@@ -125,6 +125,7 @@ Generated from repository source files. This report is informational during the 
 | 1094 | JavaScript source | `scripts/verify/pfl035_payment_request_runtime_acceptance.mjs` |
 | 1093 | Python source | `addons/smart_core/handlers/load_contract.py` |
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
+| 1093 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1080 | Python source | `scripts/verify/test_frontend_product_page_header_guard.py` |
 | 1067 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
@@ -161,7 +162,6 @@ Generated from repository source files. This report is informational during the 
 | 845 | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
 | 843 | Python source | `scripts/verify/contract_evidence_guard.py` |
 | 843 | Python source | `scripts/verify/test_scene_r3_action_target_scene_resolution.py` |
-| 833 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 833 | JavaScript source | `scripts/verify/frontend_geometry_scroll_audit.mjs` |
 | 832 | Python source | `addons/smart_core/handlers/ui_contract_v2_projection.py` |
 | 832 | Python source | `scripts/ops/production_acceptance_clone_runtime.py` |

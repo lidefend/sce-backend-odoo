@@ -28,6 +28,8 @@ ALLOWED_BRANCH = re.compile(r"^(feature|fix|refactor|audit|codex)/.+$")
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 DETACH_CONFIRMATION = "DETACH_VERIFIED_WORKTREE_KEEP_BRANCH"
 SQUASH_RETIREMENT_CONFIRMATION = "RETIRE_SQUASH_INTEGRATED_WORKTREE_WITHOUT_ARCHIVED_EVIDENCE"
+SUPERSEDED_RETIREMENT_CONFIRMATION = "RETIRE_SUPERSEDED_LOCAL_TOPIC_WITH_RECOVERY"
+INTEGRATION_BASELINE = "origin/main"
 
 
 class CleanupError(RuntimeError):
@@ -49,6 +51,10 @@ class IntegrationProof:
     tree: str
     merge_commit: str = ""
     pull_request: int = 0
+    # Paths the topic adds that the baseline never had.  Only a ``superseded``
+    # proof fills this, so the reviewed retirement record has to enumerate them
+    # and nothing new can be introduced silently.
+    branch_added: tuple[str, ...] = ()
 
 
 def run(root: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -142,7 +148,9 @@ def verify_evidence_receipt(selected: Worktree, receipt_path: Path) -> None:
             raise CleanupError(f"archived evidence role validation failed: {exc}") from exc
 
 
-def plan_cleanup(root: Path, candidate: Path) -> Worktree:
+def plan_cleanup(
+    root: Path, candidate: Path, *, allow_superseded: bool = False
+) -> Worktree:
     root = root.resolve()
     candidate = candidate.resolve()
     worktrees = parse_worktrees(run(root, "worktree", "list", "--porcelain").stdout)
@@ -173,7 +181,7 @@ def plan_cleanup(root: Path, candidate: Path) -> Worktree:
         raise CleanupError(f"worktree is not clean: {selected.path}")
 
     run(root, "fetch", "--prune", "origin")
-    prove_integration(root, selected)
+    prove_integration(root, selected, allow_superseded=allow_superseded)
     return selected
 
 
@@ -217,7 +225,81 @@ def merged_pull_request(root: Path, branch: str, head: str) -> dict | None:
     return None
 
 
-def prove_integration(root: Path, selected: Worktree) -> IntegrationProof:
+def last_touch_times(root: Path, ref: str) -> dict[str, int]:
+    """Return the newest commit time that touched each path reachable from ``ref``."""
+    output = run(root, "log", ref, "--no-renames", "--format=C%ct", "--name-only").stdout
+    times: dict[str, int] = {}
+    current = 0
+    for line in output.splitlines():
+        if line.startswith("C") and line[1:].isdigit():
+            current = int(line[1:])
+            continue
+        path = line.strip()
+        if path and current > times.get(path, 0):
+            times[path] = current
+    return times
+
+
+def prove_superseded(
+    root: Path, selected: Worktree, baseline: str = INTEGRATION_BASELINE
+) -> tuple[str, ...]:
+    """Machine-check that a local-only topic carries nothing newer than ``baseline``.
+
+    Admissible only when the topic is local-only (an unreadable remote is a denial,
+    never an absence) and unmerged, when no path that differs from the baseline is
+    newer on the topic side, and when every baseline-absent path the topic adds is
+    returned so the reviewed record has to enumerate it.  Nothing here is inferred
+    from the record: the record is compared against this recomputation.
+    """
+    if run(root, "rev-parse", "--verify", f"{baseline}^{{commit}}", check=False).returncode:
+        raise CleanupError(f"integration baseline is unreadable: {baseline}")
+    # "Local-only" has to hold for every configured remote, not just ``origin``:
+    # a live topic could equally sit on the mirror remote.  Any unreadable remote
+    # raises from ``remote_branch_sha``, so an unknown remote is a denial too.
+    if selected.branch:
+        for remote in remote_names(root):
+            if remote_branch_sha(root, selected.branch, remote=remote) is not None:
+                raise CleanupError(
+                    "a superseded topic must be local-only; "
+                    f"{remote}/{selected.branch} still exists"
+                )
+    rows = run(
+        root, "diff", "--name-status", "--no-renames", baseline, selected.head
+    ).stdout
+    compared: list[str] = []
+    branch_added: list[str] = []
+    for row in rows.splitlines():
+        if not row.strip():
+            continue
+        fields = row.split("\t")
+        status, path = fields[0], fields[-1]
+        if status.startswith("A"):
+            branch_added.append(path)
+        elif status.startswith("D"):
+            # Present in the baseline and absent from the topic: the topic cannot
+            # be newer than a file it does not contain.
+            continue
+        else:
+            compared.append(path)
+    topic_times = last_touch_times(root, selected.head)
+    baseline_times = last_touch_times(root, baseline)
+    newer = sorted(
+        path
+        for path in compared
+        if topic_times.get(path, 0) > baseline_times.get(path, 0)
+    )
+    if newer:
+        raise CleanupError(
+            "worktree HEAD is not superseded; the topic side is newer for: "
+            + ", ".join(newer[:5])
+            + (f" (+{len(newer) - 5} more)" if len(newer) > 5 else "")
+        )
+    return tuple(sorted(branch_added))
+
+
+def prove_integration(
+    root: Path, selected: Worktree, *, allow_superseded: bool = False
+) -> IntegrationProof:
     """Prove the worktree HEAD is integrated into ``origin/main``.
 
     Two integrations are admissible. ``ancestor``: the HEAD is contained in
@@ -245,7 +327,15 @@ def prove_integration(root: Path, selected: Worktree) -> IntegrationProof:
         )
     row = merged_pull_request(root, selected.branch or "", selected.head)
     if row is None:
-        raise CleanupError(f"worktree HEAD is not merged into origin/main: {selected.head}")
+        if not allow_superseded:
+            raise CleanupError(
+                f"worktree HEAD is not merged into origin/main: {selected.head}"
+            )
+        return IntegrationProof(
+            kind="superseded",
+            tree=tree,
+            branch_added=prove_superseded(root, selected),
+        )
     merge_commit = row["mergeCommit"]
     if run(
         root, "merge-base", "--is-ancestor", merge_commit, "origin/main", check=False
@@ -267,8 +357,13 @@ def prove_integration(root: Path, selected: Worktree) -> IntegrationProof:
     )
 
 
-def remote_branch_sha(root: Path, branch: str) -> str | None:
-    """Return the SHA of ``origin/<branch>``, or ``None`` when it is absent.
+def remote_names(root: Path) -> tuple[str, ...]:
+    """Return every configured remote name, sorted for deterministic messages."""
+    return tuple(sorted(name for name in run(root, "remote").stdout.split() if name))
+
+
+def remote_branch_sha(root: Path, branch: str, remote: str = "origin") -> str | None:
+    """Return the SHA of ``<remote>/<branch>``, or ``None`` when it is absent.
 
     The locally cached ``refs/remotes/origin/*`` namespace is not authoritative
     here: this repository fetches only ``main``, so a live remote topic branch
@@ -277,11 +372,11 @@ def remote_branch_sha(root: Path, branch: str) -> str | None:
     answer is a denial rather than an assumption.
     """
     process = run(
-        root, "ls-remote", "--heads", "origin", f"refs/heads/{branch}", check=False
+        root, "ls-remote", "--heads", remote, f"refs/heads/{branch}", check=False
     )
     if process.returncode:
         raise CleanupError(
-            f"cannot read origin/{branch} (remote state must be known): "
+            f"cannot read {remote}/{branch} (remote state must be known): "
             f"{process.stdout.strip()}"
         )
     rows = [line.split() for line in process.stdout.splitlines() if line.strip()]
@@ -289,7 +384,9 @@ def remote_branch_sha(root: Path, branch: str) -> str | None:
         return None
     sha = rows[0][0] if rows[0] else ""
     if not FULL_SHA.fullmatch(sha):
-        raise CleanupError(f"unexpected ls-remote result for origin/{branch}: {rows[0]!r}")
+        raise CleanupError(
+            f"unexpected ls-remote result for {remote}/{branch}: {rows[0]!r}"
+        )
     return sha
 
 
@@ -353,13 +450,44 @@ def verify_retirement_record(
         raise CleanupError("retirement record entry must declare evidenceStatus=absent")
     if not str(entry.get("reason") or "").strip():
         raise CleanupError("retirement record entry must state why no evidence exists")
-    declared_pr = entry.get("mergedPr")
-    if not isinstance(declared_pr, int) or isinstance(declared_pr, bool):
-        raise CleanupError("retirement record mergedPr must be an integer")
-    if declared_pr != proof.pull_request:
-        raise CleanupError("retirement record merged PR does not match the verified merge proof")
-    if str(entry.get("mergeCommit") or "") != proof.merge_commit:
-        raise CleanupError("retirement record merge commit does not match the verified merge proof")
+    if entry.get("integrationKind") == "superseded":
+        # A superseded topic has no merge to bind to; the reviewed record instead has
+        # to enumerate exactly what the topic adds on top of the baseline, so nothing
+        # baseline-absent can enter through the record instead of through review.
+        if proof.kind != "superseded":
+            raise CleanupError(
+                "retirement record declares a superseded topic but the worktree is integrated"
+            )
+        declared_superseded = entry.get("supersededBy")
+        if not isinstance(declared_superseded, dict):
+            raise CleanupError("superseded retirement record requires a supersededBy block")
+        if str(declared_superseded.get("baseline") or "") != INTEGRATION_BASELINE:
+            raise CleanupError(
+                f"superseded retirement record baseline must be {INTEGRATION_BASELINE}"
+            )
+        if list(declared_superseded.get("branchNewer") or []):
+            raise CleanupError(
+                "superseded retirement record must declare an empty branchNewer list"
+            )
+        declared_added = declared_superseded.get("branchAdded")
+        if not isinstance(declared_added, list) or not all(
+            isinstance(value, str) for value in declared_added
+        ):
+            raise CleanupError(
+                "superseded retirement record branchAdded must be a string list"
+            )
+        if tuple(sorted(declared_added)) != proof.branch_added:
+            raise CleanupError(
+                "superseded retirement record branchAdded does not match the verified evidence"
+            )
+    else:
+        declared_pr = entry.get("mergedPr")
+        if not isinstance(declared_pr, int) or isinstance(declared_pr, bool):
+            raise CleanupError("retirement record mergedPr must be an integer")
+        if declared_pr != proof.pull_request:
+            raise CleanupError("retirement record merged PR does not match the verified merge proof")
+        if str(entry.get("mergeCommit") or "") != proof.merge_commit:
+            raise CleanupError("retirement record merge commit does not match the verified merge proof")
     if str(entry.get("tree") or "") != proof.tree:
         raise CleanupError("retirement record tree does not match the verified merge proof")
     bundle = entry.get("recoveryBundle")
@@ -449,9 +577,10 @@ def cleanup(
     retirement_record: Path | None = None,
     recovery_bundle: Path | None = None,
     confirmation: str = "",
+    allow_superseded: bool = False,
 ) -> Worktree:
-    selected = plan_cleanup(root, candidate)
-    proof = prove_integration(root, selected)
+    selected = plan_cleanup(root, candidate, allow_superseded=allow_superseded)
+    proof = prove_integration(root, selected, allow_superseded=allow_superseded)
     branch = selected.branch or ""
     if apply:
         # Destructive steps are recorded as they succeed so that a later denial can
@@ -461,12 +590,18 @@ def cleanup(
             if evidence_receipt is not None:
                 verify_evidence_receipt(selected, evidence_receipt)
             elif retirement_record is not None and recovery_bundle is not None:
-                if confirmation != SQUASH_RETIREMENT_CONFIRMATION:
+                if proof.kind == "superseded":
+                    if confirmation != SUPERSEDED_RETIREMENT_CONFIRMATION:
+                        raise CleanupError(
+                            "superseded retirement apply requires "
+                            f"confirmation={SUPERSEDED_RETIREMENT_CONFIRMATION}"
+                        )
+                elif confirmation != SQUASH_RETIREMENT_CONFIRMATION:
                     raise CleanupError(
                         "legacy retirement apply requires "
                         f"confirmation={SQUASH_RETIREMENT_CONFIRMATION}"
                     )
-                if proof.kind not in {"squash", "ancestor"}:
+                if proof.kind not in {"squash", "ancestor", "superseded"}:
                     raise CleanupError(
                         "retirement record is only admissible for integrated topics"
                     )
@@ -517,7 +652,13 @@ def cleanup(
                 raise CleanupError(
                     f"branch ref moved before deletion: expected={selected.head} actual={ref_head}"
                 )
-            run(root, "branch", "-D" if proof.kind == "squash" else "-d", "--", branch)
+            run(
+                root,
+                "branch",
+                "-D" if proof.kind in {"squash", "superseded"} else "-d",
+                "--",
+                branch,
+            )
             completed.append(f"local branch {branch} deleted")
         except (CleanupError, subprocess.CalledProcessError) as exc:
             if not completed:
@@ -534,6 +675,7 @@ def main() -> int:
     parser.add_argument("--path", required=True)
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--detach-keep-branch", action="store_true")
+    parser.add_argument("--superseded-retirement", action="store_true")
     parser.add_argument("--expected-head", default="")
     parser.add_argument("--confirm", default="")
     parser.add_argument("--evidence-receipt", default="")
@@ -550,6 +692,10 @@ def main() -> int:
             ).stdout.strip()
         )
         if args.detach_keep_branch:
+            if args.superseded_retirement:
+                raise CleanupError(
+                    "worktree detach cannot be combined with a superseded retirement"
+                )
             selected = detach_worktree(
                 root,
                 Path(args.path),
@@ -559,6 +705,13 @@ def main() -> int:
                 evidence_receipt=Path(args.evidence_receipt) if args.evidence_receipt else None,
             )
         else:
+            if args.superseded_retirement and not (
+                args.retirement_record and args.recovery_bundle
+            ):
+                raise CleanupError(
+                    "superseded retirement requires both --retirement-record and "
+                    "--recovery-bundle"
+                )
             selected = cleanup(
                 root,
                 Path(args.path),
@@ -569,6 +722,7 @@ def main() -> int:
                 ),
                 recovery_bundle=Path(args.recovery_bundle) if args.recovery_bundle else None,
                 confirmation=args.confirm,
+                allow_superseded=args.superseded_retirement,
             )
     except (CleanupError, subprocess.CalledProcessError) as exc:
         print(f"[workspace.worktree.cleanup] DENY {exc}", file=sys.stderr)

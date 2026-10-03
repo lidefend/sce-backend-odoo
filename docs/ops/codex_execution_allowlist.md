@@ -562,13 +562,16 @@ make workspace.worktree.cleanup \
   CLEAN_WORKTREE_CONFIRM=RETIRE_SQUASH_INTEGRATED_WORKTREE_WITHOUT_ARCHIVED_EVIDENCE
 ```
 
-* 准入证明分两类，任一条件不成立即拒绝（`gh` 不可用或查询失败按无证明处理）：
+* 准入证明分三类，任一条件不成立即拒绝（`gh` 不可用或查询失败按无证明处理）：
   * **squash 同树承接**：已合并 PR 的 `headRefOid` 精确等于工作树 HEAD，其 merge
     commit 位于 `origin/main`、是**单亲**提交，且该提交的树与工作树 HEAD 的树逐字节一致。
   * **ancestor 包含**：工作树 HEAD 直接包含在 `origin/main` 中。真实 merge commit
     承接（非 squash）走这一类，因为它没有单亲同树提交；此时仍**必须**取到精确等于该
     HEAD 的已合并 PR，否则拒绝，记录中的 `mergedPr`／`mergeCommit` 与该 PR 绑定。
-  * 两类之外（HEAD 未并入）一律拒绝。
+  * **superseded 被取代**（仅限显式 opt-in，新增第三类）：本地独有、远端没有同名分支、
+    无任何已合并 PR，且与 `origin/main` 相比**主题侧没有任何更新的**改动路径。默认不
+    准入；只有显式 `CLEAN_WORKTREE_SUPERSEDED=1` 才走这一类，否则仍按“未并入”拒绝。
+  * 三类之外（HEAD 未并入）一律拒绝。
 * 治理记录必须是仓库内**被 Git 跟踪**的文件（因此必须随候选评审合入），逐条声明
   `path`／`branch`／`head`／`evidenceStatus=absent`／原因／`mergedPr`（严格整数，浮点、
   字符串与布尔一律拒绝）／`mergeCommit`／`tree`／恢复 bundle 路径与 SHA-256；入口会重读
@@ -586,6 +589,39 @@ make workspace.worktree.cleanup \
 * 退役被拒绝时的恢复：远端漂移、远端或 `gh` 不可读、lease 过期都属于硬拒绝，本入口不
   自动放宽；恢复远端可读性后重跑，或对残留引用使用 `make branch.cleanup.feature`。
 * 无归档证据必须由记录显式披露；禁止用任意文件、重跑或补造文件替代原候选证据。
+
+被 `origin/main` 取代、且**无任何合并承接**的纯本地主题（远端没有同名分支、`gh` 也查不到
+该 HEAD 的已合并 PR）走第三类 `superseded` 准入。默认仍然拒绝未并入的 HEAD；只有显式
+opt-in 时该入口才按“被取代”放行，且要求：
+
+```bash
+make workspace.worktree.cleanup \
+  CLEAN_WORKTREE=/absolute/linked/path \
+  CLEAN_WORKTREE_SUPERSEDED=1 \
+  CLEAN_WORKTREE_RETIREMENT_RECORD=/absolute/repo/docs/ops/iterations/workspace_worktree_superseded_retirement_v1.json \
+  CLEAN_WORKTREE_RECOVERY_BUNDLE=/absolute/evidence/workspace-archives/<date>/superseded-retirement/<branch>.bundle \
+  APPLY=1 \
+  CLEAN_WORKTREE_CONFIRM=RETIRE_SUPERSEDED_LOCAL_TOPIC_WITH_RECOVERY
+```
+
+* `CLEAN_WORKTREE_SUPERSEDED=1` 与 `CLEAN_WORKTREE_KEEP_BRANCH=1`（detach）互斥；apply 同时
+  要求 `CLEAN_WORKTREE_RETIREMENT_RECORD` 与 `CLEAN_WORKTREE_RECOVERY_BUNDLE`，缺一即拒绝。
+* 机器校验（全部先于任何破坏性动作，且不采信记录自称）：`origin/main` 可读；对**每一个
+  已配置远端**（`origin`、`gitee-mirror` …，按名称排序）执行 `git ls-remote --heads
+  <remote> refs/heads/<branch>`，要求全部**没有**同名分支，任一远端不可读按拒绝处理、
+  绝不当作“不存在”；HEAD 不是 `origin/main` 的祖先；对基线到 HEAD 的逐文件
+  最后改动时间比较，**主题侧更新的差异路径必须为空**。同一路径在两侧改动时间相同时不算
+  “主题更新”，不因此拒绝。
+* 该分支没有合并可绑定，所以记录除通用字段外必须给出 `integrationKind=superseded` 与
+  `supersededBy` 块（`baseline` 必须为 `origin/main`、`branchNewer` 必须为空、
+  `branchAdded` 必须**逐项等于**入口重算出的“基线不存在而主题新增”的路径集合），否则
+  拒绝；记录不得替入口引入任何未评审的路径。
+* 与其它退役一致：记录必须是被 Git 跟踪且提交在 `HEAD` 的文件，恢复 bundle 必须在工作
+  树之外、哈希匹配、覆盖该 HEAD 并通过 `git bundle verify`；破坏性顺序仍为远端 lease
+  删除（本模式通常无远端）→ 移除工作树 → 删除本地分支。删除本地分支使用 `-D`，因为被取代
+  的主题按定义不是祖先。
+* 该准入**不改动** `make workspace.retain-main-only` 的主工作树 ignored-file 守卫：两条入口
+  相互独立，本类退役不读取、不放宽该守卫。
 
 > 解释：
 > PR 的代码更新 **必须通过 `make pr.push`**，

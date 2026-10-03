@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "id": "WORKSPACE-SUPERSEDED-RETIREMENT",
+  "branch": "fix/workspace-superseded-retirement",
+  "baseline_sha": "43dec021db191779d1cb2a5d6ba51c74f8c00808",
+  "scope": [
+    "scripts/ops/safe_worktree_cleanup.py",
+    "scripts/ops/test_safe_worktree_cleanup.py",
+    "make/codex.mk",
+    "docs/ops/iterations/workspace_superseded_retirement_20261003.md",
+    "docs/ops/iterations/workspace_worktree_superseded_retirement_v1.json",
+    "docs/ops/codex_execution_allowlist.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    ".agent/goals/WORKSPACE-SUPERSEDED-RETIREMENT.yaml",
+    ".agent/runs/WORKSPACE-SUPERSEDED-RETIREMENT/run.json",
+    ".agent/active-runs.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database, service or credential access"
+  },
+  "checks": {
+    "focused": {
+      "target": "verify.workspace.worktree.guard",
+      "inputs": [
+        "scripts/ops/safe_worktree_cleanup.py",
+        "scripts/ops/test_safe_worktree_cleanup.py",
+        "scripts/ops/archive_worktree_delivery_evidence.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Implement the superseded admission in scripts/ops/safe_worktree_cleanup.py with its offline unit locks, run make verify.workspace.worktree.guard and make ci.local.iteration, then commit the reviewed record and retire sce-backend-odoo-agent-resume after the candidate merges.",
+  "status": "active",
+  "goal": ".agent/goals/WORKSPACE-SUPERSEDED-RETIREMENT.yaml",
+  "record": "docs/ops/iterations/workspace_superseded_retirement_20261003.md"
+}
