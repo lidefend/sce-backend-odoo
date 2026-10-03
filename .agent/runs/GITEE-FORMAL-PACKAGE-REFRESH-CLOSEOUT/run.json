@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "id": "GITEE-FORMAL-PACKAGE-REFRESH-CLOSEOUT",
+  "branch": "audit/gitee-formal-package-refresh-closeout",
+  "status": "completed",
+  "baseline_sha": "a9020e86f2730a9b7ccbad82663e4c0ee2c3f0d9",
+  "goal": ".agent/goals/GITEE-FORMAL-PACKAGE-REFRESH.yaml",
+  "record": "docs/ops/iterations/gitee_formal_package_refresh_20261003.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/GITEE-FORMAL-PACKAGE-REFRESH.yaml",
+    ".agent/runs/GITEE-FORMAL-PACKAGE-REFRESH/run.json",
+    ".agent/runs/GITEE-FORMAL-PACKAGE-REFRESH-CLOSEOUT/run.json",
+    "docs/ops/iterations/gitee_formal_package_refresh_20261003.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "tracked run/record metadata only; the referenced Gitee refresh, PR merge and mirror receipts were already produced through governed entries and are not replayed here"
+  },
+  "checks": {
+    "run_records": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Completed: the topic run and goal are marked completed, the closeout section records the PR #545 merge, the Gitee main mirror and the Gitee PR #34 closure. Remaining, separately authorized work is deployment and product acceptance, plus any future cleanup of the historical main.gitee.catchup anchor; nothing in this closeout is pending.",
+  "completion": {
+    "batch": "passed: the topic run and its goal are completed and the closeout record binds the merged identity",
+    "mainline": "merged via PR #545 (squash a9020e86f2730a9b7ccbad82663e4c0ee2c3f0d9, 2026-10-03T14:40:25Z); local main, origin/main and the Gitee mirror main all report the same SHA",
+    "deployment": "not_run",
+    "product_delivery": "not_run",
+    "review": "all four required checks plus release_candidate_gate and python310_runtime_compatibility SUCCESS on the exact source commit 5d0a0a3cb78e601d0a352a09af18d14824a1ea98; exact-head ci.local.quick PASS and reused by make pr.merge",
+    "quick_receipt": ".git/codex/evidence/ci.local.quick/5d0a0a3cb78e601d0a352a09af18d14824a1ea98.json"
+  },
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

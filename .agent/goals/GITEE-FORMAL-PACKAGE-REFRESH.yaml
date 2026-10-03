@@ -1,6 +1,6 @@
 goal:
   id: GITEE-FORMAL-PACKAGE-REFRESH
-  status: active
+  status: completed
   formal_product_layer: P4
   module: ops_delivery_tool
   objective: >-
@@ -36,3 +36,9 @@ goal:
     - local_dev_lifecycle_unit_non_zero
     - dev_profile_login_readback
     - gitee_formal_root_readback
+  completion: >-
+    Completed on 2026-10-03: the Gitee formal package root was refreshed to the
+    mainline SHA, the sc-local-dev demo credential was fixed and merged through
+    PR #545 (squash a9020e86f2730a9b7ccbad82663e4c0ee2c3f0d9), the Gitee main mirror
+    was fast-forwarded to the same SHA, and the redundant Gitee PR #34 was closed.
+    Deployment and product acceptance remain separately authorized and not run.
