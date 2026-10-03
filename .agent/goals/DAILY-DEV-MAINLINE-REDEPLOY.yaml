@@ -1,6 +1,6 @@
 goal:
   id: DAILY-DEV-MAINLINE-REDEPLOY
-  status: active
+  status: completed
   formal_product_layer: P4
   module: ops_delivery_tool
   objective: >-
@@ -34,3 +34,12 @@ goal:
     - runtime_repo_clean
     - served_runtime_identity_matches_deployed_sha
     - daily_readonly_probe_runtime_identity_frontend_login
+  completion: >-
+    Completed on 2026-10-03: sc-root:/opt/projects/repos/sce-product-odoo was
+    fast-forwarded from a90faee8 to the exact mainline 64efb6bf through the governed
+    bundle sync, the frontend was rebuilt, smart_core was upgraded to 17.0.1.1.14 and
+    the service was recreated. The served runtime identity was aligned with a backed-up
+    controlled write and verified through /api/runtime-version. The governed daily
+    readonly probe passes runtime_identity, frontend and login; its contract section
+    stays blocked by the record-resolution precondition and was not relaxed. Owner login
+    acceptance and formal publication remain separately authorized and not run.

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "DAILY-DEV-MAINLINE-REDEPLOY",
   "branch": "codex/daily-dev-mainline-redeploy-20261003",
-  "status": "active",
+  "status": "completed",
   "baseline_sha": "64efb6bf61ba1b7364d03c25fe0a2e1ae8849d75",
   "goal": ".agent/goals/DAILY-DEV-MAINLINE-REDEPLOY.yaml",
   "record": "docs/ops/iterations/daily_dev_mainline_redeploy_20261003.md",
@@ -45,5 +45,16 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Run verify.daily.runtime.main.bundle_sync, then the exact-SHA bundle sync for 64efb6bf against old SHA a90faee8, then the daily runtime frontend build, smart_core upgrade, restart and readbacks."
+  "next_exact_step": "Completed: the daily runtime repository on sc-root was fast-forwarded from a90faee8 to the exact mainline 64efb6bf through the governed bundle sync, its frontend was rebuilt, smart_core upgraded to 17.0.1.1.14 and the service recreated; the served runtime identity now reports 64efb6bf. The governed daily readonly probe passes runtime_identity, frontend and login, and its contract section stays blocked by the record-resolution precondition and was not relaxed. Owner login acceptance over http://1.95.85.92:18081/ remains open; formal publication stays on owner hold. This run's metadata is integrated through its own PR.",
+  "completion": {
+    "batch": "passed: P4 ops deployment, no product batch produced",
+    "mainline": "not_changed_by_this_run (main, origin/main and the Gitee mirror already report 64efb6bf); this run's metadata is integrated through its own PR",
+    "deployment": "deployed_daily_dev_runtime_64efb6bf",
+    "publication": "owner_hold",
+    "product_delivery": "not_run",
+    "daily_acceptance_contract_section": "blocked_precondition_record_resolution_missing_out_of_scope_and_not_relaxed",
+    "review": "governed daily entries executed with readback: bundle sync PASS (7831855c…), frontend build PASS (entry assets/index-DGsa_kfq.js), smart_core upgrade PASS, restart PASS, runtime repo guard PASS, module/ACL/cron readback PASS, runtime identity written with backup and readback-verified, readonly probe runtime_identity+frontend+login PASS and contract FAIL(record_resolution_missing) recorded and not relaxed"
+  },
+  "write_replay_authorized": false,
+  "candidate_evidence": false
 }
