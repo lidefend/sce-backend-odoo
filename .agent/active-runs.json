@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "branches": {
-    "audit/gitee-formal-package-refresh-20261003": ".agent/runs/GITEE-FORMAL-PACKAGE-REFRESH/run.json"
+    "audit/gitee-formal-package-refresh-closeout": ".agent/runs/GITEE-FORMAL-PACKAGE-REFRESH-CLOSEOUT/run.json"
   }
 }

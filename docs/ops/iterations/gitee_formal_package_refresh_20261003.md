@@ -71,8 +71,29 @@
   `smart_construction_demo` users; they keep their own credentials and this change does
   not alter them.
 
-## Open items
+## Closeout (2026-10-03)
 
-- Gitee main catch-up lane: inspect `make gitee.integration.inspect` and the
-  `make main.gitee.catchup` plan anchor before any apply.
-- Gitee PR #34 disposition after the package refresh.
+- GitHub PR #545 (`audit/gitee-formal-package-refresh-20261003` -> `main`), source
+  commit `5d0a0a3cb78e601d0a352a09af18d14824a1ea98`, base
+  `17c1a9740b617ee1367d3dbe7634df0dac3d0f0d`. All four required checks succeeded on
+  that exact source commit (`public_guard`, `merge_policy_gate`,
+  `professional_quality_gate`, `frontend_release_gate`), and
+  `release_candidate_gate` plus `python310_runtime_compatibility` were also SUCCESS.
+  Squash merge `a9020e86f2730a9b7ccbad82663e4c0ee2c3f0d9` is the current `origin/main`.
+- `make ci.local.quick` PASS on the exact clean head `5d0a0a3c`; the receipt
+  `.git/codex/evidence/ci.local.quick/5d0a0a3cb78e601d0a352a09af18d14824a1ea98.json`
+  was reused by `make pr.merge` instead of rerunning the suite.
+- Gitee `main` was fast-forwarded twice through the governed `make mirror.main.gitee`
+  entry: `a969aaf7` -> `17c1a974` -> `a9020e86`. Both readbacks report
+  `mode=fast_forward_only`; local `main`, `origin/main` and the Gitee mirror all report
+  `a9020e86`.
+- Gitee PR #34 was closed (comment `51438178`) as superseded: its candidate was already
+  integrated through PR #543 and the Gitee repository is a read-only mirror of GitHub
+  `main`.
+
+## Retained open items
+
+- `deployment` and `product_delivery` remain `not_run`; they need separate authorization.
+- The historical `main.gitee.catchup` lane still anchors on
+  `de9a230d3faab18dd60a219f445f932a8af9d7f5` and therefore stays fail-closed. It was not
+  used, and no DENY or audit was relaxed to work around it.

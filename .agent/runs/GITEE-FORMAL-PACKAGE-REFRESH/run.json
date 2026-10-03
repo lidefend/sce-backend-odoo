@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "GITEE-FORMAL-PACKAGE-REFRESH",
   "branch": "audit/gitee-formal-package-refresh-20261003",
-  "status": "active",
+  "status": "completed",
   "baseline_sha": "17c1a9740b617ee1367d3dbe7634df0dac3d0f0d",
   "goal": ".agent/goals/GITEE-FORMAL-PACKAGE-REFRESH.yaml",
   "record": "docs/ops/iterations/gitee_formal_package_refresh_20261003.md",
@@ -45,5 +45,13 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Record the non-zero verify.local.development_lifecycle.unit receipt for this dirty scope, commit the four fixed-credential files on audit/gitee-formal-package-refresh-20261003, then inspect the Gitee main catch-up lane and decide the PR #34 disposition."
+  "next_exact_step": "Completed: the four fixed-credential files were committed as 5d0a0a3cb78e601d0a352a09af18d14824a1ea98 and integrated through GitHub PR #545 (squash a9020e86f2730a9b7ccbad82663e4c0ee2c3f0d9). The Gitee main mirror was fast-forwarded through make mirror.main.gitee and the redundant Gitee PR #34 was closed. Deployment and product acceptance stay separately authorized.",
+  "completion": {
+    "batch": "passed: 16-test verify.local.development_lifecycle.unit receipt with the fixed credential declared for sc-local-dev only",
+    "mainline": "merged via PR #545 (squash a9020e86f2730a9b7ccbad82663e4c0ee2c3f0d9); origin/main and the Gitee mirror main both report that SHA",
+    "deployment": "not_run",
+    "product_delivery": "not_run",
+    "review": "four required checks plus release_candidate_gate and python310_runtime_compatibility SUCCESS on 5d0a0a3c; exact-head ci.local.quick PASS",
+    "quick_receipt": ".git/codex/evidence/ci.local.quick/5d0a0a3cb78e601d0a352a09af18d14824a1ea98.json"
+  }
 }
