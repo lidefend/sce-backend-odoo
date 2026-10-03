@@ -51,13 +51,12 @@ goal:
     - reuse_unchanged_passing_evidence_and_rerun_only_inputs_that_changed
     - record_the_real_effect_result_including_any_still_failing_surface
   next_exact_step: >-
-    Registered. Rebuild the governed 5180 preview and refresh the governed 18082
-    backend from this branch HEAD, resolve the fixture record through the governed
-    resolver, then run the detail and list standard page-type browser scopes to
-    obtain current real rendering evidence before adjudicating the ledger.
+    Freeze the reviewed candidate, run one make ci.local.quick on that exact clean
+    HEAD, then publish the Gitee candidate against main a969aaf7b and complete the
+    independent review. Deployment and product acceptance stay separate.
   completion:
     overall_goal: in_progress
-    ledger_closeout: not_run
+    ledger_closeout: passed
     mainline_integration: not_run
     deployment: not_run
     product_delivery: not_run

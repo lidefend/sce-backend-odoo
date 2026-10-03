@@ -47,8 +47,37 @@ build.
 ## Result
 
 Batch acceptance: passed on branch `fix/fe-tpl-render-evidence-reconciliation`
-(HEAD `d7b986bd4` plus the declared dirty scope). Mainline integration,
-deployment and product delivery are separate statuses and are not claimed here.
+at candidate `99872d500` (clean tree). Mainline integration, deployment and
+product delivery are separate statuses and are not claimed here.
+
+## Reconciliation round (2026-10-03, candidate `99872d500`)
+
+The first pass left two acceptance items open: the run scope did not cover two
+delivered paths, so `ci.local.iteration` reported `outside_scope`, and the list
+lane receipt had been recorded from a run whose contract prerequisite was stale.
+Both are closed without touching product behaviour:
+
+- `ci.local.iteration` scope: `.agent/runs/FE-TPL-RENDER-EVIDENCE-RECONCILIATION/run.json`
+  now declares the superseded predecessor run record and the refreshed
+  complexity budget report. The `checks` block stays declaration-only
+  (`target`/`kind`/`inputs`), so recorded results live in the run receipts and
+  editing the declaration can no longer invalidate them.
+- Governed runtime refresh for this candidate: `make backend.acceptance.replace-stale
+  SC_ACCEPTANCE_RUNTIME_PROFILE=local` rebuilt `sc-backend-odoo-acceptance`
+  (`SC_SOURCE_REVISION=99872d500`, port 18082, db `sc_frontend_acceptance`),
+  `make verify.dev.acceptance.record_identity.resolve COMPOSE_PROJECT_NAME=sc-fe-r2-p1-01`
+  re-resolved the fixture record against that revision, and
+  `make verify.dev.acceptance.contract ACCEPTANCE_BASE_URL=http://127.0.0.1:5180`
+  returned PASS with all eleven declared checks true. The sealed semantic digest
+  `640490e029012e43bc1e93b6e3d24881f7c99d8769ba21a684b882bc0506e727` is unchanged
+  from the earlier receipt, so the backend behaviour this evidence covers is the
+  same one. `frontend.standard.preview.build`/`.up` both reported
+  `REUSED unchanged build` / `REUSED current 5180 listener`.
+- Recorded identity for the accepted list lane: stable identifier
+  `smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a`,
+  model `payment.request`, record `1849`, companies 8/9, one matching resolved
+  target, no competing identifier. The record id is resolved by the governed
+  producer, never hard-coded.
 
 Closed root causes in this batch:
 
@@ -82,13 +111,21 @@ owned_gaps=0).
 | `detail.container` | aligned | `artifacts/frontend-web-fix-20260928/tpl07-1791023346277/report.json` (139/139) on this build; run receipt `detail_style_scope` |
 | `detail.description-grid` | aligned | same report: `style-detail-{light,dark}-{1440,390}` render 9 readonly-fact sections plus one relation extension each, and the relation lane proves click-open then exact return context in all four theme/viewport combinations |
 
-Run receipts recorded at HEAD `d7b986bd4` (`.runtime/agent-runs/FE-TPL-RENDER-EVIDENCE-RECONCILIATION/`):
-`page_pattern_parity` 15, `standard_preview_tool` 105, `primitive_adapter` 39,
-`collection_action_toolbar` 42, `list_surface_structure` 316, `detail_style_scope`
-139. The run declares a runtime environment, so the local evaluator reports these
-offline-side receipts as `stale` ("runtime evidence requires authoritative
-environment readback") rather than `reusable`; they are recorded results, not
-auto-reusable ones, and were re-run rather than assumed.
+Run receipts recorded on a clean tree at HEAD `99872d500`
+(`.runtime/agent-runs/FE-TPL-RENDER-EVIDENCE-RECONCILIATION/`, raw logs under
+`logs/`): `list_surface_structure` 316 (316/316 gated, negative fixtures 5/5
+detected with clean baselines, runtime errors 0), `detail_style_scope` 139
+(`style-detail-{light,dark}-{1440,390}` each render 9 readonly-fact sections plus
+one relation extension, and `detail-{light,dark}-{1440,390}` each prove relation
+click-open followed by the exact return context), `page_pattern_parity` 28,
+`standard_preview_tool` 147, `primitive_adapter` 39, `collection_action_toolbar`
+42. Offline counts sum every runner in the target that prints a case count
+(`node --test` and `python unittest`); a target whose node script prints only a
+PASS coverage metric is counted by its unittest count. The run declares a
+runtime environment, so the local evaluator reports every receipt as `stale`
+("runtime evidence requires authoritative environment readback") rather than
+`reusable`; they are recorded results, not auto-reusable ones, and were re-run
+rather than assumed.
 
 Also recorded: the predecessor run `.agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json`
 is `superseded` instead of `completed`, because its goal declared
