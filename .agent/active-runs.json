@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "branches": {
-    "audit/gitee-formal-package-refresh-closeout": ".agent/runs/GITEE-FORMAL-PACKAGE-REFRESH-CLOSEOUT/run.json"
+    "codex/daily-dev-mainline-redeploy-20261003": ".agent/runs/DAILY-DEV-MAINLINE-REDEPLOY/run.json"
   }
 }

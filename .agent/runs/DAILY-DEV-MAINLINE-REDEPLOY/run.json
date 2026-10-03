@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-DEV-MAINLINE-REDEPLOY",
+  "branch": "codex/daily-dev-mainline-redeploy-20261003",
+  "status": "completed",
+  "baseline_sha": "64efb6bf61ba1b7364d03c25fe0a2e1ae8849d75",
+  "goal": ".agent/goals/DAILY-DEV-MAINLINE-REDEPLOY.yaml",
+  "record": "docs/ops/iterations/daily_dev_mainline_redeploy_20261003.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DAILY-DEV-MAINLINE-REDEPLOY.yaml",
+    ".agent/runs/DAILY-DEV-MAINLINE-REDEPLOY/run.json",
+    "docs/ops/iterations/daily_dev_mainline_redeploy_20261003.md"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "existing governed Make entries executed in this repository and in the daily runtime repository on sc-root; every module upgrade or restart keeps its own gate",
+    "runtime_authority": {
+      "host_alias": "sc-root",
+      "path": "/opt/projects/repos/sce-product-odoo",
+      "env": "dev",
+      "env_file": ".env.dev",
+      "database": "sc_demo",
+      "expected_old_sha": "a90faee8e1cc95a43af111f24d7f959c6cee38f3",
+      "expected_new_sha": "64efb6bf61ba1b7364d03c25fe0a2e1ae8849d75",
+      "entrypoints": [
+        "make daily.runtime.main.bundle_sync",
+        "make verify.frontend.build",
+        "make mod.upgrade",
+        "make restart",
+        "make verify.daily_dev.runtime_repo.clean",
+        "make verify.daily_dev.acceptance.readonly.probe"
+      ]
+    }
+  },
+  "checks": {
+    "bundle_sync_tool": {
+      "target": "verify.daily.runtime.main.bundle_sync",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/ops/daily_runtime_bundle_sync.py",
+        "scripts/ops/test_daily_runtime_bundle_sync.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Completed: the daily runtime repository on sc-root was fast-forwarded from a90faee8 to the exact mainline 64efb6bf through the governed bundle sync, its frontend was rebuilt, smart_core upgraded to 17.0.1.1.14 and the service recreated; the served runtime identity now reports 64efb6bf. The governed daily readonly probe passes runtime_identity, frontend and login, and its contract section stays blocked by the record-resolution precondition and was not relaxed. Owner login acceptance over http://1.95.85.92:18081/ remains open; formal publication stays on owner hold. This run's metadata is integrated through its own PR.",
+  "completion": {
+    "batch": "passed: P4 ops deployment, no product batch produced",
+    "mainline": "not_changed_by_this_run (main, origin/main and the Gitee mirror already report 64efb6bf); this run's metadata is integrated through its own PR",
+    "deployment": "deployed_daily_dev_runtime_64efb6bf",
+    "publication": "owner_hold",
+    "product_delivery": "not_run",
+    "daily_acceptance_contract_section": "blocked_precondition_record_resolution_missing_out_of_scope_and_not_relaxed",
+    "review": "governed daily entries executed with readback: bundle sync PASS (7831855c…), frontend build PASS (entry assets/index-DGsa_kfq.js), smart_core upgrade PASS, restart PASS, runtime repo guard PASS, module/ACL/cron readback PASS, runtime identity written with backup and readback-verified, readonly probe runtime_identity+frontend+login PASS and contract FAIL(record_resolution_missing) recorded and not relaxed"
+  },
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}
