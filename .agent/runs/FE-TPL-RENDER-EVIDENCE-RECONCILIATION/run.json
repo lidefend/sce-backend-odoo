@@ -18,7 +18,9 @@
     "config/acceptance/",
     "docs/architecture/unified_page_contract_v2/examples/",
     "frontend/apps/web/src/",
-    "scripts/ops/dev_acceptance_release_probe.py"
+    "scripts/ops/dev_acceptance_release_probe.py",
+    ".agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md"
   ],
   "environment": {
     "kind": "runtime",
@@ -48,9 +50,7 @@
         "docs/frontend_productization/rendering-detail/page-pattern-reference-detail-ledger-v1.json",
         "make/frontend.mk"
       ],
-      "status": "passed",
-      "test_count": 15,
-      "note": "parity guard 15 tests OK; page-pattern ledger guard PASS entries=67 owned_gaps=0"
+      "note": "parity guard plus page-pattern ledger guard; the ledger holds no needs_work entry"
     },
     "standard_preview_tool": {
       "target": "verify.frontend.standard_preview.unit",
@@ -61,9 +61,7 @@
         "scripts/verify/test_frontend_standard_preview.py",
         "make/runtime_ops.mk"
       ],
-      "status": "passed",
-      "test_count": 105,
-      "note": "list-surface structure + standard preview tooling unchanged; re-run to bind this candidate"
+      "note": "standard preview tooling used by the list-surface and detail browser lanes"
     },
     "detail_style_scope": {
       "target": "verify.frontend.standard_page_type.browser",
@@ -74,12 +72,7 @@
         "make/runtime_ops.mk",
         "scripts/dev/frontend_acceptance_runtime.sh"
       ],
-      "status": "passed",
-      "test_count": 139,
-      "command": "TPL07_SCOPE=style TPL52_FAMILY=detail make verify.frontend.standard_page_type.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local",
-      "report": "artifacts/frontend-web-fix-20260928/tpl07-1791023346277/report.json",
-      "receipt": ".runtime/agent-runs/FE-TPL-RENDER-EVIDENCE-RECONCILIATION/detail_style_scope.json",
-      "note": "139/139 on this candidate build: style-detail light/dark 1440/390 render 9 readonly-fact sections plus one relation extension each; the relation lane proves click-open then exact return context in all four theme/viewport combinations."
+      "note": "declared detail style scope; run with TPL07_SCOPE=style TPL52_FAMILY=detail"
     },
     "list_surface_structure": {
       "target": "verify.frontend.list_surface_structure.browser",
@@ -90,11 +83,7 @@
         "scripts/dev/frontend_acceptance_runtime.sh",
         "make/frontend.mk"
       ],
-      "note": "Real report .runtime/final-acceptance/list-surface-structure.json: 316/316 gated over 1440/1024/768/521/520/390 x normal/batch/empty, negative fixtures 5/5 detected with clean baselines, runtime errors 0. Contract receipt accepted. The earlier failure is closed by the 760px narrow-layout breakpoint alignment, not by relaxing an assertion.",
-      "status": "passed",
-      "test_count": 316,
-      "report": ".runtime/final-acceptance/list-surface-structure.json",
-      "receipt": ".runtime/agent-runs/FE-TPL-RENDER-EVIDENCE-RECONCILIATION/list_surface_structure.json"
+      "note": "contract-bound list-surface structure probe over the declared viewport/state matrix"
     },
     "primitive_adapter": {
       "target": "verify.frontend.primitive_adapter.unit",
@@ -105,9 +94,7 @@
         "scripts/verify/frontend_primitive_adapter_guard.py",
         "make/frontend.mk"
       ],
-      "note": "ScButton.vue declared the column-settings touch size; primitive adapter contract must stay intact",
-      "status": "passed",
-      "test_count": 39
+      "note": "ScButton.vue declares the column-settings touch size; the primitive adapter contract must stay intact"
     },
     "collection_action_toolbar": {
       "target": "verify.frontend.collection_action_toolbar.unit",
@@ -119,9 +106,7 @@
         "scripts/verify/test_frontend_collection_action_toolbar_guard.py",
         "make/frontend.mk"
       ],
-      "note": "list-surface header composition changed at the 760px narrow breakpoint",
-      "status": "passed",
-      "test_count": 42
+      "note": "list-surface header composition changed at the 760px narrow breakpoint"
     }
   },
   "blockers": [],
