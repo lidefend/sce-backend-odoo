@@ -66,6 +66,8 @@ missing = [xmlid for xmlid in REQUIRED_XMLIDS if not env.ref(xmlid, raise_if_not
 if missing:
     raise RuntimeError("daily acceptance fixture missing xmlids: %s" % ",".join(missing))
 
+env.cr.commit()
+
 finance = env.ref("smart_construction_acceptance_fixture.fe_user_finance")
 authenticated_uid = env["res.users"].sudo().authenticate(
     env.cr.dbname,
@@ -75,7 +77,6 @@ authenticated_uid = env["res.users"].sudo().authenticate(
 )
 if int(authenticated_uid or 0) != finance.id:
     raise RuntimeError("daily acceptance fixture credential verification failed")
-env.cr.commit()
 
 print("[daily.dev.acceptance_fixture] PASS db=%s" % env.cr.dbname)
 print("[daily.dev.acceptance_fixture.auth] PASS login=%s uid=%s" % (finance.login, authenticated_uid))

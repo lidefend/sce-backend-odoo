@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "id": "DAILY-DEV-ACCEPTANCE-FIXTURE-LANE",
-  "branch": "fix/daily-dev-acceptance-fixture-runtime-20261004",
+  "branch": "fix/daily-dev-fixture-auth-verify-20261004",
   "status": "active",
-  "baseline_sha": "5153e0ac69f0dd24ac6b472fff2ceef794307a3b",
+  "baseline_sha": "0250853ee96564ebafeb7fd268951b6713014f70",
   "goal": ".agent/goals/DAILY-DEV-ACCEPTANCE-FIXTURE-LANE.yaml",
   "record": "docs/ops/iterations/daily_dev_acceptance_fixture_lane_20261004.md",
   "scope": [
@@ -68,7 +68,9 @@
         "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
         "config/acceptance/backend_contract_instance_daily_v1.json",
         "make/dev.mk",
+        "scripts/dev/daily_dev_acceptance_fixture.sh",
         "scripts/ops/dev_acceptance_release_probe.py",
+        "scripts/test/frontend_productization_fixture.sh",
         "scripts/verify/test_daily_acceptance_fixture_lane.py"
       ],
       "kind": "offline"
@@ -76,7 +78,8 @@
   },
   "blockers": [
     "smart_core res.users._has_group: superuser pass-through fabricated base.group_public membership, so OdooBot looked public and discuss_channel_member rejected fixture user provisioning; fixed with an audience-group exclusion plus a non-zero ORM test.",
-    "acceptance fixture sc.payment.execution: PR #525's create guard only admits drafts, so a fresh database could not seed paid/confirmed executions; fixed by freezing the fixture-owned row's workflow fact through its own storage while leaving the model guard intact."
+    "acceptance fixture sc.payment.execution: PR #525's create guard only admits drafts, so a fresh database could not seed paid/confirmed executions; fixed by freezing the fixture-owned row's workflow fact through its own storage while leaving the model guard intact.",
+    "daily fixture entry scripts/dev/daily_dev_acceptance_fixture.sh committed the deterministic fixture only after the credential self-check; res.users.authenticate opens its own cursor, so the uncommitted fixture rows were invisible and the entry rolled the whole fixture back with AccessDenied. Fixed by committing before the self-check, matching scripts/test/frontend_productization_fixture.sh."
   ],
-  "next_exact_step": "Lock both root-cause fixes with non-zero targeted tests, merge, bundle-sync the daily runtime to the new main, then run make daily.dev.acceptance_fixture.ensure, make daily.dev.acceptance_contract.resolve and make verify.daily_dev.acceptance.readonly.probe on sc_demo and record the runtime readback."
+  "next_exact_step": "Merge the daily fixture commit-ordering fix, bundle-sync the daily runtime to the new main, declare the new served SHA in .env.dev SC_SOURCE_REVISION and make restart, then run make daily.dev.acceptance_fixture.ensure, make daily.dev.acceptance_contract.resolve and make verify.daily_dev.acceptance.readonly.probe on sc_demo and record the runtime readback."
 }

@@ -1,9 +1,9 @@
 # Daily Dev Acceptance Fixture Lane（日常库承载验收夹具）
 
 Run: `.agent/runs/DAILY-DEV-ACCEPTANCE-FIXTURE-LANE/run.json`
-Branch: `fix/daily-dev-acceptance-fixture-runtime-20261004`（前序
-`codex/daily-dev-acceptance-fixture-lane-20261004` 已由 PR #548 合入）
-Baseline: `5153e0ac69f0dd24ac6b472fff2ceef794307a3b`（`main`，含 PR #548）
+Branch: `fix/daily-dev-fixture-auth-verify-20261004`（前序
+`fix/daily-dev-acceptance-fixture-runtime-20261004` 已由 PR #549 合入）
+Baseline: `0250853ee96564ebafeb7fd268951b6713014f70`（`main`，含 PR #549）
 Date: 2026-10-04
 Runtime repository: `sc-root:/opt/projects/repos/sce-product-odoo`
 (`ENV=dev`, `ENV_FILE=.env.dev`, `DB_NAME=sc_demo`)
@@ -133,6 +133,37 @@ PR #548 合入后首次在日常库执行 `make daily.dev.acceptance_fixture.ens
   `verify.smart_core.res_users_audience_group.orm` 与
   `verify.acceptance_fixture.execution_freeze.orm`。
 
+## 3.2 运行时阻断的第三个根因（本轮：提交先于自检）
+
+PR #549 合入、日常运行仓同步到 `0250853e` 后，首次执行受管入口
+`make daily.dev.acceptance_fixture.ensure` 在夹具自检处失败：
+
+- 现象：`ensure_fixture(env)` 完成且模块 `installed`，但随后的
+  `res.users.authenticate` 抛 `AccessDenied`；只读回读确认夹具记录全部回滚
+  （`fixture_role_finance` 0 条、`FE Company A/B` 缺失、`fe_project_a` 缺失），
+  只有 `mod.install` 的结果被保留。
+- 定位：`res.users.authenticate` → `_login` 内部使用
+  `cls.pool.cursor()` 打开**独立连接/事务**；新脚本
+  `scripts/dev/daily_dev_acceptance_fixture.sh` 把 `env.cr.commit()` 放在自检
+  **之后**，因此自检游标看不到未提交的夹具用户与会社，判定为空集。
+  规范入口 `scripts/test/frontend_productization_fixture.sh` 的既有顺序是
+  `ensure_fixture` → `env.cr.commit()` → `authenticate`，日常脚本漏了这一步。
+- 修复：把 `env.cr.commit()` 移到自检之前，与规范入口逐字一致；不改
+  `authenticate` 语义、不放宽任何守卫、不引入付款模型特判。
+- 锁定：`scripts/verify/test_daily_acceptance_fixture_lane.py` 新增
+  `DailyFixtureVerifyOrderTests`（2 项），锁定“提交先于跨事务自检”，并对照
+  规范入口保持同一顺序。
+
+### 3.2.1 证据
+
+- 根因复现：`sc_demo` 只读回读（模块 `installed`、夹具记录为空、自检
+  `AccessDenied`）。
+- 修复行为证据：以修复版脚本的**诊断副本**在 `sc_demo` 实跑，
+  `[daily.dev.acceptance_fixture] PASS`、`finance_uid=210`、`http_uid=210`、
+  10 个必需 xmlid 全部存在、`carrier=installed`。
+- 该诊断副本只验证修复前提，**不作为受管入口回执**；受管入口需在修复合入
+  `main` 并 bundle-sync 后按第 5 节重跑。
+
 ## 4. 离线结果
 
 | 层 | 入口 | 状态 | 测试数 | 证据 |
@@ -142,6 +173,7 @@ PR #548 合入后首次在日常库执行 `make daily.dev.acceptance_fixture.ens
 | L2（定向，ORM） | `make verify.smart_core.res_users_audience_group.orm` | PASS | 3（0 failed / 0 error） | 命令输出 |
 | L2（定向，ORM） | `make verify.acceptance_fixture.execution_freeze.orm` | PASS | 1（0 failed / 0 error） | 命令输出 |
 | L3（容器内守卫回归） | `make local.dev.test MODULE=smart_construction_acceptance_fixture TEST_TAGS=acceptance_fixture_gate` | PASS | 5（0 failed / 0 error） | 命令输出 |
+| L2（定向，离线，重跑） | `make verify.daily_dev.acceptance_fixture.unit` | PASS | 21（含提交顺序锁 2 项） | 命令输出 |
 
 ### 4.1 分层声明与跳过理由
 
@@ -152,17 +184,54 @@ PR #548 合入后首次在日常库执行 `make daily.dev.acceptance_fixture.ens
   L4 留给第 5 节的日常运行时受管回执（进程内 odoo shell，不是浏览器矩阵）。
 - 未跑全量 `ci.local.quick` 之前：该入口只允许在干净冻结 HEAD 上运行一次，见第 5 节流程。
 
-## 5. 运行时结果（待补）
+## 5. 运行时结果
 
-以下受管入口需在日常运行仓 `sc-root:/opt/projects/repos/sce-product-odoo` 内执行；
-本轮尚未运行，禁止在补齐前宣称该 lane 通过：
+运行时身份：日常运行仓 `sc-root:/opt/projects/repos/sce-product-odoo`，`ENV=dev`、
+`ENV_FILE=.env.dev`、`DB_NAME=sc_demo`、`COMPOSE_PROJECT_NAME=sc-backend-odoo-dev`。
+运行期身份声明 `.env.dev` 的 `SC_SOURCE_REVISION` 原停留于 `64efb6bf`（PR #546），
+与已同步的 `addons` 不一致；按既有部署期注入约定
+（`docs/ops/iterations/daily_dev_mainline_deployment_20261003.md` 第 5 节）受控写入为
+当前 `addons` SHA 并 `make restart`：
 
-1. `make daily.dev.acceptance_fixture.ensure`
-   （`CONFIRM_DAILY_DEV_ACCEPTANCE_FIXTURE=ENSURE_DAILY_DEV_ACCEPTANCE_FIXTURE`，`DB_NAME=sc_demo`）
-2. `make daily.dev.acceptance_contract.resolve`
-   （`ACCEPTANCE_TARGET_SHA=<served sha>`）
-3. `make verify.daily_dev.acceptance.readonly.probe`
-   （期望 `contract` 段 PASS 11/11）
+- 受控写入目标：`sc-root:/opt/projects/repos/sce-product-odoo/.env.dev`（`root:ci`、`600`）。
+- 备份：`sc-root:/opt/projects/backups/20261003T201724-pre-daily-fixture-identity/.env.dev.pre`
+  （旧值 `64efb6bf…`，已回读）。
+- 写入后回读：`SC_SOURCE_REVISION=0250853e…`（40 位）；容器内 `printenv` 与
+  `GET /api/runtime-version` 均回报 `0250853e…`。
+
+首轮写入时执行器手写 SHA 掉了一个字符（39 位），`/api/runtime-version` 因
+`^[0-9a-f]{40}$` 校验失败回报 `unknown`；改为从 `git rev-parse HEAD` 程序化取值后
+回读一致。这是本轮一次真实的操作缺陷，由运行身份门禁挡下。
+
+### 5.1 受管入口回执（served sha `0250853e`）
+
+| 入口 | 状态 | 证据 |
+| --- | --- | --- |
+| `make daily.dev.acceptance_fixture.ensure` | FAIL（见 3.2；本轮以诊断副本验证修复前提） | `AccessDenied`，夹具回滚 |
+| `make daily.dev.acceptance_contract.resolve` | PASS | `artifacts/backend/acceptance_record_identity.json`，`expected_sha=0250853e…` |
+| `make verify.daily_dev.acceptance.readonly.probe` | PASS | `contract` 11/11、`errors=[]`、`runtime_identity` PASS、`login` PASS |
+
+探针分段（served sha `0250853e`）：
+
+- `runtime_identity` PASS：`served_sha == expected_sha`、`served_database=sc_demo`。
+- `login` PASS：`auth_uid=16`、`nav_action_count=89`、`nav_forbidden_label_hits=[]`、
+  `nav_required_path_misses=[]`。
+- `contract` PASS：`check_detail.identity` = `uid 210` / `FE Company A` /
+  `company_id 21` / `role_code finance`；`resolution_unique_target`
+  `matching_resolved_targets=2`、`distinct_claiming_identifiers=1`、
+  `competing_identifiers=[]`；11 项必需检查全 `true`；`errors=[]`；回执语义摘要
+  `7127ac6f…`。
+- 探针凭据：日常只读导航账号 `wutao` 属已知弱口令集，按既有约定由执行器自建
+  5–10 分钟有效期、绑定 `tool/baseUrl/apiUrl/database/login/expectedSha/runId` 的
+  `daily-readonly-credential-confirmation.v1` 信封放行；日常登录口令本身未改。
+  契约账号 `fixture_role_finance` 使用夹具口令 `SC_ACCEPTANCE_FIXTURE_PASSWORD`。
+- 探针回执：`sc-root:artifacts/backend/daily_dev_acceptance_probe.json`。
+
+### 5.2 收尾要求
+
+第 5.1 的 `ensure` 行由 3.2 的提交顺序修复解除。修复合入 `main` 并 bundle-sync 后
+`served_sha` 会推进到新的 `main`，第 5.1 的 `resolve`/探针回执因绑定旧 SHA 不可继承；
+必须在新 served SHA 上重跑三个受管入口一次，并以该轮回执作为本 lane 的运行时证据。
 
 ## 6. 未改动 / 排除
 
@@ -172,12 +241,12 @@ PR #548 合入后首次在日常库执行 `make daily.dev.acceptance_fixture.ens
 
 ## 7. 四层状态
 
-- 批次验收完成：否（离线通过，运行时回执待补）。
-- 主线集成完成：否（本记录尚未合入 `main`）。
+- 批次验收完成：否（离线通过；`ensure` 根因已定位并修复，待合入后按 5.2 重跑）。
+- 主线集成完成：否。
 - 版本发布完成：否。
 - 产品交付完成：否。
 
 ## 8. 遗留
 
-- 第 5 节三个受管入口的运行时回执与 `contract` 段结果。
-- 日常运行仓是否需先刷新到本批次合入后的 `main`（bundle sync）再执行夹具与解析。
+- 3.2 的提交顺序修复合入 `main` 后，在新 served SHA 上重跑三个受管入口并回写 5.1。
+- 首轮 39 位 SHA 的受控写入已由 `git rev-parse HEAD` 程序化修正，备份与回滚路径保留。
