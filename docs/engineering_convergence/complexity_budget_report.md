@@ -96,13 +96,13 @@ Generated from repository source files. This report is informational during the 
 | 1300 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1292 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1290 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
+| 1271 | Python source | `scripts/ops/retire_historical_branch_refs.py` |
 | 1263 | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
 | 1262 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
 | 1256 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1249 | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
 | 1234 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1225 | Python source | `addons/smart_construction_core/tests/test_p1_funding_authority.py` |
-| 1224 | Python source | `scripts/ops/retire_historical_branch_refs.py` |
 | 1221 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 1221 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
@@ -120,13 +120,13 @@ Generated from repository source files. This report is informational during the 
 | 1137 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
 | 1121 | Python source | `scripts/release/production_backup_restore.py` |
 | 1117 | Python source | `scripts/ops/codex_agent_controller.py` |
+| 1110 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1100 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1096 | Python source | `addons/smart_construction_core/models/core/payment_ledger.py` |
 | 1094 | JavaScript source | `scripts/verify/list_search_group_usability_audit.js` |
 | 1094 | JavaScript source | `scripts/verify/pfl035_payment_request_runtime_acceptance.mjs` |
 | 1093 | Python source | `addons/smart_core/handlers/load_contract.py` |
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
-| 1093 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1080 | Python source | `scripts/verify/test_frontend_product_page_header_guard.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
 | 1040 | Python source | `addons/smart_construction_core/models/support/approval_policy.py` |
@@ -269,10 +269,10 @@ Generated from repository source files. This report is informational during the 
 | 1300 | warning | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1292 | warning | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1290 | warning | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
+| 1271 | warning | Python source | `scripts/ops/retire_historical_branch_refs.py` |
 | 1263 | warning | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
 | 1262 | warning | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
 | 1256 | warning | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
-| 1249 | warning | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
 
 ## Interpretation
 

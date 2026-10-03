@@ -2,6 +2,7 @@
   "schema_version": 1,
   "branches": {
     "codex/historical-retirement-ledger-closeout-20261004": ".agent/runs/HISTORICAL-BRANCH-ASSET-RETIREMENT/run.json",
-    "codex/daily-fixture-lane-runtime-closeout-20261004": ".agent/runs/DAILY-DEV-ACCEPTANCE-FIXTURE-LANE/run.json"
+    "codex/daily-fixture-lane-runtime-closeout-20261004": ".agent/runs/DAILY-DEV-ACCEPTANCE-FIXTURE-LANE/run.json",
+    "codex/squash-aware-retirement-gate-20261004": ".agent/runs/SQUASH-AWARE-BRANCH-RETIREMENT/run.json"
   }
 }

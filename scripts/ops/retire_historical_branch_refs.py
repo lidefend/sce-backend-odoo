@@ -14,6 +14,15 @@ is skipped as unmerged, a run whose observed main differs from
 never treated as an absent branch, and a branch still referenced by a runtime
 carrier is skipped instead of retired.  There is no force switch: drift,
 unproven ancestry and unreadable state all fail closed.
+
+Containment defaults to ancestry.  A squash-merged branch tip is never an
+ancestor of main, so an entry may instead declare
+``"containment": "reviewed_explicit"`` with a ``reviewed_explicit`` object
+carrying the owner ``authorization`` and a ``reviewed_at`` date.  That replaces
+*only* the ancestry proof: SHA drift, open pull requests, checked-out branches,
+runtime carriers, related-work evidence and the manifest SHA-256 binding all
+still fail closed, and every declared tip must remain obtainable so the
+recovery bundle can contain it.
 """
 
 from __future__ import annotations
@@ -58,6 +67,11 @@ class RefEntry:
     remote_sha: str | None
     reason: str
     evidence: tuple[str, ...]
+    # ``containment`` is "ancestry" unless the entry declares a recorded owner
+    # review, which replaces only the ancestry proof for squash-merged tips.
+    containment: str = "ancestry"
+    review_authorization: str | None = None
+    reviewed_at: str | None = None
 
 
 @dataclass(frozen=True)
@@ -168,6 +182,32 @@ def load_manifest(path: Path) -> tuple[dict[str, Any], tuple[RefEntry, ...]]:
         evidence = tuple(
             require_text(item, f"{label}.evidence") for item in evidence_raw
         )
+        containment = raw.get("containment", "ancestry")
+        if containment not in {"ancestry", "reviewed_explicit"}:
+            raise RetirementError(
+                f"{label}.containment must be ancestry or reviewed_explicit"
+            )
+        review_authorization = None
+        reviewed_at = None
+        if containment == "reviewed_explicit":
+            review = raw.get("reviewed_explicit")
+            if not isinstance(review, dict):
+                raise RetirementError(
+                    f"{label}.reviewed_explicit must be an object when containment "
+                    "is reviewed_explicit"
+                )
+            review_authorization = require_text(
+                review.get("authorization"),
+                f"{label}.reviewed_explicit.authorization",
+            )
+            reviewed_at = require_text(
+                review.get("reviewed_at"),
+                f"{label}.reviewed_explicit.reviewed_at",
+            )
+            if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", reviewed_at):
+                raise RetirementError(
+                    f"{label}.reviewed_explicit.reviewed_at must be YYYY-MM-DD"
+                )
         entries.append(
             RefEntry(
                 branch=branch,
@@ -177,6 +217,9 @@ def load_manifest(path: Path) -> tuple[dict[str, Any], tuple[RefEntry, ...]]:
                 remote_sha=remote_sha,
                 reason=reason,
                 evidence=evidence,
+                containment=containment,
+                review_authorization=review_authorization,
+                reviewed_at=reviewed_at,
             )
         )
     return payload, tuple(entries)
@@ -352,19 +395,23 @@ def assess_entries(
             reasons.append("branch has an open pull request")
         if related_work_error:
             reasons.append(f"related-work evidence unavailable: {related_work_error}")
-        for label, sha in (("local", entry.local_sha), ("remote", expected_remote)):
-            if not sha:
-                continue
-            contained = is_ancestor(root, sha, expected_main)
-            if contained is None:
-                reasons.append(
-                    f"{label} tip {sha} is unavailable locally; "
-                    f"containment in {remote}/main is unproven"
-                )
-            elif not contained:
-                reasons.append(
-                    f"{label} tip {sha} is not contained in {remote}/main {expected_main}"
-                )
+        if entry.containment == "ancestry":
+            for label, sha in (("local", entry.local_sha), ("remote", expected_remote)):
+                if not sha:
+                    continue
+                contained = is_ancestor(root, sha, expected_main)
+                if contained is None:
+                    reasons.append(
+                        f"{label} tip {sha} is unavailable locally; "
+                        f"containment in {remote}/main is unproven"
+                    )
+                elif not contained:
+                    reasons.append(
+                        f"{label} tip {sha} is not contained in {remote}/main {expected_main}"
+                    )
+        # A reviewed_explicit entry skips the ancestry block above only.  Every
+        # other guard in this loop, and the recovery-bundle requirement that each
+        # declared tip be obtainable, still fail closed.
         if carrier_scan:
             carriers = carrier_references(root, entry.branch)
             if carriers:
