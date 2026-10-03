@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "id": "FE-TPL-RENDER-EVIDENCE-RECONCILIATION",
+  "branch": "fix/fe-tpl-render-evidence-reconciliation",
+  "status": "active",
+  "baseline_sha": "a969aaf7b1f21ab25aceca646c2dc87c7766d1d9",
+  "goal": ".agent/goals/FE-TPL-RENDER-EVIDENCE-RECONCILIATION.yaml",
+  "record": "docs/ops/iterations/fe_tpl_render_evidence_reconciliation_20261003.md",
+  "scope": [
+    ".agent/goals/FE-TPL-RENDER-EVIDENCE-RECONCILIATION.yaml",
+    ".agent/runs/FE-TPL-RENDER-EVIDENCE-RECONCILIATION/",
+    ".agent/active-runs.json",
+    "docs/ops/iterations/fe_tpl_render_evidence_reconciliation_20261003.md",
+    "docs/frontend_productization/rendering-detail/",
+    "scripts/verify/",
+    "addons/smart_core/core/contract_lifecycle.py",
+    "addons/smart_core/tests/test_contract_lifecycle.py",
+    "config/acceptance/",
+    "docs/architecture/unified_page_contract_v2/examples/",
+    "frontend/apps/web/src/",
+    "scripts/ops/dev_acceptance_release_probe.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Existing owner-authorized isolated local acceptance runtime via governed Make entries; offline targeted tests reuse workspace dependencies",
+    "runtime_profile": "local",
+    "project": "sc-fe-r2-p1-01",
+    "database": "sc_frontend_acceptance",
+    "database_role": "isolated synthetic acceptance tenant, not production",
+    "dbfilter": "^sc_frontend_acceptance$",
+    "company_id": 8,
+    "filestore_volume": "sc_fe_r2_p1_01_odoo",
+    "ports": {
+      "backend": 18082,
+      "frontend": 5180
+    },
+    "inventory": "reuse the predecessor run's registered environment and evidence; no new environment or credential authority"
+  },
+  "checks": {
+    "page_pattern_parity": {
+      "target": "verify.frontend.page_pattern_reference_parity.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/test_frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/page_pattern_reference_ledger_guard.py",
+        "scripts/verify/test_page_pattern_reference_ledger_guard.py",
+        "docs/frontend_productization/rendering-detail/page-pattern-reference-detail-ledger-v1.json",
+        "make/frontend.mk"
+      ],
+      "status": "passed",
+      "test_count": 15,
+      "note": "parity guard 15 tests OK; page-pattern ledger guard PASS entries=67 owned_gaps=0"
+    },
+    "standard_preview_tool": {
+      "target": "verify.frontend.standard_preview.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/dev/frontend_standard_preview.py",
+        "frontend/apps/web/scripts/standard_page_type_browser.mjs",
+        "scripts/verify/test_frontend_standard_preview.py",
+        "make/runtime_ops.mk"
+      ],
+      "status": "passed",
+      "test_count": 105,
+      "note": "list-surface structure + standard preview tooling unchanged; re-run to bind this candidate"
+    },
+    "detail_style_scope": {
+      "target": "verify.frontend.standard_page_type.browser",
+      "kind": "runtime",
+      "inputs": [
+        "frontend/apps/web/scripts/standard_page_type_browser.mjs",
+        "scripts/verify/test_frontend_standard_preview.py",
+        "make/runtime_ops.mk",
+        "scripts/dev/frontend_acceptance_runtime.sh"
+      ],
+      "status": "passed",
+      "test_count": 139,
+      "command": "TPL07_SCOPE=style TPL52_FAMILY=detail make verify.frontend.standard_page_type.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1791023346277/report.json",
+      "receipt": ".runtime/agent-runs/FE-TPL-RENDER-EVIDENCE-RECONCILIATION/detail_style_scope.json",
+      "note": "139/139 on this candidate build: style-detail light/dark 1440/390 render 9 readonly-fact sections plus one relation extension each; the relation lane proves click-open then exact return context in all four theme/viewport combinations."
+    },
+    "list_surface_structure": {
+      "target": "verify.frontend.list_surface_structure.browser",
+      "kind": "runtime",
+      "inputs": [
+        "scripts/verify/frontend_list_surface_structure_browser.mjs",
+        "scripts/verify/test_frontend_list_surface_search_contract.py",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "make/frontend.mk"
+      ],
+      "note": "Real report .runtime/final-acceptance/list-surface-structure.json: 316/316 gated over 1440/1024/768/521/520/390 x normal/batch/empty, negative fixtures 5/5 detected with clean baselines, runtime errors 0. Contract receipt accepted. The earlier failure is closed by the 760px narrow-layout breakpoint alignment, not by relaxing an assertion.",
+      "status": "passed",
+      "test_count": 316,
+      "report": ".runtime/final-acceptance/list-surface-structure.json",
+      "receipt": ".runtime/agent-runs/FE-TPL-RENDER-EVIDENCE-RECONCILIATION/list_surface_structure.json"
+    },
+    "primitive_adapter": {
+      "target": "verify.frontend.primitive_adapter.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/scripts/primitive_adapter_contract_test.ts",
+        "scripts/verify/frontend_primitive_adapter_guard.py",
+        "make/frontend.mk"
+      ],
+      "note": "ScButton.vue declared the column-settings touch size; primitive adapter contract must stay intact",
+      "status": "passed",
+      "test_count": 39
+    },
+    "collection_action_toolbar": {
+      "target": "verify.frontend.collection_action_toolbar.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/components/product-list/ListSurfaceHeader.vue",
+        "frontend/apps/web/src/components/product-list/ProductListHeader.vue",
+        "frontend/apps/web/scripts/collection_action_settlement_test.ts",
+        "scripts/verify/test_frontend_collection_action_toolbar_guard.py",
+        "make/frontend.mk"
+      ],
+      "note": "list-surface header composition changed at the 760px narrow breakpoint",
+      "status": "passed",
+      "test_count": 42
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run make ci.delivery.freeze.prepare, commit the reviewed candidate at the frozen clean HEAD, run one make ci.local.quick on that exact HEAD, then make pr.push against main a969aaf7b and complete the independent review. Deployment and product acceptance stay separate and are not authorized by this step.",
+  "completion": {
+    "batch": "passed: R3/R4/R5 root causes and the 521-760px breakpoint gap are fixed at their owning layers; the four ledger needs_work entries are adjudicated and aligned; six run receipts recorded at HEAD d7b986bd4 (316/316 list surface, 139/139 detail style scope, 15/105/39/42 offline) with no assertion relaxed.",
+    "mainline": "not_run",
+    "deployment": "not_run",
+    "product_acceptance": "not_run"
+  },
+  "receipt_note": "Receipts are recorded at HEAD d7b986bd4 in .runtime/agent-runs/FE-TPL-RENDER-EVIDENCE-RECONCILIATION/. Because this run declares a runtime environment, the local evaluator reports offline-side receipts as \"stale: runtime evidence requires authoritative environment readback\" instead of \"reusable\"; they are recorded results, not auto-reusable ones, and were re-run rather than assumed."
+}

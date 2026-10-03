@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "FE-TPL-OFFICIAL-TEMPLATE-ADOPTION",
   "branch": "fix/run-closeout-fe-template-adoption",
-  "status": "completed",
+  "status": "superseded",
   "baseline_sha": "2d164a1fed2066307774c82db2e65def80bff70d",
   "goal": ".agent/goals/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION.yaml",
   "record": "docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md",
@@ -1025,7 +1025,7 @@
     "Retained post-deploy data limitation (not an evidence delta): historical attachment content is unavailable and metadata rendering does not restore it; this stays a data limitation, not a restored-file claim.",
     "Environment scope note (bounded, not a general 'environment all-pass'): the earlier DENY on volume sc_fe_r2_p1_01_odoo was that the rebuild entry demanded exactly one mount consumer while two declared consumers exist. Step (b) replaced the raw count with the declared topology (one non-oneoff compose carrier plus only the declared oneoff mounters) and acceptance.runtime.baseline_recovery.audit now PASSES with declared_consumers=2 for odoo. Foreign owners, undeclared oneoff mounters and non-odoo volumes are still DENY."
   ],
-  "next_exact_step": "Run closed as completed at the closeout branch: PR #527 landed the full successor chain (offline contract custody, wire-or-retire guard dispositions, create/edit-workbench minimum evidence) into main as f9d2f1d9f with an exact-head Quick pass at 4ab1b5eab and all remote gates green; the owner decided on 2026-10-02 to keep the addons/smart_core/contract.schema.json placeholder and to defer deployment/version release. No further executor work is scheduled under this run; a future deployment or a new evidence batch starts from main f9d2f1d9f under a fresh run with explicit owner authorization.",
+  "next_exact_step": "Superseded by run FE-TPL-RENDER-EVIDENCE-RECONCILIATION (2026-10-03): the run batch/mainline scope stayed closed as recorded, and the remaining declared overall-goal item moved to the successor run. Do not resume work under this run; a future batch starts from the successor.",
   "completion": {
     "batch": "passed: all successor steps closed with clean-HEAD-bound receipts (offline custody, guard dispositions, create/edit-workbench minimum evidence); final delivery frozen, Quick-passed and merged",
     "mainline": "completed: PR #527 merged (squash) as f9d2f1d9f22a24c125c85145d8dcee66edc0d0d6 on 2026-10-02; the merge head 4ab1b5eab carried a byte-identical tree to the frozen candidate 6a1672b13 (main-merge reconciliation with branch-side resolution, zero content change, no force push); local main was synced with explicit refspec and double-confirmed against the API sha; the remote branch was deleted",
@@ -3056,5 +3056,13 @@
       "retained post-deploy data limitation: historical attachment content is unavailable and metadata rendering does not restore it",
       "deployment/version release deferred by owner decision; requires fresh authorization when pursued"
     ]
+  },
+  "successor_handoff_20261003": {
+    "successor_run": ".agent/runs/FE-TPL-RENDER-EVIDENCE-RECONCILIATION/run.json",
+    "successor_goal": ".agent/goals/FE-TPL-RENDER-EVIDENCE-RECONCILIATION.yaml",
+    "reason": "This run closed its own successor chain (steps 1-9) and merged PR #527, but the goal .agent/goals/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION.yaml still declares completion.overall_goal: incomplete. Marking the run `completed` contradicted that declared overall goal, so the run is recorded as `superseded`: the one remaining overall-goal item (four page-pattern reference ledger needs_work entries) moved to the successor run.",
+    "carried_item": "docs/frontend_productization/rendering-detail/page-pattern-reference-detail-ledger-v1.json held four needs_work entries: collection.header-actions, collection.toolbar-surface, detail.container, detail.description-grid.",
+    "successor_result": "All four entries are adjudicated against real rendering evidence and aligned; verify.frontend.page_pattern_reference_parity.unit (parity 15 tests + ledger guard entries=67 owned_gaps=0) passes on the successor branch.",
+    "unchanged": "This correction changes no commit, no product file and no historical evidence; batches, Quick receipts and the PR #527 merge record stay exactly as recorded."
   }
 }
