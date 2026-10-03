@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "id": "BACKEND-CONTRACT-SUPPLY-CHAIN-ATTESTATION",
-  "branch": "fix/contract-supply-chain-attestation",
+  "branch": "fix/contract-supply-chain-attestation-closeout",
   "goal": ".agent/goals/BACKEND-CONTRACT-SUPPLY-CHAIN-ATTESTATION.yaml",
   "record": "docs/ops/iterations/backend_contract_supply_chain_attestation_20261002.md",
-  "status": "active",
-  "baseline_sha": "e93b5e83f572df284d37d9d3c572898858be2179",
+  "status": "completed",
+  "baseline_sha": "7ed180d8b1151f20b8d0dbe6289fa177df2bf6f6",
   "scope": [
     ".agent/",
     "addons/smart_core/core/contract_supply_chain_attestation.py",
@@ -114,16 +114,48 @@
         "make/contract.mk"
       ],
       "kind": "offline"
+    },
+    "agent_record_guard": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
     }
   },
-  "blockers": [
-    "FROZEN f4280c8508e8b106cb922d774797497284941c91 (clean tree). Offline locks all pass at this identity: supply_chain_core 19, supply_chain_compatibility 31, contract_lifecycle_authority 35 (score 100/100 L4, p0Count=0), contract_catalog 16.",
-    "Runtime lanes re-run at f4280c850 on the registered isolated profile after refreshing SC_SOURCE_REVISION 2ad47f83f -> f4280c850 and recreating the odoo container through the governed prepare/up entries: supply-chain probe 14/14 PASS + host-side Ed25519 guard 12 OK, and the SLO telemetry probe (topic b's carrier attribution, the lane that locks the carried view_orchestrator fix) 43/43 PASS + host guard 11 OK. Runtime receipts are bound to this head but are reported stale by design (no automatic reuse of runtime evidence).",
-    "Fixed at the owning layer while verifying: the standalone verify.backend.contract_supply_chain.runtime.schema.guard target silently consumed an implicit /tmp report. It now binds the governed artifacts report explicitly and fails closed with a clear message when no run has produced one, so a stray file from another revision can no longer be read.",
-    "Not done and owner-gated: independent review of this carried delta, the Gitee candidate dispatch (needs the D3 gitee-mirror/main sync first), publication (owner hold), the topic (c) external trust root (the attestation stays self-signed, so L5 is not declared), and the topic (e) re-baseline decision for the 119 stale snapshot references.",
-    "The L4 runtime lane verify.backend.contract_lifecycle.runtime was deliberately not re-run: neither its probe nor its schema guard asserts on the applied-contract carrier and none of its declared inputs changed, so its integration-head receipt in the closed BACKEND-CONTRACT-L4-CLOSURE goal stands for its own scope."
-  ],
-  "next_exact_step": "Hold publication. Request independent review of the carried delta at f4280c850, then, on owner authorization and after the gitee-mirror/main sync, dispatch through the protected PR lane with EXPECTED_HEAD=f4280c8508e8b106cb922d774797497284941c91.",
+  "blockers": [],
+  "next_exact_step": "Completed: the topic carried by this record merged into main as PR #535 (squash commit 08759706b32743bce251473ff2fa1e85a36661b0). The remaining items are owner-gated decisions (external trust root / topic (e) / publication), so no further local action is pending for this run.",
+  "completion": {
+    "batch": "passed",
+    "mainline": "merged via PR #535 (squash commit 08759706b32743bce251473ff2fa1e85a36661b0, 2026-10-02T11:07:14Z); the PR head e18fe9dc49594403f84e1a4ef20f6f78602b8616 advanced the frozen candidate f4280c850 by merge-base reconciliation",
+    "carry_integrity": "the topic's declared code scope is byte-identical between f4280c850 and main: git diff main f4280c850 over addons/smart_core/core/contract_supply_chain_attestation.py, contract_version_compatibility.py, view_orchestrator.py, scripts/verify/**, scripts/dev/local_contract_lifecycle_env_prepare.sh, make/dev.mk, make/dev_test.mk and docs/architecture/backend_contract_lifecycle_authority_v1*.md is empty; only the record document gained its results section",
+    "offline_locks": "carried from f4280c850 (declared inputs unchanged): supply_chain_core 19, supply_chain_compatibility 31, contract_lifecycle_authority 35 (score 100/100 L4, p0Count 0), contract_catalog 16",
+    "runtime_lanes": "carried from f4280c850 (head-bound, reported stale by design): supply-chain probe 14/14 + host Ed25519 guard 12 on the sc-contract-lifecycle-v1 profile; SLO telemetry probe 43/43 + host guard 11",
+    "closeout_l1": {
+      "focused": {
+        "command": "make verify.agent.resume.unit",
+        "target": "verify.agent.resume.unit",
+        "status": "passed",
+        "tests": 30,
+        "log": ".runtime/agent-runs/BACKEND-CONTRACT-SUPPLY-CHAIN-ATTESTATION/agent_record_guard.log",
+        "receipt": ".runtime/agent-runs/BACKEND-CONTRACT-SUPPLY-CHAIN-ATTESTATION/agent_record_guard.json"
+      },
+      "iteration": {
+        "command": "make ci.local.iteration",
+        "status": "passed",
+        "change_state": "dirty",
+        "note": "The L1 entry is not re-run after this commit: a completed run intentionally reports 'unregistered' so iteration exits 2 until a successor run is registered. Receipt head 7ed180d8b is an ancestor of this commit."
+      }
+    },
+    "main_and_mirror": "main and the Gitee mirror main both read 7ed180d8b1151f20b8d0dbe6289fa177df2bf6f6; the merged branch fix/contract-supply-chain-attestation is deleted on both remotes",
+    "external_trust_root": "open_owner_gated: the attestation stays self-signed, so L5 is not declared",
+    "topic_e_rebaseline": "open_owner_gated: the re-baseline decision for the 119 stale snapshot references stays a contract-authority decision",
+    "publication": "owner_hold",
+    "deployment": "not_run",
+    "product_delivery": "not_run"
+  },
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
