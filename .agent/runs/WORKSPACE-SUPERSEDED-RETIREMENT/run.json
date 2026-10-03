@@ -10,6 +10,7 @@
     "docs/ops/iterations/workspace_superseded_retirement_20261003.md",
     "docs/ops/iterations/workspace_worktree_superseded_retirement_v1.json",
     "docs/ops/codex_execution_allowlist.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
     ".agent/goals/WORKSPACE-SUPERSEDED-RETIREMENT.yaml",
     ".agent/runs/WORKSPACE-SUPERSEDED-RETIREMENT/run.json",
     ".agent/active-runs.json"

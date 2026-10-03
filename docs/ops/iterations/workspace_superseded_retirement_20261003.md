@@ -73,6 +73,10 @@ for the retirement-record path. Nothing about the ancestor or squash admission c
 | L1 | `make verify.workspace.worktree.guard` | passed, 118 tests |
 | L1 | `make ci.local.iteration` | passed (run scope re-declared to include `make/codex.mk`) |
 
+`make ci.delivery.freeze.prepare` regenerated `docs/engineering_convergence/complexity_budget_report.md`
+only: the new offline locks grew `scripts/ops/test_safe_worktree_cleanup.py` past the
+report's line-count threshold (833 -> 1093). No other generated evidence changed.
+
 Retirement of the recorded worktree runs only after this candidate merges, through
 `make workspace.worktree.cleanup` with the reviewed record and its external recovery
 bundle.
