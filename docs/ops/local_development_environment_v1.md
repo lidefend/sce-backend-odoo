@@ -14,8 +14,13 @@
 
 `sc_dev_demo` 是新功能开发的唯一常驻本地产品库。代码改变功能事实时，配套 demo 必须同步
 升级并由该库验证，不能依赖历史业务记录碰巧满足新前置条件。
-首次重建时，Make 会在固定 0600 `.env.dev` 中生成独立随机 demo 用户密码；原文不进入日志。
-后续重建复用同一凭据，禁止复用 JWT、bootstrap 或数据库密码代替。
+`sc_dev_demo` 的 demo 用户口令默认使用固定的开发口令（当前值 `scdevpass`，由
+`scripts/dev/local_dev_demo_credentials_prepare.sh` 声明），并写入固定 0600 `.env.dev`；
+按所有者决定（2026-10-03），本地日常验证使用固定简单口令以避免反复读取一次性密钥。需要
+每次安装独立随机口令时，显式设置 `SC_DEV_DEMO_PASSWORD_MODE=random` 恢复原有生成路径。
+该固定口令只对 `sc-local-dev` / `sc_dev_demo` 生效：它不改动验收 fixture、`sc-local-sample`、
+`sc-local-clean`、合同生命周期/快照环境或任何正式租户，也不改变通用登录默认值。禁止复用
+JWT、bootstrap 或数据库密码代替该凭据。
 模块增量升级后使用 `local.dev.sync_demo` 幂等同步当前 demo；只有需要从空库重建时才使用带
 精确确认的 `local.dev.rebuild_demo`。
 

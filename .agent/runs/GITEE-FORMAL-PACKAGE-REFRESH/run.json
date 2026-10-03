@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "id": "GITEE-FORMAL-PACKAGE-REFRESH",
+  "branch": "audit/gitee-formal-package-refresh-20261003",
+  "status": "active",
+  "baseline_sha": "17c1a9740b617ee1367d3dbe7634df0dac3d0f0d",
+  "goal": ".agent/goals/GITEE-FORMAL-PACKAGE-REFRESH.yaml",
+  "record": "docs/ops/iterations/gitee_formal_package_refresh_20261003.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/GITEE-FORMAL-PACKAGE-REFRESH.yaml",
+    ".agent/runs/GITEE-FORMAL-PACKAGE-REFRESH/run.json",
+    "docs/ops/iterations/gitee_formal_package_refresh_20261003.md",
+    "docs/ops/local_development_environment_v1.md",
+    "make/dev.mk",
+    "scripts/dev/local_dev_demo_credentials_prepare.sh",
+    "scripts/verify/test_local_development_lifecycle.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline Make gates and tracked run/record files; the Gitee host refresh already ran through make gitee.ci.server.update and its receipts are referenced, not replayed",
+    "runtime_authority": {
+      "note": "the Gitee formal package refresh and the sc-local-dev login readbacks already ran; this record references their receipts and does not re-authorize any write",
+      "gitee_host": "root@1.95.2.123",
+      "gitee_formal_root": "/opt/gitee-ci/formal/17c1a9740b617ee1367d3dbe7634df0dac3d0f0d",
+      "gitee_update_backup": "/var/lib/gitee-ci/update-backups/incremental-8wr_jba3",
+      "gitee_update_plan_sha256": "e97107e4ad369f125464a35808c1f483d635cd51e60b8b602d698c8baa01d394",
+      "local_dev": {
+        "profile": "sc-local-dev",
+        "database": "sc_dev_demo",
+        "ports": {"nginx": 18081, "odoo": 8070},
+        "entrypoints": ["make local.dev.demo_credentials.prepare", "make local.dev.demo_users.sync"]
+      }
+    }
+  },
+  "checks": {
+    "local_dev_lifecycle": {
+      "target": "verify.local.development_lifecycle.unit",
+      "inputs": [
+        "make/dev.mk",
+        "scripts/dev/local_dev_demo_credentials_prepare.sh",
+        "scripts/verify/test_local_development_lifecycle.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Record the non-zero verify.local.development_lifecycle.unit receipt for this dirty scope, commit the four fixed-credential files on audit/gitee-formal-package-refresh-20261003, then inspect the Gitee main catch-up lane and decide the PR #34 disposition."
+}

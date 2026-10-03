@@ -1,0 +1,38 @@
+goal:
+  id: GITEE-FORMAL-PACKAGE-REFRESH
+  status: active
+  formal_product_layer: P4
+  module: ops_delivery_tool
+  objective: >-
+    Repoint the governed Gitee formal static package to the current mainline SHA so
+    Gitee PR checks stop failing closed on policy_source_mismatch, and settle the
+    local-dev demo credential for the isolated sc-local-dev profile so a developer
+    can log in during repeated verification without reading a per-install secret.
+  layer_target:
+    - Gitee CI formal package lane (make gitee.ci.server.update)
+    - local dev lifecycle tooling (scripts/dev + make/dev.mk)
+  standard_vs_user_specific: >-
+    Operations delivery standard for the isolated sc-local-dev profile only; it is
+    not a product standard, a customer preference or low-code runtime configuration.
+  why_here: >-
+    .env.dev and scripts/dev/local_dev_demo_credentials_prepare.sh already own the
+    sc-local-dev identity, volume and env-file checks, so the demo credential for
+    that isolated profile belongs to the same P4 tooling layer. The Gitee package
+    root is only ever refreshed through the governed make gitee.ci.server.update.
+  why_not_elsewhere: >-
+    Not smart_core or smart_construction_* (no product or runtime semantics), not the
+    frontend renderer, not low-code runtime configuration, and not a migration script.
+  blast_radius: >-
+    The fixed dev credential applies only to the demo users registered by
+    smart_construction_demo inside sc-local-dev / sc_dev_demo. The acceptance fixture,
+    sc-local-sample, sc-local-clean, the contract lifecycle/snapshot environments,
+    production tenants and the generic login default are unchanged.
+  exclusions:
+    - product_deployment
+    - production_access
+    - new_product_features
+    - database_writes_outside_local_dev
+  acceptance:
+    - local_dev_lifecycle_unit_non_zero
+    - dev_profile_login_readback
+    - gitee_formal_root_readback
