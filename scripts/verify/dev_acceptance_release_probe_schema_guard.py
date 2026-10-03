@@ -331,6 +331,14 @@ def _check_contract(value: object, errors: list[str]) -> str:
             errors.append("contract.request.params must be non-empty object when contract passes")
         elif not _sha256_hex(request.get("fingerprint_sha256")):
             errors.append("contract.request.fingerprint_sha256 must be sha256 when contract passes")
+        # The sealed digest depends on the localized projection, so a passing
+        # receipt must record the request context that reproduced it; a missing
+        # context would make the recorded request unreplayable.
+        request_context = request.get("context") if isinstance(request, dict) else None
+        if not isinstance(request_context, dict) or not all(
+            isinstance(request_context.get(key), str) and request_context.get(key) for key in ("lang", "tz")
+        ):
+            errors.append("contract.request.context must record lang and tz when contract passes")
         resolution = contract.get("resolution")
         if not isinstance(resolution, dict) or not isinstance(resolution.get("record_id"), int) or resolution.get("record_id") <= 0:
             errors.append("contract.resolution.record_id must be positive int when contract passes")

@@ -148,6 +148,7 @@ export function contractPrerequisite({ receipt, expectedSha = '', database = '',
   const resolution = receipt.resolution && typeof receipt.resolution === 'object' ? receipt.resolution : {};
   const request = receipt.request && typeof receipt.request === 'object' ? receipt.request : {};
   const params = request.params && typeof request.params === 'object' ? request.params : {};
+  const requestContext = request.context && typeof request.context === 'object' && !Array.isArray(request.context) ? request.context : {};
   const model = text(resolution.model);
   const recordId = positiveInt(resolution.record_id);
   const actionId = positiveInt(resolution.action_id);
@@ -155,6 +156,11 @@ export function contractPrerequisite({ receipt, expectedSha = '', database = '',
   const stableIdentifier = text(resolution.stable_identifier);
   const viewType = text(params.view_type);
   if (text(request.intent) !== REQUIRED_INTENT) return fail('contract_receipt_intent_unexpected', { intent: request.intent });
+  if (!text(requestContext.lang) || !text(requestContext.tz)) {
+    // The sealed digest is a function of the request context (the projection is
+    // localized), so a receipt that does not record it cannot be replayed verbatim.
+    return fail('contract_receipt_request_context_missing', { lang: text(requestContext.lang), tz: text(requestContext.tz) });
+  }
   if (!model || !recordId || !actionId || !menuId || !stableIdentifier) {
     return fail('contract_receipt_resolution_incomplete', { model, record_id: recordId, action_id: actionId, menu_id: menuId, stable_identifier: stableIdentifier });
   }
@@ -178,7 +184,7 @@ export function contractPrerequisite({ receipt, expectedSha = '', database = '',
       stable_identifier: stableIdentifier,
       route: `/a/${actionId}?menu_id=${menuId}`,
     },
-    approvedRequest: { intent: text(request.intent), params },
+    approvedRequest: { intent: text(request.intent), params, context: requestContext },
     approvedSemanticSha256: approvedSha,
     schemaSha256: text(asset.sha256),
     authority: snapshotAuthority,
