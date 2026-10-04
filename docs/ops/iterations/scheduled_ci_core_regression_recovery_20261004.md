@@ -233,8 +233,13 @@ All four points are in the #525 (`2d164a1f`) diff and are fixed in the owning re
   `frontend_primitive_adapter_guard.py` PASS; `make verify.frontend.primitive_adapter.unit` = 39 tests OK;
   `make verify.frontend.typecheck.strict` PASS.
 - L2: `make frontend.acceptance.release.build` PASS.
-- L4 matrix (SKIP_PERF, direct node, managed 5175/18082): accessibility `blocking 0 / critical 0 /
-  serious 0`, responsive 68 pages, J09/J10/J11 PASS; attempts and logs `/tmp/dh_a11y_fix_matrix{,2}.log`.
+- L4 matrix (SKIP_PERF, direct node, managed 5175/18082): the first attempts reached
+  `accessibility blocking 0 / critical 0 / serious 0` and rendered 68 responsive pages, but the run
+  still **FAILED** at the final `assertRuntimeClean` (`/tmp/dh_matrix6.log`, CI full lane
+  `37209482547`). Only the accessibility half was green; "the L4 matrix passed" would have been a
+  wrong reading of that run. After root cause (c) below: `report.pass=true`,
+  `accessibility result=PASS blocking 0 (17 scans)`, responsive 68 pages / 4 viewports,
+  J09/J10/J11 PASS, error-recovery PASS, log `/tmp/dh_matrix_f9f36b54.log`.
 - L4 perf (PERF_ONLY): first attempt exceeded the `login_to_interactive` budget (median 3066 > 3000)
   while a stray 2-hour `grep -rln ... /` held 100% CPU; after the orphan was cleared the rerun PASSED
   on absolute and relative budgets (login 2642/p95 2765, my_work 388, payment_detail 245,
@@ -254,6 +259,40 @@ All four points are in the #525 (`2d164a1f`) diff and are fixed in the owning re
 - The environment DENY on the rebuild/snapshot lane stays a separate conclusion bound to the
   actual entry dependency and independent review; it is **not** generalized to "the environment
   passes". `acceptance.runtime.baseline_recovery.audit` PASS is recorded on its own.
+
+### Root cause (c) — the matrix was still red at runtime: relation contracts fetched against the projection (P0 frontend contract consumption)
+
+The final `assertRuntimeClean` of the matrix failed with eight 403s on
+`ui.contract.v2 op=model res_id=0` — four `payment.request` and four
+`payment.request.line`. One pair per viewport, on the `settlement-detail` surface rendered as the
+project-manager fixture (`fixture_role_pm`).
+
+- Locating it: a bounded read-only probe (`/tmp/surf_probe.mjs`, one route per role) reproduced the
+  pair on `settlement-detail (pm)` only, and a role sweep against the managed backend
+  (`/api/v1/intent`) showed the denial is the model ACL, not the route: `payment.request` /
+  `payment.request.line` answer 200 for `finance`, `project_member` and `config_admin`, and 403
+  `PERMISSION_DENIED 用户无权以 read 访问模型` for `pm`, `contract_operator` and `owner`.
+- The declaration was already honest. The `sc.settlement.order` contract (action 748) projects both
+  readonly one2many panels with `relation_entry.can_read=false`,
+  `reason_code=RELATION_READ_FORBIDDEN`, `source=backend_contract` — and for `finance` the fields are
+  not projected at all. So the ACL, the field permission and the projection are all correct.
+- The defect was in the generic consumer:
+  `ensureRelationFieldDescriptors` in
+  `frontend/apps/web/src/pages/contractForm/useRecordRelationshipNavigation.ts` fetched a relation's
+  model contract without consulting the declaration, so a page the actor *is* entitled to open
+  issued a request the actor is *not* entitled to make. That is why the pair appeared on a surface
+  whose journey, screenshots and axe scan all passed.
+- Fix (P0, `f9f36b54`): fail closed on the declaration —
+  `if (relationEntry(effectiveFieldDescriptor?.(name))?.canRead !== true) return;` — keeping the
+  existing char-field fallback and mirroring `openRelationSearchDialog`. No ACL override, no
+  payment-model special case and no relaxed assertion.
+- Not disabled: on the same surface `sc.settlement.order.line` and `sc.settlement.adjustment` are
+  still fetched and still answer 200 (`/tmp/surf_probe2.mjs`); for `finance`, whose contract does not
+  project those two fields, behaviour is unchanged.
+- Locked at L1: `frontend/apps/web/scripts/relation_column_descriptor_authority_test.ts` (declared
+  readable / declared unreadable / entry absent, plus the PM settlement regression) is wired into
+  `make verify.frontend.professional_relation_field.unit`. Negative control: removing the guard makes
+  the test fail with exactly the observed defect (`declared unreadable: expected 0 ... got 1`).
 
 ### Follow-up: the first dispatched full lane exposed a stale guard literal
 

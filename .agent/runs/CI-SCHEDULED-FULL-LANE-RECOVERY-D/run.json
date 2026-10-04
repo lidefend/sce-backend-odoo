@@ -13,11 +13,17 @@
     "addons/smart_construction_core/tests/",
     "addons/smart_construction_core/security/",
     "frontend/apps/web/src/",
+    "frontend/apps/web/scripts/",
+    "make/",
     "config/frontend/",
     "docs/ops/iterations/",
     ".agent/",
     "scripts/ci/personal_data_false_positives.json",
-    "scripts/verify/"
+    "scripts/verify/",
+    "addons/smart_construction_acceptance_fixture/",
+    "docs/engineering_convergence/",
+    "docs/frontend_productization/",
+    "frontend/packages/ui/src/"
   ],
   "environment": {
     "kind": "runtime",
@@ -43,11 +49,11 @@
     }
   },
   "blockers": [
-    "Batch 2: the two source fixes and the verification-tool fixes are committed on this branch (38edb97b, 240eb9b5) but not yet published; the authoritative full frontend lane (pnpm test:release -> verify.frontend.delivery_hardening.release.browser) still has to run at the frozen head in the isolated CI acceptance stack.",
+    "Batch 2: the three source fixes and the verification-tool fixes are committed on this branch (38edb97b, 240eb9b5, 2cd1f4f6, f9f36b54) but not yet published; the authoritative full frontend lane still has to run at the frozen head in the isolated CI acceptance stack. The local managed matrix at f9f36b54 is iteration evidence, not the CI pass.",
     "Environment: the two remaining non-accounted mount holders and the DENY on the rebuild/snapshot lane stay a separate conclusion bound to the actual entry dependency; they are not generalized to 'the environment passes'. acceptance.runtime.baseline_recovery.audit PASS is recorded on its own.",
     "Open product question (separate topic, not resolved here): the 89-page released contract, config/frontend/authoritative_navigation.json and backend ROLE_SURFACE_OVERRIDES['finance'] still disagree about the finance settlement surface."
   ],
-  "next_exact_step": "Batch 1 is closed (main run 37198232340: 0 failed, 0 error(s) of 471). Batch 2: run make ci.delivery.freeze.prepare (PASS, generated evidence refreshed), commit the run record and the refreshed generated evidence, then make pr.push / pr.create on fix/scheduled-ci-frontend-settlement-release-targets, add the ci:candidate label so the PR runs frontend_release_gate in full mode, and merge through the protected PR flow once the four required checks are green on the exact head. After merge, re-dispatch the scheduled lanes on main and read them back.",
+  "next_exact_step": "Run make ci.delivery.freeze.prepare, commit the doc/run record, make pr.push on fix/scheduled-ci-frontend-settlement-release-targets, dispatch the frontend_release_gate full lane at the frozen head, then merge through the protected PR flow once the four required checks are green on the exact head; after merge re-dispatch and read back the scheduled lanes on main.",
   "results": [
     {
       "layer": "L1",
@@ -131,9 +137,9 @@
       "layer": "L4",
       "command": "node scripts/verify/frontend_delivery_hardening_browser.mjs (DELIVERY_HARDENING_SKIP_PERF=1, managed 5175/18082)",
       "stage_identity": "HEAD=2c3a9200 (tree identical to 38edb97b+240eb9b5) + committed tools",
-      "status": "passed",
-      "note": "Accessibility result=PASS with blocking 0 / critical 0 / serious 0 across 17 scans; responsive 68 pages with horizontal_overflow 0; J09/J10/J11 journeys PASS. Evidence artifacts/frontend-delivery-hardening/{accessibility,responsive}.json.",
-      "log": "/tmp/dh_a11y_fix_matrix2.log, /tmp/dh_matrix4.log, /tmp/dh_matrix5.log"
+      "status": "failed",
+      "note": "The matrix did NOT pass. Only the accessibility half was green (result=PASS, blocking 0 / critical 0 / serious 0 across 17 scans) and 68 responsive pages rendered, but the run failed at the final assertRuntimeClean with eight 403s on ui.contract.v2 op=model (payment.request + payment.request.line, one pair per viewport) on the settlement-detail surface as fixture_role_pm. CI full lane 37209482547 shows the same signature. Superseded by the root cause (c) entry.",
+      "log": "/tmp/dh_matrix6.log, /tmp/fe_full_563b.log"
     },
     {
       "layer": "L4",
@@ -171,6 +177,31 @@
       "errors": 0,
       "note": "Authoritative full lane on the branch head. It failed on the stale guard literal above and therefore never reached the browser lane; the fix is the release-unit change recorded here. A new dispatch is required at the new head.",
       "log": "/tmp/fe_full_563.log"
+    },
+    {
+      "layer": "L2",
+      "command": "read-only probe: python3 /api/v1/intent role sweep + node /tmp/surf_probe.mjs (settlement-detail per role)",
+      "stage_identity": "HEAD=2cd1f4f6 clean, managed acceptance stack (sc_frontend_acceptance, 18082/5175)",
+      "status": "passed",
+      "note": "Root cause (c) located before any code change: the sc.settlement.order contract (action 748) already projects payment_request_ids / payment_request_line_ids with relation_entry.can_read=false (RELATION_READ_FORBIDDEN, source=backend_contract) and finance does not receive those fields at all, while the ACL denies pm/contract_operator/owner for payment.request(.line). The generic consumer ensureRelationFieldDescriptors fetched their model contracts anyway, so an authorized page issued an unauthorized request. Classified P0 frontend contract consumption: no ACL override, no payment-model special case, no relaxed assertion.",
+      "log": "/tmp/surf_probe.mjs output in this record"
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.frontend.professional_relation_field.unit; python3 scripts/verify/{relation_read_closure_guard,relation_entry_contract_guard,frontend_professional_detail_collection_guard,frontend_style_system_guard,line_budgets}.py",
+      "stage_identity": "HEAD=f9f36b54 dirty=none (fix committed)",
+      "status": "passed",
+      "test_count": 50,
+      "note": "Fix owning layer: relation column descriptors are fetched only when the projection explicitly declares the relation readable. New test relation_column_descriptor_authority_test locks declared readable / declared unreadable / entry absent plus the PM settlement regression; its negative control fails when the guard is removed. 10 + 40 unittest cases OK; all read-closure/entry guards PASS.",
+      "log": "/tmp/l1_relation_column_descriptor_f9f36b54.log"
+    },
+    {
+      "layer": "L4",
+      "command": "node scripts/verify/frontend_delivery_hardening_browser.mjs (PERF_ONLY then SKIP_PERF=1, managed 5175/18082)",
+      "stage_identity": "HEAD=f9f36b54d0e716f2621d9c9f5a0058b64ebd53af clean; dist-release rebuilt from the same tree (make frontend.acceptance.release.build)",
+      "status": "passed",
+      "note": "report.pass=true, git_sha bound to the candidate; accessibility result=PASS blocking 0 / critical 0 / serious 0 across 17 scans; responsive 68 pages across 1440/1280/768/390; J09/J10/J11 PASS; error-recovery network_retry/conflict_refresh/session_expired PASS; assertRuntimeClean clean (no console, no pageerror, no unexpected HTTP). performance.json regenerated for this SHA and PASS. Feature intact: settlement.order.line and settlement.adjustment still resolve 200 on the same surface.",
+      "log": "/tmp/dh_matrix_f9f36b54.log, /tmp/dh_perf_f9f36b54.log"
     }
   ]
 }
