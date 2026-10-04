@@ -1,0 +1,17 @@
+goal:
+  id: CI-SCHEDULED-FULL-LANE-RECOVERY-C
+  status: active
+  formal_product_layer: P1
+  objective: >-
+    Close the remaining scheduled full-lane failure of frontend_release_gate that the
+    previous batch (CI-SCHEDULED-FULL-LANE-RECOVERY-B) uncovered once the guard defects
+    were fixed: the browser page-identity audit compares the runtime finance navigation
+    surface against config/frontend/authoritative_navigation.json. PR #497 (cefeff1f)
+    intentionally released two finance primary menus
+    (menu_sc_product_current_account_v1, menu_sc_product_company_project_refund_v1) and
+    the later baseline-alignment batch updated only leaf_keys, leaving browser_leaf_keys
+    stale. Declare the two already-released, already-runtime-visible finance menus in the
+    frontend audit manifest; do not relax any assertion, do not change the backend
+    ROLE_SURFACE_OVERRIDES authority and do not remove any declared surface.
+  run: .agent/runs/CI-SCHEDULED-FULL-LANE-RECOVERY-C/run.json
+  exclusions: [baseline_raises, backend_release_surface_change, product_deployment, database_writes, production_access]

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "branches": {
-    "codex/ci-scheduled-full-lane-recovery-b": ".agent/runs/CI-SCHEDULED-FULL-LANE-RECOVERY-B/run.json"
+    "fix/frontend-navigation-browser-declaration-v1": ".agent/runs/CI-SCHEDULED-FULL-LANE-RECOVERY-C/run.json"
   }
 }
