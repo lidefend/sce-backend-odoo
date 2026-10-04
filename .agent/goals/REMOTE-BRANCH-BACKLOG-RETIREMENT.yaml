@@ -1,0 +1,57 @@
+schema_version: 1
+goal:
+  id: REMOTE-BRANCH-BACKLOG-RETIREMENT
+  title: remote_historical_codex_branch_backlog_retirement
+  status: completed
+  formal_product_layer: P4
+  layer_target: governed_historical_remote_reference_retirement
+  module:
+    - docs/ops/manifests
+    - docs/ops/iterations
+    - .agent
+  objective: >-
+    Retire only the historical origin codex/* references that are proven
+    squash-merged by an exact-head merged PR, through the governed
+    make branch.retire.historical entry bound to an exact manifest SHA-256 and
+    a verified recovery bundle. Never infer, broaden or force a deletion, and
+    leave every unproven or runtime-carrier-referenced branch in place.
+  baseline:
+    branch: main
+    full_sha: e0d31a120cb245a83cb6ff49fd0105b3459df268
+    source: clean_main_after_pr_555
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_governance
+    why_here: >-
+      Remote reference retirement is a delivery-lifecycle control owned by the
+      P4 ops layer; it changes how the repository's own history is tracked, not
+      what the product does.
+    why_not_elsewhere:
+      - no_p0_frontend_contract_or_platform_mechanism
+      - no_p1_construction_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_configuration
+      - no_database_fixture_migration_release_or_deployment
+    blast_radius:
+      - twenty_one_origin_codex_branch_refs_proven_merged_by_exact_head_merged_pr
+      - the_tracked_retirement_manifest_and_its_record
+  batches:
+    - id: A
+      title: retire_proven_merged_origin_refs_under_exact_manifest_sha256
+      status: completed
+      evidence:
+        - manifest_sha256_2d0e2a37b1bcd85256800d5a00eb13f7e9078cf562f0a28a5ee967167216a006
+        - dry_run_eligible_21_skipped_0
+        - recovery_bundle_verified_head_count_21_sha256_636eb141
+        - apply_completed_21_retired_0_skipped_exact_lease_each
+        - origin_codex_refs_remaining_9_as_expected
+  exclusions:
+    - the_eight_branches_without_an_exact_head_merged_pr_require_separate_judgement
+    - codex_contract_work_reading_efficiency_v1_stays_until_its_agent_carrier_reference_is_handled
+    - any_relaxation_of_identity_drift_open_pr_worktree_carrier_or_manifest_binding_guards
+  rollback:
+    - restore_any_retired_reference_from_the_verified_recovery_bundle
+  next_exact_step: >-
+    Closed 2026-10-04: the 21 proven-merged origin codex/* references were
+    retired through the governed entry under the exact approved manifest
+    SHA-256 with a verified recovery bundle; nine origin references remain by
+    design and need separate judgement.

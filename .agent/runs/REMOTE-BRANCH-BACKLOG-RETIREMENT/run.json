@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "id": "REMOTE-BRANCH-BACKLOG-RETIREMENT",
+  "branch": "codex/remote-branch-backlog-retirement-20261004",
+  "status": "completed",
+  "baseline_sha": "e0d31a120cb245a83cb6ff49fd0105b3459df268",
+  "goal": ".agent/goals/REMOTE-BRANCH-BACKLOG-RETIREMENT.yaml",
+  "record": "docs/ops/iterations/remote_branch_backlog_retirement_20261004.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/REMOTE-BRANCH-BACKLOG-RETIREMENT.yaml",
+    ".agent/runs/REMOTE-BRANCH-BACKLOG-RETIREMENT/",
+    "docs/ops/iterations/remote_branch_backlog_retirement_20261004.md",
+    "docs/ops/manifests/historical_branch_retirement_20261004.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline Make gates plus the governed historical-retirement entry and a verified recovery bundle; no product runtime, database, fixture or service"
+  },
+  "checks": {
+    "retire_entry": {
+      "target": "verify.branch.retire.historical",
+      "inputs": [
+        "scripts/ops/retire_historical_branch_refs.py",
+        "scripts/ops/test_retire_historical_branch_refs.py"
+      ],
+      "kind": "offline"
+    },
+    "branch_governance": {
+      "target": "verify.branch.governance.consistency",
+      "inputs": [
+        "AGENTS.md",
+        "docs/ops/codex_execution_allowlist.md",
+        "docs/ops/codex_workspace_execution_rules.md",
+        "docs/ops/historical_branch_retirement_runbook.md",
+        "make/codex.mk",
+        "scripts/verify/branch_governance_consistency_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Closed: 21 proven-merged origin codex/* references retired under manifest sha256 2d0e2a37…16a006 with a verified 21-head recovery bundle (sha256 636eb141…a1669d); origin keeps nine codex/* references (eight without an exact-head merged PR plus the runtime-carrier-referenced one). Publishing this manifest+record change through the ordinary PR lane.",
+  "completion": {
+    "batch": "passed: manifest dry-run 21 eligible / 0 skipped; verified recovery bundle (21 heads, sha256 636eb141…a1669d); one governed APPLY retired all 21 with per-branch exact-tip leases and zero skipped; origin re-read shows the expected nine remaining",
+    "mainline": "publishing the frozen candidate through the ordinary PR lane; the exact-head identity is the frozen source commit and its ci.local.quick receipt (.git/codex/evidence/ci.local.quick/<frozen-sha>.json)",
+    "deployment": "not_run",
+    "product_delivery": "not_run",
+    "manifest": {
+      "path": "docs/ops/manifests/historical_branch_retirement_20261004.json",
+      "sha256": "2d0e2a37b1bcd85256800d5a00eb13f7e9078cf562f0a28a5ee967167216a006"
+    },
+    "recovery_bundle": {
+      "path": ".runtime/retire/historical-branch-retirement-20261004.bundle",
+      "sha256": "636eb1410f807ca69d6c5cc2a6908d01d4616a49ede2823bdf7affa797a1669d",
+      "head_count": 21,
+      "verify": "pass"
+    },
+    "reports": [
+      ".runtime/retire/dry-run.json",
+      ".runtime/retire/bundle-prep.json",
+      ".runtime/retire/apply-report.json"
+    ],
+    "retained": [
+      "codex/backend-contract-lifecycle-authority-v1",
+      "codex/contract-governance-closure-v1",
+      "codex/form-information-architecture-audit-v1",
+      "codex/long-running-business-iteration",
+      "codex/p0-scene-component-bridge-v1",
+      "codex/p0-ui5-scene-foundation-recovery-v2",
+      "codex/p0-ui5-scene-foundation-spike-v1-recovered",
+      "codex/tdesign-enterprise-ui-foundation-v1",
+      "codex/contract-work-reading-efficiency-v1"
+    ],
+    "l1": {
+      "retire_entry": {
+        "command": "make verify.branch.retire.historical",
+        "status": "passed",
+        "log": ".runtime/agent-runs/REMOTE-BRANCH-BACKLOG-RETIREMENT/retire_entry.log"
+      },
+      "branch_governance": {
+        "command": "make verify.branch.governance.consistency",
+        "status": "passed",
+        "log": ".runtime/agent-runs/REMOTE-BRANCH-BACKLOG-RETIREMENT/branch_governance.log"
+      },
+      "iteration": {
+        "command": "make ci.local.iteration",
+        "status": "passed",
+        "change_state": "dirty",
+        "note": "Run before the final commit while the run was still bound; not re-run after the freeze because a completed run with an intentionally empty index reports 'unregistered' (existing closeout precedent)."
+      }
+    }
+  },
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}
