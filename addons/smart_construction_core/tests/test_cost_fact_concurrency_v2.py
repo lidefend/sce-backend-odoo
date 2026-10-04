@@ -419,7 +419,7 @@ class TestCostFactConcurrencyV2(TransactionCase):
             origin = cleanup_env["sc.material.outbound.line"].browse(ids[1])
             self.assertEqual(origin.returned_qty, 3)
             returns = cleanup_env["sc.material.outbound"].browse([ids[2], ids[3]])
-            self.assertEqual(returns.mapped("state"), ["issued", "submitted"])
+            self.assertEqual(returns.mapped("state"), ["issued", "approved"])
             facts = cleanup_env["project.cost.ledger"].search([
                 ("source_model", "=", "sc.material.outbound"),
                 ("source_id", "in", [ids[0], ids[2], ids[3]]),

@@ -262,8 +262,15 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
     def _next_state_hint(self, record, action_key):
         if action_key == "submit":
             company = getattr(record, "company_id", None) or self.env.company
-            return self.env["sc.approval.policy"].next_state_after_submit(
-                "payment.request", "submit", "approved", company=company,
+            # Policy lookup is platform configuration, not business record data.
+            # The contract projection must not fail for a business user who has
+            # no ACL on the approval-policy table but may legitimately act here.
+            return (
+                self.env["sc.approval.policy"]
+                .sudo()
+                .next_state_after_submit(
+                    "payment.request", "submit", "approved", company=company,
+                )
             )
         if action_key == "approve":
             # A pending multi-tier decision does not promise full approval.

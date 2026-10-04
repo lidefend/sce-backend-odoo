@@ -82,7 +82,10 @@ class TestProjectStateTransitionValidation(TransactionCase):
         )
 
     def test_draft_submit_reports_missing_fields_without_blocking(self):
-        project = self.env["project.project"].create({"name": "Draft Project"})
+        project = self.env["project.project"].create(
+            {"name": "Draft Project", "company_id": self.env.company.id}
+        )
+        project.action_sc_submit()
         project.action_set_lifecycle_state("in_progress")
         self.assertEqual(project.lifecycle_state, "in_progress")
         self.assertIn("建议完善", project.lifecycle_advisory)
@@ -104,12 +107,14 @@ class TestProjectStateTransitionValidation(TransactionCase):
         project = self.env["project.project"].create(
             {
                 "name": "Lifecycle Permission Project",
+                "company_id": self.env.company.id,
                 "manager_id": operator.id,
                 "user_id": operator.id,
             }
         )
         with self.assertRaises(UserError):
             project.with_user(reader).action_set_lifecycle_state("in_progress")
+        project.with_user(operator).action_sc_submit()
         project.with_user(operator).action_set_lifecycle_state("in_progress")
         with self.assertRaises(UserError):
             project.with_user(operator).action_set_lifecycle_state("paused")

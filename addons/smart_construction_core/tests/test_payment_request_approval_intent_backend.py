@@ -129,7 +129,7 @@ class TestPaymentRequestApprovalIntentBackend(TransactionCase):
         payment_request = self._create_payment_request_minimal()
         self._set_handler_contract_state(payment_request, "submit", "pending")
         handler = PaymentRequestApproveHandler(self.env, payload={})
-        with patch("odoo.addons.smart_construction_core.models.core.payment_request.PaymentRequest.action_approve", autospec=True, return_value=None):
+        with patch("odoo.addons.smart_construction_core.models.core.payment_request.PaymentRequest.action_approval_decision", autospec=True, return_value=None):
             result = handler.handle({"id": payment_request.id, "request_id": "req-pr-approve-success"})
         self.assertTrue(result.get("ok"))
         data = result.get("data") or {}

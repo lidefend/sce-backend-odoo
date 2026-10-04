@@ -122,6 +122,7 @@ class TestTeamLoanDeductionWorkspace(TransactionCase):
         )
         with self.assertRaises(UserError):
             loan.action_done()
+        loan.action_confirm()
         loan.with_user(self.finance_manager).action_done()
         self.assertEqual(loan.state, "done")
 

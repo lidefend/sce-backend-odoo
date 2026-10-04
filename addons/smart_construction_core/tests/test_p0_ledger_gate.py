@@ -446,9 +446,9 @@ class TestCorePaymentAmountSemantics(TransactionCase):
                 "adjustment_type": "deduction",
                 "item_name": "T1-B Deduction",
                 "amount": 10.0,
-                "state": "confirmed",
             }
         )
+        adjustment._write_document_state({"state": "confirmed"})
         self.settlement.invalidate_recordset()
         # 2. Confirmed deduction immediately reduces capacity to 90.
         self.assertEqual(self.settlement.amount_payable, 90.0)
@@ -456,15 +456,15 @@ class TestCorePaymentAmountSemantics(TransactionCase):
         self.settlement.invalidate_recordset()
         # 3. Cancelling the deduction restores 100.
         self.assertEqual(self.settlement.amount_payable, 100.0)
-        self._model("sc.settlement.adjustment").create(
+        active_adjustment = self._model("sc.settlement.adjustment").create(
             {
                 "settlement_id": self.settlement.id,
                 "adjustment_type": "deduction",
                 "item_name": "T1-B Active Deduction",
                 "amount": 10.0,
-                "state": "confirmed",
             }
         )
+        active_adjustment._write_document_state({"state": "confirmed"})
         request_80 = self._request("T1-B PR 80", 80.0, "submit")
         self.settlement.invalidate_recordset()
         # 4. Submitted 80 leaves 10 after the confirmed deduction.
@@ -543,10 +543,10 @@ class TestCorePaymentAmountSemantics(TransactionCase):
                     "currency_id": self.currency.id,
                     "paid_amount": 80.0,
                     "planned_amount": 80.0,
-                    "state": "paid",
                 }
             )
         )
+        execution._write_document_state({"state": "paid"})
         execution.reversal_reason = "T1-B ledger reversal evidence"
         execution._reverse_paid_execution()
         request.invalidate_recordset()
@@ -567,9 +567,11 @@ class TestCorePaymentAmountSemantics(TransactionCase):
         Execution.create({**common, "name": "T1-B Draft", "paid_amount": 10.0, "state": "draft"})
         # 12. Payment registrations are workflow evidence, not actual-cash facts.
         self.assertEqual(self._contract_paid(), 0.0)
-        Execution.create({**common, "name": "T1-B Confirmed", "paid_amount": 20.0, "state": "confirmed"})
+        confirmed_execution = Execution.create({**common, "name": "T1-B Confirmed", "paid_amount": 20.0})
+        confirmed_execution._write_document_state({"state": "confirmed"})
         self.assertEqual(self._contract_paid(), 0.0)
-        Execution.create({**common, "name": "T1-B Paid", "paid_amount": 30.0, "state": "paid"})
+        paid_execution = Execution.create({**common, "name": "T1-B Paid", "paid_amount": 30.0})
+        paid_execution._write_document_state({"state": "paid"})
         # 13. Even a paid registration cannot bypass the immutable cash ledger.
         self.assertEqual(self._contract_paid(), 0.0)
 

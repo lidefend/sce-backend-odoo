@@ -128,6 +128,11 @@ class TestPaymentRequestWorkItemService(TransactionCase):
         (cls.draft | cls.submitted | cls.rejected).invalidate_recordset(
             ["create_uid", "state", "reject_reason"]
         )
+        cls.submitted.request_validation()
+        cls.submitted.review_ids.sudo().write({"reviewer_ids": [(4, cls.executive.id)]})
+        cls.submitted.invalidate_recordset(
+            ["review_ids", "validation_status", "can_review"]
+        )
 
     @classmethod
     def _user(cls, login, group_xmlids):
@@ -316,6 +321,8 @@ class TestPaymentRequestWorkItemService(TransactionCase):
             id = 988
             state = "draft"
             contract_id = Contract()
+            review_ids = ()
+            validation_status = "draft"
 
             def action_submit(self):
                 return True

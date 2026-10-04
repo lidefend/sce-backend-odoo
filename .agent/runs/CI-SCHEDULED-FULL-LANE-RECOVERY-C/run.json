@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "CI-SCHEDULED-FULL-LANE-RECOVERY-C",
   "branch": "fix/frontend-navigation-browser-declaration-v1",
-  "status": "active",
+  "status": "completed",
   "baseline_sha": "4f55eed231289cf64838b3bc456529fd596dbb43",
   "goal": ".agent/goals/CI-SCHEDULED-FULL-LANE-RECOVERY-C.yaml",
   "record": "docs/ops/iterations/scheduled_ci_full_lane_navigation_declaration_20261004.md",
@@ -28,5 +28,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Run make verify.frontend.release_navigation_policy.guard, make ci.local.iteration and the freeze prepare, commit, push the candidate, run one exact-head make ci.local.quick, open the PR, let the required checks merge it, then dispatch the authoritative full frontend_release_gate lane and the full backend_test_suite lane on the merged main to confirm the scheduled lanes are green."
+  "next_exact_step": "Closed. Delivered the frontend finance navigation declaration (PR #560, squash 814bbc28); the full frontend_release_gate navigation segment passed (28 surfaces, 0 failed). Residuals moved to CI-SCHEDULED-FULL-LANE-RECOVERY-D: (1) relation-read deep-link 403 in the release hardening browser journey; (2) backend_test_suite schedule lane smart_construction_core 56/471 failing after #525."
 }

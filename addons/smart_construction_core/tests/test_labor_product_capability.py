@@ -70,7 +70,7 @@ class TestLaborProductCapability(TransactionCase):
             }
         )
         self.assertTrue(usage.with_user(operator).action_submit())
-        self.assertEqual(usage.state, "submitted")
+        self.assertEqual(usage.state, "approved")
         self.assertIn("建议补充用工单价", usage.processing_advisory)
 
     def test_the_labor_usage_record_rules_match_its_siblings(self):
@@ -165,12 +165,12 @@ class TestLaborProductCapability(TransactionCase):
         usage = self.env["sc.labor.usage"].with_user(operator).create(dict(payload))
         self.assertEqual(usage.state, "draft")
         usage.action_submit()
-        self.assertEqual(usage.state, "submitted")
+        self.assertEqual(usage.state, "approved")
 
         with self.assertRaises(UserError):
             usage.action_confirm()
         usage.invalidate_recordset()
-        self.assertEqual(usage.state, "submitted", "被拒的审批不得推进状态")
+        self.assertEqual(usage.state, "approved", "被拒的审批不得推进状态")
 
         # 审批：同一条事实仍可被合法推进，说明这是角色门禁而不是禁止确认。
         usage.with_user(manager).action_confirm()
@@ -213,7 +213,7 @@ class TestLaborProductCapability(TransactionCase):
         with self.assertRaises(UserError):
             submitted_usage.action_cancel()
         submitted_usage.invalidate_recordset()
-        self.assertEqual(submitted_usage.state, "submitted")
+        self.assertEqual(submitted_usage.state, "approved")
         submitted_usage.with_user(manager).action_cancel()
         submitted_usage.invalidate_recordset()
         self.assertEqual(submitted_usage.state, "cancel")

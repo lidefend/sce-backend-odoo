@@ -1,0 +1,22 @@
+goal:
+  id: CI-SCHEDULED-FULL-LANE-RECOVERY-D
+  status: active
+  formal_product_layer: P1
+  objective: >-
+    Restore the two scheduled GitHub lanes that are still red on main. (1)
+    backend_test_suite must go green for the full smart_construction_core module: PR
+    #525 (2d164a1f) intentionally redesigned the approval/state contract (documented
+    in docs/phase_p0/state_machine.md) but left the older guard tests asserting the
+    pre-#525 contract, so 56 of 471 tests in the full lane fail. Fix the genuine
+    defects the same run exposes (tier server actions missing groups_id, a missing
+    plan validation guard, stale test patch targets) and realign the drifted guard
+    tests to the declared contract without weakening any assertion. (2)
+    frontend_release_gate's relation-read browser journey returns 403 for a bare deep
+    link to a released business record.
+  run: .agent/runs/CI-SCHEDULED-FULL-LANE-RECOVERY-D/run.json
+  exclusions:
+    - baseline_raises
+    - product_deployment
+    - production_access
+    - database_destructive_writes
+    - frontend_test_framework_expansion

@@ -77,6 +77,7 @@ class TestProjectSpecialTaxDeduction(TransactionCase):
             default_deduction_scope="project_special",
             default_business_category_code="tax.deduction.project_special",
         ).create(self._values("SPECIAL-FACT-001"))
+        special.with_user(self.finance_manager).action_confirm()
         special.with_user(self.finance_manager).action_deduct()
         self.assertEqual(special.state, "deducted")
         fact = self.env["sc.finance.business.fact"].search(
