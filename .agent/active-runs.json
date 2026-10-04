@@ -1,6 +1,4 @@
 {
   "schema_version": 1,
-  "branches": {
-    "codex/remote-branch-carrier-retirement-20261004": ".agent/runs/REMOTE-BRANCH-CARRIER-RETIREMENT/run.json"
-  }
+  "branches": {}
 }
