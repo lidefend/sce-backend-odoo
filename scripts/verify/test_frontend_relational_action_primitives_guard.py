@@ -1,7 +1,13 @@
 import unittest
 import re
 
-from scripts.verify.frontend_relational_action_primitives_guard import ONE2MANY_CELL, X2MANY, VIEW_RELATION, validate
+from scripts.verify.frontend_relational_action_primitives_guard import (
+    ONE2MANY_CELL,
+    VIEW_RELATION,
+    X2MANY,
+    X2MANY_GOVERNED_COMMANDS,
+    validate,
+)
 
 
 class RelationalActionPrimitivesGuardTest(unittest.TestCase):
@@ -20,8 +26,16 @@ class RelationalActionPrimitivesGuardTest(unittest.TestCase):
         cases = (
             (button, "", "exactly one readonly"),
             (button, button + button, "exactly one readonly"),
-            (button, button + '<ScButton @click="writeRecord()">extra</ScButton>', "exactly 9 governed"),
-            (button, button + '<ScButton @click="writeRecord()" />', "exactly 9 governed"),
+            (
+                button,
+                button + '<ScButton @click="writeRecord()">extra</ScButton>',
+                f"exactly {X2MANY_GOVERNED_COMMANDS} governed",
+            ),
+            (
+                button,
+                button + '<ScButton @click="writeRecord()" />',
+                f"exactly {X2MANY_GOVERNED_COMMANDS} governed",
+            ),
             (button, button.replace('type="button"', 'type="button" @click="writeRecord()"'), "must only reveal"),
             (button, button.replace('type="button"', 'type="button" :onClick="writeRecord"'), "must only reveal"),
             (button, button.replace('type="button"', 'type="button" :[eventName]="writeRecord"'), "must only reveal"),

@@ -12,7 +12,7 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Category | File |
 | ---: | --- | --- |
-| 7007 | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
+| 7122 | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
 | 5294 | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5242 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 5163 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
@@ -48,7 +48,7 @@ Generated from repository source files. This report is informational during the 
 | 1970 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1954 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1932 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
-| 1908 | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
+| 1923 | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 1869 | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1848 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1841 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
@@ -193,7 +193,7 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Status | Category | File |
 | ---: | --- | --- | --- |
-| 7007 | split_plan_required | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
+| 7122 | split_plan_required | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
 | 5294 | split_plan_required | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5242 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 5163 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
@@ -229,7 +229,7 @@ Generated from repository source files. This report is informational during the 
 | 1970 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1954 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1932 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
-| 1908 | split_plan_required | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
+| 1923 | split_plan_required | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 1869 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1848 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1841 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |

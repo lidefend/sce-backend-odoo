@@ -4,6 +4,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 ACTION_VIEW = ROOT / "frontend/apps/web/src/views/ActionView.vue"
 
+# The page renders its governed action projections through ScButton. The
+# adopted official list template renders the same toolbar projections in a
+# second, mutually exclusive placement — the list card's leading slot, selected
+# by `standardListOperationsInCard` — so the source carries 11 base projections
+# plus the 3 relocated ones. The total stays exact: a 15th tag is a parallel
+# page action that no placement declares.
+EXPECTED_SC_BUTTON_PROJECTIONS = 14
+
 
 def validate(source: str | None = None) -> list[str]:
     text = source if source is not None else ACTION_VIEW.read_text(encoding="utf-8")
@@ -21,6 +29,7 @@ def validate(source: str | None = None) -> list[str]:
         'class="business-category-picker-option"',
         '<ScDialog\n      :open="businessCategoryCreatePickerVisible"',
         '@close="closeBusinessCategoryCreatePicker"',
+        '<template #leading>',
         "import ScButton from '../components/design-system/ScButton.vue';",
     )
     for marker in required_actions:
@@ -46,8 +55,11 @@ def validate(source: str | None = None) -> list[str]:
     for marker in stateful_native:
         if marker not in text:
             failures.append(f"ActionView lost stateful native control {marker}")
-    if text.count('<ScButton') != 11:
-        failures.append(f"ActionView expected 11 governed page-action projections, found {text.count('<ScButton')}")
+    if text.count('<ScButton') != EXPECTED_SC_BUTTON_PROJECTIONS:
+        failures.append(
+            f"ActionView expected {EXPECTED_SC_BUTTON_PROJECTIONS} governed page-action projections, "
+            f"found {text.count('<ScButton')}"
+        )
     return failures
 
 
@@ -58,4 +70,7 @@ if __name__ == "__main__":
         for error in errors:
             print(f"- {error}")
         raise SystemExit(1)
-    print("[frontend_action_view_page_actions_guard] PASS sc_button_projections=11 overlay_close=ScDialog")
+    print(
+        f"[frontend_action_view_page_actions_guard] PASS "
+        f"sc_button_projections={EXPECTED_SC_BUTTON_PROJECTIONS} overlay_close=ScDialog"
+    )

@@ -999,9 +999,10 @@ def enclosing_vfors(
     """The elements that loop over data and enclose a tag, innermost first.
 
     The markers have to ride the innermost one — an element looping over
-    something else above the field list is not the field list — and that loop has
-    to be the only one the field renders under, so a wrapper cannot stand in for
-    it.
+    something else above the field list is not the field list — so the field
+    list has to be the loop closest to the field, and a wrapper cannot stand in
+    for it. Outer loops may wrap that field list, as the adopted detail
+    composition wraps each field segment.
     """
     found: list[int] = []
     cursor: int | None = index
@@ -1019,9 +1020,16 @@ def loops_over_the_field_list(
     index: int,
     fields: list[int],
 ) -> bool:
-    """Whether a tag renders directly under the one loop that iterates the fields."""
+    """Whether the nearest loop a tag renders under is the one that iterates the fields.
+
+    Only the innermost loop counts as the field surface: an intermediate loop a
+    wrapper introduces is not the field list, so a branch under it still
+    dispatches no field. Outer loops are allowed, because the field list may sit
+    inside a segment (or similar) loop and that wrapper does not change which
+    fields the branch renders.
+    """
     loops = enclosing_vfors(text, tags, parents, index)
-    return len(loops) == 1 and loops[0] in fields
+    return bool(loops) and loops[0] in fields
 
 
 def vue_component_name(name: str) -> str:
@@ -1695,11 +1703,16 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         branches = template_branches(renderer_template_code, renderer_template_tags)
         if not branches:
             failures.append("FormSection declares no renderer branch")
+        branches_outside_the_field_iterator: set[str] = set()
         for index, element, condition in branches:
             # A branch is a render branch only for an element the script imports,
-            # and it dispatches only the renderer that element itself renders —
-            # inside the field list, because a name parked where no field render
-            # reaches it dispatches nothing.
+            # and it dispatches only the renderer that element itself renders.
+            # That renderer still has to be reached under the field list, because
+            # a name parked where no field render reaches it dispatches nothing.
+            # The element may render the same name on more than one surface — the
+            # adopted detail composition repeats the field render in its read-only
+            # facts — so one element only fails once every branch that dispatches
+            # it has been read and no branch renders under the field iterator.
             if element not in imported_names:
                 continue
             reached = reached_names(renderer_script_code, set(IDENTIFIER.findall(condition)))
@@ -1726,11 +1739,13 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
                     index,
                     field_iterators,
                 ):
-                    failures.append(
-                        f"the {element} branch is not rendered by the field iterator element"
-                    )
+                    branches_outside_the_field_iterator.add(element)
                     continue
                 dispatched.add(element)
+        for element in sorted(branches_outside_the_field_iterator - dispatched):
+            failures.append(
+                f"the {element} branch is not rendered by the field iterator element"
+            )
         for name in renderer_names:
             if name == TYPE_DIRECTED_RENDERER:
                 continue
