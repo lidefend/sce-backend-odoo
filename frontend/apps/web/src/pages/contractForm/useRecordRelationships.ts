@@ -544,6 +544,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
   } = useRecordRelationshipNavigation({
     actionId,
     createContractFormRecord,
+    effectiveFieldDescriptor,
     fetchRelationOptions,
     formData,
     loadModelContractV2,
