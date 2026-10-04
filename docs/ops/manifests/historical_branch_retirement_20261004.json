@@ -1,0 +1,492 @@
+{
+  "references": [
+    {
+      "branch": "codex/batch2a-worktree-controller",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip b8a6edd7e2e03a71b01c32bce44cde87dd1a5b3c",
+        "merged PR #476 headRefOid=b8a6edd7e2e03a71b01c32bce44cde87dd1a5b3c",
+        "local ref absent (already retired); only the origin ref remains",
+        "runtime-carrier scan: no scripts/config/deploy/make/.agent/.github reference"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #476 at this exact head",
+      "remote": {
+        "sha": "b8a6edd7e2e03a71b01c32bce44cde87dd1a5b3c",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-04): retire only the historical origin branches proven squash-merged by an exact-head merged PR; the 8 branches without that proof are excluded.",
+        "reviewed_at": "2026-10-04"
+      }
+    },
+    {
+      "branch": "codex/contract-handling-page-normalization-v1",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip 96c73187cb3ac2078f42349a489a25a0e769e086",
+        "merged PR #471 headRefOid=96c73187cb3ac2078f42349a489a25a0e769e086",
+        "local ref absent (already retired); only the origin ref remains",
+        "runtime-carrier scan: no scripts/config/deploy/make/.agent/.github reference"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #471 at this exact head",
+      "remote": {
+        "sha": "96c73187cb3ac2078f42349a489a25a0e769e086",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-04): retire only the historical origin branches proven squash-merged by an exact-head merged PR; the 8 branches without that proof are excluded.",
+        "reviewed_at": "2026-10-04"
+      }
+    },
+    {
+      "branch": "codex/contract-settlement-page-normalization-v1",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip 4e2d84d645fe67272a00e5e13965fb80c1b5c530",
+        "merged PR #472 headRefOid=4e2d84d645fe67272a00e5e13965fb80c1b5c530",
+        "local ref absent (already retired); only the origin ref remains",
+        "runtime-carrier scan: no scripts/config/deploy/make/.agent/.github reference"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #472 at this exact head",
+      "remote": {
+        "sha": "4e2d84d645fe67272a00e5e13965fb80c1b5c530",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-04): retire only the historical origin branches proven squash-merged by an exact-head merged PR; the 8 branches without that proof are excluded.",
+        "reviewed_at": "2026-10-04"
+      }
+    },
+    {
+      "branch": "codex/daily-runtime-sync-6387",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip 201c991df19df35b48d3cbd8fe712a0180d78a25",
+        "merged PR #137 headRefOid=201c991df19df35b48d3cbd8fe712a0180d78a25",
+        "local ref absent (already retired); only the origin ref remains",
+        "runtime-carrier scan: no scripts/config/deploy/make/.agent/.github reference"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #137 at this exact head",
+      "remote": {
+        "sha": "201c991df19df35b48d3cbd8fe712a0180d78a25",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-04): retire only the historical origin branches proven squash-merged by an exact-head merged PR; the 8 branches without that proof are excluded.",
+        "reviewed_at": "2026-10-04"
+      }
+    },
+    {
+      "branch": "codex/daily-runtime-sync-c097",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip 075c9eb7697b71398068142643b2957acab4e406",
+        "merged PR #135 headRefOid=075c9eb7697b71398068142643b2957acab4e406",
+        "local ref absent (already retired); only the origin ref remains",
+        "runtime-carrier scan: no scripts/config/deploy/make/.agent/.github reference"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #135 at this exact head",
+      "remote": {
+        "sha": "075c9eb7697b71398068142643b2957acab4e406",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-04): retire only the historical origin branches proven squash-merged by an exact-head merged PR; the 8 branches without that proof are excluded.",
+        "reviewed_at": "2026-10-04"
+      }
+    },
+    {
+      "branch": "codex/daily-runtime-sync-e5c4",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip cf412709a44c502dc333621700a949ba11050d57",
+        "merged PR #136 headRefOid=cf412709a44c502dc333621700a949ba11050d57",
+        "local ref absent (already retired); only the origin ref remains",
+        "runtime-carrier scan: no scripts/config/deploy/make/.agent/.github reference"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #136 at this exact head",
+      "remote": {
+        "sha": "cf412709a44c502dc333621700a949ba11050d57",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-04): retire only the historical origin branches proven squash-merged by an exact-head merged PR; the 8 branches without that proof are excluded.",
+        "reviewed_at": "2026-10-04"
+      }
+    },
+    {
+      "branch": "codex/daily-runtime-sync-efae",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip b748d875ca21ca93f3807b3e358f065c24311094",
+        "merged PR #134 headRefOid=b748d875ca21ca93f3807b3e358f065c24311094",
+        "local ref absent (already retired); only the origin ref remains",
+        "runtime-carrier scan: no scripts/config/deploy/make/.agent/.github reference"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #134 at this exact head",
+      "remote": {
+        "sha": "b748d875ca21ca93f3807b3e358f065c24311094",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-04): retire only the historical origin branches proven squash-merged by an exact-head merged PR; the 8 branches without that proof are excluded.",
+        "reviewed_at": "2026-10-04"
+      }
+    },
+    {
+      "branch": "codex/fix-dynamic-list-default-visibility",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip 9948cbd8ac1965e56f1cb81264ea2de2a7055777",
+        "merged PR #120 headRefOid=9948cbd8ac1965e56f1cb81264ea2de2a7055777",
+        "local ref absent (already retired); only the origin ref remains",
+        "runtime-carrier scan: no scripts/config/deploy/make/.agent/.github reference"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #120 at this exact head",
+      "remote": {
+        "sha": "9948cbd8ac1965e56f1cb81264ea2de2a7055777",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-04): retire only the historical origin branches proven squash-merged by an exact-head merged PR; the 8 branches without that proof are excluded.",
+        "reviewed_at": "2026-10-04"
+      }
+    },
+    {
+      "branch": "codex/fix-list-browser-audit-isolation",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip af51a184385246265f9fdbb77779cace542aabce",
+        "merged PR #122 headRefOid=af51a184385246265f9fdbb77779cace542aabce",
+        "local ref absent (already retired); only the origin ref remains",
+        "runtime-carrier scan: no scripts/config/deploy/make/.agent/.github reference"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #122 at this exact head",
+      "remote": {
+        "sha": "af51a184385246265f9fdbb77779cace542aabce",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-04): retire only the historical origin branches proven squash-merged by an exact-head merged PR; the 8 branches without that proof are excluded.",
+        "reviewed_at": "2026-10-04"
+      }
+    },
+    {
+      "branch": "codex/fix-list-preference-save-queue",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip 6ddc465b3f05a13502efed8f665bb576f73bc28d",
+        "merged PR #123 headRefOid=6ddc465b3f05a13502efed8f665bb576f73bc28d",
+        "local ref absent (already retired); only the origin ref remains",
+        "runtime-carrier scan: no scripts/config/deploy/make/.agent/.github reference"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #123 at this exact head",
+      "remote": {
+        "sha": "6ddc465b3f05a13502efed8f665bb576f73bc28d",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-04): retire only the historical origin branches proven squash-merged by an exact-head merged PR; the 8 branches without that proof are excluded.",
+        "reviewed_at": "2026-10-04"
+      }
+    },
+    {
+      "branch": "codex/fix-manual-list-column-priority",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip b4db3d8a32248fbe28c33421e6ee496a001e34ff",
+        "merged PR #121 headRefOid=b4db3d8a32248fbe28c33421e6ee496a001e34ff",
+        "local ref absent (already retired); only the origin ref remains",
+        "runtime-carrier scan: no scripts/config/deploy/make/.agent/.github reference"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #121 at this exact head",
+      "remote": {
+        "sha": "b4db3d8a32248fbe28c33421e6ee496a001e34ff",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-04): retire only the historical origin branches proven squash-merged by an exact-head merged PR; the 8 branches without that proof are excluded.",
+        "reviewed_at": "2026-10-04"
+      }
+    },
+    {
+      "branch": "codex/frontend-list-scroll-owner",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip 9f63f65433e304ffa22b702908c141c20dadd112",
+        "merged PR #127 headRefOid=9f63f65433e304ffa22b702908c141c20dadd112",
+        "local ref absent (already retired); only the origin ref remains",
+        "runtime-carrier scan: no scripts/config/deploy/make/.agent/.github reference"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #127 at this exact head",
+      "remote": {
+        "sha": "9f63f65433e304ffa22b702908c141c20dadd112",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-04): retire only the historical origin branches proven squash-merged by an exact-head merged PR; the 8 branches without that proof are excluded.",
+        "reviewed_at": "2026-10-04"
+      }
+    },
+    {
+      "branch": "codex/governed-delivery-freeze-efficiency-v1",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip 391daaa11c8f16b450832d7f191a8c2c48e4f678",
+        "merged PR #469 headRefOid=391daaa11c8f16b450832d7f191a8c2c48e4f678",
+        "local ref absent (already retired); only the origin ref remains",
+        "runtime-carrier scan: no scripts/config/deploy/make/.agent/.github reference"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #469 at this exact head",
+      "remote": {
+        "sha": "391daaa11c8f16b450832d7f191a8c2c48e4f678",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-04): retire only the historical origin branches proven squash-merged by an exact-head merged PR; the 8 branches without that proof are excluded.",
+        "reviewed_at": "2026-10-04"
+      }
+    },
+    {
+      "branch": "codex/governed-user-password-reset",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip 5307370174331380479d70e8d1e542ebc0f635d3",
+        "merged PR #87 headRefOid=5307370174331380479d70e8d1e542ebc0f635d3",
+        "local ref absent (already retired); only the origin ref remains",
+        "runtime-carrier scan: no scripts/config/deploy/make/.agent/.github reference"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #87 at this exact head",
+      "remote": {
+        "sha": "5307370174331380479d70e8d1e542ebc0f635d3",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-04): retire only the historical origin branches proven squash-merged by an exact-head merged PR; the 8 branches without that proof are excluded.",
+        "reviewed_at": "2026-10-04"
+      }
+    },
+    {
+      "branch": "codex/long-running-workspace",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip c0909561cf9c98716108819a5b0f39236db286a6",
+        "merged PR #119 headRefOid=c0909561cf9c98716108819a5b0f39236db286a6",
+        "local ref absent (already retired); only the origin ref remains",
+        "runtime-carrier scan: no scripts/config/deploy/make/.agent/.github reference"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #119 at this exact head",
+      "remote": {
+        "sha": "c0909561cf9c98716108819a5b0f39236db286a6",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-04): retire only the historical origin branches proven squash-merged by an exact-head merged PR; the 8 branches without that proof are excluded.",
+        "reviewed_at": "2026-10-04"
+      }
+    },
+    {
+      "branch": "codex/material-handling-page-normalization-v1",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip 0f98652697e4bf1ad58a820575c203f4d0df9ddf",
+        "merged PR #468 headRefOid=0f98652697e4bf1ad58a820575c203f4d0df9ddf",
+        "local ref absent (already retired); only the origin ref remains",
+        "runtime-carrier scan: no scripts/config/deploy/make/.agent/.github reference"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #468 at this exact head",
+      "remote": {
+        "sha": "0f98652697e4bf1ad58a820575c203f4d0df9ddf",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-04): retire only the historical origin branches proven squash-merged by an exact-head merged PR; the 8 branches without that proof are excluded.",
+        "reviewed_at": "2026-10-04"
+      }
+    },
+    {
+      "branch": "codex/shared-form-help-error-consistency-v1",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip 5f286f1bbf201e8ba68aeed655ac40d6246acc12",
+        "merged PR #474 headRefOid=5f286f1bbf201e8ba68aeed655ac40d6246acc12",
+        "local ref absent (already retired); only the origin ref remains",
+        "runtime-carrier scan: no scripts/config/deploy/make/.agent/.github reference"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #474 at this exact head",
+      "remote": {
+        "sha": "5f286f1bbf201e8ba68aeed655ac40d6246acc12",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-04): retire only the historical origin branches proven squash-merged by an exact-head merged PR; the 8 branches without that proof are excluded.",
+        "reviewed_at": "2026-10-04"
+      }
+    },
+    {
+      "branch": "codex/tdesign-system-alignment-v1",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip a1dba9cc70101551e18b0356a81a9c118777717e",
+        "merged PR #473 headRefOid=a1dba9cc70101551e18b0356a81a9c118777717e",
+        "local ref absent (already retired); only the origin ref remains",
+        "runtime-carrier scan: no scripts/config/deploy/make/.agent/.github reference"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #473 at this exact head",
+      "remote": {
+        "sha": "a1dba9cc70101551e18b0356a81a9c118777717e",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-04): retire only the historical origin branches proven squash-merged by an exact-head merged PR; the 8 branches without that proof are excluded.",
+        "reviewed_at": "2026-10-04"
+      }
+    },
+    {
+      "branch": "codex/uc4-g03-ledger-decrement-v1",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip f2fd9a938a6012ad94bf0e3d66fca1dde056901a",
+        "merged PR #489 headRefOid=f2fd9a938a6012ad94bf0e3d66fca1dde056901a",
+        "local ref absent (already retired); only the origin ref remains",
+        "runtime-carrier scan: no scripts/config/deploy/make/.agent/.github reference"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #489 at this exact head",
+      "remote": {
+        "sha": "f2fd9a938a6012ad94bf0e3d66fca1dde056901a",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-04): retire only the historical origin branches proven squash-merged by an exact-head merged PR; the 8 branches without that proof are excluded.",
+        "reviewed_at": "2026-10-04"
+      }
+    },
+    {
+      "branch": "codex/uc4-g04-ledger-deduction",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip 810340a4e81bf49091a92fa5582e0865ffd37b40",
+        "merged PR #491 headRefOid=810340a4e81bf49091a92fa5582e0865ffd37b40",
+        "local ref absent (already retired); only the origin ref remains",
+        "runtime-carrier scan: no scripts/config/deploy/make/.agent/.github reference"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #491 at this exact head",
+      "remote": {
+        "sha": "810340a4e81bf49091a92fa5582e0865ffd37b40",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-04): retire only the historical origin branches proven squash-merged by an exact-head merged PR; the 8 branches without that proof are excluded.",
+        "reviewed_at": "2026-10-04"
+      }
+    },
+    {
+      "branch": "codex/uc4-g05-ledger-deduction",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip 7332273ddefb0b5d9f17d91a0ef7b794644dd84e",
+        "merged PR #493 headRefOid=7332273ddefb0b5d9f17d91a0ef7b794644dd84e",
+        "local ref absent (already retired); only the origin ref remains",
+        "runtime-carrier scan: no scripts/config/deploy/make/.agent/.github reference"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #493 at this exact head",
+      "remote": {
+        "sha": "7332273ddefb0b5d9f17d91a0ef7b794644dd84e",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-04): retire only the historical origin branches proven squash-merged by an exact-head merged PR; the 8 branches without that proof are excluded.",
+        "reviewed_at": "2026-10-04"
+      }
+    }
+  ],
+  "repository": {
+    "name": "sce-backend-odoo",
+    "origin_url": "https://github.com/lidefend/sce-backend-odoo.git"
+  },
+  "schema_version": 1
+}
