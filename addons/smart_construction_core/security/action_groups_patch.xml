@@ -462,6 +462,71 @@
     <record id="server_action_purchase_order_on_rejected" model="ir.actions.server">
         <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_purchase_manager'))]" />
     </record>
+    <!-- Remaining tier callback actions: the same capability groups that own
+         their business surface. sc.approval.policy._sync_tier_server_action_groups
+         replaces these with the reviewer-group union once a chain exists; a model
+         with no configured approval keeps this bootstrap binding so every server
+         action stays group-bound and cannot be triggered by URL. -->
+    <record id="server_action_contract_event_on_approved" model="ir.actions.server">
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_contract_read')), (4, ref('smart_construction_core.group_sc_cap_contract_user')), (4, ref('smart_construction_core.group_sc_cap_contract_manager'))]" />
+    </record>
+    <record id="server_action_contract_event_on_rejected" model="ir.actions.server">
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_contract_read')), (4, ref('smart_construction_core.group_sc_cap_contract_user')), (4, ref('smart_construction_core.group_sc_cap_contract_manager'))]" />
+    </record>
+    <record id="server_action_plan_on_approved" model="ir.actions.server">
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_internal_user'))]" />
+    </record>
+    <record id="server_action_plan_on_rejected" model="ir.actions.server">
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_internal_user'))]" />
+    </record>
+    <record id="server_action_plan_report_on_approved" model="ir.actions.server">
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_internal_user'))]" />
+    </record>
+    <record id="server_action_plan_report_on_rejected" model="ir.actions.server">
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_internal_user'))]" />
+    </record>
+    <record id="server_action_plan_version_on_approved" model="ir.actions.server">
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_internal_user'))]" />
+    </record>
+    <record id="server_action_plan_version_on_rejected" model="ir.actions.server">
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_internal_user'))]" />
+    </record>
+    <record id="server_action_diary_on_approved" model="ir.actions.server">
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_project_read')), (4, ref('smart_construction_core.group_sc_cap_project_user')), (4, ref('smart_construction_core.group_sc_cap_project_manager'))]" />
+    </record>
+    <record id="server_action_diary_on_rejected" model="ir.actions.server">
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_project_read')), (4, ref('smart_construction_core.group_sc_cap_project_user')), (4, ref('smart_construction_core.group_sc_cap_project_manager'))]" />
+    </record>
+    <record id="server_action_tax_deduction_on_approved" model="ir.actions.server">
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_internal_user'))]" />
+    </record>
+    <record id="server_action_tax_deduction_on_rejected" model="ir.actions.server">
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_internal_user'))]" />
+    </record>
+    <record id="server_action_task_on_approved" model="ir.actions.server">
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_project_read')), (4, ref('smart_construction_core.group_sc_cap_project_user')), (4, ref('smart_construction_core.group_sc_cap_project_manager'))]" />
+    </record>
+    <record id="server_action_task_on_rejected" model="ir.actions.server">
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_project_read')), (4, ref('smart_construction_core.group_sc_cap_project_user')), (4, ref('smart_construction_core.group_sc_cap_project_manager'))]" />
+    </record>
+    <record id="server_action_project_on_approved" model="ir.actions.server">
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_project_read')), (4, ref('smart_construction_core.group_sc_cap_project_user')), (4, ref('smart_construction_core.group_sc_cap_project_manager'))]" />
+    </record>
+    <record id="server_action_project_on_rejected" model="ir.actions.server">
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_project_read')), (4, ref('smart_construction_core.group_sc_cap_project_user')), (4, ref('smart_construction_core.group_sc_cap_project_manager'))]" />
+    </record>
+    <record id="server_action_tender_guarantee_on_approved" model="ir.actions.server">
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_project_user')), (4, ref('smart_construction_core.group_sc_cap_project_manager'))]" />
+    </record>
+    <record id="server_action_tender_guarantee_on_rejected" model="ir.actions.server">
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_project_user')), (4, ref('smart_construction_core.group_sc_cap_project_manager'))]" />
+    </record>
+    <record id="server_action_output_adjustment_on_approved" model="ir.actions.server">
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_user')), (4, ref('smart_construction_core.group_sc_cap_finance_manager'))]" />
+    </record>
+    <record id="server_action_output_adjustment_on_rejected" model="ir.actions.server">
+        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_user')), (4, ref('smart_construction_core.group_sc_cap_finance_manager'))]" />
+    </record>
     <record id="ir_cron_sc_signup_throttle_gc_ir_actions_server" model="ir.actions.server">
         <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_super_admin')), (4, ref('base.group_system'))]" />
     </record>

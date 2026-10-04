@@ -231,7 +231,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(action["visible_profiles"], ["edit", "readonly"])
         self.assertTrue(action["visible"])
 
-    def test_execution_continuation_requires_exact_manager_capability(self):
+    def test_execution_continuation_requires_exact_finance_capability(self):
         request = self._set_request_state(self._request())
         finance_user = self._internal_user(
             "p1_execution_action_finance_user",
@@ -240,12 +240,24 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.project.user_id = finance_user
         action = self._execution_action(self.env(user=finance_user), request)
         self.assertTrue(action["business_available"])
-        self.assertFalse(action["authorization_allowed"])
-        self.assertFalse(action["allowed"])
-        self.assertFalse(action["enabled"])
-        self.assertTrue(action["disabled"])
-        self.assertFalse(action["primary"])
-        self.assertEqual(action["reason_code"], "ROLE_HANDOFF_REQUIRED")
+        self.assertTrue(action["authorization_allowed"])
+        self.assertTrue(action["allowed"])
+        self.assertTrue(action["enabled"])
+        self.assertFalse(action["disabled"])
+        self.assertTrue(action["primary"])
+        self.assertEqual(action["reason_code"], "")
+
+        executive = self._internal_user(
+            "p1_execution_action_executive",
+            "smart_construction_core.group_sc_role_executive",
+        )
+        self.project.user_id = executive
+        blocked = self._execution_action(self.env(user=executive), request)
+        self.assertTrue(blocked["business_available"])
+        self.assertFalse(blocked["authorization_allowed"])
+        self.assertFalse(blocked["enabled"])
+        self.assertTrue(blocked["disabled"])
+        self.assertEqual(blocked["reason_code"], "ROLE_HANDOFF_REQUIRED")
 
     def test_execution_continuation_requires_authoritative_payment_basis(self):
         request = self.env["payment.request"].create(
@@ -966,8 +978,23 @@ class TestP1PaymentRequestCapability(TransactionCase):
 
     def test_rejection_requires_explicit_reason_and_resubmit_preserves_audit(self):
         request = self._set_request_state(self._request(), "submit")
-        with self.assertRaisesRegex(UserError, "reason is required"):
-            request.action_on_tier_rejected()
+        # A real reviewer decision requires an active internal reviewer on the
+        # instantiated chain: __system__ (env.user, uid=1) is deliberately
+        # inactive and can never own a tier review.  Provision the finance
+        # manager the seeded payment.request chain expects and act as that user.
+        reviewer = self._internal_user(
+            "p1_rejection_reviewer",
+            "smart_construction_core.group_sc_cap_finance_user",
+            "smart_construction_core.group_sc_cap_finance_manager",
+        )
+        request.request_validation()
+        request.review_ids.sudo().write({"reviewer_ids": [(4, reviewer.id)]})
+        request.invalidate_recordset(["review_ids", "validation_status", "can_review"])
+        self.assertTrue(request.review_ids)
+        approver = request.with_user(reviewer)
+        self.assertTrue(approver.can_review)
+        with self.assertRaisesRegex(UserError, "审批驳回必须填写原因"):
+            approver.action_approval_reject()
         self.assertEqual(request.state, "submit")
         self.assertFalse(
             self.env["sc.audit.log"].search_count(
@@ -979,7 +1006,8 @@ class TestP1PaymentRequestCapability(TransactionCase):
             )
         )
 
-        request.action_on_tier_rejected("合同付款依据需补充签章页")
+        approver.action_approval_reject("合同付款依据需补充签章页")
+        request.invalidate_recordset(["state", "reject_reason"])
         self.assertEqual(request.state, "rejected")
         self.assertEqual(request.reject_reason, "合同付款依据需补充签章页")
         self.assertEqual(request.legal_next_action_display, "重新提交审批")
@@ -1693,6 +1721,9 @@ class TestP1PaymentRequestCapability(TransactionCase):
         )
         self.project.user_id = manager
         self._set_request_state(request, "submit")
+        request.request_validation()
+        request.invalidate_recordset(["review_ids", "validation_status", "can_review"])
+        self.assertTrue(request.review_ids)
         payload = build_financial_form_business_actions(
             self.env(user=manager), "payment.request", request.id
         )
@@ -2797,7 +2828,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
             for row in action_rules
             if (row.get("button") or {}).get("type") == "object"
             and (row.get("button") or {}).get("name") in {
-                "validate_tier",
+                "action_approval_decision",
                 "action_view_payment_execution",
             }
         }

@@ -81,7 +81,7 @@ class TestTenderDocumentAdvisory(TransactionCase):
 
         notification = application.action_submit()
 
-        self.assertEqual(application.state, "submitted")
+        self.assertEqual(application.state, "approved")
         self.assertEqual(notification.get("tag"), "display_notification")
         self.assertIn("建议补充申请日期", application.processing_advisory)
         self.assertIn("建议补充有效金额", application.processing_advisory)

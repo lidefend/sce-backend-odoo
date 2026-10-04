@@ -55,7 +55,6 @@ class TestMaterialSupplierReturn(TransactionCase):
                 "supplier_id": supplier.id,
                 "warehouse_id": warehouse.id,
                 "dest_location_id": warehouse.lot_stock_id.id,
-                "state": "received",
                 "line_ids": [
                     (
                         0,
@@ -70,6 +69,7 @@ class TestMaterialSupplierReturn(TransactionCase):
                 ],
             }
         )
+        inbound._write_inbound_state({"state": "received"})
 
         with self.assertRaises(AccessError):
             self.env["sc.material.supplier.return"].with_user(project_only_user).create(

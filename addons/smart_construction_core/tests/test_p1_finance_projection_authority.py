@@ -412,6 +412,7 @@ class TestP1FinanceProjectionAuthority(TransactionCase):
             self.env["tender.guarantee"].create(
                 {"bid_id": bid.id, "type": "out", "amount": 1, "state": "confirmed"}
             )
+        guarantee.action_submit()
         guarantee.action_confirm()
         guarantee.invalidate_recordset()
         self.assertEqual(guarantee.state, "confirmed")
@@ -722,11 +723,13 @@ class TestP1FinanceProjectionAuthority(TransactionCase):
                 "currency_id": request.currency_id.id,
             }
         )
+        receipt.action_confirm()
         with self.assertRaisesRegex(UserError, "低于收款申请金额"):
             receipt.with_user(self.finance_manager).action_received()
         receipt.invalidate_recordset()
         request.invalidate_recordset()
-        self.assertEqual(receipt.state, "draft")
+        # 已确认的收款单在登记收款失败时回滚到进入登记前的状态（confirmed）。
+        self.assertEqual(receipt.state, "confirmed")
         self.assertFalse(receipt.treasury_ledger_id)
         self.assertEqual(request.state, "approved")
         self.assertFalse(request.terminal_cash_source_model)
@@ -782,6 +785,7 @@ class TestP1FinanceProjectionAuthority(TransactionCase):
                 )
             )
 
+        receipt.action_confirm()
         receipt.with_user(self.finance_manager).action_received()
         receipt.invalidate_recordset()
         request.invalidate_recordset()
@@ -1508,8 +1512,9 @@ class TestP1FinanceProjectionAuthority(TransactionCase):
         )
         request.invalidate_recordset(["state", "validation_status"])
         execution = self.env["sc.payment.execution"].create(
-            {"payment_request_id": request.id, "state": "confirmed", "paid_amount": 29}
+            {"payment_request_id": request.id, "paid_amount": 29}
         )
+        execution._write_document_state({"state": "confirmed"})
         ledger = request._ensure_payment_ledger(amount=29, execution=execution)
         self.env.cr.execute(
             "UPDATE payment_ledger SET normalization_state = 'legacy_unresolved_identity' WHERE id = %s",
@@ -1781,7 +1786,9 @@ class TestP1FinanceProjectionAuthority(TransactionCase):
             ),
         )
         for model_name, values in cases:
-            with self.subTest(model=model_name), self.assertRaisesRegex(UserError, "受治理迁移载体"):
+            with self.subTest(model=model_name), self.assertRaisesRegex(
+                UserError, "单据必须从草稿通过正式审批和业务动作流转|受治理迁移载体"
+            ):
                 self.env[model_name].create(dict(values, project_id=self.project.id, source_origin="legacy"))
 
         unresolved = self.env["sc.receipt.income"]._create_legacy_authoritative(

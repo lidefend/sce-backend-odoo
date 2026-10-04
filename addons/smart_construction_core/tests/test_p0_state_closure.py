@@ -210,7 +210,7 @@ class TestP0StateClosure(TransactionCase):
         return settlement
 
     def _attach_dummy(self, record, name="test.pdf"):
-        self.env["ir.attachment"].create(
+        attachment = self.env["ir.attachment"].create(
             {
                 "name": name,
                 "type": "binary",
@@ -220,6 +220,10 @@ class TestP0StateClosure(TransactionCase):
                 "mimetype": "application/pdf",
             }
         )
+        field = record._fields.get("attachment_ids")
+        if field is not None and field.type == "many2many":
+            record.write({"attachment_ids": [(4, attachment.id)]})
+        return attachment
 
     def _create_settlement(self, project, partner, state="confirmed"):
         return self.env["project.settlement"].create(
@@ -233,6 +237,7 @@ class TestP0StateClosure(TransactionCase):
 
     def test_project_lifecycle_without_boq_is_advisory(self):
         project = self._create_project("P0 Project No BOQ")
+        project.action_sc_submit()
         project.action_set_lifecycle_state("in_progress")
         self.assertEqual(project.lifecycle_state, "in_progress")
         self.assertIn("建议后续导入工程量清单", project.lifecycle_advisory)
@@ -349,15 +354,20 @@ class TestP0StateClosure(TransactionCase):
                 "contract_id": contract.id,
                 "settlement_id": settlement.id,
                 "amount": 10.0,
-                "state": "approve",
+                "state": "draft",
             }
         )
-        self.env.cr.execute(
-            "UPDATE payment_request SET state=%s, validation_status=%s WHERE id=%s",
-            ("approve", "validated", pr.id),
-        )
+        finance_user = self._create_finance_user("p0_finance_user_set_approved")
+        finance_manager = self._create_finance_manager("p0_finance_manager_set_approved")
+        project.message_subscribe(partner_ids=finance_user.partner_id.ids)
+        pr.with_user(finance_user).action_submit()
+        self._complete_tier_validation(pr, finance_manager)
         pr.invalidate_recordset()
-
+        # A real validated review chain, not a manually assembled state, is the
+        # precondition the historical delegate now requires.
+        self.assertTrue(pr.review_ids)
+        self.assertEqual(pr.validation_status, "validated")
+        self.assertEqual(pr.state, "approved")
         pr.action_set_approved()
         pr.invalidate_recordset()
         self.assertEqual(pr.state, "approved")
@@ -660,6 +670,7 @@ class TestP0StateClosure(TransactionCase):
         )
         pr.invalidate_recordset()
 
+        receipt.action_confirm()
         receipt.action_received()
         pr.invalidate_recordset()
         receipt.invalidate_recordset()
@@ -799,9 +810,12 @@ class TestP0StateClosure(TransactionCase):
                 "amount": 10.0,
                 "approved_amount": 10.0,
                 "currency_id": pr.currency_id.id,
-                "state": "approved",
+                "payee_account": "R-EXPENSE-DONE-001",
+                "payer_account": "P-EXPENSE-DONE-001",
             }
         )
+        self._attach_dummy(claim)
+        claim._write_finance_authority({"state": "approved", "reject_reason": False})
         pr.invalidate_recordset()
 
         claim.action_done()
@@ -816,24 +830,56 @@ class TestP0StateClosure(TransactionCase):
 
     def test_expense_claim_blocks_invalid_state_jump_or_late_cancel(self):
         project = self._create_project("P0 Project Expense Claim State Block", with_boq=True)
+        partner = self._create_partner()
+        contract = self._create_contract(project, partner)
+        self._enable_funding(project, cap=1000.0)
+        settlement = self._create_settlement_order(
+            project, partner, contract, amount=100.0, state="approve"
+        )
+        pr = self.env["payment.request"].sudo().create(
+            {
+                "name": "P0 Expense State PR",
+                "type": "pay",
+                "project_id": project.id,
+                "partner_id": partner.id,
+                "contract_id": contract.id,
+                "settlement_id": settlement.id,
+                "amount": 10.0,
+                "state": "draft",
+            }
+        )
+        self.env.cr.execute(
+            "UPDATE payment_request SET state='approved', validation_status='validated' WHERE id=%s",
+            (pr.id,),
+        )
+        pr.invalidate_recordset()
         claim = self.env["sc.expense.claim"].sudo().create(
             {
                 "claim_type": "expense",
                 "project_id": project.id,
+                "partner_id": partner.id,
+                "payment_request_id": pr.id,
                 "amount": 10.0,
                 "approved_amount": 10.0,
+                "currency_id": pr.currency_id.id,
+                "payee_account": "R-EXPENSE-STATE-001",
+                "payer_account": "P-EXPENSE-STATE-001",
             }
         )
+        self._attach_dummy(claim)
 
         with self.assertRaises(UserError):
             claim.action_done()
         claim.action_submit()
         claim.invalidate_recordset()
-        self.assertIn(claim.state, ("submit", "approved"))
+        self.assertEqual(claim.state, "submit")
+        self.assertTrue(claim.review_ids)
         with self.assertRaises(UserError):
             claim.action_submit()
-        if claim.state == "submit":
-            claim.write({"state": "approved"})
+        finance_manager = self._create_finance_manager("p0_finance_manager_expense_state_block")
+        self._complete_tier_validation(claim, finance_manager)
+        claim.invalidate_recordset()
+        self.assertEqual(claim.state, "approved")
         claim.action_done()
         claim.invalidate_recordset()
         self.assertEqual(claim.state, "done")
@@ -857,6 +903,7 @@ class TestP0StateClosure(TransactionCase):
             }
         )
 
+        deduction.action_confirm()
         deduction.action_deduct()
         deduction.invalidate_recordset()
 
@@ -949,6 +996,7 @@ class TestP0StateClosure(TransactionCase):
             }
         )
 
+        reconciliation.action_confirm()
         reconciliation.action_reconcile()
         reconciliation.invalidate_recordset()
         self.assertEqual(reconciliation.state, "reconciled")
@@ -1054,6 +1102,7 @@ class TestP0StateClosure(TransactionCase):
             }
         )
 
+        loan.action_confirm()
         loan.action_done()
         loan.invalidate_recordset()
         self.assertEqual(loan.state, "done")
@@ -1112,6 +1161,7 @@ class TestP0StateClosure(TransactionCase):
             }
         )
 
+        diary.action_confirm()
         diary.action_done()
         diary.invalidate_recordset()
         self.assertEqual(diary.state, "done")
@@ -1261,10 +1311,10 @@ class TestP0StateClosure(TransactionCase):
 
         event.action_submit()
         event.invalidate_recordset()
-        self.assertEqual(event.state, "submitted")
-        event.action_approve()
-        event.invalidate_recordset()
+        # sc.contract.event has no configured approval policy: submission advances
+        # 草稿 -> 已审批 in one transaction and must not fabricate a tier review.
         self.assertEqual(event.state, "approved")
+        self.assertFalse(event.review_ids)
         event.action_done()
         event.invalidate_recordset()
         self.assertEqual(event.state, "done")
@@ -1307,16 +1357,20 @@ class TestP0StateClosure(TransactionCase):
             }
         )
 
-        event.action_submit()
-        event.invalidate_recordset()
-        self.assertEqual(event.state, "submitted")
         cancel_event = event.copy({"name": "P0 Contract Event Cancel"})
         cancel_event.action_cancel()
         cancel_event.invalidate_recordset()
         self.assertEqual(cancel_event.state, "cancel")
         with self.assertRaises(UserError):
             cancel_event.action_cancel()
-        event.action_approve()
+
+        event.action_submit()
+        event.invalidate_recordset()
+        self.assertEqual(event.state, "approved")
+        # With no configured approval there is no review instance, so a manual
+        # approval callback is refused instead of fabricating approval facts.
+        with self.assertRaises(UserError):
+            event.action_approve()
         event.invalidate_recordset()
         self.assertEqual(event.state, "approved")
         with self.assertRaises(UserError):
@@ -1627,10 +1681,8 @@ class TestP0StateClosure(TransactionCase):
         )
         plan.action_submit()
         plan.invalidate_recordset()
-        self.assertEqual(plan.state, "submitted")
-        plan.action_approve()
-        plan.invalidate_recordset()
         self.assertEqual(plan.state, "approved")
+        self.assertFalse(plan.review_ids)
         order = self.env["sc.material.rental.order"].create(
             {
                 "project_id": project.id,
@@ -1652,6 +1704,7 @@ class TestP0StateClosure(TransactionCase):
             }
         )
 
+        order.action_submit()
         order.action_activate()
         order.invalidate_recordset()
         self.assertEqual(order.state, "active")
@@ -1675,7 +1728,6 @@ class TestP0StateClosure(TransactionCase):
                 "rental_order_id": order.id,
                 "supplier_id": supplier.id,
                 "contract_id": contract.id,
-                "payment_request_id": payment_request.id,
                 "line_ids": [
                     (
                         0,
@@ -1692,12 +1744,35 @@ class TestP0StateClosure(TransactionCase):
             }
         )
 
+        # A rental settlement is a valid payment basis only after its own
+        # approval and confirmation, so settle that first, then attribute the
+        # request and register the authoritative ledger.
         settlement.action_submit()
         settlement.invalidate_recordset()
-        self.assertEqual(settlement.state, "submitted")
+        # sc.material.rental.settlement has no configured approval policy, so
+        # submission advances straight to approved and creates no review chain.
+        self.assertEqual(settlement.state, "approved")
+        self.assertFalse(settlement.review_ids)
         settlement.action_confirm()
         settlement.invalidate_recordset()
         self.assertEqual(settlement.state, "confirmed")
+
+        payment_request.write({"rental_settlement_id": settlement.id})
+        self.env.cr.execute(
+            "UPDATE payment_request SET state='approved' WHERE id=%s",
+            (payment_request.id,),
+        )
+        payment_request.invalidate_recordset(["state", "rental_settlement_id"])
+        payment_request._ensure_payment_ledger(amount=108.0)
+        settlement.invalidate_recordset(
+            [
+                "payment_request_ids",
+                "amount_total",
+                "payment_paid_amount",
+                "payment_remaining_amount",
+            ]
+        )
+
         settlement.action_paid()
         settlement.invalidate_recordset()
         self.assertEqual(settlement.state, "paid")
@@ -1759,12 +1834,21 @@ class TestP0StateClosure(TransactionCase):
             plan.action_submit()
         plan.line_ids.write({"planned_qty": 10.0})
         plan.action_submit()
+        plan.invalidate_recordset()
+        self.assertEqual(plan.state, "approved")
         with self.assertRaises(UserError):
             plan.action_submit()
+        # The plan carries no approval policy, so a genuine in-flight state is
+        # only reachable through the governed state entry.
+        plan._write_approval_state({"state": "submitted"})
         plan.action_cancel()
+        plan.invalidate_recordset()
+        self.assertEqual(plan.state, "cancel")
         with self.assertRaises(UserError):
             plan.action_approve()
         plan.action_reset_draft()
+        plan.invalidate_recordset()
+        self.assertEqual(plan.state, "draft")
         with self.assertRaises(UserError):
             plan.action_reset_draft()
 
@@ -1811,7 +1895,7 @@ class TestP0StateClosure(TransactionCase):
 
         usage.action_submit()
         usage.invalidate_recordset()
-        self.assertEqual(usage.state, "submitted")
+        self.assertEqual(usage.state, "approved")
         usage.action_confirm()
         usage.invalidate_recordset()
         self.assertEqual(usage.state, "confirmed")
@@ -1839,7 +1923,7 @@ class TestP0StateClosure(TransactionCase):
 
         settlement.action_submit()
         settlement.invalidate_recordset()
-        self.assertEqual(settlement.state, "submitted")
+        self.assertEqual(settlement.state, "approved")
         settlement.action_confirm()
         settlement.invalidate_recordset()
         self.assertEqual(settlement.state, "confirmed")
@@ -1912,7 +1996,7 @@ class TestP0StateClosure(TransactionCase):
 
         usage.action_submit()
         usage.invalidate_recordset()
-        self.assertEqual(usage.state, "submitted")
+        self.assertEqual(usage.state, "approved")
         usage.action_confirm()
         usage.invalidate_recordset()
         self.assertEqual(usage.state, "confirmed")
@@ -1939,7 +2023,7 @@ class TestP0StateClosure(TransactionCase):
 
         settlement.action_submit()
         settlement.invalidate_recordset()
-        self.assertEqual(settlement.state, "submitted")
+        self.assertEqual(settlement.state, "approved")
         settlement.action_confirm()
         settlement.invalidate_recordset()
         self.assertEqual(settlement.state, "confirmed")
@@ -2020,10 +2104,8 @@ class TestP0StateClosure(TransactionCase):
 
         plan.action_submit()
         plan.invalidate_recordset()
-        self.assertEqual(plan.state, "submitted")
-        plan.action_approve()
-        plan.invalidate_recordset()
         self.assertEqual(plan.state, "approved")
+        self.assertFalse(plan.review_ids)
 
         request = self.env["sc.equipment.request"].create(
             {
@@ -2048,10 +2130,8 @@ class TestP0StateClosure(TransactionCase):
 
         request.action_submit()
         request.invalidate_recordset()
-        self.assertEqual(request.state, "submitted")
-        request.action_approve()
-        request.invalidate_recordset()
         self.assertEqual(request.state, "approved")
+        self.assertFalse(request.review_ids)
 
     def test_equipment_plan_and_request_block_state_jump_or_invalid_anchor(self):
         project = self._create_project("P0 Project Equipment Plan Request Block", with_boq=True)
@@ -2077,7 +2157,9 @@ class TestP0StateClosure(TransactionCase):
         with self.assertRaises(UserError):
             plan.action_approve()
         plan.action_submit()
-        plan.action_approve()
+        self.assertEqual(plan.state, "approved")
+        with self.assertRaisesRegex(UserError, "没有审批实例"):
+            plan.action_approve()
         with self.assertRaises(UserError):
             plan.action_cancel()
         plan.invalidate_recordset()
@@ -2153,10 +2235,8 @@ class TestP0StateClosure(TransactionCase):
 
         plan.action_submit()
         plan.invalidate_recordset()
-        self.assertEqual(plan.state, "submitted")
-        plan.action_approve()
-        plan.invalidate_recordset()
         self.assertEqual(plan.state, "approved")
+        self.assertFalse(plan.review_ids)
 
         request = self.env["sc.subcontract.request"].create(
             {
@@ -2181,10 +2261,8 @@ class TestP0StateClosure(TransactionCase):
         )
         request.action_submit()
         request.invalidate_recordset()
-        self.assertEqual(request.state, "submitted")
-        request.action_approve()
-        request.invalidate_recordset()
         self.assertEqual(request.state, "approved")
+        self.assertFalse(request.review_ids)
 
         register = self.env["sc.subcontract.register"].create(
             {
@@ -2235,7 +2313,10 @@ class TestP0StateClosure(TransactionCase):
         )
         settlement.action_submit()
         settlement.invalidate_recordset()
-        self.assertEqual(settlement.state, "submitted")
+        # sc.subcontract.settlement has no configured approval policy: submission
+        # advances straight to approved without a review chain.
+        self.assertEqual(settlement.state, "approved")
+        self.assertFalse(settlement.review_ids)
         settlement.action_confirm()
         settlement.invalidate_recordset()
         self.assertEqual(settlement.state, "confirmed")
@@ -2267,7 +2348,9 @@ class TestP0StateClosure(TransactionCase):
         with self.assertRaises(UserError):
             plan.action_approve()
         plan.action_submit()
-        plan.action_approve()
+        self.assertEqual(plan.state, "approved")
+        with self.assertRaisesRegex(UserError, "没有审批实例"):
+            plan.action_approve()
         with self.assertRaises(UserError):
             plan.action_cancel()
         plan.invalidate_recordset()
@@ -2479,8 +2562,6 @@ class TestP0StateClosure(TransactionCase):
                             "name": "P0 Plan Node",
                             "planned_start": fields.Date.today(),
                             "planned_finish": fields.Date.today(),
-                            "progress_rate": 100.0,
-                            "state": "done",
                         },
                     )
                 ],
@@ -2494,6 +2575,16 @@ class TestP0StateClosure(TransactionCase):
         plan.invalidate_recordset()
         self.assertEqual(plan.state, "in_progress")
         self.assertTrue(plan.actual_start)
+        # Node execution facts are action-owned; they may only be recorded once
+        # the owning plan is executing.
+        plan.line_ids.write(
+            {
+                "state": "done",
+                "progress_rate": 100.0,
+                "actual_start": fields.Date.today(),
+                "actual_finish": fields.Date.today(),
+            }
+        )
         plan.action_done()
         plan.invalidate_recordset()
         self.assertEqual(plan.state, "done")
@@ -2524,8 +2615,6 @@ class TestP0StateClosure(TransactionCase):
                             "name": "P0 Unfinished Node",
                             "planned_start": fields.Date.today(),
                             "planned_finish": fields.Date.today(),
-                            "progress_rate": 50.0,
-                            "state": "in_progress",
                         },
                     )
                 ],
@@ -2533,6 +2622,7 @@ class TestP0StateClosure(TransactionCase):
         )
         plan.action_confirm()
         plan.action_start()
+        plan.line_ids.write({"state": "in_progress", "progress_rate": 50.0})
         with self.assertRaises(UserError):
             plan.action_done()
         with self.assertRaises(UserError):
@@ -2704,10 +2794,8 @@ class TestP0StateClosure(TransactionCase):
 
         plan.action_submit()
         plan.invalidate_recordset()
-        self.assertEqual(plan.state, "submitted")
-        plan.action_approve()
-        plan.invalidate_recordset()
         self.assertEqual(plan.state, "approved")
+        self.assertFalse(plan.review_ids)
 
         disclosure = self.env["sc.safety.disclosure"].create(
             {
@@ -2720,10 +2808,8 @@ class TestP0StateClosure(TransactionCase):
         )
         disclosure.action_submit()
         disclosure.invalidate_recordset()
-        self.assertEqual(disclosure.state, "submitted")
-        disclosure.action_approve()
-        disclosure.invalidate_recordset()
         self.assertEqual(disclosure.state, "approved")
+        self.assertFalse(disclosure.review_ids)
 
     def test_safety_plan_and_disclosure_block_invalid_anchor_or_state(self):
         project = self._create_project("P0 Project Safety Plan Block", with_boq=True)
@@ -3109,8 +3195,8 @@ class TestP0StateClosure(TransactionCase):
             }
         )
         request.action_submit()
-        request.action_approve()
         self.assertEqual(request.state, "approved")
+        self.assertFalse(request.review_ids)
 
         acceptance = self.env["sc.material.acceptance"].create(
             {
@@ -3232,10 +3318,12 @@ class TestP0StateClosure(TransactionCase):
         request = self.env["sc.material.purchase.request"].create(
             {"project_id": project.id, "line_ids": [(0, 0, line_vals)]}
         )
-        with self.assertRaises(ValidationError):
+        with self.assertRaisesRegex(UserError, "没有审批实例"):
             request.action_approve()
         request.action_submit()
-        request.action_approve()
+        self.assertEqual(request.state, "approved")
+        with self.assertRaisesRegex(UserError, "没有审批实例"):
+            request.action_approve()
         with self.assertRaises(ValidationError):
             request.action_cancel()
 

@@ -25,11 +25,11 @@ Generated from repository source files. This report is informational during the 
 | 3652 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3646 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3472 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
+| 3455 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3416 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
-| 3367 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3268 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
+| 3063 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 3049 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
-| 3032 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 3011 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2875 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2675 | Python source | `addons/smart_core/handlers/api_data.py` |
@@ -49,7 +49,7 @@ Generated from repository source files. This report is informational during the 
 | 1954 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1932 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1923 | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
-| 1869 | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
+| 1876 | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1848 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1841 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1836 | Python source | `addons/smart_construction_core/core_extension.py` |
@@ -102,7 +102,7 @@ Generated from repository source files. This report is informational during the 
 | 1256 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1249 | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
 | 1234 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
-| 1225 | Python source | `addons/smart_construction_core/tests/test_p1_funding_authority.py` |
+| 1227 | Python source | `addons/smart_construction_core/tests/test_p1_funding_authority.py` |
 | 1221 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 1221 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
@@ -128,8 +128,8 @@ Generated from repository source files. This report is informational during the 
 | 1093 | Python source | `addons/smart_core/handlers/load_contract.py` |
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1080 | Python source | `scripts/verify/test_frontend_product_page_header_guard.py` |
+| 1049 | Python source | `addons/smart_construction_core/models/support/approval_policy.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
-| 1040 | Python source | `addons/smart_construction_core/models/support/approval_policy.py` |
 | 1038 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
 | 1023 | Python source | `addons/smart_core/tests/test_business_config_change_set.py` |
 | 1013 | Python source | `addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py` |
@@ -206,11 +206,11 @@ Generated from repository source files. This report is informational during the 
 | 3652 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3646 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3472 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
+| 3455 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3416 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
-| 3367 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3268 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
+| 3063 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 3049 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
-| 3032 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 3011 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2875 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2675 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
@@ -230,7 +230,7 @@ Generated from repository source files. This report is informational during the 
 | 1954 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1932 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1923 | split_plan_required | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
-| 1869 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
+| 1876 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1848 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1841 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1836 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |

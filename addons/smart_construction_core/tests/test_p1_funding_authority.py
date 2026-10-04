@@ -427,8 +427,9 @@ class TestP1FundingAuthority(TransactionCase):
             "partner_id": partner.id, "contract_id": contract.id,
             "payment_request_id": request.id, "planned_amount": 20.0,
             "paid_amount": 20.0, "currency_id": self.env.company.currency_id.id,
-            "state": "paid", "reversal_reason": "跨公司历史冲销验证",
+            "reversal_reason": "跨公司历史冲销验证",
         })
+        execution._write_document_state({"state": "paid"})
         original_company = baseline.company_id
         original_currency = baseline.currency_id
         other_company = self.env["res.company"].create({
@@ -606,8 +607,9 @@ class TestP1FundingAuthority(TransactionCase):
             "partner_id": partner.id, "contract_id": contract.id,
             "payment_request_id": request.id, "planned_amount": 80.0,
             "paid_amount": 80.0, "currency_id": self.env.company.currency_id.id,
-            "state": "paid", "reversal_reason": "付款撤销测试",
+            "reversal_reason": "付款撤销测试",
         })
+        execution._write_document_state({"state": "paid"})
         def broken_message_post(record, *args, **kwargs):
             record.env.cr.execute("SELECT * FROM sc_p1_missing_chatter_relation")
 

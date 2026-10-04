@@ -348,6 +348,15 @@ class ScApprovalPolicy(models.Model):
                 raise UserError(_("单据仍在审批中，不能重新初始化或跳过当前审批。"))
             record.restart_validation()
             if record.review_ids:
+                # OCA only clears the instance while the document still reports a
+                # start state.  Governed callers route after entering submission, so a
+                # finished (non-live) instance can survive that reset; clear exactly
+                # the finished reviews here instead of treating it as a reset failure.
+                record.review_ids.filtered(
+                    lambda review: review.status not in ("waiting", "pending")
+                ).unlink()
+                record.invalidate_recordset(["review_ids"])
+            if record.review_ids:
                 raise UserError(_("旧审批实例未能重置，请检查单据提交状态。"))
         if not self.is_approval_required(record._name, company=company):
             return False

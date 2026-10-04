@@ -367,10 +367,12 @@ class TestMyWorkBackend(TransactionCase):
             return []
 
         handler._load_project_execution_items = load_once
+        # #525 moved the payment workspace behind CurrentWorkItemService; the
+        # handler now consumes that wrapper, so stub its build() output here.
         with patch(
             "odoo.addons.smart_construction_core.handlers.my_work_summary."
-            "PaymentRequestWorkItemService.build",
-            return_value={},
+            "CurrentWorkItemService.build",
+            return_value={"sections": [], "items": [], "source_authority": "test"},
         ):
             result = handler.handle({"limit_each": 1})
 

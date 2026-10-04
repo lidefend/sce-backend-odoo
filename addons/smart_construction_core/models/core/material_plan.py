@@ -293,8 +293,18 @@ class ProjectMaterialPlan(models.Model):
     # ==== Tier 回调 ====
     def action_on_tier_approved(self):
         for rec in self:
-            if rec.state != "submit" or not rec.review_ids or rec.validation_status != "validated":
+            if rec.state == "approved":
                 continue
+            if rec.state != "submit":
+                raise UserError(_("只有已提交状态的物资计划可以完成审批回调。"))
+            if not rec.review_ids or rec.validation_status != "validated":
+                if self.env.context.get("server_action_tier"):
+                    # OCA base_tier_validation_server_action fires this callback
+                    # after every approved level of a multi-level linear chain; a
+                    # mid-chain invocation must not advance or raise. The completed
+                    # chain re-fires the callback and finishes the transition.
+                    continue
+                raise UserError(_("物资计划尚未完成统一审批流程。"))
             rec._check_business_anchor()
             before = rec._snapshot_audit_payload()
             rec.activity_unlink(["mail.mail_activity_data_todo"])
