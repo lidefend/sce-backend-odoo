@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "id": "CI-SCHEDULED-FULL-LANE-RECOVERY-D",
-  "branch": "fix/scheduled-ci-frontend-settlement-release-targets",
+  "branch": "fix/acceptance-fixture-company-reconcile",
   "status": "active",
-  "baseline_sha": "2c3a92006cc92aae69c4c0dad80dc063afdd5eb8",
+  "baseline_sha": "127f2072477684e3eb22319fedc6099d8d319d78",
   "goal": ".agent/goals/CI-SCHEDULED-FULL-LANE-RECOVERY-D.yaml",
   "record": "docs/ops/iterations/scheduled_ci_core_regression_recovery_20261004.md",
   "scope": [
@@ -49,11 +49,13 @@
     }
   },
   "blockers": [
-    "Batch 2: the three source fixes and the verification-tool fixes are committed on this branch (38edb97b, 240eb9b5, 2cd1f4f6, f9f36b54) but not yet published; the authoritative full frontend lane still has to run at the frozen head in the isolated CI acceptance stack. The local managed matrix at f9f36b54 is iteration evidence, not the CI pass.",
-    "Environment: the two remaining non-accounted mount holders and the DENY on the rebuild/snapshot lane stay a separate conclusion bound to the actual entry dependency; they are not generalized to 'the environment passes'. acceptance.runtime.baseline_recovery.audit PASS is recorded on its own.",
+    "Batch 2 merged to main as 127f2072 (PR #563); the frontend full lane and the four required checks were green on the frozen head.",
+    "Open blocker (this batch): the backend_test_suite lane on merged main is red because the acceptance-fixture reconcile test cannot observe a stored related column through the ORM. Fixed on fix/acceptance-fixture-company-reconcile; the CI backend lane must re-run green on the merged head.",
+    "Pre-existing, not introduced here: make verify.frontend.fixture.guard fails with KeyError 'project.project' on unmodified main as well; recorded, not repaired.",
+    "Environment: the two remaining non-accounted mount holders and the DENY on the rebuild/snapshot lane stay a separate conclusion bound to the actual entry dependency; they are not generalized to 'the environment passes'. The direct make verify.frontend.fixture entry is blocked by the same class of binding and was not hand-assembled around.",
     "Open product question (separate topic, not resolved here): the 89-page released contract, config/frontend/authoritative_navigation.json and backend ROLE_SURFACE_OVERRIDES['finance'] still disagree about the finance settlement surface."
   ],
-  "next_exact_step": "Run make ci.delivery.freeze.prepare, commit the doc/run record, make pr.push on fix/scheduled-ci-frontend-settlement-release-targets, dispatch the frontend_release_gate full lane at the frozen head, then merge through the protected PR flow once the four required checks are green on the exact head; after merge re-dispatch and read back the scheduled lanes on main.",
+  "next_exact_step": "Run make ci.local.iteration plus the risk-selected targeted lanes on fix/acceptance-fixture-company-reconcile, commit the fixture fix with the record update, push and open the PR against main, merge through the protected flow once the required checks are green, then re-dispatch backend_test_suite on the merged main and read it back green.",
   "results": [
     {
       "layer": "L1",
@@ -202,6 +204,54 @@
       "status": "passed",
       "note": "report.pass=true, git_sha bound to the candidate; accessibility result=PASS blocking 0 / critical 0 / serious 0 across 17 scans; responsive 68 pages across 1440/1280/768/390; J09/J10/J11 PASS; error-recovery network_retry/conflict_refresh/session_expired PASS; assertRuntimeClean clean (no console, no pageerror, no unexpected HTTP). performance.json regenerated for this SHA and PASS. Feature intact: settlement.order.line and settlement.adjustment still resolve 200 on the same surface.",
       "log": "/tmp/dh_matrix_f9f36b54.log, /tmp/dh_perf_f9f36b54.log"
+    },
+    {
+      "layer": "L2",
+      "command": "make verify.acceptance_fixture.execution_freeze.orm (governed local.dev profile, sc_dev_demo)",
+      "stage_identity": "HEAD=127f2072477684e3eb22319fedc6099d8d319d78 (merged main) clean",
+      "status": "failed",
+      "note": "The re-dispatched backend lane on merged main (GitHub run 37216827342) fails at smart_construction_acceptance_fixture: TestAcceptanceFixtureExecutionFreeze.test_reconcile_project_company_repairs_rows_from_a_reused_database asserts res.company(3) != res.company(4) at line 134, before the reconciler is even called. Reproduced locally with the identical shape (289 != 290) in /tmp/freeze_orm.log. payment.request.company_id and sc.payment.execution.company_id are stored related fields on project_id.company_id; the test wrote the stale value with raw SQL and then invalidated the field, which makes the ORM recompute the related field from project_id instead of reading the stored column, so a warm-cache ORM read can never expose the stale value.",
+      "log": "/tmp/freeze_orm.log, GitHub run 37216827342"
+    },
+    {
+      "layer": "L2",
+      "command": "make verify.acceptance_fixture.execution_freeze.orm (governed local.dev profile, sc_dev_demo)",
+      "stage_identity": "branch fix/acceptance-fixture-company-reconcile over main 127f2072, dirty",
+      "status": "passed",
+      "note": "_reconcile_project_company now compares and repairs the stored company_id column itself (SQL read + SQL repair + cache invalidation) because the company-scoped list rules read that stored column; the test writes the stale value into the column and asserts the column is repaired, plus reconciler idempotence. Lane result 0 failed / 0 error of 2 tests.",
+      "log": "/tmp/freeze_orm2.log, /tmp/freeze_orm3.log"
+    },
+    {
+      "layer": "L2",
+      "command": "make verify.acceptance_fixture.execution_freeze.orm with the helper temporarily reverted to the previous ORM-only guard",
+      "stage_identity": "same branch, helper reverted for the control only",
+      "status": "passed",
+      "note": "Negative control: under the previous ORM-only implementation the new test fails at the stored-column assertion (AssertionError: 296 != 295, /tmp/freeze_orm_neg.log), so the test genuinely detects the defect rather than restating it. Helper restored and the lane re-run green.",
+      "log": "/tmp/freeze_orm_neg.log"
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.daily_dev.acceptance_fixture.unit",
+      "stage_identity": "branch fix/acceptance-fixture-company-reconcile over main 127f2072, dirty",
+      "status": "passed",
+      "note": "21 unit tests OK; includes py_compile of the fixture tool and the lane scripts.",
+      "log": "inline"
+    },
+    {
+      "layer": "L1",
+      "command": "make verify.frontend.fixture.guard",
+      "stage_identity": "both the modified branch and unmodified origin/main 127f2072 (git stash control)",
+      "status": "failed",
+      "note": "Pre-existing and not caused by this change: the identical KeyError 'project.project' occurs on unmodified main (/tmp/guard_baseline.log). Recorded as an open pre-existing blocker; not repaired in this batch.",
+      "log": "/tmp/guard_baseline.log"
+    },
+    {
+      "layer": "L3",
+      "command": "make verify.frontend.fixture (SC_ACCEPTANCE_FIXTURE_PASSWORD=scdevpass)",
+      "stage_identity": "branch fix/acceptance-fixture-company-reconcile over main 127f2072, dirty",
+      "status": "not_run",
+      "note": "Blocked by the already recorded environment DENY: the direct target binds a compose env whose db host has no sc_frontend_acceptance database (psycopg2 OperationalError), while the registered acceptance stack runs under project sc-fe-r2-p1-01. Not hand-assembled around; the authoritative lane for this layer is the re-dispatched CI backend suite.",
+      "log": "/tmp/fixture_runtime.log"
     }
   ]
 }

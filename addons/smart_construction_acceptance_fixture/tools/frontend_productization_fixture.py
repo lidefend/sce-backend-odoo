@@ -906,6 +906,11 @@ def _reconcile_project_company(env) -> None:
     derived value, so company scoped lists stay empty for the company that owns
     the project. Reconcile the fixture owned rows to the project company so a
     governed rerun converges without weakening any assertion.
+
+    Both the comparison and the repair address the stored column. An ORM read of
+    a stored related field is recomputed from ``project_id`` as soon as its cache
+    entry is invalidated, so it can neither expose the stale value nor clear it -
+    while the company scoped list rules read exactly that stored column.
     """
     data = env["ir.model.data"].sudo().search(
         [("module", "=", MODULE), ("model", "in", list(_PROJECT_COMPANY_MODELS))]
@@ -914,9 +919,18 @@ def _reconcile_project_company(env) -> None:
         record = env[row.model].sudo().browse(row.res_id).exists()
         if not record or not record.project_id:
             continue
-        expected_company = record.project_id.company_id
-        if record.company_id != expected_company:
-            record.write({"company_id": expected_company.id})
+        expected_company_id = record.project_id.company_id.id
+        env.cr.execute(
+            "SELECT company_id FROM %s WHERE id=%%s" % record._table,
+            (record.id,),
+        )
+        stored_company_id = env.cr.fetchone()[0]
+        if stored_company_id != expected_company_id:
+            env.cr.execute(
+                "UPDATE %s SET company_id=%%s WHERE id=%%s" % record._table,
+                (expected_company_id, record.id),
+            )
+            record.invalidate_recordset(["company_id"])
 
 
 def ensure_fixture(env) -> Dict[str, Any]:

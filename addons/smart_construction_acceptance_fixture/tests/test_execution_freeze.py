@@ -123,21 +123,37 @@ class TestAcceptanceFixtureExecutionFreeze(TransactionCase):
 
         # A reused acceptance database can hold rows created before the project
         # moved to its fixture company; the stored derived company then keeps the
-        # stale value while project_id.company_id is already correct.
+        # stale value while project_id.company_id is already correct. The company
+        # scoped list rules read that stored column, so write the stale value
+        # there directly and prove the reconciler repairs the column itself. An
+        # ORM read of this stored related field is recomputed from project_id, so
+        # it is deliberately not used to observe the stale value.
+        def stored_company_id(record):
+            env.cr.execute(
+                "SELECT company_id FROM %s WHERE id=%%s" % record._table,
+                (record.id,),
+            )
+            return env.cr.fetchone()[0]
+
         for record in (request, execution):
             self.assertEqual(record.company_id, company)
             env.cr.execute(
                 "UPDATE %s SET company_id=%%s WHERE id=%%s" % record._table,
                 (stale_company.id, record.id),
             )
-            record.invalidate_recordset(["company_id"])
-            self.assertEqual(record.company_id, stale_company)
+            self.assertEqual(stored_company_id(record), stale_company.id)
 
         _reconcile_project_company(env)
 
         for record in (request, execution):
+            self.assertEqual(stored_company_id(record), company.id)
             record.invalidate_recordset(["company_id"])
             self.assertEqual(record.company_id, company)
+
+        # The reconciler is idempotent: an already consistent row is left alone.
+        _reconcile_project_company(env)
+        for record in (request, execution):
+            self.assertEqual(stored_company_id(record), company.id)
 
         with self.assertRaisesRegex(UserError, "草稿"):
             env["sc.payment.execution"].sudo().create(
