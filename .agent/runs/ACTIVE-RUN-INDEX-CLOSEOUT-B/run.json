@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "id": "ACTIVE-RUN-INDEX-CLOSEOUT-B",
+  "branch": "fix/active-run-index-closeout-b",
+  "status": "completed",
+  "baseline_sha": "ef22efc69dbe64fcbe0ed72fd0767c0690f764cc",
+  "goal": ".agent/goals/ACTIVE-RUN-INDEX-CLOSEOUT-B.yaml",
+  "record": "docs/ops/iterations/active_run_index_closeout_b_20261005.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/ACTIVE-RUN-INDEX-CLOSEOUT-B.yaml",
+    ".agent/runs/ACTIVE-RUN-INDEX-CLOSEOUT-B/",
+    "docs/ops/iterations/active_run_index_closeout_b_20261005.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline Make gates and tracked run/record/index metadata; no database, service, credential, remote write or product runtime"
+  },
+  "checks": {
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Closed 2026-10-05: the active-run index is intentionally empty at this frozen candidate; publishing it through the ordinary PR lane, after which ci.local.iteration reports 'unregistered' as in the existing closeout precedent.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false,
+  "completion": {
+    "batch": "passed: .agent/active-runs.json branches returned to an empty object; verify.agent.resume.unit 30/30",
+    "mainline": "publishing the frozen candidate through the ordinary PR lane; the exact-head identity is the frozen source commit and its ci.local.quick receipt",
+    "deployment": "not_run",
+    "product_delivery": "not_run",
+    "l1": {
+      "agent_resume": {
+        "command": "make verify.agent.resume.unit",
+        "status": "passed",
+        "tests": 30,
+        "log": ".runtime/agent-runs/ACTIVE-RUN-INDEX-CLOSEOUT-B/agent_resume.log"
+      },
+      "iteration": {
+        "command": "make ci.local.iteration",
+        "status": "passed",
+        "change_state": "dirty"
+      },
+      "freeze_prepare": {
+        "command": "make ci.delivery.freeze.prepare",
+        "status": "passed",
+        "note": "no generated report changed"
+      },
+      "quick": {
+        "command": "make ci.local.quick",
+        "status": "pending_at_frozen_head",
+        "receipt": ".git/codex/evidence/ci.local.quick/<frozen-head-sha>.json"
+      }
+    }
+  }
+}
