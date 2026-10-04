@@ -1,6 +1,4 @@
 {
   "schema_version": 1,
-  "branches": {
-    "fix/close-scheduled-lane-recovery-ledger": ".agent/runs/CI-SCHEDULED-FULL-LANE-RECOVERY-D/run.json"
-  }
+  "branches": {}
 }

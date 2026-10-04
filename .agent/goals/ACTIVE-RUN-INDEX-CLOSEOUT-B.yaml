@@ -1,0 +1,48 @@
+schema_version: 1
+goal:
+  id: ACTIVE-RUN-INDEX-CLOSEOUT-B
+  title: clear_the_dangling_active_run_index_entry_after_the_scheduled_lane_round
+  status: completed
+  formal_product_layer: P4
+  layer_target: engineering_context_run_index
+  module:
+    - .agent
+  objective: >-
+    Return .agent/active-runs.json to the intentionally empty branches map after the
+    CI-SCHEDULED-FULL-LANE-RECOVERY-D round merged and its five merged candidate
+    branches were retired through the governed entry, so no remaining active-run
+    mapping points at a branch that has already been deleted. Metadata only; no run
+    record, goal, product artifact or product runtime changes.
+  baseline:
+    branch: main
+    full_sha: ef22efc69dbe64fcbe0ed72fd0767c0690f764cc
+    source: clean_main_after_pr_565
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_governance
+    why_here: >-
+      The run index is engineering-context delivery metadata owned by the P4 ops layer;
+      clearing a stale binding changes how the repository tracks its own runs, not what
+      the product does.
+    why_not_elsewhere:
+      - no_p0_frontend_contract_or_platform_mechanism
+      - no_p1_construction_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_configuration
+      - no_database_fixture_migration_release_or_deployment
+    blast_radius:
+      - one_stale_branch_to_run_mapping_in_the_active_run_index
+  batches:
+    - id: A
+      title: clear_the_index
+      status: completed
+      evidence:
+        - active_runs_branches_is_an_empty_object
+        - verify_agent_resume_unit_passed
+  exclusions:
+    - no_change_to_any_run_record_goal_or_manifest
+    - no_remote_reference_is_deleted_by_this_batch
+  rollback:
+    - re-add the single mapping if the round must be resumed
+  next_exact_step: >-
+    Closed 2026-10-05: .agent/active-runs.json branches is an empty object again and
+    this metadata-only candidate is published through the ordinary PR lane.
