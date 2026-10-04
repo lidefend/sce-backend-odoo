@@ -1,7 +1,4 @@
 {
   "schema_version": 1,
-  "branches": {
-    "codex/daily-fixture-lane-runtime-closeout-20261004": ".agent/runs/DAILY-DEV-ACCEPTANCE-FIXTURE-LANE/run.json",
-    "codex/squash-aware-retirement-closeout-20261004": ".agent/runs/SQUASH-AWARE-BRANCH-RETIREMENT/run.json"
-  }
+  "branches": {}
 }

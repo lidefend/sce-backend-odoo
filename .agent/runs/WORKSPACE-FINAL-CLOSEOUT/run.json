@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "id": "WORKSPACE-FINAL-CLOSEOUT",
+  "branch": "codex/workspace-final-closeout-20261004",
+  "status": "completed",
+  "baseline_sha": "0430f1b98466a4d07c78619db5bc56d6c9416ed7",
+  "goal": ".agent/goals/WORKSPACE-FINAL-CLOSEOUT.yaml",
+  "record": "docs/ops/iterations/workspace_final_closeout_20261004.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/WORKSPACE-FINAL-CLOSEOUT.yaml",
+    ".agent/runs/WORKSPACE-FINAL-CLOSEOUT/",
+    "docs/ops/iterations/workspace_final_closeout_20261004.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline Make gates and tracked run/record/index metadata; no database, service, credential, remote write or product runtime"
+  },
+  "checks": {
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ],
+      "kind": "offline"
+    },
+    "branch_cleanup_entry": {
+      "target": "verify.workspace.worktree.guard",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/ops/branch_cleanup_safe.sh",
+        "scripts/ops/safe_worktree_cleanup.py",
+        "scripts/ops/test_safe_worktree_cleanup.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Closed at the metadata layer: the three codex/* and four audit|fix merged local branches are gone locally and on origin, and no active-run mapping points at a deleted branch (the index is intentionally empty, so make ci.local.iteration reports 'unregistered' until a successor run is registered). Publishing this metadata-only candidate through the ordinary PR lane; the remote-only codex branch backlog remains a separately authorized reviewed-manifest job recorded in docs/ops/iterations/workspace_final_closeout_20261004.md.",
+  "completion": {
+    "batch": "passed: 7 merged local branches retired via governed SHA-bound entries (3 via make branch.cleanup, 4 via make branch.cleanup.feature, every one exact-head merged in origin/main) and the stale active-run index cleared; targeted checks 30/30 and 123/123",
+    "mainline": "publishing the frozen candidate through the ordinary PR lane; the exact-head identity is the frozen source commit, bound to the ci.local.quick receipt whose file name equals that commit SHA (.git/codex/evidence/ci.local.quick/<frozen-sha>.json) and re-verified by pr.merge.local_quick_gate before the squash merge",
+    "deployment": "not_run",
+    "product_delivery": "not_run",
+    "retired_branches": {
+      "codex": [
+        "codex/daily-dev-acceptance-fixture-lane-20261004 (fad6884b8f2a1fe2b96c20ab0b1f00d247a42a63)",
+        "codex/daily-dev-mainline-redeploy-20261003 (c524d267a59701001b5e4fb4e52fe6edc59fcc6a)",
+        "codex/daily-fixture-lane-runtime-closeout-20261004 (f0304b1f747b6de135e503bb7c136f6098927878)"
+      ],
+      "audit_fix": [
+        "audit/gitee-formal-package-refresh-20261003 (5d0a0a3cb78e601d0a352a09af18d14824a1ea98, PR #545)",
+        "audit/gitee-formal-package-refresh-closeout (49e19ec142df40fa14d363420fcc181d38ea7d58, PR #546)",
+        "fix/daily-dev-acceptance-fixture-runtime-20261004 (0fea38cc82d798ec6a1c45cc3093b9d4d219a100, PR #549)",
+        "fix/daily-dev-fixture-auth-verify-20261004 (9a29cb497af46a9435334a8516e5dfe0a61caebc, PR #550)"
+      ]
+    },
+    "l1": {
+      "agent_resume": {
+        "command": "make verify.agent.resume.unit",
+        "status": "passed",
+        "tests": 30,
+        "log": ".runtime/agent-runs/WORKSPACE-FINAL-CLOSEOUT/agent_resume.log"
+      },
+      "branch_cleanup_entry": {
+        "command": "make verify.workspace.worktree.guard",
+        "status": "passed",
+        "tests": 123,
+        "log": ".runtime/agent-runs/WORKSPACE-FINAL-CLOSEOUT/branch_cleanup_entry.log"
+      },
+      "iteration": {
+        "command": "make ci.local.iteration",
+        "status": "passed",
+        "change_state": "dirty",
+        "note": "Run before this final commit with the run still bound; the L1 entry is not re-run after the freeze because a completed run and an intentionally empty index report 'unregistered' and iteration exits 2 until a successor run is registered (existing closeout precedent)."
+      },
+      "freeze_prepare": {
+        "command": "make ci.delivery.freeze.prepare",
+        "status": "passed",
+        "note": "No generated report changed; the candidate stayed at four metadata paths."
+      },
+      "quick": {
+        "command": "make ci.local.quick",
+        "status": "passed_at_frozen_head",
+        "receipt": ".git/codex/evidence/ci.local.quick/<frozen-head-sha>.json",
+        "note": "The receipt file name is the frozen candidate SHA; it is not re-committed afterwards because pr.merge.local_quick_gate requires the receipt and the PR head to be the same clean commit."
+      }
+    }
+  },
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}
