@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "id": "REMOTE-BRANCH-CARRIER-RETIREMENT",
+  "branch": "codex/remote-branch-carrier-retirement-20261004",
+  "status": "completed",
+  "baseline_sha": "8cca49e20a62c314b6021bdc3c44fc9c2eebf686",
+  "goal": ".agent/goals/REMOTE-BRANCH-CARRIER-RETIREMENT.yaml",
+  "record": "docs/ops/iterations/remote_branch_carrier_retirement_20261004.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/REMOTE-BRANCH-CARRIER-RETIREMENT.yaml",
+    ".agent/runs/REMOTE-BRANCH-CARRIER-RETIREMENT/",
+    ".agent/goals/CONTRACT-COLLECTION-WORK-ITEM-READING-EFFICIENCY.yaml",
+    ".agent/runs/REMOTE-BRANCH-BACKLOG-RETIREMENT/run.json",
+    "docs/ops/iterations/remote_branch_carrier_retirement_20261004.md",
+    "docs/ops/manifests/historical_branch_retirement_carrier_20261004.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline Make gates plus the governed historical-retirement entry and a verified recovery bundle; no product runtime, database, fixture or service"
+  },
+  "checks": {
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ],
+      "kind": "offline"
+    },
+    "retire_entry": {
+      "target": "verify.branch.retire.historical",
+      "inputs": [
+        "scripts/ops/retire_historical_branch_refs.py",
+        "scripts/ops/test_retire_historical_branch_refs.py"
+      ],
+      "kind": "offline"
+    },
+    "branch_governance": {
+      "target": "verify.branch.governance.consistency",
+      "inputs": [
+        "AGENTS.md",
+        "docs/ops/codex_execution_allowlist.md",
+        "docs/ops/codex_workspace_execution_rules.md",
+        "docs/ops/historical_branch_retirement_runbook.md",
+        "make/codex.mk",
+        "scripts/verify/branch_governance_consistency_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Closed: the runtime carrier reference was cleared in this candidate and the one proven-merged origin codex branch was retired through the governed entry under manifest sha256 a918d75e…1b8878 with a verified single-head recovery bundle (sha256 a3ab356b…41598); origin re-read shows the eight unproven branches remain. Publishing this candidate through the ordinary PR lane.",
+  "completion": {
+    "batch": "passed: carrier reference removed from the goal baseline and the completed run's retained list (git grep over scripts/config/deploy/make/.agent/.github is empty); dry run eligible=1 skipped=0; verified recovery bundle (1 head, sha256 a3ab356b…41598); APPLY retired 1/1 with remote_deleted + local_absent_confirmed under the exact manifest sha256 and a --force-with-lease tip lease; origin re-read shows exactly the 8 remaining codex/* references",
+    "mainline": "publishing the frozen candidate through the ordinary PR lane; the exact-head identity is the frozen source commit and its ci.local.quick receipt (.git/codex/evidence/ci.local.quick/<frozen-sha>.json)",
+    "deployment": "not_run",
+    "product_delivery": "not_run",
+    "read_only_adjudication": {
+      "method": "branch delta = git diff merge-base(tip, origin/main) tip; per file, compare origin/main's current blob with the branch tip blob; then check whether later mainline commits touched the file",
+      "target": {
+        "merged_pr": "PR #470 (state MERGED, base main, headRefOid 7cf6cf8976faf8496d626cae8e00e8d853424d6e)",
+        "merge_commit": "731c7e6d43f64e4f8e764c67880be6943afcee15",
+        "verdict": "merged_and_superseded; eligible for reviewed_explicit retirement once the carrier reference is cleared"
+      },
+      "not_retired_this_round": [
+        {
+          "branch": "codex/backend-contract-lifecycle-authority-v1",
+          "delta_files": 226,
+          "differing_in_main": 128,
+          "verdict": "substantial_content_not_in_main; needs_owner_decision"
+        },
+        {
+          "branch": "codex/contract-governance-closure-v1",
+          "delta_files": 202,
+          "differing_in_main": 108,
+          "verdict": "substantial_content_not_in_main; needs_owner_decision"
+        },
+        {
+          "branch": "codex/form-information-architecture-audit-v1",
+          "delta_files": 93,
+          "differing_in_main": 93,
+          "verdict": "never_integrated; needs_owner_decision"
+        },
+        {
+          "branch": "codex/long-running-business-iteration",
+          "delta_files": 106,
+          "differing_in_main": 92,
+          "verdict": "PR #126 CLOSED unmerged at this head (#124/#125 diff-head); needs_owner_decision"
+        },
+        {
+          "branch": "codex/p0-scene-component-bridge-v1",
+          "delta_files": 74,
+          "differing_in_main": 60,
+          "verdict": "never_integrated; needs_owner_decision"
+        },
+        {
+          "branch": "codex/p0-ui5-scene-foundation-recovery-v2",
+          "delta_files": 50,
+          "differing_in_main": 45,
+          "verdict": "never_integrated; needs_owner_decision"
+        },
+        {
+          "branch": "codex/p0-ui5-scene-foundation-spike-v1-recovered",
+          "delta_files": 17,
+          "differing_in_main": 17,
+          "verdict": "never_integrated; needs_owner_decision"
+        },
+        {
+          "branch": "codex/tdesign-enterprise-ui-foundation-v1",
+          "delta_files": 72,
+          "differing_in_main": 72,
+          "verdict": "never_integrated; needs_owner_decision"
+        }
+      ],
+      "note": "no branch in the list above was deleted; they remain origin references pending explicit owner authorization"
+    },
+    "l1": {
+      "agent_resume": {
+        "command": "make verify.agent.resume.unit",
+        "status": "passed",
+        "tests": 30,
+        "log": ".runtime/agent-runs/REMOTE-BRANCH-CARRIER-RETIREMENT/agent_resume.log"
+      },
+      "retire_entry": {
+        "command": "make verify.branch.retire.historical",
+        "status": "passed",
+        "tests": 30,
+        "log": ".runtime/agent-runs/REMOTE-BRANCH-CARRIER-RETIREMENT/retire_entry.log"
+      },
+      "branch_governance": {
+        "command": "make verify.branch.governance.consistency",
+        "status": "passed",
+        "tests": 16,
+        "log": ".runtime/agent-runs/REMOTE-BRANCH-CARRIER-RETIREMENT/branch_governance.log"
+      },
+      "iteration": {
+        "command": "make ci.local.iteration",
+        "status": "passed",
+        "change_state": "dirty",
+        "note": "Run before the final commit with the run still bound; the L1 entry is not re-run after the freeze because a completed run reports 'closed' (existing closeout precedent)."
+      },
+      "freeze_prepare": {
+        "command": "make ci.delivery.freeze.prepare",
+        "status": "passed",
+        "note": "No generated report changed; the candidate stayed at seven metadata paths."
+      },
+      "quick": {
+        "command": "make ci.local.quick",
+        "status": "passed_at_frozen_head",
+        "receipt": ".git/codex/evidence/ci.local.quick/<frozen-head-sha>.json"
+      }
+    },
+    "manifest": {
+      "path": "docs/ops/manifests/historical_branch_retirement_carrier_20261004.json",
+      "sha256": "a918d75e4d1fe5ef06f6d8d1149177c675519ff2e84d239cbf869250fe1b8878"
+    },
+    "recovery_bundle": {
+      "path": ".runtime/retire/historical-branch-retirement-carrier-20261004.bundle",
+      "sha256": "a3ab356ba71d2fbe3cb55dba866ea46d081da2a96b94682d41e7fcd6f9411598",
+      "head_count": 1,
+      "verify": "pass"
+    },
+    "reports": [
+      ".runtime/retire/dry-run-carrier.json",
+      ".runtime/retire/bundle-prep-carrier.json",
+      ".runtime/retire/apply-report-carrier.json",
+      ".runtime/retire/origin-recheck-carrier.txt"
+    ],
+    "origin_recheck": {
+      "command": "git ls-remote --heads origin 'refs/heads/codex/*'",
+      "remaining_count": 8,
+      "note": "exactly the eight branches without an exact-head merged PR; none deleted this round"
+    }
+  },
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}
