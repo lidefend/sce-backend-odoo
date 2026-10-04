@@ -6,7 +6,7 @@ import os from 'node:os';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { launchChromium } from './playwright_runtime.mjs';
-import { applyReleasedNavigationTarget, captureReleasedNavigation } from './released_navigation_target.mjs';
+import { applyReleasedNavigationTarget, captureReleasedNavigation, findReleasedNavigationTargetByMenuXmlid } from './released_navigation_target.mjs';
 import { evaluateRelativePerformanceBudget } from './frontend_performance_budget.mjs';
 import { resolveAcceptanceEnvironment } from './lib/frontend_acceptance_environment.mjs';
 import { acquireAcceptanceLease } from './lib/frontend_acceptance_lease.mjs';
@@ -150,6 +150,45 @@ async function intentRequestFromPage(page, intent, params) {
     });
     return { status: response.status, body: await response.json().catch(() => ({})) };
   }, { dbName: DB_NAME, intentName: intent, payload: params });
+}
+// Every matrix surface must be reached through the released navigation entry the
+// role actually renders. Binding a target to a legacy menu produces a
+// NAVIGATION_AUTHORITY_DENIED redirect, so assert the declared entry is the
+// released one and fail closed instead of silently exercising a denied route.
+const RELEASED_SURFACE_TARGETS = {
+  'project-list': 'project',
+  'project-detail': 'project',
+  'contract-list': 'contract',
+  'contract-detail': 'contract',
+  'settlement-list': 'settlement',
+  'settlement-detail': 'settlement',
+  'payment-list': 'payment_request',
+  'payment-detail': 'payment_request',
+  'execution-detail': 'payment_execution',
+};
+async function releasedNavigationTargetFor(page, menuXmlid) {
+  const response = await intentRequestFromPage(page, 'system.init', {});
+  const envelope = response?.body || {};
+  const data = envelope?.result || envelope?.data || envelope || {};
+  const nav = Array.isArray(data?.navigation?.nav) ? data.navigation.nav : [];
+  return findReleasedNavigationTargetByMenuXmlid(nav, menuXmlid);
+}
+async function assertReleasedTargetForRole(page, label, target, role) {
+  const released = await releasedNavigationTargetFor(page, target.menu_xmlid);
+  check(
+    released !== null,
+    `${label}: ${target.menu_xmlid} is not present in the ${role} released navigation`,
+  );
+  check(
+    released.action_id === Number(target.action_id) && released.menu_id === Number(target.menu_id),
+    `${label}: declared ${target.action_id}/${target.menu_id} is not the ${role} released`
+    + ` navigation entry ${released.action_id}/${released.menu_id} for ${target.menu_xmlid}`,
+  );
+}
+async function assertReleasedSurfaceTarget(page, surfaceName, role) {
+  const targetKey = RELEASED_SURFACE_TARGETS[surfaceName];
+  if (!targetKey) return;
+  await assertReleasedTargetForRole(page, surfaceName, TARGETS[targetKey], role);
 }
 async function normalizedSubmitEvidence(response, evidenceLabel) {
   const envelope = await response.json();
@@ -831,7 +870,7 @@ async function main() {
       { name: 'login', route: '/login', role: '' }, { name: 'home', route: '/', role: FINANCE_LOGIN }, { name: 'my-work', route: '/my-work', role: FINANCE_LOGIN },
       { name: 'project-list', route: listRoute(TARGETS.project), role: PROJECT_MANAGER_LOGIN }, { name: 'project-detail', route: recordRoute(TARGETS.project), role: PROJECT_MANAGER_LOGIN },
       { name: 'contract-list', route: listRoute(TARGETS.contract), role: CONTRACT_OPERATOR_LOGIN }, { name: 'contract-detail', route: recordRoute(TARGETS.contract), role: CONTRACT_OPERATOR_LOGIN },
-      { name: 'settlement-list', route: listRoute(TARGETS.settlement), role: FINANCE_LOGIN }, { name: 'settlement-detail', route: recordRoute(TARGETS.settlement), role: FINANCE_LOGIN },
+      { name: 'settlement-list', route: listRoute(TARGETS.settlement), role: PROJECT_MANAGER_LOGIN }, { name: 'settlement-detail', route: recordRoute(TARGETS.settlement), role: PROJECT_MANAGER_LOGIN },
       { name: 'payment-list', route: listRoute(TARGETS.payment_request), role: FINANCE_LOGIN }, { name: 'payment-detail', route: recordRoute(TARGETS.payment_request), role: FINANCE_LOGIN },
       { name: 'payment-form', route: listRoute(TARGETS.payment_request), role: FINANCE_LOGIN, mode: 'form' },
       { name: 'execution-detail', route: recordRoute(TARGETS.payment_execution), role: FINANCE_LOGIN },
@@ -874,6 +913,7 @@ async function main() {
             faultSnapshot = { console: runtime.console.length, http: runtime.http.length, pageerror: runtime.pageerror.length };
             removeFault = await interceptNextBusiness(page, (route) => route.abort('failed'), TARGETS.payment_request);
           }
+          await assertReleasedSurfaceTarget(page, surface.name, surface.role);
           await page.goto(`${BASE_URL}${surface.route}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
           if (surface.mode === 'form') {
             await openPaymentCreateFromList(page, TARGETS.payment_request, `responsive_payment_create_${viewport.width}`);
@@ -982,12 +1022,25 @@ async function main() {
         loginSamples.push(await time(() => login(page, FINANCE_LOGIN)));
       }
       performanceReport.scenarios.login_to_interactive = stats(loginSamples);
-      for (const [name, route, readySelector] of [
-        ['my_work', '/my-work', '.product-work'],
-        ['payment_detail', recordRoute(TARGETS.payment_request), FORM_SURFACE_SELECTOR],
-        ['settlement_detail', recordRoute(TARGETS.settlement), FORM_SURFACE_SELECTOR],
-        ['execution_detail', recordRoute(TARGETS.payment_execution), FORM_SURFACE_SELECTOR],
+      // The released expense settlement entry is published to the project manager
+      // role; finance carries no released settlement action. Measure the settlement
+      // detail in that owning role and fail closed when the route is not the
+      // released navigation entry for it.
+      let performanceRole = FINANCE_LOGIN;
+      for (const [name, route, readySelector, role] of [
+        ['my_work', '/my-work', '.product-work', FINANCE_LOGIN],
+        ['payment_detail', recordRoute(TARGETS.payment_request), FORM_SURFACE_SELECTOR, FINANCE_LOGIN],
+        ['settlement_detail', recordRoute(TARGETS.settlement), FORM_SURFACE_SELECTOR, PROJECT_MANAGER_LOGIN],
+        ['execution_detail', recordRoute(TARGETS.payment_execution), FORM_SURFACE_SELECTOR, FINANCE_LOGIN],
       ]) {
+        if (role !== performanceRole) {
+          await logout(page).catch(() => {});
+          await login(page, role);
+          performanceRole = role;
+        }
+        if (name === 'settlement_detail') {
+          await assertReleasedTargetForRole(page, name, TARGETS.settlement, role);
+        }
         const samples = [];
         const requestSamples = [];
         if (name === 'my_work') {
