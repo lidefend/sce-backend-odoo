@@ -391,6 +391,8 @@ def validate(root: Path = ROOT) -> list[str]:
     for marker in ("id: props.id", "'aria-describedby': props.describedBy", "'aria-invalid': props.invalid", "'aria-label': props.ariaLabel"):
         if marker not in select_text:
             errors.append(f"ScSelect missing native field association marker: {marker}")
+    if ':aria-required=' in select_text:
+        errors.append("ScSelect must not place aria-required on the Select wrapper")
 
     card_text = (design / "ScCard.vue").read_text(encoding="utf-8") if (design / "ScCard.vue").is_file() else ""
     if ':body-class-name="bodyClassName"' not in card_text or "bodyClassName?: string" not in card_text:
@@ -418,6 +420,8 @@ def validate(root: Path = ROOT) -> list[str]:
     ):
         if marker not in relation_text:
             errors.append(f"ScRelationField missing native accessibility projection marker: {marker}")
+    if ':aria-required=' in relation_text:
+        errors.append("ScRelationField must not place aria-required on the Select wrapper")
 
     number_text = (design / "ScNumberInput.vue").read_text(encoding="utf-8") if (design / "ScNumberInput.vue").is_file() else ""
     for marker in (
@@ -498,7 +502,7 @@ def validate(root: Path = ROOT) -> list[str]:
 
     visual_projection_markers = (
         "--td-bg-color-specialcomponent: var(--sc-semantic-surface-input)",
-        "--td-text-color-placeholder: var(--sc-semantic-text-muted)",
+        "--td-text-color-placeholder: var(--sc-semantic-text-secondary)",
         "--td-border-level-2-color: var(--sc-semantic-border-strong)",
         ".sc-btn.t-button",
         ".sc-btn.t-button.sc-btn-primary[data-status='default']",

@@ -10,7 +10,6 @@
         v-for="(item, index) in items"
         :key="`${item.label}-${index}`"
         :to="item.to || undefined"
-        :disabled="!item.to"
         :aria-current="index === items.length - 1 ? 'page' : undefined"
       >
         {{ item.label }}

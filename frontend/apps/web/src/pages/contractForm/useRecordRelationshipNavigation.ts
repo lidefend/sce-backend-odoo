@@ -6,11 +6,17 @@ import { resolveRecordOpenTarget } from '../../app/runtime/recordEntryContract';
 type NavigationDependencies = Record<string, any>;
 
 export function useRecordRelationshipNavigation(dependencies: NavigationDependencies) {
-  const { actionId, createContractFormRecord, fetchRelationOptions, formData, loadModelContractV2, model, normalizeFieldValue, one2manyRelationModel, openRelationCreateDialog, pickContractNavQuery, queryRelationOptions, relationCreateMode, relationEntry, relationFieldDescriptors, relationIds, relationInlineCreate, relationKeyword, relationModel, relationUiLabel, route, router, sanitizeUiErrorMessage, setMany2oneOption, validationErrors } = dependencies;
+  const { actionId, createContractFormRecord, effectiveFieldDescriptor, fetchRelationOptions, formData, loadModelContractV2, model, normalizeFieldValue, one2manyRelationModel, openRelationCreateDialog, pickContractNavQuery, queryRelationOptions, relationCreateMode, relationEntry, relationFieldDescriptors, relationIds, relationInlineCreate, relationKeyword, relationModel, relationUiLabel, route, router, sanitizeUiErrorMessage, setMany2oneOption, validationErrors } = dependencies;
   async function ensureRelationFieldDescriptors(name: string) {
     const relation = one2manyRelationModel(name);
     if (!relation) return;
     if (relationFieldDescriptors.value[relation]) return;
+    // The contract is authoritative about relation entitlements. Relation column
+    // descriptors are fetched only for a relation the projection explicitly
+    // declares readable; otherwise the backend answers 403 to a request the page
+    // was never entitled to issue. Fail closed on the declaration and keep the
+    // existing char-field fallback (mirrors openRelationSearchDialog).
+    if (relationEntry(effectiveFieldDescriptor?.(name))?.canRead !== true) return;
     try {
       const response = await loadModelContractV2(relation, {
         viewType: 'form',

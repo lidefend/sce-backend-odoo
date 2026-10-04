@@ -12,6 +12,7 @@ from ..tools.frontend_productization_fixture import (
     _funding_baseline,
     _partner,
     _project,
+    _reconcile_project_company,
     _request,
     _settlement,
     _tax,
@@ -81,6 +82,62 @@ class TestAcceptanceFixtureExecutionFreeze(TransactionCase):
         self.assertAlmostEqual(record.paid_amount, 1000.0, 2)
         self.assertEqual(record.partner_payment_status_display, "已付款")
         self.assertEqual(record.partner_payment_amount_display, "1000.0")
+
+    def test_reconcile_project_company_repairs_rows_from_a_reused_database(self):
+        env = self.env
+        company = _company(env, "FREEZE")
+        stale_company = _company(env, "FROZEN")
+        self.assertNotEqual(company, stale_company)
+        pm = _user(
+            env,
+            "fixture_role_freeze_pm",
+            "Acceptance Fixture Freeze PM",
+            company,
+            [company],
+            ["smart_construction_core.group_sc_role_project_manager"],
+        )
+        finance = _user(
+            env,
+            "fixture_role_freeze_finance",
+            "Acceptance Fixture Freeze Finance",
+            company,
+            [company],
+            ["smart_construction_core.group_sc_role_finance_manager"],
+        )
+        partner = _partner(env, "FREEZE", company)
+        tax = _tax(env, "FREEZE", company)
+        project = _project(env, "FREEZE", company, pm, partner)
+        _funding_baseline(env, "FREEZE", project)
+        contract, _line = _contract(
+            env, "FREEZE", project, partner, tax, "confirmed", 1000.0
+        )
+        settlement = _settlement(
+            env, "FREEZE", project, contract, partner, "approve", 1000.0
+        )
+        request = _request(
+            env, "FREEZE", 1, project, contract, settlement, partner, "approved", 1000.0
+        )
+        execution = _execution(
+            env, "FREEZE", project, contract, request, partner, finance, "paid", 1000.0
+        )
+
+        # A reused acceptance database can hold rows created before the project
+        # moved to its fixture company; the stored derived company then keeps the
+        # stale value while project_id.company_id is already correct.
+        for record in (request, execution):
+            self.assertEqual(record.company_id, company)
+            env.cr.execute(
+                "UPDATE %s SET company_id=%%s WHERE id=%%s" % record._table,
+                (stale_company.id, record.id),
+            )
+            record.invalidate_recordset(["company_id"])
+            self.assertEqual(record.company_id, stale_company)
+
+        _reconcile_project_company(env)
+
+        for record in (request, execution):
+            record.invalidate_recordset(["company_id"])
+            self.assertEqual(record.company_id, company)
 
         with self.assertRaisesRegex(UserError, "草稿"):
             env["sc.payment.execution"].sudo().create(

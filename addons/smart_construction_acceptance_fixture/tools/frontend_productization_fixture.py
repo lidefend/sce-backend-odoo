@@ -890,6 +890,35 @@ def _payment_journey(env, project, contract, partner, finance):
     )
 
 
+# Project scoped fixture models whose ``company_id`` is a stored related field
+# on ``project_id.company_id``. Reused acceptance databases can still hold rows
+# created before their project moved company, so the derived value has to be
+# reconciled explicitly instead of relying on a database rebuild.
+_PROJECT_COMPANY_MODELS = ("payment.request", "sc.payment.execution")
+
+
+def _reconcile_project_company(env) -> None:
+    """Re-derive the owning company on fixture rows of a reused database.
+
+    ``payment.request.company_id`` and ``sc.payment.execution.company_id`` are
+    stored related fields on ``project_id.company_id``. When an acceptance
+    project is moved to its fixture company, rows created earlier keep the old
+    derived value, so company scoped lists stay empty for the company that owns
+    the project. Reconcile the fixture owned rows to the project company so a
+    governed rerun converges without weakening any assertion.
+    """
+    data = env["ir.model.data"].sudo().search(
+        [("module", "=", MODULE), ("model", "in", list(_PROJECT_COMPANY_MODELS))]
+    )
+    for row in data:
+        record = env[row.model].sudo().browse(row.res_id).exists()
+        if not record or not record.project_id:
+            continue
+        expected_company = record.project_id.company_id
+        if record.company_id != expected_company:
+            record.write({"company_id": expected_company.id})
+
+
 def ensure_fixture(env) -> Dict[str, Any]:
     _guard_acceptance_scope(env)
     """Create or reconcile the fixed dataset and return a secret-free summary."""
@@ -1232,6 +1261,7 @@ def ensure_fixture(env) -> Dict[str, Any]:
         partner_a,
         finance,
     )
+    _reconcile_project_company(env)
 
     return {
         "db": env.cr.dbname,

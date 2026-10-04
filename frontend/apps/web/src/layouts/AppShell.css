@@ -440,7 +440,7 @@
   flex: 0 0 auto;
   margin-bottom: var(--sc-space-lg);
   padding: 0;
-  color: var(--sc-semantic-text-muted);
+  color: var(--sc-semantic-text-secondary);
   line-height: 20px;
   text-align: center;
 }
