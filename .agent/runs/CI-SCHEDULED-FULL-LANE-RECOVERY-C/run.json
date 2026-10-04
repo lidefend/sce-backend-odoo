@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "id": "CI-SCHEDULED-FULL-LANE-RECOVERY-C",
+  "branch": "fix/frontend-navigation-browser-declaration-v1",
+  "status": "active",
+  "baseline_sha": "4f55eed231289cf64838b3bc456529fd596dbb43",
+  "goal": ".agent/goals/CI-SCHEDULED-FULL-LANE-RECOVERY-C.yaml",
+  "record": "docs/ops/iterations/scheduled_ci_full_lane_navigation_declaration_20261004.md",
+  "scope": [
+    "config/frontend/authoritative_navigation.json",
+    ".agent/",
+    "docs/ops/iterations/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Existing local Make targets only (make verify.frontend.release_navigation_policy.guard, make ci.local.iteration). The browser page-identity lane itself is CI-only; its status is proven by dispatching the authoritative full lane on the merged candidate."
+  },
+  "checks": {
+    "release_navigation_policy": {
+      "target": "verify.frontend.release_navigation_policy.guard",
+      "inputs": [
+        "config/frontend/authoritative_navigation.json",
+        "scripts/verify/frontend_release_navigation_policy_guard.py",
+        "scripts/verify/test_frontend_release_navigation_policy_guard.py",
+        "addons/smart_construction_core/core_extension_policy_maps.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run make verify.frontend.release_navigation_policy.guard, make ci.local.iteration and the freeze prepare, commit, push the candidate, run one exact-head make ci.local.quick, open the PR, let the required checks merge it, then dispatch the authoritative full frontend_release_gate lane and the full backend_test_suite lane on the merged main to confirm the scheduled lanes are green."
+}

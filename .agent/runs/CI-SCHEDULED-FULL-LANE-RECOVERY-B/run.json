@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "CI-SCHEDULED-FULL-LANE-RECOVERY-B",
   "branch": "codex/ci-scheduled-full-lane-recovery-b",
-  "status": "active",
+  "status": "completed",
   "baseline_sha": "5075504c972d61250c1970e9ff9dfce7b6e66ba6",
   "goal": ".agent/goals/CI-SCHEDULED-FULL-LANE-RECOVERY-B.yaml",
   "record": "docs/ops/iterations/scheduled_ci_full_lane_recovery_batch2_20261004.md",
@@ -39,5 +39,6 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Record the two focused checks, run make ci.local.iteration, prepare freeze evidence, commit, run one exact-head make ci.local.quick, push the candidate and let the remote required checks plus release_candidate_gate decide the merge. The scheduled frontend_release_gate browser lanes and backend_test_suite stay outside this batch."
+  "outcome": "Merged as PR #559 (squash 4f55eed2). Required checks plus release_candidate_gate all green on 52f1365. Full-lane dispatch 37174497207 then proved the guard fixes correct (all repaired guards PASS) but exposed a further independent blocker: the browser page-identity audit sees two finance primary menus released by PR #497 that config/frontend/authoritative_navigation.json declares in leaf_keys but not in browser_leaf_keys. That residual is handled by CI-SCHEDULED-FULL-LANE-RECOVERY-C.",
+  "next_exact_step": "Closed. Residuals: (1) finance browser navigation declaration -> CI-SCHEDULED-FULL-LANE-RECOVERY-C; (2) backend_test_suite schedule root cause was the self-hosted runner Docker address pool being fully subnetted (all predefined address pools used); 11 zero-endpoint orphan networks were reclaimed and a single-module dispatch (37174639058) is green, full lane 37174945333 pending."
 }

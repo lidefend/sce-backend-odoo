@@ -56,7 +56,7 @@
         "smart_construction_core.menu_sc_user_income|smart_construction_core.action_sc_receipt_income_user_income|sc.receipt.income",
         "smart_construction_core.menu_sc_user_payment_apply|smart_construction_core.action_payment_request_user_payment_apply|payment.request"
       ],
-      "browser_expected_count": 13,
+      "browser_expected_count": 15,
       "browser_leaf_keys": [
         "smart_construction_core.menu_sc_company_finance_expense|smart_construction_core.action_sc_payment_execution_company_finance_expense|sc.payment.execution",
         "smart_construction_core.menu_sc_deduction_bill|smart_construction_core.action_sc_expense_claim_deduction_bill|sc.expense.claim",
@@ -65,6 +65,8 @@
         "smart_construction_core.menu_sc_invoice_prepaid_tax_user|smart_construction_core.action_sc_invoice_prepaid_tax_user|sc.invoice.registration",
         "smart_construction_core.menu_sc_invoice_registration_user|smart_construction_core.action_sc_invoice_registration_user|sc.invoice.registration",
         "smart_construction_core.menu_sc_payment_execution|smart_construction_core.action_sc_payment_execution_actual_outflow|sc.payment.execution",
+        "smart_construction_core.menu_sc_product_company_project_refund_v1|smart_construction_core.action_sc_product_company_project_refund_v1|sc.company.project.refund.workspace",
+        "smart_construction_core.menu_sc_product_current_account_v1|smart_construction_core.action_sc_product_current_account_v1|sc.current.account.workspace",
         "smart_construction_core.menu_sc_receipt_income|smart_construction_core.action_sc_receipt_income|sc.receipt.income",
         "smart_construction_core.menu_sc_reimbursement_request|smart_construction_core.action_sc_expense_claim_reimbursement_request|sc.expense.claim",
         "smart_construction_core.menu_sc_tax_certificate_registration_user|smart_construction_core.action_sc_tax_certificate_registration_user|sc.tax.certificate.registration",
