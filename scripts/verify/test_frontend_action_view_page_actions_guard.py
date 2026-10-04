@@ -1,6 +1,10 @@
 import unittest
 
-from scripts.verify.frontend_action_view_page_actions_guard import ACTION_VIEW, validate
+from scripts.verify.frontend_action_view_page_actions_guard import (
+    ACTION_VIEW,
+    EXPECTED_SC_BUTTON_PROJECTIONS,
+    validate,
+)
 
 
 class ActionViewPageActionsGuardTest(unittest.TestCase):
@@ -29,7 +33,9 @@ class ActionViewPageActionsGuardTest(unittest.TestCase):
 
     def test_projection_count_rejects_parallel_action(self):
         altered = self.source.replace('</template>', '<ScButton>parallel</ScButton>\n</template>', 1)
-        self.assertTrue(any("expected 11" in error for error in validate(altered)))
+        self.assertTrue(
+            any(f"expected {EXPECTED_SC_BUTTON_PROJECTIONS}" in error for error in validate(altered))
+        )
 
 
 if __name__ == "__main__":

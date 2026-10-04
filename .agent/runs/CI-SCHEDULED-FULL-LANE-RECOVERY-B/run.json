@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "id": "CI-SCHEDULED-FULL-LANE-RECOVERY-B",
+  "branch": "codex/ci-scheduled-full-lane-recovery-b",
+  "status": "active",
+  "baseline_sha": "5075504c972d61250c1970e9ff9dfce7b6e66ba6",
+  "goal": ".agent/goals/CI-SCHEDULED-FULL-LANE-RECOVERY-B.yaml",
+  "record": "docs/ops/iterations/scheduled_ci_full_lane_recovery_batch2_20261004.md",
+  "scope": [
+    "scripts/verify/",
+    ".agent/",
+    "docs/ops/iterations/",
+    "docs/engineering_convergence/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Existing local Make targets only (make verify.frontend.*). No database, container or service access; the CI acceptance browser lanes are CI-only and were short-circuited in the failing run, so their status stays unverified until the next scheduled run."
+  },
+  "checks": {
+    "scene_component_bridge_guard": {
+      "target": "verify.frontend.scene_component_bridge.guard",
+      "inputs": [
+        "scripts/verify/",
+        "make/frontend.mk",
+        "frontend/apps/web/src/app/contracts/v2/store.ts"
+      ],
+      "kind": "offline"
+    },
+    "professional_component_registry": {
+      "target": "verify.frontend.professional_component_registry.unit",
+      "inputs": [
+        "scripts/verify/",
+        "make/frontend.mk",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/app/presentation/",
+        "frontend/apps/web/scripts/professional_component_registry_test.ts"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Record the two focused checks, run make ci.local.iteration, prepare freeze evidence, commit, run one exact-head make ci.local.quick, push the candidate and let the remote required checks plus release_candidate_gate decide the merge. The scheduled frontend_release_gate browser lanes and backend_test_suite stay outside this batch."
+}

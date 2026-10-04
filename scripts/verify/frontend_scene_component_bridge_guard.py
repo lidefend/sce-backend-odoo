@@ -2045,6 +2045,21 @@ def _can_end_statement(character: str) -> bool:
     return character.isalnum() or character in "_$)]}>\'\"`"
 
 
+def _js_previous_significant(source: str, index: int) -> str:
+    """The last character before `index` the statement walk does not step over.
+
+    The character is what tells a declaration's *body* brace from a brace that
+    belongs to a type in its header: `function f(): { a: 1 } {` opens the type
+    literal after the `:`, which no declaration header ends on, and the body after
+    the `}`, which a header does end on.  Without the distinction both braces read
+    as the body, so the body was reported as a statement of its own.
+    """
+    cursor = index - 1
+    while cursor >= 0 and _js_is_blank(source[cursor]):
+        cursor -= 1
+    return source[cursor] if cursor >= 0 else ""
+
+
 def _module_statements(source: str) -> list[tuple[int, str]]:
     """`(offset, first token)` for every statement at the module's own level.
 
@@ -2074,6 +2089,13 @@ def _module_statements(source: str) -> list[tuple[int, str]]:
       type-literal brace, so what followed a top-level `}` decided by identifier
       shape alone.  It is the following character that decides now, and a tail
       character (`,`, `;`, `>`, `:`, ...) means the statement is still open.
+    * That left the one pair of braces the following character cannot separate: a
+      `}` followed by a `{`.  `function f(): { a: 1 } { ... }` closes the type
+      literal and then opens the body, and the walk ended the declaration at the
+      type literal, so the body brace was reported as a statement of its own - a
+      legal function read as load-time code.  Which brace is the body is decided
+      where it is opened now, from the character before it: a `:` opens a type
+      literal and a `)`/`]`/`}`/identifier opens the body.
     """
     statements: list[tuple[int, str]] = []
     stack: list[str] = []
@@ -2081,6 +2103,12 @@ def _module_statements(source: str) -> list[tuple[int, str]]:
     line_break = False
     previous = ""
     closed_head: str | None = None
+    # Whether the top-level group now open is the body that ends the statement it
+    # belongs to.  One top-level group is open at a time, so one flag is enough: a
+    # header brace (`function f(): { a: 1 }`) leaves it clear and the body brace
+    # after it sets it, which is what keeps the walk from ending the declaration at
+    # the type literal and reporting the real body as a statement of its own.
+    body_group = False
     index = 0
     length = len(source)
     while index < length:
@@ -2091,6 +2119,7 @@ def _module_statements(source: str) -> list[tuple[int, str]]:
                     statements.append((index, character))
                     closed_head = _closed_declaration_head(source, index)
                     pending = False
+                    body_group = character == "{"
                 elif (
                     line_break
                     and _can_end_statement(previous)
@@ -2117,6 +2146,17 @@ def _module_statements(source: str) -> list[tuple[int, str]]:
                     statements.append((index, character))
                     closed_head = _closed_declaration_head(source, index)
                     pending = False
+                    body_group = character == "{"
+                else:
+                    # The group belongs to the statement already open.  A `{` here is
+                    # the declaration's body only when its header has ended: the `:`
+                    # that opens `function f(): { a: 1 }` is followed by a type
+                    # literal, and only the `}` that ends that literal is followed by
+                    # the body.  Reading both as the body ended the declaration at the
+                    # type literal and reported the body brace as its own statement.
+                    body_group = character == "{" and _can_end_statement(
+                        _js_previous_significant(source, index)
+                    )
             stack.append(character)
             previous = character
             line_break = False
@@ -2126,12 +2166,16 @@ def _module_statements(source: str) -> list[tuple[int, str]]:
             if not stack and character == "}":
                 token, token_end = _js_next_token(source, index + 1)
                 labelled = token != "" and _statement_labels(source, token_end)
+                closes_body = body_group
+                body_group = False
                 if closed_head is not None:
-                    # The body of a declaration is the end of its statement, so the
-                    # next token starts a new one unless it belongs to the same
-                    # statement (`else`/`catch`/... ) or cannot begin one at all
+                    # Only the body of a declaration ends its statement: a `}` that
+                    # closed a type literal in the header leaves the declaration open,
+                    # and the brace that follows is the body.  When it really is the
+                    # body, the next token starts a new statement unless it belongs to
+                    # the same one (`else`/`catch`/... ) or cannot begin one at all
                     # (`>`/`|`/`&` continue a type expression).
-                    if (
+                    if closes_body and (
                         token not in _JS_STRUCTURAL_CONTINUATIONS
                         and token not in _JS_TYPE_EXPRESSION_CONTINUATIONS
                     ):
@@ -2842,7 +2886,17 @@ def collaboration_import_closure_failures(
                 continue
             seen.add(target)
             failures.extend(
-                _environment_reference_failures(target_text, f"the imported module `{target}`")
+                # The environment ban is a ban on *names*, and a name spelled in a
+                # comment or a string literal is not a read of it.  The authority
+                # module's own rule already reads its blanked text; reading the raw
+                # text here made one of them refuse a module the other accepted - the
+                # word `document` in a doc comment was reported as a runtime
+                # environment read, and the closure that contains `store.ts` failed
+                # on a module that never touches the environment.
+                _environment_reference_failures(
+                    _blank_comments_and_strings(target_text),
+                    f"the imported module `{target}`",
+                )
             )
             if remaining > 1:
                 walk(target, target_text, remaining - 1)
@@ -6705,6 +6759,67 @@ _COLLABORATION_IMPORT_CLOSURE_SELF_CHECK: tuple[
                 "pages/fieldUtils.ts",
                 "export type FieldKind = string;\n",
             ),
+        },
+        _COLLABORATION_IMPORT_CLOSURE_ORIGIN,
+        True,
+    ),
+    # A declaration's body brace can sit right after a brace that ended a type in
+    # its header (`): { a: boolean } {`), and the two are only told apart by what
+    # precedes them.  Read as one shape, the walk ended the declaration at the type
+    # literal and reported the legal body as a statement that runs on load - the
+    # shape `store.ts` reached `resolveContractV2RecordActionStates` through.
+    (
+        "a reviewed import target whose declaration body follows an object type in its signature",
+        {
+            "./valueUtils": (
+                "pages/valueUtils.ts",
+                "export function read(policy: Record<string, unknown>): { blocked: boolean } {\n"
+                "  const kind = (policy as Record<string, unknown>).kind;\n"
+                "  return { blocked: kind === 'state_limited_business_document' };\n"
+                "}\n",
+            )
+        },
+        _COLLABORATION_IMPORT_CLOSURE_ORIGIN,
+        True,
+    ),
+    # The body brace that follows the type literal must still *end* the
+    # declaration, or the block under it hides inside the function and runs while
+    # the closure calls itself read.
+    (
+        "a reviewed import target whose statement follows a declaration body typed by an object literal",
+        {
+            "./valueUtils": (
+                "pages/valueUtils.ts",
+                "export function read(): { blocked: boolean } {\n"
+                "  return { blocked: false };\n"
+                "}\n"
+                "{ (Array.prototype as any).includes = () => true }\n",
+            )
+        },
+        _COLLABORATION_IMPORT_CLOSURE_ORIGIN,
+        False,
+    ),
+    # The environment ban is a ban on names the module reads.  A name spelled in a
+    # comment or a string literal is not a read of it, and the authority module's
+    # own rule already reads its blanked text.
+    (
+        "a reviewed import target that names the environment only in a comment",
+        {
+            "./valueUtils": (
+                "pages/valueUtils.ts",
+                "// the browser document is not read here\nexport function read(v: unknown) { return v; }\n",
+            )
+        },
+        _COLLABORATION_IMPORT_CLOSURE_ORIGIN,
+        True,
+    ),
+    (
+        "a reviewed import target that names the environment only in a string literal",
+        {
+            "./valueUtils": (
+                "pages/valueUtils.ts",
+                "export function label() { return 'document'; }\n",
+            )
         },
         _COLLABORATION_IMPORT_CLOSURE_ORIGIN,
         True,

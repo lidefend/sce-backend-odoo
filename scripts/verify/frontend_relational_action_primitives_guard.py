@@ -8,6 +8,13 @@ X2MANY = ROOT / "frontend/apps/web/src/components/template/X2ManyRelationRendere
 ONE2MANY_CELL = ROOT / "frontend/apps/web/src/components/template/One2ManyCellEditor.vue"
 VIEW_RELATION = ROOT / "frontend/apps/web/src/components/view/ViewRelationalRenderer.vue"
 
+# The shared surface renders every governed command through ScButton. The
+# adopted official detail composition added a governed open-row projection to
+# each readonly placement (the readonly table action column, the readonly row
+# list and the mobile row), so the command count is 9 base commands plus those
+# 3 additions. The count stays exact: a 13th command is an undeclared action.
+X2MANY_GOVERNED_COMMANDS = 12
+
 
 def x2many_command_ownership_errors(source: str) -> list[str]:
     template = re.sub(r"<!--[\s\S]*?-->", "", source.split("<script", 1)[0])
@@ -26,8 +33,11 @@ def x2many_command_ownership_errors(source: str) -> list[str]:
     disclosures = [button for button in buttons if 'class="o2m-readonly-value-trigger"' in button]
     disclosure_attrs = [attrs for attrs in parser.calls if attrs.get("class") == "o2m-readonly-value-trigger"]
     failures = []
-    if len(parser.calls) - len(disclosure_attrs) != 9:
-        failures.append("X2Many must retain exactly 9 governed commands alongside readonly disclosure")
+    if len(parser.calls) - len(disclosure_attrs) != X2MANY_GOVERNED_COMMANDS:
+        failures.append(
+            "X2Many must retain exactly "
+            f"{X2MANY_GOVERNED_COMMANDS} governed commands alongside readonly disclosure"
+        )
     if len(disclosures) != 1 or len(disclosure_attrs) != 1:
         return failures + ["X2Many must retain exactly one readonly value disclosure"]
     button = disclosures[0]
@@ -64,6 +74,9 @@ def validate(
         'v-for="row in adapter.removedOne2manyRows(field.name)"',
         '>上一页</ScButton>',
         '>下一页</ScButton>',
+        '<template #_action="{ row }">',
+        "colKey: '_action'",
+        'adapter.openOne2manyRow(field.name, row)',
     )
     for marker in x2many_actions:
         if marker not in x2m:
@@ -136,4 +149,8 @@ if __name__ == "__main__":
         for error in errors:
             print(f"- {error}")
         raise SystemExit(1)
-    print("[frontend_relational_action_primitives_guard] PASS x2many_commands=9 readonly_disclosures=1 delegated_slots=1 cell_editor=governed view_relation=6 raw_controls=0 readonly_attachments=fail_closed")
+    print(
+        "[frontend_relational_action_primitives_guard] PASS "
+        f"x2many_commands={X2MANY_GOVERNED_COMMANDS} readonly_disclosures=1 delegated_slots=1 "
+        "cell_editor=governed view_relation=6 raw_controls=0 readonly_attachments=fail_closed"
+    )
