@@ -1,0 +1,61 @@
+schema_version: 1
+goal:
+  id: REMOTE-BRANCH-CARRIER-RETIREMENT
+  title: runtime_carrier_referenced_historical_codex_branch_retirement
+  status: completed
+  formal_product_layer: P4
+  layer_target: governed_historical_remote_reference_retirement
+  module:
+    - docs/ops/manifests
+    - docs/ops/iterations
+    - .agent
+  objective: >-
+    Clear the single runtime-carrier reference that made the historical-retirement
+    entry fail closed on one already-merged origin codex/* branch, then retire that
+    branch through the governed make branch.retire.historical entry bound to an
+    exact manifest SHA-256 and a verified recovery bundle. Never infer, broaden or
+    force a deletion, and leave the eight branches that lack an exact-head merged
+    PR untouched.
+  baseline:
+    branch: main
+    full_sha: 8cca49e20a62c314b6021bdc3c44fc9c2eebf686
+    source: clean_main_after_pr_556
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_governance
+    why_here: >-
+      Retiring a stale remote reference and correcting the engineering-context
+      metadata that kept naming it is delivery-lifecycle governance owned by the
+      P4 ops layer; it changes how the repository tracks its own history, not what
+      the product does.
+    why_not_elsewhere:
+      - no_p0_frontend_contract_or_platform_mechanism
+      - no_p1_construction_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_configuration
+      - no_database_fixture_migration_release_or_deployment
+    blast_radius:
+      - one_runtime_carrier_reference_in_an_agent_goal_baseline
+      - one_retained_list_entry_in_a_completed_run_record
+      - one_origin_codex_branch_proven_squash_merged_by_merged_pr_470
+  batches:
+    - id: A
+      title: clear_runtime_carrier_reference_and_retire_the_branch
+      status: completed
+      evidence:
+        - goal_baseline_and_completed_run_retained_list_no_longer_name_the_branch
+        - carrier_scan_over_scripts_config_deploy_make_agent_github_is_empty
+        - dry_run_eligible_1_skipped_0
+        - recovery_bundle_verified_head_count_1_sha256_a3ab356b
+        - apply_completed_1_retired_0_skipped_remote_deleted_local_absent_confirmed
+        - origin_codex_refs_remaining_8_as_expected
+  exclusions:
+    - the_eight_branches_without_an_exact_head_merged_pr_remain_untouched
+    - any_relaxation_of_identity_drift_open_pr_worktree_carrier_or_manifest_binding_guards
+    - no_rewrite_of_git_history_and_no_force_push
+  rollback:
+    - restore_the_retired_reference_from_the_verified_recovery_bundle
+  next_exact_step: >-
+    Closed 2026-10-04: the carrier reference was cleared and the branch retired
+    through the governed entry under the exact manifest SHA-256 with a verified
+    recovery bundle; eight origin references remain by design and need separate
+    owner authorization.

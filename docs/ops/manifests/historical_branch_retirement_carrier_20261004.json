@@ -1,0 +1,34 @@
+{
+  "references": [
+    {
+      "branch": "codex/contract-work-reading-efficiency-v1",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip 7cf6cf8976faf8496d626cae8e00e8d853424d6e",
+        "local ref absent; only the origin ref remains",
+        "merged PR #470 headRefOid=7cf6cf8976faf8496d626cae8e00e8d853424d6e (state MERGED, base main); squash commit 731c7e6d43f64e4f8e764c67880be6943afcee15 is an ancestor of origin/main",
+        "for the four delta files that still differ from current main the squash blob equals the branch tip blob, so nothing from this branch is missing on main",
+        "later mainline work supersedes those four files: PR #471 (contract handling pages), PR #525 (official template rendering), PR #526, PR #527, PR #533, PR #543",
+        "runtime-carrier scan after this candidate clears the goal reference: no scripts/config/deploy/make/.agent/.github reference remains"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #470 at this exact head and the delivered content is preserved or superseded on main",
+      "remote": {
+        "sha": "7cf6cf8976faf8496d626cae8e00e8d853424d6e",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized 2026-10-04: clear the runtime carrier reference that blocked this branch and then retire it under the exact manifest SHA-256 through the governed historical-retirement entry; the eight branches without an exact-head merged PR stay untouched.",
+        "reviewed_at": "2026-10-04"
+      }
+    }
+  ],
+  "repository": {
+    "name": "sce-backend-odoo",
+    "origin_url": "https://github.com/lidefend/sce-backend-odoo.git"
+  },
+  "schema_version": 1
+}

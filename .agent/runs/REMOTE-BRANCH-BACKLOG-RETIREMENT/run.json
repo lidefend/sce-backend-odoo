@@ -69,9 +69,9 @@
       "codex/p0-scene-component-bridge-v1",
       "codex/p0-ui5-scene-foundation-recovery-v2",
       "codex/p0-ui5-scene-foundation-spike-v1-recovered",
-      "codex/tdesign-enterprise-ui-foundation-v1",
-      "codex/contract-work-reading-efficiency-v1"
+      "codex/tdesign-enterprise-ui-foundation-v1"
     ],
+    "carrier_referenced_followup": "one further codex branch was held back only because a runtime carrier still named it; that carrier reference was cleared and the branch retired in the successor run REMOTE-BRANCH-CARRIER-RETIREMENT (2026-10-04) under manifest docs/ops/manifests/historical_branch_retirement_carrier_20261004.json. The eight entries listed above remain by design.",
     "l1": {
       "retire_entry": {
         "command": "make verify.branch.retire.historical",

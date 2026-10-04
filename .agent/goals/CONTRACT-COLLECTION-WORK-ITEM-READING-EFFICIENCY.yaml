@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: CONTRACT-COLLECTION-WORK-ITEM-READING-EFFICIENCY
   title: contract_collection_and_work_item_reading_efficiency
-  status: active
+  status: completed
   formal_product_layer: P1_with_bounded_P0_renderer_support
   layer_target: income_contract_native_tree_and_generic_work_item_renderer
   module:
@@ -12,10 +12,14 @@ goal:
     Keep the income-contract primary identity visible at the normal reading
     origin and keep My Work cards readable and actionable at medium widths.
   baseline:
-    branch: codex/contract-work-reading-efficiency-v1
+    branch: main
     full_sha: e9f78ff079817ebcd6154e77e872cefbaf62bf81
     fingerprint: 3aef44591a704d588fb9fb48f12a34d8d7fa5b37dcb3e2977281d64db931871c
     path_count: 7424
+    note: >-
+      The delivery branch that produced this work was squash-merged into main as
+      731c7e6d43f64e4f8e764c67880be6943afcee15 (PR #470) and retired 2026-10-04;
+      the full_sha above is retained as the original merge-base identity.
   product_boundary:
     standard_vs_user_specific: construction_industry_standard_with_platform_generic_renderer_support
     why_here:
@@ -45,7 +49,7 @@ goal:
       status: completed
     - id: D
       title: frozen_delivery
-      status: active
+      status: completed
   acceptance:
     - income_contract_subject_is_visible_at_the_unscrolled_table_origin
     - work_item_type_does_not_stack_vertically_at_1088
@@ -143,3 +147,25 @@ goal:
         component_inventory_test_count: 7
         required_component_adapter_count: 35
         contract_form_split_lines: 1866
+  closure:
+    retired_at: "2026-10-04"
+    merge_proof: >-
+      squash-merged as 731c7e6d43f64e4f8e764c67880be6943afcee15 (PR #470) at head
+      7cf6cf8976faf8496d626cae8e00e8d853424d6e; the squash blob equals the branch tip
+      for every delta file, so no delivered content was missing on main.
+    later_mainline_supersession:
+      - PR #471 normalized the contract handling pages
+      - PR #525 adopted official template rendering and governed interactions
+      - PR #526, PR #527, PR #533 and PR #543 continued the contract custody and evidence lines
+    l4_note: >-
+      The recorded l4 viewport matrix was superseded by the later passing product
+      candidate (source head ed36ba45d285f0bce77c2579c260dae6f5443d69); this
+      closure does not re-run the historical matrices.
+    l5_note: >-
+      The recorded l5 tail (final commit, single Quick, independent review) was
+      overtaken by the ordinary PR lane; this closure records the delivered
+      mainline state instead of claiming a rerun of those historical gates.
+    note: >-
+      Recorded so the goal no longer holds a live branch reference; the original
+      branch name remains in the Git history of this file and in
+      docs/ops/iterations/remote_branch_carrier_retirement_20261004.md.
