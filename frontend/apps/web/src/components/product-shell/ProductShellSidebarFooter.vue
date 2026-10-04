@@ -73,6 +73,6 @@ const emit = defineEmits<{
   min-width: 0;
   overflow-wrap: anywhere;
   font: var(--sc-font-body-small);
-  color: var(--sc-semantic-text-muted);
+  color: var(--sc-semantic-text-secondary);
 }
 </style>

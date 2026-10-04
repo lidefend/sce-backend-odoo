@@ -26,7 +26,6 @@
     :placeholder="placeholder"
     :aria-disabled="disabled || undefined"
     :aria-readonly="readonly || undefined"
-    :aria-required="required || undefined"
     :aria-invalid="invalid || status === 'error' || undefined"
     :aria-describedby="describedBy"
     @change="onChange"

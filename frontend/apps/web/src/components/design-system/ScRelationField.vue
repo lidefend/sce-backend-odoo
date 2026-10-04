@@ -25,7 +25,6 @@
     :input-props="{ inputClass: 'sc-relation-field__control', autocomplete: 'off' }"
     :popup-visible="popupOpen"
     :popup-props="popupProps"
-    :aria-required="required || undefined"
     :aria-invalid="invalid || undefined"
     :aria-describedby="describedBy"
     :aria-label="ariaLabel"
