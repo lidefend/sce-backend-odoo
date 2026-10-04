@@ -1,6 +1,6 @@
 goal:
   id: CI-SCHEDULED-FULL-LANE-RECOVERY-D
-  status: active
+  status: completed
   formal_product_layer: P1
   objective: >-
     Restore the two scheduled GitHub lanes that are still red on main. (1)

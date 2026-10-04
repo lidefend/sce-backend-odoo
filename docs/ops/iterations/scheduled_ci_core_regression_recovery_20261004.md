@@ -347,3 +347,29 @@ re-dispatch (`37216827342`) **failed** at `smart_construction_acceptance_fixture
   the remaining eleven modules never ran). Between `2c3a9200` and `127f2072` the only backend module
   changes are inside `smart_construction_acceptance_fixture`, so the re-dispatch is expected to clear
   the rest, but that is a prediction until the lane is read back.
+
+## Closure (goal CI-SCHEDULED-FULL-LANE-RECOVERY-D)
+
+Both scheduled lanes that were red on main are green again on the merged main
+`91f9d371806e19fded426b1b598a56971680794c`:
+
+- `backend_test_suite` — run `37221450001`: all 13 modules `0 failed / 0 error`, including
+  `smart_construction_acceptance_fixture` (`0 failed of 6 tests`) after root cause (d).
+- `frontend_release_gate` (full, `workflow_dispatch`) — run `37221446603`: green after root cause (c).
+
+The path that got here, in order: Batch 1 restored the backend lane (PR #562); Batch 2 fixed the
+frontend 403 in the generic relation-contract consumer and was merged as `127f2072` (PR #563) after
+`frontend_release_gate` full run `37214369858` went green on frozen head `d770a756`; the re-dispatched
+backend lane on the merged main then exposed root cause (d) in the acceptance-fixture reconciler,
+fixed and merged as `91f9d371` (PR #564) after the backend lane went green on the PR head
+(`37218726765`).
+
+Every step re-ran the authoritative lane at the frozen head before merging; no assertion, audit or
+negative case was relaxed, and no commit was pushed directly to `main`.
+
+Standing items that are explicitly **not** closed by this goal and stay separate: the two
+non-accounted mount holders and the DENY on the rebuild/snapshot lane (bound to their real entry
+dependency, never generalized to "the environment passes"); the pre-existing
+`make verify.frontend.fixture.guard` `KeyError: 'project.project'` on main; and the still-disagreeing
+finance settlement surface across the 89-page released contract, `config/frontend/authoritative_navigation.json`
+and backend `ROLE_SURFACE_OVERRIDES['finance']`.
