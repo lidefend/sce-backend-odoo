@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "branches": {
-    "fix/scheduled-ci-core-regression-recovery": ".agent/runs/CI-SCHEDULED-FULL-LANE-RECOVERY-D/run.json"
+    "fix/scheduled-ci-core-reset-and-reviewer-fixtures": ".agent/runs/CI-SCHEDULED-FULL-LANE-RECOVERY-D/run.json"
   }
 }

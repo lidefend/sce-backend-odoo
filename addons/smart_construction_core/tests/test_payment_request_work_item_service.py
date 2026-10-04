@@ -129,7 +129,12 @@ class TestPaymentRequestWorkItemService(TransactionCase):
             ["create_uid", "state", "reject_reason"]
         )
         cls.submitted.request_validation()
-        cls.submitted.review_ids.sudo().write({"reviewer_ids": [(4, cls.executive.id)]})
+        # The projection under test only offers approve/reject to the reviewer of
+        # the live instance, so bind both actors the assertions exercise as
+        # current reviewers instead of relying on role-only authorization.
+        cls.submitted.review_ids.sudo().write(
+            {"reviewer_ids": [(4, cls.executive.id), (4, cls.finance.id)]}
+        )
         cls.submitted.invalidate_recordset(
             ["review_ids", "validation_status", "can_review"]
         )

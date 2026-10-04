@@ -28,7 +28,7 @@ Generated from repository source files. This report is informational during the 
 | 3455 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3416 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3268 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
-| 3063 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
+| 3066 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 3049 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 3011 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2875 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
@@ -128,7 +128,7 @@ Generated from repository source files. This report is informational during the 
 | 1093 | Python source | `addons/smart_core/handlers/load_contract.py` |
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1080 | Python source | `scripts/verify/test_frontend_product_page_header_guard.py` |
-| 1049 | Python source | `addons/smart_construction_core/models/support/approval_policy.py` |
+| 1052 | Python source | `addons/smart_construction_core/models/support/approval_policy.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
 | 1038 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
 | 1023 | Python source | `addons/smart_core/tests/test_business_config_change_set.py` |
@@ -209,7 +209,7 @@ Generated from repository source files. This report is informational during the 
 | 3455 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3416 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3268 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
-| 3063 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
+| 3066 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 3049 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 3011 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2875 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |

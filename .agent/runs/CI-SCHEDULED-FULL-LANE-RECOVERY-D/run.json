@@ -1,9 +1,9 @@
 {
  "schema_version": 1,
  "id": "CI-SCHEDULED-FULL-LANE-RECOVERY-D",
- "branch": "fix/scheduled-ci-core-regression-recovery",
+ "branch": "fix/scheduled-ci-core-reset-and-reviewer-fixtures",
  "status": "active",
- "baseline_sha": "814bbc2888bb5f70eca4fe013bdba79cb82fb483",
+ "baseline_sha": "a61615b8ceac4d7784286f9455b41c91c6028034",
  "goal": ".agent/goals/CI-SCHEDULED-FULL-LANE-RECOVERY-D.yaml",
  "record": "docs/ops/iterations/scheduled_ci_core_regression_recovery_20261004.md",
  "scope": [
@@ -20,7 +20,7 @@
  ],
  "environment": {
   "kind": "runtime",
-  "authority": "Governed local iteration only: make ci.local.iteration, risk-selected non-zero targeted odoo tests through make test with DB_NAME=sc_tmp_core_suite, and verify.ci.scheduled_gates. The authoritative schedule lanes are proven by dispatching them on the merged main."
+  "authority": "Governed local iteration only: make ci.local.iteration, risk-selected non-zero targeted odoo tests, and verify.ci.scheduled_gates. Module suites that mirror the CI lane MUST use a fresh per-module database (make test installs from scratch, e.g. DB_NAME=sc_ci_repro_core2); reusing an already-installed database (e.g. sc_tmp_core_suite) is not a valid pass and produced the superseded evidence below. The authoritative schedule lanes are proven by dispatching them on the merged main."
  },
  "checks": {
   "scheduled_gates": {
@@ -42,45 +42,72 @@
   }
  },
  "blockers": [
-  "frontend_release_gate relation-read journey: deep link to a released record returns 403 (NAVIGATION_AUTHORITY_DENIED)."
+  "Batch 1 follow-up: PR #561 merged but the merged main nightly backend_test_suite (run 37194316962) still reported 2 failed / 1 error of 471. The PR's local L2 pass had reused a stale sc_tmp_core_suite database and was not a valid pass; a fresh-install repro reproduced all three failures. Root causes fixed on this branch, remote verification pending.",
+  "frontend_release_gate full lane (run 37177685228): a released settlement record deep link is refused with 403 NAVIGATION_AUTHORITY_DENIED (Batch 2, root cause identified, fix not yet applied).",
+  "Environment: the two remaining non-accounted mount holders and the DENY on the rebuild/snapshot lane are tracked separately; they do not excuse the backend suite result."
  ],
- "next_exact_step": "Batch 1 backend core converged locally to 0 failed / 0 error of 471 (root cause of the last failure was a test fixture acting as the inactive __system__ user, which can never own a tier review; it now acts as an active finance reviewer). Next: freeze the candidate identity, run make ci.local.quick on the clean frozen HEAD, push the PR for Batch 1, then start Batch 2 (frontend relation-read 403).",
+ "next_exact_step": "Publish this branch as a PR, confirm the four required GitHub checks on the PR head, then re-dispatch backend_test_suite on the merged main and require '0 failed, 0 error(s) of 471' with a fresh per-module database. After that, update this run and start Batch 2 (frontend relation-read 403).",
  "results": [
   {
    "layer": "L1",
-   "command": "ENV=dev ENV_FILE=.env.dev make ci.local.iteration",
-   "stage_identity": "HEAD=814bbc2888bb5f70eca4fe013bdba79cb82fb483 dirty=addons/smart_construction_core/{handlers,models,security,tests} + .agent/ + docs/ops/iterations",
+   "command": "ENV=dev ENV_FILE=.env.dev make verify.ci.scheduled_gates",
+   "stage_identity": "HEAD=a61615b8ceac4d7784286f9455b41c91c6028034 dirty=approval_policy.py + two test files + .agent/",
    "status": "passed",
-   "log": "/tmp/ci_iter.log"
+   "test_count": 29,
+   "failed": 0,
+   "errors": 0,
+   "note": "Declared check scheduled_gates; the scheduled-lane workflow definitions and their guards still pass.",
+   "log": "/tmp/ci_scheduled_gates_batch2.log"
   },
   {
    "layer": "L2",
-   "command": "ENV=dev ENV_FILE=.env.dev make test MODULE=smart_construction_core TEST_TAGS=sc_smoke/smart_construction_core,sc_gate/smart_construction_core DB_NAME=sc_tmp_core_suite",
-   "stage_identity": "HEAD=814bbc2888bb5f70eca4fe013bdba79cb82fb483 dirty=addons/smart_construction_core/{handlers,models,security,tests}",
+   "command": "ENV=dev ENV_FILE=.env.dev make test MODULE=smart_construction_core TEST_TAGS=sc_smoke/smart_construction_core,sc_gate/smart_construction_core DB_NAME=sc_ci_repro_core2",
+   "stage_identity": "HEAD=a61615b8ceac4d7784286f9455b41c91c6028034 dirty=addons/smart_construction_core/models/support/approval_policy.py + tests/test_p1_payment_request_capability.py + tests/test_payment_request_work_item_service.py",
    "status": "passed",
    "test_count": 471,
    "failed": 0,
    "errors": 0,
-   "log": "/tmp/local_sc_core_test7.log",
-   "reused_from": "/tmp/local_sc_core_test6.log"
+   "note": "Fresh-install database (matches the CI per-module fresh database). Replaces the earlier stale-database L2 evidence, which was invalid.",
+   "log": "/tmp/repro_core2.log"
   },
   {
    "layer": "L2",
-   "command": "ENV=dev ENV_FILE=.env.dev make test.safe MODULE=smart_construction_core TEST_TAGS=TestP0StateClosure.test_expense_claim_blocks_invalid_state_jump_or_late_cancel,TestP0StateClosure.test_material_rental_order_and_settlement_close_business_flow,TestP1PaymentRequestCapability.test_rejection_requires_explicit_reason_and_resubmit_preserves_audit DB_NAME=sc_tmp_core_suite",
-   "stage_identity": "HEAD=814bbc2888bb5f70eca4fe013bdba79cb82fb483 dirty=tests/test_p1_payment_request_capability.py",
+   "command": "ENV=dev ENV_FILE=.env.dev make test MODULE=smart_construction_core TEST_TAGS=sc_smoke/smart_construction_core,sc_gate/smart_construction_core DB_NAME=sc_ci_repro_core1",
+   "stage_identity": "HEAD=a61615b8ceac4d7784286f9455b41c91c6028034 (pre-fix, fresh database)",
+   "status": "failed",
+   "test_count": 471,
+   "failed": 2,
+   "errors": 1,
+   "note": "Faithful local reproduction of the merged-main CI failure: TestPaymentRequestWorkItemService.test_finance_sees_submit_and_own_items_with_matching_counts, TestP1PaymentRequestCapability.test_available_actions_use_model_capabilities_not_role_names, TestP1PaymentRequestCapability.test_rejection_requires_explicit_reason_and_resubmit_preserves_audit. Also refutes the earlier 'local pass': the CI failures reproduce on a fresh database.",
+   "log": "/tmp/repro_core1.log"
+  },
+  {
+   "layer": "L2",
+   "command": "ENV=dev ENV_FILE=.env.dev make test.safe MODULE=smart_construction_core TEST_TAGS=<the three failing tests + executive work-item test> DB_NAME=sc_ci_repro_core1",
+   "stage_identity": "HEAD=a61615b8ceac4d7784286f9455b41c91c6028034 dirty=approval_policy.py + two test files",
    "status": "passed",
-   "test_count": 3,
+   "test_count": 4,
    "failed": 0,
    "errors": 0,
-   "log": "/tmp/fix_three.log"
+   "note": "Focused fix confirmation; the raised reset path now clears the whole finished review instance (4 reviews unlinked).",
+   "log": "/tmp/repro_core2_focused.log"
   },
   {
    "layer": "L1",
    "command": "python3 scripts/ci/personal_data_scan.py",
-   "stage_identity": "HEAD=f15821735505f845fe75b07e6bdb1531c047863c dirty=scripts/ci/personal_data_false_positives.json",
+   "stage_identity": "HEAD=a61615b8ceac4d7784286f9455b41c91c6028034 dirty=approval_policy.py + two test files",
    "status": "passed",
-   "note": "confirmed_matches=0 suppressed_false_positives=22; the ledger guard realignment changed the synthetic fixture blob, so its exact-SHA exemption was registered through the governed registry.",
-   "log": "/tmp/personal_data_scan1.log"
+   "note": "confirmed_matches=0 suppressed_false_positives=22; the two modified test blobs need no new exemption.",
+   "log": "/tmp/personal_data_scan_batch2.log"
+  },
+  {
+   "layer": "L2",
+   "command": "ENV=dev ENV_FILE=.env.dev make test MODULE=smart_construction_core TEST_TAGS=... DB_NAME=sc_tmp_core_suite",
+   "stage_identity": "HEAD=814bbc2888bb5f70eca4fe013bdba79cb82fb483 (pre-fix, reused database)",
+   "status": "superseded",
+   "test_count": 471,
+   "note": "Superseded. Reported 0 failed / 0 error but reused a persistent sc_tmp_core_suite database, so it never exercised the fresh-install failure and must not be cited as a pass.",
+   "log": "/tmp/local_sc_core_test7.log"
   }
  ]
 }
