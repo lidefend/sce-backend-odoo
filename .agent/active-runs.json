@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "branches": {
-    "fix/scheduled-ci-core-reset-and-reviewer-fixtures": ".agent/runs/CI-SCHEDULED-FULL-LANE-RECOVERY-D/run.json"
+    "fix/scheduled-ci-frontend-settlement-release-targets": ".agent/runs/CI-SCHEDULED-FULL-LANE-RECOVERY-D/run.json"
   }
 }

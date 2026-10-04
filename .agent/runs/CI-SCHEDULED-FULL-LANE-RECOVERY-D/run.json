@@ -1,113 +1,158 @@
 {
- "schema_version": 1,
- "id": "CI-SCHEDULED-FULL-LANE-RECOVERY-D",
- "branch": "fix/scheduled-ci-core-reset-and-reviewer-fixtures",
- "status": "active",
- "baseline_sha": "a61615b8ceac4d7784286f9455b41c91c6028034",
- "goal": ".agent/goals/CI-SCHEDULED-FULL-LANE-RECOVERY-D.yaml",
- "record": "docs/ops/iterations/scheduled_ci_core_regression_recovery_20261004.md",
- "scope": [
-  "addons/smart_construction_core/models/",
-  "addons/smart_construction_core/data/",
-  "addons/smart_construction_core/handlers/",
-  "addons/smart_construction_core/tests/",
-  "addons/smart_construction_core/security/",
-  "frontend/apps/web/src/",
-  "config/frontend/",
-  "docs/ops/iterations/",
-  ".agent/",
-  "scripts/ci/personal_data_false_positives.json"
- ],
- "environment": {
-  "kind": "runtime",
-  "authority": "Governed local iteration only: make ci.local.iteration, risk-selected non-zero targeted odoo tests, and verify.ci.scheduled_gates. Module suites that mirror the CI lane MUST use a fresh per-module database (make test installs from scratch, e.g. DB_NAME=sc_ci_repro_core2); reusing an already-installed database (e.g. sc_tmp_core_suite) is not a valid pass and produced the superseded evidence below. The authoritative schedule lanes are proven by dispatching them on the merged main."
- },
- "checks": {
-  "scheduled_gates": {
-   "target": "verify.ci.scheduled_gates",
-   "inputs": [
-    ".github/workflows/backend_test_suite.yml",
-    ".github/workflows/frontend_release_gate.yml",
-    "scripts/verify/frontend_release_gate.py"
-   ]
+  "schema_version": 1,
+  "id": "CI-SCHEDULED-FULL-LANE-RECOVERY-D",
+  "branch": "fix/scheduled-ci-frontend-settlement-release-targets",
+  "status": "active",
+  "baseline_sha": "2c3a92006cc92aae69c4c0dad80dc063afdd5eb8",
+  "goal": ".agent/goals/CI-SCHEDULED-FULL-LANE-RECOVERY-D.yaml",
+  "record": "docs/ops/iterations/scheduled_ci_core_regression_recovery_20261004.md",
+  "scope": [
+    "addons/smart_construction_core/models/",
+    "addons/smart_construction_core/data/",
+    "addons/smart_construction_core/handlers/",
+    "addons/smart_construction_core/tests/",
+    "addons/smart_construction_core/security/",
+    "frontend/apps/web/src/",
+    "config/frontend/",
+    "docs/ops/iterations/",
+    ".agent/",
+    "scripts/ci/personal_data_false_positives.json",
+    "scripts/verify/"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Governed local iteration only: make ci.local.iteration, risk-selected non-zero targeted odoo tests, and verify.ci.scheduled_gates. Module suites that mirror the CI lane MUST use a fresh per-module database (make test installs from scratch, e.g. DB_NAME=sc_ci_repro_core2); reusing an already-installed database (e.g. sc_tmp_core_suite) is not a valid pass and produced the superseded evidence below. The authoritative schedule lanes are proven by dispatching them on the merged main."
   },
-  "release_navigation_policy": {
-   "target": "verify.frontend.release_navigation_policy.guard",
-   "inputs": [
-    "config/frontend/authoritative_navigation.json",
-    "scripts/verify/frontend_release_navigation_policy_guard.py",
-    "scripts/verify/test_frontend_release_navigation_policy_guard.py",
-    "addons/smart_construction_core/core_extension_policy_maps.py"
-   ]
-  }
- },
- "blockers": [
-  "Batch 1 follow-up: PR #561 merged but the merged main nightly backend_test_suite (run 37194316962) still reported 2 failed / 1 error of 471. The PR's local L2 pass had reused a stale sc_tmp_core_suite database and was not a valid pass; a fresh-install repro reproduced all three failures. Root causes fixed on this branch, remote verification pending.",
-  "frontend_release_gate full lane (run 37177685228): a released settlement record deep link is refused with 403 NAVIGATION_AUTHORITY_DENIED (Batch 2, root cause identified, fix not yet applied).",
-  "Environment: the two remaining non-accounted mount holders and the DENY on the rebuild/snapshot lane are tracked separately; they do not excuse the backend suite result."
- ],
- "next_exact_step": "Publish this branch as a PR, confirm the four required GitHub checks on the PR head, then re-dispatch backend_test_suite on the merged main and require '0 failed, 0 error(s) of 471' with a fresh per-module database. After that, update this run and start Batch 2 (frontend relation-read 403).",
- "results": [
-  {
-   "layer": "L1",
-   "command": "ENV=dev ENV_FILE=.env.dev make verify.ci.scheduled_gates",
-   "stage_identity": "HEAD=a61615b8ceac4d7784286f9455b41c91c6028034 dirty=approval_policy.py + two test files + .agent/",
-   "status": "passed",
-   "test_count": 29,
-   "failed": 0,
-   "errors": 0,
-   "note": "Declared check scheduled_gates; the scheduled-lane workflow definitions and their guards still pass.",
-   "log": "/tmp/ci_scheduled_gates_batch2.log"
+  "checks": {
+    "scheduled_gates": {
+      "target": "verify.ci.scheduled_gates",
+      "inputs": [
+        ".github/workflows/backend_test_suite.yml",
+        ".github/workflows/frontend_release_gate.yml",
+        "scripts/verify/frontend_release_gate.py"
+      ]
+    },
+    "release_navigation_policy": {
+      "target": "verify.frontend.release_navigation_policy.guard",
+      "inputs": [
+        "config/frontend/authoritative_navigation.json",
+        "scripts/verify/frontend_release_navigation_policy_guard.py",
+        "scripts/verify/test_frontend_release_navigation_policy_guard.py",
+        "addons/smart_construction_core/core_extension_policy_maps.py"
+      ]
+    }
   },
-  {
-   "layer": "L2",
-   "command": "ENV=dev ENV_FILE=.env.dev make test MODULE=smart_construction_core TEST_TAGS=sc_smoke/smart_construction_core,sc_gate/smart_construction_core DB_NAME=sc_ci_repro_core2",
-   "stage_identity": "HEAD=a61615b8ceac4d7784286f9455b41c91c6028034 dirty=addons/smart_construction_core/models/support/approval_policy.py + tests/test_p1_payment_request_capability.py + tests/test_payment_request_work_item_service.py",
-   "status": "passed",
-   "test_count": 471,
-   "failed": 0,
-   "errors": 0,
-   "note": "Fresh-install database (matches the CI per-module fresh database). Replaces the earlier stale-database L2 evidence, which was invalid.",
-   "log": "/tmp/repro_core2.log"
-  },
-  {
-   "layer": "L2",
-   "command": "ENV=dev ENV_FILE=.env.dev make test MODULE=smart_construction_core TEST_TAGS=sc_smoke/smart_construction_core,sc_gate/smart_construction_core DB_NAME=sc_ci_repro_core1",
-   "stage_identity": "HEAD=a61615b8ceac4d7784286f9455b41c91c6028034 (pre-fix, fresh database)",
-   "status": "failed",
-   "test_count": 471,
-   "failed": 2,
-   "errors": 1,
-   "note": "Faithful local reproduction of the merged-main CI failure: TestPaymentRequestWorkItemService.test_finance_sees_submit_and_own_items_with_matching_counts, TestP1PaymentRequestCapability.test_available_actions_use_model_capabilities_not_role_names, TestP1PaymentRequestCapability.test_rejection_requires_explicit_reason_and_resubmit_preserves_audit. Also refutes the earlier 'local pass': the CI failures reproduce on a fresh database.",
-   "log": "/tmp/repro_core1.log"
-  },
-  {
-   "layer": "L2",
-   "command": "ENV=dev ENV_FILE=.env.dev make test.safe MODULE=smart_construction_core TEST_TAGS=<the three failing tests + executive work-item test> DB_NAME=sc_ci_repro_core1",
-   "stage_identity": "HEAD=a61615b8ceac4d7784286f9455b41c91c6028034 dirty=approval_policy.py + two test files",
-   "status": "passed",
-   "test_count": 4,
-   "failed": 0,
-   "errors": 0,
-   "note": "Focused fix confirmation; the raised reset path now clears the whole finished review instance (4 reviews unlinked).",
-   "log": "/tmp/repro_core2_focused.log"
-  },
-  {
-   "layer": "L1",
-   "command": "python3 scripts/ci/personal_data_scan.py",
-   "stage_identity": "HEAD=a61615b8ceac4d7784286f9455b41c91c6028034 dirty=approval_policy.py + two test files",
-   "status": "passed",
-   "note": "confirmed_matches=0 suppressed_false_positives=22; the two modified test blobs need no new exemption.",
-   "log": "/tmp/personal_data_scan_batch2.log"
-  },
-  {
-   "layer": "L2",
-   "command": "ENV=dev ENV_FILE=.env.dev make test MODULE=smart_construction_core TEST_TAGS=... DB_NAME=sc_tmp_core_suite",
-   "stage_identity": "HEAD=814bbc2888bb5f70eca4fe013bdba79cb82fb483 (pre-fix, reused database)",
-   "status": "superseded",
-   "test_count": 471,
-   "note": "Superseded. Reported 0 failed / 0 error but reused a persistent sc_tmp_core_suite database, so it never exercised the fresh-install failure and must not be cited as a pass.",
-   "log": "/tmp/local_sc_core_test7.log"
-  }
- ]
+  "blockers": [
+    "Batch 2: the two source fixes and the verification-tool fixes are committed on this branch (38edb97b, 240eb9b5) but not yet published; the authoritative full frontend lane (pnpm test:release -> verify.frontend.delivery_hardening.release.browser) still has to run at the frozen head in the isolated CI acceptance stack.",
+    "Environment: the two remaining non-accounted mount holders and the DENY on the rebuild/snapshot lane stay a separate conclusion bound to the actual entry dependency; they are not generalized to 'the environment passes'. acceptance.runtime.baseline_recovery.audit PASS is recorded on its own.",
+    "Open product question (separate topic, not resolved here): the 89-page released contract, config/frontend/authoritative_navigation.json and backend ROLE_SURFACE_OVERRIDES['finance'] still disagree about the finance settlement surface."
+  ],
+  "next_exact_step": "Batch 1 is closed (main run 37198232340: 0 failed, 0 error(s) of 471). Batch 2: run make ci.delivery.freeze.prepare (PASS, generated evidence refreshed), commit the run record and the refreshed generated evidence, then make pr.push / pr.create on fix/scheduled-ci-frontend-settlement-release-targets, add the ci:candidate label so the PR runs frontend_release_gate in full mode, and merge through the protected PR flow once the four required checks are green on the exact head. After merge, re-dispatch the scheduled lanes on main and read them back.",
+  "results": [
+    {
+      "layer": "L1",
+      "command": "ENV=dev ENV_FILE=.env.dev make verify.ci.scheduled_gates",
+      "stage_identity": "HEAD=a61615b8ceac4d7784286f9455b41c91c6028034 dirty=approval_policy.py + two test files + .agent/",
+      "status": "passed",
+      "test_count": 29,
+      "failed": 0,
+      "errors": 0,
+      "note": "Declared check scheduled_gates; the scheduled-lane workflow definitions and their guards still pass.",
+      "log": "/tmp/ci_scheduled_gates_batch2.log"
+    },
+    {
+      "layer": "L2",
+      "command": "ENV=dev ENV_FILE=.env.dev make test MODULE=smart_construction_core TEST_TAGS=sc_smoke/smart_construction_core,sc_gate/smart_construction_core DB_NAME=sc_ci_repro_core2",
+      "stage_identity": "HEAD=a61615b8ceac4d7784286f9455b41c91c6028034 dirty=addons/smart_construction_core/models/support/approval_policy.py + tests/test_p1_payment_request_capability.py + tests/test_payment_request_work_item_service.py",
+      "status": "passed",
+      "test_count": 471,
+      "failed": 0,
+      "errors": 0,
+      "note": "Fresh-install database (matches the CI per-module fresh database). Replaces the earlier stale-database L2 evidence, which was invalid.",
+      "log": "/tmp/repro_core2.log"
+    },
+    {
+      "layer": "L2",
+      "command": "ENV=dev ENV_FILE=.env.dev make test MODULE=smart_construction_core TEST_TAGS=sc_smoke/smart_construction_core,sc_gate/smart_construction_core DB_NAME=sc_ci_repro_core1",
+      "stage_identity": "HEAD=a61615b8ceac4d7784286f9455b41c91c6028034 (pre-fix, fresh database)",
+      "status": "failed",
+      "test_count": 471,
+      "failed": 2,
+      "errors": 1,
+      "note": "Faithful local reproduction of the merged-main CI failure: TestPaymentRequestWorkItemService.test_finance_sees_submit_and_own_items_with_matching_counts, TestP1PaymentRequestCapability.test_available_actions_use_model_capabilities_not_role_names, TestP1PaymentRequestCapability.test_rejection_requires_explicit_reason_and_resubmit_preserves_audit. Also refutes the earlier 'local pass': the CI failures reproduce on a fresh database.",
+      "log": "/tmp/repro_core1.log"
+    },
+    {
+      "layer": "L2",
+      "command": "ENV=dev ENV_FILE=.env.dev make test.safe MODULE=smart_construction_core TEST_TAGS=<the three failing tests + executive work-item test> DB_NAME=sc_ci_repro_core1",
+      "stage_identity": "HEAD=a61615b8ceac4d7784286f9455b41c91c6028034 dirty=approval_policy.py + two test files",
+      "status": "passed",
+      "test_count": 4,
+      "failed": 0,
+      "errors": 0,
+      "note": "Focused fix confirmation; the raised reset path now clears the whole finished review instance (4 reviews unlinked).",
+      "log": "/tmp/repro_core2_focused.log"
+    },
+    {
+      "layer": "L1",
+      "command": "python3 scripts/ci/personal_data_scan.py",
+      "stage_identity": "HEAD=a61615b8ceac4d7784286f9455b41c91c6028034 dirty=approval_policy.py + two test files",
+      "status": "passed",
+      "note": "confirmed_matches=0 suppressed_false_positives=22; the two modified test blobs need no new exemption.",
+      "log": "/tmp/personal_data_scan_batch2.log"
+    },
+    {
+      "layer": "L2",
+      "command": "ENV=dev ENV_FILE=.env.dev make test MODULE=smart_construction_core TEST_TAGS=... DB_NAME=sc_tmp_core_suite",
+      "stage_identity": "HEAD=814bbc2888bb5f70eca4fe013bdba79cb82fb483 (pre-fix, reused database)",
+      "status": "superseded",
+      "test_count": 471,
+      "note": "Superseded. Reported 0 failed / 0 error but reused a persistent sc_tmp_core_suite database, so it never exercised the fresh-install failure and must not be cited as a pass.",
+      "log": "/tmp/local_sc_core_test7.log"
+    },
+    {
+      "layer": "L1",
+      "command": "python3 scripts/verify/{design_token_system,frontend_style_system_guard,frontend_navigation_shell_guard,frontend_primitive_adapter_guard}.py; make verify.frontend.primitive_adapter.unit",
+      "stage_identity": "HEAD=240eb9b5 clean",
+      "status": "passed",
+      "test_count": 39,
+      "note": "Batch 2 a11y fix owning layer. Primitive-adapter guard includes the new 'ScSelect/ScRelationField must not place aria-required on the Select wrapper' rule; unit fixture 39 tests OK.",
+      "log": "/tmp/l1_frontend_primitive_adapter_guard.log"
+    },
+    {
+      "layer": "L2",
+      "command": "make frontend.acceptance.release.build COMPOSE_PROJECT_NAME=sc-fe-r2-p1-01 DB_NAME=sc_frontend_acceptance SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+      "stage_identity": "HEAD=2c3a9200 dirty=the four fixed frontend sources + the primitive-adapter guard",
+      "status": "passed",
+      "note": "Batch 2 frontend build. Superseded identity only because the same tree was committed afterwards as 38edb97b; the built content is unchanged.",
+      "log": "see record docs/ops/iterations/scheduled_ci_core_regression_recovery_20261004.md (Batch 2)"
+    },
+    {
+      "layer": "L4",
+      "command": "node scripts/verify/frontend_delivery_hardening_browser.mjs (DELIVERY_HARDENING_SKIP_PERF=1, managed 5175/18082)",
+      "stage_identity": "HEAD=2c3a9200 (tree identical to 38edb97b+240eb9b5) + committed tools",
+      "status": "passed",
+      "note": "Accessibility result=PASS with blocking 0 / critical 0 / serious 0 across 17 scans; responsive 68 pages with horizontal_overflow 0; J09/J10/J11 journeys PASS. Evidence artifacts/frontend-delivery-hardening/{accessibility,responsive}.json.",
+      "log": "/tmp/dh_a11y_fix_matrix2.log, /tmp/dh_matrix4.log, /tmp/dh_matrix5.log"
+    },
+    {
+      "layer": "L4",
+      "command": "node scripts/verify/frontend_delivery_hardening_browser.mjs (DELIVERY_HARDENING_PERF_ONLY=1)",
+      "stage_identity": "HEAD=2c3a9200, managed acceptance stack",
+      "status": "passed",
+      "note": "Isolated performance evidence result=PASS on absolute and relative budgets: login_to_interactive 2642 (p95 2765), my_work 388, payment_detail 245, settlement_detail 269, execution_detail 223, form_open 1068, company_switch 1941. The earlier attempt failed because a stray two-hour repository-wide grep pinned the CPU. Evidence artifacts/frontend-delivery-hardening/performance-probe.json.",
+      "log": "/tmp/dh_perf_only2.log"
+    },
+    {
+      "layer": "L2",
+      "command": "remote: GitHub backend_test_suite run 37198232340 on main",
+      "stage_identity": "head=2c3a92006cc92aae69c4c0dad80dc063afdd5eb8 (main after PR #562)",
+      "status": "passed",
+      "test_count": 471,
+      "failed": 0,
+      "errors": 0,
+      "note": "Batch 1 closure on merged main, fresh per-module database: 'smart_construction_core: 0 failed, 0 error(s) of 471 tests'. Supersedes the 2 failed / 1 error nightly result.",
+      "log": "/tmp/b1_job_summary.log"
+    }
+  ]
 }
