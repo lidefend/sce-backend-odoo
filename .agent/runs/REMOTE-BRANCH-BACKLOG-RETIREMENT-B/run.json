@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "id": "REMOTE-BRANCH-BACKLOG-RETIREMENT-B",
+  "branch": "fix/remote-branch-backlog-retirement-20261005",
+  "status": "completed",
+  "baseline_sha": "b6fe93f451bd29d356f9f07bb8ba223ee53ed195",
+  "goal": ".agent/goals/REMOTE-BRANCH-BACKLOG-RETIREMENT-B.yaml",
+  "record": "docs/ops/iterations/remote_branch_backlog_retirement_b_20261005.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/REMOTE-BRANCH-BACKLOG-RETIREMENT-B.yaml",
+    ".agent/runs/REMOTE-BRANCH-BACKLOG-RETIREMENT-B/",
+    "docs/ops/iterations/remote_branch_backlog_retirement_b_20261005.md",
+    "docs/ops/manifests/historical_branch_retirement_20261005.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline Make gates plus the governed historical-retirement entry and a verified recovery bundle; no product runtime, database, fixture or service"
+  },
+  "checks": {
+    "retire_entry": {
+      "target": "verify.branch.retire.historical",
+      "inputs": [
+        "scripts/ops/retire_historical_branch_refs.py",
+        "scripts/ops/test_retire_historical_branch_refs.py"
+      ],
+      "kind": "offline"
+    },
+    "branch_governance": {
+      "target": "verify.branch.governance.consistency",
+      "inputs": [
+        "AGENTS.md",
+        "docs/ops/codex_execution_allowlist.md",
+        "docs/ops/codex_workspace_execution_rules.md",
+        "docs/ops/historical_branch_retirement_runbook.md",
+        "make/codex.mk",
+        "scripts/verify/branch_governance_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ],
+      "kind": "offline"
+    },
+    "worktree_guard": {
+      "target": "verify.workspace.worktree.guard",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/ops/branch_cleanup_safe.sh",
+        "scripts/ops/safe_worktree_cleanup.py",
+        "scripts/ops/test_safe_worktree_cleanup.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Closed 2026-10-05: 181 proven-merged origin references were retired through the governed entry under manifest sha256 9d59ee32\u2026277e5 with a verified 181-head recovery bundle; origin went 259 -> 78 heads with zero target residue. The 50 unproven, 19 release/*, 5 outside-prefix and 3 runtime-carrier-referenced references stay in place. Publishing this manifest+record change through the ordinary PR lane.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false,
+  "completion": {
+    "batch": "passed: governed dry-run 181 eligible / 0 skipped; verified recovery bundle (181 heads, sha256 132c1a66\u20268005); one governed APPLY retired all 181 with per-branch exact-tip leases and zero skipped; origin re-read 259 -> 78 with zero target residue and the full exclusion set intact",
+    "mainline": "publishing the frozen candidate through the ordinary PR lane; exact-head identity is the frozen source commit and its ci.local.quick receipt (.git/codex/evidence/ci.local.quick/<frozen-sha>.json)",
+    "deployment": "not_run",
+    "product_delivery": "not_run",
+    "manifest": {
+      "path": "docs/ops/manifests/historical_branch_retirement_20261005.json",
+      "sha256": "9d59ee32ea2b4444bda943e3a981243f0d4a88a42f55d54500ccc9a8d87277e5"
+    },
+    "recovery_bundle": {
+      "path": ".runtime/retire/historical-branch-retirement-20261005.bundle",
+      "sha256": "132c1a66e88cd8647285569f748b5d128995ec7dbacf811deab2eb50dd3e8005",
+      "head_count": 181,
+      "verify": "pass"
+    },
+    "reports": [
+      ".runtime/retire/dry-run-20261005.json",
+      ".runtime/retire/bundle-prep-20261005.json",
+      ".runtime/retire/apply-report-20261005.json"
+    ],
+    "retired": {
+      "count": 181,
+      "prefixes": {
+        "fix": 146,
+        "feature": 28,
+        "audit": 6,
+        "refactor": 1
+      },
+      "origin_heads_before": 259,
+      "origin_heads_after": 78,
+      "target_residue": 0
+    },
+    "retained": {
+      "no_merged_pr": 50,
+      "release": 19,
+      "outside_governed_prefixes": 5,
+      "runtime_carrier_referenced": [
+        "audit/historical-branch-asset-retirement-v1",
+        "fix/atomic-release-publication-contract",
+        "fix/controlled-merge-expected-head-guard"
+      ]
+    },
+    "l1": {
+      "retire_entry": {
+        "command": "make verify.branch.retire.historical",
+        "status": "passed",
+        "log": ".runtime/agent-runs/REMOTE-BRANCH-BACKLOG-RETIREMENT-B/verify_branch_retire_historical.log"
+      },
+      "branch_governance": {
+        "command": "make verify.branch.governance.consistency",
+        "status": "passed",
+        "log": ".runtime/agent-runs/REMOTE-BRANCH-BACKLOG-RETIREMENT-B/verify_branch_governance_consistency.log"
+      },
+      "agent_resume": {
+        "command": "make verify.agent.resume.unit",
+        "status": "passed",
+        "tests": 30,
+        "log": ".runtime/agent-runs/REMOTE-BRANCH-BACKLOG-RETIREMENT-B/verify_agent_resume_unit.log"
+      },
+      "worktree_guard": {
+        "command": "make verify.workspace.worktree.guard",
+        "status": "passed",
+        "tests": 123,
+        "log": ".runtime/agent-runs/REMOTE-BRANCH-BACKLOG-RETIREMENT-B/verify_workspace_worktree_guard.log"
+      },
+      "iteration": {
+        "command": "make ci.local.iteration",
+        "status": "passed",
+        "change_state": "dirty",
+        "note": "Run before the final commit while the run was still bound; not re-run after the freeze because a completed run with an intentionally empty index reports 'unregistered' (existing closeout precedent)."
+      }
+    }
+  }
+}
