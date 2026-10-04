@@ -1,0 +1,56 @@
+schema_version: 1
+goal:
+  id: WORKSPACE-FINAL-CLOSEOUT
+  title: workspace_final_closeout_and_run_index_repair
+  status: completed
+  formal_product_layer: P4
+  layer_target: governed_workspace_branch_and_run_index_closeout
+  module:
+    - .agent
+    - docs/ops/iterations
+  objective: >-
+    Close the remaining workspace residue after the squash-aware retirement
+    batch: retire every local candidate branch whose exact head already has a
+    reviewed merged PR, and align .agent/active-runs.json with reality so no
+    mapping points at a branch that no longer exists. No product code,
+    contract, runtime, database or deployment change.
+  baseline:
+    branch: main
+    full_sha: 0430f1b98466a4d07c78619db5bc56d6c9416ed7
+    source: clean_main_after_pr_554
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_governance
+    why_here: >-
+      Branch retirement and the active-run index are delivery lifecycle
+      bookkeeping owned by the P4 ops layer; they describe how work is tracked,
+      not what the product does.
+    why_not_elsewhere:
+      - no_p0_frontend_contract_or_platform_mechanism
+      - no_p1_construction_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_configuration
+      - no_database_fixture_migration_release_or_deployment
+    blast_radius:
+      - local_and_remote_candidate_branch_refs_already_merged_into_origin_main
+      - agent_active_runs_index
+  batches:
+    - id: A
+      title: retire_merged_local_branches_and_repair_run_index
+      status: completed
+      evidence:
+        - three_codex_branches_retired_via_make_branch_cleanup_exact_head_merged
+        - four_audit_fix_branches_retired_via_make_branch_cleanup_feature_exact_head_merged
+        - active_runs_index_cleared_of_deleted_branch_mappings
+  exclusions:
+    - the_real_remote_codex_branch_backlog_requires_a_separate_reviewed_manifest_authorization
+    - any_product_frontend_contract_database_or_deployment_change
+    - any_relaxation_of_identity_drift_open_pr_worktree_or_audit_guards
+  rollback:
+    - revert_the_run_index_documentation_and_metadata_commit
+  next_exact_step: >-
+    Closed 2026-10-04: three codex/* and four audit|fix merged local branches
+    were retired through the governed SHA-bound entries and the stale
+    active-run index was cleared, so no mapping points at a deleted branch.
+    The remote-only codex branch backlog stays a separately authorized
+    reviewed-manifest job; no product, contract, database or deployment change
+    is in this goal.
