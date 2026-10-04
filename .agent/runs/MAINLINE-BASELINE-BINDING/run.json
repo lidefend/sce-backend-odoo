@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "id": "MAINLINE-BASELINE-BINDING",
+  "branch": "fix/mainline-baseline-binding",
+  "status": "completed",
+  "baseline_sha": "425c0118dbf82f07938ad26939270777f7623cdb",
+  "goal": ".agent/goals/MAINLINE-BASELINE-BINDING.yaml",
+  "record": "docs/ops/iterations/mainline_baseline_binding_20261005.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/MAINLINE-BASELINE-BINDING.yaml",
+    ".agent/runs/MAINLINE-BASELINE-BINDING/",
+    "docs/ops/iterations/mainline_baseline_binding_20261005.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline Make gates and tracked run/record/index metadata; no database, service, credential, remote write or product runtime"
+  },
+  "checks": {
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Closed 2026-10-05: mainline baseline 425c0118dbf82f07938ad26939270777f7623cdb is recorded as the anchor for the next round; the active-run index is intentionally empty at this frozen candidate, so ci.local.iteration reports 'unregistered' until a successor run is registered with this baseline_sha.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false,
+  "completion": {
+    "batch": "passed: mainline baseline 425c0118 recorded as the successor anchor; verify.agent.resume.unit 30/30",
+    "mainline": "publishing the frozen candidate through the ordinary PR lane; the exact-head identity is the frozen source commit and its ci.local.quick receipt",
+    "deployment": "not_run",
+    "product_delivery": "not_run",
+    "bound_baseline_sha": "425c0118dbf82f07938ad26939270777f7623cdb",
+    "remote_readback": {
+      "backend_test_suite": {
+        "run": 37229452451,
+        "event": "workflow_dispatch",
+        "ref": "main",
+        "head_sha": "425c0118dbf82f07938ad26939270777f7623cdb",
+        "conclusion": "success",
+        "detail": "13/13 modules, 538 tests, 0 failed / 0 error"
+      },
+      "frontend_release_gate": {
+        "run": 37229455315,
+        "event": "workflow_dispatch",
+        "ref": "main",
+        "head_sha": "425c0118dbf82f07938ad26939270777f7623cdb",
+        "conclusion": "success",
+        "detail": "single authoritative release command passed; checkout/evidence identity proven"
+      }
+    },
+    "l1": {
+      "agent_resume": {
+        "command": "make verify.agent.resume.unit",
+        "status": "passed",
+        "tests": 30,
+        "log": ".runtime/agent-runs/MAINLINE-BASELINE-BINDING/agent_resume.log"
+      },
+      "iteration": {
+        "command": "make ci.local.iteration",
+        "status": "passed",
+        "change_state": "dirty"
+      },
+      "freeze_prepare": {
+        "command": "make ci.delivery.freeze.prepare",
+        "status": "passed",
+        "note": "no generated report changed"
+      },
+      "quick": {
+        "command": "make ci.local.quick",
+        "status": "pending_at_frozen_head",
+        "receipt": ".git/codex/evidence/ci.local.quick/<frozen-head-sha>.json"
+      }
+    }
+  }
+}
