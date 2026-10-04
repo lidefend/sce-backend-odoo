@@ -1,0 +1,51 @@
+schema_version: 1
+goal:
+  id: MAINLINE-BASELINE-BINDING
+  title: bind_the_current_mainline_baseline_for_the_next_round
+  status: completed
+  formal_product_layer: P4
+  layer_target: engineering_context_baseline_anchor
+  module:
+    - .agent
+  objective: >-
+    Record the current clean mainline 425c0118dbf82f07938ad26939270777f7623cdb as the
+    bound baseline anchor for the next work round, so the successor run registers its
+    baseline_sha against a known-good, evidence-backed mainline instead of an inferred or
+    stale SHA. Metadata only; no product code, contract, guard, runtime, database or
+    deployment change.
+  baseline:
+    branch: main
+    full_sha: 425c0118dbf82f07938ad26939270777f7623cdb
+    source: clean_main_after_pr_566_with_refreshed_scheduled_lanes
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_governance
+    why_here: >-
+      A baseline anchor is engineering-context delivery metadata owned by the P4 ops layer;
+      it declares which mainline a round starts from, not what the product does.
+    why_not_elsewhere:
+      - no_p0_frontend_contract_or_platform_mechanism
+      - no_p1_construction_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_configuration
+      - no_database_fixture_migration_release_or_deployment
+    blast_radius:
+      - one_recorded_baseline_sha_for_the_successor_run
+  batches:
+    - id: A
+      title: bind_the_mainline_baseline
+      status: completed
+      evidence:
+        - mainline_sha_recorded_as_425c0118
+        - backend_full_lane_green_at_425c0118
+        - frontend_release_gate_green_at_425c0118
+        - freeze_complexity_and_contract_locks_pass_at_425c0118
+  exclusions:
+    - no_change_to_any_completed_goal_run_or_manifest
+    - no_new_global_baseline_registry_file
+    - no_relaxation_of_any_guard_or_assertion
+  rollback:
+    - revert_the_recorded_anchor_commit
+  next_exact_step: >-
+    Closed 2026-10-05: mainline baseline 425c0118dbf82f07938ad26939270777f7623cdb is
+    bound as the successor anchor and this metadata-only candidate is published through
+    the ordinary PR lane; the active-run index stays empty.
