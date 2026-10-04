@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "id": "CI-SCHEDULED-FULL-LANE-RECOVERY-D",
-  "branch": "fix/acceptance-fixture-company-reconcile",
-  "status": "active",
-  "baseline_sha": "127f2072477684e3eb22319fedc6099d8d319d78",
+  "branch": "fix/close-scheduled-lane-recovery-ledger",
+  "status": "completed",
+  "baseline_sha": "91f9d371806e19fded426b1b598a56971680794c",
   "goal": ".agent/goals/CI-SCHEDULED-FULL-LANE-RECOVERY-D.yaml",
   "record": "docs/ops/iterations/scheduled_ci_core_regression_recovery_20261004.md",
   "scope": [
@@ -49,13 +49,11 @@
     }
   },
   "blockers": [
-    "Batch 2 merged to main as 127f2072 (PR #563); the frontend full lane and the four required checks were green on the frozen head.",
-    "Open blocker (this batch): the backend_test_suite lane on merged main is red because the acceptance-fixture reconcile test cannot observe a stored related column through the ORM. Fixed on fix/acceptance-fixture-company-reconcile; the CI backend lane must re-run green on the merged head.",
-    "Pre-existing, not introduced here: make verify.frontend.fixture.guard fails with KeyError 'project.project' on unmodified main as well; recorded, not repaired.",
-    "Environment: the two remaining non-accounted mount holders and the DENY on the rebuild/snapshot lane stay a separate conclusion bound to the actual entry dependency; they are not generalized to 'the environment passes'. The direct make verify.frontend.fixture entry is blocked by the same class of binding and was not hand-assembled around.",
-    "Open product question (separate topic, not resolved here): the 89-page released contract, config/frontend/authoritative_navigation.json and backend ROLE_SURFACE_OVERRIDES['finance'] still disagree about the finance settlement surface."
+    "Both scheduled lanes are green on main 91f9d371: backend_test_suite (run 37221450001) and frontend_release_gate full (run 37221446603). The goal objective is met.",
+    "Standing, separate from this goal: the two non-accounted mount holders and the DENY on the rebuild/snapshot lane remain bound to their actual entry dependency and are not generalized to 'the environment passes'. make verify.frontend.fixture.guard still fails with KeyError 'project.project' on main (pre-existing).",
+    "Open product question (separate topic): the 89-page released contract, config/frontend/authoritative_navigation.json and backend ROLE_SURFACE_OVERRIDES['finance'] still disagree about the finance settlement surface."
   ],
-  "next_exact_step": "Run make ci.local.iteration plus the risk-selected targeted lanes on fix/acceptance-fixture-company-reconcile, commit the fixture fix with the record update, push and open the PR against main, merge through the protected flow once the required checks are green, then re-dispatch backend_test_suite on the merged main and read it back green.",
+  "next_exact_step": "Goal achieved; no further action in this run. Retire fix/close-scheduled-lane-recovery-ledger after merge. A future task must register its own run rather than inherit this completed one.",
   "results": [
     {
       "layer": "L1",
@@ -252,6 +250,30 @@
       "status": "not_run",
       "note": "Blocked by the already recorded environment DENY: the direct target binds a compose env whose db host has no sc_frontend_acceptance database (psycopg2 OperationalError), while the registered acceptance stack runs under project sc-fe-r2-p1-01. Not hand-assembled around; the authoritative lane for this layer is the re-dispatched CI backend suite.",
       "log": "/tmp/fixture_runtime.log"
+    },
+    {
+      "layer": "L4 (CI)",
+      "command": "backend_test_suite on the PR head (run 37218726765) plus the required PR checks",
+      "stage_identity": "PR #564 head 6f2f7b1b2abb2f2b68998651d9753e4959c093fe",
+      "status": "passed",
+      "note": "Backend lane green on the PR head before merge (13/13 modules, smart_construction_acceptance_fixture 0 failed of 6 tests); public_guard, merge_policy_gate, professional_quality_gate and frontend_release_gate green on the same head; local exact-head ci.local.quick PASS.",
+      "log": "GitHub run 37218726765; .git/codex/evidence/ci.local.quick/6f2f7b1b2abb2f2b68998651d9753e4959c093fe.json"
+    },
+    {
+      "layer": "L4 (CI)",
+      "command": "gh workflow run backend_test_suite.yml --ref main (run 37221450001)",
+      "stage_identity": "main 91f9d371806e19fded426b1b598a56971680794c",
+      "status": "passed",
+      "note": "Scheduled backend lane read back green on the merged main: all 13 modules 0 failed / 0 error, including smart_construction_acceptance_fixture 0 failed of 6 tests.",
+      "log": "GitHub run 37221450001"
+    },
+    {
+      "layer": "L4 (CI)",
+      "command": "gh workflow run frontend_release_gate.yml --ref main (run 37221446603)",
+      "stage_identity": "main 91f9d371806e19fded426b1b598a56971680794c",
+      "status": "passed",
+      "note": "Scheduled frontend full lane read back green on the merged main.",
+      "log": "GitHub run 37221446603"
     }
   ]
 }
