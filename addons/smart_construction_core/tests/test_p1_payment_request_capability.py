@@ -1722,6 +1722,9 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.project.user_id = manager
         self._set_request_state(request, "submit")
         request.request_validation()
+        # A live instance only authorizes its current reviewer, so bind the
+        # capability holder under test instead of asserting role-only approval.
+        request.review_ids.sudo().write({"reviewer_ids": [(4, manager.id)]})
         request.invalidate_recordset(["review_ids", "validation_status", "can_review"])
         self.assertTrue(request.review_ids)
         payload = build_financial_form_business_actions(

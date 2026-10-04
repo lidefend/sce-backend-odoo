@@ -349,12 +349,15 @@ class ScApprovalPolicy(models.Model):
             record.restart_validation()
             if record.review_ids:
                 # OCA only clears the instance while the document still reports a
-                # start state.  Governed callers route after entering submission, so a
-                # finished (non-live) instance can survive that reset; clear exactly
-                # the finished reviews here instead of treating it as a reset failure.
-                record.review_ids.filtered(
-                    lambda review: review.status not in ("waiting", "pending")
-                ).unlink()
+                # start state, but governed callers route after entering submission.
+                # A rejected instance therefore survives that reset with its sibling
+                # steps still pending/waiting, so a finished instance must be cleared
+                # in full before a fresh chain is built.  The guard above already
+                # refused a live in-flight instance; anything else here is not a
+                # finished instance and stays fail-closed.
+                if record.validation_status not in ("rejected", "validated"):
+                    raise UserError(_("旧审批实例未能重置，请检查单据提交状态。"))
+                record.review_ids.unlink()
                 record.invalidate_recordset(["review_ids"])
             if record.review_ids:
                 raise UserError(_("旧审批实例未能重置，请检查单据提交状态。"))

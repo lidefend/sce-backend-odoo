@@ -105,3 +105,57 @@ rollback case. Each will be classified (A) or (B) before any edit.
 Batch 1: converge `smart_construction_core` to 0 failing on `sc_tmp_core_suite`, then freeze
 and deliver via the governed PR flow. Batch 2: fix the relation-read authority, then dispatch
 both schedule lanes on the merged main.
+
+## Batch 1 follow-up (PR #561 merged, nightly still red)
+
+PR #561 merged as `a61615b8`. The dispatched `backend_test_suite` on the merged main
+(run `37194316962`) still failed with `2 failed, 1 error(s) of 471`, so Batch 1 was **not**
+closed and the nightly lane had been red for three consecutive days.
+
+### Invalidated evidence
+
+The PR's local L2 evidence (`sc_tmp_core_suite`, log `/tmp/local_sc_core_test7.log`) reported
+`0 failed, 0 error(s)`. That database already had `smart_construction_core` installed, so
+`--without-demo=all -i` never re-installed it and the run never exercised the fresh-install
+path the CI lane uses. Reproduction on a fresh database (`sc_ci_repro_core1`) reproduced the
+exact CI failures. That evidence is superseded; the replacement is a fresh-database run.
+
+### Root causes (all in the payment-request approval area touched by #525/#561)
+
+1. `sc.approval.policy._start_submission_review` (product). A rejected payment request keeps
+   its sibling `tier.review` rows `pending/waiting`; only the reviewer's own row becomes
+   `rejected`, so `validation_status` is `rejected` while three steps are still live. The
+   "clear only finished reviews" branch therefore deleted one row and then raised
+   `旧审批实例未能重置`. Resubmission must clear the whole finished instance.
+   `_state_from` for `payment.request` is `["draft"]` while submissions enter `submit`, so
+   OCA's `restart_validation()` never clears the instance for this model.
+2. `TestPaymentRequestWorkItemService` fixture. The submitted record's reviewers were bound to
+   the executive only, so the finance actor the assertions exercise could not review.
+3. `TestP1PaymentRequestCapability.test_available_actions_use_model_capabilities_not_role_names`
+   fixture. The capability-holder under test was never bound as the live instance's reviewer.
+
+Root causes 2 and 3 are fixture bindings, not relaxed assertions: the projection legitimately
+requires `can_review` for a live instance (R10-v2), and the fixtures now express a record whose
+current step the actor under test actually owns.
+
+### Fix and evidence
+
+- `models/support/approval_policy.py`: clear the whole finished instance, fail closed for
+  anything that is neither `rejected` nor `validated`.
+- `tests/test_payment_request_work_item_service.py`,
+  `tests/test_p1_payment_request_capability.py`: bind the actors under test as current reviewers.
+- Fresh-install L2 (`sc_ci_repro_core2`): `0 failed, 0 error(s) of 471` (`/tmp/repro_core2.log`).
+- Focused L2 (4 tests): `0 failed, 0 error(s)` (`/tmp/repro_core2_focused.log`).
+- `verify.ci.scheduled_gates`: PASS, 29 tests (`/tmp/ci_scheduled_gates_batch2.log`).
+- `scripts/ci/personal_data_scan.py`: PASS, `confirmed_matches=0` (`/tmp/personal_data_scan_batch2.log`).
+- Generated evidence: the added lines bump the complexity metric for
+  `approval_policy.py` and `test_p1_payment_request_capability.py`, so
+  `docs/engineering_convergence/complexity_budget_report.md` was refreshed with
+  `python3 scripts/ci/generate_complexity_budget_report.py --write` and committed with this batch.
+
+## Corrected next exact step
+
+Publish this branch, confirm the four required checks on the PR head, then re-dispatch
+`backend_test_suite` on the merged main and require `0 failed, 0 error(s) of 471` from a fresh
+per-module database. Only then is the nightly lane closed. Batch 2 (frontend relation-read 403)
+follows.
