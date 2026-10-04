@@ -15,7 +15,8 @@
   "frontend/apps/web/src/",
   "config/frontend/",
   "docs/ops/iterations/",
-  ".agent/"
+  ".agent/",
+  "scripts/ci/personal_data_false_positives.json"
  ],
  "environment": {
   "kind": "runtime",
@@ -72,6 +73,14 @@
    "failed": 0,
    "errors": 0,
    "log": "/tmp/fix_three.log"
+  },
+  {
+   "layer": "L1",
+   "command": "python3 scripts/ci/personal_data_scan.py",
+   "stage_identity": "HEAD=f15821735505f845fe75b07e6bdb1531c047863c dirty=scripts/ci/personal_data_false_positives.json",
+   "status": "passed",
+   "note": "confirmed_matches=0 suppressed_false_positives=22; the ledger guard realignment changed the synthetic fixture blob, so its exact-SHA exemption was registered through the governed registry.",
+   "log": "/tmp/personal_data_scan1.log"
   }
  ]
 }

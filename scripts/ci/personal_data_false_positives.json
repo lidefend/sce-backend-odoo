@@ -67,6 +67,13 @@
     {
       "rule_id": "PD003",
       "path": "addons/smart_construction_core/tests/test_p0_ledger_gate.py",
+      "blob_id": "58bcfb44cf347f0c5bfc705248b021355f0a3ddd",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_ledger_fixture"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p0_ledger_gate.py",
       "blob_id": "9f67b170a9904f1452b9e516069f8a3823669cb0",
       "classification": "BANK_ACCOUNT_PATTERN",
       "reason": "verified_synthetic_ledger_fixture"
