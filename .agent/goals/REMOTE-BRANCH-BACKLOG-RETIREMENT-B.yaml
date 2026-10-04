@@ -1,0 +1,60 @@
+schema_version: 1
+goal:
+  id: REMOTE-BRANCH-BACKLOG-RETIREMENT-B
+  title: remote_historical_non_codex_branch_backlog_retirement
+  status: completed
+  formal_product_layer: P4
+  layer_target: governed_historical_remote_reference_retirement
+  module:
+    - docs/ops/manifests
+    - docs/ops/iterations
+    - .agent
+  objective: >-
+    Retire only the 181 historical origin references (feature/fix/audit/refactor)
+    that are proven squash-merged by an exact-head merged PR, through the governed
+    make branch.retire.historical entry bound to an exact manifest SHA-256 and a
+    verified recovery bundle. Never infer, broaden or force a deletion; leave every
+    unproven, protected, outside-governed-prefix or runtime-carrier-referenced branch
+    in place.
+  baseline:
+    branch: main
+    full_sha: b6fe93f451bd29d356f9f07bb8ba223ee53ed195
+    source: clean_main_after_pr_567
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_governance
+    why_here: >-
+      Remote reference retirement is a delivery-lifecycle control owned by the P4 ops
+      layer; it changes how the repository tracks its own history, not what the product
+      does.
+    why_not_elsewhere:
+      - no_p0_frontend_contract_or_platform_mechanism
+      - no_p1_construction_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_configuration
+      - no_database_fixture_migration_release_or_deployment
+    blast_radius:
+      - one_hundred_eighty_one_origin_refs_proven_merged_by_exact_head_merged_pr
+      - the_tracked_retirement_manifest_and_its_record
+  batches:
+    - id: A
+      title: retire_181_proven_merged_origin_refs_under_exact_manifest_sha256
+      status: completed
+      evidence:
+        - manifest_sha256_9d59ee32ea2b4444bda943e3a981243f0d4a88a42f55d54500ccc9a8d87277e5
+        - dry_run_eligible_181_skipped_0
+        - recovery_bundle_verified_head_count_181_sha256_132c1a66
+        - apply_completed_181_retired_0_skipped_exact_lease_each
+        - origin_heads_259_to_78_zero_target_residue
+        - excluded_sets_intact_50_unproven_19_release_5_outside_3_carrier
+  exclusions:
+    - fifty_branches_without_an_exact_head_merged_pr_require_separate_judgement
+    - nineteen_release_refs_are_structurally_protected
+    - five_refs_outside_governed_prefixes
+    - three_branches_referenced_by_runtime_carriers_need_a_separate_p4_cleanup
+    - any_relaxation_of_identity_drift_open_pr_worktree_carrier_or_manifest_binding_guards
+  rollback:
+    - restore_any_retired_reference_from_the_verified_recovery_bundle
+  next_exact_step: >-
+    Registered 2026-10-05 under owner authorization option 1: build the reviewed
+    per-entry manifest for the 181 proven-merged origin references and retire them
+    through the governed entry. Excluded sets stay in place.
