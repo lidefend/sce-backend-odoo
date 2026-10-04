@@ -91,7 +91,7 @@ Generated from repository source files. This report is informational during the 
 | 1395 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1389 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
-| 1320 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
+| 1334 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1320 | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1305 | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 1300 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
@@ -264,7 +264,7 @@ Generated from repository source files. This report is informational during the 
 | 1395 | warning | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1389 | warning | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1339 | warning | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
-| 1320 | warning | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
+| 1334 | warning | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1320 | warning | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1305 | warning | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 1300 | warning | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |

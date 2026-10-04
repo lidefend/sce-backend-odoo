@@ -306,3 +306,44 @@ is now parsed with `ast`: it requires `CONTRACT_MENU_XMLID == smart_construction
 binding that consumes those two constants, and the absence of the legacy
 `menu_sc_construction_contract` menu. The released entry and the declared action pair are still
 locked; the formatting is not. Local `make -k verify.frontend.release.unit` then passed.
+
+### Root cause (d) — the backend lane went red after Batch 2 merged (P4 acceptance-fixture tooling)
+
+Batch 2 merged as `127f2072` (PR #563) and the frontend lane and the four required checks were green
+on the frozen head. The scheduled backend lane then had to be re-read on the merged main: the
+re-dispatch (`37216827342`) **failed** at `smart_construction_acceptance_fixture`, so the goal
+(restore the two scheduled lanes) is not yet met.
+
+- Symptom: `TestAcceptanceFixtureExecutionFreeze.test_reconcile_project_company_repairs_rows_from_a_reused_database`
+  asserted `res.company(3) != res.company(4)` at line 134 — i.e. *before* `_reconcile_project_company`
+  is called, in the code that sets up the stale precondition. Reproduced locally through the governed
+  profile (`make verify.acceptance_fixture.execution_freeze.orm`, `sc_dev_demo`) with the identical
+  shape `289 != 290` (`/tmp/freeze_orm.log`).
+- Real cause: `payment.request.company_id` and `sc.payment.execution.company_id` are stored *related*
+  fields on `project_id.company_id`. The test wrote the stale value with raw SQL and then called
+  `invalidate_recordset(["company_id"])`; invalidating a stored computed field makes the ORM
+  **recompute** it from `project_id`, so a warm-cache ORM read can never expose the stale value. The
+  guarantee the test needed is about the stored column, which is exactly what the company-scoped list
+  rules read.
+- Fix (P4, `addons/smart_construction_acceptance_fixture/`): `_reconcile_project_company` now
+  compares and repairs the stored `company_id` column itself (SQL read, SQL repair when it differs,
+  cache invalidation afterwards), and the test writes the stale value into the column and asserts the
+  column is repaired, plus reconciler idempotence. No assertion was relaxed and no product model,
+  ACL or field permission was touched.
+- Negative control: with the helper temporarily reverted to the previous ORM-only guard the new test
+  fails at the stored-column assertion (`AssertionError: 296 != 295`, `/tmp/freeze_orm_neg.log`), so
+  the test detects the defect rather than restating it. Helper restored; the lane is green
+  (`0 failed / 0 error of 2 tests`).
+- L1 beside it: `make verify.daily_dev.acceptance_fixture.unit` 21 tests OK;
+  `make ci.local.iteration` PASS; `make verify.ci.scheduled_gates` PASS;
+  `make verify.frontend.release_navigation_policy.guard` PASS.
+- Pre-existing, not introduced here: `make verify.frontend.fixture.guard` fails with
+  `KeyError: 'project.project'` on unmodified `127f2072` as well (`/tmp/guard_baseline.log`). The
+  direct `make verify.frontend.fixture` runtime entry is blocked by the recorded environment binding
+  (`database "sc_frontend_acceptance" does not exist` on the compose env it binds) and was not
+  hand-assembled around; the authoritative lane for that layer stays the CI backend suite.
+- Why the CI run had only covered two modules: the step runs under `bash -e`, so the first failing
+  module aborted the loop (`sc_norm_engine` passed, `smart_construction_acceptance_fixture` failed,
+  the remaining eleven modules never ran). Between `2c3a9200` and `127f2072` the only backend module
+  changes are inside `smart_construction_acceptance_fixture`, so the re-dispatch is expected to clear
+  the rest, but that is a prediction until the lane is read back.
