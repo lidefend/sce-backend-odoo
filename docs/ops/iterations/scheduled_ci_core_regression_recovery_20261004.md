@@ -254,3 +254,16 @@ All four points are in the #525 (`2d164a1f`) diff and are fixed in the owning re
 - The environment DENY on the rebuild/snapshot lane stays a separate conclusion bound to the
   actual entry dependency and independent review; it is **not** generalized to "the environment
   passes". `acceptance.runtime.baseline_recovery.audit` PASS is recorded on its own.
+
+### Follow-up: the first dispatched full lane exposed a stale guard literal
+
+The first dispatched full lane at `6dce3a1d` (run `37208704607`) failed inside
+`verify.frontend.release.unit`: `scripts/verify/test_frontend_delivery_hardening_guard.py::
+ContractFormCacheOwnershipTest.test_browser_contract_target_uses_released_ten_center_entry`
+asserted the *single-line spelling* of the runtime-ids contract binding, which the released-surface
+change rewrote into the declared form. The assertion locked formatting, not the declaration, so it
+is now parsed with `ast`: it requires `CONTRACT_MENU_XMLID == smart_construction_core.menu_sc_p1_daily_contract`,
+`CONTRACT_ACTION_XMLID == smart_construction_core.action_sc_general_contract`, a `payload["contract"]`
+binding that consumes those two constants, and the absence of the legacy
+`menu_sc_construction_contract` menu. The released entry and the declared action pair are still
+locked; the formatting is not. Local `make -k verify.frontend.release.unit` then passed.

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import ast
 import re
 import json
 import subprocess
@@ -193,19 +194,66 @@ class ContractFormCacheOwnershipTest(unittest.TestCase):
         self.assertIn("noEagerCandidateSurfaces", source)
 
     def test_browser_contract_target_uses_released_ten_center_entry(self):
-        source = (ROOT / "scripts/verify/frontend_delivery_hardening_runtime_ids.py").read_text(
-            encoding="utf-8"
+        # The binding must be checked through its declared constants rather than a
+        # literal source spelling, so the guard locks the released entry and the
+        # declared action pair instead of one line's formatting.
+        path = ROOT / "scripts/verify/frontend_delivery_hardening_runtime_ids.py"
+        text = path.read_text(encoding="utf-8")
+        module = ast.parse(text)
+
+        def module_constant(name):
+            for node in module.body:
+                if (
+                    isinstance(node, ast.Assign)
+                    and len(node.targets) == 1
+                    and isinstance(node.targets[0], ast.Name)
+                    and node.targets[0].id == name
+                ):
+                    return node.value
+            return None
+
+        menu_value = module_constant("CONTRACT_MENU_XMLID")
+        action_value = module_constant("CONTRACT_ACTION_XMLID")
+        self.assertIsInstance(menu_value, ast.Constant)
+        self.assertEqual(
+            menu_value.value, "smart_construction_core.menu_sc_p1_daily_contract"
+        )
+        self.assertIsInstance(action_value, ast.Constant)
+        self.assertEqual(
+            action_value.value, "smart_construction_core.action_sc_general_contract"
         )
 
-        self.assertIn(
-            '"contract": target("smart_construction_core.menu_sc_p1_daily_contract", '
-            '"smart_construction_acceptance_fixture.fe_general_contract_a")',
-            source,
+        payload = next(
+            node.value
+            for node in module.body
+            if isinstance(node, ast.Assign)
+            and isinstance(node.value, ast.Dict)
+            and any(
+                isinstance(target, ast.Name) and target.id == "payload"
+                for target in node.targets
+            )
         )
-        self.assertNotIn(
-            '"contract": target("smart_construction_core.menu_sc_construction_contract"',
-            source,
+        contract_binding = next(
+            value
+            for key, value in zip(payload.keys, payload.values)
+            if isinstance(key, ast.Constant) and key.value == "contract"
         )
+        self.assertIsInstance(contract_binding, ast.Call)
+        self.assertIsInstance(contract_binding.func, ast.Name)
+        self.assertEqual(contract_binding.func.id, "target")
+        self.assertIsInstance(contract_binding.args[0], ast.Name)
+        self.assertEqual(contract_binding.args[0].id, "CONTRACT_MENU_XMLID")
+        declared_action = next(
+            (
+                keyword.value
+                for keyword in contract_binding.keywords
+                if keyword.arg == "declared_action_xmlid"
+            ),
+            None,
+        )
+        self.assertIsInstance(declared_action, ast.Name)
+        self.assertEqual(declared_action.id, "CONTRACT_ACTION_XMLID")
+        self.assertNotIn("menu_sc_construction_contract", text)
 
     def test_browser_payment_target_uses_role_owned_hardening_fixture(self):
         source = (ROOT / "scripts/verify/frontend_delivery_hardening_runtime_ids.py").read_text(

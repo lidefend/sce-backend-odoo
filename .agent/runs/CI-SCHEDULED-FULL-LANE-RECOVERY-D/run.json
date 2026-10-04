@@ -153,6 +153,24 @@
       "errors": 0,
       "note": "Batch 1 closure on merged main, fresh per-module database: 'smart_construction_core: 0 failed, 0 error(s) of 471 tests'. Supersedes the 2 failed / 1 error nightly result.",
       "log": "/tmp/b1_job_summary.log"
+    },
+    {
+      "layer": "L2",
+      "command": "make -k verify.frontend.release.unit",
+      "stage_identity": "HEAD=6dce3a1d dirty=scripts/verify/test_frontend_delivery_hardening_guard.py",
+      "status": "passed",
+      "note": "Discovered by the first dispatched full lane (run 37208704607, commit 6dce3a1d): the guard asserted one literal spelling of the runtime-ids contract binding. Replaced with an ast-based assertion on the declared menu/action constants plus the payload binding, so the released entry stays locked without locking formatting. All release-unit guards pass locally.",
+      "log": "/tmp/fe_release_unit.log"
+    },
+    {
+      "layer": "L5",
+      "command": "remote: GitHub frontend_release_gate (workflow_dispatch, full mode) run 37208704607 @6dce3a1d",
+      "stage_identity": "head=6dce3a1d0bdf01639e4919009c46130bd2bdf52e",
+      "status": "failed",
+      "failed": 1,
+      "errors": 0,
+      "note": "Authoritative full lane on the branch head. It failed on the stale guard literal above and therefore never reached the browser lane; the fix is the release-unit change recorded here. A new dispatch is required at the new head.",
+      "log": "/tmp/fe_full_563.log"
     }
   ]
 }
