@@ -47,3 +47,4 @@ from . import test_intent_smoke
 from . import test_scene_runtime_contract_chain
 from . import test_res_users_audience_group_boundary
 from . import test_intent_permission_menu_visibility
+from . import test_smart_core_model_init_table_recovery

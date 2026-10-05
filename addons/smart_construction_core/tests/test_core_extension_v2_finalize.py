@@ -4,6 +4,7 @@ from copy import deepcopy
 from lxml import etree
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
+from odoo.tools.safe_eval import safe_eval
 
 from odoo.addons.smart_construction_core import core_extension
 from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
@@ -247,8 +248,14 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         if isinstance(arch, (str, bytes)):
             arch = etree.fromstring(arch)
 
-        self.assertEqual(arch.get("create"), "false")
-        self.assertEqual(arch.get("delete"), "false")
+        # Capability is declared by the entry and consumed through
+        # entryCapabilities; the action-scoped view stays presentation-only and
+        # must not carry capability attributes of its own.
+        self.assertIsNone(arch.get("create"))
+        self.assertIsNone(arch.get("delete"))
+        declared = safe_eval(action.context or "{}", {"context": {}})
+        self.assertIs(declared.get("create"), False)
+        self.assertIs(declared.get("delete"), False)
         self.assertEqual(
             arch.xpath("//form/header/button/@name"),
             ["action_sc_submit"],
@@ -347,9 +354,15 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         arch = dashboard_form._get_combined_arch()
         if isinstance(arch, (str, bytes)):
             arch = etree.fromstring(arch)
-        self.assertEqual(arch.get("create"), "0")
-        self.assertEqual(arch.get("edit"), "0")
-        self.assertEqual(arch.get("delete"), "0")
+        # The presentation view must stay capability-neutral: the dashboard's
+        # read-only intent is declared on the entry and consumed from there.
+        for attribute in ("create", "edit", "delete", "duplicate"):
+            self.assertNotIn(arch.get(attribute), ("0", "false", "False"), attribute)
+        denial = safe_eval(action.context or "{}", {"context": {}})
+        self.assertIs(denial.get("create"), False)
+        self.assertIs(denial.get("edit"), False)
+        self.assertIs(denial.get("delete"), False)
+        self.assertIs(denial.get("no_duplicate"), True)
         for field_name in ("tender_bid_ids", "contract_ids", "document_ids"):
             fields = arch.xpath(
                 "//field[@name=$name and not(ancestor::field)]",
@@ -379,18 +392,10 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             {**params, "subject": "action"},
         )
         self.assertEqual(source["view_id"], dashboard_form.id, source.get("view_ids_by_type"))
-        self.assertEqual(
-            {
-                key: source["views"]["form"]["capabilities"][key]
-                for key in ("can_create", "can_write", "can_delete", "can_duplicate")
-            },
-            {
-                "can_create": False,
-                "can_write": False,
-                "can_delete": False,
-                "can_duplicate": False,
-            },
-        )
+        # The dashboard's read-only capability is owned by the entry declaration
+        # (asserted above) and consumed into the effective projection; the
+        # presentation view stays capability-neutral, so its own view-level
+        # defaults are deliberately not asserted as the authority here.
         result = handler.handle(params)
         envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
         self.assertTrue(envelope.get("ok", True), envelope)
@@ -398,6 +403,14 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         global_status = contract["statusContract"]["globalStatus"]
         self.assertEqual(global_status["effectiveRenderProfile"], "readonly", global_status)
         self.assertEqual(global_status["pageAuth"], "read", global_status)
+        # The declared entry denies every mutating operation and the consumed
+        # effective projection follows it, which is the read-only authority the
+        # presentation view must not be.
+        entry_capabilities = global_status["entryCapabilities"]
+        for operation in ("create", "write", "unlink", "duplicate"):
+            self.assertIs(entry_capabilities[operation], False, (operation, entry_capabilities))
+            self.assertIs(global_status["effectiveRecordCapabilities"][operation], False,
+                          (operation, global_status["effectiveRecordCapabilities"]))
 
         projected_subviews = set()
 
@@ -430,6 +443,60 @@ class TestCoreExtensionV2Finalize(TransactionCase):
                 if row.get("visible", True)
             },
         )
+
+    def test_project_ledger_entry_declares_readonly_and_projection_follows(self):
+        # 项目台账 is a list+form handling entry, not a creation surface:
+        # creation is owned by 新项目立项. Its refusal must be declared on the
+        # entry contract and consumed into the effective projection; the
+        # presentation form stays capability-neutral so a dedicated read-only
+        # page is never the capability authority.
+        action = self.env.ref("smart_construction_core.action_sc_project_list")
+        declared = safe_eval(action.context or "{}", {"context": {}})
+        self.assertIs(declared.get("create"), False)
+        self.assertIs(declared.get("edit"), False)
+        self.assertIs(declared.get("delete"), False)
+        self.assertIs(declared.get("no_duplicate"), True)
+
+        form_binding = action.view_ids.filtered(lambda row: row.view_mode == "form")
+        self.assertEqual(len(form_binding), 1, action.view_ids)
+        # The ledger form binding stays on the overview composition it has always
+        # served: the entry, not the form, owns the capability, and a persisted
+        # low-code orchestration on the daily runtime targets that composition.
+        self.assertEqual(
+            form_binding.view_id,
+            self.env.ref("smart_construction_core.view_project_overview_form"),
+        )
+        arch = form_binding.view_id._get_combined_arch()
+        if isinstance(arch, (str, bytes)):
+            arch = etree.fromstring(arch)
+        for attribute in ("create", "edit", "delete", "duplicate"):
+            self.assertNotIn(arch.get(attribute), ("0", "false", "False"), attribute)
+
+        project = self.env["project.project"].search([], limit=1)
+        self.assertTrue(project, "the ledger entry check requires an existing project")
+        menu = self.env.ref("smart_construction_core.menu_sc_project_project")
+        handler = UiContractV2Handler(
+            self.env,
+            su_env=self.env["ir.model"].sudo().env,
+        )
+        params = {
+            "model": "project.project",
+            "view_type": "form",
+            "record_id": project.id,
+            "action_id": action.id,
+            "menu_id": menu.id,
+            "render_profile": "edit",
+            "client_type": "web_pc",
+        }
+        result = handler.handle(params)
+        envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+        self.assertTrue(envelope.get("ok", True), envelope)
+        global_status = envelope["data"]["statusContract"]["globalStatus"]
+        entry_capabilities = global_status["entryCapabilities"]
+        effective = global_status["effectiveRecordCapabilities"]
+        for operation in ("create", "write", "unlink", "duplicate"):
+            self.assertIs(entry_capabilities[operation], False, (operation, entry_capabilities))
+            self.assertIs(effective[operation], False, (operation, effective))
 
     def test_project_information_form_preserves_field_and_child_acl_boundaries(self):
         dedicated = self.env.ref(

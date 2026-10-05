@@ -5,6 +5,30 @@ import type { NativeChatterAction } from './types';
 export type ProfessionalCollaborationCapability = 'comment' | 'attachment' | 'activity' | 'follower';
 export type ProfessionalCollaborationReadiness = 'ready' | 'fail_closed';
 
+const COLLABORATION_AUTHORITY_ABSENCE_REASONS = new Set([
+  'NOT_FOUND',
+  'MISSING_RECORD',
+  'PERMISSION_DENIED',
+  'PROJECT_SCOPE_DENIED',
+  'RECORD_SCOPE_DENIED',
+]);
+
+/**
+ * The collaboration timeline is a rebuildable projection whose authority applies
+ * the current business scope. When that authority reports the record as absent or
+ * out of scope while the record page itself loaded, the timeline has no content
+ * for this record. That must project as a declared neutral state, never as a
+ * record-level error: the raw message would tell the user the record does not
+ * exist on a page that renders it. Genuine system/network failures stay errors.
+ */
+export function isCollaborationAuthorityAbsence(cause: unknown): boolean {
+  if (!cause || typeof cause !== 'object') return false;
+  const reason = String((cause as { reasonCode?: unknown }).reasonCode || '').trim().toUpperCase();
+  if (reason && COLLABORATION_AUTHORITY_ABSENCE_REASONS.has(reason)) return true;
+  const status = Number((cause as { status?: unknown }).status || 0);
+  return status === 403 || status === 404;
+}
+
 export function collaborationCapabilityReadiness(input: {
   hasCommentAction: boolean;
   hasAttachmentAuthority: boolean;

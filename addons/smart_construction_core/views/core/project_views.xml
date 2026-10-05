@@ -10,7 +10,7 @@
         <field name="res_model">project.cost.ledger</field>
         <field name="view_mode">tree,form,pivot,graph</field>
         <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_user')), (4, ref('smart_construction_core.group_sc_cap_cost_manager'))]" />
-        <field name="context">{'default_project_id': context.get('active_id'), 'search_default_project_id': context.get('active_id')}</field>
+        <field name="context">{'delete': False, 'default_project_id': context.get('active_id'), 'search_default_project_id': context.get('active_id')}</field>
         <field name="domain">context.get('default_project_id') and [('project_id','=',context.get('default_project_id'))] or []</field>
     </record>
     <record id="action_project_progress_quick" model="ir.actions.act_window">
@@ -476,10 +476,18 @@
         <field name="priority">110</field>
         <field name="arch" type="xml">
             <xpath expr="//form" position="attributes">
-                <attribute name="create">0</attribute>
-                <attribute name="edit">0</attribute>
-                <attribute name="delete">0</attribute>
-                <attribute name="duplicate">0</attribute>
+                <!-- Capability must not be owned by a view arch. This extension
+                     used to deny create/edit/delete/duplicate for the entire
+                     project form composition, which let a presentation view
+                     decide the capability of every project entry. It stays a
+                     registered extension (module upgrades never delete view
+                     records) but only restates the neutral default so any
+                     legacy denial is overwritten; the dashboard declares its
+                     read-only intent on the action entry instead. -->
+                <attribute name="create">1</attribute>
+                <attribute name="edit">1</attribute>
+                <attribute name="delete">1</attribute>
+                <attribute name="duplicate">1</attribute>
             </xpath>
         </field>
     </record>

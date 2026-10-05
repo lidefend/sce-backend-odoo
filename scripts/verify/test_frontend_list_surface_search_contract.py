@@ -223,7 +223,8 @@ assert.throws(()=>dailyContractEvidenceRef([],row),/not captured/);
 const viewports=[{key:'1440'},{key:'390'}];
 const steps=['declared_entry_route','exact_record_contract','approved_contract_binding','declared_renderer','return_to_source'];
 const checks=viewports.flatMap(viewport=>steps.map(check=>({viewport:viewport.key,check,passed:true})));
-assert.deepEqual(dailyRecordCheckSummary(checks,viewports),{passed:10,total:10,complete:true});
+const expected=viewports.flatMap(viewport=>steps.map(check=>`${viewport.key}:${check}`));
+assert.deepEqual(dailyRecordCheckSummary(checks,viewports),{passed:10,total:10,complete:true,expected});
 assert(!dailyRecordCheckSummary([],viewports).complete);
 assert(!dailyRecordCheckSummary(checks.slice(0,9),viewports).complete);
 assert(!dailyRecordCheckSummary([...checks,checks[0]],viewports).complete);
@@ -238,18 +239,47 @@ assert(!dailyRecordCheckSummary([],[]).complete);
 const viewports=[{key:'1440'},{key:'390'}];
 const dailySteps=['declared_entry_route','exact_record_contract','declared_renderer','return_to_source'];
 const dailyChecks=viewports.flatMap(viewport=>dailySteps.map(check=>({viewport:viewport.key,check,passed:true})));
-assert.deepEqual(dailyRecordCheckSummary(dailyChecks,viewports,'not_required_for_profile'),{passed:8,total:8,complete:true});
+const dailyExpected=viewports.flatMap(viewport=>dailySteps.map(check=>`${viewport.key}:${check}`));
+assert.deepEqual(dailyRecordCheckSummary(dailyChecks,viewports,'not_required_for_profile'),{passed:8,total:8,complete:true,expected:dailyExpected});
 assert(!dailyRecordCheckSummary(dailyChecks,viewports).complete);
 const acceptedSteps=[...dailySteps.slice(0,2),'approved_contract_binding',...dailySteps.slice(2)];
 const acceptedChecks=viewports.flatMap(viewport=>acceptedSteps.map(check=>({viewport:viewport.key,check,passed:true})));
-assert.deepEqual(dailyRecordCheckSummary(acceptedChecks,viewports,'accepted'),{passed:10,total:10,complete:true});
+const acceptedExpected=viewports.flatMap(viewport=>acceptedSteps.map(check=>`${viewport.key}:${check}`));
+assert.deepEqual(dailyRecordCheckSummary(acceptedChecks,viewports,'accepted'),{passed:10,total:10,complete:true,expected:acceptedExpected});
 assert(!dailyRecordCheckSummary(acceptedChecks,viewports,'not_required_for_profile').complete);
 assert(!dailyRecordCheckSummary([...dailyChecks,dailyChecks[0]],viewports,'not_required_for_profile').complete);
 assert(!dailyRecordCheckSummary(dailyChecks.map((row,i)=>i===1?{...row,passed:false}:row),viewports,'not_required_for_profile').complete);
 assert(!dailyRecordCheckSummary(dailyChecks.map(row=>({...row,viewport:'1440'})),viewports,'not_required_for_profile').complete);
-assert.deepEqual(dailyRecordCheckSummary(dailyChecks,viewports,'not_evaluated'),{passed:8,total:8,complete:true});
+assert.deepEqual(dailyRecordCheckSummary(dailyChecks,viewports,'not_evaluated'),{passed:8,total:8,complete:true,expected:dailyExpected});
 """)
-        self.assertIn('dailyRecordCheckSummary(recordChecks, VIEWPORTS, contractGate.status)', self.probe)
+        self.assertIn('dailyRecordCheckSummary(recordChecks, VIEWPORTS, contractGate.status, DAILY_OBSERVATION_SCOPE)', self.probe)
+
+    def test_daily_record_summary_covers_the_workbench_and_form_profile_scopes(self):
+        # The workbench and form-profile scopes execute different bodies, so the
+        # expected shape must follow the scope: a workbench run has no record
+        # walk at all and a form-profile run asserts the declared create/edit
+        # entries instead of the row-opened record walk.
+        self.run_record_probe_helpers("""
+const viewports=[{key:'1440'},{key:'390'}];
+const workbench=dailyRecordCheckSummary([],viewports,'not_required_for_profile','workbench-only');
+assert.equal(workbench.total,0);assert(workbench.complete);
+assert(!dailyRecordCheckSummary([{viewport:'1440',check:'x',passed:true}],viewports,'not_required_for_profile','workbench-only').complete);
+const steps=['declared_create_entry','create_contract','create_renderer','declared_edit_entry','edit_contract','edit_renderer'];
+const checks=viewports.flatMap(viewport=>steps.map(check=>({viewport:viewport.key,check,passed:true})));
+const summary=dailyRecordCheckSummary(checks,viewports,'not_required_for_profile','form-profiles');
+assert.equal(summary.passed,12);assert.equal(summary.total,12);assert(summary.complete);
+assert(!dailyRecordCheckSummary(checks.slice(0,11),viewports,'not_required_for_profile','form-profiles').complete);
+const notApplicable=checks.map(row=>row.check==='create_renderer'?{...row,passed:false,not_applicable:true,reason:'create authority not declared'}:row);
+assert(dailyRecordCheckSummary(notApplicable,viewports,'not_required_for_profile','form-profiles').complete);
+const recordSteps=['declared_entry_route','exact_record_contract','declared_renderer','return_to_source'];
+const recordChecks=viewports.flatMap(viewport=>recordSteps.map(check=>({viewport:viewport.key,check,passed:true})));
+assert(!dailyRecordCheckSummary(recordChecks,viewports,'not_required_for_profile','form-profiles').complete);
+assert(!dailyRecordCheckSummary([],viewports,'not_required_for_profile','form-profiles').complete);
+""")
+        self.assertIn('stepsByScope[scope] || recordSteps', self.probe)
+        self.assertIn('if (FORM_PROFILES_ONLY) {', self.probe)
+        self.assertIn('dailyCreateContractMatches', self.probe)
+        self.assertIn('dailyCreateDomMatches', self.probe)
 
     def test_record_renderer_probe_is_bound_to_shipped_component_markers(self):
         page = (ROOT / 'frontend/apps/web/src/pages/ContractFormPage.vue').read_text()
@@ -280,14 +310,15 @@ assert.equal(safeFailedResponse(500,'https://daily.test/assets/a?token=secret',r
 """)
 
     def test_detail_only_does_not_claim_list_checks_and_failure_retains_rows(self):
-        self.assertIn("['all', 'record-only', 'detail-only']", self.probe)
+        self.assertIn("['all', 'record-only', 'detail-only', 'workbench-only', 'form-profiles']", self.probe)
         self.assertLess(self.probe.index('const rows = [];'), self.probe.index('try {\n  if (DAILY)'))
-        self.assertIn('for (const viewport of detailOnly ? [] : VIEWPORTS)', self.probe)
-        self.assertIn('const aggregateChecks = detailOnly ? {} :', self.probe)
-        self.assertIn("list_execution: detailOnly ? 'not_run' : 'completed'", self.probe)
+        self.assertIn('const LIST_MATRIX_SKIPPED = detailOnly || WORKBENCH_ONLY || FORM_PROFILES_ONLY;', self.probe)
+        self.assertIn('for (const viewport of LIST_MATRIX_SKIPPED ? [] : VIEWPORTS)', self.probe)
+        self.assertIn('const aggregateChecks = LIST_MATRIX_SKIPPED ? {} :', self.probe)
+        self.assertIn("list_execution: LIST_MATRIX_SKIPPED ? 'not_run' : 'completed'", self.probe)
         self.assertIn('screenshot, rows, acceptance_scope: acceptanceScope, actor_context: actorContext, record_checks: recordChecks', self.probe)
-        self.assertIn('detailOnly ? null : await productionComponentProof', self.probe)
-        self.assertIn('detailOnly ? [] : await negativeProofs', self.probe)
+        self.assertIn('LIST_MATRIX_SKIPPED ? null : await productionComponentProof', self.probe)
+        self.assertIn('LIST_MATRIX_SKIPPED ? [] : await negativeProofs', self.probe)
 
     def test_daily_identity_precedes_login_and_failure_is_reported(self):
         self.assertLess(self.probe.index('servedIdentity = await verifyServedIdentity'), self.probe.index('  await login(page, navigation);'))

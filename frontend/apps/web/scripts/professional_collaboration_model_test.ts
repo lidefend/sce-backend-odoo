@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { canDeleteCollaborationAttachment, canDeleteCollaborationMessage, canDownloadCollaborationAttachment, canExecuteCollaborationCreateAction, canReplyCollaborationMessage, canUpdateCollaborationActivity, collaborationCapabilityReadiness, formatCollaborationTimelineMeta, parseActivityEntry, visibleCollaborationTimeline } from '../src/pages/contractForm/professionalCollaborationModel';
+import { canDeleteCollaborationAttachment, canDeleteCollaborationMessage, canDownloadCollaborationAttachment, canExecuteCollaborationCreateAction, canReplyCollaborationMessage, canUpdateCollaborationActivity, collaborationCapabilityReadiness, formatCollaborationTimelineMeta, isCollaborationAuthorityAbsence, parseActivityEntry, visibleCollaborationTimeline } from '../src/pages/contractForm/professionalCollaborationModel';
 import { nativeAttachmentUploadEnabled, nativeChatterActionsFromContract } from '../src/pages/contractForm/collaborationContract';
 
 assert.deepEqual(collaborationCapabilityReadiness({ hasCommentAction: true, hasAttachmentAuthority: true, hasActivityAction: true, hasFollowerAuthority: true }), {
@@ -54,4 +54,15 @@ assert.equal(canDeleteCollaborationMessage({ key: 'wrong-delete', type: 'message
 assert.equal(canDeleteCollaborationMessage({ key: 'delete', type: 'message', message: { id: 1, can_delete: true, delete_intent: 'chatter.message.delete' } } as never), true);
 assert.deepEqual(parseActivityEntry({ key: 'missing-status', type: 'activity', title: '计划', activity: { id: 1, deadline: '2020-01-01' } } as never).status, 'unknown');
 assert.deepEqual(parseActivityEntry({ key: 'overdue', type: 'activity', title: '计划', activity: { id: 1, status: 'overdue', status_label: '已逾期' } } as never).statusLabel, '已逾期');
-console.log('[professional_collaboration_model_test] PASS cases=45');
+// The timeline authority gates a rebuildable projection by the current business
+// scope, so a readable record outside that scope answers NOT_FOUND. That is a
+// declared neutral state, not a record-level failure; a system/network failure
+// must still surface as an error.
+assert.equal(isCollaborationAuthorityAbsence({ status: 404, reasonCode: 'NOT_FOUND' }), true, 'in-scope-miss on a rebuildable projection is an authority absence');
+assert.equal(isCollaborationAuthorityAbsence({ status: 403 }), true, 'an authority permission boundary is an authority absence');
+assert.equal(isCollaborationAuthorityAbsence({ reasonCode: 'PERMISSION_DENIED' }), true, 'a permission reason code is an authority absence without a numeric status');
+assert.equal(isCollaborationAuthorityAbsence({ status: 500, reasonCode: 'SYSTEM_ERROR' }), false, 'a system failure must stay a visible error');
+assert.equal(isCollaborationAuthorityAbsence({ status: 0, reasonCode: 'NETWORK_ERROR' }), false, 'a network failure must stay a visible error');
+assert.equal(isCollaborationAuthorityAbsence(new Error('boom')), false, 'an untyped error must stay a visible error');
+assert.equal(isCollaborationAuthorityAbsence(null), false, 'a missing cause is not an authority absence');
+console.log('[professional_collaboration_model_test] PASS cases=52');

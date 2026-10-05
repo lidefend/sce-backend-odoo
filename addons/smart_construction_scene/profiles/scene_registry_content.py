@@ -138,6 +138,7 @@ def list_scene_entries() -> List[Dict[str, Any]]:
         {
             "code": "projects.list",
             "name": "项目台账",
+            "identity_owner": True,
             "target": {
                 "route": "/s/projects.list",
                 "menu_xmlid": "smart_construction_core.menu_sc_project_project",
@@ -147,6 +148,7 @@ def list_scene_entries() -> List[Dict[str, Any]]:
         {
             "code": "projects.ledger",
             "name": "项目台账",
+            "alias_of": "projects.list",
             "target": {
                 "route": "/s/projects.ledger",
                 "menu_xmlid": "smart_construction_core.menu_sc_project_project",
@@ -691,8 +693,6 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "name": "项目执行中心",
             "target": {
                 "route": "/s/projects.execution",
-                "menu_xmlid": "smart_construction_core.menu_sc_root",
-                "action_xmlid": "smart_construction_core.action_sc_project_list",
             },
         },
         {

@@ -1,7 +1,7 @@
 # ======================================================
 # ==================== Guards ==========================
 # ======================================================
-.PHONY: check-compose-project check.compose.project check-compose-env check-external-addons check-odoo-conf diag.project gate.compose.config env.print.db env.print.compose_files env.matrix.check verify.environment.topology.guard verify.frontend.acceptance.environment.guard verify.daily_dev.customer_addons.runtime verify.daily_dev.runtime_repo.clean verify.daily_dev.acceptance.env.guard
+.PHONY: check-compose-project check.compose.project check-compose-env check-external-addons check-odoo-conf diag.project gate.compose.config env.print.db env.print.compose_files env.matrix.check verify.environment.topology.guard verify.frontend.acceptance.environment.guard verify.daily_dev.customer_addons.runtime verify.daily_dev.runtime_repo.clean verify.daily_dev.acceptance.env.guard verify.daily_dev.product_menu_release_gate.guard verify.product_menu_release_gate.contract.unit
 
 IS_PROD := 0
 ifneq (,$(filter prod,$(ENV)))
@@ -142,6 +142,26 @@ verify.daily_dev.acceptance.env.guard:
 	@node scripts/verify/frontend_form_editability_discovery_test.mjs
 	@python3 -m py_compile scripts/verify/daily_dev_acceptance_env_guard.py
 	@SC_ACCEPTANCE_PROFILE=daily SC_ACCEPTANCE_EXPECTED_SHA="$$(git rev-parse HEAD)" ENV="$(ENV)" ENV_FILE="$(ENV_FILE)" DB_NAME="$(DB_NAME)" ACCEPTANCE_BASE_URL="$(ACCEPTANCE_BASE_URL)" ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" ACCEPTANCE_NAV_MIN_ACTIONS="$(ACCEPTANCE_NAV_MIN_ACTIONS)" ACCEPTANCE_NAV_MAX_ACTIONS="$(ACCEPTANCE_NAV_MAX_ACTIONS)" ACCEPTANCE_NAV_FORBIDDEN_LABELS="$(ACCEPTANCE_NAV_FORBIDDEN_LABELS)" ACCEPTANCE_NAV_REQUIRED_PATHS="$(ACCEPTANCE_NAV_REQUIRED_PATHS)" ACCEPTANCE_NAV_REQUIRED_ACTIONS="$(ACCEPTANCE_NAV_REQUIRED_ACTIONS)" ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" FRONTEND_DIST_DIR="$(FRONTEND_DIST_DIR)" VITE_API_BASE_URL="$(VITE_API_BASE_URL)" VITE_API_PROXY_TARGET="$(VITE_API_PROXY_TARGET)" VITE_ODOO_DB="$(VITE_ODOO_DB)" VITE_ODOO_DB_LOCKED="$(VITE_ODOO_DB_LOCKED)" VITE_APP_ENV="$(VITE_APP_ENV)" VITE_BUILD_MODE="$(VITE_BUILD_MODE)" VITE_BUILD_OUT_DIR="$(VITE_BUILD_OUT_DIR)" VITE_DELIVERY_MODE="$(VITE_DELIVERY_MODE)" VITE_FEATURE_FLAGS="$(VITE_FEATURE_FLAGS)" VITE_LITE_CONTRACT_PILOT="$(VITE_LITE_CONTRACT_PILOT)" VITE_LITE_CONTRACT_ROLLOUT="$(VITE_LITE_CONTRACT_ROLLOUT)" VITE_PLATFORM_ADMIN_DB="$(VITE_PLATFORM_ADMIN_DB)" VITE_TENANT="$(VITE_TENANT)" python3 scripts/verify/daily_dev_acceptance_env_guard.py
+
+# Daily runtime drift guard for the published product navigation.
+#
+# The locked menu contract (repo baseline) owns three runtime artifacts that can
+# drift independently: the product policy, the active edition-release snapshot
+# (the gate that actually decides whether an entry may be opened), and the gated
+# navigation served to the principal. Reuse the production release-gate guard and
+# declare the daily lane's published product scope explicitly. The declaration is
+# fail-closed (an unknown product key aborts the run) and defaults to the full
+# published scope, so a lane can never silently narrow its way past drift.
+DAILY_PRODUCT_MENU_PRODUCT_KEYS ?= construction.standard,construction.preview
+DAILY_PRODUCT_MENU_FULL_PRODUCT_LOGIN ?= $(or $(PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN),$(ACCEPTANCE_LOGIN))
+
+verify.product_menu_release_gate.contract.unit:
+	@python3 -m py_compile scripts/verify/production_menu_release_gate_guard.py scripts/verify/test_product_menu_release_gate_contract.py
+	@python3 scripts/verify/test_product_menu_release_gate_contract.py
+
+verify.daily_dev.product_menu_release_gate.guard: guard.prod.forbid check-compose-project check-compose-env verify.product_menu_release_gate.contract.unit
+	@test -n "$(DAILY_PRODUCT_MENU_FULL_PRODUCT_LOGIN)" || { echo "[DENY] DAILY_PRODUCT_MENU_FULL_PRODUCT_LOGIN must name the daily full-product principal (set PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN or ACCEPTANCE_LOGIN)" >&2; exit 2; }
+	@$(RUN_ENV) DB_NAME=$(DB_NAME) SC_ENVIRONMENT=dev PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN="$(DAILY_PRODUCT_MENU_FULL_PRODUCT_LOGIN)" PRODUCT_MENU_CATALOG_PRODUCT_KEYS="$(DAILY_PRODUCT_MENU_PRODUCT_KEYS)" bash scripts/ops/odoo_shell_exec.sh < scripts/verify/production_menu_release_gate_guard.py
 
 gate.compose.config: check-compose-env
 	@echo "[gate.compose.config] checking container_name..."

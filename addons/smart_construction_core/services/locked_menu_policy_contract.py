@@ -303,3 +303,121 @@ def assert_snapshot_matches_locked_contract(contract: dict, product_key: str, pa
         "exact_match": True,
         "normalized_sha256": digest,
     }
+
+
+def normalized_page_release_state(page: dict) -> str:
+    """Normalize a frozen release page the same way the runtime gate does.
+
+    A disabled page is never effective. An enabled page without an explicit
+    release state defaults to ``released`` so legacy snapshots stay comparable
+    against the same caliber as current ones.
+    """
+    row = page if isinstance(page, dict) else {}
+    if row.get("enabled") is not True:
+        return "hidden"
+    return _text(row.get("release_state")) or "released"
+
+
+def _menu_release_projection(rows: Iterable[dict]) -> list[tuple[str, str]]:
+    return [
+        (
+            _text(row.get("label") or row.get("name") or row.get("page_label")),
+            _text(row.get("menu_xmlid") or row.get("page_key") or row.get("menu_key")),
+        )
+        for row in rows
+        if isinstance(row, dict)
+    ]
+
+
+def policy_preview_rows(menu_groups) -> list[dict]:
+    """Return the policy menus explicitly declared as ``preview``.
+
+    A preview entry is a declared widening of a product face beyond the locked
+    released baseline. It is allowed only when the owning policy states it, which
+    keeps the widening controllable and knowable instead of an undeclared drift.
+    """
+    rows = []
+    for group in menu_groups if isinstance(menu_groups, (list, tuple)) else []:
+        if not isinstance(group, dict):
+            continue
+        group_label = group.get("group_label") or group.get("label") or group.get("group_key")
+        for menu in group.get("menus") or []:
+            if not isinstance(menu, dict):
+                continue
+            if menu.get("enabled") is not True or _text(menu.get("release_state")) != "preview":
+                continue
+            row = dict(menu)
+            row["_group_label"] = _text(group_label)
+            rows.append(row)
+    return rows
+
+
+def assert_snapshot_matches_policy_release_states(
+    contract: dict,
+    product_key: str,
+    pages,
+    menu_groups,
+) -> dict:
+    """Compare a frozen snapshot to the contract on one shared caliber.
+
+    The locked baseline owns the released surface; the product policy may declare
+    additional ``preview`` menus. The snapshot's released pages must equal the
+    locked baseline exactly, its preview pages must equal the policy's declared
+    preview set exactly, and no other effective state is tolerated. This keeps a
+    larger preview face controllable (only what is declared) and knowable (the
+    counts and digests are returned) without weakening the released assertion.
+    """
+    page_rows = [page for page in pages if isinstance(page, dict)] if isinstance(pages, list) else []
+    released_pages = [page for page in page_rows if normalized_page_release_state(page) == "released"]
+    preview_pages = [page for page in page_rows if normalized_page_release_state(page) == "preview"]
+    others = [page for page in page_rows if normalized_page_release_state(page) not in {"released", "preview"}]
+    if others:
+        raise LockedMenuPolicyContractError(
+            "LOCKED_MENU_SNAPSHOT_MISMATCH",
+            f"{product_key} frozen snapshot contains {len(others)} non-effective page(s)",
+        )
+    released_match = assert_snapshot_matches_locked_contract(contract, product_key, released_pages)
+    declared_preview = _menu_release_projection(policy_preview_rows(menu_groups))
+    actual_preview = _menu_release_projection(preview_pages)
+    expected_preview_set = set(declared_preview)
+    actual_preview_set = set(actual_preview)
+    missing = expected_preview_set - actual_preview_set
+    additions = actual_preview_set - expected_preview_set
+    if missing or additions or len(actual_preview) != len(actual_preview_set):
+        raise LockedMenuPolicyContractError(
+            "LOCKED_MENU_SNAPSHOT_PREVIEW_MISMATCH",
+            f"{product_key} declared={len(declared_preview)} snapshot={len(actual_preview)} "
+            f"missing={len(missing)} additions={len(additions)}",
+        )
+    return {
+        "product_key": product_key,
+        "released_count": len(released_pages),
+        "preview_count": len(preview_pages),
+        "effective_count": len(released_pages) + len(preview_pages),
+        "locked_released_count": int(released_match.get("locked_menu_count") or 0),
+        "declared_preview_count": len(declared_preview),
+        "released_normalized_sha256": _text(released_match.get("normalized_sha256")),
+        "exact_match": True,
+    }
+
+
+def resolve_declared_product_keys(
+    raw=None,
+    *,
+    default: Iterable[str] = REQUIRED_PRODUCT_KEYS,
+    allowed: Iterable[str] = REQUIRED_PRODUCT_KEYS,
+) -> tuple[str, ...]:
+    """Resolve an explicitly declared product scope, failing closed on unknown keys.
+
+    An empty declaration falls back to the full published scope; naming a product
+    outside ``allowed`` is an error rather than a silent narrowing of the check.
+    """
+    keys = tuple(item.strip() for item in str(raw or "").split(",") if item.strip())
+    keys = keys or tuple(default)
+    unknown = sorted(set(keys) - set(allowed))
+    if unknown:
+        raise LockedMenuPolicyContractError(
+            "PRODUCT_MENU_CATALOG_PRODUCT_KEYS_INVALID",
+            f"unknown product key(s): {unknown}",
+        )
+    return keys

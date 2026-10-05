@@ -1,7 +1,7 @@
 {
   "schema": "frontend_acceptance_evidence_contract.v1",
   "baseline": {
-    "baseline_sha": "b0cfa8ec41ab6b349b1d1d545fd03f59cc4c2a15",
+    "baseline_sha": "3f424993c9f378aaeedd2f26080545ad37ea3f8e",
     "baseline_sha_source": "G1 branch cut point (main HEAD when the G1 acceptance baseline was frozen); traceable to origin/main via git merge-base --is-ancestor",
     "capability_inventory_path": "docs/planning/custom-frontend-integration/G1_CAPABILITY_INVENTORY.md"
   },
@@ -15,7 +15,7 @@
     "assets": [
       {
         "path": "config/frontend/acceptance_environments_v1.json",
-        "sha256": "fbc07a7a560ace1b4d76479a1adfa6a102b0f0cab141b9174741a46b1b4022e0"
+        "sha256": "3820890a71276298e580c3cf89368cace5f94604d4aa64ae0d5885bf3955a613"
       },
       {
         "path": "config/frontend/acceptance_tool_matrix_v1.json",
@@ -31,7 +31,7 @@
     "python": "3.12.3",
     "git": "2.43.0"
   },
-  "collected_at": "2026-09-03T10:34:01Z",
+  "collected_at": "2026-10-05T09:03:26Z",
   "browser_evidence_contract": {
     "required_fields": [
       "browser_full_version",

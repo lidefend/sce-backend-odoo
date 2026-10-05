@@ -16,9 +16,9 @@ def build(scene_key: str = "projects.list", runtime: dict | None = None, context
     }
     fallback_strategy = {
         "type": "native_menu_action_compat",
-        "menu_xmlid": "smart_construction_core.menu_sc_root",
+        "menu_xmlid": "smart_construction_core.menu_sc_project_project",
         "action_xmlid": "smart_construction_core.action_sc_project_list",
-        "reason": "keep the native project root menu/action available while projects.list remains the canonical wave-1 handoff entry",
+        "reason": "keep the declared project ledger menu/action while projects.list remains the canonical wave-1 handoff entry",
     }
     return {
         "scene_key": scene_key,
@@ -30,7 +30,7 @@ def build(scene_key: str = "projects.list", runtime: dict | None = None, context
         "fallback_strategy": fallback_strategy,
         "delivery_handoff": build_direct_runtime_handoff(
             family="projects",
-            user_entry="menu:smart_construction_core.menu_sc_root",
+            user_entry="menu:smart_construction_core.menu_sc_project_project",
             final_scene="projects.list",
             primary_action=primary_action,
             required_provider="construction.projects_ledger_provider.v1|construction.projects_detail_provider.v1",

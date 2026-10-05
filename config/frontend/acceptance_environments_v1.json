@@ -54,8 +54,8 @@
       "role_bindings_env": "SC_ACCEPTANCE_ROLE_BINDINGS_JSON",
       "runtime_identity_path": "/api/runtime-version",
       "navigation_policy": {
-        "min_actions": 89,
-        "max_actions": 89,
+        "min_actions": 90,
+        "max_actions": 90,
         "forbidden_labels": ["用户核对菜单", "用户数据验收", "用户验收", "直营项目系统菜单", "物资与分包", "后续上线"],
         "required_paths": [
           "系统菜单 / 工作台 / 数据总览",

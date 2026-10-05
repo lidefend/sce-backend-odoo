@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from odoo import fields, models
 
+from odoo.addons.smart_core.core import model_table_recovery
+
 
 class ScIdempotencyRecord(models.Model):
     """统一写动作幂等记录（G7 幂等基建）。
@@ -41,7 +43,14 @@ class ScIdempotencyRecord(models.Model):
     finished_at = fields.Datetime()
 
     def init(self):
-        """DB 层并发仲裁：同 (company, actor, key) 永久唯一（部分索引）。"""
+        """DB 层并发仲裁：同 (company, actor, key) 永久唯一（部分索引）。
+
+        ``Registry.check_tables_exist`` 对缺表模型只调用本方法、不调用
+        ``_auto_init``，所以这里必须先确保基表存在，避免缺表数据库升级时
+        ``UndefinedTable``（回归锁定见
+        tests/test_smart_core_model_init_table_recovery.py）。
+        """
+        model_table_recovery.ensure_table_on_init(self)
         self.env.cr.execute(
             """
             CREATE UNIQUE INDEX IF NOT EXISTS sc_idempotency_record_key_unique

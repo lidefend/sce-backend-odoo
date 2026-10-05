@@ -30,6 +30,7 @@
 
     <record id="action_project_dashboard" model="ir.actions.act_window">
         <field name="search_view_id" ref="smart_construction_core.view_project_project_search_sc_business"/>
+        <field name="context">{'group_by': 'lifecycle_state', 'create': False, 'delete': False, 'edit': False, 'no_duplicate': True}</field>
         <field name="view_ids" eval="[(5, 0, 0),
             (0, 0, {'view_mode': 'kanban', 'view_id': ref('smart_construction_core.view_project_project_kanban_dashboard')}),
             (0, 0, {'view_mode': 'tree'}),

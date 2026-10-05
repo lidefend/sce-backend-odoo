@@ -11,7 +11,14 @@ import { acquireAcceptanceLease } from './lib/frontend_acceptance_lease.mjs';
 import { DEFAULT_RECEIPT_PATH, assertContractPrerequisite, observedContractBinding, readContractReceipt } from './lib/acceptance_contract_receipt.mjs';
 const DAILY = acceptance.profile === 'daily';
 const DAILY_OBSERVATION_SCOPE = process.env.LIST_SURFACE_DAILY_OBSERVATION_SCOPE || 'all';
-if ((!DAILY && DAILY_OBSERVATION_SCOPE !== 'all') || !['all', 'record-only', 'detail-only'].includes(DAILY_OBSERVATION_SCOPE)) throw new Error('unknown daily observation scope');
+const DAILY_SCOPES = ['all', 'record-only', 'detail-only', 'workbench-only', 'form-profiles'];
+if ((!DAILY && DAILY_OBSERVATION_SCOPE !== 'all') || !DAILY_SCOPES.includes(DAILY_OBSERVATION_SCOPE)) throw new Error('unknown daily observation scope');
+// Scope variants reuse this one governed tool instead of adding a new framework:
+//   all            -> declared landing + workspace home + list matrix + record read-only walk
+//   workbench-only -> declared landing + workspace home only
+//   form-profiles  -> declared create/edit/readonly entry + renderer consumption only
+const WORKBENCH_ONLY = DAILY && DAILY_OBSERVATION_SCOPE === 'workbench-only';
+const FORM_PROFILES_ONLY = DAILY && DAILY_OBSERVATION_SCOPE === 'form-profiles';
 const dailyRuntime = DAILY ? await (async () => {
   const { build } = await import('../../frontend/apps/web/node_modules/esbuild/lib/main.js');
   const bundled = await build({ stdin: { contents: "export * from './app/runtime/recordEntryContract'; export * from './app/routeQuery'; export * from './app/resolvers/sceneRegistry';", resolveDir: path.join(acceptance.root, 'frontend/apps/web/src'), loader: 'ts' }, bundle: true, platform: 'node', format: 'esm', define: { 'import.meta.env.DEV': 'false' }, write: false });
@@ -23,6 +30,8 @@ const LOGIN = DAILY ? acceptance.login : process.env.E2E_LOGIN || acceptance.log
 const PASSWORD = DAILY ? acceptance.password : process.env.E2E_PASSWORD || acceptance.password || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
 const BOOTSTRAP_SECRET = DAILY ? '' : process.env.SC_ACCEPTANCE_BOOTSTRAP_SECRET || '';
 const PHASE = String(process.env.LIST_SURFACE_PHASE || 'full');
+const COLOR_SCHEME = String(process.env.LIST_SURFACE_COLOR_SCHEME || '').trim().toLowerCase();
+if (COLOR_SCHEME && !['light', 'dark'].includes(COLOR_SCHEME)) throw new Error('unknown LIST_SURFACE_COLOR_SCHEME');
 const OUTPUT = path.resolve(process.env.LIST_SURFACE_OUTPUT || '.runtime/final-acceptance/list-surface-structure');
 const REPORT = path.resolve(process.env.LIST_SURFACE_REPORT || '.runtime/final-acceptance/list-surface-structure.json');
 const DEFAULT_VIEWPORTS = PHASE === 'current-fail'
@@ -166,6 +175,12 @@ async function waitForList(page) {
 
 const MOBILE_RECORD_ROW = '.mobile-record-list .collection-mobile-record-row';
 const MOBILE_RECORD_CARD = `${MOBILE_RECORD_ROW} .collection-mobile-record-row__card`;
+// Declared record openers. Desktop rows expose the primary-link cell; mobile rows
+// expose the explicit `open-record` action. The mobile card body is the selection
+// surface, not a declared opener, so it must not be used as the detail entry.
+const DESKTOP_RECORD_OPENER = '.cell-primary-link:visible';
+const MOBILE_RECORD_OPENER = '[data-semantic-action="open-record"]:visible';
+const DECLARED_RECORD_OPENER = `${DESKTOP_RECORD_OPENER}, ${MOBILE_RECORD_OPENER}`;
 const ROW_SELECTION_CONTROL = '.collection-selection-control[data-selection-scope="row"]';
 const DESKTOP_ROW_SELECTION_CONTROL = `.table tbody ${ROW_SELECTION_CONTROL}`;
 const MOBILE_ROW_SELECTION_CONTROL = `${MOBILE_RECORD_ROW} ${ROW_SELECTION_CONTROL}`;
@@ -784,19 +799,73 @@ function dailyRecordDomMatches(observed, declaration, expected) {
     && (declaration.profile !== 'readonly' || observed.detailAdopted !== 'true' || observed.detailCards > 0);
 }
 
-function dailyRecordCheckSummary(checks, viewports, contractStatus = 'accepted') {
-  // The approved-contract-binding step is executed only when the lane runs under
-  // an accepted sealed contract, so the expected shape must follow the gate's
-  // real status instead of hard-coding the strictest five-step form. The default
-  // stays on the stricter form so a caller that forgets the status fails closed.
-  const steps = contractStatus === 'accepted'
+function dailyRecordCheckSummary(checks, viewports, contractStatus = 'accepted', scope = 'all') {
+  // The expected record-walk shape follows the scope that actually ran, never a
+  // single hard-coded form:
+  //   form-profiles -> declared create/edit entry + their consumed form contract
+  //                    + the rendered profile
+  //   workbench-only -> there is no record walk at all, so the summary must not
+  //                    demand record steps (the workbench block asserts itself)
+  //   other scopes  -> the record walk, with the approved-contract-binding step
+  //                    only when the lane runs under an accepted sealed contract
+  const stepsByScope = {
+    'form-profiles': ['declared_create_entry', 'create_contract', 'create_renderer',
+      'declared_edit_entry', 'edit_contract', 'edit_renderer'],
+  };
+  const recordSteps = contractStatus === 'accepted'
     ? ['declared_entry_route', 'exact_record_contract', 'approved_contract_binding', 'declared_renderer', 'return_to_source']
     : ['declared_entry_route', 'exact_record_contract', 'declared_renderer', 'return_to_source'];
+  const steps = scope === 'workbench-only' ? [] : (stepsByScope[scope] || recordSteps);
   const expected = viewports.flatMap(viewport => steps.map(check => `${viewport.key}:${check}`));
-  const actual = checks.filter(row => row.passed === true).map(row => `${row.viewport}:${row.check}`);
-  const complete = expected.length > 0 && expected.every(key => actual.filter(value => value === key).length === 1)
-    && actual.length === expected.length;
-  return { passed: actual.length, total: expected.length, complete };
+  // A step is satisfied only by its own row. An explicitly not-applicable row
+  // (declared authority absent) is the only accepted alternative, so a missing
+  // row still fails and an empty expected set is reported as zero coverage.
+  const satisfied = checks.filter(row => row.passed === true || row.not_applicable === true)
+    .map(row => `${row.viewport}:${row.check}`);
+  const complete = steps.length === 0
+    ? checks.length === 0
+    : viewports.length > 0 && expected.every(key => satisfied.filter(value => value === key).length === 1) && satisfied.length === expected.length;
+  return { passed: satisfied.length, total: expected.length, complete, expected };
+}
+
+// The declared create entry is a route: ActionView.openCreateRecord pushes
+// /f/<model>/new and the entry capability is consumed from the list contract.
+// Bind the assertion to the declared model + consumed contract, not to a
+// rendered control, so a renamed button cannot pass or fail the check.
+function dailyCreateContractMatches(row, expected) {
+  const envelope = row.response?.result?.ok !== undefined ? row.response.result : row.response;
+  return row.intent === 'ui.contract.v2' && envelope?.ok === true
+    && envelope.data?.pageInfo?.model === expected.model
+    && envelope.data?.pageInfo?.viewType === 'form';
+}
+
+function dailyCreateDomMatches(observed, expected) {
+  return observed.model === expected.model && observed.record === 'new'
+    && observed.driverCount === 1 && observed.patternCount === 1 && observed.driverErrorCount === 0
+    && observed.profile === 'create' && observed.cards > 0;
+}
+
+// One shared capture of the declared record renderer, used by the record walk
+// and the create/edit profile walk. It asserts the declared root, driver and
+// render-profile marker are actually rendered before reading their data.
+async function captureRecordPresentation(page, declaration) {
+  const root = page.locator(declaration.rootSelector).filter({ has: page.locator(declaration.driverSelector) });
+  await root.waitFor({ state: 'visible', timeout: 30_000 });
+  await root.locator(declaration.patternSelector).waitFor({ state: 'visible', timeout: 30_000 });
+  return root.evaluate((node, declared) => {
+    const visible = item => Boolean(item && item.getBoundingClientRect().width > 0 && item.getBoundingClientRect().height > 0);
+    const patterns = [...node.querySelectorAll(declared.patternSelector)].filter(visible);
+    return { model: node.dataset.formModel, record: node.dataset.formRecord,
+      action: node.dataset.formActionId, menu: node.dataset.formMenuId,
+      driverCount: [...node.querySelectorAll(declared.driverSelector)].filter(visible).length,
+      patternCount: patterns.length, profile: patterns[0]?.dataset.renderProfile,
+      driverErrorCount: node.querySelectorAll('[data-contract-form-driver-error]').length,
+      detailAdopted: node.dataset.detailCompositionAdopted,
+      // Public-surface equivalents of the card class selectors; the
+      // ScCard semantic marker covers every rendered product card.
+      detailCards: [...node.querySelectorAll('[data-semantic-component="ScCard"][data-detail-card], [data-detail-card] > [data-semantic-component="ScCard"]')].filter(visible).length,
+      cards: [...node.querySelectorAll('[data-semantic-component="ScCard"]')].filter(visible).length };
+  }, declaration);
 }
 
 function safeFailedResponse(status, url, request, response, secrets = []) {
@@ -848,7 +917,7 @@ try {
     lease = await acquireAcceptanceLease({ environment: acceptance, mode: 'shared-read', owner: { tool: 'geometry-scroll-audit' } });
   }
   browser = DAILY ? await launchAcceptanceChromium(acceptance, { headless: true }) : await launchChromium({ headless: true });
-  context = await browser.newContext({ viewport: VIEWPORTS[0] });
+  context = await browser.newContext({ viewport: VIEWPORTS[0], ...(COLOR_SCHEME ? { colorScheme: COLOR_SCHEME } : {}) });
   if (DAILY) await context.route('**/*', async route => {
     const request = route.request();
     const url = new URL(request.url());
@@ -909,7 +978,22 @@ try {
     actorContext = dailyActorContext(navigation.payload());
     if (!actorContext.user_id || !actorContext.company_id || !actorContext.role_codes.length) throw new Error('actual bootstrap actor context missing');
   }
-  if (DAILY && DAILY_OBSERVATION_SCOPE === 'all') {
+  if (COLOR_SCHEME) {
+    // Declared theme mechanism: documentElement theme attributes backed by the
+    // stored preference. A dark run must actually resolve dark before any detail
+    // observation; the rendered detail page is captured on top of this, so the
+    // attribute is a prerequisite, not the proof of the visual effect.
+    const resolved = () => page.evaluate(() => document.documentElement.getAttribute('data-sc-theme-resolved'));
+    if (await resolved() !== COLOR_SCHEME) {
+      await page.waitForFunction(scheme => document.documentElement.getAttribute('data-sc-theme-resolved') === scheme, COLOR_SCHEME, { timeout: 30_000 }).catch(async () => {
+        await page.locator('.theme-switch:visible').first().click();
+        await page.waitForFunction(scheme => document.documentElement.getAttribute('data-sc-theme-resolved') === scheme, COLOR_SCHEME, { timeout: 15_000 });
+      });
+    }
+    if (await resolved() !== COLOR_SCHEME) throw new Error(`declared theme ${COLOR_SCHEME} did not resolve`);
+    dailyObservations.push({ surface: 'declared-theme', requested: COLOR_SCHEME, resolved: await resolved(), mode: await page.evaluate(() => document.documentElement.getAttribute('data-sc-theme-mode')), url: page.url(), viewport: VIEWPORTS[0].key });
+  }
+  if (DAILY && (DAILY_OBSERVATION_SCOPE === 'all' || WORKBENCH_ONLY)) {
     const defaultRoute = dailyDeclaredLanding(navigation.payload());
     const landing = page.url();
     if (!dailyLandingMatches(landing, defaultRoute, BASE_URL)) throw new Error('daily landing does not match declared default_route');
@@ -954,16 +1038,118 @@ try {
     }
     await page.setViewportSize(VIEWPORTS[0]);
   }
-  target = await findPopulatedList(page, navigation);
-  for (const viewport of detailOnly ? [] : VIEWPORTS) {
+  if (FORM_PROFILES_ONLY) {
+    // Scope: the declared create/edit entries and the forms they consume. The
+    // authority asserted is the list contract's own effective capability; the
+    // evidence is the form contract the browser actually rendered, never the
+    // presence of a button label or a hard-coded pixel value.
+    target = await findPopulatedList(page, navigation);
+    for (const viewport of VIEWPORTS) {
+      await page.setViewportSize(viewport);
+      await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+      await waitForList(page);
+      const targetUrl = new URL(target.route, BASE_URL);
+      const source = { actionId: Number(targetUrl.pathname.split('/')[2]), menuId: Number(targetUrl.searchParams.get('menu_id')) };
+      const listContract = [...runtime.contracts].reverse().find(row => row.intent === 'ui.contract.v2' && row.response?.ok === true && Number(row.params?.action_id) === source.actionId && Number(row.params?.menu_id) === source.menuId && ['list', 'tree'].includes(row.response?.data?.pageInfo?.viewType));
+      if (!listContract) throw new Error('current list authority contract missing');
+      const listData = listContract.response.data;
+      const model = String(listData.pageInfo.model || '');
+      const listRef = dailyContractEvidenceRef(runtime.contracts, listContract);
+      const declaredCreate = listData.statusContract?.globalStatus?.effectiveRecordCapabilities?.create === true;
+
+      // Create: the declared capability must be consumed -- a rendered control
+      // exists iff the contract allows create, and clicking it opens the
+      // declared create route whose form contract declares the create profile.
+      const createControl = page.locator('[data-list-surface-header] .sc-btn-primary').first();
+      const createVisible = (await createControl.count()) > 0 && await createControl.isVisible().catch(() => false);
+      if (declaredCreate !== createVisible) throw new Error(`declared create authority=${declaredCreate} does not match rendered create control=${createVisible}`);
+      if (!declaredCreate) {
+        for (const check of ['declared_create_entry', 'create_contract', 'create_renderer']) {
+          recordChecks.push({ viewport: viewport.key, check, passed: false, not_applicable: true,
+            reason: 'create authority is not declared for this list', contract_evidence_ref: listRef });
+        }
+      } else {
+        recordChecks.push({ viewport: viewport.key, check: 'declared_create_entry', passed: true, model,
+          route: `/f/${model}/new`, contract_evidence_ref: listRef });
+        const createStart = runtime.contracts.length;
+        await createControl.click();
+        await page.waitForURL(url => url.pathname === `/f/${model}/new`, { timeout: 30_000 });
+        const expectedCreate = { model, recordId: 'new', actionId: source.actionId, menuId: source.menuId, path: `/f/${model}/new` };
+        let createRows = [];
+        for (let attempt = 0; attempt < 600; attempt += 1) {
+          createRows = runtime.contracts.slice(createStart).filter(row => dailyCreateContractMatches(row, expectedCreate));
+          if (createRows.length) break;
+          await page.waitForTimeout(50);
+        }
+        if (!createRows.length) throw new Error('create form contract response was not captured');
+        const createRow = createRows[createRows.length - 1];
+        const createRef = dailyContractEvidenceRef(runtime.contracts, createRow);
+        recordChecks.push({ viewport: viewport.key, check: 'create_contract', passed: true, contract_evidence_ref: createRef });
+        const createDeclaration = dailyRecordPresentation(createRow.response.data, expectedCreate);
+        const createPresentation = await captureRecordPresentation(page, createDeclaration);
+        if (!dailyCreateDomMatches(createPresentation, expectedCreate)) throw new Error(`create renderer declaration mismatch: ${JSON.stringify(createPresentation)}`);
+        recordChecks.push({ viewport: viewport.key, check: 'create_renderer', passed: true, contract_evidence_ref: createRef, presentation: createPresentation });
+        dailyObservations.push({ surface: 'create-form-observation-without-save', url: page.url(),
+          renderProfile: createDeclaration.profile, presentation: createPresentation, viewport: viewport.key });
+        await page.goBack({ waitUntil: 'domcontentloaded' });
+        await waitForList(page);
+      }
+
+      // Edit: open one declared row and require the profile its own record
+      // contract declares. A record that denies write renders a readonly
+      // profile; that is recorded as not-applicable, never as a passing edit.
+      const declaredRow = page.locator('[data-record-key]').filter({ has: page.locator(DECLARED_RECORD_OPENER) }).first();
+      if (!await declaredRow.count()) throw new Error('daily list contains no declared record opener');
+      const rowId = await declaredRow.getAttribute('data-record-key');
+      if (!rowId || !/^[1-9]\d*$/.test(rowId)) throw new Error('declared visible row identity missing');
+      const expectedEdit = dailyRecordEntry(listData, { id: Number(rowId), model }, source);
+      const editStart = runtime.contracts.length;
+      await declaredRow.locator(DECLARED_RECORD_OPENER).first().click();
+      await page.waitForURL(url => url.pathname === expectedEdit.path, { timeout: 30_000 });
+      recordChecks.push({ viewport: viewport.key, check: 'declared_edit_entry', passed: true, entry: expectedEdit, contract_evidence_ref: listRef });
+      let editRows = [];
+      for (let attempt = 0; attempt < 600; attempt += 1) {
+        editRows = runtime.contracts.slice(editStart).filter(row => dailyDetailContractMatches(row, expectedEdit));
+        if (editRows.length) break;
+        await page.waitForTimeout(50);
+      }
+      if (!editRows.length) throw new Error('edit form contract response was not captured');
+      const editRow = editRows[editRows.length - 1];
+      const editRef = dailyContractEvidenceRef(runtime.contracts, editRow);
+      const editDeclaration = dailyRecordPresentation(editRow.response.data, expectedEdit);
+      if (editDeclaration.profile === 'edit') {
+        recordChecks.push({ viewport: viewport.key, check: 'edit_contract', passed: true, contract_evidence_ref: editRef });
+        const editPresentation = await captureRecordPresentation(page, editDeclaration);
+        if (!dailyRecordDomMatches(editPresentation, editDeclaration, expectedEdit)) throw new Error(`edit renderer declaration mismatch: ${JSON.stringify(editPresentation)}`);
+        recordChecks.push({ viewport: viewport.key, check: 'edit_renderer', passed: true, contract_evidence_ref: editRef, presentation: editPresentation });
+        dailyObservations.push({ surface: 'edit-form-observation-without-save', declaredEntry: expectedEdit,
+          renderProfile: editDeclaration.profile, presentation: editPresentation, url: page.url(), viewport: viewport.key });
+      } else {
+        for (const check of ['edit_contract', 'edit_renderer']) {
+          recordChecks.push({ viewport: viewport.key, check, passed: false, not_applicable: true,
+            reason: `record contract declares '${editDeclaration.profile}' rather than an editable profile`,
+            contract_evidence_ref: editRef });
+        }
+      }
+      await page.goBack({ waitUntil: 'domcontentloaded' });
+      await waitForList(page);
+      if (new URL(page.url()).pathname + new URL(page.url()).search !== target.route) throw new Error('form-profiles return did not restore source list');
+    }
+    await page.setViewportSize(VIEWPORTS[0]);
+  }
+  if (!WORKBENCH_ONLY && !FORM_PROFILES_ONLY) target = await findPopulatedList(page, navigation);
+  const LIST_MATRIX_SKIPPED = detailOnly || WORKBENCH_ONLY || FORM_PROFILES_ONLY;
+  for (const viewport of LIST_MATRIX_SKIPPED ? [] : VIEWPORTS) {
     await page.setViewportSize(viewport);
     const states = PHASE === 'current-fail' ? ['normal'] : ['normal', 'batch', 'empty'];
     for (const state of states) rows.push(await captureState(page, target, viewport, state));
   }
+  if (!LIST_MATRIX_SKIPPED) {
   await page.setViewportSize(VIEWPORTS[0]);
   await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await waitForList(page);
-  if (DAILY) {
+  }
+  if (DAILY && !WORKBENCH_ONLY && !FORM_PROFILES_ONLY) {
     for (const viewport of VIEWPORTS) {
       await page.setViewportSize(viewport);
       await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
@@ -976,14 +1162,14 @@ try {
       // contract declares; never the first row that happens to render.
       const approvedRecordId = contractGate.status === 'accepted' ? Number(contractGate.approved.record_id) : null;
       const approvedRow = approvedRecordId
-        ? page.locator(`[data-record-key="${approvedRecordId}"]`).filter({ has: page.locator('.cell-primary-link, .collection-mobile-record-row__card') }).first()
-        : page.locator('[data-record-key]').filter({ has: page.locator('.cell-primary-link:visible, .collection-mobile-record-row__card:visible') }).first();
+        ? page.locator(`[data-record-key="${approvedRecordId}"]`).filter({ has: page.locator(DECLARED_RECORD_OPENER) }).first()
+        : page.locator('[data-record-key]').filter({ has: page.locator(DECLARED_RECORD_OPENER) }).first();
       if (!await approvedRow.count()) {
         throw new Error(approvedRecordId
           ? `approved record ${approvedRecordId} is not reachable through the approved list authority`
           : 'daily list contains no declared record opener');
       }
-      const firstRecord = approvedRow.locator('.cell-primary-link:visible, .collection-mobile-record-row__card:visible').first();
+      const firstRecord = approvedRow.locator(DECLARED_RECORD_OPENER).first();
       if (!await firstRecord.count()) throw new Error('daily list contains no declared record opener');
       const rowId = await approvedRow.getAttribute('data-record-key') || await firstRecord.evaluate(node => node.closest('[data-record-key]')?.getAttribute('data-record-key'));
       if (!rowId || !/^[1-9]\d*$/.test(rowId)) throw new Error('declared visible row identity missing');
@@ -1033,23 +1219,7 @@ try {
       }
       const declaration = dailyRecordPresentation(detailContract, expectedDetail);
       const profile = declaration.profile;
-      const root = page.locator(declaration.rootSelector).filter({ has: page.locator(declaration.driverSelector) });
-      await root.waitFor({ state: 'visible', timeout: 30_000 });
-      await root.locator(declaration.patternSelector).waitFor({ state: 'visible', timeout: 30_000 });
-      const presentation = await root.evaluate((node, declared) => {
-        const visible = item => Boolean(item && item.getBoundingClientRect().width > 0 && item.getBoundingClientRect().height > 0);
-        const patterns = [...node.querySelectorAll(declared.patternSelector)].filter(visible);
-        return { model: node.dataset.formModel, record: node.dataset.formRecord,
-          action: node.dataset.formActionId, menu: node.dataset.formMenuId,
-          driverCount: [...node.querySelectorAll(declared.driverSelector)].filter(visible).length,
-          patternCount: patterns.length, profile: patterns[0]?.dataset.renderProfile,
-          driverErrorCount: node.querySelectorAll('[data-contract-form-driver-error]').length,
-          detailAdopted: node.dataset.detailCompositionAdopted,
-          // Public-surface equivalents of the card class selectors; the
-          // ScCard semantic marker covers every rendered product card.
-          detailCards: [...node.querySelectorAll('[data-semantic-component="ScCard"][data-detail-card], [data-detail-card] > [data-semantic-component="ScCard"]')].filter(visible).length,
-          cards: [...node.querySelectorAll('[data-semantic-component="ScCard"]')].filter(visible).length };
-      }, declaration);
+      const presentation = await captureRecordPresentation(page, declaration);
       if (!dailyRecordDomMatches(presentation, declaration, expectedDetail)) throw new Error(`record renderer declaration mismatch: ${JSON.stringify(presentation)}`);
       recordChecks.push({ viewport: viewport.key, check: 'declared_renderer', passed: true, contract_evidence_ref: contractEvidenceRef, presentation });
       const cards = presentation.cards;
@@ -1063,8 +1233,8 @@ try {
     }
     await page.setViewportSize(VIEWPORTS[0]);
   }
-  const componentProof = detailOnly ? null : await productionComponentProof(page);
-  const negativeFixtures = detailOnly ? [] : await negativeProofs(page, VIEWPORTS[0]);
+  const componentProof = LIST_MATRIX_SKIPPED ? null : await productionComponentProof(page);
+  const negativeFixtures = LIST_MATRIX_SKIPPED ? [] : await negativeProofs(page, VIEWPORTS[0]);
   const gatedChecks = new Set([
     'desktop_actions_query_aligned',
     'column_settings_unique',
@@ -1115,7 +1285,7 @@ try {
     const visibleColumns = row.measurement.metrics.mobile_mode ? trace.mobile?.visibleColumns : trace.desktop?.visibleColumns;
     return Array.isArray(visibleColumns) && (trace.criticalColumns || []).every((field) => visibleColumns.includes(field));
   });
-  const aggregateChecks = detailOnly ? {} : {
+  const aggregateChecks = LIST_MATRIX_SKIPPED ? {} : {
     column_authority_consistent_across_viewports: columnAuthorityConsistent,
     critical_columns_reachable: criticalColumnsReachable,
     decision_trace_complete: normalRows.every((row) => row.measurement.checks.decision_trace_complete === true),
@@ -1130,7 +1300,7 @@ try {
     + Object.keys(aggregateChecks).length + (componentProof ? 1 : 0);
   const gatedFailed = failures.filter((failure) => failure.state !== 'negative-fixture').length;
   await Promise.allSettled([...responseTasks]);
-  const recordSummary = dailyRecordCheckSummary(recordChecks, VIEWPORTS, contractGate.status);
+  const recordSummary = dailyRecordCheckSummary(recordChecks, VIEWPORTS, contractGate.status, DAILY_OBSERVATION_SCOPE);
   const passed = (!DAILY || recordSummary.complete) && failures.length === 0 && !runtime.console_errors.length && !runtime.page_errors.length && !runtime.failed_responses.length && !runtime.denied_requests.length;
   const report = {
     schema: 'frontend_list_surface_structure_browser.v1',
@@ -1141,7 +1311,7 @@ try {
     actor_context: actorContext,
     daily_observations: dailyObservations,
     daily_observation_scope: DAILY_OBSERVATION_SCOPE,
-    list_execution: detailOnly ? 'not_run' : 'completed',
+    list_execution: LIST_MATRIX_SKIPPED ? 'not_run' : 'completed',
     record_checks: recordChecks,
     geometry_contract: 'controls contained by shared header; content follows header within viewport',
     rows,
@@ -1169,7 +1339,7 @@ try {
   await page?.screenshot({ path: screenshot, fullPage: true }).catch(() => {});
   await fs.mkdir(path.dirname(REPORT), { recursive: true });
   await fs.writeFile(REPORT, JSON.stringify({ schema: 'frontend_list_surface_structure_browser.v1', passed: false,
-    failure: String(error?.message || error), screenshot, rows, acceptance_scope: acceptanceScope, actor_context: actorContext, record_checks: recordChecks, record_summary: dailyRecordCheckSummary(recordChecks, VIEWPORTS, contractGate.status), list_execution: detailOnly ? 'not_run' : 'partial_or_completed_before_failure', runtime, daily_observations: dailyObservations, daily_observation_scope: DAILY_OBSERVATION_SCOPE,
+    failure: String(error?.message || error), screenshot, rows, acceptance_scope: acceptanceScope, actor_context: actorContext, record_checks: recordChecks, record_summary: dailyRecordCheckSummary(recordChecks, VIEWPORTS, contractGate.status, DAILY_OBSERVATION_SCOPE), list_execution: LIST_MATRIX_SKIPPED ? 'not_run' : 'partial_or_completed_before_failure', runtime, daily_observations: dailyObservations, daily_observation_scope: DAILY_OBSERVATION_SCOPE,
     contract_prerequisite: contractGate,
     source: { target, acceptance: redactedEnvironmentEvidence(acceptance), servedIdentity } }, null, 2));
   process.exitCode = 1;

@@ -12,7 +12,7 @@ import {
   type CollaborationUserOption,
   type CollaborationFollower,
 } from '../../api/chatter';
-import { canDeleteCollaborationMessage, canExecuteCollaborationCreateAction, canUpdateCollaborationActivity } from './professionalCollaborationModel';
+import { canDeleteCollaborationMessage, canExecuteCollaborationCreateAction, canUpdateCollaborationActivity, isCollaborationAuthorityAbsence } from './professionalCollaborationModel';
 import type { NativeFollowerContract } from './collaborationContract';
 import type { NativeChatterAction } from './types';
 
@@ -50,6 +50,7 @@ export function useNativeChatterRuntime(params: {
   const posting = ref(false);
   const loading = ref(false);
   const error = ref('');
+  const unavailable = ref(false);
   const timeline = ref<ChatterTimelineEntry[]>([]);
   const timelineHasMore = ref(false);
   const timelineNextOffset = ref(0);
@@ -78,6 +79,7 @@ export function useNativeChatterRuntime(params: {
     timelineRequestToken += 1;
     loading.value = false;
     error.value = '';
+    unavailable.value = false;
     timeline.value = [];
     timelineHasMore.value = false;
     timelineNextOffset.value = 0;
@@ -120,6 +122,7 @@ export function useNativeChatterRuntime(params: {
         include_audit: true,
       });
       if (!isCurrentRequest()) return;
+      unavailable.value = false;
       const nextItems = Array.isArray(response.items) ? response.items : [];
       if (append) {
         const merged = new Map(timeline.value.map(item => [item.key, item]));
@@ -133,7 +136,15 @@ export function useNativeChatterRuntime(params: {
       if (!append) await loadFollowers(targetResId, targetModel);
     } catch (err) {
       if (!isCurrentRequest()) return;
-      error.value = err instanceof Error ? err.message : '协作记录加载失败';
+      if (isCollaborationAuthorityAbsence(err)) {
+        unavailable.value = true;
+        error.value = '';
+        timeline.value = [];
+        timelineHasMore.value = false;
+        timelineNextOffset.value = 0;
+      } else {
+        error.value = err instanceof Error ? err.message : '协作记录加载失败';
+      }
     } finally {
       if (requestToken === timelineRequestToken) loading.value = false;
     }
@@ -400,6 +411,7 @@ export function useNativeChatterRuntime(params: {
     posting,
     loading,
     error,
+    unavailable,
     timeline,
     timelineHasMore,
     activityUpdatingIds,

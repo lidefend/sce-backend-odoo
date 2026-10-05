@@ -46,6 +46,7 @@ export function useRecordCollaborationPresentation(context: {
   activityAssigneeId: MutableRef<number>;
   chatterPosting: MutableRef<boolean>;
   chatterError: MutableRef<string>;
+  chatterUnavailable: MutableRef<boolean>;
   chatterTimeline: MutableRef<ChatterTimelineEntry[]>;
   chatterTimelineHasMore: MutableRef<boolean>;
   chatterTimelineLoading: MutableRef<boolean>;
@@ -101,6 +102,7 @@ export function useRecordCollaborationPresentation(context: {
     model: context.model.value,
     renderProfile: context.renderProfile.value,
     hasAttachments: Boolean(nativeAttachments.value),
+    authorityDenied: context.chatterUnavailable.value,
   }));
   const activeChatterSubmitLabel = computed(() => activeChatterSubmitLabelFromMode(context.activeChatterMode.value, context.activeChatterLabel.value));
   const activeChatterPostingLabel = computed(() => activeChatterPostingLabelFromMode(context.activeChatterMode.value));

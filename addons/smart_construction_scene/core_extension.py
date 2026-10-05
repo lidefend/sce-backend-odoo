@@ -114,7 +114,6 @@ NAV_MENU_SCENE_MAP = {
     "smart_construction_core.menu_sc_project_management_scene": "project.management",
     "smart_construction_core.menu_sc_project_quick_create": "projects.intake",
     "smart_construction_core.menu_sc_project_cost_code": "config.project_cost_code",
-    "smart_construction_core.menu_sc_root": "projects.list",
     "smart_construction_core.menu_sc_project_dashboard": "project.dashboard",
     "smart_construction_core.menu_sc_dictionary": "data.dictionary",
     "smart_construction_core.menu_payment_request": "finance.payment_requests",
@@ -404,12 +403,10 @@ def _derive_nav_scene_maps_from_registry(env) -> dict[str, dict[Any, str]]:
     except Exception:
         scenes = []
 
-    for scene in scenes or []:
-        if not isinstance(scene, dict):
-            continue
+    def _claim(scene: dict) -> None:
         scene_key = str(scene.get("code") or scene.get("key") or "").strip()
         if not scene_key:
-            continue
+            return
         target = scene.get("target") if isinstance(scene.get("target"), dict) else {}
         menu_xmlid = str(target.get("menu_xmlid") or "").strip()
         action_xmlid = str(target.get("action_xmlid") or "").strip()
@@ -422,6 +419,20 @@ def _derive_nav_scene_maps_from_registry(env) -> dict[str, dict[Any, str]]:
             action_xmlid_scene_map[action_xmlid] = scene_key
         if model and view_mode and (model, view_mode) not in model_view_scene_map:
             model_view_scene_map[(model, view_mode)] = scene_key
+
+    claims = [
+        scene
+        for scene in (scenes or [])
+        if isinstance(scene, dict) and not str(scene.get("alias_of") or "").strip()
+    ]
+    # Declared canonical owners own the identity; remaining claimants only fill
+    # identities no canonical scene claims, and aliases never claim.
+    for scene in claims:
+        if scene.get("identity_owner"):
+            _claim(scene)
+    for scene in claims:
+        if not scene.get("identity_owner"):
+            _claim(scene)
 
     derived = {
         "menu_scene_map": menu_scene_map,
