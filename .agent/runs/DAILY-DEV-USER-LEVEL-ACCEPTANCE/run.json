@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-DEV-USER-LEVEL-ACCEPTANCE",
+  "branch": "codex/daily-dev-user-acceptance-20261005",
+  "status": "active",
+  "baseline_sha": "4ba044e037a7bf2c3d737eaec94ea891fc602581",
+  "goal": ".agent/goals/DAILY-DEV-USER-LEVEL-ACCEPTANCE.yaml",
+  "record": "docs/ops/iterations/daily_dev_user_level_acceptance_20261005.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DAILY-DEV-USER-LEVEL-ACCEPTANCE.yaml",
+    ".agent/runs/DAILY-DEV-USER-LEVEL-ACCEPTANCE/run.json",
+    "docs/ops/iterations/daily_dev_user_level_acceptance_20261005.md"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "existing governed Make entries executed in this repository and in the daily runtime repository on sc-root; module install/upgrade, fixture ensure, restart and the readonly probe each keep their own gate",
+    "runtime_authority": {
+      "host_alias": "sc-root",
+      "path": "/opt/projects/repos/sce-product-odoo",
+      "env": "dev",
+      "env_file": ".env.dev",
+      "database": "sc_demo",
+      "frontend_url": "http://1.95.85.92:18081/",
+      "expected_old_sha": "8a77c2374d7c6b99048a14865a053276a061164b",
+      "expected_new_sha": "4ba044e037a7bf2c3d737eaec94ea891fc602581",
+      "entrypoints": [
+        "make daily.runtime.main.bundle_sync",
+        "make verify.frontend.build",
+        "make mod.upgrade",
+        "make restart",
+        "make verify.daily_dev.runtime_repo.clean",
+        "make daily.dev.acceptance_fixture.ensure",
+        "make daily.dev.acceptance_contract.resolve",
+        "make verify.daily_dev.acceptance.readonly.probe"
+      ]
+    }
+  },
+  "checks": {
+    "bundle_sync_tool": {
+      "target": "verify.daily.runtime.main.bundle_sync",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/ops/daily_runtime_bundle_sync.py",
+        "scripts/ops/test_daily_runtime_bundle_sync.py"
+      ],
+      "kind": "offline"
+    },
+    "daily_fixture_lane": {
+      "target": "verify.daily_dev.acceptance_fixture.unit",
+      "inputs": [
+        "make/dev.mk",
+        "scripts/dev/daily_dev_acceptance_fixture.sh",
+        "scripts/verify/test_daily_acceptance_fixture_lane.py",
+        "config/acceptance/backend_contract_instance_daily_v1.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Registered 2026-10-05: promote main 4ba044e0 to the daily runtime, provision the wutao acceptance credential, re-run the daily fixture lane entries and readonly probe on the new served SHA, then run the user-perspective browser acceptance.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

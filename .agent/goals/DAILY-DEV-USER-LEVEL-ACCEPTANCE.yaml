@@ -1,0 +1,66 @@
+schema_version: 1
+goal:
+  id: DAILY-DEV-USER-LEVEL-ACCEPTANCE
+  title: daily_dev_user_level_product_delivery_acceptance
+  status: active
+  formal_product_layer: P4
+  layer_target: daily_development_runtime_acceptance
+  module:
+    - .agent
+    - docs/ops/iterations
+    - scripts/ops
+  objective: >-
+    Advance the daily development runtime (sc-root:/opt/projects/repos/sce-product-odoo,
+    ENV=dev, .env.dev, DB sc_demo) to the current stable mainline, provision the
+    owner's fixed acceptance credential for wutao, and run a full user-perspective
+    product-delivery acceptance of the custom frontend: real login, navigation,
+    representative business routes, viewports and themes, plus the governed daily
+    readonly probe. No assertion, audit, ACL, field permission or negative case is
+    relaxed, and no product semantics are changed.
+  baseline:
+    branch: main
+    full_sha: 4ba044e037a7bf2c3d737eaec94ea891fc602581
+    source: clean_main_after_pr_572
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_runtime_acceptance_tool
+    why_here: >-
+      Deploying the exact mainline to the daily runtime and verifying it as a real
+      user is the ops delivery/acceptance layer (P4), the final product-delivery
+      step, not product semantics.
+    why_not_elsewhere:
+      - no_p0_platform_or_frontend_contract_change
+      - no_p1_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_lowcode_configuration
+      - no_database_schema_or_migration_change
+    blast_radius:
+      - sc-root daily runtime repository, its frontend static bundle and dev compose profile
+      - sc_demo wutao login credential for owner acceptance
+      - one closeout record, one run and the goal metadata
+  batches:
+    - id: A
+      title: promote_current_mainline_and_accept_as_user
+      status: active
+      evidence:
+        - daily_runtime_bundle_sync_pass
+        - frontend_build_and_module_upgrade_pass
+        - daily_acceptance_fixture_lane_entries_pass
+        - daily_readonly_probe_pass
+        - owner_credential_provisioned
+        - browser_user_acceptance
+  exclusions:
+    - no_relaxation_of_any_assertion_audit_acl_or_negative_case
+    - no_product_semantics_change
+    - no_production_change
+    - no_new_environment_or_credential_authority
+    - no_local_sc_local_dev_profile_change
+  rollback:
+    - restore the pre-runtime identity backup and make restart
+    - re-run the governed bundle sync with the exact previous SHA under a separate task
+    - rebuild the previous frontend from its commit
+  next_exact_step: >-
+    Registered 2026-10-05: promote main 4ba044e0 to the daily runtime through the
+    governed bundle sync, rebuild the frontend, upgrade affected modules, provision
+    the wutao acceptance credential, re-run the daily fixture lane entries and the
+    readonly probe on the new served SHA, then run the user-perspective browser
+    acceptance.
