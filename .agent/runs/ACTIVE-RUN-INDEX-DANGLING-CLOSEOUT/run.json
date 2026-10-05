@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "id": "ACTIVE-RUN-INDEX-DANGLING-CLOSEOUT",
+  "branch": "codex/active-run-index-dangling-closeout-20261006",
+  "status": "completed",
+  "baseline_sha": "4b2c37343a92b239f31f55aac3901be211079430",
+  "goal": ".agent/goals/ACTIVE-RUN-INDEX-DANGLING-CLOSEOUT.yaml",
+  "record": "docs/ops/iterations/active_run_index_dangling_closeout_20261006.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/ACTIVE-RUN-INDEX-DANGLING-CLOSEOUT.yaml",
+    ".agent/runs/ACTIVE-RUN-INDEX-DANGLING-CLOSEOUT/",
+    "docs/ops/iterations/active_run_index_dangling_closeout_20261006.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline Make gates and tracked run/record/index metadata; no database, service, credential, remote write or product runtime"
+  },
+  "checks": {
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Closed 2026-10-06: the three dangling bindings are removed and only the live codex/daily-acceptance-lane-selfconsistency-v1 binding remains; this batch's own binding is removed in the final commit so retiring the closeout branch leaves no dangling mapping. Publishing through the ordinary PR lane; afterwards ci.local.iteration reports 'unregistered' as in the existing precedent.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false,
+  "completion": {
+    "batch": "passed: the three dangling bindings (codex/daily-dev-user-acceptance-closeout-20261005, codex/daily-runtime-candidate-return-v1, codex/remote-branch-backlog-retirement-c-20261005) are removed from .agent/active-runs.json; the live codex/daily-acceptance-lane-selfconsistency-v1 binding is preserved; verify.agent.resume.unit 30/30",
+    "mainline": "publishing the frozen candidate through the ordinary PR lane; the exact-head identity is the frozen source commit and its ci.local.quick receipt",
+    "deployment": "not_run",
+    "product_delivery": "not_run",
+    "retained_limits": [
+      "the referenced run/goal records (DAILY-DEV-USER-LEVEL-ACCEPTANCE, DAILY-RUNTIME-CANDIDATE-RETURN, REMOTE-BRANCH-BACKLOG-RETIREMENT-C) are left untouched on main",
+      "no remote reference is deleted by this batch"
+    ],
+    "l1": {
+      "agent_resume": {
+        "command": "make verify.agent.resume.unit",
+        "status": "passed",
+        "tests": 30,
+        "log": ".runtime/agent-runs/ACTIVE-RUN-INDEX-DANGLING-CLOSEOUT/agent_resume.log"
+      },
+      "iteration": {
+        "command": "make ci.local.iteration",
+        "status": "passed",
+        "change_state": "dirty",
+        "outside_scope": [],
+        "log": ".runtime/agent-runs/ACTIVE-RUN-INDEX-DANGLING-CLOSEOUT/iteration.log"
+      },
+      "quick": {
+        "command": "make ci.local.quick",
+        "status": "pending_at_frozen_head",
+        "receipt": ".git/codex/evidence/ci.local.quick/<frozen-head-sha>.json"
+      }
+    }
+  }
+}
