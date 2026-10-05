@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "repository": {
+    "name": "sce-backend-odoo",
+    "origin_url": "https://github.com/lidefend/sce-backend-odoo.git"
+  },
+  "references": [
+    {
+      "branch": "audit/historical-branch-asset-retirement-v1",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip c0bed94d4b15d72003b1f39308674e36d8c33ad4",
+        "merged PR #462 headRefOid=c0bed94d4b15d72003b1f39308674e36d8c33ad4 (state MERGED, base main, merged 2026-09-11)",
+        "local ref absent; only the origin ref remains",
+        "runtime-carrier scan after this candidate clears the stale goal baseline, the completed run retained list and the test-fixture placeholder names: no scripts/config/deploy/make/.agent/.github reference remains"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #462 at this exact head; the only blocker was a stale runtime-carrier text reference, now cleared",
+      "remote": {
+        "sha": "c0bed94d4b15d72003b1f39308674e36d8c33ad4",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-05): clear the runtime carrier references that blocked these three exact-head-merged historical origin references, then retire them through the governed historical-retirement entry under the exact manifest SHA-256; no assertion, guard, prefix policy or audit was relaxed.",
+        "reviewed_at": "2026-10-05"
+      }
+    },
+    {
+      "branch": "fix/atomic-release-publication-contract",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip 9566330f52fc65b211add16a0b95203b4f8ecc2e",
+        "merged PR #34 headRefOid=9566330f52fc65b211add16a0b95203b4f8ecc2e (state MERGED, base main, merged 2026-07-23)",
+        "local ref absent; only the origin ref remains",
+        "runtime-carrier scan after this candidate clears the stale goal baseline, the completed run retained list and the test-fixture placeholder names: no scripts/config/deploy/make/.agent/.github reference remains"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #34 at this exact head; the only blocker was a stale runtime-carrier text reference, now cleared",
+      "remote": {
+        "sha": "9566330f52fc65b211add16a0b95203b4f8ecc2e",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-05): clear the runtime carrier references that blocked these three exact-head-merged historical origin references, then retire them through the governed historical-retirement entry under the exact manifest SHA-256; no assertion, guard, prefix policy or audit was relaxed.",
+        "reviewed_at": "2026-10-05"
+      }
+    },
+    {
+      "branch": "fix/controlled-merge-expected-head-guard",
+      "containment": "reviewed_explicit",
+      "evidence": [
+        "remote tip 921bf3c0632ee5f4070bb81d8c78917f80060d77",
+        "merged PR #31 headRefOid=921bf3c0632ee5f4070bb81d8c78917f80060d77 (state MERGED, base main, merged 2026-07-23)",
+        "local ref absent; only the origin ref remains",
+        "runtime-carrier scan after this candidate clears the stale goal baseline, the completed run retained list and the test-fixture placeholder names: no scripts/config/deploy/make/.agent/.github reference remains"
+      ],
+      "local": {
+        "sha": null,
+        "state": "absent"
+      },
+      "reason": "squash-merged historical origin reference; merge confirmed by merged PR #31 at this exact head; the only blocker was a stale runtime-carrier text reference, now cleared",
+      "remote": {
+        "sha": "921bf3c0632ee5f4070bb81d8c78917f80060d77",
+        "state": "present"
+      },
+      "reviewed_explicit": {
+        "authorization": "Owner-authorized option 1 (2026-10-05): clear the runtime carrier references that blocked these three exact-head-merged historical origin references, then retire them through the governed historical-retirement entry under the exact manifest SHA-256; no assertion, guard, prefix policy or audit was relaxed.",
+        "reviewed_at": "2026-10-05"
+      }
+    }
+  ]
+}

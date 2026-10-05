@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "id": "REMOTE-BRANCH-CARRIER-RETIREMENT-B",
+  "branch": "fix/remote-branch-carrier-retirement-20261005",
+  "status": "completed",
+  "baseline_sha": "1a7db19faf9321d7199767e7fbe375cb82688517",
+  "goal": ".agent/goals/REMOTE-BRANCH-CARRIER-RETIREMENT-B.yaml",
+  "record": "docs/ops/iterations/remote_branch_carrier_retirement_b_20261005.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/REMOTE-BRANCH-CARRIER-RETIREMENT-B.yaml",
+    ".agent/runs/REMOTE-BRANCH-CARRIER-RETIREMENT-B/",
+    ".agent/goals/HISTORICAL-BRANCH-ASSET-RETIREMENT.yaml",
+    ".agent/runs/REMOTE-BRANCH-BACKLOG-RETIREMENT-B/run.json",
+    "scripts/verify/test_branch_governance_consistency_guard.py",
+    "docs/ops/iterations/remote_branch_carrier_retirement_b_20261005.md",
+    "docs/ops/manifests/historical_branch_retirement_carrier_20261005.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline Make gates plus the governed historical-retirement entry and a verified recovery bundle; no product runtime, database, fixture or service"
+  },
+  "checks": {
+    "retire_entry": {
+      "target": "verify.branch.retire.historical",
+      "inputs": [
+        "scripts/ops/retire_historical_branch_refs.py",
+        "scripts/ops/test_retire_historical_branch_refs.py"
+      ],
+      "kind": "offline"
+    },
+    "branch_governance": {
+      "target": "verify.branch.governance.consistency",
+      "inputs": [
+        "AGENTS.md",
+        "docs/ops/codex_execution_allowlist.md",
+        "docs/ops/codex_workspace_execution_rules.md",
+        "docs/ops/historical_branch_retirement_runbook.md",
+        "make/codex.mk",
+        "scripts/verify/branch_governance_consistency_guard.py",
+        "scripts/verify/test_branch_governance_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ],
+      "kind": "offline"
+    },
+    "worktree_guard": {
+      "target": "verify.workspace.worktree.guard",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/ops/branch_cleanup_safe.sh",
+        "scripts/ops/safe_worktree_cleanup.py",
+        "scripts/ops/test_safe_worktree_cleanup.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Closed 2026-10-05: three stale runtime-carrier references were cleared (no assertion, guard or prefix policy touched) and the three exact-head-merged origin references were retired under manifest sha256 d0969dea\u20264187 with a verified 3-head recovery bundle; origin 78 -> 75 with zero target residue. Publishing this candidate through the ordinary PR lane.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false,
+  "completion": {
+    "batch": "passed: carrier scan zero hits; dry-run 3 eligible / 0 skipped; verified recovery bundle (3 heads, sha256 2be56d87\u2026a098); APPLY retired 3/3 with remote_deleted + local_absent_confirmed; origin 78 -> 75 with zero residue",
+    "mainline": "publishing the frozen candidate through the ordinary PR lane; exact-head identity is the frozen source commit and its ci.local.quick receipt",
+    "deployment": "not_run",
+    "product_delivery": "not_run",
+    "manifest": {
+      "path": "docs/ops/manifests/historical_branch_retirement_carrier_20261005.json",
+      "sha256": "d0969dea124671ae2b084182f6335bb7ec50301a647decaa2e3c331f45c04187"
+    },
+    "recovery_bundle": {
+      "path": ".runtime/retire/historical-branch-retirement-carrier-b-20261005.bundle",
+      "sha256": "2be56d875f1a400f50edeec434249e1d517ce91db4c1fc58326becf69fa9a098",
+      "head_count": 3,
+      "verify": "pass"
+    },
+    "reports": [
+      ".runtime/retire/dry-run-carrier-b.json",
+      ".runtime/retire/bundle-prep-carrier-b.json",
+      ".runtime/retire/apply-report-carrier-b.json"
+    ],
+    "retired": {
+      "count": 3,
+      "origin_heads_before": 78,
+      "origin_heads_after": 75,
+      "target_residue": 0,
+      "branches": [
+        "audit/historical-branch-asset-retirement-v1",
+        "fix/atomic-release-publication-contract",
+        "fix/controlled-merge-expected-head-guard"
+      ]
+    },
+    "l1": {
+      "retire_entry": {
+        "command": "make verify.branch.retire.historical",
+        "status": "passed",
+        "log": ".runtime/agent-runs/REMOTE-BRANCH-CARRIER-RETIREMENT-B/verify_branch_retire_historical.log"
+      },
+      "branch_governance": {
+        "command": "make verify.branch.governance.consistency",
+        "status": "passed",
+        "tests": 16,
+        "log": ".runtime/agent-runs/REMOTE-BRANCH-CARRIER-RETIREMENT-B/verify_branch_governance_consistency.log"
+      },
+      "agent_resume": {
+        "command": "make verify.agent.resume.unit",
+        "status": "passed",
+        "tests": 30,
+        "log": ".runtime/agent-runs/REMOTE-BRANCH-CARRIER-RETIREMENT-B/verify_agent_resume_unit.log"
+      },
+      "worktree_guard": {
+        "command": "make verify.workspace.worktree.guard",
+        "status": "passed",
+        "tests": 123,
+        "log": ".runtime/agent-runs/REMOTE-BRANCH-CARRIER-RETIREMENT-B/verify_workspace_worktree_guard.log"
+      },
+      "iteration": {
+        "command": "make ci.local.iteration",
+        "status": "passed",
+        "change_state": "dirty"
+      }
+    }
+  }
+}

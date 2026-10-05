@@ -1,0 +1,62 @@
+schema_version: 1
+goal:
+  id: REMOTE-BRANCH-CARRIER-RETIREMENT-B
+  title: clear_runtime_carrier_references_and_retire_three_exact_head_merged_refs
+  status: completed
+  formal_product_layer: P4
+  layer_target: governed_historical_remote_reference_retirement
+  module:
+    - docs/ops/manifests
+    - docs/ops/iterations
+    - scripts/verify
+    - .agent
+  objective: >-
+    Clear the stale runtime-carrier text references that made the governed
+    historical-retirement entry fail closed on three already-merged origin
+    references, then retire those three through the governed entry bound to an
+    exact manifest SHA-256 and a verified recovery bundle. Never infer, broaden or
+    force a deletion; change no assertion, guard, prefix policy or audit.
+  baseline:
+    branch: main
+    full_sha: 1a7db19faf9321d7199767e7fbe375cb82688517
+    source: clean_main_after_pr_568
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_governance
+    why_here: >-
+      Retiring stale remote references and correcting the engineering-context
+      metadata and test fixtures that kept naming them is delivery-lifecycle
+      governance owned by the P4 ops layer; it changes how the repository tracks
+      its own history, not what the product does.
+    why_not_elsewhere:
+      - no_p0_frontend_contract_or_platform_mechanism
+      - no_p1_construction_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_configuration
+      - no_database_fixture_migration_release_or_deployment
+    blast_radius:
+      - one_stale_goal_baseline_branch_reference
+      - one_completed_run_retained_list
+      - two_test_fixture_placeholder_branch_names
+      - three_origin_refs_proven_merged_by_exact_head_merged_pr
+  batches:
+    - id: A
+      title: clear_carriers_and_retire_the_three_proven_merged_refs
+      status: completed
+      evidence:
+        - carriers_cleared_git_grep_zero_hits_over_scripts_config_deploy_make_agent_github
+        - manifest_sha256_d0969dea124671ae2b084182f6335bb7ec50301a647decaa2e3c331f45c04187
+        - dry_run_eligible_3_skipped_0
+        - recovery_bundle_verified_head_count_3_sha256_2be56d87
+        - apply_completed_3_retired_0_skipped
+        - origin_heads_78_to_75_zero_target_residue
+  exclusions:
+    - no_change_to_any_guard_assertion_or_governed_prefix_regex
+    - the_two_feat_and_one_backup_content_merged_refs_stay_until_a_prefix_policy_decision
+    - the_release_refs_and_the_substantial_unmerged_work_stay_in_place
+  rollback:
+    - restore_any_retired_reference_from_the_verified_recovery_bundle
+    - revert_the_goal_baseline_run_list_and_test_fixture_edits
+  next_exact_step: >-
+    Registered 2026-10-05 under owner authorization option 1: clear the three stale
+    carrier references and retire the three exact-head-merged origin references
+    through the governed entry; excluded sets stay in place.

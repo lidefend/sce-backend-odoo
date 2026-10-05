@@ -97,11 +97,8 @@
       "no_merged_pr": 50,
       "release": 19,
       "outside_governed_prefixes": 5,
-      "runtime_carrier_referenced": [
-        "audit/historical-branch-asset-retirement-v1",
-        "fix/atomic-release-publication-contract",
-        "fix/controlled-merge-expected-head-guard"
-      ]
+      "runtime_carrier_referenced_count": 3,
+      "runtime_carrier_followup": "three exact-head-merged origin references were held back only because runtime carriers still named them; those carrier references were cleared and the branches retired in the successor run REMOTE-BRANCH-CARRIER-RETIREMENT-B (2026-10-05) under a separate reviewed manifest"
     },
     "l1": {
       "retire_entry": {
