@@ -23,7 +23,7 @@ EXPECTED_CENTERS = [
     "工作台", "项目中心", "合同中心", "成本中心", "财务中心",
     "税务中心", "会计账务中心", "报表中心", "行政中心", "产品配置",
 ]
-EXPECTED_CONTRACT_MENU_COUNT = 89
+EXPECTED_CONTRACT_MENU_COUNT = 90
 EXPECTED_ACCOUNTING_MENU_COUNT = 6
 EXPECTED_FORMAL_MENU_COUNT = EXPECTED_CONTRACT_MENU_COUNT
 
@@ -63,9 +63,9 @@ def main() -> int:
     baseline = json.loads(BASELINE.read_text(encoding="utf-8"))
     strategy = baseline.get("policy_strategy") or {}
     if strategy.get("effective_menu_count_per_product") != EXPECTED_FORMAL_MENU_COUNT:
-        errors.append("locked policy menu count is not the complete 89-page product surface")
+        errors.append("locked policy menu count is not the complete 90-page product surface")
     if strategy.get("effective_capability_count_per_product") != EXPECTED_FORMAL_MENU_COUNT:
-        errors.append("locked policy capability count is not 89")
+        errors.append("locked policy capability count is not 90")
     for product in baseline.get("products") or []:
         groups = product.get("menu_groups") or []
         if [row.get("group_label") for row in groups] != EXPECTED_CENTERS:
@@ -74,7 +74,7 @@ def main() -> int:
         rows = [menu for group in groups for menu in group.get("menus") or []]
         xmlids = [str(row.get("menu_xmlid") or "") for row in rows]
         if len(rows) != EXPECTED_FORMAL_MENU_COUNT or len(set(xmlids)) != EXPECTED_FORMAL_MENU_COUNT:
-            errors.append(f"{product.get('product_key')} must contain 89 unique menu identities")
+            errors.append(f"{product.get('product_key')} must contain 90 unique menu identities")
         actual_contract_paths: set[tuple[str, ...]] = set()
         accounting_count = 0
         for row in rows:
@@ -103,7 +103,7 @@ def main() -> int:
     acceptance = json.loads(ACCEPTANCE.read_text(encoding="utf-8"))
     daily = (((acceptance.get("profiles") or {}).get("daily") or {}).get("navigation_policy") or {})
     if daily.get("min_actions") != EXPECTED_FORMAL_MENU_COUNT or daily.get("max_actions") != EXPECTED_FORMAL_MENU_COUNT:
-        errors.append("daily acceptance must lock exactly 89 visible action pages")
+        errors.append("daily acceptance must lock exactly 90 visible action pages")
 
     module_manifest = ast.literal_eval(MANIFEST.read_text(encoding="utf-8"))
     completion_path = "views/menu_product_contract_completion_v1.xml"

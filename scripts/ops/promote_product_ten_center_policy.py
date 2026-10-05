@@ -36,6 +36,7 @@ RELEASED_MENU_BINDINGS = (
     ("项目中心", "新项目立项", "smart_construction_core.menu_sc_project_initiation", "smart_construction_core.action_project_initiation", "project.project", ("项目创建", "新项目立项")),
     ("项目中心", "项目信息编辑", "smart_construction_core.menu_sc_product_project_edit_v1", "smart_construction_core.action_sc_product_project_edit_v1", "project.project", ("项目创建", "项目信息编辑")),
     ("项目中心", "项目启停管理", "smart_construction_core.menu_sc_product_project_lifecycle_v1", "smart_construction_core.action_sc_product_project_lifecycle_v1", "project.project", ("项目创建", "项目启停管理")),
+    ("项目中心", "项目台账", "smart_construction_core.menu_sc_project_project", "smart_construction_core.action_sc_project_list", "project.project", ("项目台账", "项目台账")),
     ("项目中心", "客户档案", "smart_construction_core.menu_sc_customer_partner", "smart_construction_core.action_sc_customer_partner", "res.partner", ("客商管理", "客户档案")),
     ("项目中心", "供应商档案", "smart_construction_core.menu_sc_supplier_partner", "smart_construction_core.action_sc_supplier_partner", "res.partner", ("客商管理", "供应商档案")),
     ("项目中心", "客商黑名单", "smart_construction_core.menu_sc_product_partner_blacklist_v1", "smart_construction_core.action_sc_product_partner_blacklist_v1", "res.partner", ("客商管理", "客商黑名单")),

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "branches": {
-    "codex/daily-dev-user-acceptance-20261005": ".agent/runs/DAILY-DEV-USER-LEVEL-ACCEPTANCE/run.json"
+    "codex/daily-dev-user-acceptance-closeout-20261005": ".agent/runs/DAILY-DEV-USER-LEVEL-ACCEPTANCE/run.json"
   }
 }

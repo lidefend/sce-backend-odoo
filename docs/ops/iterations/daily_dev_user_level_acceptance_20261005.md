@@ -20,10 +20,10 @@ Owner acceptance entry: `http://1.95.85.92:18081/`（自定义前端），口令
 
 ## 2. 状态（四层分列）
 
-- **批次验收**：进行中。部署与夹具车道 PASS；1440/light 全路由走查 90/90 通过，暴露 1 个真实产品缺陷（会计科目表 403），已定位根因并修复（待部署复验）。
-- **主线集成**：main=`4ba044e0`（PR #572 已合并）；本分支修复待 PR。
+- **批次验收**：进行中。部署与夹具车道 PASS；1440/light 全路由走查 90/90 通过，暴露 1 个真实产品缺陷（会计科目表 403）；根因已定案并修复，PR #573 已合并，sc-root 已部署复验（`action_open action=291 menu_id=182` 由 403 转 200）。
+- **主线集成**：main=`3f424993c9f378aaeedd2f26080545ad37ea3f8e`（PR #573 已合并）；四项必需检查全 pass。
 - **版本发布**：未主张。
-- **产品交付**：未主张（待修复部署后完成模板/视口/主题无死角验收与独立复核）。
+- **产品交付**：未主张（待完成模板/视口/主题无死角验收、关联往返与独立复核）。
 
 ### 部署与夹具（已 PASS）
 
@@ -134,8 +134,105 @@ ARCH-DECISION-001。
   本改动新增的 2 例测试全部通过。
 
 
+### 3.5 集成与部署复验（PR #573，sc-root）
+
+- PR #573 squash 合并到 `main=3f424993c9f378aaeedd2f26080545ad37ea3f8e`；候选 HEAD
+  `025dbe15cd43f188fe8200c126a78e33c203fd60` 的 `ci.local.quick` receipt 通过；必需检查
+  `public_guard`、`merge_policy_gate`、`professional_quality_gate`、`frontend_release_gate` 全 pass。
+- sc-root 日常仓快进到 `3f424993`，`make mod.upgrade MODULE=smart_core` + `make restart` PASS。
+- HTTP 复验（wutao，`X-Anonymous-Intent: 1`）：`action_open action=291 menu_id=182` → **200**（修复前 403）；
+  无 `menu_id` 的 `action=291` → 200；负例 `menu_id=999` → 403、`action=999` → 403（无回归）。
+- 发布权威面：wutao 87 pairs + 5 containers；`decision(182,291)=True`，`decision(182,999)=False`。
+
+### 3.6 本地开发验证为何未暴露该 403（覆盖边界，非执行不勤）
+
+在 `sc_dev_demo` 实测（`make odoo.shell.exec ENV=dev ENV_FILE=.env.dev DB_NAME=sc_dev_demo`）：
+
+- **无同一条失败路由**：本机 menu `182` = `发票/报告/管理`、action `291` = `退款通知`(`account.move`)；
+  `名称 like 科目` 为空，唯一“会计”菜单是 `194 = 发票/配置/会计`（无 action）——按 id 无法复现。
+- **本地没有“发布导航”对象**：`sc.edition.release.snapshot` 计数 = 0；发布路由授权面对 uid1 与 wutao
+  均 `primary_actions=0 / pairs=0`。403 的产品症状要求“已发布 GA/default_visible 入口被拒”，本地不成立。
+- **缺陷类别本地存在，但无入口跑该差分**：用基线 `4ba044e0` 的祖先组交集规则重放，本机 wutao 430 个
+  canonical 可见菜单中有 **84** 个会被 deny（68 个带 action），主因 `设置`(43)、`系统管理（内部）/Smart Core Admin`(11)、
+  `项目 → SC 能力-行业配置管理员`(8)；admin(uid1) 204 可见中 deny **13**（10 个带 action）。
+- **本地测试为声明驱动**：入口是 `make local.dev.test MODULE=smart_core TEST_TAGS=...`，harness 用合成声明
+  `_authority(pairs=[(182,291)])`（`addons/smart_core/tests/test_intent_permission_menu_visibility.py:10`）断言规则本身，
+  与被测代码同源假设，构造性通过。
+- **修复后本地更不可验证**：新门禁消费发布权威，本机权威为空即 fail-closed；`sc_demo` 是唯一有效运行态。
+- 结论：本地是 feature 迭代库，结构性缺少“已发布导航 + 真实业务角色”夹具；该缺陷是 1440/light 全路由
+  走查在 sc-root 上首次以真实产品导航跑通时才暴露。可落地改进：在 sc-root 增加“发布导航 vs 门禁判定”
+  一致性探针（只读，复用既有受管入口，不新建框架）。
+
+### 3.7 「项目台账」发布面缺口（产品册有、发布未对齐；本轮修复）
+
+**缺口（必须明确说明）**：产品册（`config/product_menu_contract_v1.json`、
+`config/product_menu_release_manifest_v2.json`）把「项目台账」声明为 GA/default_visible，但运行时实际消费的发布基线
+`scripts/verify/baselines/formal_business_product_menu_policy_v1.json` 的「项目中心」中**没有**该入口。
+即：**产品册有的功能，发布面没有对齐**。用户登录后 `/s/projects.list?menu_id=291&action_id=506` 的
+`ui.contract.v2 op=action_open` 每次复现 **403**。
+
+**根因（两类叠加，非单一）**
+
+1. 发布基线缺项：基线不含 `(项目台账 menu=379 / action=506)`，`published_pairs` 中无 `action 506`。
+2. carrier 身份不一致：`smart_construction_scene/providers/projects_list_provider.py:19` 的
+   `fallback_strategy.menu_xmlid=menu_sc_root`，经 `smart_core/core/scene_provider.py:466`
+   （在 registry 升级之后执行）覆写场景声明身份，把 carrier 从声明的 `menu_sc_project_project(379)`
+   改成根容器 `menu_sc_root(291)`。而 `291` 是 action-less 容器，精确 pair 判定 `(291,506)` **恒为 False**。
+
+只读探针（sc_demo, wutao）实测：`DEC_291_506=False`、`DEC_379_506=False`、`PAIRS_506=[]`、
+`291 in published_menu_ids=True` 但 `PAIRS_MENU291=[]`。
+**因此“只把 379/506 发布出去”不足以消除 403**；必须同时让有效 carrier 回到声明身份。
+
+**修复（方案 A：对齐发布面，不放宽断言、不加模型特判、不删 landing scene）**
+
+- 发布面：`scripts/ops/promote_product_ten_center_policy.py` 增唯一绑定
+  `项目中心/项目台账 → menu_sc_project_project + action_sc_project_list`（`project.project`，path 4 层）；
+  重生成基线 89→**90** 与 `.sha256`（`1b7c0700…`）。
+- carrier：`projects_list_provider.py` 的 `fallback_strategy.menu_xmlid` 与 `delivery_handoff.user_entry`
+  对齐为 `menu_sc_project_project`。P0 机制不动（`test_scene_provider_target_identity_merge.py`
+  已声明 critical scene 采信 provider 身份，故修在 provider 数据层）。
+
+**定向验证（本地，非零）**
+
+- 发布面 28 项：`promote_...`（幂等一致）、`test_promote_product_ten_center_policy`(4)、
+  `product_menu_contract_v1_guard`(PASS)、`product_menu_release_manifest_v2_guard`(PASS 90/90)、
+  `test_locked_menu_policy_contract`(18)、`baseline_policy_integrity_guard`(PASS)、
+  `product_primary_center_baseline_guard`(PASS)、`test_product_menu_contract_v1_guard`(5)。
+- carrier 63 项：`test_action_only_scene_semantic_supply`(59，含新增声明消费锁)、
+  `test_scene_provider_target_identity_merge`(4)。
+- 负例控制：把 provider 回退身份临时改回 `menu_sc_root` → 新测试 FAILED(1)；恢复后 59 OK。
+
+**存量失败（非本轮引入，基线 HEAD 同样失败，单列不阻断）**：
+`scripts/verify/formal_menu_no_legacy_carrier_guard.py` 报
+`menu_sc_self_funding_advance_income/refund missing from formal product baseline`。
+
+**待部署复验**：候选分支经受管 `daily.runtime.candidate.bundle_sync` 刷到 sc-root 后
+`make mod.upgrade MODULE=smart_construction_core` + `make restart`，复验登录不再 403、
+有效 pair→200、90 入口全 200、负例 403 不回归。
+
+### 3.8 菜单入口重复的事实（待整合决策）
+
+重复分三类，只有 scene/entry 层的「同 `(menu,action)` 多认领」是真重复：
+
+- `scene_registry_content.py:143/152`：`projects.list` 与 `projects.ledger` 的 target **完全相同**
+  （`menu_sc_project_project`+`action_sc_project_list`），名字同为「项目台账」；`projects.ledger`
+  在产品册标注为**「项目台账（试点）」**（`scene_catalog_v2.md:91`）。
+- `scene_registry_content.py:694`：`projects.execution` 亦声明 `menu_sc_root`+`action_sc_project_list`。
+- `core_extension.py:110`：`NAV_MENU_SCENE_MAP` 同时把 `menu_sc_project_project` 与 `menu_sc_root`
+  映射到 `projects.list`。
+- policy 侧同一 `res_model` 多菜单（`project.project`×5、`account.move`×4、`sc.invoice.registration`×4）
+  属**正常多入口**，不是整合对象。
+
 ## 4. 待办
 
-- 修复部署后复验：1440/light 走查 0 错误；模板级验收（含写循环）；视口/主题矩阵；关联跳转往返；独立复核。
+- 修复部署后复验：1440/light 走查 0 错误；模板级验收（含写循环）；视口/主题矩阵；关联往返（须真实点击）；独立复核。
+- 「项目台账」缺口（§3.7）本地已双修（发布面 90 项 + carrier 身份对齐），定向 L2 绿并含负例控制；待候选部署到
+  sc-root 后复验登录不再 403、有效 pair→200、90 入口全 200、负例 403 不回归。未复验前不得宣称该缺口已关闭。
+- 菜单入口整合（§3.8，待调度裁决）：`projects.ledger`（试点）与 `projects.list` 同 target、`projects.execution`
+  与根容器同 target、`NAV_MENU_SCENE_MAP` 双重映射；建议作为**独立小批次**收口（`projects.ledger` 转 alias、
+  不新增菜单行、不动 ACL），避免重开已通过的列表证据。
+- 运行态身份缺口（已知，未关闭）：sc-root `/api/runtime-version` 仍报 `4ba044e0`，`.env.dev` 的
+  `SC_SOURCE_REVISION` 未随 `daily.runtime.main.bundle_sync` 刷新，且无受管刷新入口；验收身份绑定
+  sc-root git HEAD + DB + 构建产物，不以该声明 SHA 作为通过依据。
 - 后续统一（已记录的重复）：`handlers/route_authority_validate.py` 与 `handlers/system_init.py` 仍内联同构的
   发布权威构建，应改为复用 `delivery/runtime_route_authority.py`；为不改动其既有 P0 契约测试，本轮未合并。

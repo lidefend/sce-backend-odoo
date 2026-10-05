@@ -777,8 +777,72 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
         self.assertEqual((payload.get("primary_action") or {}).get("action_xmlid"), "smart_construction_core.action_sc_project_list")
         self.assertEqual(handoff.get("family"), "projects")
         self.assertEqual(handoff.get("runtime_mode"), "direct")
-        self.assertEqual(handoff.get("user_entry"), "menu:smart_construction_core.menu_sc_root")
+        self.assertEqual(handoff.get("user_entry"), "menu:smart_construction_core.menu_sc_project_project")
         self.assertEqual(handoff.get("final_scene"), "projects.list")
+
+    def test_wave1_projects_provider_identity_matches_declared_registry_target(self):
+        declared = {
+            row["code"]: (row.get("target") or {})
+            for row in scene_registry_content.list_scene_entries()
+        }["projects.list"]
+        payload = projects_list_provider.build(scene_key="projects.list", runtime={"company_id": 9})
+        fallback = payload.get("fallback_strategy") or {}
+        primary = payload.get("primary_action") or {}
+        handoff = payload.get("delivery_handoff") or {}
+
+        self.assertEqual(fallback.get("menu_xmlid"), declared.get("menu_xmlid"))
+        self.assertEqual(fallback.get("action_xmlid"), declared.get("action_xmlid"))
+        self.assertEqual(primary.get("action_xmlid"), declared.get("action_xmlid"))
+        self.assertEqual(handoff.get("user_entry"), f"menu:{declared.get('menu_xmlid')}")
+
+    def test_project_ledger_entry_has_single_declared_identity_owner(self):
+        rows = {row["code"]: row for row in scene_registry_content.list_scene_entries()}
+
+        self.assertTrue(rows["projects.list"].get("identity_owner"))
+        self.assertEqual(rows["projects.ledger"].get("alias_of"), "projects.list")
+        self.assertNotIn("identity_owner", rows["projects.ledger"])
+        execution_target = rows["projects.execution"].get("target") or {}
+        self.assertNotIn("menu_xmlid", execution_target)
+        self.assertNotIn("action_xmlid", execution_target)
+
+    def test_nav_scene_maps_drop_root_carrier_and_aliases(self):
+        _reset_caches()
+        target_core_extension.scene_registry.load_scene_configs = lambda env: list(scene_registry_content.list_scene_entries())
+        maps = target_core_extension.smart_core_nav_scene_maps(_DummyEnv())
+
+        self.assertEqual(
+            maps["menu_scene_map"]["smart_construction_core.menu_sc_project_project"],
+            "projects.list",
+        )
+        self.assertEqual(
+            maps["action_xmlid_scene_map"]["smart_construction_core.action_sc_project_list"],
+            "projects.list",
+        )
+        self.assertNotIn("smart_construction_core.menu_sc_root", maps["menu_scene_map"])
+        self.assertNotIn("projects.ledger", set(maps["menu_scene_map"].values()))
+        self.assertNotIn("projects.execution", set(maps["action_xmlid_scene_map"].values()))
+
+    def test_target_scene_lookup_prefers_declared_identity_owner_over_claimants(self):
+        rows = list(scene_registry_content.list_scene_entries())
+        rows.sort(key=lambda row: 0 if row.get("code") in ("projects.ledger", "projects.execution") else 1)
+        original = target_capability._load_scene_map_with_timings
+        target_capability._load_scene_map_with_timings = lambda env: ({row["code"]: row for row in rows}, {})
+        try:
+            _reset_caches()
+            lookup = target_capability._build_target_scene_lookup(_DummyEnv())
+        finally:
+            target_capability._load_scene_map_with_timings = original
+            _reset_caches()
+
+        self.assertEqual(
+            lookup[("action_xmlid", "smart_construction_core.action_sc_project_list")],
+            "projects.list",
+        )
+        self.assertEqual(
+            lookup[("menu_xmlid", "smart_construction_core.menu_sc_project_project")],
+            "projects.list",
+        )
+        self.assertNotIn(("menu_xmlid", "smart_construction_core.menu_sc_root"), lookup)
 
     def test_wave1_finance_provider_supplies_delivery_handoff(self):
         payload = finance_center_provider.build(scene_key="finance.center", runtime={"company_id": 9})

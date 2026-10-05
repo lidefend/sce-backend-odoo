@@ -9,6 +9,7 @@ goal:
     - .agent
     - docs/ops/iterations
     - scripts/ops
+    - addons/smart_core
   objective: >-
     Advance the daily development runtime (sc-root:/opt/projects/repos/sce-product-odoo,
     ENV=dev, .env.dev, DB sc_demo) to the current stable mainline, provision the
@@ -19,8 +20,8 @@ goal:
     relaxed, and no product semantics are changed.
   baseline:
     branch: main
-    full_sha: 4ba044e037a7bf2c3d737eaec94ea891fc602581
-    source: clean_main_after_pr_572
+    full_sha: 3f424993c9f378aaeedd2f26080545ad37ea3f8e
+    source: clean_main_after_pr_573
   product_boundary:
     standard_vs_user_specific: ops_delivery_runtime_acceptance_tool
     why_here: >-
@@ -59,8 +60,10 @@ goal:
     - re-run the governed bundle sync with the exact previous SHA under a separate task
     - rebuild the previous frontend from its commit
   next_exact_step: >-
-    Registered 2026-10-05: promote main 4ba044e0 to the daily runtime through the
-    governed bundle sync, rebuild the frontend, upgrade affected modules, provision
-    the wutao acceptance credential, re-run the daily fixture lane entries and the
-    readonly probe on the new served SHA, then run the user-perspective browser
-    acceptance.
+    Registered 2026-10-05, closeout branch codex/daily-dev-user-acceptance-closeout-20261005
+    (baseline 3f424993): the P0 publication-authority fix is merged (PR #573) and deployed to
+    sc-root sc_demo with the reported 403 verified resolved (action_open action=291 menu_id=182 -> 200).
+    Resume user-perspective acceptance: post-fix 1440/light full-route re-walk, template coverage with
+    write loop, viewport/theme matrix, relation round-trip by a real click, then detail-page closeout and
+    the create/edit and workbench minimum evidence gaps; finish with one independent review and a single
+    consolidated recheck. No assertion, audit, ACL, field permission or negative case is relaxed.

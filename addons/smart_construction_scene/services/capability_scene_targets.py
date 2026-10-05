@@ -151,9 +151,8 @@ def _build_target_scene_lookup(env) -> dict[tuple[str, str], str]:
 
     scene_map, _timings = _load_scene_map_with_timings(env)
     lookup: dict[tuple[str, str], str] = {}
-    for scene_key, scene in (scene_map or {}).items():
-        if not isinstance(scene, dict):
-            continue
+
+    def _claim(scene_key: str, scene: dict[str, Any]) -> None:
         target = scene.get("target") if isinstance(scene.get("target"), dict) else {}
         action_xmlid = str(target.get("action_xmlid") or "").strip()
         menu_xmlid = str(target.get("menu_xmlid") or "").strip()
@@ -165,6 +164,20 @@ def _build_target_scene_lookup(env) -> dict[tuple[str, str], str]:
             lookup.setdefault(("menu_xmlid", menu_xmlid), scene_key)
         if model and view_mode:
             lookup.setdefault(("model_view", f"{model}:{view_mode}"), scene_key)
+
+    claims = [
+        (scene_key, scene)
+        for scene_key, scene in (scene_map or {}).items()
+        if isinstance(scene, dict) and not str(scene.get("alias_of") or "").strip()
+    ]
+    # A declared canonical owner owns the identity; order-dependent claimants
+    # only fill identities that no canonical scene claims. Aliases never claim.
+    for scene_key, scene in claims:
+        if scene.get("identity_owner"):
+            _claim(scene_key, scene)
+    for scene_key, scene in claims:
+        if not scene.get("identity_owner"):
+            _claim(scene_key, scene)
     _TARGET_SCENE_LOOKUP_CACHE[cache_key] = lookup
     return lookup
 

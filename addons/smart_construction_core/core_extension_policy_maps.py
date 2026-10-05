@@ -576,7 +576,6 @@ NAV_MENU_SCENE_MAP = {
     "smart_construction_core.menu_sc_project_project": "projects.list",
     "smart_construction_core.menu_sc_project_management_scene": "project.management",
     "smart_construction_core.menu_sc_project_cost_code": "config.project_cost_code",
-    "smart_construction_core.menu_sc_root": "projects.list",
     "smart_construction_core.menu_sc_project_dashboard": "projects.dashboard",
     "smart_construction_core.menu_sc_history_todo": "workspace.home",
     "smart_construction_core.menu_sc_operating_metrics_project": "dashboard.company",

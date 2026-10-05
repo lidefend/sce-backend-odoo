@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "id": "DAILY-DEV-USER-LEVEL-ACCEPTANCE",
-  "branch": "codex/daily-dev-user-acceptance-20261005",
+  "branch": "codex/daily-dev-user-acceptance-closeout-20261005",
   "status": "active",
-  "baseline_sha": "4ba044e037a7bf2c3d737eaec94ea891fc602581",
+  "baseline_sha": "3f424993c9f378aaeedd2f26080545ad37ea3f8e",
   "goal": ".agent/goals/DAILY-DEV-USER-LEVEL-ACCEPTANCE.yaml",
   "record": "docs/ops/iterations/daily_dev_user_level_acceptance_20261005.md",
   "scope": [
@@ -20,7 +20,21 @@
     "addons/smart_core/delivery/runtime_route_authority.py",
     "addons/smart_core/tests/test_intent_permission_operation_policy.py",
     "docs/engineering_convergence/test_inventory.csv",
-    "docs/engineering_convergence/test_inventory_summary.md"
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "addons/smart_construction_scene/providers/projects_list_provider.py",
+    "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
+    "config/product_menu_contract_v1.json",
+    "config/frontend/acceptance_environments_v1.json",
+    "scripts/ops/promote_product_ten_center_policy.py",
+    "scripts/ops/test_promote_product_ten_center_policy.py",
+    "scripts/release/test_locked_menu_policy_contract.py",
+    "scripts/verify/product_menu_release_manifest_v2_guard.py",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+    "addons/smart_construction_core/core_extension_policy_maps.py",
+    "addons/smart_construction_scene/core_extension.py",
+    "addons/smart_construction_scene/profiles/scene_registry_content.py",
+    "addons/smart_construction_scene/services/capability_scene_targets.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -32,8 +46,8 @@
       "env_file": ".env.dev",
       "database": "sc_demo",
       "frontend_url": "http://1.95.85.92:18081/",
-      "expected_old_sha": "8a77c2374d7c6b99048a14865a053276a061164b",
-      "expected_new_sha": "4ba044e037a7bf2c3d737eaec94ea891fc602581",
+      "expected_old_sha": "4ba044e037a7bf2c3d737eaec94ea891fc602581",
+      "expected_new_sha": "3f424993c9f378aaeedd2f26080545ad37ea3f8e",
       "entrypoints": [
         "make daily.runtime.main.bundle_sync",
         "make verify.frontend.build",
@@ -68,7 +82,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the publication-authority gate + process cache (delivery/runtime_route_authority.py, security/intent_permission.py, models/release_management.py, tests, record); make ci.local.iteration; push/open PR; after merge pull main on sc-root, make mod.upgrade MODULE=smart_core, make restart, re-probe 会计科目表 action 291 menu 182 (expect 200) and confirm warm authority latency; then resume user-level acceptance (template/viewport/theme matrix, relation round-trip) on sc_demo.",
+  "next_exact_step": "Owner authorized one-round integration (root cause A publish face 379/506 + provider carrier identity; root cause B scene/entry duplication consolidation: projects.list identity_owner, projects.ledger alias_of, projects.execution carrier cleared, NAV_MENU_SCENE_MAP root->projects.list removed, two-phase claim in both capability_scene_targets and core_extension). Next: re-run L1 make ci.local.iteration; characterize the two pre-existing guard FAILs (scene_role_policy_consistency_guard, scene_no_action_scene_guard) against baseline via git stash; commit candidate on codex/* branch; governed deploy to sc-root via daily.runtime.candidate.bundle_sync with CONFIRM, then mod.upgrade smart_construction_core + smart_construction_scene + restart; verify wutao login no 403 on projects.list, pair (379,506) ->200, 90 published entries all 200, negatives still 403. Then frozen detail-page closeout (1440/390 light+dark, relation round-trip real click, create/edit + workbench gaps).",
   "write_replay_authorized": false,
   "candidate_evidence": false,
   "results": [
@@ -83,11 +97,14 @@
         "sc-root FinalMenuNavigationService (product runtime nav) for wutao outputs menu 182 action 291; flat=110",
         "sc-root route_authority for wutao: 97 pairs; (182,291) in primary_actions allowed_operation=read, denied_actions has no 291",
         "sc-root ui.menu.config.policy rows for 181/182: none; release gate not fail_closed",
-        "sc-root native ir.ui.menu._visible_menu_ids() = 532, of which 344 act_window menus are unpublished"
+        "sc-root native ir.ui.menu._visible_menu_ids() = 532, of which 344 act_window menus are unpublished",
+        "PR #573 (squash) merged to main 3f424993c9f378aaeedd2f26080545ad37ea3f8e; required checks public_guard/merge_policy_gate/professional_quality_gate/frontend_release_gate all pass",
+        "sc-root deployed 3f424993: make mod.upgrade MODULE=smart_core + make restart; HTTP action_open action=291 menu_id=182 -> 200; menu_id=999 -> 403; action=999 -> 403",
+        "wutao published route authority on sc_demo: 87 pairs + 5 containers; decision(182,291)=True"
       ],
       "root_cause": "intent_permission._menu_visible_for_user required every ancestor menu group to intersect the user's groups (contradicting the parent-carrier rule), and the gate had no publication authority. Correct authority is the published route authority (same effective policy authority as system_init), NOT native menu visibility: ARCH-DECISION-001 forbids deriving release authorization from native menu existence/visibility.",
       "supersedes": "commit 69b1ddab used Odoo canonical _visible_menu_ids as the gate authority; that would widen the allow set from 97 published to 341 unpublished entries.",
-      "status": "fixed_pending_deploy"
+      "status": "fixed_merged_deployed_verified"
     },
     {
       "id": "l2_intent_menu_publication",
@@ -155,6 +172,112 @@
         "failure_set": "identical, 34 items diffed one by one"
       },
       "note": "failing cases are um_p1/p2/p3 business ORM (cost period vs fact-date month, subcontract settlement states) plus locale label '电话' != 'Phone'; all reproduce with the change stashed -> pre-existing sc_dev_demo fixture/date drift, out of this change's ownership"
+    },
+    {
+      "id": "l5_publication_authority_merged",
+      "layer": "L5-integration",
+      "claim": "the publication-authority fix is merged into mainline",
+      "evidence": [
+        "PR #573 squash-merged; main 3f424993c9f378aaeedd2f26080545ad37ea3f8e",
+        "pre-fix branch candidate HEAD 025dbe15cd43f188fe8200c126a78e33c203fd60; local ci.local.quick receipt bound to it"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "l3_daily_runtime_deploy_verify",
+      "layer": "L3/L4",
+      "claim": "daily runtime serves the fixed build and the reported 403 is resolved",
+      "environment": "sc-root sc_demo (ENV=dev, .env.dev)",
+      "evidence": [
+        "make mod.upgrade MODULE=smart_core PASS; make restart PASS",
+        "ui.contract.v2 op=action_open action=291 menu_id=182 -> 200 (was 403 PERMISSION_DENIED)",
+        "op=action_open action=291 (no menu_id) -> 200; negative menu_id=999 -> 403; negative action=999 -> 403",
+        "warm authority latency over HTTP ~129ms; in-process cold 225ms -> warm 1.1ms"
+      ],
+      "status": "passed"
+    },
+    {
+      "id": "local_non_repro_attribution",
+      "layer": "L4-diagnosis",
+      "claim": "why local development validation did not expose the 403 (coverage boundary, not diligence)",
+      "evidence": [
+        "sc_dev_demo: menu 182 = 发票/报告/管理, action 291 = 退款通知(account.move); no 科目/会计科目表 menu exists locally -> the failing route identity cannot be reproduced locally",
+        "sc_dev_demo: sc.edition.release.snapshot count = 0; published route authority for uid1 and wutao has primary_actions=0/pairs=0 -> no published navigation object locally, so the product-level symptom cannot appear",
+        "baseline 4ba044e0 ancestor-group gate replayed on sc_dev_demo: wutao 430 canonical-visible menus -> 84 denied (68 with action), main causes 设置(43)/Smart Core Admin(11)/项目->SC 能力-行业配置管理员(8); admin 204 visible -> 13 denied -> the defect class is present locally but no local entry ran the differential",
+        "local entry was make local.dev.test MODULE=smart_core TEST_TAGS=... whose harness declares a synthetic authority (addons/smart_core/tests/test_intent_permission_menu_visibility.py:10) -> asserts the rule, not the real published navigation -> constructive pass",
+        "post-fix the gate consumes publication authority; sc_dev_demo authority is empty -> local is fail-closed and cannot validate the fix either; sc_demo is the only valid runtime"
+      ],
+      "status": "recorded"
+    },
+    {
+      "id": "runtime_version_identity_caveat",
+      "layer": "L0-identity",
+      "claim": "declared runtime identity lags the deployed commit",
+      "evidence": [
+        "sc-root /api/runtime-version reports source_revision/git_sha = 4ba044e0 while repo HEAD = 3f424993",
+        ".env.dev SC_SOURCE_REVISION is still 4ba044e0; the governed daily.runtime.main.bundle_sync intentionally does not rewrite it, and no governed entry refreshes it"
+      ],
+      "status": "known_gap_open",
+      "note": "Acceptance identity is bound to sc-root git HEAD 3f424993 + DB sc_demo + built bundle; the declared SHA lag stays visible and is not treated as a pass."
+    },
+    {
+      "id": "project_ledger_release_surface_gap",
+      "layer": "L4-diagnosis",
+      "claim": "产品册/发布面不一致：产品册声明「项目台账」，运行时发布基线未包含该入口；且该入口的有效 carrier 被 provider 覆写成根容器菜单(291)，只对齐发布面不足以消除 403",
+      "evidence": [
+        "wutao 登录后 /s/projects.list?menu_id=291&action_id=506 的 ui.contract.v2 op=action_open 每次复现 403",
+        "身份: 506=smart_construction_core.action_sc_project_list(项目台账), 379=smart_construction_core.menu_sc_project_project(parent=865 项目台账), 291=smart_construction_core.menu_sc_root(已发布容器, action=None)",
+        "sc_demo 只读探针(wutao): DEC_291_506=False, DEC_379_506=False, action 506 不在任何 published_pair, 291 在 published_menu_ids 但 PAIRS_MENU291=[]",
+        "运行时发布面 = scripts/verify/baselines/formal_business_product_menu_policy_v1.json (locked_menu_policy_contract); 该基线原本不含项目台账",
+        "addons/smart_core/core/scene_provider.py:466 的 _upgrade_target_identity_from_provider 在 registry 升级之后执行, 用 provider.fallback_strategy.menu_xmlid 覆写场景声明的 target; projects.list 在 CRITICAL_SCENE_TARGET_OVERRIDES 内",
+        "addons/smart_construction_scene/providers/projects_list_provider.py:19 原 fallback_strategy.menu_xmlid=menu_sc_root -> 覆写为 291",
+        "既有契约测试 addons/smart_core/tests/test_scene_provider_target_identity_merge.py 声明 critical scene 采信 provider 身份; 故修复点在 provider 数据而非 P0 机制"
+      ],
+      "root_cause": "两类缺陷叠加: (1) 发布基线缺少产品册已声明的「项目台账」入口; (2) 该场景的 provider 回退身份与场景注册表声明的 canonical 身份不一致, 把 carrier 从声明菜单 379 覆写成根容器 291, 而 291 在发布面是 action-less 容器, 精确 pair 判定 (291,506) 恒为 False",
+      "fix": "方案 A(对齐发布面, 不放宽断言, 不加模型特判): 发布 (379,506) + 将 provider 回退身份对齐声明身份 menu_sc_project_project",
+      "status": "fixed_pending_deploy_verify"
+    },
+    {
+      "id": "l2_project_ledger_policy_alignment",
+      "layer": "L2",
+      "status": "passed",
+      "tests": 28,
+      "failed": 0,
+      "commands": [
+        "python3 scripts/ops/promote_product_ten_center_policy.py -> {products:2, menu_count:90, sha256:1b7c0700...} (幂等一致)",
+        "python3 -m unittest scripts.ops.test_promote_product_ten_center_policy -> 4 OK",
+        "python3 scripts/verify/product_menu_contract_v1_guard.py -> PASS",
+        "python3 scripts/verify/product_menu_release_manifest_v2_guard.py -> PASS centers=10 contract_pages=90 total=90",
+        "python3 -m unittest scripts.release.test_locked_menu_policy_contract -> 18 OK",
+        "python3 scripts/verify/baseline_policy_integrity_guard.py -> PASS",
+        "python3 scripts/verify/product_primary_center_baseline_guard.py -> PASS",
+        "PYTHONPATH=. python3 -m unittest scripts.verify.test_product_menu_contract_v1_guard -> 5 OK"
+      ]
+    },
+    {
+      "id": "l2_project_ledger_carrier_identity",
+      "layer": "L2",
+      "status": "passed",
+      "tests": 63,
+      "failed": 0,
+      "commands": [
+        "python3 addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py -> 59 OK (含新增声明消费锁 test_wave1_projects_provider_identity_matches_declared_registry_target)",
+        "python3 addons/smart_core/tests/test_scene_provider_target_identity_merge.py -> 4 OK"
+      ],
+      "negative_control": "将 provider fallback menu_xmlid 临时改回 menu_sc_root -> 新测试 FAILED(failures=1); 恢复后 59 OK, 证明该测试能检出注入"
+    },
+    {
+      "id": "menu_entry_duplication_fact",
+      "layer": "L4-diagnosis",
+      "claim": "菜单入口重复分三类, 只有 scene/entry 层的同 (menu,action) 多认领是真重复",
+      "evidence": [
+        "addons/smart_construction_scene/profiles/scene_registry_content.py:143/152 projects.list 与 projects.ledger target 完全相同(menu_sc_project_project+action_sc_project_list), 名字同为项目台账",
+        "scene_registry_content.py:694 projects.execution 亦声明 menu_sc_root+action_sc_project_list(与根容器重复)",
+        "addons/smart_construction_scene/core_extension.py:110 NAV_MENU_SCENE_MAP 同时把 menu_sc_project_project 与 menu_sc_root 映射到 projects.list",
+        "docs/product/scene_entry_registry_v1.json 把 projects.ledger 标为「项目台账（试点）」(scene_catalog_v2.md:91)",
+        "policy 侧同一 res_model 多菜单(project.project x5, account.move x4, sc.invoice.registration x4)属正常多入口, 非整合对象"
+      ],
+      "status": "recorded_pending_decision"
     }
   ]
 }
