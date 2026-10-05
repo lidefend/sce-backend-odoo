@@ -23,7 +23,12 @@
     ".agent/active-runs.json",
     ".agent/goals/FORMAL-SURFACE-RUNTIME-AUDIT-CONTRACT-BINDING.yaml",
     ".agent/runs/FORMAL-SURFACE-RUNTIME-AUDIT-CONTRACT-BINDING/run.json",
-    "docs/ops/iterations/formal_surface_runtime_audit_contract_binding_20261005.md"
+    "docs/ops/iterations/formal_surface_runtime_audit_contract_binding_20261005.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "scripts/verify/registry.yaml"
   ],
   "environment": {
     "kind": "runtime",
@@ -71,8 +76,16 @@
         "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
         "addons/smart_construction_acceptance_fixture/tests/test_acceptance_fixture_guard.py"
       ]
+    },
+    "guard_registry": {
+      "kind": "offline",
+      "target": "verify.guard.registry",
+      "inputs": [
+        "scripts/verify/registry.yaml",
+        "scripts/verify/guard_registry_audit.py"
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "Run local L1 (make ci.local.iteration) and the affected non-zero L2 unit suites; then push the candidate PR, merge on passing required CI, sync the daily runtime to main, run the declared non-business-creator write and acceptance-fixture ensure, and re-run the daily composite to confirm the three gates PASS."
+  "next_exact_step": "Merge PR #580 on passing required CI (professional_quality_gate guard-registry fixed by registry.yaml seeding), then sync the daily runtime to main, run the declared non-business-creator write and acceptance-fixture ensure once, and re-run the daily composite to confirm the three gates PASS."
 }

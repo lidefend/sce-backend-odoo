@@ -121,3 +121,41 @@ project A, and the daily fixture entry declares its xmlid in `REQUIRED_XMLIDS`.
   only the local 方单 data gap; entry-metadata audit bound to 92 contract models.
 - Authoritative daily (`sc_demo`), pre-fix vs post-fix readback, and the repair
   + fixture runs, are recorded in the run's evidence index.
+
+## Delivery lane and CI (2026-10-05, post-commit)
+
+Candidate: branch `fix/formal-surface-runtime-audit-contract-binding-v1`,
+integration PR #580 against `main` `51afafd0`.
+
+Guarded-publication findings, each closed at its owning layer before merge:
+
+1. `make pr.push` preflight repelled the first attempt (`ci.generated_reports.guard`,
+   stale test inventory) because two new verifier unit tests were added. Fixed by
+   `make ci.delivery.freeze.prepare` and committing only the regenerated tracked
+   evidence: `test_inventory.csv`, `test_inventory_summary.md` (1460 -> 1462
+   assets), `complexity_budget_report.md`.
+2. `professional_quality_gate` failed `verify.guard.registry` with
+   `orphan script 'test_formal_entry_metadata_audit.py' is not acknowledged in
+   registry.yaml`. Fixed by `make guard.registry.seed` (+1 acknowledgement in
+   `scripts/verify/registry.yaml`, same acknowledged-orphan policy as the sibling
+   audit unit tests), then re-syncing the dependent generated reports
+   (`complexity_budget_report.md`, `split_plan_queue.md`).
+3. `make ci.local.iteration` then reported the new evidence/registry paths as
+   `outside_scope`; the run scope and the `verify.guard.registry` /
+   `ci.generated_evidence.preflight` checks were declared in `run.json`.
+
+These are gate-declaration and generated-evidence updates only; no verifier,
+fixture, product, ACL or data-repair semantics changed after the audited commit
+`dcf41cd0`.
+
+Remaining delivery steps (this PR is integration finalization only, not
+deployment or product delivery):
+
+- merge #580 once the four required checks are green on the final head;
+- sync the daily runtime to `main` (`make daily.runtime.main.bundle_sync` +
+  `daily.runtime.source_revision.align`), upgrading the managed backend only if
+  the backend module set actually changed;
+- run the declared repair entry `make formal_entry_metadata.non_business_creator.write`
+  and the acceptance-fixture entry once on `sc_demo`, then re-run
+  `make -k release.daily_dev.acceptance.publish` to show the three gates PASS and
+  re-check the list range.
