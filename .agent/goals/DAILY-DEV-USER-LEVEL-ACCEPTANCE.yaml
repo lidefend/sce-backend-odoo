@@ -2,7 +2,23 @@ schema_version: 1
 goal:
   id: DAILY-DEV-USER-LEVEL-ACCEPTANCE
   title: daily_dev_user_level_product_delivery_acceptance
-  status: active
+  status: superseded
+  supersession:
+    date: 2026-10-06
+    authority: owner_authorized_run_retirement
+    closed_by: DAILY-DEV-ACCEPTANCE-RUN-RETIREMENT
+    reason: >-
+      The closeout branch codex/daily-dev-user-acceptance-closeout-20261005 no
+      longer exists locally or on origin, so its .agent/active-runs.json binding
+      was retired as dangling by ACTIVE-RUN-INDEX-DANGLING-CLOSEOUT. The batch's
+      product changes and mainline integration are on main via PR #573
+      (3f424993) and PR #574 (b6b8a0e6); every path in the run scope is present
+      in main. The record never claimed the declared user-perspective
+      product-delivery acceptance, so the goal is retired as superseded rather
+      than completed. No single successor goal declares ownership of the whole
+      objective; the remaining template/viewport/theme matrix and relation
+      round-trip verification continued in the frontend official-template chain
+      (FE-TPL-OFFICIAL-TEMPLATE-ADOPTION -> FE-TPL-RENDER-EVIDENCE-RECONCILIATION).
   formal_product_layer: P4
   layer_target: daily_development_runtime_acceptance
   module:
@@ -41,7 +57,7 @@ goal:
   batches:
     - id: A
       title: promote_current_mainline_and_accept_as_user
-      status: active
+      status: superseded
       evidence:
         - daily_runtime_bundle_sync_pass
         - frontend_build_and_module_upgrade_pass
@@ -60,10 +76,10 @@ goal:
     - re-run the governed bundle sync with the exact previous SHA under a separate task
     - rebuild the previous frontend from its commit
   next_exact_step: >-
-    Registered 2026-10-05, closeout branch codex/daily-dev-user-acceptance-closeout-20261005
-    (baseline 3f424993): the P0 publication-authority fix is merged (PR #573) and deployed to
-    sc-root sc_demo with the reported 403 verified resolved (action_open action=291 menu_id=182 -> 200).
-    Resume user-perspective acceptance: post-fix 1440/light full-route re-walk, template coverage with
-    write loop, viewport/theme matrix, relation round-trip by a real click, then detail-page closeout and
-    the create/edit and workbench minimum evidence gaps; finish with one independent review and a single
-    consolidated recheck. No assertion, audit, ACL, field permission or negative case is relaxed.
+    Dated 2026-10-06: this goal is retired as superseded by
+    DAILY-DEV-ACCEPTANCE-RUN-RETIREMENT. Do not resume work under this goal; the
+    batch record docs/ops/iterations/daily_dev_user_level_acceptance_20261005.md
+    and its evidence stay as the historical record. The remaining product-delivery
+    acceptance items continued in the frontend official-template chain; the daily
+    runtime deployment and fixture lane were closed by DAILY-DEV-MAINLINE-DEPLOYMENT,
+    DAILY-DEV-MAINLINE-REDEPLOY and DAILY-DEV-ACCEPTANCE-FIXTURE-LANE.

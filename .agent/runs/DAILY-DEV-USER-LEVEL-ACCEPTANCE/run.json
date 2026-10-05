@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "DAILY-DEV-USER-LEVEL-ACCEPTANCE",
   "branch": "codex/daily-dev-user-acceptance-closeout-20261005",
-  "status": "active",
+  "status": "superseded",
   "baseline_sha": "3f424993c9f378aaeedd2f26080545ad37ea3f8e",
   "goal": ".agent/goals/DAILY-DEV-USER-LEVEL-ACCEPTANCE.yaml",
   "record": "docs/ops/iterations/daily_dev_user_level_acceptance_20261005.md",
@@ -126,9 +126,20 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "HEAD carries the P1 smart_core init()/foreign-key table-recovery fix (model_table_recovery.ensure_table_on_init) plus its L2 regression test and acceptance-lane end-to-end repro; the run.json records the single result index. Remaining: (1) freeze the clean HEAD and run one consolidated ci.local.quick; (2) independent review of the frozen candidate; (3) make pr.push for the Gitee batch PR (owner rule: required CI green on the exact candidate head merges). Four-layer status stays separate; the overall branch goal is NOT marked complete.",
+  "next_exact_step": "Superseded 2026-10-06 (owner-authorized retirement, run DAILY-DEV-ACCEPTANCE-RUN-RETIREMENT): the branch codex/daily-dev-user-acceptance-closeout-20261005 no longer exists locally or on origin, so its .agent/active-runs.json binding was retired as dangling by ACTIVE-RUN-INDEX-DANGLING-CLOSEOUT. The batch's P0 product changes and mainline integration are on main via PR #573 (3f424993) and PR #574 (b6b8a0e6), and every path in this run scope is present in main. The record never claimed the declared user-perspective product-delivery acceptance, so the run is recorded as superseded rather than completed. Do not resume work under this run.",
   "write_replay_authorized": false,
   "candidate_evidence": false,
+  "completion": {
+    "batch": "superseded: the batch's P0 product changes and their mainline integration were completed on main (PR #573 3f424993, PR #574 b6b8a0e6) and every scope path is present in main. The run is retired as superseded, not completed, because the record never claimed the declared user-perspective product-delivery acceptance (template/viewport/theme matrix, relation round-trip, independent review).",
+    "mainline": "merged: the run scope changes landed on main through PR #573 (3f424993c9f378aaeedd2f26080545ad37ea3f8e) and PR #574 (b6b8a0e6).",
+    "deployment": "not_claimed_by_this_run_after_retirement: the daily runtime deployment and fixture lane were closed separately by DAILY-DEV-MAINLINE-DEPLOYMENT, DAILY-DEV-MAINLINE-REDEPLOY and DAILY-DEV-ACCEPTANCE-FIXTURE-LANE (all completed).",
+    "product_delivery": "not_claimed: the historical record leaves product delivery unclaimed; the remaining template/viewport/theme matrix and relation round-trip verification continued in the frontend official-template chain (FE-TPL-OFFICIAL-TEMPLATE-ADOPTION -> FE-TPL-RENDER-EVIDENCE-RECONCILIATION).",
+    "retained_limits": [
+      "this retirement changes only the run/goal status and adds the closeout record; the historical batch record and its evidence are preserved unchanged",
+      "no successor goal explicitly declares ownership of the whole objective; the remaining product-delivery items are recorded as carried by successor lanes, not as completed here",
+      "no product artifact, contract, gate, fixture, database or runtime is changed by this retirement"
+    ]
+  },
   "results": [
     {
       "id": "daily_menu_visibility_root_cause",
