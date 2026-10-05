@@ -1,0 +1,65 @@
+schema_version: 1
+goal:
+  id: DAILY-DEV-USER-ACCEPTANCE-COMPLETION
+  title: daily_dev_user_perspective_product_acceptance_completion
+  status: active
+  formal_product_layer: P4
+  layer_target: daily_development_runtime_acceptance
+  module:
+    - .agent
+    - docs/ops/iterations
+  objective: >-
+    Complete the user-perspective product-delivery acceptance on the daily
+    development server (sc-root:/opt/projects/repos/sce-product-odoo, ENV=dev,
+    .env.dev, DB sc_demo, custom frontend; owner credential wutao): advance the
+    daily runtime to the exact current mainline through the governed bundle sync,
+    rebuild the served frontend, align the served source revision, run the
+    governed daily acceptance matrix, and then verify the product as a real user
+    (full-route readonly walkthrough at 1440/390 x light/dark, detail and
+    relation round-trip, and the create/edit plus workbench minimum evidence
+    gap). No assertion, audit, ACL, field permission or negative case is relaxed
+    and no product semantics are changed.
+  baseline:
+    branch: main
+    full_sha: 5ba6398e672da8b46807da3538187be980772b6d
+    source: clean_main_after_pr_588
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_runtime_acceptance_tool
+    why_here: >-
+      Deploying the exact mainline to the daily runtime and verifying it as a
+      real user is the P4 ops delivery/acceptance layer, not product semantics.
+    why_not_elsewhere:
+      - no_p0_platform_or_frontend_contract_change_expected
+      - no_p1_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_lowcode_configuration
+      - no_database_schema_or_migration_change
+    blast_radius:
+      - sc-root daily runtime repository, its served frontend bundle and dev compose profile
+      - sc_demo readonly user acceptance data and the wutao acceptance credential
+      - one acceptance record, one run and the goal metadata
+  batches:
+    - id: A
+      title: advance_daily_runtime_to_mainline_and_accept_as_user
+      status: in_progress
+      evidence:
+        - daily_runtime_bundle_sync_to_current_mainline
+        - frontend_rebuild_and_restart
+        - daily_runtime_source_revision_aligned
+        - governed_daily_acceptance_matrix_pass
+        - user_perspective_browser_acceptance
+  exclusions:
+    - no_relaxation_of_any_assertion_audit_acl_or_negative_case
+    - no_product_semantics_change
+    - no_production_tenant_change
+    - no_module_upgrade_without_an_actual_module_change
+    - no_sc_local_dev_or_isolated_acceptance_profile_change
+  rollback:
+    - restore the daily runtime repository to the exact previous SHA through the governed bundle sync under a separate task
+    - rebuild the previous frontend from its commit and restart
+    - restore the .env.dev source revision from its backup and restart
+  next_exact_step: >-
+    Register the run, sync the daily runtime to 5ba6398e through
+    daily.runtime.main.bundle_sync, rebuild and restart the frontend, align the
+    served source revision, run release.daily_dev.acceptance.publish with
+    ACCEPTANCE_LOGIN=wutao, and then run the user-perspective browser acceptance.

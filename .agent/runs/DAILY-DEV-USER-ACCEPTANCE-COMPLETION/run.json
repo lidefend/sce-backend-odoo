@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-DEV-USER-ACCEPTANCE-COMPLETION",
+  "branch": "codex/daily-dev-user-acceptance-completion-20261006",
+  "status": "active",
+  "baseline_sha": "5ba6398e672da8b46807da3538187be980772b6d",
+  "goal": ".agent/goals/DAILY-DEV-USER-ACCEPTANCE-COMPLETION.yaml",
+  "record": "docs/ops/iterations/daily_dev_user_acceptance_completion_20261006.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/",
+    ".agent/runs/",
+    "docs/ops/iterations/"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "sc-root daily runtime (sc-backend-odoo-dev profile, .env.dev, sc_demo, custom frontend) accessed through the governed daily.runtime.* and release.daily_dev.* Make entries"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Sync the daily runtime to 5ba6398e via daily.runtime.main.bundle_sync, rebuild and restart the frontend, align the served source revision, run release.daily_dev.acceptance.publish with ACCEPTANCE_LOGIN=wutao, then run the user-perspective browser acceptance.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}
