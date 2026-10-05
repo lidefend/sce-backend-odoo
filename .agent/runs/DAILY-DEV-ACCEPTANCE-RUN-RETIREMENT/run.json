@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-DEV-ACCEPTANCE-RUN-RETIREMENT",
+  "branch": "codex/daily-dev-acceptance-run-retirement-20261006",
+  "status": "completed",
+  "baseline_sha": "48441a3bb6538da1f598090e0603335b023907d8",
+  "goal": ".agent/goals/DAILY-DEV-ACCEPTANCE-RUN-RETIREMENT.yaml",
+  "record": "docs/ops/iterations/daily_dev_acceptance_run_retirement_20261006.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/",
+    ".agent/runs/",
+    "docs/ops/iterations/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline Make gates plus tracked run/agent metadata; no runtime, daily-server, database, fixture or product write in this batch"
+  },
+  "checks": {
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Completed 2026-10-06: DAILY-DEV-USER-LEVEL-ACCEPTANCE is retired as superseded and this batch's own active-run binding is dropped in the final commit, so no branchless active run and no dangling mapping remain. Published through the ordinary PR lane; afterwards ci.local.iteration reports 'unregistered' on main, as in the existing precedent.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false,
+  "completion": {
+    "batch": "passed: DAILY-DEV-USER-LEVEL-ACCEPTANCE is marked superseded (run and goal) with a truthful completion block, verify.agent.resume.unit passed 30 tests, and ci.local.iteration reported PASS with an empty out-of-scope set.",
+    "mainline": "not_run_in_this_batch: this metadata retirement is published through the ordinary PR lane; no product change requires mainline integration",
+    "deployment": "not_run_in_this_batch: metadata only; no runtime or daily server is touched",
+    "product_delivery": "not_run: product delivery is not claimed for the retired run or for this batch",
+    "retained_limits": [
+      "the retired run's historical record and evidence are preserved unchanged; only its status and completion summary change",
+      "no successor goal explicitly owns the whole retired objective; the remaining product-delivery items stay recorded as carried by successor lanes"
+    ]
+  }
+}

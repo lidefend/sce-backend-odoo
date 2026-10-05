@@ -1,0 +1,53 @@
+schema_version: 1
+goal:
+  id: DAILY-DEV-ACCEPTANCE-RUN-RETIREMENT
+  title: retire_the_dangling_active_daily_dev_user_level_acceptance_run
+  status: completed
+  formal_product_layer: P4
+  layer_target: ops_agent_run_index
+  module:
+    - .agent
+  objective: >-
+    The DAILY-DEV-USER-LEVEL-ACCEPTANCE run still carried status `active` on main
+    while its closeout branch codex/daily-dev-user-acceptance-closeout-20261005 no
+    longer exists locally or on origin; ACTIVE-RUN-INDEX-DANGLING-CLOSEOUT had
+    already retired its .agent/active-runs.json binding as dangling but left the
+    run record untouched. Close the record out as `superseded` so no branchless
+    `active` run remains, without asserting a product delivery the record never
+    claimed. No product, contract, gate, fixture or runtime behaviour is touched.
+  baseline:
+    branch: main
+    full_sha: 48441a3bb6538da1f598090e0603335b023907d8
+    source: clean_main_after_pr_586
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_governance
+    why_here: >-
+      The artifact is the P4 engineering run index and its run/goal records.
+    why_not_elsewhere:
+      - no_p0_platform_mechanism_change
+      - no_p1_construction_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_configuration_change
+      - no_change_to_any_product_gate_fixture_or_database
+    blast_radius:
+      - .agent/active-runs.json
+      - .agent/runs/DAILY-DEV-USER-LEVEL-ACCEPTANCE/
+      - .agent/goals/DAILY-DEV-USER-LEVEL-ACCEPTANCE.yaml
+  batches:
+    - id: A
+      title: retire_the_branchless_active_daily_dev_acceptance_run
+      status: completed
+      evidence:
+        - the_branch_is_absent_locally_and_on_origin
+        - every_run_scope_path_is_present_in_main
+        - the_binding_was_already_retired_by_active_run_index_dangling_closeout
+        - verify_agent_resume_unit_passed
+  exclusions:
+    - no_change_to_any_product_contract_gate_fixture_database_or_runtime
+    - the_historical_batch_record_and_its_evidence_are_preserved_unchanged
+    - product_delivery_is_not_claimed_for_the_retired_run
+  rollback:
+    - restore the run and goal status to active and re-add the active-run binding
+  next_exact_step: >-
+    Verify and publish this metadata retirement through the ordinary PR lane; no
+    branch deletion follows because the closeout branch is already gone.
