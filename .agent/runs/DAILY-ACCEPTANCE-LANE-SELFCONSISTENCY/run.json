@@ -1,0 +1,56 @@
+{
+  "baseline_sha": "4695dd8e59ff97b59bd55c78e876e5e61cc72cef",
+  "blockers": [],
+  "branch": "codex/daily-acceptance-lane-selfconsistency-v1",
+  "checks": {
+    "environment_topology_guard": {
+      "inputs": [
+        "Makefile",
+        "make/dev.mk",
+        "make/guards.mk",
+        "docs/ops/environment_tiers_unified_runbook_v1.md",
+        "scripts/verify/environment_topology_guard.py",
+        "scripts/verify/test_daily_dev_customer_addons_runtime_guard.py"
+      ],
+      "kind": "offline",
+      "target": "verify.environment.topology.guard"
+    },
+    "frontend_acceptance_environment_guard": {
+      "inputs": [
+        "make/dev.mk",
+        "make/guards.mk",
+        "scripts/verify/daily_dev_acceptance_env_guard.py",
+        "scripts/verify/environment_topology_guard.py",
+        "scripts/verify/test_dev_acceptance_release_identity.py",
+        "scripts/verify/frontend_acceptance_environment_source_guard.py",
+        "config/frontend/acceptance_environments_v1.json"
+      ],
+      "kind": "offline",
+      "target": "verify.frontend.acceptance.environment.guard"
+    }
+  },
+  "completion": {
+    "batch": "in_progress",
+    "deployment": "not_run",
+    "mainline": "not_run",
+    "product_delivery": "not_run"
+  },
+  "environment": {
+    "authority": "existing local Make tools and repository guards; no database or service access",
+    "kind": "offline"
+  },
+  "goal": ".agent/goals/DAILY-ACCEPTANCE-LANE-SELFCONSISTENCY.yaml",
+  "id": "DAILY-ACCEPTANCE-LANE-SELFCONSISTENCY",
+  "next_exact_step": "Re-run env.matrix.check and verify.frontend.acceptance.environment.guard locally, then publish this P4 self-consistency fix through the governed PR lane and re-run the daily acceptance lane on sc-root.",
+  "record": ".runtime/pr/daily-acceptance-lane-selfconsistency.md",
+  "schema_version": 1,
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DAILY-ACCEPTANCE-LANE-SELFCONSISTENCY.yaml",
+    ".agent/runs/DAILY-ACCEPTANCE-LANE-SELFCONSISTENCY/",
+    "make/dev.mk",
+    "scripts/verify/environment_topology_guard.py",
+    "scripts/verify/test_dev_acceptance_release_identity.py"
+  ],
+  "status": "active"
+}

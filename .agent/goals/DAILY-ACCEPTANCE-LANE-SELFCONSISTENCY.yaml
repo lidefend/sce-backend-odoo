@@ -1,0 +1,50 @@
+goal:
+  id: DAILY-ACCEPTANCE-LANE-SELFCONSISTENCY
+  status: active
+  formal_product_layer: P4
+  module: ops_delivery_tool
+  objective: >-
+    Make the daily development publication lane quote the same governed
+    acceptance artifact that its own env guard, the unified environment runbook
+    and the v2.0.0 evidence manifest already declare
+    (artifacts/backend/dev_acceptance_release_probe.json), so
+    make release.daily_dev.acceptance.publish stops failing closed on a
+    self-inconsistent ACCEPTANCE_PROBE_OUTPUT. Fix the environment topology
+    guard's Makefile token to match the shipped release.daily_dev.acceptance.publish
+    prerequisite list. Do not relax the guard, do not repoint
+    verify.daily_dev.acceptance.readonly.probe, and do not touch runtime/product
+    semantics.
+  layer_target:
+    - daily development runtime lane (make/dev.mk publication target)
+    - environment topology guard (scripts/verify/environment_topology_guard.py)
+  standard_vs_user_specific: >-
+    Operations delivery tooling for the existing daily development runtime
+    profile; no product semantics, no customer baseline, no platform mechanism.
+  why_here: >-
+    The lane entry, its env guard and the topology guard already own this
+    contract in this repository, and the three independent declarations agree on
+    the release probe artifact; only the Make target-level variable override
+    disagrees, so the owning layer is the lane declaration itself.
+  why_not_elsewhere: >-
+    Weakening daily_dev_acceptance_env_guard.py, environment_topology_guard.py or
+    the v2.0.0 evidence manifest to accept a daily artifact name would trade a
+    real fail-closed guard for a cosmetic pass. The readonly probe lane legitimately
+    owns the daily artifact name and must keep it. No frontend renderer, low-code
+    runtime configuration, module semantics or ops repair is involved.
+  blast_radius: >-
+    make/dev.mk: only release.daily_dev.acceptance.publish stops rebinding
+    ACCEPTANCE_PROBE_OUTPUT, so it inherits the existing global default and writes
+    the same artifact as release.dev.acceptance.publish; the readonly probe lane is
+    unchanged. environment_topology_guard.py: the required Makefile token gains the
+    already-shipped verify.daily_dev.product_menu_release_gate.guard prerequisite and
+    the .PHONY expectation gains the already-shipped target. No runtime database,
+    credential, port, volume or product field is modified.
+  exclusions:
+    - relaxing_the_daily_acceptance_env_guard
+    - repointing_the_readonly_probe_lane
+    - product_semantic_changes
+    - runtime_writes
+  acceptance:
+    - environment_topology_guard_passes
+    - dev_acceptance_release_identity_unit_non_zero
+    - daily_publication_artifact_equals_the_guarded_release_probe_path
