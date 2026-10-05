@@ -1,0 +1,38 @@
+schema_version: 1
+goal:
+  id: REMOTE-BRANCH-BACKLOG-RETIREMENT-C
+  title: unproven_codex_backlog_reference_retirement
+  status: in_progress
+  formal_product_layer: P4
+  layer_target: governed_historical_remote_reference_retirement
+  module:
+    - docs/ops/iterations
+    - .agent
+  objective: >-
+    Retire the eight remaining unproven codex/* origin references in one
+    reviewed-explicit round after clearing the two runtime-carrier references
+    that kept the retirement entry fail-closed. Relocate the per-branch names to
+    docs/ops/iterations/remote_branch_backlog_retirement_c_20261005.md (docs is
+    not a carrier root), keep the manifest/lease/bundle guards intact, and never
+    broaden the deletion set or relax an audit or assertion.
+  baseline:
+    branch: main
+    full_sha: b6b8a0e68f81a85366175f82574385a34f36fe39
+    source: clean_main_after_pr_574
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_governance
+    why_here: >-
+      Retiring stale remote references and correcting the engineering-context
+      metadata that still names them is delivery-lifecycle governance owned by
+      the P4 ops layer; it changes how the repository tracks its own history,
+      not what the product does.
+    why_not_elsewhere:
+      - no_p0_frontend_contract_or_platform_mechanism
+      - no_p1_construction_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_configuration
+      - no_database_fixture_migration_release_or_deployment
+    blast_radius:
+      - two_runtime_carrier_references_in_completed_run_records
+      - one_new_docs_iteration_record
+      - eight_origin_codex_branches_without_an_exact_head_merged_pr

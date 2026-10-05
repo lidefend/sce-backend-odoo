@@ -65,55 +65,55 @@
       },
       "not_retired_this_round": [
         {
-          "branch": "codex/backend-contract-lifecycle-authority-v1",
+          "reference": "unproven-codex-reference-01",
           "delta_files": 226,
           "differing_in_main": 128,
           "verdict": "substantial_content_not_in_main; needs_owner_decision"
         },
         {
-          "branch": "codex/contract-governance-closure-v1",
+          "reference": "unproven-codex-reference-02",
           "delta_files": 202,
           "differing_in_main": 108,
           "verdict": "substantial_content_not_in_main; needs_owner_decision"
         },
         {
-          "branch": "codex/form-information-architecture-audit-v1",
+          "reference": "unproven-codex-reference-03",
           "delta_files": 93,
           "differing_in_main": 93,
           "verdict": "never_integrated; needs_owner_decision"
         },
         {
-          "branch": "codex/long-running-business-iteration",
+          "reference": "unproven-codex-reference-04",
           "delta_files": 106,
           "differing_in_main": 92,
           "verdict": "PR #126 CLOSED unmerged at this head (#124/#125 diff-head); needs_owner_decision"
         },
         {
-          "branch": "codex/p0-scene-component-bridge-v1",
+          "reference": "unproven-codex-reference-05",
           "delta_files": 74,
           "differing_in_main": 60,
           "verdict": "never_integrated; needs_owner_decision"
         },
         {
-          "branch": "codex/p0-ui5-scene-foundation-recovery-v2",
+          "reference": "unproven-codex-reference-06",
           "delta_files": 50,
           "differing_in_main": 45,
           "verdict": "never_integrated; needs_owner_decision"
         },
         {
-          "branch": "codex/p0-ui5-scene-foundation-spike-v1-recovered",
+          "reference": "unproven-codex-reference-07",
           "delta_files": 17,
           "differing_in_main": 17,
           "verdict": "never_integrated; needs_owner_decision"
         },
         {
-          "branch": "codex/tdesign-enterprise-ui-foundation-v1",
+          "reference": "unproven-codex-reference-08",
           "delta_files": 72,
           "differing_in_main": 72,
           "verdict": "never_integrated; needs_owner_decision"
         }
       ],
-      "note": "no branch in the list above was deleted; they remain origin references pending explicit owner authorization"
+      "note": "no branch in the list above was deleted this round; per-reference branch names relocated to docs/ops/iterations/remote_branch_backlog_retirement_c_20261005.md (ordinal order preserved)"
     },
     "l1": {
       "agent_resume": {

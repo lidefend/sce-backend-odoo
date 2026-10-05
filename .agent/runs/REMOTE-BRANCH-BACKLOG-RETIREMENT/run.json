@@ -62,16 +62,9 @@
       ".runtime/retire/apply-report.json"
     ],
     "retained": [
-      "codex/backend-contract-lifecycle-authority-v1",
-      "codex/contract-governance-closure-v1",
-      "codex/form-information-architecture-audit-v1",
-      "codex/long-running-business-iteration",
-      "codex/p0-scene-component-bridge-v1",
-      "codex/p0-ui5-scene-foundation-recovery-v2",
-      "codex/p0-ui5-scene-foundation-spike-v1-recovered",
-      "codex/tdesign-enterprise-ui-foundation-v1"
+      "8 unproven codex/* origin references; per-branch names and adjudication relocated to docs/ops/iterations/remote_branch_backlog_retirement_c_20261005.md so this runtime carrier no longer names them"
     ],
-    "carrier_referenced_followup": "one further codex branch was held back only because a runtime carrier still named it; that carrier reference was cleared and the branch retired in the successor run REMOTE-BRANCH-CARRIER-RETIREMENT (2026-10-04) under manifest docs/ops/manifests/historical_branch_retirement_carrier_20261004.json. The eight entries listed above remain by design.",
+    "carrier_referenced_followup": "one further codex branch was held back only because a runtime carrier still named it; that carrier reference was cleared and the branch retired in the successor run REMOTE-BRANCH-CARRIER-RETIREMENT (2026-10-04) under manifest docs/ops/manifests/historical_branch_retirement_carrier_20261004.json. The eight entries remain by design; their per-branch names are recorded in docs/ops/iterations/remote_branch_backlog_retirement_c_20261005.md.",
     "l1": {
       "retire_entry": {
         "command": "make verify.branch.retire.historical",
