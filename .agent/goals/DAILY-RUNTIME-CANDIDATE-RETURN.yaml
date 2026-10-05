@@ -1,0 +1,41 @@
+schema_version: 1
+goal:
+  id: DAILY-RUNTIME-CANDIDATE-RETURN
+  title: daily_runtime_detached_candidate_to_main_normalization
+  status: in_progress
+  formal_product_layer: P4
+  layer_target: governed_daily_runtime_mainline_deployment_entry
+  module:
+    - scripts/ops
+    - make
+    - docs/ops
+  objective: >-
+    Let the existing governed daily-runtime mainline bundle-sync entry return a
+    detached, clean, recorded daily candidate runtime back onto main before the
+    exact fast-forward bundle sync. Every identity stays fail-closed: the
+    detached HEAD must equal the declared candidate SHA, the worktree must be
+    clean, refs/heads/main and refs/remotes/origin/main must equal the expected
+    old SHA, and the candidate SHA must be present in refs/daily-candidates/.
+    No audit, assertion, bundle digest, or fast-forward guarantee is relaxed and
+    no new environment or credential authority is created.
+  baseline:
+    branch: main
+    full_sha: e44f9c3ace53804040bd9b5d7e8fc4210d6d651c
+    source: clean_main_after_pr_575
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_tool
+    why_here: >-
+      The bundle-sync entry is the P4 delivery tool that moves the exact
+      reviewed main SHA onto the daily runtime host. Handling a previously
+      deployed detached candidate runtime is deployment-lifecycle behavior of
+      that same tool, so the change belongs in the entry it repairs.
+    why_not_elsewhere:
+      - no_p0_frontend_contract_or_platform_mechanism
+      - no_p1_construction_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_configuration
+      - no_database_fixture_migration_or_release_snapshot
+    blast_radius:
+      - one_p4_ops_script_and_its_make_entry
+      - one_ops_unit_test_file
+      - one_docs_iteration_record

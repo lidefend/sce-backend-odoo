@@ -32,7 +32,7 @@ REMOTE_SYNC = r'''
 import fcntl, hashlib, json, os, subprocess, sys, tempfile
 from pathlib import Path
 
-expected_sha, expected_old_sha, expected_bundle_sha, remote_root = sys.argv[1:5]
+expected_sha, expected_old_sha, expected_bundle_sha, expected_candidate_sha, remote_root = sys.argv[1:6]
 fixed_root = Path("/opt/projects/repos/sce-product-odoo")
 root = Path(remote_root)
 if root != fixed_root or not root.is_dir():
@@ -56,6 +56,31 @@ with lock_path.open("a+b") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
         raise SystemExit("[daily.runtime.main.bundle_sync] BLOCKED concurrent sync")
+
+    branch = git("branch", "--show-current").stdout.strip()
+    current_sha = git("rev-parse", "HEAD").stdout.strip()
+    normalized_from_candidate = False
+    if branch == "main":
+        if current_sha != expected_old_sha:
+            raise SystemExit("[daily.runtime.main.bundle_sync] BLOCKED remote branch or old SHA differs")
+    elif branch == "" and expected_candidate_sha and current_sha == expected_candidate_sha:
+        # A verified main-mode deployment replaces a detached candidate runtime.
+        # Every identity below must match exactly and the worktree must be clean;
+        # the recorded candidate ref proves the detached HEAD is an accepted
+        # daily candidate rather than an arbitrary commit.
+        if git("status", "--porcelain").stdout.strip():
+            raise SystemExit("[daily.runtime.main.bundle_sync] BLOCKED remote worktree is not clean")
+        if git("rev-parse", "refs/heads/main", check=False).stdout.strip() != expected_old_sha:
+            raise SystemExit("[daily.runtime.main.bundle_sync] BLOCKED remote main ref differs from the expected old SHA")
+        if git("rev-parse", "refs/remotes/origin/main", check=False).stdout.strip() != expected_old_sha:
+            raise SystemExit("[daily.runtime.main.bundle_sync] BLOCKED remote origin/main ref differs from the expected old SHA")
+        recorded = git("for-each-ref", "--format=%(objectname)", "refs/daily-candidates/").stdout.split()
+        if expected_candidate_sha not in recorded:
+            raise SystemExit("[daily.runtime.main.bundle_sync] BLOCKED detached HEAD is not a recorded daily candidate")
+        git("checkout", "main")
+        normalized_from_candidate = True
+    else:
+        raise SystemExit("[daily.runtime.main.bundle_sync] BLOCKED remote branch or old SHA differs")
 
     branch = git("branch", "--show-current").stdout.strip()
     current_sha = git("rev-parse", "HEAD").stdout.strip()
@@ -113,6 +138,7 @@ with lock_path.open("a+b") as lock:
             "old_sha": expected_old_sha,
             "source_sha": expected_sha,
             "bundle_sha256": expected_bundle_sha,
+            "normalized_from_candidate": normalized_from_candidate,
             "remote_root": str(root),
             "upstream": "origin/main",
         }, sort_keys=True))
@@ -140,9 +166,11 @@ def git(*arguments: str) -> str:
     return result.stdout.decode().strip()
 
 
-def preflight(expected_sha: str, expected_old_sha: str, ssh_host: str) -> None:
+def preflight(expected_sha: str, expected_old_sha: str, expected_candidate_sha: str, ssh_host: str) -> None:
     if not FULL_SHA.fullmatch(expected_sha) or not FULL_SHA.fullmatch(expected_old_sha):
         raise SyncError("expected SHAs must be full lowercase commit identities")
+    if expected_candidate_sha and not FULL_SHA.fullmatch(expected_candidate_sha):
+        raise SyncError("expected candidate SHA must be empty or a full lowercase commit identity")
     if expected_sha == expected_old_sha:
         raise SyncError("expected SHA must differ from the remote old SHA")
     if not SSH_HOST.fullmatch(ssh_host):
@@ -174,18 +202,18 @@ def create_bundle(expected_old_sha: str) -> bytes:
     return payload
 
 
-def remote_command(expected_sha: str, expected_old_sha: str, bundle_sha: str) -> str:
+def remote_command(expected_sha: str, expected_old_sha: str, bundle_sha: str, expected_candidate_sha: str) -> str:
     return " ".join(
         shlex.quote(item)
         for item in (
             "python3", "-c", REMOTE_SYNC,
-            expected_sha, expected_old_sha, bundle_sha, REMOTE_ROOT,
+            expected_sha, expected_old_sha, bundle_sha, expected_candidate_sha, REMOTE_ROOT,
         )
     )
 
 
-def synchronize(expected_sha: str, expected_old_sha: str, ssh_host: str) -> dict[str, object]:
-    preflight(expected_sha, expected_old_sha, ssh_host)
+def synchronize(expected_sha: str, expected_old_sha: str, expected_candidate_sha: str, ssh_host: str) -> dict[str, object]:
+    preflight(expected_sha, expected_old_sha, expected_candidate_sha, ssh_host)
     bundle = create_bundle(expected_old_sha)
     bundle_sha = hashlib.sha256(bundle).hexdigest()
     command = [
@@ -195,7 +223,7 @@ def synchronize(expected_sha: str, expected_old_sha: str, ssh_host: str) -> dict
         "-o", "ServerAliveInterval=15",
         "-o", "ServerAliveCountMax=4",
         ssh_host,
-        remote_command(expected_sha, expected_old_sha, bundle_sha),
+        remote_command(expected_sha, expected_old_sha, bundle_sha, expected_candidate_sha),
     ]
     result = run(command, input_bytes=bundle)
     if result.returncode:
@@ -211,6 +239,7 @@ def synchronize(expected_sha: str, expected_old_sha: str, ssh_host: str) -> dict
         or evidence.get("old_sha") != expected_old_sha
         or evidence.get("bundle_sha256") != bundle_sha
         or evidence.get("remote_root") != REMOTE_ROOT
+        or evidence.get("normalized_from_candidate") not in (True, False)
     ):
         raise SyncError("remote bundle sync evidence differs")
     return evidence
@@ -220,11 +249,12 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--expected-sha", required=True)
     parser.add_argument("--expected-old-sha", required=True)
+    parser.add_argument("--expected-candidate-sha", default="")
     parser.add_argument("--ssh-host", required=True)
     parser.add_argument("--report", required=True)
     args = parser.parse_args()
     try:
-        evidence = synchronize(args.expected_sha, args.expected_old_sha, args.ssh_host)
+        evidence = synchronize(args.expected_sha, args.expected_old_sha, args.expected_candidate_sha, args.ssh_host)
     except SyncError as exc:
         raise SystemExit(f"[daily.runtime.main.bundle_sync] BLOCKED: {exc}") from exc
     report = Path(args.report)
