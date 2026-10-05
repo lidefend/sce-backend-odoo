@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "id": "FORMAL-SURFACE-RUNTIME-AUDIT-CONTRACT-BINDING",
+  "branch": "codex/formal-surface-run-closeout-20261006",
+  "status": "completed",
+  "baseline_sha": "51afafd0fd7f41dd0d87a53d8a4eb4a105feae94",
+  "goal": ".agent/goals/FORMAL-SURFACE-RUNTIME-AUDIT-CONTRACT-BINDING.yaml",
+  "record": "docs/ops/iterations/formal_surface_runtime_audit_contract_binding_20261005.md",
+  "candidate_evidence": false,
+  "write_replay_authorized": false,
+  "scope": [
+    "scripts/verify/user_formal_field_module_boundary_audit.py",
+    "scripts/verify/test_user_formal_field_module_boundary_audit.py",
+    "scripts/verify/formal_action_runtime_drift_audit.py",
+    "scripts/verify/test_formal_action_runtime_drift_audit.py",
+    "scripts/verify/formal_entry_metadata_audit.py",
+    "scripts/verify/test_formal_entry_metadata_audit.py",
+    "scripts/ops/formal_entry_metadata_non_business_creator_write.py",
+    "scripts/ops/test_formal_entry_metadata_non_business_creator_write.py",
+    "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+    "scripts/dev/daily_dev_acceptance_fixture.sh",
+    "make/runtime_ops.mk",
+    ".agent/active-runs.json",
+    ".agent/goals/FORMAL-SURFACE-RUNTIME-AUDIT-CONTRACT-BINDING.yaml",
+    ".agent/runs/FORMAL-SURFACE-RUNTIME-AUDIT-CONTRACT-BINDING/run.json",
+    "docs/ops/iterations/formal_surface_runtime_audit_contract_binding_20261005.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "scripts/verify/registry.yaml"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "existing governed profiles only: local sc-local-dev/sc_dev_demo for iteration, and the declared daily runtime (sc-root sc-backend-odoo-dev / sc_demo) for the authoritative audit readback and the declared repair/fixture entries. No new environment, database, port, volume or credential authority."
+  },
+  "checks": {
+    "module_boundary_unit": {
+      "kind": "offline",
+      "target": "verify.user_formal_field.module_boundary.audit",
+      "inputs": [
+        "scripts/verify/user_formal_field_module_boundary_audit.py",
+        "scripts/verify/test_user_formal_field_module_boundary_audit.py"
+      ]
+    },
+    "runtime_drift_unit": {
+      "kind": "offline",
+      "target": "verify.formal_action.runtime_drift.audit",
+      "inputs": [
+        "scripts/verify/formal_action_runtime_drift_audit.py",
+        "scripts/verify/test_formal_action_runtime_drift_audit.py"
+      ]
+    },
+    "entry_metadata_unit": {
+      "kind": "offline",
+      "target": "verify.formal_entry_metadata.audit",
+      "inputs": [
+        "scripts/verify/formal_entry_metadata_audit.py",
+        "scripts/verify/test_formal_entry_metadata_audit.py",
+        "addons/smart_construction_core/models/support/formal_entry_metadata_extensions.py"
+      ]
+    },
+    "non_business_creator_unit": {
+      "kind": "offline",
+      "target": "verify.formal_entry_metadata.non_business_creator.unit",
+      "inputs": [
+        "scripts/ops/formal_entry_metadata_non_business_creator_write.py",
+        "scripts/ops/test_formal_entry_metadata_non_business_creator_write.py"
+      ]
+    },
+    "acceptance_fixture_unit": {
+      "kind": "offline",
+      "target": "verify.daily_dev.acceptance_fixture.unit",
+      "inputs": [
+        "scripts/dev/daily_dev_acceptance_fixture.sh",
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "addons/smart_construction_acceptance_fixture/tests/test_acceptance_fixture_guard.py"
+      ]
+    },
+    "guard_registry": {
+      "kind": "offline",
+      "target": "verify.guard.registry",
+      "inputs": [
+        "scripts/verify/registry.yaml",
+        "scripts/verify/guard_registry_audit.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "completion": {
+    "batch": "passed: PR #580 (verifier contract binding: boundary audit proves a real field declaration instead of a bare substring; drift contract bound to the installed source view; entry-metadata audit consumes the declared 92-model FORMAL_ENTRY_METADATA_MODELS contract) and PR #581 (governed provenance-SQL channel for sc.settlement.order/source_created_by) delivered on the exact merged heads; local unit 5 boundary + 10 drift + 3 entry-metadata + 8 non-business-creator + 21 acceptance-fixture pass; verify.guard.registry pass; exact-head ci.local.quick receipt 369f62db985f3745a35dc951e5f22e6589d755c1.",
+    "mainline": "passed: PR #580 merged as b4fc523e and PR #581 merged (squash) as 239af48b62c83f54a79cb2586c662264d95c26c6 on main; PR head 369f62db985f3745a35dc951e5f22e6589d755c1 with the four required checks success. This run closeout changes only .agent metadata and docs; no product, verifier, fixture or data semantics change.",
+    "deployment": "passed: the daily runtime repo /opt/projects/repos/sce-product-odoo is on branch main at 239af48b (clean); daily.runtime.main.bundle_sync b4fc523e -> 239af48b and daily.runtime.source_revision.align; /api/runtime-version serves source_revision=git_sha=239af48b, database sc_demo, environment dev. No backend module set or frontend source changed, so no module upgrade or frontend rebuild was required.",
+    "daily_acceptance": "passed: make formal_entry_metadata.non_business_creator.write repaired sc.settlement.order/source_created_by from the non-business admin login to the sanctioned legacy label through the governed provenance_sql channel (70 rows; before-sample taken prior to the UPDATE; the state field untouched); daily.dev.acceptance_fixture.ensure ensured smart_construction_acceptance_fixture.fe_labor_usage_ticket_a; daily.dev.acceptance_contract.resolve rebound artifacts/backend/acceptance_record_identity.json to the served 239af48b; make -k release.daily_dev.acceptance.publish EXIT=0 with USER_FORMAL_FIELD_MODULE_BOUNDARY_AUDIT failure_count=0, FORMAL_ACTION_RUNTIME_DRIFT_AUDIT failure_count=0, FORMAL_ENTRY_METADATA_AUDIT required_failures=[] errors=[] contract_required_models=92, dev_acceptance_release_probe status=PASS, and [release.daily_dev.acceptance.publish] PASS head=239af48b (log /tmp/daily_composite3.log on sc-root). Post-fix readback: sc.settlement.order non_business_creator=0 raw_non_business_creator=0 state=ok_visible.",
+    "list_range": "reused, not re-run: owner accepted the existing nonzero list-range evidence artifacts/frontend-web-fix-20260928/resume-20261001/list.json -> 108/108 gated checks, 5/5 detected negative fixtures each baseline_ok=true, zero runtime errors; no list/render/CSS/probe input changed in this closeout or the two merged PRs.",
+    "environment_boundary": "retained as a standalone conclusion, not generalised to environment-all-pass: the rebuild/snapshot lane remains blocked by the environment DENY (the two mounters belong to one project and do not prove exclusive occupancy; the non-current mounter waits on the existing governed entry, the in-use 18082 is preserved, the audit is not relaxed and containers are not touched directly). The rendering_detail_state exclusion keeps its existing evidence and adjudication and is not re-proved here.",
+    "product_delivery": "not_claimed: this record closes one P4 formal-surface audit/repair run. Version release and overall product delivery remain separate, unclaimed statuses and need their own target-environment acceptance.",
+    "retained_limits": [
+      "daily_dev_acceptance_env_guard rejects the fixed dev password 123456 unless a bound daily-readonly-credential-confirmation.v1 envelope (<=10 min) is supplied; the fixed wutao/123456 password applies only to the existing isolated daily fixture and does not change the daily login defaults",
+      "the acceptance-fixture password used by fixture ensure is the existing default scdevpass and was not randomised"
+    ]
+  },
+  "next_exact_step": "Closed: the formal-surface runtime-audit contract binding is delivered. Root causes fixed at their owning layer (PR #580: A boundary-audit bare-substring mis-measure, B stale locked action contract, C entry-metadata sweep versus the 92-model declared contract) and the residual data repaired only through the governed P4 entries (PR #581 provenance-SQL channel, 70 rows; acceptance-fixture fangdan row). Mainline integration complete at 239af48b; authoritative daily acceptance green; list range and the DENY / rendering_detail_state boundaries reused as recorded; product delivery not claimed. Reconcile the run index on the next topic."
+}

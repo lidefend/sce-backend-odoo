@@ -1,0 +1,53 @@
+schema_version: 1
+goal:
+  id: ACTIVE-RUN-INDEX-DANGLING-CLOSEOUT
+  title: retire_the_dangling_active_run_index_bindings_after_the_formal_surface_closeout
+  status: in_progress
+  formal_product_layer: P4
+  layer_target: engineering_context_run_index
+  module:
+    - .agent
+  objective: >-
+    Clean .agent/active-runs.json so no binding points at a branch that no longer
+    exists. Three pre-existing bindings are dangling after their rounds closed
+    (branch absent both locally and on origin): codex/daily-dev-user-acceptance-closeout-20261005,
+    codex/daily-runtime-candidate-return-v1 and codex/remote-branch-backlog-retirement-c-20261005.
+    The one live binding (codex/daily-acceptance-lane-selfconsistency-v1, branch
+    present on origin, run active) is preserved. The bound run/goal records
+    themselves are left untouched on main. Metadata only; no run/goal record,
+    product artifact, contract, database, fixture or runtime changes.
+  baseline:
+    branch: main
+    full_sha: 4b2c37343a92b239f31f55aac3901be211079430
+    source: clean_main_after_pr_582
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_governance
+    why_here: >-
+      The run index is engineering-context delivery metadata owned by the P4 ops
+      layer; retiring a dangling binding changes how the repository tracks its own
+      runs, not what the product does.
+    why_not_elsewhere:
+      - no_p0_frontend_contract_or_platform_mechanism
+      - no_p1_construction_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_configuration
+      - no_database_fixture_migration_release_or_deployment
+    blast_radius:
+      - three_dangling_branch_to_run_mappings_in_the_active_run_index
+  batches:
+    - id: A
+      title: retire_the_dangling_bindings
+      status: in_progress
+      evidence:
+        - the_three_dangling_branches_are_absent_locally_and_on_origin
+        - the_one_live_binding_is_preserved
+        - verify_agent_resume_unit_passed
+  exclusions:
+    - no_change_to_any_run_record_goal_or_manifest
+    - the_live_daily_acceptance_lane_binding_is_not_touched
+    - no_remote_reference_is_deleted_by_this_batch
+  rollback:
+    - re-add a mapping if a round must be resumed
+  next_exact_step: >-
+    Remove the three dangling bindings, keep the live one, record the L1 receipts
+    and publish this metadata-only candidate through the ordinary PR lane.

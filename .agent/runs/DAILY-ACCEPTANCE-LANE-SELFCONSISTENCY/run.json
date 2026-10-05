@@ -1,5 +1,5 @@
 {
-  "baseline_sha": "4695dd8e59ff97b59bd55c78e876e5e61cc72cef",
+  "baseline_sha": "5298e2883df1a7f02095e0f0768298a0ba4e0bd1",
   "blockers": [],
   "branch": "codex/daily-acceptance-lane-selfconsistency-v1",
   "checks": {
@@ -41,7 +41,7 @@
   },
   "goal": ".agent/goals/DAILY-ACCEPTANCE-LANE-SELFCONSISTENCY.yaml",
   "id": "DAILY-ACCEPTANCE-LANE-SELFCONSISTENCY",
-  "next_exact_step": "Re-run env.matrix.check and verify.frontend.acceptance.environment.guard locally, then publish this P4 self-consistency fix through the governed PR lane and re-run the daily acceptance lane on sc-root.",
+  "next_exact_step": "Reconciled 2026-10-06 with main 5298e288 (the branch was 7 commits behind); the merge kept main's retired-binding cleanup and the contract-derived navigation tokens in environment_topology_guard.py. Now re-run verify.environment.topology.guard and verify.frontend.acceptance.environment.guard, then publish through the governed PR lane.",
   "record": ".runtime/pr/daily-acceptance-lane-selfconsistency.md",
   "schema_version": 1,
   "scope": [

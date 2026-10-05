@@ -482,6 +482,10 @@ formal_entry_metadata.surface.write: guard.prod.forbid check-compose-project che
 formal_entry_metadata.non_business_creator.write: guard.prod.forbid check-compose-project check-compose-env
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) FORMAL_ENTRY_METADATA_DB_ALLOWLIST="$(DB_NAME)" MIGRATION_ARTIFACT_ROOT="$(MIGRATION_ARTIFACT_ROOT)" bash scripts/ops/odoo_shell_exec.sh < scripts/ops/formal_entry_metadata_non_business_creator_write.py
 
+verify.formal_entry_metadata.non_business_creator.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/formal_entry_metadata_non_business_creator_write.py scripts/ops/test_formal_entry_metadata_non_business_creator_write.py
+	@python3 -m unittest scripts.ops.test_formal_entry_metadata_non_business_creator_write
+
 company_finance_expense.payment_execution.backfill.write: guard.prod.forbid check-compose-project check-compose-env
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) MIGRATION_REPLAY_DB_ALLOWLIST="$(DB_NAME)" MIGRATION_ARTIFACT_ROOT="$(MIGRATION_ARTIFACT_ROOT)" bash scripts/ops/odoo_shell_exec.sh < scripts/migration/company_finance_expense_payment_execution_backfill_write.py
 

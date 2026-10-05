@@ -13,6 +13,60 @@ MANIFEST = ROOT / "addons" / "smart_construction_core" / "__manifest__.py"
 FORMAL_LISTS = ROOT / "addons" / "smart_construction_core" / "views" / "support" / "user_confirmed_formal_list_views.xml"
 ALIGNMENT_LISTS = ROOT / "addons" / "smart_construction_core" / "views" / "support" / "user_confirmed_formal_list_alignment_views.xml"
 USER_FEEDBACK_TESTS = ROOT / "addons" / "smart_construction_core" / "tests" / "test_user_feedback_business_views.py"
+VIEWS_ROOT = ROOT / "addons" / "smart_construction_core" / "views"
+
+
+def _arch_field_names(arch_field) -> list[str]:
+    if arch_field is None:
+        return []
+    if arch_field.text and arch_field.text.strip():
+        try:
+            return [node.get("name") or "" for node in ET.fromstring(arch_field.text).iter("field")]
+        except ET.ParseError:
+            return []
+    return [node.get("name") or "" for node in arch_field.iter("field") if node is not arch_field]
+
+
+def _index_repo_source() -> tuple[dict[str, list[tuple[str, str]]], dict[str, list[list[str]]]]:
+    """Map locked action ids and view technical names to the repo source face."""
+    actions: dict[str, list[tuple[str, str]]] = {}
+    views: dict[str, list[list[str]]] = {}
+    for path in sorted(VIEWS_ROOT.rglob("*.xml")):
+        try:
+            root = ET.fromstring(path.read_text(encoding="utf-8"))
+        except ET.ParseError:
+            continue
+        for record in root.iter("record"):
+            fields = {field.get("name") or "": field for field in record.findall("field")}
+            if record.get("model") == "ir.actions.act_window":
+                text = {key: (value.text or "").strip() for key, value in fields.items()}
+                actions.setdefault(record.get("id") or "", []).append(
+                    (text.get("name", ""), text.get("res_model", ""))
+                )
+            elif record.get("model") == "ir.ui.view":
+                view_name = (fields["name"].text or "").strip() if "name" in fields else ""
+                views.setdefault(view_name, []).append(_arch_field_names(fields.get("arch")))
+    return actions, views
+
+
+def _contract_source_mismatches(contracts: dict) -> list[str]:
+    actions, views = _index_repo_source()
+    issues = []
+    for action_id, spec in sorted(contracts.items()):
+        definitions = actions.get(action_id, [])
+        if not definitions:
+            issues.append(f"{action_id}:missing_action_definition")
+            continue
+        if not any(name == spec["name"] for name, _ in definitions):
+            issues.append(f"{action_id}:name")
+        if not any(model == spec["res_model"] for _, model in definitions):
+            issues.append(f"{action_id}:res_model")
+        archs = views.get(spec["view_name"], [])
+        if not archs:
+            issues.append(f"{action_id}:view")
+        elif all(fields != spec["field_names"] for fields in archs):
+            issues.append(f"{action_id}:fields")
+    return issues
 
 
 class FormalActionRuntimeDriftAuditTest(unittest.TestCase):
@@ -130,6 +184,32 @@ class FormalActionRuntimeDriftAuditTest(unittest.TestCase):
             self.assertEqual(self._field_text(view, "name"), expected["view_name"], action_id)
             if action.find("field[@name='name']") is not None:
                 self.assertEqual(self._field_text(action, "name"), expected["name"], action_id)
+
+    def test_every_locked_contract_entry_is_bound_to_repo_source(self) -> None:
+        contracts = ast.literal_eval(self._assignments()["EXPECTED_ACTION_CONTRACTS"])
+        self.assertEqual(_contract_source_mismatches(contracts), [])
+
+    def test_contract_source_binding_detects_drift(self) -> None:
+        contracts = ast.literal_eval(self._assignments()["EXPECTED_ACTION_CONTRACTS"])
+        key = "action_payment_request_user_payment_apply"
+        mutated = dict(contracts)
+        mutated[key] = dict(contracts[key], name="支付申请")
+        self.assertIn(f"{key}:name", _contract_source_mismatches(mutated))
+        mutated[key] = dict(contracts[key], field_names=list(contracts[key]["field_names"]) + ["bogus_field"])
+        self.assertIn(f"{key}:fields", _contract_source_mismatches(mutated))
+
+    def test_locked_contract_entries_have_no_dead_targets(self) -> None:
+        contracts = ast.literal_eval(self._assignments()["EXPECTED_ACTION_CONTRACTS"])
+        audited: set[str] = set()
+        for relative in ast.literal_eval(self._assignments()["HIGH_RISK_XML_FILES"]):
+            root = ET.fromstring(
+                (ROOT / "addons" / "smart_construction_core" / relative).read_text(encoding="utf-8")
+            )
+            audited.update(
+                record.attrib["id"]
+                for record in root.findall(".//record[@model='ir.actions.act_window']")
+            )
+        self.assertEqual(sorted(set(contracts) - audited), [])
 
     def test_formal_actions_do_not_depend_on_legacy_acceptance_labels(self) -> None:
         assignments = self._assignments()

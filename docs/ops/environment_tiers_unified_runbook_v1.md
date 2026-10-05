@@ -78,9 +78,12 @@ inside `/opt/projects/repos/sce-product-odoo`.
 Daily acceptance publication must use `make release.daily_dev.acceptance.publish`
 from that same runtime repository.
 That target only accepts `ENV=dev`, `ENV_FILE=.env.dev`, and `DB_NAME=sc_demo`;
-it also requires `ACCEPTANCE_BASE_URL=http://127.0.0.1:18081` and
+`DB_NAME` must resolve from `.env.dev` and must not be supplied as a make
+command-line variable, or `env.matrix.check`'s `DB`/`BD` alias probe fails with
+`DB alias broken: expected sc_matrix_alias got 'sc_demo'`. It also requires
+`ACCEPTANCE_BASE_URL=http://127.0.0.1:18081` and
 `ACCEPTANCE_LOGIN=wutao`, a non-empty `ACCEPTANCE_PASSWORD`, and
-`ACCEPTANCE_NAV_MIN_ACTIONS=100`, `ACCEPTANCE_NAV_MAX_ACTIONS=115`, and
+`ACCEPTANCE_NAV_MIN_ACTIONS=90`, `ACCEPTANCE_NAV_MAX_ACTIONS=90`, and
 `ACCEPTANCE_NAV_FORBIDDEN_LABELS=用户核对菜单,用户数据验收,用户验收,直营项目系统菜单`.
 `ACCEPTANCE_NAV_REQUIRED_PATHS` must include the locked daily product path
 sample covering customer, supplier, project ledger, general contract,

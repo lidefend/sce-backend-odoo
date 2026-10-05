@@ -2,10 +2,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+POLICY = ROOT / "config/frontend/acceptance_environments_v1.json"
 
 FILES = {
     "makefile": ROOT / "Makefile",
@@ -29,8 +31,6 @@ REQUIRED_TOKENS = {
         "ACCEPTANCE_BASE_URL=http://127.0.0.1:18081",
         "ACCEPTANCE_LOGIN=wutao",
         "ACCEPTANCE_PASSWORD",
-        "ACCEPTANCE_NAV_MIN_ACTIONS=100",
-        "ACCEPTANCE_NAV_MAX_ACTIONS=115",
         "ACCEPTANCE_NAV_FORBIDDEN_LABELS=用户核对菜单,用户数据验收,用户验收,直营项目系统菜单",
         "ACCEPTANCE_NAV_REQUIRED_PATHS",
         "ACCEPTANCE_NAV_REQUIRED_ACTIONS",
@@ -87,6 +87,20 @@ REQUIRED_TOKENS = {
 }
 
 
+def _daily_navigation_tokens(errors: list[str]) -> list[str]:
+    """Derive the runbook's navigation values from the acceptance contract."""
+    try:
+        policy = json.loads(POLICY.read_text(encoding="utf-8"))
+        navigation = policy["profiles"]["daily"]["navigation_policy"]
+        return [
+            f"ACCEPTANCE_NAV_MIN_ACTIONS={navigation['min_actions']}",
+            f"ACCEPTANCE_NAV_MAX_ACTIONS={navigation['max_actions']}",
+        ]
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        errors.append(f"cannot resolve daily navigation policy: {exc}")
+        return []
+
+
 def _read(path: Path, errors: list[str]) -> str:
     if not path.is_file():
         errors.append(f"missing file: {path.relative_to(ROOT).as_posix()}")
@@ -101,7 +115,9 @@ def main() -> int:
     contents["makefile"] = "\n".join(
         _read(path, errors) for path in (ROOT / "Makefile", *make_fragments)
     )
-    for label, tokens in REQUIRED_TOKENS.items():
+    required = {label: list(tokens) for label, tokens in REQUIRED_TOKENS.items()}
+    required["environment_tiers"].extend(_daily_navigation_tokens(errors))
+    for label, tokens in required.items():
         text = contents.get(label, "")
         for token in tokens:
             if token not in text:
