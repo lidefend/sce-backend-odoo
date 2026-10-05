@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-DEV-ACCEPTANCE-RUN-RETIREMENT-MERGE-RECORD",
+  "branch": "codex/daily-dev-acceptance-retirement-merge-record-20261006",
+  "status": "completed",
+  "baseline_sha": "2a1e67ea3509ab53ef9c4421fe7f309c1ea643f2",
+  "goal": ".agent/goals/DAILY-DEV-ACCEPTANCE-RUN-RETIREMENT-MERGE-RECORD.yaml",
+  "record": "docs/ops/iterations/daily_dev_acceptance_run_retirement_20261006.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/",
+    ".agent/runs/",
+    "docs/ops/iterations/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline Make gates plus tracked run/agent metadata; no runtime, daily-server, database, fixture or product write in this batch"
+  },
+  "checks": {
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Completed 2026-10-06: the retirement record now states the merged outcome (PR #587, merge commit 2a1e67ea3509ab53ef9c4421fe7f309c1ea643f2) and this batch's own active-run binding is dropped in the final commit, returning .agent/active-runs.json to its empty terminal state.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false,
+  "completion": {
+    "batch": "passed: the record correction is applied; verify.agent.resume.unit passed 30 tests and ci.local.iteration reported PASS with an empty out-of-scope set",
+    "mainline": "not_run_in_this_batch: this record correction is published through the ordinary PR lane; no product change requires mainline integration",
+    "deployment": "not_run_in_this_batch: documentation and metadata only; no runtime or daily server is touched",
+    "product_delivery": "not_run: no product delivery is claimed",
+    "retained_limits": [
+      "only the retirement record's outcome wording changed; the retired run/goal status and the empty run index are unchanged"
+    ]
+  }
+}
