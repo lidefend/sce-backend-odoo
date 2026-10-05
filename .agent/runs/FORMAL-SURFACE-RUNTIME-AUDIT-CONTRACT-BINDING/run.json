@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "FORMAL-SURFACE-RUNTIME-AUDIT-CONTRACT-BINDING",
-  "branch": "fix/formal-surface-runtime-audit-contract-binding-v1",
+  "branch": "fix/settlement-provenance-entry-creator-v1",
   "status": "active",
   "baseline_sha": "51afafd0fd7f41dd0d87a53d8a4eb4a105feae94",
   "goal": ".agent/goals/FORMAL-SURFACE-RUNTIME-AUDIT-CONTRACT-BINDING.yaml",
@@ -87,5 +87,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Merge PR #580 on passing required CI (professional_quality_gate guard-registry fixed by registry.yaml seeding), then sync the daily runtime to main, run the declared non-business-creator write and acceptance-fixture ensure once, and re-run the daily composite to confirm the three gates PASS."
+  "next_exact_step": "Finish the residual provenance repair on the settled data: ship the governed provenance-SQL channel in formal_entry_metadata_non_business_creator_write.py, run the affected non-zero L2 check and ci.local.iteration, push the PR, merge on passing required CI, sync the daily runtime to the new main, run the declared non-business-creator write once (real, not dry-run) plus the acceptance-fixture ensure, then re-run the daily composite and the affected list-scope recheck and record four-layer status."
 }
