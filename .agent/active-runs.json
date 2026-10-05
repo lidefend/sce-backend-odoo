@@ -1,6 +1,4 @@
 {
-  "branches": {
-    "codex/daily-acceptance-lane-selfconsistency-v1": ".agent/runs/DAILY-ACCEPTANCE-LANE-SELFCONSISTENCY/run.json"
-  },
+  "branches": {},
   "schema_version": 1
 }

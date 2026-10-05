@@ -1,6 +1,6 @@
 goal:
   id: DAILY-ACCEPTANCE-LANE-SELFCONSISTENCY
-  status: active
+  status: completed
   formal_product_layer: P4
   module: ops_delivery_tool
   objective: >-

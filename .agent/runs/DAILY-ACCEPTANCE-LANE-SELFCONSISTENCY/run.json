@@ -1,5 +1,5 @@
 {
-  "baseline_sha": "4695dd8e59ff97b59bd55c78e876e5e61cc72cef",
+  "baseline_sha": "5298e2883df1a7f02095e0f0768298a0ba4e0bd1",
   "blockers": [],
   "branch": "codex/daily-acceptance-lane-selfconsistency-v1",
   "checks": {
@@ -30,10 +30,14 @@
     }
   },
   "completion": {
-    "batch": "in_progress",
-    "deployment": "not_run",
-    "mainline": "not_run",
-    "product_delivery": "not_run"
+    "batch": "passed: make/dev.mk no longer rebinds ACCEPTANCE_PROBE_OUTPUT for release.daily_dev.acceptance.publish, the readonly probe keeps its own override, environment_topology_guard.py carries the shipped prerequisite/.PHONY tokens, and DailyAcceptanceLaneSelfConsistencyTest is present on main. verify.environment.topology.guard (15 tests) and verify.frontend.acceptance.environment.guard (42 tests) pass on the reconciled head, outside_scope=[].",
+    "mainline": "already integrated on main before this carrier; this branch only publishes the retirement metadata",
+    "deployment": "not_run_in_this_batch: metadata only",
+    "product_delivery": "not_run",
+    "retained_limits": [
+      "this branch did not produce the integration; the same content landed through the earlier lane, proven by tree comparison against main",
+      "the daily server acceptance lane was not re-run for this metadata-only retirement"
+    ]
   },
   "environment": {
     "authority": "existing local Make tools and repository guards; no database or service access",
@@ -41,7 +45,7 @@
   },
   "goal": ".agent/goals/DAILY-ACCEPTANCE-LANE-SELFCONSISTENCY.yaml",
   "id": "DAILY-ACCEPTANCE-LANE-SELFCONSISTENCY",
-  "next_exact_step": "Re-run env.matrix.check and verify.frontend.acceptance.environment.guard locally, then publish this P4 self-consistency fix through the governed PR lane and re-run the daily acceptance lane on sc-root.",
+  "next_exact_step": "Completed 2026-10-06: the lane self-consistency objective is already satisfied on main and verified by tree comparison (HEAD equals origin/main 5298e288 apart from this run record). This branch carried no unique change, so it is retired as a metadata-only carrier and its active-run binding is removed; the daily server lane was not re-run for this metadata-only retirement.",
   "record": ".runtime/pr/daily-acceptance-lane-selfconsistency.md",
   "schema_version": 1,
   "scope": [
@@ -52,5 +56,5 @@
     "scripts/verify/environment_topology_guard.py",
     "scripts/verify/test_dev_acceptance_release_identity.py"
   ],
-  "status": "active"
+  "status": "completed"
 }
