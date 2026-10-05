@@ -10,6 +10,7 @@ declares its owner explicitly so boundary changes are intentional.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 
@@ -179,61 +180,84 @@ def _iter_source_files(base: Path):
         yield from base.rglob(suffix)
 
 
-def _scan_static(core_addon_root: Path, custom_addon_root: Path | None) -> list[dict]:
+# A boundary field is owned by exactly one module. Presence is proven by a real
+# field declaration or a view field reference, never by a bare substring: the
+# generic names used on user-confirmed surfaces (`name`, `state`, `note`, ...)
+# otherwise collide with unrelated metadata such as a manifest's ``name`` key.
+PYTHON_FIELD_DECLARATION = r"(?m)^\s*{field}\s*=\s*fields\."
+XML_FIELD_REFERENCE = r"<field\b[^>]*\bname\s*=\s*[\"']{field}[\"']"
+
+
+def _field_reference_pattern(field_name: str, suffix: str) -> re.Pattern[str]:
+    template = XML_FIELD_REFERENCE if suffix == ".xml" else PYTHON_FIELD_DECLARATION
+    return re.compile(template.format(field=re.escape(field_name)))
+
+
+_SOURCE_TEXT_CACHE: dict[Path, str] = {}
+
+
+def _source_text(path: Path) -> str:
+    if path not in _SOURCE_TEXT_CACHE:
+        _SOURCE_TEXT_CACHE[path] = path.read_text(encoding="utf-8", errors="ignore")
+    return _SOURCE_TEXT_CACHE[path]
+
+
+def _field_present_in_files(files: list[Path], field_name: str) -> list[Path]:
+    return [
+        path
+        for path in files
+        if _field_reference_pattern(field_name, path.suffix).search(_source_text(path))
+    ]
+
+
+def _scan_static(
+    core_addon_root: Path,
+    custom_addon_root: Path | None,
+    cases: list[dict] | None = None,
+) -> list[dict]:
     failures = []
+    cases = BOUNDARY_CASES if cases is None else cases
     core = core_addon_root / CORE_ADDON
     custom = custom_addon_root / CUSTOM_ADDON if custom_addon_root else None
-    custom_blob = "\n".join(
-        path.read_text(encoding="utf-8", errors="ignore")
-        for path in _iter_source_files(custom)
-    ) if custom else ""
     custom_files = list(_iter_source_files(custom)) if custom else []
-    if custom is None and any(case.get("owner") == "custom" for case in BOUNDARY_CASES):
+    if custom is None and any(case.get("owner") == "custom" for case in cases):
         failures.append({
             "type": "custom_source_unavailable",
             "message": "custom-owned boundary cases require smart_construction_custom source",
         })
     core_files = list(_iter_source_files(core))
-    core_blob = "\n".join(
-        path.read_text(encoding="utf-8", errors="ignore")
-        for path in core_files
-    )
 
-    for case in BOUNDARY_CASES:
+    for case in cases:
         owner = case.get("owner")
         for field_name in case["fields"]:
             if owner == "custom":
-                if field_name not in custom_blob:
+                if not _field_present_in_files(custom_files, field_name):
                     failures.append({
                         "type": "missing_custom_owner",
                         "case": case["name"],
                         "field": field_name,
                     })
-                for path in core_files:
-                    text = path.read_text(encoding="utf-8", errors="ignore")
-                    if field_name in text:
-                        failures.append({
-                            "type": "core_user_field_leak",
-                            "case": case["name"],
-                            "field": field_name,
-                            "path": _display_path(path),
-                        })
+                for path in _field_present_in_files(core_files, field_name):
+                    failures.append({
+                        "type": "core_user_field_leak",
+                        "case": case["name"],
+                        "field": field_name,
+                        "path": _display_path(path),
+                    })
             elif owner == "core":
-                if field_name not in core_blob:
+                if not _field_present_in_files(core_files, field_name):
                     failures.append({
                         "type": "missing_core_owner",
                         "case": case["name"],
                         "field": field_name,
                     })
-                for path in custom_files:
-                    text = path.read_text(encoding="utf-8", errors="ignore")
-                    if field_name in text:
-                        failures.append({
-                            "type": "custom_business_field_leak",
-                            "case": case["name"],
-                            "field": field_name,
-                            "path": _display_path(path),
-                        })
+                for path in _field_present_in_files(custom_files, field_name):
+                    failures.append({
+                        "type": "custom_business_field_leak",
+                        "case": case["name"],
+                        "field": field_name,
+                        "path": _display_path(path),
+                    })
             else:
                 failures.append({
                     "type": "unknown_owner",
@@ -278,23 +302,28 @@ def _runtime_rows() -> tuple[list[dict], list[dict]]:
     return rows, failures
 
 
-core_addon_root = _addon_root(CORE_ADDON)
-custom_addon_root = _find_addon_root(CUSTOM_ADDON)
-failures = _scan_static(core_addon_root, custom_addon_root)
-runtime_rows, runtime_failures = _runtime_rows()
-failures.extend(runtime_failures)
+def main() -> None:
+    core_addon_root = _addon_root(CORE_ADDON)
+    custom_addon_root = _find_addon_root(CUSTOM_ADDON)
+    failures = _scan_static(core_addon_root, custom_addon_root)
+    runtime_rows, runtime_failures = _runtime_rows()
+    failures.extend(runtime_failures)
 
-payload = {
-    "audit": "user_formal_field_module_boundary_audit",
-    "status": "PASS" if not failures else "FAIL",
-    "failure_count": len(failures),
-    "failures": failures,
-    "runtime_rows": runtime_rows,
-    "source_roots": {
-        "core": str(core_addon_root),
-        "custom": str(custom_addon_root) if custom_addon_root else None,
-    },
-}
-print("USER_FORMAL_FIELD_MODULE_BOUNDARY_AUDIT=" + json.dumps(payload, ensure_ascii=False, sort_keys=True))
-if failures:
-    raise RuntimeError(payload)
+    payload = {
+        "audit": "user_formal_field_module_boundary_audit",
+        "status": "PASS" if not failures else "FAIL",
+        "failure_count": len(failures),
+        "failures": failures,
+        "runtime_rows": runtime_rows,
+        "source_roots": {
+            "core": str(core_addon_root),
+            "custom": str(custom_addon_root) if custom_addon_root else None,
+        },
+    }
+    print("USER_FORMAL_FIELD_MODULE_BOUNDARY_AUDIT=" + json.dumps(payload, ensure_ascii=False, sort_keys=True))
+    if failures:
+        raise RuntimeError(payload)
+
+
+if __name__ == "__main__":
+    main()

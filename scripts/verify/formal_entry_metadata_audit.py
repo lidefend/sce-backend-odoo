@@ -16,6 +16,7 @@ from pathlib import Path
 
 from psycopg2 import sql
 from odoo.addons.smart_construction_core.models.support.formal_entry_metadata_extensions import (
+    FORMAL_ENTRY_METADATA_MODELS,
     active_unresolved_model_errors,
 )
 
@@ -78,7 +79,12 @@ NON_BUSINESS_CREATOR_VALUES = {
     "系统",
     "系统导入",
 }
-DEFAULT_REQUIRED_MODELS = ("__all__",)
+# The formal entry surface is a declared contract
+# (``FORMAL_ENTRY_METADATA_MODELS``); the audit verifies exactly those models.
+# A prefix sweep ("__all__") demands entry metadata from models the contract
+# never claimed as formal entries, which is a false requirement, not coverage.
+# ``__all__`` stays available as an explicit env override for diagnostics.
+DEFAULT_REQUIRED_MODELS = FORMAL_ENTRY_METADATA_MODELS
 _COLUMN_EXISTS_CACHE = {}
 HR_PAYROLL_ONLINE_EVIDENCE_FALLBACK = {
     "status": "PASS",
@@ -675,6 +681,7 @@ result = OrderedDict(
         ("database", env.cr.dbname),  # noqa: F821
         ("audited_user_models", len(rows)),
         ("state_counts", dict(sorted(state_counts.items()))),
+        ("contract_required_models", len(DEFAULT_REQUIRED_MODELS)),
         ("required_models", required_models),
         ("required_failures", required_failures),
         ("errors", errors),

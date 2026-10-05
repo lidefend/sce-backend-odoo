@@ -53,11 +53,11 @@ def artifact_root():
     return Path("/tmp")
 
 
-def fix_records(model_name, resolver):
-    Model = env[model_name].sudo().with_context(active_test=False, tracking_disable=True, mail_notrack=True)  # noqa: F821
-    if "creator_name" not in Model._fields:
-        return {"model": model_name, "updated": 0, "rows": []}
-    domain = [("creator_name", "in", non_business_values())]
+def fix_records(env, model_name, field_name, resolver):
+    Model = env[model_name].sudo().with_context(active_test=False, tracking_disable=True, mail_notrack=True)
+    if field_name not in Model._fields:
+        return {"model": model_name, "field": field_name, "updated": 0, "rows": []}
+    domain = [(field_name, "in", non_business_values())]
     if "active" in Model._fields:
         domain.insert(0, ("active", "=", True))
     rows = []
@@ -65,8 +65,8 @@ def fix_records(model_name, resolver):
         replacement = resolver(record)
         if not is_business_name(replacement) and clean(replacement) != LEGACY_SYSTEM_ADMIN_LABEL:
             replacement = LEGACY_SYSTEM_ADMIN_LABEL
-        before = clean(record.creator_name)
-        record.write({"creator_name": replacement})
+        before = clean(record[field_name])
+        record.write({field_name: replacement})
         rows.append(
             OrderedDict(
                 [
@@ -77,7 +77,7 @@ def fix_records(model_name, resolver):
                 ]
             )
         )
-    return {"model": model_name, "updated": len(rows), "rows": rows}
+    return {"model": model_name, "field": field_name, "updated": len(rows), "rows": rows}
 
 
 def expense_claim_creator(record):
@@ -90,21 +90,45 @@ def receipt_income_creator(_record):
     return LEGACY_SYSTEM_ADMIN_LABEL
 
 
-results = [
-    fix_records("sc.expense.claim", expense_claim_creator),
-    fix_records("sc.receipt.income", receipt_income_creator),
-]
-env.cr.commit()  # noqa: F821
-result = OrderedDict(
-    [
-        ("status", "PASS"),
-        ("database", env.cr.dbname),  # noqa: F821
-        ("mode", "formal_entry_metadata_non_business_creator_write"),
-        ("updated_total", sum(item["updated"] for item in results)),
-        ("results", results),
-    ]
+# Settlement orders migrated from the legacy settlement system carry the
+# migrating session login in the generic ``source_created_by`` Char added to
+# every declared formal-entry model. ``entry_user_id``/``create_uid`` are the
+# migration operator (OdooBot), so the original business entry user is not
+# recoverable from the record. Use the same sanctioned legacy label already
+# used for ``sc.receipt.income`` instead of leaving the visible surface
+# attributed to ``admin``.
+def settlement_order_creator(_record):
+    return LEGACY_SYSTEM_ADMIN_LABEL
+
+
+# (model, creator field consumed by formal_entry_metadata_audit, resolver).
+CREATOR_RULES = (
+    ("sc.expense.claim", "creator_name", expense_claim_creator),
+    ("sc.receipt.income", "creator_name", receipt_income_creator),
+    ("sc.settlement.order", "source_created_by", settlement_order_creator),
 )
 
-target = artifact_root() / f"formal_entry_metadata_non_business_creator_write.{env.cr.dbname}.json"  # noqa: F821
-target.write_text(json.dumps(result, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8")
-print("FORMAL_ENTRY_METADATA_NON_BUSINESS_CREATOR_WRITE=%s" % json.dumps(result, ensure_ascii=False, sort_keys=True, default=str))
+
+def run(env):
+    results = [
+        fix_records(env, model_name, field_name, resolver)
+        for model_name, field_name, resolver in CREATOR_RULES
+    ]
+    env.cr.commit()
+    result = OrderedDict(
+        [
+            ("status", "PASS"),
+            ("database", env.cr.dbname),
+            ("mode", "formal_entry_metadata_non_business_creator_write"),
+            ("updated_total", sum(item["updated"] for item in results)),
+            ("results", results),
+        ]
+    )
+    target = artifact_root() / f"formal_entry_metadata_non_business_creator_write.{env.cr.dbname}.json"
+    target.write_text(json.dumps(result, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8")
+    print("FORMAL_ENTRY_METADATA_NON_BUSINESS_CREATOR_WRITE=%s" % json.dumps(result, ensure_ascii=False, sort_keys=True, default=str))
+    return result
+
+
+if "env" in globals():
+    run(env)  # noqa: F821

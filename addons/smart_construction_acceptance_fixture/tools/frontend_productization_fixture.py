@@ -290,6 +290,36 @@ def _funding_baseline(env, suffix, project):
     return baseline
 
 
+def _labor_usage_ticket(env, project):
+    """Deterministic 方单 (``usage_type=ticket``) row for the acceptance dataset.
+
+    ``sc.labor.usage`` carries both 方单 and 零星用工 formal menus, but the
+    demo/legacy business data only contains 零星用工 (casual) rows. The
+    formal-action runtime drift gate requires every high-risk formal entry to
+    resolve to a real surface, so the delivery dataset must not leave 方单
+    empty. This fixture-owned row is idempotent and stays in the draft state
+    the model's controlled transition flow allows.
+    """
+    return _upsert(
+        env,
+        "sc.labor.usage",
+        "fe_labor_usage_ticket_a",
+        [("name", "=", "FE-LABOR-TICKET-A"), ("project_id", "=", project.id)],
+        {
+            "name": "FE-LABOR-TICKET-A",
+            "project_id": project.id,
+            "usage_type": "ticket",
+            "usage_date": "2026-01-15",
+            "labor_team": "验收班组",
+            "work_content": "验收方单作业",
+            "worker_qty": 2.0,
+            "work_hours": 16.0,
+            "price_unit": 120.0,
+            "currency_id": project.company_id.currency_id.id,
+        },
+    )
+
+
 def _contract(env, suffix, project, partner, tax, state, amount):
     subject = "FE-%s Contract" % suffix
     record = _upsert(
@@ -1125,6 +1155,8 @@ def ensure_fixture(env) -> Dict[str, Any]:
     _funding_baseline(env, "B", project_b)
     _funding_baseline(env, "C", project_c)
 
+    labor_usage_ticket = _labor_usage_ticket(env, project_a)
+
     contract_a, _ = _contract(env, "A", project_a, partner_a, tax_a, "confirmed", 1000.0)
     contract_b, _ = _contract(env, "B", project_b, partner_b, tax_a, "draft", 1000.0)
     contract_c, _ = _contract(env, "C", project_c, partner_c, tax_b, "confirmed", 1000.0)
@@ -1301,6 +1333,7 @@ def ensure_fixture(env) -> Dict[str, Any]:
             "payment_requests": 4,
             "payment_executions": 2,
             "activity_moves": 1,
+            "labor_usage_tickets": len(labor_usage_ticket),
         },
         "journey": {
             "settlement": journey_settlement.name,
