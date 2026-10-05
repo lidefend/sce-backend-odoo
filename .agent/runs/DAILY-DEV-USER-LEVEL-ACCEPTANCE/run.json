@@ -34,7 +34,13 @@
     "addons/smart_construction_core/core_extension_policy_maps.py",
     "addons/smart_construction_scene/core_extension.py",
     "addons/smart_construction_scene/profiles/scene_registry_content.py",
-    "addons/smart_construction_scene/services/capability_scene_targets.py"
+    "addons/smart_construction_scene/services/capability_scene_targets.py",
+    "addons/smart_construction_core/services/locked_menu_policy_contract.py",
+    "make/dev.mk",
+    "make/guards.mk",
+    "scripts/verify/production_menu_release_gate_guard.py",
+    "scripts/verify/test_product_menu_release_gate_contract.py",
+    "scripts/verify/product_menu_runtime_closeout_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -82,7 +88,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Owner authorized one-round integration (root cause A publish face 379/506 + provider carrier identity; root cause B scene/entry duplication consolidation: projects.list identity_owner, projects.ledger alias_of, projects.execution carrier cleared, NAV_MENU_SCENE_MAP root->projects.list removed, two-phase claim in both capability_scene_targets and core_extension). Next: re-run L1 make ci.local.iteration; characterize the two pre-existing guard FAILs (scene_role_policy_consistency_guard, scene_no_action_scene_guard) against baseline via git stash; commit candidate on codex/* branch; governed deploy to sc-root via daily.runtime.candidate.bundle_sync with CONFIRM, then mod.upgrade smart_construction_core + smart_construction_scene + restart; verify wutao login no 403 on projects.list, pair (379,506) ->200, 90 published entries all 200, negatives still 403. Then frozen detail-page closeout (1440/390 light+dark, relation round-trip real click, create/edit + workbench gaps).",
+  "next_exact_step": "Same-caliber publish-face unification in progress: (1) locked_menu_policy_contract gained normalized_page_release_state/policy_preview_rows/assert_snapshot_matches_policy_release_states/resolve_declared_product_keys; (2) production_menu_release_gate_guard now compares snapshot vs policy on one shared caliber (released vs released, declared preview vs preview, effective totals, gate) instead of raw page_count; (3) daily lane wired: verify.daily_dev.product_menu_release_gate.guard + release.daily_product_navigation.refresh/converge; (4) converge the stale runtime preview snapshot #31 (163 legacy released pages vs contract 90) via release.daily_product_navigation.snapshot PLATFORM_RELEASE_PRODUCT_KEY=construction.preview; (5) run the daily guard on sc-root and re-verify. Then detail-page closeout and the five-root-cause report.",
   "write_replay_authorized": false,
   "candidate_evidence": false,
   "results": [

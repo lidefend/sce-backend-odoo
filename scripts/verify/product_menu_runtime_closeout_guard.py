@@ -54,7 +54,6 @@ HIDDEN_XMLIDS = {
     "menu_sc_project_wbs_cost",
     "menu_sc_cost_forecast_roadmap_v2",
     "menu_sc_cost_cashflow_roadmap_v2",
-    "menu_project_funding_actual_event_allocation",
     "menu_sc_noncash_business_group",
     "menu_sc_historical_payment_fact",
     "menu_sc_arrival_confirmation",

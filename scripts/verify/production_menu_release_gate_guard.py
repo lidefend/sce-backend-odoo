@@ -20,11 +20,14 @@ from odoo.addons.smart_core.handlers.system_init import (
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
 from odoo.addons.smart_construction_core.services.locked_menu_policy_contract import (
     assert_policy_matches_locked_contract,
+    assert_snapshot_matches_policy_release_states,
     load_locked_menu_policy_contract,
+    normalized_page_release_state,
+    resolve_declared_product_keys,
 )
 
 
-PRODUCT_KEYS = ("construction.standard", "construction.preview")
+PRODUCT_KEYS = resolve_declared_product_keys(os.getenv("PRODUCT_MENU_CATALOG_PRODUCT_KEYS", ""))
 EXPECTED_BASE_PRODUCT_KEY = "construction"
 EXPECTED_PLATFORM_RELEASE_DB_MATCH_CURRENT = True
 MIN_RELEASED_POLICY_MENU_COUNT = 1
@@ -90,15 +93,11 @@ def _formal_group_nodes(nav: list[dict]) -> list[dict]:
     return nav
 
 
-def _released_policy_menu_count(product_key: str) -> int:
-    return len(_released_policy_menus(product_key))
-
-
 def _load_formal_baseline() -> dict:
     return load_locked_menu_policy_contract()
 
 
-def _released_policy_menus(product_key: str) -> list[dict]:
+def _policy_menus_by_state(product_key: str, state: str) -> list[dict]:
     policy = env["sc.product.policy"].sudo().search([("product_key", "=", product_key)], limit=1)  # noqa: F821
     if not policy:
         raise AssertionError(f"missing product policy: {product_key}")
@@ -112,28 +111,42 @@ def _released_policy_menus(product_key: str) -> list[dict]:
         for menu in group.get("menus") or []:
             if not isinstance(menu, dict):
                 continue
-            if menu.get("enabled") and _text(menu.get("release_state")) == "released":
-                visible_path = _text(menu.get("visible_menu_path"))
-                label = _text(menu.get("label") or menu.get("name"))
-                if any(token in visible_path or token in group_label or token in label for token in FORBIDDEN_POLICY_PATH_TOKENS):
-                    raise AssertionError(
-                        f"{product_key} product policy contains acceptance menu: {group_label} / {label} / {visible_path}"
-                    )
-                row = dict(menu)
-                row["_group_label"] = group_label
-                rows.append(row)
+            if not menu.get("enabled") or _text(menu.get("release_state")) != state:
+                continue
+            visible_path = _text(menu.get("visible_menu_path"))
+            label = _text(menu.get("label") or menu.get("name"))
+            if any(token in visible_path or token in group_label or token in label for token in FORBIDDEN_POLICY_PATH_TOKENS):
+                raise AssertionError(
+                    f"{product_key} product policy contains acceptance menu: {group_label} / {label} / {visible_path}"
+                )
+            row = dict(menu)
+            row["_group_label"] = group_label
+            rows.append(row)
+    return rows
+
+
+def _released_policy_menus(product_key: str) -> list[dict]:
+    rows = _policy_menus_by_state(product_key, "released")
     if len(rows) < MIN_RELEASED_POLICY_MENU_COUNT:
         raise AssertionError(f"{product_key} has no released product menus")
     return rows
 
 
+def _preview_policy_menus(product_key: str) -> list[dict]:
+    return _policy_menus_by_state(product_key, "preview")
+
+
 def _assert_policy_matches_formal_baseline(product_key: str, baseline: dict) -> dict:
-    rows = _released_policy_menus(product_key)
+    released_rows = _released_policy_menus(product_key)
+    preview_rows = _preview_policy_menus(product_key)
     policy = env["sc.product.policy"].sudo().search([("product_key", "=", product_key)], limit=1)  # noqa: F821
     match = assert_policy_matches_locked_contract(baseline, product_key, policy.menu_groups)
     return {
         "baseline_menu_count": int(match["menu_count"]),
-        "policy_released_menu_count": len(rows),
+        "locked_released_menu_count": int(match.get("locked_menu_count") or 0),
+        "policy_released_menu_count": len(released_rows),
+        "policy_preview_menu_count": len(preview_rows),
+        "policy_effective_menu_count": len(released_rows) + len(preview_rows),
     }
 
 
@@ -154,6 +167,17 @@ def _snapshot_page_count(snapshot) -> int:
     meta = snapshot.meta_json if snapshot and isinstance(snapshot.meta_json, dict) else {}
     draft = meta.get("release_draft") if isinstance(meta.get("release_draft"), dict) else {}
     return int(draft.get("page_count") or 0)
+
+
+def _snapshot_meta_pages(snapshot) -> list[dict]:
+    meta = snapshot.meta_json if snapshot and isinstance(snapshot.meta_json, dict) else {}
+    draft = meta.get("release_draft") if isinstance(meta.get("release_draft"), dict) else {}
+    pages = draft.get("pages") if isinstance(draft.get("pages"), list) else []
+    return [page for page in pages if isinstance(page, dict)]
+
+
+def _snapshot_pages_by_state(snapshot, state: str) -> list[dict]:
+    return [page for page in _snapshot_meta_pages(snapshot) if normalized_page_release_state(page) == state]
 
 
 def _assert_startup_identity() -> dict:
@@ -179,25 +203,45 @@ def _assert_platform_release_db() -> str:
     return configured
 
 
-def _assert_runtime_gate(product_key: str, released_policy_count: int) -> dict:
+def _assert_runtime_gate(product_key: str, policy_meta: dict, baseline: dict) -> dict:
     if not FULL_PRODUCT_LOGIN:
         raise AssertionError(
             "PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN must explicitly name the release acceptance principal"
         )
+    released_policy_count = int(policy_meta["policy_released_menu_count"])
+    preview_policy_count = int(policy_meta["policy_preview_menu_count"])
+    effective_policy_count = released_policy_count + preview_policy_count
     snapshot = _active_snapshot(product_key)
     if not snapshot:
         raise AssertionError(f"{product_key} active released snapshot not found")
-    snapshot_page_count = _snapshot_page_count(snapshot)
-    if snapshot_page_count != released_policy_count:
+    released_pages = _snapshot_pages_by_state(snapshot, "released")
+    preview_pages = _snapshot_pages_by_state(snapshot, "preview")
+    if len(released_pages) != released_policy_count:
         raise AssertionError(
-            f"{product_key} snapshot page_count drift: snapshot={snapshot_page_count} policy={released_policy_count}"
+            f"{product_key} snapshot released-page drift: snapshot={len(released_pages)} policy={released_policy_count}"
+        )
+    if len(preview_pages) != preview_policy_count:
+        raise AssertionError(
+            f"{product_key} snapshot declared-preview drift: snapshot={len(preview_pages)} policy={preview_policy_count}"
+        )
+    policy = env["sc.product.policy"].sudo().search([("product_key", "=", product_key)], limit=1)  # noqa: F821
+    contract_match = assert_snapshot_matches_policy_release_states(
+        baseline,
+        product_key,
+        _snapshot_meta_pages(snapshot),
+        policy.menu_groups,
+    )
+    snapshot_page_count = _snapshot_page_count(snapshot)
+    if snapshot_page_count != effective_policy_count:
+        raise AssertionError(
+            f"{product_key} snapshot effective page_count drift: snapshot={snapshot_page_count} policy={effective_policy_count}"
         )
     gate = _load_platform_release_gate(env, product_key=product_key)  # noqa: F821
     if not gate.get("applied"):
         raise AssertionError(f"{product_key} release gate not applied: {gate!r}")
     if int(gate.get("snapshot_id") or 0) != int(snapshot.id):
         raise AssertionError(f"{product_key} release gate snapshot drift: {gate!r} active={snapshot.id}")
-    if int(gate.get("page_count") or 0) != released_policy_count:
+    if int(gate.get("page_count") or 0) != effective_policy_count:
         raise AssertionError(f"{product_key} release gate page_count drift: {gate!r}")
     full_product_user = env["res.users"].sudo().search(  # noqa: F821
         [("active", "=", True), ("login", "=", FULL_PRODUCT_LOGIN)],
@@ -251,6 +295,10 @@ def _assert_runtime_gate(product_key: str, released_policy_count: int) -> dict:
         "snapshot_id": int(snapshot.id),
         "snapshot_version": _text(snapshot.version),
         "policy_released_menu_count": released_policy_count,
+        "policy_preview_menu_count": preview_policy_count,
+        "snapshot_released_page_count": len(released_pages),
+        "snapshot_preview_page_count": len(preview_pages),
+        "contract_match": contract_match,
         "gate_page_count": int(gate.get("page_count") or 0),
         "raw_nav_node_count": sum(1 for _path, _node in _walk(raw_nav)),
         "gated_nav_node_count": sum(1 for _path, _node in _walk(gated_nav)),
@@ -327,7 +375,7 @@ def main():
     products = []
     for product_key in PRODUCT_KEYS:
         policy_meta = _assert_policy_matches_formal_baseline(product_key, baseline)
-        runtime_meta = _assert_runtime_gate(product_key, int(policy_meta["policy_released_menu_count"]))
+        runtime_meta = _assert_runtime_gate(product_key, policy_meta, baseline)
         runtime_meta.update(policy_meta)
         products.append(runtime_meta)
     menu_config_scope = _assert_menu_config_scope(
