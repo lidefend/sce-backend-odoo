@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "id": "REMOTE-BRANCH-BACKLOG-RETIREMENT-C",
+  "branch": "codex/remote-branch-backlog-retirement-c-20261005",
+  "status": "completed",
+  "baseline_sha": "b6b8a0e68f81a85366175f82574385a34f36fe39",
+  "goal": ".agent/goals/REMOTE-BRANCH-BACKLOG-RETIREMENT-C.yaml",
+  "record": "docs/ops/iterations/remote_branch_backlog_retirement_c_20261005.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/REMOTE-BRANCH-BACKLOG-RETIREMENT-C.yaml",
+    ".agent/runs/REMOTE-BRANCH-BACKLOG-RETIREMENT-C/",
+    ".agent/runs/REMOTE-BRANCH-BACKLOG-RETIREMENT/run.json",
+    ".agent/runs/REMOTE-BRANCH-CARRIER-RETIREMENT/run.json",
+    "docs/ops/iterations/remote_branch_backlog_retirement_c_20261005.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline Make gates plus the governed historical-retirement entry and a verified recovery bundle; no product runtime, database, fixture or service"
+  },
+  "checks": {
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ],
+      "kind": "offline"
+    },
+    "retire_entry": {
+      "target": "verify.branch.retire.historical",
+      "inputs": [
+        "scripts/ops/retire_historical_branch_refs.py",
+        "scripts/ops/test_retire_historical_branch_refs.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Closed: the eight unproven codex/* origin references were retired under owner authorization (manifest sha256 f279d722…c0b5, verified 8-head recovery bundle) and origin keeps zero codex/* heads. Publishing this candidate (carrier clear + docs relocation + run record) through the ordinary PR lane.",
+  "completion": {
+    "batch": "passed: carrier references cleared over scripts/config/deploy/make/.agent/.github (0 hits for all eight names); dry run eligible=8 skipped=0; verified recovery bundle (8 heads, sha256 7a1bb8b4…8714) whose heads equal the manifest tips; APPLY retired 8/8 with remote_deleted + local_absent_confirmed under manifest sha256 f279d722…c0b5 and per-branch --force-with-lease tip leases; origin re-read shows zero codex/* heads (67 heads total)",
+    "mainline": "publishing the frozen candidate through the ordinary PR lane; the exact-head identity is the frozen source commit and its ci.local.quick receipt (.git/codex/evidence/ci.local.quick/<frozen-sha>.json)",
+    "deployment": "not_run",
+    "product_delivery": "not_run",
+    "manifest": {
+      "path": ".runtime/retire/codex-backlog-manifest-20261005.json",
+      "sha256": "f279d7228135615b8f42f22546bedff991ca97bafabb8978790dc67520e6c0b5"
+    },
+    "recovery_bundle": {
+      "path": ".runtime/retire/historical-branch-retirement-backlog-c-20261005.bundle",
+      "sha256": "7a1bb8b4d6e5e1ec546aa675d478b891f7104134e2c3be1aa427bd63a5108714",
+      "head_count": 8,
+      "verify": "pass"
+    },
+    "reports": [
+      ".runtime/retire/bundle-prep-backlog-c-20261005.json",
+      ".runtime/retire/apply-report-backlog-c-20261005.json"
+    ],
+    "origin_recheck": {
+      "command": "git ls-remote --heads origin 'refs/heads/codex/*'",
+      "remaining_count": 0,
+      "total_origin_heads": 67,
+      "note": "all eight unproven codex/* references deleted under owner authorization 2026-10-05; no codex/* branch remains on origin"
+    },
+    "l1": {
+      "agent_resume": {
+        "command": "make verify.agent.resume.unit",
+        "status": "passed",
+        "tests": 30,
+        "log": ".runtime/agent-runs/REMOTE-BRANCH-BACKLOG-RETIREMENT-C/agent_resume.log"
+      },
+      "retire_entry": {
+        "command": "make verify.branch.retire.historical",
+        "status": "passed",
+        "tests": 30,
+        "log": ".runtime/agent-runs/REMOTE-BRANCH-BACKLOG-RETIREMENT-C/retire_entry.log"
+      },
+      "branch_governance": {
+        "command": "make verify.branch.governance.consistency",
+        "status": "passed",
+        "log": ".runtime/agent-runs/REMOTE-BRANCH-BACKLOG-RETIREMENT-C/branch_governance.log"
+      },
+      "iteration": {
+        "command": "make ci.local.iteration",
+        "status": "passed",
+        "change_state": "dirty",
+        "note": "L1 entry is advisory and is not delivery evidence; the two recommended non-zero targets were executed and receipted."
+      }
+    }
+  },
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}
