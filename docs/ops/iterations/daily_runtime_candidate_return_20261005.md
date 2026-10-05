@@ -65,5 +65,36 @@ original behavior exactly.
   mismatch, detached HEAD with no declared candidate identity).
 - `make ci.local.iteration` — passed (L1 advisory entry; run resolved, no out-of-scope paths).
 - `make ci.delivery.freeze.prepare` — passed with no generated-report drift.
+- `make ci.local.quick` — passed on frozen `bbee7981`.
+- PR #576 — merged (`e9e381d455edf4b598e5d6af2a823885311f295e`); required gates `public_guard`,
+  `merge_policy_gate`, `professional_quality_gate`, `frontend_release_gate` all success.
+
+## Deployment and daily acceptance
+
+Executed against the daily runtime repository (`sc-root:/opt/projects/repos/sce-product-odoo`,
+`ENV=dev`, `.env.dev`, `sc_demo`):
+
+| Step | Result |
+| --- | --- |
+| `make daily.runtime.main.bundle_sync` (`DAILY_RUNTIME_EXPECTED_CANDIDATE_SHA=d004bbf2…`) | PASS, `normalized_from_candidate=true`, `old_sha=3f424993`, `source_sha=e9e381d4`, `bundle_sha256=633b5d27…` |
+| `make verify.frontend.build` | PASS (`dist-dev` rebuilt) |
+| `make mod.upgrade MODULE=smart_core` | PASS (only `smart_core` differed from the previous runtime SHA) |
+| `make restart` | PASS |
+| `make verify.daily_dev.runtime_repo.clean` | PASS (`head=e9e381d4`, clean, customer addons read-only) |
+| `make daily.runtime.source_revision.align` | PASS (`previous_revision=d004bbf2` → served `e9e381d4`) |
+| `make daily.dev.acceptance_fixture.ensure` | PASS (`fixture_role_finance` uid 210) |
+| `make daily.dev.acceptance_contract.resolve` | PASS (`artifacts/backend/acceptance_record_identity.json`) |
+| `make verify.daily_dev.acceptance.readonly.probe` | PASS (`sc_demo`, served `e9e381d4`) |
+
+The readonly probe reported: runtime identity `served_sha = expected_sha = e9e381d4`; `wutao`
+(uid 16) login navigation 90 leaf actions with no forbidden labels and no required-path misses;
+contract account `fixture_role_finance` (uid 210, company `FE Company A`) resolving the unique
+payment target `smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a`.
+
+Daily dev credential: owner-directed fixed password `123456` for `wutao` and `fixture_role_finance`
+in `sc_demo`. The daily profile still refused the weak password until a bound
+`daily-readonly-credential-confirmation.v1` envelope (5-minute expiry, binding
+`tool/baseUrl/apiUrl/database/login/expectedSha/runId`) was supplied; no daily login default and no
+other environment was changed.
 
 Live run/deployment status is tracked in `.agent/runs/DAILY-RUNTIME-CANDIDATE-RETURN/run.json`.
