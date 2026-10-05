@@ -603,3 +603,39 @@ form 槽改绑并非必需，且它同时改变了用户可见行为并破坏持
 **未采纳的替代（留所有者裁决）**：保留原生 form，转而用受管低代码修复入口重定向/退役该 P3 配置。
 两者都不放宽审计、不加模型特判、不动 ACL/记录规则/字段权限。远端 409 在重新同步并复跑守卫前
 **不宣称已关闭**。
+
+### 6.15 缺表恢复缺口：`init()` 只建索引不建表 + 外键被快照缓存吞掉（2026-10-05 追加）
+
+**暴露路径（原始复现）**：`CODEX_NEED_UPGRADE=1 make acceptance.module.upgrade MODULE=smart_construction_core`
+在 `sc_frontend_acceptance` 上以
+`psycopg2.errors.UndefinedTable: relation "sc_contract_slo_observation" does not exist` 崩溃，
+栈为 `init_models → check_tables_exist → env[name].init()`。
+
+**根因一（建表责任）**：Odoo 对缺表模型只调用 `model.init()`（`Registry.check_tables_exist`，
+`odoo/modules/registry.py`；`odoo/modules/loading.py` 也是同一入口），不调用 `_auto_init()`。
+`contract_slo_observation.py` / `idempotency_record.py` 覆写的 `init()` 只写 `CREATE INDEX`，
+因此这条路径下根本没有能力建表 → 任何缺该表的数据库在模块升级时必崩。
+
+**根因二（外键被静默跳过）**：只让 `init()` 建表还不够。`Registry.is_an_ordinary_table` 用进程级缓存的
+`pg_class` 快照回答；该快照生成于缺表之时，早于本次新建的表，且同一轮内不再刷新，于是
+`Many2one.update_db_foreign_key`（`odoo/fields.py`）直接 early-return，外键被静默跳过。
+表现为**顺序相关**：同一轮恢复里只有第一个模型保住外键。
+
+**修复（通用责任层，无模型特判）**：新增
+`addons/smart_core/core/model_table_recovery.py::ensure_table_on_init`，表存在时严格 no-op；
+缺表时以私有 `_post_init_queue` / `_foreign_keys` / `_is_install` 上下文运行 `_auto_init`，
+立即 flush 被延迟的外键，再跑 `registry.check_indexes` + `check_foreign_keys`，并重置
+`_ordinary_tables`，使局部或过期快照都不可能遮蔽新表。两个模型在 `init()` 首行调用它。
+
+**证据**：
+- L2：`make local.dev.test MODULE=smart_core TEST_TAGS=model_init_table_recovery` →
+  2 tests / 0 failed / 0 errors / exit 0。`tests/test_smart_core_model_init_table_recovery.py`
+  先断言负例基线（两表存在），再丢表，然后经真实 `check_tables_exist` 入口断言表 + 全部 7 条外键 +
+  两处声明索引恢复，并完成一次可用的 ORM 写入。
+- 端点：验收库两表各 0 行，丢表后 `CODEX_NEED_UPGRADE=1 make acceptance.module.upgrade
+  MODULE=smart_construction_core` → `Models have no table ...` → `Recreate table of model ...` →
+  **EXIT=0**（无 `UndefinedTable`、无 `Model ... has no table`）；回读两表存在且 7 条外键、
+  2 条声明索引齐全。
+- `smart_core` 模块版本**不 bump**：改动只作用于升级期、对既有库无 schema 变化；且
+  `scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py` 用 manifest 版本锁定 L4
+  运行时产物，bump 会无谓使其失效。

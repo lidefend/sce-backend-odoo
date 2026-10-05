@@ -4,6 +4,7 @@ from __future__ import annotations
 from odoo import api, fields, models
 
 from odoo.addons.smart_core.core import contract_slo_persistence as slo_store
+from odoo.addons.smart_core.core import model_table_recovery
 
 
 class ScContractSloObservation(models.Model):
@@ -48,7 +49,14 @@ class ScContractSloObservation(models.Model):
     company_id = fields.Many2one("res.company", string="Company", index=True, ondelete="set null")
 
     def init(self):
-        """按版本 + 时间聚合是主要读法，用复合索引固定下来。"""
+        """按版本 + 时间聚合是主要读法，用复合索引固定下来。
+
+        ``Registry.check_tables_exist`` 对缺表模型只调用本方法、不调用
+        ``_auto_init``，所以这里必须先确保基表存在，否则任何缺少该表的数据库在模块
+        升级时都会以 ``UndefinedTable`` 崩溃（回归锁定见
+        tests/test_smart_core_model_init_table_recovery.py）。
+        """
+        model_table_recovery.ensure_table_on_init(self)
         self.env.cr.execute(
             """
             CREATE INDEX IF NOT EXISTS sc_contract_slo_observation_version_time
