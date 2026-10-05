@@ -487,6 +487,9 @@ class TestIntentPermissionOperationPolicy(unittest.TestCase):
         self.assertEqual(self.env.menu_model.browsed_ids, [])
 
     def test_menu_permission_normalizes_numeric_id(self):
+        # Publication authority (injected) decides; the numeric id is still
+        # normalized and the live menu is still resolved before the decision.
+        self.permission._published_menu_decision = lambda env, menu_id, action_id=0: True
         ctx = _Ctx({"intent": "ui.contract", "params": {"menu_id": "41"}})
 
         self.permission.check_intent_permission(ctx)
@@ -501,14 +504,34 @@ class TestIntentPermissionOperationPolicy(unittest.TestCase):
         self.assertEqual(self.env.menu_model.browsed_ids, [])
         self.assertEqual(self.env.generic_action_model.browsed_ids, [31])
 
-    def test_menu_permission_denies_group_mismatch(self):
-        self.env.user.groups_id = {1}
+    def test_menu_permission_denies_when_publication_authority_rejects(self):
+        self.permission._published_menu_decision = lambda env, menu_id, action_id=0: False
         ctx = _Ctx({"intent": "ui.contract", "params": {"menu_id": 42}})
 
         with self.assertRaises(AccessError):
             self.permission.check_intent_permission(ctx)
 
         self.assertEqual(self.env.menu_model.browsed_ids, [42])
+
+    def test_menu_permission_fails_closed_when_publication_unavailable(self):
+        self.permission._published_menu_decision = lambda env, menu_id, action_id=0: None
+        ctx = _Ctx({"intent": "ui.contract", "params": {"menu_id": 42}})
+
+        with self.assertRaises(AccessError):
+            self.permission.check_intent_permission(ctx)
+
+        self.assertEqual(self.env.menu_model.browsed_ids, [42])
+
+    def test_menu_configuration_intent_keeps_its_own_scope_check(self):
+        def _unexpected(*args, **kwargs):
+            raise AssertionError("menu configuration must not consume live publication")
+
+        self.permission._published_menu_decision = _unexpected
+        ctx = _Ctx({"intent": "ui.menu_config.menu.delete", "params": {"menu_id": 41}})
+
+        self.permission.check_intent_permission(ctx)
+
+        self.assertEqual(self.env.menu_model.browsed_ids, [])
 
     def test_capability_key_can_be_top_level_or_nested(self):
         self.assertEqual(

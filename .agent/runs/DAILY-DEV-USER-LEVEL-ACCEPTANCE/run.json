@@ -12,10 +12,15 @@
     ".agent/runs/DAILY-DEV-USER-LEVEL-ACCEPTANCE/run.json",
     "docs/ops/iterations/daily_dev_user_level_acceptance_20261005.md",
     "addons/smart_core/security/intent_permission.py",
+    "addons/smart_core/models/release_management.py",
     "addons/smart_core/tests/__init__.py",
     "addons/smart_core/tests/test_intent_permission_menu_visibility.py",
     "frontend/apps/web/scripts/user_page_visual_coverage.cjs",
-    "frontend/apps/web/scripts/user_template_coverage_acceptance.mjs"
+    "frontend/apps/web/scripts/user_template_coverage_acceptance.mjs",
+    "addons/smart_core/delivery/runtime_route_authority.py",
+    "addons/smart_core/tests/test_intent_permission_operation_policy.py",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md"
   ],
   "environment": {
     "kind": "runtime",
@@ -63,30 +68,54 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit P0 menu-visibility fix + P4 acceptance tools; open PR; after merge pull main on sc-root, make mod.upgrade MODULE=smart_core, make restart, re-probe 会计科目表 (expect 200), then run the remaining user-level acceptance (template/viewport/theme matrix) on sc_demo.",
+  "next_exact_step": "Commit the publication-authority gate + process cache (delivery/runtime_route_authority.py, security/intent_permission.py, models/release_management.py, tests, record); make ci.local.iteration; push/open PR; after merge pull main on sc-root, make mod.upgrade MODULE=smart_core, make restart, re-probe 会计科目表 action 291 menu 182 (expect 200) and confirm warm authority latency; then resume user-level acceptance (template/viewport/theme matrix, relation round-trip) on sc_demo.",
   "write_replay_authorized": false,
   "candidate_evidence": false,
   "results": [
     {
       "id": "daily_menu_visibility_root_cause",
       "layer": "L4-diagnosis",
-      "claim": "会计科目表 403 is a menu-gate defect, not account.account model ACL",
+      "claim": "会计科目表 403 is a menu-gate defect, not account.account model ACL and not product policy",
       "evidence": [
         "sc-root HTTP: ui.contract.v2 op=action_open action_id=291 -> 200",
         "sc-root HTTP: op=action_open action_id=291 menu_id=182 -> 403 PERMISSION_DENIED 用户无权访问菜单 会计科目表",
-        "sc-root system.init nav for wutao includes menu_id=182/action_id=291; route_authority.primary_actions authorizes it (allowed_operation=read)",
-        "sc-root ir.ui.menu._visible_menu_ids() includes 182; ancestor-walk predicate excludes it (parent 181 groups=account.group_account_manager not held)"
+        "sc-root product release manifest v2: 会计账务中心 GA/default_visible, 会计科目 RELEASED, scope 含会计科目表",
+        "sc-root FinalMenuNavigationService (product runtime nav) for wutao outputs menu 182 action 291; flat=110",
+        "sc-root route_authority for wutao: 97 pairs; (182,291) in primary_actions allowed_operation=read, denied_actions has no 291",
+        "sc-root ui.menu.config.policy rows for 181/182: none; release gate not fail_closed",
+        "sc-root native ir.ui.menu._visible_menu_ids() = 532, of which 344 act_window menus are unpublished"
       ],
-      "root_cause": "smart_core/security/intent_permission.py::_menu_visible_for_user required every ancestor menu group to intersect the user's groups, contradicting docs/product/formal_product_boundary_v1.md (hidden parent still renders as carrier when it has a visible child) and docs/security/SC_Permission_Blueprint.md (menu visibility is not permission control)",
+      "root_cause": "intent_permission._menu_visible_for_user required every ancestor menu group to intersect the user's groups (contradicting the parent-carrier rule), and the gate had no publication authority. Correct authority is the published route authority (same effective policy authority as system_init), NOT native menu visibility: ARCH-DECISION-001 forbids deriving release authorization from native menu existence/visibility.",
+      "supersedes": "commit 69b1ddab used Odoo canonical _visible_menu_ids as the gate authority; that would widen the allow set from 97 published to 341 unpublished entries.",
       "status": "fixed_pending_deploy"
     },
     {
-      "id": "l2_intent_menu_visibility",
+      "id": "l2_intent_menu_publication",
       "layer": "L2",
       "command": "make local.dev.test MODULE=smart_core TEST_TAGS=intent_permission_menu_visibility",
       "status": "passed",
-      "tests": 3,
-      "failed": 0
+      "tests": 5,
+      "failed": 0,
+      "note": "declared pair allowed; natively-visible-but-unpublished menu denied (baseline proven first); container carrier allowed; authority unavailable fails closed; gate consumes declared authority"
+    },
+    {
+      "id": "l2_intent_permission_operation_policy",
+      "layer": "L2",
+      "command": "python3 addons/smart_core/tests/test_intent_permission_operation_policy.py",
+      "status": "passed",
+      "tests": 24,
+      "failed": 0,
+      "note": "fake-harness menu tests re-bound to publication declaration (reject / fail-closed / config-intent exemption)"
+    },
+    {
+      "id": "l2_smart_core_standalone_sweep",
+      "layer": "L2",
+      "command": "for f in addons/smart_core/tests/*.py (unittest.main runners): python3 $f",
+      "status": "passed_with_known_env_failures",
+      "tests": 117,
+      "failed": 8,
+      "failed_detail": "test_form_field_label_override_registry, test_identity_resolver_entry_target, test_login_company_boundary, test_release_operator_surface_copy_backend, test_request_context_payload, test_saved_search_capability_projection, test_session_bootstrap_boundaries, test_stable_serialization_boundaries",
+      "provenance": "all 8 fail on ImportError/ModuleNotFoundError of odoo stubs or ir.filters unavailable; none references intent_permission, runtime_route_authority, check_intent_permission or route_authority_validate, so they are unaffected by this change"
     },
     {
       "id": "l2_affected_menu_contract_classes",
@@ -96,7 +125,36 @@
       "tests": 100,
       "failed": 1,
       "failed_detail": "TestOdooNativeAlignmentBoundaries.test_explicit_form_view_preserves_mixed_text_and_field_order ('电话' != 'Phone')",
-      "pre_existing_proof": "reproduced identically with intent_permission.py change stashed (68 tests, same single failure); locale-dependent, unrelated to menu visibility"
+      "pre_existing_proof": "reproduced identically with the intent_permission change stashed (68 tests, same single failure); locale-dependent, unrelated",
+      "carry_forward_note": "predates the publication-authority change; gate-dependent scope is re-covered by l2_intent_menu_publication and l2_intent_permission_operation_policy"
+    },
+    {
+      "id": "l1_route_authority_process_cache",
+      "layer": "L1/L2",
+      "claim": "publication authority is process-cached per principal and invalidated through Odoo's default registry cache bucket",
+      "evidence": [
+        "sc_dev_demo make odoo.shell.exec: cold 180-225ms -> warm 1.0-1.1ms",
+        "env.registry.clear_cache() -> cold again 186ms -> warm 1.4ms (hit and invalidation both proven)",
+        "ormcache key = (dbname, uid, company_id, principal_group_signature); policy/release-snapshot writes call registry.clear_cache()"
+      ],
+      "status": "passed"
+    },
+    {
+      "id": "l2_publication_gate_module_suite_attribution",
+      "layer": "L2",
+      "command": "make local.dev.test MODULE=smart_core TEST_TAGS=smart_core",
+      "status": "failed_preexisting_identical",
+      "tests": 416,
+      "failed": 16,
+      "errors": 18,
+      "baseline": {
+        "command": "same with change stashed",
+        "tests": 414,
+        "failed": 16,
+        "errors": 18,
+        "failure_set": "identical, 34 items diffed one by one"
+      },
+      "note": "failing cases are um_p1/p2/p3 business ORM (cost period vs fact-date month, subcontract settlement states) plus locale label '电话' != 'Phone'; all reproduce with the change stashed -> pre-existing sc_dev_demo fixture/date drift, out of this change's ownership"
     }
   ]
 }

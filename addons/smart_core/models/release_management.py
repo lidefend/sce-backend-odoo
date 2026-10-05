@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from odoo import api, fields, models
+from odoo import api, fields, models, tools
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
 
 
@@ -43,6 +43,48 @@ class ScProductPolicy(models.Model):
     _sql_constraints = [
         ("sc_product_policy_product_key_uniq", "unique(product_key)", "Product key must be unique."),
     ]
+
+    @api.model
+    def _sc_route_authority_cache_key(self):
+        from odoo.addons.smart_core.delivery.runtime_route_authority import principal_group_signature
+
+        return principal_group_signature(self.env)
+
+    @api.model
+    @tools.ormcache(
+        "self.env.cr.dbname",
+        "self.env.user.id",
+        "self.env.company.id",
+        "self._sc_route_authority_cache_key()",
+    )
+    def published_route_authority(self):
+        """Published route authority for the current principal, process-cached.
+
+        The value is stored in Odoo's default registry cache bucket, so core
+        menu / action / xmlid / rule / user writes invalidate it across
+        workers. Publication writes below signal the same bucket explicitly.
+        """
+        from odoo.addons.smart_core.delivery.runtime_route_authority import (
+            _build_runtime_route_authority,
+        )
+
+        return _build_runtime_route_authority(self.env)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        self.env.registry.clear_cache()
+        return records
+
+    def write(self, vals):
+        result = super().write(vals)
+        self.env.registry.clear_cache()
+        return result
+
+    def unlink(self):
+        result = super().unlink()
+        self.env.registry.clear_cache()
+        return result
 
     @api.model
     def ensure_platform_default_product_policies(self):
@@ -267,6 +309,22 @@ class ScEditionReleaseSnapshot(models.Model):
         for rec in self:
             service.supersede(int(rec.id), state_reason="superseded_from_platform_admin", promotion_note="superseded from platform admin")
         return True
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        self.env.registry.clear_cache()
+        return records
+
+    def write(self, vals):
+        result = super().write(vals)
+        self.env.registry.clear_cache()
+        return result
+
+    def unlink(self):
+        result = super().unlink()
+        self.env.registry.clear_cache()
+        return result
 
 
 class ScReleaseAction(models.Model):
