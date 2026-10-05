@@ -27,10 +27,18 @@ def ensure_table_on_init(model):
     """Create ``model``'s table when only ``init()`` is called for it.
 
     Returns ``True`` when the table had to be recreated, ``False`` when it was
-    already there.
+    already there or when the model is not backed by an ordinary ``_auto``
+    table.  Convention: a smart_core model that overrides ``init()`` must call
+    this helper from the first line of that override, otherwise the recovery
+    entry silently regresses to "indexes only, no table" (see
+    ``tests/test_smart_core_model_init_table_recovery.py``).
     """
     cr = model.env.cr
     if table_exists(cr, model._table):
+        return False
+    if not model._auto:
+        # A model that manages its own backing object (``_auto = False``) has
+        # nothing for ``_auto_init`` to create; leave it to the model.
         return False
 
     pool = model.pool

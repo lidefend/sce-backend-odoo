@@ -629,13 +629,21 @@ form 槽改绑并非必需，且它同时改变了用户可见行为并破坏持
 
 **证据**：
 - L2：`make local.dev.test MODULE=smart_core TEST_TAGS=model_init_table_recovery` →
-  2 tests / 0 failed / 0 errors / exit 0。`tests/test_smart_core_model_init_table_recovery.py`
-  先断言负例基线（两表存在），再丢表，然后经真实 `check_tables_exist` 入口断言表 + 全部 7 条外键 +
-  两处声明索引恢复，并完成一次可用的 ORM 写入。
+  4 tests / 0 failed / 0 errors / exit 0。`tests/test_smart_core_model_init_table_recovery.py`
+  先断言负例基线（两表存在），再丢表，然后经真实 `check_tables_exist` 入口断言表 + 全部 7 条外键
+  （逐条 + 计数）+ 全部 3 条声明索引（含 `sc_contract_slo_observation_identity_time`）恢复，
+  并完成一次可用的 ORM 写入。
+- **根因二锁定 + 负例控制**：`test_recovery_survives_stale_ordinary_tables_snapshot` 在丢表后注入
+  一份"缺表时"的 `Registry._ordinary_tables` 快照；把 `ensure_table_on_init` 的 `_ordinary_tables`
+  重置行注释掉后该用例失败（`missing foreign key sc_idempotency_record.actor_uid -> res_users.id`，
+  1 failed / EXIT=2），恢复即通过——证明该断言非空转，确实锁住根因二。
+- **opt-in 静态守卫**：`test_every_smart_core_init_override_calls_recovery` 扫描
+  `addons/smart_core/models/`，要求每个 `init()` 覆写都调用 `ensure_table_on_init`（扫描数非零），
+  避免未来新增覆写静默重落根因一。
 - 端点：验收库两表各 0 行，丢表后 `CODEX_NEED_UPGRADE=1 make acceptance.module.upgrade
   MODULE=smart_construction_core` → `Models have no table ...` → `Recreate table of model ...` →
   **EXIT=0**（无 `UndefinedTable`、无 `Model ... has no table`）；回读两表存在且 7 条外键、
-  2 条声明索引齐全。
+  3 条声明索引齐全。
 - `smart_core` 模块版本**不 bump**：改动只作用于升级期、对既有库无 schema 变化；且
   `scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py` 用 manifest 版本锁定 L4
   运行时产物，bump 会无谓使其失效。
