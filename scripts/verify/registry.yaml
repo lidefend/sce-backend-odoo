@@ -1176,6 +1176,12 @@ entries:
   date: '2026-08-11'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_formal_entry_metadata_audit.py
+  status: orphan
+  owner: platform-team
+  date: '2026-10-05'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_frontend_acceptance_baseline_rebuild.py
   status: active
   owner: platform-team

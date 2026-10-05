@@ -1,0 +1,52 @@
+schema_version: 1
+goal:
+  id: FORMAL-SURFACE-RUNTIME-AUDIT-CONTRACT-BINDING
+  title: formal_surface_runtime_audit_contract_binding
+  status: in_progress
+  formal_product_layer: P4
+  layer_target: governed_formal_surface_verification_and_repair_entries
+  module:
+    - scripts/verify
+    - scripts/ops
+    - scripts/dev
+    - addons/smart_construction_acceptance_fixture
+    - make
+    - docs/ops
+  objective: >-
+    Close the three runtime gates that the daily composite acceptance still
+    fails (verify.user_formal_field.module_boundary.audit,
+    verify.formal_action.runtime_drift.audit,
+    verify.formal_entry_metadata.audit) at their owning layer. Where the gate
+    itself mis-measured (a bare substring treating a manifest key as a field
+    leak; a locked action contract stale against its own source view; an audit
+    sweeping every user model instead of consuming the declared
+    FORMAL_ENTRY_METADATA_MODELS contract) the verifier is corrected and the
+    exact declaration is locked by a test. No assertion is relaxed, no ACL or
+    field-permission rule is overridden, and no product-model special case is
+    introduced. Where the residual failure is genuinely data (legacy
+    source_created_by=admin on migrated settlement orders; an empty 方单 formal
+    menu that the acceptance dataset never populated) the repair goes through
+    the existing governed P4 entries: the declared non-business-creator write
+    and the declared acceptance-fixture builder.
+  baseline:
+    branch: fix/formal-surface-runtime-audit-contract-binding-v1
+    full_sha: 51afafd0fd7f41dd0d87a53d8a4eb4a105feae94
+    source: main_after_pr_579
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_tool
+    why_here: >-
+      All three gates and both data repairs are P4 delivery-verification and
+      repair entries. The verifier corrections restore the declared contract
+      each audit is supposed to measure; the data repairs reuse the registered
+      daily acceptance profile and its declared repair/fixture entries.
+    why_not_elsewhere:
+      - no_p0_frontend_contract_or_platform_mechanism
+      - no_p1_construction_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_configuration
+      - no_domain_or_acl_relaxation
+    blast_radius:
+      - three_verify_audits_and_their_locked_unit_tests
+      - one_declared_p4_repair_tool_and_its_unit_test
+      - one_acceptance_fixture_row_and_its_declared_xmlid
+      - one_ops_iteration_record_and_the_bounded_run

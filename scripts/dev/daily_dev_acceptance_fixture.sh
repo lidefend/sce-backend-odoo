@@ -51,6 +51,7 @@ REQUIRED_XMLIDS = (
     "smart_construction_acceptance_fixture.fe_request_c_001",
     "smart_construction_acceptance_fixture.fe_execution_a",
     "smart_construction_acceptance_fixture.fe_b05_work_settlement_a",
+    "smart_construction_acceptance_fixture.fe_labor_usage_ticket_a",
     "smart_construction_acceptance_fixture.fe_company_a",
     "smart_construction_acceptance_fixture.fe_company_b",
     "smart_construction_acceptance_fixture.fe_user_finance",
