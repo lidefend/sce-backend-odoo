@@ -572,3 +572,34 @@ form 槽运行时 view_id = `project.edit_project`(936)，与源码一致。既�
 **待办（下一执行单）**：刷新生成证据 → 提交使 HEAD 前移 → `make ci.local.quick` 一次 →
 候选 bundle sync → 远端升级 `smart_construction_core` → 复验守卫 0 违规 + 刷新 5180 预览 → 四项交回。
 四层状态分列不变；整体分支目标**暂不**标记完成。
+
+### 6.14 受管远端回读暴露的持久化低代码回归（2026-10-05 追加）
+
+候选经受管 `daily.runtime.candidate.bundle_sync` 刷到 sc-root 后，按流程执行
+`make mod.upgrade MODULE=smart_construction_core` + `make restart`，随即运行受管守卫，**远端复验失败**：
+
+```
+AssertionError: smart_construction_core.menu_sc_project_project: action_open contract did not succeed
+ok=False  code=409  reason_code=CONFIG_TARGET_STALE
+configuration=view_orchestration:project.project:form:action:506:view:0:custom_user_flat
+target=/form[1]/sheet[1]/div[1]/div[1]/div[3]/field[1]
+```
+
+**根因（本地验证为何未暴露）**：候选把 `action_sc_project_list` 的 form 槽由
+`view_project_overview_form` 改为原生 `project.edit_project`；而 sc_demo 上存在 3 条持久化的
+P3 低代码编排配置（`ui.business.config.contract` id 2000/2111/2112，均绑定 action 506），
+其中 id 2000 的 `node_patches` 目标 xpath 只存在于**旧**的 form 组合中 → 目标失效 → 409。
+本地 `sc_dev_demo` 这类配置 **COUNT 0**，因此本地 L2/探针证据**不可能**暴露该 409；
+这是「本地能过、日常库会炸」的典型缺口，正是受管远端回读的价值。
+
+**修复（回到最小必要改动）**：清掉视图硬拒本身已足以消除守卫违规，
+form 槽改绑并非必需，且它同时改变了用户可见行为并破坏持久化运行时配置 →
+**回退该改绑**（`project.edit_project` → `view_project_overview_form`），
+保留入口声明（`{'create': False, 'edit': False, 'delete': False, 'no_duplicate': True}`）。
+本地修复后复验：守卫 `entries=90`；`TestCoreExtensionV2Finalize` 23/23；
+14 入口等价复核 `PREV_DENIED_OPS=23 STILL_DENIED=23 PROBLEMS=0` → `ENTRY_EQUIVALENCE_OK`；
+该入口 `view=True`（中性）而 `entry=False`（声明权威）。
+
+**未采纳的替代（留所有者裁决）**：保留原生 form，转而用受管低代码修复入口重定向/退役该 P3 配置。
+两者都不放宽审计、不加模型特判、不动 ACL/记录规则/字段权限。远端 409 在重新同步并复跑守卫前
+**不宣称已关闭**。

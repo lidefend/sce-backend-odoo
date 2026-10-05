@@ -447,9 +447,9 @@ class TestCoreExtensionV2Finalize(TransactionCase):
     def test_project_ledger_entry_declares_readonly_and_projection_follows(self):
         # 项目台账 is a list+form handling entry, not a creation surface:
         # creation is owned by 新项目立项. Its refusal must be declared on the
-        # entry contract and consumed into the effective projection; the native
-        # presentation form (project.edit_project) stays capability-neutral so
-        # a dedicated read-only page is never the capability authority.
+        # entry contract and consumed into the effective projection; the
+        # presentation form stays capability-neutral so a dedicated read-only
+        # page is never the capability authority.
         action = self.env.ref("smart_construction_core.action_sc_project_list")
         declared = safe_eval(action.context or "{}", {"context": {}})
         self.assertIs(declared.get("create"), False)
@@ -459,7 +459,13 @@ class TestCoreExtensionV2Finalize(TransactionCase):
 
         form_binding = action.view_ids.filtered(lambda row: row.view_mode == "form")
         self.assertEqual(len(form_binding), 1, action.view_ids)
-        self.assertEqual(form_binding.view_id, self.env.ref("project.edit_project"))
+        # The ledger form binding stays on the overview composition it has always
+        # served: the entry, not the form, owns the capability, and a persisted
+        # low-code orchestration on the daily runtime targets that composition.
+        self.assertEqual(
+            form_binding.view_id,
+            self.env.ref("smart_construction_core.view_project_overview_form"),
+        )
         arch = form_binding.view_id._get_combined_arch()
         if isinstance(arch, (str, bytes)):
             arch = etree.fromstring(arch)

@@ -18,7 +18,7 @@
     <record id="action_sc_project_list_form_view" model="ir.actions.act_window.view">
         <field name="sequence" eval="20"/>
         <field name="view_mode">form</field>
-        <field name="view_id" ref="project.edit_project"/>
+        <field name="view_id" ref="smart_construction_core.view_project_overview_form"/>
         <field name="act_window_id" ref="smart_construction_core.action_sc_project_list"/>
     </record>
     <record id="action_sc_project_list_kanban_view" model="ir.actions.act_window.view">

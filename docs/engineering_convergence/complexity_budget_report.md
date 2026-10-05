@@ -103,7 +103,7 @@ Generated from repository source files. This report is informational during the 
 | 1263 | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
 | 1262 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
 | 1249 | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
-| 1235 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
+| 1241 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1227 | Python source | `addons/smart_construction_core/tests/test_p1_funding_authority.py` |
 | 1221 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 1221 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |

@@ -122,7 +122,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Candidate now includes: entry-declaration fix for action_sc_project_list (menu_sc_project_project create/edit/delete/duplicate denied via the entry contract; equivalence re-verified 23/23), the new entry-projection lock test (23 tests OK), the G1 baseline fingerprint refresh, and the independent-review record. Remaining in this run: (1) refresh generated evidence (make ci.delivery.freeze.prepare) and commit so HEAD advances past 14267a68; (2) run make ci.local.quick once at the frozen head; (3) sync the frozen candidate to the daily runtime via the governed bundle-sync entry, upgrade smart_construction_core, re-run the guard and refresh the 5180 preview; (4) report the four-item handback. Open (documented, not blocking): the guard's directional blind spot and the form-profiles not_applicable-satisfied path. Four-layer status stays separate; the overall branch goal is NOT marked complete. Environment DENY stays scoped to the rebuild/snapshot lane.",
+  "next_exact_step": "Revert of the unnecessary action_sc_project_list form repoint is done locally (guard 90, 23 tests, equivalence 23/23). Remaining: (1) refresh generated evidence + commit so HEAD advances past ea727c40; (2) make ci.local.quick once at the frozen head; (3) daily.runtime.candidate.bundle_sync (expected-old-sha = the currently deployed remote SHA) + remote mod.upgrade smart_construction_core + restart; (4) re-run the remote guard and confirm menu_sc_project_project resolves (the 409 must be gone) and entries=90; (5) refresh the 5180 preview; (6) four-item handback. Open/decided items: the guard's directional blind spot and the form-profiles not_applicable path (P4 tooling, documented); the native-vs-overview form choice for 项目台账 (owner decision). Four-layer status stays separate; the overall branch goal is NOT marked complete. Environment DENY stays scoped to the rebuild/snapshot lane.",
   "write_replay_authorized": false,
   "candidate_evidence": false,
   "results": [
@@ -625,6 +625,30 @@
         "the candidate's own intent was behaviour-preserving refusal migration; the omitted declaration was an omission (the code comment names both consuming actions)",
         "新项目立项 (action_project_initiation) remains the creation entry; 项目信息编辑 keeps create:False",
         "if the owner wants 项目台账 to become creatable, that is a capability expansion that must also resolve the duplication with 新项目立项"
+      ]
+    },
+    {
+      "id": "l4_remote_persisted_orchestration_regression",
+      "layer": "L3/L4-runtime",
+      "status": "found_and_fixed",
+      "claim": "The governed daily-runtime readback caught a real regression the local run could not: repointing action_sc_project_list's form slot invalidated a persisted low-code view-orchestration config on sc_demo, making the 项目台账 contract return 409 CONFIG_TARGET_STALE.",
+      "evidence": [
+        "after bundle_sync to ea727c40 + remote mod.upgrade/restart, the remote guard failed: 'AssertionError: smart_construction_core.menu_sc_project_project: action_open contract did not succeed'",
+        "remote diagnosis: ok=False code=409 CONFIG_TARGET_STALE configuration=view_orchestration:project.project:form:action:506:view:0:custom_user_flat target=/form[1]/sheet[1]/div[1]/div[1]/div[3]/field[1]",
+        "remote sc_demo carries 3 persisted ui.business.config.contract rows for action 506 (id 2000 form/custom_user_flat, 2111 tree, 2112 search); id 2000 node-patches user_id at a path that only exists in the previous form composition",
+        "the local sc_dev_demo has COUNT 0 of these configs, which is exactly why local L2/probe evidence never exposed the 409",
+        "fix: revert the NOT-required form repoint on action_sc_project_list_form_view (project.edit_project -> view_project_overview_form). Removing the view-level denials already cleared the guard violation, so the form repoint was scope creep that also changed visible behaviour and broke persisted runtime configuration",
+        "post-fix local: FORMAL_ENTRY_CAPABILITY_AUTHORITY_OK entries=90; TestCoreExtensionV2Finalize 23/23; ENTRY_EQUIVALENCE_OK (23/23)",
+        "open alternative (owner decision, not taken): keep the native form and instead re-target or retire the P3 config through a governed low-code repair"
+      ]
+    },
+    {
+      "id": "l4_remote_guard_reverified_after_revert",
+      "layer": "L3/L4-runtime",
+      "status": "pending",
+      "claim": "The remote guard must be re-run after the revert sync; until then the remote 项目台账 409 is not claimed closed.",
+      "evidence": [
+        "requires: commit -> ci.local.quick at the new frozen head -> daily.runtime.candidate.bundle_sync -> remote mod.upgrade smart_construction_core + restart -> remote guard"
       ]
     }
   ]
