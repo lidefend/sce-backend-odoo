@@ -1,0 +1,60 @@
+schema_version: 1
+goal:
+  id: WORKSPACE-CLOSEOUT-ENV-LANE-GUARD
+  title: close_out_workspace_environment_lane_frontend_fixture_guard
+  status: completed
+  formal_product_layer: P4
+  layer_target: governed_frontend_acceptance_fixture_guard_verify_tool
+  module:
+    - scripts/verify
+    - docs/ops/iterations
+    - .agent
+  objective: >-
+    Close the last in-scope workspace environment-lane blocker: repair the
+    frontend productization fixture guard so its deny ring exercises the entry
+    that actually consumes DB_NAME and fails closed, and so an unbound or
+    unprovisioned demo DB fails closed with an explicit DENY instead of an opaque
+    KeyError. No assertion, ACL, field permission, audit or negative case is
+    relaxed; no product model or payment-model special case is introduced.
+  baseline:
+    branch: main
+    full_sha: 16908106ce6821b9cd6cee0341e1f30afbef46c7
+    source: clean_main_after_pr_570
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_verification_tool
+    why_here: >-
+      The guard is a P4 ops/verify tool that proves the governed frontend
+      acceptance fixture entry denies non-acceptance databases. Fixing which
+      entry the deny ring exercises and how the protected demo DB is resolved is
+      tooling correctness inside the same verification layer.
+    why_not_elsewhere:
+      - no_p0_frontend_contract_or_platform_mechanism
+      - no_p1_construction_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_configuration
+      - no_database_fixture_migration_release_or_deployment
+    blast_radius:
+      - one_verify_guard_script_deny_ring_and_db_resolution_change
+      - one_closeout_record_and_run_metadata
+      - no_product_code_change_no_assertion_relaxation
+  batches:
+    - id: A
+      title: repair_frontend_fixture_guard_deny_ring_and_db_binding
+      status: completed
+      evidence:
+        - guard_pass_sc_dev_demo_fingerprint_unchanged
+        - deny_ring_4_of_4_rc20_real_entry
+        - negative_control_relaxed_guard_detected
+        - unbound_db_fails_closed_explicit_deny
+  exclusions:
+    - no_relaxation_of_any_assertion_acl_field_permission_or_audit
+    - no_new_global_test_framework
+    - no_product_layer_open_issues_fixed_here
+    - no_branch_prefix_policy_or_gitee_mirror_change
+  rollback:
+    - revert_the_guard_script_edit
+    - restore_the_previous_run_metadata_and_closeout_record
+  next_exact_step: >-
+    Registered 2026-10-05: rewrite the guard deny ring to invoke the DB_NAME
+    consuming fail-closed entry, resolve the protected demo DB from the governed
+    profile, prove the negative control, then publish through the ordinary PR lane.

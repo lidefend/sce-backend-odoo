@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "id": "WORKSPACE-CLOSEOUT-ENV-LANE-GUARD",
+  "branch": "fix/workspace-closeout-env-lane-guard-20261005",
+  "status": "completed",
+  "baseline_sha": "16908106ce6821b9cd6cee0341e1f30afbef46c7",
+  "goal": ".agent/goals/WORKSPACE-CLOSEOUT-ENV-LANE-GUARD.yaml",
+  "record": "docs/ops/iterations/workspace_closeout_env_lane_guard_20261005.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/WORKSPACE-CLOSEOUT-ENV-LANE-GUARD.yaml",
+    ".agent/runs/WORKSPACE-CLOSEOUT-ENV-LANE-GUARD/",
+    "scripts/verify/frontend_productization_fixture_guard.sh",
+    "docs/ops/iterations/workspace_closeout_env_lane_guard_20261005.md"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "registered local.dev profile (project sc-local-dev, database sc_dev_demo) via the governed make verify.frontend.fixture.guard target; no hand-assembled compose, database, port or credential"
+  },
+  "checks": {
+    "fixture_guard": {
+      "target": "verify.frontend.fixture.guard",
+      "inputs": [
+        "scripts/verify/frontend_productization_fixture_guard.sh",
+        "scripts/verify/frontend_productization_fixture.sh",
+        "scripts/common/frontend_acceptance_guard.sh",
+        "scripts/verify/frontend_productization_history_fingerprint.py",
+        "scripts/ops/odoo_shell_exec.sh",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "runtime"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Batch recorded 2026-10-05: the frontend fixture guard now resolves the governed profile demo DB, fails closed on an unbound DB, and exercises the DB_NAME consuming fail-closed entry in its deny ring (4/4 rc=20, fingerprint unchanged, negative control detected). Frozen candidate published through the ordinary PR lane; mainline integration completes after the protected PR merge and main.sync.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false,
+  "completion": {
+    "batch": "passed: guard deny ring now exercises the DB_NAME consuming fail-closed entry; deny ring 4/4 exit=20; PASS sc_dev_demo fingerprint unchanged; negative control (relaxed guard_frontend_acceptance_scope) detected as FAIL database guard did not fail first; unbound DB fails closed with explicit DENY rc=2; no assertion/ACL/field-permission/audit relaxed",
+    "mainline": "publishing the frozen candidate through the ordinary PR lane; exact-head identity is the frozen source commit and its ci.local.quick receipt",
+    "deployment": "not_run",
+    "product_delivery": "not_run",
+    "l1": {
+      "ci_local_iteration": {
+        "command": "make ci.local.iteration",
+        "status": "passed",
+        "note": "L1 static entry; planner recommends verify.frontend.fixture.guard as the targeted L2",
+        "log": ".runtime/agent-runs/WORKSPACE-CLOSEOUT-ENV-LANE-GUARD/ci_local_iteration.log"
+      }
+    },
+    "runtime_targeted": {
+      "fixture_guard": {
+        "command": "make verify.frontend.fixture.guard",
+        "status": "passed",
+        "entry": "registered local.dev profile (project sc-local-dev, database sc_dev_demo)",
+        "log": ".runtime/agent-runs/WORKSPACE-CLOSEOUT-ENV-LANE-GUARD/verify_frontend_fixture_guard.log"
+      }
+    },
+    "negative_control": {
+      "injection": "temporarily relax guard_frontend_acceptance_scope to return 0 in scripts/common/frontend_acceptance_guard.sh, then restore from backup",
+      "observed": "make verify.frontend.fixture.guard exits 2 with [verify.frontend.fixture.guard] FAIL database guard did not fail first",
+      "scope_note": "the ring entry is read-only verification (scripts/verify/frontend_productization_fixture.py), exercised against the non-authoritative empty sc_demo; the protected sc_dev_demo was never the target",
+      "log": ".runtime/agent-runs/WORKSPACE-CLOSEOUT-ENV-LANE-GUARD/negative_control_relaxed_guard.log"
+    },
+    "check_reuse_note": "fixture_guard is a runtime check; runtime evidence is never auto-reusable and is re-proven at each governed runtime run"
+  }
+}
