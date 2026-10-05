@@ -47,7 +47,9 @@ VALID_DOC = """
 
 
 class ProductBoundaryCatalogGuardTests(unittest.TestCase):
-    def _run_report(self, doc_text: str, modules: list[str]) -> dict:
+    def _run_report(
+        self, doc_text: str, modules: list[str], auxiliary: dict[str, list[str]] | None = None
+    ) -> dict:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             addons = root / "addons"
@@ -56,6 +58,13 @@ class ProductBoundaryCatalogGuardTests(unittest.TestCase):
                 module_dir = addons / module
                 module_dir.mkdir()
                 (module_dir / "__manifest__.py").write_text("{}", encoding="utf-8")
+            for root_name, names in (auxiliary or {}).items():
+                extra_root = root / root_name
+                extra_root.mkdir()
+                for module in names:
+                    module_dir = extra_root / module
+                    module_dir.mkdir()
+                    (module_dir / "__manifest__.py").write_text("{}", encoding="utf-8")
             doc = root / "formal_product_boundary_v1.md"
             doc.write_text(doc_text, encoding="utf-8")
             with patch.object(guard, "ADDONS_ROOT", addons), patch.object(guard, "BOUNDARY_DOC", doc):
@@ -101,6 +110,22 @@ class ProductBoundaryCatalogGuardTests(unittest.TestCase):
             report["invalid_module_assignments"],
             [{"module": "beta", "assignment": "行业交付包"}],
         )
+
+    def test_documented_module_in_auxiliary_root_is_not_extra(self):
+        # smart_construction_demo ships under demo_addons/; a catalog row for it is
+        # valid and must not be reported as "documented but absent".
+        doc = VALID_DOC.replace(
+            "| `beta` | P1/P4 行业交付包 | beta | none |\n",
+            "| `beta` | P1/P4 行业交付包 | beta | none |\n"
+            "| `demo` | P4 运维交付工具 | demo | none |\n",
+        )
+        report = self._run_report(doc, ["alpha", "beta"], auxiliary={"demo_addons": ["demo"]})
+        self.assertTrue(report["summary"]["ok"], report["extra"])
+        self.assertEqual(report["extra"], [])
+        # A documented module that exists under no root is still stale.
+        stale = self._run_report(doc, ["alpha", "beta"])
+        self.assertFalse(stale["summary"]["ok"])
+        self.assertEqual(stale["extra"], ["demo"])
 
     def test_invalid_layer_name_fails(self):
         doc = VALID_DOC.replace("P0 | 平台内核产品", "P0 | 平台产品")

@@ -1,0 +1,62 @@
+schema_version: 1
+goal:
+  id: WORKSPACE-CLOSEOUT-DOCS-BOUNDARY
+  title: close_out_workspace_governance_and_repair_module_root_boundary_guard
+  status: completed
+  formal_product_layer: P4
+  layer_target: governed_workspace_closeout_and_product_boundary_catalog_guard
+  module:
+    - scripts/verify
+    - docs/ops/iterations
+    - .agent
+  objective: >-
+    Close out the workspace governance ledger after the remote-branch retirement
+    campaign (retained-set decisions and the bounded Gitee DENY), and repair the one
+    clean, deterministic defect found inside this lane: the product-boundary catalog
+    guard treated a documented P4 demo module as stale because it only scanned
+    addons/. Extend the guard to recognise the repository's registered auxiliary
+    module roots for the "documented but absent" direction only, without weakening the
+    coverage direction or relaxing any assertion, ACL, field permission or audit.
+  baseline:
+    branch: main
+    full_sha: 63283e2b3e752a14e44cffca8d3b19be49be4ace
+    source: clean_main_after_pr_569
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_governance
+    why_here: >-
+      The product-boundary catalog and its guard are formal product-layering governance
+      owned by the P4 ops/verify layer; the demo module already lives in demo_addons/
+      by an existing guard rule. Recognising the repository's real module roots is
+      tooling correctness, not a product-semantics change.
+    why_not_elsewhere:
+      - no_p0_frontend_contract_or_platform_mechanism
+      - no_p1_construction_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_configuration
+      - no_database_fixture_migration_release_or_deployment
+    blast_radius:
+      - one_verify_guard_module_root_recognition_change
+      - one_locking_unit_test
+      - one_closeout_record_and_run_metadata
+  batches:
+    - id: A
+      title: repair_boundary_guard_module_roots_and_close_out_workspace_ledger
+      status: completed
+      evidence:
+        - product_boundary_catalog_guard_auxiliary_roots
+        - unit_tests_7_ok
+        - verify_docs_product_boundary_pass_13_addon_modules
+        - verify_docs_all_pass
+        - workspace_branch_ledger_decision_retained_with_rationale
+        - gitee_mirror_lane_bounded_deny_recorded
+  exclusions:
+    - no_change_to_the_coverage_direction_or_any_guard_assertion
+    - the_52_unmerged_and_3_outside_prefix_merged_content_branches_stay_retained
+    - the_product_lane_open_issues_stay_registered_not_fixed_here
+  rollback:
+    - revert_the_guard_and_test_edit
+    - restore_the_previous_closeout_record_and_run_metadata
+  next_exact_step: >-
+    Registered 2026-10-05: repair the product-boundary catalog guard module-root
+    recognition, confirm verify.docs.all, and record the workspace closeout ledger
+    plus the bounded open-issue register.

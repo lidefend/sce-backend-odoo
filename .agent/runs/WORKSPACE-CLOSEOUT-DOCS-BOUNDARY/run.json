@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "id": "WORKSPACE-CLOSEOUT-DOCS-BOUNDARY",
+  "branch": "fix/workspace-closeout-docs-boundary-20261005",
+  "status": "completed",
+  "baseline_sha": "63283e2b3e752a14e44cffca8d3b19be49be4ace",
+  "goal": ".agent/goals/WORKSPACE-CLOSEOUT-DOCS-BOUNDARY.yaml",
+  "record": "docs/ops/iterations/workspace_closeout_docs_boundary_20261005.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/WORKSPACE-CLOSEOUT-DOCS-BOUNDARY.yaml",
+    ".agent/runs/WORKSPACE-CLOSEOUT-DOCS-BOUNDARY/",
+    "scripts/verify/product_boundary_catalog_guard.py",
+    "scripts/verify/test_product_boundary_catalog_guard.py",
+    "docs/ops/iterations/workspace_closeout_docs_boundary_20261005.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline Make gates only; no product runtime, database, fixture or service"
+  },
+  "checks": {
+    "docs_product_boundary": {
+      "target": "verify.docs.product_boundary",
+      "inputs": [
+        "docs/product/formal_product_boundary_v1.md",
+        "scripts/verify/product_boundary_catalog_guard.py",
+        "scripts/verify/test_product_boundary_catalog_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Closeout recorded 2026-10-05: the product-boundary catalog guard now recognises addons/, demo_addons/ and customer_addons/ for the documented-but-absent direction (coverage direction and every assertion unchanged); verify.docs.all is green. The workspace branch ledger decision (retain 52 unmerged + 5 outside-prefix), the bounded Gitee DENY and the open-issue register are recorded. Publishing through the ordinary PR lane.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false,
+  "completion": {
+    "batch": "passed: product-boundary guard auxiliary module-root fix; unit tests 7 OK; verify.docs.product_boundary PASS (13 addon modules); verify.docs.all PASS",
+    "mainline": "publishing the frozen candidate through the ordinary PR lane; exact-head identity is the frozen source commit and its ci.local.quick receipt",
+    "deployment": "not_run",
+    "product_delivery": "not_run",
+    "l1": {
+      "docs_product_boundary": {
+        "command": "make verify.docs.product_boundary",
+        "status": "passed",
+        "tests": 7,
+        "log": ".runtime/agent-runs/WORKSPACE-CLOSEOUT-DOCS-BOUNDARY/verify_docs_product_boundary.log"
+      },
+      "docs_all": {
+        "command": "make verify.docs.all",
+        "status": "passed",
+        "note": "composite guard cascade; no single test count",
+        "log": ".runtime/agent-runs/WORKSPACE-CLOSEOUT-DOCS-BOUNDARY/verify_docs_all.log"
+      }
+    }
+  }
+}

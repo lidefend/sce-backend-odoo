@@ -11,6 +11,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 ADDONS_ROOT = ROOT / "addons"
+# The repository ships more than one Odoo module root. Formal product modules live
+# under `addons/`; the demo carrier lives under `demo_addons/` and customer packages
+# under `customer_addons/`. The catalog entry for a documented module is valid when
+# its manifest exists under any registered root, so the "documented but absent"
+# direction must not treat an auxiliary-root module as stale.
+AUXILIARY_MODULE_ROOT_NAMES = ("demo_addons", "customer_addons")
 BOUNDARY_DOC = ROOT / "docs/product/formal_product_boundary_v1.md"
 OUT_JSON = ROOT / "artifacts/docs/product_boundary_catalog_guard.json"
 
@@ -45,12 +51,26 @@ REQUIRED_LAYER_NAMES = {
 REQUIRED_DELIVERY_TERMS = ["可重放", "可覆盖", "可审计", "可回滚", "业务端验证"]
 
 
-def addon_modules() -> list[str]:
-    return sorted(
+def modules_under(root: Path) -> set[str]:
+    if not root.is_dir():
+        return set()
+    return {
         path.parent.name
-        for path in ADDONS_ROOT.glob("*/__manifest__.py")
+        for path in root.glob("*/__manifest__.py")
         if path.is_file()
-    )
+    }
+
+
+def addon_modules() -> list[str]:
+    return sorted(modules_under(ADDONS_ROOT))
+
+
+def present_modules() -> set[str]:
+    base = ADDONS_ROOT.parent
+    present = modules_under(ADDONS_ROOT)
+    for name in AUXILIARY_MODULE_ROOT_NAMES:
+        present |= modules_under(base / name)
+    return present
 
 
 def documented_modules() -> list[str]:
@@ -206,13 +226,14 @@ def main() -> int:
 def build_report() -> dict:
     text = BOUNDARY_DOC.read_text(encoding="utf-8")
     addons = addon_modules()
+    present = present_modules()
     documented = documented_modules()
     module_assignments = documented_module_assignments()
     module_rows = documented_module_rows()
     layers = documented_layers(text)
     layer_names = documented_layer_names(text)
     missing = sorted(set(addons) - set(documented))
-    extra = sorted(set(documented) - set(addons))
+    extra = sorted(set(documented) - present)
     missing_sections = [section for section in REQUIRED_SECTIONS if section not in text]
     missing_layers = sorted(set(REQUIRED_LAYERS) - set(layers))
     invalid_layer_names = [
