@@ -236,3 +236,52 @@ ARCH-DECISION-001。
   sc-root git HEAD + DB + 构建产物，不以该声明 SHA 作为通过依据。
 - 后续统一（已记录的重复）：`handlers/route_authority_validate.py` 与 `handlers/system_init.py` 仍内联同构的
   发布权威构建，应改为复用 `delivery/runtime_route_authority.py`；为不改动其既有 P0 契约测试，本轮未合并。
+
+## 5. 发布面同口径统一与预览边界收敛（本轮）
+
+### 5.1 分叉点
+
+发布面存在三份副本：产品册意图 → 仓库锁定基线 JSON → 运行时发布快照 DB。
+锁定契约层已保证「策略 released == 锁定基线」，但守卫比较的是
+**快照 `page_count`（released+preview 有效页）** 与 **策略 released 计数**，两侧口径不同；
+同时运行时快照不随基线自动刷新。现场 `construction.preview` 的 active 快照 #31 是旧提交
+`72a15338104d` 的 163 页遗留全量、且全部标记 `release_state=released`，而当前锁定基线与策略
+均为 90。发布门只统计 `released`，所以这条未声明的 released 漂移既不报错也不可见。
+
+### 5.2 统一机制（同口径比较 + 预览可声明，不放宽断言）
+
+- `locked_menu_policy_contract` 新增 `normalized_page_release_state`、`policy_preview_rows`、
+  `assert_snapshot_matches_policy_release_states`、`resolve_declared_product_keys`。
+- `production_menu_release_gate_guard` 改为：快照 released ↔ 策略 released、快照声明 preview ↔
+  策略 preview、有效总数与发布门三处一致；released 集合对锁定基线再断言；非有效页直接拒绝。
+  预览额外页只有被策略显式声明为 `preview` 才允许 → **可控、可知道**；未知产品范围失败关闭。
+- daily 车道统一为一次入口：`release.daily_product_navigation.refresh`（刷新两个产品快照）、
+  `release.daily_product_navigation.converge`（刷新→重启→守卫）；`release.daily_dev.acceptance.publish`
+  增加 `verify.daily_dev.product_menu_release_gate.guard` 依赖。守卫默认声明**全量产品范围**，
+  显式声明替代单纯收窄。
+
+### 5.3 现场收敛与复验（sc-root sc_demo / ENV=dev / git HEAD 9121b064）
+
+- `release.daily_product_navigation.refresh`：standard 快照 #35、preview 快照 #36，
+  各 `policy_menu_count=90 / snapshot_menu_count=90`，`locked_baseline_sha256=1b7c0700…`。
+- `make restart` 后 `verify.daily_dev.product_menu_release_gate.guard`：**PASS**（standard #35 +
+  preview #36；released 90 / preview 0 / gate 90；10 个正式顶层分组；契约 `exact_match=true`）。
+- 失败关闭负例：`DAILY_PRODUCT_MENU_PRODUCT_KEYS=construction.bogus` → 退出码 2，
+  `PRODUCT_MENU_CATALOG_PRODUCT_KEYS_INVALID`。
+- 403 端到端复验（wutao）：登录落地 `/s/projects.list?menu_id=379&action_id=506`；
+  POS(379,506)→200（74407B）；NEG(865,506)→403；`system.init` 导航 112 节点 / 90 个带 action / 含 379。
+  早期探针 `NAV action_count=0` 系读取路径错误（导航在 `data.navigation.nav`），非导航缺失。
+
+### 5.4 顺带修正：主线既有门禁失败（陈旧期望）
+
+`verify.product.menu.runtime_closeout.guard` 在 main `3f424993` 与候选 `b3804cf5` 上均失败
+（stash 后复现，确认与本次改动无关）。根因：PR #400 有意把
+`menu_project_funding_actual_event_allocation` 发布到财务中心（`active=True`）并从
+`LOCKED_TARGET_UNPUBLISHED_MENU_XMLIDS` 移除，但守卫 `HIDDEN_XMLIDS` 仍保留陈旧隐藏期望。
+修正为移除该陈旧期望（不改动产品发布决定、不放宽其它断言），守卫恢复 PASS（43 条）。
+
+### 5.5 仍未关闭
+
+- L0 身份缺口：sc-root `/api/runtime-version` 仍报 `4ba044e0`，`.env.dev SC_SOURCE_REVISION`
+  未随候选同步刷新且无受管入口；验收身份继续绑定 sc-root git HEAD + DB + 构建产物。
+- 详情页 1440/390 明暗核对、真实关联往返、创建/编辑与工作台最小证据差额 —— 待下一执行单。

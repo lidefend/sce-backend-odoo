@@ -88,7 +88,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Same-caliber publish-face unification in progress: (1) locked_menu_policy_contract gained normalized_page_release_state/policy_preview_rows/assert_snapshot_matches_policy_release_states/resolve_declared_product_keys; (2) production_menu_release_gate_guard now compares snapshot vs policy on one shared caliber (released vs released, declared preview vs preview, effective totals, gate) instead of raw page_count; (3) daily lane wired: verify.daily_dev.product_menu_release_gate.guard + release.daily_product_navigation.refresh/converge; (4) converge the stale runtime preview snapshot #31 (163 legacy released pages vs contract 90) via release.daily_product_navigation.snapshot PLATFORM_RELEASE_PRODUCT_KEY=construction.preview; (5) run the daily guard on sc-root and re-verify. Then detail-page closeout and the five-root-cause report.",
+  "next_exact_step": "Publish-face unification closed and verified on sc-root (guard PASS both products, negative fail-closed, 403 e2e still green after snapshot refresh+restart). Remaining: (a) detail-page closeout 1440/390 light+dark; (b) one real relation round trip open->back->restore; (c) create/edit + workbench minimal evidence gap; (d) L0 identity gap: runtime-version (.env.dev SC_SOURCE_REVISION=4ba044e0) still lags sc-root git HEAD 9121b064; (e) commit + update run/docs; then produce the five-root-cause report.",
   "write_replay_authorized": false,
   "candidate_evidence": false,
   "results": [
@@ -200,7 +200,7 @@
         "op=action_open action=291 (no menu_id) -> 200; negative menu_id=999 -> 403; negative action=999 -> 403",
         "warm authority latency over HTTP ~129ms; in-process cold 225ms -> warm 1.1ms"
       ],
-      "status": "passed"
+      "status": "passed_and_reverified_post_refresh"
     },
     {
       "id": "local_non_repro_attribution",
@@ -241,7 +241,7 @@
       ],
       "root_cause": "两类缺陷叠加: (1) 发布基线缺少产品册已声明的「项目台账」入口; (2) 该场景的 provider 回退身份与场景注册表声明的 canonical 身份不一致, 把 carrier 从声明菜单 379 覆写成根容器 291, 而 291 在发布面是 action-less 容器, 精确 pair 判定 (291,506) 恒为 False",
       "fix": "方案 A(对齐发布面, 不放宽断言, 不加模型特判): 发布 (379,506) + 将 provider 回退身份对齐声明身份 menu_sc_project_project",
-      "status": "fixed_pending_deploy_verify"
+      "status": "fixed_merged_deployed_verified"
     },
     {
       "id": "l2_project_ledger_policy_alignment",
@@ -284,6 +284,51 @@
         "policy 侧同一 res_model 多菜单(project.project x5, account.move x4, sc.invoice.registration x4)属正常多入口, 非整合对象"
       ],
       "status": "recorded_pending_decision"
+    },
+    {
+      "id": "published_face_preview_drift",
+      "layer": "L4-diagnosis",
+      "claim": "发布面三副本(产品册意图→仓库锁定基线 JSON→运行时快照 DB)分叉: 运行时 construction.preview active 快照 #31 是旧提交 72a15338104d 的 163 页遗留全量且全部 release_state=released, 而当前锁定基线与策略均为 90; 发布门只统计 released, 因此该未声明漂移既不报错也不可见",
+      "root_cause": "发布门判定用的是快照 released 有效页集合, 守卫却拿快照 effective page_count(released+preview) 与策略 released 计数比较, 口径不一致; 且运行时快照不随锁定基线自动刷新, 现场遗留快照长期未声明",
+      "fix": "改为同口径比较: released↔released, 声明 preview↔preview, 有效总数与门一致; released 集合对锁定基线再断言; 预览额外页只有被策略显式声明(preview)才允许, 未知产品范围失败关闭; 受管入口 release.daily_product_navigation.refresh/converge 一次刷新两个产品快照",
+      "status": "fixed_deployed_verified"
+    },
+    {
+      "id": "l2_same_caliber_contract_unit",
+      "layer": "L2",
+      "command": "make verify.product_menu_release_gate.contract.unit",
+      "status": "passed",
+      "tests": 8,
+      "failed": 0,
+      "note": "纯函数锁定声明消费: released 相等+已声明 preview 更多 -> PASS; released 漂移 -> LOCKED_MENU_SNAPSHOT_MISMATCH; 未声明 preview -> LOCKED_MENU_SNAPSHOT_PREVIEW_MISMATCH; 禁用页 -> MISMATCH; 未知产品范围失败关闭; 空声明回落全量"
+    },
+    {
+      "id": "l2_runtime_closeout_stale_expectation",
+      "layer": "L1/L2",
+      "command": "make verify.product.menu.runtime_closeout.guard",
+      "status": "passed",
+      "tests": 1,
+      "failed": 0,
+      "pre_existing": "是。HEAD 3f424993 及 b3804cf5 上该门禁即失败(与本次改动无关, 已验证 stash 后仍失败)",
+      "root_cause": "PR #400 有意把 menu_project_funding_actual_event_allocation 发布到财务中心(active=True)并从 LOCKED_TARGET_UNPUBLISHED_MENU_XMLIDS 移除, 但守卫 HIDDEN_XMLIDS 仍保留陈旧隐藏期望",
+      "fix": "移除该陈旧期望, 不改动产品发布决定、不放宽其它断言",
+      "note": "43 unpublished menu facts closed"
+    },
+    {
+      "id": "l3_daily_publish_face_converged",
+      "layer": "L3/L4",
+      "environment": "sc-root sc_demo (ENV=dev, .env.dev), sc-root git HEAD 9121b064",
+      "status": "passed",
+      "evidence": "release.daily_product_navigation.refresh -> standard snapshot #35 / preview snapshot #36, 各 policy_menu_count=90 snapshot_menu_count=90, locked_baseline_sha256=1b7c0700; make restart; verify.daily_dev.product_menu_release_gate.guard -> PASS(全产品范围: standard #35 + preview #36, released 90, preview 0, gate 90, 10 个正式顶层分组)",
+      "negative_control": "DAILY_PRODUCT_MENU_PRODUCT_KEYS=construction.bogus -> 退出码 2, PRODUCT_MENU_CATALOG_PRODUCT_KEYS_INVALID 失败关闭"
+    },
+    {
+      "id": "l4_403_ree2e_after_publish_refresh",
+      "layer": "L4",
+      "environment": "sc-root sc_demo, frontend http://127.0.0.1:18081, 账号 wutao",
+      "status": "passed",
+      "evidence": "登录落地 URL=/s/projects.list?menu_id=379&action_id=506&scene_key=projects.list; POS(379,506)->200(74407B); NEG(865,506)->403 PERMISSION_DENIED; system.init navigation: 112 节点 / 90 个带 action / has379=true",
+      "note": "刷新快照 #34->#35 且重启后 403 修复仍成立; 早期探针 NAV=action_count:0 是探针读取路径错误(data.navigation.nav), 非导航缺失"
     }
   ]
 }
