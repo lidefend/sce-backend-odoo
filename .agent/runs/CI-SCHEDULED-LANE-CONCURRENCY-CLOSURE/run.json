@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "id": "CI-SCHEDULED-LANE-CONCURRENCY-CLOSURE",
+  "branch": "fix/ci-scheduled-lane-concurrency-20261005",
+  "status": "completed",
+  "baseline_sha": "0c5eaab382c337db980cef03b92515d78a580e9f",
+  "goal": ".agent/goals/CI-SCHEDULED-LANE-CONCURRENCY-CLOSURE.yaml",
+  "record": "docs/ops/iterations/ci_scheduled_lane_concurrency_closure_20261005.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CI-SCHEDULED-LANE-CONCURRENCY-CLOSURE.yaml",
+    ".agent/runs/CI-SCHEDULED-LANE-CONCURRENCY-CLOSURE/",
+    ".github/workflows/public_guard.yml",
+    ".github/workflows/professional_quality_gate.yml",
+    ".github/workflows/merge_policy_gate.yml",
+    ".github/workflows/frontend_release_gate.yml",
+    ".github/workflows/release_candidate_gate.yml",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
+    "docs/ops/iterations/ci_scheduled_lane_concurrency_closure_20261005.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline CI contract and scheduled-gate guards; GitHub Actions is the authoritative runner for the scheduled lane and is not exercised locally"
+  },
+  "checks": {
+    "scheduled_gates": {
+      "target": "verify.ci.scheduled_gates",
+      "inputs": [
+        ".github/workflows/public_guard.yml",
+        ".github/workflows/professional_quality_gate.yml",
+        ".github/workflows/merge_policy_gate.yml",
+        ".github/workflows/frontend_release_gate.yml",
+        ".github/workflows/release_candidate_gate.yml",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "scripts/verify/frontend_release_gate.py",
+        "scripts/verify/test_frontend_release_gate.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline",
+      "status": "passed",
+      "evidence": ".runtime/agent-runs/CI-SCHEDULED-LANE-CONCURRENCY-CLOSURE/verify_scheduled_gates.log"
+    },
+    "ci_orm_selection": {
+      "target": "verify.ci.orm_selection.unit",
+      "inputs": [
+        "scripts/ci/test_ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline",
+      "status": "passed",
+      "evidence": ".runtime/agent-runs/CI-SCHEDULED-LANE-CONCURRENCY-CLOSURE/verify_orm_selection.log"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Frozen candidate: commit, run one ci.local.quick, push branch, open protected PR, wait for the four required checks, merge, then main.sync and branch cleanup.",
+  "write_replay_authorized": false,
+  "candidate_evidence": true
+}

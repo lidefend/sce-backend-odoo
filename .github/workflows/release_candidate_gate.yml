@@ -14,7 +14,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: release-candidate-${{ github.event.pull_request.number || github.ref }}
+  group: release-candidate-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
