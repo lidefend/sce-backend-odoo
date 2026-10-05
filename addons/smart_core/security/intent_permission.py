@@ -141,18 +141,47 @@ def _action_model_for_type(action_type):
     return aliases.get(action_type, "")
 
 
+def _user_visible_menu_ids(menu, user):
+    """Resolve the menu ids the user actually sees via Odoo's canonical API.
+
+    ``None`` means the canonical API is unavailable, so the caller can fall
+    back instead of mistaking an unavailable surface for an empty (deny-all) one.
+    """
+    try:
+        menu_model = menu.env["ir.ui.menu"].with_user(user)
+    except Exception:
+        return None
+    for kwargs in ({"debug": False}, {}):
+        try:
+            return {int(menu_id) for menu_id in menu_model._visible_menu_ids(**kwargs)}
+        except TypeError:
+            continue
+        except Exception:
+            return None
+    return None
+
+
 def _menu_visible_for_user(menu, user):
-    current = menu
+    """Whether the runtime navigation shows ``menu`` to ``user``.
+
+    Menu visibility is navigation exposure, never the permission authority
+    (``docs/security/SC_Permission_Blueprint.md``: 禁止用菜单可见性代替权限控制).
+    Odoo's canonical ``_visible_menu_ids`` is the single runtime interpretation:
+    a menu is visible from its own ``groups_id`` plus its action's model read
+    access, and a stricter parent group never hides a visible child, matching
+    ``docs/product/formal_product_boundary_v1.md`` (a hidden parent still renders
+    as a carrier while it has a visible child). The previous ancestor walk forced
+    every parent's group to intersect the user's, wrongly denying reachable menus
+    such as 会计科目表 (182) under 会计 (181) for read-only finance users.
+    """
+    visible_ids = _user_visible_menu_ids(menu, user)
+    if visible_ids is not None:
+        return int(menu.id) in visible_ids
+    # Canonical surface unavailable: keep the documented own-group rule rather
+    # than the defective ancestor walk.
+    groups = getattr(menu, "groups_id", None)
     user_groups = getattr(user, "groups_id", None)
-    while current:
-        groups = getattr(current, "groups_id", None)
-        if groups and user_groups is not None and not (groups & user_groups):
-            return False
-        parent = getattr(current, "parent_id", None)
-        if not parent:
-            break
-        current = parent
-    return True
+    return (not groups) or (user_groups is not None and bool(groups & user_groups))
 
 
 def _resolve_action(env, action_id, action_type=None):
