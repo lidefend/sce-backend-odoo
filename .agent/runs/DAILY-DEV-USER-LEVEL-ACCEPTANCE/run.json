@@ -10,7 +10,12 @@
     ".agent/active-runs.json",
     ".agent/goals/DAILY-DEV-USER-LEVEL-ACCEPTANCE.yaml",
     ".agent/runs/DAILY-DEV-USER-LEVEL-ACCEPTANCE/run.json",
-    "docs/ops/iterations/daily_dev_user_level_acceptance_20261005.md"
+    "docs/ops/iterations/daily_dev_user_level_acceptance_20261005.md",
+    "addons/smart_core/security/intent_permission.py",
+    "addons/smart_core/tests/__init__.py",
+    "addons/smart_core/tests/test_intent_permission_menu_visibility.py",
+    "frontend/apps/web/scripts/user_page_visual_coverage.cjs",
+    "frontend/apps/web/scripts/user_template_coverage_acceptance.mjs"
   ],
   "environment": {
     "kind": "runtime",
@@ -58,7 +63,40 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Registered 2026-10-05: promote main 4ba044e0 to the daily runtime, provision the wutao acceptance credential, re-run the daily fixture lane entries and readonly probe on the new served SHA, then run the user-perspective browser acceptance.",
+  "next_exact_step": "Commit P0 menu-visibility fix + P4 acceptance tools; open PR; after merge pull main on sc-root, make mod.upgrade MODULE=smart_core, make restart, re-probe 会计科目表 (expect 200), then run the remaining user-level acceptance (template/viewport/theme matrix) on sc_demo.",
   "write_replay_authorized": false,
-  "candidate_evidence": false
+  "candidate_evidence": false,
+  "results": [
+    {
+      "id": "daily_menu_visibility_root_cause",
+      "layer": "L4-diagnosis",
+      "claim": "会计科目表 403 is a menu-gate defect, not account.account model ACL",
+      "evidence": [
+        "sc-root HTTP: ui.contract.v2 op=action_open action_id=291 -> 200",
+        "sc-root HTTP: op=action_open action_id=291 menu_id=182 -> 403 PERMISSION_DENIED 用户无权访问菜单 会计科目表",
+        "sc-root system.init nav for wutao includes menu_id=182/action_id=291; route_authority.primary_actions authorizes it (allowed_operation=read)",
+        "sc-root ir.ui.menu._visible_menu_ids() includes 182; ancestor-walk predicate excludes it (parent 181 groups=account.group_account_manager not held)"
+      ],
+      "root_cause": "smart_core/security/intent_permission.py::_menu_visible_for_user required every ancestor menu group to intersect the user's groups, contradicting docs/product/formal_product_boundary_v1.md (hidden parent still renders as carrier when it has a visible child) and docs/security/SC_Permission_Blueprint.md (menu visibility is not permission control)",
+      "status": "fixed_pending_deploy"
+    },
+    {
+      "id": "l2_intent_menu_visibility",
+      "layer": "L2",
+      "command": "make local.dev.test MODULE=smart_core TEST_TAGS=intent_permission_menu_visibility",
+      "status": "passed",
+      "tests": 3,
+      "failed": 0
+    },
+    {
+      "id": "l2_affected_menu_contract_classes",
+      "layer": "L2",
+      "command": "make local.dev.test MODULE=smart_core TEST_TAGS=action_dispatcher,native_alignment,release_gate_category_options,relation_entry_override,runtime_view_contract",
+      "status": "passed_with_known_preexisting",
+      "tests": 100,
+      "failed": 1,
+      "failed_detail": "TestOdooNativeAlignmentBoundaries.test_explicit_form_view_preserves_mixed_text_and_field_order ('电话' != 'Phone')",
+      "pre_existing_proof": "reproduced identically with intent_permission.py change stashed (68 tests, same single failure); locale-dependent, unrelated to menu visibility"
+    }
+  ]
 }

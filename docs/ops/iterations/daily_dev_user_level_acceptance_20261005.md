@@ -10,28 +10,65 @@ Owner acceptance entry: `http://1.95.85.92:18081/`（自定义前端），口令
 
 ## 1. 目标与责任层
 
-- **Formal Product Layer**：P4（ops delivery / 运行态验收工具）。
-- **Layer Target**：日常开发运行态（sc-root）主线提升 + 用户视角产品交付验收。
-- **Module**：`.agent`、`docs/ops/iterations`、`scripts/ops`（只读探测）。
-- **Standard vs User-Specific**：运维交付；无产品语义、无客户基线、无平台机制变更。
-- **Why Here**：把权威 `main` 精确 SHA 提升到日常运行态并以真实用户验证，属交付验收层。
-- **Why Not Elsewhere**：不改 P0 平台/前端契约、P1 行业语义、P2 客户偏好/数据基线、P3 运行配置，
-  不做 schema/迁移/生产变更。
-- **Blast Radius**：sc-root 日常运行仓、其前端静态产物与 dev compose profile、`sc_demo`
-  的 wutao 验收口令；不改隔离验收库、`sc-local-*`、生产租户、通用登录默认。
+- **Formal Product Layer**：P4（ops delivery / 运行态验收工具）+ P0（验收暴露出的 `smart_core` 契约/权限机制缺陷）。
+- **Layer Target**：日常开发运行态（sc-root）主线提升 + 用户视角产品交付验收；`smart_core` 意图菜单权限投影。
+- **Module**：`.agent`、`docs/ops/iterations`、`frontend/apps/web/scripts`（P4 只读走查/模板验收工具）、`addons/smart_core/security`（P0 菜单可见性投影）。
+- **Standard vs User-Specific**：P0 修复是平台机制（通用菜单可见性语义），无行业/客户语义；P4 是运维交付工具。
+- **Why Here**：把权威 `main` 精确 SHA 提升到日常运行态并以真实用户无死角验证，属交付验收层；验收暴露的通用权限投影缺陷归 `smart_core`。
+- **Why Not Elsewhere**：不改 P1 行业语义、P2 客户偏好/数据基线、P3 运行配置；不放宽 ACL/字段权限/记录规则；不为单一模型（account/付款）加特判。
+- **Blast Radius**：sc-root 日常运行仓、其前端静态产物与 dev compose profile、`sc_demo` 的 wutao 验收数据与口令；不改隔离验收库、`sc-local-*`、生产租户、通用登录默认。菜单可见性改为 Odoo canonical，影响所有带 `menu_id` 的意图；动作组与模型 ACL/记录规则校验不变。
 
-## 2. 状态（占位，执行中）
+## 2. 状态（四层分列）
 
-- 部署前 served SHA：`8a77c237`（PR #550）。
-- 目标 served SHA：`4ba044e0`（PR #572）。
+- **批次验收**：进行中。部署与夹具车道 PASS；1440/light 全路由走查 90/90 通过，暴露 1 个真实产品缺陷（会计科目表 403），已定位根因并修复（待部署复验）。
+- **主线集成**：main=`4ba044e0`（PR #572 已合并）；本分支修复待 PR。
+- **版本发布**：未主张。
+- **产品交付**：未主张（待修复部署后完成模板/视口/主题无死角验收与独立复核）。
 
-## 3. 执行记录（占位）
+### 部署与夹具（已 PASS）
 
-（受管入口回执与浏览器验收结果回填）
+- served SHA：`8a77c237` → `4ba044e0`；`/api/runtime-version` 回读 `git_sha=4ba044e0…`,
+  `database=sc_demo`, `environment=dev`。
+- `make mod.upgrade MODULE=smart_construction_core` PASS；`make verify.frontend.build` PASS；
+  `make restart` PASS。
+- 夹具三入口 PASS：`ensure`（carrier=installed, finance_uid=210）→
+  `resolve`（expected_sha=4ba044e0）→ `readonly.probe`（runtime_identity/login/contract 11/11,
+  `errors=[]`）。
+- `sc_demo` 备份：`sc-root:/opt/projects/backups/20261005T023211-pre-user-acceptance-sc_demo/sc_demo.pgdump`。
 
-## 4. 四层状态（占位）
+## 3. 执行记录
 
-- 批次验收：
-- 主线集成：
-- 版本发布：未主张。
-- 产品交付：
+### 3.1 全路由只读走查（sc-root, 1440×1000, light）
+
+- 工具：`frontend/apps/web/scripts/user_page_visual_coverage.cjs`（修复 `init.navigation.nav` 读取 bug；
+  新增 HTTP≥400 捕获、横向溢出、console error 统计）。
+- 结果：`totalDiscovered=90, actionOk=90, actionFailed=0; formsScanned=54, formFailed=0,
+  formSkipped=35(no records); overflow=0; requestFailure=0`。
+- 唯一失败：`会计账务中心 / 会计科目表`，3 处 403（`ui.contract.v2 op=action_open` 与 `op=model`）。
+
+### 3.2 会计科目表 403 根因（P0，已修复）
+
+事实（sc-root 实测）：
+
+- `ui.contract.v2 op=action_open action_id=291` → **200**；加 `menu_id=182` → **403
+  `PERMISSION_DENIED 用户无权访问菜单 会计科目表`**。
+- wutao 的 `system.init` 导航**包含** menu 182 / action 291；`route_authority.primary_actions`
+  授权该路由（`allowed_operation=read`）；role surface 无 denied 项。
+- `ir.ui.menu._visible_menu_ids()` 含 182；`account.account` 读权限完整（47/47）。
+- 缺陷在 `addons/smart_core/security/intent_permission.py::_menu_visible_for_user`：其祖先链要求
+  **每个父菜单的 groups 都必须与用户组相交**，与 `docs/product/formal_product_boundary_v1.md`
+  （父级即使隐藏，只要存在可见子菜单仍须作为运行态承载菜单显示）和
+  `docs/security/SC_Permission_Blueprint.md`（禁止用菜单可见性代替权限控制）冲突。父级「会计」
+  需要 `account.group_account_manager`，wutao 只读组没有，故被子菜单连带拒绝。
+
+修复：改用 Odoo canonical `ir.ui.menu._visible_menu_ids()`（ormcache）作为唯一运行态解释；
+仅在其不可用时回退到「自身 groups」规则。动作组 `groups_id` 与模型 ACL/记录规则校验保持不变。
+
+验证：新增 `addons/smart_core/tests/test_intent_permission_menu_visibility.py`（父级承载、缺失组拒绝、
+开放菜单三例）3/3 PASS；受影响 L2 类 100 例，1 例为既有语言标签失败
+（`test_explicit_form_view_preserves_mixed_text_and_field_order`, `'电话' != 'Phone'`），
+已用 stash 复现证明与本次改动无关。
+
+## 4. 待办
+
+- 修复部署后复验：1440/light 走查 0 错误；模板级验收（含写循环）；视口/主题矩阵；关联跳转往返；独立复核。
