@@ -79,6 +79,14 @@ After owner acceptance, open or update the PR and merge through protected
 rejection returns to the previously recorded accepted SHA; it never rewrites
 the source branch or production state.
 
+When the runtime is still at the accepted detached candidate, the main-mode
+deployment may return it to `main` by declaring the exact candidate SHA. The
+entry then requires a clean detached HEAD equal to that SHA, `refs/heads/main`
+and `refs/remotes/origin/main` equal to the expected old SHA, and the candidate
+SHA present under `refs/daily-candidates/`; only then does it check out `main`
+and run the unchanged exact bundle sync. If the candidate SHA is omitted, the
+entry still requires the runtime to be attached `main` at the expected old SHA.
+
 For an already merged main commit, the existing incremental main bundle remains
 available:
 
@@ -87,8 +95,12 @@ CONFIRM_DAILY_RUNTIME_BUNDLE_SYNC=SYNC_EXACT_DAILY_MAIN_SHA_WITH_BUNDLE \
 make daily.runtime.main.bundle_sync \
   DAILY_RUNTIME_EXPECTED_SHA=<merged-main-full-sha> \
   DAILY_RUNTIME_EXPECTED_OLD_SHA=<current-daily-main-full-sha> \
+  DAILY_RUNTIME_EXPECTED_CANDIDATE_SHA=<recorded-detached-candidate-full-sha> \
   DAILY_RUNTIME_SSH_HOST=sc-root
 ```
+
+`DAILY_RUNTIME_EXPECTED_CANDIDATE_SHA` is optional and only needed when the
+runtime is on the recorded detached candidate rather than attached `main`.
 
 The main fallback requires a clean governed local branch at the exact authoritative
 `origin/main` SHA, a clean remote `main`, exact old and new SHAs, an incremental

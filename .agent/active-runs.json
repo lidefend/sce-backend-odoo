@@ -1,7 +1,8 @@
 {
-  "schema_version": 1,
   "branches": {
     "codex/daily-dev-user-acceptance-closeout-20261005": ".agent/runs/DAILY-DEV-USER-LEVEL-ACCEPTANCE/run.json",
+    "codex/daily-runtime-candidate-return-v1": ".agent/runs/DAILY-RUNTIME-CANDIDATE-RETURN/run.json",
     "codex/remote-branch-backlog-retirement-c-20261005": ".agent/runs/REMOTE-BRANCH-BACKLOG-RETIREMENT-C/run.json"
-  }
+  },
+  "schema_version": 1
 }

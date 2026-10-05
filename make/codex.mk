@@ -667,6 +667,8 @@ verify.workspace.worktree.guard: guard.prod.forbid
 DAILY_RUNTIME_SSH_HOST ?= sc-root
 DAILY_RUNTIME_EXPECTED_SHA ?=
 DAILY_RUNTIME_EXPECTED_OLD_SHA ?=
+DAILY_RUNTIME_EXPECTED_CANDIDATE_SHA ?=
+DAILY_RUNTIME_CANDIDATE_SHA_FLAG ?= $(if $(DAILY_RUNTIME_EXPECTED_CANDIDATE_SHA), --expected-candidate-sha "$(DAILY_RUNTIME_EXPECTED_CANDIDATE_SHA)")
 DAILY_RUNTIME_BUNDLE_SYNC_REPORT ?= .runtime/final-acceptance/daily-deployed/bundle-sync.json
 DAILY_CANDIDATE_SOURCE_BRANCH ?= $(shell git branch --show-current)
 DAILY_CANDIDATE_SOURCE_REPOSITORY ?= $(CURDIR)
@@ -688,7 +690,7 @@ daily.runtime.main.bundle_sync: guard.prod.forbid verify.daily.runtime.main.bund
 	@python3 scripts/ops/daily_runtime_bundle_sync.py \
 		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
 		--expected-old-sha "$(DAILY_RUNTIME_EXPECTED_OLD_SHA)" \
-		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)"$(DAILY_RUNTIME_CANDIDATE_SHA_FLAG) \
 		--report "$(DAILY_RUNTIME_BUNDLE_SYNC_REPORT)"
 
 verify.daily.runtime.candidate.bundle_sync: guard.prod.forbid

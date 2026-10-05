@@ -1,0 +1,43 @@
+{
+  "baseline_sha": "e44f9c3ace53804040bd9b5d7e8fc4210d6d651c",
+  "blockers": [],
+  "branch": "codex/daily-runtime-candidate-return-v1",
+  "candidate_evidence": false,
+  "checks": {
+    "bundle_sync_unit": {
+      "inputs": [
+        "scripts/ops/daily_runtime_bundle_sync.py",
+        "scripts/ops/test_daily_runtime_bundle_sync.py"
+      ],
+      "kind": "offline",
+      "target": "verify.daily.runtime.main.bundle_sync"
+    }
+  },
+  "completion": {
+    "batch": "passed: remote program normalizes only a clean detached HEAD equal to a declared candidate SHA that is recorded under refs/daily-candidates/ with refs/heads/main == refs/remotes/origin/main == expected old SHA; verify.daily.runtime.main.bundle_sync 9/9 including unrecorded/dirty/mismatched-main/undeclared negatives; ci.local.iteration and ci.delivery.freeze.prepare passed with no generated drift",
+    "deployment": "not_run",
+    "mainline": "not_run",
+    "product_delivery": "not_run"
+  },
+  "environment": {
+    "authority": "existing offline Make gates plus the governed daily-runtime bundle-sync entry; no product runtime, database, fixture or service",
+    "kind": "offline"
+  },
+  "goal": ".agent/goals/DAILY-RUNTIME-CANDIDATE-RETURN.yaml",
+  "id": "DAILY-RUNTIME-CANDIDATE-RETURN",
+  "next_exact_step": "Batch L2 passed (verify.daily.runtime.main.bundle_sync, 9 tests, receipt reusable) and make ci.local.iteration + make ci.delivery.freeze.prepare passed with no generated drift. Next: commit the frozen candidate on codex/daily-runtime-candidate-return-v1, run one exact-head make ci.local.quick, then publish via make pr.push / make pr.create against main; after merge run the governed daily.runtime.main.bundle_sync with DAILY_RUNTIME_EXPECTED_CANDIDATE_SHA=d004bbf2\u2026 to return the detached daily runtime to main.",
+  "record": "docs/ops/iterations/daily_runtime_candidate_return_20261005.md",
+  "schema_version": 1,
+  "scope": [
+    "scripts/ops/daily_runtime_bundle_sync.py",
+    "scripts/ops/test_daily_runtime_bundle_sync.py",
+    "make/codex.mk",
+    ".agent/active-runs.json",
+    ".agent/goals/DAILY-RUNTIME-CANDIDATE-RETURN.yaml",
+    ".agent/runs/DAILY-RUNTIME-CANDIDATE-RETURN/run.json",
+    "docs/ops/iterations/daily_runtime_candidate_return_20261005.md",
+    "docs/ops/daily_dev_runtime_repo_policy_v1.md"
+  ],
+  "status": "active",
+  "write_replay_authorized": false
+}
