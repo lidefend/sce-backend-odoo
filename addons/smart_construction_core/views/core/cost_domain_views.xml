@@ -253,7 +253,7 @@
         <field name="name">project.profit.compare.form</field>
         <field name="model">project.profit.compare</field>
         <field name="arch" type="xml">
-            <form string="项目经营利润" create="false" edit="false" delete="false">
+            <form string="项目经营利润">
                 <header>
                     <button name="action_open_actual_revenue_lines" type="object" string="实际收入" class="btn-primary" invisible="revenue_actual_amount == 0"/>
                     <button name="action_open_budget_revenue_lines" type="object" string="预算收入" class="btn-secondary" invisible="revenue_budget_amount == 0"/>
@@ -293,6 +293,7 @@
         <field name="name">项目经营利润</field>
         <field name="res_model">project.profit.compare</field>
         <field name="view_mode">tree,form,pivot</field>
+        <field name="context">{'create': False, 'edit': False, 'delete': False}</field>
         <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_read'))]"/>
     </record>
 
@@ -328,7 +329,7 @@
         <field name="name">project.cost.ledger.form</field>
         <field name="model">project.cost.ledger</field>
         <field name="arch" type="xml">
-            <form string="成本归集台账" delete="false">
+            <form string="成本归集台账">
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button name="action_open_source" type="object" class="oe_stat_button" icon="fa-external-link" invisible="not is_generated">
@@ -415,7 +416,7 @@
         <field name="res_model">project.cost.ledger</field>
         <field name="view_mode">tree,form,pivot,graph</field>
         <field name="domain">[]</field>
-        <field name="context">{'search_default_filter_active': 1}</field>
+        <field name="context">{'delete': False, 'search_default_filter_active': 1}</field>
         <field name="search_view_id" ref="view_project_cost_ledger_search"/>
         <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_read'))]"/>
     </record>
@@ -425,7 +426,7 @@
         <field name="res_model">project.cost.ledger</field>
         <field name="view_mode">tree,form,pivot,graph</field>
         <field name="domain">['|', ('project_id.user_id', '=', uid), ('project_id.manager_id', '=', uid)]</field>
-        <field name="context">{'search_default_filter_active': 1}</field>
+        <field name="context">{'delete': False, 'search_default_filter_active': 1}</field>
         <field name="search_view_id" ref="view_project_cost_ledger_search"/>
         <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_read'))]"/>
     </record>

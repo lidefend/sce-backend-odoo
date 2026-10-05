@@ -20,7 +20,7 @@ Owner acceptance entry: `http://1.95.85.92:18081/`（自定义前端），口令
 
 ## 2. 状态（四层分列）
 
-- **批次验收**：进行中。部署与夹具车道 PASS；1440/light 全路由走查 90/90 通过，暴露 1 个真实产品缺陷（会计科目表 403）；根因已定案并修复，PR #573 已合并，sc-root 已部署复验（`action_open action=291 menu_id=182` 由 403 转 200）。
+- **批次验收**：进行中。部署与夹具车道 PASS；1440/light 全路由走查 90/90 通过，暴露 1 个真实产品缺陷（会计科目表 403）；根因已定案并修复，PR #573 已合并，sc-root 已部署复验（`action_open action=291 menu_id=182` 由 403 转 200）。能力权限驱动收口本地全绿（守卫 90 入口 0 违规 + 负例闭环，22+25 定向测试与 22 锁测试通过，见 §6.10），**尚未提交 / 未同步远端**。
 - **主线集成**：main=`3f424993c9f378aaeedd2f26080545ad37ea3f8e`（PR #573 已合并）；四项必需检查全 pass。
 - **版本发布**：未主张。
 - **产品交付**：未主张（待完成模板/视口/主题无死角验收、关联往返与独立复核）。
@@ -236,6 +236,8 @@ ARCH-DECISION-001。
   sc-root git HEAD + DB + 构建产物，不以该声明 SHA 作为通过依据。
 - 后续统一（已记录的重复）：`handlers/route_authority_validate.py` 与 `handlers/system_init.py` 仍内联同构的
   发布权威构建，应改为复用 `delivery/runtime_route_authority.py`；为不改动其既有 P0 契约测试，本轮未合并。
+- 能力权限驱动收口（§6.10）本地全绿但**未收口**：待干净 SHA 冻结 + 独立复核 + 候选 bundle sync 后，
+  在 sc-root 复验守卫 0 违规并刷新 5180 预览；可选实跑远端 `form-profiles` 范围。
 
 ## 5. 发布面同口径统一与预览边界收敛（本轮）
 
@@ -372,3 +374,165 @@ ARCH-DECISION-001。
 
 - 创建/编辑与工作台的最小证据差额（下一步执行单）。
 - 容器化受管环境的批量退役仍需按既有受管入口逐项确认，不在本次擅自下线。
+
+### 6.8 端口转发与孤儿环境清理（2026-10-05 追加）
+
+**事实澄清**：本机不存在任何 ssh `-L/-R`、socat、autossh、kubectl port-forward、frp
+进程；此前看到的"大量端口"全部是 docker 发布端口，来自历史会话／已删除工作树遗留的
+compose 项目，不是转发隧道。清理后 `docker-proxy` 端口与在用发布端口完全一致
+（`8070`、`18081`、`18082`、`19083`）。
+
+**清理范围**：
+
+- 孤儿项目（compose 工作目录已删除）：`sc-backend-odoo-test`、`sc-boundary-06-queue`、
+  `sc-contract-governance-v1`、`sc-contract-lifecycle-v1`、`sc-contract-snapshot-v1`、
+  `sc-fe-audit-20260805`、`sc-frontend-acceptance-e6ddae1`、`sc-nav-pro-01`、
+  `sc-product-center-v1`、`sc-ten-center-clean`、`sc-tenant-rc-product`。
+- 本仓库内遗留项目（`.env.local.clean`／`.env.local.sample`／`.env.prod.sim` 已不存在，
+  已无受管入口）：`sc-local-clean`、`sc-local-sample`、`sc-demo-lifecycle`、
+  `sc-fe-r2-p1-01`、`sc-backend-odoo-prod-sim`、`sc-personnel-test`、
+  `sc-p0-decoupling`、`sc-core035-mvp-20260727044923-2dc17f`。
+- 无主已退出容器 35 个。**未删除任何数据卷。**
+- 保留：日常运行时 `18081`/`8070`；隔离验收 `18082`、凭证容器 `19083`、预览 `5180`。
+
+**误伤与受管恢复（自曝）**：项目级按 label 清理时连带移除了
+`sc-fe-r2-p1-01` 的 one-off 验收后端 `sc-backend-odoo-acceptance`（`18082`）。
+恢复路径全部走受管入口：重建凭证容器 `sc-fe-r2-p1-01-odoo-1` →
+`make acceptance.runtime.preflight` PASS → `make backend.acceptance.up` PASS →
+`make backend.acceptance.health` PASS。`sc_fe_r2_p1_01_db/redis/odoo` 三卷与
+`sc_frontend_acceptance` 库完好。
+
+**两项真实发现（记录，非产品门禁）**：
+
+1. **口令漂移**：postgres 卷内 `odoo` 角色口令与当前 `.env.dev` 声明权威不再一致
+   （env 文件 mtime 晚于卷 initdb）。即清理前该车道靠"旧容器 env 与卷一致"在运行，
+   下一次受管重启同样会认证失败。已按当前声明权威重置角色口令，未改数据。
+2. **自举缺口**：凭证容器缺失时，本地受管验收入口
+   （`acceptance.runtime.preflight`、`db.frontend.acceptance.ensure`、
+   `backend.acceptance.up`、`frontend.acceptance.up`）都在 `load_profile` 前置 DENY，
+   没有本地自举路径。本次以仓库自带 `compose_dev` 封装、按 profile 解析出的精确身份恢复；
+   是否补自举入口属 P4 决策，本轮未擅自新增。
+
+**非本分支**：`127.0.0.1:39083` 为其他用户（root）预存在监听，无 sudo 不可处理。
+
+### 6.9 无关数据回收（2026-10-05 追加，所有者授权"清理无关数据"）
+
+判据：**只删未被任何容器引用、且未被本仓库构建声明引用的对象**。命名卷删除不可逆，
+已按所有者明确指令执行。
+
+| 对象 | 清理前 | 清理后 | 说明 |
+| --- | --- | --- | --- |
+| 镜像 | 101 个 / 54.47GB | 4 个 / 3.656GB | 仅留 `nginx:latest`、`odoo17-odoo:latest`、`postgres:15`、`redis:7-alpine`（在用容器的镜像）；清掉约 89 个未引用镜像，主体是其他分支的 `ghcr.io/lidefend/sce-product` 发布快照（`1.0.0-rc.18~20`、`candidate-*`、`sha-*`） |
+| 构建缓存 | 39.19GB | 659MB | `docker builder prune`，回收 37.59GB + 0.95GB |
+| 数据卷 | 1423 个 / 108.4GB | 9 个 / 4.055GB | `docker volume prune -a`；回收匿名卷 8.395GB + 命名卷 96GB |
+| 容器 | 95 总 / 50 运行 | 8 运行 / 8 总 | 移除最后一个停止容器 `sc-test-odoo-sc_dev_demo` |
+
+命名卷回收 Top：`sc-production-blocker-matrix_migration-safety-db` 33.46GB、
+`sc-boundary-06-queue-db` 7.11GB、`sc-boundary-06-bridge-db` 7.04GB、
+`sc-production-candidate-db` 6.30GB、`sc-core035-mvp-*-db-data` 6.15GB、
+`sc_local_sample_db_data` 4.98GB、`sc_dev_db_data` 及其 `_recovery_/ _corrupt_20260817`
+各 4.18GB、`sc_prod_sim_db_data` 2.96GB、`sc_contract_snapshot_db_data` 1.51GB。
+
+**保留的卷恰为在用集合**：`sc_local_dev_{db,odoo,redis}_data`、
+`sc_fe_r2_p1_01_{db,odoo,redis}` 及 4 个运行容器匿名卷；清理后卷可回收量为 0B。
+
+清理后回读：日常 `18081`、验收后端 `18082`、预览 `5180` 均可访问，8 个容器全部 healthy。
+
+**操作要点**：`docker volume prune` 默认只清匿名卷，必须 `-a` 才清命名卷——这解释了
+第一次仅回收 8.395GB、而 96GB 命名卷仍在的现象。
+
+### 6.10 能力权限驱动收口：视图独占能力违规（2026-10-05 追加）
+
+**架构判据（所有者确认）**：*我们的产品不应该有专门的只读页面，必须是权限契约驱动*。
+落到机制上：某入口的 `create/edit/delete/duplicate` 不得由 **view arch 单独阻断**；
+拒绝必须来自权限（ACL / 记录规则）或入口声明（action context），视图只能呈现。
+
+**根因定位链（消费侧，不是文本侧）**：
+`addons/smart_core/utils/contract_governance_form_render.py:53,88,114,122,129` →
+`effective(record cap) = view ∧ model ∧ record ∧ entry`；前端唯一驱动
+`frontend/apps/web/src/views/ActionView.vue:7,1459,1479` ← `store.ts:545` ←
+`status.effectiveRecordCapabilities`。因此「view 独占」= 上述四因子中 view=false 而其余三项皆 true。
+
+**守卫（P4 工具，新增）**：`scripts/verify/formal_entry_capability_authority_guard.py`
+
+- 读版本化正式菜单基线（`scripts/verify/baselines/formal_business_product_menu_policy_v1.json`），
+  对每个 enabled `menu_xmlid` 经 `UiContractV2Handler` 取 `statusContract.globalStatus`，
+  断言**不得**出现 `viewCapabilities[op]=false ∧ modelRights[op]=true ∧ entryCapabilities[op]=true`。
+- 消费检查而非文本检查：删选择器字符串不能"通过"。
+- Make 入口 `make verify.formal_entry_capability_authority.guard`（`make/runtime_ops.mk:442-445`），
+  并纳入 `verify.system_user_experience.quick` 依赖链（`make/runtime_ops.mk:451`）。
+
+**结果与负例闭环**：
+
+- 修复前 23 条违规 / 14 入口；修复后 `FORMAL_ENTRY_CAPABILITY_AUTHORITY_OK entries=90`（0 违规）。
+- 负例（先确认注入前基线守卫正常）：给 `project.edit_project` 注入 `create="0"` → 守卫精确报
+  `menu_sc_project_project: view arch is the sole blocker of 'create'`；移除注入 → 恢复
+  `OK entries=90`。证明"注入被检出"，不是"探针恒绿"。
+
+**修复按其声明位置落层（不改标签、不加模型特判、不放宽 ACL）**：
+
+| 入口 / 文件 | 处理 |
+| --- | --- |
+| `views/core/project_overview_views.xml` | 根 form 去 `create/edit/delete/duplicate="0"` |
+| `views/core/project_information_edit_views.xml:3540` | 去根 `create/delete="false"` |
+| `views/core/project_views.xml:3528` | extension 4 个 `attribute` `0→1`；`action_project_cost_ledger_quick` context 加 `delete:False` |
+| `views/core/cost_domain_views.xml` | profit_compare form 去 create/edit/delete；两 action 加 context；cost_ledger 去 `delete="false"` |
+| `views/projection/fund_daily_views.xml` | form 去 create/edit/delete；action 加 `edit:False,delete:False` |
+| `views/support/{company_project_refund,current_account,team_loan_deduction}_workspace_views.xml` | form 去 `edit="1" delete="0"` |
+| `views/menu_product_contract_completion_v1.xml` | 多 action 加 `delete:False`/`edit:False`；blacklist form 去 `create/delete="false"` |
+| `views/core/tax_filing_views.xml`、`tax_certificate_registration_views.xml` | 去 `delete="0"`/`delete="false"`；action 加 context |
+| `views/support/runtime_user_management_views.xml` | 去 `delete="0"`（保留 create/edit） |
+| `actions/project_native_action_overrides.xml` | `action_sc_project_list_form_view` view_id → `project.edit_project`；`action_project_dashboard` context 显式 `create/edit/delete:False,no_duplicate:True` |
+| `actions/project_actions.xml` | `action_sc_project_overview` context 显式 `create/edit/delete:False,no_duplicate:True` |
+
+**行为等价**：`delete/edit` 均为**显式声明**（不是键缺席），未把 create/edit 的默认→拒绝语义倒置；
+`no_duplicate:True` 即拒绝。用户可见只读行为不变，只是"谁拥有该能力"从视图移回声明层。
+
+**锁测试**（`addons/smart_construction_core/tests/test_core_extension_v2_finalize.py`）：
+两处锁改为"视图非硬拒 + 消费 entry capability"；dashboard 用例不再断言
+`source["views"]["form"]["capabilities"]`，改断言 `entryCapabilities` 与
+`effectiveRecordCapabilities` 皆 False。结果 `0 failed, 0 error(s) of 22 tests`；
+`TestProductMessageNotification + TestLightFormsConfigurationNativeLowcode`
+`0 failed, 0 error(s) of 25 tests`（`sc_dev_demo`）。
+
+**编排契约已核清（交接的待办 2 为伪风险）**：`ui.business.config.contract` id=139
+`project_project_form_structure_v1` 绑定 action=724（`action_project_initiation`）/
+view=1503（`view_project_create_form`），与本次改动的 action 506 / view 1761 **无关**；
+全库 `project.project` 仅此一条 form-structure 契约记录。`action_sc_project_list`(519) 的
+form 槽运行时 view_id = `project.edit_project`(936)，与源码一致。既有 precedent：
+`action_sc_product_project_edit_v1` 同样故意引用原生 `edit_project` 作只读展示。
+
+**探针 addendum（列表面 / 表单 profile）**：`scripts/verify/frontend_list_surface_structure_browser.mjs`
+扩展 scope 至 `['all','record-only','detail-only','workbench-only','form-profiles']`；
+`form-profiles` 执行体观测"声明 create → 点新建 → `/f/<model>/new` → form 契约 profile=create"
+与"声明 edit → 点行 → record 契约 profile=edit"，否则记 `not_applicable`；
+`not_applicable` 计入 satisfied，空 viewports 判 `incomplete`。锁
+`scripts/verify/test_frontend_list_surface_search_contract.py` 同步更新，
+`make verify.frontend.list_surface_search_contract.unit` → 22 tests OK + receipt PASS。
+**锁定声明与行为，不把选择器字符串、`44px`、`60px` 文本出现本身当作正确性证明。**
+旁证：`playwright_vendor_coupling_guard.py` OK（vendor 104 / 记录 109，余量 5；geometry 33/33，余量 0）、
+`python3 -m unittest scripts.verify.test_frontend_standard_preview` OK、`git diff --check` 干净。
+
+### 6.11 记录边界（2026-10-05 追加）
+
+1. **P1 归属纠正**：`ListPage.css`、`theme.css`、`ProductListHeader.vue` 的通用展示行为属
+   **P0 前端渲染机制**，不是 P1。已在原 run `FE-TPL-OFFICIAL-TEMPLATE-ADOPTION` 记录，此处引用；
+   **不为标签改写提交历史**。`rendering_detail_state` 的排除引用既有证据与裁决。
+2. **候选证据复用**：`02d28a06d → 6f07ff09a` 三个提交（`8fddb1f14` 前端布局、`146e47a2d` 探针/工具、
+   `6f07ff09a` run.json 元数据）不影响后台与构建产物；探针变化已由本次报告覆盖，
+   **无需仅因 HEAD 不同重新构建**。
+3. **环境 DENY 单独保留**：只作为重建/快照车道的阻断结论，绑定实际入口依赖与独立复核依据，
+   **不泛化成"环境全部通过"**。两个挂载者属同一项目不足以证明符合独占要求；非当前授权的挂载者须走
+   既有受管入口处理并复验 audit，保留在用的 `18082`，不得放宽审计或直接操作容器绕过 DENY。
+4. **固定口令独立复核**：`SC_ACCEPTANCE_FIXTURE_PASSWORD ?= scdevpass`（`make/dev.mk:741`，由已合并提交
+   `2d164a1f` / PR #525 引入，非本轮）仅作用于既有隔离 fixture；`LOCAL_CONTRACT_LIFECYCLE_PASSWORD`、
+   `LOCAL_CONTRACT_SNAPSHOT_PASSWORD` 同为隔离 profile；日常/通用登录默认
+   `E2E_LOGIN/E2E_PASSWORD = wutao/123456` **未改变**。同一结论已在
+   `FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json` 记录，本次仅做有界复核并引用。
+
+### 6.12 仍未关闭（本轮）
+
+- 本轮改动**尚未提交**（工作区 20 改 + 1 新增）；未做 clean 冻结、独立复核与候选 bundle sync。
+- 远端 `sc-root` 日常运行态仍是 `9121b064`；能力权限守卫在远端的 0 违规结论**待同步后复验**。
+- 远端 `form-profiles` 列表范围实跑为可选项：本地证据由锁测试 + 探针单测覆盖，未跑浏览器矩阵。
+- 四层状态分列不变；整体分支目标**暂不**标记完成。

@@ -21,7 +21,7 @@
         <field name="name">res.users.sc.runtime.form</field>
         <field name="model">res.users</field>
         <field name="arch" type="xml">
-            <form string="人员档案" create="1" edit="1" delete="0">
+            <form string="人员档案" create="1" edit="1">
                 <sheet>
                     <group name="sc_personnel_profile" string="人员资料">
                         <group string="基本资料">
@@ -115,7 +115,7 @@
         <field name="view_ids" eval="[(5, 0, 0),             (0, 0, {'view_mode': 'tree', 'view_id': ref('view_sc_runtime_user_tree')}),             (0, 0, {'view_mode': 'form', 'view_id': ref('view_sc_runtime_user_form')})]" />
         <field name="search_view_id" ref="view_sc_runtime_user_search" />
         <field name="domain">[('sc_runtime_company_maintainable', '=', True)]</field>
-        <field name="context">{'active_test': False, 'sc_runtime_user_management': True}</field>
+        <field name="context">{'active_test': False, 'delete': False, 'sc_runtime_user_management': True}</field>
         <field name="groups_id" eval="[(6, 0, [             ref('smart_construction_core.group_sc_cap_business_config_admin'),             ref('smart_core.group_smart_core_admin'),         ])]" />
     </record>
     <record id="view_sc_data_permission_user_tree" model="ir.ui.view">

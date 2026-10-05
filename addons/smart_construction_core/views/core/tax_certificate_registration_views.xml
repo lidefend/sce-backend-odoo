@@ -52,7 +52,7 @@
         <field name="name">sc.tax.certificate.registration.form</field>
         <field name="model">sc.tax.certificate.registration</field>
         <field name="arch" type="xml">
-            <form string="外经证登记" delete="false">
+            <form string="外经证登记">
                 <header>
                     <button name="action_register" string="登记" type="object" class="btn-primary"
                             groups="smart_construction_core.group_sc_cap_finance_user"
@@ -118,7 +118,7 @@
         <field name="views" eval="[(ref('smart_construction_core.view_sc_tax_certificate_registration_tree'), 'tree'), (ref('smart_construction_core.view_sc_tax_certificate_registration_form'), 'form')]" />
         <field name="search_view_id" ref="smart_construction_core.view_sc_tax_certificate_registration_search" />
         <field name="domain">[]</field>
-        <field name="context">{'search_default_registered': 1}</field>
+        <field name="context">{'delete': False, 'search_default_registered': 1}</field>
         <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_read'), ref('smart_construction_core.group_sc_cap_finance_read'), ref('smart_construction_core.group_sc_cap_finance_user'), ref('smart_construction_core.group_sc_cap_finance_manager')])]" />
     </record>
 </odoo>

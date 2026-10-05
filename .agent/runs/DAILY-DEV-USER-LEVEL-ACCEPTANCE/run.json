@@ -52,7 +52,25 @@
     "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
     "frontend/apps/web/src/pages/ContractFormPage.vue",
     "frontend/apps/web/scripts/professional_collaboration_model_test.ts",
-    "frontend/apps/web/scripts/native_collaboration_presentation_test.ts"
+    "frontend/apps/web/scripts/native_collaboration_presentation_test.ts",
+    "addons/smart_construction_core/actions/project_actions.xml",
+    "addons/smart_construction_core/actions/project_native_action_overrides.xml",
+    "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
+    "addons/smart_construction_core/views/core/cost_domain_views.xml",
+    "addons/smart_construction_core/views/core/project_information_edit_views.xml",
+    "addons/smart_construction_core/views/core/project_overview_views.xml",
+    "addons/smart_construction_core/views/core/project_views.xml",
+    "addons/smart_construction_core/views/core/tax_certificate_registration_views.xml",
+    "addons/smart_construction_core/views/core/tax_filing_views.xml",
+    "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+    "addons/smart_construction_core/views/projection/fund_daily_views.xml",
+    "addons/smart_construction_core/views/support/company_project_refund_workspace_views.xml",
+    "addons/smart_construction_core/views/support/current_account_workspace_views.xml",
+    "addons/smart_construction_core/views/support/runtime_user_management_views.xml",
+    "addons/smart_construction_core/views/support/team_loan_deduction_workspace_views.xml",
+    "make/runtime_ops.mk",
+    "scripts/verify/test_frontend_list_surface_search_contract.py",
+    "scripts/verify/formal_entry_capability_authority_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -100,7 +118,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Detail closeout closed (1440/390 light+dark passed; real relation round trip passes; the relation-target collaboration error was a real P0 frontend projection defect and is fixed+verified). Remaining in this run: (c) create/edit + workbench minimal evidence gap; then commit the dirty P4 tooling + frontend fix files, update this run and docs/ops/iterations/daily_dev_user_level_acceptance_20261005.md, and produce the five-root-cause report + environment audit conclusion + exact candidate identity + list-surface residual failures. Environment DENY stays scoped to the rebuild/snapshot lane and is not generalised.",
+  "next_exact_step": "Capability-authority closeout recorded and locally re-verified (guard OK entries=90; 22+25 affected module tests pass; list-surface contract 22 OK; vendor/preview/diff clean). Remaining in this run: (1) when the owner asks, commit the dirty P4 tooling + P0/entry-declaration changes as one clean candidate and run independent review; (2) sync the frozen candidate to the daily runtime via the governed bundle-sync entry and re-run the guard + refresh the 5180 preview; (3) optional remote 'form-profiles' list scope run (local evidence is the lock + probe unit tests). Then produce the four-item handback: five-root-cause results, environment audit conclusion, exact candidate identity, and remaining list-surface failures. Four-layer status stays separate; the overall branch goal is NOT marked complete. Environment DENY remains scoped to the rebuild/snapshot lane.",
   "write_replay_authorized": false,
   "candidate_evidence": false,
   "results": [
@@ -408,6 +426,137 @@
         "target page root data-form-model=res.users data-state=ok; data-field-fail-closed count 0; only the collaboration block carried an error marker before the fix"
       ],
       "note": "kept as an authority boundary, not widened and not force-overridden"
+    },
+    {
+      "id": "l0_local_runtime_port_and_orphan_cleanup",
+      "layer": "L0-environment",
+      "status": "passed",
+      "claim": "local host has no ssh/socat/kubectl forwarders; every listening development port was a docker published port. Nineteen orphan/stale compose projects and all ownerless exited containers were removed, keeping only the daily runtime and the isolated acceptance lane; the acceptance backend removed by the project-scoped pass was restored through the governed entry.",
+      "evidence": [
+        "ps/ss: no ssh -L/-R, socat, autossh, kubectl port-forward or frp process exists; docker-proxy ports after cleanup exactly equal live published ports (8070, 18081, 18082, 19083)",
+        "removed orphan projects (compose working dir already deleted): sc-backend-odoo-test, sc-boundary-06-queue, sc-contract-governance-v1, sc-contract-lifecycle-v1, sc-contract-snapshot-v1, sc-fe-audit-20260805, sc-frontend-acceptance-e6ddae1, sc-nav-pro-01, sc-product-center-v1, sc-ten-center-clean, sc-tenant-rc-product",
+        "removed stale in-repo projects whose env files are gone (.env.local.clean/.env.local.sample/.env.prod.sim absent, so no governed entry could manage them): sc-local-clean, sc-local-sample, sc-demo-lifecycle, sc-fe-r2-p1-01, sc-backend-odoo-prod-sim, sc-personnel-test, sc-p0-decoupling, sc-core035-mvp-20260727044923-2dc17f; volumes preserved",
+        "over-removal and governed restore: the project-label pass also removed the one-off acceptance backend sc-backend-odoo-acceptance (18082); restored via compose credential container sc-fe-r2-p1-01-odoo-1 -> make acceptance.runtime.preflight PASS -> make backend.acceptance.up PASS -> make backend.acceptance.health PASS (127.0.0.1:18082)",
+        "data volumes untouched: sc_fe_r2_p1_01_db/sc_fe_r2_p1_01_redis/sc_fe_r2_p1_01_odoo still present and attached; sc_frontend_acceptance database intact",
+        "post-cleanup running containers: sc-local-dev-{db,odoo,nginx,redis} + sc-fe-r2-p1-01-{db,redis,odoo} + sc-backend-odoo-acceptance = 8; 5180 release_static_server retained"
+      ],
+      "note": "Two real findings recorded, not product gates. (1) Credential drift: the postgres volume's odoo role password no longer matched the current .env.dev declared authority (env mtime newer than volume initdb), so a governed restart would have failed auth anyway; the role password was reset to the declared authority without touching data. (2) Bootstrap gap: with the credential container absent, every local governed acceptance entry (acceptance.runtime.preflight, db.frontend.acceptance.ensure, backend.acceptance.up, frontend.acceptance.up) fails in load_profile before its own logic, so the lane has no local self-bootstrap path; recovery used the repository's own compose_dev wrapper with the exact resolved profile identity. A P4 self-bootstrap entry is a decision, not changed here. 127.0.0.1:39083 is a pre-existing listener owned by another user (not this branch) and is not removable without root."
+    },
+    {
+      "id": "l0_local_unrelated_data_reclaim",
+      "layer": "L0-environment",
+      "status": "passed",
+      "claim": "Unrelated local docker data was reclaimed under owner authorization, leaving only artifacts referenced by the two in-use lanes.",
+      "evidence": [
+        "images: 101 / 54.47GB -> 4 / 3.656GB; kept exactly nginx:latest, odoo17-odoo:latest, postgres:15, redis:7-alpine (the images used by live containers). Removed ~89 unused images, dominated by ghcr.io/lidefend/sce-product release snapshots (rc.18-rc.20 and candidate-* / sha-* tags) from other branches",
+        "build cache: 39.19GB -> 659MB (docker builder prune, reclaimed 37.59GB + 0.95GB)",
+        "volumes: 1423 / 108.4GB -> 9 / 4.055GB (docker volume prune -a; 8.395GB anonymous + 96GB named). Largest reclaimed: sc-production-blocker-matrix_migration-safety-db 33.46GB, sc-boundary-06-queue-db 7.11GB, sc-boundary-06-bridge-db 7.04GB, sc-production-candidate-db 6.30GB, sc-core035-mvp-*-db-data 6.15GB, sc_local_sample_db_data 4.98GB, sc_dev_db_data{,_recovery_20260817,_corrupt_20260817} 4.18GB each, sc_prod_sim_db_data 2.96GB, sc_contract_snapshot_db_data 1.51GB",
+        "kept volumes are exactly the attached set: sc_local_dev_{db,odoo,redis}_data, sc_fe_r2_p1_01_{db,odoo,redis} and 4 anonymous volumes of the live containers; 0B reclaimable remains",
+        "containers: 95 total / 50 running -> 8 running / 8 total (removed the last stopped container sc-test-odoo-sc_dev_demo)",
+        "post-cleanup readback: daily 18081, acceptance backend 18082 and preview 5180 all reachable; all 8 containers healthy"
+      ],
+      "note": "Named-volume removal is irreversible and was scoped by an explicit owner instruction (清理无关数据). No volume attached to a live container was touched. Images referenced by repo build declarations (Dockerfiles/compose) and the images used by live containers were preserved. docker volume prune needed -a: the default prune only removes anonymous volumes, which is why the first pass reported 8.395GB while 96GB of named volumes remained."
+    },
+    {
+      "id": "l1_formal_entry_capability_authority_guard",
+      "layer": "L1-static/L2-contract",
+      "status": "passed",
+      "claim": "New baseline-driven guard proves no formal product entry's record capability is blocked solely by a view arch (permission/contract-driven entries: no dedicated read-only pages).",
+      "commands": [
+        "make verify.formal_entry_capability_authority.guard ENV=dev ENV_FILE=.env.dev DB_NAME=sc_dev_demo COMPOSE_PROJECT_NAME=sc-local-dev PROJECT=sc-local-dev"
+      ],
+      "evidence": [
+        "FORMAL_ENTRY_CAPABILITY_AUTHORITY_OK entries=90 (0 violations)",
+        "guard is a consumption check: it reads statusContract.globalStatus from UiContractV2Handler, the same authority split the frontend consumes; violation predicate = viewCapabilities[op]=false AND modelRights[op]=true AND entryCapabilities[op]=true",
+        "23 pre-existing violations across 14 entries all cleared: fund_daily_summary(write,unlink), p1_cost_ledger(unlink), p1_profit_analysis(write,create,unlink), company_project_refund(unlink), current_account(unlink), message_notification(write), partner_blacklist(unlink), project_edit(unlink), tax_filing(unlink), team_loan_deduction(unlink), project_kanban(write,create,unlink,duplicate), project_project(write,create,unlink,duplicate), runtime_user_management(unlink), tax_certificate_registration(unlink)",
+        "negative closure: with the baseline first confirmed green, injecting create=\"0\" on project.edit_project made the guard report exactly 'menu_sc_project_project: view arch is the sole blocker of create'; removing the injection restored OK entries=90"
+      ]
+    },
+    {
+      "id": "l2_entry_capability_declaration_layer_fix",
+      "layer": "L1/L2",
+      "status": "passed",
+      "claim": "The 14 entries' read-only behaviour now comes from the entry declaration layer (action context) or genuine permissions, never from a view-arch hard denial; end-user behaviour is equivalent.",
+      "evidence": [
+        "root-level hard denials removed from the views: project_overview, project_information_edit, cost_domain (profit_compare/cost_ledger), fund_daily, company_project_refund, current_account, team_loan_deduction, menu_product_contract_completion_v1 blacklist, tax_filing, tax_certificate_registration, runtime_user_management",
+        "the explicit refusal moved into action context instead: delete:False / edit:False / no_duplicate:True on action_sc_project_cost_ledger_quick, action_project_dashboard, action_sc_project_overview and the cost/profit/fund-daily/tax/refund/current-account/team-loan/user-management actions",
+        "project_views extension 4 attributes 0->1; action_sc_project_list_form_view view_id view_project_overview_form -> project.edit_project (same deliberate precedent as action_sc_product_project_edit_v1); view_project_overview_form(1761) is still referenced by action_sc_project_overview(580), no dangling reference",
+        "delete/edit context keys are explicit declarations (not absent keys); create/edit default->deny semantics were not inverted; no payment-model special case and no ACL/field-permission override added"
+      ]
+    },
+    {
+      "id": "l2_entry_capability_lock_tests",
+      "layer": "L2",
+      "status": "passed",
+      "commands": [
+        "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestCoreExtensionV2Finalize'",
+        "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestProductMessageNotification,/smart_construction_core:TestLightFormsConfigurationNativeLowcode'"
+      ],
+      "evidence": [
+        "0 failed, 0 error(s) of 22 tests (TestCoreExtensionV2Finalize; locks re-pointed to 'view is not the hard denier + entry capability consumed'; the dashboard case now asserts entryCapabilities and effectiveRecordCapabilities are both False instead of a view-level capabilities assertion)",
+        "0 failed, 0 error(s) of 25 tests (TestProductMessageNotification + TestLightFormsConfigurationNativeLowcode), sc_dev_demo"
+      ]
+    },
+    {
+      "id": "l2_list_surface_form_profile_probe",
+      "layer": "L2",
+      "status": "passed",
+      "claim": "List-surface probe extended to form-profile / workbench scopes so declared create/edit rendering is observed instead of inferred; the probe locks the declaration and the behaviour, not selector text or 44px/60px strings.",
+      "evidence": [
+        "DAILY_SCOPES extended to ['all','record-only','detail-only','workbench-only','form-profiles']; summary and executor select per-scope step sets; not_applicable is counted as satisfied; empty viewports -> incomplete",
+        "FORM_PROFILES_ONLY: declared create -> click -> /f/<model>/new -> form contract profile=create; declared edit -> row click -> record contract profile=edit (else not_applicable); list_execution supports workbench-only/form-profiles -> not_run",
+        "make verify.frontend.list_surface_search_contract.unit -> 22 tests OK + acceptance_contract_receipt PASS",
+        "python3 scripts/verify/playwright_vendor_coupling_guard.py OK (vendor_internal_selector 104/104 total, recorded 109 headroom 5; inline_geometry_assertion 33/33, headroom 0); python3 -m unittest scripts.verify.test_frontend_standard_preview OK; git diff --check clean"
+      ]
+    },
+    {
+      "id": "orchestration_contract_resolution",
+      "layer": "L1-static",
+      "status": "resolved_not_required",
+      "claim": "The orchestration contract was a false risk: ui.business.config.contract id=139 binds action=724 (action_project_initiation) / view=1503 (view_project_create_form), unrelated to the changed action 506 / view 1761; no orchestration change was needed.",
+      "evidence": [
+        "only one project.project form-structure contract row exists in sc_dev_demo; action_sc_project_list(519) form slot view_id at runtime = project.edit_project(936), matching source"
+      ]
+    },
+    {
+      "id": "p1_attribution_correction_recorded",
+      "layer": "L0-record",
+      "status": "recorded",
+      "claim": "ListPage.css / theme.css / ProductListHeader.vue generic presentation behaviour is P0 frontend rendering mechanism, not P1.",
+      "evidence": [
+        "corrected in the FE-TPL-OFFICIAL-TEMPLATE-ADOPTION run and referenced here; commit history deliberately not rewritten for a label-only correction; rendering_detail_state exclusion cites the existing evidence and ruling"
+      ]
+    },
+    {
+      "id": "candidate_evidence_reuse_02d28a06d_6f07ff09a",
+      "layer": "L0-identity",
+      "status": "recorded",
+      "claim": "The three commits 02d28a06d -> 6f07ff09a do not invalidate the existing reviewed evidence.",
+      "evidence": [
+        "8fddb1f14 (frontend layout: ProductListHeader/ListPage/theme), 146e47a2d (probes/tooling), 6f07ff09a (run.json metadata) do not touch backend or build outputs; the probe-only changes are covered by this round's report; no rebuild required merely because HEAD differs"
+      ]
+    },
+    {
+      "id": "environment_deny_scope_recorded",
+      "layer": "L0-environment",
+      "status": "blocker_scoped",
+      "claim": "The environment DENY stays scoped to the rebuild/snapshot lane only and must not be generalised to 'environment fully passes'.",
+      "evidence": [
+        "two mounters of the same project do not satisfy the exclusive-owner requirement; the non-authorized mounter must be handled through the existing governed entry and re-audited; 18082 stays in use; the DENY must not be relaxed and no container may be manipulated directly to bypass it"
+      ]
+    },
+    {
+      "id": "fixed_fixture_password_independent_scope_check",
+      "layer": "L0-credential",
+      "status": "passed",
+      "claim": "The fixed simple fixture password affects only the existing isolated acceptance fixtures and does not change any other environment or the general login default.",
+      "evidence": [
+        "make/dev.mk:741 SC_ACCEPTANCE_FIXTURE_PASSWORD ?= scdevpass (introduced by merged commit 2d164a1f, PR #525, not this round) is consumed only by the isolated fixture lane (scripts/dev/daily_dev_acceptance_fixture.sh requires it and writes it into the profile's own DB only)",
+        "sibling isolated profiles only: make/dev.mk:39 LOCAL_CONTRACT_LIFECYCLE_PASSWORD and :59 LOCAL_CONTRACT_SNAPSHOT_PASSWORD (both isolated synthetic databases)",
+        "general/daily acceptance login default is unchanged: make/runtime_ops.mk keeps E2E_LOGIN/ E2E_PASSWORD defaults of wutao/123456 and does not read the fixture password",
+        "prod_sim_fresh_replay.sh REAL_USER_INITIAL_PASSWORD and the personal-data/reset test literals are pre-existing deploy/test defaults, untouched by this round's diff",
+        "prior determination cited instead of re-proved: FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json records the same scoped conclusion"
+      ]
     }
   ]
 }

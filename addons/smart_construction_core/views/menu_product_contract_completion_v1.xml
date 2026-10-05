@@ -14,12 +14,12 @@
       <field name="name">消息通知</field><field name="res_model">mail.notification</field><field name="view_mode">tree,form</field>
       <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_product_mail_notification_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_product_mail_notification_form')})]"/>
       <field name="search_view_id" ref="smart_construction_core.view_sc_product_mail_notification_search"/>
-      <field name="domain">[('sc_is_current_recipient', '=', True), ('notification_type', '=', 'inbox')]</field><field name="context">{'create': False, 'delete': False, 'search_default_unread': 1}</field>
+      <field name="domain">[('sc_is_current_recipient', '=', True), ('notification_type', '=', 'inbox')]</field><field name="context">{'create': False, 'delete': False, 'edit': False, 'search_default_unread': 1}</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_read')])]"/>
     </record>
     <record id="action_sc_product_project_edit_v1" model="ir.actions.act_window">
       <field name="name">项目信息编辑</field><field name="res_model">project.project</field><field name="view_mode">tree,form</field>
-      <field name="context">{'create': False, 'active_test': True}</field>
+      <field name="context">{'active_test': True, 'create': False, 'delete': False}</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_user'), ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
     </record>
     <record id="action_sc_product_policy_document_v1" model="ir.actions.act_window">
@@ -37,7 +37,7 @@
     </record>
     <record id="action_sc_product_partner_blacklist_v1" model="ir.actions.act_window">
       <field name="name">客商黑名单</field><field name="res_model">res.partner</field><field name="view_mode">tree,form</field>
-      <field name="domain">[]</field><field name="context">{'create': False, 'search_default_blacklisted': 1}</field>
+      <field name="domain">[]</field><field name="context">{'create': False, 'delete': False, 'search_default_blacklisted': 1}</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_contact_manager')])]"/>
     </record>
     <record id="action_sc_product_tender_information_v1" model="ir.actions.act_window">
@@ -98,6 +98,7 @@
     <record id="action_sc_product_team_loan_deduction_v1" model="ir.actions.act_window">
       <field name="name">班组借/扣款登记</field><field name="res_model">sc.team.loan.deduction.workspace</field><field name="view_mode">form</field>
       <field name="view_id" ref="smart_construction_core.view_sc_team_loan_deduction_workspace_form"/><field name="target">current</field>
+      <field name="context">{'delete': False}</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_user'), ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
     </record>
     <record id="action_sc_product_general_contract_settlement_v1" model="ir.actions.act_window">
@@ -110,11 +111,13 @@
     <record id="action_sc_product_current_account_v1" model="ir.actions.act_window">
       <field name="name">往来款登记</field><field name="res_model">sc.current.account.workspace</field><field name="view_mode">form</field>
       <field name="view_id" ref="smart_construction_core.view_sc_current_account_workspace_form"/><field name="target">current</field>
+      <field name="context">{'delete': False}</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_finance_user'), ref('smart_construction_core.group_sc_cap_finance_manager')])]"/>
     </record>
     <record id="action_sc_product_company_project_refund_v1" model="ir.actions.act_window">
       <field name="name">公司&amp;项目退款</field><field name="res_model">sc.company.project.refund.workspace</field><field name="view_mode">form</field>
       <field name="view_id" ref="smart_construction_core.view_sc_company_project_refund_workspace_form"/><field name="target">current</field>
+      <field name="context">{'delete': False}</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_finance_user'), ref('smart_construction_core.group_sc_cap_finance_manager')])]"/>
     </record>
     <record id="action_sc_product_project_tax_deduction_v1" model="ir.actions.act_window">
@@ -128,6 +131,7 @@
       <field name="name">税务申报</field><field name="res_model">sc.tax.filing</field><field name="view_mode">tree,form</field>
       <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_tax_filing_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_tax_filing_form')})]"/>
       <field name="search_view_id" ref="smart_construction_core.view_sc_tax_filing_search"/>
+      <field name="context">{'delete': False}</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_finance_manager')])]"/>
     </record>
     <record id="action_sc_product_tax_report_v1" model="ir.actions.act_window">
@@ -388,7 +392,7 @@
       <field name="name">res.partner.blacklist.form.product.v1</field>
       <field name="model">res.partner</field>
       <field name="arch" type="xml">
-        <form string="客商黑名单" create="false" delete="false">
+        <form string="客商黑名单">
           <header>
             <button name="action_sc_add_blacklist" type="object" string="列入黑名单" class="btn-primary"
                     groups="smart_construction_core.group_sc_cap_contact_manager" invisible="sc_blacklisted"/>

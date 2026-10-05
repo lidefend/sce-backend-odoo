@@ -4,7 +4,7 @@
         <field name="name">sc.company.project.refund.workspace.form</field>
         <field name="model">sc.company.project.refund.workspace</field>
         <field name="arch" type="xml">
-            <form string="公司&amp;项目退款" edit="1" delete="0">
+            <form string="公司&amp;项目退款">
                 <header>
                     <button name="action_deduction_refund" type="object" string="扣款实缴退回" class="btn-primary" invisible="not project_id"/>
                     <button name="action_bid_deposit_return" type="object" string="投标保证金退回" class="btn-secondary" invisible="not project_id"/>

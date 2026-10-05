@@ -4,7 +4,7 @@
         <field name="name">sc.current.account.workspace.form</field>
         <field name="model">sc.current.account.workspace</field>
         <field name="arch" type="xml">
-            <form string="往来款登记" edit="1" delete="0">
+            <form string="往来款登记">
                 <header>
                     <button name="action_project_borrow_company" type="object" string="项目借公司款" class="btn-primary" invisible="not project_id"/>
                     <button name="action_project_repay_company" type="object" string="项目还公司款" class="btn-secondary" invisible="not project_id"/>

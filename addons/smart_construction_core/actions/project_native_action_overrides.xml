@@ -18,7 +18,7 @@
     <record id="action_sc_project_list_form_view" model="ir.actions.act_window.view">
         <field name="sequence" eval="20"/>
         <field name="view_mode">form</field>
-        <field name="view_id" ref="smart_construction_core.view_project_overview_form"/>
+        <field name="view_id" ref="project.edit_project"/>
         <field name="act_window_id" ref="smart_construction_core.action_sc_project_list"/>
     </record>
     <record id="action_sc_project_list_kanban_view" model="ir.actions.act_window.view">
@@ -30,6 +30,7 @@
 
     <record id="action_project_dashboard" model="ir.actions.act_window">
         <field name="search_view_id" ref="smart_construction_core.view_project_project_search_sc_business"/>
+        <field name="context">{'group_by': 'lifecycle_state', 'create': False, 'delete': False, 'edit': False, 'no_duplicate': True}</field>
         <field name="view_ids" eval="[(5, 0, 0),
             (0, 0, {'view_mode': 'kanban', 'view_id': ref('smart_construction_core.view_project_project_kanban_dashboard')}),
             (0, 0, {'view_mode': 'tree'}),

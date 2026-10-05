@@ -11,7 +11,7 @@
         <field name="name">project.project.information.edit.form.product.v1</field>
         <field name="model">project.project</field>
         <field name="arch" type="xml">
-            <form string="项目信息编辑" create="false" delete="false">
+            <form string="项目信息编辑">
                 <header>
                     <field name="sc_approval_state" readonly="1"/>
                 <field name="validation_status" invisible="1"/>

@@ -439,11 +439,16 @@ verify.formal_list_surface.no_test_placeholder_guard.prod: guard.prod.readonly c
 	@python3 -m py_compile scripts/verify/formal_list_surface_no_test_placeholder_guard.py
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) PROD_READONLY_VERIFY=1 bash scripts/ops/odoo_shell_exec.sh < scripts/verify/formal_list_surface_no_test_placeholder_guard.py
 
+.PHONY: verify.formal_entry_capability_authority.guard
+verify.formal_entry_capability_authority.guard: guard.prod.forbid check-compose-project check-compose-env
+	@python3 -m py_compile scripts/verify/formal_entry_capability_authority_guard.py
+	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/formal_entry_capability_authority_guard.py
+
 policy.cleanup.formal_list_surface_test_contract: guard.prod.danger check-compose-project check-compose-env
 	@python3 -m py_compile scripts/ops/formal_list_surface_test_contract_cleanup.py
 	@$(RUN_ENV) APPLY="$(APPLY)" DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/ops/formal_list_surface_test_contract_cleanup.py
 
-verify.system_user_experience.quick: guard.prod.forbid verify.productization.system_closure.topic_guard verify.system_user_experience.coverage_guard verify.frontend.product_language.guard verify.frontend.config_workbench_navigation_boundary.guard verify.project_context.selector_product_boundary.guard verify.formal_menu.runtime_no_legacy_carrier_guard verify.formal_list_surface.no_test_placeholder_guard verify.product.page_structure
+verify.system_user_experience.quick: guard.prod.forbid verify.productization.system_closure.topic_guard verify.system_user_experience.coverage_guard verify.frontend.product_language.guard verify.frontend.config_workbench_navigation_boundary.guard verify.project_context.selector_product_boundary.guard verify.formal_menu.runtime_no_legacy_carrier_guard verify.formal_list_surface.no_test_placeholder_guard verify.formal_entry_capability_authority.guard verify.product.page_structure
 	@node --check frontend/apps/web/scripts/config_workbench_operation_acceptance.mjs
 	@node --check frontend/apps/web/scripts/config_workbench_operation_summary_guard.mjs
 	@node --check frontend/apps/web/scripts/business_form_user_perspective_acceptance.mjs
