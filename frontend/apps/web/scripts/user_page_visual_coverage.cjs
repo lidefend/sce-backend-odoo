@@ -21,6 +21,10 @@ const skipForms = process.env.SKIP_FORMS === '1';
 const skipActions = process.env.SKIP_ACTIONS === '1';
 const startIndex = Number(process.env.START_INDEX || 0);
 const limit = Number(process.env.LIMIT || 0);
+const viewportWidth = Number(process.env.VIEWPORT_WIDTH || 1440);
+const viewportHeight = Number(process.env.VIEWPORT_HEIGHT || 1000);
+const colorScheme = String(process.env.COLOR_SCHEME || 'light').toLowerCase() === 'dark' ? 'dark' : 'light';
+const zoomPercent = Number(process.env.ZOOM_PERCENT || 100);
 
 function flattenNav(nodes, path = []) {
   const out = [];
@@ -30,7 +34,8 @@ function flattenNav(nodes, path = []) {
     const meta = node?.meta || {};
     const target = meta.entry_target || {};
     const refs = target.compatibility_refs || {};
-    const actionId = Number(meta.action_id || refs.action_id || 0);
+    const nodeAction = node?.action && typeof node.action === 'object' ? node.action : {};
+    const actionId = Number(node?.action_id || meta.action_id || target.action_id || refs.action_id || nodeAction.id || nodeAction.action_id || 0);
     const menuId = Number(meta.menu_id || node?.menu_id || refs.menu_id || 0);
     const model = String(meta.model || refs.model || '').trim();
     const sceneKey = String(meta.scene_key || target.scene_key || '').trim();
@@ -56,15 +61,49 @@ function uniqEntries(rows) {
 
 async function main() {
   const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  const page = await browser.newPage({
+    viewport: { width: viewportWidth, height: viewportHeight },
+    colorScheme,
+    locale: 'zh-CN',
+  });
+  if (zoomPercent !== 100) {
+    await page.addInitScript((z) => {
+      const apply = () => { document.documentElement.style.zoom = `${z}%`; };
+      apply();
+      document.addEventListener('DOMContentLoaded', apply);
+    }, zoomPercent);
+  }
   const consoleErrors = [];
+  const httpFailures = [];
+  const requestFailures = [];
   let currentProbe = '';
   page.on('console', (msg) => {
     if (msg.type() === 'error') consoleErrors.push({ probe: currentProbe, text: msg.text().slice(0, 500) });
   });
   page.on('pageerror', (err) => consoleErrors.push({ probe: currentProbe, text: err.message.slice(0, 500) }));
+  page.on('requestfailed', (request) => {
+    const failureText = request.failure()?.errorText || '';
+    if (failureText.includes('net::ERR_ABORTED')) return;
+    requestFailures.push({ probe: currentProbe, method: request.method(), url: request.url().slice(0, 300), failure: failureText });
+  });
   page.on('response', async (response) => {
-    if (response.status() >= 500) {
+    const responseStatus = response.status();
+    if (responseStatus >= 400) {
+      const failingRequest = response.request();
+      let failingSummary = failingRequest.postData() || '';
+      try {
+        const parsed = JSON.parse(failingSummary);
+        failingSummary = JSON.stringify({ intent: parsed.intent, op: parsed.params?.op, model: parsed.params?.model });
+      } catch { /* keep raw */ }
+      httpFailures.push({
+        probe: currentProbe,
+        status: responseStatus,
+        method: failingRequest.method(),
+        url: response.url().slice(0, 300),
+        request: String(failingSummary).slice(0, 400),
+      });
+    }
+    if (responseStatus >= 500) {
       const requestPayload = response.request().postData() || '';
       const responsePayload = await response.text().catch(() => '');
       let requestSummary = requestPayload;
@@ -122,7 +161,8 @@ async function main() {
     with: ['workspace_home'],
     root_xmlid: rootMenuXmlid,
   });
-  let entries = uniqEntries(flattenNav(init.nav || []));
+  const canonicalNav = (init && init.navigation && Array.isArray(init.navigation.nav)) ? init.navigation.nav : (init.nav || []);
+  let entries = uniqEntries(flattenNav(canonicalNav));
   const totalDiscovered = entries.length;
   if (maxActions > 0) entries = entries.slice(0, maxActions);
   if (startIndex > 0 || limit > 0) {
@@ -154,13 +194,29 @@ async function main() {
       formOk: formResults.filter((row) => !row.skipped && row.ok).length,
       formFailed: formResults.filter((row) => !row.skipped && !row.ok).length,
       consoleErrorCount: consoleErrors.length,
+      httpFailureCount: httpFailures.length,
+      requestFailureCount: requestFailures.length,
+      overflowRouteCount: actionResults.filter((row) => row.hasHorizontalOverflow).length,
+      overflowFormCount: formResults.filter((row) => !row.skipped && row.hasHorizontalOverflow).length,
     };
     fs.writeFileSync(outPath, JSON.stringify({
+      meta: {
+        baseUrl: base,
+        database: dbName,
+        login,
+        rootMenuXmlid,
+        viewport: { width: viewportWidth, height: viewportHeight },
+        colorScheme,
+        zoomPercent,
+        generatedAt: new Date().toISOString(),
+      },
       summary,
       actionFailures: actionResults.filter((row) => !row.ok).slice(0, 100),
       formFailures: formResults.filter((row) => !row.skipped && !row.ok).slice(0, 100),
       formSkipped: formResults.filter((row) => row.skipped).slice(0, 200),
       consoleErrors: consoleErrors.slice(0, 100),
+      httpFailures: httpFailures.slice(0, 200),
+      requestFailures: requestFailures.slice(0, 100),
       actionResults,
       formResults,
     }, null, 2));
@@ -175,7 +231,9 @@ async function main() {
     if (!skipActions) {
       currentProbe = `list:${entry.path}`;
       const started = Date.now();
-      let actionRow = { index, ...entry, route, ok: false, elapsedMs: 0, titleVisible: false, hasErrorText: false, headers: [], issue: '' };
+      const consoleBefore = consoleErrors.length;
+      const httpBefore = httpFailures.length;
+      let actionRow = { index, ...entry, route, ok: false, elapsedMs: 0, titleVisible: false, hasErrorText: false, headers: [], issue: '', hasHorizontalOverflow: false, overflowPx: 0, httpFailureStatuses: [], consoleErrorDelta: 0 };
       try {
         await page.goto(`${base}${route}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
         await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
@@ -187,7 +245,20 @@ async function main() {
         const hasErrorText = /render error|contract not renderable|missing required nav|页面加载失败|系统异常|加载异常|发生异常|Traceback|Cannot read/i.test(text);
         const lastLabel = String(entry.path || '').split(' / ').pop() || '';
         const titleVisible = entry.label ? text.includes(entry.label) || text.includes(lastLabel) : true;
-        actionRow = { ...actionRow, ok: !hasErrorText, elapsedMs: Date.now() - started, titleVisible, hasErrorText, headers };
+        const geometry = await page.evaluate(() => ({ doc: document.documentElement.scrollWidth, viewport: window.innerWidth })).catch(() => ({ doc: 0, viewport: 0 }));
+        const overflowPx = Math.max(0, geometry.doc - geometry.viewport - 2);
+        actionRow = {
+          ...actionRow,
+          ok: !hasErrorText,
+          elapsedMs: Date.now() - started,
+          titleVisible,
+          hasErrorText,
+          headers,
+          hasHorizontalOverflow: overflowPx > 0,
+          overflowPx,
+          httpFailureStatuses: httpFailures.slice(httpBefore).map((row) => row.status),
+          consoleErrorDelta: consoleErrors.length - consoleBefore,
+        };
       } catch (err) {
         actionRow = { ...actionRow, elapsedMs: Date.now() - started, issue: err instanceof Error ? err.message : String(err), ok: false };
       }
@@ -221,7 +292,8 @@ async function main() {
     formOpened += 1;
     currentProbe = `form:${entry.path}`;
     const formRoute = `/r/${encodeURIComponent(entry.model)}/${recordId}?db=${encodeURIComponent(dbName)}&action_id=${entry.actionId}${entry.menuId ? `&menu_id=${entry.menuId}` : ''}`;
-    let formRow = { ...entry, recordId, route: formRoute, ok: false, outline: [], inputCount: 0, issue: '', hasErrorText: false };
+    const formHttpBefore = httpFailures.length;
+    let formRow = { ...entry, recordId, route: formRoute, ok: false, outline: [], inputCount: 0, issue: '', hasErrorText: false, hasHorizontalOverflow: false, overflowPx: 0, httpFailureStatuses: [] };
     try {
       await page.goto(`${base}${formRoute}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
       await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
@@ -232,7 +304,9 @@ async function main() {
       )).catch(() => []);
       const inputCount = await page.locator('input, textarea, select').count().catch(() => 0);
       const hasErrorText = /render error|contract not renderable|页面加载失败|Traceback|Cannot read/i.test(text);
-      formRow = { ...formRow, ok: !hasErrorText, outline, inputCount, hasErrorText };
+      const formGeometry = await page.evaluate(() => ({ doc: document.documentElement.scrollWidth, viewport: window.innerWidth })).catch(() => ({ doc: 0, viewport: 0 }));
+      const formOverflowPx = Math.max(0, formGeometry.doc - formGeometry.viewport - 2);
+      formRow = { ...formRow, ok: !hasErrorText, outline, inputCount, hasErrorText, hasHorizontalOverflow: formOverflowPx > 0, overflowPx: formOverflowPx, httpFailureStatuses: httpFailures.slice(formHttpBefore).map((row) => row.status) };
     } catch (err) {
       formRow = { ...formRow, issue: err instanceof Error ? err.message : String(err), ok: false };
     }

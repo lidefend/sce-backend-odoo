@@ -6,7 +6,11 @@ from odoo.exceptions import AccessError, MissingError
 from ..core.intent_operation_policy import access_mode_for_intent, nested_params
 from ..core.work_item_action_authority import work_item_request_access_mode
 from ..core.request_identity import identity_id
-from ..utils.backend_contract_boundaries import APPROVAL_POLICY_INTENTS, BUSINESS_CONFIG_INTENTS
+from ..utils.backend_contract_boundaries import (
+    APPROVAL_POLICY_INTENTS,
+    BUSINESS_CONFIG_INTENTS,
+    MENU_CONFIG_INTENTS,
+)
 from ..utils.extension_hooks import call_extension_hook_first
 from .auth import get_user_from_token
 
@@ -141,18 +145,39 @@ def _action_model_for_type(action_type):
     return aliases.get(action_type, "")
 
 
-def _menu_visible_for_user(menu, user):
-    current = menu
-    user_groups = getattr(user, "groups_id", None)
-    while current:
-        groups = getattr(current, "groups_id", None)
-        if groups and user_groups is not None and not (groups & user_groups):
-            return False
-        parent = getattr(current, "parent_id", None)
-        if not parent:
-            break
-        current = parent
-    return True
+def _published_menu_decision(env, menu_id, action_id=0):
+    """Whether the published navigation authorizes a menu carrier for the user.
+
+    The product baseline keeps one navigation contract owning both the rendered
+    tree and its route authority (``addons/smart_core/handlers/system_init.py``),
+    and ``.agent/decisions/contract-first.yaml`` forbids deriving release
+    authorization from action declarations or native menu existence/visibility.
+    The gate therefore consumes the published route authority and never
+    re-derives publication from ``ir.ui.menu``.
+
+    ``None`` means the authority could not be established; the caller fails
+    closed instead of guessing from native visibility.
+    """
+    from ..delivery.runtime_route_authority import (
+        build_runtime_route_authority,
+        menu_publication_decision,
+    )
+
+    return menu_publication_decision(
+        build_runtime_route_authority(env), menu_id, action_id=action_id
+    )
+
+
+_MENU_CONFIG_INTENT_NAMES = frozenset(MENU_CONFIG_INTENTS.values())
+
+
+def _is_menu_config_intent(intent_name):
+    """Configuration intents act on the config surface, not the live navigation.
+
+    They address hidden or created menus and enforce their own access and scope
+    checks, so the live-navigation publication gate must not deny them.
+    """
+    return str(intent_name or "").strip() in _MENU_CONFIG_INTENT_NAMES
 
 
 def _resolve_action(env, action_id, action_type=None):
@@ -357,7 +382,10 @@ def check_intent_permission(ctx):
                 raise AccessError(f"用户无权以 {access_mode} 访问记录 {record_ids}")
 
         # ✅ 校验菜单权限（如果传入 menu_id）
-        if menu_id:
+        # Publication authority: a live-navigation menu must appear in the same
+        # route authority that owns the rendered navigation contract. Menu
+        # configuration intents keep their own access/scope checks instead.
+        if menu_id and not _is_menu_config_intent(intent_name):
             normalized_menu_id = _to_int(menu_id)
             if normalized_menu_id <= 0:
                 raise MissingError(f"菜单 {menu_id} 不存在")
@@ -368,7 +396,8 @@ def check_intent_permission(ctx):
                 menu = env["ir.ui.menu"].browse(normalized_menu_id)
                 if not menu.exists():
                     raise MissingError(f"菜单 {menu_id} 不存在")
-                if not _menu_visible_for_user(menu, env.user):
+                published = _published_menu_decision(env, normalized_menu_id, _to_int(action_id))
+                if published is not True:
                     raise AccessError(f"用户无权访问菜单 {menu.name}")
 
         # ✅ 校验动作权限（如果传入 action_id）
