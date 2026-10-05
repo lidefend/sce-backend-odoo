@@ -81,8 +81,8 @@ filestore.
    `ACCEPTANCE_BASE_URL=http://127.0.0.1:18081`; it requires
    `ACCEPTANCE_LOGIN=wutao` and a non-empty `ACCEPTANCE_PASSWORD`, so the
    publish gate must exercise real login and `system.init`. The daily product
-   navigation baseline requires `ACCEPTANCE_NAV_MIN_ACTIONS=100`,
-   `ACCEPTANCE_NAV_MAX_ACTIONS=115`, and
+   navigation baseline requires `ACCEPTANCE_NAV_MIN_ACTIONS=90`,
+   `ACCEPTANCE_NAV_MAX_ACTIONS=90`, and
    `ACCEPTANCE_NAV_FORBIDDEN_LABELS=用户核对菜单,用户数据验收,用户验收,直营项目系统菜单`.
    It also requires `ACCEPTANCE_NAV_REQUIRED_PATHS` to include the locked daily
    product path sample for customer, supplier, project ledger, general contract,

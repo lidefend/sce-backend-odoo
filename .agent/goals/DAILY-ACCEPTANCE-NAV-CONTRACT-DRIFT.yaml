@@ -1,0 +1,57 @@
+schema_version: 1
+goal:
+  id: DAILY-ACCEPTANCE-NAV-CONTRACT-DRIFT
+  title: align_daily_acceptance_navigation_values_with_the_acceptance_contract
+  status: in_progress
+  formal_product_layer: P4
+  layer_target: ops_daily_acceptance_entry
+  module:
+    - docs/ops
+    - scripts/verify
+    - .agent
+  objective: >-
+    The two daily-acceptance ops runbooks and the environment topology guard
+    still pinned the pre-PR#574 navigation policy `ACCEPTANCE_NAV_MIN_ACTIONS=100`
+    / `ACCEPTANCE_NAV_MAX_ACTIONS=115`, while
+    config/frontend/acceptance_environments_v1.json profiles.daily.navigation_policy
+    (set by merge b6b8a0e6, PR #574) and the fail-closed
+    daily_dev_acceptance_env_guard both enforce 90/90. Record the contract-derived
+    values in the runbooks and make the guard derive the two tokens from the
+    contract so the pair cannot drift again. No gate, threshold, assertion,
+    fixture, probe or product behaviour is relaxed.
+  baseline:
+    branch: main
+    full_sha: 626836ad0ee9531316ab8498c750556ca55bb254
+    source: clean_main_after_pr_583
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_governance
+    why_here: >-
+      The stale values live in P4 ops acceptance documentation and a
+      doc-consistency guard; the corrected value is read from the acceptance
+      contract config, which remains the single authority.
+    why_not_elsewhere:
+      - no_p0_platform_mechanism_change
+      - no_p1_construction_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_configuration_change
+      - no_change_to_the_acceptance_gate_fixture_or_database
+    blast_radius:
+      - docs/ops daily acceptance runbooks
+      - scripts/verify/environment_topology_guard.py token derivation
+  batches:
+    - id: A
+      title: record_the_contract_values_and_derive_them_in_the_guard
+      status: in_progress
+      evidence:
+        - the_contract_config_is_the_single_authority_for_min_and_max_actions
+        - verify_environment_topology_guard_passes_after_the_correction
+  exclusions:
+    - no_change_to_the_daily_acceptance_policy_values_themselves
+    - no_change_to_any_gate_threshold_assertion_or_fixture
+    - no_change_to_the_acceptance_probe_or_frontend
+  rollback:
+    - revert the runbook values and the guard derivation
+  next_exact_step: >-
+    Verify verify.environment.topology.guard and verify.agent.resume.unit, record
+    the receipts, then publish this docs+guard candidate through the ordinary PR
+    lane alongside the branch's DB_NAME constraint commit.
