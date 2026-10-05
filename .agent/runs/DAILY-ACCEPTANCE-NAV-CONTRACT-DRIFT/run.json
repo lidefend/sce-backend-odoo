@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-ACCEPTANCE-NAV-CONTRACT-DRIFT",
+  "branch": "codex/daily-acceptance-entry-dbname-cli-constraint-v1",
+  "status": "active",
+  "baseline_sha": "626836ad0ee9531316ab8498c750556ca55bb254",
+  "goal": ".agent/goals/DAILY-ACCEPTANCE-NAV-CONTRACT-DRIFT.yaml",
+  "record": "docs/ops/iterations/daily_acceptance_nav_contract_drift_20261006.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/",
+    ".agent/runs/",
+    "docs/ops/iterations/",
+    "docs/ops/dev_acceptance_release_runbook_v1.md",
+    "docs/ops/environment_tiers_unified_runbook_v1.md",
+    "scripts/verify/environment_topology_guard.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline Make gates plus tracked docs/guard/run/agent metadata; this batch performs no runtime, daily-server or database write"
+  },
+  "checks": {
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ]
+    },
+    "topology_guard": {
+      "target": "verify.environment.topology.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/environment_topology_guard.py",
+        "scripts/verify/daily_dev_customer_addons_runtime_guard.py",
+        "scripts/verify/test_daily_dev_customer_addons_runtime_guard.py",
+        "scripts/ops/daily_candidate_bundle_sync.py",
+        "scripts/ops/test_daily_candidate_bundle_sync.py",
+        "config/frontend/acceptance_environments_v1.json",
+        "docs/ops/environment_tiers_unified_runbook_v1.md",
+        "docs/ops/daily_dev_runtime_repo_policy_v1.md",
+        "docs/ops/production_deployment_runbook_v1.md",
+        "docs/ops/production_upgrade_standard_v1.md",
+        "Makefile",
+        "make"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Record verify.agent.resume.unit and verify.environment.topology.guard receipts, commit the docs+guard correction with the branch's DB_NAME constraint commit, and publish through the ordinary PR lane once GitHub Actions leaves the 2026-10-05 major outage.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false,
+  "completion": {
+    "batch": "in_progress: the two daily-acceptance ops runbooks now state the contract-derived navigation values (90/90) instead of the pre-PR#574 100/115, and environment_topology_guard.py derives ACCEPTANCE_NAV_MIN_ACTIONS/MAX_ACTIONS from config/frontend/acceptance_environments_v1.json profiles.daily.navigation_policy so the doc/guard pair can no longer drift. No gate, threshold, assertion, fixture or probe changed.",
+    "mainline": "not_run",
+    "deployment": "not_run_in_this_batch: docs and an offline doc-consistency guard only; neither the frontend build nor the daily server is touched",
+    "product_delivery": "not_run",
+    "retained_limits": [
+      "the daily acceptance policy values themselves are unchanged; this batch only makes the documentation and the topology guard agree with the enforced contract",
+      "the daily-server matrix observed at 626836ad is reused as-is and is not re-run for this docs-only correction",
+      "PR #584 merge is blocked by the 2026-10-05 GitHub Actions major outage (runner assignment delays), not by candidate content"
+    ]
+  }
+}
