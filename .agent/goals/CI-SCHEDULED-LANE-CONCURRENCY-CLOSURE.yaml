@@ -1,0 +1,62 @@
+schema_version: 1
+goal:
+  id: CI-SCHEDULED-LANE-CONCURRENCY-CLOSURE
+  title: scope_required_gate_concurrency_groups_by_event_kind
+  status: completed
+  formal_product_layer: P4
+  layer_target: github_actions_required_check_workflow_concurrency
+  module:
+    - .github/workflows
+    - scripts/ci
+    - docs/ops/iterations
+    - .agent
+  objective: >-
+    Close the nightly scheduled-gate fragility on main: the required gate
+    workflows keyed their concurrency group only by ref, so a push run on
+    refs/heads/main could cancel the in-flight nightly schedule run, and
+    release_candidate_gate (which requires a schedule-event success from each
+    sibling at the same head) then failed every night the window was hit. Scope
+    each group by github.event_name so push, schedule and pull_request runs
+    never share a group while same-kind re-runs still collapse. No required
+    check, lane selection, cron, trigger or assertion is removed or relaxed.
+  baseline:
+    branch: main
+    full_sha: 0c5eaab382c337db980cef03b92515d78a580e9f
+    source: clean_main_after_pr_571
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_ci_verification_tool
+    why_here: >-
+      Concurrency keys and the workflow contract test are P4 ops/CI verification
+      tooling that decides whether the nightly candidate gate can observe its
+      sibling schedules. Fixing the group key is tooling correctness in the same
+      layer, not product semantics.
+    why_not_elsewhere:
+      - no_p0_frontend_contract_or_platform_mechanism
+      - no_p1_construction_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_configuration
+      - no_database_fixture_migration_release_or_deployment
+    blast_radius:
+      - five_required_check_workflow_concurrency_group_edits
+      - one_locking_assertion_in_the_existing_ci_contract_test
+      - one_closeout_record_and_run_metadata
+  batches:
+    - id: A
+      title: scope_required_gate_concurrency_by_event_kind
+      status: completed
+      evidence:
+        - ci_risk_workflow_contract_7_tests_ok
+        - verify_ci_scheduled_gates_pass
+        - verify_ci_orm_selection_unit_pass
+  exclusions:
+    - no_change_to_any_trigger_cron_lane_selection_job_or_required_check
+    - no_relaxation_of_cancel_in_progress_or_any_assertion
+    - no_new_global_test_framework
+    - no_change_to_the_gitee_mirror_or_branch_prefix_policy
+  rollback:
+    - revert_the_five_concurrency_group_edits
+    - revert_the_contract_test_assertion_and_run_metadata
+  next_exact_step: >-
+    Complete: five required-gate concurrency groups scoped by github.event_name,
+    locked by the existing CI contract test, verified with L1/L2 and a negative
+    control; publish through the ordinary protected PR lane.
