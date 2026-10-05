@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4580`
+- Scanned files: `4584`
 - Files requiring split plan: `60`
 - Files above warning threshold: `111`
 
@@ -90,8 +90,10 @@ Generated from repository source files. This report is informational during the 
 | 1408 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1395 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1389 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
+| 1348 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1334 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
+| 1320 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1320 | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1305 | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 1300 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
@@ -100,7 +102,6 @@ Generated from repository source files. This report is informational during the 
 | 1271 | Python source | `scripts/ops/retire_historical_branch_refs.py` |
 | 1263 | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
 | 1262 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
-| 1256 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1249 | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
 | 1227 | Python source | `addons/smart_construction_core/tests/test_p1_funding_authority.py` |
 | 1221 | Python source | `addons/smart_construction_core/models/support/tender.py` |
@@ -109,12 +110,11 @@ Generated from repository source files. This report is informational during the 
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1207 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
-| 1178 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
-| 1174 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
+| 1187 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1170 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
-| 1147 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1147 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
+| 1146 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1137 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
@@ -263,16 +263,16 @@ Generated from repository source files. This report is informational during the 
 | 1408 | warning | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1395 | warning | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1389 | warning | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
+| 1348 | warning | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1339 | warning | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1334 | warning | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
+| 1320 | warning | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1320 | warning | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1305 | warning | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 1300 | warning | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1292 | warning | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1287 | warning | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1271 | warning | Python source | `scripts/ops/retire_historical_branch_refs.py` |
-| 1263 | warning | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
-| 1262 | warning | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
 
 ## Interpretation
 
