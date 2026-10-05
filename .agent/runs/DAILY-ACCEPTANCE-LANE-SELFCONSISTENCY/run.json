@@ -30,10 +30,13 @@
     }
   },
   "completion": {
-    "batch": "in_progress",
-    "deployment": "not_run",
-    "mainline": "not_run",
-    "product_delivery": "not_run"
+    "batch": "in_progress: run the declared guards on the reconciled head before retiring this metadata-only carrier.",
+    "mainline": "the self-consistency content is already on main; this branch only reconciles and retires its carrier",
+    "deployment": "not_run_in_this_batch: metadata only",
+    "product_delivery": "not_run",
+    "retained_limits": [
+      "this branch did not produce the integration; the same content landed through the earlier lane"
+    ]
   },
   "environment": {
     "authority": "existing local Make tools and repository guards; no database or service access",
@@ -41,7 +44,7 @@
   },
   "goal": ".agent/goals/DAILY-ACCEPTANCE-LANE-SELFCONSISTENCY.yaml",
   "id": "DAILY-ACCEPTANCE-LANE-SELFCONSISTENCY",
-  "next_exact_step": "Reconciled 2026-10-06 with main 5298e288 (the branch was 7 commits behind); the merge kept main's retired-binding cleanup and the contract-derived navigation tokens in environment_topology_guard.py. Now re-run verify.environment.topology.guard and verify.frontend.acceptance.environment.guard, then publish through the governed PR lane.",
+  "next_exact_step": "Reconciled 2026-10-06 with main 5298e288 and confirmed by tree comparison that the self-consistency content is already on main; this carrier holds no unique change. Running the declared guards, then retiring the carrier and its active-run binding in the final commit.",
   "record": ".runtime/pr/daily-acceptance-lane-selfconsistency.md",
   "schema_version": 1,
   "scope": [
