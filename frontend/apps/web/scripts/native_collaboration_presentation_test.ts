@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { shouldShowNativeCollaborationPanel } from '../src/pages/contractForm/collaborationPresentation';
-import { resolveNativeFollowerContract } from '../src/pages/contractForm/collaborationContract';
+import { nativeCollaborationUnavailableMessage, resolveNativeFollowerContract } from '../src/pages/contractForm/collaborationContract';
 
 assert.equal(shouldShowNativeCollaborationPanel({
   hasChatterActions: true,
@@ -57,5 +57,12 @@ assert.deepEqual(resolveNativeFollowerContract({
     unfollow: { enabled: false, label: '取消关注' },
   },
 }, 'exact backend intents and action authority project into the professional component');
+
+assert.equal(nativeCollaborationUnavailableMessage({
+  recordId: 1, model: 'res.users', renderProfile: 'detail', hasAttachments: true,
+}), '', 'a loaded record keeps the collaboration panel without an unavailable message');
+assert.equal(nativeCollaborationUnavailableMessage({
+  recordId: 1, model: 'res.users', renderProfile: 'detail', hasAttachments: true, authorityDenied: true,
+}), '当前记录不在所选业务范围内，暂不显示协作日志。', 'an authority-absent record projects the declared neutral state instead of a record-level error');
 
 console.log('native collaboration presentation tests passed');

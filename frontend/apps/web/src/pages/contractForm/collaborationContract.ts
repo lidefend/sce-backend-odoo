@@ -170,7 +170,9 @@ export function nativeCollaborationUnavailableMessage(params: {
   model: string;
   renderProfile: string;
   hasAttachments: boolean;
+  authorityDenied?: boolean;
 }) {
+  if (params.authorityDenied) return '当前记录不在所选业务范围内，暂不显示协作日志。';
   if (params.recordId && params.model) return '';
   if (params.renderProfile === 'create') {
     return params.hasAttachments

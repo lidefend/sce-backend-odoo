@@ -91,7 +91,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     configurationPreview: computed(() => Boolean(route.query.preview_token)),
     activeChatterMode, activeChatterLabel, chatterDraft, replyTarget, activitySummary, activityDeadline, activityNote,
     collaborationUserQuery, collaborationUserOptions, collaborationUserChoices, collaborationUsersLoading,
-    selectedMentionUsers, activityAssigneeId, chatterPosting, chatterError, chatterTimeline,
+    selectedMentionUsers, activityAssigneeId, chatterPosting, chatterError, chatterTimeline, chatterUnavailable: dependencies.chatterUnavailable,
     chatterTimelineHasMore, chatterTimelineLoading, activityUpdatingIds,
     followers, followerCount, isFollowing, canFollow, canUnfollow, followersLoading, followerError,
     attachmentError, attachmentUploading, attachmentDeletingIds, messageDeletingIds, pendingNativeAttachments, onNativeAttachmentSelected,
