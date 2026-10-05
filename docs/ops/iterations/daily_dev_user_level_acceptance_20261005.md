@@ -285,3 +285,90 @@ ARCH-DECISION-001。
 - L0 身份缺口：sc-root `/api/runtime-version` 仍报 `4ba044e0`，`.env.dev SC_SOURCE_REVISION`
   未随候选同步刷新且无受管入口；验收身份继续绑定 sc-root git HEAD + DB + 构建产物。
 - 详情页 1440/390 明暗核对、真实关联往返、创建/编辑与工作台最小证据差额 —— 待下一执行单。
+
+## 6. 详情收口（1440/390 × 明暗）+ 关系往返 + 关联目标协作投影缺陷
+
+运行环境：日常库运行时 `http://127.0.0.1:18081`（=sc-root `http://1.95.85.92:18081`），
+`sc_demo`，账号 `wutao`；真实有数据的列表入口 `/a/506?menu_id=379`
+（`project.project.tree`），源记录 `project.project/581`。
+
+### 6.1 L0 身份缺口闭合（受管入口）
+
+`/api/runtime-version` 原先报 `4ba044e0`，与 sc-root 已部署 HEAD 不一致。新增受管入口
+`scripts/ops/daily_runtime_source_revision_align.py`（+8 单测）与
+`make daily.runtime.source_revision.align`（确认串
+`ALIGN_DAILY_RUNTIME_SOURCE_REVISION_WITH_DEPLOYED_HEAD`）。实跑后
+`git_sha=source_revision=9121b06427266e13712171e599907b4b461aefc2`，证据
+`.runtime/final-acceptance/daily-deployed/source-revision-align.json`。
+
+### 6.2 详情页实拍核对（通过）
+
+以受管车道 `make verify.daily_dev.list_surface.readonly.browser` 的 `detail-only` 范围，
+`1440/390 × light/dark` 各一次：`record_checks` 的 `declared_entry_route`、
+`exact_record_contract`、`declared_renderer`、`return_to_source` 全部为真；
+`driverErrorCount=0`、`detailAdopted=true`、`console_errors=[]`、`denied_requests=[]`、
+`failed_responses=[]`。证据 `.runtime/final-acceptance/detail-closeout/{light,dark}.json`
+与同名截图目录。
+
+探针侧同时修掉一处**探针缺陷**（非产品缺陷）：移动端 `390` 原先用
+`.collection-mobile-record-row__card` 当 opener，而卡片主体是“选择”语义，点击不导航；
+改为消费声明的打开动作 `[data-semantic-action="open-record"]`（桌面仍用
+`.cell-primary-link`），并新增 `LIST_SURFACE_COLOR_SCHEME=light|dark` 断言
+`[data-sc-theme-resolved]` 已解析。未放宽任何断言。
+
+### 6.3 真实关联往返（通过）
+
+真实点击 `project.project/581` 的 `user_id` 关系按钮 → 目标
+`/f/res.users/1?menu_id=438&action_id=723&return_model=project.project&return_field=user_id&return_record_id=581`
+→ `goBack` 后 URL 与进入前完全一致、源记录恢复（count 1）、动作集 `before==after`。
+归还契约携带 `return_model/return_field/return_record_id/return_action_id/return_menu_id`。
+
+### 6.4 关联目标协作块“记录不存在”：真实可见缺陷（已修）
+
+**现象**：目标页根 `data-form-model="res.users" data-state="ok"`、`data-field-fail-closed` 计数 0，
+但可见红色告警 `记录不存在`（`role="alert"`）位于
+`section.native-chatter-block → section.sc-native-contract-collaboration`。
+
+**事实**：`chatter.timeline` 是 `projection_only / no_business_fact_authority` 的可重建投影，
+按当前**业务/公司作用域**门控。实测同一意图：`res.users/2`、`res.partner/1`、`res.company/1`、
+`project.project/581` 均 200 且有条目；`res.users/1`、`res.users/3`、`res.company/21` 均 404
+（作用域外行）。`res.users` 页面契约声明 `capabilities.collaboration=true`，面板是**声明面**，
+且既有契约测试明确“已保存记录始终保留协作面板”。
+
+**根因**：前端把权威的“作用域外”答复（404 `NOT_FOUND`）灌进了**记录级错误通道**，于是在一个
+已经正常渲染的记录页上打印“记录不存在”。
+
+**修复（仅 P0 前端投影层，无模型特判、不覆盖 ACL/字段权限、不放宽断言）**：
+- `professionalCollaborationModel.isCollaborationAuthorityAbsence(cause)`：识别
+  `403/404` 与 `NOT_FOUND/PERMISSION_DENIED/*_SCOPE_DENIED`；系统/网络失败不匹配。
+- `useNativeChatterRuntime.loadTimeline`：命中权威缺席时置 `unavailable` 并清空错误/时间线，
+  不再进错误通道；成功时复位。
+- `collaborationContract.nativeCollaborationUnavailableMessage` 增加
+  `authorityDenied` → 中性声明态“当前记录不在所选业务范围内，暂不显示协作日志。”
+  （复用既有 `unavailableMessage` 空态机制，同时自然抑制不可用的撰写入口）。
+
+**复验**：本地 vite dev（`/api` 代理到日常后端）下，源 `project.project` 仍为 3 条时间线且无错误；
+目标 `res.users/1` 变为中性态、正文不再出现“记录不存在”。单测
+`professional_collaboration_model_test`（含 7 条权威缺席用例）、
+`native_collaboration_presentation_test` 与 `contract_form_collaboration_authority.unit` 全绿，
+`vue-tsc --noEmit` 与 `eslint` 均 0 退出。
+
+### 6.5 关联目标残余请求（记录，不阻塞）
+
+- `chatter.timeline res.users/1 → 404`：即 6.4 的权威作用域答复，展示层已修。
+- `api.data op=read res.company ids [2,21,22,1] → 403`：调用方公司作用域外记录被拒；
+  目标页未渲染公司字段、无 fail-closed 标记、无可见错误。
+
+两者均属权威边界（**不是** 缺陷，也不据此放宽或强制覆盖），仅登记事实。
+
+### 6.6 环境与本地清理
+
+- 受管预览 `5180`（隔离验收前端）与在用后端 `18082` 保留（18082 有 10 条活动连接）。
+- 清理本会话与更早遗留的临时监听：`5199`（本次 vite dev）、`3002/5173`（`/tmp/td-starter`
+  的 mock vite）、`5175`（游离 `release_static_server` 预览）、`8443`（`/tmp/github_proxy.py`
+  临时 TCP 转发）。日常运行时 `18081` 及其余受管 compose 环境未动。
+
+### 6.7 仍未关闭
+
+- 创建/编辑与工作台的最小证据差额（下一步执行单）。
+- 容器化受管环境的批量退役仍需按既有受管入口逐项确认，不在本次擅自下线。

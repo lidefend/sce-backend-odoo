@@ -10,37 +10,49 @@
     ".agent/active-runs.json",
     ".agent/goals/DAILY-DEV-USER-LEVEL-ACCEPTANCE.yaml",
     ".agent/runs/DAILY-DEV-USER-LEVEL-ACCEPTANCE/run.json",
-    "docs/ops/iterations/daily_dev_user_level_acceptance_20261005.md",
-    "addons/smart_core/security/intent_permission.py",
-    "addons/smart_core/models/release_management.py",
-    "addons/smart_core/tests/__init__.py",
-    "addons/smart_core/tests/test_intent_permission_menu_visibility.py",
-    "frontend/apps/web/scripts/user_page_visual_coverage.cjs",
-    "frontend/apps/web/scripts/user_template_coverage_acceptance.mjs",
-    "addons/smart_core/delivery/runtime_route_authority.py",
-    "addons/smart_core/tests/test_intent_permission_operation_policy.py",
-    "docs/engineering_convergence/test_inventory.csv",
-    "docs/engineering_convergence/test_inventory_summary.md",
-    "addons/smart_construction_scene/providers/projects_list_provider.py",
-    "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
-    "config/product_menu_contract_v1.json",
-    "config/frontend/acceptance_environments_v1.json",
-    "scripts/ops/promote_product_ten_center_policy.py",
-    "scripts/ops/test_promote_product_ten_center_policy.py",
-    "scripts/release/test_locked_menu_policy_contract.py",
-    "scripts/verify/product_menu_release_manifest_v2_guard.py",
-    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
-    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
     "addons/smart_construction_core/core_extension_policy_maps.py",
+    "addons/smart_construction_core/services/locked_menu_policy_contract.py",
     "addons/smart_construction_scene/core_extension.py",
     "addons/smart_construction_scene/profiles/scene_registry_content.py",
+    "addons/smart_construction_scene/providers/projects_list_provider.py",
     "addons/smart_construction_scene/services/capability_scene_targets.py",
-    "addons/smart_construction_core/services/locked_menu_policy_contract.py",
+    "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
+    "addons/smart_core/delivery/runtime_route_authority.py",
+    "addons/smart_core/models/release_management.py",
+    "addons/smart_core/security/intent_permission.py",
+    "addons/smart_core/tests/__init__.py",
+    "addons/smart_core/tests/test_intent_permission_menu_visibility.py",
+    "addons/smart_core/tests/test_intent_permission_operation_policy.py",
+    "config/frontend/acceptance_environments_v1.json",
+    "config/product_menu_contract_v1.json",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/ops/iterations/daily_dev_user_level_acceptance_20261005.md",
+    "frontend/apps/web/scripts/user_page_visual_coverage.cjs",
+    "frontend/apps/web/scripts/user_template_coverage_acceptance.mjs",
+    "make/codex.mk",
     "make/dev.mk",
     "make/guards.mk",
+    "scripts/ops/daily_runtime_source_revision_align.py",
+    "scripts/ops/promote_product_ten_center_policy.py",
+    "scripts/ops/test_daily_runtime_source_revision_align.py",
+    "scripts/ops/test_promote_product_ten_center_policy.py",
+    "scripts/release/test_locked_menu_policy_contract.py",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+    "scripts/verify/frontend_list_surface_structure_browser.mjs",
+    "scripts/verify/product_menu_release_manifest_v2_guard.py",
+    "scripts/verify/product_menu_runtime_closeout_guard.py",
     "scripts/verify/production_menu_release_gate_guard.py",
     "scripts/verify/test_product_menu_release_gate_contract.py",
-    "scripts/verify/product_menu_runtime_closeout_guard.py"
+    "frontend/apps/web/src/pages/contractForm/useNativeChatterRuntime.ts",
+    "frontend/apps/web/src/pages/contractForm/professionalCollaborationModel.ts",
+    "frontend/apps/web/src/pages/contractForm/collaborationContract.ts",
+    "frontend/apps/web/src/pages/contractForm/useRecordCollaborationPresentation.ts",
+    "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
+    "frontend/apps/web/src/pages/ContractFormPage.vue",
+    "frontend/apps/web/scripts/professional_collaboration_model_test.ts",
+    "frontend/apps/web/scripts/native_collaboration_presentation_test.ts"
   ],
   "environment": {
     "kind": "runtime",
@@ -88,7 +100,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Publish-face unification closed and verified on sc-root (guard PASS both products, negative fail-closed, 403 e2e still green after snapshot refresh+restart). Remaining: (a) detail-page closeout 1440/390 light+dark; (b) one real relation round trip open->back->restore; (c) create/edit + workbench minimal evidence gap; (d) L0 identity gap: runtime-version (.env.dev SC_SOURCE_REVISION=4ba044e0) still lags sc-root git HEAD 9121b064; (e) commit + update run/docs; then produce the five-root-cause report.",
+  "next_exact_step": "Detail closeout closed (1440/390 light+dark passed; real relation round trip passes; the relation-target collaboration error was a real P0 frontend projection defect and is fixed+verified). Remaining in this run: (c) create/edit + workbench minimal evidence gap; then commit the dirty P4 tooling + frontend fix files, update this run and docs/ops/iterations/daily_dev_user_level_acceptance_20261005.md, and produce the five-root-cause report + environment audit conclusion + exact candidate identity + list-surface residual failures. Environment DENY stays scoped to the rebuild/snapshot lane and is not generalised.",
   "write_replay_authorized": false,
   "candidate_evidence": false,
   "results": [
@@ -329,6 +341,73 @@
       "status": "passed",
       "evidence": "登录落地 URL=/s/projects.list?menu_id=379&action_id=506&scene_key=projects.list; POS(379,506)->200(74407B); NEG(865,506)->403 PERMISSION_DENIED; system.init navigation: 112 节点 / 90 个带 action / has379=true",
       "note": "刷新快照 #34->#35 且重启后 403 修复仍成立; 早期探针 NAV=action_count:0 是探针读取路径错误(data.navigation.nav), 非导航缺失"
+    },
+    {
+      "id": "l0_daily_runtime_source_revision_aligned",
+      "layer": "L0-identity",
+      "status": "passed",
+      "environment": "sc-root /opt/projects/repos/sce-product-odoo, sc_demo, ENV=dev",
+      "command": "make daily.runtime.source_revision.align (CONFIRM_DAILY_RUNTIME_SOURCE_REVISION_ALIGN_WITH_DEPLOYED_HEAD)",
+      "evidence": "/api/runtime-version now reports git_sha=source_revision=9121b06427266e13712171e599907b4b461aefc2 (was 4ba044e0); report .runtime/final-acceptance/daily-deployed/source-revision-align.json",
+      "note": "new governed entrypoint scripts/ops/daily_runtime_source_revision_align.py + 8 tests; closes the identity caveat recorded earlier"
+    },
+    {
+      "id": "l4_detail_closeout_1440_390_light_dark",
+      "layer": "L4",
+      "status": "passed",
+      "environment": "daily runtime http://127.0.0.1:18081, sc_demo, wutao",
+      "command": "LIST_SURFACE_DAILY_OBSERVATION_SCOPE=detail-only LIST_SURFACE_VIEWPORTS=1440,390 LIST_SURFACE_ROUTE='/a/506?menu_id=379' LIST_SURFACE_COLOR_SCHEME=<light|dark> make verify.daily_dev.list_surface.readonly.browser",
+      "evidence": [
+        ".runtime/final-acceptance/detail-closeout/light.json + light/daily-detail-*.png",
+        ".runtime/final-acceptance/detail-closeout/dark.json + dark/daily-detail-*.png"
+      ],
+      "tests": 4,
+      "note": "record_checks declared_entry_route/exact_record_contract/declared_renderer/return_to_source all true at 1440 and 390; driverErrorCount=0; detailAdopted=true; console_errors=[]; denied_requests=[]"
+    },
+    {
+      "id": "l4_relation_roundtrip_real_click",
+      "layer": "L4",
+      "status": "passed",
+      "environment": "daily runtime, project.project/581 -> res.users/1 -> back",
+      "evidence": "real click on user_id relation button: target /f/res.users/1?menu_id=438&action_id=723&return_model=project.project&return_field=user_id&return_record_id=581; after goBack url equals origin, source record restored (count 1) and action set identical (before==after); re-verified on the fixed frontend build",
+      "note": "relation contract carries return_model/return_field/return_record_id/return_action_id/return_menu_id; opens the declared target and restores the source"
+    },
+    {
+      "id": "l4_relation_target_collaboration_error_defect",
+      "layer": "L4/P0-frontend",
+      "status": "fixed_verified",
+      "claim": "opening a record outside the current business scope rendered a user-visible red '记录不存在' inside the collaboration block of a page whose record rendered fine",
+      "root_cause": "chatter.timeline is a rebuildable, no-business-fact-authority projection that gates by the current business/company scope; a readable record outside that scope answers 404 NOT_FOUND. The frontend mapped that authority answer to the record-level error channel (ScInlineState state=error) although the panel is retained by contract for saved records.",
+      "evidence": [
+        "DOM chain: leaf '记录不存在' -> .t-alert--error.sc-inline-state[data-state=error][role=alert] -> section.native-chatter-block -> section.sc-native-contract-collaboration",
+        "matrix: chatter.timeline res.users/2=200(2 items), res.partner/1=200, res.company/1=200, project.project/581=200(4 items); res.users/1=404, res.users/3=404, res.company/21=404 (company-scope rows)",
+        "page contract for res.users declares capabilities.collaboration=true, so the panel is a declared surface, not a stray render"
+      ],
+      "fix": "P0 frontend only: isCollaborationAuthorityAbsence(cause) in professionalCollaborationModel.ts classifies 403/404/NOT_FOUND/PERMISSION_DENIED/*_SCOPE_DENIED; useNativeChatterRuntime.loadTimeline degrades those to the declared neutral state (unavailable) instead of the error channel; collaborationContract.nativeCollaborationUnavailableMessage projects '当前记录不在所选业务范围内，暂不显示协作日志。'; system/network failures still surface as errors. No model special-casing, no ACL/field-visibility override, no assertion loosening.",
+      "verification": "local vite dev proxied to the daily backend: source project.project keeps 3 timeline entries and no error; relation target res.users/1 now shows the neutral message and no '记录不存在'; readiness attributes unchanged"
+    },
+    {
+      "id": "l2_collaboration_authority_absence_projection",
+      "layer": "L2",
+      "status": "passed",
+      "commands": [
+        "make verify.frontend.professional_collaboration.unit",
+        "make verify.frontend.native_collaboration_presentation.unit",
+        "make verify.frontend.contract_form_collaboration_authority.unit"
+      ],
+      "note": "professional_collaboration_model_test PASS cases=52 (45 existing + 7 new authority-absence cases); frontend_professional_collaboration_guard 29 unittest cases OK; contract_form_collaboration_authority PASS cases=102; native_collaboration_presentation_test PASS; vue-tsc --noEmit exit 0; eslint exit 0"
+    },
+    {
+      "id": "l4_relation_target_residual_acl_requests",
+      "layer": "L4-diagnosis",
+      "status": "recorded_not_blocking",
+      "claim": "two auxiliary requests during the relation open are authority answers, not target-page failures",
+      "evidence": [
+        "chatter.timeline res.users/1 -> 404 NOT_FOUND (company scope) - presentation fixed above",
+        "api.data op=read res.company ids [2,21,22,1] -> 403 PERMISSION_DENIED for the records outside the caller's company scope; the page shows no company field and no fail-closed marker for it",
+        "target page root data-form-model=res.users data-state=ok; data-field-fail-closed count 0; only the collaboration block carried an error marker before the fix"
+      ],
+      "note": "kept as an authority boundary, not widened and not force-overridden"
     }
   ]
 }

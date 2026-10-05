@@ -23,6 +23,8 @@ const LOGIN = DAILY ? acceptance.login : process.env.E2E_LOGIN || acceptance.log
 const PASSWORD = DAILY ? acceptance.password : process.env.E2E_PASSWORD || acceptance.password || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
 const BOOTSTRAP_SECRET = DAILY ? '' : process.env.SC_ACCEPTANCE_BOOTSTRAP_SECRET || '';
 const PHASE = String(process.env.LIST_SURFACE_PHASE || 'full');
+const COLOR_SCHEME = String(process.env.LIST_SURFACE_COLOR_SCHEME || '').trim().toLowerCase();
+if (COLOR_SCHEME && !['light', 'dark'].includes(COLOR_SCHEME)) throw new Error('unknown LIST_SURFACE_COLOR_SCHEME');
 const OUTPUT = path.resolve(process.env.LIST_SURFACE_OUTPUT || '.runtime/final-acceptance/list-surface-structure');
 const REPORT = path.resolve(process.env.LIST_SURFACE_REPORT || '.runtime/final-acceptance/list-surface-structure.json');
 const DEFAULT_VIEWPORTS = PHASE === 'current-fail'
@@ -166,6 +168,12 @@ async function waitForList(page) {
 
 const MOBILE_RECORD_ROW = '.mobile-record-list .collection-mobile-record-row';
 const MOBILE_RECORD_CARD = `${MOBILE_RECORD_ROW} .collection-mobile-record-row__card`;
+// Declared record openers. Desktop rows expose the primary-link cell; mobile rows
+// expose the explicit `open-record` action. The mobile card body is the selection
+// surface, not a declared opener, so it must not be used as the detail entry.
+const DESKTOP_RECORD_OPENER = '.cell-primary-link:visible';
+const MOBILE_RECORD_OPENER = '[data-semantic-action="open-record"]:visible';
+const DECLARED_RECORD_OPENER = `${DESKTOP_RECORD_OPENER}, ${MOBILE_RECORD_OPENER}`;
 const ROW_SELECTION_CONTROL = '.collection-selection-control[data-selection-scope="row"]';
 const DESKTOP_ROW_SELECTION_CONTROL = `.table tbody ${ROW_SELECTION_CONTROL}`;
 const MOBILE_ROW_SELECTION_CONTROL = `${MOBILE_RECORD_ROW} ${ROW_SELECTION_CONTROL}`;
@@ -848,7 +856,7 @@ try {
     lease = await acquireAcceptanceLease({ environment: acceptance, mode: 'shared-read', owner: { tool: 'geometry-scroll-audit' } });
   }
   browser = DAILY ? await launchAcceptanceChromium(acceptance, { headless: true }) : await launchChromium({ headless: true });
-  context = await browser.newContext({ viewport: VIEWPORTS[0] });
+  context = await browser.newContext({ viewport: VIEWPORTS[0], ...(COLOR_SCHEME ? { colorScheme: COLOR_SCHEME } : {}) });
   if (DAILY) await context.route('**/*', async route => {
     const request = route.request();
     const url = new URL(request.url());
@@ -908,6 +916,21 @@ try {
   if (DAILY) {
     actorContext = dailyActorContext(navigation.payload());
     if (!actorContext.user_id || !actorContext.company_id || !actorContext.role_codes.length) throw new Error('actual bootstrap actor context missing');
+  }
+  if (COLOR_SCHEME) {
+    // Declared theme mechanism: documentElement theme attributes backed by the
+    // stored preference. A dark run must actually resolve dark before any detail
+    // observation; the rendered detail page is captured on top of this, so the
+    // attribute is a prerequisite, not the proof of the visual effect.
+    const resolved = () => page.evaluate(() => document.documentElement.getAttribute('data-sc-theme-resolved'));
+    if (await resolved() !== COLOR_SCHEME) {
+      await page.waitForFunction(scheme => document.documentElement.getAttribute('data-sc-theme-resolved') === scheme, COLOR_SCHEME, { timeout: 30_000 }).catch(async () => {
+        await page.locator('.theme-switch:visible').first().click();
+        await page.waitForFunction(scheme => document.documentElement.getAttribute('data-sc-theme-resolved') === scheme, COLOR_SCHEME, { timeout: 15_000 });
+      });
+    }
+    if (await resolved() !== COLOR_SCHEME) throw new Error(`declared theme ${COLOR_SCHEME} did not resolve`);
+    dailyObservations.push({ surface: 'declared-theme', requested: COLOR_SCHEME, resolved: await resolved(), mode: await page.evaluate(() => document.documentElement.getAttribute('data-sc-theme-mode')), url: page.url(), viewport: VIEWPORTS[0].key });
   }
   if (DAILY && DAILY_OBSERVATION_SCOPE === 'all') {
     const defaultRoute = dailyDeclaredLanding(navigation.payload());
@@ -976,14 +999,14 @@ try {
       // contract declares; never the first row that happens to render.
       const approvedRecordId = contractGate.status === 'accepted' ? Number(contractGate.approved.record_id) : null;
       const approvedRow = approvedRecordId
-        ? page.locator(`[data-record-key="${approvedRecordId}"]`).filter({ has: page.locator('.cell-primary-link, .collection-mobile-record-row__card') }).first()
-        : page.locator('[data-record-key]').filter({ has: page.locator('.cell-primary-link:visible, .collection-mobile-record-row__card:visible') }).first();
+        ? page.locator(`[data-record-key="${approvedRecordId}"]`).filter({ has: page.locator(DECLARED_RECORD_OPENER) }).first()
+        : page.locator('[data-record-key]').filter({ has: page.locator(DECLARED_RECORD_OPENER) }).first();
       if (!await approvedRow.count()) {
         throw new Error(approvedRecordId
           ? `approved record ${approvedRecordId} is not reachable through the approved list authority`
           : 'daily list contains no declared record opener');
       }
-      const firstRecord = approvedRow.locator('.cell-primary-link:visible, .collection-mobile-record-row__card:visible').first();
+      const firstRecord = approvedRow.locator(DECLARED_RECORD_OPENER).first();
       if (!await firstRecord.count()) throw new Error('daily list contains no declared record opener');
       const rowId = await approvedRow.getAttribute('data-record-key') || await firstRecord.evaluate(node => node.closest('[data-record-key]')?.getAttribute('data-record-key'));
       if (!rowId || !/^[1-9]\d*$/.test(rowId)) throw new Error('declared visible row identity missing');

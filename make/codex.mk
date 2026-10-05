@@ -662,7 +662,7 @@ verify.workspace.worktree.guard: guard.prod.forbid
 	@python3 -m unittest scripts/ops/test_safe_worktree_create.py scripts/ops/test_safe_worktree_cleanup.py
 
 # ------------------ Main sync (safe) ------------------
-.PHONY: main.sync daily.runtime.main.bundle_sync verify.daily.runtime.main.bundle_sync daily.runtime.candidate.bundle_sync verify.daily.runtime.candidate.bundle_sync mirror.main.gitee main.cutover.controlled candidate.required_checks.dispatch candidate.mirror.gitee
+.PHONY: main.sync daily.runtime.main.bundle_sync verify.daily.runtime.main.bundle_sync daily.runtime.candidate.bundle_sync verify.daily.runtime.candidate.bundle_sync mirror.main.gitee main.cutover.controlled candidate.required_checks.dispatch candidate.mirror.gitee daily.runtime.source_revision.align verify.daily.runtime.source_revision.align
 
 DAILY_RUNTIME_SSH_HOST ?= sc-root
 DAILY_RUNTIME_EXPECTED_SHA ?=
@@ -704,6 +704,29 @@ daily.runtime.candidate.bundle_sync: guard.prod.forbid verify.daily.runtime.cand
 		--expected-old-sha "$(DAILY_CANDIDATE_EXPECTED_OLD_SHA)" \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--report "$(DAILY_CANDIDATE_BUNDLE_SYNC_REPORT)"
+
+# The governed code-sync entry checks out an exact SHA but does not declare it.
+# The daily runtime serves /api/runtime-version from the SC_SOURCE_REVISION env
+# var, so the served identity can lag the deployed tree and make the acceptance
+# identity check bind a stale value. This entry declares the exact running HEAD,
+# restarts, readbacks the served endpoint and restores the env file on failure.
+DAILY_RUNTIME_SOURCE_REVISION_SHA ?=
+DAILY_RUNTIME_ENV_NAME ?= dev
+DAILY_RUNTIME_ENV_FILE ?= .env.dev
+DAILY_RUNTIME_SOURCE_REVISION_REPORT ?= .runtime/final-acceptance/daily-deployed/source-revision-align.json
+
+verify.daily.runtime.source_revision.align: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_source_revision_align.py scripts/ops/test_daily_runtime_source_revision_align.py
+	@python3 scripts/ops/test_daily_runtime_source_revision_align.py
+
+daily.runtime.source_revision.align: guard.prod.forbid verify.daily.runtime.source_revision.align
+	@test "$${CONFIRM_DAILY_RUNTIME_SOURCE_REVISION_ALIGN:-}" = "ALIGN_DAILY_RUNTIME_SOURCE_REVISION_WITH_DEPLOYED_HEAD" || { echo "exact daily runtime source-revision alignment confirmation is required" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_source_revision_align.py \
+		--expected-sha "$(DAILY_RUNTIME_SOURCE_REVISION_SHA)" \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--env-name "$(DAILY_RUNTIME_ENV_NAME)" \
+		--env-file "$(DAILY_RUNTIME_ENV_FILE)" \
+		--report "$(DAILY_RUNTIME_SOURCE_REVISION_REPORT)"
 
 mirror.main.gitee: guard.prod.forbid
 	@bash scripts/ops/mirror_main_gitee.sh
