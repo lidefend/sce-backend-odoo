@@ -607,5 +607,36 @@ class CanonicalNavigationTest(unittest.TestCase):
         self.assertIn('canonical_navigation_nav_missing_or_invalid', self.probe(None)['errors'])
 
 
+class DailyAcceptanceLaneSelfConsistencyTest(unittest.TestCase):
+    """The daily publication lane quotes the governed release probe artifact."""
+
+    def test_daily_publication_keeps_the_governed_probe_artifact(self):
+        source = (ROOT / 'make/dev.mk').read_text()
+        publish = source.split('release.daily_dev.acceptance.publish:')[1].split(
+            'release.daily_product_navigation.snapshot')[0]
+        self.assertNotIn('ACCEPTANCE_PROBE_OUTPUT', publish)
+        self.assertIn('ACCEPTANCE_PROBE_OUTPUT ?= artifacts/backend/dev_acceptance_release_probe.json', source)
+        readonly = source.split('.PHONY: verify.daily_dev.acceptance.readonly.probe')[1].split('.PHONY:')[0]
+        self.assertIn('ACCEPTANCE_PROBE_OUTPUT := $(DAILY_ACCEPTANCE_PROBE_OUTPUT)', readonly)
+
+    def test_guards_bind_the_same_release_probe_artifact(self):
+        env_guard = (ROOT / 'scripts/verify/daily_dev_acceptance_env_guard.py').read_text()
+        self.assertIn('"ACCEPTANCE_PROBE_OUTPUT": "artifacts/backend/dev_acceptance_release_probe.json"', env_guard)
+        topology = (ROOT / 'scripts/verify/environment_topology_guard.py').read_text()
+        self.assertIn('ACCEPTANCE_PROBE_OUTPUT=artifacts/backend/dev_acceptance_release_probe.json', topology)
+
+    def test_topology_guard_token_matches_the_shipped_prerequisite_list(self):
+        source = (ROOT / 'make/dev.mk').read_text()
+        header = source.split('release.daily_dev.acceptance.publish: guard.prod.forbid')[1].split('\n')[0]
+        self.assertIn('verify.daily_dev.product_menu_release_gate.guard', header)
+        topology = (ROOT / 'scripts/verify/environment_topology_guard.py').read_text()
+        self.assertIn(
+            'release.daily_dev.acceptance.publish: guard.prod.forbid verify.daily_dev.acceptance.env.guard '
+            'env.matrix.check verify.daily_dev.runtime_repo.clean verify.daily_dev.product_menu_release_gate.guard '
+            'release.dev.acceptance.publish',
+            topology,
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
