@@ -1,6 +1,7 @@
 {
   "branches": {
     "codex/daily-acceptance-entry-dbname-cli-constraint-v1": ".agent/runs/DAILY-ACCEPTANCE-NAV-CONTRACT-DRIFT/run.json",
+    "codex/daily-acceptance-run-index-closeout-20261006": ".agent/runs/DAILY-ACCEPTANCE-RUN-INDEX-CLOSEOUT/run.json",
     "codex/daily-acceptance-lane-selfconsistency-v1": ".agent/runs/DAILY-ACCEPTANCE-LANE-SELFCONSISTENCY/run.json"
   },
   "schema_version": 1

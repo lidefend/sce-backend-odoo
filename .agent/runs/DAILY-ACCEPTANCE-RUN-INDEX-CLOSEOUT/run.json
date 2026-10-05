@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-ACCEPTANCE-RUN-INDEX-CLOSEOUT",
+  "branch": "codex/daily-acceptance-run-index-closeout-20261006",
+  "status": "active",
+  "baseline_sha": "f253c4a07751993c5b80e12451e3a066ab1d9b72",
+  "goal": ".agent/goals/DAILY-ACCEPTANCE-RUN-INDEX-CLOSEOUT.yaml",
+  "record": "docs/ops/iterations/daily_acceptance_run_index_closeout_20261006.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/",
+    ".agent/runs/",
+    "docs/ops/iterations/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline Make gates plus tracked run/agent metadata; no runtime, daily-server or database write in this batch"
+  },
+  "checks": {
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Record the verify.agent.resume.unit receipt, drop this closeout batch's own binding in the final commit, publish through the ordinary PR lane, then delete the retired codex/daily-acceptance-entry-dbname-cli-constraint-v1 branch.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false,
+  "completion": {
+    "batch": "in_progress: mark DAILY-ACCEPTANCE-NAV-CONTRACT-DRIFT completed on main and remove its active-run binding so branch retirement leaves no dangling mapping.",
+    "mainline": "not_run",
+    "deployment": "not_run_in_this_batch: metadata only",
+    "product_delivery": "not_run",
+    "retained_limits": [
+      "the NAV-CONTRACT-DRIFT run and goal remain the historical record; only their status and the index binding change",
+      "the active codex/daily-acceptance-lane-selfconsistency-v1 binding is intentionally preserved"
+    ]
+  }
+}
