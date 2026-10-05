@@ -103,6 +103,7 @@ Generated from repository source files. This report is informational during the 
 | 1263 | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
 | 1262 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
 | 1249 | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
+| 1235 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1227 | Python source | `addons/smart_construction_core/tests/test_p1_funding_authority.py` |
 | 1221 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 1221 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
@@ -110,7 +111,6 @@ Generated from repository source files. This report is informational during the 
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1207 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
-| 1187 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1170 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1147 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |

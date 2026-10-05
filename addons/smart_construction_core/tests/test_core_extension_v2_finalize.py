@@ -444,6 +444,54 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             },
         )
 
+    def test_project_ledger_entry_declares_readonly_and_projection_follows(self):
+        # 项目台账 is a list+form handling entry, not a creation surface:
+        # creation is owned by 新项目立项. Its refusal must be declared on the
+        # entry contract and consumed into the effective projection; the native
+        # presentation form (project.edit_project) stays capability-neutral so
+        # a dedicated read-only page is never the capability authority.
+        action = self.env.ref("smart_construction_core.action_sc_project_list")
+        declared = safe_eval(action.context or "{}", {"context": {}})
+        self.assertIs(declared.get("create"), False)
+        self.assertIs(declared.get("edit"), False)
+        self.assertIs(declared.get("delete"), False)
+        self.assertIs(declared.get("no_duplicate"), True)
+
+        form_binding = action.view_ids.filtered(lambda row: row.view_mode == "form")
+        self.assertEqual(len(form_binding), 1, action.view_ids)
+        self.assertEqual(form_binding.view_id, self.env.ref("project.edit_project"))
+        arch = form_binding.view_id._get_combined_arch()
+        if isinstance(arch, (str, bytes)):
+            arch = etree.fromstring(arch)
+        for attribute in ("create", "edit", "delete", "duplicate"):
+            self.assertNotIn(arch.get(attribute), ("0", "false", "False"), attribute)
+
+        project = self.env["project.project"].search([], limit=1)
+        self.assertTrue(project, "the ledger entry check requires an existing project")
+        menu = self.env.ref("smart_construction_core.menu_sc_project_project")
+        handler = UiContractV2Handler(
+            self.env,
+            su_env=self.env["ir.model"].sudo().env,
+        )
+        params = {
+            "model": "project.project",
+            "view_type": "form",
+            "record_id": project.id,
+            "action_id": action.id,
+            "menu_id": menu.id,
+            "render_profile": "edit",
+            "client_type": "web_pc",
+        }
+        result = handler.handle(params)
+        envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+        self.assertTrue(envelope.get("ok", True), envelope)
+        global_status = envelope["data"]["statusContract"]["globalStatus"]
+        entry_capabilities = global_status["entryCapabilities"]
+        effective = global_status["effectiveRecordCapabilities"]
+        for operation in ("create", "write", "unlink", "duplicate"):
+            self.assertIs(entry_capabilities[operation], False, (operation, entry_capabilities))
+            self.assertIs(effective[operation], False, (operation, effective))
+
     def test_project_information_form_preserves_field_and_child_acl_boundaries(self):
         dedicated = self.env.ref(
             "smart_construction_core.view_sc_product_project_information_edit_form_v1"

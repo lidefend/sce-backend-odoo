@@ -70,7 +70,11 @@
     "addons/smart_construction_core/views/support/team_loan_deduction_workspace_views.xml",
     "make/runtime_ops.mk",
     "scripts/verify/test_frontend_list_surface_search_contract.py",
-    "scripts/verify/formal_entry_capability_authority_guard.py"
+    "scripts/verify/formal_entry_capability_authority_guard.py",
+    "addons/smart_construction_core/actions/project_list_actions.xml",
+    "docs/planning/custom-frontend-integration/G1_BASELINE_EVIDENCE.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
   ],
   "environment": {
     "kind": "runtime",
@@ -118,7 +122,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Capability-authority closeout recorded and locally re-verified (guard OK entries=90; 22+25 affected module tests pass; list-surface contract 22 OK; vendor/preview/diff clean). Remaining in this run: (1) when the owner asks, commit the dirty P4 tooling + P0/entry-declaration changes as one clean candidate and run independent review; (2) sync the frozen candidate to the daily runtime via the governed bundle-sync entry and re-run the guard + refresh the 5180 preview; (3) optional remote 'form-profiles' list scope run (local evidence is the lock + probe unit tests). Then produce the four-item handback: five-root-cause results, environment audit conclusion, exact candidate identity, and remaining list-surface failures. Four-layer status stays separate; the overall branch goal is NOT marked complete. Environment DENY remains scoped to the rebuild/snapshot lane.",
+  "next_exact_step": "Candidate now includes: entry-declaration fix for action_sc_project_list (menu_sc_project_project create/edit/delete/duplicate denied via the entry contract; equivalence re-verified 23/23), the new entry-projection lock test (23 tests OK), the G1 baseline fingerprint refresh, and the independent-review record. Remaining in this run: (1) refresh generated evidence (make ci.delivery.freeze.prepare) and commit so HEAD advances past 14267a68; (2) run make ci.local.quick once at the frozen head; (3) sync the frozen candidate to the daily runtime via the governed bundle-sync entry, upgrade smart_construction_core, re-run the guard and refresh the 5180 preview; (4) report the four-item handback. Open (documented, not blocking): the guard's directional blind spot and the form-profiles not_applicable-satisfied path. Four-layer status stays separate; the overall branch goal is NOT marked complete. Environment DENY stays scoped to the rebuild/snapshot lane.",
   "write_replay_authorized": false,
   "candidate_evidence": false,
   "results": [
@@ -475,13 +479,14 @@
     {
       "id": "l2_entry_capability_declaration_layer_fix",
       "layer": "L1/L2",
-      "status": "passed",
-      "claim": "The 14 entries' read-only behaviour now comes from the entry declaration layer (action context) or genuine permissions, never from a view-arch hard denial; end-user behaviour is equivalent.",
+      "status": "passed_after_correction",
+      "claim": "The 14 entries' read-only behaviour now comes from the entry declaration layer (action context) or genuine permissions, never from a view-arch hard denial; end-user behaviour is equivalent AFTER correcting the omitted declaration on action_sc_project_list.",
       "evidence": [
         "root-level hard denials removed from the views: project_overview, project_information_edit, cost_domain (profit_compare/cost_ledger), fund_daily, company_project_refund, current_account, team_loan_deduction, menu_product_contract_completion_v1 blacklist, tax_filing, tax_certificate_registration, runtime_user_management",
         "the explicit refusal moved into action context instead: delete:False / edit:False / no_duplicate:True on action_sc_project_cost_ledger_quick, action_project_dashboard, action_sc_project_overview and the cost/profit/fund-daily/tax/refund/current-account/team-loan/user-management actions",
         "project_views extension 4 attributes 0->1; action_sc_project_list_form_view view_id view_project_overview_form -> project.edit_project (same deliberate precedent as action_sc_product_project_edit_v1); view_project_overview_form(1761) is still referenced by action_sc_project_overview(580), no dangling reference",
-        "delete/edit context keys are explicit declarations (not absent keys); create/edit default->deny semantics were not inverted; no payment-model special case and no ACL/field-permission override added"
+        "delete/edit context keys are explicit declarations (not absent keys); create/edit default->deny semantics were not inverted; no payment-model special case and no ACL/field-permission override added",
+        "CORRECTION (see l2_project_ledger_entry_declaration_correction): the original claim did not hold for menu_sc_project_project, whose create silently flipped False->True because action_sc_project_list never declared the refusal; the refusal is now declared on that entry and the 23/23 previously-denied ops are re-verified still denied"
       ]
     },
     {
@@ -493,7 +498,7 @@
         "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestProductMessageNotification,/smart_construction_core:TestLightFormsConfigurationNativeLowcode'"
       ],
       "evidence": [
-        "0 failed, 0 error(s) of 22 tests (TestCoreExtensionV2Finalize; locks re-pointed to 'view is not the hard denier + entry capability consumed'; the dashboard case now asserts entryCapabilities and effectiveRecordCapabilities are both False instead of a view-level capabilities assertion)",
+        "0 failed, 0 error(s) of 23 tests (TestCoreExtensionV2Finalize; +1 test_project_ledger_entry_declares_readonly_and_projection_follows; locks re-pointed to 'view is not the hard denier + entry capability consumed'; the dashboard case asserts entryCapabilities and effectiveRecordCapabilities are both False instead of a view-level capabilities assertion)",
         "0 failed, 0 error(s) of 25 tests (TestProductMessageNotification + TestLightFormsConfigurationNativeLowcode), sc_dev_demo"
       ]
     },
@@ -556,6 +561,70 @@
         "general/daily acceptance login default is unchanged: make/runtime_ops.mk keeps E2E_LOGIN/ E2E_PASSWORD defaults of wutao/123456 and does not read the fixture password",
         "prod_sim_fresh_replay.sh REAL_USER_INITIAL_PASSWORD and the personal-data/reset test literals are pre-existing deploy/test defaults, untouched by this round's diff",
         "prior determination cited instead of re-proved: FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json records the same scoped conclusion"
+      ]
+    },
+    {
+      "id": "l0_g1_acceptance_baseline_fingerprint_refresh",
+      "layer": "L0-evidence",
+      "status": "passed",
+      "claim": "G1 acceptance baseline evidence fingerprint is refreshed to the current 90-action publish surface so the frozen-candidate Quick baseline guard passes.",
+      "evidence": [
+        "root cause: b3804cf5 raised navigation_policy.min/max_actions 89->90 in config/frontend/acceptance_environments_v1.json (the 项目台账 publish-surface fix) but docs/planning/custom-frontend-integration/G1_BASELINE_EVIDENCE.json was not refreshed",
+        "before: [g1_acceptance_baseline_guard] FAIL fingerprint drift for config/frontend/acceptance_environments_v1.json recorded fbc07a7a560a... actual 3820890a7127...",
+        "refresh: python3 scripts/verify/g1_acceptance_baseline_guard.py --write --baseline-sha 3f424993c9f378aaeedd2f26080545ad37ea3f8e; diff is exactly baseline_sha + environments sha256 + collected_at (3 lines), no other asset changed",
+        "after: [g1_acceptance_baseline_guard] PASS four-environment profiles configured (fingerprints verified for 3 assets), baseline evidence reproducible at baseline_sha 3f424993c9f3"
+      ]
+    },
+    {
+      "id": "l2_project_ledger_entry_declaration_correction",
+      "layer": "L1/L2",
+      "status": "fixed_and_reverified",
+      "claim": "Independent review found the candidate's 'behaviour equivalent' claim did not hold for menu_sc_project_project: removing the view-level denial silently flipped create False->True because action_sc_project_list never declared the refusal. The refusal is now declared on the entry contract, restoring equivalence.",
+      "evidence": [
+        "pre-candidate: action_sc_project_list form = view_project_overview_form whose <form create=\"0\" edit=\"0\" delete=\"0\" duplicate=\"0\"> made effective.create False for every role",
+        "candidate 46b060a8: form -> project.edit_project (native) and the view denial removed, but action_sc_project_list context stayed {} -> effective.create True for group_sc_cap_project_user/manager/business_config_admin (all imply group_sc_cap_project_read)",
+        "the code comment in project_overview_views.xml names both consumers (action_sc_project_overview / action_sc_project_list), but only action_sc_project_overview received the declaration -> a plain omission, not a product decision",
+        "product facts: 新项目立项 (action_project_initiation) already owns project creation and 项目信息编辑 (action_sc_product_project_edit_v1) declares create:False; a new create button on 项目台账 would duplicate 新项目立项",
+        "fix: action_sc_project_list context {} -> {'create': False, 'edit': False, 'delete': False, 'no_duplicate': True}; no ACL, record rule or field permission touched and no model special-case added",
+        "reverified via UiContractV2Handler (menu_sc_project_project): write/create/unlink/duplicate now entryCapabilities[x]=False and effectiveRecordCapabilities[x]=False",
+        "entry equivalence re-run over the 14 previously view-denied entries: PREV_DENIED_OPS=23 STILL_DENIED=23 PROBLEMS=0 -> ENTRY_EQUIVALENCE_OK"
+      ]
+    },
+    {
+      "id": "l2_entry_capability_lock_test_increment",
+      "layer": "L2",
+      "status": "passed",
+      "commands": [
+        "make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestCoreExtensionV2Finalize'"
+      ],
+      "evidence": [
+        "0 failed, 0 error(s) of 23 tests (TestCoreExtensionV2Finalize; +1 new test_project_ledger_entry_declares_readonly_and_projection_follows)",
+        "the new test locks declaration consumption AND actual behaviour: action_sc_project_list declares create/edit/delete False and no_duplicate True; its form binding is project.edit_project and the combined arch carries no create/edit/delete/duplicate denial; the consumed projection on menu_sc_project_project has entryCapabilities and effectiveRecordCapabilities False for create/write/unlink/duplicate",
+        "guard re-run after the fix: FORMAL_ENTRY_CAPABILITY_AUTHORITY_OK entries=90",
+        "module upgraded locally first via CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core make local.dev.upgrade MODULE=smart_construction_core (action context is DB-backed)"
+      ]
+    },
+    {
+      "id": "l5_independent_review_entry_capability",
+      "layer": "L5-independent",
+      "status": "blocker_found_and_closed",
+      "claim": "Independent read-only review of 3f424993c..14267a68 found the project-ledger create flip and the guard's directional blind spot; the flip is closed by the entry declaration.",
+      "evidence": [
+        "reviewer confirmed: lock tests NOT weakened (stronger, non-zero, independently re-run); 13/14 entries migrate the refusal to action context; no ACL/ir.rule/field-permission file touched; no payment-model special case; generated evidence shows only attributable re-generation drift",
+        "reviewer independently proved the guard predicate is non-vacuous: 138 menus carrying act_window -> 23 hits, all on Odoo-native menus; the formal 90-entry baseline -> 0",
+        "open Major (documented, not silently fixed): the guard predicate is one-directional (view=false AND model=true AND entry=true) and runs as superuser so modelRights is 1; it cannot detect 'the view used to deny, the denial was dropped and no declaration was added'; and the list-surface form-profiles scope counts not_applicable as satisfied so a fully read-only target passes",
+        "review identity: the review is bound to 14267a68; the post-review delta is the G1 evidence refresh + the action_sc_project_list entry declaration + one lock test, none of which weakens a reviewed guard or lock test"
+      ]
+    },
+    {
+      "id": "menu_sc_project_project_create_product_decision",
+      "layer": "L4-diagnosis",
+      "status": "resolved_behaviour_preserving",
+      "claim": "项目台账 create/edit/delete/duplicate stay denied, consistent with the pre-candidate behaviour and with 新项目立项 owning creation; making 项目台账 a creatable permission-driven list is a separate product decision and is NOT taken in this round.",
+      "evidence": [
+        "the candidate's own intent was behaviour-preserving refusal migration; the omitted declaration was an omission (the code comment names both consuming actions)",
+        "新项目立项 (action_project_initiation) remains the creation entry; 项目信息编辑 keeps create:False",
+        "if the owner wants 项目台账 to become creatable, that is a capability expansion that must also resolve the duplication with 新项目立项"
       ]
     }
   ]

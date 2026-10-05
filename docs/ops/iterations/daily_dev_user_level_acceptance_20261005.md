@@ -536,3 +536,39 @@ form 槽运行时 view_id = `project.edit_project`(936)，与源码一致。既�
 - 远端 `sc-root` 日常运行态仍是 `9121b064`；能力权限守卫在远端的 0 违规结论**待同步后复验**。
 - 远端 `form-profiles` 列表范围实跑为可选项：本地证据由锁测试 + 探针单测覆盖，未跑浏览器矩阵。
 - 四层状态分列不变；整体分支目标**暂不**标记完成。
+
+### 6.13 候选纠偏与冻结前修复（2026-10-05 追加）
+
+独立只读复核 `3f424993c..14267a68` 发现一处真实缺陷，已闭环；另有一处冻结前阻断已修复。
+
+1. **`menu_sc_project_project`（项目台账）`create` 被静默放开（已修）**
+   - 事实链：`action_sc_project_list` 的 form 槽由 `view_project_overview_form`
+     （根级 `create/edit/delete/duplicate=0`）改为原生 `project.edit_project`，但
+     `action_sc_project_list` 的 `context` 仍是 `{}` → `effective.create` 由 `False` 翻为 `True`
+     （`group_sc_cap_project_user`/`manager`/`business_config_admin` 均 implied `group_sc_cap_project_read`）。
+   - 判定：`project_overview_views.xml` 注释已点名两个消费 action
+     （`action_sc_project_overview` / `action_sc_project_list`），但只有前者拿到声明 → **漏声明**，
+     不是产品决策；且 `新项目立项`(`action_project_initiation`) 已拥有创建入口，台账再出现「新建」与之重复。
+   - 修复：`action_sc_project_list` context → `{'create': False, 'edit': False, 'delete': False,
+     'no_duplicate': True}`；未动 ACL / 记录规则 / 字段权限，未加模型特判，未改绑 1843。
+   - 复验：`UiContractV2Handler(menu_sc_project_project)` → `write/create/unlink/duplicate` 的
+     `entryCapabilities` 与 `effectiveRecordCapabilities` 均为 `False`；14 个原视图拒绝入口等价复核
+     `PREV_DENIED_OPS=23 STILL_DENIED=23 PROBLEMS=0` → `ENTRY_EQUIVALENCE_OK`。新增锁
+     `test_project_ledger_entry_declares_readonly_and_projection_follows`：
+     `TestCoreExtensionV2Finalize` **23 tests, 0 failed**（原 22）。守卫复跑 `entries=90`。
+2. **`ci.local.quick` 的 G1 基线指纹阻断（已修）**
+   - `b3804cf5` 把 `acceptance_environments_v1.json` 的 `min/max_actions` 89→90（§3.7 项目台账发布面修复），
+     未同步刷新 `G1_BASELINE_EVIDENCE.json` 资产指纹 → `[g1_acceptance_baseline_guard] FAIL
+     fingerprint drift ... recorded fbc07a7a560a... actual 3820890a7127...`。
+   - 修复：`python3 scripts/verify/g1_acceptance_baseline_guard.py --write
+     --baseline-sha 3f424993c9f378aaeedd2f26080545ad37ea3f8e`；diff 仅 3 行
+     （`baseline_sha` / environments `sha256` / `collected_at`），复验 `[g1_acceptance_baseline_guard] PASS`。
+3. **守卫已知盲区（记录，不静默修复）**：谓词单向
+   （`view=false ∧ model=true ∧ entry=true`）且以超级用户运行（`modelRights` 恒真），**无法**检出
+   「视图原本拒绝 → 去拒绝后未声明 → 翻为允许」这一类；`form-profiles` 探针 scope 把
+   `not_applicable` 计入 satisfied，故对整体只读目标会「通过」。独立复核以「全库 138 菜单命中 23 条
+   原生违规」自证谓词非空转。二者列为本轮之后的 P4 工具改进项。
+
+**待办（下一执行单）**：刷新生成证据 → 提交使 HEAD 前移 → `make ci.local.quick` 一次 →
+候选 bundle sync → 远端升级 `smart_construction_core` → 复验守卫 0 违规 + 刷新 5180 预览 → 四项交回。
+四层状态分列不变；整体分支目标**暂不**标记完成。
