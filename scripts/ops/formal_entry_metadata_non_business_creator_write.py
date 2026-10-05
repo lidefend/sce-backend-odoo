@@ -53,31 +53,82 @@ def artifact_root():
     return Path("/tmp")
 
 
-def fix_records(env, model_name, field_name, resolver):
+def _quote_identifier(name):
+    """Quote a registry-owned SQL identifier (never user input)."""
+    return '"%s"' % str(name).replace('"', '""')
+
+
+def _resolve_value(resolver, record):
+    replacement = resolver(record)
+    if not is_business_name(replacement) and clean(replacement) != LEGACY_SYSTEM_ADMIN_LABEL:
+        return LEGACY_SYSTEM_ADMIN_LABEL
+    return replacement
+
+
+def provenance_sql_update(env, model_name, field_name, records, resolver):
+    """Repair a platform provenance column that the ORM refuses to write.
+
+    ``source_created_by``/``source_created_at`` are platform-added, read-only
+    provenance annotations; they are not business facts. Business-fact models
+    such as ``sc.settlement.order`` legitimately block ordinary ``write`` on
+    approved/completed/voided records, so the declared provenance repair runs
+    as a governed P4 SQL update on exactly this column, and only on rows whose
+    current value is still an operator login. No other column is touched, the
+    update is idempotent, and the product write guard is left intact.
+    """
+    Model = env[model_name]
+    table = _quote_identifier(Model._table)
+    column = _quote_identifier(field_name)
+    grouped = OrderedDict()
+    for record in records:
+        grouped.setdefault(_resolve_value(resolver, record), []).append(record.id)
+    query = (
+        "UPDATE {table} SET {column} = %s WHERE id = ANY(%s) "
+        "AND (LOWER(NULLIF(BTRIM({column}::text), '')) = ANY(%s) "
+        "OR NULLIF(BTRIM({column}::text), '') = ANY(%s))"
+    ).format(table=table, column=column)
+    lower_values = sorted(value.lower() for value in NON_BUSINESS_CREATOR_VALUES)
+    raw_values = list(non_business_values())
+    updated = 0
+    for value, ids in grouped.items():
+        env.cr.execute(query, [value, list(ids), lower_values, raw_values])
+        updated += int(env.cr.rowcount or 0)
+    return updated
+
+
+def _record_row(record, field_name, before, after):
+    return OrderedDict(
+        [
+            ("id", record.id),
+            ("name", clean(getattr(record, "name", "")) or clean(record.display_name)),
+            ("before", before),
+            ("after", after),
+        ]
+    )
+
+
+def fix_records(env, model_name, field_name, resolver, channel="orm"):
     Model = env[model_name].sudo().with_context(active_test=False, tracking_disable=True, mail_notrack=True)
     if field_name not in Model._fields:
-        return {"model": model_name, "field": field_name, "updated": 0, "rows": []}
+        return {"model": model_name, "field": field_name, "channel": channel, "updated": 0, "rows": []}
     domain = [(field_name, "in", non_business_values())]
     if "active" in Model._fields:
         domain.insert(0, ("active", "=", True))
+    records = Model.search(domain)
+    if channel == "provenance_sql":
+        rows = [
+            _record_row(record, field_name, clean(record[field_name]), _resolve_value(resolver, record))
+            for record in records
+        ]
+        updated = provenance_sql_update(env, model_name, field_name, records, resolver)
+        return {"model": model_name, "field": field_name, "channel": channel, "updated": updated, "rows": rows}
     rows = []
-    for record in Model.search(domain):
-        replacement = resolver(record)
-        if not is_business_name(replacement) and clean(replacement) != LEGACY_SYSTEM_ADMIN_LABEL:
-            replacement = LEGACY_SYSTEM_ADMIN_LABEL
+    for record in records:
+        replacement = _resolve_value(resolver, record)
         before = clean(record[field_name])
         record.write({field_name: replacement})
-        rows.append(
-            OrderedDict(
-                [
-                    ("id", record.id),
-                    ("name", clean(getattr(record, "name", "")) or clean(record.display_name)),
-                    ("before", before),
-                    ("after", replacement),
-                ]
-            )
-        )
-    return {"model": model_name, "field": field_name, "updated": len(rows), "rows": rows}
+        rows.append(_record_row(record, field_name, before, replacement))
+    return {"model": model_name, "field": field_name, "channel": channel, "updated": len(rows), "rows": rows}
 
 
 def expense_claim_creator(record):
@@ -96,23 +147,28 @@ def receipt_income_creator(_record):
 # migration operator (OdooBot), so the original business entry user is not
 # recoverable from the record. Use the same sanctioned legacy label already
 # used for ``sc.receipt.income`` instead of leaving the visible surface
-# attributed to ``admin``.
+# attributed to ``admin``. Approved/completed/voided settlements legitimately
+# reject ordinary writes, so this rule repairs the provenance column through
+# the declared ``provenance_sql`` channel.
 def settlement_order_creator(_record):
     return LEGACY_SYSTEM_ADMIN_LABEL
 
 
-# (model, creator field consumed by formal_entry_metadata_audit, resolver).
+# (model, creator field consumed by formal_entry_metadata_audit, resolver, channel).
+# channel ``orm`` uses the model's own validated write; ``provenance_sql`` is the
+# governed P4 path for a provenance column on records whose business-fact write
+# guard must stay intact.
 CREATOR_RULES = (
-    ("sc.expense.claim", "creator_name", expense_claim_creator),
-    ("sc.receipt.income", "creator_name", receipt_income_creator),
-    ("sc.settlement.order", "source_created_by", settlement_order_creator),
+    ("sc.expense.claim", "creator_name", expense_claim_creator, "orm"),
+    ("sc.receipt.income", "creator_name", receipt_income_creator, "orm"),
+    ("sc.settlement.order", "source_created_by", settlement_order_creator, "provenance_sql"),
 )
 
 
 def run(env):
     results = [
-        fix_records(env, model_name, field_name, resolver)
-        for model_name, field_name, resolver in CREATOR_RULES
+        fix_records(env, model_name, field_name, resolver, channel)
+        for model_name, field_name, resolver, channel in CREATOR_RULES
     ]
     env.cr.commit()
     result = OrderedDict(
