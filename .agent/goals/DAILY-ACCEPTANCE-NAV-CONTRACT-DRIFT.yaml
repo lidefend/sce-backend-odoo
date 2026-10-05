@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: DAILY-ACCEPTANCE-NAV-CONTRACT-DRIFT
   title: align_daily_acceptance_navigation_values_with_the_acceptance_contract
-  status: in_progress
+  status: completed
   formal_product_layer: P4
   layer_target: ops_daily_acceptance_entry
   module:

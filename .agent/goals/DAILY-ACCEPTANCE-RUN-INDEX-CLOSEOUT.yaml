@@ -1,0 +1,48 @@
+schema_version: 1
+goal:
+  id: DAILY-ACCEPTANCE-RUN-INDEX-CLOSEOUT
+  title: retire_the_merged_daily_acceptance_run_binding
+  status: completed
+  formal_product_layer: P4
+  layer_target: ops_agent_run_index
+  module:
+    - .agent
+  objective: >-
+    PR #584 merged the DAILY-ACCEPTANCE-NAV-CONTRACT-DRIFT run while it still
+    carried status `active` and an entry in `.agent/active-runs.json` bound to
+    the now-mergeable topic branch. Close the run out on main: mark the run and
+    goal completed, and remove the binding so retiring
+    `codex/daily-acceptance-entry-dbname-cli-constraint-v1` leaves no dangling
+    index mapping. No product, contract, gate or runtime behaviour is touched.
+  baseline:
+    branch: main
+    full_sha: f253c4a07751993c5b80e12451e3a066ab1d9b72
+    source: clean_main_after_pr_584
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_governance
+    why_here: >-
+      The artifact is the P4 engineering run index and its run/goal records.
+    why_not_elsewhere:
+      - no_p0_platform_mechanism_change
+      - no_p1_construction_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_configuration_change
+      - no_change_to_any_product_gate_fixture_or_database
+    blast_radius:
+      - .agent/active-runs.json
+      - .agent/runs/DAILY-ACCEPTANCE-NAV-CONTRACT-DRIFT/
+  batches:
+    - id: A
+      title: complete_the_run_and_remove_the_retired_binding
+      status: in_progress
+      evidence:
+        - the_nav_contract_drift_run_is_merged_on_main_via_pr_584
+        - verify_agent_resume_unit_passed
+  exclusions:
+    - no_change_to_any_product_contract_gate_or_runtime
+    - the_still_active_daily_acceptance_lane_selfconsistency_binding_is_left_intact
+  rollback:
+    - restore the run status and the active-run binding
+  next_exact_step: >-
+    Verify and publish this metadata closeout through the ordinary PR lane, then
+    delete the retired codex/daily-acceptance-entry-dbname-cli-constraint-v1 branch.
