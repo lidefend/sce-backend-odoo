@@ -66,9 +66,10 @@ class FakeRecord:
 
 
 class FakeModel:
-    def __init__(self, fields, records):
+    def __init__(self, fields, records, table="fake_table"):
         self._fields = {name: object() for name in fields}
         self._records = records
+        self._table = table
 
     def sudo(self):
         return self
@@ -94,17 +95,39 @@ class FakeModel:
 
 
 class FakeCursor:
-    def __init__(self):
+    def __init__(self, rowcount=0):
         self.committed = 0
+        self.rowcount = rowcount
+        self.executions = []
 
     def commit(self):
         self.committed += 1
 
+    def execute(self, query, params=None):
+        self.executions.append((query, params))
+        return None
+
+
+class MutatingCursor(FakeCursor):
+    """Simulate the DB applying the UPDATE so we can prove ``before`` is pre-update."""
+
+    def __init__(self, records, value, rowcount=1):
+        super().__init__(rowcount=rowcount)
+        self._records = records
+        self._value = value
+
+    def execute(self, query, params=None):
+        super().execute(query, params)
+        if query.lstrip().upper().startswith("UPDATE"):
+            for record in self._records:
+                record["source_created_by"] = self._value
+        return None
+
 
 class FakeEnv:
-    def __init__(self, models):
+    def __init__(self, models, rowcount=0):
         self._models = models
-        self.cr = FakeCursor()
+        self.cr = FakeCursor(rowcount=rowcount)
         self.dbname = "sc_fake"
 
     def __getitem__(self, name):
@@ -118,14 +141,50 @@ class NonBusinessCreatorWriteTest(unittest.TestCase):
     def test_settlement_rule_targets_a_declared_contract_model(self) -> None:
         declared = set(_module_assignment(EXTENSIONS, "FORMAL_ENTRY_METADATA_MODELS"))
         self.assertIn("sc.settlement.order", declared)
-        rules = dict((model, field) for model, field, _resolver in self.tool.CREATOR_RULES)
+        rules = dict((model, field) for model, field, _resolver, _channel in self.tool.CREATOR_RULES)
         self.assertEqual(rules.get("sc.settlement.order"), "source_created_by")
 
     def test_registry_fields_are_declared_entry_creator_fields(self) -> None:
         pairs = _module_assignment(AUDIT, "ENTRY_PAIRS")
         creator_fields = {creator for creator, _time in pairs}
-        for model, field_name, _resolver in self.tool.CREATOR_RULES:
+        for model, field_name, _resolver, _channel in self.tool.CREATOR_RULES:
             self.assertIn(field_name, creator_fields, "%s uses %s" % (model, field_name))
+
+    def test_settlement_rule_channel_is_governed_provenance_sql(self) -> None:
+        channels = dict((model, channel) for model, _field, _resolver, channel in self.tool.CREATOR_RULES)
+        self.assertEqual(channels.get("sc.settlement.order"), "provenance_sql")
+        self.assertEqual(channels.get("sc.receipt.income"), "orm")
+
+    def test_provenance_sql_only_touches_the_declared_column(self) -> None:
+        record = FakeRecord({"id": 11, "name": "S", "source_created_by": "admin", "active": True})
+        env = FakeEnv(
+            {
+                "sc.settlement.order": FakeModel(
+                    {"source_created_by": object(), "active": object()}, [record], table="sc_settlement_order"
+                )
+            },
+            rowcount=1,
+        )
+        env.cr = MutatingCursor([record], self.tool.LEGACY_SYSTEM_ADMIN_LABEL, rowcount=1)
+        result = self.tool.fix_records(
+            env,
+            "sc.settlement.order",
+            "source_created_by",
+            lambda _record: "",
+            channel="provenance_sql",
+        )
+        self.assertEqual(result["channel"], "provenance_sql")
+        self.assertEqual(result["updated"], 1)
+        self.assertEqual(len(env.cr.executions), 1)
+        query, params = env.cr.executions[0]
+        self.assertIn('"source_created_by"', query)
+        self.assertIn("WHERE id = ANY(%s)", query)
+        self.assertNotIn("SET \"state\"", query)
+        self.assertNotIn("state", query.split("WHERE")[0].replace("source_created_by", ""))
+        self.assertEqual(params[0], self.tool.LEGACY_SYSTEM_ADMIN_LABEL)
+        self.assertEqual(params[1], [11])
+        self.assertEqual(result["rows"][0]["before"], "admin")
+        self.assertEqual(result["rows"][0]["after"], self.tool.LEGACY_SYSTEM_ADMIN_LABEL)
 
     def test_fix_records_rewrites_non_business_creator(self) -> None:
         record = FakeRecord({"id": 7, "name": "FE", "creator": "admin", "active": True})
@@ -152,7 +211,10 @@ class NonBusinessCreatorWriteTest(unittest.TestCase):
     def test_fix_records_skips_model_without_field(self) -> None:
         env = FakeEnv({"x": FakeModel({"other": object()}, [])})
         result = self.tool.fix_records(env, "x", "creator", lambda _record: "")
-        self.assertEqual(result, {"model": "x", "field": "creator", "updated": 0, "rows": []})
+        self.assertEqual(
+            result,
+            {"model": "x", "field": "creator", "channel": "orm", "updated": 0, "rows": []},
+        )
 
 
 if __name__ == "__main__":
