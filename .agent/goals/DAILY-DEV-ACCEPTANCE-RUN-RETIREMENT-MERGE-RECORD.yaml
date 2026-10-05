@@ -1,0 +1,47 @@
+schema_version: 1
+goal:
+  id: DAILY-DEV-ACCEPTANCE-RUN-RETIREMENT-MERGE-RECORD
+  title: record_the_merged_outcome_of_the_daily_dev_acceptance_run_retirement
+  status: completed
+  formal_product_layer: P4
+  layer_target: ops_agent_run_index
+  module:
+    - .agent
+    - docs/ops/iterations
+  objective: >-
+    DAILY-DEV-ACCEPTANCE-RUN-RETIREMENT merged as PR #587 (2a1e67ea) while its
+    batch record still stated mainline integration as pending that merge. Record
+    the actual merged outcome in the same record so no stale statement remains on
+    main. Metadata and documentation only; no product, contract, gate, fixture,
+    database or runtime behaviour is touched.
+  baseline:
+    branch: main
+    full_sha: 2a1e67ea3509ab53ef9c4421fe7f309c1ea643f2
+    source: clean_main_after_pr_587
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_governance
+    why_here: >-
+      The artifact is the P4 engineering run record for a metadata retirement.
+    why_not_elsewhere:
+      - no_p0_platform_mechanism_change
+      - no_p1_construction_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_configuration_change
+      - no_change_to_any_product_gate_fixture_or_database
+    blast_radius:
+      - docs/ops/iterations/daily_dev_acceptance_run_retirement_20261006.md
+  batches:
+    - id: A
+      title: record_the_merged_retirement_outcome
+      status: completed
+      evidence:
+        - pr_587_merged_as_2a1e67ea
+        - the_pr_head_quick_receipt_was_reused_by_the_merge_gate
+        - verify_agent_resume_unit_passed
+  exclusions:
+    - no_change_to_any_product_contract_gate_fixture_database_or_runtime
+    - no_change_to_run_or_goal_status_of_the_retired_record
+  rollback:
+    - restore the record's outcome wording
+  next_exact_step: >-
+    Verify and publish this record correction through the ordinary PR lane.

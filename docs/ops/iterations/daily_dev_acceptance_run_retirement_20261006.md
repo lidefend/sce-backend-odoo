@@ -54,5 +54,14 @@ product delivery the record never claimed, so the run and goal are retired as
   binding until the final commit drops it.
 - `make agent.run.resume` resolves this batch; `make verify.agent.resume.unit` and
   `make ci.local.iteration` are recorded in the run.
-- Four-layer status: batch accepted (this metadata retirement); mainline integration pending
-  the PR merge; version release not run; product delivery not claimed.
+- Four-layer status: batch accepted (this metadata retirement); mainline integration completed
+  — merged as PR #587 (merge commit `2a1e67ea3509ab53ef9c4421fe7f309c1ea643f2`), after which
+  `.agent/active-runs.json` is empty on main and the retired run reads `superseded`; version
+  release not run; product delivery not claimed.
+
+## Correction (2026-10-06)
+
+- This record was first merged while stating mainline integration as *pending* that PR. The
+  merged outcome above is recorded by DAILY-DEV-ACCEPTANCE-RUN-RETIREMENT-MERGE-RECORD so no
+  stale statement remains on main. Only this record's wording changed; the retired run/goal
+  status and the empty run index are unchanged.
