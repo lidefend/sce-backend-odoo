@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "DAILY-ACCEPTANCE-RUN-INDEX-CLOSEOUT",
   "branch": "codex/daily-acceptance-run-index-closeout-20261006",
-  "status": "active",
+  "status": "completed",
   "baseline_sha": "f253c4a07751993c5b80e12451e3a066ab1d9b72",
   "goal": ".agent/goals/DAILY-ACCEPTANCE-RUN-INDEX-CLOSEOUT.yaml",
   "record": "docs/ops/iterations/daily_acceptance_run_index_closeout_20261006.md",
@@ -27,11 +27,11 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Record the verify.agent.resume.unit receipt, drop this closeout batch's own binding in the final commit, publish through the ordinary PR lane, then delete the retired codex/daily-acceptance-entry-dbname-cli-constraint-v1 branch.",
+  "next_exact_step": "Completed 2026-10-06: DAILY-ACCEPTANCE-NAV-CONTRACT-DRIFT is marked completed and its active-run binding is removed; this closeout batch also drops its own binding in the final commit. Remaining step: delete the retired codex/daily-acceptance-entry-dbname-cli-constraint-v1 branch after this merge.",
   "write_replay_authorized": false,
   "candidate_evidence": false,
   "completion": {
-    "batch": "in_progress: mark DAILY-ACCEPTANCE-NAV-CONTRACT-DRIFT completed on main and remove its active-run binding so branch retirement leaves no dangling mapping.",
+    "batch": "passed: DAILY-ACCEPTANCE-NAV-CONTRACT-DRIFT is marked completed on main and its active-run binding is removed so branch retirement leaves no dangling mapping; verify.agent.resume.unit passed 30 tests and ci.local.iteration reported PASS with an empty out-of-scope set.",
     "mainline": "not_run",
     "deployment": "not_run_in_this_batch: metadata only",
     "product_delivery": "not_run",

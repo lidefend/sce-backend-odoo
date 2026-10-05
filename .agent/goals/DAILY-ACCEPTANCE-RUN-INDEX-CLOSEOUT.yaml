@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: DAILY-ACCEPTANCE-RUN-INDEX-CLOSEOUT
   title: retire_the_merged_daily_acceptance_run_binding
-  status: in_progress
+  status: completed
   formal_product_layer: P4
   layer_target: ops_agent_run_index
   module:
