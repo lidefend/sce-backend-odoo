@@ -14,9 +14,12 @@ goal:
     recovery bundle, and retire only separately authorized branch references
     without restoring obsolete product code.
   baseline:
-    branch: audit/historical-branch-asset-retirement-v1
+    branch: main
     full_sha: 3c5b048075181e15c046fd172031413c9d6952bb
     source: clean_main_after_pr_461_archive_merge
+    note: >-
+      The delivery branch that produced this work was retired 2026-10-05; the
+      full_sha above is retained as the original merge-base identity.
   product_boundary:
     standard_vs_user_specific: ops_delivery_governance
     why_here: >-
