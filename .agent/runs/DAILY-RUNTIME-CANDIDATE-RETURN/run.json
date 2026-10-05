@@ -16,7 +16,7 @@
   "completion": {
     "batch": "passed: remote program normalizes only a clean detached HEAD equal to a declared candidate SHA that is recorded under refs/daily-candidates/ with refs/heads/main == refs/remotes/origin/main == expected old SHA; verify.daily.runtime.main.bundle_sync 9/9 including unrecorded/dirty/mismatched-main/undeclared negatives; ci.local.iteration and ci.delivery.freeze.prepare passed with no generated drift",
     "daily_credential": "owner-directed fixed dev password 123456 for wutao and fixture_role_finance in sc_demo; the daily readonly probe still required its bound daily-readonly-credential-confirmation.v1 envelope (self-built, 5-minute expiry, binding tool/baseUrl/apiUrl/database/login/expectedSha/runId); the daily login defaults were not changed",
-    "deployment": "passed: daily.runtime.main.bundle_sync PASS with normalized_from_candidate=true (old_sha 3f424993, source_sha e9e381d4, bundle_sha256 633b5d27\u2026); make verify.frontend.build (dist-dev) PASS; make mod.upgrade MODULE=smart_core PASS; make restart PASS; make verify.daily_dev.runtime_repo.clean PASS (head=e9e381d4, clean, customer addons read-only); daily.runtime.source_revision.align PASS (served git_sha/source_revision e9e381d4, previous d004bbf2)",
+    "deployment": "passed: daily.runtime.main.bundle_sync PASS with normalized_from_candidate=true (old_sha 3f424993, source_sha e9e381d4, bundle_sha256 633b5d27\u2026); make verify.frontend.build (dist-dev) PASS; make mod.upgrade MODULE=smart_core PASS; make restart PASS; make verify.daily_dev.runtime_repo.clean PASS (head=e9e381d4, clean, customer addons read-only); daily.runtime.source_revision.align PASS (served git_sha/source_revision e9e381d4, previous d004bbf2); final re-sync to main a438d69d (docs-only delta from e9e381d4) via daily.runtime.main.bundle_sync (normalized_from_candidate=false, bundle_sha256 a3ab2e02\u2026) and daily.runtime.source_revision.align (served a438d69d, previous e9e381d4); no module or frontend source changed so no rebuild/upgrade was rerun",
     "l1": {
       "bundle_sync_unit": {
         "command": "make verify.daily.runtime.main.bundle_sync",
@@ -38,7 +38,7 @@
       }
     },
     "mainline": "passed: PR #576 merged (merge commit e9e381d455edf4b598e5d6af2a823885311f295e); required gates public_guard, merge_policy_gate, professional_quality_gate, frontend_release_gate all success on head bbee7981 at base e44f9c3a; branch retired after merge",
-    "product_delivery": "passed (daily dev readonly acceptance): verify.daily_dev.acceptance.readonly.probe PASS against http://127.0.0.1:18081/ sc_demo \u2014 runtime_identity served_sha=e9e381d4; wutao(uid=16) login nav 90 leaf actions, 0 forbidden labels, 0 required path misses; contract account fixture_role_finance(uid=210) company 'FE Company A' resolution_unique_target record_xmlid smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a, all executed checks pass; dev_acceptance_release_probe_schema_guard PASS",
+    "product_delivery": "passed (daily dev readonly acceptance, re-verified at the final deployed SHA): verify.daily_dev.acceptance.readonly.probe PASS against http://127.0.0.1:18081/ sc_demo at expected_sha a438d69d \u2014 runtime_identity served_sha=a438d69d; wutao(uid=16) nav 90 leaf actions, 0 forbidden labels, 0 required-path misses; contract fixture_role_finance(uid=210) company 'FE Company A' resolved the unique target smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a with 11 executed checks and no errors; schema guard PASS. The first pass at e9e381d4 (identical code) is superseded.",
     "reports": [
       ".runtime/final-acceptance/daily-deployed/bundle-sync.json",
       ".runtime/final-acceptance/daily-deployed/source-revision-align.json",
@@ -53,7 +53,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-CANDIDATE-RETURN.yaml",
   "id": "DAILY-RUNTIME-CANDIDATE-RETURN",
-  "next_exact_step": "Closed: the detached daily runtime was returned to main and the exact new mainline SHA was deployed. PR #576 merged to e9e381d4; daily.runtime.main.bundle_sync normalized the recorded detached candidate (d004bbf2) with normalized_from_candidate=true and fast-forwarded to e9e381d4; dist-dev rebuilt; smart_core upgraded; restart; runtime repo clean at e9e381d4; SC_SOURCE_REVISION aligned so /api/runtime-version serves e9e381d4. Daily readonly acceptance probe PASS (identity + wutao nav + fixture_role_finance contract). Owner can log in at http://1.95.85.92:18081/.",
+  "next_exact_step": "Closed: the detached daily runtime was returned to main and the daily runtime now tracks main exactly. PR #576 delivered the normalization entry; PR #577 closed this record. Final deployed identity is the main merge a438d69d (docs-only re-sync from the code-bearing e9e381d4). /api/runtime-version serves a438d69d and the daily readonly acceptance probe was re-run PASS at a438d69d. Owner can log in at http://1.95.85.92:18081/ with wutao / 123456.",
   "record": "docs/ops/iterations/daily_runtime_candidate_return_20261005.md",
   "schema_version": 1,
   "scope": [

@@ -97,4 +97,13 @@ in `sc_demo`. The daily profile still refused the weak password until a bound
 `tool/baseUrl/apiUrl/database/login/expectedSha/runId`) was supplied; no daily login default and no
 other environment was changed.
 
+### Final identity alignment
+
+The record close-out itself added a docs-only commit, so `main` advanced from the code-bearing
+`e9e381d4` to `a438d69d`. The daily runtime was re-synced to that exact SHA
+(`normalized_from_candidate=false`, bundle `a3ab2e02…`) and its source revision re-aligned, so
+`/api/runtime-version` serves `a438d69d`. No addon or frontend source changed in that delta, so the
+frontend rebuild and `smart_core` upgrade were not rerun; the daily readonly acceptance probe was
+re-executed at `a438d69d` and passed with the same identity, navigation and contract results.
+
 Live run/deployment status is tracked in `.agent/runs/DAILY-RUNTIME-CANDIDATE-RETURN/run.json`.
