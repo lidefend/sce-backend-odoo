@@ -1,0 +1,55 @@
+schema_version: 1
+goal:
+  id: DAILY-ACCEPTANCE-ENTRY-DBNAME-CLI-CONSTRAINT
+  title: record_the_command_line_db_name_constraint_for_the_daily_acceptance_publish_entry
+  status: in_progress
+  formal_product_layer: P4
+  layer_target: ops_daily_acceptance_entry
+  module:
+    - docs/ops
+    - .agent
+  objective: >-
+    Record the entry constraint discovered while running the daily composite
+    acceptance matrix at mainline 626836ad: make release.daily_dev.acceptance.publish
+    must NOT receive DB_NAME as a make command-line variable. A command-line
+    DB_NAME is propagated to the sub-make that env.matrix.check uses for its
+    DB/BD alias probe and re-enters with command-line origin, so it wins over the
+    alias and the probe reports "DB alias broken: expected sc_matrix_alias got
+    'sc_demo'". The value from .env.dev (and an exported environment variable) is
+    correct. The target itself, its gates and the acceptance assertions are NOT
+    changed; only the documented invocation and the run record are corrected.
+  baseline:
+    branch: main
+    full_sha: 626836ad0ee9531316ab8498c750556ca55bb254
+    source: clean_main_after_pr_583
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_governance
+    why_here: >-
+      The defect is an invocation-contract defect of a P4 ops acceptance entry:
+      the Makefile precedence/alias rules for DB_NAME and the runbook that tells
+      operators how to call the entry. It changes no product behaviour.
+    why_not_elsewhere:
+      - no_p0_frontend_contract_or_platform_mechanism
+      - no_p1_construction_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_configuration
+      - no_change_to_the_target_gates_fixture_or_database
+    blast_radius:
+      - the daily_dev acceptance publish invocation documented in docs/ops runbooks
+  batches:
+    - id: A
+      title: record_the_constraint_and_the_matrix_result
+      status: in_progress
+      evidence:
+        - the_failure_reproduces_only_with_a_command_line_db_name
+        - the_full_daily_matrix_passes_at_626836ad_without_it
+        - verify_agent_resume_unit_passed
+  exclusions:
+    - no_change_to_release_daily_dev_acceptance_publish_or_any_guard
+    - no_change_to_any_gate_threshold_assertion_or_fixture
+    - historical_iteration_records_are_not_rewritten
+  rollback:
+    - revert the runbook note and the run/goal records
+  next_exact_step: >-
+    Land the runbook constraint, then publish the docs-only candidate through the
+    ordinary PR lane and remove this batch's own active-run binding.

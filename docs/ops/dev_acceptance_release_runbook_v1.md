@@ -69,7 +69,7 @@ filestore.
    ACCEPTANCE_BACKUP_DIR=/tmp/20260512T125816 \
    ACCEPTANCE_BASE_URL=http://127.0.0.1:18081 \
    ACCEPTANCE_LOGIN=wutao ACCEPTANCE_PASSWORD='<password>' \
-   ENV=dev ENV_FILE=.env.dev DB_NAME=sc_demo \
+   ENV=dev ENV_FILE=.env.dev \
    make release.daily_dev.acceptance.publish
    ```
 
@@ -95,6 +95,14 @@ filestore.
    the frontend output must remain `./frontend/apps/web/dist-dev`,
    `VITE_PLATFORM_ADMIN_DB` must remain `sc_platform_core`, and Vite build or
    runtime overrides must stay unset.
+   `DB_NAME` must not be passed as a make command-line variable on this
+   entrypoint. The target runs `env.matrix.check`, which resolves DB-name
+   precedence through a `DB`/`BD` alias probe; a command-line `DB_NAME` is
+   forwarded to that probe's sub-make through `MAKEFLAGS`, where it re-enters
+   with command-line origin and outranks the alias, failing with
+   `DB alias broken: expected sc_matrix_alias got 'sc_demo'`. Let `DB_NAME`
+   resolve from `.env.dev` (`sc_demo`); the env guard still receives
+   `DB_NAME=sc_demo` because the recipe forwards `$(DB_NAME)`.
 
 ## Acceptance Criteria
 
