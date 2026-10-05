@@ -159,3 +159,99 @@ deployment or product delivery):
   and the acceptance-fixture entry once on `sc_demo`, then re-run
   `make -k release.daily_dev.acceptance.publish` to show the three gates PASS and
   re-check the list range.
+
+## Closeout (2026-10-06)
+
+This run is closed. The closeout changes only `.agent/` metadata and this
+document; no product, verifier, fixture or data semantics change.
+
+### Mainline integration
+
+- PR #580 (verifier contract binding, root causes A/B/C) merged as `b4fc523e`.
+- PR #581 (governed provenance-SQL channel) merged (squash) as
+  `239af48b62c83f54a79cb2586c662264d95c26c6` on `main`; PR head
+  `369f62db985f3745a35dc951e5f22e6589d755c1`, four required checks success.
+- PR: https://github.com/lidefend/sce-backend-odoo/pull/581
+
+### Closeout L1 re-verification (this HEAD)
+
+- Offline units re-run at this candidate HEAD and all pass: 5
+  (user_formal_field module boundary) + 10 (formal_action runtime drift) + 3
+  (formal_entry_metadata audit) + 8 (non-business-creator write) + 21
+  (acceptance fixture) = 47.
+- `make verify.guard.registry` PASS (`1387 scripts, 88/88 orphans
+  acknowledged`).
+- `make ci.local.iteration` PASS `change_state=dirty coverage=L1_only` with
+  `outside_scope=[]` (log
+  `.runtime/agent-runs/FORMAL-SURFACE-RUNTIME-AUDIT-CONTRACT-BINDING/logs/closeout-iteration.log`).
+- Risk-selected L2: no runtime or product layer is touched by this docs/.agent
+  closeout, so no additional L2/L3/L4 target is required; the merged PRs'
+  runtime evidence is unchanged and reused.
+
+### Daily acceptance (authoritative `sc-root` / `sc_demo`)
+
+- Repo `/opt/projects/repos/sce-product-odoo` on branch `main` at `239af48b`
+  (clean); `daily.runtime.main.bundle_sync` (`b4fc523e -> 239af48b`) and
+  `daily.runtime.source_revision.align`; `/api/runtime-version` serves
+  `source_revision = git_sha = 239af48b`, database `sc_demo`, environment `dev`.
+  No backend module set or frontend source changed, so no module upgrade or
+  frontend rebuild was required.
+- `make formal_entry_metadata.non_business_creator.write` repaired
+  `sc.settlement.order/source_created_by` from the non-business `admin` login to
+  the sanctioned legacy label through the governed `provenance_sql` channel
+  (70 rows; before-sample taken prior to the UPDATE; `state` untouched).
+  Post-fix readback: `non_business_creator=0`, `raw_non_business_creator=0`,
+  `state=ok_visible`.
+- `daily.dev.acceptance_fixture.ensure` ensured
+  `smart_construction_acceptance_fixture.fe_labor_usage_ticket_a` (方单);
+  `daily.dev.acceptance_contract.resolve` rebound
+  `artifacts/backend/acceptance_record_identity.json` to the served `239af48b`.
+- `make -k release.daily_dev.acceptance.publish` EXIT=0 with:
+  `USER_FORMAL_FIELD_MODULE_BOUNDARY_AUDIT failure_count=0`,
+  `FORMAL_ACTION_RUNTIME_DRIFT_AUDIT failure_count=0`,
+  `FORMAL_ENTRY_METADATA_AUDIT required_failures=[] errors=[]
+  contract_required_models=92`, `dev_acceptance_release_probe status=PASS`
+  (`login=wutao`, `runtime_identity expected_sha = served_sha = 239af48b`), and
+  `[release.daily_dev.acceptance.publish] PASS head=239af48b`
+  (log `sc-root:/tmp/daily_composite3.log`).
+- Fixed dev password `wutao` / `123456` is confined to the existing isolated
+  daily fixture; it does not change the daily login defaults, and the acceptance
+  env guard still requires a bound `daily-readonly-credential-confirmation.v1`
+  envelope (<=10 min). The fixture-ensure password stays the existing default
+  `scdevpass`.
+
+### List range and environment boundaries
+
+- List range is reused, not re-run. Owner accepted the existing nonzero evidence
+  `artifacts/frontend-web-fix-20260928/resume-20261001/list.json` -> 108/108 gated
+  checks, 5/5 detected negative fixtures each `baseline_ok=true`, zero runtime
+  errors; no list/render/CSS/probe input changed in this closeout or the two
+  merged PRs.
+- The environment DENY is retained as a standalone conclusion for the
+  rebuild/snapshot lane only (the two mounters belong to one project and do not
+  prove exclusive occupancy; the non-current mounter waits on the existing
+  governed entry, the in-use 18082 is preserved, the audit is not relaxed and
+  containers are not touched directly). It is not generalised into an
+  environment-all-pass. The `rendering_detail_state` exclusion keeps its existing
+  evidence and adjudication and is not re-proved here.
+
+### Four-layer status
+
+- Batch acceptance: passed (both owned PRs delivered; local units and
+  `verify.guard.registry` pass; exact-head `ci.local.quick` receipt
+  `369f62db…`).
+- Mainline integration: passed (`main` `239af48b`).
+- Version release: not claimed (no version deployed for this run; the daily
+  runtime is the persistent dev environment).
+- Product delivery: not claimed; requires its own target-environment acceptance.
+
+### Index and freeze order
+
+As in the earlier `ACTIVE-RUN-INDEX-CLOSEOUT` precedent, the index stayed bound
+to the closeout branch while the L1 receipts were recorded, and the final commit
+retires the binding for the merged `fix/settlement-provenance-entry-creator-v1`
+branch instead of leaving a dangling mapping. The frozen HEAD then runs one
+`ci.local.quick` (Quick does not depend on the run binding). After freezing,
+`make ci.local.iteration` reports `unregistered`, which is the same accepted
+behaviour documented by that precedent. The four other pre-existing
+`active-runs.json` bindings are untouched by this closeout.
