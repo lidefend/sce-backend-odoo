@@ -317,3 +317,24 @@
 - 责任层：**P4 日常验收夹具车道**（daily 需用受管生产者在**服务中 SHA**下重生成 daily 作用域的
   record-identity 产物；daily 入口不应复用 acceptance profile 的解析产物）。
   不属本轮候选回归，保持 blocker `DAILY_ACCEPTANCE_CONTRACT_CUSTODY=pending_env_gated`。
+
+### 更正：日常受管车道本身完整；缺的是「在服务中 SHA 重跑解析」这一步
+
+- 上节把 FAIL 归因为「P4 车道缺口」**不准确**。实际是登记流程漏跑了一步：
+  `make daily.dev.acceptance_contract.resolve`（`make/dev.mk:905`）——它要求
+  `ACCEPTANCE_TARGET_SHA` 且校验 `served_sha == ACCEPTANCE_TARGET_SHA`，然后在
+  `DAILY_DEV_ACCEPTANCE_DB=sc_demo`（`SC_ACCEPTANCE_FIXTURE_SCOPE=daily_dev`）上用受管生产者
+  `scripts/verify/frontend_delivery_hardening_runtime_ids.py` 重写
+  `ACCEPTANCE_RECORD_RESOLUTION`（默认 `artifacts/backend/acceptance_record_identity.json`，
+  gitignored）。旧产物 `expected_sha=dfa6fa49`、companies `a=8/b=9` 是**上一个 SHA 的遗留**。
+- 在 daily 主机按登记入口重跑解析后（`ssh sc-root` + `ENV=dev ENV_FILE=.env.dev DB_NAME=sc_demo`
+  + `ACCEPTANCE_TARGET_SHA=5d1dfaeb`），产物更新为 `expected_sha=5d1dfaeb`、companies `a=21/b=22`、
+  `payment_request` 目标 record 36154 / action 780 / menu 550。
+- 随后在 daily 主机跑 `make verify.daily_dev.acceptance.readonly.probe`（wutao/123456 +
+  ≤10 分钟 `daily-readonly-credential-confirmation.v1` 信封）→ **整体 PASS**：
+  - `runtime_identity` PASS（`served_sha == expected_sha == 5d1dfaeb`）；
+  - `login` PASS（wutao `nodes=111 actions=89 leaves=89 forbidden=[] required_miss=[]`，含「项目台账」）；
+  - `contract` PASS（`fixture_role_finance` uid 210，公司 `[21,22]`，`resolved_sha == served_sha`，
+    11/11 checks true，`http_status=200`（此前 403），custody `response_sha256=bb739fa2…`，
+    `integrity_reason=ok`）；`[dev_acceptance_release_probe_schema_guard] PASS`。
+- 结论：登记序列固定为 **resolve → probe**；产物按 SHA 失效属预期，不是审计放宽，也未改探针框架。
