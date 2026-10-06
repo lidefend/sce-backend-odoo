@@ -19,12 +19,14 @@ Owner acceptance entry: `http://1.95.85.92:18081/`（自定义前端），口令
 
 ## 2. 状态（四层分列）
 
-- **批次验收**：本批（P4 验收工具 + 记录）通过；日常运行态用户视角四象限 91/91、55/55，
-  detail 8/8，form-profiles/workbench 明暗皆 PASS。同时确认 1 项用户可见产品失败
-  （关系打开 `project_id` → 无权访问，根因见 §3.4），未因该失败放宽任何断言。
-- **主线集成**：`main = 5ba6398e`（PR #588 已合并），必需检查全绿；本批不改产品代码。
+- **批次验收**：通过。日常运行态用户视角四象限 91/91、55/55，detail 8/8，
+  form-profiles/workbench 明暗皆 PASS；并修复 §3.4 确认的关系打开投影缺陷（P0 `smart_core`，
+  提交 `827bffed`），定向 ORM `12 tests / 0 failed`、运行态关系往返复验 `status=pass`
+  （`denied_requests=0`、`console_errors=0`）。全程未放宽任何断言或 ACL。
+- **主线集成**：`main = 5ba6398e`（PR #588 已合并），必需检查全绿。本批产品变更
+  （`smart_core`，`827bffed`）在本分支，**尚未合并主线**，待普通 Gitee PR 完整远端门禁。
 - **版本发布**：未主张。
-- **产品交付**：未主张——待 §4 的关系打开投影缺陷收敛后再判断。
+- **产品交付**：未主张——待产品变更合入主线并完成当日运行态回归后再判断。
 
 ## 3. 执行记录
 
@@ -138,17 +140,52 @@ Owner acceptance entry: `http://1.95.85.92:18081/`（自定义前端），口令
 - `config/frontend/acceptance_environments_v1.json` 的 `navigation_policy.max_actions=90`，
   而当前发布面实际为 91；本轮 lane 未因该值失败，但口径应在下一次发布面对齐时一并复核。
 
+### 3.8 关系打开投影缺陷修复（P0 平台契约装配，本轮新增）
+
+**责任层**：P0 平台契约投影缺陷（`smart_core` 声明了一个主体未被授权的打开入口），
+不是 P1 行业语义，也不是合法权限边界。
+
+- **根因**：`page_assembler._build_relation_entry_map` 用 `ir.ui.menu._visible_menu_ids()` 取关系模型
+  第一个可见菜单/动作，与发布导航授权面 `navigation.route_authority` **不同源**；`project.project`
+  被声明 `334/199`，而主体授权面中不存在该对 → 前端按 `model_write_authority=true` 生成 `/f/`，
+  路由守卫 `findRouteAuthority` 未命中 → `/access-denied?reason=NAVIGATION_AUTHORITY_DENIED`。
+- **修复**（提交 `827bffed484dcc1af4db05ec7b0b10a5189e9938`）：
+  1. `addons/smart_core/delivery/runtime_route_authority.py` 新增 `iter_published_pairs(authority)`
+     （按 bucket 顺序 yield 发布对），`published_pairs` 改为其集合。
+  2. `page_assembler._build_relation_entry_map` 改为消费 `build_runtime_route_authority(self.env)`
+     **同一授权面**：原生候选对若已在授权面内则保留；否则回退到该模型在授权面内的首个发布入口；
+     若该模型在授权面内无任何入口则 **fail-closed**：不声明打开入口
+     （`action_id=null`、`menu_id=null`、`can_open=false`、`reason_code="RELATION_ENTRY_NOT_PUBLISHED"`）。
+     不覆盖 ACL / 字段权限 / 合法隐藏规则，**无模型特判**。
+  3. `_build_relation_entry_for_field` 的 `can_open` 由硬编码 `True` 改为消费 base 声明，
+     使 fail-closed 结果真正生效。
+- **锁定（层内，非零）**：新增受管 ORM 车道 `make verify.smart_core.relation_entry_publication.orm`
+  → `0 failed, 0 error(s) of 12 tests`（日志
+  `.runtime/agent-runs/DAILY-DEV-USER-ACCEPTANCE-COMPLETION/relation_entry_publication_orm.log`）；
+  `make ci.local.iteration` PASS；`verify.frontend.list_surface_search_contract.unit` 22/22 OK。
+- **运行态复验（只跑受影响的定向车道，不重跑矩阵）**：受管入口
+  `daily.runtime.candidate.bundle_sync` + `daily.runtime.source_revision.align`（仅 restart，
+  本变更无新字段/XML/迁移，Python 方法体变更由容器重启加载）。回读 `/api/runtime-version`
+  `git_sha=827bffed484dcc1af4db05ec7b0b10a5189e9938`；部署盘
+  `sc-root:/opt/projects/repos/sce-product-odoo` HEAD 同 SHA 且含新符号。
+  探针产物 `.runtime/final-acceptance/relation-roundtrip-postfix/20261006T030040/summary.json`：
+  - `status=pass`，`declared_entry_count=14`，`denied_requests=0`，`console_errors=0`。
+  - `project_id` 现声明**已发布对** `action_id=696/menu_id=376`（原 334/199 未发布→按规则回退），
+    真实点击落 `/f/project.project/1245`；回退后 path/title/statusbar/tabs/actions 全部恢复、
+    `error_free=true`。
+  - `partner_id`(`786/598`)、`handler_id`(`723/438`)、`tax_id`(无菜单对) 仍 `opened`。
+- **未放宽断言**：修复只收敛「声明 ↔ 授权面」一致，不新增任何放行；原有失败位置的结论由
+  「确认产品缺陷」更新为「已修复并复验」，其余断言不变。
+
 ## 4. 仍未关闭
 
-1. **关系打开投影缺陷（产品修复，需所有者决策定层）**：`project.project` 关系条目声明
-   334/199，主体授权中不存在该入口，真实点击落到无权访问。修复位置在 P0 平台契约装配
-   （`_build_relation_entry_map` 应消费与 `navigation.route_authority` 同源的授权面，或把
-   `can_open` 收敛为 false），属后端模块变更，需按实际变更决定是否升级模块并在日常运行态复验。
-   本轮按“只修确认失败、不擅自跨层改产品语义”的口径未动手。
+1. **关系打开投影缺陷**：**已修复并在日常运行态复验通过**（提交 `827bffed`，证据见 §3.8）。
+   剩余动作仅为走普通 Gitee PR 完整远端门禁后合入主线；本条不再是产品缺陷阻断项。
 2. **`项目台账` 的 `/f/` ↔ `readonly` profile 观察项**：列表声明 `model_write_authority=true` 并据此
    打开 `/f/project.project/<id>`，但记录契约给出 `effectiveRenderProfile=readonly`。探针按既有策略记为
    not_applicable（绝不当成编辑通过）；是否为产品策略需所有者确认。
-3. **测试资产登记**：新脚本尚未进入 `docs/engineering_convergence/test_inventory.csv`
-   （由 `scripts/ci/generate_test_inventory.py` 生成，属交付冻结准备步骤）。
-4. 本批产品代码 0 变更（仅 P4 验收工具与记录），所以**未主张版本发布与产品交付完成**；
-   四层状态见 §2。
+3. **测试资产登记**：新脚本（含 `scripts/verify/record_relation_roundtrip_acceptance.js`）尚未进入
+   `docs/engineering_convergence/test_inventory.csv`（由 `scripts/ci/generate_test_inventory.py` 生成，
+   属交付冻结准备步骤）。
+4. 本批含产品代码变更（P0 `smart_core`）与 P4 验收工具/记录；在变更合入主线前**不主张版本发布与
+   产品交付完成**，四层状态见 §2。
