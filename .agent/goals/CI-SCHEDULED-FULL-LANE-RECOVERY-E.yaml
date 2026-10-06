@@ -1,0 +1,26 @@
+goal:
+  id: CI-SCHEDULED-FULL-LANE-RECOVERY-E
+  status: active
+  formal_product_layer: P0
+  objective: >-
+    Restore the scheduled frontend_release_gate full lane that #594 (90484d88) left
+    red on main. Three independent regressions are closed with their owning layer
+    kept separate: (1) the newly added contract_form_dirty_semantics_test.ts tripped
+    the full-lane eslint @typescript-eslint/no-explicit-any rule, so its harness
+    typing loses every `any` without changing an assertion; (2) the reviewed
+    scene-component collaboration gate moved from the raw `showCollaborationPanel`
+    prop to the contract-derived `collaborationPanelVisible`, so the static guard's
+    recorded review and self-check samples are re-registered on the new authority
+    instead of accepting two spellings; (3) the authoritative navigation manifest
+    still projected the released project-ledger leaf for pm only, so project_a_member
+    and owner browser declarations are converged on the same released ledger the
+    release-navigation policy and core-extension policy map already contain.
+    page_identity.browser must pass declared==observed with no missing/unexpected keys.
+  run: .agent/runs/CI-SCHEDULED-FULL-LANE-RECOVERY-E/run.json
+  exclusions:
+    - baseline_raises
+    - product_deployment
+    - production_access
+    - database_destructive_writes
+    - frontend_test_framework_expansion
+    - assertion_relaxation

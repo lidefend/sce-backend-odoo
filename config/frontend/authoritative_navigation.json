@@ -84,10 +84,11 @@
         "smart_construction_core.menu_sc_plan|smart_construction_core.action_sc_plan|sc.plan",
         "smart_construction_core.menu_sc_project_project|smart_construction_core.action_sc_project_list|project.project"
       ],
-      "browser_expected_count": 2,
+      "browser_expected_count": 3,
       "browser_leaf_keys": [
         "smart_construction_core.menu_sc_construction_diary|smart_construction_core.action_sc_construction_diary|sc.construction.diary",
-        "smart_construction_core.menu_sc_general_contract|smart_construction_core.action_sc_general_contract|sc.general.contract"
+        "smart_construction_core.menu_sc_general_contract|smart_construction_core.action_sc_general_contract|sc.general.contract",
+        "smart_construction_core.menu_sc_project_project|smart_construction_core.action_sc_project_list|project.project"
       ]
     },
     "pm": {
@@ -143,12 +144,13 @@
         "smart_construction_core.menu_sc_product_team_loan_deduction_v1|smart_construction_core.action_sc_product_team_loan_deduction_v1|sc.team.loan.deduction.workspace",
         "smart_construction_core.menu_sc_project_project|smart_construction_core.action_sc_project_list|project.project"
       ],
-      "browser_expected_count": 4,
+      "browser_expected_count": 5,
       "browser_leaf_keys": [
         "smart_construction_core.menu_sc_certificate_registration|smart_construction_core.action_sc_certificate_registration|sc.document.admin.document",
         "smart_construction_core.menu_sc_construction_diary|smart_construction_core.action_sc_construction_diary|sc.construction.diary",
         "smart_construction_core.menu_sc_general_contract|smart_construction_core.action_sc_general_contract|sc.general.contract",
-        "smart_construction_core.menu_sc_p1_daily_contract|smart_construction_core.action_sc_general_contract|sc.general.contract"
+        "smart_construction_core.menu_sc_p1_daily_contract|smart_construction_core.action_sc_general_contract|sc.general.contract",
+        "smart_construction_core.menu_sc_project_project|smart_construction_core.action_sc_project_list|project.project"
       ]
     }
   }

@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "id": "CI-SCHEDULED-FULL-LANE-RECOVERY-E",
+  "branch": "fix/scheduled-full-lane-recovery-e",
+  "status": "active",
+  "baseline_sha": "90484d88ac1db90098fdd5ad098600d781573f6a",
+  "goal": ".agent/goals/CI-SCHEDULED-FULL-LANE-RECOVERY-E.yaml",
+  "record": "docs/ops/iterations/scheduled_full_lane_recovery_e_20261006.md",
+  "scope": [
+    "config/frontend/",
+    "frontend/apps/web/scripts/",
+    "scripts/verify/",
+    ".agent/",
+    "docs/ops/iterations/",
+    "docs/engineering_convergence/"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Governed local iteration plus the isolated acceptance runtime: make ci.local.iteration, risk-selected non-zero focused tests, and the declared verify targets. The scheduled full lane itself is proven by dispatching frontend_release_gate on merged main; local browser runs use the registered sc-fe-r2-p1-01 acceptance profile with the fixed fixture password, never a hand-assembled stack."
+  },
+  "checks": {
+    "release_navigation_policy": {
+      "target": "verify.frontend.release_navigation_policy.guard",
+      "inputs": [
+        "config/frontend/authoritative_navigation.json",
+        "scripts/verify/frontend_release_navigation_policy_guard.py",
+        "scripts/verify/test_frontend_release_navigation_policy_guard.py",
+        "addons/smart_construction_core/core_extension_policy_maps.py"
+      ]
+    },
+    "scene_component_bridge": {
+      "target": "verify.frontend.scene_component_bridge.guard",
+      "inputs": [
+        "scripts/verify/frontend_scene_component_bridge_guard.py",
+        "scripts/verify/contract_form_semantic_identity_guard.py",
+        "scripts/verify/scene_audit_disclosure_guard.py",
+        "frontend/apps/web/src/pages/contractForm"
+      ]
+    },
+    "contract_form_dirty_semantics": {
+      "target": "verify.frontend.contract_form_dirty_semantics.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/contract_form_dirty_semantics_test.ts",
+        "frontend/apps/web/src/pages/contractForm"
+      ]
+    },
+    "page_identity_browser": {
+      "target": "verify.frontend.page_identity.browser",
+      "inputs": [
+        "config/frontend/authoritative_navigation.json",
+        "frontend/apps/web/scripts/frontend_product_maturity_audit.mjs",
+        "scripts/verify/frontend_navigation_audit.mjs"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Finish the delivery-hardening browser verification, then commit the three owning-layer fixes plus the run records, push fix/scheduled-full-lane-recovery-e, and open a protected PR; confirm the frontend_release_gate full lane on merged main before claiming the schedule is restored."
+}

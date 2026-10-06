@@ -1001,7 +1001,15 @@ _COLLABORATION_CAPABILITY_PROP = "props.showCollaborationPanel"
 # panel visibility, so the slot can be wired and still render nothing: the panel gate is
 # compared against this authority like the flag delegation is, instead of only being
 # tested for literal falsiness.
-_COLLABORATION_PANEL_GATE = "showCollaborationPanel"
+#
+# The page-region contract made the gate a derived authority: a contract that
+# declares its regions decides from the declaration, and only the legacy contract
+# (no declaration at all) still needs the runtime capability conjunct, so the
+# panel gate moved from the raw prop to `collaborationPanelVisible`.  The two
+# reviewed expressions behind it are `hasCollaboration` above and the
+# declaration-aware predicate the guard pins in the runtime VM, so this is a
+# recorded review of the same single authority rather than a second one.
+_COLLABORATION_PANEL_GATE = "collaborationPanelVisible"
 _COLLABORATION_SUPPRESSION_PROP = "props.suppressCollaboration"
 _COLLABORATION_SUBORDINATE_ZONE = "props.renderModel?.zones.subordinate"
 _COLLABORATION_KINDS_CONSTANT = "COLLABORATION_SURFACE_KINDS"
@@ -1062,13 +1070,17 @@ _COLLABORATION_SUPPRESSION_AUTHORITY = "dispatchContextCollaboration"
 # host side - `ContractFormDriverHost.vue` wraps the carrier in
 # `ScErrorState v-if="error || !renderModel"` / `section v-else`, gates the carrier on
 # `!preserveAuthoritativeBusinessSections` and the task pattern on the presentation
-# mode; the region template is gated on the flag and the panel on its own authority.
+# mode; the region template is gated on the flag and the panel on its own derived
+# authority.  `showCollaborationPanel` is no longer a template gate - the contract
+# made the panel gate the derived `collaborationPanelVisible`, so it is replaced here
+# rather than kept as a second accepted spelling (the panel has its own exact-gate
+# check just below).
 _COLLABORATION_HOST_TEMPLATE_GATES = frozenset(
     {
         "!preserveAuthoritativeBusinessSections",
         _condense("renderModel.identity.presentationMode === 'task'"),
         "hasCollaboration",
-        "showCollaborationPanel",
+        "collaborationPanelVisible",
     }
 )
 _COLLABORATION_HOST_ELSE_ELEMENTS = frozenset({"section"})
@@ -1439,11 +1451,23 @@ def _innermost_element(source: str, offset: int) -> tuple[str, int, int] | None:
 
 
 _COLLABORATION_EXPECTED_FLAG = (
-    "() => resolveCollaborationVisibility({\n"
-    "  capability: props.showCollaborationPanel,\n"
-    "  suppressed: props.suppressCollaboration,\n"
-    "  nodes: props.renderModel?.zones.subordinate,\n"
-    "})"
+    "() => {\n"
+    "  if (contractDeclaresSurfaces.value) {\n"
+    "    return props.suppressCollaboration ? false : Boolean(collaborationSurface.value);\n"
+    "  }\n"
+    "  return resolveCollaborationVisibility({\n"
+    "    capability: props.showCollaborationPanel,\n"
+    "    suppressed: props.suppressCollaboration,\n"
+    "    nodes: props.renderModel?.zones.subordinate,\n"
+    "  });\n"
+    "}"
+)
+# The reviewed flag, reflowed onto one line and with the capability spelled as a
+# bracket property access.  Both are the same expression to the compiler and to the
+# guard's normalizers, so they are accepted samples rather than rewrites.
+_COLLABORATION_EXPECTED_FLAG_REFLOWED = re.sub(r"\s+", " ", _COLLABORATION_EXPECTED_FLAG)
+_COLLABORATION_EXPECTED_FLAG_BRACKET = _COLLABORATION_EXPECTED_FLAG.replace(
+    "props.showCollaborationPanel", "props['showCollaborationPanel']"
 )
 
 
@@ -3703,11 +3727,11 @@ def _collaboration_module(
 
 
 def _collaboration_host(
-    flag_body: str = _COLLABORATION_MODULE_FLAG_CALL,
+    flag_body: str | None = None,
     region_binding: str = ':has-collaboration="hasCollaboration"',
     region_gate: str = 'v-if="hasCollaboration"',
     region_slot: str = "#collaboration",
-    panel_gate: str = 'v-if="showCollaborationPanel"',
+    panel_gate: str = 'v-if="collaborationPanelVisible"',
     region_prefix: str = "",
     region_tail: str = "",
     region_suffix: str = "",
@@ -3732,9 +3756,15 @@ def _collaboration_host(
     what the region is for: a slot that keeps its gate while its only child is
     removed renders nothing, and the guard binds the panel's own gate as well.
     """
-    argument = (
-        f"() => (\n  {flag_body}\n)" if flag_argument is None else flag_argument
-    )
+    # The reviewed flag is the contract-aware predicate, so an unadorned sample
+    # carries it verbatim: only the samples that deliberately rewrite the flag
+    # pass `flag_body`/`flag_argument`, and those spell the old delegation call.
+    if flag_argument is not None:
+        argument = flag_argument
+    elif flag_body is not None:
+        argument = f"() => (\n  {flag_body}\n)"
+    else:
+        argument = _COLLABORATION_EXPECTED_FLAG
     return (
         "<template>\n"
         f"{carrier_prefix}"
@@ -3789,10 +3819,7 @@ _COLLABORATION_SELF_CHECK: tuple[tuple[str, str, str, str, bool], ...] = (
     ("delegated flag and wired region", _collaboration_host(), _collaboration_module(), _collaboration_makefile(), True),
     (
         "reflowed delegation call",
-        _collaboration_host(
-            "resolveCollaborationVisibility({ capability: props.showCollaborationPanel, "
-            "suppressed: props.suppressCollaboration, nodes: props.renderModel?.zones.subordinate })"
-        ),
+        _collaboration_host(flag_argument=_COLLABORATION_EXPECTED_FLAG_REFLOWED),
         _collaboration_module(),
         _collaboration_makefile(),
         True,
@@ -3812,11 +3839,11 @@ _COLLABORATION_SELF_CHECK: tuple[tuple[str, str, str, str, bool], ...] = (
         True,
     ),
     (
-        "flag written as a block whose sole statement is the return",
+        "legacy delegation rewritten as a block whose sole statement is the return",
         _collaboration_host(flag_argument=_DELEGATION_BLOCK),
         _collaboration_module(),
         _collaboration_makefile(),
-        True,
+        False,
     ),
     (
         "sibling markup after the region slot inside the flag element",
@@ -3827,10 +3854,7 @@ _COLLABORATION_SELF_CHECK: tuple[tuple[str, str, str, str, bool], ...] = (
     ),
     (
         "flag delegation spelling the capability as a bracket property access",
-        _collaboration_host(
-            "resolveCollaborationVisibility({ capability: props['showCollaborationPanel'], "
-            "suppressed: props.suppressCollaboration, nodes: props.renderModel?.zones.subordinate })"
-        ),
+        _collaboration_host(flag_argument=_COLLABORATION_EXPECTED_FLAG_BRACKET),
         _collaboration_module(),
         _collaboration_makefile(),
         True,

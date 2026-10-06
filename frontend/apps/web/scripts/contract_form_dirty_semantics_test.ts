@@ -17,7 +17,7 @@ import { fieldType } from '../src/pages/contractForm/fieldUtils';
 const SERVER_RULE = { sourceWidgetId: 'field.name', triggerType: 'change', dispatchMode: 'server' };
 
 function harness(options: {
-  fields: Record<string, any>;
+  fields: Record<string, unknown>;
   formData: Record<string, unknown>;
   originalValues: Record<string, unknown>;
   rules?: Array<Record<string, unknown>>;
@@ -32,7 +32,7 @@ function harness(options: {
   const validationFieldErrors = ref<Record<string, unknown>>({});
   let timer: ReturnType<typeof setTimeout> | null = null;
 
-  const context: any = {
+  const context = {
     formFields: computed(() => fields),
     model: computed(() => 'project.project'),
     recordId: computed(() => 581),
@@ -73,7 +73,7 @@ function harness(options: {
     quickCreateRelation: async () => undefined,
     relationUiLabel: (_d: unknown, _k: string, fallback?: string) => fallback || '',
     relationModel: () => 'res.partner',
-    relationIds: (name: string) => (Array.isArray((formData as any)[name]) ? (formData as any)[name] : []),
+    relationIds: (name: string) => (Array.isArray(formData[name]) ? formData[name] : []),
     upsertRelationOption: () => {},
     buildOne2manyCommandValue: () => [],
     one2manyFieldRows: () => [],
@@ -83,7 +83,7 @@ function harness(options: {
     canonicalFieldWritable: () => true,
     fieldOccurrenceDecision: () => 'writable',
     pendingInlineCreateFields: ref([]),
-  };
+  } as unknown as Parameters<typeof useRecordFormState>[0];
 
   const api = useRecordFormState(context);
   return {
@@ -204,9 +204,9 @@ function harness(options: {
   };
   // Only the declarations the keyword path consumes are bound explicitly; the
   // rest of the hook's dependency surface is inert for this call.
-  const dependencies: any = new Proxy(overrides, {
-    get: (target, key) => (key in target ? (target as any)[key] : stub),
-  });
+  const dependencies = new Proxy(overrides, {
+    get: (target, key) => (typeof key === 'string' && key in target ? target[key] : stub),
+  }) as unknown as Parameters<typeof useRecordRelationships>[0];
   const { setRelationKeyword } = useRecordRelationships(dependencies);
   setRelationKeyword('tag_ids', '');
   assert.deepEqual(keywordWrites, [['tag_ids', '']], 'the keyword buffer must still be updated');
