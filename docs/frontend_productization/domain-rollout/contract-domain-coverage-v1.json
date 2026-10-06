@@ -3,6 +3,9 @@
   "status": "PASS",
   "domain": "contract",
   "rootMenuXmlid": "smart_construction_core.menu_sc_contract_center",
+  "rootMenuXmlids": [
+    "smart_construction_core.menu_sc_contract_center"
+  ],
   "ownerModule": "smart_construction_core",
   "excludedScopes": [
     "demo_addons",
@@ -10,21 +13,21 @@
     "user_specific_visibility"
   ],
   "summary": {
-    "action_count": 7,
-    "model_count": 5,
-    "ready_surface_count": 7,
-    "readable_fallback_count": 0,
-    "structural_form_count": 7,
+    "action_count": 8,
+    "model_count": 6,
+    "ready_surface_count": 8,
+    "readable_fallback_count": 1,
+    "structural_form_count": 8,
     "fail_closed_count": 0,
     "excluded_count": 0,
     "gap_count": 0
   },
   "actions": [
     {
-      "menuId": 660,
+      "menuId": 662,
       "menuXmlid": "smart_construction_core.menu_sc_p1_contract_change",
       "menuName": "合同变更",
-      "actionId": 693,
+      "actionId": 695,
       "actionXmlid": "smart_construction_core.action_sc_contract_change",
       "actionName": "合同变更",
       "model": "sc.contract.change",
@@ -77,10 +80,74 @@
       ]
     },
     {
-      "menuId": 661,
+      "menuId": 659,
+      "menuXmlid": "smart_construction_core.menu_sc_p1_contract_execution_position",
+      "menuName": "合同执行态势",
+      "actionId": 611,
+      "actionXmlid": "smart_construction_core.action_sc_contract_execution_position",
+      "actionName": "合同执行态势",
+      "model": "sc.contract.execution.position",
+      "viewMode": "tree,pivot,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_contract_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_contract_manager",
+              "smart_construction_core.group_sc_cap_contract_read",
+              "smart_construction_core.group_sc_cap_contract_user",
+              "smart_construction_core.group_sc_cap_purchase_manager"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_p1_contract_execution_position",
+            "groups": [
+              "smart_construction_core.group_sc_cap_contract_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_contract_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_contract_execution_position_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "pivot",
+          "viewXmlid": "smart_construction_core.view_sc_contract_execution_position_pivot",
+          "jsClass": "",
+          "semantic": "pivot",
+          "readiness": "readable_fallback",
+          "reason": "RENDERER_PIVOT_PLANNED"
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_contract_execution_position_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 663,
       "menuXmlid": "smart_construction_core.menu_sc_p1_daily_contract",
       "menuName": "日常合同",
-      "actionId": 685,
+      "actionId": 687,
       "actionXmlid": "smart_construction_core.action_sc_general_contract",
       "actionName": "一般合同（公司）",
       "model": "sc.general.contract",
@@ -139,7 +206,7 @@
       ]
     },
     {
-      "menuId": 659,
+      "menuId": 661,
       "menuXmlid": "smart_construction_core.menu_sc_p1_expense_contract",
       "menuName": "支出合同",
       "actionId": 610,
@@ -197,10 +264,10 @@
       ]
     },
     {
-      "menuId": 663,
+      "menuId": 665,
       "menuXmlid": "smart_construction_core.menu_sc_p1_expense_settlement",
       "menuName": "支出结算",
-      "actionId": 780,
+      "actionId": 782,
       "actionXmlid": "smart_construction_core.action_sc_settlement_order_expense",
       "actionName": "支出合同结算",
       "model": "sc.settlement.order",
@@ -253,7 +320,7 @@
       ]
     },
     {
-      "menuId": 658,
+      "menuId": 660,
       "menuXmlid": "smart_construction_core.menu_sc_p1_income_contract",
       "menuName": "收入合同",
       "actionId": 609,
@@ -311,10 +378,10 @@
       ]
     },
     {
-      "menuId": 662,
+      "menuId": 664,
       "menuXmlid": "smart_construction_core.menu_sc_p1_income_settlement",
       "menuName": "收入结算",
-      "actionId": 779,
+      "actionId": 781,
       "actionXmlid": "smart_construction_core.action_sc_settlement_order_income",
       "actionName": "收入合同结算",
       "model": "sc.settlement.order",
@@ -367,10 +434,10 @@
       ]
     },
     {
-      "menuId": 696,
+      "menuId": 698,
       "menuXmlid": "smart_construction_core.menu_sc_product_general_contract_settlement_v1",
       "menuName": "日常合同结算",
-      "actionId": 874,
+      "actionId": 876,
       "actionXmlid": "smart_construction_core.action_sc_product_general_contract_settlement_v1",
       "actionName": "日常合同结算",
       "model": "sc.settlement.order",

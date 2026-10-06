@@ -11,9 +11,9 @@
   "summary": {
     "primaryCenterCount": 10,
     "deliveredReportCount": 15,
-    "runtimeSurfaceCount": 88,
+    "runtimeSurfaceCount": 93,
     "excludedSurfaceCount": 1,
-    "coveredSurfaceCount": 88,
+    "coveredSurfaceCount": 93,
     "uncoveredSurfaceCount": 0,
     "runtimeGapCount": 0,
     "gapCount": 0
@@ -30,7 +30,7 @@
       "file": "contract-domain-coverage-v1.json",
       "domain": "contract",
       "status": "PASS",
-      "actionCount": 7,
+      "actionCount": 8,
       "gapCount": 0
     },
     {
@@ -100,7 +100,7 @@
       "file": "finance-center-coverage-v1.json",
       "domain": "finance_center",
       "status": "PASS",
-      "actionCount": 11,
+      "actionCount": 14,
       "gapCount": 0
     },
     {
@@ -121,7 +121,7 @@
       "file": "reporting-center-coverage-v1.json",
       "domain": "reporting_center",
       "status": "PASS",
-      "actionCount": 6,
+      "actionCount": 7,
       "gapCount": 0
     }
   ],
@@ -143,8 +143,8 @@
     {
       "center": "contract",
       "rootMenuXmlid": "smart_construction_core.menu_sc_contract_center",
-      "surfaceCount": 7,
-      "coveredCount": 7,
+      "surfaceCount": 8,
+      "coveredCount": 8,
       "uncoveredCount": 0
     },
     {
@@ -157,8 +157,8 @@
     {
       "center": "finance",
       "rootMenuXmlid": "smart_construction_core.menu_sc_finance_center",
-      "surfaceCount": 11,
-      "coveredCount": 11,
+      "surfaceCount": 14,
+      "coveredCount": 14,
       "uncoveredCount": 0
     },
     {
@@ -178,8 +178,8 @@
     {
       "center": "reporting",
       "rootMenuXmlid": "smart_construction_core.menu_sc_data_center",
-      "surfaceCount": 6,
-      "coveredCount": 6,
+      "surfaceCount": 7,
+      "coveredCount": 7,
       "uncoveredCount": 0
     },
     {
@@ -268,7 +268,7 @@
     {
       "center": "workbench",
       "rootMenuXmlid": "smart_construction_core.menu_sc_workspace_center",
-      "menuId": 467,
+      "menuId": 468,
       "menuXmlid": "smart_construction_core.menu_sc_project_kanban",
       "menuName": "项目看板",
       "actionId": 605,
@@ -320,7 +320,7 @@
         },
         {
           "view_type": "form",
-          "view_xmlid": "project.edit_project",
+          "view_xmlid": "smart_construction_core.view_project_dashboard_readonly_form",
           "root_tag": "form",
           "js_class": "project_form",
           "semantic": "form_structure",
@@ -333,10 +333,10 @@
     {
       "center": "workbench",
       "rootMenuXmlid": "smart_construction_core.menu_sc_workspace_center",
-      "menuId": 464,
+      "menuId": 465,
       "menuXmlid": "smart_construction_core.menu_sc_workbench_my_todo_fact",
       "menuName": "待办事项",
-      "actionId": 857,
+      "actionId": 859,
       "actionXmlid": "smart_construction_core.action_sc_workbench_task_center",
       "actionName": "待办事项",
       "actionOwner": "smart_construction_core",
@@ -389,10 +389,10 @@
     {
       "center": "workbench",
       "rootMenuXmlid": "smart_construction_core.menu_sc_workspace_center",
-      "menuId": 673,
+      "menuId": 675,
       "menuXmlid": "smart_construction_core.menu_sc_product_message_notification_v1",
       "menuName": "消息通知",
-      "actionId": 858,
+      "actionId": 860,
       "actionXmlid": "smart_construction_core.action_sc_product_message_notification_v1",
       "actionName": "消息通知",
       "actionOwner": "smart_construction_core",
@@ -445,10 +445,10 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 378,
+      "menuId": 379,
       "menuXmlid": "smart_construction_core.menu_sc_project_initiation",
       "menuName": "新项目立项",
-      "actionId": 722,
+      "actionId": 724,
       "actionXmlid": "smart_construction_core.action_project_initiation",
       "actionName": "项目立项",
       "actionOwner": "smart_construction_core",
@@ -502,7 +502,78 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 493,
+      "menuId": 382,
+      "menuXmlid": "smart_construction_core.menu_sc_project_project",
+      "menuName": "项目台账",
+      "actionId": 519,
+      "actionXmlid": "smart_construction_core.action_sc_project_list",
+      "actionName": "项目台账",
+      "actionOwner": "smart_construction_core",
+      "model": "project.project",
+      "viewMode": "tree,kanban,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menu_chain": [
+          {
+            "menu_xmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menu_xmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menu_xmlid": "smart_construction_core.menu_sc_project_ledger_group_v2",
+            "groups": []
+          },
+          {
+            "menu_xmlid": "smart_construction_core.menu_sc_project_project",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          }
+        ],
+        "action_groups": [
+          "smart_construction_core.group_sc_cap_project_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "view_type": "tree",
+          "view_xmlid": "smart_construction_core.view_project_my_list_tree",
+          "root_tag": "tree",
+          "js_class": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "view_type": "kanban",
+          "view_xmlid": "smart_construction_core.view_sc_project_kanban_card",
+          "root_tag": "kanban",
+          "js_class": "",
+          "semantic": "card",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "view_type": "form",
+          "view_xmlid": "smart_construction_core.view_project_overview_form",
+          "root_tag": "form",
+          "js_class": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ],
+      "coverageStatus": "covered"
+    },
+    {
+      "center": "project",
+      "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
+      "menuId": 494,
       "menuXmlid": "smart_construction_core.menu_sc_material_inbound",
       "menuName": "材料入库",
       "actionId": 546,
@@ -570,10 +641,10 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 525,
+      "menuId": 526,
       "menuXmlid": "smart_construction_core.menu_sc_safety_issue",
       "menuName": "安全检查",
-      "actionId": 680,
+      "actionId": 682,
       "actionXmlid": "smart_construction_core.action_sc_safety_issue",
       "actionName": "安全问题闭环",
       "actionOwner": "smart_construction_core",
@@ -638,10 +709,10 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 602,
+      "menuId": 603,
       "menuXmlid": "smart_construction_core.menu_sc_customer_partner",
       "menuName": "客户档案",
-      "actionId": 818,
+      "actionId": 820,
       "actionXmlid": "smart_construction_core.action_sc_customer_partner",
       "actionName": "客户",
       "actionOwner": "smart_construction_core",
@@ -702,10 +773,10 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 682,
+      "menuId": 684,
       "menuXmlid": "smart_construction_core.menu_sc_product_tender_information_v1",
       "menuName": "招标信息",
-      "actionId": 863,
+      "actionId": 865,
       "actionXmlid": "smart_construction_core.action_sc_product_tender_information_v1",
       "actionName": "招标信息",
       "actionOwner": "smart_construction_core",
@@ -766,10 +837,10 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 686,
+      "menuId": 688,
       "menuXmlid": "smart_construction_core.menu_sc_product_labor_realname_v1",
       "menuName": "劳务实名制",
-      "actionId": 868,
+      "actionId": 870,
       "actionXmlid": "smart_construction_core.action_sc_product_labor_realname_v1",
       "actionName": "劳务实名制",
       "actionOwner": "smart_construction_core",
@@ -830,7 +901,7 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 690,
+      "menuId": 692,
       "menuXmlid": "smart_construction_core.menu_sc_product_equipment_shift_v1",
       "menuName": "机械台班登记",
       "actionId": 570,
@@ -894,7 +965,7 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 691,
+      "menuId": 693,
       "menuXmlid": "smart_construction_core.menu_sc_product_subcontract_cost_v1",
       "menuName": "分包成本登记",
       "actionId": 575,
@@ -958,10 +1029,10 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 693,
+      "menuId": 695,
       "menuXmlid": "smart_construction_core.menu_sc_product_project_payroll_v1",
       "menuName": "薪资核算清单",
-      "actionId": 871,
+      "actionId": 873,
       "actionXmlid": "smart_construction_core.action_sc_product_project_payroll_v1",
       "actionName": "薪资核算清单",
       "actionOwner": "smart_construction_core",
@@ -1024,10 +1095,10 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 695,
+      "menuId": 697,
       "menuXmlid": "smart_construction_core.menu_sc_product_team_loan_deduction_v1",
       "menuName": "班组借/扣款登记",
-      "actionId": 873,
+      "actionId": 875,
       "actionXmlid": "smart_construction_core.action_sc_product_team_loan_deduction_v1",
       "actionName": "班组借/扣款登记",
       "actionOwner": "smart_construction_core",
@@ -1081,7 +1152,7 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 383,
+      "menuId": 384,
       "menuXmlid": "smart_construction_core.menu_sc_project_wbs",
       "menuName": "执行结构",
       "actionId": 531,
@@ -1145,7 +1216,7 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 386,
+      "menuId": 387,
       "menuXmlid": "smart_construction_core.menu_sc_project_tender",
       "menuName": "投标项目",
       "actionId": 594,
@@ -1209,7 +1280,7 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 494,
+      "menuId": 495,
       "menuXmlid": "smart_construction_core.menu_sc_material_outbound",
       "menuName": "材料出库",
       "actionId": 547,
@@ -1277,10 +1348,10 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 603,
+      "menuId": 604,
       "menuXmlid": "smart_construction_core.menu_sc_supplier_partner",
       "menuName": "供应商档案",
-      "actionId": 819,
+      "actionId": 821,
       "actionXmlid": "smart_construction_core.action_sc_supplier_partner",
       "actionName": "供应商",
       "actionOwner": "smart_construction_core",
@@ -1341,76 +1412,10 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 679,
-      "menuXmlid": "smart_construction_core.menu_sc_product_project_edit_v1",
-      "menuName": "项目信息编辑",
-      "actionId": 859,
-      "actionXmlid": "smart_construction_core.action_sc_product_project_edit_v1",
-      "actionName": "项目信息编辑",
-      "actionOwner": "smart_construction_core",
-      "model": "project.project",
-      "viewMode": "tree,form",
-      "authority": {
-        "semantics": "all_restricted_layers_must_match_one_group",
-        "menu_chain": [
-          {
-            "menu_xmlid": "smart_construction_core.menu_sc_root",
-            "groups": []
-          },
-          {
-            "menu_xmlid": "smart_construction_core.menu_sc_project_center",
-            "groups": [
-              "smart_construction_core.group_sc_cap_project_read"
-            ]
-          },
-          {
-            "menu_xmlid": "smart_construction_core.menu_sc_project_management_group",
-            "groups": [
-              "smart_construction_core.group_sc_cap_project_read"
-            ]
-          },
-          {
-            "menu_xmlid": "smart_construction_core.menu_sc_product_project_edit_v1",
-            "groups": [
-              "smart_construction_core.group_sc_cap_project_manager",
-              "smart_construction_core.group_sc_cap_project_user"
-            ]
-          }
-        ],
-        "action_groups": [
-          "smart_construction_core.group_sc_cap_project_manager",
-          "smart_construction_core.group_sc_cap_project_user"
-        ]
-      },
-      "surfaces": [
-        {
-          "view_type": "tree",
-          "view_xmlid": "smart_construction_core.view_sc_product_project_lifecycle_tree_v1",
-          "root_tag": "tree",
-          "js_class": "",
-          "semantic": "table",
-          "readiness": "ready",
-          "reason": ""
-        },
-        {
-          "view_type": "form",
-          "view_xmlid": "project.edit_project",
-          "root_tag": "form",
-          "js_class": "project_form",
-          "semantic": "form_structure",
-          "readiness": "structural",
-          "reason": ""
-        }
-      ],
-      "coverageStatus": "covered"
-    },
-    {
-      "center": "project",
-      "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 684,
+      "menuId": 686,
       "menuXmlid": "smart_construction_core.menu_sc_product_quality_acceptance_v1",
       "menuName": "质量验收",
-      "actionId": 865,
+      "actionId": 867,
       "actionXmlid": "smart_construction_core.action_sc_product_quality_acceptance_v1",
       "actionName": "质量验收",
       "actionOwner": "smart_construction_core",
@@ -1473,10 +1478,10 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 687,
+      "menuId": 689,
       "menuXmlid": "smart_construction_core.menu_sc_product_labor_cost_v1",
       "menuName": "劳务成本登记",
-      "actionId": 869,
+      "actionId": 871,
       "actionXmlid": "smart_construction_core.action_sc_product_labor_cost_v1",
       "actionName": "劳务成本登记",
       "actionOwner": "smart_construction_core",
@@ -1537,10 +1542,10 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 692,
+      "menuId": 694,
       "menuXmlid": "smart_construction_core.menu_sc_product_subcontract_variation_v1",
       "menuName": "分包签证费用",
-      "actionId": 867,
+      "actionId": 869,
       "actionXmlid": "smart_construction_core.action_sc_product_subcontract_variation_v1",
       "actionName": "分包签证费用",
       "actionOwner": "smart_construction_core",
@@ -1601,10 +1606,10 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 694,
+      "menuId": 696,
       "menuXmlid": "smart_construction_core.menu_sc_product_project_salary_payment_v1",
       "menuName": "薪资发放登记",
-      "actionId": 872,
+      "actionId": 874,
       "actionXmlid": "smart_construction_core.action_sc_product_project_salary_payment_v1",
       "actionName": "薪资发放登记",
       "actionOwner": "smart_construction_core",
@@ -1665,7 +1670,7 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 411,
+      "menuId": 412,
       "menuXmlid": "smart_construction_core.menu_sc_project_documents",
       "menuName": "工程资料",
       "actionId": 597,
@@ -1729,10 +1734,10 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 680,
+      "menuId": 682,
       "menuXmlid": "smart_construction_core.menu_sc_product_project_lifecycle_v1",
       "menuName": "项目启停管理",
-      "actionId": 861,
+      "actionId": 863,
       "actionXmlid": "smart_construction_core.action_sc_product_project_lifecycle_v1",
       "actionName": "项目启停管理",
       "actionOwner": "smart_construction_core",
@@ -1793,10 +1798,10 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 681,
+      "menuId": 683,
       "menuXmlid": "smart_construction_core.menu_sc_product_partner_blacklist_v1",
       "menuName": "客商黑名单",
-      "actionId": 862,
+      "actionId": 864,
       "actionXmlid": "smart_construction_core.action_sc_product_partner_blacklist_v1",
       "actionName": "客商黑名单",
       "actionOwner": "smart_construction_core",
@@ -1857,10 +1862,10 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 683,
+      "menuId": 685,
       "menuXmlid": "smart_construction_core.menu_sc_product_tender_document_v1",
       "menuName": "标书管理",
-      "actionId": 864,
+      "actionId": 866,
       "actionXmlid": "smart_construction_core.action_sc_product_tender_document_v1",
       "actionName": "标书管理",
       "actionOwner": "smart_construction_core",
@@ -1923,10 +1928,10 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 688,
+      "menuId": 690,
       "menuXmlid": "smart_construction_core.menu_sc_product_labor_deduction_v1",
       "menuName": "劳务扣款明细",
-      "actionId": 870,
+      "actionId": 872,
       "actionXmlid": "smart_construction_core.action_sc_product_labor_deduction_v1",
       "actionName": "劳务扣款明细",
       "actionOwner": "smart_construction_core",
@@ -1987,7 +1992,7 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 689,
+      "menuId": 691,
       "menuXmlid": "smart_construction_core.menu_sc_product_material_return_v1",
       "menuName": "材料退货",
       "actionId": 554,
@@ -2051,10 +2056,10 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 425,
+      "menuId": 426,
       "menuXmlid": "smart_construction_core.menu_sc_construction_diary",
       "menuName": "施工日志",
-      "actionId": 727,
+      "actionId": 729,
       "actionXmlid": "smart_construction_core.action_sc_construction_diary",
       "actionName": "施工日志",
       "actionOwner": "smart_construction_core",
@@ -2119,10 +2124,10 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 473,
+      "menuId": 474,
       "menuXmlid": "smart_construction_core.menu_sc_tender_guarantee",
       "menuName": "投标保证金",
-      "actionId": 776,
+      "actionId": 778,
       "actionXmlid": "smart_construction_core.action_sc_tender_guarantee",
       "actionName": "投标保证金",
       "actionOwner": "smart_construction_core",
@@ -2185,10 +2190,10 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 472,
+      "menuId": 473,
       "menuXmlid": "smart_construction_core.menu_sc_tender_won",
       "menuName": "中标管理",
-      "actionId": 775,
+      "actionId": 777,
       "actionXmlid": "smart_construction_core.action_sc_tender_won",
       "actionName": "中标记录",
       "actionOwner": "smart_construction_core",
@@ -2249,7 +2254,7 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 519,
+      "menuId": 520,
       "menuXmlid": "smart_construction_core.menu_sc_construction_progress",
       "menuName": "施工进度",
       "actionId": 527,
@@ -2316,10 +2321,10 @@
     {
       "center": "project",
       "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
-      "menuId": 685,
+      "menuId": 687,
       "menuXmlid": "smart_construction_core.menu_sc_product_site_variation_v1",
       "menuName": "签证变更",
-      "actionId": 866,
+      "actionId": 868,
       "actionXmlid": "smart_construction_core.action_sc_product_site_variation_v1",
       "actionName": "签证变更",
       "actionOwner": "smart_construction_core",
@@ -2380,7 +2385,78 @@
     {
       "center": "contract",
       "rootMenuXmlid": "smart_construction_core.menu_sc_contract_center",
-      "menuId": 658,
+      "menuId": 659,
+      "menuXmlid": "smart_construction_core.menu_sc_p1_contract_execution_position",
+      "menuName": "合同执行态势",
+      "actionId": 611,
+      "actionXmlid": "smart_construction_core.action_sc_contract_execution_position",
+      "actionName": "合同执行态势",
+      "actionOwner": "smart_construction_core",
+      "model": "sc.contract.execution.position",
+      "viewMode": "tree,pivot,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menu_chain": [
+          {
+            "menu_xmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menu_xmlid": "smart_construction_core.menu_sc_contract_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_contract_manager",
+              "smart_construction_core.group_sc_cap_contract_read",
+              "smart_construction_core.group_sc_cap_contract_user",
+              "smart_construction_core.group_sc_cap_purchase_manager"
+            ]
+          },
+          {
+            "menu_xmlid": "smart_construction_core.menu_sc_p1_contract_execution_position",
+            "groups": [
+              "smart_construction_core.group_sc_cap_contract_read"
+            ]
+          }
+        ],
+        "action_groups": [
+          "smart_construction_core.group_sc_cap_contract_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "view_type": "tree",
+          "view_xmlid": "smart_construction_core.view_sc_contract_execution_position_tree",
+          "root_tag": "tree",
+          "js_class": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "view_type": "pivot",
+          "view_xmlid": "smart_construction_core.view_sc_contract_execution_position_pivot",
+          "root_tag": "pivot",
+          "js_class": "",
+          "semantic": "pivot",
+          "readiness": "readable_fallback",
+          "reason": "RENDERER_PIVOT_PLANNED"
+        },
+        {
+          "view_type": "form",
+          "view_xmlid": "smart_construction_core.view_sc_contract_execution_position_form",
+          "root_tag": "form",
+          "js_class": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ],
+      "coverageStatus": "covered"
+    },
+    {
+      "center": "contract",
+      "rootMenuXmlid": "smart_construction_core.menu_sc_contract_center",
+      "menuId": 660,
       "menuXmlid": "smart_construction_core.menu_sc_p1_income_contract",
       "menuName": "收入合同",
       "actionId": 609,
@@ -2444,7 +2520,7 @@
     {
       "center": "contract",
       "rootMenuXmlid": "smart_construction_core.menu_sc_contract_center",
-      "menuId": 659,
+      "menuId": 661,
       "menuXmlid": "smart_construction_core.menu_sc_p1_expense_contract",
       "menuName": "支出合同",
       "actionId": 610,
@@ -2508,10 +2584,10 @@
     {
       "center": "contract",
       "rootMenuXmlid": "smart_construction_core.menu_sc_contract_center",
-      "menuId": 660,
+      "menuId": 662,
       "menuXmlid": "smart_construction_core.menu_sc_p1_contract_change",
       "menuName": "合同变更",
-      "actionId": 693,
+      "actionId": 695,
       "actionXmlid": "smart_construction_core.action_sc_contract_change",
       "actionName": "合同变更",
       "actionOwner": "smart_construction_core",
@@ -2570,10 +2646,10 @@
     {
       "center": "contract",
       "rootMenuXmlid": "smart_construction_core.menu_sc_contract_center",
-      "menuId": 661,
+      "menuId": 663,
       "menuXmlid": "smart_construction_core.menu_sc_p1_daily_contract",
       "menuName": "日常合同",
-      "actionId": 685,
+      "actionId": 687,
       "actionXmlid": "smart_construction_core.action_sc_general_contract",
       "actionName": "一般合同（公司）",
       "actionOwner": "smart_construction_core",
@@ -2638,10 +2714,10 @@
     {
       "center": "contract",
       "rootMenuXmlid": "smart_construction_core.menu_sc_contract_center",
-      "menuId": 662,
+      "menuId": 664,
       "menuXmlid": "smart_construction_core.menu_sc_p1_income_settlement",
       "menuName": "收入结算",
-      "actionId": 779,
+      "actionId": 781,
       "actionXmlid": "smart_construction_core.action_sc_settlement_order_income",
       "actionName": "收入合同结算",
       "actionOwner": "smart_construction_core",
@@ -2700,10 +2776,10 @@
     {
       "center": "contract",
       "rootMenuXmlid": "smart_construction_core.menu_sc_contract_center",
-      "menuId": 696,
+      "menuId": 698,
       "menuXmlid": "smart_construction_core.menu_sc_product_general_contract_settlement_v1",
       "menuName": "日常合同结算",
-      "actionId": 874,
+      "actionId": 876,
       "actionXmlid": "smart_construction_core.action_sc_product_general_contract_settlement_v1",
       "actionName": "日常合同结算",
       "actionOwner": "smart_construction_core",
@@ -2764,10 +2840,10 @@
     {
       "center": "contract",
       "rootMenuXmlid": "smart_construction_core.menu_sc_contract_center",
-      "menuId": 663,
+      "menuId": 665,
       "menuXmlid": "smart_construction_core.menu_sc_p1_expense_settlement",
       "menuName": "支出结算",
-      "actionId": 780,
+      "actionId": 782,
       "actionXmlid": "smart_construction_core.action_sc_settlement_order_expense",
       "actionName": "支出合同结算",
       "actionOwner": "smart_construction_core",
@@ -2826,10 +2902,10 @@
     {
       "center": "cost",
       "rootMenuXmlid": "smart_construction_core.menu_sc_cost_center",
-      "menuId": 664,
+      "menuId": 666,
       "menuXmlid": "smart_construction_core.menu_sc_p1_project_budget",
       "menuName": "项目预算",
-      "actionId": 619,
+      "actionId": 620,
       "actionXmlid": "smart_construction_core.action_project_budget",
       "actionName": "目标成本计划",
       "actionOwner": "smart_construction_core",
@@ -2885,7 +2961,7 @@
     {
       "center": "cost",
       "rootMenuXmlid": "smart_construction_core.menu_sc_cost_center",
-      "menuId": 665,
+      "menuId": 667,
       "menuXmlid": "smart_construction_core.menu_sc_p1_cost_plan",
       "menuName": "成本计划编制",
       "actionId": 539,
@@ -2942,7 +3018,7 @@
     {
       "center": "cost",
       "rootMenuXmlid": "smart_construction_core.menu_sc_cost_center",
-      "menuId": 666,
+      "menuId": 668,
       "menuXmlid": "smart_construction_core.menu_sc_p1_cost_ledger",
       "menuName": "成本归集",
       "actionId": 523,
@@ -3019,7 +3095,7 @@
     {
       "center": "cost",
       "rootMenuXmlid": "smart_construction_core.menu_sc_cost_center",
-      "menuId": 667,
+      "menuId": 669,
       "menuXmlid": "smart_construction_core.menu_sc_p1_profit_analysis",
       "menuName": "项目盈亏分析",
       "actionId": 522,
@@ -3087,10 +3163,10 @@
     {
       "center": "finance",
       "rootMenuXmlid": "smart_construction_core.menu_sc_finance_center",
-      "menuId": 337,
+      "menuId": 338,
       "menuXmlid": "smart_construction_core.menu_sc_receipt_income",
       "menuName": "收款登记",
-      "actionId": 635,
+      "actionId": 637,
       "actionXmlid": "smart_construction_core.action_sc_receipt_income",
       "actionName": "收款收入",
       "actionOwner": "smart_construction_core",
@@ -3157,10 +3233,10 @@
     {
       "center": "finance",
       "rootMenuXmlid": "smart_construction_core.menu_sc_finance_center",
-      "menuId": 558,
+      "menuId": 559,
       "menuXmlid": "smart_construction_core.menu_sc_user_payment_apply",
       "menuName": "付款申请",
-      "actionId": 807,
+      "actionId": 809,
       "actionXmlid": "smart_construction_core.action_payment_request_user_payment_apply",
       "actionName": "付款申请",
       "actionOwner": "smart_construction_core",
@@ -3214,7 +3290,7 @@
         },
         {
           "view_type": "form",
-          "view_xmlid": "smart_construction_core.view_payment_request_form",
+          "view_xmlid": "smart_construction_core.view_payment_request_pay_form",
           "root_tag": "form",
           "js_class": "",
           "semantic": "form_structure",
@@ -3227,10 +3303,10 @@
     {
       "center": "finance",
       "rootMenuXmlid": "smart_construction_core.menu_sc_finance_center",
-      "menuId": 338,
+      "menuId": 339,
       "menuXmlid": "smart_construction_core.menu_sc_payment_execution",
       "menuName": "实付登记",
-      "actionId": 835,
+      "actionId": 837,
       "actionXmlid": "smart_construction_core.action_sc_payment_execution_actual_outflow",
       "actionName": "实付登记",
       "actionOwner": "smart_construction_core",
@@ -3297,10 +3373,78 @@
     {
       "center": "finance",
       "rootMenuXmlid": "smart_construction_core.menu_sc_finance_center",
-      "menuId": 577,
+      "menuId": 332,
+      "menuXmlid": "smart_construction_core.menu_payment_ledger_allocation_evidence",
+      "menuName": "付款分摊审计",
+      "actionId": 630,
+      "actionXmlid": "smart_construction_core.action_payment_ledger_allocation_evidence",
+      "actionName": "付款分摊审计",
+      "actionOwner": "smart_construction_core",
+      "model": "payment.ledger.allocation",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menu_chain": [
+          {
+            "menu_xmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menu_xmlid": "smart_construction_core.menu_sc_finance_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user",
+              "smart_construction_core.group_sc_cap_settlement_manager",
+              "smart_construction_core.group_sc_cap_settlement_read",
+              "smart_construction_core.group_sc_cap_settlement_user"
+            ]
+          },
+          {
+            "menu_xmlid": "smart_construction_core.menu_payment_ledger_allocation_evidence",
+            "groups": [
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user"
+            ]
+          }
+        ],
+        "action_groups": [
+          "smart_construction_core.group_sc_cap_finance_manager",
+          "smart_construction_core.group_sc_cap_finance_read",
+          "smart_construction_core.group_sc_cap_finance_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "view_type": "tree",
+          "view_xmlid": "smart_construction_core.view_payment_ledger_allocation_evidence_tree",
+          "root_tag": "tree",
+          "js_class": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "view_type": "form",
+          "view_xmlid": "smart_construction_core.view_payment_ledger_allocation_evidence_form",
+          "root_tag": "form",
+          "js_class": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ],
+      "coverageStatus": "covered"
+    },
+    {
+      "center": "finance",
+      "rootMenuXmlid": "smart_construction_core.menu_sc_finance_center",
+      "menuId": 578,
       "menuXmlid": "smart_construction_core.menu_sc_reimbursement_request",
       "menuName": "费用报销",
-      "actionId": 790,
+      "actionId": 792,
       "actionXmlid": "smart_construction_core.action_sc_expense_claim_reimbursement_request",
       "actionName": "报销申请",
       "actionOwner": "smart_construction_core",
@@ -3367,10 +3511,10 @@
     {
       "center": "finance",
       "rootMenuXmlid": "smart_construction_core.menu_sc_finance_center",
-      "menuId": 697,
+      "menuId": 699,
       "menuXmlid": "smart_construction_core.menu_sc_product_current_account_v1",
       "menuName": "往来款登记",
-      "actionId": 875,
+      "actionId": 877,
       "actionXmlid": "smart_construction_core.action_sc_product_current_account_v1",
       "actionName": "往来款登记",
       "actionOwner": "smart_construction_core",
@@ -3424,10 +3568,10 @@
     {
       "center": "finance",
       "rootMenuXmlid": "smart_construction_core.menu_sc_finance_center",
-      "menuId": 544,
+      "menuId": 545,
       "menuXmlid": "smart_construction_core.menu_sc_user_income",
       "menuName": "公司收入",
-      "actionId": 804,
+      "actionId": 806,
       "actionXmlid": "smart_construction_core.action_sc_receipt_income_user_income",
       "actionName": "收入",
       "actionOwner": "smart_construction_core",
@@ -3494,10 +3638,10 @@
     {
       "center": "finance",
       "rootMenuXmlid": "smart_construction_core.menu_sc_finance_center",
-      "menuId": 546,
+      "menuId": 547,
       "menuXmlid": "smart_construction_core.menu_sc_company_finance_expense",
       "menuName": "公司支出",
-      "actionId": 806,
+      "actionId": 808,
       "actionXmlid": "smart_construction_core.action_sc_payment_execution_company_finance_expense",
       "actionName": "公司财务支出",
       "actionOwner": "smart_construction_core",
@@ -3564,10 +3708,10 @@
     {
       "center": "finance",
       "rootMenuXmlid": "smart_construction_core.menu_sc_finance_center",
-      "menuId": 562,
+      "menuId": 563,
       "menuXmlid": "smart_construction_core.menu_sc_deduction_bill",
       "menuName": "公司&项目扣款",
-      "actionId": 796,
+      "actionId": 798,
       "actionXmlid": "smart_construction_core.action_sc_expense_claim_deduction_bill",
       "actionName": "扣款登记",
       "actionOwner": "smart_construction_core",
@@ -3636,10 +3780,10 @@
     {
       "center": "finance",
       "rootMenuXmlid": "smart_construction_core.menu_sc_finance_center",
-      "menuId": 698,
+      "menuId": 700,
       "menuXmlid": "smart_construction_core.menu_sc_product_company_project_refund_v1",
       "menuName": "公司&项目退款",
-      "actionId": 876,
+      "actionId": 878,
       "actionXmlid": "smart_construction_core.action_sc_product_company_project_refund_v1",
       "actionName": "公司&项目退款",
       "actionOwner": "smart_construction_core",
@@ -3693,10 +3837,10 @@
     {
       "center": "finance",
       "rootMenuXmlid": "smart_construction_core.menu_sc_finance_center",
-      "menuId": 574,
+      "menuId": 575,
       "menuXmlid": "smart_construction_core.menu_sc_advance_fund",
       "menuName": "备用金",
-      "actionId": 791,
+      "actionId": 793,
       "actionXmlid": "smart_construction_core.action_sc_expense_claim_advance_fund",
       "actionName": "备用金",
       "actionOwner": "smart_construction_core",
@@ -3759,10 +3903,10 @@
     {
       "center": "finance",
       "rootMenuXmlid": "smart_construction_core.menu_sc_finance_center",
-      "menuId": 541,
+      "menuId": 542,
       "menuXmlid": "smart_construction_core.menu_sc_funding_plan_summary",
       "menuName": "资金汇总",
-      "actionId": 644,
+      "actionId": 646,
       "actionXmlid": "smart_construction_core.action_project_funding_baseline_summary",
       "actionName": "资金计划汇总",
       "actionOwner": "smart_construction_core",
@@ -3825,12 +3969,148 @@
       "coverageStatus": "covered"
     },
     {
+      "center": "finance",
+      "rootMenuXmlid": "smart_construction_core.menu_sc_finance_center",
+      "menuId": 331,
+      "menuXmlid": "smart_construction_core.menu_payment_ledger",
+      "menuName": "支付台账",
+      "actionId": 631,
+      "actionXmlid": "smart_construction_core.action_payment_ledger",
+      "actionName": "支付台账",
+      "actionOwner": "smart_construction_core",
+      "model": "payment.ledger",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menu_chain": [
+          {
+            "menu_xmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menu_xmlid": "smart_construction_core.menu_sc_finance_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user",
+              "smart_construction_core.group_sc_cap_settlement_manager",
+              "smart_construction_core.group_sc_cap_settlement_read",
+              "smart_construction_core.group_sc_cap_settlement_user"
+            ]
+          },
+          {
+            "menu_xmlid": "smart_construction_core.menu_payment_ledger",
+            "groups": [
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user"
+            ]
+          }
+        ],
+        "action_groups": [
+          "smart_construction_core.group_sc_cap_finance_manager",
+          "smart_construction_core.group_sc_cap_finance_read",
+          "smart_construction_core.group_sc_cap_finance_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "view_type": "tree",
+          "view_xmlid": "smart_construction_core.view_payment_ledger_tree",
+          "root_tag": "tree",
+          "js_class": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "view_type": "form",
+          "view_xmlid": "smart_construction_core.view_payment_ledger_form",
+          "root_tag": "form",
+          "js_class": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ],
+      "coverageStatus": "covered"
+    },
+    {
+      "center": "finance",
+      "rootMenuXmlid": "smart_construction_core.menu_sc_finance_center",
+      "menuId": 342,
+      "menuXmlid": "smart_construction_core.menu_project_funding_actual_event_allocation",
+      "menuName": "资金计划实际付款分配",
+      "actionId": 647,
+      "actionXmlid": "smart_construction_core.action_project_funding_actual_event_allocation",
+      "actionName": "资金计划实际付款分配",
+      "actionOwner": "smart_construction_core",
+      "model": "project.funding.actual.event.allocation",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menu_chain": [
+          {
+            "menu_xmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menu_xmlid": "smart_construction_core.menu_sc_finance_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user",
+              "smart_construction_core.group_sc_cap_settlement_manager",
+              "smart_construction_core.group_sc_cap_settlement_read",
+              "smart_construction_core.group_sc_cap_settlement_user"
+            ]
+          },
+          {
+            "menu_xmlid": "smart_construction_core.menu_project_funding_actual_event_allocation",
+            "groups": [
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user"
+            ]
+          }
+        ],
+        "action_groups": [
+          "smart_construction_core.group_sc_cap_finance_manager",
+          "smart_construction_core.group_sc_cap_finance_read",
+          "smart_construction_core.group_sc_cap_finance_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "view_type": "tree",
+          "view_xmlid": "smart_construction_core.view_project_funding_actual_event_allocation_tree",
+          "root_tag": "tree",
+          "js_class": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "view_type": "form",
+          "view_xmlid": "smart_construction_core.view_project_funding_actual_event_allocation_form",
+          "root_tag": "form",
+          "js_class": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ],
+      "coverageStatus": "covered"
+    },
+    {
       "center": "tax",
       "rootMenuXmlid": "smart_construction_core.menu_sc_tax_center",
-      "menuId": 538,
+      "menuId": 539,
       "menuXmlid": "smart_construction_core.menu_sc_tax_certificate_registration_user",
       "menuName": "外经证",
-      "actionId": 638,
+      "actionId": 640,
       "actionXmlid": "smart_construction_core.action_sc_tax_certificate_registration_user",
       "actionName": "外经证登记",
       "actionOwner": "smart_construction_core",
@@ -3894,10 +4174,10 @@
     {
       "center": "tax",
       "rootMenuXmlid": "smart_construction_core.menu_sc_tax_center",
-      "menuId": 535,
+      "menuId": 536,
       "menuXmlid": "smart_construction_core.menu_sc_invoice_prepaid_tax_user",
       "menuName": "预缴登记",
-      "actionId": 786,
+      "actionId": 788,
       "actionXmlid": "smart_construction_core.action_sc_invoice_prepaid_tax_user",
       "actionName": "预缴税款",
       "actionOwner": "smart_construction_core",
@@ -3961,10 +4241,10 @@
     {
       "center": "tax",
       "rootMenuXmlid": "smart_construction_core.menu_sc_tax_center",
-      "menuId": 533,
+      "menuId": 534,
       "menuXmlid": "smart_construction_core.menu_sc_invoice_application_user",
       "menuName": "开票申请",
-      "actionId": 784,
+      "actionId": 786,
       "actionXmlid": "smart_construction_core.action_sc_invoice_application_user",
       "actionName": "销项开票申请",
       "actionOwner": "smart_construction_core",
@@ -4028,10 +4308,10 @@
     {
       "center": "tax",
       "rootMenuXmlid": "smart_construction_core.menu_sc_tax_center",
-      "menuId": 534,
+      "menuId": 535,
       "menuXmlid": "smart_construction_core.menu_sc_invoice_registration_user",
       "menuName": "销项开票",
-      "actionId": 785,
+      "actionId": 787,
       "actionXmlid": "smart_construction_core.action_sc_invoice_registration_user",
       "actionName": "销项开票登记",
       "actionOwner": "smart_construction_core",
@@ -4095,10 +4375,10 @@
     {
       "center": "tax",
       "rootMenuXmlid": "smart_construction_core.menu_sc_tax_center",
-      "menuId": 334,
+      "menuId": 335,
       "menuXmlid": "smart_construction_core.menu_sc_output_invoice_change_registration",
       "menuName": "发票红冲",
-      "actionId": 632,
+      "actionId": 634,
       "actionXmlid": "smart_construction_core.action_sc_output_invoice_change_registration",
       "actionName": "销项变更登记",
       "actionOwner": "smart_construction_core",
@@ -4158,10 +4438,10 @@
     {
       "center": "tax",
       "rootMenuXmlid": "smart_construction_core.menu_sc_tax_center",
-      "menuId": 531,
+      "menuId": 532,
       "menuXmlid": "smart_construction_core.menu_sc_invoice_input",
       "menuName": "进项发票",
-      "actionId": 783,
+      "actionId": 785,
       "actionXmlid": "smart_construction_core.action_sc_invoice_input",
       "actionName": "进项发票",
       "actionOwner": "smart_construction_core",
@@ -4221,10 +4501,10 @@
     {
       "center": "tax",
       "rootMenuXmlid": "smart_construction_core.menu_sc_tax_center",
-      "menuId": 537,
+      "menuId": 538,
       "menuXmlid": "smart_construction_core.menu_sc_tax_deduction_registration_user",
       "menuName": "税额抵扣",
-      "actionId": 788,
+      "actionId": 790,
       "actionXmlid": "smart_construction_core.action_sc_tax_deduction_registration_user",
       "actionName": "抵扣登记",
       "actionOwner": "smart_construction_core",
@@ -4288,10 +4568,10 @@
     {
       "center": "tax",
       "rootMenuXmlid": "smart_construction_core.menu_sc_tax_center",
-      "menuId": 699,
+      "menuId": 701,
       "menuXmlid": "smart_construction_core.menu_sc_product_project_tax_deduction_v1",
       "menuName": "项目专项抵扣",
-      "actionId": 877,
+      "actionId": 879,
       "actionXmlid": "smart_construction_core.action_sc_product_project_tax_deduction_v1",
       "actionName": "项目专项抵扣",
       "actionOwner": "smart_construction_core",
@@ -4351,10 +4631,10 @@
     {
       "center": "tax",
       "rootMenuXmlid": "smart_construction_core.menu_sc_tax_center",
-      "menuId": 700,
+      "menuId": 702,
       "menuXmlid": "smart_construction_core.menu_sc_product_tax_filing_v1",
       "menuName": "税务申报",
-      "actionId": 878,
+      "actionId": 880,
       "actionXmlid": "smart_construction_core.action_sc_product_tax_filing_v1",
       "actionName": "税务申报",
       "actionOwner": "smart_construction_core",
@@ -4412,10 +4692,10 @@
     {
       "center": "accounting",
       "rootMenuXmlid": "smart_construction_core.menu_sc_accounting_center",
-      "menuId": 668,
+      "menuId": 670,
       "menuXmlid": "smart_construction_core.menu_sc_account_journal_foundation",
       "menuName": "日记账",
-      "actionId": 853,
+      "actionId": 855,
       "actionXmlid": "smart_construction_core.action_sc_account_journal_foundation",
       "actionName": "日记账",
       "actionOwner": "smart_construction_core",
@@ -4470,10 +4750,10 @@
     {
       "center": "accounting",
       "rootMenuXmlid": "smart_construction_core.menu_sc_accounting_center",
-      "menuId": 669,
+      "menuId": 671,
       "menuXmlid": "smart_construction_core.menu_sc_analytic_account_foundation",
       "menuName": "分析账户",
-      "actionId": 854,
+      "actionId": 856,
       "actionXmlid": "smart_construction_core.action_sc_analytic_account_foundation",
       "actionName": "分析账户",
       "actionOwner": "smart_construction_core",
@@ -4528,10 +4808,10 @@
     {
       "center": "accounting",
       "rootMenuXmlid": "smart_construction_core.menu_sc_accounting_center",
-      "menuId": 670,
+      "menuId": 672,
       "menuXmlid": "smart_construction_core.menu_sc_analytic_distribution_foundation",
       "menuName": "分析分配模型",
-      "actionId": 855,
+      "actionId": 857,
       "actionXmlid": "smart_construction_core.action_sc_analytic_distribution_foundation",
       "actionName": "分析分配模型",
       "actionOwner": "smart_construction_core",
@@ -4586,10 +4866,10 @@
     {
       "center": "reporting",
       "rootMenuXmlid": "smart_construction_core.menu_sc_data_center",
-      "menuId": 599,
+      "menuId": 600,
       "menuXmlid": "smart_construction_core.menu_sc_project_operation_statistics_report",
       "menuName": "项目报表",
-      "actionId": 827,
+      "actionId": 829,
       "actionXmlid": "smart_construction_core.action_sc_project_operation_statistics_report",
       "actionName": "项目经营统计表",
       "actionOwner": "smart_construction_core",
@@ -4655,10 +4935,10 @@
     {
       "center": "reporting",
       "rootMenuXmlid": "smart_construction_core.menu_sc_data_center",
-      "menuId": 428,
+      "menuId": 429,
       "menuXmlid": "smart_construction_core.menu_sc_legacy_business_entity_map",
       "menuName": "历史业务主体对照",
-      "actionId": 733,
+      "actionId": 735,
       "actionXmlid": "smart_construction_core.action_sc_legacy_business_entity_map",
       "actionName": "历史业务主体对照",
       "actionOwner": "smart_construction_core",
@@ -4702,10 +4982,88 @@
     {
       "center": "reporting",
       "rootMenuXmlid": "smart_construction_core.menu_sc_data_center",
-      "menuId": 591,
+      "menuId": 408,
+      "menuXmlid": "smart_construction_core.menu_sc_project_cost_ledger",
+      "menuName": "成本台账",
+      "actionId": 523,
+      "actionXmlid": "smart_construction_core.action_project_cost_ledger",
+      "actionName": "成本归集台账",
+      "actionOwner": "smart_construction_core",
+      "model": "project.cost.ledger",
+      "viewMode": "tree,form,pivot,graph",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menu_chain": [
+          {
+            "menu_xmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menu_xmlid": "smart_construction_core.menu_sc_data_center",
+            "groups": []
+          },
+          {
+            "menu_xmlid": "smart_construction_core.menu_sc_project_cost_ledger",
+            "groups": [
+              "smart_construction_core.group_sc_cap_cost_manager",
+              "smart_construction_core.group_sc_cap_cost_read",
+              "smart_construction_core.group_sc_cap_cost_user"
+            ]
+          }
+        ],
+        "action_groups": [
+          "smart_construction_core.group_sc_cap_cost_manager",
+          "smart_construction_core.group_sc_cap_cost_read",
+          "smart_construction_core.group_sc_cap_cost_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "view_type": "tree",
+          "view_xmlid": "smart_construction_core.view_project_cost_ledger_tree",
+          "root_tag": "tree",
+          "js_class": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "view_type": "form",
+          "view_xmlid": "smart_construction_core.view_project_cost_ledger_form",
+          "root_tag": "form",
+          "js_class": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        },
+        {
+          "view_type": "pivot",
+          "view_xmlid": "smart_construction_core.view_project_cost_ledger_pivot",
+          "root_tag": "pivot",
+          "js_class": "",
+          "semantic": "pivot",
+          "readiness": "readable_fallback",
+          "reason": "RENDERER_PIVOT_PLANNED"
+        },
+        {
+          "view_type": "graph",
+          "view_xmlid": "smart_construction_core.view_project_cost_ledger_graph",
+          "root_tag": "graph",
+          "js_class": "",
+          "semantic": "graph",
+          "readiness": "readable_fallback",
+          "reason": "RENDERER_GRAPH_PLANNED"
+        }
+      ],
+      "coverageStatus": "covered"
+    },
+    {
+      "center": "reporting",
+      "rootMenuXmlid": "smart_construction_core.menu_sc_data_center",
+      "menuId": 592,
       "menuXmlid": "smart_construction_core.menu_sc_comprehensive_cost_statistics_report",
       "menuName": "成本报表",
-      "actionId": 824,
+      "actionId": 826,
       "actionXmlid": "smart_construction_core.action_sc_comprehensive_cost_statistics_report",
       "actionName": "成本统计表（综合）",
       "actionOwner": "smart_construction_core",
@@ -4794,10 +5152,10 @@
     {
       "center": "reporting",
       "rootMenuXmlid": "smart_construction_core.menu_sc_data_center",
-      "menuId": 365,
+      "menuId": 366,
       "menuXmlid": "smart_construction_core.menu_sc_fund_daily_summary",
       "menuName": "资金报表",
-      "actionId": 697,
+      "actionId": 699,
       "actionXmlid": "smart_construction_core.action_sc_fund_daily_summary",
       "actionName": "企业资金日报汇总",
       "actionOwner": "smart_construction_core",
@@ -4872,10 +5230,10 @@
     {
       "center": "reporting",
       "rootMenuXmlid": "smart_construction_core.menu_sc_data_center",
-      "menuId": 701,
+      "menuId": 703,
       "menuXmlid": "smart_construction_core.menu_sc_product_tax_report_v1",
       "menuName": "税务报表",
-      "actionId": 879,
+      "actionId": 881,
       "actionXmlid": "smart_construction_core.action_sc_product_tax_report_v1",
       "actionName": "税务报表",
       "actionOwner": "smart_construction_core",
@@ -4937,10 +5295,10 @@
     {
       "center": "reporting",
       "rootMenuXmlid": "smart_construction_core.menu_sc_data_center",
-      "menuId": 702,
+      "menuId": 704,
       "menuXmlid": "smart_construction_core.menu_sc_product_labor_subcontract_report_v1",
       "menuName": "劳务分包报表",
-      "actionId": 880,
+      "actionId": 882,
       "actionXmlid": "smart_construction_core.action_sc_product_labor_subcontract_report_v1",
       "actionName": "劳务分包报表",
       "actionOwner": "smart_construction_core",
@@ -5011,10 +5369,10 @@
     {
       "center": "administration",
       "rootMenuXmlid": "smart_construction_core.menu_sc_hr_admin_center",
-      "menuId": 426,
+      "menuId": 427,
       "menuXmlid": "smart_construction_core.menu_sc_organization_department",
       "menuName": "部门管理",
-      "actionId": 731,
+      "actionId": 733,
       "actionXmlid": "smart_construction_core.action_sc_organization_department",
       "actionName": "组织架构",
       "actionOwner": "smart_construction_core",
@@ -5070,10 +5428,10 @@
     {
       "center": "administration",
       "rootMenuXmlid": "smart_construction_core.menu_sc_hr_admin_center",
-      "menuId": 703,
+      "menuId": 705,
       "menuXmlid": "smart_construction_core.menu_sc_product_job_management_v1",
       "menuName": "岗位管理",
-      "actionId": 881,
+      "actionId": 883,
       "actionXmlid": "smart_construction_core.action_sc_product_job_management_v1",
       "actionName": "岗位管理",
       "actionOwner": "smart_construction_core",
@@ -5129,12 +5487,12 @@
     {
       "center": "administration",
       "rootMenuXmlid": "smart_construction_core.menu_sc_hr_admin_center",
-      "menuId": 429,
+      "menuId": 430,
       "menuXmlid": "smart_construction_core.menu_sc_runtime_user_management",
       "menuName": "人员档案",
-      "actionId": 734,
+      "actionId": 736,
       "actionXmlid": "smart_construction_core.action_sc_runtime_user_management",
-      "actionName": "用户账号与权限",
+      "actionName": "人员档案",
       "actionOwner": "smart_construction_core",
       "model": "res.users",
       "viewMode": "tree,form",
@@ -5190,10 +5548,10 @@
     {
       "center": "administration",
       "rootMenuXmlid": "smart_construction_core.menu_sc_hr_admin_center",
-      "menuId": 355,
+      "menuId": 356,
       "menuXmlid": "smart_construction_core.menu_sc_certificate_registration",
       "menuName": "证书管理",
-      "actionId": 664,
+      "actionId": 666,
       "actionXmlid": "smart_construction_core.action_sc_certificate_registration",
       "actionName": "证照登记",
       "actionOwner": "smart_construction_core",
@@ -5251,10 +5609,10 @@
     {
       "center": "administration",
       "rootMenuXmlid": "smart_construction_core.menu_sc_hr_admin_center",
-      "menuId": 704,
+      "menuId": 706,
       "menuXmlid": "smart_construction_core.menu_sc_product_social_fund_v1",
       "menuName": "社保公积",
-      "actionId": 882,
+      "actionId": 884,
       "actionXmlid": "smart_construction_core.action_sc_product_social_fund_v1",
       "actionName": "社保公积",
       "actionOwner": "smart_construction_core",
@@ -5310,10 +5668,10 @@
     {
       "center": "administration",
       "rootMenuXmlid": "smart_construction_core.menu_sc_hr_admin_center",
-      "menuId": 671,
+      "menuId": 673,
       "menuXmlid": "smart_construction_core.menu_sc_payroll_management",
       "menuName": "工资薪酬",
-      "actionId": 856,
+      "actionId": 858,
       "actionXmlid": "smart_construction_core.action_sc_payroll_management",
       "actionName": "工资薪酬",
       "actionOwner": "smart_construction_core",
@@ -5371,10 +5729,10 @@
     {
       "center": "administration",
       "rootMenuXmlid": "smart_construction_core.menu_sc_hr_admin_center",
-      "menuId": 705,
+      "menuId": 707,
       "menuXmlid": "smart_construction_core.menu_sc_product_office_asset_v1",
       "menuName": "办公资产",
-      "actionId": 883,
+      "actionId": 885,
       "actionXmlid": "smart_construction_core.action_sc_product_office_asset_v1",
       "actionName": "办公资产",
       "actionOwner": "smart_construction_core",
@@ -5430,10 +5788,10 @@
     {
       "center": "administration",
       "rootMenuXmlid": "smart_construction_core.menu_sc_hr_admin_center",
-      "menuId": 706,
+      "menuId": 708,
       "menuXmlid": "smart_construction_core.menu_sc_product_policy_document_v1",
       "menuName": "制度文件",
-      "actionId": 860,
+      "actionId": 862,
       "actionXmlid": "smart_construction_core.action_sc_product_policy_document_v1",
       "actionName": "制度文件",
       "actionOwner": "smart_construction_core",
@@ -5489,10 +5847,10 @@
     {
       "center": "product_configuration",
       "rootMenuXmlid": "smart_construction_core.menu_sc_business_config_center",
-      "menuId": 430,
+      "menuId": 431,
       "menuXmlid": "smart_construction_core.menu_sc_business_config_workbench",
       "menuName": "表单配置",
-      "actionId": 735,
+      "actionId": 737,
       "actionXmlid": "smart_construction_core.action_sc_business_config_workbench",
       "actionName": "配置工作台",
       "actionOwner": "smart_construction_core",
@@ -5551,10 +5909,10 @@
     {
       "center": "product_configuration",
       "rootMenuXmlid": "smart_construction_core.menu_sc_business_config_center",
-      "menuId": 423,
+      "menuId": 424,
       "menuXmlid": "smart_construction_core.menu_sc_approval_policy",
       "menuName": "流程审批配置",
-      "actionId": 725,
+      "actionId": 727,
       "actionXmlid": "smart_construction_core.action_sc_approval_policy",
       "actionName": "审批规则",
       "actionOwner": "smart_construction_core",
@@ -5609,10 +5967,10 @@
     {
       "center": "product_configuration",
       "rootMenuXmlid": "smart_construction_core.menu_sc_business_config_center",
-      "menuId": 444,
+      "menuId": 445,
       "menuXmlid": "smart_construction_core.menu_ui_form_field_policy_business_config",
       "menuName": "字段管理",
-      "actionId": 747,
+      "actionId": 749,
       "actionXmlid": "smart_construction_core.action_ui_form_field_policy_business_config",
       "actionName": "表单字段配置",
       "actionOwner": "smart_construction_core",
@@ -5667,10 +6025,10 @@
     {
       "center": "product_configuration",
       "rootMenuXmlid": "smart_construction_core.menu_sc_business_config_center",
-      "menuId": 707,
+      "menuId": 709,
       "menuXmlid": "smart_construction_core.menu_sc_product_data_permission_v1",
       "menuName": "数据权限",
-      "actionId": 884,
+      "actionId": 886,
       "actionXmlid": "smart_construction_core.action_sc_product_data_permission_v1",
       "actionName": "数据权限",
       "actionOwner": "smart_construction_core",
@@ -5725,10 +6083,10 @@
     {
       "center": "product_configuration",
       "rootMenuXmlid": "smart_construction_core.menu_sc_business_config_center",
-      "menuId": 708,
+      "menuId": 710,
       "menuXmlid": "smart_construction_core.menu_sc_product_system_parameter_v1",
       "menuName": "系统参数",
-      "actionId": 885,
+      "actionId": 887,
       "actionXmlid": "smart_construction_core.action_sc_product_system_parameter_v1",
       "actionName": "系统参数",
       "actionOwner": "smart_construction_core",
@@ -5774,10 +6132,10 @@
     {
       "center": "product_configuration",
       "rootMenuXmlid": "smart_construction_core.menu_sc_business_config_center",
-      "menuId": 709,
+      "menuId": 711,
       "menuXmlid": "smart_construction_core.menu_sc_product_numbering_rule_v1",
       "menuName": "编码规则",
-      "actionId": 886,
+      "actionId": 888,
       "actionXmlid": "smart_construction_core.action_sc_product_numbering_rule_v1",
       "actionName": "编码规则",
       "actionOwner": "smart_construction_core",

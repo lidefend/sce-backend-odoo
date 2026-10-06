@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "id": "PROJECT-LEDGER-ENTRY-UNIFICATION",
+  "branch": "fix/project-ledger-entry-unification-v1",
+  "status": "active",
+  "baseline_sha": "8892042761eeb8f47a135fd817a9a9d220837620",
+  "goal": ".agent/goals/PROJECT-LEDGER-ENTRY-UNIFICATION.yaml",
+  "record": "docs/ops/iterations/project_ledger_entry_unification_20261006.md",
+  "scope": [
+    "addons/smart_construction_core/views/",
+    "addons/smart_construction_core/actions/",
+    "addons/smart_construction_core/core_extension_policy_maps.py",
+    "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
+    "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+    "config/",
+    "contracts/generated/",
+    "scripts/ops/",
+    "scripts/verify/",
+    "scripts/release/",
+    "docs/",
+    "frontend/apps/web/scripts/",
+    ".agent/"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "runtime_profile": "local.dev",
+    "database": "sc_dev_demo",
+    "authority": "existing registered local.dev lane (make local.dev.*) plus offline locked baselines; daily acceptance readback still pending"
+  },
+  "checks": {
+    "locked_menu_policy_contract": {
+      "target": "verify.product.menu.contract_v1.guard",
+      "kind": "offline",
+      "status": "passed",
+      "tests": 5,
+      "inputs": [
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+        "scripts/release/test_locked_menu_policy_contract.py"
+      ]
+    },
+    "product_menu_release_manifest_v2": {
+      "target": "verify.product.menu.release_manifest_v2.guard",
+      "kind": "offline",
+      "status": "passed",
+      "detail": "centers=10 contract_pages=89 accounting_pages=6 total=89",
+      "inputs": [
+        "scripts/ops/promote_product_ten_center_policy.py",
+        "scripts/ops/test_promote_product_ten_center_policy.py",
+        "scripts/verify/product_menu_release_manifest_v2_guard.py",
+        "config/product_menu_contract_v1.json"
+      ]
+    },
+    "view_structure_lock": {
+      "target": "verify.contract.structure_lock",
+      "kind": "offline",
+      "status": "passed",
+      "detail": "domains=14 fingerprint=current",
+      "inputs": [
+        "scripts/ci/enforce_contract_structure_lock.py"
+      ]
+    },
+    "project_domain_runtime": {
+      "target": "verify.frontend.professionalization.project_domain.runtime",
+      "kind": "runtime",
+      "status": "passed",
+      "detail": "actions=30 gaps=0; negative control was EXPECTED_DOMAIN_ANCHOR_MISSING before the wave1 fix",
+      "inputs": [
+        "scripts/verify/frontend_project_domain_rollout.py",
+        "addons/smart_construction_core/views/menu_product_project_wave1.xml"
+      ]
+    },
+    "contract_domain_runtime": {
+      "target": "verify.frontend.professionalization.contract_domain.runtime",
+      "kind": "runtime",
+      "status": "passed",
+      "detail": "stale sibling report regenerated (was missing a main-merged contract entry)",
+      "inputs": [
+        "scripts/verify/frontend_contract_domain_rollout.py"
+      ]
+    },
+    "finance_center_runtime": {
+      "target": "verify.frontend.professionalization.finance_center.runtime",
+      "kind": "runtime",
+      "status": "passed",
+      "detail": "stale sibling report regenerated (payment ledger entries)",
+      "inputs": [
+        "scripts/verify/frontend_finance_center_rollout.py"
+      ]
+    },
+    "reporting_center_runtime": {
+      "target": "verify.frontend.professionalization.reporting_center.runtime",
+      "kind": "runtime",
+      "status": "passed",
+      "detail": "stale sibling report regenerated (project cost ledger entry)",
+      "inputs": [
+        "scripts/verify/frontend_reporting_center_rollout.py"
+      ]
+    },
+    "systemwide_coverage_runtime": {
+      "target": "verify.frontend.professionalization.systemwide_coverage.runtime",
+      "kind": "runtime",
+      "status": "passed",
+      "detail": "runtime=93 covered=93 uncovered=0 gaps=0",
+      "inputs": [
+        "scripts/verify/frontend_systemwide_coverage_audit.py",
+        "scripts/verify/frontend_project_domain_rollout.py"
+      ]
+    }
+  },
+  "evidence": {
+    "record": "docs/ops/iterations/project_ledger_entry_unification_20261006.md",
+    "runtime_reports": [
+      "docs/frontend_productization/domain-rollout/project-domain-coverage-v1.json",
+      "docs/frontend_productization/domain-rollout/systemwide-coverage-audit-v1.json"
+    ]
+  },
+  "blockers": [
+    {
+      "id": "VIEW_STRUCTURE_BASELINE_CLEAN_LANE",
+      "status": "deferred_env_gated",
+      "detail": "contracts/generated/product_view_structure_contract.json requires the local.clean lane (guard enforces runtime_profile=local.clean/sc_clean/demo_data=False); no clean lane in this worktree and new environment authority needs separate P4 authorization. The baseline is already stale on main and verify.contract.view_structure is not part of ci.local.quick."
+    },
+    {
+      "id": "DAILY_ACCEPTANCE_READBACK",
+      "status": "pending",
+      "detail": "governed daily lane upgrade + user-visible readback (sc_demo, wutao/123456) not yet run for this candidate; requires a clean committed SHA via daily.runtime.candidate.bundle_sync."
+    }
+  ],
+  "next_exact_step": "Commit the unified ledger entry (product + carriers + runtime evidence) with active-runs binding released, then run the governed daily candidate sync/upgrade/restart and read back: ledger group + menu visible at 项目中心/项目台账/项目台账, action 506 orchestration resolves without 409, retired edit entry gone, user acceptance via wutao/123456.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false,
+  "stage_identity": {
+    "baseline_sha": "8892042761eeb8f47a135fd817a9a9d220837620",
+    "head": "8892042761eeb8f47a135fd817a9a9d220837620",
+    "dirty": true,
+    "note": "single writer; unfrozen working tree at record time"
+  }
+}

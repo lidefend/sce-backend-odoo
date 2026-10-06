@@ -54,13 +54,13 @@
       "role_bindings_env": "SC_ACCEPTANCE_ROLE_BINDINGS_JSON",
       "runtime_identity_path": "/api/runtime-version",
       "navigation_policy": {
-        "min_actions": 90,
-        "max_actions": 90,
+        "min_actions": 89,
+        "max_actions": 89,
         "forbidden_labels": ["用户核对菜单", "用户数据验收", "用户验收", "直营项目系统菜单", "物资与分包", "后续上线"],
         "required_paths": [
           "系统菜单 / 工作台 / 数据总览",
           "系统菜单 / 项目中心 / 项目创建 / 新项目立项",
-          "系统菜单 / 项目中心 / 项目创建 / 项目信息编辑",
+          "系统菜单 / 项目中心 / 项目台账 / 项目台账",
           "系统菜单 / 项目中心 / 项目创建 / 项目启停管理",
           "系统菜单 / 项目中心 / 客商管理 / 客户档案",
           "系统菜单 / 项目中心 / 客商管理 / 客商黑名单",

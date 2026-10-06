@@ -86,14 +86,14 @@ async function desktopJourney(browser, report) {
     .waitFor({ state: 'visible', timeout: 45000 });
 
   await expandNode(page, '项目中心');
-  await expandNode(page, '项目创建');
+  await expandNode(page, '项目台账');
   const target = page.locator(
     '[data-navigation-node="canonical"][data-navigation-label="项目中心"] '
-    + '[data-navigation-node="canonical"][data-navigation-label="项目创建"] '
-    + '[data-navigation-node="canonical"][data-navigation-label="项目信息编辑"]',
+    + '[data-navigation-node="canonical"][data-navigation-label="项目台账"] '
+    + '[data-navigation-node="canonical"][data-navigation-label="项目台账"]',
   );
   check(await target.count() === 1, '项目完整工作区必须拥有唯一 canonical menu/action 身份', { count: await target.count() });
-  check((await target.textContent() || '').trim() === '项目信息编辑', '项目工作区菜单标签漂移');
+  check((await target.textContent() || '').trim() === '项目台账', '项目工作区菜单标签漂移');
   const depth = Number(await target.getAttribute('data-navigation-depth'));
   check(depth >= 2, '正式项目入口必须保留三级父子层级', { depth });
   const targetMenuId = String(await target.getAttribute('data-navigation-menu-id') || '');

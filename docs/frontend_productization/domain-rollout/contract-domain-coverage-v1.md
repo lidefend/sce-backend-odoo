@@ -6,11 +6,11 @@ Demo, customer overlays, and user-specific visibility are deliberately excluded.
 ## Summary
 
 - status: `PASS`
-- formal actions: `7`
-- models: `5`
-- ready collection surfaces: `7`
-- readable fallbacks: `0`
-- structural forms: `7`
+- formal actions: `8`
+- models: `6`
+- ready collection surfaces: `8`
+- readable fallbacks: `1`
+- structural forms: `8`
 - fail-closed surfaces: `0`
 - gaps: `0`
 
@@ -19,6 +19,7 @@ Demo, customer overlays, and user-specific visibility are deliberately excluded.
 | Menu | Action | Model | Views | Layered authority |
 | --- | --- | --- | --- | --- |
 | `smart_construction_core.menu_sc_p1_contract_change` | `smart_construction_core.action_sc_contract_change` | `sc.contract.change` | tree:table:ready, form:form_structure:structural | `smart_construction_core.menu_sc_root`:[public] → `smart_construction_core.menu_sc_contract_center`:[`smart_construction_core.group_sc_cap_business_initiator`, `smart_construction_core.group_sc_cap_contract_manager`, `smart_construction_core.group_sc_cap_contract_read`, `smart_construction_core.group_sc_cap_contract_user`, `smart_construction_core.group_sc_cap_purchase_manager`] → `smart_construction_core.menu_sc_p1_contract_change`:[`smart_construction_core.group_sc_cap_contract_read`] → action:[`smart_construction_core.group_sc_cap_contract_read`] |
+| `smart_construction_core.menu_sc_p1_contract_execution_position` | `smart_construction_core.action_sc_contract_execution_position` | `sc.contract.execution.position` | tree:table:ready, pivot:pivot:readable_fallback, form:form_structure:structural | `smart_construction_core.menu_sc_root`:[public] → `smart_construction_core.menu_sc_contract_center`:[`smart_construction_core.group_sc_cap_business_initiator`, `smart_construction_core.group_sc_cap_contract_manager`, `smart_construction_core.group_sc_cap_contract_read`, `smart_construction_core.group_sc_cap_contract_user`, `smart_construction_core.group_sc_cap_purchase_manager`] → `smart_construction_core.menu_sc_p1_contract_execution_position`:[`smart_construction_core.group_sc_cap_contract_read`] → action:[`smart_construction_core.group_sc_cap_contract_read`] |
 | `smart_construction_core.menu_sc_p1_daily_contract` | `smart_construction_core.action_sc_general_contract` | `sc.general.contract` | tree:table:ready, form:form_structure:structural | `smart_construction_core.menu_sc_root`:[public] → `smart_construction_core.menu_sc_contract_center`:[`smart_construction_core.group_sc_cap_business_initiator`, `smart_construction_core.group_sc_cap_contract_manager`, `smart_construction_core.group_sc_cap_contract_read`, `smart_construction_core.group_sc_cap_contract_user`, `smart_construction_core.group_sc_cap_purchase_manager`] → `smart_construction_core.menu_sc_p1_daily_contract`:[`smart_construction_core.group_sc_cap_business_initiator`, `smart_construction_core.group_sc_cap_contract_manager`, `smart_construction_core.group_sc_cap_contract_read`, `smart_construction_core.group_sc_cap_contract_user`] → action:[`smart_construction_core.group_sc_cap_business_initiator`, `smart_construction_core.group_sc_cap_contract_manager`, `smart_construction_core.group_sc_cap_contract_read`, `smart_construction_core.group_sc_cap_contract_user`] |
 | `smart_construction_core.menu_sc_p1_expense_contract` | `smart_construction_core.action_construction_contract_expense` | `construction.contract.expense` | tree:hierarchical_worksheet:ready, form:form_structure:structural | `smart_construction_core.menu_sc_root`:[public] → `smart_construction_core.menu_sc_contract_center`:[`smart_construction_core.group_sc_cap_business_initiator`, `smart_construction_core.group_sc_cap_contract_manager`, `smart_construction_core.group_sc_cap_contract_read`, `smart_construction_core.group_sc_cap_contract_user`, `smart_construction_core.group_sc_cap_purchase_manager`] → `smart_construction_core.menu_sc_p1_expense_contract`:[`smart_construction_core.group_sc_cap_contract_read`] → action:[`smart_construction_core.group_sc_cap_contract_manager`, `smart_construction_core.group_sc_cap_contract_read`, `smart_construction_core.group_sc_cap_contract_user`] |
 | `smart_construction_core.menu_sc_p1_expense_settlement` | `smart_construction_core.action_sc_settlement_order_expense` | `sc.settlement.order` | tree:hierarchical_worksheet:ready, form:form_structure:structural | `smart_construction_core.menu_sc_root`:[public] → `smart_construction_core.menu_sc_contract_center`:[`smart_construction_core.group_sc_cap_business_initiator`, `smart_construction_core.group_sc_cap_contract_manager`, `smart_construction_core.group_sc_cap_contract_read`, `smart_construction_core.group_sc_cap_contract_user`, `smart_construction_core.group_sc_cap_purchase_manager`] → `smart_construction_core.menu_sc_p1_expense_settlement`:[`smart_construction_core.group_sc_cap_settlement_read`] → action:[`smart_construction_core.group_sc_cap_settlement_read`] |

@@ -117,11 +117,11 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         contract = CONTRACT.load_locked_menu_policy_contract(self.baseline, self.checksum)
         self.assertEqual(
             contract["sha256"],
-            "1b7c0700983f1053409b393206f9af4dfb68cc5a4d3bbbe70ed4f4457a07721c",
+            "a10e35bed3769a2cbea5fcc36847ca0f3133e51914eb148d8ccb0ce2486eb476",
         )
         for product_key in CONTRACT.REQUIRED_PRODUCT_KEYS:
             rows = CONTRACT.baseline_rows(contract, product_key)
-            self.assertEqual(len(rows), 90)
+            self.assertEqual(len(rows), 89)
             self.assertIn(
                 (
                     "产品配置",
@@ -213,7 +213,7 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
             menu["menu_id"] = index
             menu["action_id"] = index + 10000
         result = CONTRACT.assert_policy_matches_locked_contract(contract, "construction.standard", groups)
-        self.assertEqual(result["menu_count"], 90)
+        self.assertEqual(result["menu_count"], 89)
         self.assertTrue(result["exact_match"])
 
     def test_full_baseline_rejects_every_out_of_band_addition(self):
@@ -241,7 +241,7 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         ]
         self.assertEqual(
             CONTRACT.assert_snapshot_matches_locked_contract(contract, "construction.standard", pages)["menu_count"],
-            90,
+            89,
         )
         pages.pop()
         with self.assertRaisesRegex(CONTRACT.LockedMenuPolicyContractError, "LOCKED_MENU_SNAPSHOT_MISMATCH"):
@@ -252,8 +252,8 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         standard = contract["products"]["construction.standard"]
         preview = contract["products"]["construction.preview"]
         self.assertIsNot(standard, preview)
-        self.assertEqual(len(CONTRACT.baseline_rows(contract, "construction.standard")), 90)
-        self.assertEqual(len(CONTRACT.baseline_rows(contract, "construction.preview")), 90)
+        self.assertEqual(len(CONTRACT.baseline_rows(contract, "construction.standard")), 89)
+        self.assertEqual(len(CONTRACT.baseline_rows(contract, "construction.preview")), 89)
         self.assertNotEqual(standard["product_key"], preview["product_key"])
 
 

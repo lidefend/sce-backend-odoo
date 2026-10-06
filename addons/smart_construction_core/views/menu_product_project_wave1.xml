@@ -4,7 +4,13 @@
     <data>
         <!-- Retire superseded project groupings and incomplete capability groups. -->
         <record id="menu_sc_project_overview_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
-        <record id="menu_sc_project_ledger_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <!-- 项目台账 is a RELEASED_FOUNDATION level-two group in the locked
+             product menu contract (config/product_menu_contract_v1.json); it
+             holds the single 项目台账 record entry and its declared runtime
+             acceptance path is 项目中心 / 项目台账 / 项目台账. Retirement here
+             would make a contracted menu disappear, so it is explicitly kept
+             active and existing databases are converged on upgrade. -->
+        <record id="menu_sc_project_ledger_group_v2" model="ir.ui.menu"><field name="active">True</field></record>
         <record id="menu_sc_project_planning_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_project_organization_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_project_milestone_group_v2" model="ir.ui.menu"><field name="active">False</field></record>

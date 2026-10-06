@@ -1,0 +1,59 @@
+schema_version: 1
+goal:
+  id: PROJECT-LEDGER-ENTRY-UNIFICATION
+  title: unify_project_ledger_and_project_information_edit_into_one_entry
+  status: in_progress
+  formal_product_layer: P1
+  layer_target: smart_construction_core_project_center_entry_surface
+  module:
+    - smart_construction_core
+    - config
+    - scripts
+    - docs
+  objective: >-
+    The project center exposes two product entries on the same model: 项目台账
+    (menu_sc_project_project / action_sc_project_list, read-only handling
+    surface) and 项目信息编辑 (menu_sc_product_project_edit_v1 /
+    action_sc_product_project_edit_v1, master-data edit surface). Keep 项目台账
+    as the single product entry, retire 项目信息编辑, carry its complete
+    master-data maintenance function into the ledger's record form, and make the
+    ledger entry's declared capability permission/contract driven so the entry
+    declaration, the resolved record contract and the entry target agree.
+  baseline:
+    branch: main
+    full_sha: 8892042761eeb8f47a135fd817a9a9d220837620
+    source: clean_main_after_pr_593
+  product_boundary:
+    standard_vs_user_specific: construction_industry_standard_product
+    why_here: >-
+      Both entries are P1 construction-product menu entries and their consuming
+      form/action declarations live in smart_construction_core; the product menu
+      contract, the authoritative navigation config and the locked menu policy
+      baseline are P1 product surfaces.
+    why_not_elsewhere:
+      - no_p0_platform_mechanism_change
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_lowcode_configuration_write
+      - no_p4_repository_only_tooling_change_beyond_generators_and_guards
+    blast_radius:
+      - smart_construction_core project center menu, actions and project form composition
+      - locked product menu policy baseline and its checksum
+      - authoritative navigation config and acceptance environment action counts
+      - generated product view structure contract
+      - product menu contract and release manifest
+      - frontend acceptance scripts and the formal entry acceptance CSV
+      - persisted low-code orchestration ui.business.config.contract rows bound to action 506 must keep resolving
+  exclusions:
+    - no_relaxation_of_any_gate_or_audit
+    - no_write_to_the_daily_runtime_database_or_lowcode_configuration
+    - no_model_acl_record_rule_or_field_level_permission_change
+    - no_model_specific_special_case_in_shared_projection_code
+    - no_project_ledger_creation_surface_creation_is_owned_by_新项目立项
+  rollback:
+    - revert this single commit; the retired entry and the previous baseline/checksum return
+  next_exact_step: >-
+    Carry the 项目信息编辑 master-data groups into the ledger record form
+    additively so the persisted action-506 orchestration target path stays
+    resolvable, retire the duplicate entry across every locked/generated/doc
+    carrier, run the affected non-zero targeted tests, then the governed runtime
+    readback.

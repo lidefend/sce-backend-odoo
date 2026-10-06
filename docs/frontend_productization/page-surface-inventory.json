@@ -2218,14 +2218,6 @@
       "viewRef": "smart_construction_core.view_sc_policy_document_tree"
     },
     {
-      "actionXmlidLocal": "action_sc_product_project_edit_v1",
-      "authority": "declarative_action_definition",
-      "model": "project.project",
-      "source": "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
-      "viewMode": "tree,form",
-      "viewRef": null
-    },
-    {
       "actionXmlidLocal": "action_sc_product_project_lifecycle_v1",
       "authority": "declarative_action_definition",
       "model": "project.project",
@@ -5657,14 +5649,6 @@
       "label": "制度文件",
       "menuXmlidLocal": "menu_sc_product_policy_document_v1",
       "parentRef": "smart_construction_core.menu_sc_hr_admin_center",
-      "source": "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
-    },
-    {
-      "actionRef": "smart_construction_core.action_sc_product_project_edit_v1",
-      "authority": "declarative_menu_definition_not_runtime_visibility",
-      "label": "项目信息编辑",
-      "menuXmlidLocal": "menu_sc_product_project_edit_v1",
-      "parentRef": "smart_construction_core.menu_sc_project_management_group",
       "source": "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
     },
     {
