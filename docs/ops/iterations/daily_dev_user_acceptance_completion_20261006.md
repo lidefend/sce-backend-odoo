@@ -26,7 +26,8 @@ Owner acceptance entry: `http://1.95.85.92:18081/`（自定义前端），口令
 - **主线集成**：完成。PR #589（squash）已合并，`main = dd75f83c`；四个必需检查
   （`public_guard` / `merge_policy_gate` / `professional_quality_gate` / `frontend_release_gate`）
   在精确 HEAD `0794f203` 上全部 success，合并门禁复用同 HEAD 的 `ci.local.quick` receipt
-  （`REUSE`，未重复执行套件）。详见 §3.9。
+  （`REUSE`，未重复执行套件）。随后 PR #591（squash）以精确 HEAD `6b5230c0` 落地本收口记录，
+  `main = b0f0dba5`（该 PR 同时把 run 绑定改到了短命分支，见 §4.3，本批清除）。详见 §3.9、§3.10。
 - **版本发布**：未主张。
 - **产品交付**：未主张——待所有者对 §4.1 的单项产品策略观察项判断。
 
@@ -199,6 +200,26 @@ Owner acceptance entry: `http://1.95.85.92:18081/`（自定义前端），口令
   若未来把 squash 合入后的分支头直接当作 `expected_old_sha`，预检会以「不是祖先」阻断——
   这是本入口的既有前置条件，已在此记录以免重复排查。
 
+### 3.10 run 索引绑定清理（P4 工具层，本批新增）
+
+- **事实**：PR #591 落地收口记录时，把 `.agent/active-runs.json` 的绑定从
+  `codex/daily-dev-user-acceptance-completion-20261006` 改成
+  `codex/daily-dev-user-acceptance-closeout-20261006`，随后该分支被 `branch.cleanup` 退役，
+  `main` 因此残留一条指向**已删除分支**的悬空绑定（`run.json` 的 `branch` 同值、`status=active`）。
+- **影响**：在 `main` 上 `agent_run_context` 解析为 `unregistered`（exit 2），
+  `make ci.local.iteration` 无法在 `main` 上得到 `resolved`；绑定还会让未来同名的重开分支静默继承本 run。
+- **修复**：本批把 `.agent/active-runs.json` 收敛为 `{"schema_version": 1, "branches": {}}`，
+  并把 `.agent/runs/DAILY-DEV-USER-ACCEPTANCE-COMPLETION/run.json` 标记 `status=completed`。
+  依据既有先例（`ACTIVE-RUN-INDEX-DANGLING-CLOSEOUT`、PR #586 `48441a3b` 同为 `{}`），
+  已退役分支不得在 `main` 留下映射；`main` 上 `ci.local.iteration` 报 `unregistered` 是该车道既有先例。
+- **不走捷径**：未改 `agent_run_context` 的解析规则，未放宽 `ci.local.iteration` 的 `resolved` 要求，
+  仅让索引回到与「分支已退役」一致的真实状态。
+- **顺带修复的记录层缺陷**：`.agent/goals/DAILY-DEV-USER-ACCEPTANCE-COMPLETION.yaml` 第 78 行缩进错误
+  （`  - no_relaxation_of_relation_open_authority_or_field_permission` 少两个空格），使整个 goal 记录
+  **无法被任何 YAML 解析器读取**（`yaml.safe_load` 直接 ParserError）。已按同级 key 对齐修正，
+  并同步 goal 的 `next_exact_step`；`goal.status` 保持 `active`（产品交付仍待所有者判断），
+  与 `run.status=completed` 的组合沿用 `ACTIVE-RUN-INDEX-DANGLING-CLOSEOUT` 先例。
+
 ## 4. 仍未关闭
 
 1. **`项目台账` 的 `/f/` ↔ `readonly` profile 观察项**：列表声明 `model_write_authority=true` 并据此
@@ -208,4 +229,8 @@ Owner acceptance entry: `http://1.95.85.92:18081/`（自定义前端），口令
    - 关系打开投影缺陷：已修复、已合入 main（PR #589 → `dd75f83c`）、已在大运行态复验（§3.8、§3.9）。
    - 测试资产登记：`scripts/verify/record_relation_roundtrip_acceptance.js` 已由
      `scripts/ci/generate_test_inventory.py` 登记为 `T-ASSET-942`（总资产 1462 → 1463）。
-3. 四层状态见 §2：批次验收 = 通过，主线集成 = 完成，版本发布 = 未主张，产品交付 = 待所有者判断。
+3. 已关闭的工具层项：`main` 悬空 run 绑定（PR #591 把绑定指向随后退役的
+   `codex/daily-dev-user-acceptance-closeout-20261006`）。本批把 `.agent/active-runs.json` 收敛为
+   空索引，并把本 run 标记 `status=completed`；详见 §3.10。此后 `main` 上
+   `ci.local.iteration` 报 `unregistered`，与既有先例一致，不是新的缺陷。
+4. 四层状态见 §2：批次验收 = 通过，主线集成 = 完成，版本发布 = 未主张，产品交付 = 待所有者判断。

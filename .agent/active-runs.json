@@ -1,6 +1,4 @@
 {
-  "branches": {
-    "codex/daily-dev-user-acceptance-closeout-20261006": ".agent/runs/DAILY-DEV-USER-ACCEPTANCE-COMPLETION/run.json"
-  },
-  "schema_version": 1
+  "schema_version": 1,
+  "branches": {}
 }

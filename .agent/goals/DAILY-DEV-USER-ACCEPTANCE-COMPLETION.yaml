@@ -75,7 +75,7 @@ goal:
   exclusions:
     - no_relaxation_of_any_assertion_audit_acl_or_negative_case
     - no_product_semantics_change_outside_the_authorized_p0_relation_open_projection_fix
-  - no_relaxation_of_relation_open_authority_or_field_permission
+    - no_relaxation_of_relation_open_authority_or_field_permission
     - no_production_tenant_change
     - no_module_upgrade_without_an_actual_module_change
     - no_sc_local_dev_or_isolated_acceptance_profile_change
@@ -84,9 +84,13 @@ goal:
     - rebuild the previous frontend from its commit and restart
     - restore the .env.dev source revision from its backup and restart
   next_exact_step: >-
-    Complete the daily-server user-perspective acceptance on the already advanced
-    runtime (served 5ba6398e / sc_demo): reuse the 91-action four-quadrant visual
-    coverage, the detail 8/8 lane, the declared-relation round trip, the
-    form-profiles and workbench lanes, then backfill the iteration record and
-    close the run. The confirmed relation-open projection gap stays open for the
-    owner's fix decision.
+    Execution is complete: the daily-server user-perspective acceptance passed on
+    sc_demo (91-action four-quadrant visual coverage, detail 8/8, declared-relation
+    round trip, form-profiles and workbench lanes); the confirmed relation-open
+    projection gap was fixed in P0 smart_core (827bffed), merged to main through
+    PR #589 (dd75f83c), and the daily runtime was normalized from the detached
+    candidate back to main and re-verified. PR #591 landed the closeout record
+    (main b0f0dba5); its run-index retarget left a dangling binding that is cleared
+    in this batch. Remaining is owner judgment only: the single product-policy
+    observation (the 项目台账 /f/ opener against a readonly record contract) and
+    whether overall product delivery is claimed. 版本发布 is not claimed.
