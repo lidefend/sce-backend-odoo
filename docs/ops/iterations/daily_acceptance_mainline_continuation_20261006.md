@@ -134,6 +134,24 @@ Owner acceptance entry: `http://1.95.85.92:18081/`（自定义前端），口令
   （“runtime evidence requires authoritative environment readback”，是工具对该类检查的保守默认，
   不等于失败；其回执已在本批于 served `6c8e07f7` 上登记）。
 
+### 3.8 远端必需门禁首跑失败与修复（`professional_quality_gate`）
+
+- **候选**：`9364609241b69e80fea3ac79da8d3b8508ba15e6`（PR #597）。
+- **失败**：`professional_quality_gate` 中 `make verify.product.release.version` 报
+  `product version duplicated outside VERSION: .agent/runs/DAILY-ACCEPTANCE-MAINLINE-CONTINUATION/run.json`。
+  其余必需检查（`public_guard`、`merge_policy_gate`、`frontend_release_gate`、`professional_authorization`、
+  `python310_runtime_compatibility`、`release_candidate_gate`）均 PASS。
+- **分类**：记录内容违反“产品版本单源真值”门禁，**不是**产品缺陷、断言缺陷或环境缺陷。
+- **根因**：`run.json` 的 `evidence.runtime_identity.product_version` 直接写了裸版本串，
+  等于在 `VERSION` 之外复制产品版本。守卫扫描所有 tracked + 未忽略文件（`.runtime/`、`artifacts/`
+  已被 gitignore 跳过）；文档中 `product_version=1.0.0-rc.20` 的写法与既有已合并记录一致且被守卫的前置断言允许。
+- **修复**：删除该裸字面量，改为绑定 `VERSION` 文件本身
+  （`product_version_authority=VERSION`、`version_file_sha256=32c7b592…`），保持单源真值。
+- **复核**：`make verify.product.release.version` → PASS `duplicates=0`；
+  `make ci.generated_reports.guard architecture.complexity_baseline_lock` → PASS；
+  `git diff --check` → 干净。
+- **未放宽**：未削弱守卫、未新增豁免/白名单、未改动 `VERSION`。
+
 ## 4. 仍未关闭
 
 1. **`项目台账` 的 `/f/` ↔ `readonly` profile 观察项**（跨批保留，唯一未决产品策略项）：

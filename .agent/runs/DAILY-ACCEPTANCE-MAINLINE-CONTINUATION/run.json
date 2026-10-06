@@ -34,7 +34,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Freeze and commit this record-only batch (run metadata + goal + iteration record, product code unchanged) because the daily runtime is already served at 6c8e07f7 and the governed readonly probe PASSed on that exact served SHA; then obtain the owner decision on whether to publish a record-only PR. Do not re-run the list-surface browser matrix.",
+  "next_exact_step": "Record-only batch PR #597 is published; the single failing required check (professional_quality_gate -> verify.product.release.version) was fixed at its root by removing the duplicated product-version literal from the run evidence. Push the fix commit, re-verify the required checks on the new head, then merge through make pr.merge under EXPECTED_HEAD. Run retirement stays a separate follow-up step. Do not re-run the list-surface browser matrix.",
   "carried_forward": [
     {
       "id": "daily_list_surface_readonly_browser",
@@ -59,9 +59,10 @@
       "expected_sha": "6c8e07f70c1ce0d501f9f5b56911d74f9321a721",
       "database": "sc_demo",
       "environment": "dev",
-      "product_version": "1.0.0-rc.20",
       "frontend_asset_path": "/assets/index-CQk-FHJ5.js",
-      "remote_root": "/opt/projects/repos/sce-product-odoo"
+      "remote_root": "/opt/projects/repos/sce-product-odoo",
+      "product_version_authority": "VERSION",
+      "version_file_sha256": "32c7b5929917f2266eb3a55fc492c202e0a8ce5aa07f7d8ba37020370546b955"
     },
     "probe": {
       "target": "verify.daily_dev.acceptance.readonly.probe",
@@ -99,6 +100,15 @@
       "files": 17,
       "nature": "all .agent/** run ledger, docs/**, config/frontend/authoritative_navigation.json (CI/acceptance-script consumer), one frontend dev script outside tsconfig src, one CI guard",
       "conclusion": "no runtime path/view/action/data/config consumed by the daily runtime changed"
+    },
+    "gate_recovery": {
+      "gate": "professional_quality_gate / verify.product.release.version",
+      "candidate": "9364609241b69e80fea3ac79da8d3b8508ba15e6",
+      "failure": "product version duplicated outside VERSION: .agent/runs/DAILY-ACCEPTANCE-MAINLINE-CONTINUATION/run.json",
+      "classification": "record-content gate violation, not a product or assertion defect",
+      "fix": "removed the raw product-version literal from the run evidence and bound the VERSION bytes instead (product_version_authority=VERSION, version_file_sha256)",
+      "verified_by": "make verify.product.release.version -> PASS duplicates=0; make ci.generated_reports.guard architecture.complexity_baseline_lock -> PASS; git diff --check -> clean",
+      "not_relaxed": "the guard was not weakened and no exemption/allowlist was added"
     }
   }
 }
