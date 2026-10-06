@@ -338,7 +338,6 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
           const current = relationIds(fieldName) || [];
           setRelationIds(fieldName, Array.from(new Set([...current, Math.trunc(id)])));
           setRelationKeyword(fieldName, '');
-          markFieldChanged(fieldName);
         }
       } catch (err) {
         validationErrors.value = [

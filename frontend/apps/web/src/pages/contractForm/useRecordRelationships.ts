@@ -189,13 +189,13 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     resolveContractV2FormFieldMap(v2ContractStore.value) as Record<string, FieldDescriptor>;
   function setRelationKeyword(name: string, keyword: string) {
     setRelationKeywordValue(name, keyword);
-    const descriptor = effectiveFieldDescriptor(name);
-    const widget = String((descriptor as Record<string, unknown> | undefined)?.widget || '')
-      .trim()
-      .toLowerCase();
-    if (fieldType(descriptor) === 'many2many' && widget === 'many2many_tags') {
-      markFieldChanged(name);
-    }
+    // A search keyword is a transient input buffer, never a field value: it has
+    // no delivered-record baseline to differ from, so it can never justify dirty
+    // state or an api.onchange. Marking dirty here fabricated a write intent from
+    // a mount-time keyword reset (the many2many_tags control writes its empty
+    // keyword back when it mounts), which the read-only acceptance lane refused
+    // as an unexpected write. Dirtiness stays derived from an actual relation
+    // value change (setRelationIds/addRelationId -> syncFieldDirty).
     if (relationQueryTimers[name]) {
       clearTimeout(relationQueryTimers[name]);
     }

@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { computed, ref } from 'vue';
 
 import { useRecordFormState } from '../src/pages/contractForm/useRecordFormState';
+import { useRecordRelationships } from '../src/pages/contractForm/useRecordRelationships';
+import { fieldType } from '../src/pages/contractForm/fieldUtils';
 
 // Dirty semantics are a consumer responsibility, not a permission decision.
 // The record form delivers the persisted record baseline; a value setter that
@@ -160,6 +162,57 @@ function harness(options: {
   assert.equal(h.dirtyFieldSet.has('state'), true, 'a different selection is dirty');
   h.api.setBooleanField('active', false);
   assert.equal(h.dirtyFieldSet.has('active'), true, 'a different boolean is dirty');
+}
+
+// 5. A relation search keyword is a transient input buffer, never a field value:
+//    it has no delivered-record baseline to differ from. The live contract
+//    declares `tag_ids` on the project ledger edit layout with
+//    `widget: "many2many_tags"`, and that control writes its (empty) keyword
+//    back when it mounts. That interaction changed nothing and must not mark the
+//    field dirty or dispatch an api.onchange. The keyword channel itself must
+//    keep working (buffer update + option query), so this is a value-based
+//    guard, not a suppression of the declared keyword behaviour.
+{
+  // The declaration is consumed from the contract-v2 store exactly as the page
+  // consumes it (field code -> widgetType), not from a hand-written descriptor.
+  const v2ContractStore = ref({
+    widgetsByFieldCode: new Map([
+      ['tag_ids', {
+        label: '\u6807\u7b7e',
+        widgetType: 'many2many_tags',
+        componentConfig: { fieldType: 'many2many', relation: 'res.partner.category' },
+      }],
+    ]),
+  });
+  const dirtyCalls: string[] = [];
+  const keywordWrites: Array<[string, string]> = [];
+  const timers: Record<string, ReturnType<typeof setTimeout>> = {};
+  const stub = () => undefined;
+  const overrides: Record<string, unknown> = {
+    fieldType,
+    v2ContractStore,
+    findNativeFieldNodeInTree: () => null,
+    nativeFormLayoutNodes: ref([]),
+    markFieldChanged: (name: string) => { dirtyCalls.push(name); },
+    setRelationKeywordValue: (name: string, keyword: string) => { keywordWrites.push([name, keyword]); },
+    relationKeywords: {},
+    relationQueryTimers: timers,
+    queryRelationOptions: async () => [],
+    relationRuntimeGeneration: ref(0),
+    layoutNodes: ref([]),
+    route: { query: {} },
+  };
+  // Only the declarations the keyword path consumes are bound explicitly; the
+  // rest of the hook's dependency surface is inert for this call.
+  const dependencies: any = new Proxy(overrides, {
+    get: (target, key) => (key in target ? (target as any)[key] : stub),
+  });
+  const { setRelationKeyword } = useRecordRelationships(dependencies);
+  setRelationKeyword('tag_ids', '');
+  assert.deepEqual(keywordWrites, [['tag_ids', '']], 'the keyword buffer must still be updated');
+  assert.ok(timers.tag_ids, 'the option query must still be scheduled');
+  clearTimeout(timers.tag_ids);
+  assert.deepEqual(dirtyCalls, [], 'a search keyword is not a field value change: no dirty, no onchange');
 }
 
 process.stdout.write('contract_form_dirty_semantics_test: PASS\n');
