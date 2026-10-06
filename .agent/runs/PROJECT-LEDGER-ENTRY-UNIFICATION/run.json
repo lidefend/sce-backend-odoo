@@ -227,6 +227,28 @@
         "scripts/verify/contract_authority_hierarchy_guard.py",
         "docs/architecture/backend_scene_surface_authority_boundary_v1.md"
       ]
+    },
+    "scene_surface_runtime_readback": {
+      "target": "odoo.shell.exec scene/surface readback",
+      "kind": "runtime",
+      "status": "passed",
+      "detail": "Served DB sc_dev_demo, profile local.dev. (1) Registered surfaces keep their file policy: workspace_pm_v1 -> delivery=[project.management], deep=[finance.payment_requests]; construction_exec_v1 -> deep=[finance.payment_requests, project.management], both meta.source=file, bypass=false. (2) Unregistered surface unknown_face_v1 -> delivery=[], deep=[], meta.source=unregistered_closed, reasons {SCENE_SURFACE_UNREGISTERED: 3}. (3) Platform-admin bypass live: admin(user 2) on dev -> authorized role_code=platform_admin and filter meta.source=unregistered_bypass, bypass=true; on prod -> None; a non-admin demo user on dev -> None.",
+      "inputs": [
+        "addons/smart_core/core/scene_delivery_policy.py",
+        "addons/smart_construction_core/core_extension_surface_bypass.py"
+      ]
+    },
+    "local_dev_env_refresh": {
+      "target": "local.dev.down + local.dev.up + local.dev.restart + local.dev.health",
+      "kind": "runtime",
+      "status": "passed",
+      "detail": "Refreshed the managed local.dev backend after the P0/P1 code change (python needs a process reload) and repaired the stale nginx dist-dev bind-mount via the governed down/up. local.dev.health PASS (frontend_http=200), GET / = 200, /api/runtime-version = 200 db=sc_dev_demo.",
+      "inputs": [
+        "make/dev.mk",
+        "scripts/dev/up.sh",
+        "scripts/dev/down.sh",
+        "scripts/dev/restart.sh"
+      ]
     }
   },
   "evidence": {
@@ -275,6 +297,6 @@
     "baseline_sha": "8892042761eeb8f47a135fd817a9a9d220837620",
     "head": "7945751e",
     "dirty": true,
-    "note": "single writer; uncommitted on top of the three layer commits (6a391504 P0 closure, add0cd9a P1 bypass, c44afa57 tests/docs/run): the P1 bypass gate is corrected to consume the published platform-admin identity instead of a non-producible 'system_admin' role code, with the test, doc section 7.1 and this run updated. Runtime readback on the served sc_dev_demo confirmed: registered surfaces keep their file policy nav/deep split, an unregistered surface is closed with SCENE_SURFACE_UNREGISTERED, and the platform-admin dev bypass re-opens it (prod denied). Also recorded: an uncollected dead runtime test (test_scene_delivery_policy.py) and a stale nginx bind-mount that the local.dev.health gate caught."
+    "note": "single writer; uncommitted on top of the three layer commits (6a391504 P0 closure, add0cd9a P1 bypass, c44afa57 tests/docs/run): the P1 bypass gate is corrected to consume the published platform-admin identity instead of a non-producible 'system_admin' role code, with the test, doc section 7.1 and this run updated. Runtime readback on the served sc_dev_demo confirmed: registered surfaces keep their file policy nav/deep split, an unregistered surface is closed with SCENE_SURFACE_UNREGISTERED, and the platform-admin dev bypass re-opens it (prod denied). Also recorded: an uncollected dead runtime test (test_scene_delivery_policy.py) and a stale nginx bind-mount that the local.dev.health gate caught. Env refreshed afterwards via governed entries; local.dev.health PASS and the served database now runs the corrected gate."
   }
 }
