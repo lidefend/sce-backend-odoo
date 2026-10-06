@@ -56,6 +56,9 @@ goal:
   rollback:
     - revert this branch; the matrix returns to its partial_passed rows and the daily runtime keeps only the lifecycle state the acceptance run actually advanced
   next_exact_step: >-
-    Register this run, then drive project 463 through the declared lifecycle on
-    the daily development server product surface and record the observed
-    transitions before touching the matrix.
+    Object 3 (项目启停管理) is closed with a real contract-driven run on the daily
+    server. Next: close the written gaps of the other two partial rows
+    (日常合同 approval submission plus list query/filter/paging and
+    detail-return context; 付款申请 one2many row-edit save block), then handle
+    the parallel published-navigation authority finding for
+    group_sc_role_project_manager. Do not rerun object 3.

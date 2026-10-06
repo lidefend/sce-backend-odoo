@@ -103,3 +103,26 @@ make verify.frontend.business_entry.lifecycle.browser \
 - 夹具口令仍为既有固定值 `123456`，本批次 diff **未改动任何口令或认证默认**（`git diff` 无 password/认证相关行）。
   口令只经由 `SC_ACCEPTANCE_FIXTURE_PASSWORD` 作用于既有隔离 fixture（`smart_construction_acceptance_fixture`），
   未改变其它环境或通用登录默认。
+
+## 收口验证矩阵（L1/L2，冻结前）
+
+阶段身份：迭代期 = HEAD + dirty scope；冻结后 = 精确 HEAD `425bd830f9dc7eeb969875ca6c0d48e10dea825d`。
+本地 receipt 按框架设计对 `environment.kind=runtime` 恒为 advisory `stale`
+（`runtime evidence requires authoritative environment readback`），不是门禁；门禁是远端必需检查。
+
+| 层 | 入口 | 结果 | 非零计数 | 说明 |
+| --- | --- | --- | --- | --- |
+| L1 | `make ci.local.iteration` | PASS | 16 | `change_state=dirty scope=unclassified_by_design coverage=L1_only`；含 `verify.baseline.iteration.execution.policy` |
+| L2 | `make verify.daily.runtime.mail_sender.prepare` | PASS | 10 | 发件人受管入口行为单测 |
+| L2 | `make verify.daily.runtime.lifecycle_fixture.prepare` | PASS | 17 | 生命周期夹具受管入口行为单测 |
+| L2 | `make verify.frontend.delivery_hardening.guard` | PASS | — | 静态守卫 `error_states=12 title_writers=1 async_epoch=enabled` |
+| L2 | `py_compile` + `node --check` | PASS | — | `frontend_productization_fixture.py`、`frontend_delivery_hardening_runtime_ids.py`、`frontend_business_entry_lifecycle_browser.mjs` |
+| L4 | `make verify.frontend.business_entry.lifecycle.browser` | PASS（复用） | 6 | 正式受管 run；输入文件自 run 后未变，按未变输入复用，不重跑 |
+
+未跑层的显式理由：
+
+- L3（受管模块升级 / 运行时冒烟）：本批次未改产品运行时代码；日常服务器仍由
+  `make pr.push` 之外的既有主线承载，发布不触发产品部署，故不适用于本轮候选。
+- L5（独立复核 / 生成报告 / 完整发布门禁 / 精确头发布）：待本次冻结后由远端必需检查与独立复核执行。
+
+`make ci.delivery.freeze.prepare` PASS（生成报告 `docs/engineering_convergence/` 已刷新并一并提交）。

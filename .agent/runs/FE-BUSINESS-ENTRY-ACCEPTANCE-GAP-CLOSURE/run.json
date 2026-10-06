@@ -16,7 +16,8 @@
     "addons/smart_construction_core/",
     "config/",
     "scripts/ops/",
-    "addons/smart_construction_acceptance_fixture/"
+    "addons/smart_construction_acceptance_fixture/",
+    "docs/engineering_convergence/"
   ],
   "environment": {
     "kind": "runtime",
@@ -34,6 +35,36 @@
         "scripts/ops/daily_runtime_lifecycle_fixture_prepare.py",
         "make/frontend.mk",
         "config/frontend/acceptance_environments_v1.json"
+      ]
+    },
+    "baseline_iteration_execution_policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "kind": "unit",
+      "layer": "L1",
+      "inputs": [
+        "make/ci.mk",
+        "scripts/ops/agent_run_context.py"
+      ]
+    },
+    "daily_runtime_mail_sender_prepare": {
+      "target": "verify.daily.runtime.mail_sender.prepare",
+      "kind": "unit",
+      "layer": "L2",
+      "inputs": [
+        "scripts/ops/daily_runtime_mail_sender_prepare.py",
+        "scripts/ops/test_daily_runtime_mail_sender_prepare.py",
+        "make/codex.mk"
+      ]
+    },
+    "daily_runtime_lifecycle_fixture_prepare": {
+      "target": "verify.daily.runtime.lifecycle_fixture.prepare",
+      "kind": "unit",
+      "layer": "L2",
+      "inputs": [
+        "scripts/ops/daily_runtime_lifecycle_fixture_prepare.py",
+        "scripts/ops/test_daily_runtime_lifecycle_fixture_prepare.py",
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "make/codex.mk"
       ]
     }
   },
