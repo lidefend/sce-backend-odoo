@@ -386,3 +386,121 @@
 - 该修复属 **P0 前端渲染机制**（通用契约消费/渲染责任），非 P1 业务语义，非 P2 客户偏好。
 
 - 产品修复提交：`fix(frontend): 契约基线值比较消除幻影脏字段(P0 渲染层)`（前端源码 + 负例单测 + make 目标，一笔）。
+
+## 后端场景化边界收口：`协作记录 + 历史审计` 合并为契约声明的 surface
+
+### 用户裁决
+- 审计入口给特殊角色，出现与否**必须契约 + 角色权限驱动**；"有数据定义、没有权限也不应该出现"。
+- 后端"场景化"（scene/layout/surface 三条线）界限要一次性定死，不再反复。
+
+### 根因（此前两条入口 + 可见性漂移）
+1. `协作记录`/`历史审计` 从未出现在 `ui.contract.v2 → formStructureContract.sourceSectionTitles`
+   （交付报告内两词出现 0 次）：两个标签都是前端自造。
+   - `nativeSectionNavigation.ts` 旧 `workspaceSurfaceNavigationItems()` 硬编码两个顶层条目。
+   - `ObjectTaskPage.vue` 另有一份硬编码 `surface:activity`/`surface:audit` 导航条目。
+2. 审计区块可见性由**运行时数据**决定：
+   - `ContractFormDriverHost.vue` 旧 `auditAvailable = showCollaborationPanel && auditEvents.length > 0`；
+   - `NativeCollaborationPanel.vue` 旧 `v-if="showAuditTimeline !== false && auditEvents.length"`。
+   ⇒ 时间线未加载时少一个页签（light/dark 差异）、无审计角色的用户也能看到该区块。
+3. 同一语义存在两个顶层入口（`协作记录` 与面板内 `历史审计`），任务模式与工作区模式布局不一致。
+
+### 边界（新增 `docs/architecture/form_structure_surface_contract_boundary_v1.md`）
+| 层 | 载体 | 负责 |
+| --- | --- | --- |
+| 场景/导航 | `scene_ready_contract`/`system.init.nav` | 菜单、action、scene 身份 |
+| 页面契约 | `ui.contract.v2` 快照 | 单个 (scene, action, model, view, record, role, company, lang) 的投影 |
+| 布局 | `layoutContract` | Odoo 原生视图元素的位置（容器树） |
+| 状态/动作/数据 | `statusContract`/`actionContract`/`dataContract` | 权限状态、动作、数据源 |
+| 语义结构 | `formStructureContract`（`projection_only`） | 槽位、字段角色、**声明的 surfaces** |
+| 角色/能力 | `res.groups` + 能力注册表 | 谁能用哪个能力 |
+
+`scene_key` 在 `ui.contract.v2` 中只作绑定/授权校验与入口身份，**不是页面 body 的权威**；
+非字段区块只能声明在 `formStructureContract.surfaces`，不得放进 layout，也不得从 scene 推导。
+
+可见性单一规则（唯一方向）：
+```
+visible = 契约声明该 surface
+          AND (无 audit 子声明 OR audit.authorization.state == 'allow')
+          AND 无其它已声明治理规则压制
+```
+运行时数据永远不是可见性权威。
+
+### 三层落地
+- **smart_core（机制）**：`ui_contract_v2.py` 新增 `FORM_STRUCTURE_SURFACE_POLICY_HOOK`、
+  `project_form_structure_surfaces()` 与归一化函数；四处 `form_structure_contract` 统一加 `"surfaces"`；
+  hook 无声明时**只回退模型能力区块（activity），绝不声明 audit**，且不出现任何产品能力键。
+- **smart_construction_core（策略）**：hook `smart_core_form_structure_surface_policy` 声明 activity surface，
+  其 `audit.authorization` 复用能力注册表 `capability_authorization_for_user(user, "governance.runtime.audit")`
+  （未声明能力 → `deny/UNDECLARED_CAPABILITY`），与 `system.init.capabilities` 同源。
+- **前端（只消费）**：`schema.ts` 严格解码 `surfaces`（未知键/未知 state 抛 `ContractV2DecodeError`）；
+  `store.ts`/`contractRuntimeVm.ts` 提供 `resolveContractV2FormStructureSurfaces`、
+  `declaredCollaborationSurface`、`declaredAuditAuthorized`；`ContractFormDriverHost`、
+  `ObjectTaskPage`、`CanonicalNativeFormSurface`、`NativeCollaborationPanel` 全部改为声明驱动，
+  硬编码标签/`auditEvents.length` 判定清除；`surfaces === undefined`（契约无法声明）才走 legacy 路径。
+- **契约文档同步**：`form_structure_contract_v2.md` 补充 `surfaces` 说明；
+  规范 schema `unified_page_contract_v2.schema.json` 增加 `formStructureSurface*` 定义（`additionalProperties:false`）。
+
+### 验证（负例先行，均为真实模块执行）
+- 新增 `frontend/apps/web/scripts/form_structure_surface_contract_test.ts`
+  （目标 `verify.frontend.form_structure_surface_contract.unit`，esbuild+node 形态，未新增框架）：
+  真实解码 + 真实 store 解析 + 真实投影函数；覆盖 (a) 无声明、(b) 声明但 `deny/pending/coming_soon`、
+  (c) 声明且 `allow`（含空时间线仍渲染）、标签取自声明、未知键/未知 state 必须解码失败。
+  **负例证明**：把 `declaredAuditAuthorized` 换成"声明即授权"后同一测试 FAIL。
+- 后端 `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` 新增
+  `FormStructureSurfaceBoundariesTest`（5 项，共 127 passed）：平台回退不得声明 audit、
+  声明归一化（含 `reason_code→reasonCode`）、畸形/重复声明被丢弃、未知 state 不得变 allow。
+  **负例证明**：把未知 state 改成 `allow` 后该测试 FAIL。
+- 夹具负例证明：schema 去掉 `surfaces` 后 `verify.unified_page_contract.v2.assembler`
+  FAIL（`Additional properties are not allowed ('surfaces' was unexpected)`），恢复后 PASS。
+- 守卫更新（由文本断言升级为声明消费断言，不引入新框架）：
+  `frontend_form_canvas_wide_grid_guard.py`、`frontend_professional_audit_guard.py`、
+  `frontend_v2_policy_projection_guard.py`（新增 `coming_soon` 白名单 + 绑定后端能力治理生产者）。
+
+### 责任层归属
+- 机制/归一化/契约键：**P0 platform kernel product（`smart_core`）**。
+- surface 声明与审计能力键：**P1 construction industry standard product（`smart_construction_core`）**。
+- 渲染消费：**P0 前端渲染机制**（通用契约消费，无产品特判）。
+
+## 后端场景化边界收口（scene / surface 命名与权威，2026-10-06 续）
+
+### 事实（排查结论）
+- `scene` 一词在后端承担**三个不同对象**：S1 导航通道 `sc.menu.config.scene`
+  （`web/pm/finance/mobile`，P0）、S2 业务场景身份 `scene_key`（P0 `smart_scene`
+  内核 + P1 `smart_construction_scene` 内容）、S3 发布场景快照
+  `sc.scene.snapshot`/`release_surface_scene_contract`（P0 delivery）。
+- `surface` 一词承担**四个不同对象**：F1 `contract_surface`（user/native）、
+  F2 `role_surface`（`system.init.role_surface`）、F3 交付面 `scene_surface`
+  （交付策略白名单）、F4 `formStructureContract.surfaces`（本批新增声明面）。
+- 绕的根因不是缺机制，而是缺一张总表；同一对象在不同层被复读。
+
+### 已钉死的边界（文档 + 行为锁）
+- 新增 `docs/architecture/backend_scene_surface_authority_boundary_v1.md`：三对象/四对象总表、
+  三条硬规则（R1 页面体只来自 `ui.contract.v2`，`scene_key` 仅绑定授权；R2 入口由
+  scene-ready + 交付面 + 角色能力共同决定；R3 可见性单条 fail-closed）。
+- 新增 `addons/smart_core/tests/test_backend_scene_surface_boundary.py`
+  （目标 `verify.backend.scene_surface_boundary.unit`，10 项）：**执行投影函数**断言
+  排除原因码闭集、已注册交付面白名单 fail-closed、`_normalize_surface` 开放命名空间的已知边界。
+  **负例先行**：把 `_select_surface_policy` 注入为恒 `enabled=False` 后，已注册面两例立即 FAIL。
+
+### 登记为待裁决缺口（不掩盖、不放宽）
+- **未注册交付面 fail-open**：`_normalize_surface` 开放命名空间 + 未注册面
+  `_select_surface_policy` 返回 `enabled=False`，导致调用方（含传入业务 `scene_key`）
+  可绕过 F3 交付白名单。角色/能力门仍生效，但只声明 `delivery_mode` 的场景会多出。
+  收紧为 fail-closed 属产品可见性决策，登记 `SCENE_SURFACE_UNREGISTERED_FAIL_OPEN=decision_pending`。
+- **交付策略默认关闭** fail-open 已作为显式边界在测试中锁定（`smart_construction_scene`
+  已 seed `sc.scene.delivery.policy.enabled=1`），不作为"环境通过"依据。
+- S1 由 S2 前缀推导、`SURFACE_POLICY_FILE_DEFAULT` 指向不存在的策略文件，均登记待收敛。
+
+### 本批定向验证（未变的通过证据继续复用）
+`verify.backend.scene_surface_boundary.unit`、`verify.frontend.form_structure_surface_contract.unit`、
+`verify.frontend.form_structure_contract_projection.unit`、`verify.frontend.native_section_navigation.unit`、
+`verify.frontend.contract_form_collaboration_authority.unit`、`verify.frontend.native_form_structure_responsibility.unit`、
+`verify.form_structure.contract.guard`、`verify.unified_page_contract.v2.assembler`、
+`verify.unified_page_contract.v2.stable_projection`、`verify.unified_page_contract.v2.guard_inventory`、
+`verify.frontend.contract_v2_render_authority.unit`、`verify.business_config.formal_list.unit`、
+`verify.frontend.contract_form_dirty_semantics.unit` 全绿。
+
+### 预存在无关失败（非本批引入，勿归因本改动）
+`verify.form_view.native_structure.boundary_guard` 期望 `NativeFormTreeRenderer.vue` 含
+`if (authoritativeBusinessSectionMode.value) return '';`，该 token 在本分支 HEAD 与本机 `main`
+均已缺失；本批未触碰该文件。登记为预存在漂移，待独立处理。

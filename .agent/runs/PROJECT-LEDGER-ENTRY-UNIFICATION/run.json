@@ -28,7 +28,14 @@
     "addons/smart_core/tests/test_load_contract_response_cache.py",
     "addons/smart_construction_core/tests/",
     "frontend/apps/web/src/pages/contractForm/",
-    "make/frontend.mk"
+    "make/frontend.mk",
+    "addons/smart_construction_core/__init__.py",
+    "addons/smart_construction_core/core_extension.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/test_backend_scene_surface_boundary.py",
+    "frontend/apps/web/src/app/contracts/v2/",
+    "frontend/apps/web/src/pages/ContractFormPage.vue",
+    "make/runtime_ops.mk"
   ],
   "environment": {
     "kind": "runtime",
@@ -179,6 +186,44 @@
         "frontend/apps/web/src/pages/contractForm/contractActionRules.ts",
         "make/frontend.mk"
       ]
+    },
+    "form_structure_surface_contract_unit": {
+      "target": "verify.frontend.form_structure_surface_contract.unit",
+      "kind": "offline",
+      "status": "passed",
+      "tests": 0,
+      "detail": "declared form surfaces: contract declares -> renderer consumes -> capability registry gates the audit sub-region; negative-first (declaration-only change flips it red).",
+      "inputs": [
+        "frontend/apps/web/scripts/form_structure_surface_contract_test.ts",
+        "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue",
+        "frontend/apps/web/src/pages/contractForm/contractRuntimeVm.ts",
+        "frontend/apps/web/src/app/contracts/v2/store.ts",
+        "addons/smart_core/handlers/ui_contract_v2.py"
+      ]
+    },
+    "unified_page_contract_v2_assembler": {
+      "target": "verify.unified_page_contract.v2.assembler",
+      "kind": "offline",
+      "status": "passed",
+      "detail": "formStructureContract.surfaces accepted by the v2 schema; removing the schema key flips it red (negative control).",
+      "inputs": [
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "docs/architecture/unified_page_contract_v2/fixtures/ui_contract_source.json",
+        "addons/smart_core/handlers/ui_contract_v2.py"
+      ]
+    },
+    "backend_scene_surface_boundary_unit": {
+      "target": "verify.backend.scene_surface_boundary.unit",
+      "kind": "offline",
+      "status": "passed",
+      "tests": 10,
+      "detail": "locks the scene/surface boundary: closed exclusion reason vocabulary, fail-closed allowlist for a registered delivery surface, explicit known fail-open edges (disabled filter; unregistered surface passed through). Negative-first: injecting fail-open policy turns the registered-allowlist cases red.",
+      "inputs": [
+        "addons/smart_core/tests/test_backend_scene_surface_boundary.py",
+        "addons/smart_core/core/scene_delivery_policy.py",
+        "scripts/verify/contract_authority_hierarchy_guard.py",
+        "docs/architecture/backend_scene_surface_authority_boundary_v1.md"
+      ]
     }
   },
   "evidence": {
@@ -198,15 +243,20 @@
       "id": "LEDGER_DETAIL_ACCEPTANCE",
       "status": "pending",
       "detail": "Record-page detail acceptance not yet run: 1440/390 visual + light/dark themes, one real \"open relation record -> return to origin -> labels and actions restore\" interaction, and the create/edit + workbench minimum evidence delta."
+    },
+    {
+      "id": "SCENE_SURFACE_UNREGISTERED_FAIL_OPEN",
+      "status": "decision_pending",
+      "detail": "scene_delivery_policy._normalize_surface is an open name space and _select_surface_policy returns enabled=False for an unregistered surface, so the delivery-surface allowlist is bypassed when a caller passes an unregistered surface (including a business scene_key). Role/capability gates still apply. Tightening to fail-closed is a product visibility decision; boundary documented in docs/architecture/backend_scene_surface_authority_boundary_v1.md section 7 and pinned by verify.backend.scene_surface_boundary.unit."
     }
   ],
-  "next_exact_step": "Detail-lane root cause fixed at the P0 renderer (value-based dirty; no assertion relaxation) and proven negative-first. Next: sync this commit to daily via daily.runtime.candidate.bundle_sync (old_sha=5d1dfaeb), rebuild the served frontend dist-dev on the daily host (verify.frontend.build) + restart nginx, daily.runtime.source_revision.align, then re-run the detail lane (1440/390, light/dark, detail-only) expecting denied_requests=0, and re-bind the relation roundtrip to the new SHA.",
+  "next_exact_step": "Boundary work complete and locally locked: docs/architecture/backend_scene_surface_authority_boundary_v1.md defines the three scene objects and four surface objects, and verify.backend.scene_surface_boundary.unit locks the closed reason vocabulary plus fail-closed registered-surface allowlist (negative-first). Next: review the full diff, commit in layers (P0 mechanism/frontend, P1 policy/contract/docs, iteration record), re-run the affected L2 set, then sync to daily via daily.runtime.candidate.bundle_sync + verify.frontend.build + daily.runtime.source_revision.align, and re-run the detail lane (1440/390, light/dark, detail-only) with the relation roundtrip re-bound to the new SHA. Do not force push or write main directly.",
   "write_replay_authorized": false,
   "candidate_evidence": false,
   "stage_identity": {
     "baseline_sha": "8892042761eeb8f47a135fd817a9a9d220837620",
-    "head": "cb472723d3112f060030d16eeb5d6ba667813295",
+    "head": "f743006a",
     "dirty": true,
-    "note": "single writer; P0 renderer value-based dirty fix (frontend source, commit cb472723) + focused negative-first unit test + make target; no addon runtime path change"
+    "note": "single writer; P0 mechanism (formStructureContract.surfaces + scene/surface boundary) + P1 policy hook + frontend consumption + docs/guards/tests; uncommitted."
   }
 }
