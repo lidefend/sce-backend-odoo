@@ -19,6 +19,11 @@ if ((!DAILY && DAILY_OBSERVATION_SCOPE !== 'all') || !DAILY_SCOPES.includes(DAIL
 //   form-profiles  -> declared create/edit/readonly entry + renderer consumption only
 const WORKBENCH_ONLY = DAILY && DAILY_OBSERVATION_SCOPE === 'workbench-only';
 const FORM_PROFILES_ONLY = DAILY && DAILY_OBSERVATION_SCOPE === 'form-profiles';
+// Resolved at module scope so the failure handler can report the list execution
+// state even when the run aborts before the observation scopes are reached.
+// Referencing a later `const` from the handler would throw a TDZ ReferenceError
+// and mask the real failure.
+const LIST_MATRIX_SKIPPED = WORKBENCH_ONLY || FORM_PROFILES_ONLY || (DAILY && DAILY_OBSERVATION_SCOPE === 'detail-only');
 const dailyRuntime = DAILY ? await (async () => {
   const { build } = await import('../../frontend/apps/web/node_modules/esbuild/lib/main.js');
   const bundled = await build({ stdin: { contents: "export * from './app/runtime/recordEntryContract'; export * from './app/routeQuery'; export * from './app/resolvers/sceneRegistry';", resolveDir: path.join(acceptance.root, 'frontend/apps/web/src'), loader: 'ts' }, bundle: true, platform: 'node', format: 'esm', define: { 'import.meta.env.DEV': 'false' }, write: false });
@@ -210,10 +215,16 @@ async function findPopulatedList(page, navigation) {
   const preferred = routes.filter((row) => /一般合同|项目台账|施工合同/.test(row.label));
   if (REQUESTED_ROUTE && !routes.some(row => row.route === REQUESTED_ROUTE)) throw new Error('requested list route is not in captured released navigation');
   const candidates = REQUESTED_ROUTE ? routes.filter(row => row.route === REQUESTED_ROUTE) : [...preferred, ...routes.filter((row) => !preferred.includes(row))];
+  // The declared daily target is an external deployment reached over the
+  // network: its first navigation loads the released bundle and menu tree, so
+  // the list toolbar can take well over the loopback tuning used for local
+  // runs. Only three candidates are probed on daily, so each one gets a
+  // realistic budget instead of being abandoned before the surface renders.
+  const toolbarTimeout = REQUESTED_ROUTE ? 45_000 : (DAILY ? 30_000 : 8_000);
   for (const target of (DAILY ? candidates.slice(0, 3) : candidates)) {
     await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
     const toolbar = page.locator('[data-list-query-action-bar]');
-    if (!await toolbar.waitFor({ state: 'visible', timeout: REQUESTED_ROUTE ? 45_000 : 8_000 }).then(() => true).catch(() => false)) continue;
+    if (!await toolbar.waitFor({ state: 'visible', timeout: toolbarTimeout }).then(() => true).catch(() => false)) continue;
     await waitForList(page);
     if (await page.locator(`.table tbody tr, ${MOBILE_RECORD_ROW}`).count()) return target;
   }
@@ -908,7 +919,6 @@ const recordChecks = [];
 let target = null;
 let actorContext = null;
 const responseTasks = new Set();
-const detailOnly = DAILY && DAILY_OBSERVATION_SCOPE === 'detail-only';
 try {
   if (DAILY) {
     if (acceptance.operation !== 'readonly' || acceptance.target.mode !== 'external' || acceptance.apiUrl !== BASE_URL || !LOGIN || !PASSWORD) throw new Error('daily scope requires exact external readonly target and credentials');
@@ -1138,7 +1148,6 @@ try {
     await page.setViewportSize(VIEWPORTS[0]);
   }
   if (!WORKBENCH_ONLY && !FORM_PROFILES_ONLY) target = await findPopulatedList(page, navigation);
-  const LIST_MATRIX_SKIPPED = detailOnly || WORKBENCH_ONLY || FORM_PROFILES_ONLY;
   for (const viewport of LIST_MATRIX_SKIPPED ? [] : VIEWPORTS) {
     await page.setViewportSize(viewport);
     const states = PHASE === 'current-fail' ? ['normal'] : ['normal', 'batch', 'empty'];
@@ -1334,6 +1343,7 @@ try {
   process.stdout.write(`[frontend_list_surface_structure_browser] ${passed ? 'PASS' : 'FAIL'} phase=${PHASE} rows=${rows.length} failures=${failures.length}\n`);
   if (!passed) process.exitCode = 1;
 } catch (error) {
+  process.stderr.write(`[frontend_list_surface_structure_browser] failure: ${String(error?.stack || error)}\n`);
   await Promise.allSettled([...responseTasks]);
   const screenshot = path.join(OUTPUT, 'failure.png');
   await page?.screenshot({ path: screenshot, fullPage: true }).catch(() => {});

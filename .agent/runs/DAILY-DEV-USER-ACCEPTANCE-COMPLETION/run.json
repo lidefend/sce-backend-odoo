@@ -10,15 +10,74 @@
     ".agent/active-runs.json",
     ".agent/goals/",
     ".agent/runs/",
-    "docs/ops/iterations/"
+    "docs/ops/iterations/",
+    "scripts/verify/"
   ],
   "environment": {
     "kind": "runtime",
     "authority": "sc-root daily runtime (sc-backend-odoo-dev profile, .env.dev, sc_demo, custom frontend) accessed through the governed daily.runtime.* and release.daily_dev.* Make entries"
   },
-  "checks": {},
-  "blockers": [],
-  "next_exact_step": "Sync the daily runtime to 5ba6398e via daily.runtime.main.bundle_sync, rebuild and restart the frontend, align the served source revision, run release.daily_dev.acceptance.publish with ACCEPTANCE_LOGIN=wutao, then run the user-perspective browser acceptance.",
+  "checks": {
+    "identity": {
+      "served_sha": "5ba6398e672da8b46807da3538187be980772b6d",
+      "database": "sc_demo",
+      "environment": "dev",
+      "product_version": "1.0.0-rc.20",
+      "status": "passed"
+    },
+    "user_perspective_visual_coverage": {
+      "status": "passed",
+      "evidence": ".runtime/final-acceptance/user-perspective/uavc-{1440,390}-{light,dark}.json",
+      "actions": "91/91",
+      "forms": "55/55",
+      "runtime_errors": 0,
+      "overflow": 0
+    },
+    "detail_lane": {
+      "status": "passed",
+      "evidence": ".runtime/final-acceptance/detail-closeout-5ba6398e/{light,dark}.json",
+      "record_checks": "8/8 per viewport"
+    },
+    "relation_roundtrip": {
+      "status": "failed",
+      "evidence": ".runtime/final-acceptance/relation-roundtrip/20261006T023437/summary.json",
+      "opened": [
+        "partner_id",
+        "handler_id",
+        "tax_id"
+      ],
+      "restored_all": true,
+      "denied": [
+        "project_id"
+      ],
+      "denied_reason": "NAVIGATION_AUTHORITY_DENIED",
+      "denied_cause": "declared relation_entry action_id=334/menu_id=199 absent from principal route authority"
+    },
+    "form_profiles": {
+      "status": "passed",
+      "evidence": ".runtime/final-acceptance/form-profiles-5ba6398e/{light,dark}.report.json",
+      "effective_assertions": [
+        "1440:declared_edit_entry",
+        "390:declared_edit_entry"
+      ]
+    },
+    "workbench_only": {
+      "status": "passed",
+      "evidence": ".runtime/final-acceptance/workbench-5ba6398e/{light,dark}.report.json"
+    },
+    "tool_layer": {
+      "status": "passed",
+      "commands": [
+        "make ci.local.iteration",
+        "make verify.frontend.list_surface_search_contract.unit"
+      ]
+    }
+  },
+  "blockers": [
+    "relation_open: construction.contract.income/2331 project_id declares action_id=334/menu_id=199, absent from the principal route authority; the real click lands on /access-denied (NAVIGATION_AUTHORITY_DENIED). Owner decision required before any P0/P1 projection fix.",
+    "observation: on 项目台账 the declared record opener yields /f/project.project/<id> while the record contract declares effectiveRenderProfile=readonly; recorded as not-applicable, not as an edit pass."
+  ],
+  "next_exact_step": "Owner decision on the confirmed relation-open projection defect (declared relation entry action_id=334/menu_id=199 for project.project is absent from the principal route authority). If authorized: fix the P0 relation-entry projection (consume the same authorized surface as navigation.route_authority, or converge can_open to false), decide the module upgrade, refresh the governed backend/frontend on the daily runtime and re-verify only the affected relation-open journeys.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

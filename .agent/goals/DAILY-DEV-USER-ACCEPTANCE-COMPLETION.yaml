@@ -8,6 +8,7 @@ goal:
   module:
     - .agent
     - docs/ops/iterations
+    - scripts/verify
   objective: >-
     Complete the user-perspective product-delivery acceptance on the daily
     development server (sc-root:/opt/projects/repos/sce-product-odoo, ENV=dev,
@@ -59,7 +60,9 @@ goal:
     - rebuild the previous frontend from its commit and restart
     - restore the .env.dev source revision from its backup and restart
   next_exact_step: >-
-    Register the run, sync the daily runtime to 5ba6398e through
-    daily.runtime.main.bundle_sync, rebuild and restart the frontend, align the
-    served source revision, run release.daily_dev.acceptance.publish with
-    ACCEPTANCE_LOGIN=wutao, and then run the user-perspective browser acceptance.
+    Complete the daily-server user-perspective acceptance on the already advanced
+    runtime (served 5ba6398e / sc_demo): reuse the 91-action four-quadrant visual
+    coverage, the detail 8/8 lane, the declared-relation round trip, the
+    form-profiles and workbench lanes, then backfill the iteration record and
+    close the run. The confirmed relation-open projection gap stays open for the
+    owner's fix decision.
