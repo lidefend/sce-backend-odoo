@@ -312,7 +312,12 @@ assert.equal(safeFailedResponse(500,'https://daily.test/assets/a?token=secret',r
     def test_detail_only_does_not_claim_list_checks_and_failure_retains_rows(self):
         self.assertIn("['all', 'record-only', 'detail-only', 'workbench-only', 'form-profiles']", self.probe)
         self.assertLess(self.probe.index('const rows = [];'), self.probe.index('try {\n  if (DAILY)'))
-        self.assertIn('const LIST_MATRIX_SKIPPED = detailOnly || WORKBENCH_ONLY || FORM_PROFILES_ONLY;', self.probe)
+        self.assertIn("const LIST_MATRIX_SKIPPED = WORKBENCH_ONLY || FORM_PROFILES_ONLY "
+                      "|| (DAILY && DAILY_OBSERVATION_SCOPE === 'detail-only');", self.probe)
+        # Declared at module scope: the failure handler reads it, so a later declaration
+        # would raise a TDZ ReferenceError and mask the real failure.
+        self.assertLess(self.probe.index('const LIST_MATRIX_SKIPPED'),
+                        self.probe.index('list_execution: LIST_MATRIX_SKIPPED ?'))
         self.assertIn('for (const viewport of LIST_MATRIX_SKIPPED ? [] : VIEWPORTS)', self.probe)
         self.assertIn('const aggregateChecks = LIST_MATRIX_SKIPPED ? {} :', self.probe)
         self.assertIn("list_execution: LIST_MATRIX_SKIPPED ? 'not_run' : 'completed'", self.probe)

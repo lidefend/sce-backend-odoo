@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-DEV-USER-ACCEPTANCE-COMPLETION",
+  "branch": "codex/daily-dev-user-acceptance-completion-20261006",
+  "status": "active",
+  "baseline_sha": "5ba6398e672da8b46807da3538187be980772b6d",
+  "goal": ".agent/goals/DAILY-DEV-USER-ACCEPTANCE-COMPLETION.yaml",
+  "record": "docs/ops/iterations/daily_dev_user_acceptance_completion_20261006.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/",
+    ".agent/runs/",
+    "docs/ops/iterations/",
+    "scripts/verify/",
+    "addons/smart_core/",
+    "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+    "addons/smart_core/delivery/runtime_route_authority.py",
+    "addons/smart_core/tests/",
+    "make/dev.mk"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "sc-root daily runtime (sc-backend-odoo-dev profile, .env.dev, sc_demo, custom frontend) accessed through the governed daily.runtime.* and release.daily_dev.* Make entries"
+  },
+  "checks": {
+    "relation_entry_publication_orm": {
+      "target": "verify.smart_core.relation_entry_publication.orm",
+      "inputs": [
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "addons/smart_core/delivery/runtime_route_authority.py",
+        "addons/smart_core/tests/test_runtime_view_contract_fail_closed.py"
+      ],
+      "kind": "offline"
+    },
+    "list_surface_search_contract_unit": {
+      "target": "verify.frontend.list_surface_search_contract.unit",
+      "inputs": [
+        "scripts/verify/test_frontend_list_surface_search_contract.py",
+        "scripts/verify/frontend_list_surface_structure_browser.mjs"
+      ],
+      "kind": "offline"
+    },
+    "daily_runtime_observation": {
+      "target": "verify.daily_dev.list_surface.readonly.browser",
+      "inputs": [
+        "scripts/verify/frontend_list_surface_structure_browser.mjs",
+        "scripts/verify/record_relation_roundtrip_acceptance.js",
+        "config/frontend/acceptance_environments_v1.json"
+      ],
+      "kind": "runtime"
+    }
+  },
+  "evidence": {
+    "identity": {
+      "scope": "visual / detail / workbench lanes collected before the P0 fix",
+      "served_sha": "5ba6398e672da8b46807da3538187be980772b6d",
+      "database": "sc_demo",
+      "environment": "dev",
+      "status": "passed",
+      "product_version_source": "VERSION"
+    },
+    "user_perspective_visual_coverage": {
+      "status": "passed",
+      "evidence": ".runtime/final-acceptance/user-perspective/uavc-{1440,390}-{light,dark}.json",
+      "actions": "91/91",
+      "forms": "55/55",
+      "runtime_errors": 0,
+      "overflow": 0
+    },
+    "detail_lane": {
+      "status": "passed",
+      "evidence": ".runtime/final-acceptance/detail-closeout-5ba6398e/{light,dark}.json",
+      "record_checks": "8/8 per viewport"
+    },
+    "form_profiles": {
+      "status": "passed",
+      "evidence": ".runtime/final-acceptance/form-profiles-5ba6398e/{light,dark}.report.json",
+      "effective_assertions": [
+        "1440:declared_edit_entry",
+        "390:declared_edit_entry"
+      ]
+    },
+    "workbench_only": {
+      "status": "passed",
+      "evidence": ".runtime/final-acceptance/workbench-5ba6398e/{light,dark}.report.json"
+    },
+    "tool_layer": {
+      "status": "passed",
+      "commands": [
+        "make ci.local.iteration",
+        "make verify.smart_core.relation_entry_publication.orm",
+        "make verify.frontend.list_surface_search_contract.unit"
+      ],
+      "list_surface_search_contract_unit": {
+        "status": "passed",
+        "tests": "22 tests OK",
+        "log": ".runtime/agent-runs/DAILY-DEV-USER-ACCEPTANCE-COMPLETION/list_surface_search_contract_unit.log",
+        "receipt": ".runtime/agent-runs/DAILY-DEV-USER-ACCEPTANCE-COMPLETION/list_surface_search_contract_unit.json"
+      }
+    },
+    "identity_postfix": {
+      "scope": "relation-open lane after the P0 fix",
+      "served_sha": "827bffed484dcc1af4db05ec7b0b10a5189e9938",
+      "runtime_version_endpoint": "http://1.95.85.92:18081/api/runtime-version",
+      "deployed_repo": "sc-root:/opt/projects/repos/sce-product-odoo (HEAD 827bffed, new symbols present)",
+      "refresh": "daily.runtime.candidate.bundle_sync + daily.runtime.source_revision.align (restart only; no new fields/XML/migration)",
+      "database": "sc_demo",
+      "environment": "dev",
+      "status": "passed"
+    },
+    "relation_roundtrip_pre_fix": {
+      "superseded_by": "relation_roundtrip_postfix",
+      "status": "failed",
+      "evidence": ".runtime/final-acceptance/relation-roundtrip/20261006T023437/summary.json",
+      "opened": [
+        "partner_id",
+        "handler_id",
+        "tax_id"
+      ],
+      "restored_all": true,
+      "denied": [
+        "project_id"
+      ],
+      "denied_reason": "NAVIGATION_AUTHORITY_DENIED",
+      "denied_cause": "declared relation_entry action_id=334/menu_id=199 absent from principal route authority"
+    },
+    "relation_roundtrip_postfix": {
+      "status": "passed",
+      "evidence": ".runtime/final-acceptance/relation-roundtrip-postfix/20261006T030040/summary.json",
+      "source": "construction.contract.income/2331 action 578 menu 904",
+      "declared_entry_count": 14,
+      "opened": [
+        "project_id",
+        "partner_id",
+        "handler_id",
+        "tax_id"
+      ],
+      "project_id_declared": "action_id=696/menu_id=376 (published pair; former 334/199 was unpublished and fell back)",
+      "project_id_landed": "/f/project.project/1245",
+      "restored_all": true,
+      "denied_requests": 0,
+      "console_errors": 0
+    },
+    "relation_entry_publication_orm": {
+      "status": "passed",
+      "target": "verify.smart_core.relation_entry_publication.orm",
+      "tests": "0 failed, 0 error(s) of 12 tests",
+      "log": ".runtime/agent-runs/DAILY-DEV-USER-ACCEPTANCE-COMPLETION/relation_entry_publication_orm.log",
+      "receipt": ".runtime/agent-runs/DAILY-DEV-USER-ACCEPTANCE-COMPLETION/relation_entry_publication_orm.json"
+    }
+  },
+  "blockers": [
+    "observation: on 项目台账 the declared record opener yields /f/project.project/<id> while the record contract declares effectiveRenderProfile=readonly; recorded as not-applicable, not as an edit pass; product policy confirmation still pending.",
+    "delivery prep: scripts/verify/record_relation_roundtrip_acceptance.js is not yet registered in docs/engineering_convergence/test_inventory.csv (generated by scripts/ci/generate_test_inventory.py)."
+  ],
+  "next_exact_step": "The authorized P0 relation-entry projection fix is implemented (827bffed), locked by a non-zero smart_core ORM lane and re-verified in the daily runtime (relation_roundtrip_postfix status=pass). Remaining: publish the product change through the ordinary Gitee PR lane (exact-head required remote checks) before any mainline-integration claim; overall branch goal stays not-completed pending owner judgment.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}
