@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "CI-SCHEDULED-FULL-LANE-RECOVERY-E",
   "branch": "fix/scheduled-full-lane-recovery-e",
-  "status": "active",
+  "status": "completed",
   "baseline_sha": "90484d88ac1db90098fdd5ad098600d781573f6a",
   "goal": ".agent/goals/CI-SCHEDULED-FULL-LANE-RECOVERY-E.yaml",
   "record": "docs/ops/iterations/scheduled_full_lane_recovery_e_20261006.md",
@@ -53,6 +53,20 @@
       ]
     }
   },
-  "blockers": [],
-  "next_exact_step": "Finish the delivery-hardening browser verification, then commit the three owning-layer fixes plus the run records, push fix/scheduled-full-lane-recovery-e, and open a protected PR; confirm the frontend_release_gate full lane on merged main before claiming the schedule is restored."
+  "mainline_integration_record": {
+    "status": "passed",
+    "pull_request": 595,
+    "merge_commit": "fda3fe4bcdd31324ec5ee20a54af8e4c980f9e5c",
+    "merge_method": "squash",
+    "source_head": "f9fdf2a862beb89f29a3772e342a3b4630b13bda",
+    "required_checks_on_head": "public_guard / merge_policy_gate / professional_quality_gate / frontend_release_gate / release_candidate_gate = success on f9fdf2a8",
+    "local_quick": "exact-head ci.local.quick receipt verified and reused by pr.merge.local_quick_gate",
+    "remote_full_lane": "frontend_release_gate workflow_dispatch run 37475951901 on main fda3fe4b = success; pnpm test:release PASS with gate-result.json git_sha=fda3fe4b and navigation-report 30/30 (finance 15, project_a_member 5, pm 7, owner 3)",
+    "push_lane": "frontend_release_gate / public_guard / merge_policy_gate / professional_quality_gate push runs on fda3fe4b = success"
+  },
+  "blockers": [
+    "Pre-existing, separate from this goal: the paired schedule (frontend_release_gate + release_candidate_gate at cron 18:30 UTC) is only confirmed at the next cron occurrence. The dispatch run proves the full lane green on main; release_candidate_gate polls the scheduled frontend_release_gate for at most 30 minutes, while a cold-runner full lane measured ~35 minutes, so that timing margin is a standing risk that was not introduced or closed here.",
+    "Pre-existing, inherited from run D and unchanged: make verify.frontend.fixture.guard fails with KeyError 'project.project' on main."
+  ],
+  "next_exact_step": "Closed. Ledger retirement handled by CI-SCHEDULED-FULL-LANE-RECOVERY-E-RETIREMENT; do not reuse this run."
 }

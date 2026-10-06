@@ -54,3 +54,28 @@ The first browser attempt was denied by the governed runtime check
 the run was retried only after the port was provably free, and the governed
 `frontend.acceptance.up` entry then passed. No audit was relaxed and no container
 was manipulated directly.
+
+## Mainline integration and remote proof (2026-10-06)
+
+| Step | Result |
+| --- | --- |
+| Source head | `f9fdf2a862beb89f29a3772e342a3b4630b13bda` |
+| Pull request | **#595** — public_guard / merge_policy_gate / professional_quality_gate / frontend_release_gate / release_candidate_gate all `success` on `f9fdf2a8` |
+| Merge | squash → main `fda3fe4bcdd31324ec5ee20a54af8e4c980f9e5c` |
+| Local quick | exact-head `ci.local.quick` receipt verified and reused by `pr.merge.local_quick_gate` |
+| Push lanes on main | `frontend_release_gate` / `public_guard` / `merge_policy_gate` / `professional_quality_gate` = success |
+| Full lane on main | `frontend_release_gate` **workflow_dispatch run 37475951901** = success; `pnpm test:release` PASS with `gate-result.json` `git_sha=fda3fe4b`, aggregate audit seven sections PASS, `navigation-report` 30/30 (finance 15, project_a_member 5, pm 7, owner 3) |
+
+The branch `fix/scheduled-full-lane-recovery-e` was deleted after merge per the
+repository convention, and this batch returns `.agent/active-runs.json` to its
+empty terminal state so no index entry points at a deleted branch.
+
+## Open, separate from this batch
+
+- The paired cron (`frontend_release_gate` + `release_candidate_gate`, `30 18 * * *`)
+  is confirmed only at the next occurrence. `release_candidate_gate` polls the
+  scheduled `frontend_release_gate` for at most 30 minutes, while a cold-runner full
+  lane measured ~35 minutes here; that margin is a standing risk not introduced or
+  closed by this batch.
+- `make verify.frontend.fixture.guard` still fails with `KeyError 'project.project'`
+  on main (inherited from run D, untouched here).

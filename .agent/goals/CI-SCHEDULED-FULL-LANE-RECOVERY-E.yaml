@@ -1,6 +1,6 @@
 goal:
   id: CI-SCHEDULED-FULL-LANE-RECOVERY-E
-  status: active
+  status: completed
   formal_product_layer: P0
   objective: >-
     Restore the scheduled frontend_release_gate full lane that #594 (90484d88) left
