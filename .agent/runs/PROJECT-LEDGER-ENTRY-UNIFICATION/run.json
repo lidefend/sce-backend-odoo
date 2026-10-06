@@ -290,13 +290,13 @@
       "detail": "local.dev.health failed frontend_http=403 while /web/login and /api/runtime-version were 200. Root cause: nginx bind-mounts frontend/apps/web/dist-dev, and that host directory was recreated today (13:03) by the static build, so the running nginx container still pointed at the removed inode and saw an empty html root (index.html absent -> 403). Not caused by any code change. Repaired through the governed local.dev.down + local.dev.up (volumes preserved); local.dev.health now PASS and GET / returns 200. Recurrence note for the ops owner: scripts/dev/restart.sh force-recreates only odoo, so a recreated dist-dev needs a full down/up (or an extended restart wrapper) before the preview serves the new build."
     }
   ],
-  "next_exact_step": "Commit the P1 bypass-gate correction (policy + tests + doc + run). Then finish the pending detail lane (1440/390, light/dark, relation open->return->restore) and the create/edit + workbench minimum evidence delta, then sync to daily. Do not force push or write main directly.",
+  "next_exact_step": "Close out the branch: (1) deploy this exact candidate to the daily runtime via the governed daily.runtime.candidate.bundle_sync (expected old SHA f743006a) + remote verify.frontend.build + mod.upgrade (smart_core, smart_construction_core) + restart + daily.runtime.source_revision.align; (2) re-verify on the new served SHA the detail-only (1440/390, light/dark) lane, the form-profiles and workbench-only lanes, and one real relation open->return->restore interaction; (3) fold the results into this run and the completion record; (4) run independent review, then push the candidate through the governed PR entry. Do not force push or write main directly.",
   "write_replay_authorized": false,
   "candidate_evidence": false,
   "stage_identity": {
     "baseline_sha": "8892042761eeb8f47a135fd817a9a9d220837620",
-    "head": "7945751e",
-    "dirty": true,
-    "note": "single writer; uncommitted on top of the three layer commits (6a391504 P0 closure, add0cd9a P1 bypass, c44afa57 tests/docs/run): the P1 bypass gate is corrected to consume the published platform-admin identity instead of a non-producible 'system_admin' role code, with the test, doc section 7.1 and this run updated. Runtime readback on the served sc_dev_demo confirmed: registered surfaces keep their file policy nav/deep split, an unregistered surface is closed with SCENE_SURFACE_UNREGISTERED, and the platform-admin dev bypass re-opens it (prod denied). Also recorded: an uncollected dead runtime test (test_scene_delivery_policy.py) and a stale nginx bind-mount that the local.dev.health gate caught. Env refreshed afterwards via governed entries; local.dev.health PASS and the served database now runs the corrected gate."
+    "head": "9e2d2660a25512b6a491df04bebe5eff6b01b0a0",
+    "dirty": false,
+    "note": "single writer; worktree CLEAN at this HEAD. Five committed layers on top of the detail-projection fix f743006a: 6a391504 (P0 unregistered delivery surface closed fail-closed), add0cd9a (P1 development bypass policy), c44afa57 (tests/doc/run locks), 3dd0dea3 (bypass gate corrected to the published platform-admin identity), 9e2d2660 (run: scene-surface runtime readback + env refresh). f743006a..HEAD touches 12 frontend files (formStructureContract.surfaces consumption) and the backend scene/surface policy, so the daily served revision is still f743006a and the detail/form/workbench/relation lanes must be re-verified on this exact candidate."
   }
 }
