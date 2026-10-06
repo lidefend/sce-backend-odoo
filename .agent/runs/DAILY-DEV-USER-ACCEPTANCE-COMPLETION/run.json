@@ -11,13 +11,46 @@
     ".agent/goals/",
     ".agent/runs/",
     "docs/ops/iterations/",
-    "scripts/verify/"
+    "scripts/verify/",
+    "addons/smart_core/",
+    "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+    "addons/smart_core/delivery/runtime_route_authority.py",
+    "addons/smart_core/tests/",
+    "make/dev.mk"
   ],
   "environment": {
     "kind": "runtime",
     "authority": "sc-root daily runtime (sc-backend-odoo-dev profile, .env.dev, sc_demo, custom frontend) accessed through the governed daily.runtime.* and release.daily_dev.* Make entries"
   },
   "checks": {
+    "relation_entry_publication_orm": {
+      "target": "verify.smart_core.relation_entry_publication.orm",
+      "inputs": [
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "addons/smart_core/delivery/runtime_route_authority.py",
+        "addons/smart_core/tests/test_runtime_view_contract_fail_closed.py"
+      ],
+      "kind": "offline"
+    },
+    "list_surface_search_contract_unit": {
+      "target": "verify.frontend.list_surface_search_contract.unit",
+      "inputs": [
+        "scripts/verify/test_frontend_list_surface_search_contract.py",
+        "scripts/verify/frontend_list_surface_structure_browser.mjs"
+      ],
+      "kind": "offline"
+    },
+    "daily_runtime_observation": {
+      "target": "verify.daily_dev.list_surface.readonly.browser",
+      "inputs": [
+        "scripts/verify/frontend_list_surface_structure_browser.mjs",
+        "scripts/verify/record_relation_roundtrip_acceptance.js",
+        "config/frontend/acceptance_environments_v1.json"
+      ],
+      "kind": "runtime"
+    }
+  },
+  "evidence": {
     "identity": {
       "served_sha": "5ba6398e672da8b46807da3538187be980772b6d",
       "database": "sc_demo",
@@ -74,10 +107,10 @@
     }
   },
   "blockers": [
-    "relation_open: construction.contract.income/2331 project_id declares action_id=334/menu_id=199, absent from the principal route authority; the real click lands on /access-denied (NAVIGATION_AUTHORITY_DENIED). Owner decision required before any P0/P1 projection fix.",
+    "relation_open: construction.contract.income/2331 project_id declared action_id=334/menu_id=199, absent from the principal route authority; the real click landed on /access-denied (NAVIGATION_AUTHORITY_DENIED). Owner authorized the P0 platform fix (consume the same authorized surface as navigation.route_authority).",
     "observation: on 项目台账 the declared record opener yields /f/project.project/<id> while the record contract declares effectiveRenderProfile=readonly; recorded as not-applicable, not as an edit pass."
   ],
-  "next_exact_step": "Owner decision on the confirmed relation-open projection defect (declared relation entry action_id=334/menu_id=199 for project.project is absent from the principal route authority). If authorized: fix the P0 relation-entry projection (consume the same authorized surface as navigation.route_authority, or converge can_open to false), decide the module upgrade, refresh the governed backend/frontend on the daily runtime and re-verify only the affected relation-open journeys.",
+  "next_exact_step": "Implement the authorized P0 relation-entry projection fix in page_assembler._build_relation_entry_map (declared relation open entry must be a published (menu_id, action_id) pair from runtime_route_authority; otherwise converge can_open to false), lock it with a non-zero targeted smart_core ORM test, refresh the governed daily backend (smart_core upgrade) and re-verify only the affected relation-open journey.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

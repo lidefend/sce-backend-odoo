@@ -49,9 +49,33 @@ goal:
         - daily_runtime_source_revision_aligned
         - governed_daily_acceptance_matrix_pass
         - user_perspective_browser_acceptance
+  authoritative_owner_authorization:
+    authorized_on: "2026-10-06"
+    decision: >-
+      Owner authorized one P0 platform-layer fix after the daily acceptance
+      proved a projection defect: a relation open declaration whose
+      (menu_id, action_id) is absent from the principal's published route
+      authority. The fix consumes the same authorized surface as
+      navigation.route_authority and never relaxes an ACL, field permission or
+      acceptance assertion.
+    product_layer: P0
+    layer_target: smart_core_relation_entry_projection
+    why_here: >-
+      The published navigation authority and the relation open declaration are
+      the same publication decision, so the consumer belongs to the same P0
+      platform contract assembly, not to the frontend or an industry module.
+    why_not_elsewhere:
+      - no_frontend_fallback_for_a_server_publication_decision
+      - no_p1_industry_or_p2_customer_model_special_case
+      - no_acl_field_permission_or_hidden_rule_override
+    blast_radius:
+      - addons/smart_core/app_config_engine/services/assemblers/page_assembler.py relation open projection
+      - addons/smart_core/delivery/runtime_route_authority.py published pair iterator
+      - affected relation open journeys on the daily runtime (construction.contract.income relation fields)
   exclusions:
     - no_relaxation_of_any_assertion_audit_acl_or_negative_case
-    - no_product_semantics_change
+    - no_product_semantics_change_outside_the_authorized_p0_relation_open_projection_fix
+  - no_relaxation_of_relation_open_authority_or_field_permission
     - no_production_tenant_change
     - no_module_upgrade_without_an_actual_module_change
     - no_sc_local_dev_or_isolated_acceptance_profile_change

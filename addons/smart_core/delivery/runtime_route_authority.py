@@ -30,16 +30,24 @@ def _positive_int(value) -> int:
     return parsed if parsed > 0 else 0
 
 
-def published_pairs(authority: dict) -> set:
-    """Published ``(menu_id, action_id)`` route pairs, carriers included."""
-    pairs = set()
+def iter_published_pairs(authority: dict):
+    """Published ``(menu_id, action_id)`` route pairs in bucket order.
+
+    Yields the same pairs as :func:`published_pairs` but keeps the authority's
+    own bucket order, so a consumer that must pick one published entry per
+    target model resolves it deterministically from the publication surface.
+    """
     if not isinstance(authority, dict):
-        return pairs
+        return
     for bucket in ROUTE_AUTHORITY_BUCKETS:
         for row in authority.get(bucket) or []:
             if isinstance(row, dict):
-                pairs.add((_positive_int(row.get("menu_id")), _positive_int(row.get("action_id"))))
-    return pairs
+                yield (_positive_int(row.get("menu_id")), _positive_int(row.get("action_id")))
+
+
+def published_pairs(authority: dict) -> set:
+    """Published ``(menu_id, action_id)`` route pairs, carriers included."""
+    return set(iter_published_pairs(authority))
 
 
 def published_menu_ids(authority: dict) -> set:

@@ -835,10 +835,17 @@ verify.daily_dev.acceptance.readonly.probe: guard.prod.forbid
 # superuser has_group pass-through out of Odoo's public/portal audience markers;
 # the fixture fix freezes its own payment execution without weakening the model
 # guard. Both run against the registered local.dev profile and the real modules.
-.PHONY: verify.smart_core.res_users_audience_group.orm verify.acceptance_fixture.execution_freeze.orm
+.PHONY: verify.smart_core.res_users_audience_group.orm verify.smart_core.relation_entry_publication.orm verify.acceptance_fixture.execution_freeze.orm
 verify.smart_core.res_users_audience_group.orm: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  MODULE=smart_core TEST_TAGS=res_users_audience_group test.safe
+
+# Root-cause lock for the P0 relation-open projection: a declared relation open
+# entry must be a published (menu_id, action_id) pair from the same authority as
+# navigation.route_authority, never a natively visible but unpublished menu.
+verify.smart_core.relation_entry_publication.orm: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_core TEST_TAGS=relation_entry_override test.safe
 
 verify.acceptance_fixture.execution_freeze.orm: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \

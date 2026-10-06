@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
+from unittest.mock import patch
 
 from odoo import api
 from odoo.exceptions import ValidationError
@@ -7,6 +8,16 @@ from odoo.tests.common import TransactionCase, tagged
 from odoo.addons.smart_core.app_config_engine.services.assemblers.page_assembler import (
     PageAssembler,
 )
+from odoo.addons.smart_core.delivery import runtime_route_authority
+
+
+def _route_authority(pairs):
+    """A published route authority declaration for the current principal."""
+    return {
+        "primary_actions": [
+            {"menu_id": menu_id, "action_id": action_id} for menu_id, action_id in pairs
+        ],
+    }
 
 
 @tagged("post_install", "-at_install", "smart_core", "relation_entry_override")
@@ -196,7 +207,7 @@ class TestRelationEntryOverrideFailClosed(TransactionCase):
         self.assertIsNone(entry["menu_id"])
         self.assertEqual(entry["reason_code"], "NO_VISIBLE_ACTION")
 
-    def test_auto_discovery_preserves_visible_action_menu_pair(self):
+    def test_published_visible_action_menu_pair_is_declared(self):
         assembler, _hidden_group = self._restricted_relation_assembler()
         action = self.env["ir.actions.act_window"].create({
             "name": "Visible partner relation",
@@ -218,9 +229,71 @@ class TestRelationEntryOverrideFailClosed(TransactionCase):
             assembler._relation_entry_authority_pair_error(action.id, child.id, "res.partner"),
             "",
         )
-        entry = assembler._build_relation_entry_map(["res.partner"])["res.partner"]
+        with patch.object(
+            runtime_route_authority,
+            "build_runtime_route_authority",
+            return_value=_route_authority([(child.id, action.id)]),
+        ):
+            entry = assembler._build_relation_entry_map(["res.partner"])["res.partner"]
         self.assertEqual(entry["action_id"], action.id)
         self.assertEqual(entry["menu_id"], child.id)
+        self.assertTrue(entry["can_open"])
+
+    def test_unpublished_visible_menu_is_not_declared_as_open(self):
+        """A natively visible menu is not a publication answer."""
+        assembler, _hidden_group = self._restricted_relation_assembler()
+        action = self.env["ir.actions.act_window"].create({
+            "name": "Unpublished partner relation",
+            "res_model": "res.partner",
+            "view_mode": "tree,form",
+        })
+        menu = self.env["ir.ui.menu"].create({
+            "name": "Unpublished relation menu",
+            "sequence": -100,
+            "action": "ir.actions.act_window,%s" % action.id,
+        })
+        visible = {
+            int(menu_id)
+            for menu_id in assembler.env["ir.ui.menu"]._visible_menu_ids(debug=False)
+        }
+        self.assertIn(int(menu.id), visible)
+        with patch.object(
+            runtime_route_authority,
+            "build_runtime_route_authority",
+            return_value=_route_authority([(90001, 90002)]),
+        ):
+            entry = assembler._build_relation_entry_map(["res.partner"])["res.partner"]
+        self.assertIsNone(entry["action_id"])
+        self.assertIsNone(entry["menu_id"])
+        self.assertFalse(entry["can_open"])
+        self.assertEqual(entry["reason_code"], "RELATION_ENTRY_NOT_PUBLISHED")
+
+    def test_unpublished_menu_falls_back_to_a_published_pair(self):
+        assembler, _hidden_group = self._restricted_relation_assembler()
+        native_action = self.env["ir.actions.act_window"].create({
+            "name": "Native partner relation",
+            "res_model": "res.partner",
+            "view_mode": "tree,form",
+        })
+        self.env["ir.ui.menu"].create({
+            "name": "Native relation menu",
+            "sequence": -100,
+            "action": "ir.actions.act_window,%s" % native_action.id,
+        })
+        published_action = self.env["ir.actions.act_window"].create({
+            "name": "Published partner relation",
+            "res_model": "res.partner",
+            "view_mode": "tree,form",
+        })
+        with patch.object(
+            runtime_route_authority,
+            "build_runtime_route_authority",
+            return_value=_route_authority([(700, published_action.id)]),
+        ):
+            entry = assembler._build_relation_entry_map(["res.partner"])["res.partner"]
+        self.assertEqual(entry["action_id"], published_action.id)
+        self.assertEqual(entry["menu_id"], 700)
+        self.assertTrue(entry["can_open"])
 
 
 @tagged("post_install", "-at_install", "smart_core", "runtime_view_contract")

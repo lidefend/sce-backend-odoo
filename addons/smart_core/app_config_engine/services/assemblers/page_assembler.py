@@ -3518,7 +3518,7 @@ class PageAssembler:
         relation_domain = []
         display_field = ""
         relation_order = ""
-        can_open = True
+        can_open = bool(entry.get("can_open", True))
         switch_context = {}
         ui_labels_extra = {}
         is_contract_tax_field = False
@@ -3928,6 +3928,50 @@ class PageAssembler:
             "reason_code": "INLINE_CREATE_READY",
         }
 
+    def _relation_open_authority(self, relation_models):
+        """Published relation open entries for the current principal.
+
+        A relation open declaration is the same publication decision as a
+        navigation entry: ``navigation.route_authority`` owns whether the
+        principal may open a published ``(menu_id, action_id)`` pair, and native
+        ``ir.ui.menu`` visibility is not a publication answer
+        (``.agent/decisions/contract-first.yaml``). Returns the published pair
+        set plus, per relation model, the first published page entry in
+        authority bucket order so a caller never has to guess.
+        """
+        published_pairs = set()
+        published_open_by_model = {}
+        wanted = {str(model or "").strip() for model in relation_models if str(model or "").strip()}
+        if not wanted:
+            return published_pairs, published_open_by_model
+        try:
+            from odoo.addons.smart_core.delivery.runtime_route_authority import (
+                build_runtime_route_authority,
+                iter_published_pairs,
+            )
+        except Exception:
+            return published_pairs, published_open_by_model
+        ordered_pairs = [
+            (menu_id, action_id)
+            for menu_id, action_id in iter_published_pairs(build_runtime_route_authority(self.env))
+            if menu_id and action_id
+        ]
+        published_pairs = set(ordered_pairs)
+        if not ordered_pairs:
+            return published_pairs, published_open_by_model
+        action_ids = sorted({action_id for _menu_id, action_id in ordered_pairs})
+        actions = self.env["ir.actions.act_window"].sudo().browse(action_ids).exists()
+        action_by_id = {int(action.id): action for action in actions}
+        for menu_id, action_id in ordered_pairs:
+            action = action_by_id.get(int(action_id))
+            if not action:
+                continue
+            model_name = str(action.res_model or "").strip()
+            if model_name not in wanted or model_name in published_open_by_model:
+                continue
+            published_open_by_model[model_name] = (int(menu_id), action)
+        return published_pairs, published_open_by_model
+
     def _build_relation_entry_map(self, relation_models):
         relation_models = sorted(str(m).strip() for m in (relation_models or []) if str(m).strip())
         if not relation_models:
@@ -3969,6 +4013,7 @@ class PageAssembler:
                     "dry_run_supported": True,
                 }
 
+        published_pairs, published_open_by_model = self._relation_open_authority(relation_models)
         entry_map = {}
         try:
             visible_menu_ids = set(self.env["ir.ui.menu"]._visible_menu_ids())
@@ -3992,37 +4037,46 @@ class PageAssembler:
             action_by_model[model_name] = act
             menu_by_action[act.id] = menu.id
 
-        for relation in relation_models:
-            act = action_by_model.get(relation)
-            if act:
-                entry_map[relation] = {
-                    "model": relation,
-                    "action_id": int(act.id),
-                    "menu_id": int(menu_by_action.get(act.id) or 0) or None,
-                    "view_type": "form",
-                    "view_mode": str(act.view_mode or "form"),
-                    "entry_intent": "open",
-                    "model_write_authority": _safe_can_write(relation),
-                    "can_read": _safe_can_read(relation),
-                    "can_create": _safe_can_create(relation),
-                    "delete_policy": _safe_delete_policy(relation),
-                    "source": "backend_contract",
-                }
-                continue
-            entry_map[relation] = {
+        def _open_entry(relation, action=None, menu_id=0, can_open=True, reason_code=""):
+            entry = {
                 "model": relation,
-                "action_id": None,
-                "menu_id": None,
+                "action_id": int(action.id) if action else None,
+                "menu_id": int(menu_id) or None,
                 "view_type": "form",
-                "view_mode": "form",
+                "view_mode": str(action.view_mode or "form") if action else "form",
                 "entry_intent": "open",
+                "can_open": bool(can_open),
                 "model_write_authority": _safe_can_write(relation),
                 "can_read": _safe_can_read(relation),
                 "can_create": _safe_can_create(relation),
                 "delete_policy": _safe_delete_policy(relation),
                 "source": "backend_contract",
-                "reason_code": "NO_VISIBLE_ACTION",
             }
+            if reason_code:
+                entry["reason_code"] = reason_code
+            return entry
+
+        for relation in relation_models:
+            act = action_by_model.get(relation)
+            if not act:
+                entry_map[relation] = _open_entry(relation, reason_code="NO_VISIBLE_ACTION")
+                continue
+            candidate_menu_id = int(menu_by_action.get(act.id) or 0)
+            if (candidate_menu_id, int(act.id)) in published_pairs:
+                entry_map[relation] = _open_entry(relation, action=act, menu_id=candidate_menu_id)
+                continue
+            published = published_open_by_model.get(relation)
+            if published:
+                menu_id, published_action = published
+                entry_map[relation] = _open_entry(relation, action=published_action, menu_id=menu_id)
+                continue
+            # A native menu existed but the principal's published authority does
+            # not carry it: never declare an opener the route guard would deny.
+            entry_map[relation] = _open_entry(
+                relation,
+                can_open=False,
+                reason_code="RELATION_ENTRY_NOT_PUBLISHED",
+            )
         return entry_map
 
     # ---------------- 首屏数据 ----------------
