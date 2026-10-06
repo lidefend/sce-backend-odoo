@@ -139,3 +139,104 @@ class TestProjectLedgerRuntimeContract(TransactionCase):
             restored,
             "the governed repair must restore the declared composition",
         )
+
+    # --- 台账按钮的组权限：声明必须由运行契约实际生效（有组可见 / 无组不可见） ----
+    #
+    # 「声明存在」不等于「权限驱动」。本组按两侧行为钉住：声明了组权限的用户拿到的
+    # 运行契约必须含该按钮；同一条契约对不具备这些组的用户必须不含该按钮，且仍
+    # 正常返回其余未加组约束的按钮（证明"缺失"来自组权限，而不是契约整体失败）。
+
+    _LEDGER_SUBMIT_GROUPS = (
+        "smart_construction_core.group_sc_cap_project_user",
+        "smart_construction_core.group_sc_cap_project_manager",
+        "smart_construction_core.group_sc_super_admin",
+    )
+
+    def _runtime_layout_buttons(self, *, user, action_id=None, view_id=None, record_id=None):
+        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+
+        params = {
+            "op": "model",
+            "model": "project.project",
+            "view_type": "form",
+            "render_profile": "edit",
+            "client_type": "web_pc",
+        }
+        if action_id:
+            params["action_id"] = int(action_id)
+        if view_id:
+            params["view_id"] = int(view_id)
+        if record_id:
+            params["record_id"] = int(record_id)
+        user_env = self.env(user=user.id)
+        result = UiContractV2Handler(
+            user_env, su_env=user_env["ir.model"].sudo().env
+        ).handle(params)
+        result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+        self.assertTrue(result.get("ok", True), result.get("error"))
+
+        names: set[str] = set()
+
+        def walk(node):
+            if isinstance(node, dict):
+                if node.get("type") == "button" and node.get("name"):
+                    names.add(node["name"])
+                for value in node.values():
+                    walk(value)
+            elif isinstance(node, list):
+                for value in node:
+                    walk(value)
+
+        walk((result["data"] or {}).get("layoutContract"))
+        return names
+
+    def _ledger_probe_users(self):
+        """两个真实角色：具备台账按钮组权限的用户，与只有只读能力、不具备该权限的用户。
+
+        负例身份必须能正常解析同一份台账契约（否则"缺按钮"可能只是契约整体失败），
+        因此只读角色同时具备项目只读与合同只读能力——这正是台账概览统计所需的最小
+        业务角色包，且不蕴含 提交立项 声明的任何组。
+        """
+        base_group = self.env.ref("base.group_user").id
+        project_read = self.env.ref("smart_construction_core.group_sc_cap_project_read").id
+        contract_read = self.env.ref("smart_construction_core.group_sc_cap_contract_read").id
+        declared = [self.env.ref(xmlid).id for xmlid in self._LEDGER_SUBMIT_GROUPS]
+        member = self.env["res.users"].create({
+            "name": "台账按钮组承载 lock",
+            "login": "ledger_submit_group_member_lock",
+            "groups_id": [(6, 0, [base_group, project_read, *declared])],
+        })
+        outsider = self.env["res.users"].create({
+            "name": "台账按钮组负例 lock",
+            "login": "ledger_submit_group_outsider_lock",
+            "groups_id": [(6, 0, [base_group, project_read, contract_read])],
+        })
+        return member, outsider
+
+    def test_ledger_submit_button_group_authority_is_enforced_in_the_runtime_contract(self):
+        action_id = self.env.ref(self._LEDGER_ACTION_XMLID).id
+        project = self.env["project.project"].create({"name": "台账按钮组权限 lock"})
+        member, outsider = self._ledger_probe_users()
+
+        member_buttons = self._runtime_layout_buttons(
+            user=member, action_id=action_id, record_id=project.id
+        )
+        outsider_buttons = self._runtime_layout_buttons(
+            user=outsider, action_id=action_id, record_id=project.id
+        )
+
+        self.assertIn(
+            "action_sc_submit",
+            member_buttons,
+            "the declared group authority must actually deliver 提交立项 to its members",
+        )
+        self.assertIn(
+            "action_sc_start",
+            outsider_buttons,
+            "the outsider contract must still resolve its ungrouped buttons (negative control)",
+        )
+        self.assertNotIn(
+            "action_sc_submit",
+            outsider_buttons,
+            "提交立项 group authority must actually withhold the action from non-members",
+        )

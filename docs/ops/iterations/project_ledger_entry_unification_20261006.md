@@ -228,3 +228,92 @@
   `tests/test_project_ledger_runtime_contract.py`（`@tagged("core_extension_v2_finalize")`，
   在 `tests/__init__.py` 注册），避免既有大测试文件因本轮新增而越过复杂度拆分阈值；
   同 tag 使 `verify.contract.project_ledger_entry_carrier.orm` 行为不变。
+
+---
+
+## 续轮（2026-10-06）：运行契约「声明消费」锁 + 两处承载边界裁决
+
+- 记录时身份：HEAD `5d1dfaeb`（0978c0cc/589d6a2d/5d1dfaeb 三笔）+ 本轮未提交工作区（单写者）。
+- 本轮任务：把「**声明（groups 等）必须在运行契约层被稳定消费**」钉成可回归的锁，并对两处
+  疑似承载缺口给出**证据裁决**；不放宽断言、不加 `project.project` 特判、不用 `critical` 覆盖 ACL。
+
+### 新增锁（P1 产品面的验证载体）
+
+11. **按钮组权限的运行契约消费锁**：
+    `tests/test_project_ledger_runtime_contract.py::test_ledger_submit_button_group_authority_is_enforced_in_the_runtime_contract`。
+    用 `UiContractV2Handler` 直读同一台账 action 的 `layoutContract`，钉住两侧行为：
+    - `member`（`base.group_user + group_sc_cap_project_read + {group_sc_cap_project_user,
+      group_sc_cap_project_manager, group_sc_super_admin}`）运行契约**必须含** `action_sc_submit`；
+    - `outsider`（`base.group_user + group_sc_cap_project_read + group_sc_cap_contract_read`，
+      能正常解析同一契约但**不含**声明组）运行契约**必须不含** `action_sc_submit`，
+      且**必须仍含**未加组约束的 `action_sc_start`（负例对照：证明"缺按钮"来自组权限，
+      而不是契约整体解析失败）。
+    锁的是**声明消费与实际行为**（按用户身份跑真实 handler），不以选择器字符串/文本出现为正确性证明。
+
+### 裁决 A：退役表单的 `<chatter groups=...>` 不是台账的承载缺口（不修）
+
+- 事实（本地 `sc_dev_demo` 直读 `UiContractV2Handler`，`/tmp/ledger_collab_probe.py`）：
+  - 台账 action 运行契约 `runtimeContract.collaboration` = `{chatter, attachments, followers,
+    timeline, sourceAuthority, user_search_intent}`，`chatter.enabled=True`、3 个 action，
+    `attachments/followers/timeline` 均 `enabled=True`；退役 view 与之**逐项一致**。
+  - 差异只在**布局节点**：退役 view 的 `layoutContract` 有 `chatter` 容器 token，台账为 `[]`。
+- 判定依据：前端协作区的单一权威 `resolveCollaborationVisibility`（`contractRuntimeVm.ts`）
+  明确「运行能力（capability）是布局节点的**替代**，不是可将其关闭的条件」；台账契约以
+  **运行能力声明**承载协作面，由 `CanonicalNativeFormSurface` 在 `showCollaborationPanel` 为真时
+  渲染，与退役页一致。前端读的是 `store.snapshot.runtimeContract.collaboration`
+  （`app/contracts/v2/store.ts`），即**契约本身**。
+- 无回归证明：`git show main:.../project_overview_views.xml` 中台账表单**本无** `<chatter>` 节点；
+  本分支对台账的改动是**追加**资料维护区，未新增/移除 chatter 声明。退役页 `<chatter groups=...>`
+  是**已退役入口**的布局区声明；唯一入口以运行能力承载同一能力，符合「运行时契约驱动」。
+
+### 裁决 B：台账概览头部 5 个字段未带 `groups` 不是权限放宽（不修）
+
+- 事实：静态比对两表单 `//field/@name -> groups` —— 退役表单 19 个字段挂
+  `group_sc_cap_project_read`；台账资料区承载了其中 14 个的 `groups`（并集 ⊇ 退役），
+  仅 `location/manager_id/operation_strategy/project_code/project_type_id` 在**概览头部**以
+  无 `groups` 形式出现（`project_code` 在资料区**另有**一条带 `groups` 的声明）。
+- 判定依据：台账唯一入口的菜单 `menu_sc_project_project` 自身 `groups="...group_sc_cap_project_read"`
+  （`views/menu.xml:24`）——**能打开台账的用户必已具备 project_read**，故概览头部不重复声明
+  不产生任何越权可见；`location` 在头部为 `invisible="1"`。属展示层归一，非权限放宽，
+  符合「不覆盖合法隐藏规则、不放宽 ACL/字段权限」。
+
+### 本轮验证
+
+| 层 | 命令 | 身份 | 结果 |
+|---|---|---|---|
+| L1 | `make ci.local.iteration` | dirty `5d1dfaeb` | PASS（仅 L1，建议 L2 定向） |
+| L2 | `make verify.contract.project_ledger_entry_carrier.orm` | local.dev/sc_dev_demo | PASS `32 tests 0 failed`（含新增组权限锁；`test_ledger_submit_button_group_authority_is_enforced_in_the_runtime_contract` 实际执行并通过） |
+| L3 | 日常 `ui.contract.v2` 回读（wutao/123456，`rb_ledger506.json`） | daily/sc_demo@`5d1dfaeb` | `project_code` 在布局；`action_sc_submit` 状态契约 `visible=true/disabled=false`；`action_sc_start` `visible=false`（`ACTION_NOT_VISIBLE_IN_STATE`，状态驱动非权限）；`runtimeContract.collaboration.chatter.enabled=true` |
+| L3 | 日常导航回读（governed `probe_login`，wutao） | daily/sc_demo@`5d1dfaeb` | PASS `nodes=111 actions=89 leaves=89 forbidden=[] required_miss=[]`；含「项目台账」，无「项目信息编辑」 |
+
+- 复用：`5d1dfaeb` 已通过且运行面输入未变的 L2 结果（formal_list 185、form_structure 201、
+  guard_inventory 151、field_overlay.repair noop、load_contract_response_cache 9）继续有效，
+  本轮产品/运行面**零改动**（仅新增测试文件 + 文档/元数据），故日常部署 `5d1dfaeb` 仍为有效运行候选。
+
+### 未覆盖 / 下一步
+
+- 详情页 1440/390、明暗主题视觉核对与「点击打开 → 返回原记录 → 标签与动作恢复」真实交互，
+  以及创建/编辑与工作台最小证据差额，仍待执行。
+- `VIEW_STRUCTURE_BASELINE_CLEAN_LANE` 与运行环境 DENY 维持既有结论，未放宽。
+
+### 补充：日常受管回读入口实跑结论（修正上面 L3 的口径）
+
+- 上面 L3 两行是**受管探针模块 + 登记配置**的第一手诊断回读（wutao/123456），不是受管门禁入口。
+  本轮补跑了登记入口 `make verify.daily_dev.acceptance.readonly.probe`（daily 契约实例
+  `config/acceptance/backend_contract_instance_daily_v1.json`；`ACCEPTANCE_TARGET_SHA=5d1dfaeb`；
+  以 `SC_ACCEPTANCE_RUN_ID` + `.runtime/gen_daily_confirmation.py` 生成 ≤10 分钟
+  `daily-readonly-credential-confirmation.v1` 信封确认固定口令，未放宽任何审计/断言）。
+- 结果：**runtime_identity PASS**（`served_sha == expected_sha == 5d1dfaeb`）；
+  **login PASS**（wutao：`nodes=111 actions=89 leaves=89 forbidden=[] required_miss=[]`，
+  role `business_config_admin`，含「项目台账」）；**contract custody FAIL**。
+- FAIL 归因（与本轮候选**无关**，本轮仅新增测试 + 文档/元数据）：
+  - `record_resolution_served_sha_mismatch`：daily 探针消费的是
+    `ACCEPTANCE_RECORD_RESOLUTION=artifacts/backend/acceptance_record_identity.json`，
+    该产物 `expected_sha=dfa6fa49`、companies `a=8/b=9`，而 daily 夹具身份
+    `fixture_role_finance` 绑定公司 `[21,22]`；
+  - 因此 `fixture_role_finance` 对解析出的 `payment_request` 目标（record 1849 / action 775 /
+    menu 545）请求 `ui.contract.v2` 得到 **HTTP 403**，连带
+    `request_target_binding/contract_custody_*/contract_schema_*` 未通过。
+- 责任层：**P4 日常验收夹具车道**（daily 需用受管生产者在**服务中 SHA**下重生成 daily 作用域的
+  record-identity 产物；daily 入口不应复用 acceptance profile 的解析产物）。
+  不属本轮候选回归，保持 blocker `DAILY_ACCEPTANCE_CONTRACT_CUSTODY=pending_env_gated`。

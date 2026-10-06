@@ -32,7 +32,7 @@
     "kind": "runtime",
     "runtime_profile": "local.dev",
     "database": "sc_dev_demo",
-    "authority": "existing registered local.dev lane (make local.dev.*) plus offline locked baselines; daily acceptance readback still pending"
+    "authority": "existing registered local.dev lane (make local.dev.*) + offline locked baselines + governed daily readback entry verify.daily_dev.acceptance.readonly.probe at 5d1dfaeb"
   },
   "checks": {
     "locked_menu_policy_contract": {
@@ -114,23 +114,6 @@
         "scripts/verify/frontend_project_domain_rollout.py"
       ]
     },
-    "project_ledger_entry_carrier": {
-      "target": "verify.contract.project_ledger_entry_carrier.orm",
-      "kind": "runtime",
-      "status": "passed",
-      "tests": 29,
-      "detail": "retired 项目信息编辑 composition fully carried into 项目台账: fields/buttons ONLY-in-retired=[]; 提交立项 button groups == project.project.action_sc_submit enforced groups; runtime contract (by action) carries the retired form's field set incl. project_code; stale ledger ui.form.field.policy overlay is detected and the governed repair restores the contract",
-      "inputs": [
-        "make/dev.mk",
-        "addons/smart_construction_core/views/core/project_overview_views.xml",
-        "addons/smart_construction_core/views/core/project_information_edit_views.xml",
-        "addons/smart_construction_core/actions/project_list_actions.xml",
-        "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
-        "addons/smart_construction_core/services/project_ledger_field_overlay_repair.py",
-        "addons/smart_construction_core/migrations/17.0.0.170/pre-migration.py",
-        "addons/smart_construction_core/tests/test_project_ledger_runtime_contract.py"
-      ]
-    },
     "business_config_guard_inventory": {
       "target": "verify.business_config.guard_inventory",
       "kind": "offline",
@@ -156,6 +139,32 @@
         "scripts/verify/test_formal_list_configuration_baseline.py",
         "addons/smart_core/utils/load_contract_response_cache.py"
       ]
+    },
+    "project_ledger_entry_carrier": {
+      "target": "verify.contract.project_ledger_entry_carrier.orm",
+      "kind": "runtime",
+      "status": "passed",
+      "tests": 32,
+      "detail": "local.dev/sc_dev_demo: carrier lock + stale-overlay detect/repair lock + NEW runtime-contract button-group authority lock (test_ledger_submit_button_group_authority_is_enforced_in_the_runtime_contract: member sees action_sc_submit, outsider does not, outsider still sees ungrouped action_sc_start as the negative control).",
+      "inputs": [
+        "addons/smart_construction_core/tests/test_project_ledger_runtime_contract.py",
+        "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
+        "addons/smart_construction_core/views/core/project_overview_views.xml",
+        "addons/smart_core/handlers/ui_contract_v2.py"
+      ]
+    },
+    "daily_acceptance_readonly_probe": {
+      "target": "verify.daily_dev.acceptance.readonly.probe",
+      "kind": "runtime",
+      "status": "failed",
+      "detail": "daily/sc_demo @5d1dfaeb as wutao/123456 with a time-bounded governed credential confirmation. PASS: runtime_identity (served_sha=expected_sha), login (nav nodes=111 actions=89 leaves=89 forbidden=[] required_miss=[], role=business_config_admin including 项目台账). FAIL: contract custody (record_resolution_served_sha_mismatch, request_target_binding_mismatch, contract_custody_not_captured, contract_integrity_self_inconsistent, contract_schema_digest_not_bound, contract_formal_schema_invalid). Root cause: the daily probe consumes ACCEPTANCE_RECORD_RESOLUTION=artifacts/backend/acceptance_record_identity.json, which was produced at dfa6fa49 with company ids 8/9 while the the daily fixture identity of fixture_role_finance binds companies 21/22; the stale resolved target makes the payment_request intent 403. Not caused by this round (test+docs only); owner layer is the P4 daily acceptance-fixture lane.",
+      "inputs": [
+        "make/dev.mk",
+        "scripts/ops/dev_acceptance_release_probe.py",
+        "config/acceptance/backend_contract_instance_daily_v1.json",
+        "artifacts/backend/acceptance_record_identity.json",
+        "scripts/verify/frontend_delivery_hardening_runtime_ids.py"
+      ]
     }
   },
   "evidence": {
@@ -169,21 +178,26 @@
     {
       "id": "VIEW_STRUCTURE_BASELINE_CLEAN_LANE",
       "status": "deferred_env_gated",
-      "detail": "contracts/generated/product_view_structure_contract.json requires the local.clean lane (guard enforces runtime_profile=local.clean/sc_clean/demo_data=False); no clean lane in this worktree and new environment authority needs separate P4 authorization. The baseline is already stale on main and verify.contract.view_structure is not part of ci.local.quick."
+      "detail": "contracts/generated/product_view_structure_contract.json requires the local.clean lane (guard enforces runtime_profile=local.clean/sc_clean/demo_data=False); no clean lane in this worktree and new environment authority needs separate P4 authorization. Already stale on main; verify.contract.view_structure is not part of ci.local.quick."
     },
     {
-      "id": "DAILY_ACCEPTANCE_READBACK",
+      "id": "DAILY_ACCEPTANCE_CONTRACT_CUSTODY",
+      "status": "pending_env_gated",
+      "detail": "daily/sc_demo @5d1dfaeb runtime_identity and wutao navigation PASS. The governed contract-custody sub-check fails only because artifacts/backend/acceptance_record_identity.json is stale (produced at dfa6fa49, company ids 8/9) while the daily fixture identity binds companies 21/22, so the resolved payment_request target 403s. Needs the daily record-identity artifact regenerated by the governed producer at the served SHA; the daily probe target should point at a daily-scoped resolution artifact instead of reusing the acceptance-profile one. P4 daily acceptance-fixture lane, separate from this candidate."
+    },
+    {
+      "id": "LEDGER_DETAIL_ACCEPTANCE",
       "status": "pending",
-      "detail": "daily repo is at 589d6a2d (detached, clean); this candidate adds the P0 projection-source-token fix, the P2 ledger field-overlay repair service + migrations/17.0.0.170, and the carrier/repair locks. Requires a clean committed SHA, daily.runtime.candidate.bundle_sync, sc_demo upgrade of smart_construction_core (the pre-migration retires the stale ui.form.field.policy rows), restart, and a wutao/123456 ui.contract.v2 / menu readback (项目台账 visible, 项目信息编辑 gone, 提交立项 visibility follows group authority, project_code rendered, no 409/CONFIG_TARGET_STALE)."
+      "detail": "Record-page detail acceptance not yet run: 1440/390 visual + light/dark themes, one real \"open relation record -> return to origin -> labels and actions restore\" interaction (handler-only diagnosis is not a substitute), and the create/edit + workbench minimum evidence delta."
     }
   ],
-  "next_exact_step": "Commit this round (P0 projection-source-token field-policy binding + lock tests; P2 ledger field-overlay repair service/migration/entry; carrier lock), push the branch, then run the governed daily candidate sync (make daily.runtime.candidate.bundle_sync with DAILY_CANDIDATE_EXPECTED_OLD_SHA=589d6a2d...), upgrade smart_construction_core on sc_demo (CODEX_NEED_UPGRADE=1 so migrations/17.0.0.170 runs), restart, align the source revision, and read back with wutao/123456: 项目台账 renders project_code, 项目信息编辑 gone, 提交立项 follows group authority, no CONFIG_TARGET_STALE.",
+  "next_exact_step": "Commit this round (runtime-contract button-group authority lock + iteration record/run rulings), push the branch. Product/runtime inputs are unchanged since 5d1dfaeb, so no daily re-sync/module upgrade is required. Remaining: (1) P4 daily acceptance-fixture lane must regenerate the daily-scoped record-identity artifact before the contract-custody gate can pass; (2) ledger record-page detail acceptance (1440/390, light/dark, one real relation open->return interaction) and the create/edit + workbench evidence delta.",
   "write_replay_authorized": false,
   "candidate_evidence": false,
   "stage_identity": {
     "baseline_sha": "8892042761eeb8f47a135fd817a9a9d220837620",
-    "head": "589d6a2d7f239f707779913fc3802e82b00541b4",
+    "head": "5d1dfaebdd4fed2703df8c276cdeec2dbd995e58",
     "dirty": true,
-    "note": "single writer; P0 token fix + P2 repair service/migration/entry/locks uncommitted at record time"
+    "note": "single writer; adds runtime-contract group-authority lock + iteration/run rulings; no addon runtime path change"
   }
 }
