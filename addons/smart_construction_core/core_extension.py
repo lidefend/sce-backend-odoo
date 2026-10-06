@@ -64,6 +64,7 @@ from odoo.addons.smart_construction_core import core_extension_contract_normaliz
 from odoo.addons.smart_construction_core import core_extension_intent_handlers as _intent_handlers
 from odoo.addons.smart_construction_core import core_extension_service_builders as _service_builders
 from odoo.addons.smart_construction_core import core_extension_actor_roles as _actor_roles
+from odoo.addons.smart_construction_core import core_extension_surface_bypass as _surface_bypass
 from odoo.addons.smart_core.handlers.ui_contract_v2_projection import (
     normalize_post_projected_container_tree,
 )
@@ -920,6 +921,10 @@ def smart_core_surface_aliases(env):
     return {
         "construction_pm_v1": "workspace_default_v1",
     }
+
+
+# P1 policy: the kernel only asks this hook, the role/stage gate lives in it.
+smart_core_surface_unregistered_bypass = _surface_bypass.smart_core_surface_unregistered_bypass
 
 
 def smart_core_runtime_business_config_productization_sources(env):
