@@ -412,6 +412,15 @@ verify.frontend.contract_form_collaboration_authority.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_form_collaboration_authority_test.ts --bundle --platform=node --format=esm --outfile=/tmp/contract-form-collaboration-authority-test.mjs >/dev/null
 	@node /tmp/contract-form-collaboration-authority-test.mjs
 
+# Declared form surfaces: a non-field page region is visible only when the
+# contract declares it, and a role-gated sub-region only on an explicit allow.
+# Negative-first: the withheld-authorization and empty-declaration cases must
+# stay hidden before the allowed case is proven to render.
+.PHONY: verify.frontend.form_structure_surface_contract.unit
+verify.frontend.form_structure_surface_contract.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/form_structure_surface_contract_test.ts --bundle --platform=node --format=esm --outfile=/tmp/form-structure-surface-contract-test.mjs >/dev/null
+	@node /tmp/form-structure-surface-contract-test.mjs
+
 .PHONY: verify.frontend.contract_v2_render_authority.unit
 verify.frontend.contract_v2_render_authority.unit: guard.prod.forbid
 	@python3 scripts/verify/contract_v2_render_authority_matrix.py --check

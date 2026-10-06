@@ -172,6 +172,7 @@
           @selected-group-visibility-change="onSelectedFormSettingsGroupVisibilityChange"
         />
         <ContractFormDriverHost v-if="!showCurrentFormFieldConfigScope" actions-in-header :render-model="canonicalFormRenderState.model" :error="canonicalFormDriverError" :driver-config="contractFormDriverConfig" :busy="busy" :claimed-statusbar-node-identity="nativeStatusbarNodeIdentity" :claimed-statusbar-field-code="nativeStatusbar.field" :collaboration-panel-listeners="nativeCollaborationPanelListeners" :collaboration-panel-props="nativeCollaborationPanelProps" :relation-adapter="relationFieldAdapter" :show-collaboration-panel="showNativeCollaborationPanel"
+          :surfaces="formStructureSurfaces"
           :suppress-collaboration="dispatchContextCollaboration"
           @driver-change="changeContractFormDriver"
           @field-change="onTemplateFieldChange"
@@ -388,6 +389,7 @@ import {
   resolveContractV2MainData,
   resolveContractV2ActionRules,
   resolveContractV2FormFieldMap,
+  resolveContractV2FormStructureSurfaces,
   resolveContractV2RuntimeContract,
   resolveContractV2WorkflowContract,
   loadActionContractV2,
@@ -1280,6 +1282,10 @@ const showNativeCollaborationPanel = computed(() => shouldShowNativeCollaboratio
   isIntakeCreateMode: isIntakeCreateMode.value,
   collaborationSuppressed: dispatchContextCollaboration.value,
 }));
+// The declared surfaces are the authority for non-field page regions.  The
+// value is `undefined` for a contract that cannot declare them, which is the
+// only case that may fall back to the legacy runtime predicate.
+const formStructureSurfaces = computed(() => resolveContractV2FormStructureSurfaces(v2ContractStore.value));
 const intakeAutosaveKey = computed(() => {
   if (!isIntakeCreateMode.value) return '';
   const mode = isQuickIntakeMode.value ? 'quick' : 'standard';

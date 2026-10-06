@@ -108,6 +108,36 @@ export interface ContractV2FormStructureSourceAuthority {
   governance_source: ContractV2FormStructureGovernanceSource;
 }
 
+export interface ContractV2FormStructureSurfaceAuthorization {
+  capability: string;
+  state: 'allow' | 'deny' | 'pending' | 'coming_soon';
+  reasonCode?: string;
+  reason?: string;
+  requiredRoles?: string[];
+  requiredGroups?: string[];
+}
+
+export interface ContractV2FormStructureSurfaceAudit {
+  title: string;
+  contentKind: 'collaboration-panel' | 'audit-timeline';
+  sourceIdentity: string;
+  authorization: ContractV2FormStructureSurfaceAuthorization;
+}
+
+export interface ContractV2FormStructureSurface {
+  surface: string;
+  title: string;
+  role: string;
+  contentKind: 'collaboration-panel' | 'audit-timeline';
+  sourceIdentity: string;
+  capabilities?: {
+    timeline?: boolean;
+    remarks?: boolean;
+    attachments?: boolean;
+  };
+  audit?: ContractV2FormStructureSurfaceAudit;
+}
+
 export interface ContractV2FormStructureContract {
   source: 'ui.contract.v2.form_structure_contract';
   structureVersion: '1.0' | '1.1';
@@ -130,6 +160,8 @@ export interface ContractV2FormStructureContract {
   fieldLabels?: Record<string, string>;
   slots: ContractV2FormStructureSlot[];
   fieldRoles: Record<string, ContractV2FormStructureRole>;
+  /** Declared page regions that are not Odoo view elements. */
+  surfaces?: ContractV2FormStructureSurface[];
   sourceAuthority: ContractV2FormStructureSourceAuthority;
 }
 

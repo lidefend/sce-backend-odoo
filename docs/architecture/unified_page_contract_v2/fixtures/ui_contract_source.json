@@ -130,6 +130,26 @@
         "source": "business_view_orchestration",
         "ownerLayer": "business_view_orchestration"
       }
-    }
+    },
+    "surfaces": [
+      {
+        "surface": "activity",
+        "title": "协作记录",
+        "role": "activity",
+        "contentKind": "collaboration-panel",
+        "sourceIdentity": "collaboration-panel",
+        "capabilities": {"timeline": true, "remarks": true, "attachments": false},
+        "audit": {
+          "title": "历史审计",
+          "contentKind": "audit-timeline",
+          "sourceIdentity": "professional-audit-timeline",
+          "authorization": {
+            "capability": "governance.runtime.audit",
+            "state": "allow",
+            "requiredRoles": ["executive"]
+          }
+        }
+      }
+    ]
   }
 }

@@ -337,10 +337,10 @@
       data-form-section-target="surface:activity"
       data-section-content-kind="collaboration-panel"
       data-section-source-identity="collaboration-panel"
-      data-section-title="协作记录"
+      :data-section-title="activityTitle"
       data-canonical-zone="subordinate"
     ><slot name="collaboration" /></section>
-    <section v-if="hasAudit || auditNodes.length || auditEvents.length" class="object-task-page__audit" data-floorplan-region="audit">
+    <section v-if="auditRegionVisible" class="object-task-page__audit" data-floorplan-region="audit">
       <ProfessionalAuditTimeline :events="auditEvents" :declared="hasAudit" :fallback-available="auditNodes.length > 0">
         <div data-audit-content>
         <CanonicalFormNodeRenderer
@@ -374,10 +374,12 @@ import ScCard from '../../components/design-system/ScCard.vue';
 import ScInlineState from '../../components/design-system/ScInlineState.vue';
 import { canonicalFieldHasPresentableValue, canonicalNodeHasPresentableContent } from './canonicalFormRenderer';
 import {
+  contractSurfaceNavigationItems,
   relationshipCollectionNavigationItems,
   governedFormStructureSectionNavigationItems,
   type WorkspaceSectionNavigationItem,
 } from './nativeSectionNavigation';
+import type { ContractV2FormStructureSurface } from '../../app/contracts/v2/types';
 
 const detailComposition = useOptionalStandardDetailComposition();
 
@@ -403,6 +405,13 @@ const props = defineProps<{
   relationAdapter?: RelationFieldAdapter;
   hasCollaboration?: boolean;
   hasAudit?: boolean;
+  /**
+   * Declared surfaces from `formStructureContract.surfaces`.  `undefined`
+   * keeps the legacy runtime-data behaviour; a declared list is authoritative.
+   */
+  sectionSurfaces?: ContractV2FormStructureSurface[];
+  auditAuthorized?: boolean;
+  collaborationTitle?: string;
   decisionMode?: boolean;
   blockedActionMessage?: string;
 }>();
@@ -416,6 +425,33 @@ const contextSectionLinks = computed(() => governedFormStructureSectionNavigatio
 const relationSectionLinks = computed(() => governedFormStructureSectionNavigationItems(presentableRelationNodes.value));
 const businessSectionLinks = computed(() => governedFormStructureSectionNavigationItems(props.businessSectionNodes));
 const postRelationSectionLinks = computed(() => governedFormStructureSectionNavigationItems(props.postRelationInputNodes));
+
+// A region is declared by the contract, not by the data that happens to be
+// loaded: an authorized audit region renders its own empty state, and an
+// unauthorized one stays hidden even when events exist.
+const contractDeclaresSurfaces = computed(() => props.sectionSurfaces !== undefined);
+const auditRegionVisible = computed(() => (
+  contractDeclaresSurfaces.value
+    ? props.auditAuthorized === true
+    : Boolean(props.hasAudit || props.auditNodes.length || props.auditEvents.length)
+));
+const activityTitle = computed(() => props.collaborationTitle || '协作记录');
+const surfaceSectionLinks = computed<WorkspaceSectionNavigationItem[]>(() => {
+  if (contractDeclaresSurfaces.value) {
+    return contractSurfaceNavigationItems(props.sectionSurfaces || []);
+  }
+  const legacyItems: Array<WorkspaceSectionNavigationItem | null> = [
+    props.hasCollaboration ? {
+      key: 'surface:activity', label: '协作记录', selector: '[data-form-section-target="surface:activity"]', role: 'activity',
+      contentKind: 'collaboration-panel', sourceType: 'surface', sourceIdentity: 'collaboration-panel',
+    } : null,
+    props.auditEvents.length ? {
+      key: 'surface:audit', label: '历史审计', selector: '[data-form-section-target="surface:audit"]', role: 'audit',
+      contentKind: 'audit-timeline', sourceType: 'surface', sourceIdentity: 'professional-audit-timeline',
+    } : null,
+  ];
+  return legacyItems.filter((item): item is WorkspaceSectionNavigationItem => Boolean(item));
+});
 
 function hasUnclassifiedFields(nodes: CanonicalFormNode[]): boolean {
   return nodes.some(function visit(node): boolean {
@@ -469,14 +505,7 @@ const sectionLinks = computed(() => uniqueSectionLinks([
     ? floorplanSection('post-relation-input', props.postRelationInputTitle || '补充信息', 'context')
     : null,
   props.subordinateNodes.length ? floorplanSection('subordinate', '附件与辅助信息', 'context') : null,
-  props.hasCollaboration ? {
-    key: 'surface:activity', label: '协作记录', selector: '[data-form-section-target="surface:activity"]', role: 'activity',
-    contentKind: 'collaboration-panel', sourceType: 'surface', sourceIdentity: 'collaboration-panel',
-  } satisfies WorkspaceSectionNavigationItem : null,
-  props.auditEvents.length ? {
-    key: 'surface:audit', label: '历史审计', selector: '[data-form-section-target="surface:audit"]', role: 'audit',
-    contentKind: 'audit-timeline', sourceType: 'surface', sourceIdentity: 'professional-audit-timeline',
-  } satisfies WorkspaceSectionNavigationItem : null,
+  ...surfaceSectionLinks.value,
 ].filter((item): item is WorkspaceSectionNavigationItem => Boolean(item))));
 
 </script>

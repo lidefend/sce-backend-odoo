@@ -198,6 +198,19 @@ DELETE_POLICY_PRODUCERS = (
     ROOT / "addons/smart_construction_core/core_extension_policy_maps.py",
 )
 
+# The capability authorization vocabulary is owned by the platform governance
+# producer, not by the frontend.  `coming_soon` is the only state that is not
+# already used elsewhere in this file; the other three (`allow`, `deny`,
+# `pending`) stay covered by the tokens above.  The producer check below keeps
+# the entry bound to a real declaration.
+ALLOWED_STRICT_SURFACE_AUTHORIZATION_TOKENS = {
+    "coming_soon",
+}
+
+SURFACE_AUTHORIZATION_STATE_PRODUCERS = (
+    ROOT / "addons/smart_core/utils/contract_governance_capabilities.py",
+)
+
 ALLOWED_STRICT_STORE_SNAKE_CASE_TOKENS = {
     # ContractV2ValueSource.kind; not a payload field read.
     "main_data",
@@ -207,6 +220,8 @@ ALLOWED_STRICT_STORE_SNAKE_CASE_TOKENS = {
     "widget_options",
     # Declared delete-policy vocabulary, bound to its producers below.
     *ALLOWED_STRICT_STORE_DELETE_POLICY_TOKENS,
+    # Published capability authorization state, bound to its producer below.
+    *ALLOWED_STRICT_SURFACE_AUTHORIZATION_TOKENS,
 }
 
 ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
@@ -220,6 +235,8 @@ ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
     "act_window",
     "business_form",
     "container_tree_authority",
+    # Published capability authorization state, bound to its producer below.
+    *ALLOWED_STRICT_SURFACE_AUTHORIZATION_TOKENS,
     "harmony_h5",
     "native_activity_view_projection",
     "native_graph_view_projection",
@@ -660,6 +677,15 @@ def main() -> int:
             violations.append(
                 f"{_relative(STRICT_STORE)}: delete policy token {token} is not declared by the backend "
                 "delete policy producers, so the strict store must not read it"
+            )
+    surface_state_producer_source = "\n".join(
+        path.read_text(encoding="utf-8") for path in SURFACE_AUTHORIZATION_STATE_PRODUCERS
+    )
+    for token in sorted(ALLOWED_STRICT_SURFACE_AUTHORIZATION_TOKENS):
+        if token not in surface_state_producer_source:
+            violations.append(
+                f"{_relative(STRICT_SCHEMA)}: capability authorization state {token} is not declared by the "
+                "backend capability governance producer, so the strict decoder must not accept it"
             )
     strict_store_snake_tokens = _snake_case_tokens(strict_store_source)
     if strict_store_snake_tokens != ALLOWED_STRICT_STORE_SNAKE_CASE_TOKENS:

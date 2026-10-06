@@ -1,6 +1,10 @@
 import type { ContractAction } from './types';
-import { resolveContractV2FormStructureContract, resolveContractV2SourceContext } from '../../app/contracts/v2/store';
-import type { ContractV2NormalizedStore } from '../../app/contracts/v2/types';
+import {
+  contractV2SurfaceAuthorizationAllows,
+  resolveContractV2FormStructureContract,
+  resolveContractV2SourceContext,
+} from '../../app/contracts/v2/store';
+import type { ContractV2FormStructureSurface, ContractV2NormalizedStore } from '../../app/contracts/v2/types';
 import { normalizeRouteDefault } from './valueUtils';
 
 export type FormContractReadiness = {
@@ -259,4 +263,31 @@ export function resolveCollaborationVisibility(input: {
 }): boolean {
   return Boolean(input.capability)
     || (!input.suppressed && hasCollaborationNode(input.nodes));
+}
+
+/**
+ * The declared collaboration surface for this identity, or null.
+ *
+ * `undefined` surfaces means the contract cannot declare regions at all, so
+ * there is no declaration to find; an empty list means the contract declares
+ * that this page publishes no surface.
+ */
+export function declaredCollaborationSurface(
+  surfaces: readonly ContractV2FormStructureSurface[] | undefined | null,
+): ContractV2FormStructureSurface | null {
+  if (!Array.isArray(surfaces)) return null;
+  return surfaces.find((surface) => surface.contentKind === 'collaboration-panel') || null;
+}
+
+/**
+ * The role-gated audit sub-region renders only on an explicit `allow` for the
+ * requesting identity.  A missing declaration, a `deny`, a `pending` or a
+ * `coming_soon` all keep it hidden; runtime audit events are not an input.
+ */
+export function declaredAuditAuthorized(
+  surfaces: readonly ContractV2FormStructureSurface[] | undefined | null,
+): boolean {
+  return contractV2SurfaceAuthorizationAllows(
+    declaredCollaborationSurface(surfaces)?.audit?.authorization,
+  );
 }

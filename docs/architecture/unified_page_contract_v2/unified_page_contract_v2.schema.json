@@ -796,6 +796,12 @@
             "$ref": "#/$defs/formStructureRole"
           }
         },
+        "surfaces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/formStructureSurface"
+          }
+        },
         "sourceAuthority": {
           "$ref": "#/$defs/formStructureSourceAuthority"
         }
@@ -827,6 +833,61 @@
         "model": {"type": "string", "minLength": 1},
         "kind": {"const": "business_form"},
         "factAuthority": {"type": "string", "minLength": 1}
+      }
+    },
+    "formStructureSurface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["surface", "title", "role", "contentKind", "sourceIdentity"],
+      "properties": {
+        "surface": {"$ref": "#/$defs/id"},
+        "title": {"type": "string", "minLength": 1},
+        "role": {"$ref": "#/$defs/formStructureRoleName"},
+        "contentKind": {"enum": ["collaboration-panel", "audit-timeline"]},
+        "sourceIdentity": {"type": "string", "minLength": 1},
+        "capabilities": {"$ref": "#/$defs/formStructureSurfaceCapabilities"},
+        "audit": {"$ref": "#/$defs/formStructureSurfaceAudit"}
+      }
+    },
+    "formStructureSurfaceCapabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "timeline": {"type": "boolean"},
+        "remarks": {"type": "boolean"},
+        "attachments": {"type": "boolean"}
+      }
+    },
+    "formStructureSurfaceAudit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "contentKind", "sourceIdentity", "authorization"],
+      "properties": {
+        "title": {"type": "string", "minLength": 1},
+        "contentKind": {"enum": ["audit-timeline"]},
+        "sourceIdentity": {"type": "string", "minLength": 1},
+        "authorization": {"$ref": "#/$defs/formStructureSurfaceAuthorization"}
+      }
+    },
+    "formStructureSurfaceAuthorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capability", "state"],
+      "properties": {
+        "capability": {"type": "string", "minLength": 1},
+        "state": {"enum": ["allow", "deny", "pending", "coming_soon"]},
+        "reasonCode": {"type": "string"},
+        "reason": {"type": "string"},
+        "requiredRoles": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "requiredGroups": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        }
       }
     },
     "formStructureNavigation": {

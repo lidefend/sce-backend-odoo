@@ -9,8 +9,10 @@ class ProfessionalAuditGuardTests(unittest.TestCase):
     def test_audit_ownership_breaks_fail(self):
         cases = (
             ("ContractFormDriverHost.vue", ':show-audit-timeline="false"', ':show-audit-timeline="true"', "task compatibility audit timeline ownership"),
-            ("CanonicalNativeFormSurface.vue", ':show-audit-timeline="true"', ':show-audit-timeline="false"', "native surface audit timeline ownership"),
-            ("CanonicalNativeFormSurface.vue", ':show-audit-timeline="true"', '', "native surface audit timeline ownership"),
+            ("CanonicalNativeFormSurface.vue", ':show-audit-timeline="auditVisible"', ':show-audit-timeline="true"', "native surface audit timeline ownership"),
+            ("CanonicalNativeFormSurface.vue", ':show-audit-timeline="auditVisible"', '', "native surface audit timeline ownership"),
+            ("CanonicalNativeFormSurface.vue", ':audit-declared="auditDeclared"', '', "declared audit authorization"),
+            ("NativeCollaborationPanel.vue", 'auditEvents.length || auditDeclared === true', 'auditEvents.length', "declared audit region must not depend on runtime events"),
             ("CanonicalNativeFormSurface.vue", '<NativeCollaborationPanel', '<MissingPanel', "exactly one collaboration panel"),
             ("CanonicalNativeFormSurface.vue", 'v-bind="collaborationPanelProps"', 'v-bind="{}"', "authoritative collaboration props"),
         )

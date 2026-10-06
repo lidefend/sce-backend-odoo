@@ -30,6 +30,9 @@ import type {
   ContractV2FormStructureRoleName,
   ContractV2FormStructureSlot,
   ContractV2FormStructureSourceAuthority,
+  ContractV2FormStructureSurface,
+  ContractV2FormStructureSurfaceAudit,
+  ContractV2FormStructureSurfaceAuthorization,
   ContractV2GlobalStatus,
   ContractV2LayoutType,
   ContractV2LayoutContract,
@@ -1442,6 +1445,135 @@ function collectLayoutFieldCodes(containers: ContractV2Container[]): Set<string>
   return out;
 }
 
+function decodeFormStructureSurfaceAuthorization(
+  raw: unknown,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2FormStructureSurfaceAuthorization | null {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return null;
+  }
+  rejectUnknownKeys(raw, [
+    'capability', 'state', 'reasonCode', 'reason', 'requiredRoles', 'requiredGroups',
+  ], path, issues);
+  const state = raw.state;
+  if (state !== 'allow' && state !== 'deny' && state !== 'pending' && state !== 'coming_soon') {
+    issues.push({ path: `${path}.state`, message: 'must be one of allow, deny, pending, coming_soon' });
+  }
+  const out: ContractV2FormStructureSurfaceAuthorization = {
+    capability: requiredString(raw, 'capability', path, issues),
+    state: (state === 'allow' || state === 'deny' || state === 'pending' || state === 'coming_soon')
+      ? state
+      : 'deny',
+  };
+  if (raw.reasonCode !== undefined) out.reasonCode = optionalStringField(raw, 'reasonCode', path, issues);
+  if (raw.reason !== undefined) out.reason = optionalStringField(raw, 'reason', path, issues);
+  if (raw.requiredRoles !== undefined) {
+    out.requiredRoles = decodeUniqueStringArray(raw.requiredRoles, `${path}.requiredRoles`, issues);
+  }
+  if (raw.requiredGroups !== undefined) {
+    out.requiredGroups = decodeUniqueStringArray(raw.requiredGroups, `${path}.requiredGroups`, issues);
+  }
+  return out;
+}
+
+function decodeFormStructureSurfaceAudit(
+  raw: unknown,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2FormStructureSurfaceAudit | null {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return null;
+  }
+  rejectUnknownKeys(raw, ['title', 'contentKind', 'sourceIdentity', 'authorization'], path, issues);
+  const contentKind = raw.contentKind;
+  if (contentKind !== 'collaboration-panel' && contentKind !== 'audit-timeline') {
+    issues.push({ path: `${path}.contentKind`, message: 'must be collaboration-panel or audit-timeline' });
+    return null;
+  }
+  const authorization = decodeFormStructureSurfaceAuthorization(
+    raw.authorization, `${path}.authorization`, issues,
+  );
+  if (!authorization) return null;
+  return {
+    title: requiredDisplayString(raw, 'title', path, issues),
+    contentKind,
+    sourceIdentity: requiredString(raw, 'sourceIdentity', path, issues),
+    authorization,
+  };
+}
+
+function decodeFormStructureSurface(
+  raw: unknown,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2FormStructureSurface | null {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return null;
+  }
+  rejectUnknownKeys(raw, [
+    'surface', 'title', 'role', 'contentKind', 'sourceIdentity', 'capabilities', 'audit',
+  ], path, issues);
+  const contentKind = raw.contentKind;
+  if (contentKind !== 'collaboration-panel' && contentKind !== 'audit-timeline') {
+    issues.push({ path: `${path}.contentKind`, message: 'must be collaboration-panel or audit-timeline' });
+    return null;
+  }
+  const out: ContractV2FormStructureSurface = {
+    surface: requiredString(raw, 'surface', path, issues),
+    title: requiredDisplayString(raw, 'title', path, issues),
+    role: requiredString(raw, 'role', path, issues),
+    contentKind,
+    sourceIdentity: requiredString(raw, 'sourceIdentity', path, issues),
+  };
+  if (raw.capabilities !== undefined) {
+    if (!isRecord(raw.capabilities)) {
+      issues.push({ path: `${path}.capabilities`, message: 'must be an object' });
+    } else {
+      rejectUnknownKeys(raw.capabilities, ['timeline', 'remarks', 'attachments'], `${path}.capabilities`, issues);
+      out.capabilities = {
+        timeline: raw.capabilities.timeline === true,
+        remarks: raw.capabilities.remarks === true,
+        attachments: raw.capabilities.attachments === true,
+      };
+    }
+  }
+  if (raw.audit !== undefined) {
+    const audit = decodeFormStructureSurfaceAudit(raw.audit, `${path}.audit`, issues);
+    if (audit) out.audit = audit;
+  }
+  return out;
+}
+
+function decodeFormStructureSurfaces(
+  raw: unknown,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2FormStructureSurface[] | undefined {
+  if (raw === undefined) return undefined;
+  if (!Array.isArray(raw)) {
+    issues.push({ path, message: 'must be an array' });
+    return undefined;
+  }
+  const rows = raw as unknown[];
+  const out: ContractV2FormStructureSurface[] = [];
+  const seen = new Set<string>();
+  rows.forEach((row, index) => {
+    const surface = decodeFormStructureSurface(row, `${path}[${index}]`, issues);
+    if (!surface) return;
+    if (seen.has(surface.surface)) {
+      issues.push({ path: `${path}[${index}].surface`, message: 'must be unique' });
+      return;
+    }
+    seen.add(surface.surface);
+    out.push(surface);
+  });
+  return out;
+}
+
 function decodeFormStructureContract(
   raw: unknown,
   pageInfo: ContractV2PageInfo,
@@ -1457,7 +1589,7 @@ function decodeFormStructureContract(
   rejectUnknownKeys(raw, [
     'source', 'structureVersion', 'model', 'viewType', 'mode', 'presentationMode', 'layoutPolicy', 'columns',
     'objectProfile', 'navigation', 'sourceSectionTitles', 'fieldLabels', 'slots', 'fieldRoles',
-    'sourceAuthority',
+    'surfaces', 'sourceAuthority',
   ], path, issues);
   if (raw.source !== 'ui.contract.v2.form_structure_contract') {
     issues.push({ path: `${path}.source`, message: 'must equal ui.contract.v2.form_structure_contract' });
@@ -1579,6 +1711,10 @@ function decodeFormStructureContract(
       : {}),
     slots,
     fieldRoles,
+    ...(() => {
+      const surfaces = decodeFormStructureSurfaces(raw.surfaces, `${path}.surfaces`, issues);
+      return surfaces === undefined ? {} : { surfaces };
+    })(),
     sourceAuthority,
   };
 }

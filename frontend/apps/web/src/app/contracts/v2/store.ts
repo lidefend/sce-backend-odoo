@@ -10,6 +10,7 @@ import type {
   ContractV2FormStructureRoleName,
   ContractV2FormStructureRole,
   ContractV2FormStructureContract,
+  ContractV2FormStructureSurface,
   ContractV2NormalizedStore,
   ContractV2Snapshot,
   ContractV2UnsupportedFeature,
@@ -156,6 +157,33 @@ export function resolveContractV2FormStructureContract(
   store: ContractV2NormalizedStore | null,
 ): ContractV2FormStructureContract | null {
   return store?.snapshot.formStructureContract || null;
+}
+
+/** Declared page regions. `undefined` means the contract cannot declare them. */
+export function resolveContractV2FormStructureSurfaces(
+  store: ContractV2NormalizedStore | null,
+): ContractV2FormStructureSurface[] | undefined {
+  return resolveContractV2FormStructureContract(store)?.surfaces;
+}
+
+export function resolveContractV2FormStructureSurface(
+  store: ContractV2NormalizedStore | null,
+  surfaceKey: string,
+): ContractV2FormStructureSurface | null {
+  const key = String(surfaceKey || '').trim();
+  if (!key) return null;
+  return (resolveContractV2FormStructureSurfaces(store) || []).find((surface) => surface.surface === key) || null;
+}
+
+/**
+ * A gated sub-region renders only on an explicit `allow`.  Every other state
+ * (`deny`, `pending`, `coming_soon`) keeps it hidden, and a missing
+ * authorization is hidden too.
+ */
+export function contractV2SurfaceAuthorizationAllows(
+  authorization: { state?: string } | undefined | null,
+): boolean {
+  return String(authorization?.state || '').trim().toLowerCase() === 'allow';
 }
 
 export function resolveContractV2SearchContract(store: ContractV2NormalizedStore | null): ContractV2Dictionary {

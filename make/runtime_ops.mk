@@ -2380,6 +2380,11 @@ verify.business_config.formal_list.unit: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_view_orchestrator.py
 	@python3 scripts/verify/test_formal_list_configuration_baseline.py
 
+.PHONY: verify.backend.scene_surface_boundary.unit
+verify.backend.scene_surface_boundary.unit: guard.prod.forbid
+	@python3 addons/smart_core/tests/test_backend_scene_surface_boundary.py
+	@python3 scripts/verify/contract_authority_hierarchy_guard.py
+
 .PHONY: verify.frontend.standard_bootstrap.inventory
 verify.frontend.standard_bootstrap.inventory: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-page-inventory
