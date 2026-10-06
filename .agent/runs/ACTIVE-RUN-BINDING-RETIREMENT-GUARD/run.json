@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "ACTIVE-RUN-BINDING-RETIREMENT-GUARD",
   "branch": "codex/active-run-binding-retirement-guard-20261006",
-  "status": "active",
+  "status": "completed",
   "baseline_sha": "cb5ca646193007bef8b1aa0a94d4dade1edf69f0",
   "goal": ".agent/goals/ACTIVE-RUN-BINDING-RETIREMENT-GUARD.yaml",
   "record": "docs/ops/iterations/active_run_binding_retirement_guard_20261006.md",
@@ -43,7 +43,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Implemented and validated locally: the governed retirement entry now refuses to retire a branch that the selected remote's main still binds in .agent/active-runs.json, with a behavioural test plus a negative-baseline check. Remaining: ship through the ordinary protected PR lane (freeze, one exact-head ci.local.quick, four required remote checks, pr.merge) and then retire the candidate branch.",
+  "next_exact_step": "Delivered on the candidate commit: the retirement entry now refuses to retire a branch that the selected remote's main still binds, with behavioural coverage and a negative-baseline check. The candidate's own binding is removed in this final commit so main gains no binding for a branch that will be retired - the exact dangling state this batch prevents. Remaining: protected-PR merge and candidate-branch retirement.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

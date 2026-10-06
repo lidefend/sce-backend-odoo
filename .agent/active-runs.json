@@ -1,6 +1,4 @@
 {
-  "branches": {
-    "codex/active-run-binding-retirement-guard-20261006": ".agent/runs/ACTIVE-RUN-BINDING-RETIREMENT-GUARD/run.json"
-  },
-  "schema_version": 1
+  "schema_version": 1,
+  "branches": {}
 }
