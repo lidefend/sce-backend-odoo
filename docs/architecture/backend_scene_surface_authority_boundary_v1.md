@@ -89,10 +89,13 @@ scene-ready contract + 交付面（F3）过滤 + 角色/能力共同决定，缺
    开发阶段例外：P0 只发起扩展 hook `smart_core_surface_unregistered_bypass`，
    授权规则归 P1（`smart_construction_core/core_extension_surface_bypass.py`），
    且必须同时满足 ①有运行时环境（无 `env` 不旁路）②运行时阶段 ∈
-   {`dev`,`test`,`local`,`stage`,`staging`} ③角色为 `system_admin`（平台/系统管理员，
-   与 `system.init.role_surface` 同一角色策略解析）。旁路命中即回到既有直通语义，
-   并在 `nav_meta.delivery_policy` 标记 `surface_policy_bypass=true` 供审计。
-   不新增能力键、不放宽 ACL、不授予任何客户角色；生产阶段旁路为关。
+   {`dev`,`test`,`local`,`stage`,`staging`} ③调用者是平台管理员身份——消费运行时契约
+   已发布的 `identity.is_platform_admin`
+   （`smart_core.security.platform_admin.user_is_platform_admin`），而不是另造角色词表。
+   注意 `IdentityResolver` 只承载客户业务角色（`executive`/`pm`/`finance`/
+   `project_member`），不得作为本授权来源。旁路命中即回到既有直通语义，并在
+   `nav_meta.delivery_policy` 标记 `surface_policy_bypass=true` 供审计。
+   不新增能力键、不放宽 ACL、不授予任何客户业务角色；生产阶段旁路为关。
    授权模块本身由 `verify.backend.scene_surface_boundary.unit` **执行真实实现**并锁定：
    无 `env`、`env` 无用户、非开发阶段、非 `system_admin`、角色解析失败 → 一律不授权；
    负例（放宽阶段或角色门）即产生失败。

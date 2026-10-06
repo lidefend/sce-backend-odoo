@@ -192,7 +192,7 @@ class UnregisteredSurfaceDevelopmentBypassTest(_HookRegistryTest):
         return calls
 
     def test_authorized_bypass_reopens_the_legacy_pass_through(self):
-        calls = self._register_bypass({"authorized": True, "role_code": "system_admin"})
+        calls = self._register_bypass({"authorized": True, "role_code": "platform_admin"})
         policy = POLICY._select_surface_policy("projects.ledger", env=self.env, runtime_env="dev")
 
         self.assertEqual(policy["source"], POLICY.SURFACE_POLICY_SOURCE_UNREGISTERED_BYPASS)
@@ -216,7 +216,7 @@ class UnregisteredSurfaceDevelopmentBypassTest(_HookRegistryTest):
         self.assertTrue(result["meta"]["surface_policy_unregistered"])
 
     def test_bypass_requires_a_runtime_environment(self):
-        self._register_bypass({"authorized": True, "role_code": "system_admin"})
+        self._register_bypass({"authorized": True, "role_code": "platform_admin"})
         policy = POLICY._select_surface_policy("projects.ledger", env=None, runtime_env="dev")
         self.assertFalse(policy.get("bypass"))
         self.assertTrue(policy["closed"])
@@ -319,7 +319,7 @@ class SceneDeliveryFailClosedTest(_HookRegistryTest):
         # non-internal surface.
         _HOOKS[POLICY.UNREGISTERED_SURFACE_BYPASS_HOOK] = lambda *args, **kwargs: {
             "authorized": True,
-            "role_code": "system_admin",
+            "role_code": "platform_admin",
         }
         env = types.SimpleNamespace(user=object())
         opened = self._filter([scene], surface="internal", env=env)
@@ -365,25 +365,23 @@ _CONSTRUCTION_BYPASS_MODULE = (
 _SENTINEL_DEFAULT = object()
 
 
-def _install_role_resolver(role_codes, *, raises=False):
-    """Install the published role resolver the P1 bypass module asks for."""
-    _install_module("odoo.addons.smart_core.identity")
+def _install_platform_admin_check(*, is_admin, raises=False):
+    """Install the published platform-admin check the P1 bypass module asks for.
 
-    class _StubResolver:
-        def __init__(self, env):
-            self.env = env
+    The module consumes ``smart_core.security.platform_admin.user_is_platform_admin``
+    (the same identity the runtime contract publishes as
+    ``identity.is_platform_admin``); the stub replaces it deterministically.
+    """
+    _install_module("odoo.addons.smart_core.security")
 
-        def user_group_xmlids(self, user):
-            return ()
-
-        def resolve_role_codes_with_evidence(self, groups):
-            if raises:
-                raise RuntimeError("role resolver unavailable")
-            return (list(role_codes), {})
+    def _user_is_platform_admin(user, **kwargs):
+        if raises:
+            raise RuntimeError("platform admin check unavailable")
+        return bool(is_admin) and user is not None
 
     _install_module(
-        "odoo.addons.smart_core.identity.identity_resolver",
-        IdentityResolver=_StubResolver,
+        "odoo.addons.smart_core.security.platform_admin",
+        user_is_platform_admin=_user_is_platform_admin,
     )
 
 
@@ -411,26 +409,26 @@ class UnregisteredSurfaceBypassPolicyTest(unittest.TestCase):
         self.env = types.SimpleNamespace(user=object())
         self.bypass = _load_bypass_policy_module()
 
-    def _answer(self, role_codes, runtime_env="dev", *, env=_SENTINEL_DEFAULT):
-        _install_role_resolver(role_codes)
+    def _answer(self, is_admin, runtime_env="dev", *, env=_SENTINEL_DEFAULT, raises=False):
+        _install_platform_admin_check(is_admin=is_admin, raises=raises)
         target = self.env if env is _SENTINEL_DEFAULT else env
         return self.bypass.smart_core_surface_unregistered_bypass(
             target, "projects.ledger", runtime_env
         )
 
-    def test_grant_requires_system_admin_in_a_development_stage(self):
-        grant = self._answer(["system_admin"])
+    def test_grant_requires_platform_admin_in_a_development_stage(self):
+        grant = self._answer(True)
         self.assertTrue(grant["authorized"])
-        self.assertEqual(grant["role_code"], "system_admin")
+        self.assertEqual(grant["role_code"], "platform_admin")
         self.assertEqual(grant["runtime_env"], "dev")
         self.assertEqual(grant["surface"], "projects.ledger")
         self.assertEqual(
             grant["reason_code"], self.bypass.UNREGISTERED_SURFACE_DEV_BYPASS_REASON
         )
-        self.assertEqual(tuple(self.bypass.DEVELOPMENT_BYPASS_ROLES), ("system_admin",))
+        self.assertEqual(tuple(self.bypass.DEVELOPMENT_BYPASS_ROLES), ("platform_admin",))
 
     def test_no_runtime_environment_means_no_bypass(self):
-        _install_role_resolver(["system_admin"])
+        _install_platform_admin_check(is_admin=True)
         self.assertIsNone(
             self.bypass.smart_core_surface_unregistered_bypass(
                 None, "projects.ledger", "dev"
@@ -438,23 +436,24 @@ class UnregisteredSurfaceBypassPolicyTest(unittest.TestCase):
         )
 
     def test_environment_without_an_acting_user_is_not_authorized(self):
-        _install_role_resolver(["system_admin"])
+        _install_platform_admin_check(is_admin=True)
         self.assertIsNone(
             self.bypass.smart_core_surface_unregistered_bypass(
                 types.SimpleNamespace(), "projects.ledger", "dev"
             )
         )
 
-    def test_non_admin_roles_are_never_authorized(self):
-        for role in ("project_manager", "finance_manager", "customer_admin", "portal_user"):
-            self.assertIsNone(self._answer([role]), role)
+    def test_a_non_platform_admin_user_is_never_authorized(self):
+        # Customer business roles (executive/pm/finance/project_member) and any
+        # other non-platform-admin user must not open a closed surface.
+        self.assertIsNone(self._answer(False))
 
     def test_non_development_stages_stay_closed(self):
         for stage in ("prod", "production", "release", "saas"):
-            self.assertIsNone(self._answer(["system_admin"], runtime_env=stage), stage)
+            self.assertIsNone(self._answer(True, runtime_env=stage), stage)
 
-    def test_role_resolution_failure_fails_closed(self):
-        _install_role_resolver(["system_admin"], raises=True)
+    def test_platform_admin_check_failure_fails_closed(self):
+        _install_platform_admin_check(is_admin=True, raises=True)
         self.assertIsNone(
             self.bypass.smart_core_surface_unregistered_bypass(
                 self.env, "projects.ledger", "dev"
