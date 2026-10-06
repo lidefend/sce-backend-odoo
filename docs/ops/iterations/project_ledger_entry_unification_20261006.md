@@ -504,3 +504,73 @@ visible = 契约声明该 surface
 `verify.form_view.native_structure.boundary_guard` 期望 `NativeFormTreeRenderer.vue` 含
 `if (authoritativeBusinessSectionMode.value) return '';`，该 token 在本分支 HEAD 与本机 `main`
 均已缺失；本批未触碰该文件。登记为预存在漂移，待独立处理。
+
+## 契约 schema 摘要漂移（P0，本轮新增根因与修复）
+
+### 事实（根因）
+- `d78cb4be` 为 `formStructureContract` 新增声明式 `surfaces`，改写了
+  `docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json`（+61 行），
+  但未按权威派生路径重生成 `addons/smart_core/core/contract_lifecycle.py` 的
+  `UNIFIED_PAGE_SCHEMA_SHA256`。
+- 证据：schema 资产字节 `sha256=28be508e…`；运行时契约 `meta.lifecycle.definition.schemaSha256`
+  仍为常量 `204b8f6c…`。`f743006a` 与 main `88920427` 上两者一致（均为 `204b8f6c…`），
+  漂移由本分支引入，不是预存在。
+- 暴露位置：daily 只读探针 `verify.daily_dev.acceptance.readonly.probe` 的
+  `contract_schema_digest_bound`。此前该 contract 段因夹具口令先行失败
+  （`contract_probe_auth_failed`），该检查一直未被触达，所以首轮 daily 收口未看见。
+- 逃逸原因：绑定守卫 `verify.contract.schema.declaration.sync` 与
+  `verify.backend.contract_lifecycle.authority` 只挂在 `ci.local.quick`（交付冻结 HEAD 才跑一次），
+  不在开发内环 `ci.local.iteration`；本分支尚未跑 Quick，故本地未拦住。这是执行时序缺口，
+  不是守卫缺失。
+
+### 修复（不放宽任何断言、不新增特判）
+- `make contract.schema.declaration.sync`（权威派生路径：`schemaSha256` ← schema 资产字节、
+  `schemaVersion`/`normativeStatus` ← `enum_registry.json`、`schemaId` ← 稳定协议标识）
+  重写常量。与历史约定一致：`registryVersion` 保持 `2.2.0`，只同步资产摘要
+  （`6f86a983`…`9abaa79d` 的历史提交同样只随资产重新派生摘要）。
+- 4 个 canonical 示例 `docs/architecture/unified_page_contract_v2/examples/*.json` 内嵌的
+  `schemaSha256` 溯源字段一并同步。`meta.lifecycle` 不参与 `contractSha256` 语义封印，
+  示例封印值不变；且无任何守卫/快照记录这 4 个文件的字节哈希（已核验）。
+- 提交 `e384b832`。定向验证：`verify.contract.schema.declaration.sync`（4 tests OK）、
+  `verify.backend.contract_lifecycle.authority`（8 维全 `passed`，`errors=[]`）、
+  `verify.unified_page_contract.v2.schema`（4 examples 通过）、
+  `verify.unified_page_contract.v2.client`（3 clients）、
+  `scripts.verify.test_dev_acceptance_release_identity`（42 OK）全绿。
+
+### 责任层归属
+**P0 platform kernel product / `smart_core`**（契约生命周期常量 + schema 权威资产）；
+示例内嵌摘要属同一权威身份，非独立产品语义。
+
+## daily 候选收口（served = e384b832）
+
+- **受管部署**：`daily.runtime.candidate.bundle_sync`（old `ed783035` → `e384b832`，远端 detached）、
+  `daily.runtime.source_revision.align`（仅 restart：本变更无 XML/字段/迁移，Python 常量由容器重启加载）。
+  `/api/runtime-version` 回读 `git_sha=e384b832…`、`database=sc_demo`、`product_version=1.0.0-rc.20`。
+- **前端产物复用**：本提交与前一提交均无前端路径变更；远端 `dist-dev` 已在 `ed783035` 构建
+  （`index-CQk-FHJ5.js`），本轮按「未变上游结果可携带」复用，未重复构建。
+- **夹具与契约解析**：`daily.dev.acceptance_fixture.ensure` PASS（finance uid 210）；
+  `daily.dev.acceptance_contract.resolve` 写 `expected_sha=e384b832`，唯一目标
+  `smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a`
+  （`payment.request/36156`，action 780，menu 550；companies a=21,b=22）。
+- **只读探针**：`verify.daily_dev.acceptance.readonly.probe` **overall PASS** —
+  runtime_identity / frontend / login / contract 四段全 PASS；`contract.checks` 11/11 true
+  （含 `contract_schema_digest_bound=true`）；login `nav nodes=111 actions=89 leaves=89`
+  `forbidden=[] required_miss=[]`；contract identity `fixture_role_finance` uid 210、role `finance`。
+  产物 `artifacts/backend/daily_dev_acceptance_probe.json`（远端）。
+- **详情车道**（`LIST_SURFACE_DAILY_OBSERVATION_SCOPE=detail-only`，1440/390）：
+  light 8/8、dark 8/8（`declared_entry_route` / `exact_record_contract` /
+  `declared_renderer` / `return_to_source` ×2 viewport），`runtime_errors=0`；
+  主题由 `data-sc-theme-resolved` 断言校验（`requested==resolved`）。
+- **关系往返（真实点击一次）**：`.runtime/final-acceptance/relation-roundtrip-e384b832/20261006T113534/summary.json`
+  `status=pass`，源记录 `construction.contract.income/2331`（action 578 / menu 904）；
+  4 个声明 `can_open` 条目全部 `opened`；往返 `path/title/statusbar/tabs/actions` 全恢复、
+  `error_free=true`；`denied_requests=0`、`console_errors=0`。
+- **创建/编辑 + 工作台**：`form-profiles` 12/12 × light/dark；`workbench-only` 覆盖
+  `declared-theme` / `declared-default-landing`(1440,390) / `router-workspace-home`(1440,390, summaryResp=1)
+  × light/dark，`runtime_errors=0`。
+
+### 证据复用与失效分析（未变的通过证据继续复用）
+- **列表范围不复跑**：本提交不触碰列表路径、列表探针与卡片/滚动/主题消费；108/108、负例 5/5、
+  运行时错误 0 的结论按其输入未变而携带。
+- **前端浏览器车道**绑定本次 served `e384b832` 实测；后端投射由同一 served 运行时提供，
+  前后端同为该候选，未出现跨身份拼接。

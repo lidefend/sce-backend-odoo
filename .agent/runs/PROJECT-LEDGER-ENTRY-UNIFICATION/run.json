@@ -1,11 +1,307 @@
 {
-  "schema_version": 1,
-  "id": "PROJECT-LEDGER-ENTRY-UNIFICATION",
-  "branch": "fix/project-ledger-entry-unification-v1",
-  "status": "active",
   "baseline_sha": "8892042761eeb8f47a135fd817a9a9d220837620",
+  "blockers": [
+    {
+      "detail": "contracts/generated/product_view_structure_contract.json requires the local.clean lane (guard enforces runtime_profile=local.clean/sc_clean/demo_data=False); no clean lane in this worktree and new environment authority needs separate P4 authorization. Already stale on main; verify.contract.view_structure is not part of ci.local.quick.",
+      "id": "VIEW_STRUCTURE_BASELINE_CLEAN_LANE",
+      "status": "deferred_env_gated"
+    },
+    {
+      "detail": "Closed at served e384b832: detail-only lane 1440/390 in light and dark (8/8 each, runtime_errors=0), one real relation open->return->restore interaction (4 declared entries opened, all presentation restored, denied=0, console=0), form-profiles 12/12 x light/dark, workbench-only landing+router-workspace-home x light/dark. The daily readonly contract probe is overall PASS. The list range (108/108, negatives 5/5, runtime errors 0) was carried forward unchanged because this candidate touches no list path.",
+      "id": "LEDGER_DETAIL_ACCEPTANCE",
+      "status": "resolved"
+    },
+    {
+      "detail": "scene_delivery_policy now closes an unregistered delivery surface fail-closed: _select_surface_policy returns a registered-but-closed policy (source=unregistered_closed, closed=true) and filter_delivery_scenes excludes the whole request with REASON_SCENE_SURFACE_UNREGISTERED. The only opening is the P1 development bypass hook smart_core_surface_unregistered_bypass (smart_construction_core/core_extension_surface_bypass.py): runtime env required, stage in {dev,test,local,stage,staging}, role system_admin resolved through the same published role policy as system.init.role_surface; bypass hits are marked surface_policy_bypass=true in nav_meta.delivery_policy. No capability key, ACL widening or customer role added. Boundary documented in docs/architecture/backend_scene_surface_authority_boundary_v1.md section 7.1 and pinned (negative-first) by verify.backend.scene_surface_boundary.unit.",
+      "id": "SCENE_SURFACE_UNREGISTERED_FAIL_OPEN",
+      "status": "resolved"
+    },
+    {
+      "detail": "The unregistered-surface closure ships with one authorized escape hatch so development can still reach a surface the product has not registered. P0 (scene_delivery_policy) only asks the extension hook smart_core_surface_unregistered_bypass and never decides the role. P1 (smart_construction_core/core_extension_surface_bypass.py) grants it only when (1) a runtime env exists, (2) the runtime stage is in {dev,test,local,stage,staging}, (3) the caller is a platform administrator, consumed through smart_core.security.platform_admin.user_is_platform_admin - the same identity the runtime contract publishes as identity.is_platform_admin. Corrected this round: the first cut authorized a 'system_admin' role code that IdentityResolver can never produce (its vocabulary is executive/pm/finance/project_member), which made the escape hatch dead; verified live in sc_dev_demo that platform admin (admin) is admitted on dev and denied on prod, and a non-admin user is denied. No capability key, no ACL widening, no customer role; production stays closed.",
+      "id": "SCENE_SURFACE_DEV_BYPASS_POLICY",
+      "status": "resolved"
+    },
+    {
+      "detail": "addons/smart_core/tests/test_scene_delivery_policy.py (delivery-filter runtime semantics) is not collected: addons/smart_core/tests/__init__.py never imports it (git log -S shows it was never wired since the clean baseline). It also calls filter_delivery_scenes without env, so the P1 policy-file/alias hooks (smart_core_surface_policy_file_default, smart_core_surface_aliases) are unreachable and 2 of its 6 cases assert a degenerate path that fails on HEAD too (verified by stashing scene_delivery_policy.py back to HEAD: same 2 failures). Wiring it in requires an owning-layer decision on whether a smart_core test may depend on the P1 hook; until then it is not evidence. The boundary doc now states this explicitly instead of citing the file as runtime evidence.",
+      "id": "SCENE_DELIVERY_POLICY_RUNTIME_TEST_NOT_COLLECTED",
+      "status": "pending_owner_decision"
+    },
+    {
+      "detail": "local.dev.health failed frontend_http=403 while /web/login and /api/runtime-version were 200. Root cause: nginx bind-mounts frontend/apps/web/dist-dev, and that host directory was recreated today (13:03) by the static build, so the running nginx container still pointed at the removed inode and saw an empty html root (index.html absent -> 403). Not caused by any code change. Repaired through the governed local.dev.down + local.dev.up (volumes preserved); local.dev.health now PASS and GET / returns 200. Recurrence note for the ops owner: scripts/dev/restart.sh force-recreates only odoo, so a recreated dist-dev needs a full down/up (or an extended restart wrapper) before the preview serves the new build.",
+      "id": "LOCAL_DEV_NGINX_MOUNT_STALENESS",
+      "status": "resolved_env_observation"
+    }
+  ],
+  "branch": "fix/project-ledger-entry-unification-v1",
+  "candidate_evidence": false,
+  "checks": {
+    "backend_scene_surface_boundary_unit": {
+      "detail": "locks the scene/surface boundary: closed exclusion-reason vocabulary, fail-closed allowlist for a registered delivery surface, fail-closed + SCENE_SURFACE_UNREGISTERED exclusion for an unregistered surface, and the development bypass. The suite EXECUTES the real P1 policy module (core_extension_surface_bypass.py) with a stubbed platform-admin check: no env / no acting user / non-development stage / non-platform-admin / check failure all deny. The bypass consumes identity.is_platform_admin (smart_core.security.platform_admin.user_is_platform_admin), NOT IdentityResolver (whose vocabulary is only executive/pm/finance/project_member). Negative-first: relaxing the stage or the admin check turns 3 cases red. Also re-locked the kernel side (injected hook).",
+      "inputs": [
+        "addons/smart_core/tests/test_backend_scene_surface_boundary.py",
+        "addons/smart_core/core/scene_delivery_policy.py",
+        "addons/smart_construction_core/core_extension_surface_bypass.py",
+        "scripts/verify/contract_authority_hierarchy_guard.py",
+        "docs/architecture/backend_scene_surface_authority_boundary_v1.md"
+      ],
+      "kind": "offline",
+      "status": "passed",
+      "target": "verify.backend.scene_surface_boundary.unit",
+      "tests": 22
+    },
+    "business_config_formal_list_unit": {
+      "detail": "locks the P0 projection-source-token identity: a ui.form.field.policy definition change (same-second active/visible flip, create, remove) must invalidate the assembled-contract token, so a governed repair cannot be served a stale projection.",
+      "inputs": [
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "addons/smart_core/tests/test_load_contract_response_cache.py",
+        "addons/smart_core/tests/test_view_orchestrator.py",
+        "scripts/verify/test_formal_list_configuration_baseline.py",
+        "addons/smart_core/utils/load_contract_response_cache.py"
+      ],
+      "kind": "offline",
+      "status": "passed",
+      "target": "verify.business_config.formal_list.unit",
+      "tests": 185
+    },
+    "business_config_guard_inventory": {
+      "detail": "make_sources=17 scanned_files=36 assertions=151 negative_self_test=PASS; fixed false-positive _target_body scan for ifeq-wrapped recipes",
+      "inputs": [
+        "scripts/verify/business_config_guard_inventory.py",
+        "Makefile",
+        "make/"
+      ],
+      "kind": "offline",
+      "status": "passed",
+      "target": "verify.business_config.guard_inventory",
+      "tests": 151
+    },
+    "contract_domain_runtime": {
+      "detail": "stale sibling report regenerated (was missing a main-merged contract entry)",
+      "inputs": [
+        "scripts/verify/frontend_contract_domain_rollout.py"
+      ],
+      "kind": "runtime",
+      "status": "passed",
+      "target": "verify.frontend.professionalization.contract_domain.runtime"
+    },
+    "contract_form_dirty_semantics": {
+      "detail": "P0 renderer: value setters mark dirty/onchange only when the draft value differs from the delivered record baseline. Negative-first: the same test fails against the pre-fix source (an identical relation value must not be dirty, 1 !== 0) and passes after the fix. Fixes the phantom onchange that failed the detail lane at 5d1dfaeb.",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/useRecordFormState.ts",
+        "frontend/apps/web/scripts/contract_form_dirty_semantics_test.ts",
+        "frontend/apps/web/src/pages/contractForm/contractActionRules.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline",
+      "status": "passed",
+      "target": "verify.frontend.contract_form_dirty_semantics.unit"
+    },
+    "contract_schema_declaration_sync": {
+      "detail": "Root cause found and fixed this round (P0 smart_core). d78cb4be added formStructureContract.surfaces and rewrote docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json (+61 lines) without re-deriving UNIFIED_PAGE_SCHEMA_SHA256, so the runtime contract published schemaSha256=204b8f6c... while the schema asset hashes to 28be508e... (main 88920427 and f743006a were consistent at 204b8f6c..., so the drift was introduced by this branch). Fix used the authoritative derived entry `make contract.schema.declaration.sync` (no hand-edited constant, no assertion loosened; registryVersion stays 2.2.0 per the historical convention) and refreshed the stale schemaSha256 provenance field in the 4 canonical examples (meta.lifecycle is outside contractSha256 coverage; no guard or snapshot records those files' byte hashes). Verification: verify.contract.schema.declaration.sync (4 tests OK), verify.backend.contract_lifecycle.authority (8/8 dimensions passed, errors=[]), verify.unified_page_contract.v2.schema (4 examples), verify.unified_page_contract.v2.client (3 clients), scripts.verify.test_dev_acceptance_release_identity (42 OK) all green. Escape cause: the binding guard only runs in ci.local.quick at the frozen delivery HEAD, not in the dev inner loop, and this branch had not run Quick yet.",
+      "inputs": [
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "docs/architecture/unified_page_contract_v2/enum_registry.json",
+        "addons/smart_core/core/contract_lifecycle.py",
+        "scripts/verify/contract_schema_declaration_sync.py",
+        "scripts/verify/backend_contract_lifecycle_authority_guard.py"
+      ],
+      "kind": "unit",
+      "status": "passed",
+      "target": "verify.contract.schema.declaration.sync + verify.backend.contract_lifecycle.authority"
+    },
+    "daily_acceptance_readonly_probe": {
+      "detail": "daily/sc_demo @e384b832, run on the daily host with a time-bounded governed credential confirmation. Prerequisite: daily.dev.acceptance_fixture.ensure PASS (finance login fixture_role_finance uid 210) then daily.dev.acceptance_contract.resolve wrote expected_sha=e384b832 / companies a=21,b=22 / unique target smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a (payment.request/36156, action 780, menu 550). Probe overall PASS: runtime_identity/frontend/login/contract all PASS; contract checks 11/11 true incl. contract_schema_digest_bound=true; login nodes=111 actions=89 leaves=89 forbidden=[] required_miss=[]; contract identity fixture_role_finance uid 210 role finance. The same probe failed contract_schema_digest_not_bound before the e384b832 fix (see checks.contract_schema_declaration_sync).",
+      "inputs": [
+        "make/dev.mk",
+        "scripts/ops/dev_acceptance_release_probe.py",
+        "config/acceptance/backend_contract_instance_daily_v1.json",
+        "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
+        "config/frontend/acceptance_environments_v1.json"
+      ],
+      "kind": "runtime",
+      "status": "passed",
+      "target": "verify.daily_dev.acceptance.readonly.probe"
+    },
+    "daily_detail_lane": {
+      "detail": "served=e384b832, 1440/390 x light/dark. Each run 8/8 record checks (declared_entry_route, exact_record_contract, declared_renderer, return_to_source per viewport), runtime_errors=0. The declared theme is asserted through data-sc-theme-resolved (requested==resolved). Reports: .runtime/final-acceptance/detail-lane-e384b832/light.json, dark.json.",
+      "inputs": [
+        "scripts/verify/frontend_list_surface_structure_browser.mjs",
+        "scripts/verify/playwright_runtime.mjs",
+        "config/frontend/acceptance_environments_v1.json"
+      ],
+      "kind": "runtime",
+      "status": "passed",
+      "target": "verify.daily_dev.list_surface.readonly.browser (LIST_SURFACE_DAILY_OBSERVATION_SCOPE=detail-only)"
+    },
+    "daily_form_profiles_and_workbench_lane": {
+      "detail": "served=e384b832, light/dark each. form-profiles: 12/12 record checks. workbench-only: no record walk by design; covers declared-theme, declared-default-landing (1440,390) and router-workspace-home (1440,390, summaryResponses=1); runtime_errors=0 for both. Reports: .runtime/final-acceptance/forms-workbench-e384b832/*.json.",
+      "inputs": [
+        "scripts/verify/frontend_list_surface_structure_browser.mjs",
+        "config/frontend/acceptance_environments_v1.json"
+      ],
+      "kind": "runtime",
+      "status": "passed",
+      "target": "verify.daily_dev.list_surface.readonly.browser (form-profiles / workbench-only)"
+    },
+    "daily_relation_roundtrip": {
+      "detail": "served=e384b832, real single click (declaration consumption, not handler diagnostics). Source construction.contract.income/2331 action 578 / menu 904: 4 declared can_open entries all opened; the round trip restored path/title/statusbar/tabs/actions (error_free=true); denied_requests=0, console_errors=0. Report: .runtime/final-acceptance/relation-roundtrip-e384b832/20261006T113534/summary.json.",
+      "inputs": [
+        "scripts/verify/record_relation_roundtrip_acceptance.js",
+        "scripts/verify/playwright_runtime.mjs"
+      ],
+      "kind": "runtime",
+      "status": "passed",
+      "target": "node scripts/verify/record_relation_roundtrip_acceptance.js"
+    },
+    "finance_center_runtime": {
+      "detail": "stale sibling report regenerated (payment ledger entries)",
+      "inputs": [
+        "scripts/verify/frontend_finance_center_rollout.py"
+      ],
+      "kind": "runtime",
+      "status": "passed",
+      "target": "verify.frontend.professionalization.finance_center.runtime"
+    },
+    "form_structure_surface_contract_unit": {
+      "detail": "declared form surfaces: contract declares -> renderer consumes -> capability registry gates the audit sub-region; negative-first (declaration-only change flips it red).",
+      "inputs": [
+        "frontend/apps/web/scripts/form_structure_surface_contract_test.ts",
+        "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue",
+        "frontend/apps/web/src/pages/contractForm/contractRuntimeVm.ts",
+        "frontend/apps/web/src/app/contracts/v2/store.ts",
+        "addons/smart_core/handlers/ui_contract_v2.py"
+      ],
+      "kind": "offline",
+      "status": "passed",
+      "target": "verify.frontend.form_structure_surface_contract.unit",
+      "tests": 0
+    },
+    "local_dev_env_refresh": {
+      "detail": "Refreshed the managed local.dev backend after the P0/P1 code change (python needs a process reload) and repaired the stale nginx dist-dev bind-mount via the governed down/up. local.dev.health PASS (frontend_http=200), GET / = 200, /api/runtime-version = 200 db=sc_dev_demo.",
+      "inputs": [
+        "make/dev.mk",
+        "scripts/dev/up.sh",
+        "scripts/dev/down.sh",
+        "scripts/dev/restart.sh"
+      ],
+      "kind": "runtime",
+      "status": "passed",
+      "target": "local.dev.down + local.dev.up + local.dev.restart + local.dev.health"
+    },
+    "locked_menu_policy_contract": {
+      "inputs": [
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+        "scripts/release/test_locked_menu_policy_contract.py"
+      ],
+      "kind": "offline",
+      "status": "passed",
+      "target": "verify.product.menu.contract_v1.guard",
+      "tests": 5
+    },
+    "product_menu_release_manifest_v2": {
+      "detail": "centers=10 contract_pages=89 accounting_pages=6 total=89",
+      "inputs": [
+        "scripts/ops/promote_product_ten_center_policy.py",
+        "scripts/ops/test_promote_product_ten_center_policy.py",
+        "scripts/verify/product_menu_release_manifest_v2_guard.py",
+        "config/product_menu_contract_v1.json"
+      ],
+      "kind": "offline",
+      "status": "passed",
+      "target": "verify.product.menu.release_manifest_v2.guard"
+    },
+    "project_domain_runtime": {
+      "detail": "actions=30 gaps=0; negative control was EXPECTED_DOMAIN_ANCHOR_MISSING before the wave1 fix",
+      "inputs": [
+        "scripts/verify/frontend_project_domain_rollout.py",
+        "addons/smart_construction_core/views/menu_product_project_wave1.xml"
+      ],
+      "kind": "runtime",
+      "status": "passed",
+      "target": "verify.frontend.professionalization.project_domain.runtime"
+    },
+    "project_ledger_entry_carrier": {
+      "detail": "local.dev/sc_dev_demo: carrier lock + stale-overlay detect/repair lock + NEW runtime-contract button-group authority lock (test_ledger_submit_button_group_authority_is_enforced_in_the_runtime_contract: member sees action_sc_submit, outsider does not, outsider still sees ungrouped action_sc_start as the negative control).",
+      "inputs": [
+        "addons/smart_construction_core/tests/test_project_ledger_runtime_contract.py",
+        "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
+        "addons/smart_construction_core/views/core/project_overview_views.xml",
+        "addons/smart_core/handlers/ui_contract_v2.py"
+      ],
+      "kind": "runtime",
+      "status": "passed",
+      "target": "verify.contract.project_ledger_entry_carrier.orm",
+      "tests": 32
+    },
+    "reporting_center_runtime": {
+      "detail": "stale sibling report regenerated (project cost ledger entry)",
+      "inputs": [
+        "scripts/verify/frontend_reporting_center_rollout.py"
+      ],
+      "kind": "runtime",
+      "status": "passed",
+      "target": "verify.frontend.professionalization.reporting_center.runtime"
+    },
+    "scene_surface_runtime_readback": {
+      "detail": "Served DB sc_dev_demo, profile local.dev. (1) Registered surfaces keep their file policy: workspace_pm_v1 -> delivery=[project.management], deep=[finance.payment_requests]; construction_exec_v1 -> deep=[finance.payment_requests, project.management], both meta.source=file, bypass=false. (2) Unregistered surface unknown_face_v1 -> delivery=[], deep=[], meta.source=unregistered_closed, reasons {SCENE_SURFACE_UNREGISTERED: 3}. (3) Platform-admin bypass live: admin(user 2) on dev -> authorized role_code=platform_admin and filter meta.source=unregistered_bypass, bypass=true; on prod -> None; a non-admin demo user on dev -> None.",
+      "inputs": [
+        "addons/smart_core/core/scene_delivery_policy.py",
+        "addons/smart_construction_core/core_extension_surface_bypass.py"
+      ],
+      "kind": "runtime",
+      "status": "passed",
+      "target": "odoo.shell.exec scene/surface readback"
+    },
+    "systemwide_coverage_runtime": {
+      "detail": "runtime=93 covered=93 uncovered=0 gaps=0",
+      "inputs": [
+        "scripts/verify/frontend_systemwide_coverage_audit.py",
+        "scripts/verify/frontend_project_domain_rollout.py"
+      ],
+      "kind": "runtime",
+      "status": "passed",
+      "target": "verify.frontend.professionalization.systemwide_coverage.runtime"
+    },
+    "unified_page_contract_v2_assembler": {
+      "detail": "formStructureContract.surfaces accepted by the v2 schema; removing the schema key flips it red (negative control).",
+      "inputs": [
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "docs/architecture/unified_page_contract_v2/fixtures/ui_contract_source.json",
+        "addons/smart_core/handlers/ui_contract_v2.py"
+      ],
+      "kind": "offline",
+      "status": "passed",
+      "target": "verify.unified_page_contract.v2.assembler"
+    },
+    "view_structure_lock": {
+      "detail": "domains=14 fingerprint=current",
+      "inputs": [
+        "scripts/ci/enforce_contract_structure_lock.py"
+      ],
+      "kind": "offline",
+      "status": "passed",
+      "target": "verify.contract.structure_lock"
+    }
+  },
+  "environment": {
+    "authority": "registered local.dev lane (make local.dev.*) + offline locked baselines + governed daily acceptance gate (daily.dev.acceptance_contract.resolve -> verify.daily_dev.acceptance.readonly.probe) green at e384b832",
+    "database": "sc_dev_demo",
+    "kind": "runtime",
+    "runtime_profile": "local.dev"
+  },
+  "evidence": {
+    "record": "docs/ops/iterations/project_ledger_entry_unification_20261006.md",
+    "runtime_reports": [
+      "docs/frontend_productization/domain-rollout/project-domain-coverage-v1.json",
+      "docs/frontend_productization/domain-rollout/systemwide-coverage-audit-v1.json"
+    ]
+  },
   "goal": ".agent/goals/PROJECT-LEDGER-ENTRY-UNIFICATION.yaml",
+  "id": "PROJECT-LEDGER-ENTRY-UNIFICATION",
+  "next_exact_step": "Close out the branch: (1) run one independent review of the full candidate diff (f743006a..tip) covering the P0 schema-digest fix and the scene/surface layers; (2) commit this run/documentation update, re-align daily to the tip served SHA and re-run the cheap daily readonly probe for a tip-bound receipt; (3) push the candidate through the governed PR entry (Gitee ordinary PR or GitHub) with exact SHA, remote required checks and independent review; do not force push or write main directly. Deferred by owner decision: VIEW_STRUCTURE_BASELINE_CLEAN_LANE (env-gated) and SCENE_DELIVERY_POLICY_RUNTIME_TEST_NOT_COLLECTED.",
   "record": "docs/ops/iterations/project_ledger_entry_unification_20261006.md",
+  "schema_version": 1,
   "scope": [
     "addons/smart_construction_core/views/",
     "addons/smart_construction_core/actions/",
@@ -37,266 +333,16 @@
     "frontend/apps/web/src/pages/ContractFormPage.vue",
     "make/runtime_ops.mk",
     "addons/smart_core/core/scene_delivery_policy.py",
-    "addons/smart_construction_core/core_extension_surface_bypass.py"
+    "addons/smart_construction_core/core_extension_surface_bypass.py",
+    "addons/smart_core/core/contract_lifecycle.py",
+    "docs/architecture/unified_page_contract_v2/examples/"
   ],
-  "environment": {
-    "kind": "runtime",
-    "runtime_profile": "local.dev",
-    "database": "sc_dev_demo",
-    "authority": "registered local.dev lane (make local.dev.*) + offline locked baselines + governed daily acceptance gate (daily.dev.acceptance_contract.resolve -> verify.daily_dev.acceptance.readonly.probe) green at 5d1dfaeb"
-  },
-  "checks": {
-    "locked_menu_policy_contract": {
-      "target": "verify.product.menu.contract_v1.guard",
-      "kind": "offline",
-      "status": "passed",
-      "tests": 5,
-      "inputs": [
-        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
-        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
-        "scripts/release/test_locked_menu_policy_contract.py"
-      ]
-    },
-    "product_menu_release_manifest_v2": {
-      "target": "verify.product.menu.release_manifest_v2.guard",
-      "kind": "offline",
-      "status": "passed",
-      "detail": "centers=10 contract_pages=89 accounting_pages=6 total=89",
-      "inputs": [
-        "scripts/ops/promote_product_ten_center_policy.py",
-        "scripts/ops/test_promote_product_ten_center_policy.py",
-        "scripts/verify/product_menu_release_manifest_v2_guard.py",
-        "config/product_menu_contract_v1.json"
-      ]
-    },
-    "view_structure_lock": {
-      "target": "verify.contract.structure_lock",
-      "kind": "offline",
-      "status": "passed",
-      "detail": "domains=14 fingerprint=current",
-      "inputs": [
-        "scripts/ci/enforce_contract_structure_lock.py"
-      ]
-    },
-    "project_domain_runtime": {
-      "target": "verify.frontend.professionalization.project_domain.runtime",
-      "kind": "runtime",
-      "status": "passed",
-      "detail": "actions=30 gaps=0; negative control was EXPECTED_DOMAIN_ANCHOR_MISSING before the wave1 fix",
-      "inputs": [
-        "scripts/verify/frontend_project_domain_rollout.py",
-        "addons/smart_construction_core/views/menu_product_project_wave1.xml"
-      ]
-    },
-    "contract_domain_runtime": {
-      "target": "verify.frontend.professionalization.contract_domain.runtime",
-      "kind": "runtime",
-      "status": "passed",
-      "detail": "stale sibling report regenerated (was missing a main-merged contract entry)",
-      "inputs": [
-        "scripts/verify/frontend_contract_domain_rollout.py"
-      ]
-    },
-    "finance_center_runtime": {
-      "target": "verify.frontend.professionalization.finance_center.runtime",
-      "kind": "runtime",
-      "status": "passed",
-      "detail": "stale sibling report regenerated (payment ledger entries)",
-      "inputs": [
-        "scripts/verify/frontend_finance_center_rollout.py"
-      ]
-    },
-    "reporting_center_runtime": {
-      "target": "verify.frontend.professionalization.reporting_center.runtime",
-      "kind": "runtime",
-      "status": "passed",
-      "detail": "stale sibling report regenerated (project cost ledger entry)",
-      "inputs": [
-        "scripts/verify/frontend_reporting_center_rollout.py"
-      ]
-    },
-    "systemwide_coverage_runtime": {
-      "target": "verify.frontend.professionalization.systemwide_coverage.runtime",
-      "kind": "runtime",
-      "status": "passed",
-      "detail": "runtime=93 covered=93 uncovered=0 gaps=0",
-      "inputs": [
-        "scripts/verify/frontend_systemwide_coverage_audit.py",
-        "scripts/verify/frontend_project_domain_rollout.py"
-      ]
-    },
-    "business_config_guard_inventory": {
-      "target": "verify.business_config.guard_inventory",
-      "kind": "offline",
-      "status": "passed",
-      "tests": 151,
-      "detail": "make_sources=17 scanned_files=36 assertions=151 negative_self_test=PASS; fixed false-positive _target_body scan for ifeq-wrapped recipes",
-      "inputs": [
-        "scripts/verify/business_config_guard_inventory.py",
-        "Makefile",
-        "make/"
-      ]
-    },
-    "business_config_formal_list_unit": {
-      "target": "verify.business_config.formal_list.unit",
-      "kind": "offline",
-      "status": "passed",
-      "tests": 185,
-      "detail": "locks the P0 projection-source-token identity: a ui.form.field.policy definition change (same-second active/visible flip, create, remove) must invalidate the assembled-contract token, so a governed repair cannot be served a stale projection.",
-      "inputs": [
-        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
-        "addons/smart_core/tests/test_load_contract_response_cache.py",
-        "addons/smart_core/tests/test_view_orchestrator.py",
-        "scripts/verify/test_formal_list_configuration_baseline.py",
-        "addons/smart_core/utils/load_contract_response_cache.py"
-      ]
-    },
-    "project_ledger_entry_carrier": {
-      "target": "verify.contract.project_ledger_entry_carrier.orm",
-      "kind": "runtime",
-      "status": "passed",
-      "tests": 32,
-      "detail": "local.dev/sc_dev_demo: carrier lock + stale-overlay detect/repair lock + NEW runtime-contract button-group authority lock (test_ledger_submit_button_group_authority_is_enforced_in_the_runtime_contract: member sees action_sc_submit, outsider does not, outsider still sees ungrouped action_sc_start as the negative control).",
-      "inputs": [
-        "addons/smart_construction_core/tests/test_project_ledger_runtime_contract.py",
-        "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
-        "addons/smart_construction_core/views/core/project_overview_views.xml",
-        "addons/smart_core/handlers/ui_contract_v2.py"
-      ]
-    },
-    "daily_acceptance_readonly_probe": {
-      "target": "verify.daily_dev.acceptance.readonly.probe",
-      "kind": "runtime",
-      "status": "passed",
-      "detail": "daily/sc_demo @5d1dfaeb, run on the daily host with a time-bounded governed credential confirmation. Prerequisite step re-run first: daily.dev.acceptance_contract.resolve rewrote the gitignored record-identity artifact to expected_sha=5d1dfaeb / companies a=21,b=22 / payment_request record 36154 action 780 menu 550. Probe: runtime_identity PASS (served_sha=expected_sha), login PASS (wutao nodes=111 actions=89 leaves=89 forbidden=[] required_miss=[], role business_config_admin incl. 项目台账), contract PASS (fixture_role_finance uid 210, resolved_sha==served_sha, 11/11 checks true, http_status=200, custody response_sha256=bb739fa223e2f1c35d530e4abf2f41556cff20c7349ecbda0425b581eae0ca7c, integrity ok); overall status PASS; schema guard PASS.",
-      "inputs": [
-        "make/dev.mk",
-        "scripts/ops/dev_acceptance_release_probe.py",
-        "config/acceptance/backend_contract_instance_daily_v1.json",
-        "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
-        "config/frontend/acceptance_environments_v1.json"
-      ]
-    },
-    "contract_form_dirty_semantics": {
-      "target": "verify.frontend.contract_form_dirty_semantics.unit",
-      "kind": "offline",
-      "status": "passed",
-      "detail": "P0 renderer: value setters mark dirty/onchange only when the draft value differs from the delivered record baseline. Negative-first: the same test fails against the pre-fix source (an identical relation value must not be dirty, 1 !== 0) and passes after the fix. Fixes the phantom onchange that failed the detail lane at 5d1dfaeb.",
-      "inputs": [
-        "frontend/apps/web/src/pages/contractForm/useRecordFormState.ts",
-        "frontend/apps/web/scripts/contract_form_dirty_semantics_test.ts",
-        "frontend/apps/web/src/pages/contractForm/contractActionRules.ts",
-        "make/frontend.mk"
-      ]
-    },
-    "form_structure_surface_contract_unit": {
-      "target": "verify.frontend.form_structure_surface_contract.unit",
-      "kind": "offline",
-      "status": "passed",
-      "tests": 0,
-      "detail": "declared form surfaces: contract declares -> renderer consumes -> capability registry gates the audit sub-region; negative-first (declaration-only change flips it red).",
-      "inputs": [
-        "frontend/apps/web/scripts/form_structure_surface_contract_test.ts",
-        "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue",
-        "frontend/apps/web/src/pages/contractForm/contractRuntimeVm.ts",
-        "frontend/apps/web/src/app/contracts/v2/store.ts",
-        "addons/smart_core/handlers/ui_contract_v2.py"
-      ]
-    },
-    "unified_page_contract_v2_assembler": {
-      "target": "verify.unified_page_contract.v2.assembler",
-      "kind": "offline",
-      "status": "passed",
-      "detail": "formStructureContract.surfaces accepted by the v2 schema; removing the schema key flips it red (negative control).",
-      "inputs": [
-        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
-        "docs/architecture/unified_page_contract_v2/fixtures/ui_contract_source.json",
-        "addons/smart_core/handlers/ui_contract_v2.py"
-      ]
-    },
-    "backend_scene_surface_boundary_unit": {
-      "target": "verify.backend.scene_surface_boundary.unit",
-      "kind": "offline",
-      "status": "passed",
-      "tests": 22,
-      "detail": "locks the scene/surface boundary: closed exclusion-reason vocabulary, fail-closed allowlist for a registered delivery surface, fail-closed + SCENE_SURFACE_UNREGISTERED exclusion for an unregistered surface, and the development bypass. The suite EXECUTES the real P1 policy module (core_extension_surface_bypass.py) with a stubbed platform-admin check: no env / no acting user / non-development stage / non-platform-admin / check failure all deny. The bypass consumes identity.is_platform_admin (smart_core.security.platform_admin.user_is_platform_admin), NOT IdentityResolver (whose vocabulary is only executive/pm/finance/project_member). Negative-first: relaxing the stage or the admin check turns 3 cases red. Also re-locked the kernel side (injected hook).",
-      "inputs": [
-        "addons/smart_core/tests/test_backend_scene_surface_boundary.py",
-        "addons/smart_core/core/scene_delivery_policy.py",
-        "addons/smart_construction_core/core_extension_surface_bypass.py",
-        "scripts/verify/contract_authority_hierarchy_guard.py",
-        "docs/architecture/backend_scene_surface_authority_boundary_v1.md"
-      ]
-    },
-    "scene_surface_runtime_readback": {
-      "target": "odoo.shell.exec scene/surface readback",
-      "kind": "runtime",
-      "status": "passed",
-      "detail": "Served DB sc_dev_demo, profile local.dev. (1) Registered surfaces keep their file policy: workspace_pm_v1 -> delivery=[project.management], deep=[finance.payment_requests]; construction_exec_v1 -> deep=[finance.payment_requests, project.management], both meta.source=file, bypass=false. (2) Unregistered surface unknown_face_v1 -> delivery=[], deep=[], meta.source=unregistered_closed, reasons {SCENE_SURFACE_UNREGISTERED: 3}. (3) Platform-admin bypass live: admin(user 2) on dev -> authorized role_code=platform_admin and filter meta.source=unregistered_bypass, bypass=true; on prod -> None; a non-admin demo user on dev -> None.",
-      "inputs": [
-        "addons/smart_core/core/scene_delivery_policy.py",
-        "addons/smart_construction_core/core_extension_surface_bypass.py"
-      ]
-    },
-    "local_dev_env_refresh": {
-      "target": "local.dev.down + local.dev.up + local.dev.restart + local.dev.health",
-      "kind": "runtime",
-      "status": "passed",
-      "detail": "Refreshed the managed local.dev backend after the P0/P1 code change (python needs a process reload) and repaired the stale nginx dist-dev bind-mount via the governed down/up. local.dev.health PASS (frontend_http=200), GET / = 200, /api/runtime-version = 200 db=sc_dev_demo.",
-      "inputs": [
-        "make/dev.mk",
-        "scripts/dev/up.sh",
-        "scripts/dev/down.sh",
-        "scripts/dev/restart.sh"
-      ]
-    }
-  },
-  "evidence": {
-    "record": "docs/ops/iterations/project_ledger_entry_unification_20261006.md",
-    "runtime_reports": [
-      "docs/frontend_productization/domain-rollout/project-domain-coverage-v1.json",
-      "docs/frontend_productization/domain-rollout/systemwide-coverage-audit-v1.json"
-    ]
-  },
-  "blockers": [
-    {
-      "id": "VIEW_STRUCTURE_BASELINE_CLEAN_LANE",
-      "status": "deferred_env_gated",
-      "detail": "contracts/generated/product_view_structure_contract.json requires the local.clean lane (guard enforces runtime_profile=local.clean/sc_clean/demo_data=False); no clean lane in this worktree and new environment authority needs separate P4 authorization. Already stale on main; verify.contract.view_structure is not part of ci.local.quick."
-    },
-    {
-      "id": "LEDGER_DETAIL_ACCEPTANCE",
-      "status": "pending",
-      "detail": "Record-page detail acceptance not yet run: 1440/390 visual + light/dark themes, one real \"open relation record -> return to origin -> labels and actions restore\" interaction, and the create/edit + workbench minimum evidence delta."
-    },
-    {
-      "id": "SCENE_SURFACE_UNREGISTERED_FAIL_OPEN",
-      "status": "resolved",
-      "detail": "scene_delivery_policy now closes an unregistered delivery surface fail-closed: _select_surface_policy returns a registered-but-closed policy (source=unregistered_closed, closed=true) and filter_delivery_scenes excludes the whole request with REASON_SCENE_SURFACE_UNREGISTERED. The only opening is the P1 development bypass hook smart_core_surface_unregistered_bypass (smart_construction_core/core_extension_surface_bypass.py): runtime env required, stage in {dev,test,local,stage,staging}, role system_admin resolved through the same published role policy as system.init.role_surface; bypass hits are marked surface_policy_bypass=true in nav_meta.delivery_policy. No capability key, ACL widening or customer role added. Boundary documented in docs/architecture/backend_scene_surface_authority_boundary_v1.md section 7.1 and pinned (negative-first) by verify.backend.scene_surface_boundary.unit."
-    },
-    {
-      "id": "SCENE_SURFACE_DEV_BYPASS_POLICY",
-      "status": "resolved",
-      "detail": "The unregistered-surface closure ships with one authorized escape hatch so development can still reach a surface the product has not registered. P0 (scene_delivery_policy) only asks the extension hook smart_core_surface_unregistered_bypass and never decides the role. P1 (smart_construction_core/core_extension_surface_bypass.py) grants it only when (1) a runtime env exists, (2) the runtime stage is in {dev,test,local,stage,staging}, (3) the caller is a platform administrator, consumed through smart_core.security.platform_admin.user_is_platform_admin - the same identity the runtime contract publishes as identity.is_platform_admin. Corrected this round: the first cut authorized a 'system_admin' role code that IdentityResolver can never produce (its vocabulary is executive/pm/finance/project_member), which made the escape hatch dead; verified live in sc_dev_demo that platform admin (admin) is admitted on dev and denied on prod, and a non-admin user is denied. No capability key, no ACL widening, no customer role; production stays closed."
-    },
-    {
-      "id": "SCENE_DELIVERY_POLICY_RUNTIME_TEST_NOT_COLLECTED",
-      "status": "pending_owner_decision",
-      "detail": "addons/smart_core/tests/test_scene_delivery_policy.py (delivery-filter runtime semantics) is not collected: addons/smart_core/tests/__init__.py never imports it (git log -S shows it was never wired since the clean baseline). It also calls filter_delivery_scenes without env, so the P1 policy-file/alias hooks (smart_core_surface_policy_file_default, smart_core_surface_aliases) are unreachable and 2 of its 6 cases assert a degenerate path that fails on HEAD too (verified by stashing scene_delivery_policy.py back to HEAD: same 2 failures). Wiring it in requires an owning-layer decision on whether a smart_core test may depend on the P1 hook; until then it is not evidence. The boundary doc now states this explicitly instead of citing the file as runtime evidence."
-    },
-    {
-      "id": "LOCAL_DEV_NGINX_MOUNT_STALENESS",
-      "status": "resolved_env_observation",
-      "detail": "local.dev.health failed frontend_http=403 while /web/login and /api/runtime-version were 200. Root cause: nginx bind-mounts frontend/apps/web/dist-dev, and that host directory was recreated today (13:03) by the static build, so the running nginx container still pointed at the removed inode and saw an empty html root (index.html absent -> 403). Not caused by any code change. Repaired through the governed local.dev.down + local.dev.up (volumes preserved); local.dev.health now PASS and GET / returns 200. Recurrence note for the ops owner: scripts/dev/restart.sh force-recreates only odoo, so a recreated dist-dev needs a full down/up (or an extended restart wrapper) before the preview serves the new build."
-    }
-  ],
-  "next_exact_step": "Close out the branch: (1) deploy this exact candidate to the daily runtime via the governed daily.runtime.candidate.bundle_sync (expected old SHA f743006a) + remote verify.frontend.build + mod.upgrade (smart_core, smart_construction_core) + restart + daily.runtime.source_revision.align; (2) re-verify on the new served SHA the detail-only (1440/390, light/dark) lane, the form-profiles and workbench-only lanes, and one real relation open->return->restore interaction; (3) fold the results into this run and the completion record; (4) run independent review, then push the candidate through the governed PR entry. Do not force push or write main directly.",
-  "write_replay_authorized": false,
-  "candidate_evidence": false,
   "stage_identity": {
     "baseline_sha": "8892042761eeb8f47a135fd817a9a9d220837620",
-    "head": "9e2d2660a25512b6a491df04bebe5eff6b01b0a0",
     "dirty": false,
-    "note": "single writer; worktree CLEAN at this HEAD. Five committed layers on top of the detail-projection fix f743006a: 6a391504 (P0 unregistered delivery surface closed fail-closed), add0cd9a (P1 development bypass policy), c44afa57 (tests/doc/run locks), 3dd0dea3 (bypass gate corrected to the published platform-admin identity), 9e2d2660 (run: scene-surface runtime readback + env refresh). f743006a..HEAD touches 12 frontend files (formStructureContract.surfaces consumption) and the backend scene/surface policy, so the daily served revision is still f743006a and the detail/form/workbench/relation lanes must be re-verified on this exact candidate."
-  }
+    "head": "e384b8328ce36b3586fd9dbb6004bd665740edf5",
+    "note": "single writer; worktree CLEAN. Six product/record commits on top of the detail-projection fix f743006a: 6a391504 (P0 unregistered delivery surface closed fail-closed), add0cd9a (P1 development bypass policy), c44afa57 (tests/doc/run locks), 3dd0dea3 (bypass gate corrected to the published platform-admin identity), ed783035 (run: candidate HEAD + daily closeout plan), e384b832 (P0 fix: re-derived contract schema digest bound to the schema asset, plus 4 canonical example provenance fields). This run/documentation commit sits directly on top of e384b832 and changes no product path: the acceptance evidence binds the product inputs at e384b832, which this metadata commit does not touch (documentation changes do not invalidate page evidence). Daily served revision is e384b832; the candidate tip for publication is this commit."
+  },
+  "status": "active",
+  "write_replay_authorized": false
 }
