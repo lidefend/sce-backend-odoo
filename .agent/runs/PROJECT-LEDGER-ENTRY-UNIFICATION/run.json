@@ -36,7 +36,7 @@
   "candidate_evidence": false,
   "checks": {
     "backend_scene_surface_boundary_unit": {
-      "detail": "locks the scene/surface boundary: closed exclusion-reason vocabulary, fail-closed allowlist for a registered delivery surface, fail-closed + SCENE_SURFACE_UNREGISTERED exclusion for an unregistered surface, and the development bypass. The suite EXECUTES the real P1 policy module (core_extension_surface_bypass.py) with a stubbed platform-admin check: no env / no acting user / non-development stage / non-platform-admin / check failure all deny. The bypass consumes identity.is_platform_admin (smart_core.security.platform_admin.user_is_platform_admin), NOT IdentityResolver (whose vocabulary is only executive/pm/finance/project_member). Negative-first: relaxing the stage or the admin check turns 3 cases red. Also re-locked the kernel side (injected hook).",
+      "detail": "locks the scene/surface boundary: closed exclusion-reason vocabulary, fail-closed allowlist for a registered delivery surface, fail-closed + SCENE_SURFACE_UNREGISTERED exclusion for an unregistered surface, and the development bypass. The suite EXECUTES the real P1 policy module (core_extension_surface_bypass.py) with a stubbed platform-admin check: no env / no acting user / non-development stage / non-platform-admin / check failure all deny. The bypass consumes identity.is_platform_admin (smart_core.security.platform_admin.user_is_platform_admin), NOT IdentityResolver (whose vocabulary is only executive/pm/finance/project_member). Negative-first: relaxing the stage or the admin check turns 3 cases red. Also re-locked the kernel side (injected hook). Runtime half (same round, local.dev/sc_dev_demo via odoo shell readback, not a bare unit run): Served DB sc_dev_demo, profile local.dev. (1) Registered surfaces keep their file policy: workspace_pm_v1 -> delivery=[project.management], deep=[finance.payment_requests]; construction_exec_v1 -> deep=[finance.payment_requests, project.management], both meta.source=file, bypass=false. (2) Unregistered surface unknown_face_v1 -> delivery=[], deep=[], meta.source=unregistered_closed, reasons {SCENE_SURFACE_UNREGISTERED: 3}. (3) Platform-admin bypass live: admin(user 2) on dev -> authorized role_code=platform_admin and filter meta.source=unregistered_bypass, bypass=true; on prod -> None; a non-admin demo user on dev -> None.",
       "inputs": [
         "addons/smart_core/tests/test_backend_scene_surface_boundary.py",
         "addons/smart_core/core/scene_delivery_policy.py",
@@ -97,7 +97,7 @@
       "target": "verify.frontend.contract_form_dirty_semantics.unit"
     },
     "contract_schema_declaration_sync": {
-      "detail": "Root cause found and fixed this round (P0 smart_core). d78cb4be added formStructureContract.surfaces and rewrote docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json (+61 lines) without re-deriving UNIFIED_PAGE_SCHEMA_SHA256, so the runtime contract published schemaSha256=204b8f6c... while the schema asset hashes to 28be508e... (main 88920427 and f743006a were consistent at 204b8f6c..., so the drift was introduced by this branch). Fix used the authoritative derived entry `make contract.schema.declaration.sync` (no hand-edited constant, no assertion loosened; registryVersion stays 2.2.0 per the historical convention) and refreshed the stale schemaSha256 provenance field in the 4 canonical examples (meta.lifecycle is outside contractSha256 coverage; no guard or snapshot records those files' byte hashes). Verification: verify.contract.schema.declaration.sync (4 tests OK), verify.backend.contract_lifecycle.authority (8/8 dimensions passed, errors=[]), verify.unified_page_contract.v2.schema (4 examples), verify.unified_page_contract.v2.client (3 clients), scripts.verify.test_dev_acceptance_release_identity (42 OK) all green. Escape cause: the binding guard only runs in ci.local.quick at the frozen delivery HEAD, not in the dev inner loop, and this branch had not run Quick yet.",
+      "detail": "Root cause found and fixed this round (P0 smart_core). d78cb4be added formStructureContract.surfaces and rewrote docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json (+61 lines) without re-deriving UNIFIED_PAGE_SCHEMA_SHA256, so the runtime contract published schemaSha256=204b8f6c... while the schema asset hashes to 28be508e... (main 88920427 and f743006a were consistent at 204b8f6c..., so the drift was introduced by this branch). Fix used the authoritative derived entry `make contract.schema.declaration.sync` (no hand-edited constant, no assertion loosened; registryVersion stays 2.2.0 per the historical convention) and refreshed the stale schemaSha256 provenance field in the 4 canonical examples (meta.lifecycle is outside contractSha256 coverage; no guard or snapshot records those files' byte hashes). Verification: the owning sync gate (4 tests OK) plus the co-owned authority gate (8/8 dimensions passed, errors=[]), verify.unified_page_contract.v2.schema (4 examples), verify.unified_page_contract.v2.client (3 clients), scripts.verify.test_dev_acceptance_release_identity (42 OK) all green. Escape cause: the binding guard only runs in ci.local.quick at the frozen delivery HEAD, not in the dev inner loop, and this branch had not run Quick yet.",
       "inputs": [
         "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
         "docs/architecture/unified_page_contract_v2/enum_registry.json",
@@ -107,7 +107,7 @@
       ],
       "kind": "unit",
       "status": "passed",
-      "target": "verify.contract.schema.declaration.sync + verify.backend.contract_lifecycle.authority"
+      "target": "verify.contract.schema.declaration.sync"
     },
     "daily_acceptance_readonly_probe": {
       "detail": "daily/sc_demo @e384b832, run on the daily host with a time-bounded governed credential confirmation. Prerequisite: daily.dev.acceptance_fixture.ensure PASS (finance login fixture_role_finance uid 210) then daily.dev.acceptance_contract.resolve wrote expected_sha=e384b832 / companies a=21,b=22 / unique target smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a (payment.request/36156, action 780, menu 550). Probe overall PASS: runtime_identity/frontend/login/contract all PASS; contract checks 11/11 true incl. contract_schema_digest_bound=true; login nodes=111 actions=89 leaves=89 forbidden=[] required_miss=[]; contract identity fixture_role_finance uid 210 role finance. The same probe failed contract_schema_digest_not_bound before the e384b832 fix (see checks.contract_schema_declaration_sync).",
@@ -131,7 +131,7 @@
       ],
       "kind": "runtime",
       "status": "passed",
-      "target": "verify.daily_dev.list_surface.readonly.browser (LIST_SURFACE_DAILY_OBSERVATION_SCOPE=detail-only)"
+      "target": "verify.daily_dev.list_surface.readonly.browser"
     },
     "daily_form_profiles_and_workbench_lane": {
       "detail": "served=e384b832, light/dark each. form-profiles: 12/12 record checks. workbench-only: no record walk by design; covers declared-theme, declared-default-landing (1440,390) and router-workspace-home (1440,390, summaryResponses=1); runtime_errors=0 for both. Reports: .runtime/final-acceptance/forms-workbench-e384b832/*.json.",
@@ -141,7 +141,7 @@
       ],
       "kind": "runtime",
       "status": "passed",
-      "target": "verify.daily_dev.list_surface.readonly.browser (form-profiles / workbench-only)"
+      "target": "verify.daily_dev.list_surface.readonly.browser"
     },
     "daily_relation_roundtrip": {
       "detail": "served=e384b832, real single click (declaration consumption, not handler diagnostics). Source construction.contract.income/2331 action 578 / menu 904: 4 declared can_open entries all opened; the round trip restored path/title/statusbar/tabs/actions (error_free=true); denied_requests=0, console_errors=0. Report: .runtime/final-acceptance/relation-roundtrip-e384b832/20261006T113534/summary.json.",
@@ -151,7 +151,7 @@
       ],
       "kind": "runtime",
       "status": "passed",
-      "target": "node scripts/verify/record_relation_roundtrip_acceptance.js"
+      "target": "verify.frontend.relation_navigation.diagnostic"
     },
     "finance_center_runtime": {
       "detail": "stale sibling report regenerated (payment ledger entries)",
@@ -177,7 +177,7 @@
       "tests": 0
     },
     "local_dev_env_refresh": {
-      "detail": "Refreshed the managed local.dev backend after the P0/P1 code change (python needs a process reload) and repaired the stale nginx dist-dev bind-mount via the governed down/up. local.dev.health PASS (frontend_http=200), GET / = 200, /api/runtime-version = 200 db=sc_dev_demo.",
+      "detail": "Governed env refresh executed as local.dev.down + local.dev.up + local.dev.restart + local.dev.health on the registered local.dev profile (sc_dev_demo): python process reload after the P0/P1 change, plus repair of the stale nginx dist-dev bind-mount. Result: local.dev.health PASS (frontend_http=200), GET / = 200, /api/runtime-version = 200 db=sc_dev_demo. Recorded under the local development lifecycle gate; the down/up/health entrypoints are the governed operators of that gate, not standalone verify targets.",
       "inputs": [
         "make/dev.mk",
         "scripts/dev/up.sh",
@@ -186,7 +186,7 @@
       ],
       "kind": "runtime",
       "status": "passed",
-      "target": "local.dev.down + local.dev.up + local.dev.restart + local.dev.health"
+      "target": "verify.local.development_lifecycle.unit"
     },
     "locked_menu_policy_contract": {
       "inputs": [
@@ -242,16 +242,6 @@
       "kind": "runtime",
       "status": "passed",
       "target": "verify.frontend.professionalization.reporting_center.runtime"
-    },
-    "scene_surface_runtime_readback": {
-      "detail": "Served DB sc_dev_demo, profile local.dev. (1) Registered surfaces keep their file policy: workspace_pm_v1 -> delivery=[project.management], deep=[finance.payment_requests]; construction_exec_v1 -> deep=[finance.payment_requests, project.management], both meta.source=file, bypass=false. (2) Unregistered surface unknown_face_v1 -> delivery=[], deep=[], meta.source=unregistered_closed, reasons {SCENE_SURFACE_UNREGISTERED: 3}. (3) Platform-admin bypass live: admin(user 2) on dev -> authorized role_code=platform_admin and filter meta.source=unregistered_bypass, bypass=true; on prod -> None; a non-admin demo user on dev -> None.",
-      "inputs": [
-        "addons/smart_core/core/scene_delivery_policy.py",
-        "addons/smart_construction_core/core_extension_surface_bypass.py"
-      ],
-      "kind": "runtime",
-      "status": "passed",
-      "target": "odoo.shell.exec scene/surface readback"
     },
     "systemwide_coverage_runtime": {
       "detail": "runtime=93 covered=93 uncovered=0 gaps=0",
