@@ -64,4 +64,22 @@ Runtime: `http://1.95.85.92:18081`（`ENV=dev`、`DB_NAME=sc_demo`、served `6c8
 中的**日常开发服务器发布门禁**一项，由本节 L4 证据在本批次内首次被证明为 PASS；
 此前该项从未被执行（不存在历史 harness 产物）。
 
+## 6. 状态（四层分列）
+
+- **批次验收**：通过。候选 `a298e9d4` 上 `make verify.production.acceptance.harness`（144 tests OK）与
+  `make release.daily_dev.production_acceptance.harness`（日常开发服务器真实 HTTP，`PASS runs=2`）均通过。
+- **主线集成**：完成 —— PR #599 已合并（merge commit `74465a03`），合并前精确 HEAD `a298e9d4` 上必需检查
+  （`public_guard`、`merge_policy_gate`、`professional_quality_gate`、`frontend_release_gate`、
+  `professional_authorization`、`python310_runtime_compatibility`、`release_candidate_gate`）全部 PASS。
+- **版本发布**：未主张（未部署版本、未做 release snapshot）。
+- **产品交付**：未主张；本批只闭合"日常开发服务器发布门禁"一项。
+
+## 7. 台账说明
+
+- run 回执 `.runtime/agent-runs/ACCEPTANCE-HARNESS-LOGIN-CONTRACT-ALIGNMENT/acceptance_harness_unit.json`
+  绑定冻结 HEAD `a298e9d4`。该 run 的 `environment.kind=runtime`，故解析器把这份**离线**回执保守地标为
+  `stale`（原因 `runtime evidence requires authoritative environment readback`）——这是既有的保守语义，
+  与 `DAILY-DEV-USER-ACCEPTANCE-COMPLETION` 先例一致，不代表证据失效。
+- 本批 run/goal 已 `completed`，`.agent/active-runs.json` 回到空终止态（见 `ACCEPTANCE-HARNESS-LOGIN-CONTRACT-ALIGNMENT-RETIREMENT`）。
+
 （执行后回填）

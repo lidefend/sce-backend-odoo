@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: ACCEPTANCE-HARNESS-LOGIN-CONTRACT-ALIGNMENT
   title: align_the_daily_dev_production_acceptance_harness_with_the_declared_login_contract
-  status: active
+  status: completed
   formal_product_layer: P4
   layer_target: ops_delivery_acceptance_gate
   module:
