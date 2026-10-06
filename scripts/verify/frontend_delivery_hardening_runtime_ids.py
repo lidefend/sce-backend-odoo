@@ -3,7 +3,7 @@
 import json
 
 
-def target(menu_xmlid, record_xmlid, *, declared_action_xmlid=""):
+def target(menu_xmlid, record_xmlid, *, declared_action_xmlid="", expect=None):
     menu = env.ref(menu_xmlid)
     action = menu.action
     action_xmlid = str(action.get_external_id().get(action.id, "") or "").strip()
@@ -23,7 +23,7 @@ def target(menu_xmlid, record_xmlid, *, declared_action_xmlid=""):
         ),
         str(record.display_name).strip(),
     )
-    return {
+    resolved = {
         "menu_id": int(menu.id),
         "menu_xmlid": menu_xmlid,
         "action_id": int(action.id),
@@ -34,6 +34,12 @@ def target(menu_xmlid, record_xmlid, *, declared_action_xmlid=""):
         "record_identity": record_identity,
         "display_name": str(record.display_name),
     }
+    # A lane that mutates real product state also declares the boundary it acts
+    # on, so the browser probe can fail closed before its first write instead of
+    # trusting whichever record the route happened to open.
+    for key, value in (expect or {}).items():
+        resolved[key] = value(record) if callable(value) else value
+    return resolved
 
 
 # Browser matrix targets must be the *released* navigation entry of the role that
@@ -51,6 +57,10 @@ PAYMENT_REQUEST_MENU_XMLID = "smart_construction_core.menu_sc_user_payment_apply
 PAYMENT_REQUEST_ACTION_XMLID = "smart_construction_core.action_payment_request_user_payment_apply"
 PAYMENT_EXECUTION_MENU_XMLID = "smart_construction_core.menu_sc_payment_execution"
 PAYMENT_EXECUTION_ACTION_XMLID = "smart_construction_core.action_sc_payment_execution_actual_outflow"
+LIFECYCLE_MENU_XMLID = "smart_construction_core.menu_sc_product_project_lifecycle_v1"
+LIFECYCLE_ACTION_XMLID = "smart_construction_core.action_sc_product_project_lifecycle_v1"
+LIFECYCLE_RECORD_XMLID = "smart_construction_acceptance_fixture.fe_project_lifecycle"
+LIFECYCLE_COMPANY_XMLID = "smart_construction_acceptance_fixture.fe_company_a"
 
 # pm's released project surface is the single 项目台账 record entry
 # (menu_sc_project_project / action_sc_project_list). The duplicate
@@ -96,6 +106,17 @@ payload = {
         SETTLEMENT_MENU_XMLID,
         "smart_construction_acceptance_fixture.fe_b05_work_settlement_a",
         declared_action_xmlid=SETTLEMENT_ACTION_XMLID,
+    ),
+    "lifecycle_project": target(
+        LIFECYCLE_MENU_XMLID,
+        LIFECYCLE_RECORD_XMLID,
+        declared_action_xmlid=LIFECYCLE_ACTION_XMLID,
+        expect={
+            "record_code": lambda record: str(record.code or "").strip(),
+            "company_id": lambda record: int(record.company_id.id),
+            "company_xmlid": LIFECYCLE_COMPANY_XMLID,
+            "declared_start_state": {"lifecycle_state": "draft", "sc_approval_state": "draft"},
+        },
     ),
 }
 payload["companies"] = {
