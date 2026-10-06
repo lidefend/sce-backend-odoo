@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: DAILY-ACCEPTANCE-MAINLINE-CONTINUATION
   title: daily_dev_user_perspective_acceptance_continuation_on_current_mainline
-  status: active
+  status: completed
   formal_product_layer: P4
   layer_target: daily_development_runtime_acceptance
   module:

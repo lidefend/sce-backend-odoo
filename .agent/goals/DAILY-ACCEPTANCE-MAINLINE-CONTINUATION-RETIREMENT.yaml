@@ -1,0 +1,21 @@
+goal:
+  id: DAILY-ACCEPTANCE-MAINLINE-CONTINUATION-RETIREMENT
+  status: completed
+  formal_product_layer: P4
+  objective: >-
+    Retire the DAILY-ACCEPTANCE-MAINLINE-CONTINUATION run ledger after PR #597
+    merged into main. Mark the run and goal completed with the recorded
+    mainline-integration evidence (merged as 2836f9da) and return
+    .agent/active-runs.json to its empty terminal state, so no index entry points
+    at the merged audit/daily-acceptance-mainline-continuation-20261006 branch.
+    This is bookkeeping only: it changes no product, contract, test, gate,
+    workflow, runtime or credential behaviour.
+  run: .agent/runs/DAILY-ACCEPTANCE-MAINLINE-CONTINUATION-RETIREMENT/run.json
+  exclusions:
+    - product_changes
+    - contract_changes
+    - assertion_or_audit_relaxation
+    - baseline_raises
+    - product_deployment
+    - production_access
+    - credential_rotation
