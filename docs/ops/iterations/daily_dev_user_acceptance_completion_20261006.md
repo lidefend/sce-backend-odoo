@@ -214,6 +214,11 @@ Owner acceptance entry: `http://1.95.85.92:18081/`（自定义前端），口令
   已退役分支不得在 `main` 留下映射；`main` 上 `ci.local.iteration` 报 `unregistered` 是该车道既有先例。
 - **不走捷径**：未改 `agent_run_context` 的解析规则，未放宽 `ci.local.iteration` 的 `resolved` 要求，
   仅让索引回到与「分支已退役」一致的真实状态。
+- **顺带修复的记录层缺陷**：`.agent/goals/DAILY-DEV-USER-ACCEPTANCE-COMPLETION.yaml` 第 78 行缩进错误
+  （`  - no_relaxation_of_relation_open_authority_or_field_permission` 少两个空格），使整个 goal 记录
+  **无法被任何 YAML 解析器读取**（`yaml.safe_load` 直接 ParserError）。已按同级 key 对齐修正，
+  并同步 goal 的 `next_exact_step`；`goal.status` 保持 `active`（产品交付仍待所有者判断），
+  与 `run.status=completed` 的组合沿用 `ACTIVE-RUN-INDEX-DANGLING-CLOSEOUT` 先例。
 
 ## 4. 仍未关闭
 
