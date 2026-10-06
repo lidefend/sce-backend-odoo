@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "DAILY-DEV-USER-ACCEPTANCE-COMPLETION",
-  "branch": "codex/daily-dev-user-acceptance-completion-20261006",
+  "branch": "codex/daily-dev-user-acceptance-closeout-20261006",
   "status": "active",
   "baseline_sha": "5ba6398e672da8b46807da3538187be980772b6d",
   "goal": ".agent/goals/DAILY-DEV-USER-ACCEPTANCE-COMPLETION.yaml",
