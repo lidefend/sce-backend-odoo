@@ -42,6 +42,8 @@
 
 **R2 入口规则**：可打开的入口（scene / route / action / menu）由
 scene-ready contract + 交付面（F3）过滤 + 角色/能力共同决定，缺一不可。
+未注册的交付面是**关闭通道**：交付策略启用时，它不交付任何场景（fail-closed），
+只有经授权的开发旁路（见 §7.1）可临时打开，且不得回落到"未注册即直通"。
 
 **R3 可见性规则（单条，fail-closed）**：
 
@@ -66,19 +68,34 @@ scene-ready contract + 交付面（F3）过滤 + 角色/能力共同决定，缺
 
 - `make verify.contract.authority_hierarchy.guard` — §4 权威链。
 - `make verify.backend.scene_surface_boundary.unit` — §2/§3 的通道词汇表闭包、
-  已注册交付面 fail-closed、未注册面的已知边界（行为断言，非文本断言）。
+  已注册交付面 fail-closed、未注册交付面 fail-closed 与角色开发旁路
+  （行为断言，非文本断言；负例先确认基线为绿）。
 - `make verify.frontend.form_structure_surface_contract.unit` — R3 的声明消费与角色门。
-- `addons/smart_core/tests/test_scene_delivery_policy.py` — 交付过滤的运行时语义。
+- 运行时补证（诚实口径）：`addons/smart_core/tests/test_scene_delivery_policy.py`
+  本是交付过滤的运行时语义，但**当前未被收集**——`addons/smart_core/tests/__init__.py`
+  未导入该文件；且它以 `env=None` 调用 `filter_delivery_scenes`，触达不到 P1 的策略
+  文件/别名 hook，断言针对的是退化路径（在 HEAD 上同样失败，非本轮引入）。在
+  "模块测试是否可依赖 P1 hook"这一归属决策落地前，它**不作为证据**。本轮改由
+  `verify.backend.scene_surface_boundary.unit` 直接执行真实 P1 旁路模块来锁定。
 
 ## 7. 已知边界与待裁决缺口（不掩盖）
 
-1. **未注册交付面 fail-open**：`_normalize_surface` 是开放命名空间，
-   `_select_surface_policy` 对未注册面返回 `enabled=False`，交付白名单随即失效。
-   调用方显式传入一个未注册的 `surface`（甚至一个业务 `scene_key`）即可绕过 F3
-   的产品面白名单。角色/能力门仍然生效，但只声明了 `delivery_mode`、未声明
-   `access`/`required_capabilities` 的场景会因此多出。是否收紧为"策略源存在时，
-   未注册面按 fail-closed 排除"属于产品可见性决策，需显式裁决后再改机制，
-   本轮只把它登记并锁定为已知边界。
+1. **未注册交付面已收紧为 fail-closed（本轮裁决并实现）**：`_normalize_surface`
+   仍是纯命名归一化（未注册名原样保留、可审计），但 `_select_surface_policy` 对未
+   注册面返回"已注册但关闭"（`source=unregistered_closed`、`closed=true`），
+   `filter_delivery_scenes` 对整条请求以 `SCENE_SURFACE_UNREGISTERED` 排除，不再回落到
+   fail-open 直通。历史缺口（调用方显式传入未注册 `surface`、甚至业务 `scene_key`
+   即可绕过 F3 产品面白名单）因此关闭。
+   开发阶段例外：P0 只发起扩展 hook `smart_core_surface_unregistered_bypass`，
+   授权规则归 P1（`smart_construction_core/core_extension_surface_bypass.py`），
+   且必须同时满足 ①有运行时环境（无 `env` 不旁路）②运行时阶段 ∈
+   {`dev`,`test`,`local`,`stage`,`staging`} ③角色为 `system_admin`（平台/系统管理员，
+   与 `system.init.role_surface` 同一角色策略解析）。旁路命中即回到既有直通语义，
+   并在 `nav_meta.delivery_policy` 标记 `surface_policy_bypass=true` 供审计。
+   不新增能力键、不放宽 ACL、不授予任何客户角色；生产阶段旁路为关。
+   授权模块本身由 `verify.backend.scene_surface_boundary.unit` **执行真实实现**并锁定：
+   无 `env`、`env` 无用户、非开发阶段、非 `system_admin`、角色解析失败 → 一律不授权；
+   负例（放宽阶段或角色门）即产生失败。
 2. **交付策略默认关闭**：`resolve_delivery_policy_runtime` 在无参数、无
    `ir.config_parameter`、无环境变量时 `enabled=False`，`filter_delivery_scenes`
    原样返回全部场景。`smart_construction_scene` 已 seed

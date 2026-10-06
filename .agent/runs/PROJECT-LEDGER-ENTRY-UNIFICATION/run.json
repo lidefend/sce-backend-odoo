@@ -35,7 +35,9 @@
     "addons/smart_core/tests/test_backend_scene_surface_boundary.py",
     "frontend/apps/web/src/app/contracts/v2/",
     "frontend/apps/web/src/pages/ContractFormPage.vue",
-    "make/runtime_ops.mk"
+    "make/runtime_ops.mk",
+    "addons/smart_core/core/scene_delivery_policy.py",
+    "addons/smart_construction_core/core_extension_surface_bypass.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -216,11 +218,12 @@
       "target": "verify.backend.scene_surface_boundary.unit",
       "kind": "offline",
       "status": "passed",
-      "tests": 10,
-      "detail": "locks the scene/surface boundary: closed exclusion reason vocabulary, fail-closed allowlist for a registered delivery surface, explicit known fail-open edges (disabled filter; unregistered surface passed through). Negative-first: injecting fail-open policy turns the registered-allowlist cases red.",
+      "tests": 22,
+      "detail": "locks the scene/surface boundary: closed exclusion-reason vocabulary, fail-closed allowlist for a registered delivery surface, fail-closed + SCENE_SURFACE_UNREGISTERED exclusion for an unregistered surface, and the runtime-env/role-gated development bypass (env=None cannot bypass; authorized hook re-opens the legacy pass-through and is marked surface_policy_bypass=true). Now also EXECUTES the real P1 policy module (core_extension_surface_bypass.py) with a stubbed role resolver: no env / no acting user / non-development stage / non-system_admin role / resolver failure all deny. Negative-first: relaxing the stage or role gate turns 3 cases red; reinjecting the legacy fail-open branch turned 7 cases red. Baseline green first. Ran on the dirty stage HEAD=7945751e + uncommitted P0/P1 scope.",
       "inputs": [
         "addons/smart_core/tests/test_backend_scene_surface_boundary.py",
         "addons/smart_core/core/scene_delivery_policy.py",
+        "addons/smart_construction_core/core_extension_surface_bypass.py",
         "scripts/verify/contract_authority_hierarchy_guard.py",
         "docs/architecture/backend_scene_surface_authority_boundary_v1.md"
       ]
@@ -246,17 +249,27 @@
     },
     {
       "id": "SCENE_SURFACE_UNREGISTERED_FAIL_OPEN",
-      "status": "decision_pending",
-      "detail": "scene_delivery_policy._normalize_surface is an open name space and _select_surface_policy returns enabled=False for an unregistered surface, so the delivery-surface allowlist is bypassed when a caller passes an unregistered surface (including a business scene_key). Role/capability gates still apply. Tightening to fail-closed is a product visibility decision; boundary documented in docs/architecture/backend_scene_surface_authority_boundary_v1.md section 7 and pinned by verify.backend.scene_surface_boundary.unit."
+      "status": "resolved",
+      "detail": "scene_delivery_policy now closes an unregistered delivery surface fail-closed: _select_surface_policy returns a registered-but-closed policy (source=unregistered_closed, closed=true) and filter_delivery_scenes excludes the whole request with REASON_SCENE_SURFACE_UNREGISTERED. The only opening is the P1 development bypass hook smart_core_surface_unregistered_bypass (smart_construction_core/core_extension_surface_bypass.py): runtime env required, stage in {dev,test,local,stage,staging}, role system_admin resolved through the same published role policy as system.init.role_surface; bypass hits are marked surface_policy_bypass=true in nav_meta.delivery_policy. No capability key, ACL widening or customer role added. Boundary documented in docs/architecture/backend_scene_surface_authority_boundary_v1.md section 7.1 and pinned (negative-first) by verify.backend.scene_surface_boundary.unit."
+    },
+    {
+      "id": "SCENE_SURFACE_DEV_BYPASS_POLICY",
+      "status": "resolved",
+      "detail": "The unregistered-surface closure ships with one authorized escape hatch, so development can still reach a surface the product has not registered. P0 (scene_delivery_policy) only asks the extension hook smart_core_surface_unregistered_bypass and never decides the role; P1 (smart_construction_core/core_extension_surface_bypass.py) grants it only when (1) a runtime env exists, (2) runtime stage is in {dev,test,local,stage,staging}, (3) the role resolves to system_admin through the same published role policy as system.init.role_surface. No new capability key, no ACL widening, no customer role; production stage stays closed. Residual review point: if a deployment needs a different or additional bypass role, it must be declared in DEVELOPMENT_BYPASS_ROLES with the same stage gate, not by relaxing the kernel closure."
+    },
+    {
+      "id": "SCENE_DELIVERY_POLICY_RUNTIME_TEST_NOT_COLLECTED",
+      "status": "pending_owner_decision",
+      "detail": "addons/smart_core/tests/test_scene_delivery_policy.py (delivery-filter runtime semantics) is not collected: addons/smart_core/tests/__init__.py never imports it (git log -S shows it was never wired since the clean baseline). It also calls filter_delivery_scenes without env, so the P1 policy-file/alias hooks (smart_core_surface_policy_file_default, smart_core_surface_aliases) are unreachable and 2 of its 6 cases assert a degenerate path that fails on HEAD too (verified by stashing scene_delivery_policy.py back to HEAD: same 2 failures). Wiring it in requires an owning-layer decision on whether a smart_core test may depend on the P1 hook; until then it is not evidence. The boundary doc now states this explicitly instead of citing the file as runtime evidence."
     }
   ],
-  "next_exact_step": "Boundary work complete and locally locked: docs/architecture/backend_scene_surface_authority_boundary_v1.md defines the three scene objects and four surface objects, and verify.backend.scene_surface_boundary.unit locks the closed reason vocabulary plus fail-closed registered-surface allowlist (negative-first). Next: review the full diff, commit in layers (P0 mechanism/frontend, P1 policy/contract/docs, iteration record), re-run the affected L2 set, then sync to daily via daily.runtime.candidate.bundle_sync + verify.frontend.build + daily.runtime.source_revision.align, and re-run the detail lane (1440/390, light/dark, detail-only) with the relation roundtrip re-bound to the new SHA. Do not force push or write main directly.",
+  "next_exact_step": "Unregistered-surface tightening + development bypass are implemented and locked at the owning layers (P0 closure in scene_delivery_policy, P1 role/stage policy in core_extension_surface_bypass, 22-case negative-first unit on the dirty stage). Next: review the full diff and commit in layers (P0 mechanism, P1 bypass policy + hook export, tests/docs/run), re-run the affected L2 set, then finish the pending detail lane (1440/390, light/dark, relation roundtrip re-bound to the new SHA) and the create/edit + workbench evidence delta. Do not force push or write main directly.",
   "write_replay_authorized": false,
   "candidate_evidence": false,
   "stage_identity": {
     "baseline_sha": "8892042761eeb8f47a135fd817a9a9d220837620",
-    "head": "f743006a",
+    "head": "7945751e",
     "dirty": true,
-    "note": "single writer; P0 mechanism (formStructureContract.surfaces + scene/surface boundary) + P1 policy hook + frontend consumption + docs/guards/tests; uncommitted."
+    "note": "single writer; committed at 7945751e (formStructureContract.surfaces + scene/surface boundary); uncommitted: unregistered-surface fail-closed closure in smart_core/core/scene_delivery_policy.py, P1 development-bypass hook (core_extension_surface_bypass.py + core_extension.py/__init__.py export), boundary test now 22 cases incl. real-P1-module execution, docs section 6/7.1 correction, this run. Discovered (pre-existing, not introduced here): test_scene_delivery_policy.py is an uncollected dead runtime test with stale/ degenerate expectations -> recorded as a blocker, doc claim corrected."
   }
 }
