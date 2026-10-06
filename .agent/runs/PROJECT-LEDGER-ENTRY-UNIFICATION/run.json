@@ -12,7 +12,7 @@
       "status": "resolved"
     },
     {
-      "detail": "scene_delivery_policy now closes an unregistered delivery surface fail-closed: _select_surface_policy returns a registered-but-closed policy (source=unregistered_closed, closed=true) and filter_delivery_scenes excludes the whole request with REASON_SCENE_SURFACE_UNREGISTERED. The only opening is the P1 development bypass hook smart_core_surface_unregistered_bypass (smart_construction_core/core_extension_surface_bypass.py): runtime env required, stage in {dev,test,local,stage,staging}, role system_admin resolved through the same published role policy as system.init.role_surface; bypass hits are marked surface_policy_bypass=true in nav_meta.delivery_policy. No capability key, ACL widening or customer role added. Boundary documented in docs/architecture/backend_scene_surface_authority_boundary_v1.md section 7.1 and pinned (negative-first) by verify.backend.scene_surface_boundary.unit.",
+      "detail": "scene_delivery_policy now closes an unregistered delivery surface fail-closed: _select_surface_policy returns a registered-but-closed policy (source=unregistered_closed, closed=true) and filter_delivery_scenes excludes the whole request with REASON_SCENE_SURFACE_UNREGISTERED. The only opening is the P1 development bypass hook smart_core_surface_unregistered_bypass (smart_construction_core/core_extension_surface_bypass.py): runtime env required, stage in {dev,test,local,stage,staging}, the caller must resolve as a platform administrator through smart_core.security.platform_admin.user_is_platform_admin (the identity the runtime contract publishes as identity.is_platform_admin); bypass hits are marked surface_policy_bypass=true in nav_meta.delivery_policy. No capability key, ACL widening or customer role added. Boundary documented in docs/architecture/backend_scene_surface_authority_boundary_v1.md section 7.1 and pinned (negative-first) by verify.backend.scene_surface_boundary.unit.",
       "id": "SCENE_SURFACE_UNREGISTERED_FAIL_OPEN",
       "status": "resolved"
     },
@@ -163,7 +163,7 @@
       "target": "verify.frontend.professionalization.finance_center.runtime"
     },
     "form_structure_surface_contract_unit": {
-      "detail": "declared form surfaces: contract declares -> renderer consumes -> capability registry gates the audit sub-region; negative-first (declaration-only change flips it red).",
+      "detail": "declared form surfaces: contract declares -> renderer consumes -> capability registry gates the audit sub-region; negative-first (declaration-only change flips it red). Harness is a node assertion script; recorded tests=21 counts its assert.* assertions (the runner prints a single ok line, not a unittest count).",
       "inputs": [
         "frontend/apps/web/scripts/form_structure_surface_contract_test.ts",
         "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue",
@@ -174,7 +174,7 @@
       "kind": "offline",
       "status": "passed",
       "target": "verify.frontend.form_structure_surface_contract.unit",
-      "tests": 0
+      "tests": 21
     },
     "local_dev_env_refresh": {
       "detail": "Governed env refresh executed as local.dev.down + local.dev.up + local.dev.restart + local.dev.health on the registered local.dev profile (sc_dev_demo): python process reload after the P0/P1 change, plus repair of the stale nginx dist-dev bind-mount. Result: local.dev.health PASS (frontend_http=200), GET / = 200, /api/runtime-version = 200 db=sc_dev_demo. Recorded under the local development lifecycle gate; the down/up/health entrypoints are the governed operators of that gate, not standalone verify targets.",
@@ -281,6 +281,22 @@
     "runtime_profile": "local.dev"
   },
   "evidence": {
+    "independent_review": {
+      "carry_forward": "The docs/generated-only tail after 39fc2380 changes no product path; the review's product conclusions carry forward to the frozen tip by deterministic impact analysis.",
+      "findings": "1 major process/identity (stage_identity lagged the tip; closed by this re-freeze), 3 minor (stale system_admin sentence in blockers[2] - fixed here; zero-recorded harness count - fixed here; bypass stage env fallback - defense-in-depth note only), 1 nit (only form_project.json embedded schemaSha256 is indirectly guarded).",
+      "product_blockers": 0,
+      "range": "f743006a..39fc2380",
+      "reproduced": [
+        "make verify.contract.schema.declaration.sync (4 tests)",
+        "make verify.backend.contract_lifecycle.authority (8/8 dims)",
+        "make verify.backend.scene_surface_boundary.unit (22 tests)",
+        "make verify.frontend.form_structure_surface_contract.unit",
+        "make verify.unified_page_contract.v2.schema",
+        "make ci.generated_reports.guard"
+      ],
+      "reviewer": "independent read-only executor (separate agent, no writes)",
+      "verdict": "pass"
+    },
     "record": "docs/ops/iterations/project_ledger_entry_unification_20261006.md",
     "runtime_reports": [
       "docs/frontend_productization/domain-rollout/project-domain-coverage-v1.json",
@@ -289,7 +305,7 @@
   },
   "goal": ".agent/goals/PROJECT-LEDGER-ENTRY-UNIFICATION.yaml",
   "id": "PROJECT-LEDGER-ENTRY-UNIFICATION",
-  "next_exact_step": "Close out the branch: (1) run one independent review of the full candidate diff (f743006a..tip) covering the P0 schema-digest fix and the scene/surface layers; (2) commit this run/documentation update, re-align daily to the tip served SHA and re-run the cheap daily readonly probe for a tip-bound receipt; (3) push the candidate through the governed PR entry (Gitee ordinary PR or GitHub) with exact SHA, remote required checks and independent review; do not force push or write main directly. Deferred by owner decision: VIEW_STRUCTURE_BASELINE_CLEAN_LANE (env-gated) and SCENE_DELIVERY_POLICY_RUNTIME_TEST_NOT_COLLECTED.",
+  "next_exact_step": "Close out the branch: (1) generated-evidence preflight PASS at the clean tip (done); (2) re-align the daily served revision to the frozen candidate tip and re-run the cheap daily readonly probe once, storing the tip-bound receipt as untracked evidence / PR text (receipts are not committed); (3) push the candidate through the governed GitHub PR entry (make pr.push then make pr.create) with the exact SHA, remote required checks (public_guard / merge_policy_gate / professional_quality_gate / frontend_release_gate on the PR head) and the independent review; do not force push or write main directly, merge per the owner's CI-pass rule. Local ci.local.quick is an explicit risk-classified skip for this ordinary candidate (docs/generated-only tail, targeted owning-layer guards already green, remote gates authoritative). Deferred by owner decision: VIEW_STRUCTURE_BASELINE_CLEAN_LANE (env-gated) and SCENE_DELIVERY_POLICY_NOT_COLLECTED.",
   "record": "docs/ops/iterations/project_ledger_entry_unification_20261006.md",
   "schema_version": 1,
   "scope": [
@@ -329,9 +345,10 @@
   ],
   "stage_identity": {
     "baseline_sha": "8892042761eeb8f47a135fd817a9a9d220837620",
+    "candidate_tip_after_freeze_prepare": "13f355426aa32e0fe56e081a6c53354a685f2885",
     "dirty": false,
     "head": "e384b8328ce36b3586fd9dbb6004bd665740edf5",
-    "note": "single writer; worktree CLEAN. Six product/record commits on top of the detail-projection fix f743006a: 6a391504 (P0 unregistered delivery surface closed fail-closed), add0cd9a (P1 development bypass policy), c44afa57 (tests/doc/run locks), 3dd0dea3 (bypass gate corrected to the published platform-admin identity), ed783035 (run: candidate HEAD + daily closeout plan), e384b832 (P0 fix: re-derived contract schema digest bound to the schema asset, plus 4 canonical example provenance fields). This run/documentation commit sits directly on top of e384b832 and changes no product path: the acceptance evidence binds the product inputs at e384b832, which this metadata commit does not touch (documentation changes do not invalidate page evidence). Daily served revision is e384b832; the candidate tip for publication is this commit."
+    "note": "single writer; worktree CLEAN. Product-input identity stays e384b832 (P0 schema-digest fix + P1 scene/surface layers on top of the detail-projection fix f743006a); the tips above it are record/generated-evidence only: 39fc2380 (run target收敛), 9620aedf + 13f35542 (freeze-prepare refresh of complexity_budget_report / split_plan_queue / p4 contract form split evidence / component-driver-takeover-inventory), and the final run/documentation commit. Generated-evidence preflight PASS after the refresh; product paths unchanged, so page evidence and the independent review carry forward by deterministic impact analysis (documentation/generated changes do not invalidate page evidence). Daily served revision was 39fc2380 for the detail/relation/form/workbench lanes; the final daily re-alignment binds the frozen candidate tip."
   },
   "status": "active",
   "write_replay_authorized": false

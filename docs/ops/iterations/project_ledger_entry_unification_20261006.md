@@ -574,3 +574,45 @@ visible = 契约声明该 surface
   运行时错误 0 的结论按其输入未变而携带。
 - **前端浏览器车道**绑定本次 served `e384b832` 实测；后端投射由同一 served 运行时提供，
   前后端同为该候选，未出现跨身份拼接。
+
+## 分支收口：生成证据冻结 + 独立复核 + 受管推送（2026-10-06）
+
+### 生成证据冻结（L1，`make pr.push` 强制前置）
+- 首次 `make ci.generated_evidence.preflight` → **FAIL**：`complexity report is stale`。
+- 按受管入口 `make ci.delivery.freeze.prepare` 刷新（`refresh.generated_reports` + 组件接管清单
+  + 契约表单拆分证据），提交 `9620aedf`、`13f355426aa32e0fe56e081a6c53354a685f2885`
+  （**仅生成报告，无产品路径**）。
+- 复跑 `make ci.generated_evidence.preflight` → **PASS**：test inventory 1463 current、
+  E2E matrix / module map / complexity / split queue / GitHub remote plan / contract structure
+  fingerprint 全 current；`component_driver_takeover` 13 tests OK（required=33 missing=0
+  bridge_only=0 raw=0）、`contract_form_split_evidence` PASS lines=1960。
+
+### 独立复核（只读、独立执行器，未修改任何文件；范围 `f743006a..39fc2380`）
+- 结论：**可推送**，产品代码 0 blocker；四个复核域（schema 摘要绑定 / scene-surface fail-closed
+  与旁路 / 前端声明消费 fail-closed / 记录可复现）全部通过。
+- 独立复算：`contract_lifecycle.py:16` 常量 == schema 资产 sha256（`28be508e…`）；4 个 canonical
+  示例内嵌 `schemaSha256` 与 `integrity.contractSha256` 自洽；守卫改动全部为**收紧**，无 token 移除。
+- 独立亲跑并通过：`verify.contract.schema.declaration.sync`(4)、`verify.backend.contract_lifecycle.authority`
+  (8/8 dims, score 100)、`verify.backend.scene_surface_boundary.unit`(22)、
+  `verify.frontend.form_structure_surface_contract.unit`、`verify.unified_page_contract.v2.schema`(4 examples)、
+  `verify.unified_page_contract.v2`、`verify.contract.structure_lock`、
+  `scripts.verify.test_dev_acceptance_release_identity`(42)、`make ci.generated_reports.guard`。
+- 发现与处置：**1 major**（流程/身份：`stage_identity` 落后于 tip）→ 本轮重绑并更新 run.json；
+  **3 minor**：① `blockers[2]` 过期 `system_admin` 表述 → 本轮删除并改为
+  `smart_core.security.platform_admin.user_is_platform_admin`；② `form_structure_surface_contract_unit.tests=0`
+  → 本轮改为 21（node 断言脚本计数口径）；③ 旁路 stage 取 `os.environ["ENV"] or "dev"` → 纵深防御提示，
+  主控为平台管理员身份且与仓库既有 `runtime_env` 约定一致，不改；**1 nit**：4 个示例中仅
+  `form_project.json` 的内嵌摘要被间接守卫（当前值均正确）。
+- **身份重绑**：`39fc2380` 之后的尾部（`9620aedf`、`13f35542`、本记录提交）为 docs/generated-only，
+  产品路径与守卫输入未变，产品结论与浏览器证据按确定性影响分析携带，不重跑。
+
+### 本地 Quick 的显式 skip（按可信风险分类，非缺失门禁）
+- 本候选尾部仅生成报告/记录变更，产品输入仍为 `e384b832`；定向 owning-layer 守卫已全绿；
+  远端 PR 必需检查（`public_guard` / `merge_policy_gate` / `professional_quality_gate` /
+  `frontend_release_gate`）将在 PR head 上权威执行。故 `ci.local.quick` 为显式 skip，不重复执行；
+  按 `AGENTS.md` 2026-09-23 分工，本地 Quick 不是普通候选推送前置。
+
+### daily 重对齐与只读探针（tip 绑定收据）
+- 受管 `daily.runtime.candidate.bundle_sync`（old `39fc2380` → 冻结 tip）+ `daily.runtime.source_revision.align`；
+  `/api/runtime-version` 回读 `git_sha=<冻结 tip>`；`verify.daily_dev.acceptance.readonly.probe` overall PASS。
+- 收据按「post-freeze receipt」口径存放于未跟踪证据区与 PR 文本，不落提交（避免产生新的 doc-only 尾部）。
