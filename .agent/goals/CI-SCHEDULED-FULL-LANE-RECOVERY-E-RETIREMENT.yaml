@@ -1,0 +1,18 @@
+goal:
+  id: CI-SCHEDULED-FULL-LANE-RECOVERY-E-RETIREMENT
+  status: completed
+  formal_product_layer: P4
+  objective: >-
+    Retire the CI-SCHEDULED-FULL-LANE-RECOVERY-E run ledger after PR #595 merged.
+    Mark the E run and goal completed with the recorded mainline-integration and
+    remote full-lane evidence, and return .agent/active-runs.json to its empty
+    terminal state, because the E branch was deleted after merge and a binding to
+    a deleted branch is a dangling index entry. This is bookkeeping only: it
+    changes no product, contract, test, gate, workflow or runtime behaviour.
+  run: .agent/runs/CI-SCHEDULED-FULL-LANE-RECOVERY-E-RETIREMENT/run.json
+  exclusions:
+    - product_changes
+    - contract_changes
+    - baseline_raises
+    - product_deployment
+    - production_access
