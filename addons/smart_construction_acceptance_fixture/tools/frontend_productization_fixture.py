@@ -29,6 +29,30 @@ FIXTURE_SCOPES = {
 }
 FIXTURE_SCOPE_ENV = "SC_ACCEPTANCE_FIXTURE_SCOPE"
 
+# Dedicated carrier for the project lifecycle browser acceptance.
+#
+# The 项目启停管理 entry walks the declared project ladder from `draft` to its
+# terminal `closed` state. A closed project can never re-enter `draft` through
+# the declared state machine, so a governed rerun cannot reuse the previously
+# walked row. This carrier therefore owns exactly one project that is reset to
+# the declared start state before each walk. It is deliberately separate from
+# FE Project A/B/C so the reset can never disturb a row another acceptance lane
+# reads. The reset removes only the carrier's own history: the builder fails
+# closed if any contract, settlement or payment row references the carrier.
+LIFECYCLE_FIXTURE_XMLID = "fe_project_lifecycle"
+LIFECYCLE_FIXTURE_NAME = "FE Project Lifecycle"
+LIFECYCLE_FIXTURE_CODE = "FE-LC"
+LIFECYCLE_FIXTURE_START_STATE = {"lifecycle_state": "draft", "sc_approval_state": "draft"}
+LIFECYCLE_FIXTURE_DEPENDENT_MODELS = (
+    "construction.contract",
+    "sc.general.contract",
+    "sc.settlement.order",
+    "project.settlement",
+    "payment.request",
+    "sc.payment.execution",
+    "project.task",
+)
+
 
 def _fixture_password():
     password = str(os.environ.get("SC_ACCEPTANCE_FIXTURE_PASSWORD") or "").strip()
@@ -257,6 +281,72 @@ def _project(env, suffix, company, manager, partner):
         [("name", "=", name), ("company_id", "=", company.id)],
         values,
     )
+
+
+def _lifecycle_carrier(env, company, manager, partner):
+    """Return the lifecycle carrier project in its declared start state.
+
+    A carrier that already sits in the declared start state is reconciled in
+    place through the same administrative upsert every other fixture row uses.
+    Any other state is a leftover from an earlier walk, so the carrier is
+    removed and recreated instead of being written back into `draft` - the
+    declared state machine makes `closed` terminal, and bypassing it would
+    weaken the very rule this lane exists to prove. The removal is guarded: it
+    is denied while any business fact still references the carrier.
+    """
+    model = env["project.project"].sudo().with_context(active_test=False, tracking_disable=True)
+    record = env.ref("%s.%s" % (MODULE, LIFECYCLE_FIXTURE_XMLID), raise_if_not_found=False)
+    if record and record._name != "project.project":
+        raise RuntimeError("xmlid %s does not point to project.project" % LIFECYCLE_FIXTURE_XMLID)
+    if record:
+        record = model.browse(record.id).exists()
+    reset = False
+    if record and any(
+        record[field_name] != expected
+        for field_name, expected in LIFECYCLE_FIXTURE_START_STATE.items()
+    ):
+        dependents = [
+            "%s=%s" % (model_name, env[model_name].sudo().search_count([("project_id", "=", record.id)]))
+            for model_name in LIFECYCLE_FIXTURE_DEPENDENT_MODELS
+            if env[model_name].sudo().search_count([("project_id", "=", record.id)])
+        ]
+        if dependents:
+            raise RuntimeError(
+                "lifecycle carrier %s must not be reset while business facts reference it: %s"
+                % (record.id, ",".join(dependents))
+            )
+        record.unlink()
+        record = model.browse()
+        reset = True
+    values = {
+        "name": LIFECYCLE_FIXTURE_NAME,
+        "code": LIFECYCLE_FIXTURE_CODE,
+        "company_id": company.id,
+        "partner_id": partner.id,
+        "user_id": manager.id,
+        "manager_id": manager.id,
+        "privacy_visibility": "followers",
+        "funding_enabled": True,
+        "active": True,
+    }
+    if "project_code" in env["project.project"]._fields:
+        values["project_code"] = LIFECYCLE_FIXTURE_CODE
+    values.update(LIFECYCLE_FIXTURE_START_STATE)
+    carrier = _upsert(
+        env,
+        "project.project",
+        LIFECYCLE_FIXTURE_XMLID,
+        [("name", "=", LIFECYCLE_FIXTURE_NAME), ("company_id", "=", company.id)],
+        values,
+    )
+    carrier.message_subscribe(partner_ids=[manager.partner_id.id])
+    for field_name, expected in LIFECYCLE_FIXTURE_START_STATE.items():
+        if carrier[field_name] != expected:
+            raise RuntimeError(
+                "lifecycle carrier %s is not in the declared start state: %s=%s"
+                % (carrier.id, field_name, carrier[field_name])
+            )
+    return carrier, reset
 
 
 def _funding_baseline(env, suffix, project):
@@ -1136,6 +1226,9 @@ def ensure_fixture(env) -> Dict[str, Any]:
     project_a = _project(env, "A", company_a, pm, partner_a)
     project_b = _project(env, "B", company_a, pm, partner_b)
     project_c = _project(env, "C", company_b, finance, partner_c)
+    lifecycle_carrier, lifecycle_carrier_reset = _lifecycle_carrier(
+        env, company_a, config_admin, partner_a
+    )
 
     # Reconcile only follower rows attached to projects owned by this fixture.
     follower_model = env["mail.followers"].sudo()
@@ -1325,7 +1418,17 @@ def ensure_fixture(env) -> Dict[str, Any]:
             executive.login,
         ],
         "companies": [company_a.name, company_b.name],
-        "projects": [project_a.name, project_b.name, project_c.name],
+        "projects": [project_a.name, project_b.name, project_c.name, lifecycle_carrier.name],
+        "lifecycle_carrier": {
+            "id": int(lifecycle_carrier.id),
+            "code": lifecycle_carrier.code,
+            "xmlid": "%s.%s" % (MODULE, LIFECYCLE_FIXTURE_XMLID),
+            "reset": lifecycle_carrier_reset,
+            "state": {
+                field_name: lifecycle_carrier[field_name]
+                for field_name in LIFECYCLE_FIXTURE_START_STATE
+            },
+        },
         "records": {
             "contracts": 3,
             "general_contracts": 3,

@@ -1,0 +1,61 @@
+schema_version: 1
+goal:
+  id: FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE
+  title: close_the_declared_gaps_of_the_89_formal_business_frontend_entries
+  status: in_progress
+  formal_product_layer: P1
+  layer_target: smart_construction_core_project_center_and_contract_center_entry_surfaces
+  module:
+    - smart_construction_core
+    - frontend/apps/web
+    - scripts/verify
+    - docs/product
+  objective: >-
+    docs/product/frontend_business_entry_acceptance_v1.csv declares 89 formal
+    business frontend entries in the formal 办理 closure standard. Three rows are
+    partial_passed with an explicit, written gap and 84 rows are not_run. Close
+    the written gaps of the three partial rows with real runtime evidence on the
+    owner-authorized daily development server (ENV=dev, DB_NAME=sc_demo), driving
+    the product surface rather than the ORM: 项目启停管理 must show the remaining
+    lifecycle transitions (标记竣工/进入结算/进入保修期/关闭项目 including the
+    declared close confirmation), 日常合同 must show its approval submission,
+    list query/filter/paging and detail-return context, and 付款申请 must show
+    whether its one2many row-edit save block reproduces. Update only the rows the
+    evidence actually closes; never mark a row passed on a selector string, a
+    literal pixel value or a handler-level diagnosis. No assertion, ACL, field
+    permission, negative case or acceptance profile is relaxed; no new global
+    test framework is introduced.
+  baseline:
+    branch: main
+    full_sha: 1c5368a7ecae72946e8183a8a84c2a1f99a89485
+    source: clean_main_after_pr_600
+  product_boundary:
+    standard_vs_user_specific: construction_industry_standard_product
+    why_here: >-
+      The three partial rows are P1 construction-product entries whose menu,
+      action, native view and lifecycle declarations live in
+      smart_construction_core; the acceptance matrix itself is a P4 product
+      acceptance record under docs/product.
+    why_not_elsewhere:
+      - no_p0_platform_mechanism_or_contract_envelope_change_without_observed_defect
+      - no_p2_customer_preference_or_data_baseline_change
+      - no_p3_runtime_lowcode_configuration_write
+      - no_relaxation_of_any_gate_assertion_audit_acl_or_negative_case
+      - no_new_environment_database_port_volume_or_credential_authority
+      - no_global_one2many_identity_semantics_change_without_explicit_owner_decision
+    blast_radius:
+      - docs/product/frontend_business_entry_acceptance_v1.csv acceptance_status and evidence columns
+      - scripts/verify focused business-entry acceptance tools reused from the registered daily profile
+      - smart_construction_core lifecycle/view projection only if an owner-layer defect is observed
+  exclusions:
+    - no_change_to_config_frontend_acceptance_environments_v1_json_operation_allowlist
+    - no_direct_container_or_orm_write_that_bypasses_the_product_surface
+    - no_random_or_rotated_credentials_the_isolated_fixture_password_stays_fixed
+    - no_retirement_of_passing_rows_and_no_blanket_not_run_to_passed_rewrite
+    - no_global_one2many_validation_semantic_change_in_this_batch
+  rollback:
+    - revert this branch; the matrix returns to its partial_passed rows and the daily runtime keeps only the lifecycle state the acceptance run actually advanced
+  next_exact_step: >-
+    Register this run, then drive project 463 through the declared lifecycle on
+    the daily development server product surface and record the observed
+    transitions before touching the matrix.

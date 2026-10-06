@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "id": "FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE",
+  "branch": "fix/frontend-business-entry-acceptance-closure-20261007",
+  "status": "active",
+  "baseline_sha": "1c5368a7ecae72946e8183a8a84c2a1f99a89485",
+  "goal": ".agent/goals/FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE.yaml",
+  "record": "docs/ops/iterations/frontend_business_entry_acceptance_gap_closure_20261007.md",
+  "scope": [
+    ".agent/",
+    "docs/product/",
+    "docs/ops/iterations/",
+    "scripts/verify/",
+    "make/",
+    "frontend/apps/web/src/",
+    "addons/smart_construction_core/",
+    "config/",
+    "scripts/ops/",
+    "addons/smart_construction_acceptance_fixture/"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "owner-authorized governed daily development server http://1.95.85.92:18081 resolved through config/frontend/acceptance_environments_v1.json profiles.daily (ENV=dev, database sc_demo, external target_mode, expected sha required). The owner explicitly authorized mutating the sc_demo semi-production dataset to exercise real product function. No new environment, database, port, volume, credential or acceptance-profile authority is created."
+  },
+  "checks": {
+    "business_entry_lifecycle_browser": {
+      "target": "verify.frontend.business_entry.lifecycle.browser",
+      "kind": "runtime",
+      "inputs": [
+        "scripts/verify/frontend_business_entry_lifecycle_browser.mjs",
+        "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
+        "scripts/verify/playwright_runtime.mjs",
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "scripts/ops/daily_runtime_lifecycle_fixture_prepare.py",
+        "make/frontend.mk",
+        "config/frontend/acceptance_environments_v1.json"
+      ]
+    }
+  },
+  "blockers": [
+    "RESOLVED 2026-10-07: the draft->in_progress rollback traced to missing outgoing-mail sender configuration on the daily runtime (mail.default.from / res.company.email absent and internal accounts without an address made mail.thread._message_compute_author raise UserError). Fixed through the governed entry 'make daily.runtime.mail_sender.prepare' (scripts/ops/daily_runtime_mail_sender_prepare.py); report .runtime/final-acceptance/daily-deployed/mail-sender-prepare.json, users_still_without_email=0.",
+    "RESOLVED 2026-10-07: close/warranty refusals on production rows are the declared business preconditions (_guard_project_close_by_settlement / _guard_project_close_by_payment), not a defect. The lane now walks a dedicated resettable carrier with no settlement/payment facts; no guard, ACL or field permission was relaxed.",
+    "OPEN PARALLEL FINDING (does not block this entry's closure; awaits owner adjudication): the published navigation authority filters menu 970 / action 1178 out for group_sc_role_project_manager (fixture_role_pm uid214) while the menu/action declaration (group_sc_cap_project_manager) resolves True for that role (ORM has_group=True) - the menu-layer group authority and the published-navigation authority disagree. This row was accepted with group_sc_role_business_admin (fixture_role_config_admin uid216), whose published navigation contains the entry."
+  ],
+  "next_exact_step": "Object 3 (项目启停管理) is closed: acceptance_status is now 'passed' in docs/product/frontend_business_entry_acceptance_v1.csv and the runtime contract-driven walk reached the declared terminal state on the daily server (artifacts/frontend-business-entry-lifecycle/daily-6c8e07f7/summary.json). Next: close the remaining minimal evidence gaps of the other two partial rows (日常合同 approval submission + list query/filter/paging /detail-return; 付款申请 one2many row-edit save block) under the same governed daily lane, then handle the parallel published-navigation authority finding for group_sc_role_project_manager. Do not rerun object 3."
+}

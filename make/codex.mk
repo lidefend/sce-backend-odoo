@@ -730,6 +730,55 @@ daily.runtime.source_revision.align: guard.prod.forbid verify.daily.runtime.sour
 		--env-file "$(DAILY_RUNTIME_ENV_FILE)" \
 		--report "$(DAILY_RUNTIME_SOURCE_REVISION_REPORT)"
 
+# The daily runtime has no outgoing-mail sender declared, so product transitions
+# that notify a reviewer fail inside mail.mail._send and roll the whole business
+# transition back. This entry declares one sender identity through the existing
+# governed `make odoo.shell.exec` entry and proves it with the existing read-only
+# `make prod.guard.mail_from` guard. It writes only mail-sender configuration.
+.PHONY: daily.runtime.mail_sender.prepare verify.daily.runtime.mail_sender.prepare
+DAILY_RUNTIME_DATABASE ?= sc_demo
+DAILY_RUNTIME_MAIL_SENDER_FROM ?= noreply@sc-daily.local
+DAILY_RUNTIME_MAIL_SENDER_BASE_URL ?= http://1.95.85.92:18081
+DAILY_RUNTIME_MAIL_SENDER_REPORT ?= .runtime/final-acceptance/daily-deployed/mail-sender-prepare.json
+
+verify.daily.runtime.mail_sender.prepare: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_mail_sender_prepare.py scripts/ops/test_daily_runtime_mail_sender_prepare.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_mail_sender_prepare
+
+daily.runtime.mail_sender.prepare: guard.prod.forbid verify.daily.runtime.mail_sender.prepare
+	@test "$${CONFIRM_DAILY_RUNTIME_MAIL_SENDER_PREPARE:-}" = "PREPARE_DAILY_RUNTIME_OUTGOING_MAIL_SENDER" || { echo "exact daily runtime mail-sender preparation confirmation is required" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_mail_sender_prepare.py \
+		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
+		--sender "$(DAILY_RUNTIME_MAIL_SENDER_FROM)" \
+		--database "$(DAILY_RUNTIME_DATABASE)" \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--base-url "$(DAILY_RUNTIME_MAIL_SENDER_BASE_URL)" \
+		--report "$(DAILY_RUNTIME_MAIL_SENDER_REPORT)"
+
+# The project-lifecycle browser acceptance walks a dedicated fixture carrier from
+# `draft` to its terminal `closed`. That carrier is a row of the existing
+# `daily_dev` acceptance fixture scope, so it is materialised through the same
+# governed `make odoo.shell.exec` entry and proven with a readback of the carrier
+# identity and declared start state. It writes only fixture rows.
+.PHONY: daily.runtime.lifecycle_fixture.prepare verify.daily.runtime.lifecycle_fixture.prepare
+DAILY_RUNTIME_LIFECYCLE_FIXTURE_BASE_URL ?= http://1.95.85.92:18081
+DAILY_RUNTIME_LIFECYCLE_FIXTURE_REPORT ?= .runtime/final-acceptance/daily-deployed/lifecycle-fixture-prepare.json
+
+verify.daily.runtime.lifecycle_fixture.prepare: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_lifecycle_fixture_prepare.py scripts/ops/test_daily_runtime_lifecycle_fixture_prepare.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_lifecycle_fixture_prepare
+
+daily.runtime.lifecycle_fixture.prepare: guard.prod.forbid verify.daily.runtime.lifecycle_fixture.prepare
+	@test "$${CONFIRM_DAILY_RUNTIME_LIFECYCLE_FIXTURE:-}" = "DRIVE_DAILY_SC_DEMO_PROJECT_LIFECYCLE" || { echo "exact daily runtime lifecycle fixture confirmation is required" >&2; exit 2; }
+	@test -n "$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" || { echo "SC_ACCEPTANCE_FIXTURE_PASSWORD must be supplied through the environment" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_lifecycle_fixture_prepare.py \
+		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
+		--database "$(DAILY_RUNTIME_DATABASE)" \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--base-url "$(DAILY_RUNTIME_LIFECYCLE_FIXTURE_BASE_URL)" \
+		--password "$${SC_ACCEPTANCE_FIXTURE_PASSWORD}" \
+		--report "$(DAILY_RUNTIME_LIFECYCLE_FIXTURE_REPORT)"
+
 mirror.main.gitee: guard.prod.forbid
 	@bash scripts/ops/mirror_main_gitee.sh
 

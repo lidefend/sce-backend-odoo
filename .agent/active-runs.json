@@ -1,4 +1,6 @@
 {
   "schema_version": 1,
-  "branches": {}
+  "branches": {
+    "fix/frontend-business-entry-acceptance-closure-20261007": ".agent/runs/FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE/run.json"
+  }
 }

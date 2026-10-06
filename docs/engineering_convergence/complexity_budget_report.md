@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4595`
+- Scanned files: `4600`
 - Files requiring split plan: `60`
 - Files above warning threshold: `111`
 
@@ -82,6 +82,7 @@ Generated from repository source files. This report is informational during the 
 | 1497 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1488 | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1484 | Python source | `scripts/release/release_publication.py` |
+| 1470 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1467 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1453 | Python source | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py` |
 | 1432 | Python source | `addons/smart_core/utils/contract_governance.py` |
@@ -91,7 +92,6 @@ Generated from repository source files. This report is informational during the 
 | 1395 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1389 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1381 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
-| 1367 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1358 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1320 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
@@ -255,6 +255,7 @@ Generated from repository source files. This report is informational during the 
 | 1497 | warning | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1488 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1484 | warning | Python source | `scripts/release/release_publication.py` |
+| 1470 | warning | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1467 | warning | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1453 | warning | Python source | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py` |
 | 1432 | warning | Python source | `addons/smart_core/utils/contract_governance.py` |
@@ -264,7 +265,6 @@ Generated from repository source files. This report is informational during the 
 | 1395 | warning | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1389 | warning | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1381 | warning | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
-| 1367 | warning | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1358 | warning | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1339 | warning | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1320 | warning | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
