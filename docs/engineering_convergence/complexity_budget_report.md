@@ -12,7 +12,7 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Category | File |
 | ---: | --- | --- |
-| 7122 | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
+| 7146 | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
 | 5363 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 5294 | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5163 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
@@ -193,7 +193,7 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Status | Category | File |
 | ---: | --- | --- | --- |
-| 7122 | split_plan_required | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
+| 7146 | split_plan_required | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
 | 5363 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 5294 | split_plan_required | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5163 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
