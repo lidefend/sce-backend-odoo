@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "DAILY-DEV-USER-ACCEPTANCE-COMPLETION",
-  "branch": "codex/daily-dev-user-acceptance-closeout-20261006",
+  "branch": "codex/daily-dev-acceptance-index-and-record-closeout-20261006",
   "status": "active",
   "baseline_sha": "5ba6398e672da8b46807da3538187be980772b6d",
   "goal": ".agent/goals/DAILY-DEV-USER-ACCEPTANCE-COMPLETION.yaml",
@@ -181,12 +181,21 @@
       "restored_all": true,
       "denied_requests": 0,
       "console_errors": 0
+    },
+    "mainline_integration_record": {
+      "status": "passed",
+      "pull_request": 591,
+      "merge_commit": "b0f0dba5ea8d4fe48e74146acc9b75390d2d25e4",
+      "merge_method": "squash",
+      "required_checks_on_head": "public_guard / merge_policy_gate / professional_quality_gate / frontend_release_gate = success on 6b5230c0",
+      "local_quick": "exact-head ci.local.quick receipt reused by pr.merge.local_quick_gate",
+      "purpose": "land the closeout record and, mistakenly, retarget the run binding to the short-lived codex/daily-dev-user-acceptance-closeout-20261006 branch, which was retired right after; that left main with a dangling binding, cleared by this batch"
     }
   },
   "blockers": [
     "observation: on 项目台账 the declared record opener yields /f/project.project/<id> while the record contract declares effectiveRenderProfile=readonly; recorded as not-applicable, not as an edit pass; product policy confirmation still pending."
   ],
-  "next_exact_step": "Branch acceptance and mainline integration are complete (PR #589 squash-merged to main dd75f83c; the governed daily runtime was normalized from the detached candidate 827bffed back to main and re-verified: relation roundtrip pass, denied_requests=0, console_errors=0). Remaining: owner judgment on the single product-policy observation (项目台账 /f/ opener vs readonly record contract) and on whether overall product delivery is claimed; 版本发布 is not claimed.",
+  "next_exact_step": "Branch acceptance, mainline integration (PR #589 -> main dd75f83c) and daily runtime alignment to main are complete (relation roundtrip on main: status=pass, denied_requests=0, console_errors=0). PR #591 then landed the closeout record and retargeted the run binding to codex/daily-dev-user-acceptance-closeout-20261006, which was retired immediately, leaving main with a dangling .agent/active-runs.json binding; this batch clears the binding so a retired branch never stays bound. Remaining: owner judgment on the single product-policy observation (项目台账 /f/ opener vs readonly record contract) and on whether overall product delivery is claimed; 版本发布 is not claimed.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
