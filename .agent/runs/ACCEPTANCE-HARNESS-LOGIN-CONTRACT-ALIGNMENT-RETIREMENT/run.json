@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "id": "ACCEPTANCE-HARNESS-LOGIN-CONTRACT-ALIGNMENT-RETIREMENT",
+  "branch": "audit/acceptance-harness-login-contract-retirement-20261007",
+  "status": "completed",
+  "baseline_sha": "74465a03e580cccae417293d8e61e05513ea68e4",
+  "goal": ".agent/goals/ACCEPTANCE-HARNESS-LOGIN-CONTRACT-ALIGNMENT-RETIREMENT.yaml",
+  "record": "docs/ops/iterations/acceptance_harness_login_token_contract_alignment_20261007.md",
+  "scope": [
+    ".agent/",
+    "docs/ops/iterations/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Bookkeeping only. No runtime is exercised; the referenced daily runtime, contract and remote-gate evidence belongs to the already-merged ACCEPTANCE-HARNESS-LOGIN-CONTRACT-ALIGNMENT run (PR #599 / merge commit 74465a03)."
+  },
+  "checks": {
+    "run_index_terminal_state": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Retired. The ACCEPTANCE-HARNESS-LOGIN-CONTRACT-ALIGNMENT run is completed with its mainline-integration evidence recorded (PR #599 merged as 74465a03) and its daily development server publication-gate evidence recorded PASS, and .agent/active-runs.json is back to its empty terminal state so no index entry points at the merged fix/acceptance-harness-login-token-contract-20261007 branch. On main, make agent.run.resume then reports unregistered, matching the ACTIVE-RUN-INDEX-DANGLING-CLOSEOUT precedent. Branch deletion of the merged fix branch belongs to the separate governed branch.retire.historical lane, not to this batch."
+}

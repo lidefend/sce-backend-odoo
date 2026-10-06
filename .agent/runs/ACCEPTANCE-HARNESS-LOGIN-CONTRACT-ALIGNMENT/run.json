@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "ACCEPTANCE-HARNESS-LOGIN-CONTRACT-ALIGNMENT",
   "branch": "fix/acceptance-harness-login-token-contract-20261007",
-  "status": "active",
+  "status": "completed",
   "baseline_sha": "a012ced9b0fdeb891f55b8ddfdceb839496bfaa7",
   "goal": ".agent/goals/ACCEPTANCE-HARNESS-LOGIN-CONTRACT-ALIGNMENT.yaml",
   "record": "docs/ops/iterations/acceptance_harness_login_token_contract_alignment_20261007.md",
@@ -28,5 +28,33 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Repair the harness token extraction and its unit test, refresh the acceptance package digest, pass verify.production.acceptance.harness, then run release.daily_dev.production_acceptance.harness against the live daily development server and record the truthful result."
+  "evidence": {
+    "candidate_head": "a298e9d45b68bce445d8b3940161e99369e0efb6",
+    "mainline_integration": {
+      "status": "completed",
+      "pull_request": 599,
+      "merge_commit": "74465a03e580cccae417293d8e61e05513ea68e4",
+      "required_checks": "public_guard, merge_policy_gate, professional_quality_gate, frontend_release_gate, professional_authorization, python310_runtime_compatibility, release_candidate_gate all PASS on the exact head"
+    },
+    "offline_gate": {
+      "target": "verify.production.acceptance.harness",
+      "result": "144 tests OK; acceptance.package.verify PASS",
+      "package_digest": "75ad08f9ee02d49ca1facadd1196aa4d4a214b859c8175b8d469a899868122a7"
+    },
+    "runtime_gate": {
+      "target": "release.daily_dev.production_acceptance.harness",
+      "environment": "http://1.95.85.92:18081 ENV=dev DB_NAME=sc_demo served 6c8e07f7",
+      "result": "PASS runs=2",
+      "artifact": "artifacts/backend/production_acceptance_harness.json",
+      "observed_role_code": "business_config_admin",
+      "navigation_node_count": 111,
+      "repeated_clean_session_pass": true
+    },
+    "frozen_candidate_quick": {
+      "head": "a298e9d45b68bce445d8b3940161e99369e0efb6",
+      "receipt": ".git/codex/evidence/ci.local.quick/a298e9d45b68bce445d8b3940161e99369e0efb6.json",
+      "result": "PASS"
+    }
+  },
+  "next_exact_step": "Completed. PR #599 merged into main as 74465a03. The daily development server publication gate is proven PASS for the first time; retire this ledger to its terminal state."
 }

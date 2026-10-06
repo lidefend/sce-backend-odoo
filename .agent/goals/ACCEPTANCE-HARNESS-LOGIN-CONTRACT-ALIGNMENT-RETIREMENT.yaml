@@ -1,0 +1,21 @@
+goal:
+  id: ACCEPTANCE-HARNESS-LOGIN-CONTRACT-ALIGNMENT-RETIREMENT
+  status: completed
+  formal_product_layer: P4
+  objective: >-
+    Retire the ACCEPTANCE-HARNESS-LOGIN-CONTRACT-ALIGNMENT run ledger after PR #599
+    merged into main as 74465a03. Mark the run and goal completed with the recorded
+    mainline-integration and daily-runtime-gate evidence and return
+    .agent/active-runs.json to its empty terminal state, so no index entry points
+    at the merged fix/acceptance-harness-login-token-contract-20261007 branch.
+    Bookkeeping only: it changes no product, contract, test, gate, workflow,
+    runtime or credential behaviour.
+  run: .agent/runs/ACCEPTANCE-HARNESS-LOGIN-CONTRACT-ALIGNMENT-RETIREMENT/run.json
+  exclusions:
+    - product_changes
+    - contract_changes
+    - assertion_or_audit_relaxation
+    - baseline_raises
+    - product_deployment
+    - production_access
+    - credential_rotation
