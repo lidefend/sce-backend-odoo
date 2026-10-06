@@ -31,15 +31,74 @@
         "scripts/verify/lib/frontend_acceptance_environment.mjs"
       ],
       "kind": "runtime"
-    },
-    "daily_list_surface_readonly_browser": {
-      "target": "verify.daily_dev.list_surface.readonly.browser",
-      "inputs": [
-        "scripts/verify/frontend_list_surface_structure_browser.mjs"
-      ],
-      "kind": "runtime"
     }
   },
   "blockers": [],
-  "next_exact_step": "Raise the daily runtime to 6c8e07f7 through the governed bundle sync, align the served source revision, then rebind the governed readonly acceptance probe to the new served SHA."
+  "next_exact_step": "Freeze and commit this record-only batch (run metadata + goal + iteration record, product code unchanged) because the daily runtime is already served at 6c8e07f7 and the governed readonly probe PASSed on that exact served SHA; then obtain the owner decision on whether to publish a record-only PR. Do not re-run the list-surface browser matrix.",
+  "carried_forward": [
+    {
+      "id": "daily_list_surface_readonly_browser",
+      "target": "verify.daily_dev.list_surface.readonly.browser",
+      "kind": "runtime",
+      "decision": "owner_closed_list_scope_no_matrix_rerun",
+      "evidence": "artifacts/frontend-web-fix-20260928/resume-20261001/list.json",
+      "evidence_sha256": "e524697405138a672ac32af0b7d3610994256ca3f763deec15585920b6950c64",
+      "result": {
+        "gated": "passed 108/108",
+        "negative_fixtures": "detected 5/5 (baseline_ok=true)",
+        "runtime_errors": 0,
+        "observations": 0
+      },
+      "basis": "No backend runtime path, frontend runtime path, view, action, data or daily-runtime config differs between the served 90484d88 and 6c8e07f7 (git diff --name-status e384b832 6c8e07f7 = .agent/**, docs/**, config/frontend/authoritative_navigation.json, one non-included frontend dev script, one CI guard). Runtime corroboration: identical content-hashed entry asset /assets/index-CQk-FHJ5.js, identical navigation 111/89/89, identical approved_semantic_sha256 c2861394..., identical contract response bytes 1043093.",
+      "not_a_relaxation": "The carried record is an already-accepted full pass reused by deterministic impact analysis; no selector string, 44px or 60px text-appearance assertion is used as a correctness proof."
+    }
+  ],
+  "evidence": {
+    "runtime_identity": {
+      "served_sha": "6c8e07f70c1ce0d501f9f5b56911d74f9321a721",
+      "expected_sha": "6c8e07f70c1ce0d501f9f5b56911d74f9321a721",
+      "database": "sc_demo",
+      "environment": "dev",
+      "product_version": "1.0.0-rc.20",
+      "frontend_asset_path": "/assets/index-CQk-FHJ5.js",
+      "remote_root": "/opt/projects/repos/sce-product-odoo"
+    },
+    "probe": {
+      "target": "verify.daily_dev.acceptance.readonly.probe",
+      "status": "passed",
+      "test_count": 11,
+      "sections": "runtime_identity/frontend/login/contract all PASS; schema guard PASS",
+      "login": "wutao uid16 nodes=111 actions=89 leaves=89 role=business_config_admin forbidden=[] required_miss=[]",
+      "contract_actor": "fixture_role_finance uid210 company=[21,22]",
+      "contract_response_sha256": "2d84607b7e66e8c998a63578833a4686b200f1a998b3bc87084c9aaeaa368358",
+      "approved_semantic_sha256": "c286139488caa076b38cfa607e1f336d80ad6ac94426b93132b8249e18fada05"
+    },
+    "artifacts": {
+      "probe_json": ".runtime/final-acceptance/daily-main-6c8e07f7/daily_dev_acceptance_probe.json",
+      "probe_json_sha256": "e38b1a9d1f74beb3faa0d14ab9ac4b435476955094376036d53569d3e16a9bd3",
+      "contract_json": ".runtime/final-acceptance/daily-main-6c8e07f7/daily_dev_acceptance_probe.contract.json",
+      "contract_json_sha256": "2d84607b7e66e8c998a63578833a4686b200f1a998b3bc87084c9aaeaa368358",
+      "probe_log": ".runtime/final-acceptance/daily-main-6c8e07f7/probe-run.log",
+      "probe_log_sha256": "8bd92eaeea83c3283f45c6963fdc81cecb5c55ca25a1c42440a845dc5f492d49",
+      "record_identity": ".runtime/final-acceptance/daily-main-6c8e07f7/acceptance_record_identity.json",
+      "record_identity_sha256": "4d90da2549d51ad7dfd371af6c9b6312e42271c53743e80f6ef2f81b985d4b44",
+      "bundle_sync": ".runtime/final-acceptance/daily-main-6c8e07f7/bundle-sync.json",
+      "bundle_sync_sha256": "9ae963e702442700ecffa1152b346004f2a03b6b6fa1061834bac4cdfc6cbb93",
+      "source_revision_align": ".runtime/final-acceptance/daily-main-6c8e07f7/source-revision-align.json",
+      "source_revision_align_sha256": "8007a4a48d08b4adcb56be9577d12f4a202120916a17f77ab4d6cdd07a6f004a",
+      "bundle_sha256": "d731f7d638c4b89a4ae5ba841336f22678235129a2790ea98de36a4527a553e1",
+      "receipt": ".runtime/agent-runs/DAILY-ACCEPTANCE-MAINLINE-CONTINUATION/daily_readonly_acceptance_probe.json"
+    },
+    "input_correction": {
+      "failed_first_run": "contract_probe_auth_failed on fixture_role_finance",
+      "recovery_fact": "daily sc_demo fixture password is the owner-fixed 123456 (authenticate: scdevpass -> Access Denied, 123456 -> uid=210); make/dev.mk SC_ACCEPTANCE_FIXTURE_PASSWORD ?= scdevpass is the isolated-profile default",
+      "change": "invocation input only; no assertion, audit, ACL, field permission or negative case relaxed"
+    },
+    "unchanged_delta": {
+      "range": "e384b832..6c8e07f7",
+      "files": 17,
+      "nature": "all .agent/** run ledger, docs/**, config/frontend/authoritative_navigation.json (CI/acceptance-script consumer), one frontend dev script outside tsconfig src, one CI guard",
+      "conclusion": "no runtime path/view/action/data/config consumed by the daily runtime changed"
+    }
+  }
 }

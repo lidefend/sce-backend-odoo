@@ -14,9 +14,10 @@ goal:
     server. Advance the daily runtime from 90484d88 to the exact current mainline
     through the governed bundle sync, align the served source revision, rebind the
     governed readonly acceptance probe (runtime identity + navigation + declared
-    contract) to the new served SHA, re-run the list-surface readonly browser lane,
-    and carry the unchanged user-perspective / detail / relation / workbench
-    evidence forward only through a recorded deterministic impact analysis: no
+    contract) to the new served SHA, and carry the unchanged user-perspective /
+    detail / relation / workbench / list-surface evidence forward only through a
+    recorded deterministic impact analysis (the list-surface lane is closed by
+    owner decision and is not re-run as a matrix): no
     backend runtime path, frontend runtime path, view, action, data or config
     consumed by the daily runtime differs between 90484d88 and the new mainline
     (the delta is the CI verification manifest, one test script, one guard and the
@@ -52,7 +53,8 @@ goal:
     - restore the daily runtime repository to 90484d88 through the governed bundle sync under its own report
     - restore .env.dev source revision from its backup and restart
   next_exact_step: >-
-    Advance the daily runtime to 6c8e07f7 with the governed daily.runtime.main.bundle_sync
-    plus daily.runtime.source_revision.align, read back /api/runtime-version, then run
-    daily.dev.acceptance_fixture.ensure, daily.dev.acceptance_contract.resolve and
-    verify.daily_dev.acceptance.readonly.probe bound to the served SHA.
+    Freeze and commit this record-only batch (run metadata + goal + iteration record,
+    product code unchanged) because the daily runtime is already served at 6c8e07f7 and
+    the governed readonly probe PASSed on that exact served SHA; then obtain the owner
+    decision on whether to publish a record-only PR. Do not re-run the list-surface
+    browser matrix.
