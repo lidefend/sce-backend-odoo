@@ -1,4 +1,6 @@
 {
   "schema_version": 1,
-  "branches": {}
+  "branches": {
+    "fix/acceptance-harness-login-token-contract-20261007": ".agent/runs/ACCEPTANCE-HARNESS-LOGIN-CONTRACT-ALIGNMENT/run.json"
+  }
 }
