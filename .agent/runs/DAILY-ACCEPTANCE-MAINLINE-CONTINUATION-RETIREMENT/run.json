@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-ACCEPTANCE-MAINLINE-CONTINUATION-RETIREMENT",
+  "branch": "audit/daily-acceptance-mainline-continuation-retirement-20261007",
+  "status": "completed",
+  "baseline_sha": "2836f9dad74444aca9c9615f9c6e837ca3f76966",
+  "goal": ".agent/goals/DAILY-ACCEPTANCE-MAINLINE-CONTINUATION-RETIREMENT.yaml",
+  "record": "docs/ops/iterations/daily_acceptance_mainline_continuation_20261006.md",
+  "scope": [
+    ".agent/",
+    "docs/ops/iterations/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Bookkeeping only. No runtime is exercised; the referenced runtime, contract and remote-gate evidence belongs to the already-merged DAILY-ACCEPTANCE-MAINLINE-CONTINUATION run (PR #597 / merge commit 2836f9da)."
+  },
+  "checks": {
+    "run_index_terminal_state": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Retired. The DAILY-ACCEPTANCE-MAINLINE-CONTINUATION run is completed with its mainline-integration evidence recorded (PR #597 merged as 2836f9da), and .agent/active-runs.json is back to its empty terminal state so no index entry points at the merged audit/daily-acceptance-mainline-continuation-20261006 branch. On main, make agent.run.resume then reports unregistered, matching the ACTIVE-RUN-INDEX-DANGLING-CLOSEOUT precedent. Branch deletion of the merged audit branch belongs to the separate governed branch.retire.historical lane, not to this batch."
+}

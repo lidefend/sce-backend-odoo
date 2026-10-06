@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "DAILY-ACCEPTANCE-MAINLINE-CONTINUATION",
   "branch": "audit/daily-acceptance-mainline-continuation-20261006",
-  "status": "active",
+  "status": "completed",
   "baseline_sha": "6c8e07f70c1ce0d501f9f5b56911d74f9321a721",
   "goal": ".agent/goals/DAILY-ACCEPTANCE-MAINLINE-CONTINUATION.yaml",
   "record": "docs/ops/iterations/daily_acceptance_mainline_continuation_20261006.md",

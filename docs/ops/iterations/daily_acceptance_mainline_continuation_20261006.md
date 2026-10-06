@@ -22,7 +22,10 @@ Owner acceptance entry: `http://1.95.85.92:18081/`（自定义前端），口令
 - **批次验收**：通过。日常运行态已对齐到 `main = 6c8e07f7`，受管只读探针在 served `6c8e07f7` 上
   **整体 PASS**（`runtime_identity` / `frontend` / `login` / `contract` 四段全 PASS，契约 11/11）。
   本批未改动任何产品路径，未放宽任何断言、审计、ACL、字段权限或负例。
-- **主线集成**：本记录随本批 PR 落地；合并前不主张 mainline 完成。
+- **主线集成**：完成 —— 记录批 PR #597 已合并（merge commit `2836f9da`），合并前的最新增量
+  `500d6f91` 上必需检查（`public_guard`、`merge_policy_gate`、`professional_quality_gate`、
+  `frontend_release_gate`、`professional_authorization`、`python310_runtime_compatibility`、
+  `release_candidate_gate`）全部 PASS。
 - **版本发布**：未主张（未部署版本、未做 release snapshot）。
 - **产品交付**：未主张 —— 待所有者对 §4.1 的单一产品策略观察项裁决。
 
@@ -120,7 +123,7 @@ Owner acceptance entry: `http://1.95.85.92:18081/`（自定义前端），口令
 原声明的 `daily_list_surface_readonly_browser` 依所有者裁决改为**确定性携带**，不再作为本批执行项，
 迁至 `run.carried_forward` 并附依据，而不是保留一个无回执的“待跑”项。
 
-### 3.7 run 生命周期与退役（后续步骤）
+### 3.7 run 生命周期与退役（约束；执行见 §5）
 
 - 本批合并时，本 run 保持 `status=active` 且 `.agent/active-runs.json` 仍绑定本分支。
   这与上一批先例一致：`CI-SCHEDULED-FULL-LANE-RECOVERY-E` 随 PR #595 合并时仍是 active，
@@ -133,6 +136,7 @@ Owner acceptance entry: `http://1.95.85.92:18081/`（自定义前端），口令
   仅 `checks.daily_readonly_acceptance_probe` 因运行时属性报 `stale`
   （“runtime evidence requires authoritative environment readback”，是工具对该类检查的保守默认，
   不等于失败；其回执已在本批于 served `6c8e07f7` 上登记）。
+- 该退役已于记录批合并后作为独立步骤执行，见 §5。
 
 ### 3.8 远端必需门禁首跑失败与修复（`professional_quality_gate`）
 
@@ -167,3 +171,16 @@ Owner acceptance entry: `http://1.95.85.92:18081/`（自定义前端），口令
      `addons/smart_core/tests/test_scene_delivery_policy.py` 未在 `__init__.py` 注册）。
    - `LOCAL_DEV_NGINX_MOUNT_STALENESS`（已 resolved 的观察项）。
 4. 四层状态见 §2。
+
+## 5. Run 退役（终态）
+
+- 记录批 PR #597 合并后，本 run 与 goal 已置 `completed`，`.agent/active-runs.json` 回到空的终态
+  `{"schema_version":1,"branches":{}}`，使索引不再指向已合并的
+  `audit/daily-acceptance-mainline-continuation-20261006` 分支。
+- 退役沿用先例形态（对应 `CI-SCHEDULED-FULL-LANE-RECOVERY-E-RETIREMENT`）：独立离线 run
+  `.agent/runs/DAILY-ACCEPTANCE-MAINLINE-CONTINUATION-RETIREMENT/run.json`（`environment.kind=offline`，
+  检查 `run_index_terminal_state → verify.agent.resume.unit`），只做台账收口，不改产品、契约、测试、
+  门禁、工作流、运行时或口令。
+- 终态下 `make agent.run.resume` 在 `main` 上报告 `unregistered`，与
+  `ACTIVE-RUN-INDEX-DANGLING-CLOSEOUT` 先例一致；这不是失败，而是“无活动批次”的预期结果。
+- 已合并 `audit/...` 分支的删除属独立的 `branch.retire.historical` 受管车道，不在本批范围。
