@@ -1,0 +1,49 @@
+schema_version: 1
+goal:
+  id: ACTIVE-RUN-BINDING-RETIREMENT-GUARD
+  title: close_the_active_run_binding_retirement_loop
+  status: in_progress
+  formal_product_layer: P4
+  layer_target: governed_branch_retirement_tooling
+  module:
+    - scripts/ops
+    - docs/ops
+    - .agent
+  objective: >-
+    Close the recurring bookkeeping loop that made every closeout batch pay an
+    extra freeze+quick cycle: a candidate PR lands a .agent/active-runs.json
+    binding for its own branch on main, the branch is then retired, and main is
+    left with a binding that names a branch that no longer exists. The governed
+    retirement entry must refuse to retire a branch that the selected remote's
+    main still binds, so the dangling state can never be created silently again.
+  baseline:
+    branch: main
+    full_sha: cb5ca646193007bef8b1aa0a94d4dade1edf69f0
+    source: clean_main_after_pr_592
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_tooling
+    why_here: >-
+      Branch retirement and the run index are governed delivery tooling, not
+      product semantics.
+    why_not_elsewhere:
+      - no_p0_platform_mechanism_change
+      - no_p1_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_lowcode_configuration
+      - no_ci_gate_change
+    blast_radius:
+      - scripts/ops/branch_cleanup_safe.sh and its behavioural test
+      - one iteration record and this run
+  exclusions:
+    - no_relaxation_of_any_retirement_or_deletion_gate
+    - no_force_delete_switch
+    - no_change_to_agent_run_context_resolution_rules
+    - no_new_ci_workflow_or_job
+    - no_branch_retirement_in_this_batch
+  rollback:
+    - revert this single commit; the retirement entry returns to its previous behaviour
+  next_exact_step: >-
+    Add the fail-closed precondition to branch_cleanup_safe.sh, cover it with a
+    behavioural test in scripts/ops/test_safe_worktree_cleanup.py, run
+    verify.workspace.worktree.guard and ci.local.iteration, then record the
+    outcome.

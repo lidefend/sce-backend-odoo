@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "id": "ACTIVE-RUN-BINDING-RETIREMENT-GUARD",
+  "branch": "codex/active-run-binding-retirement-guard-20261006",
+  "status": "completed",
+  "baseline_sha": "cb5ca646193007bef8b1aa0a94d4dade1edf69f0",
+  "goal": ".agent/goals/ACTIVE-RUN-BINDING-RETIREMENT-GUARD.yaml",
+  "record": "docs/ops/iterations/active_run_binding_retirement_guard_20261006.md",
+  "scope": [
+    ".agent/",
+    "docs/ops/iterations/",
+    "docs/ops/codex_workspace_execution_rules.md",
+    "scripts/ops/",
+    "docs/engineering_convergence/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "local repository only; no runtime, database, container or remote mutation"
+  },
+  "checks": {
+    "branch_cleanup_guard": {
+      "target": "verify.workspace.worktree.guard",
+      "inputs": [
+        "scripts/ops/branch_cleanup_safe.sh",
+        "scripts/ops/test_safe_worktree_cleanup.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "evidence": {
+    "branch_cleanup_guard": {
+      "status": "passed",
+      "target": "verify.workspace.worktree.guard",
+      "tests": "125 tests OK",
+      "log": ".runtime/agent-runs/ACTIVE-RUN-BINDING-RETIREMENT-GUARD/branch_cleanup_guard.log",
+      "receipt": ".runtime/agent-runs/ACTIVE-RUN-BINDING-RETIREMENT-GUARD/branch_cleanup_guard.json",
+      "negative_baseline": "with the previous branch_cleanup_safe.sh the new refusal test fails (0 == 0); restored 11/11 OK"
+    },
+    "layered_validation": {
+      "layer": "L1 (syntax/static) + non-zero targeted L2",
+      "ci_local_iteration": "PASS resolved outside_scope=[]",
+      "generated_evidence": "ci.delivery.freeze.prepare reports no drift"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Delivered on the candidate commit: the retirement entry now refuses to retire a branch that the selected remote's main still binds, with behavioural coverage and a negative-baseline check. The candidate's own binding is removed in this final commit so main gains no binding for a branch that will be retired - the exact dangling state this batch prevents. Remaining: protected-PR merge and candidate-branch retirement.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

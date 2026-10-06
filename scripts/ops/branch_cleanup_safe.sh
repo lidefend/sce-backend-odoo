@@ -4,8 +4,11 @@
 #
 # There is no force switch.  A branch is admissible only when its tip is
 # contained in the bound main of the selected remote, or when the GitHub lane
-# can prove an exact-head merged pull request.  An unreadable remote is never
-# treated as an absent branch, and any identity drift aborts before deletion.
+# can prove an exact-head merged pull request.  It is additionally refused while
+# that main still binds the branch in .agent/active-runs.json, so retiring a
+# branch can never silently leave a dangling run binding behind.  An unreadable
+# remote is never treated as an absent branch, and any identity drift aborts
+# before deletion.
 set -euo pipefail
 
 # CLEAN_BRANCH_ROOT exists so the governed rules can be exercised against an
@@ -123,6 +126,42 @@ else
   fi
   squash_merge_verified=1
   echo "[branch.cleanup.feature] exact-head merged PR detected for ${branch}"
+fi
+
+# A run-index binding left on the selected remote's main dangles the moment this
+# branch is deleted, and the next closeout batch then pays a whole freeze plus
+# Quick cycle to clear bookkeeping it did not create.  Retirement therefore
+# refuses until an ordinary merged PR has cleared the binding.  Unreadable
+# evidence fails closed, exactly like the other identity checks above.
+if ! git cat-file -e "${expected_main_sha}^{commit}" 2>/dev/null; then
+  git fetch --quiet "$remote" main >/dev/null 2>&1 || true
+fi
+if ! git cat-file -e "${expected_main_sha}^{commit}" 2>/dev/null; then
+  echo "❌ cannot read ${remote}/main ${expected_main_sha} locally; refusing to retire without the binding check" >&2
+  exit 2
+fi
+if git cat-file -e "${expected_main_sha}:.agent/active-runs.json" 2>/dev/null; then
+  if python3 -c '
+import json, sys
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    sys.exit(3)
+if not isinstance(data, dict):
+    sys.exit(3)
+branches = data.get("branches")
+if not isinstance(branches, dict):
+    sys.exit(3)
+sys.exit(1 if sys.argv[1] in branches else 0)
+' "$branch" <<<"$(git show "${expected_main_sha}:.agent/active-runs.json")"; then
+    echo "[branch.cleanup.feature] binding check: ${remote}/main does not bind ${branch}"
+  else
+    echo "❌ ${remote}/main still binds ${branch} in .agent/active-runs.json" >&2
+    echo "   clear the binding in an ordinary merged PR before retiring; a retired branch must never stay bound" >&2
+    exit 2
+  fi
+else
+  echo "[branch.cleanup.feature] binding check: ${remote}/main carries no run index"
 fi
 
 if [[ "$apply" != "1" ]]; then
