@@ -33,7 +33,7 @@
     }
   ],
   "branch": "fix/project-ledger-entry-unification-v1",
-  "candidate_evidence": false,
+  "candidate_evidence": true,
   "checks": {
     "backend_scene_surface_boundary_unit": {
       "detail": "locks the scene/surface boundary: closed exclusion-reason vocabulary, fail-closed allowlist for a registered delivery surface, fail-closed + SCENE_SURFACE_UNREGISTERED exclusion for an unregistered surface, and the development bypass. The suite EXECUTES the real P1 policy module (core_extension_surface_bypass.py) with a stubbed platform-admin check: no env / no acting user / non-development stage / non-platform-admin / check failure all deny. The bypass consumes identity.is_platform_admin (smart_core.security.platform_admin.user_is_platform_admin), NOT IdentityResolver (whose vocabulary is only executive/pm/finance/project_member). Negative-first: relaxing the stage or the admin check turns 3 cases red. Also re-locked the kernel side (injected hook). Runtime half (same round, local.dev/sc_dev_demo via odoo shell readback, not a bare unit run): Served DB sc_dev_demo, profile local.dev. (1) Registered surfaces keep their file policy: workspace_pm_v1 -> delivery=[project.management], deep=[finance.payment_requests]; construction_exec_v1 -> deep=[finance.payment_requests, project.management], both meta.source=file, bypass=false. (2) Unregistered surface unknown_face_v1 -> delivery=[], deep=[], meta.source=unregistered_closed, reasons {SCENE_SURFACE_UNREGISTERED: 3}. (3) Platform-admin bypass live: admin(user 2) on dev -> authorized role_code=platform_admin and filter meta.source=unregistered_bypass, bypass=true; on prod -> None; a non-admin demo user on dev -> None.",
@@ -305,7 +305,7 @@
   },
   "goal": ".agent/goals/PROJECT-LEDGER-ENTRY-UNIFICATION.yaml",
   "id": "PROJECT-LEDGER-ENTRY-UNIFICATION",
-  "next_exact_step": "Close out the branch: (1) generated-evidence preflight PASS at the clean tip (done); (2) re-align the daily served revision to the frozen candidate tip and re-run the cheap daily readonly probe once, storing the tip-bound receipt as untracked evidence / PR text (receipts are not committed); (3) push the candidate through the governed GitHub PR entry (make pr.push then make pr.create) with the exact SHA, remote required checks (public_guard / merge_policy_gate / professional_quality_gate / frontend_release_gate on the PR head) and the independent review; do not force push or write main directly, merge per the owner's CI-pass rule. Local ci.local.quick is an explicit risk-classified skip for this ordinary candidate (docs/generated-only tail, targeted owning-layer guards already green, remote gates authoritative). Deferred by owner decision: VIEW_STRUCTURE_BASELINE_CLEAN_LANE (env-gated) and SCENE_DELIVERY_POLICY_NOT_COLLECTED.",
+  "next_exact_step": "Closed for the batch: scoped changes landed on fix/project-ledger-entry-unification-v1, targeted owning-layer tests + independent read-only review (range f743006a..39fc2380, 0 product blockers) + the daily readonly probe at the frozen tip c7859cea1ab3243feb080528048d3d6811f999b2 (served==expected, contract 11/11 incl. contract_schema_digest_bound, custody response_sha256=2ff91f5a..., recomputed semantic sha256=c2861394...) all passed. Mainline integration is dispatched as PR #594 (head c7859cea, base main 88920427) and completes only when the remote required checks pass and the platform merge lands; no product path changed after c7859cea (only .agent metadata), so the review and acceptance evidence carry forward. The branch binding in .agent/active-runs.json is cleared in the same commit so main carries no dangling run map. Deferred by owner decision: VIEW_STRUCTURE_BASELINE_CLEAN_LANE (env-gated) and SCENE_DELIVERY_POLICY_RUNTIME_TEST_NOT_COLLECTED.",
   "record": "docs/ops/iterations/project_ledger_entry_unification_20261006.md",
   "schema_version": 1,
   "scope": [
@@ -350,6 +350,6 @@
     "head": "e384b8328ce36b3586fd9dbb6004bd665740edf5",
     "note": "single writer; worktree CLEAN. Product-input identity stays e384b832 (P0 schema-digest fix + P1 scene/surface layers on top of the detail-projection fix f743006a); the tips above it are record/generated-evidence only: 39fc2380 (run target收敛), 9620aedf + 13f35542 (freeze-prepare refresh of complexity_budget_report / split_plan_queue / p4 contract form split evidence / component-driver-takeover-inventory), and the final run/documentation commit. Generated-evidence preflight PASS after the refresh; product paths unchanged, so page evidence and the independent review carry forward by deterministic impact analysis (documentation/generated changes do not invalidate page evidence). Daily served revision was 39fc2380 for the detail/relation/form/workbench lanes; the final daily re-alignment binds the frozen candidate tip."
   },
-  "status": "active",
+  "status": "completed",
   "write_replay_authorized": false
 }

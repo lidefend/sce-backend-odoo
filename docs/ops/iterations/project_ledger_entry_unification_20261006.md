@@ -612,7 +612,18 @@ visible = 契约声明该 surface
   `frontend_release_gate`）将在 PR head 上权威执行。故 `ci.local.quick` 为显式 skip，不重复执行；
   按 `AGENTS.md` 2026-09-23 分工，本地 Quick 不是普通候选推送前置。
 
-### daily 重对齐与只读探针（tip 绑定收据）
-- 受管 `daily.runtime.candidate.bundle_sync`（old `39fc2380` → 冻结 tip）+ `daily.runtime.source_revision.align`；
-  `/api/runtime-version` 回读 `git_sha=<冻结 tip>`；`verify.daily_dev.acceptance.readonly.probe` overall PASS。
-- 收据按「post-freeze receipt」口径存放于未跟踪证据区与 PR 文本，不落提交（避免产生新的 doc-only 尾部）。
+### daily 重对齐与只读探针（tip 绑定收据，冻结 tip = `c7859cea`）
+- 受管 `daily.runtime.candidate.bundle_sync`（old `39fc2380` → `c7859cea`，bundle_sha256
+  `904599e2…`，远端 detached）+ `daily.runtime.source_revision.align`（restart）；
+  `/api/runtime-version` 回读 `git_sha=c7859cea…`、`database=sc_demo`、`product_version=1.0.0-rc.20`。
+- `daily.dev.acceptance_contract.resolve` 写 `expected_sha=c7859cea`，唯一目标仍为
+  `smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a`
+  （`payment.request/36156`，action 780，menu 550）。
+- **只读探针 overall PASS**（10 分钟弱口令确认信封，`dailyCredentialConfirmed=true`）：
+  `runtime_identity` served==expected==`c7859cea`；`frontend` PASS；`login` wutao
+  nodes=111 / actions=89 / leaves=89、forbidden=[]、required_miss=[]；`contract` 11/11 true
+  （含 `contract_schema_digest_bound=true`），identity `fixture_role_finance` uid 210 role finance，
+  custody `response_sha256=2ff91f5a1cfbd9ff19cc0d75871136ca6ce8e294bf9eb89d4ae3f12a7fa12a30`，
+  `recomputed_semantic_sha256=c286139488caa076b38cfa607e1f336d80ad6ac94426b93132b8249e18fada05`；
+  `dev_acceptance_release_probe_schema_guard` PASS。
+- 收据按「post-freeze receipt」口径存放于未跟踪证据区与 PR 文本。
