@@ -30,6 +30,7 @@ RENDERED = {
     "formStructureContract.navigation": ("shell", "presentContractV2Form.shell"),
     "formStructureContract.fieldLabels": ("field-label", "formStructureFieldLabels"),
     "formStructureContract.slots": ("compatibility-only structure", "structureSlot; empty for container_tree_authority"),
+    "formStructureContract.surfaces": ("declared-region", "contractSurfaceNavigationItems; declaredCollaborationSurface; region gated by surface.authorization.state"),
     "formStructureContract.fieldRoles": ("compatibility-only membership", "fieldSemanticIdentity; native roles derive from tree nodes"),
     "formStructureNavigation.title": ("shell-title", "presentContractV2Form.shell.title"),
     "formStructureSlot.slot": ("semantic-identity", "structureSlot"),

@@ -4,6 +4,7 @@ import type {
   CanonicalFormSemanticRole,
 } from '../../app/presentation/canonicalFormRenderModel';
 import { fieldIsBusinessRelationCollection } from '../../app/presentation/canonicalFormFloorplan';
+import type { ContractV2FormStructureSurface } from '../../app/contracts/v2/types';
 import { canonicalNodeHasContent } from './canonicalFormRenderer';
 import {
   collectNativeBusinessSections,
@@ -345,7 +346,37 @@ export function relationshipCollectionNavigationItems(
   return items;
 }
 
-export function workspaceSurfaceNavigationItems(input: {
+/**
+ * Navigation items for the surfaces the contract declares.
+ *
+ * The declaration is the authority: the label, the region role and the region
+ * identity all come from `formStructureContract.surfaces`, so the renderer
+ * cannot invent a region or add a second entry for a sub-region.  A gated
+ * sub-region (for example the audit timeline) is not a navigation entry of its
+ * own; it renders inside its owning surface when its authorization allows it.
+ */
+export function contractSurfaceNavigationItems(
+  surfaces: readonly ContractV2FormStructureSurface[],
+): WorkspaceSectionNavigationItem[] {
+  return surfaces.map((surface) => ({
+    key: `surface:${surface.surface}`,
+    label: surface.title,
+    selector: `[data-form-section-target="surface:${surface.surface}"]`,
+    role: surface.role as CanonicalFormSemanticRole,
+    contentKind: surface.contentKind,
+    sourceType: 'surface',
+    sourceIdentity: surface.sourceIdentity,
+  }));
+}
+
+/**
+ * Legacy visibility predicate for contracts that cannot declare surfaces.
+ *
+ * It is used only when `formStructureContract.surfaces` is absent; a contract
+ * that declares surfaces (including an empty list) is consumed through
+ * `contractSurfaceNavigationItems` instead.
+ */
+export function legacySurfaceNavigationItems(input: {
   collaborationAvailable: boolean;
   auditAvailable: boolean;
 }): WorkspaceSectionNavigationItem[] {

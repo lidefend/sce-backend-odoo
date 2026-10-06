@@ -12,7 +12,8 @@ import {
   sectionScrollDelta,
   shouldPreserveAuthoritativeBusinessSections,
   workspaceSectionNavigationItems,
-  workspaceSurfaceNavigationItems,
+  contractSurfaceNavigationItems,
+  legacySurfaceNavigationItems,
 } from '../src/pages/contractForm/nativeSectionNavigation';
 
 assert.equal(sectionRevealTargetsContain('["field:line_ids:relation-collection"]', 'field:line_ids:relation-collection'), true);
@@ -416,8 +417,54 @@ assert.deepEqual(
   'a relation whose occurrences are all hidden must not produce a dead navigation target',
 );
 
-assert.deepEqual(workspaceSurfaceNavigationItems({ collaborationAvailable: true, auditAvailable: false }).map((item) => item.role), ['activity']);
-assert.deepEqual(workspaceSurfaceNavigationItems({ collaborationAvailable: true, auditAvailable: true }).map((item) => item.role), ['activity', 'audit']);
+assert.deepEqual(legacySurfaceNavigationItems({ collaborationAvailable: true, auditAvailable: false }).map((item) => item.role), ['activity']);
+assert.deepEqual(legacySurfaceNavigationItems({ collaborationAvailable: true, auditAvailable: true }).map((item) => item.role), ['activity', 'audit']);
+
+// Contract-declared surfaces are consumed as declared: the label, the region
+// identity and the navigation target all come from the declaration, and a
+// gated sub-region never becomes a second top-level entry.
+assert.deepEqual(
+  contractSurfaceNavigationItems([{
+    surface: 'activity',
+    title: '协作记录',
+    role: 'activity',
+    contentKind: 'collaboration-panel',
+    sourceIdentity: 'collaboration-panel',
+    audit: {
+      title: '历史审计',
+      contentKind: 'audit-timeline',
+      sourceIdentity: 'professional-audit-timeline',
+      authorization: { capability: 'governance.runtime.audit', state: 'allow' },
+    },
+  }]),
+  [{
+    key: 'surface:activity',
+    label: '协作记录',
+    selector: '[data-form-section-target="surface:activity"]',
+    role: 'activity',
+    contentKind: 'collaboration-panel',
+    sourceType: 'surface',
+    sourceIdentity: 'collaboration-panel',
+  }],
+  'one declared region produces exactly one navigation entry, and the audit sub-region is not a separate entry',
+);
+assert.deepEqual(
+  contractSurfaceNavigationItems([{
+    surface: 'activity',
+    title: '协作记录',
+    role: 'activity',
+    contentKind: 'collaboration-panel',
+    sourceIdentity: 'collaboration-panel',
+    audit: {
+      title: '历史审计',
+      contentKind: 'audit-timeline',
+      sourceIdentity: 'professional-audit-timeline',
+      authorization: { capability: 'governance.runtime.audit', state: 'deny' },
+    },
+  }]).map((item) => item.label),
+  ['协作记录'],
+  'a declared region with a denied audit authorization still yields exactly one region entry, not an audit entry',
+);
 
 const lowerPagePositions = [
   { key: 'basic', top: -900 },

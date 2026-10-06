@@ -234,3 +234,36 @@ Owner acceptance entry: `http://1.95.85.92:18081/`（自定义前端），口令
    空索引，并把本 run 标记 `status=completed`；详见 §3.10。此后 `main` 上
    `ci.local.iteration` 报 `unregistered`，与既有先例一致，不是新的缺陷。
 4. 四层状态见 §2：批次验收 = 通过，主线集成 = 完成，版本发布 = 未主张，产品交付 = 待所有者判断。
+
+### 3.11 契约 schema 摘要漂移暴露与修复，daily 候选全车道复验（served = e384b832，本轮新增）
+
+- **暴露路径（谁最先看见）**：daily 只读探针 `verify.daily_dev.acceptance.readonly.probe`。
+  本轮补齐受管夹具（`daily.dev.acceptance_fixture.ensure` PASS，finance uid 210）后，
+  contract 段首次越过口令闸门，随即报 **`contract_schema_digest_not_bound`**：
+  运行时契约 `meta.lifecycle.definition.schemaSha256` 与 schema 资产字节不一致。
+- **根因**：`d78cb4be`（本分支 P0 声明面提交）改写了契约 schema 资产（+61 行 `formStructureContract.surfaces`）
+  但未重派生 `UNIFIED_PAGE_SCHEMA_SHA256`（`204b8f6c…` ← 应为 `28be508e…`）。属**本分支引入**，
+  main 上一致。守卫只在 `ci.local.quick`（交付冻结时跑）而不在开发内环，故此前本地未暴露。
+- **修复**：走权威派生入口 `make contract.schema.declaration.sync`（不手改常量、不放宽断言），
+  并同步 4 个 canonical 示例的溯源摘要；提交 `e384b832`。详见
+  `docs/ops/iterations/project_ledger_entry_unification_20261006.md`「契约 schema 摘要漂移」节。
+- **daily 复验（受管入口，served=e384b832）**：
+  - `daily.runtime.candidate.bundle_sync`（old `ed783035` → `e384b832`）+
+    `daily.runtime.source_revision.align`（仅 restart，无 XML/字段/迁移）；`/api/runtime-version`
+    回读 `git_sha=e384b832…`、`database=sc_demo`；前端产物按「无前端路径变更」复用 `ed783035` 的 `dist-dev`。
+  - `daily.dev.acceptance_contract.resolve`：`expected_sha=e384b832`，唯一目标
+    `smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a`
+    （`payment.request/36156`、action 780、menu 550）。
+  - `verify.daily_dev.acceptance.readonly.probe` **overall PASS**（四段全 PASS，contract 11/11，
+    `contract_schema_digest_bound=true`；login nodes=111/actions=89/leaves=89，`forbidden=[]`、`required_miss=[]`）。
+  - 详情车道 `detail-only` 1440/390：light 8/8、dark 8/8，`runtime_errors=0`。
+  - 关系往返真实点击一次：`status=pass`，4 个声明条目全部 `opened`，往返全恢复，`denied_requests=0`、`console_errors=0`。
+  - 创建/编辑 + 工作台：`form-profiles` 12/12 × light/dark；`workbench-only`
+    （declared-theme / declared-default-landing / router-workspace-home，1440+390）× light/dark，`runtime_errors=0`。
+- **复用口径**：列表范围（108/108、负例 5/5、运行时错误 0）未重跑，输入未变；
+  前端车道均在 served `e384b832` 上实测。
+
+#### §4 补充（本轮）
+- 新增已关闭项：**契约 schema 摘要漂移**（本分支引入，`e384b832` 修复并在 daily served `e384b832` 全车道复验）。
+- 新增证据项：daily 只读探针 contract 段在补齐夹具后首次真正跑通，11/11 检查在前端+后端同候选身份下成立。
+- 仍开放项不变：**`项目台账` `/f/` ↔ `readonly` 观察项**（唯一的未决产品策略项，需所有者确认）。

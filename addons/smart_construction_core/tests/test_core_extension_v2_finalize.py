@@ -236,11 +236,27 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             self.assertTrue(without_capability.xpath(selector), field_name)
             self.assertTrue(with_capability.xpath(selector), field_name)
 
-    def test_project_information_action_uses_only_its_dedicated_form(self):
-        action = self.env.ref("smart_construction_core.action_sc_product_project_edit_v1")
-        dedicated = self.env.ref(
-            "smart_construction_core.view_sc_product_project_information_edit_form_v1"
+    def test_project_ledger_entry_owns_the_complete_record_composition(self):
+        # 项目台账 is the single project record entry: the duplicate
+        # 项目信息编辑 entry is retired and its complete master-data composition
+        # was carried into the ledger's pinned record form. No second entry may
+        # re-appear on the same model.
+        self.assertFalse(
+            self.env.ref(
+                "smart_construction_core.menu_sc_product_project_edit_v1",
+                raise_if_not_found=False,
+            ),
+            "the duplicate 项目信息编辑 menu must stay retired",
         )
+        self.assertFalse(
+            self.env.ref(
+                "smart_construction_core.action_sc_product_project_edit_v1",
+                raise_if_not_found=False,
+            ),
+            "the duplicate 项目信息编辑 action must stay retired",
+        )
+        action = self.env.ref("smart_construction_core.action_sc_project_list")
+        dedicated = self.env.ref("smart_construction_core.view_project_overview_form")
         form_bindings = action.view_ids.filtered(lambda row: row.view_mode == "form")
         self.assertEqual(form_bindings.mapped("view_id"), dedicated)
 
@@ -257,11 +273,16 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         self.assertIs(declared.get("create"), False)
         self.assertIs(declared.get("delete"), False)
         self.assertEqual(
-            arch.xpath("//form/header/button/@name"),
-            ["action_sc_submit"],
-            "project information editing must not absorb lifecycle-management actions",
+            arch.xpath("//form/header"),
+            [],
+            "the ledger form owns lifecycle handling inside the sheet, not a second header",
         )
-        lifecycle = arch.xpath("//form/header/field[@name='lifecycle_state']")
+        self.assertEqual(
+            len(arch.xpath("//button[@name='action_sc_submit']")),
+            1,
+            "the record form must expose exactly one 提交立项 action",
+        )
+        lifecycle = arch.xpath("//field[@name='lifecycle_state']")
         self.assertEqual(len(lifecycle), 1)
         self.assertEqual(lifecycle[0].get("readonly"), "1")
 
@@ -444,18 +465,22 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             },
         )
 
-    def test_project_ledger_entry_declares_readonly_and_projection_follows(self):
-        # 项目台账 is a list+form handling entry, not a creation surface:
-        # creation is owned by 新项目立项. Its refusal must be declared on the
-        # entry contract and consumed into the effective projection; the
-        # presentation form stays capability-neutral so a dedicated read-only
-        # page is never the capability authority.
+    def test_project_ledger_entry_capability_follows_permission_contract(self):
+        # 项目台账 is the single project record entry. Creation stays owned by
+        # 新项目立项 and deletion stays outside the record surface, but record
+        # maintenance is no longer hard-denied on the entry: editing follows the
+        # permission contract, group-gated fields and ACL instead of a dedicated
+        # read-only page.
         action = self.env.ref("smart_construction_core.action_sc_project_list")
         declared = safe_eval(action.context or "{}", {"context": {}})
         self.assertIs(declared.get("create"), False)
-        self.assertIs(declared.get("edit"), False)
         self.assertIs(declared.get("delete"), False)
         self.assertIs(declared.get("no_duplicate"), True)
+        self.assertIsNot(
+            declared.get("edit"),
+            False,
+            "record maintenance must not be hard-denied by the entry contract",
+        )
 
         form_binding = action.view_ids.filtered(lambda row: row.view_mode == "form")
         self.assertEqual(len(form_binding), 1, action.view_ids)
@@ -494,31 +519,56 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         global_status = envelope["data"]["statusContract"]["globalStatus"]
         entry_capabilities = global_status["entryCapabilities"]
         effective = global_status["effectiveRecordCapabilities"]
-        for operation in ("create", "write", "unlink", "duplicate"):
+        for operation in ("create", "unlink", "duplicate"):
             self.assertIs(entry_capabilities[operation], False, (operation, entry_capabilities))
             self.assertIs(effective[operation], False, (operation, effective))
+        self.assertIs(entry_capabilities["write"], True, entry_capabilities)
+        self.assertIs(effective["write"], True, effective)
 
-    def test_project_information_form_preserves_field_and_child_acl_boundaries(self):
-        dedicated = self.env.ref(
-            "smart_construction_core.view_sc_product_project_information_edit_form_v1"
+        # The read-only boundary is now carried by ACL, not by the entry:
+        # 项目台账 stays read-only for the read-only capability group.
+        acl = self.env["ir.model.access"].search([
+            ("model_id.model", "=", "project.project"),
+            ("group_id", "=", self.env.ref(
+                "smart_construction_core.group_sc_cap_project_read"
+            ).id),
+        ])
+        self.assertTrue(acl, "project.project read-only ACL must exist")
+        self.assertFalse(
+            any(row.perm_write for row in acl),
+            "the read-only capability group must not gain write access",
         )
-        dedicated_arch = dedicated._get_combined_arch()
-        if isinstance(dedicated_arch, (str, bytes)):
-            dedicated_arch = etree.fromstring(dedicated_arch)
+
+    def test_project_ledger_form_preserves_field_and_child_acl_boundaries(self):
+        # The master-data fields carried into 项目台账 keep the exact
+        # domain/context/options/widget and effective constraints of the model's
+        # authoritative form; carry-over must not re-open a field boundary.
+        ledger = self.env.ref("smart_construction_core.view_project_overview_form")
+        ledger_arch = ledger._get_combined_arch()
+        if isinstance(ledger_arch, (str, bytes)):
+            ledger_arch = etree.fromstring(ledger_arch)
         default_arch = self.env["project.project"].get_view(view_type="form")["arch"]
         if isinstance(default_arch, (str, bytes)):
             default_arch = etree.fromstring(default_arch)
 
         constraint_mismatches = []
-        for field_name in ("partner_id", "user_id", "date_start", "date", "tag_ids", "description"):
+        carried_scopes = {
+            "partner_id": "project-basic",
+            "user_id": "project-plan-responsibility",
+            "date_start": "project-plan-responsibility",
+            "date": "project-plan-responsibility",
+            "tag_ids": "project-collaboration",
+            "description": "project-description",
+        }
+        for field_name, scope in carried_scopes.items():
             source_nodes = default_arch.xpath(
                 f"//sheet//field[@name='{field_name}' and not(ancestor::field)]"
             )
-            target_nodes = dedicated_arch.xpath(
-                f"//sheet//field[@name='{field_name}' and not(ancestor::field)]"
+            target_nodes = ledger_arch.xpath(
+                f"//sheet//group[@data-sc-anchor='{scope}']//field[@name='{field_name}']"
             )
             self.assertEqual(len(source_nodes), 1, f"source field identity is ambiguous: {field_name}")
-            self.assertEqual(len(target_nodes), 1, f"dedicated field identity is ambiguous: {field_name}")
+            self.assertEqual(len(target_nodes), 1, f"carried field identity is ambiguous: {field_name}")
             target_constraints = self._effective_view_constraints(target_nodes[0])
             source_constraints = self._effective_view_constraints(source_nodes[0])
             if target_constraints != source_constraints:
@@ -534,7 +584,8 @@ class TestCoreExtensionV2Finalize(TransactionCase):
                     )
         self.assertFalse(
             constraint_mismatches,
-            "dedicated form changed source field behavior:\n" + "\n".join(constraint_mismatches),
+            "carried master-data composition changed source field behavior:\n"
+            + "\n".join(constraint_mismatches),
         )
 
         fields_meta = self.env["project.project"].fields_get(
@@ -551,11 +602,21 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         self.assertEqual(fields_meta["project_type_id"]["relation"], "sc.dictionary")
         self.assertEqual(fields_meta["responsibility_ids"]["relation"], "project.responsibility")
 
-        project_type = dedicated_arch.xpath("//field[@name='project_type_id']")[0]
+        project_type = ledger_arch.xpath(
+            "//group[@data-sc-anchor='project-basic']//field[@name='project_type_id']"
+        )[0]
         self.assertIn("project_type", str(fields_meta["project_type_id"].get("domain")))
         self.assertIsNotNone(project_type)
-        self.assertTrue(dedicated_arch.xpath("//field[@name='project_category_id' and @invisible='1']"))
-        self.assertTrue(dedicated_arch.xpath("//field[@name='operation_strategy']"))
+        self.assertTrue(
+            ledger_arch.xpath(
+                "//group[@data-sc-anchor='project-basic']//field[@name='project_category_id' and @invisible='1']"
+            )
+        )
+        self.assertTrue(
+            ledger_arch.xpath(
+                "//group[@data-sc-anchor='project-basic']//field[@name='operation_strategy']"
+            )
+        )
 
         company = self.env.ref("base.main_company")
         project_user = self.env["res.users"].with_context(no_reset_password=True).create({
@@ -580,12 +641,12 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         })
         user_arch = etree.fromstring(
             self.env["project.project"].with_user(project_user).get_view(
-                view_id=dedicated.id, view_type="form"
+                view_id=ledger.id, view_type="form"
             )["arch"].encode()
         )
         manager_arch = etree.fromstring(
             self.env["project.project"].with_user(project_manager).get_view(
-                view_id=dedicated.id, view_type="form"
+                view_id=ledger.id, view_type="form"
             )["arch"].encode()
         )
         self.assertTrue(user_arch.xpath("//field[@name='responsibility_ids']"))
@@ -1239,3 +1300,82 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         self.assertNotIn("visible", policy)
         self.assertIn("sc_source_project_name", policy["hidden"])
         self.assertIn("sc_business_role_label", policy["hidden"])
+
+    # --- 项目台账唯一入口：退役页功能承载 lock -------------------------------
+    #
+    # 项目信息编辑 入口已退役，但它的功能不是"消失"，而是被项目台账记录表单
+    # 完整承载。以下两条锁把"声明"和"实际行为"绑在一起：一条证明承载是全集
+    # （不是靠人工挑选字段），另一条证明台账按钮暴露的权限面与模型方法真正
+    # 校验的权限面一致，避免"界面能点、后端报错"的声明漂移。
+
+    def _combined_arch(self, xmlid):
+        arch = self.env.ref(xmlid)._get_combined_arch()
+        if isinstance(arch, (str, bytes)):
+            arch = etree.fromstring(arch)
+        return arch
+
+    def test_retired_project_edit_composition_is_fully_carried_into_the_ledger(self):
+        ledger = self._combined_arch("smart_construction_core.view_project_overview_form")
+        retired = self._combined_arch(
+            "smart_construction_core.view_sc_product_project_information_edit_form_v1"
+        )
+
+        ledger_fields = set(ledger.xpath("//field/@name"))
+        retired_fields = set(retired.xpath("//field/@name"))
+        self.assertEqual(
+            sorted(retired_fields - ledger_fields),
+            [],
+            "项目台账 must carry every 项目信息编辑 field",
+        )
+
+        ledger_buttons = {
+            (button.get("name"), button.get("type")) for button in ledger.xpath("//button")
+        }
+        retired_buttons = {
+            (button.get("name"), button.get("type")) for button in retired.xpath("//button")
+        }
+        self.assertEqual(
+            sorted(retired_buttons - ledger_buttons),
+            [],
+            "项目台账 must carry every 项目信息编辑 action",
+        )
+
+        ledger_x2many = set(ledger.xpath("//field[@name='responsibility_ids']/tree/@editable"))
+        self.assertEqual(ledger_x2many, {"bottom"}, "责任矩阵 must stay editable on the ledger")
+
+        # 承载的是"维护能力"，不是"创建能力"：创建仍归 新项目立项；
+        # 复制被拒绝与本模块其它 project 入口（project_actions /
+        # project_native_action_overrides / 台账本身在 main 的口径）一致，
+        # 避免绕过立项校验复制出无来源项目。edit 不再硬禁，改由 ACL 与
+        # 字段分组驱动。
+        action = self.env.ref("smart_construction_core.action_sc_project_list")
+        declared = safe_eval(action.context or "{}", {"context": {}})
+        self.assertIs(declared.get("create"), False)
+        self.assertIs(declared.get("delete"), False)
+        self.assertIs(declared.get("no_duplicate"), True)
+        self.assertNotIn("edit", declared)
+
+    def test_project_ledger_submit_button_binds_the_model_group_authority(self):
+        import inspect
+        import re
+
+        ledger = self._combined_arch("smart_construction_core.view_project_overview_form")
+        buttons = ledger.xpath("//button[@name='action_sc_submit']")
+        self.assertEqual(len(buttons), 1, "the ledger must expose exactly one 提交立项 button")
+        declared = {
+            item.strip()
+            for item in (buttons[0].get("groups") or "").split(",")
+            if item.strip()
+        }
+        self.assertTrue(declared, "提交立项 must declare its group authority")
+
+        method = type(self.env["project.project"]).action_sc_submit
+        enforced = set(
+            re.findall(r'has_group\(\s*"([^"]+)"\s*\)', inspect.getsource(method))
+        )
+        self.assertTrue(enforced, "action_sc_submit must declare the groups it enforces")
+        self.assertEqual(
+            declared,
+            enforced,
+            "the 提交立项 button must advertise exactly the groups the model enforces",
+        )

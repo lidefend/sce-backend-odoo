@@ -88,7 +88,7 @@
       @remove="$emit('remove-pending-attachment', $event)"
     />
     <ProfessionalAuditTimeline
-      v-if="showAuditTimeline !== false && auditEvents.length"
+      v-if="showAuditTimeline !== false && (auditEvents.length || auditDeclared === true)"
       :events="auditEvents"
       declared
       summary="历史审计"
@@ -129,6 +129,12 @@ import ScInlineState from '../../components/design-system/ScInlineState.vue';
 export type NativeCollaborationPanelProps = {
   readonly?: boolean;
   showAuditTimeline?: boolean;
+  /**
+   * The contract declares the audit sub-region for this identity.  A declared
+   * region renders its own empty state instead of disappearing while the
+   * timeline is empty; it never depends on runtime event data.
+   */
+  auditDeclared?: boolean;
   title: string;
   unavailableMessage: string;
   actions: NativeChatterAction[];

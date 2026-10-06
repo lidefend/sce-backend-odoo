@@ -835,7 +835,7 @@ verify.daily_dev.acceptance.readonly.probe: guard.prod.forbid
 # superuser has_group pass-through out of Odoo's public/portal audience markers;
 # the fixture fix freezes its own payment execution without weakening the model
 # guard. Both run against the registered local.dev profile and the real modules.
-.PHONY: verify.smart_core.res_users_audience_group.orm verify.smart_core.relation_entry_publication.orm verify.acceptance_fixture.execution_freeze.orm
+.PHONY: verify.smart_core.res_users_audience_group.orm verify.smart_core.relation_entry_publication.orm verify.acceptance_fixture.execution_freeze.orm verify.contract.project_ledger_entry_carrier.orm
 verify.smart_core.res_users_audience_group.orm: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  MODULE=smart_core TEST_TAGS=res_users_audience_group test.safe
@@ -850,6 +850,34 @@ verify.smart_core.relation_entry_publication.orm: guard.prod.forbid local.dev.re
 verify.acceptance_fixture.execution_freeze.orm: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  MODULE=smart_construction_acceptance_fixture TEST_TAGS=acceptance_fixture_execution_freeze test.safe
+
+# Carrier lock for the single project-center record entry: 项目台账 is the one
+# permission/contract-driven project record surface, and the retired 项目信息编辑
+# entry's complete composition must be provably carried into it (every field and
+# button of the retired form, plus the 提交立项 button advertising exactly the
+# groups the model method enforces). This binds declaration to behaviour at the
+# owning layer instead of relying on selector strings.
+verify.contract.project_ledger_entry_carrier.orm: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_construction_core TEST_TAGS=core_extension_v2_finalize test.safe
+
+# Governed report/apply entry for the unified ledger field-overlay repair. The
+# ledger is the single project-center record entry, so its runtime contract must
+# render the composition its authoritative native form declares; a stale legacy
+# ui.form.field.policy overlay from the retired 项目信息编辑 era suppressed
+# project_code. The migration in migrations/17.0.0.170 carries the repair into
+# every module upgrade; this entry reports/repairs an already-deployed database
+# through the registered compose project and DB_NAME binding.
+.PHONY: verify.project.ledger.field_overlay.repair.unit project.ledger.field_overlay.repair
+verify.project.ledger.field_overlay.repair.unit: guard.prod.forbid
+	@python3 -m py_compile \
+	  scripts/ops/repair_project_ledger_field_overlay.py \
+	  addons/smart_construction_core/services/project_ledger_field_overlay_repair.py
+	@python3 -c "import ast,sys; [ast.parse(open(p).read()) for p in sys.argv[1:]]" \
+	  addons/smart_construction_core/migrations/17.0.0.170/pre-migration.py
+project.ledger.field_overlay.repair: guard.prod.forbid check-compose-project check-compose-env verify.project.ledger.field_overlay.repair.unit
+	@PROJECT_LEDGER_OVERLAY_ACTION="$${PROJECT_LEDGER_OVERLAY_ACTION:-report}" \
+	  $(MAKE) --no-print-directory odoo.shell.exec < scripts/ops/repair_project_ledger_field_overlay.py
 
 # The fixture carrier and its deterministic records are provisioned in the daily
 # runtime database through the governed entries below. Both write entries require

@@ -46,12 +46,15 @@
         :blocked-action-message="floorplan.blockedActions.length ? blockedActionMessage : ''"
         :relation-adapter="relationAdapter"
         :has-collaboration="hasCollaboration"
+        :audit-authorized="auditAuthorized"
+        :section-surfaces="contractSurfacesForSections"
+        :collaboration-title="collaborationTitle"
         @field-change="emit('field-change', $event)"
         @field-action="emit('field-action', $event)"
       >
         <template v-if="hasCollaboration" #collaboration>
           <NativeCollaborationPanel
-            v-if="showCollaborationPanel"
+            v-if="collaborationPanelVisible"
             v-bind="collaborationPanelProps"
             :readonly="renderModel.identity.mode === 'readonly'"
             :show-audit-timeline="false"
@@ -86,7 +89,9 @@
         :section-links="workspaceSectionLinks"
         :render-mode="renderModel.identity.mode"
         :relation-adapter="relationAdapter"
-        :show-collaboration-panel="showCollaborationPanel"
+        :show-collaboration-panel="collaborationPanelVisible"
+        :audit-visible="panelAuditVisible"
+        :audit-declared="panelAuditDeclared"
         :collaboration-panel-props="collaborationPanelProps"
         :collaboration-panel-listeners="collaborationPanelListeners"
         :visible-actions="visibleActions"
@@ -105,7 +110,9 @@
         :section-links="workspaceSectionLinks"
         :render-mode="renderModel.identity.mode"
         :relation-adapter="relationAdapter"
-        :show-collaboration-panel="showCollaborationPanel"
+        :show-collaboration-panel="collaborationPanelVisible"
+        :audit-visible="panelAuditVisible"
+        :audit-declared="panelAuditDeclared"
         :collaboration-panel-props="collaborationPanelProps"
         :collaboration-panel-listeners="collaborationPanelListeners"
         :visible-actions="visibleActions"
@@ -126,7 +133,7 @@
 import { computed, inject } from 'vue';
 import { ScTaskActionResolverKey } from '../../components/template/taskActionResolver';
 import { SceneButton, SceneUiProvider, type SceneUiKitId } from '@sc/ui/form';
-import type { ContractV2ActionRule } from '../../app/contracts/v2/types';
+import type { ContractV2ActionRule, ContractV2FormStructureSurface } from '../../app/contracts/v2/types';
 import type { CanonicalAuditEvent, CanonicalFormNode, CanonicalFormRenderModel } from '../../app/presentation/canonicalFormRenderModel';
 import { composeCanonicalFormFloorplan, type CanonicalFormFloorplan } from '../../app/presentation/canonicalFormFloorplan';
 import ScErrorState from '../../components/design-system/ScErrorState.vue';
@@ -146,13 +153,16 @@ import TaskFormPattern from '../../components/product-page-patterns/TaskFormPatt
 import WorkspaceFormPattern from '../../components/product-page-patterns/WorkspaceFormPattern.vue';
 import { canonicalNodeHasContent, type CanonicalRelationProjection } from './canonicalFormRenderer';
 import {
+  declaredAuditAuthorized,
+  declaredCollaborationSurface,
   isCollaborationSurfaceKind,
   resolveCollaborationVisibility,
 } from './contractRuntimeVm';
 import {
   authoritativeNativeBusinessSections,
+  contractSurfaceNavigationItems,
+  legacySurfaceNavigationItems,
   shouldPreserveAuthoritativeBusinessSections,
-  workspaceSurfaceNavigationItems,
 } from './nativeSectionNavigation';
 
 const props = defineProps<{
@@ -168,6 +178,14 @@ const props = defineProps<{
   };
   relationAdapter?: RelationFieldAdapter;
   showCollaborationPanel?: boolean;
+  /**
+   * Declared page regions from `formStructureContract.surfaces`.
+   *
+   * `undefined` means the contract cannot declare regions, which is the only
+   * case allowed to fall back to the legacy runtime predicate.  An empty array
+   * is a declaration: this page publishes no surface at all.
+   */
+  surfaces?: ContractV2FormStructureSurface[];
   /** A dispatch context has no collaboration of its own: no panel, no titled section. */
   suppressCollaboration?: boolean;
   collaborationPanelProps?: NativeCollaborationPanelProps;
@@ -271,12 +289,41 @@ const allowUserOverride = computed(() => (
 ));
 const directActions = computed(() => visibleActions.value.filter((action) => ['primary', 'secondary'].includes(action.tier)));
 const overflowActions = computed(() => visibleActions.value.filter((action) => ['overflow', 'configuration'].includes(action.tier)));
-const hasCollaboration = computed(() => resolveCollaborationVisibility({
-  capability: props.showCollaborationPanel,
-  suppressed: props.suppressCollaboration,
-  nodes: props.renderModel?.zones.subordinate,
-}));
 const auditEvents = computed<CanonicalAuditEvent[]>(() => resolveProfessionalAuditEvents(props.collaborationPanelProps?.timeline || []));
+// A page region is visible when the contract declares it, and a role-gated
+// sub-region additionally needs an explicit `allow`.  Runtime data (a
+// non-empty timeline) is never the authority.
+const contractDeclaresSurfaces = computed(() => props.surfaces !== undefined);
+const collaborationSurface = computed(() => declaredCollaborationSurface(props.surfaces));
+const auditAuthorized = computed(() => declaredAuditAuthorized(props.surfaces));
+const panelAuditVisible = computed(() => (contractDeclaresSurfaces.value ? auditAuthorized.value : true));
+const panelAuditDeclared = computed(() => contractDeclaresSurfaces.value && auditAuthorized.value);
+const collaborationTitle = computed(() => collaborationSurface.value?.title || '协作记录');
+const hasCollaboration = computed(() => {
+  if (contractDeclaresSurfaces.value) {
+    return props.suppressCollaboration ? false : Boolean(collaborationSurface.value);
+  }
+  return resolveCollaborationVisibility({
+    capability: props.showCollaborationPanel,
+    suppressed: props.suppressCollaboration,
+    nodes: props.renderModel?.zones.subordinate,
+  });
+});
+// `showCollaborationPanel` stays the runtime predicate for a legacy contract;
+// a contract that declares surfaces uses the declaration instead.
+const collaborationPanelVisible = computed(() => (
+  contractDeclaresSurfaces.value
+    ? hasCollaboration.value
+    : hasCollaboration.value && props.showCollaborationPanel === true
+));
+// Only surfaces that actually render become navigation entries, so a
+// suppressed region never leaves a dead entry pointing at nothing.
+const renderedSurfaces = computed(() => (props.surfaces || []).filter((surface) => (
+  surface.contentKind === 'collaboration-panel' ? hasCollaboration.value : true
+)));
+const contractSurfacesForSections = computed(() => (
+  contractDeclaresSurfaces.value ? renderedSurfaces.value : undefined
+));
 const nativeBridgeModel = computed<CanonicalFormRenderModel | null>(() => {
   const model = props.renderModel;
   if (!model || model.identity.mode !== 'create' || preserveAuthoritativeBusinessSections.value) return model;
@@ -303,10 +350,12 @@ const floorplanSubordinateNodes = computed(() => floorplan.value.subordinateNode
   .filter(canonicalNodeHasContent));
 const workspaceSectionLinks = computed(() => [
   ...(nativeBridge.value?.sectionLinks || []),
-  ...workspaceSurfaceNavigationItems({
-    collaborationAvailable: props.showCollaborationPanel === true,
-    auditAvailable: props.showCollaborationPanel === true && auditEvents.value.length > 0,
-  }),
+  ...(contractDeclaresSurfaces.value
+    ? contractSurfaceNavigationItems(renderedSurfaces.value)
+    : legacySurfaceNavigationItems({
+      collaborationAvailable: props.showCollaborationPanel === true,
+      auditAvailable: props.showCollaborationPanel === true && auditEvents.value.length > 0,
+    })),
 ]);
 
 </script>

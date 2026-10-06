@@ -20,7 +20,7 @@ OUTPUT_PATH = Path(
 )
 EXPECTED_ANCHORS = {
     "smart_construction_core.action_project_initiation",
-    "smart_construction_core.action_sc_product_project_edit_v1",
+    "smart_construction_core.action_sc_project_list",
     "smart_construction_core.action_exec_structure_wbs",
     "smart_construction_core.action_project_progress_entry",
     "smart_construction_core.action_sc_project_document",

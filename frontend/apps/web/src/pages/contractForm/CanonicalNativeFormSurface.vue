@@ -48,7 +48,8 @@
       <NativeCollaborationPanel
         v-bind="collaborationPanelProps"
         :readonly="renderMode === 'readonly'"
-        :show-audit-timeline="true"
+        :show-audit-timeline="auditVisible"
+        :audit-declared="auditDeclared"
         v-on="collaborationPanelListeners || {}"
       />
     </component>
@@ -63,6 +64,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useOptionalStandardDetailComposition } from './standardDetailCompositionRuntime';
 import ScCard from '../../components/design-system/ScCard.vue';
 import type { CanonicalFormAction, CanonicalFormRenderMode } from '../../app/presentation/canonicalFormRenderModel';
@@ -87,6 +89,9 @@ const props = defineProps<{
   renderMode: CanonicalFormRenderMode;
   relationAdapter?: RelationFieldAdapter;
   showCollaborationPanel?: boolean;
+  /** Contract authorization for the role-gated audit sub-region (default: legacy). */
+  auditVisible?: boolean;
+  auditDeclared?: boolean;
   collaborationPanelProps?: NativeCollaborationPanelProps;
   collaborationPanelListeners?: NativeCollaborationPanelListeners;
   visibleActions: CanonicalFormAction[];
@@ -95,6 +100,11 @@ const props = defineProps<{
   effectivePrimaryKey: string;
   actionsInHeader?: boolean;
 }>();
+// A legacy contract has no surface declaration, so the audit sub-region keeps
+// its historical "render when there are events" behaviour; a declaring
+// contract passes an explicit authorization instead.
+const auditVisible = computed(() => props.auditVisible !== false);
+const auditDeclared = computed(() => props.auditDeclared === true);
 const emit = defineEmits<{
   'field-change': [payload: FormSectionFieldChange];
   'field-action': [payload: FormSectionFieldActionPayload];

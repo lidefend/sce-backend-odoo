@@ -2,9 +2,9 @@
 
 - Status: **PASS**
 - Primary centers: **10**
-- Runtime menu/action surfaces: **88**
+- Runtime menu/action surfaces: **93**
 - Excluded non-product surfaces: **1**
-- Covered surfaces: **88**
+- Covered surfaces: **93**
 - Uncovered surfaces: **0**
 - Runtime/authority gaps: **0**
 
@@ -14,12 +14,12 @@
 |---|---:|---:|---:|
 | workbench | 4 | 4 | 0 |
 | project | 30 | 30 | 0 |
-| contract | 7 | 7 | 0 |
+| contract | 8 | 8 | 0 |
 | cost | 4 | 4 | 0 |
-| finance | 11 | 11 | 0 |
+| finance | 14 | 14 | 0 |
 | tax | 9 | 9 | 0 |
 | accounting | 3 | 3 | 0 |
-| reporting | 6 | 6 | 0 |
+| reporting | 7 | 7 | 0 |
 | administration | 8 | 8 | 0 |
 | product_configuration | 6 | 6 | 0 |
 

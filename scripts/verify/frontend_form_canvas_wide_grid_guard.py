@@ -119,7 +119,8 @@ for required in (
     "relationshipCollectionNavigationItems(",
     'v-if="supplementaryInputNodes.length"',
     'data-form-section-target="surface:activity"',
-    "props.auditEvents.length ? {",
+    "contractSurfaceNavigationItems(props.sectionSurfaces || [])",
+    "auditRegionVisible",
     '<section\n      v-if="presentableRelationNodes.length"',
 ):
     if required not in object_task:
@@ -132,7 +133,8 @@ if "inferredSectionRole" in native_navigation_model:
     fail("workspace navigation still infers section identity from descendant field roles")
 for required in (
     "nativeBridge.value?.sectionLinks",
-    "workspaceSurfaceNavigationItems",
+    "contractSurfaceNavigationItems(renderedSurfaces.value)",
+    "legacySurfaceNavigationItems(",
     "auditAvailable: props.showCollaborationPanel === true && auditEvents.value.length > 0",
 ):
     if required not in native_driver:

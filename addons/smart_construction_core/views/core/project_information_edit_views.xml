@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!--
-        The product action "项目信息编辑" owns project master-data maintenance.
-        This is intentionally a standalone, action-scoped form: the complete
-        project.edit_project composition remains available to dashboard and
-        native consumers, while cross-business child records stay in their
-        dedicated operating entries.
+        Project master-data maintenance composition.
+
+        The separate 项目信息编辑 product entry was retired and its complete
+        composition was carried into the single 项目台账 record form
+        (view_project_overview_form). This view record is intentionally kept
+        dormant: a persisted low-code orchestration on the daily runtime binds
+        its view-level node patches to this exact view id, so deleting the
+        record would strand that configuration. Nothing exposes it as an entry.
     -->
     <record id="view_sc_product_project_information_edit_form_v1" model="ir.ui.view">
         <field name="name">project.project.information.edit.form.product.v1</field>
@@ -124,10 +127,4 @@
         </field>
     </record>
 
-    <record id="action_sc_product_project_edit_form_v1" model="ir.actions.act_window.view">
-        <field name="sequence">20</field>
-        <field name="view_mode">form</field>
-        <field name="view_id" ref="smart_construction_core.view_sc_product_project_information_edit_form_v1"/>
-        <field name="act_window_id" ref="smart_construction_core.action_sc_product_project_edit_v1"/>
-    </record>
 </odoo>

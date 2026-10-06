@@ -18,6 +18,7 @@ REASON_SCENE_ROLE_PRUNED = "SCENE_ROLE_PRUNED"
 REASON_SCENE_CAPABILITY_BLOCKED = "SCENE_CAPABILITY_BLOCKED"
 REASON_SCENE_INTERNAL_ONLY = "SCENE_INTERNAL_ONLY"
 REASON_SCENE_DEMO_ONLY = "SCENE_DEMO_ONLY"
+REASON_SCENE_SURFACE_UNREGISTERED = "SCENE_SURFACE_UNREGISTERED"
 
 ALLOWED_REASON_CODES = {
     REASON_SCENE_INVALID,
@@ -30,6 +31,7 @@ ALLOWED_REASON_CODES = {
     REASON_SCENE_CAPABILITY_BLOCKED,
     REASON_SCENE_INTERNAL_ONLY,
     REASON_SCENE_DEMO_ONLY,
+    REASON_SCENE_SURFACE_UNREGISTERED,
 }
 
 DEFAULT_DELIVERY_MODE = "default"
@@ -44,6 +46,7 @@ SOURCE_AUTHORITIES = (
     "extension_hook:smart_core_surface_policy_default_name",
     "extension_hook:smart_core_surface_nav_allowlist",
     "extension_hook:smart_core_surface_aliases",
+    "extension_hook:smart_core_surface_unregistered_bypass",
     "builtin_workspace_surface_policy",
 )
 NO_BUSINESS_FACT_AUTHORITY = True
@@ -71,6 +74,12 @@ BUILTIN_SURFACE_DEEP_LINK_ALLOWLIST = {
     ),
 }
 SURFACE_POLICY_FILE_DEFAULT = "docs/product/delivery/v1/workspace_default_v1_scene_surface_policy.json"
+# A delivery surface that is not declared by any policy source is a closed
+# channel.  Opening it is a product decision delegated to this extension hook;
+# the platform kernel never decides which role may bypass the closure.
+UNREGISTERED_SURFACE_BYPASS_HOOK = "smart_core_surface_unregistered_bypass"
+SURFACE_POLICY_SOURCE_UNREGISTERED_CLOSED = "unregistered_closed"
+SURFACE_POLICY_SOURCE_UNREGISTERED_BYPASS = "unregistered_bypass"
 _SURFACE_POLICY_CACHE: dict[str, Any] = {"path": "", "mtime": -1.0, "payload": {}}
 
 
@@ -284,7 +293,42 @@ def _resolve_default_surface_from_file(env=None) -> str:
     return value if value and value != "default" else ""
 
 
-def _select_surface_policy(surface: str, env=None) -> dict:
+def _resolve_unregistered_surface_bypass(env, surface: str, runtime_env: str = "dev") -> dict | None:
+    """Resolve an authorized development bypass for an unregistered surface.
+
+    Fail-closed contract: without a runtime environment there is no acting user,
+    so no bypass can be resolved.  The *authorization* rule (which role, which
+    stage) is never implemented in the platform kernel: it is delegated to the
+    ``smart_core_surface_unregistered_bypass`` extension hook owned by the
+    industry/product layer.  The kernel only honours a positive answer.
+    """
+    if env is None:
+        return None
+    payload = call_extension_hook_first(
+        env, UNREGISTERED_SURFACE_BYPASS_HOOK, env, surface, runtime_env
+    )
+    if not isinstance(payload, dict):
+        return None
+    if not _to_bool(payload.get("authorized"), False):
+        return None
+    return {
+        "authorized": True,
+        "role_code": str(payload.get("role_code") or "").strip(),
+        "reason_code": str(payload.get("reason_code") or "").strip(),
+        "runtime_env": runtime_env,
+    }
+
+
+def _select_surface_policy(surface: str, env=None, runtime_env: str = "dev") -> dict:
+    """Resolve one delivery surface into an explicit channel policy.
+
+    A surface declared by the policy file or the builtin/hook allowlists is a
+    *registered* channel and delivers only its allowlisted scenes.  Any other
+    name is an *unregistered* channel: it is closed fail-closed, and only an
+    authorized development bypass (see ``_resolve_unregistered_surface_bypass``)
+    re-opens the legacy pass-through.  The name space therefore stays closed
+    once the delivery policy is enabled.
+    """
     key = _normalize_surface(surface, env=env)
     file_policy_map = _load_surface_policy_from_file(env)
     file_policy = file_policy_map.get(key) if isinstance(file_policy_map, dict) else None
@@ -312,7 +356,27 @@ def _select_surface_policy(surface: str, env=None) -> dict:
         if str(item or "").strip()
     }
     if not nav_allowlist and not deep_link_allowlist:
-        return {"name": "", "enabled": False, "source": "none", "nav_allowlist": set(), "deep_link_allowlist": set()}
+        bypass = _resolve_unregistered_surface_bypass(env, key, runtime_env)
+        if bypass is not None:
+            return {
+                "name": key,
+                "enabled": False,
+                "source": SURFACE_POLICY_SOURCE_UNREGISTERED_BYPASS,
+                "unregistered": True,
+                "bypass": True,
+                "bypass_role": bypass.get("role_code") or "",
+                "nav_allowlist": set(),
+                "deep_link_allowlist": set(),
+            }
+        return {
+            "name": key,
+            "enabled": True,
+            "source": SURFACE_POLICY_SOURCE_UNREGISTERED_CLOSED,
+            "unregistered": True,
+            "closed": True,
+            "nav_allowlist": set(),
+            "deep_link_allowlist": set(),
+        }
     return {
         "name": key,
         "enabled": True,
@@ -369,12 +433,19 @@ def resolve_delivery_policy_runtime(env, params: dict | None) -> dict:
 
     runtime_env = str(os.environ.get("ENV") or "dev").strip().lower() or "dev"
     alias_meta = _legacy_surface_alias_meta(surface, env=env)
+    normalized_surface = _normalize_surface(surface, env=env)
+    surface_policy = _select_surface_policy(normalized_surface, env=env, runtime_env=runtime_env)
     return {
         "enabled": bool(enabled),
-        "surface": _normalize_surface(surface, env=env),
+        "surface": normalized_surface,
         "requested_surface": str(surface or "").strip().lower(),
         "legacy_surface_alias": alias_meta,
         "runtime_env": runtime_env,
+        "surface_policy_name": str(surface_policy.get("name") or ""),
+        "surface_policy_source": str(surface_policy.get("source") or "none"),
+        "surface_policy_unregistered": bool(surface_policy.get("unregistered")),
+        "surface_policy_closed": bool(surface_policy.get("closed")),
+        "surface_policy_bypass": bool(surface_policy.get("bypass")),
     }
 
 
@@ -395,7 +466,8 @@ def filter_delivery_scenes(
     reason_counts = {}
     normalized_surface = _normalize_surface(surface, env=env)
     alias_meta = _legacy_surface_alias_meta(surface, env=env)
-    surface_policy = _select_surface_policy(normalized_surface, env=env)
+    surface_policy = _select_surface_policy(normalized_surface, env=env, runtime_env=runtime_env)
+    surface_closed = bool(surface_policy.get("closed"))
 
     def _exclude(scene_code: str, reason_code: str):
         safe_reason = reason_code if reason_code in ALLOWED_REASON_CODES else REASON_SCENE_INVALID
@@ -435,6 +507,8 @@ def filter_delivery_scenes(
                 "surface_policy_applied": bool(surface_policy.get("enabled")),
                 "surface_policy_name": str(surface_policy.get("name") or ""),
                 "surface_policy_source": str(surface_policy.get("source") or "none"),
+                "surface_policy_unregistered": bool(surface_policy.get("unregistered")),
+                "surface_policy_bypass": bool(surface_policy.get("bypass")),
                 "delivery_scene_codes_sample": sorted(
                     str((item or {}).get("code") or (item or {}).get("key") or "").strip()
                     for item in scene_items
@@ -452,6 +526,13 @@ def filter_delivery_scenes(
         code = str(scene.get("code") or scene.get("key") or "").strip()
         if not code:
             _exclude("", REASON_SCENE_INVALID)
+            continue
+        if surface_closed:
+            # An unregistered delivery surface is a closed channel: the whole
+            # request is excluded with the surface-level reason instead of the
+            # legacy fail-open pass-through.  Only an authorized development
+            # bypass re-opens it (and then no allowlist is applied at all).
+            _exclude(code, REASON_SCENE_SURFACE_UNREGISTERED)
             continue
         if not _has_resolvable_target(scene):
             _exclude(code, REASON_SCENE_TARGET_UNRESOLVED)
@@ -532,6 +613,8 @@ def filter_delivery_scenes(
             "surface_policy_applied": bool(surface_policy.get("enabled")),
             "surface_policy_name": str(surface_policy.get("name") or ""),
             "surface_policy_source": str(surface_policy.get("source") or "none"),
+            "surface_policy_unregistered": bool(surface_policy.get("unregistered")),
+            "surface_policy_bypass": bool(surface_policy.get("bypass")),
             "surface_nav_allowlist_size": len(surface_policy.get("nav_allowlist") or set()),
             "surface_deep_link_allowlist_size": len(surface_policy.get("deep_link_allowlist") or set()),
             "delivery_scene_codes_sample": sorted(

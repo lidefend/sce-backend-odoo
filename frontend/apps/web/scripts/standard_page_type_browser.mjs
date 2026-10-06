@@ -3402,7 +3402,7 @@ try {
         check('information edit: project-only responsibility', spec.model === 'project.project');
         const entries = ['primary_actions', 'role_home_actions', 'contextual_actions', 'admin_actions']
           .flatMap((key) => report.routeAuthority?.[key] || []);
-        const matches = entries.filter((row) => row.menu_xmlid === 'smart_construction_core.menu_sc_product_project_edit_v1');
+        const matches = entries.filter((row) => row.menu_xmlid === 'smart_construction_core.menu_sc_project_project');
         check('information edit: current principal has one authorized entry', matches.length === 1 && Number(matches[0].menu_id) > 0 && Number(matches[0].action_id) > 0);
         report.approvalPages.at(-1).entry = matches[0];
         entryContext = `?menu_id=${Number(matches[0].menu_id)}&action_id=${Number(matches[0].action_id)}`;

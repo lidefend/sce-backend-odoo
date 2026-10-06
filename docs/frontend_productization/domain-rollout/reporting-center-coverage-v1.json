@@ -13,21 +13,21 @@
     "user_specific_visibility"
   ],
   "summary": {
-    "action_count": 6,
-    "model_count": 6,
-    "ready_surface_count": 6,
-    "readable_fallback_count": 9,
-    "structural_form_count": 4,
+    "action_count": 7,
+    "model_count": 7,
+    "ready_surface_count": 7,
+    "readable_fallback_count": 11,
+    "structural_form_count": 5,
     "fail_closed_count": 0,
     "excluded_count": 0,
     "gap_count": 0
   },
   "actions": [
     {
-      "menuId": 591,
+      "menuId": 592,
       "menuXmlid": "smart_construction_core.menu_sc_comprehensive_cost_statistics_report",
       "menuName": "成本报表",
-      "actionId": 824,
+      "actionId": 826,
       "actionXmlid": "smart_construction_core.action_sc_comprehensive_cost_statistics_report",
       "actionName": "成本统计表（综合）",
       "model": "sc.comprehensive.cost.summary",
@@ -108,10 +108,10 @@
       ]
     },
     {
-      "menuId": 365,
+      "menuId": 366,
       "menuXmlid": "smart_construction_core.menu_sc_fund_daily_summary",
       "menuName": "资金报表",
-      "actionId": 697,
+      "actionId": 699,
       "actionXmlid": "smart_construction_core.action_sc_fund_daily_summary",
       "actionName": "企业资金日报汇总",
       "model": "sc.fund.daily.summary",
@@ -178,10 +178,10 @@
       ]
     },
     {
-      "menuId": 428,
+      "menuId": 429,
       "menuXmlid": "smart_construction_core.menu_sc_legacy_business_entity_map",
       "menuName": "历史业务主体对照",
-      "actionId": 733,
+      "actionId": 735,
       "actionXmlid": "smart_construction_core.action_sc_legacy_business_entity_map",
       "actionName": "历史业务主体对照",
       "model": "sc.business.entity",
@@ -220,10 +220,10 @@
       ]
     },
     {
-      "menuId": 702,
+      "menuId": 704,
       "menuXmlid": "smart_construction_core.menu_sc_product_labor_subcontract_report_v1",
       "menuName": "劳务分包报表",
-      "actionId": 880,
+      "actionId": 882,
       "actionXmlid": "smart_construction_core.action_sc_product_labor_subcontract_report_v1",
       "actionName": "劳务分包报表",
       "model": "sc.labor.subcontract.report",
@@ -286,10 +286,10 @@
       ]
     },
     {
-      "menuId": 701,
+      "menuId": 703,
       "menuXmlid": "smart_construction_core.menu_sc_product_tax_report_v1",
       "menuName": "税务报表",
-      "actionId": 879,
+      "actionId": 881,
       "actionXmlid": "smart_construction_core.action_sc_product_tax_report_v1",
       "actionName": "税务报表",
       "model": "sc.tax.filing",
@@ -344,10 +344,80 @@
       ]
     },
     {
-      "menuId": 599,
+      "menuId": 408,
+      "menuXmlid": "smart_construction_core.menu_sc_project_cost_ledger",
+      "menuName": "成本台账",
+      "actionId": 523,
+      "actionXmlid": "smart_construction_core.action_project_cost_ledger",
+      "actionName": "成本归集台账",
+      "model": "project.cost.ledger",
+      "viewMode": "tree,form,pivot,graph",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_data_center",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_cost_ledger",
+            "groups": [
+              "smart_construction_core.group_sc_cap_cost_manager",
+              "smart_construction_core.group_sc_cap_cost_read",
+              "smart_construction_core.group_sc_cap_cost_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_cost_manager",
+          "smart_construction_core.group_sc_cap_cost_read",
+          "smart_construction_core.group_sc_cap_cost_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_project_cost_ledger_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_project_cost_ledger_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        },
+        {
+          "viewType": "pivot",
+          "viewXmlid": "smart_construction_core.view_project_cost_ledger_pivot",
+          "jsClass": "",
+          "semantic": "pivot",
+          "readiness": "readable_fallback",
+          "reason": "RENDERER_PIVOT_PLANNED"
+        },
+        {
+          "viewType": "graph",
+          "viewXmlid": "smart_construction_core.view_project_cost_ledger_graph",
+          "jsClass": "",
+          "semantic": "graph",
+          "readiness": "readable_fallback",
+          "reason": "RENDERER_GRAPH_PLANNED"
+        }
+      ]
+    },
+    {
+      "menuId": 600,
       "menuXmlid": "smart_construction_core.menu_sc_project_operation_statistics_report",
       "menuName": "项目报表",
-      "actionId": 827,
+      "actionId": 829,
       "actionXmlid": "smart_construction_core.action_sc_project_operation_statistics_report",
       "actionName": "项目经营统计表",
       "model": "sc.operating.metrics.project",

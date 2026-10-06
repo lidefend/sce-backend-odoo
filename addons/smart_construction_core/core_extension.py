@@ -64,6 +64,7 @@ from odoo.addons.smart_construction_core import core_extension_contract_normaliz
 from odoo.addons.smart_construction_core import core_extension_intent_handlers as _intent_handlers
 from odoo.addons.smart_construction_core import core_extension_service_builders as _service_builders
 from odoo.addons.smart_construction_core import core_extension_actor_roles as _actor_roles
+from odoo.addons.smart_construction_core import core_extension_surface_bypass as _surface_bypass
 from odoo.addons.smart_core.handlers.ui_contract_v2_projection import (
     normalize_post_projected_container_tree,
 )
@@ -922,6 +923,10 @@ def smart_core_surface_aliases(env):
     }
 
 
+# P1 policy: the kernel only asks this hook, the role/stage gate lives in it.
+smart_core_surface_unregistered_bypass = _surface_bypass.smart_core_surface_unregistered_bypass
+
+
 def smart_core_runtime_business_config_productization_sources(env):
     del env
     return []
@@ -1099,6 +1104,55 @@ def smart_core_form_business_actions(env, model_name, record_id, contract):
         return build_financial_form_business_actions(env, model_name, record_id)
     except Exception:
         return None
+
+
+FORM_SURFACE_AUDIT_CAPABILITY = "governance.runtime.audit"
+
+
+def smart_core_form_structure_surface_policy(env, model_name, capabilities):
+    """Declare the product form surfaces and the role entitlement of each.
+
+    ``协作记录`` is a model-capability region.  ``历史审计`` is not: it is a
+    role-gated sub-region of the collaboration surface, so a record that has
+    audit events must still hide the region from a role without the audit
+    capability, and an authorized role sees it even before events exist.  The
+    entitlement reuses the published capability registry, which is also the
+    authority behind ``system.init.capabilities``.
+    """
+    del model_name
+    caps = capabilities if isinstance(capabilities, dict) else {}
+    if not (caps.get("collaboration") or caps.get("attachments")):
+        return []
+    try:
+        from odoo.addons.smart_construction_core.services.capability_registry import (
+            capability_authorization_for_user,
+        )
+        authorization = capability_authorization_for_user(env.user, FORM_SURFACE_AUDIT_CAPABILITY)
+    except Exception:
+        authorization = {
+            "capability": FORM_SURFACE_AUDIT_CAPABILITY,
+            "state": "deny",
+            "reason_code": "AUTHORIZATION_RESOLUTION_FAILED",
+            "reason": "审计区域授权解析失败",
+        }
+    return [{
+        "surface": "activity",
+        "title": "协作记录",
+        "role": "activity",
+        "contentKind": "collaboration-panel",
+        "sourceIdentity": "collaboration-panel",
+        "capabilities": {
+            "timeline": bool(caps.get("collaboration")),
+            "remarks": bool(caps.get("remarks")),
+            "attachments": bool(caps.get("attachments")),
+        },
+        "audit": {
+            "title": "历史审计",
+            "contentKind": "audit-timeline",
+            "sourceIdentity": "professional-audit-timeline",
+            "authorization": authorization,
+        },
+    }]
 
 
 def smart_core_hierarchy_governance(env, model_name, context, contract):

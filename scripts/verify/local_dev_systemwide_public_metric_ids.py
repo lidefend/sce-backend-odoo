@@ -15,8 +15,8 @@ if not user.active:
 payment_menu = env.ref("smart_construction_core.menu_sc_user_payment_apply")
 payment_action = env.ref("smart_construction_core.action_payment_request_user_payment_apply")
 payment = env.ref("smart_construction_demo.payment_request_floorplan_demo_record")
-project_menu = env.ref("smart_construction_core.menu_sc_product_project_edit_v1")
-project_action = env.ref("smart_construction_core.action_sc_product_project_edit_v1")
+project_menu = env.ref("smart_construction_core.menu_sc_project_project")
+project_action = env.ref("smart_construction_core.action_sc_project_list")
 project_env = (
     env["project.project"].with_user(user).with_company(user.company_id)
     .with_context(allowed_company_ids=user.company_ids.ids, active_test=False)

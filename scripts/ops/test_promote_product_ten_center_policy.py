@@ -26,7 +26,7 @@ class ProductTenCenterPolicyPromotionTests(unittest.TestCase):
             self.assertEqual([group["group_label"] for group in product["menu_groups"]], list(TARGET_CENTERS))
             rows = [menu for group in product["menu_groups"] for menu in group["menus"]]
             xmlids = [row["menu_xmlid"] for row in rows]
-            self.assertEqual(len(rows), 90)
+            self.assertEqual(len(rows), 89)
             self.assertEqual(len(xmlids), len(set(xmlids)))
 
     def test_retired_centers_are_absent_and_accounting_is_real(self):

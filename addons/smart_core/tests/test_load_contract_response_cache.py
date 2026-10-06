@@ -111,5 +111,115 @@ class TestLoadContractResponseCache(unittest.TestCase):
         self.assertNotEqual(first, second)
 
 
+class TestFieldPolicyProjectionSourceToken(unittest.TestCase):
+    """A field-policy change must invalidate the projection source token.
+
+    ``ui.form.field.policy`` rows are projection inputs. ``write_date`` is
+    second-resolution and can stay identical for an A -> B -> A change inside a
+    single transaction (for example a governed repair that retires a stale
+    overlay), so the token must be derived from the policy definition set, not
+    from the latest row's timestamp.
+    """
+
+    @staticmethod
+    def _policy_row(**overrides):
+        row = SimpleNamespace(
+            id=85,
+            write_date="2026-10-06 07:47:00",
+            active=True,
+            visible=False,
+            field_name="project_code",
+            action_id=SimpleNamespace(id=506),
+            view_id=SimpleNamespace(id=0),
+            sequence=1,
+            label="项目编号",
+            role_group_ids=SimpleNamespace(ids=[]),
+        )
+        for key, value in overrides.items():
+            setattr(row, key, value)
+        return row
+
+    @classmethod
+    def _build_env(cls, rows):
+        class _GenericModel:
+            _fields = {"write_date": object()}
+
+            def sudo(self):
+                return self
+
+            def with_context(self, **_kwargs):
+                return self
+
+            def search(self, _domain, **_kwargs):
+                if _kwargs.get("order") == "id":
+                    return [SimpleNamespace(
+                        id=1, definition_sha256="d", version_no=1,
+                        status="published", active=True,
+                    )]
+                return SimpleNamespace(id=1, write_date="2026-08-21 00:00:00", latest_version="")
+
+        class _PolicyModel:
+            _fields = {"write_date": object(), "field_name": object(), "visible": object(), "active": object()}
+
+            def __init__(self, policy_rows):
+                self.policy_rows = policy_rows
+
+            def sudo(self):
+                return self
+
+            def with_context(self, **_kwargs):
+                return self
+
+            def search(self, _domain, **_kwargs):
+                return list(self.policy_rows)
+
+        class _Env:
+            def __init__(self, policy_rows):
+                self.user = SimpleNamespace(id=7)
+                self.company = SimpleNamespace(id=1)
+                self.models = {
+                    "ui.business.config.contract": _GenericModel(),
+                    "ui.form.field.policy": _PolicyModel(policy_rows),
+                }
+
+            def __contains__(self, _model_code):
+                return True
+
+            def __getitem__(self, model_code):
+                return self.models.setdefault(model_code, _GenericModel())
+
+        return _Env(rows)
+
+    def _token(self, rows):
+        with patch.dict(os.environ, {"SC_SOURCE_REVISION": "a" * 40, "SC_SOURCE_FINGERPRINT": "b" * 64}, clear=False):
+            return TARGET.build_projection_source_token(
+                self._build_env(rows), model_name="project.project", action_id=506
+            )
+
+    def test_same_second_active_flip_reaches_the_token(self):
+        row = self._policy_row()
+        before = self._token([row])
+        retired = self._policy_row(active=False)
+        after = self._token([retired])
+
+        self.assertTrue(before)
+        self.assertTrue(after)
+        self.assertNotEqual(
+            before,
+            after,
+            "retiring a field-policy overlay in the same second must invalidate the projection token",
+        )
+
+    def test_visibility_and_identity_changes_reach_the_token(self):
+        baseline = self._token([self._policy_row()])
+        visible = self._token([self._policy_row(visible=True)])
+        renamed = self._token([self._policy_row(field_name="business_nature")])
+        removed = self._token([])
+
+        self.assertNotEqual(baseline, visible)
+        self.assertNotEqual(baseline, renamed)
+        self.assertNotEqual(baseline, removed)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -4,9 +4,9 @@ import re
 
 ROOT = Path(__file__).resolve().parents[2]
 
-def audit_timeline_ownership_errors(driver: str, surface: str) -> list[str]:
+def audit_timeline_ownership_errors(driver: str, surface: str, collaboration: str) -> list[str]:
     errors = []
-    for source, enabled, owner in ((driver, "false", "task compatibility"), (surface, "true", "native surface")):
+    for source, enabled, owner in ((driver, "false", "task compatibility"), (surface, "auditVisible", "native surface")):
         template = re.sub(r"<!--[\s\S]*?-->", "", source.split("<script", 1)[0])
         panels = re.findall(r"<NativeCollaborationPanel\b[\s\S]*?/>", template)
         if len(panels) != 1:
@@ -17,6 +17,15 @@ def audit_timeline_ownership_errors(driver: str, surface: str) -> list[str]:
             errors.append(f"{owner} audit timeline ownership must be {enabled}")
         if attrs.get("v-bind") != "collaborationPanelProps":
             errors.append(f"{owner} must forward authoritative collaboration props")
+    # The role-gated audit sub-region is owned by the contract authorization the
+    # surface forwards, and it must not fall back to "the timeline happens to be
+    # non-empty": a declared and allowed region renders its own empty state.
+    surface_template = re.sub(r"<!--[\s\S]*?-->", "", surface.split("<script", 1)[0])
+    if ':audit-declared="auditDeclared"' not in surface_template:
+        errors.append("native surface must forward the declared audit authorization")
+    collaboration_template = re.sub(r"<!--[\s\S]*?-->", "", collaboration.split("<script", 1)[0])
+    if "auditEvents.length || auditDeclared === true" not in collaboration_template:
+        errors.append("declared audit region must not depend on runtime events")
     return errors
 
 def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -> list[str]:
@@ -36,7 +45,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("task audit surface bypasses professional audit authority")
     if "ProfessionalAuditTimeline" not in collaboration or "resolveProfessionalAuditEvents" not in collaboration:
         failures.append("workspace collaboration hides or bypasses professional audit events")
-    failures.extend(audit_timeline_ownership_errors(driver, surface))
+    failures.extend(audit_timeline_ownership_errors(driver, surface, collaboration))
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
         if forbidden in model or forbidden in event or forbidden in timeline:
             failures.append(f"audit components contain forbidden product special case {forbidden}")

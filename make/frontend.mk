@@ -412,6 +412,15 @@ verify.frontend.contract_form_collaboration_authority.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_form_collaboration_authority_test.ts --bundle --platform=node --format=esm --outfile=/tmp/contract-form-collaboration-authority-test.mjs >/dev/null
 	@node /tmp/contract-form-collaboration-authority-test.mjs
 
+# Declared form surfaces: a non-field page region is visible only when the
+# contract declares it, and a role-gated sub-region only on an explicit allow.
+# Negative-first: the withheld-authorization and empty-declaration cases must
+# stay hidden before the allowed case is proven to render.
+.PHONY: verify.frontend.form_structure_surface_contract.unit
+verify.frontend.form_structure_surface_contract.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/form_structure_surface_contract_test.ts --bundle --platform=node --format=esm --outfile=/tmp/form-structure-surface-contract-test.mjs >/dev/null
+	@node /tmp/form-structure-surface-contract-test.mjs
+
 .PHONY: verify.frontend.contract_v2_render_authority.unit
 verify.frontend.contract_v2_render_authority.unit: guard.prod.forbid
 	@python3 scripts/verify/contract_v2_render_authority_matrix.py --check
@@ -857,6 +866,11 @@ verify.frontend.contract_error_business_ownership.unit: guard.prod.forbid
 verify.frontend.contract_form_save_failure_recovery.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_form_save_failure_recovery_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/contract-form-save-failure-recovery-test.mjs >/dev/null
 	@node /tmp/contract-form-save-failure-recovery-test.mjs
+
+.PHONY: verify.frontend.contract_form_dirty_semantics.unit
+verify.frontend.contract_form_dirty_semantics.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_form_dirty_semantics_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/contract-form-dirty-semantics-test.mjs >/dev/null
+	@node /tmp/contract-form-dirty-semantics-test.mjs
 
 .PHONY: verify.frontend.standard_form_composition.unit
 verify.frontend.standard_form_composition.unit: guard.prod.forbid

@@ -445,6 +445,48 @@ def lint_registry(env=None) -> list[dict[str, Any]]:
     return issues
 
 
+def capability_authorization_for_user(user, capability_key: str) -> dict[str, Any]:
+    """Resolve one declared capability's authorization for *user*.
+
+    The registry definition is the single policy authority (required roles and
+    required groups); this returns the same decision the published capability
+    list publishes, so a role-gated page region and the capability matrix cannot
+    drift into two rules.  An unknown key is denied rather than silently allowed.
+    """
+    key = str(capability_key or "").strip()
+    definition = None
+    for item in capability_definitions():
+        if str(item.get("key") or "").strip() == key:
+            definition = item
+            break
+    if not key or not isinstance(definition, dict):
+        return {
+            "capability": key,
+            "state": "deny",
+            "reason_code": "UNDECLARED_CAPABILITY",
+            "reason": _("未声明的能力"),
+        }
+    role_codes = _resolve_role_codes_for_user(user)
+    visible, allowed, reason_code, reason = _capability_access(definition, role_codes, user)
+    if not visible:
+        cap_state, cap_state_reason = "deny", reason or _("角色范围不匹配")
+    else:
+        cap_state, cap_state_reason = _capability_state(definition, allowed)
+    authorization: dict[str, Any] = {
+        "capability": key,
+        "state": cap_state,
+        "reason_code": reason_code or "",
+        "reason": cap_state_reason or reason or "",
+    }
+    required_roles = [str(item).strip() for item in (definition.get("required_roles") or []) if str(item).strip()]
+    required_groups = [str(item).strip() for item in (definition.get("required_groups") or []) if str(item).strip()]
+    if required_roles:
+        authorization["required_roles"] = required_roles
+    if required_groups:
+        authorization["required_groups"] = required_groups
+    return authorization
+
+
 def capability_registry_summary(env, user) -> dict[str, Any]:
     caps = list_capabilities_for_user(env, user)
     by_role = sorted(_resolve_role_codes_for_user(user))

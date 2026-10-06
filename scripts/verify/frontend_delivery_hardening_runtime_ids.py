@@ -41,8 +41,8 @@ def target(menu_xmlid, record_xmlid, *, declared_action_xmlid=""):
 # missing from a role's released navigation is denied with NAVIGATION_AUTHORITY_DENIED.
 # Every binding below therefore names its declared menu/action pair, and the resolver
 # fails closed when the resolved pair differs from the declaration.
-PROJECT_MENU_XMLID = "smart_construction_core.menu_sc_product_project_edit_v1"
-PROJECT_ACTION_XMLID = "smart_construction_core.action_sc_product_project_edit_v1"
+PROJECT_MENU_XMLID = "smart_construction_core.menu_sc_project_project"
+PROJECT_ACTION_XMLID = "smart_construction_core.action_sc_project_list"
 CONTRACT_MENU_XMLID = "smart_construction_core.menu_sc_p1_daily_contract"
 CONTRACT_ACTION_XMLID = "smart_construction_core.action_sc_general_contract"
 SETTLEMENT_MENU_XMLID = "smart_construction_core.menu_sc_expense_contract_settlement"
@@ -52,9 +52,10 @@ PAYMENT_REQUEST_ACTION_XMLID = "smart_construction_core.action_payment_request_u
 PAYMENT_EXECUTION_MENU_XMLID = "smart_construction_core.menu_sc_payment_execution"
 PAYMENT_EXECUTION_ACTION_XMLID = "smart_construction_core.action_sc_payment_execution_actual_outflow"
 
-# pm's released project surface is the productized project information edit entry;
-# the legacy "项目台账" menu (menu_sc_project_project) is deliberately outside the
-# released browser projection and is denied for every role.
+# pm's released project surface is the single 项目台账 record entry
+# (menu_sc_project_project / action_sc_project_list). The duplicate
+# 项目信息编辑 entry was retired and its master-data composition was carried
+# into that entry's record form.
 payload = {
     "project": target(
         PROJECT_MENU_XMLID,

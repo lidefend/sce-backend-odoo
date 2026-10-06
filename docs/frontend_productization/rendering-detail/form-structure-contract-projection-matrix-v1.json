@@ -20,8 +20,8 @@
     "legacyRetirement": "remove compatibility structure consumers after formal menu ledger reaches zero"
   },
   "summary": {
-    "schemaFieldCount": 75,
-    "renderedAuthorityCount": 22,
+    "schemaFieldCount": 76,
+    "renderedAuthorityCount": 23,
     "validatedNonVisualAuthorityCount": 53,
     "unclassifiedCount": 0
   },
@@ -133,6 +133,12 @@
       "classification": "validated_non_visual_authority",
       "reason": "decoder compatibility boundary",
       "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureContract.surfaces",
+      "classification": "rendered_authority",
+      "semantic": "declared-region",
+      "consumer": "contractSurfaceNavigationItems; declaredCollaborationSurface; region gated by surface.authorization.state"
     },
     {
       "path": "formStructureContract.viewType",

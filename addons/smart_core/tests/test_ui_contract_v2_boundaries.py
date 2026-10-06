@@ -264,6 +264,127 @@ def resolve_structure_fixture(source, configs):
     )
 
 
+class FormStructureSurfaceBoundariesTest(unittest.TestCase):
+    """Declared form surfaces: the platform mechanism never invents product policy.
+
+    Negative-first: a contract that cannot declare surfaces must fall back to the
+    model capability only, and a malformed or withheld declaration must be
+    dropped rather than promoted into a visible region.
+    """
+
+    def setUp(self):
+        self.module = _load_handler()
+
+    def test_platform_fallback_declares_only_the_model_capability_region(self):
+        handler = self.module.UiContractV2Handler(env={}, su_env={})
+        declared = handler._form_structure_surfaces(
+            model="x.document",
+            capabilities={"collaboration": True, "remarks": True, "attachments": False},
+        )
+        self.assertEqual([row["surface"] for row in declared], ["activity"])
+        self.assertEqual(declared[0]["contentKind"], "collaboration-panel")
+        self.assertNotIn(
+            "audit", declared[0],
+            "the platform fallback must not declare a role-gated region it cannot own",
+        )
+        self.assertEqual(
+            handler._form_structure_surfaces(
+                model="x.document",
+                capabilities={"collaboration": False, "remarks": False, "attachments": False},
+            ),
+            [],
+            "a model without chatter or attachments publishes no surface",
+        )
+
+    def test_product_declaration_is_composed_and_normalized(self):
+        from unittest.mock import patch
+        handler = self.module.UiContractV2Handler(env={}, su_env={})
+        declaration = [{
+            "surface": "activity",
+            "title": "协作记录",
+            "role": "activity",
+            "contentKind": "collaboration-panel",
+            "sourceIdentity": "collaboration-panel",
+            "capabilities": {"timeline": True},
+            "audit": {
+                "title": "历史审计",
+                "contentKind": "audit-timeline",
+                "sourceIdentity": "professional-audit-timeline",
+                "authorization": {
+                    "capability": "governance.runtime.audit",
+                    "state": "DENY",
+                    "reason_code": "ROLE_SCOPE_MISMATCH",
+                    "required_roles": ["executive"],
+                },
+            },
+        }]
+        with patch.object(self.module, "call_extension_hook_first", return_value=declaration):
+            declared = handler._form_structure_surfaces(
+                model="x.document",
+                capabilities={"collaboration": True},
+            )
+        self.assertEqual(len(declared), 1)
+        audit = declared[0]["audit"]
+        self.assertEqual(audit["authorization"]["state"], "deny")
+        self.assertEqual(audit["authorization"]["reasonCode"], "ROLE_SCOPE_MISMATCH")
+        self.assertEqual(audit["authorization"]["requiredRoles"], ["executive"])
+        self.assertFalse(
+            any(key.isupper() for key in audit["authorization"]),
+            "the declaration is normalized to the published camelCase shape",
+        )
+
+    def test_malformed_or_duplicate_declarations_are_dropped(self):
+        project = self.module.project_form_structure_surfaces
+        self.assertEqual(project("not-a-list", capabilities={"collaboration": True}), [{
+            "surface": "activity",
+            "title": "协作记录",
+            "role": "activity",
+            "contentKind": "collaboration-panel",
+            "sourceIdentity": "collaboration-panel",
+            "capabilities": {"timeline": True, "remarks": False, "attachments": False},
+        }])
+        rows = project([
+            {"surface": "activity", "title": "协作记录", "role": "activity",
+             "contentKind": "collaboration-panel", "sourceIdentity": "collaboration-panel"},
+            {"surface": "activity", "title": "duplicate", "role": "activity",
+             "contentKind": "collaboration-panel", "sourceIdentity": "collaboration-panel"},
+            {"surface": "broken", "title": "", "role": "activity",
+             "contentKind": "collaboration-panel", "sourceIdentity": "collaboration-panel"},
+            {"surface": "weird", "title": "Weird", "role": "activity",
+             "contentKind": "not-a-region", "sourceIdentity": "weird"},
+        ])
+        self.assertEqual([row["title"] for row in rows], ["协作记录"])
+
+    def test_unknown_authorization_state_is_denied_not_allowed(self):
+        normalize = self.module._normalize_surface_authorization
+        self.assertEqual(
+            normalize({"capability": "governance.runtime.audit", "state": "ALLOW"})["state"],
+            "allow",
+        )
+        for raw in (
+            {"capability": "governance.runtime.audit", "state": "maybe"},
+            {"capability": "", "state": "allow"},
+            "not-a-dict",
+            {"state": "allow"},
+        ):
+            authorization = normalize(raw)
+            self.assertTrue(
+                authorization is None or authorization["state"] == "deny",
+                "an unknown authorization must never become an allow",
+            )
+
+    def test_declared_surface_states_are_published_vocabulary(self):
+        self.assertEqual(
+            self.module.FORM_STRUCTURE_SURFACE_AUTHORIZATION_STATES,
+            ("allow", "deny", "pending", "coming_soon"),
+            "the published authorization vocabulary must match the capability registry",
+        )
+        self.assertEqual(
+            self.module.FORM_STRUCTURE_SURFACE_POLICY_HOOK,
+            "smart_core_form_structure_surface_policy",
+        )
+
+
 class TestUiContractV2Boundaries(unittest.TestCase):
     def setUp(self):
         self.module = _load_handler()
@@ -3118,13 +3239,13 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             unique=lambda items: list(dict.fromkeys(str(item or "").strip() for item in items if str(item or "").strip())),
             field_label=lambda name: name,
             governance={"form_structure_authority": "native_authority"},
-            navigation_title="项目信息编辑",
+            navigation_title="项目台账",
         )
 
         self.assertEqual(structure["mode"], "native_structured_form")
         self.assertEqual(structure["presentationMode"], "workspace")
         self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
-        self.assertEqual(structure["navigation"]["title"], "项目信息编辑")
+        self.assertEqual(structure["navigation"]["title"], "项目台账")
 
         default_structure = handler._build_form_structure_contract(
             model="project.project",

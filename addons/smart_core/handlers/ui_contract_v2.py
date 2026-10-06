@@ -81,6 +81,131 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-governance-2026-09-02-user-search"
 
 
+# --- Declared form surfaces -------------------------------------------------
+# A surface is a declared page region that is not an Odoo view element (for
+# example the collaboration region and its role-gated audit sub-region).  The
+# generic mechanism lives here: smart_core normalizes and composes whatever the
+# product layer declares and never names a product capability key itself.
+# Boundary: docs/architecture/form_structure_surface_contract_boundary_v1.md
+FORM_STRUCTURE_SURFACE_POLICY_HOOK = "smart_core_form_structure_surface_policy"
+FORM_STRUCTURE_SURFACE_CONTENT_KINDS = ("collaboration-panel", "audit-timeline")
+FORM_STRUCTURE_SURFACE_AUTHORIZATION_STATES = ("allow", "deny", "pending", "coming_soon")
+FORM_STRUCTURE_DEFAULT_ACTIVITY_SURFACE: dict[str, Any] = {
+    "surface": "activity",
+    "title": "协作记录",
+    "role": "activity",
+    "contentKind": "collaboration-panel",
+    "sourceIdentity": "collaboration-panel",
+}
+
+
+def _surface_text(value: Any) -> str:
+    return str(value or "").strip()
+
+
+def _normalize_surface_authorization(raw: Any) -> dict[str, Any] | None:
+    if not isinstance(raw, dict):
+        return None
+    capability = _surface_text(raw.get("capability"))
+    if not capability:
+        return None
+    state = _surface_text(raw.get("state")).lower()
+    if state not in FORM_STRUCTURE_SURFACE_AUTHORIZATION_STATES:
+        state = "deny"
+    authorization = {
+        "capability": capability,
+        "state": state,
+        "reasonCode": _surface_text(raw.get("reason_code") or raw.get("reasonCode")),
+        "reason": _surface_text(raw.get("reason")),
+    }
+    roles = [
+        _surface_text(item)
+        for item in (raw.get("required_roles") or raw.get("requiredRoles") or [])
+        if _surface_text(item)
+    ]
+    groups = [
+        _surface_text(item)
+        for item in (raw.get("required_groups") or raw.get("requiredGroups") or [])
+        if _surface_text(item)
+    ]
+    if roles:
+        authorization["requiredRoles"] = roles
+    if groups:
+        authorization["requiredGroups"] = groups
+    return authorization
+
+
+def _normalize_form_structure_surface(raw: Any) -> dict[str, Any] | None:
+    if not isinstance(raw, dict):
+        return None
+    surface = _surface_text(raw.get("surface") or raw.get("key"))
+    title = _surface_text(raw.get("title"))
+    content_kind = _surface_text(raw.get("contentKind") or raw.get("content_kind"))
+    source_identity = _surface_text(raw.get("sourceIdentity") or raw.get("source_identity"))
+    if not (surface and title and source_identity):
+        return None
+    if content_kind not in FORM_STRUCTURE_SURFACE_CONTENT_KINDS:
+        return None
+    out: dict[str, Any] = {
+        "surface": surface,
+        "title": title,
+        "role": _surface_text(raw.get("role")) or surface,
+        "contentKind": content_kind,
+        "sourceIdentity": source_identity,
+    }
+    capabilities = raw.get("capabilities")
+    if isinstance(capabilities, dict):
+        out["capabilities"] = {
+            key: bool(capabilities.get(key))
+            for key in ("timeline", "remarks", "attachments")
+        }
+    audit = raw.get("audit")
+    if isinstance(audit, dict):
+        authorization = _normalize_surface_authorization(audit.get("authorization"))
+        audit_kind = _surface_text(audit.get("contentKind") or audit.get("content_kind")) or "audit-timeline"
+        if authorization and audit_kind in FORM_STRUCTURE_SURFACE_CONTENT_KINDS:
+            out["audit"] = {
+                "title": _surface_text(audit.get("title")) or "历史审计",
+                "contentKind": audit_kind,
+                "sourceIdentity": (
+                    _surface_text(audit.get("sourceIdentity") or audit.get("source_identity"))
+                    or "professional-audit-timeline"
+                ),
+                "authorization": authorization,
+            }
+    return out
+
+
+def project_form_structure_surfaces(payload: Any, *, capabilities: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    """Project the declared form surfaces for ``formStructureContract``.
+
+    ``payload`` is the product declaration.  When it is not a list the platform
+    declares only the generic collaboration surface for a model that carries
+    chatter or attachments, and declares no role-gated sub-region.
+    """
+    declared = payload if isinstance(payload, list) else None
+    if declared is None:
+        caps = capabilities if isinstance(capabilities, dict) else {}
+        if not (caps.get("collaboration") or caps.get("attachments")):
+            return []
+        fallback = dict(FORM_STRUCTURE_DEFAULT_ACTIVITY_SURFACE)
+        fallback["capabilities"] = {
+            "timeline": bool(caps.get("collaboration")),
+            "remarks": bool(caps.get("remarks")),
+            "attachments": bool(caps.get("attachments")),
+        }
+        return [fallback]
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for row in declared:
+        surface = _normalize_form_structure_surface(row)
+        if not surface or surface["surface"] in seen:
+            continue
+        seen.add(surface["surface"])
+        out.append(surface)
+    return out
+
+
 def authoritative_form_role_key(env: Any) -> str:
     """Resolve the current server session's formal role surface for form selection.
 
@@ -1856,6 +1981,7 @@ class UiContractV2Handler(BaseIntentHandler):
             },
             "slots": slots,
             "fieldRoles": field_roles,
+            "surfaces": self._form_structure_surfaces(model=model),
             "sourceAuthority": {
                 "kind": self.SOURCE_KIND,
                 "runtime_carrier": "ui.contract.v2.form_structure_contract",
@@ -2397,6 +2523,45 @@ class UiContractV2Handler(BaseIntentHandler):
             }
         return {}
 
+    def _form_structure_surfaces(
+        self,
+        *,
+        model: str,
+        capabilities: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
+        """Compose the declared form surfaces for the current identity.
+
+        The product layer declares the surfaces and resolves each role gate; this
+        method only normalizes the declaration and falls back to the model
+        capability when no policy is registered.
+        """
+        caps = capabilities if isinstance(capabilities, dict) else self._model_surface_capabilities(model)
+        try:
+            payload = call_extension_hook_first(
+                self.env,
+                FORM_STRUCTURE_SURFACE_POLICY_HOOK,
+                self.env,
+                model,
+                dict(caps),
+            )
+        except Exception:
+            _logger.debug("form structure surface policy hook failed", exc_info=True)
+            payload = None
+        return project_form_structure_surfaces(payload, capabilities=caps)
+
+    def _model_surface_capabilities(self, model: str) -> dict[str, bool]:
+        names: set[str] = set()
+        if model:
+            try:
+                names = set((self.env[model].sudo().fields_get(load=False) or {}).keys())
+            except Exception:
+                names = set()
+        return {
+            "collaboration": bool({"message_ids", "activity_ids"} & names),
+            "remarks": "message_ids" in names,
+            "attachments": "attachment_ids" in names,
+        }
+
     def _build_form_structure_contract(
         self,
         *,
@@ -2525,6 +2690,7 @@ class UiContractV2Handler(BaseIntentHandler):
                                   "factAuthority": "business_object_model_and_view"},
                 "navigation": {"title": navigation_title or "业务办理"},
                 "slots": [], "fieldRoles": {},
+                "surfaces": self._form_structure_surfaces(model=model),
                 "sourceAuthority": {
                     "kind": self.SOURCE_KIND,
                     "runtime_carrier": "ui.contract.v2.form_structure_contract",
@@ -2610,6 +2776,7 @@ class UiContractV2Handler(BaseIntentHandler):
                         "groups": group_rows,
                     }],
                     "fieldRoles": configured_roles,
+                    "surfaces": self._form_structure_surfaces(model=model),
                     "sourceAuthority": {
                         "kind": self.SOURCE_KIND,
                         "runtime_carrier": "ui.contract.v2.form_structure_contract",
@@ -2828,6 +2995,10 @@ class UiContractV2Handler(BaseIntentHandler):
             "sourceSectionTitles": source_section_titles,
             "slots": slots,
             "fieldRoles": field_roles,
+            "surfaces": self._form_structure_surfaces(
+                model=model,
+                capabilities=profile.get("capabilities"),
+            ),
             "sourceAuthority": {
                 "kind": self.SOURCE_KIND,
                 "runtime_carrier": "ui.contract.v2.form_structure_contract",
