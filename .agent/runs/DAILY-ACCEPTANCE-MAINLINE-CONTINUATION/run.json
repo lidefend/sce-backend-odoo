@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-ACCEPTANCE-MAINLINE-CONTINUATION",
+  "branch": "audit/daily-acceptance-mainline-continuation-20261006",
+  "status": "active",
+  "baseline_sha": "6c8e07f70c1ce0d501f9f5b56911d74f9321a721",
+  "goal": ".agent/goals/DAILY-ACCEPTANCE-MAINLINE-CONTINUATION.yaml",
+  "record": "docs/ops/iterations/daily_acceptance_mainline_continuation_20261006.md",
+  "scope": [
+    ".agent/",
+    "docs/",
+    "scripts/",
+    "make/",
+    "config/",
+    "addons/",
+    "contracts/",
+    "artifacts/"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "sc-root daily runtime (sc-backend-odoo-dev profile, .env.dev, sc_demo, custom frontend) reached only through the governed daily.runtime.* and verify.daily_dev.* Make entries",
+    "database": "sc_demo",
+    "runtime_profile": "daily_external"
+  },
+  "checks": {
+    "daily_readonly_acceptance_probe": {
+      "target": "verify.daily_dev.acceptance.readonly.probe",
+      "inputs": [
+        "scripts/ops/dev_acceptance_release_probe.py",
+        "scripts/verify/dev_acceptance_release_probe_schema_guard.py",
+        "scripts/verify/lib/frontend_acceptance_environment.mjs"
+      ],
+      "kind": "runtime"
+    },
+    "daily_list_surface_readonly_browser": {
+      "target": "verify.daily_dev.list_surface.readonly.browser",
+      "inputs": [
+        "scripts/verify/frontend_list_surface_structure_browser.mjs"
+      ],
+      "kind": "runtime"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Raise the daily runtime to 6c8e07f7 through the governed bundle sync, align the served source revision, then rebind the governed readonly acceptance probe to the new served SHA."
+}

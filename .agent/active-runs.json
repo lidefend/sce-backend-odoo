@@ -1,4 +1,6 @@
 {
   "schema_version": 1,
-  "branches": {}
+  "branches": {
+    "audit/daily-acceptance-mainline-continuation-20261006": ".agent/runs/DAILY-ACCEPTANCE-MAINLINE-CONTINUATION/run.json"
+  }
 }
