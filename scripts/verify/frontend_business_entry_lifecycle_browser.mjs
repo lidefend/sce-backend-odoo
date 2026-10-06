@@ -172,14 +172,20 @@ async function workflowSnapshot(page) {
       return node ? node.getAttribute('data-workflow-current') : null;
     })(),
     error_text: (() => {
-      const node = document.querySelector('.t-message--error, [data-semantic-status="error"], .status-panel.error, .t-alert--error');
+      const node = document.querySelector('[data-semantic-status="error"], .status-panel.error');
       return node ? String(node.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 200) : '';
     })(),
     dialog_text: (() => {
-      const node = document.querySelector('.t-dialog--default:not([style*="display: none"]) .t-dialog__body, [role="dialog"] .t-dialog__body');
+      const node = document.querySelector('[data-dialog-purpose="intent-confirmation"], [role="dialog"]');
       return node ? String(node.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 200) : '';
     })(),
   }));
+}
+
+// The contract supplies the business label; the overflow item is located by that
+// exact visible text so the probe consumes the declared label instead of a vendor DOM class.
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 async function waitForRecordForm(page, timeout = 30000) {
@@ -246,7 +252,7 @@ async function confirmIfAsked(page) {
   const scopes = [
     page.locator('[data-dialog-purpose="intent-confirmation"]:visible'),
     page.locator('.intent-confirmation:visible'),
-    page.locator('[role="dialog"]:visible, .t-dialog:visible'),
+    page.locator('[role="dialog"]:visible'),
   ];
   for (const scope of scopes) {
     const dialog = scope.last();
@@ -276,7 +282,7 @@ async function invoke(page, row) {
   }
   const opened = await openOverflow(page);
   if (!opened) return { invoked: false, reason: 'action not exposed by the product surface' };
-  const item = page.locator('.t-dropdown__item:visible').filter({ hasText: new RegExp(`^${row.label}$`) }).first();
+  const item = page.locator('li', { hasText: new RegExp(`^${escapeRegExp(row.label)}$`) }).last();
   if (!(await item.count())) {
     await page.keyboard.press('Escape').catch(() => {});
     return { invoked: false, reason: `declared action ${row.key} is in no exposed surface` };

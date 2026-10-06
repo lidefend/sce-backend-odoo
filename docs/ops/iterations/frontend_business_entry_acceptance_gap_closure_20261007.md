@@ -61,7 +61,7 @@ draft →（提交立项）draft →（启动项目）in_progress →（标记�
   单测 17 项；运行工作树夹具源码经受管 `odoo.shell.exec` 送入，不改远端 checkout）。
 - 身份解析 `scripts/verify/frontend_delivery_hardening_runtime_ids.py`（契约绑定 record/company/声明起点态，
   要求唯一匹配）→ `artifacts/backend/acceptance_record_identity.json#lifecycle_project`
-  （record 2019 / company 21 / menu 970 / action 1178 / 起点 draft+draft）。
+  （record 2021 / company 21 / menu 970 / action 1178 / 起点 draft+draft）。
 
 ### 探针改动
 
@@ -85,10 +85,10 @@ make verify.frontend.business_entry.lifecycle.browser \
   ACCEPTANCE_RECORD_RESOLUTION=artifacts/backend/acceptance_record_identity.json \
   SC_ENTRY_WRITE_CONFIRM=DRIVE_DAILY_SC_DEMO_PROJECT_LIFECYCLE \
   DB_NAME=sc_demo ACCEPTANCE_BASE_URL=http://1.95.85.92:18081 \
-  SC_ACCEPTANCE_OUTPUT_DIR=artifacts/frontend-business-entry-lifecycle/daily-6c8e07f7
+  SC_ACCEPTANCE_OUTPUT_DIR=artifacts/frontend-business-entry-lifecycle/daily-6c8e07f7-r2
 ```
 
-原始证据：`artifacts/frontend-business-entry-lifecycle/daily-6c8e07f7/summary.json`（正式，受管 run 记录）、
+原始证据：`artifacts/frontend-business-entry-lifecycle/daily-6c8e07f7-r2/summary.json`（正式，受管 run 记录）、
 `artifacts/frontend-business-entry-lifecycle/dryrun/summary.json`（只读干跑）、
 `artifacts/frontend-business-entry-lifecycle/run1/summary.json`（close 确认弹窗修复前，保留）。
 
@@ -117,7 +117,7 @@ make verify.frontend.business_entry.lifecycle.browser \
 | L2 | `make verify.daily.runtime.lifecycle_fixture.prepare` | PASS | 17 | 生命周期夹具受管入口行为单测 |
 | L2 | `make verify.frontend.delivery_hardening.guard` | PASS | — | 静态守卫 `error_states=12 title_writers=1 async_epoch=enabled` |
 | L2 | `py_compile` + `node --check` | PASS | — | `frontend_productization_fixture.py`、`frontend_delivery_hardening_runtime_ids.py`、`frontend_business_entry_lifecycle_browser.mjs` |
-| L4 | `make verify.frontend.business_entry.lifecycle.browser` | PASS（复用） | 6 | 正式受管 run；输入文件自 run 后未变，按未变输入复用，不重跑 |
+| L4 | `make verify.frontend.business_entry.lifecycle.browser` | PASS（重跑） | 6 | 探针选择器加固后重跑；见「F3 复验」 |
 
 未跑层的显式理由：
 
@@ -126,3 +126,45 @@ make verify.frontend.business_entry.lifecycle.browser \
 - L5（独立复核 / 生成报告 / 完整发布门禁 / 精确头发布）：待本次冻结后由远端必需检查与独立复核执行。
 
 `make ci.delivery.freeze.prepare` PASS（生成报告 `docs/engineering_convergence/` 已刷新并一并提交）。
+
+## 批次 F3 复验：探针选择器去 vendor 耦合（2026-10-07）
+
+### 触发
+
+精确头 `64b3cf6f5f7600f3adbb168ecd67762e76e13ae2` 的远端 `professional_quality_gate` 在
+`verify.frontend.playwright_vendor_coupling.guard` 失败：新探针
+`scripts/verify/frontend_business_entry_lifecycle_browser.mjs` 有 4 处 vendor 内部选择器
+（`.t-message--error`/`.t-alert--error`、`.t-dialog--default … .t-dialog__body`、
+`.t-dialog:visible`、`.t-dropdown__item:visible`）。该守卫基线只允许收缩，不允许抬高基线通过。
+
+### 修复（只改探针，不改产品面）
+
+| 用途 | 原（vendor 内部） | 现（声明语义 / 业务事实） |
+| --- | --- | --- |
+| 错误态文本 | `.t-message--error, .t-alert--error` | `[data-semantic-status="error"], .status-panel.error` |
+| 确认弹窗文本 | `.t-dialog--default … .t-dialog__body` | `[data-dialog-purpose="intent-confirmation"], [role="dialog"]` |
+| 确认弹窗范围 | `[role="dialog"]:visible, .t-dialog:visible` | `[role="dialog"]:visible` |
+| 溢出菜单项 | `.t-dropdown__item:visible` | 按契约标签精确文本定位 `li`（`escapeRegExp` 转义） |
+
+溢出项经核为 TDesign `<li class="t-dropdown__item">`，**无 `role` 属性**，因此不能用角色定位；
+改为消费契约声明的动作标签（业务事实），不使用任何 vendor 类名。
+
+### 因断言输入变化而重跑（旧证据作废）
+
+探针是断言的输入，故先前的 `daily-6c8e07f7` 证据不再复用：
+
+1. 载体经 `make daily.runtime.lifecycle_fixture.prepare` 重建 → record **2021**（company 21，起点 draft+draft）。
+2. 身份经受管 `odoo.shell.exec` 重新解析 → `artifacts/backend/acceptance_record_identity.json#lifecycle_project`。
+3. 全链重跑 → `artifacts/frontend-business-entry-lifecycle/daily-6c8e07f7-r2/summary.json`：
+   `ok=true`、`problems=[]`、`console_errors=[]`；`submit→draft, activate→in_progress, complete→done,
+   advance_closing→closing, advance_warranty→warranty, close→closed`；
+   `via=overflow` 命中 5 次（activate/complete/advance_closing/advance_warranty/close）；
+   关闭弹窗真实文案「确认关闭项目 关闭后不可恢复，确定继续吗？」被捕获。
+
+该次重跑同时证明了被动过的四条选择器在真实产品面上确实被消费，而非仅静态存在。
+
+### 过程教训（已纳入后续 L2 选择）
+
+本地 `make ci.local.quick` 不覆盖 `verify.frontend.playwright_vendor_coupling.guard`，
+本次漏检因此在远端才暴露。凡改动 `scripts/verify/**` 下的浏览器探针，
+必须把 `make verify.frontend.playwright_vendor_coupling.guard` 纳入本轮 L2 定向测试。
