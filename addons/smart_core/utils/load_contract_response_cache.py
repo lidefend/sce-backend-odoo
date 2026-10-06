@@ -220,6 +220,44 @@ def build_projection_source_token(env, *, model_name, menu_id=None, action_id=No
                     for row in records
                 ]])
                 continue
+            if model_code == "ui.form.field.policy" and {
+                "field_name", "visible", "active",
+            } <= set(model._fields):
+                # Field policies are projection inputs, so retiring, creating,
+                # editing or role-scoping one changes the assembled contract.
+                # write_date is second-resolution and can stay identical for an
+                # A -> B -> A change inside one transaction, so bind the
+                # definition set for this model/action, not the latest row.
+                domain = [
+                    ("model", "=", model_name), "|",
+                    ("company_id", "=", False),
+                    ("company_id", "=", env.company.id),
+                ]
+                if action_id:
+                    domain = domain + [
+                        "|",
+                        ("action_id", "=", int(action_id)),
+                        ("action_id", "=", False),
+                    ]
+                records = model.sudo().with_context(active_test=False).search(
+                    domain, order="id"
+                )
+                versions.append([model_code, [
+                    [
+                        row.id,
+                        str(row.write_date or ""),
+                        bool(row.active),
+                        bool(row.visible),
+                        str(row.field_name or ""),
+                        int(row.action_id.id or 0),
+                        int(row.view_id.id or 0),
+                        int(row.sequence or 0),
+                        str(row.label or ""),
+                        sorted(int(group_id) for group_id in row.role_group_ids.ids),
+                    ]
+                    for row in records
+                ]])
+                continue
             if "write_date" not in model._fields:
                 return ""
             latest = model.sudo().with_context(active_test=False).search(

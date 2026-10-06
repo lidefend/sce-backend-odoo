@@ -167,3 +167,64 @@
 - `product_view_structure_contract.json` 仍需 `local.clean` 车道再生（环境门控，非本分支回归）。
 - 日常库（`sc_demo`）受管回读仍待提交后执行：远端运行仓 `sc-root:/opt/projects/repos/sce-product-odoo`
   当前为 `0978c0cc`（detached、干净），尚不含本轮 groups 修复与承载锁。
+
+---
+
+## 续轮（2026-10-06）：运行契约承载锁 + 投影身份根因（P0）收口
+
+- 记录时身份：HEAD `589d6a2d`（含 0978c0cc/589d6a2d 两笔）+ 本轮未提交工作区（单写者）。
+- 本轮任务：把「声明层承载完整」推进到「**运行契约层承载完整**」，并修掉让运行契约丢失
+  已声明字段的**通用投影责任**；不放宽断言、不加 `project.project` 特判、不用 `critical` 覆盖 ACL。
+
+### 新增根因（P0 投影身份，非业务特判）
+
+9. **投影源 token 对字段策略不敏感**：`smart_core` 的组装契约缓存以
+   `build_projection_source_token` 为失效键。`ui.form.field.policy` 原先只按「最新一行的
+   `write_date`」参与 token，而 `write_date` 是**秒级**且同事务内可完全相同：把一行从
+   `active=True` 改为 `False`（A→B）时 token 不变，进程内热缓存与**库内持久化 source asset**
+   （按 `asset_version=source_token`）继续命中 → 修复后仍投影出修复前的旧契约。
+   修复：比照既有的 `ui.business.config.contract` 先例，`ui.form.field.policy` 改为绑定
+   **model/action 范围内的定义集合**（`id/write_date/active/visible/field_name/action/sequence/
+   label/role_group_ids`），任一字段策略的定义变化立即改变 token。按模型能力守卫（缺
+   `field_name/visible/active` 字段时回退到原「最新行」逻辑），不改变其它模型行为。
+10. **退役遗留 overlay 未随入口退役清理**：P2 服务
+    `smart_construction_core/services/project_ledger_field_overlay_repair.py` 由**声明派生**
+    台账必需字段集合（台账原生表单 ∪ 退役「项目信息编辑」表单的 `//field/@name`），只退役
+    `model=project.project`、台账 action、`visible=False`、`active=True`、且字段∈必需集合的
+    遗留行；幂等、单 action/model 范围，不触碰 ACL/记录规则/字段权限。迁移
+    `migrations/17.0.0.170/pre-migration.py` 在升级时执行；受管入口
+    `make project.ledger.field_overlay.repair`（默认 report，`PROJECT_LEDGER_OVERLAY_ACTION=apply` 执行）。
+
+### 责任层声明（本轮增量）
+
+- `addons/smart_core/utils/load_contract_response_cache.py`：P0 平台内核（契约缓存身份/投影机制）。
+- `addons/smart_construction_core/services/|migrations/|__manifest__.py`：P1 标准产品面（唯一台账入口的承载修复）。
+- `scripts/ops/repair_project_ledger_field_overlay.py` + `make/dev.mk`：P4 受管入口/证据载体。
+
+### 本轮验证
+
+| 层 | 命令 | 身份 | 结果 |
+|---|---|---|---|
+| L1 | `make ci.local.iteration` | dirty `589d6a2d` | PASS（仅 L1，建议 L2 定向） |
+| L2 | `make verify.contract.project_ledger_entry_carrier.orm` | sc-local-dev/sc_dev_demo | PASS `29 tests 0 failed`（含运行契约承载锁 + stale overlay 检出/修复锁） |
+| L2 | `make verify.business_config.formal_list.unit` | offline | PASS `122 + 7 + 51 + 5 = 185 tests`（含 cache 新增 2 条 token 锁） |
+| L2 | `make verify.form_structure_authority_unification.unit` | offline | PASS `201 tests` |
+| L2 | `make verify.business_config.guard_inventory` | offline | PASS `assertions=151 negative_self_test=PASS` |
+| L3 | `make project.ledger.field_overlay.repair`（report） | sc-local-dev/sc_dev_demo | PASS `status=noop`，`required_fields` 含 `project_code` |
+
+- 负例纪律：`test_stale_ledger_field_overlay_is_detected_and_repaired` 先断言**未注入基线**已承载
+  `project_code`，再注入同形 stale 策略证明**确实丢失**（可检出），最后受管修复后**恢复**。
+- 锁定的是「声明消费 + 实际投影行为」，不把选择器字符串/文本出现当正确性证明。
+
+### 未覆盖 / 复用
+
+- 复用 589d6a2d 前已通过且输入未变的离线 guard 与运行面 coverage 报告。
+- 日常库 `sc_demo` 受管回读仍待提交后执行；本轮 P0 token 变更会连带使既有持久化 source asset
+  在新 token 下自然失效，无需手工清缓存。
+
+### 结构整理（同轮）
+
+- 把台账「运行契约承载」两条锁从 `tests/test_core_extension_v2_finalize.py` 抽出为独立文件
+  `tests/test_project_ledger_runtime_contract.py`（`@tagged("core_extension_v2_finalize")`，
+  在 `tests/__init__.py` 注册），避免既有大测试文件因本轮新增而越过复杂度拆分阈值；
+  同 tag 使 `verify.contract.project_ledger_entry_carrier.orm` 行为不变。

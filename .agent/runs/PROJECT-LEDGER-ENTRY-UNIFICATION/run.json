@@ -20,7 +20,13 @@
     "scripts/release/",
     "docs/",
     "frontend/apps/web/scripts/",
-    ".agent/"
+    ".agent/",
+    "addons/smart_construction_core/services/",
+    "addons/smart_construction_core/migrations/",
+    "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_core/utils/load_contract_response_cache.py",
+    "addons/smart_core/tests/test_load_contract_response_cache.py",
+    "addons/smart_construction_core/tests/"
   ],
   "environment": {
     "kind": "runtime",
@@ -112,14 +118,17 @@
       "target": "verify.contract.project_ledger_entry_carrier.orm",
       "kind": "runtime",
       "status": "passed",
-      "tests": 25,
-      "detail": "retired 项目信息编辑 composition fully carried into 项目台账: fields/buttons ONLY-in-retired=[]; 提交立项 button groups == project.project.action_sc_submit enforced groups",
+      "tests": 29,
+      "detail": "retired 项目信息编辑 composition fully carried into 项目台账: fields/buttons ONLY-in-retired=[]; 提交立项 button groups == project.project.action_sc_submit enforced groups; runtime contract (by action) carries the retired form's field set incl. project_code; stale ledger ui.form.field.policy overlay is detected and the governed repair restores the contract",
       "inputs": [
         "make/dev.mk",
         "addons/smart_construction_core/views/core/project_overview_views.xml",
         "addons/smart_construction_core/views/core/project_information_edit_views.xml",
         "addons/smart_construction_core/actions/project_list_actions.xml",
-        "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py"
+        "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
+        "addons/smart_construction_core/services/project_ledger_field_overlay_repair.py",
+        "addons/smart_construction_core/migrations/17.0.0.170/pre-migration.py",
+        "addons/smart_construction_core/tests/test_project_ledger_runtime_contract.py"
       ]
     },
     "business_config_guard_inventory": {
@@ -132,6 +141,20 @@
         "scripts/verify/business_config_guard_inventory.py",
         "Makefile",
         "make/"
+      ]
+    },
+    "business_config_formal_list_unit": {
+      "target": "verify.business_config.formal_list.unit",
+      "kind": "offline",
+      "status": "passed",
+      "tests": 185,
+      "detail": "locks the P0 projection-source-token identity: a ui.form.field.policy definition change (same-second active/visible flip, create, remove) must invalidate the assembled-contract token, so a governed repair cannot be served a stale projection.",
+      "inputs": [
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "addons/smart_core/tests/test_load_contract_response_cache.py",
+        "addons/smart_core/tests/test_view_orchestrator.py",
+        "scripts/verify/test_formal_list_configuration_baseline.py",
+        "addons/smart_core/utils/load_contract_response_cache.py"
       ]
     }
   },
@@ -151,16 +174,16 @@
     {
       "id": "DAILY_ACCEPTANCE_READBACK",
       "status": "pending",
-      "detail": "daily runtime repo already at 0978c0cc (detached, clean) but this candidate's uncommitted groups fix + carrier lock are not in that SHA and sc_demo has not been module-upgraded. Requires a clean committed SHA, daily.runtime.candidate.bundle_sync, sc_demo module upgrade of smart_construction_core, and a wutao/123456 ui.contract.v2 / menu readback (ledger entry visible, retired entry gone, 提交立项 visibility follows groups, no 409)."
+      "detail": "daily repo is at 589d6a2d (detached, clean); this candidate adds the P0 projection-source-token fix, the P2 ledger field-overlay repair service + migrations/17.0.0.170, and the carrier/repair locks. Requires a clean committed SHA, daily.runtime.candidate.bundle_sync, sc_demo upgrade of smart_construction_core (the pre-migration retires the stale ui.form.field.policy rows), restart, and a wutao/123456 ui.contract.v2 / menu readback (项目台账 visible, 项目信息编辑 gone, 提交立项 visibility follows group authority, project_code rendered, no 409/CONFIG_TARGET_STALE)."
     }
   ],
-  "next_exact_step": "Commit the ledger carrier round (groups authority fix + carrier/authority lock tests + guard false-positive fix + registered carry-over gate), push the branch, then run the governed daily candidate sync (make daily.runtime.candidate.bundle_sync), upgrade smart_construction_core on sc_demo, restart, and read back with wutao/123456: 项目中心/项目台账/项目台账 visible, 项目信息编辑 gone, 提交立项 visibility follows group authority, no CONFIG_TARGET_STALE.",
+  "next_exact_step": "Commit this round (P0 projection-source-token field-policy binding + lock tests; P2 ledger field-overlay repair service/migration/entry; carrier lock), push the branch, then run the governed daily candidate sync (make daily.runtime.candidate.bundle_sync with DAILY_CANDIDATE_EXPECTED_OLD_SHA=589d6a2d...), upgrade smart_construction_core on sc_demo (CODEX_NEED_UPGRADE=1 so migrations/17.0.0.170 runs), restart, align the source revision, and read back with wutao/123456: 项目台账 renders project_code, 项目信息编辑 gone, 提交立项 follows group authority, no CONFIG_TARGET_STALE.",
   "write_replay_authorized": false,
   "candidate_evidence": false,
   "stage_identity": {
     "baseline_sha": "8892042761eeb8f47a135fd817a9a9d220837620",
-    "head": "0978c0ccbe7317370759d6bae27358f74de24ac3",
+    "head": "589d6a2d7f239f707779913fc3802e82b00541b4",
     "dirty": true,
-    "note": "single writer; carrier round uncommitted at record time"
+    "note": "single writer; P0 token fix + P2 repair service/migration/entry/locks uncommitted at record time"
   }
 }
