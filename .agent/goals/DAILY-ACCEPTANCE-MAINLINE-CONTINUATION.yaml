@@ -1,0 +1,60 @@
+schema_version: 1
+goal:
+  id: DAILY-ACCEPTANCE-MAINLINE-CONTINUATION
+  title: daily_dev_user_perspective_acceptance_continuation_on_current_mainline
+  status: active
+  formal_product_layer: P4
+  layer_target: daily_development_runtime_acceptance
+  module:
+    - .agent
+    - docs/ops/iterations
+    - scripts/verify
+  objective: >-
+    Continue the user-perspective product acceptance on the daily development
+    server. Advance the daily runtime from 90484d88 to the exact current mainline
+    through the governed bundle sync, align the served source revision, rebind the
+    governed readonly acceptance probe (runtime identity + navigation + declared
+    contract) to the new served SHA, and carry the unchanged user-perspective /
+    detail / relation / workbench / list-surface evidence forward only through a
+    recorded deterministic impact analysis (the list-surface lane is closed by
+    owner decision and is not re-run as a matrix): no
+    backend runtime path, frontend runtime path, view, action, data or config
+    consumed by the daily runtime differs between 90484d88 and the new mainline
+    (the delta is the CI verification manifest, one test script, one guard and the
+    run ledger). No assertion, audit, ACL, field permission or negative case is
+    relaxed and no product semantics change.
+  baseline:
+    branch: main
+    full_sha: 6c8e07f70c1ce0d501f9f5b56911d74f9321a721
+    source: clean_main_after_pr_596
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_runtime_acceptance_tool
+    why_here: >-
+      Deploying the exact mainline to the daily runtime and verifying it as a real
+      user is the P4 ops delivery / acceptance layer, not product semantics.
+    why_not_elsewhere:
+      - no_p0_platform_or_frontend_contract_change_expected
+      - no_p1_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_lowcode_configuration
+      - no_database_schema_or_migration_change
+    blast_radius:
+      - sc-root daily runtime repository and its served revision identity
+      - sc_demo readonly user acceptance data and the existing wutao acceptance credential
+      - one acceptance record, one run and the goal metadata
+  exclusions:
+    - no_relaxation_of_any_assertion_audit_acl_or_negative_case
+    - no_product_semantics_change
+    - no_credential_rotation_or_random_password
+    - no_production_tenant_change
+    - no_module_upgrade_without_an_actual_module_change
+    - no_sc_local_dev_or_isolated_acceptance_profile_change
+  rollback:
+    - restore the daily runtime repository to 90484d88 through the governed bundle sync under its own report
+    - restore .env.dev source revision from its backup and restart
+  next_exact_step: >-
+    Freeze and commit this record-only batch (run metadata + goal + iteration record,
+    product code unchanged) because the daily runtime is already served at 6c8e07f7 and
+    the governed readonly probe PASSed on that exact served SHA; then obtain the owner
+    decision on whether to publish a record-only PR. Do not re-run the list-surface
+    browser matrix.
