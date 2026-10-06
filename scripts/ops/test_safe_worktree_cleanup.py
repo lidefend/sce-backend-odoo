@@ -778,6 +778,53 @@ class GovernedBranchCleanupScriptTest(unittest.TestCase):
             0,
         )
 
+    def main_with_binding(self, *bound_branches: str) -> str:
+        """Commit an .agent/active-runs.json to main and return the new main SHA."""
+        index = {
+            "schema_version": 1,
+            "branches": {
+                branch: f".agent/runs/RUN-{position}/run.json"
+                for position, branch in enumerate(bound_branches)
+            },
+        }
+        path = self.root / ".agent" / "active-runs.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(index, indent=2) + "\n", encoding="utf-8")
+        git(self.root, "add", ".agent/active-runs.json")
+        git(self.root, "commit", "-m", "bind a run index branch")
+        git(self.root, "push", self.REMOTE, "main")
+        return self.main_sha()
+
+    def test_retirement_is_refused_while_main_binds_the_branch(self) -> None:
+        """A binding for the retired branch would dangle, so retire is blocked."""
+        sha = self.landed_branch()
+        main = self.main_with_binding("fix/landed-topic")
+        result = self.run_script(
+            "fix/landed-topic",
+            sha=sha,
+            main=main,
+            APPLY="1",
+            CLEAN_BRANCH_CONFIRM="DELETE_EXACT_REVIEWED_BRANCH",
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("still binds", result.stderr)
+        self.assertIn(sha, self.remote_ref("fix/landed-topic"))
+        self.assertEqual(git(self.root, "rev-parse", "refs/heads/fix/landed-topic"), sha)
+
+    def test_retirement_allows_a_main_that_binds_another_branch(self) -> None:
+        """Only a binding for the retired branch itself is a dangling risk."""
+        sha = self.landed_branch()
+        main = self.main_with_binding("fix/some-other-topic")
+        result = self.run_script(
+            "fix/landed-topic",
+            sha=sha,
+            main=main,
+            APPLY="1",
+            CLEAN_BRANCH_CONFIRM="DELETE_EXACT_REVIEWED_BRANCH",
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.remote_ref("fix/landed-topic"), "")
+
     def test_local_sha_drift_is_refused(self) -> None:
         self.landed_branch()
         result = self.run_script("fix/landed-topic", sha="0" * 40, main=self.main_sha())

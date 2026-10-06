@@ -113,6 +113,7 @@ Generated from repository source files. This report is informational during the 
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
 | 1170 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
+| 1157 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1147 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
 | 1146 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
@@ -120,7 +121,6 @@ Generated from repository source files. This report is informational during the 
 | 1137 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
 | 1121 | Python source | `scripts/release/production_backup_restore.py` |
 | 1117 | Python source | `scripts/ops/codex_agent_controller.py` |
-| 1110 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1100 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1096 | Python source | `addons/smart_construction_core/models/core/payment_ledger.py` |
 | 1094 | JavaScript source | `scripts/verify/list_search_group_usability_audit.js` |
