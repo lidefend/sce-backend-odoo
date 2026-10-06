@@ -369,17 +369,75 @@ def _target_line(makefile: str, target: str) -> str:
     return match.group("deps").strip() if match else ""
 
 
+MAKE_CONDITIONAL_DIRECTIVE = re.compile(r"^(?:ifeq|ifneq|ifdef|ifndef|else|endif)\b")
+
+
 def _target_body(makefile: str, target: str) -> str:
-    pattern = re.compile(
-        rf"^{re.escape(target)}\s*:[^\n]*\n(?P<body>(?:\t[^\n]*\n|[ \t]*\n)*)",
-        re.MULTILINE,
-    )
-    match = pattern.search(makefile)
-    return match.group("body") if match else ""
+    """Return the recipe region of ``target``, including make conditionals.
+
+    A recipe may be wrapped in ``ifeq`` / ``else`` / ``endif``.  Those directives
+    sit at column 0 between the target line and its tab-indented commands, so a
+    scan that stops at the first non-tab line reports a false "missing command
+    body" for a target that is in fact wired.  Consume recipe lines, blank lines
+    and make conditionals; stop at the first line of the next rule (or file).
+    """
+    lines = makefile.splitlines(keepends=True)
+    start = None
+    for index, line in enumerate(lines):
+        if line.startswith(("\t", " ")):
+            continue
+        if re.match(rf"^{re.escape(target)}\s*:", line):
+            start = index
+            break
+    if start is None:
+        return ""
+    body: list[str] = []
+    for line in lines[start + 1 :]:
+        if line.startswith("\t") or not line.strip():
+            body.append(line)
+            continue
+        if MAKE_CONDITIONAL_DIRECTIVE.match(line.strip()):
+            body.append(line)
+            continue
+        break
+    return "".join(body)
 
 
 def _deps(line: str) -> set[str]:
     return {item.strip() for item in line.split() if item.strip()}
+
+def _target_body_self_test(errors: list[str]) -> None:
+    """Prove the recipe scan sees conditional blocks without inventing recipes.
+
+    The scan must keep a recipe that is wrapped in ``ifeq`` / ``else`` /
+    ``endif`` (the false "missing command body" regression), must keep a plain
+    tab-indented recipe, must not invent a body for a rule that has none, and
+    must not match an undeclared target.
+    """
+    conditional = (
+        "verify.business_config.approval_runtime: guard.prod.forbid\n"
+        "ifeq ($(SC_ACCEPTANCE_RUNTIME_PROFILE),local)\n"
+        "\t@bash scripts/dev/local_entry.sh\n"
+        "else\n"
+        "\t@python3 scripts/verify/business_config_approval_runtime_smoke.py\n"
+        "endif\n"
+        "\n"
+        "verify.other: guard.prod.forbid\n"
+        "\t@true\n"
+    )
+    wrapped = _target_body(conditional, "verify.business_config.approval_runtime")
+    for marker in ("local_entry.sh", "business_config_approval_runtime_smoke.py"):
+        if marker not in wrapped:
+            errors.append("target body scan lost the conditional recipe for %s" % marker)
+    if "verify.other" in wrapped:
+        errors.append("target body scan leaked the following rule into the body")
+    if "@true" not in _target_body(conditional, "verify.other"):
+        errors.append("target body scan dropped a plain tab-indented recipe")
+    empty = "verify.empty: guard.prod.forbid\n\nverify.other: guard.prod.forbid\n\t@true\n"
+    if _target_body(empty, "verify.empty").strip():
+        errors.append("target body scan invented a recipe for a bodyless target")
+    if _target_body(conditional, "verify.absent"):
+        errors.append("target body scan matched an undeclared target")
 
 
 def _validate_capability_matrix(makefile: str, errors: list[str]) -> None:
@@ -550,6 +608,8 @@ def validate(makefile: str) -> list[str]:
     guard_body = _target_body(makefile, "verify.business_config.guard_inventory")
     if "scripts/verify/business_config_guard_inventory.py" not in guard_body:
         errors.append("verify.business_config.guard_inventory is not wired to its script")
+
+    _target_body_self_test(errors)
 
     _validate_capability_matrix(makefile, errors)
     _validate_boundary_constant_parity(errors)

@@ -111,3 +111,59 @@
 - 主线集成：未完成（未推送、未合并、未过远端必需检查）。
 - 版本发布：未完成。
 - 产品交付/用户视角验收：待日常开发服（`sc_demo`）受管升级 + 用户 `wutao/123456` 登录复核。
+
+---
+
+## 第二轮：承载完整性与声明漂移收口（用户指令：保留项目台账，编辑能力必须完整承载）
+
+用户确认：保留「项目台账」为唯一入口；「项目信息编辑」的功能必须完整承载过来，从最基础的信息
+在全系统产品面完整统一；编辑能力必须权限/契约驱动，不得保留专门只读页。
+
+### 本轮变更
+
+- `views/core/project_overview_views.xml`：台账「提交立项」按钮补 `groups` 声明。
+- `tests/test_core_extension_v2_finalize.py`：新增两条**行为锁**——
+  - `test_retired_project_edit_composition_is_fully_carried_into_the_ledger`：
+    退役表单的**全部字段与按钮**都必须出现在台账表单（差集为空），
+    且 `responsibility_ids` 保持 `editable="bottom"`；台账动作 context 仍 `create/delete=False`、
+    `no_duplicate=True`、不再硬禁 `edit`。
+  - `test_project_ledger_submit_button_binds_the_model_group_authority`：
+    台账 `提交立项` 按钮声明的 `groups` 集合必须**等于** `project.project.action_sc_submit`
+    方法源码中 `has_group(...)` 实际校验的集合。
+- `scripts/verify/business_config_guard_inventory.py`：修复 `_target_body` 解析伪阳性——
+  目标体被 `ifeq/else/endif` 包裹时，旧解析在首个非制表行停下，错误报告「缺少命令体」。
+  新解析消费制表行、空行与 make 条件指令，并在 `verify.other` 处停止；新增 `_target_body_self_test`
+  自检（条件体保留、普通体保留、无体目标不臆造、未声明目标不匹配）。
+- `docs/frontend_productization/product-page-patterns-v1.md`：两处入口矩阵行加退役注记，
+  指向唯一台账记录入口，不重写历史行。
+- `make/dev.mk`：新增已注册门禁 `verify.contract.project_ledger_entry_carrier.orm`，
+  按既有 `.orm` 范式复用注册的 `local.dev` 车道（`local.dev.ready` + `test.safe`），
+  让承载锁成为可复跑、非零计数的定向证据，而非一次性运行。
+
+### 新增根因
+
+7. **声明漂移（组权限）**：台账「提交立项」按钮原先**无 `groups`**，但 `action_sc_submit` 方法硬校验
+   `group_sc_cap_project_user/manager/super_admin`。结果：界面把按钮渲染给无权限用户 → 点击必失败。
+   修复：按钮声明与模型校验面对齐（用锁测试钉住，不用文本出现证明正确性）。
+8. **校验工具伪阳性**：`business_config_guard_inventory` 对 ifeq 包裹的目标体误报缺体，
+   使 guard 结论不可信。修复解析并加自检。
+
+### 本轮验证
+
+| 层 | 命令 | 身份 | 结果 |
+|---|---|---|---|
+| L1 | `python3 scripts/verify/business_config_guard_inventory.py` | dirty | PASS `make_sources=17 scanned_files=36 assertions=151 negative_self_test=PASS` |
+| L2/L3 | `make verify.contract.project_ledger_entry_carrier.orm` | sc-local-dev/sc_dev_demo | PASS `0 failed, 0 error(s) of 25 tests`（含新增两条承载/权限锁） |
+
+### 承载完整性结论（登记口径）
+
+- 退役「项目信息编辑」表单的字段集合、按钮集合 ⊆ 台账表单（`ONLY in retired = []`）。
+- 台账记录页协作能力（chatter/attachments/followers/timeline/user_search_intent）与锁定契约一致。
+- 编辑能力由入口 context（不再硬禁 `edit`）+ 字段分组 + ACL 驱动，不依赖专门只读视图。
+
+### 未覆盖 / 复用
+
+- 复用 0978c0cc 已通过的锁定契约/清单/结构锁 guard 与运行面 coverage 报告（输入未变）。
+- `product_view_structure_contract.json` 仍需 `local.clean` 车道再生（环境门控，非本分支回归）。
+- 日常库（`sc_demo`）受管回读仍待提交后执行：远端运行仓 `sc-root:/opt/projects/repos/sce-product-odoo`
+  当前为 `0978c0cc`（detached、干净），尚不含本轮 groups 修复与承载锁。

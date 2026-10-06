@@ -139,8 +139,15 @@ only selection input. The table is kept as rollout history only.
 
 | Model | Verified entry | Round |
 |---|---|---|
-| `project.project` | `menu_sc_product_project_edit_v1` (menu 680) | TPL-01 |
+| `project.project` | `menu_sc_product_project_edit_v1` (menu 680) — retired, see note below | TPL-01 |
 | `sc.general.contract` | `menu_sc_p1_daily_contract` (action `action_sc_general_contract`, menu 662) | TPL-02 |
+
+> Retirement note: the `project.project` round above was verified against the
+> 项目信息编辑 entry that has since been retired. Its complete composition is now
+> carried by the single 项目台账 record entry
+> (`smart_construction_core.action_sc_project_list` / view
+> `smart_construction_core.view_project_overview_form`); the row is kept as
+> rollout history and is not a live entry reference.
 
 TPL-02 also adopted the sibling menu `一般合同（公司）` (`menu_sc_general_contract`, menu 353)
 because adoption is decided per model, not per menu. That menu is not a row of the entry
@@ -312,7 +319,7 @@ adding a second page implementation.
 
 | Surface | Model | Verified entry | Round |
 |---|---|---|---|
-| Standard query list | `project.project` | `menu_sc_product_project_edit_v1` (menu 680) | TPL-03 |
+| Standard query list | `project.project` | `menu_sc_product_project_edit_v1` (menu 680) — retired, see TPL-01 note | TPL-03 |
 | Standard query list | `sc.general.contract` | `menu_sc_p1_daily_contract` (menu 662) | TPL-03 |
 | Standard query list | `payment.request` | `menu_sc_user_payment_apply` (menu 545) | TPL-06A |
 | Standard readonly detail | `sc.general.contract` | record `/r/sc.general.contract/11` | TPL-03 |

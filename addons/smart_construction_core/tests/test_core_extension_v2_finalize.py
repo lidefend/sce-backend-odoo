@@ -1300,3 +1300,82 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         self.assertNotIn("visible", policy)
         self.assertIn("sc_source_project_name", policy["hidden"])
         self.assertIn("sc_business_role_label", policy["hidden"])
+
+    # --- 项目台账唯一入口：退役页功能承载 lock -------------------------------
+    #
+    # 项目信息编辑 入口已退役，但它的功能不是"消失"，而是被项目台账记录表单
+    # 完整承载。以下两条锁把"声明"和"实际行为"绑在一起：一条证明承载是全集
+    # （不是靠人工挑选字段），另一条证明台账按钮暴露的权限面与模型方法真正
+    # 校验的权限面一致，避免"界面能点、后端报错"的声明漂移。
+
+    def _combined_arch(self, xmlid):
+        arch = self.env.ref(xmlid)._get_combined_arch()
+        if isinstance(arch, (str, bytes)):
+            arch = etree.fromstring(arch)
+        return arch
+
+    def test_retired_project_edit_composition_is_fully_carried_into_the_ledger(self):
+        ledger = self._combined_arch("smart_construction_core.view_project_overview_form")
+        retired = self._combined_arch(
+            "smart_construction_core.view_sc_product_project_information_edit_form_v1"
+        )
+
+        ledger_fields = set(ledger.xpath("//field/@name"))
+        retired_fields = set(retired.xpath("//field/@name"))
+        self.assertEqual(
+            sorted(retired_fields - ledger_fields),
+            [],
+            "项目台账 must carry every 项目信息编辑 field",
+        )
+
+        ledger_buttons = {
+            (button.get("name"), button.get("type")) for button in ledger.xpath("//button")
+        }
+        retired_buttons = {
+            (button.get("name"), button.get("type")) for button in retired.xpath("//button")
+        }
+        self.assertEqual(
+            sorted(retired_buttons - ledger_buttons),
+            [],
+            "项目台账 must carry every 项目信息编辑 action",
+        )
+
+        ledger_x2many = set(ledger.xpath("//field[@name='responsibility_ids']/tree/@editable"))
+        self.assertEqual(ledger_x2many, {"bottom"}, "责任矩阵 must stay editable on the ledger")
+
+        # 承载的是"维护能力"，不是"创建能力"：创建仍归 新项目立项；
+        # 复制被拒绝与本模块其它 project 入口（project_actions /
+        # project_native_action_overrides / 台账本身在 main 的口径）一致，
+        # 避免绕过立项校验复制出无来源项目。edit 不再硬禁，改由 ACL 与
+        # 字段分组驱动。
+        action = self.env.ref("smart_construction_core.action_sc_project_list")
+        declared = safe_eval(action.context or "{}", {"context": {}})
+        self.assertIs(declared.get("create"), False)
+        self.assertIs(declared.get("delete"), False)
+        self.assertIs(declared.get("no_duplicate"), True)
+        self.assertNotIn("edit", declared)
+
+    def test_project_ledger_submit_button_binds_the_model_group_authority(self):
+        import inspect
+        import re
+
+        ledger = self._combined_arch("smart_construction_core.view_project_overview_form")
+        buttons = ledger.xpath("//button[@name='action_sc_submit']")
+        self.assertEqual(len(buttons), 1, "the ledger must expose exactly one 提交立项 button")
+        declared = {
+            item.strip()
+            for item in (buttons[0].get("groups") or "").split(",")
+            if item.strip()
+        }
+        self.assertTrue(declared, "提交立项 must declare its group authority")
+
+        method = type(self.env["project.project"]).action_sc_submit
+        enforced = set(
+            re.findall(r'has_group\(\s*"([^"]+)"\s*\)', inspect.getsource(method))
+        )
+        self.assertTrue(enforced, "action_sc_submit must declare the groups it enforces")
+        self.assertEqual(
+            declared,
+            enforced,
+            "the 提交立项 button must advertise exactly the groups the model enforces",
+        )

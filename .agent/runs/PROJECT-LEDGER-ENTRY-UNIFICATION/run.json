@@ -15,6 +15,7 @@
     "config/",
     "contracts/generated/",
     "scripts/ops/",
+    "make/dev.mk",
     "scripts/verify/",
     "scripts/release/",
     "docs/",
@@ -106,6 +107,32 @@
         "scripts/verify/frontend_systemwide_coverage_audit.py",
         "scripts/verify/frontend_project_domain_rollout.py"
       ]
+    },
+    "project_ledger_entry_carrier": {
+      "target": "verify.contract.project_ledger_entry_carrier.orm",
+      "kind": "runtime",
+      "status": "passed",
+      "tests": 25,
+      "detail": "retired 项目信息编辑 composition fully carried into 项目台账: fields/buttons ONLY-in-retired=[]; 提交立项 button groups == project.project.action_sc_submit enforced groups",
+      "inputs": [
+        "make/dev.mk",
+        "addons/smart_construction_core/views/core/project_overview_views.xml",
+        "addons/smart_construction_core/views/core/project_information_edit_views.xml",
+        "addons/smart_construction_core/actions/project_list_actions.xml",
+        "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py"
+      ]
+    },
+    "business_config_guard_inventory": {
+      "target": "verify.business_config.guard_inventory",
+      "kind": "offline",
+      "status": "passed",
+      "tests": 151,
+      "detail": "make_sources=17 scanned_files=36 assertions=151 negative_self_test=PASS; fixed false-positive _target_body scan for ifeq-wrapped recipes",
+      "inputs": [
+        "scripts/verify/business_config_guard_inventory.py",
+        "Makefile",
+        "make/"
+      ]
     }
   },
   "evidence": {
@@ -124,16 +151,16 @@
     {
       "id": "DAILY_ACCEPTANCE_READBACK",
       "status": "pending",
-      "detail": "governed daily lane upgrade + user-visible readback (sc_demo, wutao/123456) not yet run for this candidate; requires a clean committed SHA via daily.runtime.candidate.bundle_sync."
+      "detail": "daily runtime repo already at 0978c0cc (detached, clean) but this candidate's uncommitted groups fix + carrier lock are not in that SHA and sc_demo has not been module-upgraded. Requires a clean committed SHA, daily.runtime.candidate.bundle_sync, sc_demo module upgrade of smart_construction_core, and a wutao/123456 ui.contract.v2 / menu readback (ledger entry visible, retired entry gone, 提交立项 visibility follows groups, no 409)."
     }
   ],
-  "next_exact_step": "Commit the unified ledger entry (product + carriers + runtime evidence) with active-runs binding released, then run the governed daily candidate sync/upgrade/restart and read back: ledger group + menu visible at 项目中心/项目台账/项目台账, action 506 orchestration resolves without 409, retired edit entry gone, user acceptance via wutao/123456.",
+  "next_exact_step": "Commit the ledger carrier round (groups authority fix + carrier/authority lock tests + guard false-positive fix + registered carry-over gate), push the branch, then run the governed daily candidate sync (make daily.runtime.candidate.bundle_sync), upgrade smart_construction_core on sc_demo, restart, and read back with wutao/123456: 项目中心/项目台账/项目台账 visible, 项目信息编辑 gone, 提交立项 visibility follows group authority, no CONFIG_TARGET_STALE.",
   "write_replay_authorized": false,
   "candidate_evidence": false,
   "stage_identity": {
     "baseline_sha": "8892042761eeb8f47a135fd817a9a9d220837620",
-    "head": "8892042761eeb8f47a135fd817a9a9d220837620",
+    "head": "0978c0ccbe7317370759d6bae27358f74de24ac3",
     "dirty": true,
-    "note": "single writer; unfrozen working tree at record time"
+    "note": "single writer; carrier round uncommitted at record time"
   }
 }

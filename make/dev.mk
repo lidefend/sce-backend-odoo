@@ -835,7 +835,7 @@ verify.daily_dev.acceptance.readonly.probe: guard.prod.forbid
 # superuser has_group pass-through out of Odoo's public/portal audience markers;
 # the fixture fix freezes its own payment execution without weakening the model
 # guard. Both run against the registered local.dev profile and the real modules.
-.PHONY: verify.smart_core.res_users_audience_group.orm verify.smart_core.relation_entry_publication.orm verify.acceptance_fixture.execution_freeze.orm
+.PHONY: verify.smart_core.res_users_audience_group.orm verify.smart_core.relation_entry_publication.orm verify.acceptance_fixture.execution_freeze.orm verify.contract.project_ledger_entry_carrier.orm
 verify.smart_core.res_users_audience_group.orm: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  MODULE=smart_core TEST_TAGS=res_users_audience_group test.safe
@@ -850,6 +850,16 @@ verify.smart_core.relation_entry_publication.orm: guard.prod.forbid local.dev.re
 verify.acceptance_fixture.execution_freeze.orm: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  MODULE=smart_construction_acceptance_fixture TEST_TAGS=acceptance_fixture_execution_freeze test.safe
+
+# Carrier lock for the single project-center record entry: 项目台账 is the one
+# permission/contract-driven project record surface, and the retired 项目信息编辑
+# entry's complete composition must be provably carried into it (every field and
+# button of the retired form, plus the 提交立项 button advertising exactly the
+# groups the model method enforces). This binds declaration to behaviour at the
+# owning layer instead of relying on selector strings.
+verify.contract.project_ledger_entry_carrier.orm: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_construction_core TEST_TAGS=core_extension_v2_finalize test.safe
 
 # The fixture carrier and its deterministic records are provisioned in the daily
 # runtime database through the governed entries below. Both write entries require
