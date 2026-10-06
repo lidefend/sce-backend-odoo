@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "id": "ACCEPTANCE-HARNESS-LOGIN-CONTRACT-ALIGNMENT",
+  "branch": "fix/acceptance-harness-login-token-contract-20261007",
+  "status": "active",
+  "baseline_sha": "a012ced9b0fdeb891f55b8ddfdceb839496bfaa7",
+  "goal": ".agent/goals/ACCEPTANCE-HARNESS-LOGIN-CONTRACT-ALIGNMENT.yaml",
+  "record": "docs/ops/iterations/acceptance_harness_login_token_contract_alignment_20261007.md",
+  "scope": [
+    ".agent/",
+    "docs/ops/iterations/",
+    "scripts/ops/"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "governed daily development server (http://1.95.85.92:18081, ENV=dev, DB_NAME=sc_demo, served 6c8e07f7) reached through the repository Make entries release.daily_dev.production_acceptance.harness and verify.production.acceptance.harness; no environment or credential authority is created"
+  },
+  "checks": {
+    "acceptance_harness_unit": {
+      "target": "verify.production.acceptance.harness",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/production_acceptance_harness.py",
+        "scripts/ops/production_acceptance_contract_v1.json",
+        "scripts/ops/production_acceptance_package_v1.sha256",
+        "scripts/ops/test_production_acceptance_harness.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Repair the harness token extraction and its unit test, refresh the acceptance package digest, pass verify.production.acceptance.harness, then run release.daily_dev.production_acceptance.harness against the live daily development server and record the truthful result."
+}

@@ -16,6 +16,7 @@ class FakeAcceptanceHandler(BaseHTTPRequestHandler):
     login_count = 0
     tokens: set[str] = set()
     authorization_by_token: dict[str, int] = {}
+    flat_token_login = False
 
     def log_message(self, _format: str, *_args: object) -> None:
         return
@@ -58,7 +59,10 @@ class FakeAcceptanceHandler(BaseHTTPRequestHandler):
             type(self).login_count += 1
             token = f"clean-token-{type(self).login_count}"
             type(self).tokens.add(token)
-            self._reply(200, {"ok": True, "data": {"token": token}})
+            if type(self).flat_token_login:
+                self._reply(200, {"ok": True, "data": {"token": token}})
+                return
+            self._reply(200, {"ok": True, "data": {"session": {"token": token}}})
             return
         if not token or token not in type(self).tokens:
             self._reply(401, {"ok": False, "error": {"code": "AUTH_REQUIRED"}})
@@ -108,6 +112,7 @@ class ProductionAcceptanceHarnessTest(unittest.TestCase):
         FakeAcceptanceHandler.login_count = 0
         FakeAcceptanceHandler.tokens = set()
         FakeAcceptanceHandler.authorization_by_token = {}
+        FakeAcceptanceHandler.flat_token_login = False
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), FakeAcceptanceHandler)
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
@@ -134,6 +139,18 @@ class ProductionAcceptanceHarnessTest(unittest.TestCase):
         serialized = json.dumps(report)
         self.assertNotIn("never-print-this-password", serialized)
         self.assertNotIn("clean-token-", serialized)
+
+    def test_flat_login_token_without_declared_session_path_is_rejected(self) -> None:
+        FakeAcceptanceHandler.flat_token_login = True
+        with self.assertRaises(harness.AcceptanceError):
+            harness.run_acceptance(
+                base_url=self.base_url,
+                db_name="sc_demo",
+                login="candidate-user",
+                password="never-print-this-password",
+                run_count=1,
+            )
+        self.assertFalse(FakeAcceptanceHandler.authorization_by_token)
 
     def test_harness_has_no_odoo_request_or_direct_token_generation_dependency(self) -> None:
         source = Path(harness.__file__).read_text(encoding="utf-8")

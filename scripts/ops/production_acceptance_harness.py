@@ -113,6 +113,18 @@ def unwrap_data(payload: dict[str, Any]) -> dict[str, Any]:
     return data if isinstance(data, dict) else {}
 
 
+def session_token_from_login(payload: dict[str, Any]) -> str:
+    """Read the bearer token from the declared login envelope.
+
+    The smart_core login intent producer returns ``data.session.token`` and the web
+    session store consumes the same declared path.  Accepting only that path keeps
+    the gate bound to the contract instead of masking a producer/consumer drift.
+    """
+    data = unwrap_data(payload)
+    session = data.get("session") if isinstance(data.get("session"), dict) else {}
+    return str(session.get("token") or "").strip()
+
+
 def node_label(node: dict[str, Any]) -> str:
     return str(
         node.get("label")
@@ -211,8 +223,7 @@ def run_once(
         headers={**db_headers, anonymous_header: "1"},
         timeout=timeout,
     )
-    login_data = unwrap_data(login_payload)
-    token = str(login_data.get("token") or "").strip()
+    token = session_token_from_login(login_payload)
     login_pass = login_status == 200 and login_payload.get("ok") is True and bool(token)
     if not login_pass:
         raise AcceptanceError(

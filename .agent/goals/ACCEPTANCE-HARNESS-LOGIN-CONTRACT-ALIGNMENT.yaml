@@ -1,0 +1,61 @@
+schema_version: 1
+goal:
+  id: ACCEPTANCE-HARNESS-LOGIN-CONTRACT-ALIGNMENT
+  title: align_the_daily_dev_production_acceptance_harness_with_the_declared_login_contract
+  status: active
+  formal_product_layer: P4
+  layer_target: ops_delivery_acceptance_gate
+  module:
+    - scripts/ops
+    - .agent
+    - docs/ops/iterations
+  objective: >-
+    The governed daily development production acceptance harness
+    (release.daily_dev.production_acceptance.harness) aborts at real HTTP login
+    because it reads the bearer token from data.token while the smart_core login
+    intent producer emits data.session.token and the web session store consumes
+    result.session.token. The tooling unit test enshrined the same wrong shape, so
+    no gate ever caught the drift. Bind the harness to the declared session path,
+    repair the unit test to the real producer shape, add a negative case proving a
+    missing declared token is rejected, refresh the immutable acceptance package
+    digest, and then run the harness once against the live daily development server
+    so the closure-plan criterion "daily development server passes the full release
+    gate" is either proven or truthfully reported as failing. No product runtime
+    code, contract producer, ACL, field permission, assertion or negative case is
+    relaxed.
+  baseline:
+    branch: main
+    full_sha: a012ced9b0fdeb891f55b8ddfdceb839496bfaa7
+    source: clean_main_after_pr_598
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_acceptance_tool
+    why_here: >-
+      The production acceptance harness is a P4 ops delivery / acceptance gate, not
+      platform mechanism, industry default, customer preference or low-code config.
+    why_not_elsewhere:
+      - no_p0_smart_core_contract_envelope_change
+      - no_p1_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_lowcode_configuration
+      - no_frontend_runtime_change
+      - no_relaxation_of_any_assertion_audit_acl_or_negative_case
+    blast_radius:
+      - scripts/ops/production_acceptance_harness.py and its unit test
+      - scripts/ops/production_acceptance_package_v1.sha256 immutable package digest
+      - release.daily_dev.production_acceptance.harness and the packaged
+        daily_candidate immutable tool archive
+  exclusions:
+    - no_product_runtime_semantics_change
+    - no_credential_rotation_or_new_password_authority
+    - no_production_tenant_change
+    - no_environment_database_port_or_volume_assembly
+    - no_new_global_test_framework
+    - no_widening_of_acceptance_assertions_or_negative_cases
+  rollback:
+    - revert the harness and unit test to the previous revision and restore the prior
+      acceptance package digest from git
+  next_exact_step: >-
+    Repair the harness token extraction plus its unit test, refresh the package
+    digest, pass the offline unit gate, then run
+    make release.daily_dev.production_acceptance.harness against the live daily
+    development server and record the result.
