@@ -858,6 +858,11 @@ verify.frontend.contract_form_save_failure_recovery.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_form_save_failure_recovery_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/contract-form-save-failure-recovery-test.mjs >/dev/null
 	@node /tmp/contract-form-save-failure-recovery-test.mjs
 
+.PHONY: verify.frontend.contract_form_dirty_semantics.unit
+verify.frontend.contract_form_dirty_semantics.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_form_dirty_semantics_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/contract-form-dirty-semantics-test.mjs >/dev/null
+	@node /tmp/contract-form-dirty-semantics-test.mjs
+
 .PHONY: verify.frontend.standard_form_composition.unit
 verify.frontend.standard_form_composition.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/standard_form_composition_adoption_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/standard-form-composition-adoption-test.mjs >/dev/null
