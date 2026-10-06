@@ -23,10 +23,12 @@ Owner acceptance entry: `http://1.95.85.92:18081/`（自定义前端），口令
   form-profiles/workbench 明暗皆 PASS；并修复 §3.4 确认的关系打开投影缺陷（P0 `smart_core`，
   提交 `827bffed`），定向 ORM `12 tests / 0 failed`、运行态关系往返复验 `status=pass`
   （`denied_requests=0`、`console_errors=0`）。全程未放宽任何断言或 ACL。
-- **主线集成**：`main = 5ba6398e`（PR #588 已合并），必需检查全绿。本批产品变更
-  （`smart_core`，`827bffed`）在本分支，**尚未合并主线**，待普通 Gitee PR 完整远端门禁。
+- **主线集成**：完成。PR #589（squash）已合并，`main = dd75f83c`；四个必需检查
+  （`public_guard` / `merge_policy_gate` / `professional_quality_gate` / `frontend_release_gate`）
+  在精确 HEAD `0794f203` 上全部 success，合并门禁复用同 HEAD 的 `ci.local.quick` receipt
+  （`REUSE`，未重复执行套件）。详见 §3.9。
 - **版本发布**：未主张。
-- **产品交付**：未主张——待产品变更合入主线并完成当日运行态回归后再判断。
+- **产品交付**：未主张——待所有者对 §4.1 的单项产品策略观察项判断。
 
 ## 3. 执行记录
 
@@ -177,15 +179,33 @@ Owner acceptance entry: `http://1.95.85.92:18081/`（自定义前端），口令
 - **未放宽断言**：修复只收敛「声明 ↔ 授权面」一致，不新增任何放行；原有失败位置的结论由
   「确认产品缺陷」更新为「已修复并复验」，其余断言不变。
 
+### 3.9 主线合入与日常运行态归一化到 main（本轮新增）
+
+- **PR 合入**：`lidefend/sce-backend-odoo#589`，squash 合入，`main = dd75f83c04e6c47066037755fbbcf0396bd086fc`
+  （2026-10-06T03:54:56Z）。四个必需检查在精确 HEAD `0794f2030459cff16d3d69d8550129388e57f2f6` 上全部 success；
+  `pr.merge.local_quick_gate` 命中同 HEAD 的 `ci.local.quick` receipt（`REUSE`），未重复跑套件。
+  本地 quick 在本轮实际抓到过一项远端未覆盖的阻断（`product.release.version` 认为 `run.json` 重复了产品版本字面量），
+  该缺陷已修（提交 `0794f203`）——本地守卫与远端门禁不是冗余关系。
+- **运行态归一化**：此前日常运行态处于**分离候选态** `827bffed`（PR 分支头，squash 后不是 main 的祖先）。
+  受管入口 `daily.runtime.main.bundle_sync` 走「分离候选 → main」归一化路径
+  （`normalized_from_candidate=true`，`old_sha=5ba6398e`、`source_sha=dd75f83c`），随后
+  `daily.runtime.source_revision.align` 声明 `SC_SOURCE_REVISION` 并重启；`/api/runtime-version`
+  回读 `git_sha=dd75f83c043…`。报告：`.runtime/final-acceptance/daily-deployed/bundle-sync.json`。
+- **main 上复验（只跑受影响的定向车道）**：
+  `.runtime/final-acceptance/relation-roundtrip-main-dd75f83c/20261006T035750/summary.json`，
+  `status=pass`、`declared_entry_count=14`、四个关系条目全部 `opened`、往返
+  `path/title/statusbar/tabs/actions` 全恢复、`denied_requests=0`、`console_errors=0`。
+- **口径注记**：本主线同步需要 `expected_old_sha` 为远端 `main` 引用而非远端 HEAD；
+  若未来把 squash 合入后的分支头直接当作 `expected_old_sha`，预检会以「不是祖先」阻断——
+  这是本入口的既有前置条件，已在此记录以免重复排查。
+
 ## 4. 仍未关闭
 
-1. **关系打开投影缺陷**：**已修复并在日常运行态复验通过**（提交 `827bffed`，证据见 §3.8）。
-   剩余动作仅为走普通 Gitee PR 完整远端门禁后合入主线；本条不再是产品缺陷阻断项。
-2. **`项目台账` 的 `/f/` ↔ `readonly` profile 观察项**：列表声明 `model_write_authority=true` 并据此
+1. **`项目台账` 的 `/f/` ↔ `readonly` profile 观察项**：列表声明 `model_write_authority=true` 并据此
    打开 `/f/project.project/<id>`，但记录契约给出 `effectiveRenderProfile=readonly`。探针按既有策略记为
-   not_applicable（绝不当成编辑通过）；是否为产品策略需所有者确认。
-3. **测试资产登记**：新脚本（含 `scripts/verify/record_relation_roundtrip_acceptance.js`）尚未进入
-   `docs/engineering_convergence/test_inventory.csv`（由 `scripts/ci/generate_test_inventory.py` 生成，
-   属交付冻结准备步骤）。
-4. 本批含产品代码变更（P0 `smart_core`）与 P4 验收工具/记录；在变更合入主线前**不主张版本发布与
-   产品交付完成**，四层状态见 §2。
+   not_applicable（绝不当成编辑通过）；是否为产品策略需所有者确认。这是当前唯一的未决产品策略项。
+2. 已关闭项：
+   - 关系打开投影缺陷：已修复、已合入 main（PR #589 → `dd75f83c`）、已在大运行态复验（§3.8、§3.9）。
+   - 测试资产登记：`scripts/verify/record_relation_roundtrip_acceptance.js` 已由
+     `scripts/ci/generate_test_inventory.py` 登记为 `T-ASSET-942`（总资产 1462 → 1463）。
+3. 四层状态见 §2：批次验收 = 通过，主线集成 = 完成，版本发布 = 未主张，产品交付 = 待所有者判断。
