@@ -26,7 +26,9 @@
     "addons/smart_construction_core/__manifest__.py",
     "addons/smart_core/utils/load_contract_response_cache.py",
     "addons/smart_core/tests/test_load_contract_response_cache.py",
-    "addons/smart_construction_core/tests/"
+    "addons/smart_construction_core/tests/",
+    "frontend/apps/web/src/pages/contractForm/",
+    "make/frontend.mk"
   ],
   "environment": {
     "kind": "runtime",
@@ -165,6 +167,18 @@
         "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
         "config/frontend/acceptance_environments_v1.json"
       ]
+    },
+    "contract_form_dirty_semantics": {
+      "target": "verify.frontend.contract_form_dirty_semantics.unit",
+      "kind": "offline",
+      "status": "passed",
+      "detail": "P0 renderer: value setters mark dirty/onchange only when the draft value differs from the delivered record baseline. Negative-first: the same test fails against the pre-fix source (an identical relation value must not be dirty, 1 !== 0) and passes after the fix. Fixes the phantom onchange that failed the detail lane at 5d1dfaeb.",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/useRecordFormState.ts",
+        "frontend/apps/web/scripts/contract_form_dirty_semantics_test.ts",
+        "frontend/apps/web/src/pages/contractForm/contractActionRules.ts",
+        "make/frontend.mk"
+      ]
     }
   },
   "evidence": {
@@ -186,13 +200,13 @@
       "detail": "Record-page detail acceptance not yet run: 1440/390 visual + light/dark themes, one real \"open relation record -> return to origin -> labels and actions restore\" interaction, and the create/edit + workbench minimum evidence delta."
     }
   ],
-  "next_exact_step": "Daily acceptance gate is green at 5d1dfaeb (resolve->probe sequence). Next: ledger record-page detail acceptance (1440/390, light/dark, one real relation open->return interaction), then the create/edit + workbench minimum evidence delta.",
+  "next_exact_step": "Detail-lane root cause fixed at the P0 renderer (value-based dirty; no assertion relaxation) and proven negative-first. Next: sync this commit to daily via daily.runtime.candidate.bundle_sync (old_sha=5d1dfaeb), rebuild the served frontend dist-dev on the daily host (verify.frontend.build) + restart nginx, daily.runtime.source_revision.align, then re-run the detail lane (1440/390, light/dark, detail-only) expecting denied_requests=0, and re-bind the relation roundtrip to the new SHA.",
   "write_replay_authorized": false,
   "candidate_evidence": false,
   "stage_identity": {
     "baseline_sha": "8892042761eeb8f47a135fd817a9a9d220837620",
-    "head": "5d1dfaebdd4fed2703df8c276cdeec2dbd995e58",
+    "head": "cb472723d3112f060030d16eeb5d6ba667813295",
     "dirty": true,
-    "note": "single writer; adds runtime-contract group-authority lock + iteration/run rulings; no addon runtime path change"
+    "note": "single writer; P0 renderer value-based dirty fix (frontend source, commit cb472723) + focused negative-first unit test + make target; no addon runtime path change"
   }
 }

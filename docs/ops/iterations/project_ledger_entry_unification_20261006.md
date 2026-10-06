@@ -338,3 +338,51 @@
     11/11 checks true，`http_status=200`（此前 403），custody `response_sha256=bb739fa2…`，
     `integrity_reason=ok`）；`[dev_acceptance_release_probe_schema_guard] PASS`。
 - 结论：登记序列固定为 **resolve → probe**；产物按 SHA 失效属预期，不是审计放宽，也未改探针框架。
+
+## 详情车道 FAIL 根因与修复（P0 渲染层：幻影脏字段）
+
+### 现象与证据
+- `detail-closeout-5ba6398e`（readonly 剖面）：`passed=true`、`denied_requests=[]`。
+- `detail-closeout-5d1dfaeb`（edit 剖面）：`passed=false`，**8/8 记录全部通过**、`failures=[]`，
+  但 `runtime.denied_requests` = 2 笔 `api.onchange`，`console_errors` = 2 条
+  `net::ERR_BLOCKED_BY_CLIENT.Inspector`（被车道 fail-closed 拦截的 fetch）。
+- 对照：`res.partner/8754`（可编辑、无 m2m tags）打开时**无任何 onchange** ⇒ 不是"所有可编辑表单都会触发"。
+
+### 根因链（已钉死）
+1. 编辑权限翻转（`5d1dfaeb` 后 `project.project,581` 为 `edit`）是**正确的权限驱动结果**，
+   它只是让各字段 setter 从"被 `isFieldWritable` 短路"变为真正可达。
+2. `ProfessionalManyToManySelect` 的 `selectedIds` setter / `onChange`
+   → `adapter.setRelationIds` → `useRecordFormState.setRelationIds`，在挂载回写时
+   传入**与记录基线完全相同**的 id 集合；实测请求体 `tag_ids=[[6,0,[]]]` ⇒ 数值未变。
+3. 旧实现 `markFieldChanged` **无条件**加入 `dirtyFieldSet`，并按
+   `fieldRequiresServerOnchange`（该字段有 `field_x_show/hide` 生成的
+   `{sourceWidgetId:"field.tag_ids", dispatchMode:"server", intent:"ui.form_field_policy.set"}` 配置规则）
+   加入 `changedFieldSet` → 300ms 后发出 `api.onchange`。
+4. 观测车道 `dailyReadonlyRequest` 白名单不含 `api.onchange` → fail-closed 记 denied。
+
+结论：**这是消费端臆造语义**——契约只声明了权限与字段策略，从未声明"变更意图"；
+`markFieldChanged` 把"setter 被调用"当成"值已变化"。
+
+### 修复（P0 泛化渲染职责，无特判、无 ACL 覆盖、无断言放宽）
+- `frontend/apps/web/src/pages/contractForm/useRecordFormState.ts` 新增 `syncFieldDirty`：
+  仅当 `comparableFieldValue(当前草稿值) !== comparableFieldValue(契约下发的记录基线)` 才标脏/派发；
+  回退到基线会清脏、清 `changedFieldSet` 并在其空集时取消待发 onchange 定时器。
+- 值 setter（`setBooleanField`/`setMany2oneField`/`setRelationIds`/`setSelectionField`/
+  `setTextField`/`setTechnicalCompanionTextField`）改用 `syncFieldDirty`。
+- `commitMany2oneInline` 的**显式意图**路径仍用 `markFieldChanged`（该处确有待创建关联，语义未削弱）。
+- 比较只使用契约下发的记录基线数据，不推导权限/字段策略；无 `project.project`/`tag_ids` 特判。
+
+### 验证（负例先行）
+- 新增 `frontend/apps/web/scripts/contract_form_dirty_semantics_test.ts`
+  （目标 `verify.frontend.contract_form_dirty_semantics.unit`，沿用既有 esbuild+node 单测形态，未引入新框架）。
+- **负例证明**：同一测试对修复前源码**失败**
+  （`AssertionError: an identical relation value must not be dirty`，`1 !== 0`）；修复后 `PASS`。
+- 定向 L2 全过：`contract_form_collaboration_authority`(102) / `record_form_return`(18) /
+  `professional_relation_field` / `professional_relation_lifecycle`；`typecheck` 通过、`lint:src` 0 error。
+- 与本改动无关的**预存在**失败：`verify.frontend.contract_form_save_failure_recovery.unit`
+  在 HEAD 上同样报 `boundSurfaceKey` 上下文缺字段，未改动。
+
+### 责任层归属
+- 该修复属 **P0 前端渲染机制**（通用契约消费/渲染责任），非 P1 业务语义，非 P2 客户偏好。
+
+- 产品修复提交：`fix(frontend): 契约基线值比较消除幻影脏字段(P0 渲染层)`（前端源码 + 负例单测 + make 目标，一笔）。
