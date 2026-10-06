@@ -123,6 +123,26 @@ model names, field names, or Chinese titles.
       ]
     }
   ],
+  "surfaces": [
+    {
+      "surface": "activity",
+      "title": "协作记录",
+      "role": "activity",
+      "contentKind": "collaboration-panel",
+      "sourceIdentity": "collaboration-panel",
+      "capabilities": {"timeline": true, "remarks": true, "attachments": false},
+      "audit": {
+        "title": "历史审计",
+        "contentKind": "audit-timeline",
+        "sourceIdentity": "professional-audit-timeline",
+        "authorization": {
+          "capability": "governance.runtime.audit",
+          "state": "allow",
+          "requiredRoles": ["executive"]
+        }
+      }
+    }
+  ],
   "sourceAuthority": {
     "kind": "unified_page_contract_v2",
     "runtime_carrier": "ui.contract.v2.form_structure_contract",
@@ -136,6 +156,17 @@ model names, field names, or Chinese titles.
   }
 }
 ```
+
+`surfaces` declares the page regions that are not Odoo view elements.  It is an
+optional list; an absent list means the producing contract cannot declare
+regions, while an empty list means the page publishes none.  Each entry carries
+the region identity (`surface`, `title`, `role`, `contentKind`,
+`sourceIdentity`) and, for a role-gated sub-region, an `audit.authorization`
+resolved for the requesting identity.  The renderer maps the declaration to a
+navigation entry and renders the region only when the declaration exists and
+the authorization state is `allow`; runtime data is never the visibility
+authority.  Ownership and the full visibility rule live in
+`docs/architecture/form_structure_surface_contract_boundary_v1.md`.
 
 ## Standard Slots
 

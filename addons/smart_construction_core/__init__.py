@@ -31,6 +31,7 @@ from .core_extension import (  # noqa: F401
     smart_core_create_field_fallbacks,
     smart_core_create_default_skip_fields,
     smart_core_form_business_actions,
+    smart_core_form_structure_surface_policy,
     smart_core_hierarchy_governance,
     smart_core_identity_profile,
     smart_core_nav_scene_maps,
