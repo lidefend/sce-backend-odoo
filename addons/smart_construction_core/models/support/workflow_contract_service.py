@@ -484,7 +484,12 @@ class ScWorkflowContractService(models.AbstractModel):
             "state_actions": {
                 "draft": ["submit", "complete", "cancel"],
                 "confirmed": ["complete", "cancel"],
-                "signed": ["cancel"],
+                # `action_cancel` refuses anything past `confirmed`, and
+                # `test_p0_state_closure.test_general_contract_blocks_invalid_anchor_or_terminal_cancel`
+                # locks that refusal as a terminal-state violation. Declaring
+                # `cancel` here published a button whose only outcome was a
+                # UserError, so a signed contract declares no transition at all.
+                "signed": [],
             },
             "approval_actions": ["approve", "reject"],
             "method_by_action": {
