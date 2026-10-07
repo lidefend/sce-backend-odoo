@@ -313,6 +313,13 @@ register_contract_domain_override(
     "smart_construction_core.project_intake_form",
     _apply_project_intake_form_governance,
     priority=20,
+    # The intake create form resolves to a native view, so the generic
+    # governance pass is skipped for it. This override only declares the
+    # create-flow semantics (surface, create_flow_mode, primary_action_label,
+    # post_create_target) and never rewrites the native structure, so it must
+    # survive that skip — the same reason the context-workspace declaration
+    # above is native_authority_safe.
+    native_authority_safe=True,
 )
 
 register_contract_domain_override(

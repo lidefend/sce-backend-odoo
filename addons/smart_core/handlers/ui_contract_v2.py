@@ -78,7 +78,7 @@ REASON_STANDARD_SUBMIT_ACTION = "STANDARD_SUBMIT_ACTION"
 REASON_SCENE_CONTRACT_READY = "SCENE_CONTRACT_READY"
 REASON_ACTION_GROUP_ACCESS_DENIED = _authority.REASON_ACTION_GROUP_ACCESS_DENIED
 REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INVALID
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-governance-2026-09-02-user-search"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-governance-2026-10-07-form-structure-surfaces"
 
 
 # --- Declared form surfaces -------------------------------------------------
@@ -222,8 +222,6 @@ def authoritative_form_role_key(env: Any) -> str:
         # select a role-bound task surface. They safely fall back to workspace.
         _logger.debug("authenticated role surface unavailable for form selection", exc_info=True)
         return ""
-
-
 class UiContractV2Handler(BaseIntentHandler):
     INTENT_TYPE = "ui.contract.v2"
     DESCRIPTION = "统一页面契约 v2 入口；以 ui.contract 为事实来源，按终端类型裁剪 v2 契约"
@@ -2549,13 +2547,37 @@ class UiContractV2Handler(BaseIntentHandler):
             payload = None
         return project_form_structure_surfaces(payload, capabilities=caps)
 
+    def _surface_capability_model(self, model: str):
+        """Resolve the model whose real field names drive the surface probe.
+
+        Only "this environment has no such model" may answer nothing.  Reading
+        the field API stays outside the guard on purpose: the retired version
+        called ``fields_get`` with a keyword this Odoo build does not accept, the
+        swallowed ``TypeError`` became an empty capability set, and every
+        contract then declared ``surfaces: []`` — a wrong default that silently
+        removed a real product region from every form while the pure-unittest
+        boundary tests (which inject ``capabilities``) kept passing.
+        """
+        try:
+            model_obj = self.env[model]
+        except (KeyError, TypeError):
+            # KeyError: the registry has no such model.  TypeError: the caller
+            # supplied an env double that cannot resolve models at all.
+            return None
+        sudo = getattr(model_obj, "sudo", None)
+        if not callable(sudo):
+            # An env double without the ORM surface cannot answer a field
+            # registry question, so it must not fabricate capabilities either.
+            return None
+        return sudo()
+
     def _model_surface_capabilities(self, model: str) -> dict[str, bool]:
+        """Return the declared-surface capability of a model, from its real fields."""
         names: set[str] = set()
         if model:
-            try:
-                names = set((self.env[model].sudo().fields_get(load=False) or {}).keys())
-            except Exception:
-                names = set()
+            model_obj = self._surface_capability_model(model)
+            if model_obj is not None:
+                names = set(model_obj.fields_get() or {})
         return {
             "collaboration": bool({"message_ids", "activity_ids"} & names),
             "remarks": "message_ids" in names,

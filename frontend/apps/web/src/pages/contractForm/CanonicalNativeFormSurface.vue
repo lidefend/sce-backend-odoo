@@ -47,7 +47,6 @@
     >
       <NativeCollaborationPanel
         v-bind="collaborationPanelProps"
-        :readonly="renderMode === 'readonly'"
         :show-audit-timeline="auditVisible"
         :audit-declared="auditDeclared"
         v-on="collaborationPanelListeners || {}"

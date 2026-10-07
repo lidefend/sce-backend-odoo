@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-from odoo.addons.smart_core.utils.contract_governance import apply_contract_governance
+from odoo.tests.common import BaseCase, tagged
+
+from odoo.addons.smart_core.utils.contract_governance import (
+    apply_contract_governance,
+    apply_native_authority_domain_overrides,
+)
 from odoo.addons.smart_construction_core.services import contract_governance_overrides  # noqa: F401
 
 
@@ -39,7 +44,8 @@ def _payload(scene_key="projects.intake", render_profile="create", menu_xmlid=No
     }
 
 
-class ProjectIntakeContractGovernanceCase(unittest.TestCase):
+@tagged("post_install", "-at_install", "uc4_native_lowcode")
+class ProjectIntakeContractGovernanceCase(BaseCase):
     def test_project_intake_create_contract_receives_scene_governance(self):
         governed = apply_contract_governance(_payload(), "user")
 
@@ -78,6 +84,45 @@ class ProjectIntakeContractGovernanceCase(unittest.TestCase):
                 "route": "/s/project.management",
             },
         )
+
+    def test_native_authority_intake_create_still_receives_its_declaration(self):
+        """The intake form resolves to a native view, which skips generic governance.
+
+        The declaration only describes what saving means on the entry (it never
+        rewrites the native structure), so it must still reach the contract on
+        that path. The registration defect this locks was silent: the generic
+        `apply_contract_governance` path delivered the label, while the real
+        handler took the native-authority branch and delivered nothing, so the
+        entry fell back to the generic draft wording on the live page.
+        """
+        payload = _payload()
+        apply_native_authority_domain_overrides(payload, "user")
+
+        governance = payload.get("form_governance") or {}
+        self.assertEqual(governance.get("surface"), "project_intake")
+        self.assertEqual(governance.get("create_flow_mode"), "standard")
+        self.assertTrue(governance.get("primary_action_label"))
+        self.assertNotEqual(governance.get("primary_action_label"), "保存草稿")
+
+    def test_native_authority_intake_quick_create_still_receives_its_declaration(self):
+        payload = _payload(
+            scene_key="",
+            menu_xmlid="smart_construction_core.menu_sc_project_quick_create",
+        )
+        apply_native_authority_domain_overrides(payload, "user")
+
+        governance = payload.get("form_governance") or {}
+        self.assertEqual(governance.get("create_flow_mode"), "quick")
+        self.assertTrue(governance.get("primary_action_label"))
+
+    def test_native_authority_skip_does_not_leak_into_non_intake_forms(self):
+        """Only semantic declarations survive the skip; the predicate still guards it."""
+        payload = _payload(scene_key="projects.list")
+        apply_native_authority_domain_overrides(payload, "user")
+
+        governance = payload.get("form_governance") or {}
+        self.assertIsNone(governance.get("create_flow_mode"))
+        self.assertIsNone(governance.get("primary_action_label"))
 
     def test_non_intake_project_contract_is_not_overridden(self):
         governed = apply_contract_governance(_payload(scene_key="projects.list"), "user")

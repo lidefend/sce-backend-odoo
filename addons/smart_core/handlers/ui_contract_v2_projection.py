@@ -520,8 +520,31 @@ def apply_field_policies_to_v2_status(
         if widget_id:
             by_widget.setdefault(widget_id, []).append(row)
 
+    # A native form's delivered layout is the structural authority for field
+    # visibility.  A form-render-profile policy may tighten readonly/required
+    # semantics, but it must not deliver a field hidden in the profile where
+    # the delivered native status declares that field required: that pair is
+    # unsatisfiable and would hand structure back to a second owner.  Field and
+    # record permissions are carried by the permission surfaces
+    # (globalStatus/auth), never by these render-profile policies, so this
+    # guard cannot widen access or resurrect a natively hidden field: it only
+    # refuses to *newly* hide a required, natively visible occurrence.
+    native_required_widget_ids = (
+        {
+            str(row.get("widgetId") or "").strip()
+            for row in widget_status
+            if isinstance(row, dict) and row.get("required") is True
+        }
+        if native_form
+        else set()
+    )
+
     def apply_policy(row: dict[str, Any], policy: dict[str, Any]) -> None:
+        keep_visible = str(row.get("widgetId") or "").strip() in native_required_widget_ids
+
         def merge_flag(key: str, value: bool) -> None:
+            if key == "visible" and value is False and keep_visible:
+                return
             if not tighten_only:
                 row[key] = value
             elif key in {"readonly", "required"} and value:

@@ -691,10 +691,19 @@ class MenuService:
                 node.get("availability_status") or meta.get("availability_status")
                 or node.get("state") or meta.get("state")
             ).lower()
+            # ``is_clickable=False`` only means "disabled" for a node that owns a
+            # target (action entry or route container).  A pure directory group
+            # carries no target and the client contract resolves it to
+            # ``state="container"``; the delivery engine marks every such group
+            # ``is_clickable=False`` with ``reason_code=DIRECTORY_ONLY``, so
+            # reading the flag alone rejected legitimate directories.
+            owns_target = action_id > 0 or container_entry is not None
             explicitly_disabled = (
-                node.get("is_clickable") is False
-                or meta.get("is_clickable") is False
-                or availability in {"disabled", "blocked", "unavailable", "denied"}
+                availability in {"disabled", "blocked", "unavailable", "denied"}
+                or (
+                    owns_target
+                    and (node.get("is_clickable") is False or meta.get("is_clickable") is False)
+                )
             )
             disabled_reason = text(node.get("disabled_reason") or meta.get("disabled_reason"))
             children = [
@@ -702,7 +711,10 @@ class MenuService:
                 for index, child in enumerate(node.get("children") or [])
             ]
             if explicitly_disabled and not disabled_reason:
-                raise ValueError("disabled canonical navigation node requires a server reason")
+                raise ValueError(
+                    "disabled canonical navigation node requires a server reason: %s/%s (%s)"
+                    % (menu_id, action_id, key)
+                )
             if action_id <= 0 and not children and not container_entry:
                 raise ValueError("canonical navigation node has neither target nor children")
 

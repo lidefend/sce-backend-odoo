@@ -56,7 +56,6 @@
           <NativeCollaborationPanel
             v-if="collaborationPanelVisible"
             v-bind="collaborationPanelProps"
-            :readonly="renderModel.identity.mode === 'readonly'"
             :show-audit-timeline="false"
             v-on="collaborationPanelListeners"
           />

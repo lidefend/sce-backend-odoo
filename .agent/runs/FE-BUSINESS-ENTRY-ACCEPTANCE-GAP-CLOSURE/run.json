@@ -29,20 +29,6 @@
     "authority": "owner-authorized governed daily development server http://1.95.85.92:18081 resolved through config/frontend/acceptance_environments_v1.json profiles.daily (ENV=dev, database sc_demo, external target_mode, expected sha required). The owner explicitly authorized mutating the sc_demo semi-production dataset to exercise real product function. No new environment, database, port, volume, credential or acceptance-profile authority is created."
   },
   "checks": {
-    "business_entry_lifecycle_browser": {
-      "target": "verify.frontend.business_entry.lifecycle.browser",
-      "kind": "runtime",
-      "inputs": [
-        "scripts/verify/frontend_business_entry_lifecycle_browser.mjs",
-        "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
-        "scripts/verify/playwright_runtime.mjs",
-        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
-        "scripts/ops/daily_runtime_lifecycle_fixture_prepare.py",
-        "make/frontend.mk",
-        "config/frontend/acceptance_environments_v1.json",
-        "artifacts/backend/acceptance_record_identity.json"
-      ]
-    },
     "baseline_iteration_execution_policy": {
       "target": "verify.baseline.iteration.execution.policy",
       "kind": "unit",
@@ -50,78 +36,6 @@
       "inputs": [
         "make/ci.mk",
         "scripts/ops/agent_run_context.py"
-      ]
-    },
-    "daily_runtime_mail_sender_prepare": {
-      "target": "verify.daily.runtime.mail_sender.prepare",
-      "kind": "unit",
-      "layer": "L2",
-      "inputs": [
-        "scripts/ops/daily_runtime_mail_sender_prepare.py",
-        "scripts/ops/test_daily_runtime_mail_sender_prepare.py",
-        "make/codex.mk"
-      ]
-    },
-    "daily_runtime_lifecycle_fixture_prepare": {
-      "target": "verify.daily.runtime.lifecycle_fixture.prepare",
-      "kind": "unit",
-      "layer": "L2",
-      "inputs": [
-        "scripts/ops/daily_runtime_lifecycle_fixture_prepare.py",
-        "scripts/ops/test_daily_runtime_lifecycle_fixture_prepare.py",
-        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
-        "make/codex.mk"
-      ]
-    },
-    "role_surface_exposure_declaration_guard": {
-      "target": "verify.frontend.role_surface_exposure_declaration.guard",
-      "kind": "unit",
-      "layer": "L2",
-      "inputs": [
-        "scripts/verify/role_surface_exposure_declaration_guard.py",
-        "scripts/verify/test_role_surface_exposure_declaration_guard.py",
-        "config/frontend/role_surface_exposure_declarations_v1.json",
-        "docs/product/frontend_business_entry_acceptance_v1.csv",
-        "addons/smart_construction_core/core_extension_policy_maps.py",
-        "addons/smart_construction_core/security/sc_role_groups.xml",
-        "addons/smart_construction_core/security/sc_capability_groups.xml",
-        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
-        "make/frontend.mk",
-        "make/ci.mk"
-      ]
-    },
-    "release_navigation_policy_guard": {
-      "target": "verify.frontend.release_navigation_policy.guard",
-      "kind": "unit",
-      "layer": "L2",
-      "inputs": [
-        "scripts/verify/frontend_release_navigation_policy_guard.py",
-        "scripts/verify/test_frontend_release_navigation_policy_guard.py",
-        "config/frontend/authoritative_navigation.json",
-        "addons/smart_construction_core/core_extension_policy_maps.py",
-        "make/frontend.mk"
-      ]
-    },
-    "business_entry_payment_request_browser": {
-      "target": "verify.frontend.business_entry.payment_request.browser",
-      "kind": "runtime",
-      "inputs": [
-        "scripts/verify/business_entry_payment_request_one2many_browser.mjs",
-        "scripts/verify/playwright_runtime.mjs",
-        "artifacts/backend/acceptance_record_identity.json",
-        "make/frontend.mk",
-        "config/frontend/acceptance_environments_v1.json"
-      ]
-    },
-    "daily_runtime_record_identity_resolve": {
-      "target": "verify.daily.runtime.record_identity.resolve",
-      "kind": "unit",
-      "layer": "L2",
-      "inputs": [
-        "scripts/ops/daily_runtime_record_identity_resolve.py",
-        "scripts/ops/test_daily_runtime_record_identity_resolve.py",
-        "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
-        "make/codex.mk"
       ]
     },
     "business_entry_general_contract_browser": {
@@ -142,31 +56,23 @@
         "make/frontend.mk",
         "make/codex.mk",
         "config/frontend/acceptance_environments_v1.json",
-        "artifacts/backend/acceptance_record_identity.json"
+        "artifacts/backend/acceptance_record_identity.json",
+        "addons/smart_core/delivery/menu_service.py"
       ]
     },
-    "frontend_primitive_semantic_identity": {
-      "target": "verify.frontend.primitive_adapter.unit",
-      "kind": "static",
+    "business_entry_lifecycle_browser": {
+      "target": "verify.frontend.business_entry.lifecycle.browser",
+      "kind": "runtime",
       "inputs": [
-        "frontend/apps/web/src/components/design-system/primitiveAdapter.ts",
-        "frontend/apps/web/scripts/primitive_adapter_contract_test.ts",
-        "scripts/verify/frontend_primitive_adapter_guard.py",
-        "scripts/verify/test_frontend_primitive_adapter_guard.py",
-        "make/frontend.mk"
-      ]
-    },
-    "frontend_component_driver_takeover_inventory": {
-      "target": "verify.frontend.component_driver_takeover.unit",
-      "kind": "generated",
-      "inputs": [
-        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
-        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
-        "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
-        "frontend/apps/web/src/components/design-system/ScCard.vue",
-        "frontend/apps/web/src/components/design-system/ScButton.vue",
-        "frontend/apps/web/src/components/design-system/ScIconButton.vue",
-        "make/frontend.mk"
+        "scripts/verify/frontend_business_entry_lifecycle_browser.mjs",
+        "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
+        "scripts/verify/playwright_runtime.mjs",
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "scripts/ops/daily_runtime_lifecycle_fixture_prepare.py",
+        "make/frontend.mk",
+        "config/frontend/acceptance_environments_v1.json",
+        "artifacts/backend/acceptance_record_identity.json",
+        "addons/smart_core/delivery/menu_service.py"
       ]
     },
     "business_entry_matrix_browser": {
@@ -180,20 +86,8 @@
         "scripts/verify/released_navigation_target.mjs",
         "docs/product/frontend_business_entry_acceptance_v1.csv",
         "make/frontend.mk",
-        "config/frontend/acceptance_environments_v1.json"
-      ]
-    },
-    "evidence_scope_engine": {
-      "target": "verify.frontend.business_entry.evidence_scope.unit",
-      "kind": "static",
-      "inputs": [
-        "make/frontend.mk",
-        "scripts/ops/evidence_scope.py",
-        "scripts/ops/test_evidence_scope.py",
-        "scripts/verify/business_entry_matrix_incremental.py",
-        "scripts/verify/business_entry_matrix_scope_seed.py",
-        "scripts/verify/frontend_dev_incremental.py",
-        "scripts/verify/test_business_entry_matrix_incremental.py"
+        "config/frontend/acceptance_environments_v1.json",
+        "addons/smart_core/delivery/menu_service.py"
       ]
     },
     "business_entry_matrix_incremental": {
@@ -212,7 +106,19 @@
         "scripts/verify/business_entry_negative_closures.mjs",
         "scripts/verify/playwright_runtime.mjs",
         "scripts/verify/released_navigation_target.mjs",
-        "scripts/verify/test_business_entry_matrix_incremental.py"
+        "scripts/verify/test_business_entry_matrix_incremental.py",
+        "addons/smart_core/delivery/menu_service.py"
+      ]
+    },
+    "business_entry_payment_request_browser": {
+      "target": "verify.frontend.business_entry.payment_request.browser",
+      "kind": "runtime",
+      "inputs": [
+        "scripts/verify/business_entry_payment_request_one2many_browser.mjs",
+        "scripts/verify/playwright_runtime.mjs",
+        "artifacts/backend/acceptance_record_identity.json",
+        "make/frontend.mk",
+        "config/frontend/acceptance_environments_v1.json"
       ]
     },
     "contract_v2_final_modifier_entitlement": {
@@ -230,6 +136,51 @@
         "make/ci.mk"
       ]
     },
+    "daily_runtime_lifecycle_fixture_prepare": {
+      "target": "verify.daily.runtime.lifecycle_fixture.prepare",
+      "kind": "unit",
+      "layer": "L2",
+      "inputs": [
+        "scripts/ops/daily_runtime_lifecycle_fixture_prepare.py",
+        "scripts/ops/test_daily_runtime_lifecycle_fixture_prepare.py",
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "make/codex.mk"
+      ]
+    },
+    "daily_runtime_mail_sender_prepare": {
+      "target": "verify.daily.runtime.mail_sender.prepare",
+      "kind": "unit",
+      "layer": "L2",
+      "inputs": [
+        "scripts/ops/daily_runtime_mail_sender_prepare.py",
+        "scripts/ops/test_daily_runtime_mail_sender_prepare.py",
+        "make/codex.mk"
+      ]
+    },
+    "daily_runtime_record_identity_resolve": {
+      "target": "verify.daily.runtime.record_identity.resolve",
+      "kind": "unit",
+      "layer": "L2",
+      "inputs": [
+        "scripts/ops/daily_runtime_record_identity_resolve.py",
+        "scripts/ops/test_daily_runtime_record_identity_resolve.py",
+        "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
+        "make/codex.mk"
+      ]
+    },
+    "evidence_scope_engine": {
+      "target": "verify.frontend.business_entry.evidence_scope.unit",
+      "kind": "static",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/ops/evidence_scope.py",
+        "scripts/ops/test_evidence_scope.py",
+        "scripts/verify/business_entry_matrix_incremental.py",
+        "scripts/verify/business_entry_matrix_scope_seed.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_business_entry_matrix_incremental.py"
+      ]
+    },
     "frontend_canonical_form_presenter_state_derived": {
       "target": "verify.frontend.canonical_form_presenter.unit",
       "kind": "unit",
@@ -239,6 +190,68 @@
         "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
         "make/frontend.mk"
       ]
+    },
+    "frontend_collaboration_primitives_browser": {
+      "target": "verify.frontend.collaboration_primitives.browser",
+      "kind": "runtime",
+      "layer": "L2",
+      "inputs": [
+        "scripts/verify/frontend_collaboration_primitives_browser.mjs",
+        "scripts/verify/playwright_runtime.mjs",
+        "frontend/apps/web/src/pages/contractForm/CanonicalNativeFormSurface.vue",
+        "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue",
+        "addons/smart_core/delivery/menu_service.py"
+      ]
+    },
+    "frontend_component_driver_takeover_inventory": {
+      "target": "verify.frontend.component_driver_takeover.unit",
+      "kind": "generated",
+      "inputs": [
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+        "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
+        "frontend/apps/web/src/components/design-system/ScCard.vue",
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/design-system/ScIconButton.vue",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_primitive_semantic_identity": {
+      "target": "verify.frontend.primitive_adapter.unit",
+      "kind": "static",
+      "inputs": [
+        "frontend/apps/web/src/components/design-system/primitiveAdapter.ts",
+        "frontend/apps/web/scripts/primitive_adapter_contract_test.ts",
+        "scripts/verify/frontend_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_primitive_adapter_guard.py",
+        "make/frontend.mk"
+      ]
+    },
+    "local_dev_form_structure_surface_capability_orm": {
+      "target": "verify.local.dev.form_structure_surface_capability.orm",
+      "kind": "unit",
+      "layer": "L2",
+      "inputs": [
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/tests/__init__.py",
+        "addons/smart_core/tests/test_form_structure_surface_capability_orm.py",
+        "make/dev.mk"
+      ]
+    },
+    "local_dev_project_create_contract_action_scope": {
+      "target": "verify.local.dev.project_create_contract_action_scope",
+      "kind": "runtime",
+      "layer": "L4",
+      "inputs": [
+        "scripts/verify/local_dev_project_create_contract_action_scope.sh",
+        "scripts/verify/local_dev_project_create_contract_action_scope.py",
+        "scripts/verify/local_dev_project_create_contract_driver_probe.mjs",
+        "scripts/verify/local_dev_collaboration_fixture_cleanup.py",
+        "scripts/verify/playwright_runtime.mjs",
+        "make/dev.mk",
+        "addons/smart_core/delivery/menu_service.py"
+      ],
+      "test_count_definition": "declared-scope journeys (follower/attachment/message/activity-cancel) + browser activity journeys + declared projections (occurrence integrity, relation and follower declarations, workspace structure, intake semantics) + browser surfaces"
     },
     "product_entry_publication_authority": {
       "target": "verify.product.entry_publication.unit",
@@ -250,6 +263,71 @@
         "addons/smart_construction_core/models/support/context_workspace_entry_authority.py",
         "addons/smart_core/tests/test_entry_publication_authority.py",
         "addons/smart_core/tests/test_route_authority_single_consumer.py",
+        "make/runtime_ops.mk"
+      ]
+    },
+    "release_navigation_policy_guard": {
+      "target": "verify.frontend.release_navigation_policy.guard",
+      "kind": "unit",
+      "layer": "L2",
+      "inputs": [
+        "scripts/verify/frontend_release_navigation_policy_guard.py",
+        "scripts/verify/test_frontend_release_navigation_policy_guard.py",
+        "config/frontend/authoritative_navigation.json",
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "make/frontend.mk"
+      ]
+    },
+    "role_surface_exposure_declaration_guard": {
+      "target": "verify.frontend.role_surface_exposure_declaration.guard",
+      "kind": "unit",
+      "layer": "L2",
+      "inputs": [
+        "scripts/verify/role_surface_exposure_declaration_guard.py",
+        "scripts/verify/test_role_surface_exposure_declaration_guard.py",
+        "config/frontend/role_surface_exposure_declarations_v1.json",
+        "docs/product/frontend_business_entry_acceptance_v1.csv",
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "addons/smart_construction_core/security/sc_role_groups.xml",
+        "addons/smart_construction_core/security/sc_capability_groups.xml",
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "make/frontend.mk",
+        "make/ci.mk"
+      ]
+    },
+    "local_dev_canonical_navigation_projection_orm": {
+      "target": "verify.local.dev.canonical_navigation_projection.orm",
+      "kind": "unit",
+      "layer": "L2",
+      "inputs": [
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_core/tests/test_canonical_navigation_projection.py",
+        "addons/smart_core/tests/__init__.py",
+        "make/dev.mk"
+      ]
+    },
+    "business_config_field_policy_declaration_parity": {
+      "target": "verify.business_config.field_policy_declaration_parity",
+      "kind": "runtime",
+      "layer": "L2",
+      "inputs": [
+        "scripts/verify/business_config_field_policy_declaration_parity.py",
+        "addons/smart_construction_core/data/p1_daily_business_form_orchestration_contract_data.xml",
+        "make/runtime_ops.mk",
+        "docs/product/field_policy_declaration_parity_v1.md"
+      ]
+    },
+    "system_user_experience_business_form_user_perspective": {
+      "target": "verify.system_user_experience.business_form_user_perspective",
+      "kind": "runtime",
+      "layer": "L4",
+      "inputs": [
+        "frontend/apps/web/scripts/business_form_user_perspective_acceptance.mjs",
+        "frontend/apps/web/scripts/business_form_user_perspective_summary_guard.mjs",
+        "docs/product/frontend_business_entry_acceptance_v1.csv",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "addons/smart_construction_core/data/current_account_workspace_contract.xml",
+        "addons/smart_construction_core/data/company_project_refund_workspace_contract.xml",
         "make/runtime_ops.mk"
       ]
     }
@@ -279,7 +357,19 @@
     "VERIFIED ON THE DAILY RUNTIME 2026-10-07 (served 7d0ed7340dbfe5845cff783ff86f7313771118cd / sc_demo / ENV=dev, matching the branch HEAD; make daily.runtime.candidate.bundle_sync then make daily.runtime.source_revision.align recreated the odoo container): the decisive probe .runtime/diag/ws_authority_consistency.mjs shows the client published surface and route.authority.validate now agree exactly. wutao PUBLISHED_COUNT=97 and both workbench entries (1192/1193) answer ok=true; the finance fixture PUBLISHED_COUNT=18 with the published actions 770/764/1192 answering ok=true while the unpublished 775/774/776/777/821/991/994/782 answer 403 PRODUCT_ENTRY_NOT_RELEASED. In the workspace the 6 declared 办理事项 buttons stay PRE_DECLARED_VISIBLE=6/6 ENABLED=0 until a record is saved (ACTION_REQUIRES_SAVED_RECORD, as declared), and after save the click target returns the governed business message instead of a NAVIGATION_DENIED refusal page.",
     "OPEN (pre-existing, NOT introduced this round and NOT fixed this round): addons/smart_construction_core test tag uc4_native_lowcode/smart_construction_core:TestContextWorkspaceNativeLowcode runs 35 with 1 failure - test_the_native_authority_contract_carries_the_declared_governance expects '记录办理上下文' but gets '保存草稿'. It reproduces on the untouched HEAD baseline, so it is not caused by the route-authority convergence. Owner layer: label governance in addons/smart_construction_core/services/contract_governance_overrides.py (_CONTEXT_WORKSPACE_PRIMARY_ACTION_LABELS). Do not weaken the assertion; awaiting the owner's call on whether to fix it inside this run or register it as a separate pre-existing defect.",
     "MERGED 2026-10-07: the route-authority convergence (b333c2d8, 7d0ed734) and the workspace-button presentation fix were integrated to main through GitHub PR #605 (squash 2ec9d5830993f83a8c37883c429de15330078d90, tree identical to head e589676c23e4ef54d0dc1cfc9bce1749e5c7eb3a). The four required checks frontend_release_gate / merge_policy_gate / public_guard / professional_quality_gate were all success on that exact head; the merge used make pr.merge.prep then make pr.merge with the reused exact-head ci.local.quick receipt. A merge does not deploy, so the daily runtime still serves 7d0ed734 until a later governed delivery.",
-    "RECORDED 2026-10-07: the repeated local-lane mechanics mistakes are now durable in .agent/decisions/codex-local-lane-mechanics.yaml (OPS-DECISION-003) instead of being rediscovered: launch ci.local.quick in a foreground agent session polled by write_stdin (a background nohup launch is reaped when the command returns and the log stops mid-suite), never use 'pgrep -f ci.local.quick' as a liveness probe (the checking command line self-matches and reports a false RUNNING) and instead read the receipt under .git/codex/evidence/ci.local.quick/<head>.json, reuse the exact-head receipt via make pr.merge REUSE with no carry-forward after any later tracked commit, run make ci.delivery.freeze.prepare before make pr.push because the complexity report and split plan queue go stale on ordinary source-size changes, and merge origin/main into the branch after a squash merge so the PR base is normalized (expected record-file conflicts resolve to the branch side and must be content-neutral)."
+    "RECORDED 2026-10-07: the repeated local-lane mechanics mistakes are now durable in .agent/decisions/codex-local-lane-mechanics.yaml (OPS-DECISION-003) instead of being rediscovered: launch ci.local.quick in a foreground agent session polled by write_stdin (a background nohup launch is reaped when the command returns and the log stops mid-suite), never use 'pgrep -f ci.local.quick' as a liveness probe (the checking command line self-matches and reports a false RUNNING) and instead read the receipt under .git/codex/evidence/ci.local.quick/<head>.json, reuse the exact-head receipt via make pr.merge REUSE with no carry-forward after any later tracked commit, run make ci.delivery.freeze.prepare before make pr.push because the complexity report and split plan queue go stale on ordinary source-size changes, and merge origin/main into the branch after a squash merge so the PR base is normalized (expected record-file conflicts resolve to the branch side and must be content-neutral).",
+    "RESOLVED 2026-10-08 (P0 platform kernel, addons/smart_core/handlers/ui_contract_v2.py): _model_surface_capabilities called fields_get with a keyword this Odoo build does not accept; the TypeError was swallowed into an empty name set, so every published contract carried formStructureContract.surfaces = [] and the client read 'no declared region', which removed the collaboration region from every form while the pure-unit boundary tests kept passing because they injected capabilities directly. Fixed at the owning layer plus a real-ORM lock addons/smart_core/tests/test_form_structure_surface_capability_orm.py (4 tests, tag form_structure_surface_capability_orm). No ACL, field permission, hidden rule or assertion was relaxed and no model special-case was added.",
+    "RESOLVED 2026-10-08 (P0 frontend renderer mechanism, frontend/apps/web/src/pages/contractForm/CanonicalNativeFormSurface.vue and ContractFormDriverHost.vue): the collaboration panel render binding overrode the contract-resolved panel readonly declaration, so a declared-live panel could be downgraded to readonly on the host side. The override binding was removed and locked by verify.frontend.collaboration_primitives.browser (declared-live controls=2/upload=1, declared-readonly controls=0/upload=0, declarationConsumed=true). The declaration, not the form render mode, owns the panel mode.",
+    "ADJUDICATED 2026-10-08 (retired probe assertion, scripts/verify/local_dev_project_create_contract_driver_probe.mjs): the 项目台账 notebook assertion expected the retired default project form (11 tabs). The declared unified overview view_project_overview_form (view 1761) declares notebook_tabs=[], so the assertion now consumes declaration length (declared empty -> rendered 0) instead of a hardcoded tab count. No assertion was weakened; the DOM section structure is still checked field-by-field against the declaration.",
+    "RESOLVED 2026-10-08 (stale browser expectation + mount race, follower journey): the follower journey used an ORM is_following snapshot as the browser expectation, but follow state is per current user and a captured snapshot can move before the browser clicks; separately data-state=ready is true from first mount, so an immediate count() raced the chatter.followers.list response. The journey now projects the declared follower capability from the contract (bound to the surface the browser actually loads: action 519 for project.project, action 809 for payment.request), waits for the authoritative live list response and then requires exactly one declared button whose state mirrors it, with exactly the declared update intents in order on the declared record. The ORM round-trip stays as backend evidence only. Hardened during this round: only a successful list envelope (ok=true and count>=0) may act as live authority, so a failed/truncated response can no longer be read as 'not following'; both models pass.",
+    "RESOLVED 2026-10-08 (retired probe assertion, payment relation area): the payment assertion counted [data-floorplan-region=\"relation\"] interactions, a region that the payment surface no longer renders (data-detail-composition-adopted=false, only data-floorplan-region=audit present), so the selector was structurally guaranteed to be 0. Root cause was a stale selector, not a product gap. The assertion is now declaration-driven: the scope probe projects the declared relation collection for outflow_line_ids from the contract (unique field node -> component_key sc.payment.settlement_detail_collection, relation payment.request.line, fieldInfo.subview.policies {can_create:false, inline_edit:true, can_unlink:true}, column_count 8) with fail-closed uniqueness, completeness and mirrored-widget-policy drift checks; the browser requires the declared relation field to render the declared component, exactly one declared collection with mirrored can_create/can_inline_edit/column_count and the declared control state, zero retired floorplan relation regions, and no readonly empty placeholder for an editable declaration. No auto-create capability was invented: can_create=false is the declaration itself, so no ACL/field permission was touched and no payment-model special-case was added.",
+    "RESOLVED 2026-10-08 (P4 acceptance tool, fixture identity): the payment carrier is resolved through the governed xmlid smart_construction_demo.payment_request_floorplan_demo_record and fails closed unless state=='draft', instead of a hardcoded record id; the record identity is bound to the managed reset entry make local.dev.reset_payment_request_fixture.",
+    "RESOLVED 2026-10-08 (P0 platform kernel, addons/smart_core/delivery/menu_service.py): MenuService.project_canonical_navigation read is_clickable=False as 'explicitly disabled' on every node, but the delivery engine marks each published directory/group node exactly that way (target_type=directory, delivery_mode=none, availability_status=ok, reason_code=DIRECTORY_ONLY) and the client contract resolves a node without an action target and without a container authority to state='container'. Publishing the product policy (sc_product_policy rows rewritten 2026-10-07 17:02:44) therefore put two catalog directory groups into the published nav (group:catalog.成本中心.项目预算 menu 666, group:catalog.报表中心.成本报表 menu 592), and every system.init afterwards failed closed with ValueError('disabled canonical navigation node requires a server reason') -> HTTP 500 for every user of that policy. Evidence: the first occurrence in the whole runtime log is 2026-10-07 17:08:03 and the last successful system.init before it is 17:00:43; an authenticated read-only repro shows the guard firing and names the two directory nodes; 322 of 324 nav nodes carry no is_clickable/availability key at all. NOT introduced by this branch's uncommitted changes: no changed file is on the navigation path, menu_service.py is unmodified since 2026-10-02, and the trigger is policy data plus a pre-existing predicate. Fix: a disabled_reason is now required only when the node owns a target (action_id > 0 or a route container authority) or when its availability_status itself declares disabled/blocked/unavailable/denied, so a pure directory keeps state='container'; the refusal message now names the offending menu/action/key. No ACL, field permission, hidden rule or assertion was relaxed, no directory was newly hidden and no model special-case was added. Locked by addons/smart_core/tests/test_canonical_navigation_projection.py (4 tests, tag canonical_navigation_projection, target verify.local.dev.canonical_navigation_projection.orm); live readback after make local.dev.restart: system.init HTTP 200, 324 nav nodes, states container=61/enabled=263, zero nodes whose state conflicts with the client identity rule (evidence .runtime/agent-runs/FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE/nav_projection_system_init_readback.json).",
+    "RE-RUN 2026-10-08 for the nav-projection change (addons/smart_core/delivery/menu_service.py is now a declared input of every check whose evidence reads the published navigation tree): make verify.local.dev.project_create_contract_action_scope now passes end to end - intentFailures=[] and browserErrors=[], declared follower journeys on project.project (count 4) and payment.request (count 2) with the declared update intents, the declared relation collection (sc.payment.settlement_detail_collection, column_count 8, can_create=false as declared) and 0 retired floorplan relation regions; fixture cleanup remaining=0 (23 declared-scope assertion groups, receipt local_dev_project_create_contract_action_scope.json). verify.frontend.collaboration_primitives.browser re-run: declarationConsumed=true, declared-live controls=2/upload=1, declared-readonly controls=0/upload=0, errors=[] (8). verify.frontend.release_navigation_policy.guard (5) and verify.frontend.role_surface_exposure_declaration.guard (10) re-run green. verify.local.dev.form_structure_surface_capability.orm re-run green (4).",
+    "RESOLVED 2026-10-08: the due_date disappearance in 借款办理 was a P1 declaration defect in the model-wide `*_p1_form_business_facts_v1` bodies, not a projection or permission gap. An unconditional readonly:True on an entry-owned editorial field disagrees with every action-scoped entry contract for the same model; because view_orchestrator._apply_field_display_policy only tightens while statusContract.widgetStatus keeps the native answer, the renderer's read-only fact rule could drop the empty fact. 14 such contradictions were inventoried across 6 model-wide bodies (sc.financing.loan, payment.request, sc.fund.account.operation, sc.labor.request, sc.equipment.request, sc.equipment.settlement); only the unconditional readonly was removed, sequence kept, the model-wide bodies stay active as the carrier of the *_display mirror facts. New fail-closed gate 'make verify.business_config.field_policy_declaration_parity' (read-only odoo shell) now reports contradiction_count 14 -> 0; criteria and boundaries in docs/product/field_policy_declaration_parity_v1.md. No ACL, field permission, hidden rule or acceptance assertion was relaxed and no model special-case was added.",
+    "ADJUDICATED 2026-10-08: the 8 'runtime navigation did not deliver the entry' failures were a declaration-scope drift in the acceptance probe, not a delivery gap. Four governed declarations agree on the same 89 delivered entries (locked baseline scripts/verify/baselines/formal_business_product_menu_policy_v1.json, the published runtime policy sc.product.policy('construction.standard'), the daily acceptance navigation_policy min_actions=max_actions=89, and docs/product/frontend_business_entry_acceptance_v1.csv) and none of them contains these standalone handling menus. The probe previously unioned config/frontend/authoritative_navigation.json into its declaration set (declaredEntryCount 140); that file is the per-role menu entitlement surface consumed by verify.frontend.release_navigation_policy.guard, not the delivered-entry declaration. It now consumes only the governed CSV (declaredEntryCount 89). Of the 8: 2 were re-pointed to declared delivered carriers (settlement.income -> 收入结算, finance.receipt.income.progress -> 收款登记), 1 was re-pointed to the declared create entry on the same model (finance.payment.apply.receive -> 付款申请), and 5 are asserted through their declared unified handling carrier with a new fail-closed consolidation-drift check (the retired standalone identity must be absent from the declaration and from the released navigation). Result: 20/20 pass, 0 failures, 0 console errors. No assertion was weakened, no model special-case was added and no second global test framework was introduced.",
+    "ADJUDICATED 2026-10-08 (declaration-consumption rule, NOT a product/projection defect; NOT an assertion relaxation): the settlement.income evidence is closed. Facts: (a) the sc.settlement.order native form declares the six groups 执行与匹配 / 发票信息 / 付款申请 / 扣款调整 / 采购订单 / 系统办理信息 with invisible=\"not id\" (addons/smart_construction_core/views/core/settlement_views.xml), i.e. 'show only once the record is saved' — the four fields requested_fund_amount / invoice_ref / invoice_date / adjustment_ids live only inside those groups; (b) the create-profile contract delivers dataContract.mainData.id = \"NewId_0x<hex>\", Odoo ORM's unsaved-record virtual id (models.NewId), an established, frozen convention of this repository already recorded in docs/contract/snapshots/api_onchange_intent_admin.json; (c) the delivered page renders from its live record state (formData.id false on a new record) and therefore correctly hides those groups. The drift was in the probe's ground-truth evaluator, which read the truthy NewId_* string as a persisted id and so inverted 'not id' into visible. Fixed on the consumption side only: the evaluator now resolves NewId_* as an unsaved record, and field visibility aggregates across occurrences (the delivered status contract is per field, not per occurrence). No declaration body, page, ACL, field permission or hidden rule was touched. Locked by three fail-closed guard rules in business_form_user_perspective_summary_guard.mjs: createRecordIdKind must not be 'persisted'; declaredVisibleNotRendered must be empty (promoted from evidence to a hard gate now that the ground truth is correct); every create case must declare a non-empty visible-editable field set so the gate cannot pass vacuously. Re-run on the local governed runtime: 20/20 pass, declaredEntryCount 89, failures 0, declaredVisibleNotRendered [], createIdentityKinds [absent, unsaved_sentinel], consoleErrors 0; declaredRequired for settlement.income unchanged (project_id/contract_id/partner_id/line_ids), proving the required-field gate was not weakened. Rule and the projection-defect-vs-consumption-error discrimination written down in docs/product/field_policy_declaration_parity_v1.md section 7.",
+    "RESOLVED 2026-10-08 (P0 platform kernel, addons/smart_core/handlers/ui_contract_v2_projection.py): apply_field_policies_to_v2_status let a form render-profile policy newly hide a field that the delivered native status declares required and visible. That pair (visible=false with required=true) is unsatisfiable and hands structural ownership back to a second owner, and it is the first place on this path that can produce visible:false / auth:'none'. Fixed generically: when the native delivered status says an occurrence is required, the render-profile policy may still tighten readonly/required but cannot set visible=false; a natively hidden occurrence is still never resurrected (no 'critical' override, no ACL/field-permission widening, no payment-model special case). Locked by addons/smart_core/tests/test_ui_contract_v2_boundaries.py::test_native_form_policy_never_hides_a_required_occurrence, which also proves the non-required occurrence is still hidden by the policy and the natively hidden occurrence stays auth='none'. This is complementary to (not a substitute for) the P1 declaration-parity fix in blocker 33."
   ],
-  "next_exact_step": "Product-acceptance goal on the governed daily runtime (http://1.95.85.92:18081, sc_demo, ENV=dev). (1) DONE and MERGED 2026-10-07: the workspace-button presentation fix and the route-authority convergence are re-verified on the daily runtime (which serves 7d0ed7340dbfe5845cff783ff86f7313771118cd) and integrated to main through PR #605 (squash 2ec9d583). The daily runtime still serves 7d0ed734 because a merge does not deploy. (2) Re-point verify.system_user_experience.business_form_user_perspective at the declared delivered entries so it consumes the contract instead of the retired standalone 借款办理/结算办理/票税办理 menus (root cause and evidence in blockers), and fold this workspace-button declaration check into it as the declared-entry assertion; do not weaken its assertions, do not add a model special-case and do not add a second global test framework. (3) Close the remaining written gaps of the two partial rows in docs/product/frontend_business_entry_acceptance_v1.csv (日常合同, 付款申请) with real runtime evidence. (4) Produce one consolidated user-level acceptance verdict on the 89-entry surface. Batch these so the candidate needs one exact-head ci.local.quick at the end; do NOT mark the branch target complete."
+  "next_exact_step": "Product-acceptance goal on the governed daily runtime (http://1.95.85.92:18081, sc_demo, ENV=dev). (1) DONE and MERGED 2026-10-07: workspace-button presentation fix and route-authority convergence (PR #605, squash 2ec9d583); a merge does not deploy, so the daily runtime still serves 7d0ed734. (2) DONE 2026-10-08: verify.system_user_experience.business_form_user_perspective consumes only the governed delivered-entry declaration (declaredEntryCount 89). (3) DONE 2026-10-08: the due_date class was fixed at the owning P1 layer (14 contradictions -> 0) with gate verify.business_config.field_policy_declaration_parity. (4) DONE 2026-10-08: the settlement.income declared-visible-but-not-rendered evidence is adjudicated as a declaration-consumption rule (NewId_* unsaved-record sentinel), not a projection defect; the evaluator was corrected and the consistency check is now a hard gate. Local re-run: 20/20, declaredVisibleNotRendered [], createIdentityKinds [absent, unsaved_sentinel]. (5) OPEN: re-evidence the 付款申请 row (docs/product/frontend_business_entry_acceptance_v1.csv row menu_sc_user_payment_apply, currently passed on daily 6c8e07f7) against the governed daily runtime once this candidate is deployed there; 日常合同 is already re-evidenced on daily f7b7c2ee. (6) OPEN: produce one consolidated user-level acceptance verdict over the 89-entry surface and re-run the affected L4 lanes on the governed daily runtime once the candidate is deployed; the 20/20 above is local sc_dev_demo, not daily sc_demo. Batch this so the candidate needs one exact-head ci.local.quick at the end; do NOT mark the branch target complete."
 }

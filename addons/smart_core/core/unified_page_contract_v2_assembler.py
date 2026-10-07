@@ -3208,7 +3208,12 @@ def _append_standard_form_save_action(
         "actionKey": action_id,
         "sourceActionKey": action_id,
         "backendIdentity": backend_identity,
-        "label": "保存草稿",
+        # The entry declares what saving means when it publishes form_governance
+        # (e.g. a transient dispatch entry records a handling context, a project
+        # intake creates a project). The assembler consumes that declaration
+        # instead of inventing business wording; only entries without a declared
+        # label keep the generic draft wording.
+        "label": governed_primary_label or "保存草稿",
         "intent": "api.data",
         "target": {"model": _text(source.get("model") or ui.get("model")), "operation": required_right},
         "actionSemantics": {

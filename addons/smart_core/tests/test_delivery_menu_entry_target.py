@@ -161,20 +161,32 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         )
 
     def test_canonical_navigation_projection_rejects_disabled_without_reason(self):
+        # Only a node that owns a target can be declared "disabled".  A pure
+        # directory group carries ``is_clickable=False`` as its container
+        # identity and must project ``state="container"``; a target-owning
+        # entry marked non-clickable still requires a server reason.
         nav = [{
             "key": "root",
             "menu_id": 1,
             "label": "业务根",
+            "meta": {"action_id": 10},
             "is_clickable": False,
             "children": [{"key": "child", "menu_id": 2, "label": "子项", "meta": {"action_id": 30}, "children": []}],
         }]
         with self.assertRaisesRegex(ValueError, "requires a server reason"):
             menu_service.MenuService.project_canonical_navigation(nav, {
-                "primary_actions": [{
-                    "route_kind": "PRIMARY_NAV", "menu_id": 2, "menu_xmlid": "test.child",
-                    "action_id": 30, "action_xmlid": "test.action", "route": "/a/30?menu_id=2",
-                    "source": "route_authority",
-                }],
+                "primary_actions": [
+                    {
+                        "route_kind": "PRIMARY_NAV", "menu_id": 1, "menu_xmlid": "test.root",
+                        "action_id": 10, "action_xmlid": "test.action_root", "route": "/a/10?menu_id=1",
+                        "source": "route_authority",
+                    },
+                    {
+                        "route_kind": "PRIMARY_NAV", "menu_id": 2, "menu_xmlid": "test.child",
+                        "action_id": 30, "action_xmlid": "test.action", "route": "/a/30?menu_id=2",
+                        "source": "route_authority",
+                    },
+                ],
             })
 
     def test_canonical_navigation_projection_rejects_duplicate_menu_identity(self):

@@ -1147,31 +1147,57 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
             row.get("name") for row in DOMAIN_OVERRIDE_REGISTRY
             if row.get("native_authority_safe")
         })
-        self.assertEqual(safe_names, ["smart_construction_core.context_workspace_form"])
+        # Two entries own semantic-only declarations: the transient dispatch
+        # workspaces and the project intake create form. Both resolve to native
+        # views, so both must survive the skip, and both are checked below to
+        # add nothing but their own declaration.
+        self.assertEqual(safe_names, [
+            "smart_construction_core.context_workspace_form",
+            "smart_construction_core.project_intake_form",
+        ])
         structural_keys = (
             "sections", "fields", "columns", "field_slots", "layout",
             "header_buttons", "actions", "button_box", "view_orchestration",
             "containerTree", "nodes",
         )
-        for action_key, _view, model_name, _title, _ctx, _note in self.ENTRIES:
-            data = {
-                "head": {"model": model_name, "view_type": "form", "render_profile": "create"},
-                "model": model_name, "render_profile": "create",
+        cases = [
+            (
+                action_key,
+                {
+                    "head": {"model": model_name, "view_type": "form", "render_profile": "create"},
+                    "model": model_name, "render_profile": "create",
+                    "views": {"form": {"layout": [{"type": "sheet", "children": []}]}},
+                    "fields": {"project_id": {"type": "many2one", "required": True}},
+                },
+            )
+            for action_key, _view, model_name, _title, _ctx, _note in self.ENTRIES
+        ]
+        cases.append((
+            "projects.intake",
+            {
+                "head": {
+                    "model": "project.project", "view_type": "form",
+                    "render_profile": "create", "scene_key": "projects.intake",
+                },
+                "model": "project.project", "render_profile": "create",
+                "scene_key": "projects.intake",
                 "views": {"form": {"layout": [{"type": "sheet", "children": []}]}},
-                "fields": {"project_id": {"type": "many2one", "required": True}},
-            }
+                "fields": {"name": {"type": "char", "required": True}},
+            },
+        ))
+        for case_key, data in cases:
             before = copy.deepcopy(data)
             failures = apply_native_authority_domain_overrides(data, "user")
-            self.assertEqual(failures, [], action_key)
+            self.assertEqual(failures, [], case_key)
             self.assertEqual(
                 sorted(set(data) - set(before)), ["form_governance"],
-                (action_key, "the safe pass may only add its declaration"),
+                (case_key, "the safe pass may only add its declaration"),
             )
             for key in structural_keys:
-                self.assertEqual(data.get(key), before.get(key), (action_key, key))
+                self.assertEqual(data.get(key), before.get(key), (case_key, key))
             # The declaration may not weaken a constraint the native form owns.
-            self.assertEqual(data["fields"], before["fields"], action_key)
-            self.assertEqual(data["views"], before["views"], action_key)
+            self.assertEqual(data["fields"], before["fields"], case_key)
+            self.assertEqual(data["views"], before["views"], case_key)
 
     def test_a_carrier_fails_closed_when_the_authority_offers_several_routes(self):
         """Several candidate routes must not be resolved by picking one.

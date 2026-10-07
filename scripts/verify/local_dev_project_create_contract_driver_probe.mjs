@@ -17,11 +17,27 @@ const contractActions = [];
 const contractPresentations = [];
 const browserErrors = [];
 const followerUpdates = [];
+const followerListResponses = [];
 const attachmentMutations = [];
 const messageMutations = [];
 const activityMutations = [];
 const userSearchRequests = [];
 const intentFailures = [];
+// The collaboration chips render before the backend authorization/enabled
+// projection settles, so a single isDisabled() sample races the declared state.
+// Wait for the declared enabled state instead of sampling once.
+async function expectActionEnabled(locator, label, timeout = 15000) {
+  const deadline = Date.now() + timeout;
+  let lastDisabled = null;
+  for (;;) {
+    lastDisabled = await locator.isDisabled().catch(() => null);
+    if (lastDisabled === false) return;
+    if (Date.now() >= deadline) {
+      throw new Error(`${label} is not backend-authorized (disabled=${lastDisabled})`);
+    }
+    await page.waitForTimeout(200);
+  }
+}
 async function captureHeaderPresentation(surface) {
   const header = surface.locator('.contract-form-command-bar');
   await header.waitFor({ state: 'visible', timeout: 45000 });
@@ -39,13 +55,82 @@ async function captureHeaderPresentation(surface) {
     horizontalOverflow: await header.evaluate((node) => node.scrollWidth > node.clientWidth + 1),
   };
 }
+// Only an authoritative successful list response counts as live authority; a
+// failed or truncated envelope must never be read as "not following".
+async function waitForFollowerListResponse(model, recordId, timeout = 15000) {
+  const deadline = Date.now() + timeout;
+  for (;;) {
+    const found = [...followerListResponses].reverse().find((row) => (
+      row.model === model && String(row.recordId) === String(recordId)
+      && row.ok === true && row.count >= 0
+    ));
+    if (found) return found;
+    if (Date.now() > deadline) return null;
+    await page.waitForTimeout(100);
+  }
+}
 async function verifyFollowerMutation(surface, model) {
-  const expected = (target.follower_journeys || []).find((row) => row.model === model);
-  if (!expected) throw new Error(`missing follower journey authority for ${model}`);
+  // The journey is anchored on the contract declaration (governed intents and
+  // action labels) plus the live list authority the product itself consumed.
+  // It never trusts a follower snapshot captured before the browser ran, since
+  // follow state is per current user and may have moved in between.
+  const declared = (target.follower_declaration || []).find((row) => row.model === model);
+  if (!declared) throw new Error(`missing follower declaration for ${model}`);
+  if (declared.list_intent !== 'chatter.followers.list'
+    || declared.update_intent !== 'chatter.followers.update'
+    || declared.follow_enabled !== true || declared.unfollow_enabled !== true
+    || !declared.follow_label || !declared.unfollow_label
+    || declared.follow_label === declared.unfollow_label) {
+    throw new Error(`follower declaration is not governed for ${model}: ${JSON.stringify(declared)}`);
+  }
   const manager = surface.locator('[data-professional-collaboration-component="followers"]');
-  const initialFollowing = expected.before?.is_following === true;
-  const firstLabel = initialFollowing ? '取消关注' : '关注';
-  const restoreLabel = initialFollowing ? '关注' : '取消关注';
+  const followButton = manager.getByRole('button', { name: declared.follow_label, exact: true });
+  const unfollowButton = manager.getByRole('button', { name: declared.unfollow_label, exact: true });
+
+  // The followers component reports data-state="ready" from the first mount, so
+  // the journey must wait for the live list-intent response the product itself
+  // consumed before it may judge the offered action.
+  const liveList = await waitForFollowerListResponse(model, declared.record_id);
+  if (!liveList) {
+    throw new Error(`no authoritative live follower list response for ${model}:${declared.record_id}: ${
+      JSON.stringify(followerListResponses)}`);
+  }
+  if (liveList.canFollow === liveList.canUnfollow) {
+    throw new Error(`follower list response did not declare a single action for ${model}: ${JSON.stringify(liveList)}`);
+  }
+  const declaredFollowing = liveList.canUnfollow === true;
+
+  // Exactly one declared action must settle, and it must mirror the live list
+  // authority: following <=> unfollow offered, not following <=> follow
+  // offered. Neither or both actions offered is a defect.
+  const settleDeadline = Date.now() + 15000;
+  let followCount = await followButton.count();
+  let unfollowCount = await unfollowButton.count();
+  while (followCount + unfollowCount !== 1) {
+    if (Date.now() > settleDeadline) {
+      throw new Error(`follower manager did not declare exactly one action for ${model}: ${JSON.stringify({
+        declared,
+        liveList,
+        followButtons: followCount,
+        unfollowButtons: unfollowCount,
+        text: String(await manager.textContent() || '').replace(/\s+/g, ' ').trim(),
+      })}`);
+    }
+    await page.waitForTimeout(100);
+    followCount = await followButton.count();
+    unfollowCount = await unfollowButton.count();
+  }
+  if (declaredFollowing !== (unfollowCount === 1)) {
+    throw new Error(`follower action did not mirror the live list authority for ${model}: ${JSON.stringify({
+      liveList, followButtons: followCount, unfollowButtons: unfollowCount,
+    })}`);
+  }
+
+  const firstAction = declaredFollowing ? 'unfollow' : 'follow';
+  const firstLabel = declaredFollowing ? declared.unfollow_label : declared.follow_label;
+  const restoreLabel = declaredFollowing ? declared.follow_label : declared.unfollow_label;
+  const updatesBefore = followerUpdates.filter((row) => row.model === model).length;
+
   await manager.getByRole('button', { name: firstLabel, exact: true }).click();
   await manager.getByRole('button', { name: restoreLabel, exact: true })
     .waitFor({ state: 'visible', timeout: 15000 });
@@ -53,11 +138,28 @@ async function verifyFollowerMutation(surface, model) {
   await manager.getByRole('button', { name: restoreLabel, exact: true }).click();
   await manager.getByRole('button', { name: firstLabel, exact: true })
     .waitFor({ state: 'visible', timeout: 15000 });
+  const restoredText = String(await manager.textContent() || '').replace(/\s+/g, ' ').trim();
+
+  // The round-trip must issue exactly the declared update intents, in order, on
+  // the declared record.
+  const issuedRows = followerUpdates.filter((row) => row.model === model).slice(updatesBefore);
+  const issuedActions = issuedRows.map((row) => row.action);
+  const expectedActions = [firstAction, firstAction === 'follow' ? 'unfollow' : 'follow'];
+  if (issuedRows.length !== 2 || issuedActions.join(',') !== expectedActions.join(',')) {
+    throw new Error(`follower journey did not issue the declared intents for ${model}: ${JSON.stringify({
+      issuedActions, expectedActions, issuedRows,
+    })}`);
+  }
+  if (issuedRows.some((row) => String(row.recordId) !== String(declared.record_id))) {
+    throw new Error(`follower journey targeted an undeclared record for ${model}: ${JSON.stringify(issuedRows)}`);
+  }
   return {
-    initialFollowing,
-    firstAction: initialFollowing ? 'unfollow' : 'follow',
+    declaredFollowing,
+    firstAction,
+    issuedActions,
+    liveList,
     changedText,
-    restoredText: String(await manager.textContent() || '').replace(/\s+/g, ' ').trim(),
+    restoredText,
   };
 }
 async function verifyAttachmentDeleteJourney(surface, model) {
@@ -183,7 +285,7 @@ async function verifyCreateActionJourney(surface, model) {
     const body = `codex-create-action-journey-${mode}-${token}`;
     const action = surface.locator('.chips').getByTitle(mode, { exact: true });
     await action.waitFor({ state: 'visible', timeout: 15000 });
-    if (await action.isDisabled()) throw new Error(`${model} ${mode} create action is not backend-authorized`);
+    await expectActionEnabled(action, `${model} ${mode} create action`);
     await action.click();
     const composer = surface.locator('[data-professional-collaboration-component="composer"]');
     await composer.waitFor({ state: 'visible', timeout: 15000 });
@@ -209,7 +311,7 @@ async function verifyCreateActionJourney(surface, model) {
   const summary = `codex-create-action-journey-activity-${token}`;
   const activityAction = surface.locator('.chips').getByTitle('activity', { exact: true });
   await activityAction.waitFor({ state: 'visible', timeout: 15000 });
-  if (await activityAction.isDisabled()) throw new Error(`${model} activity create action is not backend-authorized`);
+  await expectActionEnabled(activityAction, `${model} activity create action`);
   await activityAction.click();
   const activityComposer = surface.locator('[data-professional-collaboration-component="composer"]');
   await activityComposer.waitFor({ state: 'visible', timeout: 15000 });
@@ -321,6 +423,22 @@ page.on('response', async (response) => {
     try { responseText = (await response.text()).slice(0, 1200); } catch {}
     intentFailures.push({ status: response.status(), intent: String(request.intent || ''), responseText });
   }
+  if (String(request.intent || '') === 'chatter.followers.list') {
+    let listBody = {};
+    try { listBody = await response.json(); } catch {}
+    const listData = listBody?.data && typeof listBody.data === 'object' ? listBody.data : {};
+    const listParams = request?.params && typeof request.params === 'object' ? request.params : {};
+    followerListResponses.push({
+      status: response.status(),
+      ok: listBody?.ok === true,
+      model: String(listParams.model ?? request.model ?? ''),
+      recordId: String(listParams.res_id ?? listParams.record_id ?? request.res_id ?? ''),
+      count: Number(listData.count ?? -1),
+      isFollowing: listData.is_following === true,
+      canFollow: listData.can_follow === true,
+      canUnfollow: listData.can_unfollow === true,
+    });
+  }
   if (String(request.intent || '') !== 'ui.contract.v2') return;
   let body = {};
   try { body = await response.json(); } catch {}
@@ -420,8 +538,12 @@ try {
     errors,
     taskPage: await surface.locator('[data-object-task-page]').count(),
     nativeStructure: await surface.locator('[data-native-contract-structure]').count(),
-    currentTaskText: await surface.locator('[data-floorplan-region="current-task"]').allTextContents(),
     riskRegions: await surface.locator('[data-floorplan-region="risk"]').count(),
+    nativeSections: await surface.locator('section.native-container--group').evaluateAll((nodes) => nodes.map((node) => ({
+      heading: (node.querySelector(':scope > header h3')?.textContent || '').trim(),
+      fields: [...node.querySelectorAll('[data-field-name]')]
+        .map((field) => field.getAttribute('data-field-name')),
+    }))),
     contractActions: [...contractActions],
     header: await captureHeaderPresentation(surface),
   };
@@ -431,12 +553,36 @@ try {
   if (projectPresentation?.structureVersion !== '1.1' || projectPresentation?.presentationMode !== 'task') {
     throw new Error(`project initiation did not resolve task presentation: ${JSON.stringify(projectPresentation)}`);
   }
-  if (projectResult.taskPage !== 1 || projectResult.nativeStructure !== 0) {
-    throw new Error(`project initiation did not render Floorplan: ${JSON.stringify(projectResult)}`);
+  // U-C4 G12 retired the entry-level structure declaration, so the resolved
+  // native view owns field placement: the create surface must render the
+  // declared native structure and must not bring the retired floorplan regions
+  // back. The declared business groups (current_task / intake_risk, projected by
+  // the contract into intake_semantic_contract) must carry their declared
+  // fields, so the check binds the declaration to the rendered structure
+  // instead of asserting a heading string on its own.
+  const declaredFieldAnchors = (target.intake_semantic_contract || {}).anchor_groups || {};
+  const declaredAnchorLabels = (target.intake_semantic_contract || {}).anchor_sections || {};
+  const declaredSections = Object.entries(declaredFieldAnchors).map(([field, anchor]) => ({
+    field,
+    anchor,
+    label: String(declaredAnchorLabels[anchor] || ''),
+  }));
+  if (!declaredSections.length || declaredSections.some((row) => !row.label)) {
+    throw new Error(`project create declaration is incomplete: ${JSON.stringify({
+      declaredFieldAnchors, declaredAnchorLabels,
+    })}`);
   }
-  if (projectResult.currentTaskText.length !== 1 || projectResult.riskRegions !== 1
-    || !projectResult.currentTaskText[0].includes('补齐立项必填信息')) {
-    throw new Error(`project initiation task and risk guidance is incomplete: ${JSON.stringify(projectResult)}`);
+  if (projectResult.nativeStructure !== 1
+    || projectResult.taskPage !== 0 || projectResult.riskRegions !== 0) {
+    throw new Error(`project initiation did not render the declared native structure: ${JSON.stringify(projectResult)}`);
+  }
+  const unplacedSections = declaredSections.filter((row) => !projectResult.nativeSections.some(
+    (section) => section.heading === row.label && section.fields.includes(row.field),
+  ));
+  if (unplacedSections.length) {
+    throw new Error(`project initiation native sections are incomplete: ${JSON.stringify({
+      unplacedSections, nativeSections: projectResult.nativeSections,
+    })}`);
   }
   if (projectResult.header.commandBars !== 1 || projectResult.header.scButtons < 1
     || projectResult.header.primaryActions > 1 || projectResult.header.rawButtonsOutsideWorkflow !== 0) {
@@ -477,7 +623,14 @@ try {
     errors: await workspaceSurface.locator('[data-contract-form-driver-error]').allTextContents(),
     taskPage: await workspaceSurface.locator('[data-object-task-page]').count(),
     nativeStructure: await workspaceSurface.locator('[data-native-contract-structure]').count(),
-    notebookPages: await workspaceSurface.locator('[data-native-contract-structure] .native-tabs .native-tab').count(),
+    nativeSections: await workspaceSurface.locator('.native-container--group').evaluateAll((nodes) => nodes.map((node) => ({
+      tag: node.tagName,
+      title: String(node.getAttribute('data-group-title') || '').trim(),
+      heading: (node.querySelector(':scope > header h3, :scope > header button, .t-card__title')?.textContent || '').trim(),
+      fields: [...node.querySelectorAll('[data-field-name]')].map((field) => field.getAttribute('data-field-name')),
+    }))),
+    notebookPages: await workspaceSurface.locator('[data-native-contract-structure] .native-tabs .native-tab')
+      .evaluateAll((nodes) => nodes.map((node) => (node.textContent || '').trim())),
     readonlyRelationFacts: await workspaceSurface.locator('.o2m-readonly-fact dd').allTextContents(),
     readonlyRelationRows: await workspaceSurface.locator('.o2m-readonly-row').evaluateAll((rows) => rows.map((row) => (
       [...row.querySelectorAll('.o2m-readonly-fact dd')].map((node) => (node.textContent || '').trim())
@@ -502,14 +655,68 @@ try {
   if (workspacePresentation?.structureVersion !== '1.1' || workspacePresentation?.presentationMode !== 'workspace') {
     throw new Error(`project workspace did not resolve workspace presentation: ${JSON.stringify(workspacePresentation)}`);
   }
+  // The 项目台账 record surface is the unified single-page native overview
+  // declaration (view_project_overview_form). Its contract owns the section
+  // identity, so the render binding asserts the declared sections and fields
+  // (and a notebook tab count only when the declaration declares tabs) instead
+  // of the retired 11-page default project form tab count.
+  const workspaceDeclaration = target.workspace_structure_contract || {};
+  const declaredNotebookTabs = (workspaceDeclaration.notebook_tabs || []).map((label) => String(label));
+  const declaredWorkspaceSections = (workspaceDeclaration.sections || []).map((row) => ({
+    title: String(row.title || ''),
+    fields: (row.fields || []).map((field) => String(field.name || field)),
+    mustRenderFields: (row.must_render_fields || []).map((field) => String(field)),
+  }));
+  if (!declaredWorkspaceSections.length
+    || declaredWorkspaceSections.some((row) => !row.title || !row.fields.length)) {
+    throw new Error(`project workspace declaration is incomplete: ${JSON.stringify(workspaceDeclaration)}`);
+  }
   if (
     workspaceResult.drivers !== 1
     || workspaceResult.errors.length !== 0
     || workspaceResult.taskPage !== 0
     || workspaceResult.nativeStructure !== 1
-    || workspaceResult.notebookPages !== 11
+    || workspaceResult.notebookPages.length !== declaredNotebookTabs.length
   ) {
-    throw new Error(`project workspace did not preserve native notebook structure: ${JSON.stringify(workspaceResult)}`);
+    throw new Error(`project workspace did not render the declared native structure: ${JSON.stringify(workspaceResult)}`);
+  }
+  const declaredTitles = declaredWorkspaceSections.map((row) => row.title);
+  const renderedByTitle = new Map(
+    workspaceResult.nativeSections.map((section) => [section.heading, section.fields]),
+  );
+  // A declared section that must show a visible fact has to be rendered under
+  // its declared heading and carry that fact; a declaration that places no
+  // visible fact (every field empty or hidden by the declaration) may be
+  // omitted, but never replaced by an undeclared section.
+  const missingWorkspaceSections = declaredWorkspaceSections.filter((row) => (
+    row.mustRenderFields.length > 0 && !renderedByTitle.has(row.title)
+  ));
+  const unplacedWorkspaceFields = declaredWorkspaceSections.flatMap((row) => {
+    const rendered = renderedByTitle.get(row.title);
+    if (!rendered) return [];
+    return row.mustRenderFields.filter((field) => !rendered.includes(field)).map((field) => `${row.title}:${field}`);
+  });
+  const undeclaredSections = workspaceResult.nativeSections
+    .map((section) => section.heading)
+    .filter((heading) => heading && !declaredTitles.includes(heading));
+  const unplacedRenderedFields = declaredWorkspaceSections.flatMap((row) => {
+    const rendered = renderedByTitle.get(row.title);
+    if (!rendered) return [];
+    return rendered.filter((field) => !row.fields.includes(field)).map((field) => `${row.title}:${field}`);
+  });
+  if (missingWorkspaceSections.length || unplacedWorkspaceFields.length
+    || undeclaredSections.length || unplacedRenderedFields.length) {
+    throw new Error(`project workspace native sections are incomplete: ${JSON.stringify({
+      missingWorkspaceSections, unplacedWorkspaceFields, undeclaredSections, unplacedRenderedFields,
+      nativeSections: workspaceResult.nativeSections,
+    })}`);
+  }
+  if (declaredNotebookTabs.length) {
+    const renderedTabs = workspaceResult.notebookPages.map((label) => label.replace(/\s+/g, ''));
+    const missingTabs = declaredNotebookTabs.filter((label) => !renderedTabs.includes(label.replace(/\s+/g, '')));
+    if (missingTabs.length) {
+      throw new Error(`project workspace notebook tabs are incomplete: ${JSON.stringify({ missingTabs, renderedTabs })}`);
+    }
   }
   if (workspaceResult.header.commandBars !== 1 || workspaceResult.header.scButtons < 1
     || workspaceResult.header.primaryActions > 1 || workspaceResult.header.rawButtonsOutsideWorkflow !== 0) {
@@ -571,9 +778,24 @@ try {
       .locator('[data-field-name]')
       .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-field-name')).filter(Boolean)),
     emptyReadonlyRelations: await paymentSurface.locator('[data-readonly-relation-empty]').count(),
-    relationInteractionCount: await paymentSurface.locator(
-      '[data-floorplan-region="relation"] input[type="file"], [data-floorplan-region="relation"] button:visible',
-    ).count(),
+    retiredRelationRegionCount: await paymentSurface.locator('[data-floorplan-region="relation"]').count(),
+    relationFields: await paymentSurface.locator('[data-field-name][data-component-key]').evaluateAll((nodes) => nodes.map((node) => ({
+      field: node.getAttribute('data-field-name'),
+      componentKey: node.getAttribute('data-component-key'),
+      renderer: node.getAttribute('data-component-renderer'),
+      widgetType: node.getAttribute('data-widget-type'),
+      auth: node.getAttribute('data-field-auth'),
+    }))),
+    detailCollections: await paymentSurface
+      .locator('[data-semantic-component="ProfessionalDetailCollectionControl"]')
+      .evaluateAll((nodes) => nodes.map((node) => ({
+        relationModel: node.getAttribute('data-relation-model'),
+        rowCount: node.getAttribute('data-row-count'),
+        columnCount: node.getAttribute('data-column-count'),
+        canCreate: node.getAttribute('data-can-create'),
+        canInlineEdit: node.getAttribute('data-can-inline-edit'),
+        controlState: node.getAttribute('data-control-state'),
+      }))),
     attachmentEditors: await paymentSurface.locator('[data-semantic-component="RelationAttachmentEditor"]').evaluateAll((nodes) => nodes.map((node) => ({
       state: String(node.getAttribute('data-control-state') || ''),
       uploads: node.querySelectorAll('input[type="file"]').length,
@@ -607,8 +829,48 @@ try {
     || new Set(paymentResult.visibleFieldNames).size !== paymentResult.visibleFieldNames.length) {
     throw new Error(`payment page repeated canonical facts: ${JSON.stringify(paymentResult.visibleFieldNames)}`);
   }
-  if (paymentResult.emptyReadonlyRelations !== 0 || paymentResult.relationInteractionCount < 1) {
-    throw new Error(`payment relation information efficiency is incomplete: ${JSON.stringify(paymentResult)}`);
+  // The record relation area is bound to the contract declaration, not to the
+  // retired floorplan relation region: the declared relation field must render
+  // the declared component, the declared detail collection must be present
+  // exactly once and its capability projection plus column count must mirror
+  // the declaration. This replaces the retired region selector assertion
+  // without weakening it: an editable declaration must render an editable
+  // collection and must not fall back to a readonly empty placeholder.
+  const declaredDetail = (target.payment_detail_declaration || [])[0];
+  if (!declaredDetail || !declaredDetail.component_key || !declaredDetail.relation_model) {
+    throw new Error(`payment detail declaration is missing: ${JSON.stringify(target.payment_detail_declaration)}`);
+  }
+  const declaredRelationFields = paymentResult.relationFields.filter((row) => (
+    row.field === declaredDetail.field && row.componentKey === declaredDetail.component_key
+  ));
+  if (declaredRelationFields.length !== 1 || !declaredRelationFields[0].renderer) {
+    throw new Error(`payment relation field did not consume the declared component: ${JSON.stringify({
+      declaredDetail, relationFields: paymentResult.relationFields,
+    })}`);
+  }
+  const declaredCollections = paymentResult.detailCollections.filter(
+    (row) => row.relationModel === declaredDetail.relation_model,
+  );
+  if (declaredCollections.length !== 1) {
+    throw new Error(`payment relation area did not render the declared detail collection: ${JSON.stringify({
+      declaredDetail, detailCollections: paymentResult.detailCollections,
+    })}`);
+  }
+  const renderedCollection = declaredCollections[0];
+  const declaredControlState = declaredDetail.readonly ? 'readonly' : 'editable';
+  if (renderedCollection.canCreate !== String(declaredDetail.can_create)
+    || renderedCollection.canInlineEdit !== String(declaredDetail.can_inline_edit)
+    || Number(renderedCollection.columnCount) !== declaredDetail.column_count
+    || renderedCollection.controlState !== declaredControlState) {
+    throw new Error(`payment relation capability projection drifted from the declaration: ${JSON.stringify({
+      declaredDetail, renderedCollection,
+    })}`);
+  }
+  if (paymentResult.retiredRelationRegionCount !== 0) {
+    throw new Error(`payment relation area brought the retired floorplan region back: ${JSON.stringify(paymentResult.retiredRelationRegionCount)}`);
+  }
+  if (!declaredDetail.readonly && paymentResult.emptyReadonlyRelations !== 0) {
+    throw new Error(`payment relation area rendered a readonly empty placeholder for an editable declaration: ${JSON.stringify(paymentResult.emptyReadonlyRelations)}`);
   }
   if (paymentResult.attachmentEditors.some((editor) => (
     (editor.state === 'readonly' && (editor.uploads > 0 || editor.removes > 0))
@@ -749,6 +1011,7 @@ try {
     mutations,
     executeRequests,
     followerUpdates,
+    followerListResponses,
     attachmentMutations,
     messageMutations,
     activityMutations,
@@ -802,6 +1065,24 @@ try {
         attributes: Object.fromEntries([...node.attributes].map((attribute) => [attribute.name, attribute.value])),
       }))
     )).catch(() => []),
+    collaboration: await page.locator('[data-professional-collaboration-component="panel"]').evaluateAll((nodes) => (
+      nodes.map((node) => ({
+        attrs: Object.fromEntries([...node.attributes].map((attribute) => [attribute.name, attribute.value])),
+        chips: [...node.querySelectorAll('.chips button')].map((button) => ({
+          text: (button.textContent || '').trim(), title: button.getAttribute('title'), disabled: button.disabled,
+        })),
+        composers: node.querySelectorAll('[data-professional-collaboration-component="composer"]').length,
+        submitDisabled: [...node.querySelectorAll('.native-chatter-compose-actions button')].map((button) => button.disabled),
+      }))
+    )).catch(() => []),
+    followers: await page.locator('[data-professional-collaboration-component="followers"]').evaluateAll((nodes) => (
+      nodes.map((node) => ({
+        attrs: Object.fromEntries([...node.attributes].map((attribute) => [attribute.name, attribute.value])),
+        text: String(node.textContent || '').replace(/\s+/g, ' ').trim(),
+        buttons: [...node.querySelectorAll('button')].map((button) => (button.textContent || '').trim()),
+      }))
+    )).catch(() => []),
+    followerListResponses,
     browserErrors,
     intentFailures,
     executeRequests,
