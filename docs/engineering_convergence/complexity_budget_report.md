@@ -85,9 +85,9 @@ Generated from repository source files. This report is informational during the 
 | 1484 | Python source | `scripts/release/release_publication.py` |
 | 1467 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1453 | Python source | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py` |
+| 1433 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1432 | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1432 | Python source | `scripts/product/build_capability_productization_v1.py` |
-| 1421 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1408 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1395 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1389 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
@@ -260,9 +260,9 @@ Generated from repository source files. This report is informational during the 
 | 1484 | warning | Python source | `scripts/release/release_publication.py` |
 | 1467 | warning | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1453 | warning | Python source | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py` |
+| 1433 | warning | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1432 | warning | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1432 | warning | Python source | `scripts/product/build_capability_productization_v1.py` |
-| 1421 | warning | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1408 | warning | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1395 | warning | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1389 | warning | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
