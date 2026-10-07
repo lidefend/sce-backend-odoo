@@ -854,11 +854,36 @@ CSV：3 个 account 行 `declared→passed`、`阻塞→本轮验收`，`role_au
   `make agent.run.resume` 由 `reconcile` 恢复为 `resolved`（`outside_scope=[]`），`make ci.local.iteration` 恢复 PASS。
   仅补齐本轮真实改动范围，未放宽任何门禁。
 
+### 日常运行态下发与真实浏览器复验（served `f1745110` / `sc_demo`）
+
+| 步骤 | 受管入口 | 结果 |
+| --- | --- | --- |
+| 同步候选 | `make daily.runtime.candidate.bundle_sync` | PASS（old `ce8b77bf` → source `f1745110`，bundle `c705908b`） |
+| 声明身份 + 重载 | `make daily.runtime.source_revision.align` | PASS，`restarted=true`、`rolled_back=false`，odoo 容器已重建（addon python 重新装载） |
+| 重建前端 | 远端 `ENV=dev ENV_FILE=.env.dev make verify.frontend.build` | RC=0（重建 `frontend/apps/web/dist-dev`；线上 `index.html` 现引用 `assets/index-Ct929tvc.js`） |
+
+**契约回读（运行态 `op=model`，`sc.current.account.workspace`）**：6 行原生 header 行现均为
+`entitlementEvaluated:true`、`allowed/enabled/disabled = true/true/false`；`buttonStatus` 对「未选项目」
+快照**仍然**如实报告 `visible:false` / `reasonCode:"ACTION_NOT_VISIBLE_IN_STATE"`（状态本身没有被改写）。
+
+**真实浏览器复验**（`.runtime/diag/ws_buttons_final.mjs`，`wutao` @ `http://1.95.85.92:18081`，
+证据 `artifacts/frontend-business-entry-workspace-buttons/daily-f1745110/summary.json`）：
+
+| 状态 | action refs | header 文本 | 渲染数 |
+| --- | --- | --- | --- |
+| 基线（未选项目、未选承包人/往来单位） | `['form.save']` | 返回 保存草稿 | 0/6 |
+| 仅选承包人/往来单位 | `['form.save']` | 返回 保存草稿 | 0/6 |
+| 选项目 + 承包人/往来单位 | `form.save` + `action.{project_borrow_company, project_repay_company, contractor_borrow_project, contractor_repay_project, account_transfer, view_current_account}` | 返回 保存草稿 项目借公司款 项目还公司款 承包人借项目款 承包人还项目款 账户间调拨 查看往来台账 | **6/6，missing=[]** |
+
+即渲染集合现在**精确跟随声明 modifier**（4 个声明 `invisible="not project_id"`，2 个声明
+`invisible="not project_id or not partner_id"`），而不是修复前「任何状态都不渲染」。基线/仅选承包人两项的
+隐藏是**契约声明的正确 fail-closed 结果**，未放宽为可见。
+
 ### 未完成（下一步）
 
-1. 由受管入口下发到日常运行态并做**真实浏览器**复验：`make daily.runtime.candidate.bundle_sync` →
-   `make daily.runtime.source_revision.align`（重启即重载 addon）→ 远端
-   `ENV=dev ENV_FILE=.env.dev DB_NAME=sc_demo make verify.frontend.build` 重建 `dist-dev`；
-   然后复跑 `/a/1192?menu_id=987` 选项目 → 6 个「办理事项」按钮出现，空项目基线仍隐藏。
-2. 再按原 `next_exact_step` 把 `verify.system_user_experience.business_form_user_perspective`
-   重定位到声明交付入口，并出 89 条交付面的用户级验收结论。
+1. 按原 `next_exact_step`(2) 把 `verify.system_user_experience.business_form_user_perspective` 重定位到
+   声明交付入口（消费契约，而非已退役的独立 `借款办理/结算办理/票税办理` 菜单），并把本次「办理事项按钮
+   声明消费」断言并入该入口；不放宽断言、不加模型特判、不新增第二套全局测试框架。
+2. 收敛 `docs/product/frontend_business_entry_acceptance_v1.csv` 中两行 `partial_passed`（日常合同、付款申请）
+   的运行态证据。
+3. 出 89 条交付面的一次性用户级验收结论。**分支目标仍未完成。**
