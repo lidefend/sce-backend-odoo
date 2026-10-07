@@ -626,7 +626,8 @@ try {
     nativeSections: await workspaceSurface.locator('.native-container--group').evaluateAll((nodes) => nodes.map((node) => ({
       tag: node.tagName,
       title: String(node.getAttribute('data-group-title') || '').trim(),
-      heading: (node.querySelector(':scope > header h3, :scope > header button, .t-card__title')?.textContent || '').trim(),
+      heading: (node.querySelector(':scope > header h3, :scope > header button')?.textContent
+        || String(node.getAttribute('data-group-title') || '')).trim(),
       fields: [...node.querySelectorAll('[data-field-name]')].map((field) => field.getAttribute('data-field-name')),
     }))),
     notebookPages: await workspaceSurface.locator('[data-native-contract-structure] .native-tabs .native-tab')
