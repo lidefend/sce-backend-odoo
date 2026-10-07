@@ -394,7 +394,7 @@ profile 原先声明 `"signed": ["cancel"]`，但 `general_contract.py` 的 `act
 | --- | --- | --- |
 | initial | rawState=draft, mainData.state=draft, company=21, editability=editable | 起点等于声明 `draft`，会话公司等于声明公司 |
 | list_query | 搜索 `FE-GC-CARRIER` 命中 1 行 | 唯一匹配 |
-| paging | mode=paged，共 3 条（1 页） | 分页面按声明渲染，未越界 |
+| paging | 声明语义面 `mode=paged`、`state=ready`、`region_label=列表分页`、`共 3 条`、`rows=3` | 分页声明与列表数据一致（total ≥ rows）；交互换页不可用并已显式记录（页脚不暴露公共页控件，列表路由不接受 page/page-size 查询） |
 | detail_return | 返回后搜索词恢复 `FE-GC-CARRIER`、行数恢复 1 | 详情返回恢复同一过滤上下文 |
 | submit | 声明动作 `submit`→`action_confirm`；draft→confirmed；后续 offered=[complete,cancel] | rawState/mainData 等于声明后继 `confirmed` |
 | complete | 声明动作 `complete`→`action_signed`；confirmed→signed；后续 offered=[] | rawState/mainData 等于声明后继 `signed` |
@@ -412,7 +412,7 @@ FE Company A(21) 无 `sc.general.contract` 生效审批策略（daily 的 `gener
 ### 残留（不在本行收口口径内）
 
 页面级附件上传/下载旅程、超出既有两个角色（`fixture_role_config_admin` / `fixture_role_finance`）
-的完整权限矩阵，由后续批次按同一矩阵口径补足。
+的完整权限矩阵，以及可交互的换页（当前数据集仅 1 页且页脚无公共页控件），由后续批次按同一矩阵口径补足。
 
 ### 复现入口
 

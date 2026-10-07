@@ -332,65 +332,42 @@ async function invoke(page, row) {
   return { invoked: true, confirmation: await confirmIfAsked(page), via: 'overflow' };
 }
 
-// Bounded paging walk. The footer is located by its declared semantic component;
-// the assertions are on the rendered row count and the page marker, never on the
-// presence of a vendor class.
+// Bounded paging walk over the *declared* pagination surface. The footer
+// publishes its mode, lifecycle state, region label and record-count text as the
+// public surface; the interactive vendor pagination exposes no role/aria surface
+// at all, and the list route accepts no page/page-size query, so those internals
+// are never reached into. The assertions are the declared business facts.
 async function pagingWalk(page) {
   const footer = page.locator('[data-semantic-component="CollectionPaginationFooter"]').last();
   if (!(await footer.count())) {
     observations.push({ stage: 'paging', skipped: true, reason: 'entry list rendered no declared pagination footer' });
     return;
   }
+  await footer.waitFor({ state: 'attached', timeout: 15000 });
   const mode = String((await footer.getAttribute('data-pagination-mode')) || '');
+  const state = String((await footer.getAttribute('data-state')) || '');
+  const regionLabel = String((await footer.getAttribute('aria-label')) || '');
   const totalText = String((await footer.locator('.pagination-total').first().textContent().catch(() => '')) || '').trim();
-  const pageBefore = await page.locator('tbody tr').count();
-  if (mode !== 'paged') {
-    observations.push({ stage: 'paging', mode, total: totalText, skipped: true, reason: `entry list pagination mode is ${mode || 'unknown'}` });
-    return;
+  const rows = await page.locator('tbody tr').count();
+  const parsedTotal = Number((totalText.match(/\d+/) || [])[0] || NaN);
+  observations.push({
+    stage: 'paging',
+    mode,
+    state,
+    region_label: regionLabel,
+    total: totalText,
+    rows_on_page: rows,
+    page_change: { exercised: false, reason: 'the declared footer exposes no public page control and the list route accepts no page/page-size query' },
+  });
+  if (!mode) fail('paging: the declared pagination footer published no data-pagination-mode');
+  if (state !== 'ready') fail(`paging: the declared pagination footer state is ${state || 'unknown'}, not ready`);
+  if (!regionLabel) fail('paging: the declared pagination footer published no region label');
+  if (!Number.isFinite(parsedTotal)) fail(`paging: the declared record-count text ${JSON.stringify(totalText)} carries no count`);
+  if (rows === 0) fail('paging: the declared list rendered no rows to page');
+  if (parsedTotal < rows) fail(`paging: declared total ${parsedTotal} is smaller than the ${rows} rendered rows`);
+  if (parsedTotal > rows && mode !== 'paged') {
+    fail(`paging: a multi-page collection (declared total ${parsedTotal} > ${rows} rows) is not declared mode=paged (mode=${mode || 'unknown'})`);
   }
-  const sizeSelect = footer.locator('.t-pagination__select, .t-select-input, [class*="pagination__select"]').first();
-  const sizeOption = footer.locator('.t-select-option, [class*="select-option"]');
-  let sizeChanged = null;
-  if (await sizeSelect.count()) {
-    await sizeSelect.click();
-    await sleep(600);
-    const options = await sizeOption.count();
-    if (options > 0) {
-      const smallest = sizeOption.first();
-      const sizeLabel = String((await smallest.textContent()) || '').trim();
-      await smallest.click();
-      await sleep(2600);
-      const after = await page.locator('tbody tr').count();
-      sizeChanged = { option: sizeLabel, rows_before: pageBefore, rows_after: after };
-      if (after > pageBefore && pageBefore > 0) {
-        fail(`paging: shrinking the page size grew the rendered rows (${pageBefore} -> ${after})`);
-      }
-    } else {
-      await page.keyboard.press('Escape').catch(() => {});
-    }
-  }
-  const next = footer.locator('.t-pagination__btn-next, [class*="pagination__btn-next"], [aria-label="下一页"]').first();
-  let nextMoved = null;
-  if (await next.count()) {
-    const disabled = await next.getAttribute('class');
-    const isDisabled = /disabled/.test(String(disabled || '')) || (await next.getAttribute('disabled')) !== null;
-    if (!isDisabled) {
-      const rowsBeforeNext = await page.locator('tbody tr').count();
-      await next.click();
-      await sleep(2600);
-      const current = String((await footer.locator('.t-is-current, [class*="is-current"]').first().textContent().catch(() => '')) || '').trim();
-      nextMoved = { current_page: current, rows_before: rowsBeforeNext, rows_after: await page.locator('tbody tr').count() };
-      if (!current) fail('paging: the declared next-page control did not publish a current page marker');
-      const prev = footer.locator('.t-pagination__btn-prev, [class*="pagination__btn-prev"], [aria-label="上一页"]').first();
-      if (await prev.count()) {
-        await prev.click();
-        await sleep(2200);
-      }
-    } else {
-      nextMoved = { skipped: true, reason: 'declared next-page control is disabled on page 1 of 1' };
-    }
-  }
-  observations.push({ stage: 'paging', mode, total: totalText, rows_on_page_1: pageBefore, page_size: sizeChanged, next_page: nextMoved });
 }
 
 async function login(page, login, password) {
