@@ -4,7 +4,7 @@
     v-native-control-projection="nativeProjection"
     class="sc-checkbox"
     :class="`size-${size}`"
-    data-semantic-component="ScCheckbox"
+    data-semantic-component="ScCheckbox" data-semantic-primitive="ScCheckbox"
     data-semantic-layer="primitive"
     :data-checked="checked || undefined"
     :data-indeterminate="indeterminate || undefined"

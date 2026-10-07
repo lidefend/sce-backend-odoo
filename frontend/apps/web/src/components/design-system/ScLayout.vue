@@ -1,5 +1,5 @@
 <template>
-  <TDesignLayout data-semantic-component="ScLayout" data-semantic-layer="primitive" data-primitive-driver="tdesign">
+  <TDesignLayout data-semantic-component="ScLayout" data-semantic-primitive="ScLayout" data-semantic-layer="primitive" data-primitive-driver="tdesign">
     <slot />
   </TDesignLayout>
 </template>

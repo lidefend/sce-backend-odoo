@@ -1,6 +1,6 @@
 <template>
   <slot v-if="bare" />
-  <TDesignForm v-else ref="formRef" v-bind="{ ...$attrs, ...semanticPrimitiveIdentity('ScForm'), ...formBindings }">
+  <TDesignForm v-else ref="formRef" v-bind="{ ...semanticPrimitiveIdentity('ScForm'), ...$attrs, ...formBindings }">
     <slot />
   </TDesignForm>
 </template>

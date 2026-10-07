@@ -1,5 +1,5 @@
 <template>
-  <TDesignTimeline v-bind="{ ...$attrs, ...semanticPrimitiveIdentity('ScTimeline') }" :layout="layout" :mode="mode">
+  <TDesignTimeline v-bind="{ ...semanticPrimitiveIdentity('ScTimeline'), ...$attrs }" :layout="layout" :mode="mode">
     <TDesignTimelineItem v-for="item in items" :key="item.key" :label="item.label" :dot-color="item.dotColor">
       <slot name="item" :item="item" />
     </TDesignTimelineItem>

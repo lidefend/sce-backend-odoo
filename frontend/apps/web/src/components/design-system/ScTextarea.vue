@@ -3,7 +3,7 @@
     ref="textareaRef"
     v-native-control-projection="nativeProjection"
     class="sc-input sc-textarea"
-    data-semantic-component="ScTextarea"
+    data-semantic-component="ScTextarea" data-semantic-primitive="ScTextarea"
     data-semantic-layer="primitive"
     data-focus-ring-owner="component"
     :data-size="normalizePrimitiveSize(size)"

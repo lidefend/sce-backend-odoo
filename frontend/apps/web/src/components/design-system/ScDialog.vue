@@ -3,9 +3,9 @@
     :close-on-esc-keydown="false" :close-on-overlay-click="dismissible && closeOnBackdrop" :prevent-scroll-through="false"
     :confirm-loading="busy" :dialog-style="{ width: `min(${size === 'wide' ? 'var(--sc-component-dialog-wide-width)' : 'var(--sc-component-dialog-width)'}, calc(100vw - 2 * var(--sc-product-page-gutter)))`, maxWidth: '100vw', boxSizing: 'border-box' }"
     :dialog-class-name="['sc-dialog', panelClass].filter(Boolean).join(' ')" :z-index="dialogZIndex" @close="emit('close')">
-    <section ref="surface" v-bind="$attrs" role="dialog" tabindex="-1" aria-modal="true" :aria-labelledby="titleId" :aria-describedby="description ? descriptionId : undefined" :aria-busy="busy || undefined"
-      data-semantic-component="ScDialog" data-semantic-driver="tdesign-dialog" data-semantic-layer="primitive"
-      data-overlay-kind="dialog" :data-state="open ? 'open' : 'closed'" :aria-hidden="open ? undefined : true" :data-size="size" :data-appearance="appearance" :data-dismissible="dismissible" @keydown="onKeydown">
+    <section ref="surface" role="dialog" tabindex="-1" aria-modal="true" :aria-labelledby="titleId" :aria-describedby="description ? descriptionId : undefined" :aria-busy="busy || undefined"
+      data-semantic-component="ScDialog" data-semantic-primitive="ScDialog" data-semantic-driver="tdesign-dialog" data-semantic-layer="primitive"
+      data-overlay-kind="dialog" :data-state="open ? 'open' : 'closed'" :aria-hidden="open ? undefined : true" :data-size="size" :data-appearance="appearance" :data-dismissible="dismissible" @keydown="onKeydown" v-bind="$attrs">
       <header class="sc-design-dialog__header">
         <div class="sc-design-dialog__heading"><h2 :id="titleId">{{ title }}</h2><p v-if="description" :id="descriptionId">{{ description }}</p></div>
         <div class="sc-design-dialog__header-actions"><slot name="header-actions" /><ScIconButton v-if="dismissible" :label="closeLabel" @click="emit('close')"><ScIcon name="close" /></ScIconButton></div>

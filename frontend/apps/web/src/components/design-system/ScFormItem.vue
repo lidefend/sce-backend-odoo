@@ -1,6 +1,13 @@
 <template>
-  <div v-if="bare" v-bind="$attrs"><slot /></div>
-  <TDesignFormItem v-else v-bind="{ ...$attrs, ...semanticPrimitiveIdentity('ScFormItem'), ...itemBindings }">
+  <!--
+    The bare branch is the primitive's own composition root. It publishes only the
+    stable `data-semantic-primitive` marker: adding a `data-semantic-component`
+    default there would newly activate the consumer-scoped
+    `[data-semantic-component='ScFormItem']` styling that this branch has never
+    matched, which is a behaviour change outside this contract.
+  -->
+  <div v-if="bare" v-bind="{ 'data-semantic-primitive': 'ScFormItem', ...$attrs }"><slot /></div>
+  <TDesignFormItem v-else v-bind="{ ...semanticPrimitiveIdentity('ScFormItem'), ...$attrs, ...itemBindings }">
     <slot />
   </TDesignFormItem>
 </template>

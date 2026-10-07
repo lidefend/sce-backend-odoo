@@ -1,7 +1,7 @@
 <template>
   <TDesignDatePicker
     v-native-control-projection="nativeProjection"
-    data-semantic-component="ScDateField"
+    data-semantic-component="ScDateField" data-semantic-primitive="ScDateField"
     data-semantic-driver="tdesign-date-picker"
     data-semantic-layer="primitive"
     data-focus-ring-owner="component"

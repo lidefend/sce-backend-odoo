@@ -1,6 +1,6 @@
 <template>
   <TDesignTag size="small" variant="light" :theme="theme" :title="label" class="sc-status-badge"
-    data-semantic-component="ScStatusBadge" data-semantic-driver="tdesign-tag"
+    data-semantic-component="ScStatusBadge" data-semantic-primitive="ScStatusBadge" data-semantic-driver="tdesign-tag"
     data-semantic-layer="primitive" :data-status="value" :data-semantic-status="semantic">
     <span class="sc-visually-hidden">{{ statusPrefix }}</span>{{ label }}
   </TDesignTag>

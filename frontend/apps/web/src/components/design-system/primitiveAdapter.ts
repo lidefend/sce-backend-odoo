@@ -64,9 +64,25 @@ export interface ScPrimitiveStateProps {
   loading?: boolean;
 }
 
+/**
+ * Semantic identity contract between the design system and product surfaces.
+ *
+ * `data-semantic-component` names the semantic component that OWNS the node. It
+ * defaults to the primitive name and follows the same precedence as every other
+ * Vue attribute: a consumer declaration on a primitive root wins, because the
+ * primitives spread `semanticPrimitiveIdentity(...)` before `$attrs`.
+ *
+ * `data-semantic-primitive` always names the design-system primitive that
+ * rendered the node. Without it a consumer that legitimately declares its own
+ * owning component on a primitive root would make the primitive itself
+ * unaddressable, which is why every primitive publishes both markers.
+ *
+ * `data-semantic-layer` marks the primitive layer.
+ */
 export function semanticPrimitiveIdentity(component: ScPrimitiveKey): Record<string, string> {
   return {
     'data-semantic-component': component,
+    'data-semantic-primitive': component,
     'data-semantic-layer': 'primitive',
   };
 }

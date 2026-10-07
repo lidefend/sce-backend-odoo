@@ -1,2 +1,2 @@
-<template><TDesignProgress v-bind="{ ...$attrs, ...semanticPrimitiveIdentity('ScProgress') }" :percentage="percentage" :status="status" /></template>
+<template><TDesignProgress v-bind="{ ...semanticPrimitiveIdentity('ScProgress'), ...$attrs }" :percentage="percentage" :status="status" /></template>
 <script setup lang="ts">import { TDesignProgress } from './tdesignPrimitiveBridge'; import { semanticPrimitiveIdentity } from './primitiveAdapter'; defineOptions({ inheritAttrs:false }); defineProps<{percentage:number; status?:'success'|'error'|'warning'|'active'}>();</script>

@@ -435,3 +435,77 @@ make verify.frontend.business_entry.general_contract.browser \
   SC_ENTRY_WRITE_CONFIRM=DRIVE_DAILY_SC_DEMO_GENERAL_CONTRACT \
   SC_ACCEPTANCE_OUTPUT_DIR=artifacts/frontend-business-entry-general-contract/daily-f7b7c2ee
 ```
+
+---
+
+## 轮次增补：设计系统语义身份契约收口（2026-10-07）
+
+### 根因（本轮实证，纠正上一轮假设）
+
+列表/看板入口的 `ProductListSurface`、`CollectionKanbanRecordCard`、`ProductAppShell` 在真实 DOM 中
+根本不可寻址：`ScCard`、`ScButton`、`ScIconButton` 三个原语把 `v-bind="$attrs"`（或
+`v-bind="{ ...$attrs, ...semanticPrimitiveIdentity(...) }"`）放在静态身份之前，消费方在消费点声明的
+`data-semantic-component` 被原语默认值覆盖，于是消费方身份被“吞掉”。
+
+- 实测：`ProductListSurface` 未渲染（被 `ScCard` 吞）、`CollectionKanbanRecordCard` 被吞（看板卡片计数 0）、
+  页面骨架 `ProductAppShell` 被吞。
+- 实测反证：`ScCheckbox`/`ScLayout`/`ScFooter`/`ScAside` 不吞（消费方胜出），
+  `CollectionSelectionControl` 实际渲染 7 个、`data-selection-scope` 存在。
+  因此上一轮“列表选择框定位超时＝身份被吞”的判断不成立，选择框身份一直正常。
+- Vue 语义实证（`@vue/runtime-core@3.5.27` / `@vue/compiler-sfc@3.5.27`）：fallthrough `$attrs` 在
+  `cloneVNode` → `mergeProps(props, extraProps)` 中后者胜；模板里静态属性写在 `v-bind="attrs"` 之前则静态胜
+  （编译器保持属性顺序）。
+
+### 契约裁决
+
+`data-semantic-component` = 该节点的**归属组件**，遵循平台属性约定：消费方在消费点上声明即合法胜出。
+因此每个原语必须**恒定发布 `data-semantic-primitive`**（稳定原语标记），否则消费方的合法声明会让原语本身
+不可寻址。不新增 `data-primitive-component`（与 `data-primitive-driver` 视觉混淆）。
+
+`ScDialog` 的既有守卫本来即规定“消费方不得用 `data-semantic-component` 覆盖”，现改述为“不得占用归属标记，
+请用 `data-dialog-purpose`”。
+
+### 改动
+
+- `primitiveAdapter.ts`：`semanticPrimitiveIdentity` 返回 `{data-semantic-component, data-semantic-primitive,
+  data-semantic-layer}` 并写入契约注释。
+- 17 个原语的 `{ ...$attrs, ...semanticPrimitiveIdentity(X) }` 翻转为身份优先；37 个原语补
+  `data-semantic-primitive`；`ScButton`/`ScIconButton`/`ScDialog`/`ScDrawer` 改为“静态身份在 fallthrough 之前”。
+- `ScFormItem` bare 分支只加 `data-semantic-primitive`（加 `data-semantic-component` 会新激活
+  `[data-semantic-component='ScFormItem']` 样式，属契约外行为变更）。
+- 守卫 `frontend_primitive_adapter_guard.py` 新增两条断言：缺 `data-semantic-primitive`、`$attrs` 在身份默认之前
+  均报错；测试 helper 桩同步为真实规范形态。
+
+### 验证（L1/L2，未部署）
+
+| 入口 | 结果 |
+| --- | --- |
+| `verify.frontend.primitive_adapter.unit` | passed：契约测试 `components=46 eventCases=11`、单测 41/41、守卫 `PASS components=46` |
+| `verify.frontend.component_driver_takeover.unit` | passed 13/13（生成清单已按受管入口 `refresh.frontend.component_driver_takeover.inventory` 重算） |
+| 受影响消费方单测（kanban card / selection control / overlay lifecycle / product page pattern / collection view semantics / list surface search / row cell / row action identity / action toolbar / aggregate footer / page header / mobile record row / navigation controls / low-code dialog / form header actions / native form action+structure / action view actions / relational actions / state dashboard / navigation shell / professional registry / professional detail collection / global component capability / official icon / native text） | 全部 passed |
+
+### 预先存在、非本轮引入（已有基线对照）
+
+- `verify.frontend.standard_shell_composition.unit`：断言 `AppShell.css` 含
+  `width: min(340px, calc(100vw - 44px))`，该文件未修改且 HEAD 与 main(`c3979912`) 均无此串。
+- `verify.frontend.standard_collection_composition.unit`：断言 `ListPage.vue` 含
+  `<ProductListSurface v-else-if="status === 'empty'">`，该文件未修改且 HEAD 与 main 均无此串。
+- `verify.frontend.rendering_detail_state.unit`：三份 rendering-detail 生成清单在 HEAD 已 stale
+  （暂存改动后逐项复核），与本轮无关；run 中已有 `rendering_detail_state` 排除裁决。
+- 以上三项均不在 CI 必需门（`frontend_release_gate` 走 `pnpm test`/`test:release`）内。
+  按规则不在本批次修复。
+
+### 探针补强
+
+- `business_entry_matrix_browser.mjs`：按声明展示形态选择就绪面（table→`ListPage[data-list-status]`，
+  kanban→`KanbanPage[data-collection-state]`）；渲染记录数按展示形态读取；单入口失败改为
+  per-entry try/catch，绑定到该入口并继续覆盖同批其余入口，不再中断整批。
+
+### 下一步
+
+1. 提交候选。
+2. 经受管入口重建/刷新日常运行为态产物并重新声明 served revision。
+3. 在日常运行时对刷新后的候选运行 `verify.frontend.business_entry.matrix.browser`，确认
+   `ProductListSurface`/`CollectionKanbanRecordCard`/`ProductAppShell` 身份恢复且
+   `CollectionSelectionControl` 不变。
+4. 按域继续剩余 `not_run` 行。**不标记分支目标完成**。

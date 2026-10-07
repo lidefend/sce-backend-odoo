@@ -61,8 +61,9 @@ assert.deepEqual(tdesignDropdownOptions([
 for (const key of SC_PRIMITIVE_KEYS) {
   assert.deepEqual(semanticPrimitiveIdentity(key), {
     'data-semantic-component': key,
+    'data-semantic-primitive': key,
     'data-semantic-layer': 'primitive',
-  });
+  }, 'every primitive must publish its owning component default and its stable primitive marker');
 }
 
 assert.equal(resolveModalKeyboardAction({ key: 'Escape', shiftKey: false, focusableCount: 2, activeIndex: 0, surfaceActive: false }), 'close');

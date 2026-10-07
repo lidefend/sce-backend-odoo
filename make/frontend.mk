@@ -1116,3 +1116,19 @@ verify.frontend.business_entry.general_contract.browser: guard.prod.forbid
 	@test -n "$(ACCEPTANCE_RECORD_RESOLUTION)" -a -f "$(ACCEPTANCE_RECORD_RESOLUTION)" || (echo "ACCEPTANCE_RECORD_RESOLUTION must point at the managed resolution body"; exit 2)
 	@test "$(SC_ENTRY_WRITE_CONFIRM)" = "DRIVE_DAILY_SC_DEMO_GENERAL_CONTRACT" || (echo "SC_ENTRY_WRITE_CONFIRM=DRIVE_DAILY_SC_DEMO_GENERAL_CONTRACT is required"; exit 2)
 	@SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" SC_ACCEPTANCE_TARGET_SHA="$(ACCEPTANCE_TARGET_SHA)" ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" ACCEPTANCE_RECORD_RESOLUTION="$(ACCEPTANCE_RECORD_RESOLUTION)" SC_ENTRY_RECORD_XMLID="$(SC_ENTRY_RECORD_XMLID)" SC_ENTRY_ENTRY_MODE="$(SC_ENTRY_ENTRY_MODE)" SC_ENTRY_DENIED_ROLE_LOGIN="$(SC_ENTRY_DENIED_ROLE_LOGIN)" SC_ENTRY_WRITE_CONFIRM="$(SC_ENTRY_WRITE_CONFIRM)" SC_ENTRY_DRY_RUN="$(SC_ENTRY_DRY_RUN)" SC_ACCEPTANCE_OUTPUT_DIR="$(SC_ACCEPTANCE_OUTPUT_DIR)" node scripts/verify/business_entry_general_contract_browser.mjs
+
+.PHONY: verify.frontend.business_entry.matrix.browser
+# Declaration-driven read-only product-surface acceptance over the formal business
+# entry matrix (docs/product/frontend_business_entry_acceptance_v1.csv). It selects
+# one declared batch (SC_ENTRY_MATRIX_DOMAIN and/or SC_ENTRY_MATRIX_KEYS), resolves
+# every entry inside the acting role's RELEASED navigation (not merely the raw
+# route), walks the declared list lifecycle, the search filter built from a
+# rendered row identity, the first-row detail read-back and the declared
+# pagination surface, then proves the negative authority case for a role holding
+# none of the entry's declared groups. It is read-only: an entry whose overlay
+# declares a mutating expectation fails closed unless SC_ENTRY_WRITE_CONFIRM
+# carries the explicit token, so the lane never slips a write into a read batch.
+verify.frontend.business_entry.matrix.browser: guard.prod.forbid
+	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)
+	@test -n "$(ACCEPTANCE_LOGIN)" -a -n "$(ACCEPTANCE_PASSWORD)" || (echo "ACCEPTANCE_LOGIN and ACCEPTANCE_PASSWORD must be supplied through the environment"; exit 2)
+	@SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" SC_ACCEPTANCE_TARGET_SHA="$(ACCEPTANCE_TARGET_SHA)" ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" SC_ENTRY_MATRIX_DOMAIN="$(SC_ENTRY_MATRIX_DOMAIN)" SC_ENTRY_MATRIX_KEYS="$(SC_ENTRY_MATRIX_KEYS)" SC_ENTRY_MATRIX_INCLUDE_PASSED="$(SC_ENTRY_MATRIX_INCLUDE_PASSED)" SC_ENTRY_MATRIX_CSV="$(SC_ENTRY_MATRIX_CSV)" SC_ENTRY_MATRIX_OVERLAY="$(SC_ENTRY_MATRIX_OVERLAY)" SC_ENTRY_WRITE_CONFIRM="$(SC_ENTRY_WRITE_CONFIRM)" SC_ACCEPTANCE_OUTPUT_DIR="$(SC_ACCEPTANCE_OUTPUT_DIR)" node scripts/verify/business_entry_matrix_browser.mjs

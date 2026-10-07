@@ -1,0 +1,21 @@
+{
+  "schema": "business_entry_matrix_overlay.v1",
+  "notes": [
+    "Per-entry behaviour overlay for scripts/verify/business_entry_matrix_browser.mjs.",
+    "Identity (menu_xmlid/action_xmlid/model/label) comes from docs/product/frontend_business_entry_acceptance_v1.csv;",
+    "this file only declares behaviour the CSV does not carry.",
+    "detail=true means: open the first rendered row and read back the ui.contract.v2 envelope.",
+    "denied_role, when set, must NOT receive the entry in its released navigation."
+  ],
+  "defaults": {
+    "detail": true,
+    "expect_write": null,
+    "denied_role": "fixture_role_finance"
+  },
+  "entries": {
+    "smart_construction_core.menu_sc_operating_metrics_project": { "presentation": "table" },
+    "smart_construction_core.menu_sc_project_kanban": { "presentation": "kanban" },
+    "smart_construction_core.menu_sc_workbench_my_todo_fact": { "presentation": "table" },
+    "smart_construction_core.menu_sc_product_message_notification_v1": { "presentation": "table" }
+  }
+}

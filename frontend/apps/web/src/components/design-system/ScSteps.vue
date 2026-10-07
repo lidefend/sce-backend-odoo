@@ -1,5 +1,5 @@
 <template>
-  <TDesignSteps v-bind="{ ...$attrs, ...semanticPrimitiveIdentity('ScSteps') }" :current="current" :layout="layout" :readonly="readonly">
+  <TDesignSteps v-bind="{ ...semanticPrimitiveIdentity('ScSteps'), ...$attrs }" :current="current" :layout="layout" :readonly="readonly">
     <TDesignStepItem v-for="item in items" :key="item.value" :value="item.value" :title="item.label" :disabled="item.disabled" @click="!readonly && !item.disabled && emit('select', item.value)" />
   </TDesignSteps>
 </template>
