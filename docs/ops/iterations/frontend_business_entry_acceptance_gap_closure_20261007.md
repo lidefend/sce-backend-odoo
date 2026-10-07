@@ -626,3 +626,10 @@ CSV 第 88/89/90 行 `declared` → `passed`（矩阵合计 86 passed + 3 declar
 
 1. 剩余唯一 OPEN：19 入口负例覆盖限制（16 声明 `group_sc_cap_project_read` + 3 account 无组），需受限夹具身份或声明组的产品/治理裁决。
 2. 待所有者授权分支目标后，跑一次冻结候选 Quick 并发起 Gitee PR；**不标记分支目标完成**。
+
+### 部署身份（最终）
+
+日常运行时服务**本分支 tip**。产品改动在代码提交 `aed39bc5` 上完成部署与验证（bundle `d087a30a`，模块升级
+registry 134.9s，上述运行态回读与三键矩阵均在该身份取得）；其后的 delta 仅为 `.agent/` + `docs/` 台账，
+`addons/`、`config/`、`scripts/` 运行相关文件集**未变**，故按确定性影响分析复用已取得的运行证据，
+不重复跑矩阵。
