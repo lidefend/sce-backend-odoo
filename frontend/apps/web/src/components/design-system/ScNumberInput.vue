@@ -1,7 +1,7 @@
 <template>
   <TDesignInputNumber
     v-native-control-projection="nativeProjection"
-    v-bind="{ ...$attrs, ...semanticPrimitiveIdentity('ScNumberInput') }"
+    v-bind="{ ...semanticPrimitiveIdentity('ScNumberInput'), ...$attrs }"
     data-focus-ring-owner="component"
     :value="modelValue"
     :disabled="disabled"

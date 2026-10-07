@@ -1,2 +1,2 @@
-<template><TDesignUpload v-bind="{ ...$attrs, ...semanticPrimitiveIdentity('ScUpload') }" :files="files" :disabled="disabled" :accept="accept" @change="emit('change', $event)"><slot /></TDesignUpload></template>
+<template><TDesignUpload v-bind="{ ...semanticPrimitiveIdentity('ScUpload'), ...$attrs }" :files="files" :disabled="disabled" :accept="accept" @change="emit('change', $event)"><slot /></TDesignUpload></template>
 <script setup lang="ts">import { TDesignUpload } from './tdesignPrimitiveBridge'; import { semanticPrimitiveIdentity } from './primitiveAdapter'; defineOptions({ inheritAttrs:false }); defineProps<{files?:unknown[]; disabled?:boolean; accept?:string}>(); const emit=defineEmits<{ change:[value:unknown] }>();</script>

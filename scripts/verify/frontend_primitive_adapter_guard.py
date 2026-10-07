@@ -53,6 +53,42 @@ PROFESSIONAL_COMPOSITE_OWNERS: set[str] = set()
 RAW_INTERACTIVE_CONTROL = re.compile(r"<(?:button|input|select|textarea|table)(?:\s|>)", re.IGNORECASE)
 SC_DIALOG_CONSUMER = re.compile(r"<ScDialog\b(?P<attrs>[^>]*)>", re.DOTALL)
 
+# Semantic identity contract.  `data-semantic-component` names the component that
+# owns the node and follows the platform attribute convention, so a consumer
+# declaration on a primitive root wins.  `data-semantic-primitive` therefore has
+# to be published unconditionally, otherwise a consumer that legitimately claims
+# the owning component makes the primitive itself unaddressable.  Spreading
+# `$attrs` before the identity default silently reverses that: the design system
+# would swallow every consumer declaration again.
+PRIMITIVE_MARKER = 'data-semantic-primitive="{component}"'
+IDENTITY_BEFORE_ATTRS = re.compile(r"\.\.\.\$attrs,\s*\.\.\.semanticPrimitiveIdentity\(")
+FALLTHROUGH_SPREAD = re.compile(r'v-bind="(?:\$attrs|attrs|restAttrs)"')
+# Attribute values may legally contain `>` (arrow functions) but not `<`, so a
+# quoted-value-tolerant scan extracts real element open tags without breaking on
+# `=>` inside a binding.
+ELEMENT_TAG = re.compile(r"<(?P<tag>[A-Za-z][\w.-]*)(?P<attrs>(?:[^<>]|\"[^\"]*\"|'[^']*')*?)/?>", re.DOTALL)
+
+
+def identity_swallowing_tags(component: str, text: str) -> list[str]:
+    """Element open tags that spread `$attrs` before the primitive identity default."""
+    marker = f"semanticPrimitiveIdentity('{component}')"
+    literal = f'data-semantic-component="{component}"'
+    offenders = []
+    for match in ELEMENT_TAG.finditer(text):
+        attrs = match.group("attrs")
+        for spread in FALLTHROUGH_SPREAD.finditer(attrs):
+            declared = [
+                position
+                for position in (
+                    attrs.find(literal),
+                    attrs.find(marker),
+                )
+                if position >= 0
+            ]
+            if not declared or min(declared) > spread.start():
+                offenders.append(match.group("tag"))
+    return offenders
+
 
 # Declared authority boundary.  Consumer *visual chrome* rules are scoped to
 # the formal P0/P1 business surfaces; P3 low-code administration/designer
@@ -223,7 +259,7 @@ def validate(root: Path = ROOT) -> list[str]:
             if RAW_INTERACTIVE_CONTROL.search(source_text):
                 errors.append(f"business surface bypasses the professional primitive adapter: {relative}")
             if any('data-semantic-component=' in match.group("attrs") for match in SC_DIALOG_CONSUMER.finditer(source_text)):
-                errors.append(f"ScDialog consumer must use data-dialog-purpose instead of overriding primitive semantic identity: {relative}")
+                errors.append(f"ScDialog consumer must use data-dialog-purpose instead of overloading the ScDialog owning-component marker: {relative}")
             if relative in PROFESSIONAL_COMPOSITE_OWNERS:
                 continue
             if consumer_chrome_exempt(relative, p3_files, p3_prefixes):
@@ -246,6 +282,18 @@ def validate(root: Path = ROOT) -> list[str]:
         text = source.read_text(encoding="utf-8")
         if f"data-semantic-component=\"{component}\"" not in text and f"semanticPrimitiveIdentity('{component}')" not in text:
             errors.append(f"{component} missing exact semantic component identity")
+        if (
+            PRIMITIVE_MARKER.format(component=component) not in text
+            and f"semanticPrimitiveIdentity('{component}')" not in text
+        ):
+            errors.append(f"{component} missing stable primitive identity marker")
+        if IDENTITY_BEFORE_ATTRS.search(text):
+            errors.append(f"{component} spreads $attrs before its identity default, which swallows consumer declarations")
+        for tag in identity_swallowing_tags(component, text):
+            errors.append(
+                f"{component} element <{tag}> forwards $attrs before its identity default, "
+                "which swallows every consumer declaration"
+            )
         if "data-semantic-layer=\"primitive\"" not in text and "semanticPrimitiveIdentity(" not in text:
             errors.append(f"{component} missing primitive layer identity")
         if FORBIDDEN_PRIVATE_TDESIGN.search(text):

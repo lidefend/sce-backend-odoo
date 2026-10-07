@@ -1,7 +1,7 @@
 <template>
   <TDesignInputAdornment
     class="sc-input-group"
-    data-semantic-component="ScInputGroup"
+    data-semantic-component="ScInputGroup" data-semantic-primitive="ScInputGroup"
     data-semantic-layer="primitive"
     data-primitive-driver="tdesign"
   >

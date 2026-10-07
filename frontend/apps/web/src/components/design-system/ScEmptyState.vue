@@ -1,5 +1,5 @@
 <template>
-  <TDesignEmpty class="sc-empty" :size="density === 'compact' ? 'small' : 'medium'" :data-density="density" data-semantic-component="ScEmptyState" data-semantic-driver="tdesign-empty" data-semantic-layer="primitive" data-state="empty" role="status" :aria-labelledby="titleId">
+  <TDesignEmpty class="sc-empty" :size="density === 'compact' ? 'small' : 'medium'" :data-density="density" data-semantic-component="ScEmptyState" data-semantic-primitive="ScEmptyState" data-semantic-driver="tdesign-empty" data-semantic-layer="primitive" data-state="empty" role="status" :aria-labelledby="titleId">
     <template #title><component :is="titleTag" :id="titleId" class="sc-empty__title">{{ title }}</component></template>
     <template v-if="description" #description><p>{{ description }}</p></template>
     <template v-if="$slots.actions" #action><div class="sc-action-group"><slot name="actions" /></div></template>

@@ -1,5 +1,5 @@
 <template>
-  <TDesignHeader :height="height" data-semantic-component="ScHeader" data-semantic-layer="primitive" data-primitive-driver="tdesign">
+  <TDesignHeader :height="height" data-semantic-component="ScHeader" data-semantic-primitive="ScHeader" data-semantic-layer="primitive" data-primitive-driver="tdesign">
     <slot />
   </TDesignHeader>
 </template>

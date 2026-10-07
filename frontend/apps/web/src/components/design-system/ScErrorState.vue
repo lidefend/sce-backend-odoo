@@ -1,5 +1,5 @@
 <template>
-  <TDesignAlert class="sc-error-state" theme="error" :data-density="density" data-semantic-component="ScErrorState" data-semantic-driver="tdesign-alert" data-semantic-layer="primitive" data-state="error" role="alert" :aria-labelledby="titleId">
+  <TDesignAlert class="sc-error-state" theme="error" :data-density="density" data-semantic-component="ScErrorState" data-semantic-primitive="ScErrorState" data-semantic-driver="tdesign-alert" data-semantic-layer="primitive" data-state="error" role="alert" :aria-labelledby="titleId">
     <template #title><component :is="titleTag" :id="titleId" class="sc-error-state__title">{{ title }}</component></template>
     <template #message>
       <div class="sc-error-state__body">

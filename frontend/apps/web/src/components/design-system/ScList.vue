@@ -1,5 +1,5 @@
 <template>
-  <TDesignList v-bind="{ ...$attrs, ...semanticPrimitiveIdentity('ScList') }" :split="split" :stripe="stripe">
+  <TDesignList v-bind="{ ...semanticPrimitiveIdentity('ScList'), ...$attrs }" :split="split" :stripe="stripe">
     <TDesignListItem v-for="item in items" :key="item.key"><slot name="item" :item="item" /></TDesignListItem>
     <slot v-if="!items.length" />
   </TDesignList>

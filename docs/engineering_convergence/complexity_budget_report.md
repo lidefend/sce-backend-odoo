@@ -4,9 +4,9 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4606`
+- Scanned files: `4615`
 - Files requiring split plan: `61`
-- Files above warning threshold: `110`
+- Files above warning threshold: `111`
 
 ## Split Plan Required
 
@@ -62,10 +62,10 @@ Generated from repository source files. This report is informational during the 
 | 1656 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1650 | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1645 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
+| 1630 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1621 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1608 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
-| 1592 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1568 | Python source | `scripts/verify/test_frontend_standard_preview.py` |
 | 1553 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1542 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
@@ -114,8 +114,8 @@ Generated from repository source files. This report is informational during the 
 | 1170 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1157 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
+| 1148 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1147 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
-| 1145 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1137 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
@@ -153,6 +153,7 @@ Generated from repository source files. This report is informational during the 
 | 886 | Python source | `addons/smart_construction_core/models/core/equipment_management.py` |
 | 886 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
+| 872 | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
 | 868 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 867 | Python source | `addons/smart_core/app_config_engine/models/app_search_config.py` |
 | 862 | Python source | `scripts/release/release_candidate.py` |
@@ -244,10 +245,10 @@ Generated from repository source files. This report is informational during the 
 | 1654 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1650 | split_plan_required | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1645 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
+| 1630 | split_plan_required | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1621 | split_plan_required | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1608 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
-| 1592 | split_plan_required | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1568 | split_plan_required | Python source | `scripts/verify/test_frontend_standard_preview.py` |
 | 1557 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1553 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |

@@ -3,7 +3,7 @@
     ref="selectRef"
     v-native-control-projection="nativeProjection"
     class="sc-select"
-    data-semantic-component="ScSelect"
+    data-semantic-component="ScSelect" data-semantic-primitive="ScSelect"
     data-semantic-layer="primitive"
     data-focus-ring-owner="component"
     data-primitive-driver="tdesign"

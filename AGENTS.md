@@ -72,6 +72,40 @@ main 的必需检查保持；人工审核按上方最新合并规则执行。新
 - The default inner-loop static entry is `make ci.local.iteration`, which prints but does not execute mapped frontend L2 recommendations, followed by the risk-selected affected non-zero L2 target or targets and, only when needed, focused `local.dev.*` runtime checks. Test count follows the declared risk and is never mechanically fixed to one. This L1 entry is not delivery evidence. Run `make ci.delivery.freeze.prepare` before the final commit so generated evidence is reviewed before the clean HEAD is frozen. `make ci.local.quick` is reserved for a clean frozen delivery HEAD and must not be used after every edit or local commit; for this flow it runs once after the final commit.
 - Every validation result records layer, exact command/entrypoint, stage identity (HEAD/dirty scope during iteration, full fingerprint at final delivery), any carried-forward source identity, status (`passed`/`failed`/`not_run`), non-zero test count when applicable, failure owner, and next earliest valid step. Exit code zero alone is not proof of a passed gate.
 
+### Incremental Evidence Set (Hard Lock, 2026-10-07)
+- Closing a declared gap defaults to the **affected exact set**, never to rerunning the whole
+  batch, matrix or viewport set. Before any rerun, produce a reviewable deterministic impact
+  analysis: list the changed inputs (probe, fixture, contract, declaration CSV, identity), then
+  derive the affected key set offline from declaration data x runtime identity. Record the
+  derivation method and the resulting key list in the same batch record.
+- Run only that set. A whole-matrix, whole-batch or whole-viewport rerun must state its trigger
+  in the batch record: the frozen delivery HEAD lane, an explicit owner request, or a proof that
+  the affected set equals the whole. "Belt and braces", "to be safe" and "identity changed" are
+  not triggers.
+- Newly added entries are handled incrementally too: rerun only the new keys plus the keys whose
+  inputs actually changed; keep reusing passed keys whose inputs are unchanged.
+- Read-only lightweight diagnostics used to compute the set (for example a script that only logs
+  in and reads a principal's capability closure or released navigation-target count) are expected
+  and cheap. They are not delivery evidence and never replace the owning layer's assertion.
+- A set is closed when `uncovered == 0` and every key has a discriminating candidate observed with
+  a real outcome - not when a full rerun happened to pass.
+- The reuse decision is owned by one systemic, check-agnostic engine, not by ad-hoc per-check
+  caches: `scripts/ops/evidence_scope.py` holds the only reusable/affected/blocked authority and is
+  covered by `scripts/ops/test_evidence_scope.py` (run through
+  `make verify.frontend.business_entry.evidence_scope.unit`). A governed check declares its surface
+  as units with per-unit input fingerprints and records only what it actually executed.
+- The declaration-driven business-entry matrix entry is reuse-first by default:
+  `make verify.frontend.business_entry.matrix.incremental` plans against the ledger, executes only
+  the affected key set, and records the outcome. Re-executing an already-covered key needs an
+  explicit `SC_ENTRY_SCOPE_REVERIFY_REASON`; re-walking the whole matrix needs
+  `SC_ENTRY_SCOPE_FULL=1` together with `SC_ENTRY_SCOPE_FULL_REASON`. The raw
+  `verify.frontend.business_entry.matrix.browser` remains the executor the entry drives.
+- A served-bundle revision is provenance, not a validity key: a deploy alone never invalidates the
+  set. What invalidates a unit is a change to its declared inputs (row, overlay behaviour, derived
+  denial), to the model/probe assertions, or to the governed runtime identity (base url, database,
+  acting login, candidate order). Carrying evidence across a deploy requires a recorded impact
+  analysis, exactly as any other reuse does.
+
 ### Diagnosis Before Delivery (Hard Lock)
 - Close known delivery blockers before finalization. A clean commit or a documentation update is not proof of delivery readiness. Reuse the current result index to record required earlier-layer results and any explicit independent-review exclusion; unresolved delivery blockers keep freeze preparation, final Quick and candidate dispatch pending.
 - Collect independent same-layer failures before refreezing. After a fail-fast gate, inspect existing results and run only remaining independent, affected, registered cheap checks whose prerequisites pass. Do not discover each sibling failure through another Quick/publication cycle or rescan the whole repository.

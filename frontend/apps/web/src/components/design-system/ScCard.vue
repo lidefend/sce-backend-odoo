@@ -1,6 +1,6 @@
 <template>
   <TDesignCard
-    v-bind="{ ...$attrs, ...semanticPrimitiveIdentity('ScCard') }"
+    v-bind="{ ...semanticPrimitiveIdentity('ScCard'), ...$attrs }"
     :title="title"
     :subtitle="subtitle"
     :bordered="bordered"

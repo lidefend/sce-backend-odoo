@@ -2,9 +2,9 @@
   <ScTooltip :content="hint" :disabled="!hint">
   <button
     v-if="usesStructuredDriver"
-    v-bind="attrs"
     ref="nativeButtonRef"
     data-semantic-component="ScButton"
+    data-semantic-primitive="ScButton"
     data-semantic-layer="primitive"
     data-primitive-driver="browser-structured"
     :data-size="size"
@@ -16,15 +16,16 @@
     :disabled="disabled || loading"
     :aria-disabled="ariaDisabled || disabled || loading || undefined"
     :aria-busy="loading || undefined"
+    v-bind="attrs"
   >
     <span class="sc-btn__content"><slot /></span>
     <span v-if="loading" class="sc-visually-hidden">{{ loadingLabel }}</span>
   </button>
   <TDesignButton
     v-else
-    v-bind="attrs"
     ref="buttonRef"
     data-semantic-component="ScButton"
+    data-semantic-primitive="ScButton"
     data-semantic-layer="primitive"
     :data-size="size"
     :data-status="status"
@@ -39,6 +40,7 @@
     :disabled="disabled || loading"
     :aria-disabled="ariaDisabled || disabled || loading || undefined"
     :aria-busy="loading || undefined"
+    v-bind="attrs"
   >
     <span class="sc-btn__content"><slot /></span>
     <span v-if="loading" class="sc-visually-hidden">{{ loadingLabel }}</span>

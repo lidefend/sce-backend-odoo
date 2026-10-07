@@ -1322,6 +1322,42 @@ def ensure_fixture(env) -> Dict[str, Any]:
         [company_a],
         ["smart_construction_core.group_sc_role_executive"],
     )
+    # Negative-authority identities for the business-entry matrix.  The matrix
+    # proves that an identity whose published capability closure is disjoint from
+    # an entry's declared groups receives none of that entry on the released
+    # navigation surface, and it only accepts a candidate that actually received
+    # released navigation (otherwise "the entry is absent" is vacuous).
+    # Almost every SC role reaches group_sc_cap_project_read (directly, or through
+    # group_sc_cap_business_config_admin covering every domain manager), so those
+    # identities can never be a valid negative for a project-baseline entry.
+    # group_sc_role_partner_manager is the only declared assignable SC role whose
+    # closure excludes that baseline; holding it here lets the probe derive the
+    # negative from the product's own role graph instead of a hand-kept group
+    # list.  It is deliberately NOT the negative baseline: the runtime releases
+    # it no navigation at all (the role is assignable but carries no delivered
+    # surface), so the matrix records it as an ineligible candidate.
+    partner_data_admin = _user(
+        env,
+        "fixture_role_partner_manager",
+        "Acceptance Fixture Partner Data Admin",
+        company_a,
+        [company_a],
+        ["smart_construction_core.group_sc_role_partner_manager"],
+    )
+    # Platform-technical surface (system_admin).  Its capability closure is
+    # disjoint from the project baseline and the runtime does release the
+    # platform configuration menu to it, so it is the discriminating negative
+    # baseline for entries gated only by group_sc_cap_project_read: the principal
+    # navigates (proving the navigation pipeline delivered) yet receives none of
+    # those entries.
+    system_admin = _user(
+        env,
+        "fixture_role_system_admin",
+        "Acceptance Fixture System Admin",
+        company_a,
+        [company_a],
+        ["smart_core.group_smart_core_admin"],
+    )
 
     partner_a = _partner(env, "A", company_a)
     partner_b = _partner(env, "B", company_a)
@@ -1528,6 +1564,8 @@ def ensure_fixture(env) -> Dict[str, Any]:
             activity_accounting.login,
             owner.login,
             executive.login,
+            system_admin.login,
+            partner_data_admin.login,
         ],
         "companies": [company_a.name, company_b.name],
         "projects": [project_a.name, project_b.name, project_c.name, lifecycle_carrier.name],

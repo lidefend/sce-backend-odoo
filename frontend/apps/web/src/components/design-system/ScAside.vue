@@ -1,5 +1,5 @@
 <template>
-  <TDesignAside :width="width" data-semantic-component="ScAside" data-semantic-layer="primitive" data-primitive-driver="tdesign">
+  <TDesignAside :width="width" data-semantic-component="ScAside" data-semantic-primitive="ScAside" data-semantic-layer="primitive" data-primitive-driver="tdesign">
     <slot />
   </TDesignAside>
 </template>

@@ -92,6 +92,14 @@ worktrees and not final-delivery evidence. Documentation-only commits do not inv
 unrelated source checks. Rebases, missing logs, changed tools or changed inputs invalidate
 relevant evidence. No receipt can suppress required remote or final release gates.
 
+Reuse is owned systemically, not per check. `scripts/ops/evidence_scope.py` is the single
+reuse authority: a check declares its surface as units with per-unit input fingerprints,
+the engine reports reusable/affected/blocked, and recording rejects any unit the run did
+not execute or any planned unit it skipped. A governed entry therefore defaults to the
+affected exact set and reuses unchanged passing evidence; re-collecting covered evidence or
+re-walking a whole surface needs an explicit stated reason. A served-bundle revision is
+provenance, not a validity key, so a redeploy alone does not invalidate the set.
+
 `ci.local.iteration` requires the common entry. The frontend planner uses the registered
 batch baseline, including committed, staged, unstaged and untracked changes; PR diff
 selection retains its whole-branch semantics (`--plan-branch` explicitly). Missing run
@@ -136,6 +144,8 @@ Every active run must identify:
 - formal product layer and exact file scope;
 - pre-existing dirty paths excluded from ownership;
 - commands actually executed and their results;
+- the affected exact set for the current delta, the deterministic derivation method and changed
+  inputs behind it, and which previously-passed results are carried forward instead of rerun;
 - non-zero collected tests when tests are required;
 - generated artifact paths and immutable fingerprints when applicable;
 - remaining risks, rollback path, and next exact step.

@@ -3,7 +3,7 @@
     ref="selectRef"
     v-native-control-projection="nativeProjection"
     class="sc-relation-field"
-    data-semantic-component="ScRelationField"
+    data-semantic-component="ScRelationField" data-semantic-primitive="ScRelationField"
     data-semantic-driver="tdesign-select"
     data-semantic-layer="primitive"
     :data-appearance="appearance"

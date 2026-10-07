@@ -1,0 +1,70 @@
+decision:
+
+  id:
+    OPS-DECISION-002
+
+  topic:
+    evidence_reuse_identity
+
+  owner_approval:
+    status: confirmed
+    date: "2026-10-07"
+
+  decision:
+
+    single_reuse_authority:
+      - scripts/ops/evidence_scope.py
+    unit_surface_contract:
+      - declared_units_carry_input_fingerprints
+      - recording_accepts_only_executed_units
+      - recording_rejects_skipping_a_planned_unit
+      - only_passed_checked_declared_reused_are_carried_forward
+    entry_policy:
+      default: affected_exact_set_reuse_first
+      covered_unit_rerun_requires: SC_ENTRY_SCOPE_REVERIFY_REASON
+      whole_surface_rerun_requires:
+        - SC_ENTRY_SCOPE_FULL=1
+        - SC_ENTRY_SCOPE_FULL_REASON
+    served_bundle_revision_role: provenance
+    validity_key_excludes:
+      - served_bundle_revision
+    cross_deploy_carry_forward_requires:
+      - recorded_deterministic_impact_analysis
+
+  invalidates_a_unit:
+    - declared_row_change
+    - overlay_behaviour_change
+    - derived_denial_change
+    - model_or_probe_assertion_change
+    - governed_runtime_identity_change   # base url, database, acting login, candidate order
+
+  does_not_invalidate_a_unit:
+    - redeploy_of_an_unchanged_surface
+    - documentation_only_change
+
+  accepted_risk:
+
+    - id: stale_surface_reuse
+      statement: >
+        A deploy that changes page behaviour without touching any declared input
+        would be carried forward by reuse. Accepted because re-walking the whole
+        declared surface on every deploy is the failure mode this decision exists
+        to remove.
+      control: >
+        Carrying evidence across a deploy requires a recorded deterministic impact
+        analysis in the same run record; a change judged surface-affecting is
+        invalidated by its declared input or by the model/probe revision.
+
+  reason:
+
+    - no_mechanism_computed_an_affected_set_so_closures_degraded_into_full_reruns
+    - key_level_binding_is_required_for_declaration_driven_surfaces
+    - per_check_caches_do_not_generalize_systemic_reuse_does
+    - owner_approved_that_a_head_difference_alone_must_not_force_revalidation
+
+  related_goals:
+
+    - FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE
+
+  status:
+    active

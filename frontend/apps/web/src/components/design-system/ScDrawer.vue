@@ -3,9 +3,9 @@
     :close-on-esc-keydown="false" :close-on-overlay-click="dismissible && closeOnBackdrop" :prevent-scroll-through="false"
     :size="appearance === 'navigation' ? 'min(var(--sc-component-drawer-width), calc(100vw - var(--sc-touch-target-min)))' : size === 'wide' ? 'min(var(--sc-component-dialog-wide-width), 100vw)' : 'min(var(--sc-component-drawer-width), 100vw)'"
     :drawer-class-name="['sc-design-drawer', appearance === 'navigation' ? 'sc-design-drawer--navigation' : '', panelClass].filter(Boolean).join(' ')" :z-index="drawerZIndex" @close="emit('close')">
-    <aside ref="surface" v-bind="$attrs" role="dialog" tabindex="-1" aria-modal="true" :aria-labelledby="appearance === 'navigation' ? undefined : titleId" :aria-label="appearance === 'navigation' ? title : undefined" :aria-describedby="description ? descriptionId : undefined" :aria-busy="busy || undefined"
-      data-semantic-component="ScDrawer" data-semantic-driver="tdesign-drawer" data-semantic-layer="primitive"
-      data-overlay-kind="drawer" :data-state="open ? 'open' : 'closed'" :aria-hidden="open ? undefined : true" :data-size="size" :data-appearance="appearance" :data-dismissible="dismissible" @keydown="onKeydown">
+    <aside ref="surface" role="dialog" tabindex="-1" aria-modal="true" :aria-labelledby="appearance === 'navigation' ? undefined : titleId" :aria-label="appearance === 'navigation' ? title : undefined" :aria-describedby="description ? descriptionId : undefined" :aria-busy="busy || undefined"
+      data-semantic-component="ScDrawer" data-semantic-primitive="ScDrawer" data-semantic-driver="tdesign-drawer" data-semantic-layer="primitive"
+      data-overlay-kind="drawer" :data-state="open ? 'open' : 'closed'" :aria-hidden="open ? undefined : true" :data-size="size" :data-appearance="appearance" :data-dismissible="dismissible" @keydown="onKeydown" v-bind="$attrs">
       <header v-if="appearance !== 'navigation'" class="sc-design-drawer__header">
         <div class="sc-design-drawer__heading"><h2 :id="titleId">{{ title }}</h2><p v-if="description" :id="descriptionId">{{ description }}</p></div>
         <div class="sc-design-drawer__header-actions"><slot name="header-actions" /><ScIconButton v-if="dismissible" :label="closeLabel" @click="emit('close')"><ScIcon name="close" /></ScIconButton></div>

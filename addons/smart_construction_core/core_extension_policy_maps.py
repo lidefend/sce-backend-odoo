@@ -148,6 +148,9 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_ui_form_field_policy_business_config",
             "smart_construction_core.menu_ui_form_custom_field_wizard_business_config",
             "smart_construction_core.menu_sc_approval_policy",
+            "smart_construction_core.menu_sc_product_data_permission_v1",
+            "smart_construction_core.menu_sc_product_system_parameter_v1",
+            "smart_construction_core.menu_sc_product_numbering_rule_v1",
         ],
         "denied_menu_xmlids": [],
         "admin_action_authorities": [

@@ -1,8 +1,8 @@
 <template>
-  <TDesignLoading v-if="state === 'loading'" class="sc-inline-state" data-semantic-component="ScInlineState"
+  <TDesignLoading v-if="state === 'loading'" class="sc-inline-state" data-semantic-component="ScInlineState" data-semantic-primitive="ScInlineState"
     data-semantic-driver="tdesign-loading" data-semantic-layer="primitive" :data-state="state" :data-density="density"
     role="status" aria-live="polite" :aria-busy="state === 'loading' || undefined" size="small" :text="label" />
-  <TDesignAlert v-else class="sc-inline-state" data-semantic-component="ScInlineState" data-semantic-driver="tdesign-alert"
+  <TDesignAlert v-else class="sc-inline-state" data-semantic-component="ScInlineState" data-semantic-primitive="ScInlineState" data-semantic-driver="tdesign-alert"
     data-semantic-layer="primitive" :data-state="state" :data-density="density"
     :theme="state === 'error' ? 'error' : state === 'success' ? 'success' : 'info'"
     :role="state === 'error' ? 'alert' : 'status'" :aria-live="state === 'error' ? 'assertive' : 'polite'"

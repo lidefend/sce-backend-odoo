@@ -76,7 +76,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 if name in {"ScDialog", "ScDrawer"} else ""
             )
             state_contract = {
-                "ScButton": '<button data-primitive-driver="browser-structured" /><TDesignButton v-bind="attrs" :data-appearance="appearance" :data-loading="loading || undefined" :aria-disabled="ariaDisabled || disabled || loading || undefined" :loading="loading" /><!-- ariaDisabled?: boolean; tdesignButtonPresentation inheritAttrs: false [\'structured-content\', \'metric\', \'dashboard-quick-link\'] -->',
+                "ScButton": '<button data-primitive-driver="browser-structured" /><TDesignButton data-semantic-component="ScButton" data-semantic-primitive="ScButton" v-bind="attrs" :data-appearance="appearance" :data-loading="loading || undefined" :aria-disabled="ariaDisabled || disabled || loading || undefined" :loading="loading" /><!-- ariaDisabled?: boolean; tdesignButtonPresentation inheritAttrs: false [\'structured-content\', \'metric\', \'dashboard-quick-link\'] -->',
                 "ScIconButton": '<TDesignButton :data-appearance="appearance" />',
                 "ScCheckbox": '<TDesignCheckbox v-native-control-projection :data-checked="checked || undefined" :data-indeterminate="indeterminate || undefined" :data-disabled="disabled || undefined" /><!-- id: props.id \'aria-checked\': props.indeterminate ? \'mixed\' : String(props.checked) \'aria-label\': props.label \'aria-invalid\': props.invalid || undefined -->',
                 "ScRadioGroup": '<TDesignRadioGroup :options="options" :aria-required="required || undefined" /><!-- semanticPrimitiveIdentity(\'ScRadioGroup\') -->',
@@ -98,7 +98,8 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 "ScDisclosure": '<TDesignCollapse><ScButton appearance="context-action" data-disclosure-trigger :aria-expanded="String(localOpen)" :aria-controls="contentId" @click.stop="toggle" /></TDesignCollapse>\n<script>import ScButton from \'./ScButton.vue\'</script>',
             }.get(name, "")
             (design / f"{name}.vue").write_text(
-                f'<template><div data-semantic-component="{name}" data-semantic-layer="primitive">{state_contract}</div></template>{modal_contract}\n',
+                f'<template><div data-semantic-component="{name}" data-semantic-primitive="{name}" '
+                f'data-semantic-layer="primitive">{state_contract}</div></template>{modal_contract}\n',
                 encoding="utf-8",
             )
         (design / "ScRelationField.vue").write_text(
@@ -151,6 +152,25 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         errors = validate(root)
         self.assertTrue(any("ScButton missing exact semantic" in error for error in errors))
         self.assertTrue(any("ScButton missing primitive layer" in error for error in errors))
+
+    def test_stable_primitive_marker_is_required(self) -> None:
+        root = self.make_root()
+        source = root / "frontend/apps/web/src/components/design-system/ScCard.vue"
+        source.write_text(
+            '<template><div data-semantic-component="ScCard" data-semantic-layer="primitive" /></template>\n',
+            encoding="utf-8",
+        )
+        self.assertTrue(any("ScCard missing stable primitive identity marker" in error for error in validate(root)))
+
+    def test_identity_default_must_precede_consumer_attrs(self) -> None:
+        root = self.make_root()
+        source = root / "frontend/apps/web/src/components/design-system/ScCard.vue"
+        source.write_text(
+            '<template><div v-bind="{ ...$attrs, ...semanticPrimitiveIdentity(\'ScCard\') }" '
+            'data-semantic-primitive="ScCard" data-semantic-layer="primitive" /></template>\n',
+            encoding="utf-8",
+        )
+        self.assertTrue(any("spreads $attrs before its identity default" in error for error in validate(root)))
 
     def test_button_without_fallthrough_forwarding_fails(self) -> None:
         root = self.make_root()
