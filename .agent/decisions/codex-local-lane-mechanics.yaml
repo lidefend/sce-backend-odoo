@@ -1,0 +1,87 @@
+# OPS-DECISION-003
+#
+# Durable execution mechanics for the GitHub delivery lane. It exists because the
+# same three mistakes were re-discovered by hand across several candidates:
+# a backgrounded local Quick that was silently reaped, a self-matching liveness
+# probe that reported a false "running", and a push rejected by generated
+# evidence that had gone stale from ordinary source-size changes.
+
+decision:
+
+  id:
+    OPS-DECISION-003
+
+  topic:
+    codex_local_lane_mechanics
+
+  owner_approval:
+    status: directed
+    basis: >-
+      owner directive 2026-10-07: record accumulated execution lessons so the same
+      mistakes are not rediscovered instead of being reused.
+
+  scope:
+    - every executor on the GitHub delivery lane of this repository
+
+  decision:
+
+    local_quick_launch:
+      required: foreground agent session polled with write_stdin
+      forbidden: background nohup/`&` launch; the agent tool reaps the process group when the command returns
+      symptom_of_violation: the log stops mid-suite and no receipt is written
+
+    local_quick_liveness:
+      forbidden_check: 'pgrep -f "ci.local.quick"'
+      why_forbidden: the checking command line itself contains the pattern, so it always self-matches and reports a false RUNNING
+      correct_check:
+        - poll the running agent session
+        - or test the receipt file directly
+      receipt_path: .git/codex/evidence/ci.local.quick/<head>.json
+      success_signal: "[local_quick_evidence] RECORDED <path>"
+
+    local_quick_cost:
+      order_of_magnitude: about ten minutes
+      policy: run once per frozen candidate head, never per iteration
+
+    github_merge_lane:
+      gate: make pr.merge depends on pr.merge.local_quick_gate
+      requirement: exact-head ci.local.quick receipt; head and tree must both match
+      reuse_signal: "[pr.merge.local_quick_gate] REUSE: exact-head ci.local.quick evidence verified for <head>"
+      no_carry_forward: any later tracked-file commit invalidates the receipt
+      owner_rule_scope: >-
+        the 2026-09-23 relaxation of the local Quick requirement covers ordinary Gitee
+        candidates only; the GitHub entry is unchanged
+      sequencing:
+        - finish every tracked edit
+        - run exactly one Quick at the frozen head
+        - prepare and merge without any further commit
+
+    push_preflight:
+      gate: make pr.push runs ci.generated_evidence.preflight
+      known_stale_on_source_size_change:
+        - docs/engineering_convergence/complexity_budget_report.md
+        - docs/engineering_convergence/split_plan_queue.md
+      correct_order:
+        - make ci.delivery.freeze.prepare
+        - review the generated diff
+        - commit
+        - make pr.push
+
+    post_squash_merge_base_normalization:
+      trigger: the branch's PR was squash-merged and work continues on the same branch
+      action: merge origin/main into the branch before the next push
+      why: a squash merge rewrites history, so without normalization the PR base stays the old merge-base and the already-merged content reappears in the diff
+      expected_conflicts: record-only files (run records, iteration logs, generated digests)
+      resolution: take the branch side
+      resolution_justification: main's side equals the already-merged ancestor content, so the merge is content-neutral
+      verification: git diff --quiet <pre-merge-branch-head> origin/main must report identical trees
+
+  recorded_instances:
+    - candidate: e589676c23e4ef54d0dc1cfc9bce1749e5c7eb3a
+      pr: 605
+      squash: 2ec9d5830993f83a8c37883c429de15330078d90
+      observations: >-
+        the first local Quick attempt was launched with nohup and reaped; the liveness
+        probe self-matched; the push was rejected twice by the complexity report and
+        then the split plan queue; origin/main was merged to normalize the base and the
+        resulting conflicts resolved to the branch side with identical trees.
