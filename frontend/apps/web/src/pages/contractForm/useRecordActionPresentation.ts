@@ -53,6 +53,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
       sceneReadyActions,
       v2ButtonStatus,
       v2ActionRuleList: resolveContractV2ActionRules(v2ContractStore.value) as Array<Record<string, unknown>>,
+      values: formData as Record<string, unknown>,
       resolveActionReference: (requested) => resolveAuthorizedWindowActionTarget(
         routeAuthorityEntries(session.routeAuthority),
         requested,

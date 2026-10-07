@@ -3,7 +3,7 @@ import contractV2Schema from '../../../../docs/architecture/unified_page_contrac
 import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 import {
   collectContractV2ButtonStatusById, createContractV2Store,
-  resolveContractV2EffectiveFormCapabilities, resolveContractV2FieldDescriptorMap,
+  resolveContractV2ActionRules, resolveContractV2EffectiveFormCapabilities, resolveContractV2FieldDescriptorMap,
 } from '../src/app/contracts/v2/store';
 import type { ContractV2FormStructureRoleName, ContractV2Snapshot } from '../src/app/contracts/v2/types';
 import {
@@ -15,6 +15,7 @@ import {
   presentContractV2Form,
 } from '../src/app/presentation/contractFormPresenter';
 import { composeCanonicalFormFloorplan } from '../src/app/presentation/canonicalFormFloorplan';
+import { buildContractFormActions } from '../src/pages/contractForm/contractActionPresentation';
 import { applyCanonicalFormValidation } from '../src/pages/contractForm/canonicalFormRenderState';
 import {
   BusinessErrorCodes,
@@ -3729,3 +3730,64 @@ assert.deepEqual(
   'a state-revealed action keeps its declared tier when it is the only visible primary',
 );
 console.log('[canonical_form_presenter] state-derived primary resolution cases PASS count=2');
+
+// ---------------------------------------------------------------------------
+// A declared record action must not be presented as executable before its record
+// exists.  The renderer keeps the declaration visible, disables it and names the
+// persistence precondition; once the record is persisted the same declaration
+// becomes executable.  The executable adapter must agree item-for-item with the
+// rendered set, otherwise the form renders a button no adapter can execute
+// (the CANONICAL_FORM_ACTION_EXECUTION_ADAPTER_MISSING regression).
+// ---------------------------------------------------------------------------
+const unpersistedRecordModel = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(stateDependentNativeHeaderSnapshot())),
+  'create',
+  { project_id: 12 },
+  { recordPersisted: false },
+);
+assert.deepEqual(
+  unpersistedRecordModel.actionBar.filter((entry) => entry.visible).map((entry) => entry.key),
+  ['action_project_borrow_company'],
+  'an unpersisted record keeps a declared record action visible',
+);
+assert.equal(unpersistedRecordModel.actionBar[0]?.enabled, false, 'an unpersisted record action is not executable yet');
+assert.equal(
+  unpersistedRecordModel.actionBar[0]?.reasonCode, 'ACTION_REQUIRES_SAVED_RECORD',
+  'the unpersisted gate must name the persistence precondition, not a workflow denial',
+);
+
+const persistedRecordModel = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(stateDependentNativeHeaderSnapshot())),
+  'create',
+  { project_id: 12 },
+  { recordPersisted: true },
+);
+assert.equal(
+  persistedRecordModel.actionBar[0]?.enabled, true,
+  'a persisted record makes the declared action executable again',
+);
+
+{
+  const store = createContractV2Store(decodeContractV2Snapshot(stateDependentNativeHeaderSnapshot()));
+  const values = { project_id: 12 };
+  const model = presentContractV2Form(store, 'create', values, { recordPersisted: false });
+  const adapters = buildContractFormActions({
+    contract: null,
+    model: 'sc.current.account.workspace',
+    recordId: 0,
+    renderProfile: 'create',
+    sceneReadyActions: [],
+    v2ButtonStatus: collectContractV2ButtonStatusById(store),
+    v2ActionRuleList: resolveContractV2ActionRules(store) as unknown as Array<Record<string, unknown>>,
+    policyContext: {} as never,
+    values,
+  }).filter((entry) => entry.level === 'header');
+  assert.deepEqual(
+    adapters.map((entry) => entry.key).sort(),
+    model.actionBar.filter((entry) => entry.visible).map((entry) => entry.key).sort(),
+    'the executable adapter set must cover exactly the rendered visible set',
+  );
+  assert.equal(adapters[0]?.enabled, false);
+  assert.equal(adapters[0]?.requiresSavedRecord, true);
+}
+console.log('[canonical_form_presenter] record-persistence action gating cases PASS count=4');

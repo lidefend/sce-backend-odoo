@@ -1,4 +1,9 @@
 import { normalizeActionSemantics } from '@sc/schema';
+import {
+  actionRequiresPersistedRecord,
+  declaredVisibilityModifier,
+  resolveStateDerivedStatus,
+} from './actionRuleDerivation';
 import type {
   CanonicalFormAction,
   CanonicalFormField,
@@ -547,72 +552,6 @@ function actionStatus(
     || (actionKey ? store.buttonStatusById.get(statusKey) : undefined);
 }
 
-/**
- * The v2 button status is assembled once, against the record fields known at
- * contract-fetch time.  A button whose visibility is *declared* on the
- * contract (`visible.attrs.invisible` over form fields) is therefore a
- * state-dependent statement, not an authority statement: the backend can only
- * freeze the state it saw.  The renderer already owns the declarative
- * evaluation (`definitionInvisible`, recomputed on every live form value), so a
- * state-derived hide must not permanently override it.
- *
- * Only the state-derived reasons are deferrable.  Authority reasons
- * (`ACTION_NOT_ALLOWED`, field/ACL policy, …) keep blocking exactly as before,
- * and the deferral additionally requires every field the declared modifier
- * references to be present in the live values, so an unresolvable dependency
- * still fails closed.
- */
-const STATE_DERIVED_STATUS_REASONS: ReadonlySet<string> = new Set([
-  'ACTION_NOT_VISIBLE_IN_STATE',
-  'ACTION_VISIBILITY_UNRESOLVED',
-]);
-
-function collectModifierFields(value: unknown, fields: Set<string>): void {
-  if (Array.isArray(value)) {
-    value.forEach((entry) => collectModifierFields(entry, fields));
-    return;
-  }
-  if (!value || typeof value !== 'object') return;
-  const row = value as Record<string, unknown>;
-  const field = text(row.field);
-  if (field) fields.add(field);
-  const valueField = text(row.value_field) || text(row.valueField);
-  if (valueField) fields.add(valueField);
-  collectModifierFields(row.expr, fields);
-  collectModifierFields(row.exprs, fields);
-}
-
-function declaredModifierDependenciesResolved(modifier: unknown, values: ContractV2Dictionary): boolean {
-  if (!modifier || typeof modifier !== 'object') return false;
-  const fields = new Set<string>();
-  collectModifierFields(modifier, fields);
-  if (!fields.size) return false;
-  for (const field of fields) {
-    if (!Object.prototype.hasOwnProperty.call(values, field)) return false;
-  }
-  return true;
-}
-
-function declaredVisibilityModifier(action: ContractV2ActionRule): unknown {
-  const visibleAttrs = asDict(action.visible?.attrs);
-  if (Object.prototype.hasOwnProperty.call(action.modifiers || {}, 'invisible')) {
-    return action.modifiers?.invisible;
-  }
-  if (Object.prototype.hasOwnProperty.call(visibleAttrs, 'invisible')) {
-    return visibleAttrs.invisible;
-  }
-  return action.invisible;
-}
-
-function resolveStateDerivedStatus(
-  action: ContractV2ActionRule,
-  status: ContractV2ButtonStatus | undefined,
-  values: ContractV2Dictionary,
-): boolean {
-  if (status?.visible !== false) return false;
-  if (!STATE_DERIVED_STATUS_REASONS.has(text(status?.reasonCode))) return false;
-  return declaredModifierDependenciesResolved(declaredVisibilityModifier(action), values);
-}
 
 function presentAction(
   action: ContractV2ActionRule,
@@ -622,6 +561,7 @@ function presentAction(
   values: ContractV2Dictionary,
   workflowContract: ContractV2Dictionary,
   stateDerivedStatus: boolean,
+  recordPersisted: boolean | undefined,
 ): CanonicalFormAction {
   const profiles = (action.visibleProfiles || ['create', 'edit', 'readonly'])
     .filter((profile): profile is CanonicalFormRenderMode => ['create', 'edit', 'readonly'].includes(profile));
@@ -678,21 +618,29 @@ function presentAction(
     methodName: text(button.name || button.method),
     backendIdentity: action.backendIdentity,
   });
-  if (availability.kind === 'unmanaged' || (availability.kind === 'managed' && availability.enabled)) {
-    return presented;
+  const settled = availability.kind === 'unmanaged' || (availability.kind === 'managed' && availability.enabled)
+    ? presented
+    : {
+      ...presented,
+      enabled: false,
+      reasonCode: availability.reasonCode || 'WORKFLOW_ACTION_NOT_AVAILABLE',
+    };
+  // A declared record action cannot run before the record exists.  Presenting it
+  // as enabled would promise an action no adapter can execute yet, so it stays
+  // visible with an explicit reason and turns executable once the draft is saved.
+  if (recordPersisted === false && settled.enabled && actionRequiresPersistedRecord(action)) {
+    return { ...settled, enabled: false, reasonCode: 'ACTION_REQUIRES_SAVED_RECORD' };
   }
-  return {
-    ...presented,
-    enabled: false,
-    reasonCode: availability.reasonCode || 'WORKFLOW_ACTION_NOT_AVAILABLE',
-  };
+  return settled;
 }
 
 export function presentContractV2Form(
   store: ContractV2NormalizedStore,
   mode: CanonicalFormRenderMode,
   runtimeValues?: ContractV2Dictionary,
+  context?: { recordPersisted?: boolean },
 ): CanonicalFormRenderModel {
+  const recordPersisted = context?.recordPersisted;
   const snapshot = store.snapshot;
   const structure = snapshot.formStructureContract;
   if (structure && structure.presentationMode !== 'task' && structure.presentationMode !== 'workspace') {
@@ -730,6 +678,7 @@ export function presentContractV2Form(
       runtimeValuesMerged,
       snapshot.workflowContract || {},
       stateDerivedStatus,
+      recordPersisted,
     );
   });
   const visibleActions = allActions.filter((action) => action.visible);
