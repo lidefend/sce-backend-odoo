@@ -87,6 +87,18 @@ RULES = (
     Rule(("scripts/verify/frontend_page_pattern_reference_parity_guard.py",), (
         "verify.frontend.page_pattern_reference_parity.unit",
     )),
+    # The business-entry matrix shares one pure model, one scope adapter and one
+    # reuse engine. A change to any of them moves the derivation or the reuse
+    # decision, so route all of them to the engine unit test instead of letting
+    # the matrix scripts fall through to the typecheck fallback.
+    Rule((
+        "scripts/verify/business_entry_matrix_",
+        "scripts/verify/business_entry_negative_closures.mjs",
+        "scripts/ops/evidence_scope.py",
+        "scripts/verify/business_entry_matrix_incremental.py",
+    ), (
+        "verify.frontend.business_entry.evidence_scope.unit",
+    )),
 )
 FALLBACK_TARGET = "verify.frontend.typecheck.strict"
 FORBIDDEN_DEVELOPMENT_TARGET_PARTS = ("quick", "build", "browser", "release", "fingerprint")

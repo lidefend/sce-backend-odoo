@@ -701,3 +701,60 @@ CSV：3 个 account 行 `declared→passed`、`阻塞→本轮验收`，`role_au
 - 本分支目标**仍未完成**：待所有者授权后，在干净 HEAD 上跑一次冻结候选 `make ci.local.quick` 并开 Gitee PR。
 - 运行相关文件集在测量提交 `ce8b77bf` 上完成部署与验证；其后 delta 仅为 `.agent/` + `docs/` 台账，
   按确定性影响分析复用上述运行证据。
+
+## 迭代效率：体系化复用引擎（P4 研发/交付工具，2026-10-07）
+
+### 根因
+
+上一轮把「19 键负例覆盖」的收口退化成了整矩阵重跑。直接原因不是探针慢，而是**没有任何机制
+能算出「受影响集合」**：既有增量机制只到 check/target 粒度，声明型批处理（89 入口）没有**键级**
+证据绑定，于是每次收口都只能全量重跑。
+
+### 落地（体系化复用，非点对点缓存）
+
+- **单一复用权威**：`scripts/ops/evidence_scope.py`（schema `evidence_scope.units.v1` /
+  `evidence_scope.ledger.v1`，台账 `.runtime/evidence-scope/<check>.json`）。它与检查无关、不执行任何
+  检查，只做裁决：`affected / reusable / never_recorded / stale / blocked / execution_required`。
+  `select` 复用优先：已覆盖单元重跑必须带 `--reverify-reason`，失败单元盲重试同样被拒；
+  `record` 三向校验：只能登记真实执行过的单元、`executed_units` 必须与 `results` 一一对应、
+  `planned_affected ⊆ executed`——**杜绝虚假覆盖**。
+- **单测**：`scripts/ops/test_evidence_scope.py`（25 项）经
+  `make verify.frontend.business_entry.evidence_scope.unit` 执行，锁住引擎语义。
+- **执行与规划同源**：`scripts/verify/business_entry_matrix_model.mjs` 是唯一纯函数真相源，浏览器探针
+  与范围规划器共同 import，消除「执行/规划漂移」。矩阵按 entry 声明为 unit，指纹包含声明行、
+  overlay 行为、推导出的拒权候选与模型/探针 revision。
+- **构建产物版本是溯源而非有效性键**：仅因重新部署不使集合失效；使单元失效的是声明输入、模型/探针
+  断言或受管运行态身份（base url、库、登录、候选顺序）变化。跨部署沿用证据需要记录影响分析。
+- **复用优先入口**：`make verify.frontend.business_entry.matrix.incremental`。默认先规划、只跑受影响键、
+  再回写台账；`SC_ENTRY_SCOPE_REVERIFY_REASON` 才允许重跑已覆盖键，`SC_ENTRY_SCOPE_FULL=1` +
+  `SC_ENTRY_SCOPE_FULL_REASON` 才允许整矩阵重跑。原 `matrix.browser` 保持为执行器。
+- **只读诊断复用输入**：`scripts/verify/business_entry_negative_closures.mjs` 支持
+  `SC_ENTRY_MATRIX_CLOSURES_FROM` 采用既有观测，避免重复登录 10 个 principal。
+- **入口可发现**：`scripts/verify/frontend_dev_incremental.py` 把矩阵/引擎文件映射到引擎单测，
+  `ci.local.iteration` 会推荐正确的责任检查。
+
+### 实测（served `ce8b77bf` / `sc_demo`，未重新取证）
+
+| 步骤 | 结果 |
+| --- | --- |
+| 台账播种（复用 `daily-ce8b77bf-negative-19`、`daily-ce8b77bf-negative-delta2`，以及按其自身记录的候选集复算的 `f4279416` 全量） | `recorded=85/89 {passed:80, declared:5}` |
+| `plan`（播种后） | `85 reusable / 4 affected / 0 stale / 0 blocked` |
+| `make verify.frontend.business_entry.matrix.incremental` | 只执行 4 键：`ok=true entries=4 problems=0 console_errors=0`，回写台账 |
+| 再次运行同一入口 | `89 reusable / 0 affected` → `REUSE-FIRST nothing to execute`（约 1.6s，无浏览器执行） |
+| 重跑已覆盖键（无理由） | DENY（拒绝重复取证） |
+| `SC_ENTRY_SCOPE_FULL=1`（无理由） | DENY（全量需显式理由） |
+| `make verify.frontend.business_entry.matrix.evidence_scope.status` | `{checked:4, declared:5, passed:80}`（89/89，uncovered=0） |
+| `make verify.frontend.business_entry.evidence_scope.unit` | `Ran 25 tests OK` |
+
+### 需要所有者知悉（未放宽、未替证）
+
+- 4 个声明归于其他车道的入口（`menu_sc_project_initiation`、`menu_sc_project_project`、
+  `menu_sc_user_payment_apply`、`menu_sc_p1_daily_contract`）引用的证据路径在磁盘上已不存在
+  （`artifacts/frontend-web-fix-20260928/evidence.md`、`uat02-raw/*`、`tpl02/TPL02-20260928132220-journey.json`）。
+  播种器把它们记为 `declared`，并在结果文档写显式 `declaration_drift` 列表，**不静默声称覆盖**；
+  这是另一车道的声明漂移，需由其责任层修复或重新指向可读证据。
+- 该 4 项之外，矩阵车道自身表面（85 键）零缺口。
+
+### 未完成
+
+- 本分支目标**仍未完成**：待所有者授权后，在干净 HEAD 上跑一次冻结候选 `make ci.local.quick` 并开 Gitee PR。

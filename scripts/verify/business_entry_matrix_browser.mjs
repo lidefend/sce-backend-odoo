@@ -23,6 +23,18 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { launchChromium } from './playwright_runtime.mjs';
 import { findReleasedNavigationTarget } from './released_navigation_target.mjs';
+import {
+  candidateStates,
+  countReleasedNavigationTargets,
+  declaredEntryGroups,
+  ineligibleCandidates,
+  loadMatrix,
+  loadOverlay,
+  negativePlanByCandidate,
+  overlayFor,
+  selectEntries,
+  universalCapabilities,
+} from './business_entry_matrix_model.mjs';
 
 const BASE = (process.env.SC_ACCEPTANCE_FRONTEND_URL || process.env.FRONTEND_URL || '').replace(/\/$/, '');
 const DB = process.env.SC_ACCEPTANCE_DATABASE || process.env.DB_NAME || 'sc_demo';
@@ -49,72 +61,6 @@ let browser;
 function fail(message) { problems.push(message); }
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 
-// Count the released navigation targets a principal actually received. A node
-// only carries a route when the runtime published a positive action_id/menu_id
-// pair; a candidate that received none cannot support a denial, because "the
-// entry is absent" would be vacuously true rather than exercised.
-function countReleasedNavigationTargets(nav) {
-  const pending = Array.isArray(nav) ? [...nav] : [];
-  let count = 0;
-  while (pending.length) {
-    const node = pending.shift();
-    if (!node || typeof node !== 'object') continue;
-    const meta = node.meta && typeof node.meta === 'object' ? node.meta : {};
-    const actionId = Number(node.action_id || meta.action_id || 0);
-    const menuId = Number(node.menu_id || meta.menu_id || 0);
-    if (actionId > 0 && menuId > 0) count += 1;
-    if (Array.isArray(node.children)) pending.push(...node.children);
-  }
-  return count;
-}
-
-function parseCsv(text) {
-  const rows = [];
-  let row = [];
-  let field = '';
-  let quoted = false;
-  for (let index = 0; index < text.length; index += 1) {
-    const ch = text[index];
-    if (quoted) {
-      if (ch === '"') {
-        if (text[index + 1] === '"') { field += '"'; index += 1; } else { quoted = false; }
-      } else { field += ch; }
-      continue;
-    }
-    if (ch === '"') { quoted = true; continue; }
-    if (ch === ',') { row.push(field); field = ''; continue; }
-    if (ch === '\n') { row.push(field); field = ''; rows.push(row); row = []; continue; }
-    if (ch === '\r') continue;
-    field += ch;
-  }
-  if (field.length || row.length) { row.push(field); rows.push(row); }
-  return rows;
-}
-
-function loadMatrix() {
-  const table = parseCsv(fs.readFileSync(CSV_PATH, 'utf8'));
-  const header = table.shift();
-  return table
-    .filter((cols) => cols.some((value) => String(value).trim() !== ''))
-    .map((cols) => Object.fromEntries(header.map((name, index) => [name, cols[index] === undefined ? '' : cols[index]])));
-}
-
-function loadOverlay() {
-  const body = JSON.parse(fs.readFileSync(OVERLAY_PATH, 'utf8'));
-  return {
-    defaults: body.defaults && typeof body.defaults === 'object' ? body.defaults : {},
-    entries: body.entries && typeof body.entries === 'object' ? body.entries : {},
-    deniedRoleCandidates: Array.isArray(body.denied_role_candidates)
-      ? body.denied_role_candidates.map(String)
-      : [],
-  };
-}
-
-// The governed exposure registry already adjudicates entries that exist but are
-// deliberately not delivered to any business role, and entries whose authority
-// is still pending runtime resolution. The probe consumes that declaration
-// instead of re-deriving a second opinion; it never relaxes an
-// authorization/ACL/field-permission assertion and never invents a pass.
 function loadExposureRegistry() {
   const body = JSON.parse(fs.readFileSync(EXPOSURE_REGISTRY_PATH, 'utf8'));
   const declared = new Map();
@@ -138,39 +84,6 @@ function loadExposureRegistry() {
     unauthored_count: unauthored.length,
     pending_count: Object.keys(pending).length,
   };
-}
-
-function overlayFor(overlay, menuXmlid) {
-  const merged = { ...overlay.defaults, ...(overlay.entries[menuXmlid] || {}) };
-  if (!('detail' in merged)) merged.detail = true;
-  if (!('expect_write' in merged)) merged.expect_write = null;
-  return merged;
-}
-
-function declaredEntryGroups(row) {
-  try {
-    const parsed = JSON.parse(String(row.role_authority || '{}'));
-    if (Array.isArray(parsed.action_groups) && parsed.action_groups.length) {
-      return parsed.action_groups.map(String);
-    }
-    if (Array.isArray(parsed.menu_chain)) {
-      return [...new Set(parsed.menu_chain
-        .flatMap((node) => (node && Array.isArray(node.groups) ? node.groups : []))
-        .map(String))];
-    }
-    return [];
-  } catch {
-    return [];
-  }
-}
-
-function selectEntries(matrix, overlay) {
-  let selected = matrix.filter((row) => SKIP_PASSED || row.acceptance_status !== 'passed');
-  if (KEYS_FILTER.length) selected = selected.filter((row) => KEYS_FILTER.includes(row.menu_xmlid));
-  if (DOMAIN_FILTER) selected = selected.filter((row) => row.domain === DOMAIN_FILTER);
-  return selected
-    .map((row) => ({ row, behaviour: overlayFor(overlay, row.menu_xmlid) }))
-    .filter((entry) => entry.row.menu_xmlid && entry.row.action_xmlid);
 }
 
 function envelopeData(body) {
@@ -772,10 +685,12 @@ async function main() {
   if (!EXPECTED_SHA) throw new Error('SC_ACCEPTANCE_TARGET_SHA is required');
   if (!LOGIN || !PASSWORD) throw new Error('ACCEPTANCE_LOGIN and ACCEPTANCE_PASSWORD are required');
 
-  const matrix = loadMatrix();
-  const overlay = loadOverlay();
+  const matrix = loadMatrix(CSV_PATH);
+  const overlay = loadOverlay(OVERLAY_PATH);
   const exposure = loadExposureRegistry();
-  const selected = selectEntries(matrix, overlay);
+  const selected = selectEntries(matrix, overlay, {
+    skipPassed: SKIP_PASSED, keys: KEYS_FILTER, domain: DOMAIN_FILTER,
+  });
   if (!selected.length) throw new Error('no entry selected from the matrix (check SC_ENTRY_MATRIX_DOMAIN / KEYS)');
   const mutating = selected.filter((entry) => entry.behaviour.expect_write === true);
   if (mutating.length && WRITE_CONFIRM !== WRITE_CONFIRM_TOKEN) {
@@ -833,11 +748,16 @@ async function main() {
   // Negative authority is declared by the runtime, never by a hand-kept map.
   // The login envelope publishes the acting principal's full capability closure
   // (`principal.role_xmlids`), so a candidate is a valid negative for an entry
-  // only when that closure is disjoint from the entry's declared groups.
+  // only when that closure is disjoint from the entry's declared groups AND the
+  // runtime actually released it navigation targets: an empty navigation tree
+  // makes "the entry is absent" vacuously true, which would fabricate a denial
+  // that was never exercised. The derivation lives in
+  // business_entry_matrix_model.mjs so planning and execution cannot drift.
   const candidateRoles = overlay.deniedRoleCandidates;
-  const candidateState = new Map();
+  const closures = {};
+  const navByRole = new Map();
   for (const role of candidateRoles) {
-    if (candidateState.has(role)) continue;
+    if (Object.prototype.hasOwnProperty.call(closures, role)) continue;
     const observed = await deniedRoleNavigation(role);
     if (!observed.nav && observed.error) {
       fail(`authority: ${role} login/navigation failed (${observed.error})`);
@@ -845,83 +765,45 @@ async function main() {
     if (!Array.isArray(observed.roleXmlids) || !observed.roleXmlids.length) {
       fail(`authority: ${role} login envelope declared no capability closure (principal.role_xmlids)`);
     }
-    // A candidate is only a valid negative baseline when the runtime actually
-    // released navigation targets to it. An empty nav tree makes "the entry is
-    // absent" vacuously true, which would fabricate a denial that was never
-    // exercised, so such a candidate is ineligible rather than a denial.
-    const releasedTargets = countReleasedNavigationTargets(observed.nav);
-    candidateState.set(role, {
-      ...observed,
-      released_targets: releasedTargets,
-      eligible: releasedTargets > 0,
+    closures[role] = {
+      role_xmlids: Array.isArray(observed.roleXmlids) ? observed.roleXmlids : [],
+      nav_targets: countReleasedNavigationTargets(observed.nav),
+    };
+    navByRole.set(role, observed.nav || []);
+  }
+  const states = candidateStates(candidateRoles, closures);
+  for (const candidate of ineligibleCandidates(candidateRoles, states)) {
+    observations.push({
+      stage: 'authority_negative_candidate',
+      login: candidate.role,
+      eligible: false,
+      released_navigation_targets: candidate.released_targets,
+      capability_closure_size: candidate.capability_closure_size,
+      reason: 'runtime released no navigation target to the candidate, so a denial cannot be distinguished from a missing navigation',
     });
   }
-  for (const role of candidateRoles) {
-    const candidate = candidateState.get(role);
-    if (candidate && !candidate.eligible) {
-      observations.push({
-        stage: 'authority_negative_candidate',
-        login: role,
-        eligible: false,
-        released_navigation_targets: candidate.released_targets || 0,
-        capability_closure_size: (candidate.roleXmlids || []).length,
-        reason: 'runtime released no navigation target to the candidate, so a denial cannot be distinguished from a missing navigation',
-      });
-    }
-  }
-  const negativeByRole = new Map();
-  const candidateClosures = candidateRoles
-    .map((role) => candidateState.get(role))
-    .filter((candidate) => candidate && candidate.eligible)
-    .map((candidate) => candidate.roleXmlids)
-    .filter((caps) => Array.isArray(caps) && caps.length);
-  const universalCaps = candidateClosures.length
-    ? candidateClosures.reduce((acc, caps) => acc.filter((cap) => caps.includes(cap)))
-    : [];
-  for (const { row, behaviour } of selected) {
-    const declared = declaredEntryGroups(row);
-    if (!declared.length) {
-      observations.push({
-        stage: 'authority_negative', entry: row.menu_xmlid, skipped: true,
-        reason: 'entry role_authority declares no group to deny',
-      });
-      continue;
-    }
-    const pinned = behaviour.denied_role ? String(behaviour.denied_role) : null;
-    let chosen = null;
-    for (const role of candidateRoles) {
-      if (pinned && role !== pinned) continue;
-      const candidate = candidateState.get(role);
-      if (!candidate || !candidate.eligible) continue;
-      const caps = Array.isArray(candidate.roleXmlids) ? candidate.roleXmlids : [];
-      if (!caps.length) continue;
-      if (!caps.some((cap) => declared.includes(cap))) { chosen = role; break; }
-    }
-    if (!chosen) {
-      const blocking = declared.filter((cap) => universalCaps.includes(cap));
-      observations.push({
-        stage: 'authority_negative', entry: row.menu_xmlid, skipped: true,
-        declared_groups: declared,
-        baseline_groups: blocking,
-        reason: 'no eligible denied-role candidate declares a capability closure disjoint from the entry declared groups',
-      });
-      continue;
-    }
-    if (!negativeByRole.has(chosen)) negativeByRole.set(chosen, []);
-    negativeByRole.get(chosen).push({ action: row.action_xmlid, menu: row.menu_xmlid });
+  const universalCaps = universalCapabilities(candidateRoles, states);
+  const { byCandidate, undecidable } = negativePlanByCandidate(selected, candidateRoles, states);
+  for (const item of undecidable) {
+    observations.push({
+      stage: 'authority_negative', entry: item.entry, skipped: true,
+      declared_groups: item.declared_groups,
+      baseline_groups: item.declared_groups.filter((cap) => universalCaps.includes(cap)),
+      reason: item.reason,
+    });
   }
   let negativeChecked = 0;
-  for (const [deniedRole, entries] of negativeByRole) {
-    const observed = candidateState.get(deniedRole);
+  for (const [deniedRole, entries] of byCandidate) {
+    const nav = navByRole.get(deniedRole) || [];
     const leaked = entries
-      .filter((item) => findReleasedNavigationTarget(observed.nav || [], item.action))
+      .filter((item) => findReleasedNavigationTarget(nav, item.action))
       .map((item) => item.action);
     negativeChecked += entries.length;
     observations.push({
       stage: 'authority_negative',
       login: deniedRole,
-      capability_closure_size: (observed.roleXmlids || []).length,
-      navigation_observed: Boolean(observed.nav),
+      capability_closure_size: (closures[deniedRole].role_xmlids || []).length,
+      navigation_observed: Boolean(nav),
       checked_entries: entries.length,
       leaked_entries: leaked,
     });

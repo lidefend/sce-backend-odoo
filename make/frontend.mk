@@ -937,6 +937,7 @@ verify.frontend.playwright_vendor_coupling.guard: guard.prod.forbid
 
 verify.frontend.quick.gate: verify.frontend.j13_required_value_semantics.unit verify.frontend.canonical_form_presenter.unit verify.frontend.hierarchy_command_authority.unit verify.frontend.create_default_hydration.unit verify.frontend.create_record_user_journey.unit verify.frontend.contract_field_occurrence_identity.unit verify.frontend.contract_form_save_failure_recovery.unit verify.frontend.contract_error_business_ownership.unit verify.frontend.standard_form_composition.unit verify.frontend.adopted_form_engine_decision.unit verify.frontend.adopted_form_validation_identity.unit verify.frontend.standard_collection_composition.unit verify.frontend.standard_shell_composition.unit verify.frontend.native_section_navigation.unit verify.frontend.native_collaboration_presentation.unit verify.frontend.cross_model_action_navigation.unit verify.frontend.contract_render_profile.unit verify.frontend.collection_status_presentation.unit
 verify.frontend.quick.gate: verify.frontend.playwright_vendor_coupling.guard
+verify.frontend.quick.gate: verify.frontend.business_entry.evidence_scope.unit
 verify.frontend.quick.gate: guard.prod.forbid verify.frontend.workspace_content_alignment.guard verify.frontend.page_identity verify.frontend.contract_header_action.unit verify.frontend.readonly_main_data_coverage.unit verify.frontend.relation_entry.contract_guard verify.frontend.relation_read_closure.guard verify.frontend.modifiers_runtime.guard verify.frontend.onchange_roundtrip.guard verify.frontend.onchange_contract_schema.guard verify.frontend.onchange_line_patch.guard verify.frontend.x2many_command_semantic.guard verify.frontend.x2many_inline_edit.guard verify.contract.subviews.guard verify.frontend.view_type_render_coverage.guard verify.frontend.view_type_contract_semantic.guard verify.frontend.search_groupby_savedfilters.guard verify.frontend.saved_search_capability.unit verify.frontend.record_denied_reason.unit verify.frontend.contract_record_action_state.unit verify.frontend.group_summary_runtime.guard verify.frontend.grouped_rows_runtime.guard verify.frontend.grouped_pagination_semantic.guard verify.frontend.grouped_pagination_semantic_drift.guard verify.frontend.grouped_contract_consistency.guard verify.frontend.grouped_drift_summary.baseline.guard verify.frontend.typecheck.strict verify.frontend.build
 	@echo "[OK] verify.frontend.quick.gate done"
 
@@ -1132,3 +1133,46 @@ verify.frontend.business_entry.matrix.browser: guard.prod.forbid
 	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)
 	@test -n "$(ACCEPTANCE_LOGIN)" -a -n "$(ACCEPTANCE_PASSWORD)" || (echo "ACCEPTANCE_LOGIN and ACCEPTANCE_PASSWORD must be supplied through the environment"; exit 2)
 	@SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" SC_ACCEPTANCE_TARGET_SHA="$(ACCEPTANCE_TARGET_SHA)" ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" SC_ENTRY_MATRIX_DOMAIN="$(SC_ENTRY_MATRIX_DOMAIN)" SC_ENTRY_MATRIX_KEYS="$(SC_ENTRY_MATRIX_KEYS)" SC_ENTRY_MATRIX_INCLUDE_PASSED="$(SC_ENTRY_MATRIX_INCLUDE_PASSED)" SC_ENTRY_MATRIX_CSV="$(SC_ENTRY_MATRIX_CSV)" SC_ENTRY_MATRIX_OVERLAY="$(SC_ENTRY_MATRIX_OVERLAY)" SC_ENTRY_WRITE_CONFIRM="$(SC_ENTRY_WRITE_CONFIRM)" SC_ACCEPTANCE_OUTPUT_DIR="$(SC_ACCEPTANCE_OUTPUT_DIR)" node scripts/verify/business_entry_matrix_browser.mjs
+
+# Reuse-first entry for the same declaration-driven surface. It declares the
+# matrix as evidence units, asks scripts/ops/evidence_scope.py what is still
+# affected under the current inputs, executes exactly that key set through the
+# existing probe, then records the outcome. An unchanged passing entry is reused
+# instead of re-collected; a targeted rerun of a covered entry is refused unless
+# SC_ENTRY_SCOPE_REVERIFY_REASON states why; re-walking every entry needs
+# SC_ENTRY_SCOPE_FULL=1 together with SC_ENTRY_SCOPE_FULL_REASON. The plan this
+# entry consumes is the negative-closure snapshot below, so refresh that first
+# when the principal closures could have moved.
+SC_ENTRY_MATRIX_CLOSURES ?= artifacts/frontend-business-entry-matrix/negative_closures.json
+SC_ENTRY_SCOPE_LEDGER ?= .runtime/evidence-scope/verify.frontend.business_entry.matrix.browser.json
+SC_ENTRY_SCOPE_REVERIFY_REASON ?=
+SC_ENTRY_SCOPE_FULL ?=
+SC_ENTRY_SCOPE_FULL_REASON ?=
+
+.PHONY: verify.frontend.business_entry.negative_closures verify.frontend.business_entry.matrix.incremental verify.frontend.business_entry.matrix.evidence_scope.status verify.frontend.business_entry.evidence_scope.unit
+
+# Bounded read-only diagnostic: observe each declared denied-role candidate's
+# capability closure and released navigation count. Set SC_ENTRY_MATRIX_CLOSURES_FROM
+# to an already-recorded observation to adopt it instead of re-walking the logins.
+verify.frontend.business_entry.negative_closures: guard.prod.forbid
+	@test -n "$(ACCEPTANCE_BASE_URL)" || (echo "ACCEPTANCE_BASE_URL is required"; exit 2)
+	@test -n "$(ACCEPTANCE_PASSWORD)" || (echo "ACCEPTANCE_PASSWORD is required"; exit 2)
+	@SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" SC_ENTRY_MATRIX_OVERLAY="$(SC_ENTRY_MATRIX_OVERLAY)" SC_ENTRY_MATRIX_CLOSURES_OUT="$(SC_ENTRY_MATRIX_CLOSURES)" SC_ENTRY_MATRIX_CLOSURES_FROM="$(SC_ENTRY_MATRIX_CLOSURES_FROM)" node scripts/verify/business_entry_negative_closures.mjs
+
+verify.frontend.business_entry.matrix.incremental: guard.prod.forbid
+	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)
+	@test -n "$(ACCEPTANCE_LOGIN)" -a -n "$(ACCEPTANCE_PASSWORD)" || (echo "ACCEPTANCE_LOGIN and ACCEPTANCE_PASSWORD must be supplied through the environment"; exit 2)
+	@SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" SC_ACCEPTANCE_TARGET_SHA="$(ACCEPTANCE_TARGET_SHA)" ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" SC_ENTRY_MATRIX_CSV="$(SC_ENTRY_MATRIX_CSV)" SC_ENTRY_MATRIX_OVERLAY="$(SC_ENTRY_MATRIX_OVERLAY)" SC_ENTRY_MATRIX_CLOSURES="$(SC_ENTRY_MATRIX_CLOSURES)" SC_ENTRY_MATRIX_KEYS="$(SC_ENTRY_MATRIX_KEYS)" SC_ENTRY_SCOPE_LEDGER="$(SC_ENTRY_SCOPE_LEDGER)" SC_ENTRY_SCOPE_REVERIFY_REASON="$(SC_ENTRY_SCOPE_REVERIFY_REASON)" SC_ENTRY_SCOPE_FULL="$(SC_ENTRY_SCOPE_FULL)" SC_ENTRY_SCOPE_FULL_REASON="$(SC_ENTRY_SCOPE_FULL_REASON)" SC_ENTRY_WRITE_CONFIRM="$(SC_ENTRY_WRITE_CONFIRM)" SC_ACCEPTANCE_OUTPUT_DIR="$(SC_ACCEPTANCE_OUTPUT_DIR)" python3 scripts/verify/business_entry_matrix_incremental.py
+
+# Read-only coverage report for the same surface. It executes nothing: it prints
+# how many declared entries are covered, stale, never recorded or blocked.
+verify.frontend.business_entry.matrix.evidence_scope.status: guard.prod.forbid
+	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)
+	@test -n "$(ACCEPTANCE_LOGIN)" -a -n "$(ACCEPTANCE_PASSWORD)" || (echo "ACCEPTANCE_LOGIN and ACCEPTANCE_PASSWORD must be supplied through the environment"; exit 2)
+	@mkdir -p .runtime/evidence-scope
+	@SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" SC_ACCEPTANCE_TARGET_SHA="$(ACCEPTANCE_TARGET_SHA)" ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" SC_ENTRY_MATRIX_CSV="$(SC_ENTRY_MATRIX_CSV)" SC_ENTRY_MATRIX_OVERLAY="$(SC_ENTRY_MATRIX_OVERLAY)" SC_ENTRY_MATRIX_CLOSURES="$(SC_ENTRY_MATRIX_CLOSURES)" node scripts/verify/business_entry_matrix_scope.mjs --emit-units .runtime/evidence-scope/units.status.json
+	@python3 scripts/ops/evidence_scope.py status --units .runtime/evidence-scope/units.status.json --ledger "$(SC_ENTRY_SCOPE_LEDGER)"
+
+verify.frontend.business_entry.evidence_scope.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/evidence_scope.py scripts/verify/business_entry_matrix_incremental.py scripts/verify/business_entry_matrix_scope_seed.py
+	@python3 -m unittest scripts.ops.test_evidence_scope
