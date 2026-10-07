@@ -1,197 +1,197 @@
 {
- "schema_version": 1,
- "id": "FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE",
- "branch": "fix/frontend-business-entry-contract-payment-closure-20261007",
- "status": "active",
- "baseline_sha": "8c2b8dda27856cd31715cbb0c4e214aefbfda41a",
- "goal": ".agent/goals/FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE.yaml",
- "record": "docs/ops/iterations/frontend_business_entry_acceptance_gap_closure_20261007.md",
- "scope": [
-  ".agent/",
-  "addons/smart_construction_acceptance_fixture/",
-  "addons/smart_construction_core/",
-  "config/",
-  "docs/engineering_convergence/",
-  "docs/frontend_productization/",
-  "docs/ops/iterations/",
-  "docs/product/",
-  "frontend/apps/web/scripts/",
-  "frontend/apps/web/src/",
-  "make/",
-  "scripts/ops/",
-  "scripts/verify/"
- ],
- "environment": {
-  "kind": "runtime",
-  "authority": "owner-authorized governed daily development server http://1.95.85.92:18081 resolved through config/frontend/acceptance_environments_v1.json profiles.daily (ENV=dev, database sc_demo, external target_mode, expected sha required). The owner explicitly authorized mutating the sc_demo semi-production dataset to exercise real product function. No new environment, database, port, volume, credential or acceptance-profile authority is created."
- },
- "checks": {
-  "business_entry_lifecycle_browser": {
-   "target": "verify.frontend.business_entry.lifecycle.browser",
-   "kind": "runtime",
-   "inputs": [
-    "scripts/verify/frontend_business_entry_lifecycle_browser.mjs",
-    "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
-    "scripts/verify/playwright_runtime.mjs",
-    "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
-    "scripts/ops/daily_runtime_lifecycle_fixture_prepare.py",
-    "make/frontend.mk",
-    "config/frontend/acceptance_environments_v1.json",
-    "artifacts/backend/acceptance_record_identity.json"
-   ]
+  "schema_version": 1,
+  "id": "FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE",
+  "branch": "fix/frontend-business-entry-contract-payment-closure-20261007",
+  "status": "active",
+  "baseline_sha": "8c2b8dda27856cd31715cbb0c4e214aefbfda41a",
+  "goal": ".agent/goals/FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE.yaml",
+  "record": "docs/ops/iterations/frontend_business_entry_acceptance_gap_closure_20261007.md",
+  "scope": [
+    ".agent/",
+    "addons/smart_construction_acceptance_fixture/",
+    "addons/smart_construction_core/",
+    "config/",
+    "docs/engineering_convergence/",
+    "docs/frontend_productization/",
+    "docs/ops/iterations/",
+    "docs/product/",
+    "frontend/apps/web/scripts/",
+    "frontend/apps/web/src/",
+    "make/",
+    "scripts/ops/",
+    "scripts/verify/"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "owner-authorized governed daily development server http://1.95.85.92:18081 resolved through config/frontend/acceptance_environments_v1.json profiles.daily (ENV=dev, database sc_demo, external target_mode, expected sha required). The owner explicitly authorized mutating the sc_demo semi-production dataset to exercise real product function. No new environment, database, port, volume, credential or acceptance-profile authority is created."
   },
-  "baseline_iteration_execution_policy": {
-   "target": "verify.baseline.iteration.execution.policy",
-   "kind": "unit",
-   "layer": "L1",
-   "inputs": [
-    "make/ci.mk",
-    "scripts/ops/agent_run_context.py"
-   ]
+  "checks": {
+    "business_entry_lifecycle_browser": {
+      "target": "verify.frontend.business_entry.lifecycle.browser",
+      "kind": "runtime",
+      "inputs": [
+        "scripts/verify/frontend_business_entry_lifecycle_browser.mjs",
+        "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
+        "scripts/verify/playwright_runtime.mjs",
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "scripts/ops/daily_runtime_lifecycle_fixture_prepare.py",
+        "make/frontend.mk",
+        "config/frontend/acceptance_environments_v1.json",
+        "artifacts/backend/acceptance_record_identity.json"
+      ]
+    },
+    "baseline_iteration_execution_policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "kind": "unit",
+      "layer": "L1",
+      "inputs": [
+        "make/ci.mk",
+        "scripts/ops/agent_run_context.py"
+      ]
+    },
+    "daily_runtime_mail_sender_prepare": {
+      "target": "verify.daily.runtime.mail_sender.prepare",
+      "kind": "unit",
+      "layer": "L2",
+      "inputs": [
+        "scripts/ops/daily_runtime_mail_sender_prepare.py",
+        "scripts/ops/test_daily_runtime_mail_sender_prepare.py",
+        "make/codex.mk"
+      ]
+    },
+    "daily_runtime_lifecycle_fixture_prepare": {
+      "target": "verify.daily.runtime.lifecycle_fixture.prepare",
+      "kind": "unit",
+      "layer": "L2",
+      "inputs": [
+        "scripts/ops/daily_runtime_lifecycle_fixture_prepare.py",
+        "scripts/ops/test_daily_runtime_lifecycle_fixture_prepare.py",
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "make/codex.mk"
+      ]
+    },
+    "role_surface_exposure_declaration_guard": {
+      "target": "verify.frontend.role_surface_exposure_declaration.guard",
+      "kind": "unit",
+      "layer": "L2",
+      "inputs": [
+        "scripts/verify/role_surface_exposure_declaration_guard.py",
+        "scripts/verify/test_role_surface_exposure_declaration_guard.py",
+        "config/frontend/role_surface_exposure_declarations_v1.json",
+        "docs/product/frontend_business_entry_acceptance_v1.csv",
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "addons/smart_construction_core/security/sc_role_groups.xml",
+        "addons/smart_construction_core/security/sc_capability_groups.xml",
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "make/frontend.mk",
+        "make/ci.mk"
+      ]
+    },
+    "release_navigation_policy_guard": {
+      "target": "verify.frontend.release_navigation_policy.guard",
+      "kind": "unit",
+      "layer": "L2",
+      "inputs": [
+        "scripts/verify/frontend_release_navigation_policy_guard.py",
+        "scripts/verify/test_frontend_release_navigation_policy_guard.py",
+        "config/frontend/authoritative_navigation.json",
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "make/frontend.mk"
+      ]
+    },
+    "business_entry_payment_request_browser": {
+      "target": "verify.frontend.business_entry.payment_request.browser",
+      "kind": "runtime",
+      "inputs": [
+        "scripts/verify/business_entry_payment_request_one2many_browser.mjs",
+        "scripts/verify/playwright_runtime.mjs",
+        "artifacts/backend/acceptance_record_identity.json",
+        "make/frontend.mk",
+        "config/frontend/acceptance_environments_v1.json"
+      ]
+    },
+    "daily_runtime_record_identity_resolve": {
+      "target": "verify.daily.runtime.record_identity.resolve",
+      "kind": "unit",
+      "layer": "L2",
+      "inputs": [
+        "scripts/ops/daily_runtime_record_identity_resolve.py",
+        "scripts/ops/test_daily_runtime_record_identity_resolve.py",
+        "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
+        "make/codex.mk"
+      ]
+    },
+    "business_entry_general_contract_browser": {
+      "target": "verify.frontend.business_entry.general_contract.browser",
+      "kind": "runtime",
+      "inputs": [
+        "scripts/verify/business_entry_general_contract_browser.mjs",
+        "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
+        "scripts/verify/playwright_runtime.mjs",
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "scripts/ops/daily_runtime_lifecycle_fixture_prepare.py",
+        "scripts/ops/daily_runtime_record_identity_resolve.py",
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "addons/smart_construction_core/models/core/general_contract.py",
+        "addons/smart_construction_core/security/sc_role_groups.xml",
+        "addons/smart_construction_core/security/sc_capability_groups.xml",
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "make/frontend.mk",
+        "make/codex.mk",
+        "config/frontend/acceptance_environments_v1.json",
+        "artifacts/backend/acceptance_record_identity.json"
+      ]
+    },
+    "frontend_primitive_semantic_identity": {
+      "target": "verify.frontend.primitive_adapter.unit",
+      "kind": "static",
+      "inputs": [
+        "frontend/apps/web/src/components/design-system/primitiveAdapter.ts",
+        "frontend/apps/web/scripts/primitive_adapter_contract_test.ts",
+        "scripts/verify/frontend_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_primitive_adapter_guard.py",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_component_driver_takeover_inventory": {
+      "target": "verify.frontend.component_driver_takeover.unit",
+      "kind": "generated",
+      "inputs": [
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+        "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
+        "frontend/apps/web/src/components/design-system/ScCard.vue",
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/design-system/ScIconButton.vue",
+        "make/frontend.mk"
+      ]
+    },
+    "business_entry_matrix_browser": {
+      "target": "verify.frontend.business_entry.matrix.browser",
+      "kind": "runtime",
+      "inputs": [
+        "scripts/verify/business_entry_matrix_browser.mjs",
+        "scripts/verify/business_entry_matrix_overlay.json",
+        "scripts/verify/released_navigation_target.mjs",
+        "scripts/verify/playwright_runtime.mjs",
+        "docs/product/frontend_business_entry_acceptance_v1.csv",
+        "config/frontend/role_surface_exposure_declarations_v1.json",
+        "config/frontend/acceptance_environments_v1.json",
+        "make/frontend.mk"
+      ]
+    }
   },
-  "daily_runtime_mail_sender_prepare": {
-   "target": "verify.daily.runtime.mail_sender.prepare",
-   "kind": "unit",
-   "layer": "L2",
-   "inputs": [
-    "scripts/ops/daily_runtime_mail_sender_prepare.py",
-    "scripts/ops/test_daily_runtime_mail_sender_prepare.py",
-    "make/codex.mk"
-   ]
-  },
-  "daily_runtime_lifecycle_fixture_prepare": {
-   "target": "verify.daily.runtime.lifecycle_fixture.prepare",
-   "kind": "unit",
-   "layer": "L2",
-   "inputs": [
-    "scripts/ops/daily_runtime_lifecycle_fixture_prepare.py",
-    "scripts/ops/test_daily_runtime_lifecycle_fixture_prepare.py",
-    "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
-    "make/codex.mk"
-   ]
-  },
-  "role_surface_exposure_declaration_guard": {
-   "target": "verify.frontend.role_surface_exposure_declaration.guard",
-   "kind": "unit",
-   "layer": "L2",
-   "inputs": [
-    "scripts/verify/role_surface_exposure_declaration_guard.py",
-    "scripts/verify/test_role_surface_exposure_declaration_guard.py",
-    "config/frontend/role_surface_exposure_declarations_v1.json",
-    "docs/product/frontend_business_entry_acceptance_v1.csv",
-    "addons/smart_construction_core/core_extension_policy_maps.py",
-    "addons/smart_construction_core/security/sc_role_groups.xml",
-    "addons/smart_construction_core/security/sc_capability_groups.xml",
-    "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
-    "make/frontend.mk",
-    "make/ci.mk"
-   ]
-  },
-  "release_navigation_policy_guard": {
-   "target": "verify.frontend.release_navigation_policy.guard",
-   "kind": "unit",
-   "layer": "L2",
-   "inputs": [
-    "scripts/verify/frontend_release_navigation_policy_guard.py",
-    "scripts/verify/test_frontend_release_navigation_policy_guard.py",
-    "config/frontend/authoritative_navigation.json",
-    "addons/smart_construction_core/core_extension_policy_maps.py",
-    "make/frontend.mk"
-   ]
-  },
-  "business_entry_payment_request_browser": {
-   "target": "verify.frontend.business_entry.payment_request.browser",
-   "kind": "runtime",
-   "inputs": [
-    "scripts/verify/business_entry_payment_request_one2many_browser.mjs",
-    "scripts/verify/playwright_runtime.mjs",
-    "artifacts/backend/acceptance_record_identity.json",
-    "make/frontend.mk",
-    "config/frontend/acceptance_environments_v1.json"
-   ]
-  },
-  "daily_runtime_record_identity_resolve": {
-   "target": "verify.daily.runtime.record_identity.resolve",
-   "kind": "unit",
-   "layer": "L2",
-   "inputs": [
-    "scripts/ops/daily_runtime_record_identity_resolve.py",
-    "scripts/ops/test_daily_runtime_record_identity_resolve.py",
-    "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
-    "make/codex.mk"
-   ]
-  },
-  "business_entry_general_contract_browser": {
-   "target": "verify.frontend.business_entry.general_contract.browser",
-   "kind": "runtime",
-   "inputs": [
-    "scripts/verify/business_entry_general_contract_browser.mjs",
-    "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
-    "scripts/verify/playwright_runtime.mjs",
-    "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
-    "scripts/ops/daily_runtime_lifecycle_fixture_prepare.py",
-    "scripts/ops/daily_runtime_record_identity_resolve.py",
-    "addons/smart_construction_core/models/support/workflow_contract_service.py",
-    "addons/smart_construction_core/models/core/general_contract.py",
-    "addons/smart_construction_core/security/sc_role_groups.xml",
-    "addons/smart_construction_core/security/sc_capability_groups.xml",
-    "addons/smart_construction_core/core_extension_policy_maps.py",
-    "make/frontend.mk",
-    "make/codex.mk",
-    "config/frontend/acceptance_environments_v1.json",
-    "artifacts/backend/acceptance_record_identity.json"
-   ]
-  },
-  "frontend_primitive_semantic_identity": {
-   "target": "verify.frontend.primitive_adapter.unit",
-   "kind": "static",
-   "inputs": [
-    "frontend/apps/web/src/components/design-system/primitiveAdapter.ts",
-    "frontend/apps/web/scripts/primitive_adapter_contract_test.ts",
-    "scripts/verify/frontend_primitive_adapter_guard.py",
-    "scripts/verify/test_frontend_primitive_adapter_guard.py",
-    "make/frontend.mk"
-   ]
-  },
-  "frontend_component_driver_takeover_inventory": {
-   "target": "verify.frontend.component_driver_takeover.unit",
-   "kind": "generated",
-   "inputs": [
-    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
-    "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
-    "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
-    "frontend/apps/web/src/components/design-system/ScCard.vue",
-    "frontend/apps/web/src/components/design-system/ScButton.vue",
-    "frontend/apps/web/src/components/design-system/ScIconButton.vue",
-    "make/frontend.mk"
-   ]
-  },
-  "business_entry_matrix_browser": {
-   "target": "verify.frontend.business_entry.matrix.browser",
-   "kind": "runtime",
-   "inputs": [
-    "scripts/verify/business_entry_matrix_browser.mjs",
-    "scripts/verify/business_entry_matrix_overlay.json",
-    "scripts/verify/released_navigation_target.mjs",
-    "scripts/verify/playwright_runtime.mjs",
-    "docs/product/frontend_business_entry_acceptance_v1.csv",
-    "config/frontend/role_surface_exposure_declarations_v1.json",
-    "config/frontend/acceptance_environments_v1.json",
-    "make/frontend.mk"
-   ]
-  }
- },
- "blockers": [
-  "RESOLVED 2026-10-07: the draft->in_progress rollback traced to missing outgoing-mail sender configuration on the daily runtime (mail.default.from / res.company.email absent and internal accounts without an address made mail.thread._message_compute_author raise UserError). Fixed through the governed entry 'make daily.runtime.mail_sender.prepare' (scripts/ops/daily_runtime_mail_sender_prepare.py); report .runtime/final-acceptance/daily-deployed/mail-sender-prepare.json, users_still_without_email=0.",
-  "RESOLVED 2026-10-07: close/warranty refusals on production rows are the declared business preconditions (_guard_project_close_by_settlement / _guard_project_close_by_payment), not a defect. The lane now walks a dedicated resettable carrier with no settlement/payment facts; no guard, ACL or field permission was relaxed.",
-  "MERGED 2026-10-07: object 3 (项目启停管理) was integrated to main through GitHub PR #601 (squash 8c2b8dda27856cd31715cbb0c4e214aefbfda41a); the required checks frontend_release_gate / merge_policy_gate / public_guard / professional_quality_gate were all success on the exact head 25532a53. mainline integration is complete for that object; the daily runtime still serves 6c8e07f7 because a merge does not deploy.",
-  "ADJUDICATED 2026-10-07 (owner decision = B): the published navigation surface filtering menu 970 / action 1178 out for group_sc_role_project_manager while the menu group declaration resolves True is a deliberate product narrowing, not a defect. It is now recorded as an explicit declaration in config/frontend/role_surface_exposure_declarations_v1.json (pm narrowed=35 of 38 capability-reachable entries) and locked by scripts/verify/role_surface_exposure_declaration_guard.py, which recomputes the sets from the acceptance entry universe, the role policy map and the role/capability group XML and fails closed on any drift. No whitelist was widened, no menu was added, no ACL was relaxed and no acceptance assertion was weakened; authoritative_navigation.json is unchanged.",
-  "RESOLVED 2026-10-07: the 付款申请 lane first re-run failed with 'the record form did not expose the declared detail collection'. Root cause was a stale hand-assembled record resolution body (artifacts/backend/acceptance_record_identity.json held a bare payload with payment_request.record_id=36166 while the 08:38 fixture rebuild had recreated the row as 36168), not a product defect. Fixed systemically: new governed entry 'make daily.runtime.record_identity.resolve' (scripts/ops/daily_runtime_record_identity_resolve.py, 26 unit tests) drives the working-tree resolver through the registered remote 'make odoo.shell.exec' entry and writes the canonical envelope {schema,producer,expected_sha,targets} that both governed writers already emit; both browser probes now read body.targets.<key> and fail closed on a missing envelope. No environment, database, port, credential or assertion was added or relaxed.",
-  "RESOLVED 2026-10-07: the recorded 付款申请 detail-row block (editing an imported line and saving was judged a duplicate row) is NOT reproducible on daily revision 6c8e07f7. The value-keyed row identity it described was replaced by identity-keyed semantics in PR #525 (merge-base: 2d164a1f is an ancestor of 6c8e07f7); the introduce handler's constant 来源类型 column no longer acts as the row identity. Proven by the governed lane artifacts/frontend-business-entry-payment-request/daily-6c8e07f7/report.json (ok=true, problems=[]): 2 declared settlements introduced (constant first column), edit 200->150 saves with no duplicate/validation block, api.data(payment.request) HTTP 200, readback persists 150, then product-surface row removal and amount restore read back row_count=0 amount=20.00. No validation semantics were changed, no assertion weakened, no ORM write used. CSV row 47 menu_sc_user_payment_apply: partial_passed -> passed.",
-  "RESOLVED 2026-10-07: 日常合同 (sc.general.contract, menu 907 / action 669, CSV row 38 由 partial_passed 更新为 passed). The published machine declared an unreachable final rung: workflowContract published 'signed': ['cancel'] while action_cancel only accepts draft/confirmed (and test_p0_state_closure.test_general_contract_blocks_invalid_anchor_or_terminal_cancel locks that refusal), so the entry offered a button whose only outcome was a UserError. Fixed at the owning layer (workflow_contract_service.py sc.general.contract profile -> 'signed': []) with a new positive test test_general_contract_signed_declares_no_transition; no action_cancel change, no ACL/field-permission/assertion relaxation and no model special-casing. Real daily-runtime evidence bound to the runtime contract: artifacts/frontend-business-entry-general-contract/daily-f7b7c2ee/summary.json (ok=true, problems=[], console_errors=[]) - declared ladder submit/action_confirm draft->confirmed, complete/action_signed confirmed->signed, terminal signed offers no action; the entry's list query/filter matched exactly one row, paging walked, detail-return restored the same single-row filter; authorized role fixture_role_config_admin walked it and the negative role fixture_role_finance was refused NAVIGATION_AUTHORITY_DENIED. The resettable carrier smart_construction_acceptance_fixture.fe_general_contract_carrier was recreated back to draft after the walk (1722 -> 1723) and the managed resolution refreshed, so no shared carrier is left flowed. Recorded fact (not a defect): FE Company A(21) has no active sc.general.contract approval policy (daily general_contract_approval is company_id=1 with mode=none/required=False), so the declared machine has no approval rung and submit reaches confirmed directly.",
-  "MERGED 2026-10-07: the daily-contract entry closure (P1 contract-projection fix f7b7c2ee, governed daily record 69e0246b, vendor-decoupled probe 14ccf609) was integrated to main through GitHub PR #603 (squash c3979912e6b0e6650474bd83210b103f5fb936e4). The four required checks frontend_release_gate / merge_policy_gate / public_guard / professional_quality_gate were all success on the exact head 14ccf609daf148a9b2615b29c46f119eee9e491d; merge used make pr.merge.prep + make pr.merge with EXPECTED_HEAD and the reused exact-head ci.local.quick evidence. mainline integration is complete for this candidate; a merge does not deploy, so the daily runtime still serves f7b7c2ee until the next governed bundle sync.",
-  "OPEN 2026-10-07 (product decision required): 3 product-config entries (menu_sc_product_data_permission_v1 / menu_sc_product_system_parameter_v1 / menu_sc_product_numbering_rule_v1) declare group_sc_cap_config_admin while no business role holds it, so they are registered in config/frontend/role_surface_exposure_declarations_v1.json as capability_reachable_by_no_role ('exists but delivered to no one'). The matrix now records them as declared rather than failing; a product-side decision is still needed on whether to narrow/unpublish the surface or re-home the declaration group. No menu, ACL or assertion was changed and the published navigation is untouched.",
-  "OPEN 2026-10-07 (coverage limitation, not a defect): 16 matrix entries declare group_sc_cap_project_read, which every probed fixture role holds (project_read is a baseline capability of all SC internal roles), and 3 account rows declare no group at all; no negative-authority role can therefore be constructed for these 19 entries. The matrix records an explicit observation with the blocking baseline group instead of fabricating a pass. Closing it requires either a declared restricted fixture identity or a change to the declared groups - a product/governance decision."
- ],
- "next_exact_step": "The 89-entry matrix is closed at the declaration layer on the daily runtime (served f4279416/sc_demo, acting role fixture_role_config_admin/company 21): verify.frontend.business_entry.matrix.browser reports ok=true entries=80 problems=0 console_errors=0. The probe is now declaration-driven: presentations come from the runtime's own data-product-page-mode / data-surface-semantic declarations (new generic 'admin' adapter for the action whose context declares sc_web_route=/admin/business-config), negative authority reads the acting principal's full capability closure from the login envelope (principal.role_xmlids) instead of a hand-kept role map, and entries the governed registry already adjudicates are consumed as declared rather than re-derived. CSV backfilled: 83 passed + 6 declared. Next: (1) commit this candidate; (2) obtain product-side decisions on the two open governance items below; (3) once the branch target is authorised, run the frozen-candidate Quick and open the Gitee PR. Do NOT mark the branch target complete: the matrix is 89-entry declared/validated but the branch has not been integrated, and 19 entries still lack a constructible negative-authority role."
+  "blockers": [
+    "RESOLVED 2026-10-07: the draft->in_progress rollback traced to missing outgoing-mail sender configuration on the daily runtime (mail.default.from / res.company.email absent and internal accounts without an address made mail.thread._message_compute_author raise UserError). Fixed through the governed entry 'make daily.runtime.mail_sender.prepare' (scripts/ops/daily_runtime_mail_sender_prepare.py); report .runtime/final-acceptance/daily-deployed/mail-sender-prepare.json, users_still_without_email=0.",
+    "RESOLVED 2026-10-07: close/warranty refusals on production rows are the declared business preconditions (_guard_project_close_by_settlement / _guard_project_close_by_payment), not a defect. The lane now walks a dedicated resettable carrier with no settlement/payment facts; no guard, ACL or field permission was relaxed.",
+    "MERGED 2026-10-07: object 3 (项目启停管理) was integrated to main through GitHub PR #601 (squash 8c2b8dda27856cd31715cbb0c4e214aefbfda41a); the required checks frontend_release_gate / merge_policy_gate / public_guard / professional_quality_gate were all success on the exact head 25532a53. mainline integration is complete for that object; the daily runtime still serves 6c8e07f7 because a merge does not deploy.",
+    "ADJUDICATED 2026-10-07 (owner decision = B): the published navigation surface filtering menu 970 / action 1178 out for group_sc_role_project_manager while the menu group declaration resolves True is a deliberate product narrowing, not a defect. It is now recorded as an explicit declaration in config/frontend/role_surface_exposure_declarations_v1.json (pm narrowed=35 of 38 capability-reachable entries) and locked by scripts/verify/role_surface_exposure_declaration_guard.py, which recomputes the sets from the acceptance entry universe, the role policy map and the role/capability group XML and fails closed on any drift. No whitelist was widened, no menu was added, no ACL was relaxed and no acceptance assertion was weakened; authoritative_navigation.json is unchanged.",
+    "RESOLVED 2026-10-07: the 付款申请 lane first re-run failed with 'the record form did not expose the declared detail collection'. Root cause was a stale hand-assembled record resolution body (artifacts/backend/acceptance_record_identity.json held a bare payload with payment_request.record_id=36166 while the 08:38 fixture rebuild had recreated the row as 36168), not a product defect. Fixed systemically: new governed entry 'make daily.runtime.record_identity.resolve' (scripts/ops/daily_runtime_record_identity_resolve.py, 26 unit tests) drives the working-tree resolver through the registered remote 'make odoo.shell.exec' entry and writes the canonical envelope {schema,producer,expected_sha,targets} that both governed writers already emit; both browser probes now read body.targets.<key> and fail closed on a missing envelope. No environment, database, port, credential or assertion was added or relaxed.",
+    "RESOLVED 2026-10-07: the recorded 付款申请 detail-row block (editing an imported line and saving was judged a duplicate row) is NOT reproducible on daily revision 6c8e07f7. The value-keyed row identity it described was replaced by identity-keyed semantics in PR #525 (merge-base: 2d164a1f is an ancestor of 6c8e07f7); the introduce handler's constant 来源类型 column no longer acts as the row identity. Proven by the governed lane artifacts/frontend-business-entry-payment-request/daily-6c8e07f7/report.json (ok=true, problems=[]): 2 declared settlements introduced (constant first column), edit 200->150 saves with no duplicate/validation block, api.data(payment.request) HTTP 200, readback persists 150, then product-surface row removal and amount restore read back row_count=0 amount=20.00. No validation semantics were changed, no assertion weakened, no ORM write used. CSV row 47 menu_sc_user_payment_apply: partial_passed -> passed.",
+    "RESOLVED 2026-10-07: 日常合同 (sc.general.contract, menu 907 / action 669, CSV row 38 由 partial_passed 更新为 passed). The published machine declared an unreachable final rung: workflowContract published 'signed': ['cancel'] while action_cancel only accepts draft/confirmed (and test_p0_state_closure.test_general_contract_blocks_invalid_anchor_or_terminal_cancel locks that refusal), so the entry offered a button whose only outcome was a UserError. Fixed at the owning layer (workflow_contract_service.py sc.general.contract profile -> 'signed': []) with a new positive test test_general_contract_signed_declares_no_transition; no action_cancel change, no ACL/field-permission/assertion relaxation and no model special-casing. Real daily-runtime evidence bound to the runtime contract: artifacts/frontend-business-entry-general-contract/daily-f7b7c2ee/summary.json (ok=true, problems=[], console_errors=[]) - declared ladder submit/action_confirm draft->confirmed, complete/action_signed confirmed->signed, terminal signed offers no action; the entry's list query/filter matched exactly one row, paging walked, detail-return restored the same single-row filter; authorized role fixture_role_config_admin walked it and the negative role fixture_role_finance was refused NAVIGATION_AUTHORITY_DENIED. The resettable carrier smart_construction_acceptance_fixture.fe_general_contract_carrier was recreated back to draft after the walk (1722 -> 1723) and the managed resolution refreshed, so no shared carrier is left flowed. Recorded fact (not a defect): FE Company A(21) has no active sc.general.contract approval policy (daily general_contract_approval is company_id=1 with mode=none/required=False), so the declared machine has no approval rung and submit reaches confirmed directly.",
+    "MERGED 2026-10-07: the daily-contract entry closure (P1 contract-projection fix f7b7c2ee, governed daily record 69e0246b, vendor-decoupled probe 14ccf609) was integrated to main through GitHub PR #603 (squash c3979912e6b0e6650474bd83210b103f5fb936e4). The four required checks frontend_release_gate / merge_policy_gate / public_guard / professional_quality_gate were all success on the exact head 14ccf609daf148a9b2615b29c46f119eee9e491d; merge used make pr.merge.prep + make pr.merge with EXPECTED_HEAD and the reused exact-head ci.local.quick evidence. mainline integration is complete for this candidate; a merge does not deploy, so the daily runtime still serves f7b7c2ee until the next governed bundle sync.",
+    "RESOLVED 2026-10-07 (owner decision = B: 可配置属产品功能): the 3 product-config entries (menu_sc_product_data_permission_v1 / menu_sc_product_system_parameter_v1 / menu_sc_product_numbering_rule_v1) are required product functions and are now delivered to the business-config capability. Fixed at the owning P1 layer: menu_product_contract_completion_v1.xml adds group_sc_cap_business_config_admin alongside group_sc_cap_config_admin on the three actions and menus (the industry group already implies the business group, so the industry capability keeps its reach); ir.model.access.csv mirrors the existing sc.product.system.settings (1,1,1,1) and ir.sequence (1,1,0,0) rows for group_sc_cap_business_config_admin; core_extension_policy_maps.py exposes the three leaf xmlids on business_config_admin so the declared role surface matches; role_surface_exposure_declarations_v1.json capability_reachable_by_no_role is now empty. Daily runtime at served aed39bc5/sc_demo: the fixture_role_config_admin released navigation moved 86->89 and now surfaces 数据权限(action 1201)/系统参数(1202)/编码规则(1203); wutao stays 89 so the daily navigation policy metric is unchanged; verify.frontend.business_entry.matrix.browser on the three keys = ok=true entries=3 problems=0 console_errors=0 with negative authority fixture_role_project_a_member leaked_entries=[]; the formal four business-role published surface is unchanged (release guard 84 leaves). No assertion, ACL, field permission or negative case was relaxed and no model was special-cased. Branch target is NOT marked complete.",
+    "OPEN 2026-10-07 (coverage limitation, not a defect): 16 matrix entries declare group_sc_cap_project_read, which every probed fixture role holds (project_read is a baseline capability of all SC internal roles), and 3 account rows declare no group at all; no negative-authority role can therefore be constructed for these 19 entries. The matrix records an explicit observation with the blocking baseline group instead of fabricating a pass. Closing it requires either a declared restricted fixture identity or a change to the declared groups - a product/governance decision."
+  ],
+  "next_exact_step": "Owner decision B is implemented and validated on the daily runtime at served aed39bc5/sc_demo (branch fix/frontend-business-entry-contract-payment-closure-20261007, baseline main 8c2b8dda). State: role_surface_exposure_declaration_guard PASS roles=9 universe=86 pending=3 narrowed=207 no_role=0; release_navigation_policy_guard PASS roles=4 released_leaf_identities=84 (formal 4 roles unchanged); ci.local.iteration PASS (dirty, L1_only). Runtime readback: the fixture_role_config_admin released navigation moved 86->89 (data permission / system parameters / numbering rules now present as actions 1201/1202/1203) and wutao stays 89, so the daily navigation policy (min=max=89) is preserved. verify.frontend.business_entry.matrix.browser on the three keys = ok=true entries=3 problems=0 console_errors=0 (table:list_status=ok records=10 search+detail; form:render_profile=create; table:list_status=empty declared empty state); negative authority fixture_role_project_a_member observed none of the three (leaked_entries=[]). CSV rows 88-90 declared->passed, so the matrix is now 86 passed + 3 declared. Next: (1) this evidence/bookkeeping commit is the only remaining tracked change; (2) the sole remaining open item is the negative-authority coverage limitation (16 entries declare group_sc_cap_project_read which every probed fixture holds, and 3 account rows declare no group), which needs a declared restricted fixture identity or a product/governance change to the declared groups - it is a coverage limitation, not a defect; (3) when the owner authorises the branch target, run the frozen-candidate Quick once and open the Gitee PR. Do NOT mark the branch target complete."
 }

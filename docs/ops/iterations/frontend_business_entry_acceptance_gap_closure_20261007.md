@@ -569,3 +569,60 @@ DB=`sc_demo`、served `f4279416`、受测角色 `fixture_role_config_admin`/公�
 1. 产品配置 3 行「仅存在无人交付」需产品侧裁决（是否收敛发布面或调整声明组）。
 2. 19 个入口的负例覆盖需产品侧确认是否引入受限身份或调整声明组，方可闭环负例断言。
 3. 提交候选后按受管入口补 `agent.run.record`；**仍不标记分支目标完成**，走 PR 集成。
+
+## 轮次增补：产品配置入口按「可配置属产品功能」交付（owner decision B，2026-10-07）
+
+### 裁决
+
+产品配置（数据权限 / 系统参数 / 编码规则）是**产品功能**，应由业务配置管理员角色
+（`group_sc_role_business_admin` → `group_sc_cap_business_config_admin`）交付，
+而不是登记为「仅存在、无人交付」的发布面缺口。
+
+### 事实（运行态实测，非推断）
+
+- 日常运行时（served `f4279416`）`fixture_role_config_admin`（uid216，role `business_config_admin`）
+  发布面 86 actions / 108 nodes，「产品配置」下仅 表单配置(1014)/流程审批配置(699)/字段管理(839)。
+- 同角色 `wutao`（uid16）发布面 89 actions / 111 nodes，**已包含** 数据权限(1201)/系统参数(1202)/编码规则(1203)
+  —— 因其原生持有行业配置能力 `group_sc_cap_config_admin`。即真实产品面已交付，缺失的是**声明角色面**。
+- 三个入口的菜单/动作声明组仅 `group_sc_cap_config_admin`，而规范业务配置管理员角色不持有它。
+
+### 责任层与改动（P1 施工行业标准产品入口面）
+
+- `views/menu_product_contract_completion_v1.xml`：三个 action 与 menuitem 的组声明**追加**
+  `group_sc_cap_business_config_admin`（保留 `group_sc_cap_config_admin`；后者已 implied 前者，行业能力可达性不变）。
+- `security/ir.model.access.csv`：为 `group_sc_cap_business_config_admin` 复刻既有
+  `sc.product.system.settings`(1,1,1,1) 与 `ir.sequence`(1,1,0,0) 授权；未改既有规则。
+- `core_extension_policy_maps.py`：把三个叶子 xmlid 加入 `business_config_admin.admin_menu_xmlids`，
+  使**声明角色面**与真实产品面一致。
+- `config/frontend/role_surface_exposure_declarations_v1.json`：`capability_reachable_by_no_role` 清空，理由记 owner decision B。
+- `tests/test_data_permission_surface.py`：旧断言（锁定 business_admin 看不到权限菜单）改写为正向交付断言
+  （业务/行业管理员均可见三个入口，`project_read` 成员不可见）。
+
+未放宽任何断言/ACL/字段权限/负例，无模型特判；正式 4 业务角色发布面不变（84 leaves）。
+
+### 日常运行时验证（served `aed39bc5` / `sc_demo`，候选提交 `aed39bc5`）
+
+| 项 | 结果 |
+| --- | --- |
+| `daily.runtime.candidate.bundle_sync` | PASS（bundle `d087a30a`，old `f4279416`） |
+| `daily.runtime.source_revision.align` | PASS（served `aed39bc5`） |
+| 远端 `make mod.upgrade MODULE=smart_construction_core` | EXIT=0（registry 134.9s） |
+| 运行态回读：`fixture_role_config_admin` 发布面 | **86→89**，出现 数据权限(1201)/系统参数(1202)/编码规则(1203) |
+| 运行态回读：`wutao` 发布面 | **89（不变）** → 日常导航政策 `min=max=89` 未被击穿 |
+| `verify.frontend.business_entry.matrix.browser`（三键定向） | `ok=true entries=3 problems=0 console_errors=0` |
+| 负例授权 | `fixture_role_project_a_member`（闭包 12）对三入口 `leaked_entries=[]` |
+| `role_surface_exposure_declaration_guard` | PASS `no_role=0`（原 3） |
+| `release_navigation_policy_guard` | PASS `roles=4 released_leaf_identities=84`（不变） |
+| `ci.local.iteration` | PASS（L1_only，dirty） |
+
+CSV 第 88/89/90 行 `declared` → `passed`（矩阵合计 86 passed + 3 declared）。
+
+### 证据落盘
+
+- `artifacts/frontend-business-entry-matrix/daily-aed39bc5-matrix/summary.json`
+- `.runtime/final-acceptance/daily-deployed/candidate-bundle-sync.json`、`source-revision-align.json`
+
+### 下一步（未完成）
+
+1. 剩余唯一 OPEN：19 入口负例覆盖限制（16 声明 `group_sc_cap_project_read` + 3 account 无组），需受限夹具身份或声明组的产品/治理裁决。
+2. 待所有者授权分支目标后，跑一次冻结候选 Quick 并发起 Gitee PR；**不标记分支目标完成**。
