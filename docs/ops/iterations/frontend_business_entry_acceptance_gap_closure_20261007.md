@@ -1179,3 +1179,87 @@ CSV：3 个 account 行 `declared→passed`、`阻塞→本轮验收`，`role_au
 
 以上均为本地 `sc_dev_demo` 证据，与日常 `sc_demo` 是两套运行栈，不能互相冒充；日常结论需在候选部署后
 单独取证。**分支目标仍未完成。**
+
+## 续轮 4（2026-10-08）：PR #607 合并 → 日常部署 `24e05cd5` → 详情面/工作台收口（run blockers 37–42）
+
+### 身份与运行态
+
+- 分支 `fix/frontend-business-entry-contract-payment-closure-20261007`，HEAD `25845e97`；PR #607 已 squash 合并为
+  **`24e05cd54685645498843bf29b222fed3f595d9e`**（`25845e97^{tree} == 24e05cd5^{tree}`）。
+- 日常开发服务器 `http://1.95.85.92:18081` 现served **`24e05cd5`**（`sc_demo`、`ENV=dev`），
+  受管入口链路：`daily.runtime.main.bundle_sync` → 远端 `make mod.upgrade MODULE=smart_core` /
+  `MODULE=smart_construction_core` → `verify.frontend.build` → `daily.runtime.source_revision.align`。
+- 本地 `sc_dev_demo` @ `127.0.0.1:18081` 与日常 `sc_demo` @ `1.95.85.92:18081` 是两套栈，证据不可互相冒充。
+
+### A. `workbench-only` 失败 ＝ 探针声明消费口径过期（P4 验收工具），不是渲染回归
+
+- 现象：`verify.daily_dev.list_surface.readonly.browser`（`LIST_SURFACE_DAILY_OBSERVATION_SCOPE=workbench-only`）
+  在 `scripts/verify/frontend_list_surface_structure_browser.mjs:1012` 超时
+  （`[data-semantic-component="ScCard"]:visible` 30s 未出现）。旧日常版本 `e384b832` 同路由同断言通过。
+- 钉事实（served `24e05cd5`，`wutao`）：
+  - 落地面 `/s/projects.list` **确实渲染**：`SceneView` `data-state` 由 `loading` → `ready`；
+    其后 `ListPage` / `ProductListSurface` / `ScTable` 出现（`共 750 条`），整页 `ScEmptyState=0`、`console_errors=[]`。
+  - 该页的卡片节点是 `div.t-card.list-card-container`，同时带
+    `data-semantic-component="ProductListSurface"` 与 `data-semantic-primitive="ScCard"`；全页 `ScCard` 组件标识为 0。
+- 根因：本批次修的是设计系统基元语义标识的**优先级**。
+  旧写法 `{ ...$attrs, ...semanticPrimitiveIdentity('ScCard') }` 让基元身份**覆盖**消费者声明，
+  于是这个节点被冒名标成 `ScCard`；新写法 `{ ...semanticPrimitiveIdentity('ScCard'), ...$attrs }`
+  让**消费者声明获胜**，并新增无条件发布的 `data-semantic-primitive`。
+  `scripts/verify/frontend_primitive_adapter_guard.py` 明确声明了这一契约（“消费者在基元根上的声明获胜；
+  否则基元自身不可寻址”）。**探针原来靠的正是被修掉的那个冒名行为。**
+- 修复（只改 P4 探针消费口径）：新增 `CARD_PRIMITIVE_SELECTOR = '[data-semantic-primitive="ScCard"]'`，
+  声明落地面与 `router /` workspace home 两处“卡片已渲染”断言改消费**声明的基元标识**。
+- 为什么不是放宽：修复前后**节点集合相同**（旧行为下基元节点一律被强制标成 `ScCard`，
+  新行为下这些节点一律带 `data-semantic-primitive="ScCard"`），断言强度不变；
+  未改任何产品代码、ACL、字段权限、合法隐藏规则，也未使用 `critical` 覆盖。
+- 结果：`workbench-only` light / dark 均 `rc=0`（served `24e05cd5`）。
+
+### B. 详情面其余项（served `24e05cd5`，1440/390 × 明暗，全部 `rc=0`）
+
+| scope | 断言 | 结果 |
+| --- | ---: | --- |
+| `detail-only` | 8 | passed（`declared_entry_route` / `exact_record_contract` / `declared_renderer` / `return_to_source`） |
+| `form-profiles` | 12 | passed（声明的 create/edit/readonly 入口 + 渲染档消费） |
+| `workbench-only` | 2 | passed（修复后） |
+
+产物：`.runtime/final-acceptance/detail-lane-24e05cd5/`。原清单中“创建/编辑与工作台的最小证据差额”就此闭合；
+列表矩阵未重跑（本轮的探针改动不在其执行路径上，89/89 既有结论不受影响）。
+
+### C. 关系交互：一次真实“点击打开 → 返回原记录 → 标签和动作恢复”（served `24e05cd5`）
+
+- 证据：`.runtime/final-acceptance/relation-roundtrip-24e05cd5/20261007T224226/summary.json`，`status=pass`。
+- 源记录 `construction.contract.income/2331`（`action_id=578`、`menu_id=904`），页面自身契约声明 14 个
+  relation entry，其中 4 个声明可打开：`project_id 马鞍村库房`、`partner_id 测试11`、`handler_id 吴涛`、`tax_id 9%`。
+- 4 个全部由**真实点击**判定为 `opened`；首个完成受验证的往返：`return_*` 契约齐全，
+  返回后 `path/title/statusbar/tabs/actions` 全部恢复、`error_free=true`；
+  `denied_requests=0`、`console_errors=0`。
+- 该证据取代 `e384b832` 的关系往返证据：本批次改动了动作/标签呈现代码
+  （`contractActionPresentation.ts`、`actionPresentation/actionRuleDerivation.ts`），旧证据的“标签与动作恢复”断言已失效。
+
+### D. 事实澄清：受管 fixture 身份对 `wutao` 不可用（多公司隔离正确，非缺陷）
+
+- `make daily.runtime.record_identity.resolve` 在 served `24e05cd5` 上 PASS，绑定的是 fixture 稳定标识
+  （`fe_project_a`=2014 / `fe_general_contract_a`=1719 / `fe_delivery_hardening_payment_request_a`=36178 …）。
+- 但这些记录属于 `smart_construction_acceptance_fixture.fe_company_a/b`（21/22），
+  而验收账号 `wutao` 是 **user 16、company 1**。直接记录路由被产品**正确拒绝**：
+  `/r/sc.general.contract/1719` → `reason=PROJECT_SCOPE_DENIED`；
+  `/r/payment.request/36178` → `PROJECT_SCOPE_DENIED`；`/r/project.project/2014` → `PERMISSION_DENIED`。
+- 因此用户级关系证据使用 company 1 的业务记录（与上一次已接受的日常证据同一身份），
+  并由探针自身在 PASS 时再次验证该绑定；不新增硬编码，也不改绑到 fixture。
+
+### E. 本轮新发现（与本轮改动无关，独立登记）
+
+- `make verify.frontend.playwright_vendor_coupling.guard` 在**干净 HEAD**（把本轮改动 stash 后）同样失败：
+  报 `scripts/verify/local_dev_project_create_contract_driver_probe.mjs 2 > baseline 1`，
+  即合并批次新增了一个 vendor 内部选择器而未同步收缩/更新声明基线。
+  本轮改动的探针自身基线项（4）未被点名。
+- 判定：独立、既存、非部署阻断（同一棵树的远端四项必需检查在 `25845e97` 全 success）。
+  仍需由归属层处理，且**不得**靠抬高基线通过。
+
+### F. 状态边界（本轮不主张上线）
+
+- 批次验收：详情面本轮收口完成（A–D）。
+- 主线集成：PR #607 已完成（squash `24e05cd5`）；合并不等于部署，但该 revision 已部署且已回读对齐。
+- 版本发布：**未主张**。产品交付：**未主张**。
+- 剩余：89 条交付面在已部署 revision 上的**单一用户级统一裁决**（逐条证据已在，整体结论与剩余失败尚未落笔）。
+- **分支目标仍未标记完成。**
