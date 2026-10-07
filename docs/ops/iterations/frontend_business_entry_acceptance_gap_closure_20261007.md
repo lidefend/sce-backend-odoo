@@ -347,3 +347,91 @@ make verify.frontend.business_entry.payment_request.browser \
   探针按 xmlid 校验解析体，不硬编码数字 id。
 - 写入仅限该声明载具（引入/编辑/删行/复位金额），结束态回到声明空态；未改 ACL、字段权限、发布导航或断言。
 - 夹具口令仍为既有固定值 `123456`，只作用于既有隔离 fixture，未改其它环境或通用登录默认。
+
+## 批次 F3 收口：日常合同入口闭环（2026-10-07）
+
+### 结论
+
+`docs/product/frontend_business_entry_acceptance_v1.csv` 第 38 行
+`smart_construction_core.menu_sc_p1_daily_contract`（日常合同，`sc.general.contract`，menu 907 / action 669）
+由 `partial_passed` 更新为 `passed`。声明阶梯经真实产品入口走通：
+draft →（submit / `action_confirm`）confirmed →（complete / `action_signed`）signed，终态零动作；
+列表查询/筛选/分页与详情返回上下文、授权边界均已核实并回读，`problems=[]`、`console_errors=[]`。
+
+### 根因修复（P1 契约投影缺陷，提交 `f7b7c2ee`）
+
+`addons/smart_construction_core/models/support/workflow_contract_service.py` 的 `sc.general.contract`
+profile 原先声明 `"signed": ["cancel"]`，但 `general_contract.py` 的 `action_cancel` 只接受 `draft/confirmed`，
+且 `test_p0_state_closure.test_general_contract_blocks_invalid_anchor_or_terminal_cancel` 锁定该终态拒绝 →
+投影发布了唯一结果只会抛 `UserError` 的按钮。修复为 `"signed": []`（附注释）。
+未改 `action_cancel`、未放宽断言/ACL/字段权限、无模型特判。新增
+`test_general_contract_signed_declares_no_transition`（直接以 `state="signed"` 建记录，断言
+`availableActions==[]` 且 `action_cancel` 抛 `UserError`）。本地 A/B：旧代码 FAIL、修复后 PASS
+（`.runtime/final-acceptance/business-entry-general-contract/local-l2-{with-fix,baseline}.log`）。
+
+### daily 部署（受管入口）
+
+`make daily.runtime.candidate.bundle_sync` → `make daily.runtime.source_revision.align`，日常开发服务器现服务
+`f7b7c2ee` / `sc_demo`（`.runtime/final-acceptance/daily-deployed/{candidate-bundle-sync,source-revision-align}.json`）。
+
+### 载体与身份（受管解析，不硬编码 1722/1723）
+
+- 新增可重置载体 `smart_construction_acceptance_fixture.fe_general_contract_carrier`
+  （`FE General Contract Carrier`，company A=21；非 draft 且被业务行引用时 fail-closed 拒绝 unlink）。
+- `make daily.runtime.record_identity.resolve` → `artifacts/backend/acceptance_record_identity.json#general_contract_carrier`
+  （xmlid 校验 + 唯一匹配 + 声明起点 `state=draft` 绑定；验收时 record 1722，复位重建后 1723）。
+
+### 探针
+
+`scripts/verify/business_entry_general_contract_browser.mjs`（契约驱动：消费运行时 `ui.contract.v2` 的
+`workflowContract.availableActions / rawState / stateField` 与 `dataContract.mainData`，方法名取自契约）。
+
+### 证据
+
+`artifacts/frontend-business-entry-general-contract/daily-f7b7c2ee/summary.json`（`ok=true`、`problems=[]`、`console_errors=[]`）：
+
+| 阶段 | 观察 | 断言 |
+| --- | --- | --- |
+| initial | rawState=draft, mainData.state=draft, company=21, editability=editable | 起点等于声明 `draft`，会话公司等于声明公司 |
+| list_query | 搜索 `FE-GC-CARRIER` 命中 1 行 | 唯一匹配 |
+| paging | 声明语义面 `mode=paged`、`state=ready`、`region_label=列表分页`、`共 3 条`、`rows=3` | 分页声明与列表数据一致（total ≥ rows）；交互换页不可用并已显式记录（页脚不暴露公共页控件，列表路由不接受 page/page-size 查询） |
+| detail_return | 返回后搜索词恢复 `FE-GC-CARRIER`、行数恢复 1 | 详情返回恢复同一过滤上下文 |
+| submit | 声明动作 `submit`→`action_confirm`；draft→confirmed；后续 offered=[complete,cancel] | rawState/mainData 等于声明后继 `confirmed` |
+| complete | 声明动作 `complete`→`action_signed`；confirmed→signed；后续 offered=[] | rawState/mainData 等于声明后继 `signed` |
+| terminal | signed：`declared_actions=[]`、`offered=[]` | 终态零动作（`cancel` 不再出现） |
+| authority_negative | `fixture_role_finance` → `/access-denied?reason=NAVIGATION_AUTHORITY_DENIED`，渲染 0 行 | 无声明组角色不得进入本入口 |
+
+干跑（只读、不写入）`artifacts/frontend-business-entry-general-contract/daily-f7b7c2ee-dryrun/summary.json` 同样 `ok=true`。
+
+### 运行时契约事实（非缺陷，记录以对齐口径）
+
+FE Company A(21) 无 `sc.general.contract` 生效审批策略（daily 的 `general_contract_approval` 为
+`company_id=1` 且 `mode=none / required=False`），故本入口声明机器在验收公司下不存在审批档位，
+`submit` 直达 `confirmed`；探针以运行时契约声明为准，未引入或伪造审批事实。
+
+### 残留（不在本行收口口径内）
+
+页面级附件上传/下载旅程、超出既有两个角色（`fixture_role_config_admin` / `fixture_role_finance`）
+的完整权限矩阵，以及可交互的换页（当前数据集仅 1 页且页脚无公共页控件），由后续批次按同一矩阵口径补足。
+
+### 复现入口
+
+```
+make daily.runtime.lifecycle_fixture.prepare \
+  CONFIRM_DAILY_RUNTIME_LIFECYCLE_FIXTURE=DRIVE_DAILY_SC_DEMO_PROJECT_LIFECYCLE \
+  SC_ACCEPTANCE_FIXTURE_PASSWORD=123456 \
+  DAILY_RUNTIME_EXPECTED_SHA=f7b7c2eefbbb1ffbfd2ac304108c28166419c9ef DAILY_RUNTIME_DATABASE=sc_demo
+
+make daily.runtime.record_identity.resolve \
+  CONFIRM_DAILY_RUNTIME_RECORD_IDENTITY=RESOLVE_DAILY_SC_DEMO_RECORD_IDENTITY \
+  DAILY_RUNTIME_EXPECTED_SHA=f7b7c2eefbbb1ffbfd2ac304108c28166419c9ef DAILY_RUNTIME_DATABASE=sc_demo \
+  ACCEPTANCE_RECORD_RESOLUTION=artifacts/backend/acceptance_record_identity.json
+
+make verify.frontend.business_entry.general_contract.browser \
+  ACCEPTANCE_TARGET_SHA=f7b7c2eefbbb1ffbfd2ac304108c28166419c9ef \
+  ACCEPTANCE_BASE_URL=http://1.95.85.92:18081 DB_NAME=sc_demo \
+  ACCEPTANCE_LOGIN=fixture_role_config_admin ACCEPTANCE_PASSWORD=123456 \
+  ACCEPTANCE_RECORD_RESOLUTION=artifacts/backend/acceptance_record_identity.json \
+  SC_ENTRY_WRITE_CONFIRM=DRIVE_DAILY_SC_DEMO_GENERAL_CONTRACT \
+  SC_ACCEPTANCE_OUTPUT_DIR=artifacts/frontend-business-entry-general-contract/daily-f7b7c2ee
+```

@@ -1097,3 +1097,22 @@ verify.frontend.business_entry.payment_request.browser: guard.prod.forbid
 	@test -n "$(ACCEPTANCE_RECORD_RESOLUTION)" -a -f "$(ACCEPTANCE_RECORD_RESOLUTION)" || (echo "ACCEPTANCE_RECORD_RESOLUTION must point at the managed resolution body"; exit 2)
 	@test "$(SC_ENTRY_WRITE_CONFIRM)" = "DRIVE_DAILY_SC_DEMO_PAYMENT_REQUEST_ONE2MANY" || (echo "SC_ENTRY_WRITE_CONFIRM=DRIVE_DAILY_SC_DEMO_PAYMENT_REQUEST_ONE2MANY is required"; exit 2)
 	@SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" SC_ACCEPTANCE_TARGET_SHA="$(ACCEPTANCE_TARGET_SHA)" ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" ACCEPTANCE_RECORD_RESOLUTION="$(ACCEPTANCE_RECORD_RESOLUTION)" SC_ENTRY_WRITE_CONFIRM="$(SC_ENTRY_WRITE_CONFIRM)" SC_ACCEPTANCE_OUTPUT_DIR="$(SC_ACCEPTANCE_OUTPUT_DIR)" node scripts/verify/business_entry_payment_request_one2many_browser.mjs
+
+.PHONY: verify.frontend.business_entry.general_contract.browser
+# Owner-authorized product acceptance for the 日常合同 formal business entry
+# (sc.general.contract) on the external daily development server. It drives the
+# declared record ladder (submit -> confirmed, complete -> signed) and the declared
+# terminal rung from the runtime ui.contract.v2 workflowContract, walks the declared
+# list query/filter/paging surface with its detail-return context, and proves the
+# negative authority case for a role holding none of the entry's declared groups.
+# Like the lifecycle lane it MUTATES the declared fixture carrier inside the
+# owner-authorized sc_demo acceptance fixture, so it is deliberately NOT bound to
+# the readonly daily profile. Its write authority is the explicit
+# SC_ENTRY_WRITE_CONFIRM token; the served revision must equal ACCEPTANCE_TARGET_SHA
+# and the served database must equal DB_NAME before any action runs.
+verify.frontend.business_entry.general_contract.browser: guard.prod.forbid
+	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)
+	@test -n "$(ACCEPTANCE_LOGIN)" -a -n "$(ACCEPTANCE_PASSWORD)" || (echo "ACCEPTANCE_LOGIN and ACCEPTANCE_PASSWORD must be supplied through the environment"; exit 2)
+	@test -n "$(ACCEPTANCE_RECORD_RESOLUTION)" -a -f "$(ACCEPTANCE_RECORD_RESOLUTION)" || (echo "ACCEPTANCE_RECORD_RESOLUTION must point at the managed resolution body"; exit 2)
+	@test "$(SC_ENTRY_WRITE_CONFIRM)" = "DRIVE_DAILY_SC_DEMO_GENERAL_CONTRACT" || (echo "SC_ENTRY_WRITE_CONFIRM=DRIVE_DAILY_SC_DEMO_GENERAL_CONTRACT is required"; exit 2)
+	@SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" SC_ACCEPTANCE_TARGET_SHA="$(ACCEPTANCE_TARGET_SHA)" ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" ACCEPTANCE_RECORD_RESOLUTION="$(ACCEPTANCE_RECORD_RESOLUTION)" SC_ENTRY_RECORD_XMLID="$(SC_ENTRY_RECORD_XMLID)" SC_ENTRY_ENTRY_MODE="$(SC_ENTRY_ENTRY_MODE)" SC_ENTRY_DENIED_ROLE_LOGIN="$(SC_ENTRY_DENIED_ROLE_LOGIN)" SC_ENTRY_WRITE_CONFIRM="$(SC_ENTRY_WRITE_CONFIRM)" SC_ENTRY_DRY_RUN="$(SC_ENTRY_DRY_RUN)" SC_ACCEPTANCE_OUTPUT_DIR="$(SC_ACCEPTANCE_OUTPUT_DIR)" node scripts/verify/business_entry_general_contract_browser.mjs

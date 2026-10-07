@@ -77,6 +77,16 @@ payload = {
         "smart_construction_acceptance_fixture.fe_general_contract_a",
         declared_action_xmlid=CONTRACT_ACTION_XMLID,
     ),
+    "general_contract_carrier": target(
+        CONTRACT_MENU_XMLID,
+        "smart_construction_acceptance_fixture.fe_general_contract_carrier",
+        declared_action_xmlid=CONTRACT_ACTION_XMLID,
+        expect={
+            "company_id": lambda record: int(record.company_id.id),
+            "company_xmlid": "smart_construction_acceptance_fixture.fe_company_a",
+            "declared_start_state": {"state": "draft"},
+        },
+    ),
     "settlement": target(
         SETTLEMENT_MENU_XMLID,
         "smart_construction_acceptance_fixture.fe_settlement_a",

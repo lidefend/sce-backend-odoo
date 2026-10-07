@@ -54,6 +54,23 @@ LIFECYCLE_FIXTURE_DEPENDENT_MODELS = (
 )
 
 
+# Dedicated carrier for the 日常合同 (sc.general.contract) browser acceptance.
+#
+# The entry walks the declared contract ladder draft -> confirmed -> signed; a
+# signed row can never re-enter the declared start state through the state
+# machine (`action_cancel` intentionally refuses anything past `confirmed` and
+# the P0 state-closure test locks that), so the governed lane cannot reuse the
+# row it walked. This carrier therefore owns exactly one contract that is reset
+# to the declared start state before each walk. It is deliberately separate
+# from FE-A/B/C General Contract so the reset can never disturb a row another
+# acceptance lane reads. The reset removes only the carrier's own history: the
+# builder fails closed while any business row still references the carrier.
+GENERAL_CONTRACT_CARRIER_XMLID = "fe_general_contract_carrier"
+GENERAL_CONTRACT_CARRIER_NAME = "FE General Contract Carrier"
+GENERAL_CONTRACT_CARRIER_CODE = "FE-GC-CARRIER"
+GENERAL_CONTRACT_CARRIER_START_STATE = {"state": "draft"}
+
+
 def _fixture_password():
     password = str(os.environ.get("SC_ACCEPTANCE_FIXTURE_PASSWORD") or "").strip()
     if not password:
@@ -472,6 +489,98 @@ def _general_contract(env, suffix, project, partner, tax, state, amount):
             "active": True,
         },
     )
+
+
+def _contract_carrier_dependents(env, contract_id):
+    """Return the business rows that still reference the contract carrier.
+
+    The reset is administrative and never bypasses a business guard: like the
+    project-lifecycle carrier it refuses to remove the carrier while another row
+    still points at it, so a rerun can never orphan a settlement, payment or
+    ledger fact the carrier was used to exercise.
+    """
+    dependents = []
+    for model_name in sorted(env.registry):
+        model = env[model_name]
+        if model._abstract or model._transient:
+            continue
+        for field_name, field in model._fields.items():
+            if field.type != "many2one" or field.comodel_name != "sc.general.contract":
+                continue
+            count = model.sudo().with_context(active_test=False).search_count(
+                [(field_name, "=", contract_id)]
+            )
+            if count:
+                dependents.append("%s.%s=%s" % (model_name, field_name, count))
+    return dependents
+
+
+def _general_contract_carrier(env, company, project, partner, tax):
+    """Return the 日常合同 carrier in its declared start state.
+
+    A carrier already sitting in the declared start state is reconciled in place
+    through the same administrative upsert every other fixture row uses. Any
+    other state is a leftover from an earlier walk, so the carrier is removed and
+    recreated instead of being written back into `draft` - the declared machine
+    ends at a signed contract that `action_cancel` intentionally refuses to
+    reverse. The removal is guarded: it is denied while any business row still
+    references the carrier.
+    """
+    model = env["sc.general.contract"].sudo().with_context(active_test=False, tracking_disable=True)
+    record = env.ref("%s.%s" % (MODULE, GENERAL_CONTRACT_CARRIER_XMLID), raise_if_not_found=False)
+    if record and record._name != "sc.general.contract":
+        raise RuntimeError(
+            "xmlid %s does not point to sc.general.contract" % GENERAL_CONTRACT_CARRIER_XMLID
+        )
+    if record:
+        record = model.browse(record.id).exists()
+    reset = False
+    if record and any(
+        record[field_name] != expected
+        for field_name, expected in GENERAL_CONTRACT_CARRIER_START_STATE.items()
+    ):
+        dependents = _contract_carrier_dependents(env, record.id)
+        if dependents:
+            raise RuntimeError(
+                "general contract carrier %s must not be reset while business facts reference it: %s"
+                % (record.id, ",".join(dependents))
+            )
+        record.unlink()
+        record = model.browse()
+        reset = True
+    amount = 120000.0
+    carrier = _upsert(
+        env,
+        "sc.general.contract",
+        GENERAL_CONTRACT_CARRIER_XMLID,
+        [("contract_name", "=", GENERAL_CONTRACT_CARRIER_NAME), ("company_id", "=", company.id)],
+        {
+            "name": GENERAL_CONTRACT_CARRIER_CODE,
+            "contract_name": GENERAL_CONTRACT_CARRIER_NAME,
+            "project_id": project.id,
+            "company_id": company.id,
+            "partner_id": partner.id,
+            "contract_type": "工程服务",
+            "contract_attribute": "一般合同",
+            "contract_direction": "expense",
+            "contract_date": "2026-07-01",
+            "amount_total": amount,
+            "amount_untaxed": round(amount / 1.13, 2),
+            "tax_id": tax.id,
+            "tax_rate": 13.0,
+            "currency_id": company.currency_id.id,
+            "state": GENERAL_CONTRACT_CARRIER_START_STATE["state"],
+            "handler_id": project.user_id.id,
+            "active": True,
+        },
+    )
+    for field_name, expected in GENERAL_CONTRACT_CARRIER_START_STATE.items():
+        if carrier[field_name] != expected:
+            raise RuntimeError(
+                "general contract carrier %s is not in the declared start state: %s=%s"
+                % (carrier.id, field_name, carrier[field_name])
+            )
+    return carrier, reset
 
 
 def _ensure_settlement_state(record, target_state):
@@ -1229,6 +1338,9 @@ def ensure_fixture(env) -> Dict[str, Any]:
     lifecycle_carrier, lifecycle_carrier_reset = _lifecycle_carrier(
         env, company_a, config_admin, partner_a
     )
+    general_contract_carrier, general_contract_carrier_reset = _general_contract_carrier(
+        env, company_a, project_a, partner_a, tax_a
+    )
 
     # Reconcile only follower rows attached to projects owned by this fixture.
     follower_model = env["mail.followers"].sudo()
@@ -1419,6 +1531,16 @@ def ensure_fixture(env) -> Dict[str, Any]:
         ],
         "companies": [company_a.name, company_b.name],
         "projects": [project_a.name, project_b.name, project_c.name, lifecycle_carrier.name],
+        "general_contract_carrier": {
+            "id": int(general_contract_carrier.id),
+            "name": general_contract_carrier.contract_name,
+            "xmlid": "%s.%s" % (MODULE, GENERAL_CONTRACT_CARRIER_XMLID),
+            "reset": general_contract_carrier_reset,
+            "state": {
+                field_name: general_contract_carrier[field_name]
+                for field_name in GENERAL_CONTRACT_CARRIER_START_STATE
+            },
+        },
         "lifecycle_carrier": {
             "id": int(lifecycle_carrier.id),
             "code": lifecycle_carrier.code,

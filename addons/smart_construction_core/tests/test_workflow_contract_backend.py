@@ -220,6 +220,43 @@ class TestWorkflowContractBackend(TransactionCase):
             contract["statusbar"]["states"],
         )
 
+    def test_general_contract_signed_declares_no_transition(self):
+        """A signed 一般合同（公司）must not advertise a transition it refuses.
+
+        The profile published `cancel` on `signed`, but `action_cancel` accepts
+        only `draft` / `confirmed` and
+        `test_p0_state_closure.test_general_contract_blocks_invalid_anchor_or_terminal_cancel`
+        locks that refusal, so the declared button's only outcome was a
+        UserError. The terminal record is materialised the same way its
+        `legacy_confirmed` sibling is, so the declaration is compared with the
+        model's own precondition on one record and the check does not depend on
+        whether the deployment carries an approval policy for the model; the P0
+        test already owns proving the declared ladder reaches `signed`.
+        """
+        contract_record = self.env["sc.general.contract"].create(
+            {
+                "project_id": self.project.id,
+                "partner_id": self.partner.id,
+                "contract_name": "Workflow Contract Signed",
+                "contract_type": "材料采购",
+                "amount_total": 100.0,
+                "state": "signed",
+            }
+        )
+        self.assertEqual(contract_record.state, "signed")
+
+        contract = self.service.describe_record(contract_record)
+
+        self.assertEqual(contract["rawState"], "signed")
+        self.assertEqual(contract["businessPhase"], "effective")
+        self.assertEqual(
+            contract["availableActions"], [],
+            "signed must declare no transition: action_cancel refuses it",
+        )
+        # Declared-absent and actually-refused describe the same product truth.
+        with self.assertRaises(UserError):
+            contract_record.action_cancel()
+
     def test_the_shared_approval_family_declares_only_reachable_states(self):
         """The shared approval template must not carry states its members lack.
 
