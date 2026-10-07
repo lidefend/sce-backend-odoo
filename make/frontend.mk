@@ -1078,3 +1078,22 @@ verify.frontend.business_entry.lifecycle.browser: guard.prod.forbid
 	@test -n "$(ACCEPTANCE_RECORD_RESOLUTION)" -a -f "$(ACCEPTANCE_RECORD_RESOLUTION)" || (echo "ACCEPTANCE_RECORD_RESOLUTION must point at the managed resolution body"; exit 2)
 	@test "$(SC_ENTRY_WRITE_CONFIRM)" = "DRIVE_DAILY_SC_DEMO_PROJECT_LIFECYCLE" || (echo "SC_ENTRY_WRITE_CONFIRM=DRIVE_DAILY_SC_DEMO_PROJECT_LIFECYCLE is required"; exit 2)
 	@SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" SC_ACCEPTANCE_TARGET_SHA="$(ACCEPTANCE_TARGET_SHA)" ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" ACCEPTANCE_RECORD_RESOLUTION="$(ACCEPTANCE_RECORD_RESOLUTION)" SC_ENTRY_RECORD_XMLID="$(SC_ENTRY_RECORD_XMLID)" SC_ENTRY_WRITE_CONFIRM="$(SC_ENTRY_WRITE_CONFIRM)" SC_ENTRY_DRY_RUN="$(SC_ENTRY_DRY_RUN)" SC_ACCEPTANCE_OUTPUT_DIR="$(SC_ACCEPTANCE_OUTPUT_DIR)" node scripts/verify/frontend_business_entry_lifecycle_browser.mjs
+
+.PHONY: verify.frontend.business_entry.payment_request.browser
+# Owner-authorized product acceptance for the 付款申请 formal business entry
+# (payment.request) detail collection on the external daily development server.
+# It reproduces the recorded gap "edit an existing imported detail row, then save
+# is refused as a duplicate row" and locks the observed behaviour to the runtime
+# contract and the persisted result. Like the lifecycle lane it MUTATES the
+# declared fixture carrier inside the owner-authorized sc_demo acceptance fixture
+# and restores its declared empty start state before returning, so it is
+# deliberately NOT bound to the readonly daily profile. Its write authority is the
+# explicit SC_ENTRY_WRITE_CONFIRM token; the served revision must equal
+# ACCEPTANCE_TARGET_SHA and the served database must equal DB_NAME before any
+# action runs.
+verify.frontend.business_entry.payment_request.browser: guard.prod.forbid
+	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)
+	@test -n "$(ACCEPTANCE_LOGIN)" -a -n "$(ACCEPTANCE_PASSWORD)" || (echo "ACCEPTANCE_LOGIN and ACCEPTANCE_PASSWORD must be supplied through the environment"; exit 2)
+	@test -n "$(ACCEPTANCE_RECORD_RESOLUTION)" -a -f "$(ACCEPTANCE_RECORD_RESOLUTION)" || (echo "ACCEPTANCE_RECORD_RESOLUTION must point at the managed resolution body"; exit 2)
+	@test "$(SC_ENTRY_WRITE_CONFIRM)" = "DRIVE_DAILY_SC_DEMO_PAYMENT_REQUEST_ONE2MANY" || (echo "SC_ENTRY_WRITE_CONFIRM=DRIVE_DAILY_SC_DEMO_PAYMENT_REQUEST_ONE2MANY is required"; exit 2)
+	@SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" SC_ACCEPTANCE_TARGET_SHA="$(ACCEPTANCE_TARGET_SHA)" ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" ACCEPTANCE_RECORD_RESOLUTION="$(ACCEPTANCE_RECORD_RESOLUTION)" SC_ENTRY_WRITE_CONFIRM="$(SC_ENTRY_WRITE_CONFIRM)" SC_ACCEPTANCE_OUTPUT_DIR="$(SC_ACCEPTANCE_OUTPUT_DIR)" node scripts/verify/business_entry_payment_request_one2many_browser.mjs

@@ -265,3 +265,85 @@ F3 的「并列发现」事实链：菜单 970 `menu_sc_product_project_lifecycl
   在 `roles=4 released_leaf_identities=84` 下仍 PASS。
 - 声明文件不产生任何运行态可见性变化，只是把既有刻意窄化写成可复算、可失败的契约。
 - 守卫不把「选择器字符串/像素值文本出现」当作正确性证明：它比较的是集合等式与声明模式。
+
+## 批次 F4 收口：付款申请入口明细行身份（2026-10-07）
+
+### 结论
+
+`docs/product/frontend_business_entry_acceptance_v1.csv` 第 47 行
+`smart_construction_core.menu_sc_user_payment_apply`（付款申请）由 `partial_passed` 更新为
+`passed`：该行 `gap` 原记录的「多行付款申请编辑已有明细行后保存被判为重复行、不发写请求」
+在 daily 修订 `6c8e07f7` 上**已不可复现**，并由受管探针从产品面与持久化结果证明。
+
+### 根因（先证伪，再定性）
+
+原阻断描述的「首个业务列作行身份」实现，已在 PR #525 被身份式判定取代
+（`frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` 的 `one2manyRowCollectionIdentity`
+与 `collectOne2manyDraftValidationFromRows`）；`git merge-base --is-ancestor 2d164a1f 6c8e07f7`
+成立，即 daily 已含该修复。导入处理器写入的常量列（`来源类型=结算单明细`）不再承担行身份。
+因此本批次**不改任何校验语义**，只把「原阻断是否仍存在」用产品面证据定性。
+
+### 并列根因（本轮真正的阻断）：受管记录身份漂移
+
+首次重跑探针时报「the record form did not expose the declared detail collection」。
+定位：`artifacts/backend/acceptance_record_identity.json` 是上一轮**人工拼装**的裸 payload
+（顶层直挂 `payment_request`，无 `schema/targets` 信封），其中 `record_id=36166`；
+而 2026-10-07 08:38 的夹具重建（`make daily.runtime.lifecycle_fixture.prepare`）已把该行重建为
+`36168`。**身份漂移 → 路由指向不存在的记录 → 明细集合不存在**，与产品缺陷无关。
+
+同时暴露契约不一致：仓库里两个受管写入器（`make verify.dev.acceptance.record_identity.resolve`、
+`make daily.dev.acceptance_contract.resolve`）写的是规范信封 `{schema,producer,expected_sha,targets}`，
+而两个浏览器消费端读的是顶层裸键。
+
+### 处理（体系化，不放宽）
+
+1. **新增受管入口** `make daily.runtime.record_identity.resolve`
+   （`scripts/ops/daily_runtime_record_identity_resolve.py`，单测 26 项）：复用既有注册环境
+   （ssh `sc-root` + 远程受管 `make odoo.shell.exec`），把**工作树**的既有解析器
+   `scripts/verify/frontend_delivery_hardening_runtime_ids.py` 送入远程执行，写规范信封，
+   fail-closed：远端 HEAD ≠ 声明 SHA、served revision/database 不一致、payload 缺失或目标缺键时
+   拒绝写入（**不覆盖既有工件**）。不新建环境/库/端口/凭据。
+2. **消费端口径统一**：两个浏览器探针改为读规范信封 `body.targets.<key>`，
+   并在 `targets` 缺失时 fail-closed（不再接受裸 payload）。
+3. **身份重新解析**：`payment_request.record_id=36168`、`lifecycle_project.record_id=2022`，
+   与夹具重建后的实际值一致；`producer`/`expected_sha` 绑 `6c8e07f7`。
+
+### 复现入口
+
+```
+make daily.runtime.record_identity.resolve \
+  CONFIRM_DAILY_RUNTIME_RECORD_IDENTITY=RESOLVE_DAILY_SC_DEMO_RECORD_IDENTITY \
+  DAILY_RUNTIME_EXPECTED_SHA=6c8e07f70c1ce0d501f9f5b56911d74f9321a721 \
+  DAILY_RUNTIME_DATABASE=sc_demo \
+  ACCEPTANCE_RECORD_RESOLUTION=artifacts/backend/acceptance_record_identity.json
+
+make verify.frontend.business_entry.payment_request.browser \
+  ACCEPTANCE_TARGET_SHA=6c8e07f70c1ce0d501f9f5b56911d74f9321a721 \
+  ACCEPTANCE_BASE_URL=http://1.95.85.92:18081 DB_NAME=sc_demo \
+  ACCEPTANCE_LOGIN=fixture_role_finance ACCEPTANCE_PASSWORD=123456 \
+  ACCEPTANCE_RECORD_RESOLUTION=artifacts/backend/acceptance_record_identity.json \
+  SC_ENTRY_WRITE_CONFIRM=DRIVE_DAILY_SC_DEMO_PAYMENT_REQUEST_ONE2MANY \
+  SC_ACCEPTANCE_OUTPUT_DIR=artifacts/frontend-business-entry-payment-request/daily-6c8e07f7
+```
+
+### 证据（受管探针，绑定声明消费与持久化结果）
+
+`artifacts/frontend-business-entry-payment-request/daily-6c8e07f7/report.json`（`ok=true`、`problems=[]`）：
+
+| 阶段 | 观察 | 断言 |
+| --- | --- | --- |
+| after_introduce | 从 2 个声明结算单各引入 1 行，共 2 行；10 列含「本次申请」；全部行的首列值相同（常量前置条件成立） | 行数=2；列含声明列；首列常量 |
+| save(编辑行) | 「本次申请」200→150；无重复行提示；`data-validation-visible=false`；`待提交：无变更`；`api.data(payment.request)` HTTP 200 | 不得出现重复行/校验阻断；必须发写请求且成功 |
+| readback_after_save | 重新加载后该单元格 = 150，行数=2 | 持久化值等于声明值 |
+| restored | 产品面删行 + 复位申请金额 20.00 | `row_count=0`、`amount=20.00`（声明空态） |
+
+补充：解析体口径对齐后，生命周期探针的**只读干跑**（不重跑对象 3 的产品验收）
+`.runtime/business-entry-lifecycle/dryrun-canonical` `ok=true`，证明 `targets.<key>` 读取路径可用。
+
+### 环境与夹具身份
+
+- served revision/database：`6c8e07f7…` / `sc_demo`（与解析体 `expected_sha` 一致）。
+- 载体由**声明 xmlid** 绑定：`smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a`，
+  探针按 xmlid 校验解析体，不硬编码数字 id。
+- 写入仅限该声明载具（引入/编辑/删行/复位金额），结束态回到声明空态；未改 ACL、字段权限、发布导航或断言。
+- 夹具口令仍为既有固定值 `123456`，只作用于既有隔离 fixture，未改其它环境或通用登录默认。
