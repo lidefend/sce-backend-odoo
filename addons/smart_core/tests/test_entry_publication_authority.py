@@ -75,24 +75,6 @@ class EntryPublicationTest(unittest.TestCase):
         nodes = [StripImports().visit(node) for node in tree.body if isinstance(node, (ast.FunctionDef, ast.ClassDef))]
         tests = self
         calls = []
-        class Menus:
-            def __init__(self, env): pass
-            def build_nav(self, **kwargs):
-                tests.nav_policy = kwargs
-                return [{"key": "published-navigation", "meta": {"action_id": 775}}]
-            def build_route_authority(self, surface, *, nav):
-                tests.consumed_navigation = nav
-                return tests.authority
-            filter_route_authority_by_publication = staticmethod(tests.project)
-        class Engine:
-            def __init__(self, env): pass
-            def _normalize_delivery_nav_refs(self, nodes):
-                tests.normalized_navigation = True
-                return nodes
-        class Policies:
-            def __init__(self, env): pass
-            def get_policy(self, **kwargs): calls.append(kwargs); return {"product_key": "construction.standard"}
-        identity = {"product_key": "construction.standard", "base_product_key": "construction", "edition_key": "standard"}
         class Base:
             def __init__(self, env=None, su_env=None, request=None, context=None, payload=None):
                 self.env, self.su_env, self.request, self.context = env, su_env, request, context
@@ -102,15 +84,21 @@ class EntryPublicationTest(unittest.TestCase):
                 tests.contract_reads.append(self.params)
                 return {"ok": True, "data": contracts[self.params["model"]]}
         tests.contract_reads = []
+        # The validator must consume the one published authority instead of
+        # deriving its own projection.  This double *is* that authority:
+        # release-gated and publication-filtered, or empty when fail-closed.
+        def build_runtime_route_authority(env):
+            authority = {} if fail_closed else tests.project(
+                tests.authority, filter_nodes=tests.filter_nodes)
+            calls.append({"env": env, "authority": authority})
+            return authority
         relation_scope = {}
         exec(compile((ROOT / "core/relation_action_authority.py").read_text(), "relation_action_authority.py", "exec"), relation_scope)
         scope = {"BaseIntentHandler": Base, "UiContractV2Handler": ContractReader,
             "positive_relation_id": relation_scope["positive_relation_id"],
-            "validate_relation_action_origin": relation_scope["validate_relation_action_origin"], "IntentExecutionResult": Result, "MenuService": Menus,
-            "IdentityResolver": lambda env: SimpleNamespace(user_group_xmlids=lambda user: [], build_role_surface=lambda *args: {"role_code": "config"}),
-            "ProductPolicyService": Policies, "DeliveryEngine": Engine, "_resolve_startup_delivery_identity": lambda *args: identity,
-            "_load_platform_release_gate": lambda *args, **kwargs: {"applied": True, "fail_closed": fail_closed},
-            "_filter_nav_by_release_gate": lambda nodes, *args, **kwargs: (tests.filter_nodes(nodes), {})}
+            "validate_relation_action_origin": relation_scope["validate_relation_action_origin"],
+            "IntentExecutionResult": Result,
+            "build_runtime_route_authority": build_runtime_route_authority}
         exec(compile(ast.Module(body=nodes, type_ignores=[]), str(path), "exec"), scope)
         handler = scope["RouteAuthorityValidateHandler"]()
         handler.env = env if env is not None else SimpleNamespace(user=object())
@@ -121,20 +109,22 @@ class EntryPublicationTest(unittest.TestCase):
         result, calls = self.handler(655)
         self.assertFalse(result.ok)
         self.assertEqual(result.error["reason_code"], "PRODUCT_ENTRY_NOT_RELEASED")
-        self.assertTrue(calls[0]["enforce_release"] and calls[0]["enforce_access"])
-        self.assertEqual(calls[0]["product_key"], "construction.standard")
+        # A role-surface-declared action that the publication excludes is
+        # denied through the one published authority, never a local
+        # release-gate re-derivation (locked in the authority-owner test).
+        self.assertEqual(len(calls), 1, "the validator must consume the published authority")
 
     def test_runtime_validator_keeps_published_action(self):
         result, _ = self.handler(775)
         self.assertTrue(result.ok); self.assertEqual(result.data["model"], "payment")
 
-    def test_runtime_validator_consumes_effective_published_navigation(self):
-        self.handler(775)
-        self.assertTrue(self.normalized_navigation)
-        self.assertEqual(self.nav_policy["policy"]["product_key"], "construction.standard")
-        self.assertEqual(self.consumed_navigation[0]["key"], "published-navigation")
-        self.handler(775, fail_closed=True)
-        self.assertEqual(self.consumed_navigation, [])
+    def test_runtime_validator_consumes_the_single_published_authority(self):
+        result, calls = self.handler(775)
+        self.assertTrue(result.ok)
+        self.assertEqual(len(calls), 1, "one published authority consumption per validate")
+        # The consumed authority is the release-gated, publication-filtered
+        # projection: 655 is declared in the role surface yet absent here.
+        self.assertEqual([row["action_id"] for row in calls[0]["authority"]["primary_actions"]], [775])
 
     def test_navigation_projection_preserves_release_keys(self):
         path = ROOT / "delivery/menu_service.py"

@@ -108,7 +108,9 @@ export function resolveCanonicalFormRenderState(
   try {
     return {
       model: applyCanonicalFormValidation(
-        presentContractV2Form(store, mode, runtimeValues),
+        presentContractV2Form(store, mode, runtimeValues, {
+          recordPersisted: Number(errorScope?.recordId || 0) > 0,
+        }),
         validationFieldErrors,
         errorScope,
       ),

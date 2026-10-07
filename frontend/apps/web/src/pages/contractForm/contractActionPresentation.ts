@@ -12,6 +12,9 @@ import {
 } from './actionContract';
 import type { ContractAction } from './types';
 import { nativeActionOccurrenceKey } from './nativeActionIdentity';
+import { resolveActionExecutionShape, resolveStateDerivedStatus } from '../../app/presentation/actionRuleDerivation';
+import type { ActionRuleExecutionShape } from '../../app/presentation/actionRuleDerivation';
+import type { ContractV2ActionRule, ContractV2Dictionary } from '../../app/contracts/v2/types';
 
 export type AuthorizedWindowActionTarget = { actionId: number; menuId: number };
 
@@ -72,13 +75,12 @@ export function buildContractFormActions(params: {
   v2ButtonStatus: Record<string, ContractV2ButtonStatus>;
   v2ActionRuleList: Array<Record<string, unknown>>;
   resolveActionReference?: (requested: { actionId: number | null; actionReference: string; menuId: number | null }) => AuthorizedWindowActionTarget | null;
+  values?: ContractV2Dictionary;
 }): ContractAction[] {
   const merged: Array<Record<string, unknown>> = [];
   (params.v2ActionRuleList || []).forEach((raw) => {
       if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return;
       const row = raw as Record<string, unknown>;
-      const sourceWidgetId = String(row.sourceWidgetId || row.source_widget_id || '').trim();
-      const targetScope = String(row.targetScope || row.target_scope || '').trim().toLowerCase();
       const triggerType = String(row.triggerType || row.trigger_type || '').trim();
       if (triggerType && triggerType !== 'click') return;
       const key = String(row.actionKey || row.key || row.actionId || '').trim();
@@ -87,22 +89,13 @@ export function buildContractFormActions(params: {
       const button = parseMaybeJsonRecord(row.button);
       const clientMode = String(target.mode || target.client_mode || '').trim();
       const buttonName = String(button.name || button.method || '').trim();
-      // V2 targetScope describes the action's mutation/navigation scope, not
-      // a visual body slot.  A page-scoped action emitted from page.root is a
-      // page-header action; widget/container/dataSource/runtime scopes are not.
-      const isHeaderAction = sourceWidgetId === 'page.header'
-        || (sourceWidgetId === 'page.root' && ['header', 'page'].includes(targetScope));
-      const isFooterAction = targetScope === 'footer';
       const nativeIdentity = parseMaybeJsonRecord(row.nativeIdentity || row.native_identity);
-      const canonicalRegion = String(nativeIdentity.canonical_region || nativeIdentity.canonicalRegion || '').trim().toLowerCase();
-      const level = isFooterAction
-        ? 'footer'
-        : isHeaderAction
-          ? 'header'
-          : canonicalRegion === 'stat_buttons'
-            ? 'smart'
-            : 'body';
       const buttonType = String(button.type || button.buttonType || '').trim();
+      const sourceWidgetId = String(row.sourceWidgetId || row.source_widget_id || '').trim();
+      // Presentation and the executable adapter list must derive the execution
+      // shape from the same rule, otherwise the renderer can show an action no
+      // adapter can run (or drop one that can).
+      const shape = resolveActionExecutionShape(row);
       merged.push({
         key,
         authorityActionId: String(row.actionId || row.action_id || '').trim(),
@@ -110,21 +103,13 @@ export function buildContractFormActions(params: {
         nativeIdentity,
         actionSemantics: row.actionSemantics,
         label: String(row.label || key).trim() || key,
-        kind: ['ui.local_mode', 'ui.mode'].includes(String(row.intent || '').trim())
-          ? 'client'
-          : buttonType === 'server' || buttonType === 'server_action'
-          ? 'server'
-          : buttonType === 'action'
-            ? 'action'
-            : buttonName
-              ? 'object'
-              : clientMode
-                ? 'client'
-                : 'open',
+        kind: shape.kind,
+        executionShape: shape,
         intent: String(row.intent || '').trim(),
-        level,
+        level: shape.level,
         selection: 'none',
         sourceWidgetId,
+        targetScope: String(row.targetScope || row.target_scope || '').trim().toLowerCase(),
         target,
         target_model: String(target.model || '').trim(),
         payload: {
@@ -233,11 +218,23 @@ export function buildContractFormActions(params: {
         : resolveV2ButtonStatus(key, params.v2ButtonStatus);
     if (!status || typeof status.visible !== 'boolean' || typeof status.disabled !== 'boolean') continue;
     if (status?.backendIdentity && status.backendIdentity !== backendIdentity) continue;
-    if (status.visible === false) continue;
+    // The button status is assembled once, against the record fields the
+    // producer could see.  A *state-derived* hide is a statement about that
+    // fetch-time state, so it defers to the declared modifier evaluated against
+    // the live values the renderer already uses.  Authority reasons
+    // (ACTION_NOT_ALLOWED, field/ACL policy, …) and unresolvable dependencies
+    // keep blocking exactly as before.
+    if (status.visible === false
+      && !resolveStateDerivedStatus(row as unknown as ContractV2ActionRule, status, params.values || {})) continue;
     const contractAllowed = row.allowed === true;
     const contractEnabled = row.enabled === true;
     const contractDisabled = row.disabled === true;
-    const needRecord = ['object', 'server', 'action', 'mutation'].includes(effectiveKind) || ['row', 'smart'].includes(level);
+    // Reuse the shape resolved once from the original declaration: the merged
+    // row is a projection that no longer carries `button`/raw `target`, so
+    // re-deriving here would silently disagree with the renderer.
+    const executionShape = (row.executionShape as ActionRuleExecutionShape | undefined)
+      ?? resolveActionExecutionShape(row);
+    const needRecord = executionShape.requiresPersistedRecord;
     // The declared actor-authorization / business-availability deny is
     // authoritative on its own; the folded flags are only a producer shortcut.
     const declaredDenial = declaredActionAuthorityDenial(row);

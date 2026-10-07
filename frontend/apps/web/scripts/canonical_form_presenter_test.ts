@@ -3,7 +3,7 @@ import contractV2Schema from '../../../../docs/architecture/unified_page_contrac
 import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 import {
   collectContractV2ButtonStatusById, createContractV2Store,
-  resolveContractV2EffectiveFormCapabilities, resolveContractV2FieldDescriptorMap,
+  resolveContractV2ActionRules, resolveContractV2EffectiveFormCapabilities, resolveContractV2FieldDescriptorMap,
 } from '../src/app/contracts/v2/store';
 import type { ContractV2FormStructureRoleName, ContractV2Snapshot } from '../src/app/contracts/v2/types';
 import {
@@ -15,6 +15,7 @@ import {
   presentContractV2Form,
 } from '../src/app/presentation/contractFormPresenter';
 import { composeCanonicalFormFloorplan } from '../src/app/presentation/canonicalFormFloorplan';
+import { buildContractFormActions } from '../src/pages/contractForm/contractActionPresentation';
 import { applyCanonicalFormValidation } from '../src/pages/contractForm/canonicalFormRenderState';
 import {
   BusinessErrorCodes,
@@ -3590,3 +3591,203 @@ assert.equal(legacyActorDenied.enabled, false, 'legacy: an injected actor denial
 assert.equal(legacyActorDenied.hint, 'ACTION_NOT_AUTHORIZED', 'legacy: the actor denial must be named');
 
 console.log('[canonical_form_presenter] legacy declared action authority cases PASS count=7');
+
+// ---------------------------------------------------------------------------
+// A state-derived button status must not permanently freeze declared
+// visibility.  The backend assembles the status once, against the record fields
+// it knew at contract-fetch time; for a workspace/create form whose declared
+// modifier depends on a still-empty field it can only state visible=false.  The
+// renderer recomputes the declared modifier against live form values instead.
+// The deferral is bounded: it requires a state-derived reason, a declared
+// modifier and a resolvable dependency, and it never overrides authority.
+// ---------------------------------------------------------------------------
+function stateDependentNativeHeaderSnapshot() {
+  const candidate = snapshot();
+  candidate.actionContract.actionRuleList[0] = {
+    ...candidate.actionContract.actionRuleList[0],
+    actionId: 'action.action_project_borrow_company',
+    actionKey: 'action_project_borrow_company',
+    label: '项目借公司款',
+    backendIdentity: 'native_button:object:action_project_borrow_company:/form[1]/header[1]/button[1]:1',
+    sourceWidgetId: 'page.header',
+    sourceChannel: 'native_form_header',
+    button: { name: 'action_project_borrow_company', type: 'object' },
+    nativeIdentity: {
+      type: 'object',
+      name: 'action_project_borrow_company',
+      native_locator: '/form[1]/header[1]/button[1]',
+      occurrence_index: 1,
+    },
+    visible: {
+      attrs: {
+        invisible: { kind: 'not', expr: { kind: 'field_truthy', field: 'project_id' } },
+      },
+    },
+    visibleProfiles: ['create', 'edit', 'readonly'],
+    entitlementEvaluated: true,
+    allowed: true,
+    enabled: true,
+    disabled: false,
+  };
+  candidate.statusContract.buttonStatus = [{
+    btnId: 'btn.action_project_borrow_company',
+    visible: false,
+    disabled: false,
+    reasonCode: 'ACTION_NOT_VISIBLE_IN_STATE',
+  }];
+  return candidate;
+}
+
+function presentStateDependentNativeHeader(
+  values: Record<string, unknown>,
+  patch: Record<string, unknown> = {},
+  statusPatch: Record<string, unknown> = {},
+) {
+  const candidate = stateDependentNativeHeaderSnapshot();
+  candidate.actionContract.actionRuleList[0] = { ...candidate.actionContract.actionRuleList[0], ...patch };
+  candidate.statusContract.buttonStatus = [{ ...candidate.statusContract.buttonStatus[0], ...statusPatch }];
+  return presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(candidate)), 'create', values);
+}
+
+const stateDependentBaseline = presentStateDependentNativeHeader({ project_id: '' });
+assert.deepEqual(
+  stateDependentBaseline.actionBar.map((action) => action.key), [],
+  'baseline: a declared "not project_id" button stays hidden while the dependency is empty',
+);
+
+const stateDependentResolved = presentStateDependentNativeHeader({ project_id: 12 });
+assert.deepEqual(
+  stateDependentResolved.actionBar.map((action) => action.key), ['action_project_borrow_company'],
+  'a frozen state-derived hide must be recomputed from the declared modifier and live values',
+);
+assert.equal(stateDependentResolved.actionBar[0]?.visible, true, 'the recomputed button is visible');
+assert.equal(stateDependentResolved.actionBar[0]?.enabled, true, 'the recomputed button stays enabled');
+assert.equal(
+  stateDependentResolved.actionBar[0]?.reasonCode, '',
+  'a state-derived status reason must not leak onto a recomputed visible button',
+);
+
+assert.deepEqual(
+  presentStateDependentNativeHeader({}).actionBar.map((action) => action.key), [],
+  'an unresolvable declared dependency must still fail closed, never guess visibility',
+);
+
+assert.deepEqual(
+  presentStateDependentNativeHeader({ project_id: 12 }, {}, { reasonCode: 'ACTION_NOT_ALLOWED' })
+    .actionBar.map((action) => action.key), [],
+  'an authority reason must keep blocking even when the declared modifier resolves visible',
+);
+
+assert.deepEqual(
+  presentStateDependentNativeHeader({ project_id: 12 }, { entitlementEvaluated: false })
+    .actionBar.map((action) => action.key), [],
+  'a state-derived status must not substitute for missing entitlement authority',
+);
+
+console.log('[canonical_form_presenter] state-derived action visibility cases PASS count=5');
+
+// A state-revealed primary must not become a second effective primary: the
+// contract's fetch-time primary resolution stays dominant (the workspace case
+// ships a save action alongside a state-dependent business primary).
+const stateDerivedPrimarySnapshot = stateDependentNativeHeaderSnapshot();
+stateDerivedPrimarySnapshot.actionContract.actionRuleList.push({
+  ...stateDerivedPrimarySnapshot.actionContract.actionRuleList[0],
+  actionId: 'form.save',
+  actionKey: 'form.save',
+  label: '保存草稿',
+  backendIdentity: 'contract_action:form.save',
+  sourceChannel: 'platform_form_action',
+  sourceWidgetId: 'page.root',
+  triggerType: 'submit',
+  targetScope: 'page',
+  nativeIdentity: {},
+  button: {},
+  visible: {},
+  presentation: { tier: 'primary' },
+  entitlementEvaluated: true,
+  allowed: true,
+  enabled: true,
+  disabled: false,
+});
+stateDerivedPrimarySnapshot.statusContract.buttonStatus.push({
+  btnId: 'form.save',
+  visible: true,
+  disabled: false,
+});
+const stateDerivedPrimaryModel = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(stateDerivedPrimarySnapshot)),
+  'create',
+  { project_id: 12 },
+);
+assert.deepEqual(
+  stateDerivedPrimaryModel.actionBar.map((action) => `${action.key}:${action.tier}:${action.visible}`),
+  ['action_project_borrow_company:secondary:true', 'form.save:primary:true'],
+  'a state-revealed action must stay a secondary entry while the contract primary remains single',
+);
+assert.deepEqual(
+  presentStateDependentNativeHeader({ project_id: 12 }).actionBar.map((action) => action.tier),
+  ['primary'],
+  'a state-revealed action keeps its declared tier when it is the only visible primary',
+);
+console.log('[canonical_form_presenter] state-derived primary resolution cases PASS count=2');
+
+// ---------------------------------------------------------------------------
+// A declared record action must not be presented as executable before its record
+// exists.  The renderer keeps the declaration visible, disables it and names the
+// persistence precondition; once the record is persisted the same declaration
+// becomes executable.  The executable adapter must agree item-for-item with the
+// rendered set, otherwise the form renders a button no adapter can execute
+// (the CANONICAL_FORM_ACTION_EXECUTION_ADAPTER_MISSING regression).
+// ---------------------------------------------------------------------------
+const unpersistedRecordModel = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(stateDependentNativeHeaderSnapshot())),
+  'create',
+  { project_id: 12 },
+  { recordPersisted: false },
+);
+assert.deepEqual(
+  unpersistedRecordModel.actionBar.filter((entry) => entry.visible).map((entry) => entry.key),
+  ['action_project_borrow_company'],
+  'an unpersisted record keeps a declared record action visible',
+);
+assert.equal(unpersistedRecordModel.actionBar[0]?.enabled, false, 'an unpersisted record action is not executable yet');
+assert.equal(
+  unpersistedRecordModel.actionBar[0]?.reasonCode, 'ACTION_REQUIRES_SAVED_RECORD',
+  'the unpersisted gate must name the persistence precondition, not a workflow denial',
+);
+
+const persistedRecordModel = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(stateDependentNativeHeaderSnapshot())),
+  'create',
+  { project_id: 12 },
+  { recordPersisted: true },
+);
+assert.equal(
+  persistedRecordModel.actionBar[0]?.enabled, true,
+  'a persisted record makes the declared action executable again',
+);
+
+{
+  const store = createContractV2Store(decodeContractV2Snapshot(stateDependentNativeHeaderSnapshot()));
+  const values = { project_id: 12 };
+  const model = presentContractV2Form(store, 'create', values, { recordPersisted: false });
+  const adapters = buildContractFormActions({
+    contract: null,
+    model: 'sc.current.account.workspace',
+    recordId: 0,
+    renderProfile: 'create',
+    sceneReadyActions: [],
+    v2ButtonStatus: collectContractV2ButtonStatusById(store),
+    v2ActionRuleList: resolveContractV2ActionRules(store) as unknown as Array<Record<string, unknown>>,
+    policyContext: {} as never,
+    values,
+  }).filter((entry) => entry.level === 'header');
+  assert.deepEqual(
+    adapters.map((entry) => entry.key).sort(),
+    model.actionBar.filter((entry) => entry.visible).map((entry) => entry.key).sort(),
+    'the executable adapter set must cover exactly the rendered visible set',
+  );
+  assert.equal(adapters[0]?.enabled, false);
+  assert.equal(adapters[0]?.requiresSavedRecord, true);
+}
+console.log('[canonical_form_presenter] record-persistence action gating cases PASS count=4');

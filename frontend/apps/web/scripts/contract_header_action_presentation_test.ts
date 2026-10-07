@@ -829,6 +829,49 @@ assert.deepEqual(buildFormActionExecutionPlan({ action: localDesigner[0], modelN
   { kind: 'local_mode', mode: 'form_field_configuration', toggle: true });
 console.log('[contract_header_action_presentation_test] PASS unsaved_designer_entry=1');
 
+// A state-derived hide must never be discarded by the executable adapter.  The
+// producer freezes visible:false / ACTION_NOT_VISIBLE_IN_STATE against the fields
+// it saw at fetch time; the renderer re-evaluates the declared modifier against
+// live values, so the adapter must include the row on the same basis or the form
+// renders a button no adapter can execute (the
+// CANONICAL_FORM_ACTION_EXECUTION_ADAPTER_MISSING regression).  Authority
+// reasons and unresolvable dependencies must still drop the row.
+const stateDerivedHeaderRule = rule('state-derived-header', 'page.header', 'page', {
+  button: { name: 'action_state_derived_header', type: 'object' },
+  visible: { attrs: { invisible: { kind: 'not', expr: { kind: 'field_truthy', field: 'project_id' } } } },
+});
+const stateDerivedStatus = (patch: Record<string, unknown> = {}) => ({
+  'btn.state-derived-header': {
+    btnId: 'btn.state-derived-header',
+    backendIdentity: 'button:object:action_state-derived-header',
+    visible: false, disabled: false, reasonCode: 'ACTION_NOT_VISIBLE_IN_STATE',
+    ...patch,
+  },
+});
+const buildStateDerived = (values: Record<string, unknown>, recordId: number, status = stateDerivedStatus()) => (
+  buildContractFormActions({
+    contract: null, model: 'sc.current.account.workspace', recordId,
+    renderProfile: recordId ? 'edit' : 'create', sceneReadyActions: [],
+    v2ButtonStatus: status, workflowActionRows: [], v2ActionRuleList: [stateDerivedHeaderRule],
+    policyContext: {} as never, values,
+  })
+);
+const stateDerivedUnsaved = buildStateDerived({ project_id: 12 }, 0);
+assert.equal(stateDerivedUnsaved.length, 1, 'a state-derived hide must not drop the executable adapter row');
+assert.equal(stateDerivedUnsaved[0]?.enabled, false, 'an unsaved record keeps the action non-executable');
+assert.equal(stateDerivedUnsaved[0]?.requiresSavedRecord, true);
+assert.equal(stateDerivedUnsaved[0]?.hint, 'requires record id');
+const stateDerivedSaved = buildStateDerived({ project_id: 12 }, 7);
+assert.equal(stateDerivedSaved.length, 1);
+assert.equal(stateDerivedSaved[0]?.enabled, true, 'a persisted record makes the declared action executable');
+assert.equal(stateDerivedSaved[0]?.requiresSavedRecord, false);
+assert.deepEqual(buildStateDerived({}, 7), [], 'an unresolvable declared dependency must still fail closed');
+assert.deepEqual(
+  buildStateDerived({ project_id: 12 }, 7, stateDerivedStatus({ reasonCode: 'ACTION_NOT_ALLOWED' })), [],
+  'an authority reason must still block the adapter row',
+);
+console.log('[contract_header_action_presentation_test] PASS state_derived_adapter=3');
+
 // CONTRACT-ACT-01: the real contract save producer may change its label; Web
 // emphasis must follow normalized intent, never text or array position.
 {

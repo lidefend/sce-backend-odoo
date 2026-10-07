@@ -2366,6 +2366,7 @@ verify.nav.pro01r.route_authority.browser: guard.prod.forbid
 .PHONY: verify.product.entry_publication.unit
 verify.product.entry_publication.unit: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_entry_publication_authority.py
+	@python3 addons/smart_core/tests/test_route_authority_single_consumer.py
 	@python3 addons/smart_core/tests/test_system_init_final_route_authority_static.py
 
 .PHONY: verify.business_config.approval_targets.unit

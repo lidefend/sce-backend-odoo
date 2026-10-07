@@ -1,4 +1,9 @@
 import { normalizeActionSemantics } from '@sc/schema';
+import {
+  actionRequiresPersistedRecord,
+  declaredVisibilityModifier,
+  resolveStateDerivedStatus,
+} from './actionRuleDerivation';
 import type {
   CanonicalFormAction,
   CanonicalFormField,
@@ -547,6 +552,7 @@ function actionStatus(
     || (actionKey ? store.buttonStatusById.get(statusKey) : undefined);
 }
 
+
 function presentAction(
   action: ContractV2ActionRule,
   status: ContractV2ButtonStatus | undefined,
@@ -554,6 +560,8 @@ function presentAction(
   identityUnique: boolean,
   values: ContractV2Dictionary,
   workflowContract: ContractV2Dictionary,
+  stateDerivedStatus: boolean,
+  recordPersisted: boolean | undefined,
 ): CanonicalFormAction {
   const profiles = (action.visibleProfiles || ['create', 'edit', 'readonly'])
     .filter((profile): profile is CanonicalFormRenderMode => ['create', 'edit', 'readonly'].includes(profile));
@@ -567,24 +575,23 @@ function presentAction(
     && typeof action.disabled === 'boolean'
     && (!status?.backendIdentity || status.backendIdentity === text(action.backendIdentity));
   const resolveFieldValue = (field: string) => values[field];
-  const visibleAttrs = asDict(action.visible?.attrs);
-  const invisibleModifier = Object.prototype.hasOwnProperty.call(action.modifiers || {}, 'invisible')
-    ? action.modifiers?.invisible
-    : Object.prototype.hasOwnProperty.call(visibleAttrs, 'invisible')
-      ? visibleAttrs.invisible
-      : action.invisible;
+  const invisibleModifier = declaredVisibilityModifier(action);
   const disabledModifier = Object.prototype.hasOwnProperty.call(action.modifiers || {}, 'disabled')
     ? action.modifiers?.disabled
     : action.modifiers?.readonly;
   const definitionInvisible = evaluateNativeModifierValue(invisibleModifier, resolveFieldValue);
   const definitionDisabled = evaluateNativeModifierValue(disabledModifier, resolveFieldValue);
+  // A state-derived button status is recomputed from the declared visibility
+  // modifier against live form values; every other status stays authoritative.
+  const statusVisibilityDenied = status?.visible === false && !stateDerivedStatus;
+  const statusDisabledDenied = status?.disabled === true && !stateDerivedStatus;
   // A declared actor-authorization or business-availability deny is honoured
   // directly, not just through the producer's folded allowed/enabled/disabled.
   const declaredDenial = declaredActionAuthorityDenial(action);
   const declaredAuthority = declaredDenial === '';
   const allowed = declaredAuthority && explicitAuthority && action.allowed === true;
   const enabled = declaredAuthority && action.enabled === true && action.disabled !== true
-    && status?.disabled !== true && !definitionDisabled;
+    && !statusDisabledDenied && !definitionDisabled;
   if (!text(action.actionId) || !text(action.backendIdentity)) {
     throw new Error('CANONICAL_FORM_ACTION_REFERENCE_MISSING');
   }
@@ -596,10 +603,10 @@ function presentAction(
     visible: explicitAuthority
       && !definitionInvisible
       && profiles.includes(mode)
-      && status?.visible !== false
+      && !statusVisibilityDenied
       && !(mode === 'readonly' && (action.actionSemantics || normalizeActionSemantics(action))?.kind === 'persistence'),
     enabled: allowed && enabled,
-    reasonCode: text(status?.reasonCode || action.reasonCode) || declaredDenial
+    reasonCode: text(stateDerivedStatus ? '' : status?.reasonCode || action.reasonCode) || declaredDenial
       || (!allowed || !enabled ? 'ACTION_NOT_ALLOWED' : ''),
     visibleProfiles: profiles,
     safety: Object.freeze({ ...(action.actionSafety || {}) }),
@@ -611,21 +618,29 @@ function presentAction(
     methodName: text(button.name || button.method),
     backendIdentity: action.backendIdentity,
   });
-  if (availability.kind === 'unmanaged' || (availability.kind === 'managed' && availability.enabled)) {
-    return presented;
+  const settled = availability.kind === 'unmanaged' || (availability.kind === 'managed' && availability.enabled)
+    ? presented
+    : {
+      ...presented,
+      enabled: false,
+      reasonCode: availability.reasonCode || 'WORKFLOW_ACTION_NOT_AVAILABLE',
+    };
+  // A declared record action cannot run before the record exists.  Presenting it
+  // as enabled would promise an action no adapter can execute yet, so it stays
+  // visible with an explicit reason and turns executable once the draft is saved.
+  if (recordPersisted === false && settled.enabled && actionRequiresPersistedRecord(action)) {
+    return { ...settled, enabled: false, reasonCode: 'ACTION_REQUIRES_SAVED_RECORD' };
   }
-  return {
-    ...presented,
-    enabled: false,
-    reasonCode: availability.reasonCode || 'WORKFLOW_ACTION_NOT_AVAILABLE',
-  };
+  return settled;
 }
 
 export function presentContractV2Form(
   store: ContractV2NormalizedStore,
   mode: CanonicalFormRenderMode,
   runtimeValues?: ContractV2Dictionary,
+  context?: { recordPersisted?: boolean },
 ): CanonicalFormRenderModel {
+  const recordPersisted = context?.recordPersisted;
   const snapshot = store.snapshot;
   const structure = snapshot.formStructureContract;
   if (structure && structure.presentationMode !== 'task' && structure.presentationMode !== 'workspace') {
@@ -648,17 +663,24 @@ export function presentContractV2Form(
     if (identity) actionIdentityCounts.set(identity, (actionIdentityCounts.get(identity) || 0) + 1);
     if (actionId) actionIdCounts.set(actionId, (actionIdCounts.get(actionId) || 0) + 1);
   });
-  const allActions = snapshot.actionContract.actionRuleList.map((action) => (
-    presentAction(
+  const runtimeValuesMerged = { ...contractValues, ...(runtimeValues || {}) };
+  const stateDerivedKeys = new Set<string>();
+  const allActions = snapshot.actionContract.actionRuleList.map((action) => {
+    const status = actionStatus(store, action);
+    const stateDerivedStatus = resolveStateDerivedStatus(action, status, runtimeValuesMerged);
+    if (stateDerivedStatus) stateDerivedKeys.add(action.actionKey || action.actionId);
+    return presentAction(
       action,
-      actionStatus(store, action),
+      status,
       mode,
       actionIdentityCounts.get(text(action.backendIdentity)) === 1
         && actionIdCounts.get(text(action.actionId)) === 1,
-      { ...contractValues, ...(runtimeValues || {}) },
+      runtimeValuesMerged,
       snapshot.workflowContract || {},
-    )
-  ));
+      stateDerivedStatus,
+      recordPersisted,
+    );
+  });
   const visibleActions = allActions.filter((action) => action.visible);
   const actionsByIdentity = new Map(visibleActions.map((action) => [text(action.actionRef.backendIdentity), action]));
   const actionsByNativeOccurrence = new Map(visibleActions.flatMap((action) => {
@@ -683,7 +705,24 @@ export function presentContractV2Form(
     isFormActionBarAction(action.actionRef)
   ));
   const primaryWinnerIdentity = text(asDict(snapshot.actionContract.primaryResolution).winner);
-  const actions = retainAuthoritativeActionOccurrences(actionCandidates, primaryWinnerIdentity);
+  const retainedActions = retainAuthoritativeActionOccurrences(actionCandidates, primaryWinnerIdentity);
+  const contractPrimaries = retainedActions.filter((action) => (
+    action.visible && action.enabled && action.tier === 'primary'
+  ));
+  const clientResolvedPrimaries = contractPrimaries.filter((action) => stateDerivedKeys.has(action.key));
+  // Client-side state re-evaluation may reveal a state-dependent action, but it
+  // may not introduce a second effective primary: the contract's fetch-time
+  // primary (resolved against the state the producer could see) stays dominant
+  // and the revealed action keeps its function as a secondary entry.
+  const demotedKeys = new Set<string>();
+  if (contractPrimaries.length > 1 && clientResolvedPrimaries.length) {
+    const contractOwnedPrimaries = contractPrimaries.length - clientResolvedPrimaries.length;
+    (contractOwnedPrimaries ? clientResolvedPrimaries : clientResolvedPrimaries.slice(1))
+      .forEach((action) => demotedKeys.add(action.key));
+  }
+  const actions = demotedKeys.size
+    ? retainedActions.map((action) => (demotedKeys.has(action.key) ? { ...action, tier: 'secondary' as const } : action))
+    : retainedActions;
   const primaryCount = actions.filter((action) => action.visible && action.enabled && action.tier === 'primary').length;
   if (primaryCount > 1) throw new Error('CANONICAL_FORM_MULTIPLE_PRIMARY_ACTIONS');
   return {

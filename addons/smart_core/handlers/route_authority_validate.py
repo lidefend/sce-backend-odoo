@@ -3,8 +3,7 @@ from __future__ import annotations
 
 from ..core.base_handler import BaseIntentHandler
 from ..core.intent_execution_result import IntentExecutionResult
-from ..delivery.menu_service import MenuService
-from ..identity.identity_resolver import IdentityResolver
+from ..delivery.runtime_route_authority import build_runtime_route_authority
 
 
 def _positive_int(value) -> int:
@@ -120,32 +119,12 @@ class RouteAuthorityValidateHandler(BaseIntentHandler):
         if not action_id:
             return self._deny("ROUTE_ACTION_REQUIRED")
 
-        resolver = IdentityResolver(self.env)
-        surface = resolver.build_role_surface(
-            resolver.user_group_xmlids(self.env.user),
-            [],
-            {"workspace.home"},
-        )
-        menu_service = MenuService(self.env)
-        from .system_init import _resolve_startup_delivery_identity, _load_platform_release_gate, _filter_nav_by_release_gate
-        from ..delivery.product_policy_service import ProductPolicyService
-        from ..delivery.delivery_engine import DeliveryEngine
-        identity = _resolve_startup_delivery_identity(self.env, {})
-        policy = ProductPolicyService(self.env).get_policy(
-            **{key: identity[key] for key in ("product_key", "base_product_key", "edition_key")},
-            role_code=surface.get("role_code"), enforce_release=True, enforce_access=True,
-        )
-        release_gate = _load_platform_release_gate(self.env, product_key=policy["product_key"])
-        navigation = menu_service.build_nav(policy=policy, role_surface=surface)
-        navigation = DeliveryEngine(self.env)._normalize_delivery_nav_refs(navigation)
-        navigation = [] if release_gate.get("fail_closed") else _filter_nav_by_release_gate(
-            navigation, release_gate, env=self.env,
-        )[0]
-        authority = menu_service.build_route_authority(surface, nav=navigation)
-        authority = MenuService.filter_route_authority_by_publication(
-            authority, filter_nodes=lambda nodes: [] if release_gate.get("fail_closed") else
-                _filter_nav_by_release_gate(nodes, release_gate, env=self.env)[0],
-        )
+        # One navigation contract owns both the rendered tree and its route
+        # authority (``handlers/system_init.py``), and ``sc.product.policy``
+        # exposes that same published authority to server-side consumers.  A
+        # second derivation here would let this gate answer a different
+        # question than the client asked.
+        authority = build_runtime_route_authority(self.env)
         entries = [
             row
             for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions")

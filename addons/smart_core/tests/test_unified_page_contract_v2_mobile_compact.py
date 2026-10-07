@@ -2373,6 +2373,81 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertFalse(status["disabled"])
         self.assertNotIn("reasonCode", status)
 
+    def test_final_modifier_hydration_records_entitlement_for_state_hidden_native_action(self):
+        """A state-derived hide is not a permission denial.
+
+        The native header object button was authorized by Odoo itself
+        (allowed/enabled/disabled are all resolved), but its declared
+        ``not project_id`` modifier is empty at contract-fetch time, so the
+        state verdict hides it.  The status must stay fail-closed while the
+        entitlement fact is recorded, otherwise the frontend
+        ``explicitAuthority`` check can never re-evaluate the button against
+        live form values.
+        """
+
+        def contract(extra):
+            row = {
+                "actionId": "action.action_project_borrow_company",
+                "actionKey": "action_project_borrow_company",
+                "backendIdentity": "native_button:object:action_project_borrow_company:/form[1]/header[1]/button[1]:1",
+                "sourceChannel": "native_form_header",
+                "button": {"name": "action_project_borrow_company", "type": "object"},
+                "nativeIdentity": {"native_locator": "/form[1]/header[1]/button[1]"},
+                "allowed": True,
+                "enabled": True,
+                "disabled": False,
+                "presentation": {"tier": "primary"},
+                "visible": {"attrs": {"invisible": {
+                    "kind": "not",
+                    "expr": {"kind": "field_truthy", "field": "project_id"},
+                }}},
+            }
+            row.update(extra)
+            return {
+                "actionContract": {"actionRuleList": [row]},
+                "statusContract": {"buttonStatus": [{
+                    "btnId": "btn.action_project_borrow_company",
+                    "visible": False,
+                    "disabled": False,
+                    "reasonCode": "ACTION_NOT_VISIBLE_IN_STATE",
+                }]},
+                "dataContract": {"mainData": {"project_id": False}},
+            }
+
+        hidden = contract({})
+        assembler.hydrate_final_action_modifier_status(hidden)
+        hidden_row = hidden["actionContract"]["actionRuleList"][0]
+        hidden_status = hidden["statusContract"]["buttonStatus"][0]
+        self.assertIs(hidden_status["visible"], False)
+        self.assertIs(hidden_status["disabled"], False)
+        self.assertEqual(hidden_status["reasonCode"], "ACTION_NOT_VISIBLE_IN_STATE")
+        self.assertIs(hidden_row["entitlementEvaluated"], True)
+        self.assertIs(hidden_row["allowed"], True)
+        self.assertIs(hidden_row["enabled"], True)
+        self.assertIs(hidden_row["disabled"], False)
+
+        resolved = contract({})
+        resolved["dataContract"]["mainData"]["project_id"] = 12
+        assembler.hydrate_final_action_modifier_status(resolved)
+        resolved_row = resolved["actionContract"]["actionRuleList"][0]
+        resolved_status = resolved["statusContract"]["buttonStatus"][0]
+        self.assertIs(resolved_status["visible"], True)
+        self.assertNotIn("reasonCode", resolved_status)
+        self.assertIs(resolved_row["entitlementEvaluated"], True)
+
+        # A row without native header authority must not claim entitlement.
+        unauthorized = contract({
+            "sourceChannel": "contract_header",
+            "button": {},
+            "nativeIdentity": {},
+        })
+        unauthorized["actionContract"]["actionRuleList"][0].pop("entitlementEvaluated", None)
+        assembler.hydrate_final_action_modifier_status(unauthorized)
+        self.assertNotIn(
+            "entitlementEvaluated",
+            unauthorized["actionContract"]["actionRuleList"][0],
+        )
+
     def test_final_modifier_hydration_does_not_override_runtime_business_unavailability(self):
         contract = {
             "actionContract": {"actionRuleList": [{

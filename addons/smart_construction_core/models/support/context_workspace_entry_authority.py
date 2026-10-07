@@ -12,10 +12,11 @@ menu the current principal's route authority already contains for that action.  
 carrier whose target is outside the principal's route authority fails closed with
 a business message instead of navigating the user into a navigation denial.
 
-The route authority is the same contract the client enforces, and it is derived
-from configuration - the released product surface and the role surface - so a
-principal that is granted the entry reaches the formal document without a code
-change, and one that is not gets an actionable message.
+The route authority is the same published contract the client enforces, so this
+module consumes the single server-side entrypoint for it instead of deriving a
+second projection from the role surface.  A principal that is granted the entry
+reaches the formal document without a code change, and one that is not gets an
+actionable message.
 """
 from datetime import date, datetime
 
@@ -71,18 +72,20 @@ class ScContextWorkspaceEntryAuthority(models.AbstractModel):
         return [(record.id, record.name or record._sc_readable_context_name()) for record in self]
 
     def _sc_route_authority(self):
-        """Return the route authority entries the current principal may open."""
-        from odoo.addons.smart_core.delivery.delivery_engine import DeliveryEngine
-        from odoo.addons.smart_core.identity.identity_resolver import IdentityResolver
+        """Return the published route authority entries the principal may open.
 
-        resolver = IdentityResolver(self.env)
-        role_surface = resolver.build_role_surface(
-            resolver.user_group_xmlids(self.env.user),
-            [],
-            {"workspace.home"},
+        ``system_init`` fixes one navigation contract that owns both the
+        rendered tree and its route authority, and the platform release gate
+        projects that authority onto the released product surface.
+        ``sc.product.policy.published_route_authority`` is the single
+        server-side consumer entrypoint for it, so a carrier pinned from a
+        re-derived role surface could offer a menu the client then denies.
+        """
+        from odoo.addons.smart_core.delivery.runtime_route_authority import (
+            build_runtime_route_authority,
         )
-        payload = DeliveryEngine(self.env).build(data={"role_surface": role_surface})
-        authority = payload.get("route_authority")
+
+        authority = build_runtime_route_authority(self.env)
         if not isinstance(authority, dict):
             return []
         entries = []
