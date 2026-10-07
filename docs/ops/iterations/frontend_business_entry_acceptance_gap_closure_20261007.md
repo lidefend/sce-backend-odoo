@@ -887,3 +887,295 @@ CSV：3 个 account 行 `declared→passed`、`阻塞→本轮验收`，`role_au
 2. 收敛 `docs/product/frontend_business_entry_acceptance_v1.csv` 中两行 `partial_passed`（日常合同、付款申请）
    的运行态证据。
 3. 出 89 条交付面的一次性用户级验收结论。**分支目标仍未完成。**
+
+---
+
+## 续轮：字段策略声明一致性 + 声明口径收敛到交付面（2026-10-08 续）
+
+### A. `due_date` 消失 = 契约声明投影缺陷（P1 声明体，非放宽断言）
+
+- 责任层：P1 施工行业标准产品（`smart_construction_core` 的 `ui.business.config.contract` 声明体）。
+  P0 `smart_core` 字段策略投影的**收紧语义**本轮没有改动，也没有加任何模型特判；同批另加了一道
+  「渲染档策略不得新隐藏原生 required 字段」的**结构权威守卫**（见续轮 3 · H，属于通用投影责任修复，
+  不是本节的替代解释，也不放宽任何断言）。
+- 泄漏链：模型级 `*_p1_form_business_facts_v1` 声明体给出**无条件** `readonly: True` →
+  `view_orchestrator._apply_field_display_policy` 只置 true 不回松 → 交付字段节点被压成只读 →
+  `statusContract.widgetStatus` 仍按原生 arch 报 `auth=edit`（两个投影互相矛盾）→
+  `formSection.mapper.ts::readonlyFactIsPresentable` 丢弃“只读且空值”字段 → 到期日从页面消失。
+- 修复：移除 6 个模型级声明体上 **14 个应由用户录入字段**的无条件只读，保留 `sequence`；
+  `*_display` 镜像事实的只读策略仍由这些声明体承载，**声明体不退役**。
+
+| 模型 | 移除的无条件只读字段 |
+| --- | --- |
+| `sc.financing.loan` | `due_date` |
+| `payment.request` | `name` |
+| `sc.fund.account.operation` | `note` |
+| `sc.labor.request` | `request_date`, `contractor_id`, `note` |
+| `sc.equipment.request` | `project_id`, `supplier_id`, `request_date`, `note` |
+| `sc.equipment.settlement` | `name`, `project_id`, `settlement_date`, `supplier_id` |
+
+- 新受管门禁：`make verify.business_config.field_policy_declaration_parity`
+  （`scripts/verify/business_config_field_policy_declaration_parity.py`，只读 shell 门禁）。
+  修复前 `contradiction_count=14`（FAIL，逐条列出）；修复后 `contradiction_count=0`（PASS）。
+  报告 `artifacts/backend/business_config_field_policy_declaration_parity.json`。
+- 判据与边界文档：`docs/product/field_policy_declaration_parity_v1.md`
+  （区分“矛盾声明”与真实 ACL/字段权限拒绝、合法隐藏规则、系统生成字段、未识别 widget 默认值）。
+
+### B. 8 例“运行时导航未交付” = 声明口径漂移（探针改消费交付声明）
+
+事实（四份受管声明互相一致，全部不含这 6 个独立入口）：
+
+- `scripts/verify/baselines/formal_business_product_menu_policy_v1.json`（当前锁定基线，89 菜单）
+- 运行态发布策略 `sc.product.policy("construction.standard")`：89 菜单
+- 日常验收导航策略 `config/frontend/acceptance_environments_v1.json` → `daily.navigation_policy`
+  `min_actions=max_actions=89`
+- 交付声明 `docs/product/frontend_business_entry_acceptance_v1.csv`：89 行
+
+各入口在运行态的 `ir.ui.menu` 记录仍 `active=True`，但**不在**上述任一交付面内；其能力由声明的
+统一载体承接（运行态契约 `current_account_workspace_contract.xml` /
+`company_project_refund_workspace_contract.xml` 的 `fact_models`）：
+
+| 业务代码 | 目标模型 | 声明的交付载体 |
+| --- | --- | --- |
+| `finance.loan.project_borrow_company` | `sc.financing.loan` | 往来款登记（`sc.current.account.workspace`） |
+| `finance.fund.transfer` | `sc.fund.account.operation` | 往来款登记 |
+| `finance.deposit.bid.pay` / `finance.repayment.registration` | `sc.expense.claim` | 往来款登记 |
+| `finance.self_funding.income` | `sc.self.funding.registration` | 公司&项目退款（`sc.company.project.refund.workspace`） |
+| `finance.payment.apply.receive` | `payment.request` | 付款申请（已声明创建入口） |
+
+探针改动（`frontend/apps/web/scripts/business_form_user_perspective_acceptance.mjs`）：
+
+1. `loadDeclaredEntryKeys()` 不再并入 `config/frontend/authoritative_navigation.json`
+   （那是**每角色菜单授权面**，仍是发布导航策略门禁的输入，不是交付声明），只消费交付声明 CSV。
+   `declaredEntryCount` 由 140 收敛为 **89**。
+2. 两例重指向已交付承载入口：`settlement.income` → 收入结算；`finance.receipt.income.progress` →
+   收款登记。
+3. 6 例按上述载体收敛：`finance.payment.apply.receive` 重指向付款申请（创建旅程保留）；
+   另外 5 例改为 **统一载体断言** —— 复用 `assertDeclaredEntryActions`（捕获交付 action 契约，
+   要求渲染的 header 动作集**精确等于**声明基线可见集），并新增 fail-closed
+   `checkRetiredConsolidation`：退役的独立身份不得出现在交付声明中，也不得出现在运行态导航中。
+   这不是放宽断言：原先断言的“独立创建面”在产品中并不存在，改为真实契约陈述 + 漂移检查。
+4. 汇总守卫（`..._summary_guard.mjs`）新增：consolidated 用例必须绑定退役身份且
+   `retiredAbsentFromDeclaration=true`、必须消费到非空声明动作集；`MIN_CASE_COUNT=20` 不变。
+
+实证（驳回一次错误绑定）：把 5 例直接绑到工作台载体跑**创建旅程**会失败
+（`openCreateFromMenu`: "the declared entry exposes no create control"；工作台入口不暴露列表级“新建”控件），因此不能复用创建旅程，
+只能走声明动作集断言。
+
+**结果**（`artifacts/playwright/business-form-user-perspective/report.json`，本地受管运行态
+`sc_dev_demo` @ `127.0.0.1:18081`，`sc_test_admin`）：
+
+- 20/20 用例通过（15 创建旅程 + 5 统一载体断言），`declaredEntryCount=89`，
+  `declaredEntryAssertions=1`，`consoleErrors=0`。
+- 汇总守卫 PASS（`caseCount=20`、`failures=0`、`missing=0`、`undeclared=0`、`consolidated=5`、
+  `consolidatedUnbound=0`、`leaked=0`）。
+- 未入门的观察（保持可见、未放宽）：`settlement.income` 声明可编辑但未渲染
+  `requested_fund_amount / invoice_ref / invoice_date / adjustment_ids`（与生效于 `due_date`
+  的同类声明-投影漂移有待判定，属证据项，未纳入 gate）。
+
+### 本轮未完成 / 下一步
+
+1. 上述 `settlement.income` 4 个字段的声明-投影漂移判定（是真投影缺陷还是合法空态/字段权限）。
+2. CSV 两行 `partial_passed`（日常合同、付款申请）的运行态证据收敛。
+3. 89 条交付面一次性用户级验收结论。**分支目标仍未完成。**
+
+---
+
+## 续轮 2（2026-10-08）：`settlement.income` 4 字段判定 + 声明消费口径修正
+
+上一轮留下的唯一未决项是：`settlement.income` 的交付契约声明
+`requested_fund_amount / invoice_ref / invoice_date / adjustment_ids` 可见且可编辑，但页面一个都不渲染。
+本轮按“先钉事实、再定责任层”的顺序收口，结论是 **声明消费口径错误，不是产品缺陷、不是投影缺陷**。
+
+### C.1 取证链（三层独立证据，全部在本地受管运行态 `sc_dev_demo` @ `127.0.0.1:18081`）
+
+1. **交付契约**（`ui.contract.v2 op=model render_profile=create`，探针实际捕获的同一条响应）：
+   `mainData.id = "NewId_0x72831417a3b0"`。
+   - 该值由**服务端**下发：用 node 直连 `/api/v1/intent`（绕开浏览器）复取，仍得
+     `mainData.id = "NewId_0x..."`，`typeof === "string"`。
+   - 它是 **Odoo ORM 的未保存记录虚拟 id**（`models.NewId`，`__str__` 为 `NewId_0x<hex>`；
+     仓库内 `addons_external/oca_server_ux/base_tier_validation/models/tier_validation.py:252`
+     即按 `isinstance(rec.id, models.NewId)` 判定）。
+   - 它同时是**已冻结的契约约定**：`docs/contract/snapshots/api_onchange_intent_admin.json`
+     早已记录 `ui_contract_raw.patch.id = "NewId_0x735997d2e080"`。因此**不能**为迎合消费方改成
+     `false` 或删除。
+2. **声明体（原生 arch）**：`addons/smart_construction_core/views/core/settlement_views.xml`
+   的六个 group 明确写 `invisible="not id"`——`执行与匹配`（含 `requested_fund_amount`）、
+   `发票信息`（含 `invoice_ref`、`invoice_date`）、`扣款调整`（含 `adjustment_ids`），
+   另有 `付款申请` / `采购订单` / `系统办理信息`。语义即“记录保存后才显示”（“仅当记录已有 id”）。
+3. **交付页面**：容器树**忠实地**携带判据（不是丢判据）：
+   `modifiers.invisible = {"kind":"not","expr":{"kind":"field_truthy","field":"id"},"raw":"not id"}`；
+   前端按**真实记录状态**求值（新记录 `formData.id` 为假）→ 六组隐藏 → 4 字段不渲染。**页面是对的。**
+
+### C.2 根因
+
+探针的地面真值函数 `collectNativeFieldVisibility()` 只拿 `dataContract.mainData` 求值，
+把 `NewId_0x...` 当成了**真值**字符串，于是 `not id` 求值为 `false`——把声明整体倒置，
+把“新建态按声明正确隐藏”的区域误判成“声明可见但未渲染”。
+
+这与 `due_date` 是**外观相同、成因相反**的两类问题，必须按同一组问句区分：
+
+| 问句 | `due_date`（第一次） | `settlement.income`（本次） |
+| --- | --- | --- |
+| 声明之间互相一致吗？ | ❌ 模型级无条件只读 vs 入口声明可编辑 | ✅ 一致 |
+| 页面渲染符合声明吗？ | ❌ 与声明不一致 | ✅ 一致（声明即“保存后才显示”） |
+| 因此责任层 | 声明体所属层（P1） | 消费侧（验收探针） |
+
+### C.3 修复（只改消费侧，最小面）
+
+`frontend/apps/web/scripts/business_form_user_perspective_acceptance.mjs`：
+
+1. 新增未保存记录哨兵规则 `UNSAVED_RECORD_ID = /^NewId_0x[0-9a-f]+$/i` 与
+   `declaredRecordValues()`：按既有契约约定，把 `NewId_*` 解析为“未保存记录”（`id` 为假）。
+2. `collectNativeFieldVisibility()` 改用它求值；并把可见性由“最后一次出现覆盖”改为
+   **任一次出现可见即可见**（交付状态契约是按**字段**而非按 occurrence 陈述的；
+   `purchase_order_ids` 有两个 occurrence，一显一隐，旧聚合会误报为 native-hidden）。
+3. 新增 `createRecordIdKind` 证据：`absent` / `unsaved_sentinel` / `persisted`。
+
+不做的事（守住边界）：**不改**声明体、**不改**页面、**不改** ACL/字段权限/合法隐藏规则、
+**不加**模型特判、**不新增**第二套全局测试框架。
+
+### C.4 反向锁定（收紧，不是放宽）
+
+汇总守卫 `frontend/apps/web/scripts/business_form_user_perspective_summary_guard.mjs` 新增三条 fail-closed：
+
+- `createRecordIdKind` 不得为 `persisted`：create 契约若绑到已持久化记录则整套求值无效，直接失败。
+- `declaredVisibleNotRendered` 必须为空：由“证据项”**升级为硬门禁**——地面真值修正后，
+  “声明本 profile 可见可编辑、且自身与全部祖先 `invisible` 均解析为假”的字段必须真实渲染。
+- 每个 create 用例必须声明到**非空**可见可编辑字段集，防止“把一切都判为隐藏”让门禁空转（反空洞）。
+
+同一批还顺带修正的**同族消费口径**问题：`declaredVisibleEditable` 的 occurrence 聚合
+（见 C.3 第 2 条）。
+
+### C.5 结果（本地受管运行态）
+
+- `verify.system_user_experience.business_form_user_perspective`：
+  **20/20 通过**（15 创建旅程 + 5 统一载体断言），`declaredEntryCount=89`，`failures=0`，
+  `consoleErrors=0`，`declaredVisibleNotRendered=[]`（全 20 例归零），
+  `createIdentityKinds=[absent, unsaved_sentinel]`（含 `unsaved_sentinel` 1 例，无 `persisted`）。
+- 汇总守卫 PASS：`caseCount=20`、`declaredEditableCases=15`、`consolidated=5`、
+  `consolidatedUnbound=0`、`leaked=0`。
+- **未放宽必填门禁的证明**：`settlement.income` 的 `declaredRequired` 修复前后一致
+  （`project_id / contract_id / partner_id / line_ids`）；修复只会让“新建态本就隐藏”的字段
+  退出 `declaredVisibleEditable`，而该集合在修复前就已经全部被渲染（`missing=[]`），故
+  `declaredRequired ⊆ DOM` 的既有通过结论不受影响。
+- `make verify.business_config.field_policy_declaration_parity` PASS（`contradiction_count=0`）。
+- `make ci.local.iteration` PASS（`coverage=L1_only`）。
+- 判据与区分方法写入 `docs/product/field_policy_declaration_parity_v1.md` 第 7 节，
+  避免同类现象第三次被重新判定。
+
+### 本轮更新后的剩余项
+
+1. ~~`settlement.income` 4 字段判定~~ → **本轮已收口**（消费口径）。
+2. CSV 两行 `partial_passed`：经查已在本 run 中 RESOLVED，CSV 现为 **89/89 `passed`**；
+   `付款申请` 行仍需在本次候选**部署到日常库后**复验一次（见下）。
+3. 89 条交付面一次性用户级验收结论：需在候选部署到日常开发服务器后出具，
+   并显式区分**本地 `sc_dev_demo`** 与**日常 `sc_demo`** 证据。
+4. **分支目标仍未完成**，不得标记完成。
+
+## 续轮 3（2026-10-08）：P0 平台内核投影 + 前端渲染机制 + 探针声明消费（run blockers 25–32）
+
+与 `due_date`／`settlement.income` 同一批收口的还有四条根因。它们外观相似但责任层各不相同，逐条按
+责任层修复，未放宽任何断言、ACL、字段权限或合法隐藏规则，未加模型特判。以下为长表补充说明，逐条结论
+索引仍以 `.agent/runs/FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE/run.json` blockers 25–32 为准。
+
+### D. 表单结构面 `surfaces: []` ＝ P0 平台内核字段 API 调用错误（blocker 25）
+
+- 责任层：P0 平台内核（`addons/smart_core/handlers/ui_contract_v2.py::_model_surface_capabilities`）。
+- 泄漏链：该方法用 `fields_get(load=False)` 查询真实字段，而本 Odoo 版本不接受 `load` 关键字 →
+  `TypeError` 被 `except Exception` 吞成空集合 → 每份契约都声明
+  `formStructureContract.surfaces = []` → 客户端把空列表读成「本页不声明任何区域」→
+  **全部表单的协作区消失**。纯单测（注入 `capabilities`）绕过了这条路径，所以一直绿灯。
+- 修复：改为受支持的 `fields_get()`；只有「本环境无此模型」或 env double 无 ORM 面时才允许回答空。
+  字段 API 异常不再被转换成错误默认值（真实异常必须冒泡）。
+- 锁定：`addons/smart_core/tests/test_form_structure_surface_capability_orm.py`
+  （真实 ORM，4 例，target `verify.local.dev.form_structure_surface_capability.orm`）。
+
+### E. 协作区面板只读态被宿主覆盖 ＝ P0 前端渲染机制（blocker 26）
+
+- 责任层：P0 前端渲染机制（`frontend/apps/web/src/pages/contractForm/CanonicalNativeFormSurface.vue`、
+  `ContractFormDriverHost.vue`）。
+- 根因：宿主向 `NativeCollaborationPanel` 显式传入 `:readonly`，覆盖了契约已解析的面板声明——
+  声明为可交互的面板会被宿主按表单 `renderMode` 降级成只读。**面板模式的唯一所有者是声明，不是渲染模式。**
+- 修复：移除该覆盖绑定（不改组件、不改声明）。
+- 锁定：`verify.frontend.collaboration_primitives.browser`（声明 live→`controls=2`/`upload=1`，
+  声明 readonly→`controls=0`/`upload=0`，`declarationConsumed=true`，8 例）。
+
+### F. `system.init` 对全部用户 500 ＝ P0 平台内核把目录节点当禁用项（blocker 31）
+
+- 责任层：P0 平台内核（`addons/smart_core/delivery/menu_service.py::project_canonical_navigation`）。
+- 根因：投影把 `is_clickable=False` 一律读成「显式禁用」，而交付引擎对每个已发布目录组节点
+  （`target_type=directory`、`delivery_mode=none`、`availability_status=ok`、`reason_code=DIRECTORY_ONLY`）
+  恰好下发该标记；客户端契约本就把「无 action 目标且无 container 授权」的节点解析为
+  `state='container'`。2026-10-07 17:02 发布的产品策略把两个目录组（menu 666 项目预算、menu 592 成本报表）
+  带入已发布导航后，所有该策略用户的 `system.init` 都 fail-closed 抛
+  `ValueError('disabled canonical navigation node requires a server reason')` → HTTP 500。
+  运行日志首次出现 2026-10-07 17:08:03，之前最后一次成功 17:00:43；324 个导航节点里 322 个根本不含该键。
+- 边界澄清：**不是本分支未提交改动引入**——导航路径不含本分支改动文件，`menu_service.py` 自
+  2026-10-02 未变，触发条件是策略数据命中一个既有判据。
+- 修复：仅当节点**拥有目标**（`action_id > 0` 或路由 container 授权）或 `availability_status` 自身声明
+  禁用时，才要求服务端 `disabled_reason`；纯目录保持 `state='container'`。拒绝信息附带 menu/action/key，
+  便于定位。未新增隐藏、未放宽 ACL、未加模型特判。
+- 锁定：`addons/smart_core/tests/test_canonical_navigation_projection.py`
+  （4 例，target `verify.local.dev.canonical_navigation_projection.orm`）＋ 运行态回读
+  `.runtime/agent-runs/FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE/nav_projection_system_init_readback.json`
+  （HTTP 200，324 节点，`container=61`/`enabled=263`，0 个与客户端身份规则冲突）。
+
+### G. 退役探针断言 + 夹具身份 ＝ P4 验收工具（blockers 27–30、32）
+
+- **项目台账 notebook**：原断言期望退役的默认项目表单（11 tabs）；改消费声明
+  （`view_project_overview_form`（view 1761）声明 `notebook_tabs=[]` → 渲染 0），DOM 仍逐字段对声明校验。
+- **关注者旅程**：原用 ORM `is_following` 快照当浏览器期望（关注态随当前用户变化、快照会漂移），
+  且 `data-state=ready` 自首次挂载即为真，立即计数会与 `chatter.followers.list` 响应竞态。
+  改为从契约投影声明的关注者能力（绑定浏览器实际加载的面：`project.project` action 519、
+  `payment.request` action 809），等待权威 live list 响应，再要求恰好一个声明按钮镜像它，并按序要求
+  声明记录上的全部声明 update intent；ORM 往返仅留作后端证据。加固：只有成功信封
+  （`ok=true` 且 `count>=0`）才可作 live 权威，失败/截断响应不可再被读成「未关注」。
+- **付款关系面**：原断言统计 `[data-floorplan-region="relation"]`，而付款面已不再渲染该区域
+  （`data-detail-composition-adopted=false`，仅 `data-floorplan-region=audit` 存在），选择器结构上恒为 0。
+  改为声明驱动：从契约投影声明的关系集合（唯一字段节点 → `component_key=sc.payment.settlement_detail_collection`、
+  `relation=payment.request.line`、`fieldInfo.subview.policies {can_create:false, inline_edit:true, can_unlink:true}`、
+  `column_count=8`），带 fail-closed 唯一性/完整性/镜像策略漂移检查。
+  `can_create=false` **是声明本身**，未新增自动创建能力，未触碰 ACL/字段权限。
+- **付款夹具身份**：改为受管 xmlid `smart_construction_demo.payment_request_floorplan_demo_record`，
+  fail-closed 要求 `state=='draft'`，并绑定 `make local.dev.reset_payment_request_fixture`，不再硬编码记录 id。
+- **因导航投影变更重跑的受影响门禁**（`menu_service.py` 已成为所有读取已发布导航树证据的 check 的声明输入）：
+  `verify.local.dev.project_create_contract_action_scope`（23 组断言，`intentFailures=[]`、`browserErrors=[]`，
+  夹具清理 `remaining=0`）、`verify.frontend.collaboration_primitives.browser`（8）、
+  `verify.frontend.release_navigation_policy.guard`（5）、
+  `verify.frontend.role_surface_exposure_declaration.guard`（10）、
+  `verify.local.dev.form_structure_surface_capability.orm`（4）。
+
+### H. 渲染档策略不得新隐藏原生 required 字段 ＝ P0 平台内核投影责任（blocker 36）
+
+- 责任层：P0 平台内核（`addons/smart_core/handlers/ui_contract_v2_projection.py::apply_field_policies_to_v2_status`）。
+- 事实：原生表单的**已交付布局**是字段可见性的结构权威。渲染档策略（`field_policies`）只能收紧
+  `readonly`/`required` 语义，**不得**把一个「原生交付状态声明为 required、且原生可见」的 occurrence
+  新隐藏掉——`visible=false` 且 `required=true` 是一组**不可满足**的声明，等于把结构所有权交回第二个 owner。
+- 边界（守死）：字段/记录权限只由权限面承载（`globalStatus` / `auth`），从不经这些渲染档策略下发；
+  因此本守卫**不能**放宽访问，**不能**复活一个原生已结构隐藏的字段（原生 `NATIVE_MODIFIER_INVISIBLE`
+  的 occurrence 保持不可见），也**不**使用 `critical` 覆盖。它只拒绝「新隐藏 required 且原生可见」。
+- 这是用户要求的「钉住首次产生 `visible:false / auth:"none"` 的位置、修复通用投影责任」，
+  与 A 节的 P1 声明一致性修复**互补**：A 节消掉矛盾声明的源头，H 节让通用投影不再把矛盾变成结构丢失。
+- 锁定：`addons/smart_core/tests/test_ui_contract_v2_boundaries.py::test_native_form_policy_never_hides_a_required_occurrence`
+  （required+原生可见 → 保持 visible（readonly）；非 required → 仍按策略隐藏；原生结构隐藏 → 不复活）。
+- 未放宽的证明：同测试断言非 required occurrence 仍被策略隐藏、原生隐藏 occurrence 仍 `auth="none"`，
+  故 `declaredRequired ⊆ DOM` 一类既有通过结论不受影响；`business_form_user_perspective` 20/20
+  与 `declaredRequired` 修复前后一致。
+
+### 本轮验证汇总（本地受管运行态 `sc_dev_demo` @ `127.0.0.1:18081`；HEAD `93032a3d`）
+
+| 门禁 | 例数 | 结果 |
+| --- | ---: | --- |
+| `verify.system_user_experience.business_form_user_perspective` | 20 | passed |
+| `verify.local.dev.project_create_contract_action_scope` | 23 | passed |
+| `verify.frontend.collaboration_primitives.browser` | 8 | passed |
+| `verify.frontend.release_navigation_policy.guard` | 5 | passed |
+| `verify.frontend.role_surface_exposure_declaration.guard` | 10 | passed |
+| `verify.local.dev.form_structure_surface_capability.orm` | 4 | passed |
+| `verify.local.dev.canonical_navigation_projection.orm` | 4 | passed |
+| `verify.business_config.field_policy_declaration_parity` | — | PASS（`contradiction_count=0`） |
+| `ci.local.iteration` | — | PASS（`coverage=L1_only`） |
+
+以上均为本地 `sc_dev_demo` 证据，与日常 `sc_demo` 是两套运行栈，不能互相冒充；日常结论需在候选部署后
+单独取证。**分支目标仍未完成。**
