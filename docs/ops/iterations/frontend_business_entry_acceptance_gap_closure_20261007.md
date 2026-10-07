@@ -509,3 +509,63 @@ make verify.frontend.business_entry.general_contract.browser \
    `ProductListSurface`/`CollectionKanbanRecordCard`/`ProductAppShell` 身份恢复且
    `CollectionSelectionControl` 不变。
 4. 按域继续剩余 `not_run` 行。**不标记分支目标完成**。
+
+---
+
+## 89 入口矩阵域级收口（f4279416，2026-10-07）
+
+本轮把矩阵从「表格/看板二元假设」推进到**声明驱动 + 登记表消费**，并把负例授权判定改为
+运行态权威能力闭包。全部验证在受管日常运行时进行（`http://1.95.85.92:18081`、ENV=dev、
+DB=`sc_demo`、served `f4279416`、受测角色 `fixture_role_config_admin`/公司21）。
+
+### 五类根因与处理
+
+1. **配置工作台入口未识别（原 `unknown-presentation`）**：根因是动作
+   `action_sc_business_config_workbench` 用 `context.sc_web_route=/admin/business-config`
+   声明了工作台面，而 CSV 仍声明 `tree:table; form:form_structure`（产物声明过期）。
+   处理：探针新增声明驱动的 `admin` 适配器，读取页面根 `data-product-page-mode="admin"`
+   （就绪属性 `data-page-sections-ready`）；同时把 CSV 该行 `rendering_path` 改为
+   `admin:business_config_surface [declared: action context sc_web_route=...]`。非入口特判。
+2. **产品配置 3 行 NOT-IN-NAV**：事实为菜单声明 `group_sc_cap_config_admin`，而
+   `group_sc_role_business_admin` 闭包仅到 `group_sc_cap_business_config_admin`；
+   受管登记表已按「仅存在、无人交付」登记为 `capability_reachable_by_no_role`。
+   处理：探针消费登记表判定为 `declared`（带登记原因），**未放宽断言、未改动菜单/ACL**；
+   CSV 记 6. 行状态 `declared` 并写明产品侧待裁决。
+3. **阻塞清单 3 行 account**：登记表 `authority_pending_entries` 已登记为待解析。
+   处理：同样按登记判定 `declared`，不静默丢弃也不放宽。
+4. **负例授权泄漏（`fixture_role_finance` 收到 `action_sc_invoice_input`）**：根因是 overlay
+   手写的角色能力闭包过期（只列身份组、漏传递闭包）。处理：删除手写闭包，改为读取登录信封
+   `principal.role_xmlids`（运行态发布的完整生效组闭包），候选仅当闭包与入口声明组**不相交**
+   才作为有效负例；`fixture_role_finance` 因此不再是该入口的负例。overlay 仅保留候选登录清单。
+5. **空态权威计数**：对空态入口的 42 个模型在受管 odoo.shell 内以受测角色执行
+   `with_user(uid).search_count([])` 与 `sudo().search_count([])`：34 个模型全库 0 行（真实空态），
+   8 个模型存在他公司数据（`account.journal`/`hr.department`/`project.cost.ledger`/`sc.expense.claim`/
+   `sc.invoice.registration`/`sc.tax.deduction.registration`/`ui.form.field.policy` 全属公司1，
+   `project.progress.entry` 1 行无公司），受测公司21 作用域排除，属**作用域边界**而非产品零数据。
+
+### 负例覆盖的结构性事实
+
+16 个入口的声明组含基线能力 `group_sc_cap_project_read`，而被测的 8 个夹具角色闭包**全部**持有该能力，
+故在当前角色模型下不存在可断言的负例角色；3 个 account 行 `role_authority` 未声明可否定组。
+两类共 19 个入口以显式 observation 记录「负例不可构造」及阻断能力组，**不伪造通过**。
+
+### 验证
+
+| 入口 | 结果 |
+| --- | --- |
+| `verify.frontend.business_entry.matrix.browser`（全量 80 行） | `ok=true entries=80 problems=0 console_errors=0`；分布 table:ok 11 / table:empty 52 / hierarchical:ready 4 / hierarchical:empty 1 / form:ok 3 / aggregate:ok 1 / aggregate:empty 1 / admin:true 1 / declared 6 |
+| 负例授权 | project_a_member 49 + contract_operator 10 + executive 2 = 61 入口已断言 0 泄漏；19 入口不可构造（见上） |
+| `make ci.local.iteration` | PASS（L1，推荐 L2） |
+| `verify.frontend.role_surface_exposure_declaration.guard` | PASS roles=9 universe=86 pending=3 no_role=3 |
+| `verify.frontend.release_navigation_policy.guard` | PASS roles=4 released_leaf_identities=84 |
+
+### 证据落盘
+
+- `artifacts/frontend-business-entry-matrix/daily-f4279416-matrix/summary.json`（权威全量报告）
+- 空态权威计数：受管 odoo.shell 批量输出（本轮临时 `/tmp/empty_counts.out`，CSV `evidence` 已内联结论）
+
+### 下一步（未完成）
+
+1. 产品配置 3 行「仅存在无人交付」需产品侧裁决（是否收敛发布面或调整声明组）。
+2. 19 个入口的负例覆盖需产品侧确认是否引入受限身份或调整声明组，方可闭环负例断言。
+3. 提交候选后按受管入口补 `agent.run.record`；**仍不标记分支目标完成**，走 PR 集成。

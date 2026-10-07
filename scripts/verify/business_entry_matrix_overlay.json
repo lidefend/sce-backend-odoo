@@ -2,20 +2,45 @@
   "schema": "business_entry_matrix_overlay.v1",
   "notes": [
     "Per-entry behaviour overlay for scripts/verify/business_entry_matrix_browser.mjs.",
-    "Identity (menu_xmlid/action_xmlid/model/label) comes from docs/product/frontend_business_entry_acceptance_v1.csv;",
+    "Identity (menu_xmlid/action_xmlid/model/label/presentation) comes from docs/product/frontend_business_entry_acceptance_v1.csv;",
     "this file only declares behaviour the CSV does not carry.",
-    "detail=true means: open the first rendered row and read back the ui.contract.v2 envelope.",
-    "denied_role, when set, must NOT receive the entry in its released navigation."
+    "detail=true means: read back the record ui.contract.v2 envelope for the declared presentation.",
+    "presentation, when set, is an expectation: the probe fails if the runtime declares a different surface.",
+    "denied_role overrides the derived negative-authority role for one entry.",
+    "denied_role_candidates lists the fixture role logins probed as negative authority. The capability",
+    "closure is NOT declared here: the probe reads the acting principal's closure from the login envelope",
+    "(`principal.role_xmlids`, the external ids of every effective group) and only accepts a candidate whose",
+    "closure is disjoint from the entry's declared groups."
   ],
   "defaults": {
     "detail": true,
-    "expect_write": null,
-    "denied_role": "fixture_role_finance"
+    "expect_write": null
   },
+  "denied_role_candidates": [
+    "fixture_role_project_a_member",
+    "fixture_role_executive",
+    "fixture_role_contract_operator",
+    "fixture_role_owner",
+    "fixture_role_pm",
+    "fixture_role_finance",
+    "fixture_role_activity_accounting",
+    "fixture_role_config_admin"
+  ],
   "entries": {
     "smart_construction_core.menu_sc_operating_metrics_project": { "presentation": "table" },
     "smart_construction_core.menu_sc_project_kanban": { "presentation": "kanban" },
     "smart_construction_core.menu_sc_workbench_my_todo_fact": { "presentation": "table" },
-    "smart_construction_core.menu_sc_product_message_notification_v1": { "presentation": "table" }
+    "smart_construction_core.menu_sc_product_message_notification_v1": { "presentation": "table" },
+    "smart_construction_core.menu_sc_product_team_loan_deduction_v1": { "presentation": "form" },
+    "smart_construction_core.menu_sc_product_current_account_v1": { "presentation": "form" },
+    "smart_construction_core.menu_sc_product_company_project_refund_v1": { "presentation": "form" },
+    "smart_construction_core.menu_sc_product_system_parameter_v1": { "presentation": "form" },
+    "smart_construction_core.menu_sc_p1_income_contract": { "presentation": "hierarchical" },
+    "smart_construction_core.menu_sc_p1_expense_contract": { "presentation": "hierarchical" },
+    "smart_construction_core.menu_sc_p1_income_settlement": { "presentation": "hierarchical" },
+    "smart_construction_core.menu_sc_p1_expense_settlement": { "presentation": "hierarchical" },
+    "smart_construction_core.menu_sc_payment_execution": { "presentation": "hierarchical" },
+    "smart_construction_core.menu_sc_product_tax_report_v1": { "presentation": "aggregate" },
+    "smart_construction_core.menu_sc_product_labor_subcontract_report_v1": { "presentation": "aggregate" }
   }
 }
