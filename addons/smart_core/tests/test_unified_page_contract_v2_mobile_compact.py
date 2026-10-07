@@ -774,7 +774,12 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         )
 
         save = next(row for row in full["actionContract"]["actionRuleList"] if row["actionId"] == "form.save")
-        self.assertEqual(save["label"], "保存草稿")
+        # The assembler consumes the declared label: a governed entry says what
+        # saving means on that page. 22ee5391 narrowed this assertion to the
+        # generic draft wording while hardcoding the same wording into the
+        # producer, which left every declared label unimplemented; the invariant
+        # is "the assembler honours the declaration, it does not invent business".
+        self.assertEqual(save["label"], "创建业务对象")
         self.assertEqual(save["presentation"]["tier"], "primary")
 
     def test_declared_business_semantics_survive_runtime_projection_and_conflict(self):
