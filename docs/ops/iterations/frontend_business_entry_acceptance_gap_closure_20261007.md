@@ -1315,3 +1315,41 @@ CSV：3 个 account 行 `declared→passed`、`阻塞→本轮验收`，`role_au
 - 主线集成：PR #607 已完成（squash `24e05cd5`）；合并不等于部署，但该 revision 已部署且已回读对齐。
 - 版本发布：**未主张**。产品交付：**未主张**。
 - **分支目标仍未标记完成**；唯一独立未决项为既存 vendor-coupling L1 守卫（上一节 E），属归属层处理。
+
+## 续轮 6（2026-10-08）：vendor-coupling L1 守卫收口（run blocker 44）
+
+### 现象与归属
+- `make verify.frontend.playwright_vendor_coupling.guard`（受 `verify.frontend.quick.gate` 依赖，
+  **属交付门禁**，不只是普通 L1）在干净 HEAD 上报：
+  `vendor_internal_selector: scripts/verify/local_dev_project_create_contract_driver_probe.mjs 2 > baseline 1`。
+- 责任层：**P4 验收工具**（探针消费口径），不是产品渲染、不是 ACL/字段权限、不是合法隐藏规则。
+
+### 根因
+- 该探针在读取工作台 `.native-container--group` 段落标题时，兜底选择器写成了 **TDesign 内部类**
+  `.t-card__title`（`:scope > header h3, :scope > header button, .t-card__title`），
+  把本文件 literal vendor-internal selector 计数从 1 抬到 2。
+- 该兜底**是承重的**：项目台账详情段落以 `ScCard` 渲染（探针实测 `tag=DIV`），
+  detail-card 不渲染原生 `<header>`，标题经 ScCard 透传给 TDesign 落到 `.t-card__title`，
+  所以不能简单删除。
+
+### 修复（只收紧，不放宽）
+- 探针改消费渲染器**已声明的公共面**：
+  `:scope > header h3, :scope > header button`（原生容器头）→ 否则读根节点的 `data-group-title`
+  （`NativeFormTreeRenderer` 一直在容器根发布该声明属性，探针原本也已把它读进 `title`）。
+- 未改任何产品代码、ACL、字段权限、负例，未抬高基线数字。
+- 判别力未变（实测等价，非声明）：在受管 `local.dev` 夹具上，修复前后工作台 5 个段落的
+  `title`（声明属性）与 `heading`（可见标题）**逐字相等**：
+  `基本信息 / 计划与责任 / 责任矩阵 / 项目说明 / 协作资料`。
+
+### 复验
+| 层 | 入口 | 结果 |
+| --- | --- | --- |
+| L1 | `make verify.frontend.playwright_vendor_coupling.guard` | passed（`vendor_internal_selector` files=21 total=104 ≤ recorded 109；`rc=0`，含 7 个单测 OK） |
+| L4 | `make verify.local.dev.project_create_contract_action_scope` | passed（`rc=0`，工作台 5 段标题/字段不变，`drivers=1 errors=[]`） |
+
+证据：`.runtime/final-acceptance/vendor-coupling-probe-fix/local_dev_project_create_contract_action_scope.log`。
+
+### 结论
+- 守卫恢复通过；`verify.frontend.quick.gate` 的该项阻断解除。
+- 该修复只影响探针执行路径：`verify.local.dev.project_create_contract_action_scope` 结果已刷新，
+  89 条矩阵 / 详情车道 / 关系往返**不依赖**该探针，其既有通过证据继续复用。
