@@ -187,6 +187,12 @@ const DESKTOP_RECORD_OPENER = '.cell-primary-link:visible';
 const MOBILE_RECORD_OPENER = '[data-semantic-action="open-record"]:visible';
 const DECLARED_RECORD_OPENER = `${DESKTOP_RECORD_OPENER}, ${MOBILE_RECORD_OPENER}`;
 const ROW_SELECTION_CONTROL = '.collection-selection-control[data-selection-scope="row"]';
+// Declared semantic identity contract (scripts/verify/frontend_primitive_adapter_guard.py):
+// `data-semantic-component` names the component that OWNS the node, so a consumer
+// declaration on a primitive root wins; the primitive itself is published
+// unconditionally as `data-semantic-primitive`. "A product card was rendered" is
+// therefore the declared primitive marker, never the owning-component name.
+const CARD_PRIMITIVE_SELECTOR = '[data-semantic-primitive="ScCard"]';
 const DESKTOP_ROW_SELECTION_CONTROL = `.table tbody ${ROW_SELECTION_CONTROL}`;
 const MOBILE_ROW_SELECTION_CONTROL = `${MOBILE_RECORD_ROW} ${ROW_SELECTION_CONTROL}`;
 // Declared list-surface search contract. The released toolbar renders the official
@@ -1007,9 +1013,11 @@ try {
     const defaultRoute = dailyDeclaredLanding(navigation.payload());
     const landing = page.url();
     if (!dailyLandingMatches(landing, defaultRoute, BASE_URL)) throw new Error('daily landing does not match declared default_route');
-    // Public-surface equivalent: every rendered product card carries the
-    // ScCard semantic marker (verified 47/47 coverage on detail surfaces).
-    await page.locator('[data-semantic-component="ScCard"]:visible').first().waitFor({ state: 'visible', timeout: 30_000 });
+    // Public-surface equivalent: the declared landing must render a product
+    // card. The card primitive marker is consumed, not the owning-component
+    // name, so a surface that legitimately claims ownership of its card root
+    // still proves the card rendered.
+    await page.locator(`${CARD_PRIMITIVE_SELECTOR}:visible`).first().waitFor({ state: 'visible', timeout: 30_000 });
     let landingContracts = [];
     for (let attempt = 0; attempt < 60; attempt += 1) {
       landingContracts = runtime.contracts.filter(row => row.intent === 'ui.contract.v2' && row.response?.ok === true
@@ -1040,7 +1048,7 @@ try {
     const home = page.url();
     for (const viewport of VIEWPORTS) {
       await page.setViewportSize(viewport);
-      const officialCards = await page.locator('[data-role-home] [data-semantic-component="ScCard"]:visible').count();
+      const officialCards = await page.locator(`[data-role-home] ${CARD_PRIMITIVE_SELECTOR}:visible`).count();
       if (!officialCards) throw new Error('daily workspace home has no visible official Card');
       const screenshot = path.join(OUTPUT, `daily-home-${viewport.key}.png`);
       await page.screenshot({ path: screenshot, fullPage: true });
