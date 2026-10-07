@@ -549,6 +549,10 @@ DB=`sc_demo`、served `f4279416`、受测角色 `fixture_role_config_admin`/公�
 故在当前角色模型下不存在可断言的负例角色；3 个 account 行 `role_authority` 未声明可否定组。
 两类共 19 个入口以显式 observation 记录「负例不可构造」及阻断能力组，**不伪造通过**。
 
+> 已被 2026-10-07 `ce8b77bf` 轮次取代：见文末「负例授权覆盖闭环」。上述「不存在可断言的负例角色」
+> 只对**当时**的候选集与判定成立（当时不要求负例角色真的收到发布导航）；补齐平台技术面身份并把
+> 「收到 0 条发布导航目标的候选」判为不合格后，19 个入口均已实测断言，`uncovered_entries=0`。
+
 ### 验证
 
 | 入口 | 结果 |
@@ -633,3 +637,67 @@ CSV 第 88/89/90 行 `declared` → `passed`（矩阵合计 86 passed + 3 declar
 registry 134.9s，上述运行态回读与三键矩阵均在该身份取得）；其后的 delta 仅为 `.agent/` + `docs/` 台账，
 `addons/`、`config/`、`scripts/` 运行相关文件集**未变**，故按确定性影响分析复用已取得的运行证据，
 不重复跑矩阵。
+
+## 轮次增补：负例授权覆盖闭环（`ce8b77bf`，2026-10-07）
+
+### 结论
+
+原 run 的**唯一 OPEN 项**（19 入口负例覆盖）已彻底收口：19/19 实测断言，`uncovered_entries=0`。
+同时修正了上一轮的一处**假通过**。
+
+### 根因（上一轮为何是假通过）
+
+- 上一轮把 `fixture_role_partner_manager` 作为 16 个 project-baseline 入口的负例基线。该身份确实是
+  唯一不含 `group_sc_cap_project_read` 的已声明 SC 角色，但**运行态不给它任何发布导航**：登录信封发布
+  了 12 个能力组，`system.init.navigation.nav` 为空。
+- 探针对候选只判 `!observed.nav`，而 `Boolean([]) === true`，空导航因此混过；随后
+  `findReleasedNavigationTarget(observed.nav, action)` 对任意 action 恒为 `null`，
+  `leaked_entries=[]` 变成**空洞成立**，并非被检验过的拒绝。
+- 结构事实（源码组闭包核验）：发布面角色触发组
+  `business_full / owner / executive / project_manager / project_user / finance_manager / finance_user / cost /
+  group_sc_cap_business_config_admin` **全部**传递蕴含 `group_sc_cap_project_read`；唯一不蕴含的
+  `group_sc_role_partner_manager` 未被映射到任何交付面，因此拿不到导航。
+
+### 修复（不放宽任何断言/ACL/字段权限/负例，无模型特判，未改产品角色与能力组）
+
+1. **探针加固** `scripts/verify/business_entry_matrix_browser.mjs`：负例候选**必须真的收到 ≥1 条发布导航目标**
+   （含正 `action_id`+`menu_id` 的节点）才合格；不合格候选记 `authority_negative_candidate` 观察项，
+   **不再计作拒绝**；`authority_negative_summary.uncovered_entries > 0` 直接 fail-closed。
+   这样「空导航」在结构上不可能再伪造通过。
+2. **夹具对齐产品能力** `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py`：
+   新增 `fixture_role_system_admin`（平台技术面，能力闭包 9，**不含** `group_sc_cap_project_read`，
+   运行态收到 2 条发布导航目标）——它是**可判别**的负例基线：该主体能正常导航（证明导航链路已投递），
+   却收不到 16 个 project-baseline 入口。
+   `fixture_role_partner_manager` 保留为**不合格候选回归样本**（证明加固生效）。
+3. overlay `scripts/verify/business_entry_matrix_overlay.json` 增加
+   `fixture_role_system_admin`；`scripts/verify/frontend_productization_fixture.py` 的 `LOGINS` 同步补登。
+
+### 运行态验证（served `ce8b77bf` / `sc_demo`）
+
+| 项 | 结果 |
+| --- | --- |
+| `daily.runtime.candidate.bundle_sync` | PASS（old `e57e4990` → source `ce8b77bf`） |
+| `daily.runtime.source_revision.align` | PASS（served `ce8b77bf`，restarted，未回滚） |
+| 远端 `make daily.dev.acceptance_fixture.ensure` | PASS `db=sc_demo`（含新身份重建） |
+| `verify.frontend.business_entry.matrix.browser`（19 键定向） | `ok=true entries=19 problems=0 console_errors=0` |
+| `authority_negative_summary` | `checked_entries=19 uncovered_entries=0` |
+| 负例 `fixture_role_system_admin`（闭包 9） | `checked_entries=16 leaked_entries=[]`（导航已发布，真实拒绝） |
+| 负例 `fixture_role_project_a_member`（闭包 12） | `checked_entries=3 leaked_entries=[]` |
+| 不合格候选 | `fixture_role_executive`、`fixture_role_partner_manager` 均记 `released_navigation_targets=0` |
+| `role_surface_exposure_declaration.guard` | PASS `roles=9 excluded=1 universe=89 pending=0 narrowed=211 no_role=0` |
+| `release_navigation_policy.guard` | PASS `roles=4 released_leaf_identities=84`（正式 4 业务角色发布面不变） |
+| `ci.local.iteration` | PASS（dirty，L1_only） |
+
+CSV：3 个 account 行 `declared→passed`、`阻塞→本轮验收`，`role_authority` 记为真实
+`account.group_account_invoice / group_account_readonly / group_account_manager` 菜单链；
+16 个 project-baseline 行的 evidence 由「负例不可构造」改为实测结论。**矩阵现为 89/89 passed**。
+
+### 证据落盘
+
+- `artifacts/frontend-business-entry-matrix/daily-ce8b77bf-negative-19/summary.json`（19 键定向 + 负例断言）
+
+### 未完成
+
+- 本分支目标**仍未完成**：待所有者授权后，在干净 HEAD 上跑一次冻结候选 `make ci.local.quick` 并开 Gitee PR。
+- 运行相关文件集在测量提交 `ce8b77bf` 上完成部署与验证；其后 delta 仅为 `.agent/` + `docs/` 台账，
+  按确定性影响分析复用上述运行证据。
