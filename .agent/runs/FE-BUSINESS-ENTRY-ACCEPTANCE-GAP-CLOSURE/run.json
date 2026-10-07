@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "id": "FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE",
-  "branch": "fix/frontend-business-entry-acceptance-closure-20261007",
+  "branch": "fix/frontend-business-entry-contract-payment-closure-20261007",
   "status": "active",
-  "baseline_sha": "1c5368a7ecae72946e8183a8a84c2a1f99a89485",
+  "baseline_sha": "8c2b8dda27856cd31715cbb0c4e214aefbfda41a",
   "goal": ".agent/goals/FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE.yaml",
   "record": "docs/ops/iterations/frontend_business_entry_acceptance_gap_closure_20261007.md",
   "scope": [
@@ -34,7 +34,8 @@
         "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
         "scripts/ops/daily_runtime_lifecycle_fixture_prepare.py",
         "make/frontend.mk",
-        "config/frontend/acceptance_environments_v1.json"
+        "config/frontend/acceptance_environments_v1.json",
+        "artifacts/backend/acceptance_record_identity.json"
       ]
     },
     "baseline_iteration_execution_policy": {
@@ -66,12 +67,66 @@
         "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
         "make/codex.mk"
       ]
+    },
+    "role_surface_exposure_declaration_guard": {
+      "target": "verify.frontend.role_surface_exposure_declaration.guard",
+      "kind": "unit",
+      "layer": "L2",
+      "inputs": [
+        "scripts/verify/role_surface_exposure_declaration_guard.py",
+        "scripts/verify/test_role_surface_exposure_declaration_guard.py",
+        "config/frontend/role_surface_exposure_declarations_v1.json",
+        "docs/product/frontend_business_entry_acceptance_v1.csv",
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "addons/smart_construction_core/security/sc_role_groups.xml",
+        "addons/smart_construction_core/security/sc_capability_groups.xml",
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "make/frontend.mk",
+        "make/ci.mk"
+      ]
+    },
+    "release_navigation_policy_guard": {
+      "target": "verify.frontend.release_navigation_policy.guard",
+      "kind": "unit",
+      "layer": "L2",
+      "inputs": [
+        "scripts/verify/frontend_release_navigation_policy_guard.py",
+        "scripts/verify/test_frontend_release_navigation_policy_guard.py",
+        "config/frontend/authoritative_navigation.json",
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "make/frontend.mk"
+      ]
+    },
+    "business_entry_payment_request_browser": {
+      "target": "verify.frontend.business_entry.payment_request.browser",
+      "kind": "runtime",
+      "inputs": [
+        "scripts/verify/business_entry_payment_request_one2many_browser.mjs",
+        "scripts/verify/playwright_runtime.mjs",
+        "artifacts/backend/acceptance_record_identity.json",
+        "make/frontend.mk",
+        "config/frontend/acceptance_environments_v1.json"
+      ]
+    },
+    "daily_runtime_record_identity_resolve": {
+      "target": "verify.daily.runtime.record_identity.resolve",
+      "kind": "unit",
+      "layer": "L2",
+      "inputs": [
+        "scripts/ops/daily_runtime_record_identity_resolve.py",
+        "scripts/ops/test_daily_runtime_record_identity_resolve.py",
+        "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
+        "make/codex.mk"
+      ]
     }
   },
   "blockers": [
     "RESOLVED 2026-10-07: the draft->in_progress rollback traced to missing outgoing-mail sender configuration on the daily runtime (mail.default.from / res.company.email absent and internal accounts without an address made mail.thread._message_compute_author raise UserError). Fixed through the governed entry 'make daily.runtime.mail_sender.prepare' (scripts/ops/daily_runtime_mail_sender_prepare.py); report .runtime/final-acceptance/daily-deployed/mail-sender-prepare.json, users_still_without_email=0.",
     "RESOLVED 2026-10-07: close/warranty refusals on production rows are the declared business preconditions (_guard_project_close_by_settlement / _guard_project_close_by_payment), not a defect. The lane now walks a dedicated resettable carrier with no settlement/payment facts; no guard, ACL or field permission was relaxed.",
-    "OPEN PARALLEL FINDING (does not block this entry's closure; awaits owner adjudication): the published navigation authority filters menu 970 / action 1178 out for group_sc_role_project_manager (fixture_role_pm uid214) while the menu/action declaration (group_sc_cap_project_manager) resolves True for that role (ORM has_group=True) - the menu-layer group authority and the published-navigation authority disagree. This row was accepted with group_sc_role_business_admin (fixture_role_config_admin uid216), whose published navigation contains the entry."
+    "MERGED 2026-10-07: object 3 (项目启停管理) was integrated to main through GitHub PR #601 (squash 8c2b8dda27856cd31715cbb0c4e214aefbfda41a); the required checks frontend_release_gate / merge_policy_gate / public_guard / professional_quality_gate were all success on the exact head 25532a53. mainline integration is complete for that object; the daily runtime still serves 6c8e07f7 because a merge does not deploy.",
+    "ADJUDICATED 2026-10-07 (owner decision = B): the published navigation surface filtering menu 970 / action 1178 out for group_sc_role_project_manager while the menu group declaration resolves True is a deliberate product narrowing, not a defect. It is now recorded as an explicit declaration in config/frontend/role_surface_exposure_declarations_v1.json (pm narrowed=35 of 38 capability-reachable entries) and locked by scripts/verify/role_surface_exposure_declaration_guard.py, which recomputes the sets from the acceptance entry universe, the role policy map and the role/capability group XML and fails closed on any drift. No whitelist was widened, no menu was added, no ACL was relaxed and no acceptance assertion was weakened; authoritative_navigation.json is unchanged.",
+    "RESOLVED 2026-10-07: the 付款申请 lane first re-run failed with 'the record form did not expose the declared detail collection'. Root cause was a stale hand-assembled record resolution body (artifacts/backend/acceptance_record_identity.json held a bare payload with payment_request.record_id=36166 while the 08:38 fixture rebuild had recreated the row as 36168), not a product defect. Fixed systemically: new governed entry 'make daily.runtime.record_identity.resolve' (scripts/ops/daily_runtime_record_identity_resolve.py, 26 unit tests) drives the working-tree resolver through the registered remote 'make odoo.shell.exec' entry and writes the canonical envelope {schema,producer,expected_sha,targets} that both governed writers already emit; both browser probes now read body.targets.<key> and fail closed on a missing envelope. No environment, database, port, credential or assertion was added or relaxed.",
+    "RESOLVED 2026-10-07: the recorded 付款申请 detail-row block (editing an imported line and saving was judged a duplicate row) is NOT reproducible on daily revision 6c8e07f7. The value-keyed row identity it described was replaced by identity-keyed semantics in PR #525 (merge-base: 2d164a1f is an ancestor of 6c8e07f7); the introduce handler's constant 来源类型 column no longer acts as the row identity. Proven by the governed lane artifacts/frontend-business-entry-payment-request/daily-6c8e07f7/report.json (ok=true, problems=[]): 2 declared settlements introduced (constant first column), edit 200->150 saves with no duplicate/validation block, api.data(payment.request) HTTP 200, readback persists 150, then product-surface row removal and amount restore read back row_count=0 amount=20.00. No validation semantics were changed, no assertion weakened, no ORM write used. CSV row 47 menu_sc_user_payment_apply: partial_passed -> passed."
   ],
-  "next_exact_step": "Object 3 (项目启停管理) is closed: acceptance_status is now 'passed' in docs/product/frontend_business_entry_acceptance_v1.csv and the runtime contract-driven walk reached the declared terminal state on the daily server (artifacts/frontend-business-entry-lifecycle/daily-6c8e07f7/summary.json). Next: close the remaining minimal evidence gaps of the other two partial rows (日常合同 approval submission + list query/filter/paging /detail-return; 付款申请 one2many row-edit save block) under the same governed daily lane, then handle the parallel published-navigation authority finding for group_sc_role_project_manager. Do not rerun object 3."
+  "next_exact_step": "Object 3 (项目启停管理) merged and closed; the published-navigation narrowing is adjudicated/declared (decision B); object 付款申请 (payment.request, CSV row 47) is now closed passed through the governed lane artifacts/frontend-business-entry-payment-request/daily-6c8e07f7/report.json and the governed record-identity entry. Remaining: 日常合同 (sc.general.contract, menu 907 / action 669, CSV row 38, partial_passed) - collect real daily-runtime evidence for the declared approval submission (action_confirm draft->waiting plus the approval decision), the entry's list query/filter/paging and detail-return context, and the remaining role authority rows; drive the product surface, never the ORM, and prefer a resettable fixture carrier so the shared fe_general_contract_a carrier (used by the delivery-hardening lane) is not left in a flowed state. Do not rerun object 3 and do not rerun the list matrix."
 }

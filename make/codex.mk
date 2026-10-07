@@ -779,6 +779,32 @@ daily.runtime.lifecycle_fixture.prepare: guard.prod.forbid verify.daily.runtime.
 		--password "$${SC_ACCEPTANCE_FIXTURE_PASSWORD}" \
 		--report "$(DAILY_RUNTIME_LIFECYCLE_FIXTURE_REPORT)"
 
+# Every browser acceptance lane binds the *served* identity of its fixture
+# carrier, never a locally guessed database id. The daily runtime rebuilds its
+# fixture rows whenever the lifecycle carrier is recreated, so a captured numeric
+# id goes stale silently and the lane then opens a dead route. This entry drives
+# the working tree's governed resolver through the existing `make odoo.shell.exec`
+# entry and writes the resolved identity in the canonical governed envelope the
+# repository's resolution consumers read. It writes only the identity artifact
+# and its own report.
+.PHONY: daily.runtime.record_identity.resolve verify.daily.runtime.record_identity.resolve
+DAILY_RUNTIME_RECORD_IDENTITY_BASE_URL ?= http://1.95.85.92:18081
+DAILY_RUNTIME_RECORD_IDENTITY_REPORT ?= .runtime/final-acceptance/daily-deployed/record-identity-resolve.json
+
+verify.daily.runtime.record_identity.resolve: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_record_identity_resolve.py scripts/ops/test_daily_runtime_record_identity_resolve.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_record_identity_resolve
+
+daily.runtime.record_identity.resolve: guard.prod.forbid verify.daily.runtime.record_identity.resolve
+	@test "$${CONFIRM_DAILY_RUNTIME_RECORD_IDENTITY:-}" = "RESOLVE_DAILY_SC_DEMO_RECORD_IDENTITY" || { echo "exact daily runtime record identity confirmation is required" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_record_identity_resolve.py \
+		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
+		--database "$(DAILY_RUNTIME_DATABASE)" \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--base-url "$(DAILY_RUNTIME_RECORD_IDENTITY_BASE_URL)" \
+		--output "$(ACCEPTANCE_RECORD_RESOLUTION)" \
+		--report "$(DAILY_RUNTIME_RECORD_IDENTITY_REPORT)"
+
 mirror.main.gitee: guard.prod.forbid
 	@bash scripts/ops/mirror_main_gitee.sh
 

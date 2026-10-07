@@ -168,3 +168,182 @@ make verify.frontend.business_entry.lifecycle.browser \
 本地 `make ci.local.quick` 不覆盖 `verify.frontend.playwright_vendor_coupling.guard`，
 本次漏检因此在远端才暴露。凡改动 `scripts/verify/**` 下的浏览器探针，
 必须把 `make verify.frontend.playwright_vendor_coupling.guard` 纳入本轮 L2 定向测试。
+
+## 批次 F4（裁决 B）：发布导航面刻意窄化改为显式声明 + 守卫（2026-10-07）
+
+### 触发与裁决
+
+F3 的「并列发现」事实链：菜单 970 `menu_sc_product_project_lifecycle_v1`（及 376
+`menu_sc_project_initiation`）声明持组 `group_sc_cap_project_manager`，`fixture_role_pm`
+（uid214）对该组 `has_group=True`，菜单层 ACL 放行；但发布导航面由
+`ROLE_SURFACE_OVERRIDES["pm"].primary_menu_xmlids`（24 项白名单）驱动，这两项不在其中，
+发布面拒绝。两侧口径不同不是偶然，而是**产品刻意窄化**。
+
+所有者裁决 **B**：登记为显式声明，**不算缺陷、不放宽验收断言、不擅自补菜单**，并加守卫锁住
+「角色能力组可达但未注册交付面」的分歧。
+
+### 责任层与边界
+
+- Formal Product Layer：P1（施工行业标准产品的角色发布面声明）。
+- Layer Target：`config/frontend/role_surface_exposure_declarations_v1.json`（新增声明）、
+  `scripts/verify/role_surface_exposure_declaration_guard.py`（新增守卫）。
+- 不改：`ROLE_SURFACE_OVERRIDES` 白名单、`config/frontend/authoritative_navigation.json`、
+  任何 ACL / record rule / 字段权限 / 验收断言 / 前端渲染 / 契约 schema。
+
+### 声明的语义（口径可复算）
+
+- 能力可达 = 角色**身份组闭包**（`implied_ids` 传递闭包）∩ 入口逐层声明组与 `action_groups`。
+  入口声明来自 `docs/product/frontend_business_entry_acceptance_v1.csv` 的 `role_authority`
+  （`all_restricted_layers_must_match_one_group`）。
+- 身份组取**受管夹具身份**（`addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py`），
+  无夹具身份的角色回落到其角色组并显式记录证据来源（`identity_evidence`）。
+- 发布面 = `ROLE_SURFACE_OVERRIDES[role]` 的 `primary_menu_xmlids ∪ role_home_menu_xmlids − denied_menu_xmlids`。
+- 交付模式：`declared_whitelist`（白名单交付）/ `capability_discover`（可达即交付）/
+  `denied`（`deny_all_navigation`，一律不交付）。
+
+### 结果（登记表实际内容，非人工估计）
+
+| 角色 | 交付模式 | 能力可达 | 交付 | 窄化声明 |
+| --- | --- | ---: | ---: | ---: |
+| restricted | denied | 19 | 0 | 19 |
+| project_member | declared_whitelist | 33 | 5 | 29 |
+| business_full | capability_discover | 83 | 可达即交付 | 0 |
+| business_config_admin | capability_discover | 83 | 可达即交付 | 0 |
+| owner | declared_whitelist | 24 | 2 | 22 |
+| pm | declared_whitelist | 38 | 3 | 35 |
+| finance | declared_whitelist | 47 | 15 | 32 |
+| executive | declared_whitelist | 48 | 0 | 48 |
+| cost | declared_whitelist | 24 | 4 | 22 |
+
+- 入口全集 89 行：86 行可由当前契约解析，3 行（`account.menu_action_move_journal_line_form` /
+  `menu_action_account_moves_all` / `menu_action_account_form`）`role_authority` 仍为
+  「待从当前契约核对」→ 登记在 `authority_pending_entries`，**显式保留为缺口**，不静默丢弃。
+- `capability_reachable_by_no_role` = 3：`menu_sc_product_data_permission_v1` /
+  `menu_sc_product_numbering_rule_v1` / `menu_sc_product_system_parameter_v1`
+  （仅存在、无任何业务角色交付）。
+- `delivered_without_declared_capability`（反方向分歧，同样登记）：
+  `project_member` 1 项（875 班组借/扣款登记工作台）、`cost` 2 项
+  （`menu_sc_p1_daily_contract`、`menu_sc_certificate_registration`，需业务发起能力）。
+- `system_admin` 列在 `excluded_roles`：`base.group_system` 属 Odoo 核心模块、不在本仓库源码内，
+  无法静态求闭包，显式排除并记录理由。
+
+### 守卫行为（fail-closed，锁定消费与行为）
+
+`scripts/verify/role_surface_exposure_declaration_guard.py` 静态重算上述集合并要求与登记表**完全相等**；
+以下任一项漂移即失败：登记表缺角色、`delivery_mode` 与策略标志不符、身份组不可解析、
+窄化声明多一项/少一项、反向分歧未登记、`no_role` 集合变化、待解析入口变化、
+新入口进入验收全集而未登记。单测 `scripts/verify/test_role_surface_exposure_declaration_guard.py`
+（10 项：9 项负例 + 1 项仓库现状断言）。
+
+负例实证（临时抽掉 `pm` 一条窄化声明 → 守卫 exit=2）：
+
+```
+- pm: capability_reachable_not_delivered drift undeclared=['smart_construction_core.menu_sc_workbench_my_todo_fact'] stale=[]
+```
+
+### 挂载
+
+| 层 | 入口 | 结果 | 非零计数 |
+| --- | --- | --- | --- |
+| L1/L2 | `make verify.frontend.role_surface_exposure_declaration.guard` | PASS | 10 |
+| L2 | `make verify.frontend.release_navigation_policy.guard`（现依赖上一项） | PASS | 10 + 5 |
+| L2 | `make verify.guard.registry` | PASS | 1389 scripts |
+| L2 | `make ci.generated_reports.guard` | PASS | 1467 assets |
+| L2 | `make verify.contract.structure_lock` | PASS | 14 domains |
+
+- `verify.frontend.release_navigation_policy.guard` 是 `frontend_static_release_audit.py` 的必需检查项，
+  因此新守卫自动进入 `frontend_release_gate`；同时把新目标追加进
+  `ci.professional.backend.shard-verify` 依赖串，使其在远端 shard-verify 直接覆盖
+  （教训：本地 `ci.local.quick` 不覆盖该层）。
+- 生成物刷新：新增 2 个 `scripts/verify/**` 资产 → `make refresh.generated_reports` 更新
+  `docs/engineering_convergence/test_inventory.csv|_summary.md`（1465→1467）与
+  `complexity_budget_report.md`（扫描文件 4600→4602）；`contract_structure_fingerprint.json` 未变。
+
+### 未放宽的证明
+
+- 未改任何 ACL / 菜单持组 / `authoritative_navigation.json` / 验收断言；`frontend_release_navigation_policy_guard`
+  在 `roles=4 released_leaf_identities=84` 下仍 PASS。
+- 声明文件不产生任何运行态可见性变化，只是把既有刻意窄化写成可复算、可失败的契约。
+- 守卫不把「选择器字符串/像素值文本出现」当作正确性证明：它比较的是集合等式与声明模式。
+
+## 批次 F4 收口：付款申请入口明细行身份（2026-10-07）
+
+### 结论
+
+`docs/product/frontend_business_entry_acceptance_v1.csv` 第 47 行
+`smart_construction_core.menu_sc_user_payment_apply`（付款申请）由 `partial_passed` 更新为
+`passed`：该行 `gap` 原记录的「多行付款申请编辑已有明细行后保存被判为重复行、不发写请求」
+在 daily 修订 `6c8e07f7` 上**已不可复现**，并由受管探针从产品面与持久化结果证明。
+
+### 根因（先证伪，再定性）
+
+原阻断描述的「首个业务列作行身份」实现，已在 PR #525 被身份式判定取代
+（`frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` 的 `one2manyRowCollectionIdentity`
+与 `collectOne2manyDraftValidationFromRows`）；`git merge-base --is-ancestor 2d164a1f 6c8e07f7`
+成立，即 daily 已含该修复。导入处理器写入的常量列（`来源类型=结算单明细`）不再承担行身份。
+因此本批次**不改任何校验语义**，只把「原阻断是否仍存在」用产品面证据定性。
+
+### 并列根因（本轮真正的阻断）：受管记录身份漂移
+
+首次重跑探针时报「the record form did not expose the declared detail collection」。
+定位：`artifacts/backend/acceptance_record_identity.json` 是上一轮**人工拼装**的裸 payload
+（顶层直挂 `payment_request`，无 `schema/targets` 信封），其中 `record_id=36166`；
+而 2026-10-07 08:38 的夹具重建（`make daily.runtime.lifecycle_fixture.prepare`）已把该行重建为
+`36168`。**身份漂移 → 路由指向不存在的记录 → 明细集合不存在**，与产品缺陷无关。
+
+同时暴露契约不一致：仓库里两个受管写入器（`make verify.dev.acceptance.record_identity.resolve`、
+`make daily.dev.acceptance_contract.resolve`）写的是规范信封 `{schema,producer,expected_sha,targets}`，
+而两个浏览器消费端读的是顶层裸键。
+
+### 处理（体系化，不放宽）
+
+1. **新增受管入口** `make daily.runtime.record_identity.resolve`
+   （`scripts/ops/daily_runtime_record_identity_resolve.py`，单测 26 项）：复用既有注册环境
+   （ssh `sc-root` + 远程受管 `make odoo.shell.exec`），把**工作树**的既有解析器
+   `scripts/verify/frontend_delivery_hardening_runtime_ids.py` 送入远程执行，写规范信封，
+   fail-closed：远端 HEAD ≠ 声明 SHA、served revision/database 不一致、payload 缺失或目标缺键时
+   拒绝写入（**不覆盖既有工件**）。不新建环境/库/端口/凭据。
+2. **消费端口径统一**：两个浏览器探针改为读规范信封 `body.targets.<key>`，
+   并在 `targets` 缺失时 fail-closed（不再接受裸 payload）。
+3. **身份重新解析**：`payment_request.record_id=36168`、`lifecycle_project.record_id=2022`，
+   与夹具重建后的实际值一致；`producer`/`expected_sha` 绑 `6c8e07f7`。
+
+### 复现入口
+
+```
+make daily.runtime.record_identity.resolve \
+  CONFIRM_DAILY_RUNTIME_RECORD_IDENTITY=RESOLVE_DAILY_SC_DEMO_RECORD_IDENTITY \
+  DAILY_RUNTIME_EXPECTED_SHA=6c8e07f70c1ce0d501f9f5b56911d74f9321a721 \
+  DAILY_RUNTIME_DATABASE=sc_demo \
+  ACCEPTANCE_RECORD_RESOLUTION=artifacts/backend/acceptance_record_identity.json
+
+make verify.frontend.business_entry.payment_request.browser \
+  ACCEPTANCE_TARGET_SHA=6c8e07f70c1ce0d501f9f5b56911d74f9321a721 \
+  ACCEPTANCE_BASE_URL=http://1.95.85.92:18081 DB_NAME=sc_demo \
+  ACCEPTANCE_LOGIN=fixture_role_finance ACCEPTANCE_PASSWORD=123456 \
+  ACCEPTANCE_RECORD_RESOLUTION=artifacts/backend/acceptance_record_identity.json \
+  SC_ENTRY_WRITE_CONFIRM=DRIVE_DAILY_SC_DEMO_PAYMENT_REQUEST_ONE2MANY \
+  SC_ACCEPTANCE_OUTPUT_DIR=artifacts/frontend-business-entry-payment-request/daily-6c8e07f7
+```
+
+### 证据（受管探针，绑定声明消费与持久化结果）
+
+`artifacts/frontend-business-entry-payment-request/daily-6c8e07f7/report.json`（`ok=true`、`problems=[]`）：
+
+| 阶段 | 观察 | 断言 |
+| --- | --- | --- |
+| after_introduce | 从 2 个声明结算单各引入 1 行，共 2 行；10 列含「本次申请」；全部行的首列值相同（常量前置条件成立） | 行数=2；列含声明列；首列常量 |
+| save(编辑行) | 「本次申请」200→150；无重复行提示；`data-validation-visible=false`；`待提交：无变更`；`api.data(payment.request)` HTTP 200 | 不得出现重复行/校验阻断；必须发写请求且成功 |
+| readback_after_save | 重新加载后该单元格 = 150，行数=2 | 持久化值等于声明值 |
+| restored | 产品面删行 + 复位申请金额 20.00 | `row_count=0`、`amount=20.00`（声明空态） |
+
+补充：解析体口径对齐后，生命周期探针的**只读干跑**（不重跑对象 3 的产品验收）
+`.runtime/business-entry-lifecycle/dryrun-canonical` `ok=true`，证明 `targets.<key>` 读取路径可用。
+
+### 环境与夹具身份
+
+- served revision/database：`6c8e07f7…` / `sc_demo`（与解析体 `expected_sha` 一致）。
+- 载体由**声明 xmlid** 绑定：`smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a`，
+  探针按 xmlid 校验解析体，不硬编码数字 id。
+- 写入仅限该声明载具（引入/编辑/删行/复位金额），结束态回到声明空态；未改 ACL、字段权限、发布导航或断言。
+- 夹具口令仍为既有固定值 `123456`，只作用于既有隔离 fixture，未改其它环境或通用登录默认。

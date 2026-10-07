@@ -66,7 +66,13 @@ function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 function readResolution() {
   if (!RESOLUTION_PATH) throw new Error('ACCEPTANCE_RECORD_RESOLUTION must point at the managed resolution body');
   const body = JSON.parse(fs.readFileSync(RESOLUTION_PATH, 'utf8'));
-  const entry = body && body.lifecycle_project;
+  // The resolution body is the canonical governed envelope
+  // (schema/producer/expected_sha/targets); every consumer reads the same shape.
+  const targets = body && body.targets;
+  if (!targets || typeof targets !== 'object') {
+    throw new Error('managed resolution is not the governed envelope (targets missing)');
+  }
+  const entry = targets.lifecycle_project;
   if (!entry) throw new Error('managed resolution is missing lifecycle_project');
   if (String(entry.record_xmlid || '') !== RECORD_XMLID) {
     throw new Error(`resolution record_xmlid ${entry.record_xmlid} != declared ${RECORD_XMLID}`);
