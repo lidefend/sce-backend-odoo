@@ -725,6 +725,9 @@ CSV：3 个 account 行 `declared→passed`、`阻塞→本轮验收`，`role_au
   overlay 行为、推导出的拒权候选与模型/探针 revision。
 - **构建产物版本是溯源而非有效性键**：仅因重新部署不使集合失效；使单元失效的是声明输入、模型/探针
   断言或受管运行态身份（base url、库、登录、候选顺序）变化。跨部署沿用证据需要记录影响分析。
+  该判断经所有者确认，固化为 `.agent/decisions/evidence-reuse-identity.yaml`（`OPS-DECISION-002`，
+  owner_approval=confirmed），并显式登记了「纯部署改变页面行为但未触及任何声明输入」这一已接受风险
+  与补偿控制（影响分析留痕）。
 - **复用优先入口**：`make verify.frontend.business_entry.matrix.incremental`。默认先规划、只跑受影响键、
   再回写台账；`SC_ENTRY_SCOPE_REVERIFY_REASON` 才允许重跑已覆盖键，`SC_ENTRY_SCOPE_FULL=1` +
   `SC_ENTRY_SCOPE_FULL_REASON` 才允许整矩阵重跑。原 `matrix.browser` 保持为执行器。
