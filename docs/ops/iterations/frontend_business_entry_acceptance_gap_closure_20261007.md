@@ -1263,3 +1263,55 @@ CSV：3 个 account 行 `declared→passed`、`阻塞→本轮验收`，`role_au
 - 版本发布：**未主张**。产品交付：**未主张**。
 - 剩余：89 条交付面在已部署 revision 上的**单一用户级统一裁决**（逐条证据已在，整体结论与剩余失败尚未落笔）。
 - **分支目标仍未标记完成。**
+
+## 续轮 5（2026-10-08）：89 条交付面的单一用户级统一裁决（run blocker 43）
+
+### 身份与复用前提
+- served revision = `24e05cd54685645498843bf29b222fed3f595d9e`（PR #607 squash-merged），
+  base_url `http://1.95.85.92:18081`，数据库 `sc_demo`，`ENV=dev`。
+- 裁决输入为**只读状态计算** `make verify.frontend.business_entry.matrix.evidence_scope.status`，
+  登录固定 `fixture_role_config_admin`（session company 21）。原因：89 条交付面按**发布导航策略**
+  （nav 策略 min=max=89）复核，用 `wutao`（company 1）会把 89 条全部判 stale。
+- 该入口只重算“声明指纹 ↔ 既有观测”的匹配，**不重跑浏览器、不改任何运行态**；未重新取证的条目属复用。
+
+### A. 覆盖裁决（89/89）
+- `state_counts = {"checked": 9, "passed": 80}`；`stale = 0`、`uncovered = 0`、`undecidable = 0`。
+- 9 条 `checked`（其声明指纹与 F7B7C2EE 批准的 89 条基线逐字段相等，构成行级等价性证明）：
+  `menu_sc_operating_metrics_project`、`menu_sc_p1_daily_contract`、`menu_sc_product_message_notification_v1`、
+  `menu_sc_product_project_lifecycle_v1`、`menu_sc_project_initiation`、`menu_sc_project_kanban`、
+  `menu_sc_project_project`、`menu_sc_user_payment_apply`、`menu_sc_workbench_my_todo_fact`。
+- 80 条 `passed` 由 `evidence_scope` 引擎复用既有观测：主车道
+  `artifacts/frontend-business-entry-matrix/daily-f4279416-full/summary.json`
+  （80 entries、`ok=true`、`problems=[]`、`console_errors=[]`），增量为 `daily-aed39bc5-matrix`(3)、
+  `daily-ce8b77bf-incremental`(4) 等；引擎判定其输入未变，故不重跑。
+
+### B. 本轮补采：付款申请行
+- `artifacts/frontend-business-entry-matrix/incremental/summary.json`：
+  `ok=true`、`problems=[]`、`console_errors=[]`、`target_sha=served_revision=24e05cd5`、
+  `selection.keys=["smart_construction_core.menu_sc_user_payment_apply"]`、`record_id=36179`、
+  `workflow_actions=[save_draft, submit, cancel]`；列表渲染 14 行，搜索 `FE-CORE-FORM-CONFLICT-001` 命中 14。
+
+### C. 负例（权限边界）
+- `daily-ce8b77bf-negative-19`：19 例，`ok=true`、`leaked_entries=[]`。
+- `daily-ce8b77bf-negative-delta2`：2 例，`ok=true`、`leaked_entries=[]`。
+- `artifacts/frontend-business-entry-matrix/negative_closures.json`：10 个候选，`leaked_entries=[]`（无越权泄漏）。
+- 2 个**不可判候选**（`fixture_role_executive`、`fixture_role_partner_manager`）：runtime 未向其发布任何导航目标
+  （`released_navigation_targets=0`）⇒ 无法区分“拒绝”与“无导航”，记为**未覆盖**，**不计为失败**。
+
+### D. 历史 excluded 车道（非本轮独立证据，附原因）
+- `daily-ce8b77bf-full`、`daily-f4279416-matrix` / `daily-f4279416-notrun`：同候选重复。
+- `daily-f4279416-project-center`：处于导航投影变更之前。
+- `daily-f4279416-workbench`、`daily-f7b7c2ee-workbench`：其问题后续已被 89 条矩阵覆盖。
+- `recon-presentations`：仅展示层侦察，不承载交付面判定。
+- 以上均**不**作为本轮 89 条裁决的证据，仅登记被排除的原因。
+
+### E. 裁决结论
+- **在已部署 revision `24e05cd5` 上，89 条交付面的剩余失败 = 无。**
+  coverage 89/89（stale 0、uncovered 0）、`problems=[]`、`console_errors=0`、负例 19/19 无泄漏。
+- 该裁决绑定 served revision 与既有观测；**不是**版本发布主张，也**不是**产品交付主张。
+
+### F. 状态边界
+- 批次验收：本轮完成。
+- 主线集成：PR #607 已完成（squash `24e05cd5`）；合并不等于部署，但该 revision 已部署且已回读对齐。
+- 版本发布：**未主张**。产品交付：**未主张**。
+- **分支目标仍未标记完成**；唯一独立未决项为既存 vendor-coupling L1 守卫（上一节 E），属归属层处理。
