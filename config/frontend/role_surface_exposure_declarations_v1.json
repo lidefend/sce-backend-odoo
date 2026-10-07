@@ -207,6 +207,8 @@
       "identity_evidence": "受管夹具身份 fixture_role_finance。",
       "rationale": "财务主管发布面按 45 项白名单窄化；其余财务/资金/税务原生能力保留 ACL 直达，不进发布导航面。",
       "capability_reachable_not_delivered": [
+        "account.menu_action_account_moves_all",
+        "account.menu_action_move_journal_line_form",
         "smart_construction_core.menu_sc_account_journal_foundation",
         "smart_construction_core.menu_sc_advance_fund",
         "smart_construction_core.menu_sc_analytic_account_foundation",
@@ -252,6 +254,8 @@
       "identity_evidence": "受管夹具身份 fixture_role_executive。",
       "rationale": "管理层只保留经营总览只读（menu_sc_historical_payment_fact 为唯一交付项）；全部办理型入口刻意不交付。",
       "capability_reachable_not_delivered": [
+        "account.menu_action_account_moves_all",
+        "account.menu_action_move_journal_line_form",
         "smart_construction_core.menu_sc_account_journal_foundation",
         "smart_construction_core.menu_sc_advance_fund",
         "smart_construction_core.menu_sc_analytic_account_foundation",
@@ -345,10 +349,6 @@
   },
   "capability_reachable_by_no_role": [],
   "capability_reachable_by_no_role_reason": "（owner decision B，2026-10-07）原登记的 3 个产品配置入口（数据权限 menu_sc_product_data_permission_v1 / 系统参数 menu_sc_product_system_parameter_v1 / 编码规则 menu_sc_product_numbering_rule_v1）已按「可配置属产品功能」把 group_sc_cap_business_config_admin 加入其菜单/动作声明组与 ACL，业务配置管理员角色（group_sc_role_business_admin）闭包可达并交付；正式 4 个业务角色的发布面仍刻意不含这些管理面入口，故本项为空。",
-  "authority_pending_entries": {
-    "account.menu_action_move_journal_line_form": "日记账分录 / account.move: 待从当前契约核对；G-F0-02",
-    "account.menu_action_account_moves_all": "日记账项目 / account.move.line: 待从当前契约核对；G-F0-02",
-    "account.menu_action_account_form": "会计科目表 / account.account: 待从当前契约核对；G-F0-02"
-  },
-  "authority_pending_reason": "入口清单中 role_authority 尚未从当前契约解析（account 模块原生菜单）；显式登记为待解析，既不放宽断言也不静默丢弃。"
+  "authority_pending_entries": {},
+  "authority_pending_reason": "（2026-10-07）原登记的 3 个 account 原生入口（日记账分录 / 日记账项目 / 会计科目表）的 role_authority 与 action_xmlid 已按契约实例 contracts/generated/product_view_structure_contract.json 的 resolved_view_action 与日常运行态菜单链解析并写回 docs/product/frontend_business_entry_acceptance_v1.csv；不再有待解析入口（authority_pending_entries 为空）。"
 }

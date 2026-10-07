@@ -19,6 +19,8 @@ LOGINS = (
     "fixture_role_config_admin_peer",
     "fixture_role_activity_accounting",
     "fixture_role_owner",
+    "fixture_role_executive",
+    "fixture_role_partner_manager",
 )
 MODELS = (
     "construction.contract",

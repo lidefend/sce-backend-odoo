@@ -24,7 +24,8 @@
     "fixture_role_pm",
     "fixture_role_finance",
     "fixture_role_activity_accounting",
-    "fixture_role_config_admin"
+    "fixture_role_config_admin",
+    "fixture_role_partner_manager"
   ],
   "entries": {
     "smart_construction_core.menu_sc_operating_metrics_project": { "presentation": "table" },

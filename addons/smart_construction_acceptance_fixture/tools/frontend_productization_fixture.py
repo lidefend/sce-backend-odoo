@@ -1322,6 +1322,23 @@ def ensure_fixture(env) -> Dict[str, Any]:
         [company_a],
         ["smart_construction_core.group_sc_role_executive"],
     )
+    # Negative-authority identity for the business-entry matrix.  The matrix proves
+    # that an identity whose published capability closure is disjoint from an entry's
+    # declared groups receives none of that entry on the released navigation surface.
+    # Almost every SC role reaches group_sc_cap_project_read (directly, or through
+    # group_sc_cap_business_config_admin covering every domain manager), so those
+    # identities can never be a valid negative for a project-baseline entry.
+    # group_sc_role_partner_manager is the only declared assignable SC role whose
+    # closure excludes that baseline; holding it here lets the probe derive the
+    # negative from the product's own role graph instead of a hand-kept group list.
+    partner_data_admin = _user(
+        env,
+        "fixture_role_partner_manager",
+        "Acceptance Fixture Partner Data Admin",
+        company_a,
+        [company_a],
+        ["smart_construction_core.group_sc_role_partner_manager"],
+    )
 
     partner_a = _partner(env, "A", company_a)
     partner_b = _partner(env, "B", company_a)
@@ -1528,6 +1545,7 @@ def ensure_fixture(env) -> Dict[str, Any]:
             activity_accounting.login,
             owner.login,
             executive.login,
+            partner_data_admin.login,
         ],
         "companies": [company_a.name, company_b.name],
         "projects": [project_a.name, project_b.name, project_c.name, lifecycle_carrier.name],
