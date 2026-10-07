@@ -36,6 +36,18 @@ SCOPE_ADAPTER = 'scripts/verify/business_entry_matrix_scope.mjs'
 BROWSER_PROBE = 'scripts/verify/business_entry_matrix_browser.mjs'
 ENGINE = 'scripts/ops/evidence_scope.py'
 
+# Evidence must land in a stable, declared location. The governed Make target
+# forwards SC_ACCEPTANCE_OUTPUT_DIR even when the caller left it unset, so an
+# empty/blank value must fall back to the default directory instead of resolving
+# to the repository root (Path('') == '.') and leaking summary.json into the
+# worktree.
+DEFAULT_OUTPUT_DIR = 'artifacts/frontend-business-entry-matrix/incremental'
+
+
+def resolve_output_dir(env: dict | None = None) -> Path:
+    source = os.environ if env is None else env
+    return Path((source.get('SC_ACCEPTANCE_OUTPUT_DIR') or '').strip() or DEFAULT_OUTPUT_DIR)
+
 
 class IncrementalError(RuntimeError):
     pass
@@ -103,7 +115,7 @@ def main(argv: list[str] | None = None) -> int:
     units_path = run_dir / 'units.json'
     selection_path = run_dir / 'selection.json'
     results_path = run_dir / 'results.json'
-    output_dir = Path(os.environ.get('SC_ACCEPTANCE_OUTPUT_DIR', 'artifacts/frontend-business-entry-matrix/incremental'))
+    output_dir = resolve_output_dir()
     ledger = args.ledger or str(ROOT / '.runtime' / 'evidence-scope' / f'{CHECK}.json')
 
     run_checked(['node', SCOPE_ADAPTER, '--emit-units', str(units_path)])

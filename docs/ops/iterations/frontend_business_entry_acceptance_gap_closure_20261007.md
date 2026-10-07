@@ -761,3 +761,28 @@ CSV：3 个 account 行 `declared→passed`、`阻塞→本轮验收`，`role_au
 ### 未完成
 
 - 本分支目标**仍未完成**：待所有者授权后，在干净 HEAD 上跑一次冻结候选 `make ci.local.quick` 并开 Gitee PR。
+
+### 本轮收口补充（2026-10-07 继续）：声明漂移消解 + 证据落点修复
+
+- **声明漂移由本车道直接消解**：4 个漂移声明（连同未漂移的第 5 个声明单元）改为第一手取证。带
+  `SC_ENTRY_MATRIX_KEYS` + `SC_ENTRY_SCOPE_REVERIFY_REASON` 运行
+  `make verify.frontend.business_entry.matrix.incremental`，只走这 5 键 →
+  `ok=true entries=5 problems=0 console_errors=0`；台账状态 `{checked:9, passed:80}`、
+  `declared=0`、uncovered=0。未放宽任何断言，未改绑 1813/1843，未新增模型特判。
+- **修复证据落点缺陷（根因）**：受管 Make 目标在调用者未设置时也会转发空 `SC_ACCEPTANCE_OUTPUT_DIR`，
+  而 `scripts/verify/business_entry_matrix_incremental.py` 用 `os.environ.get(name, default)` 把空串
+  当作有效值，`Path('') == '.'`，于是 `summary.json` 被写进**仓库根**（未跟踪、易被误提交）。
+  修复为「空/空白视为未设置」，新增 `scripts/verify/test_business_entry_matrix_incremental.py`（5 项
+  行为测试）并接入 `verify.frontend.business_entry.evidence_scope.unit`（现 `Ran 30 tests OK`）。
+  探针侧本已空安全（使用 `||`），无需改动。
+- 修复后带理由复采这 5 键一次，使 `source` 解析到声明目录
+  `artifacts/frontend-business-entry-matrix/incremental/summary.json`；仓库根泄漏文件已清理。台账中
+  先前 `run.source="summary.json"` 为被取代的历史条目，其单元引用已由新条目覆盖。
+
+### 待所有者裁决（未擅自放宽）
+
+- `scripts/ops/agent_run_context.py:170` 的复用判定要求 `check.kind == 'offline'` **且**
+  `run.environment.kind == 'offline'` 才可能返回 `reusable`。本 run 的 `environment.kind = 'runtime'`，
+  因此该 run 内**任何**检查（含纯静态单测）在 `agent.run.resume` 中都只能读作 `stale`，结果索引无法
+  体现复用。运行时证据需要环境回读是正确的，但静态/单测证据不依赖运行态，按其输入是否变化即可复用。
+  这是 fail-closed 门禁的语义，本轮**未擅自修改**；运行时表面的复用由矩阵台账承担（本次 89/89）。
