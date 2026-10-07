@@ -25,6 +25,7 @@
     "fixture_role_finance",
     "fixture_role_activity_accounting",
     "fixture_role_config_admin",
+    "fixture_role_system_admin",
     "fixture_role_partner_manager"
   ],
   "entries": {

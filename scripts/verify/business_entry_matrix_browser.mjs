@@ -49,6 +49,25 @@ let browser;
 function fail(message) { problems.push(message); }
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 
+// Count the released navigation targets a principal actually received. A node
+// only carries a route when the runtime published a positive action_id/menu_id
+// pair; a candidate that received none cannot support a denial, because "the
+// entry is absent" would be vacuously true rather than exercised.
+function countReleasedNavigationTargets(nav) {
+  const pending = Array.isArray(nav) ? [...nav] : [];
+  let count = 0;
+  while (pending.length) {
+    const node = pending.shift();
+    if (!node || typeof node !== 'object') continue;
+    const meta = node.meta && typeof node.meta === 'object' ? node.meta : {};
+    const actionId = Number(node.action_id || meta.action_id || 0);
+    const menuId = Number(node.menu_id || meta.menu_id || 0);
+    if (actionId > 0 && menuId > 0) count += 1;
+    if (Array.isArray(node.children)) pending.push(...node.children);
+  }
+  return count;
+}
+
 function parseCsv(text) {
   const rows = [];
   let row = [];
@@ -820,17 +839,41 @@ async function main() {
   for (const role of candidateRoles) {
     if (candidateState.has(role)) continue;
     const observed = await deniedRoleNavigation(role);
-    candidateState.set(role, observed);
-    if (!observed.nav) {
-      fail(`authority: ${role} released navigation was not observed (${observed.error || 'unknown'})`);
+    if (!observed.nav && observed.error) {
+      fail(`authority: ${role} login/navigation failed (${observed.error})`);
     }
     if (!Array.isArray(observed.roleXmlids) || !observed.roleXmlids.length) {
       fail(`authority: ${role} login envelope declared no capability closure (principal.role_xmlids)`);
     }
+    // A candidate is only a valid negative baseline when the runtime actually
+    // released navigation targets to it. An empty nav tree makes "the entry is
+    // absent" vacuously true, which would fabricate a denial that was never
+    // exercised, so such a candidate is ineligible rather than a denial.
+    const releasedTargets = countReleasedNavigationTargets(observed.nav);
+    candidateState.set(role, {
+      ...observed,
+      released_targets: releasedTargets,
+      eligible: releasedTargets > 0,
+    });
+  }
+  for (const role of candidateRoles) {
+    const candidate = candidateState.get(role);
+    if (candidate && !candidate.eligible) {
+      observations.push({
+        stage: 'authority_negative_candidate',
+        login: role,
+        eligible: false,
+        released_navigation_targets: candidate.released_targets || 0,
+        capability_closure_size: (candidate.roleXmlids || []).length,
+        reason: 'runtime released no navigation target to the candidate, so a denial cannot be distinguished from a missing navigation',
+      });
+    }
   }
   const negativeByRole = new Map();
   const candidateClosures = candidateRoles
-    .map((role) => candidateState.get(role)?.roleXmlids)
+    .map((role) => candidateState.get(role))
+    .filter((candidate) => candidate && candidate.eligible)
+    .map((candidate) => candidate.roleXmlids)
     .filter((caps) => Array.isArray(caps) && caps.length);
   const universalCaps = candidateClosures.length
     ? candidateClosures.reduce((acc, caps) => acc.filter((cap) => caps.includes(cap)))
@@ -848,8 +891,9 @@ async function main() {
     let chosen = null;
     for (const role of candidateRoles) {
       if (pinned && role !== pinned) continue;
-      const caps = Array.isArray(candidateState.get(role)?.roleXmlids)
-        ? candidateState.get(role).roleXmlids : [];
+      const candidate = candidateState.get(role);
+      if (!candidate || !candidate.eligible) continue;
+      const caps = Array.isArray(candidate.roleXmlids) ? candidate.roleXmlids : [];
       if (!caps.length) continue;
       if (!caps.some((cap) => declared.includes(cap))) { chosen = role; break; }
     }
@@ -859,7 +903,7 @@ async function main() {
         stage: 'authority_negative', entry: row.menu_xmlid, skipped: true,
         declared_groups: declared,
         baseline_groups: blocking,
-        reason: 'no denied-role candidate declares a capability closure disjoint from the entry declared groups',
+        reason: 'no eligible denied-role candidate declares a capability closure disjoint from the entry declared groups',
       });
       continue;
     }
@@ -891,6 +935,9 @@ async function main() {
     checked_entries: negativeChecked,
     uncovered_entries: selected.length - negativeChecked,
   });
+  if (selected.length - negativeChecked > 0) {
+    fail(`authority: ${selected.length - negativeChecked} selected entries have no eligible denied-role candidate whose released navigation was observed and whose capability closure is disjoint from the declared groups`);
+  }
 
   fs.mkdirSync(OUT_DIR, { recursive: true });
   const ok = problems.length === 0;
