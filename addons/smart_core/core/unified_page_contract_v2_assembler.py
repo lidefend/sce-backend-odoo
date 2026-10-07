@@ -4349,14 +4349,33 @@ def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
             status = {"btnId": btn_id, "visible": True, "disabled": False}
             statuses.append(status)
             status_by_btn_id[btn_id] = status
+        modifier_authoritative = (
+            _text(row.get("sourceChannel")) == "native_form_header"
+            and _text(_dict(row.get("button")).get("type")) == "object"
+            and bool(_text(_dict(row.get("nativeIdentity")).get("native_locator")))
+        )
+        permission_resolved = (
+            isinstance(row.get("allowed"), bool)
+            and isinstance(row.get("enabled"), bool)
+            and isinstance(row.get("disabled"), bool)
+        )
         verdict = _evaluate_action_modifier(invisible, record, strict=True)
-        if verdict is True:
-            status["visible"] = False
-            status.setdefault("reasonCode", "ACTION_NOT_VISIBLE_IN_STATE")
-        elif verdict is None:
-            status["visible"] = False
-            status["disabled"] = True
-            status["reasonCode"] = "ACTION_VISIBILITY_UNRESOLVED"
+        if verdict is True or verdict is None:
+            # 状态判定（依赖字段缺失，或当前状态下应隐藏）不等于权限被拒绝。
+            # 原生 header object 按钮的权限由 Odoo 原生评估且 allowed/enabled/
+            # disabled 均已确定，因此必须如实记录 entitlement 已评估，使前端
+            # explicitAuthority 契约校验依据权限事实，而不是把状态可见性快照
+            # 误判成“未评估”。可见性仍由状态契约与声明 modifier 共同决定，
+            # 未解析依赖仍保持 fail-closed。
+            if modifier_authoritative and permission_resolved:
+                row["entitlementEvaluated"] = True
+            if verdict is True:
+                status["visible"] = False
+                status.setdefault("reasonCode", "ACTION_NOT_VISIBLE_IN_STATE")
+            else:
+                status["visible"] = False
+                status["disabled"] = True
+                status["reasonCode"] = "ACTION_VISIBILITY_UNRESOLVED"
         else:
             status["visible"] = True
             evaluated_traces = [
@@ -4367,21 +4386,10 @@ def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
                 trace.get("authorizationAllowed") for trace in evaluated_traces
                 if isinstance(trace.get("authorizationAllowed"), bool)
             ]
-            modifier_authoritative = (
-                _text(row.get("sourceChannel")) == "native_form_header"
-                and _text(_dict(row.get("button")).get("type")) == "object"
-                and bool(_text(_dict(row.get("nativeIdentity")).get("native_locator")))
-            )
             # 原生 header object 按钮（工作流/提交类）的权限由 Odoo 原生评估，
             # allowed/enabled/disabled 均已确定；其 sourceTrace 未显式标记
-            # entitlementEvaluated 属装配缺口。此处对权限已解析且允许的原生
-            # 按钮补记 entitlement 评估，使前端 explicitAuthority 契约校验通过，
-            # 避免合法的产品主操作（如提交审批）被 explicitAuthority 误过滤。
-            permission_resolved = (
-                isinstance(row.get("allowed"), bool)
-                and isinstance(row.get("enabled"), bool)
-                and isinstance(row.get("disabled"), bool)
-            )
+            # entitlementEvaluated 属装配缺口，此处补记（与状态判定分支共用同一
+            # 判定，见上方 modifier_authoritative / permission_resolved）。
             entitlement_evaluated = (
                 row.get("entitlementEvaluated") is True
                 or bool(evaluated_traces)
