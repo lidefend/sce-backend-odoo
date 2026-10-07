@@ -110,7 +110,7 @@
         "smart_construction_core.group_sc_role_business_admin"
       ],
       "identity_evidence": "受管夹具身份 fixture_role_config_admin。",
-      "rationale": "能力发现模式（discover_installed_capabilities=true）：可达即交付；其 primary/admin 白名单必须落在可达集内，超出即失败。",
+      "rationale": "能力发现模式（discover_installed_capabilities=true）：可达即交付；其 primary/admin 白名单必须落在可达集内，超出即失败。（owner decision B，2026-10-07）产品配置入口 数据权限/系统参数/编码规则 已提升为产品功能，声明组在 group_sc_cap_config_admin 之外新增 group_sc_cap_business_config_admin，本角色闭包可达并交付。",
       "capability_reachable_not_delivered": [],
       "delivered_without_declared_capability": [],
       "delivered_without_declared_capability_reason": ""
@@ -343,12 +343,8 @@
       "delivered_without_declared_capability_reason": "日常合同(menu_sc_p1_daily_contract)与证照登记(menu_sc_certificate_registration)的交付依赖业务发起能力(group_sc_cap_business_initiator)；成本员角色组本身不可达，交付由角色组合承担，登记为声明，不放宽断言、不改 ACL。"
     }
   },
-  "capability_reachable_by_no_role": [
-    "smart_construction_core.menu_sc_product_data_permission_v1",
-    "smart_construction_core.menu_sc_product_numbering_rule_v1",
-    "smart_construction_core.menu_sc_product_system_parameter_v1"
-  ],
-  "capability_reachable_by_no_role_reason": "入口存在但没有任何业务角色的身份组闭包可达：仅存在、无人交付，登记为缺口声明。",
+  "capability_reachable_by_no_role": [],
+  "capability_reachable_by_no_role_reason": "（owner decision B，2026-10-07）原登记的 3 个产品配置入口（数据权限 menu_sc_product_data_permission_v1 / 系统参数 menu_sc_product_system_parameter_v1 / 编码规则 menu_sc_product_numbering_rule_v1）已按「可配置属产品功能」把 group_sc_cap_business_config_admin 加入其菜单/动作声明组与 ACL，业务配置管理员角色（group_sc_role_business_admin）闭包可达并交付；正式 4 个业务角色的发布面仍刻意不含这些管理面入口，故本项为空。",
   "authority_pending_entries": {
     "account.menu_action_move_journal_line_form": "日记账分录 / account.move: 待从当前契约核对；G-F0-02",
     "account.menu_action_account_moves_all": "日记账项目 / account.move.line: 待从当前契约核对；G-F0-02",

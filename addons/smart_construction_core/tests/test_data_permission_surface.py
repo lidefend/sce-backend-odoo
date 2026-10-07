@@ -35,13 +35,27 @@ class TestDataPermissionSurface(TransactionCase):
         self.assertEqual(personnel_action.res_model, permission_action.res_model)
         self.assertEqual(personnel_action.domain, permission_action.domain)
 
-    def test_runtime_menu_visibility_confirms_asymmetric_carryover(self):
+    def test_runtime_menu_visibility_delivers_product_config_to_business_admin(self):
+        """Owner decision B (2026-10-07): the product-configuration entries
+        (data permission / system parameters / numbering rules) are declared
+        product functions, so they are delivered to the business-config
+        capability instead of only the higher industry-config capability.
+
+        The menu/action declarations keep ``group_sc_cap_config_admin`` and add
+        ``group_sc_cap_business_config_admin``.  The industry group implies the
+        business group, so the industry admin keeps its reach while the
+        business admin now reaches the entries too.  No ACL, record rule or
+        field permission was relaxed to make this true.
+        """
         company = self.env.ref("base.main_company")
         business_group = self.env.ref(
             "smart_construction_core.group_sc_cap_business_config_admin"
         )
         industry_group = self.env.ref(
             "smart_construction_core.group_sc_cap_config_admin"
+        )
+        project_group = self.env.ref(
+            "smart_construction_core.group_sc_cap_project_read"
         )
 
         def create_user(login, group):
@@ -58,24 +72,29 @@ class TestDataPermissionSurface(TransactionCase):
 
         business_admin = create_user("batch2a_business_admin", business_group)
         industry_admin = create_user("batch2a_industry_admin", industry_group)
+        project_member = create_user("batch2a_project_member", project_group)
         personnel_menu = self.env.ref(
             "smart_construction_core.menu_sc_runtime_user_management"
         )
-        permission_menu = self.env.ref(
-            "smart_construction_core.menu_sc_product_data_permission_v1"
-        )
+        config_menus = [
+            self.env.ref("smart_construction_core.menu_sc_product_data_permission_v1"),
+            self.env.ref("smart_construction_core.menu_sc_product_system_parameter_v1"),
+            self.env.ref("smart_construction_core.menu_sc_product_numbering_rule_v1"),
+        ]
 
-        business_visible = self.env["ir.ui.menu"].with_user(
-            business_admin
-        )._visible_menu_ids()
-        industry_visible = self.env["ir.ui.menu"].with_user(
-            industry_admin
-        )._visible_menu_ids()
+        def visible(user):
+            return self.env["ir.ui.menu"].with_user(user)._visible_menu_ids()
+
+        business_visible = visible(business_admin)
+        industry_visible = visible(industry_admin)
+        member_visible = visible(project_member)
 
         self.assertIn(personnel_menu.id, business_visible)
-        self.assertNotIn(permission_menu.id, business_visible)
-        self.assertIn(personnel_menu.id, industry_visible)
-        self.assertIn(permission_menu.id, industry_visible)
+        for menu in config_menus:
+            with self.subTest(menu=menu.name):
+                self.assertIn(menu.id, business_visible)
+                self.assertIn(menu.id, industry_visible)
+                self.assertNotIn(menu.id, member_visible)
 
     def test_personnel_form_separates_profile_account_and_compatible_authorization(self):
         action = self.env.ref("smart_construction_core.action_sc_runtime_user_management")

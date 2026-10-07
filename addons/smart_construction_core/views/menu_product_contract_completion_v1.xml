@@ -193,7 +193,7 @@
       <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_data_permission_user_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_data_permission_user_form')})]"/>
       <field name="search_view_id" ref="smart_construction_core.view_sc_data_permission_user_search"/>
       <field name="domain">[('sc_runtime_company_maintainable', '=', True)]</field><field name="context">{'active_test': False, 'sc_runtime_user_management': True, 'create': False, 'delete': False}</field>
-      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_config_admin')])]"/>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_config_admin'), ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
     </record>
     <!-- U-C4 G11: 887 系统参数（menu 710 / action `action_sc_product_system_parameter_v1`）
          的原生承载。三个业务分组带稳定 `data-sc-anchor`，消费方按它生成本入口的业务章节与
@@ -225,7 +225,7 @@
     <record id="action_sc_product_system_parameter_v1" model="ir.actions.act_window">
       <field name="name">系统参数</field><field name="res_model">sc.product.system.settings</field><field name="view_mode">form</field>
       <field name="view_id" ref="smart_construction_core.view_sc_product_system_settings_form_v1"/><field name="target">current</field>
-      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_config_admin')])]"/>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_config_admin'), ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
     </record>
     <record id="view_sc_product_numbering_rule_tree_v1" model="ir.ui.view">
       <field name="name">ir.sequence.sc.product.tree.v1</field><field name="model">ir.sequence</field>
@@ -262,7 +262,7 @@
       <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_product_numbering_rule_tree_v1')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_product_numbering_rule_form_v1')})]"/>
       <field name="search_view_id" ref="smart_construction_core.view_sc_product_numbering_rule_search_v1"/>
       <field name="domain">[('sc_product_configurable', '=', True)]</field><field name="context">{'create': False, 'delete': False}</field>
-      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_config_admin')])]"/>
+      <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_config_admin'), ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
     </record>
 
     <!-- Project lifecycle is a backend state machine rendered by generic views. -->
@@ -463,8 +463,8 @@
     <menuitem id="menu_sc_product_social_fund_v1" name="社保公积" parent="smart_construction_core.menu_sc_hr_admin_center" action="smart_construction_core.action_sc_product_social_fund_v1" sequence="50" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
     <menuitem id="menu_sc_product_office_asset_v1" name="办公资产" parent="smart_construction_core.menu_sc_hr_admin_center" action="smart_construction_core.action_sc_product_office_asset_v1" sequence="70" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
     <menuitem id="menu_sc_product_policy_document_v1" name="制度文件" parent="smart_construction_core.menu_sc_hr_admin_center" action="smart_construction_core.action_sc_product_policy_document_v1" sequence="80" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
-    <menuitem id="menu_sc_product_data_permission_v1" name="数据权限" parent="smart_construction_core.menu_sc_business_config_center" action="smart_construction_core.action_sc_product_data_permission_v1" sequence="40" groups="smart_construction_core.group_sc_cap_config_admin"/>
-    <menuitem id="menu_sc_product_system_parameter_v1" name="系统参数" parent="smart_construction_core.menu_sc_business_config_center" action="smart_construction_core.action_sc_product_system_parameter_v1" sequence="50" groups="smart_construction_core.group_sc_cap_config_admin"/>
-    <menuitem id="menu_sc_product_numbering_rule_v1" name="编码规则" parent="smart_construction_core.menu_sc_business_config_center" action="smart_construction_core.action_sc_product_numbering_rule_v1" sequence="60" groups="smart_construction_core.group_sc_cap_config_admin"/>
+    <menuitem id="menu_sc_product_data_permission_v1" name="数据权限" parent="smart_construction_core.menu_sc_business_config_center" action="smart_construction_core.action_sc_product_data_permission_v1" sequence="40" groups="smart_construction_core.group_sc_cap_config_admin,smart_construction_core.group_sc_cap_business_config_admin"/>
+    <menuitem id="menu_sc_product_system_parameter_v1" name="系统参数" parent="smart_construction_core.menu_sc_business_config_center" action="smart_construction_core.action_sc_product_system_parameter_v1" sequence="50" groups="smart_construction_core.group_sc_cap_config_admin,smart_construction_core.group_sc_cap_business_config_admin"/>
+    <menuitem id="menu_sc_product_numbering_rule_v1" name="编码规则" parent="smart_construction_core.menu_sc_business_config_center" action="smart_construction_core.action_sc_product_numbering_rule_v1" sequence="60" groups="smart_construction_core.group_sc_cap_config_admin,smart_construction_core.group_sc_cap_business_config_admin"/>
   </data>
 </odoo>
