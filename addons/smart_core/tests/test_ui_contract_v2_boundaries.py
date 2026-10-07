@@ -1452,6 +1452,66 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertFalse(rows["field.native_hidden"]["visible"])
         self.assertEqual(rows["field.native_hidden"]["auth"], "none")
 
+    def test_native_form_policy_never_hides_a_required_occurrence(self):
+        """A render-profile policy may tighten semantics, not structure.
+
+        A native form declares its own field visibility.  When the delivered
+        native status says an occurrence is required for this profile, a form
+        policy must not deliver it hidden, because that pair is unsatisfiable
+        and would reintroduce a second structure owner.
+        """
+        required_occ = "field.source_kind.occ.required"
+        optional_occ = "field.source_kind.occ.optional"
+        natively_hidden_occ = "field.source_kind.occ.hidden"
+        contract = {
+            "layoutContract": {
+                "layoutType": "form",
+                "containerTree": [
+                    {
+                        "type": "group",
+                        "containerType": "group",
+                        "containerId": "group.identity",
+                        "children": [
+                            {"type": "field", "containerType": "field", "fieldCode": "source_kind", "widgetId": required_occ, "containerId": required_occ},
+                            {"type": "field", "containerType": "field", "fieldCode": "source_kind", "widgetId": optional_occ, "containerId": optional_occ},
+                            {"type": "field", "containerType": "field", "fieldCode": "source_kind", "widgetId": natively_hidden_occ, "containerId": natively_hidden_occ},
+                        ],
+                    }
+                ],
+            },
+            "statusContract": {
+                "widgetStatus": [
+                    {"widgetId": required_occ, "visible": True, "readonly": False, "required": True, "disabled": False, "auth": "edit"},
+                    {"widgetId": optional_occ, "visible": True, "readonly": False, "required": False, "disabled": False, "auth": "edit"},
+                    {"widgetId": natively_hidden_occ, "visible": False, "readonly": True, "required": False, "disabled": False, "auth": "none", "reasonCode": "NATIVE_MODIFIER_INVISIBLE"},
+                ]
+            },
+        }
+        source = {
+            "render_profile": "create",
+            "field_policies": {
+                "source_kind": {
+                    "visible_profiles": ["edit", "readonly"],
+                    "readonly_profiles": ["create", "edit", "readonly"],
+                }
+            },
+        }
+
+        self.module._projection.apply_field_policies_to_v2_status(contract, source)
+
+        rows = {row["widgetId"]: row for row in contract["statusContract"]["widgetStatus"]}
+        # Required + natively visible: the policy keeps it rendered (readonly),
+        # it must not be delivered as an invisible/unusable occurrence.
+        self.assertTrue(rows[required_occ]["visible"])
+        self.assertEqual(rows[required_occ]["auth"], "read")
+        # Not required: the declared form policy still hides it.
+        self.assertFalse(rows[optional_occ]["visible"])
+        self.assertEqual(rows[optional_occ]["auth"], "none")
+        # A native structural hide is never resurrected by this guard.
+        self.assertFalse(rows[natively_hidden_occ]["visible"])
+        self.assertEqual(rows[natively_hidden_occ]["auth"], "none")
+        self.assertEqual(rows[natively_hidden_occ]["reasonCode"], "NATIVE_MODIFIER_INVISIBLE")
+
     def test_projection_marks_native_visible_layout_fields_editable(self):
         handler = self.module.UiContractV2Handler(env=object())
         contract = {
