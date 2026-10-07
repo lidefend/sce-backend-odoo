@@ -168,3 +168,100 @@ make verify.frontend.business_entry.lifecycle.browser \
 本地 `make ci.local.quick` 不覆盖 `verify.frontend.playwright_vendor_coupling.guard`，
 本次漏检因此在远端才暴露。凡改动 `scripts/verify/**` 下的浏览器探针，
 必须把 `make verify.frontend.playwright_vendor_coupling.guard` 纳入本轮 L2 定向测试。
+
+## 批次 F4（裁决 B）：发布导航面刻意窄化改为显式声明 + 守卫（2026-10-07）
+
+### 触发与裁决
+
+F3 的「并列发现」事实链：菜单 970 `menu_sc_product_project_lifecycle_v1`（及 376
+`menu_sc_project_initiation`）声明持组 `group_sc_cap_project_manager`，`fixture_role_pm`
+（uid214）对该组 `has_group=True`，菜单层 ACL 放行；但发布导航面由
+`ROLE_SURFACE_OVERRIDES["pm"].primary_menu_xmlids`（24 项白名单）驱动，这两项不在其中，
+发布面拒绝。两侧口径不同不是偶然，而是**产品刻意窄化**。
+
+所有者裁决 **B**：登记为显式声明，**不算缺陷、不放宽验收断言、不擅自补菜单**，并加守卫锁住
+「角色能力组可达但未注册交付面」的分歧。
+
+### 责任层与边界
+
+- Formal Product Layer：P1（施工行业标准产品的角色发布面声明）。
+- Layer Target：`config/frontend/role_surface_exposure_declarations_v1.json`（新增声明）、
+  `scripts/verify/role_surface_exposure_declaration_guard.py`（新增守卫）。
+- 不改：`ROLE_SURFACE_OVERRIDES` 白名单、`config/frontend/authoritative_navigation.json`、
+  任何 ACL / record rule / 字段权限 / 验收断言 / 前端渲染 / 契约 schema。
+
+### 声明的语义（口径可复算）
+
+- 能力可达 = 角色**身份组闭包**（`implied_ids` 传递闭包）∩ 入口逐层声明组与 `action_groups`。
+  入口声明来自 `docs/product/frontend_business_entry_acceptance_v1.csv` 的 `role_authority`
+  （`all_restricted_layers_must_match_one_group`）。
+- 身份组取**受管夹具身份**（`addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py`），
+  无夹具身份的角色回落到其角色组并显式记录证据来源（`identity_evidence`）。
+- 发布面 = `ROLE_SURFACE_OVERRIDES[role]` 的 `primary_menu_xmlids ∪ role_home_menu_xmlids − denied_menu_xmlids`。
+- 交付模式：`declared_whitelist`（白名单交付）/ `capability_discover`（可达即交付）/
+  `denied`（`deny_all_navigation`，一律不交付）。
+
+### 结果（登记表实际内容，非人工估计）
+
+| 角色 | 交付模式 | 能力可达 | 交付 | 窄化声明 |
+| --- | --- | ---: | ---: | ---: |
+| restricted | denied | 19 | 0 | 19 |
+| project_member | declared_whitelist | 33 | 5 | 29 |
+| business_full | capability_discover | 83 | 可达即交付 | 0 |
+| business_config_admin | capability_discover | 83 | 可达即交付 | 0 |
+| owner | declared_whitelist | 24 | 2 | 22 |
+| pm | declared_whitelist | 38 | 3 | 35 |
+| finance | declared_whitelist | 47 | 15 | 32 |
+| executive | declared_whitelist | 48 | 0 | 48 |
+| cost | declared_whitelist | 24 | 4 | 22 |
+
+- 入口全集 89 行：86 行可由当前契约解析，3 行（`account.menu_action_move_journal_line_form` /
+  `menu_action_account_moves_all` / `menu_action_account_form`）`role_authority` 仍为
+  「待从当前契约核对」→ 登记在 `authority_pending_entries`，**显式保留为缺口**，不静默丢弃。
+- `capability_reachable_by_no_role` = 3：`menu_sc_product_data_permission_v1` /
+  `menu_sc_product_numbering_rule_v1` / `menu_sc_product_system_parameter_v1`
+  （仅存在、无任何业务角色交付）。
+- `delivered_without_declared_capability`（反方向分歧，同样登记）：
+  `project_member` 1 项（875 班组借/扣款登记工作台）、`cost` 2 项
+  （`menu_sc_p1_daily_contract`、`menu_sc_certificate_registration`，需业务发起能力）。
+- `system_admin` 列在 `excluded_roles`：`base.group_system` 属 Odoo 核心模块、不在本仓库源码内，
+  无法静态求闭包，显式排除并记录理由。
+
+### 守卫行为（fail-closed，锁定消费与行为）
+
+`scripts/verify/role_surface_exposure_declaration_guard.py` 静态重算上述集合并要求与登记表**完全相等**；
+以下任一项漂移即失败：登记表缺角色、`delivery_mode` 与策略标志不符、身份组不可解析、
+窄化声明多一项/少一项、反向分歧未登记、`no_role` 集合变化、待解析入口变化、
+新入口进入验收全集而未登记。单测 `scripts/verify/test_role_surface_exposure_declaration_guard.py`
+（10 项：9 项负例 + 1 项仓库现状断言）。
+
+负例实证（临时抽掉 `pm` 一条窄化声明 → 守卫 exit=2）：
+
+```
+- pm: capability_reachable_not_delivered drift undeclared=['smart_construction_core.menu_sc_workbench_my_todo_fact'] stale=[]
+```
+
+### 挂载
+
+| 层 | 入口 | 结果 | 非零计数 |
+| --- | --- | --- | --- |
+| L1/L2 | `make verify.frontend.role_surface_exposure_declaration.guard` | PASS | 10 |
+| L2 | `make verify.frontend.release_navigation_policy.guard`（现依赖上一项） | PASS | 10 + 5 |
+| L2 | `make verify.guard.registry` | PASS | 1389 scripts |
+| L2 | `make ci.generated_reports.guard` | PASS | 1467 assets |
+| L2 | `make verify.contract.structure_lock` | PASS | 14 domains |
+
+- `verify.frontend.release_navigation_policy.guard` 是 `frontend_static_release_audit.py` 的必需检查项，
+  因此新守卫自动进入 `frontend_release_gate`；同时把新目标追加进
+  `ci.professional.backend.shard-verify` 依赖串，使其在远端 shard-verify 直接覆盖
+  （教训：本地 `ci.local.quick` 不覆盖该层）。
+- 生成物刷新：新增 2 个 `scripts/verify/**` 资产 → `make refresh.generated_reports` 更新
+  `docs/engineering_convergence/test_inventory.csv|_summary.md`（1465→1467）与
+  `complexity_budget_report.md`（扫描文件 4600→4602）；`contract_structure_fingerprint.json` 未变。
+
+### 未放宽的证明
+
+- 未改任何 ACL / 菜单持组 / `authoritative_navigation.json` / 验收断言；`frontend_release_navigation_policy_guard`
+  在 `roles=4 released_leaf_identities=84` 下仍 PASS。
+- 声明文件不产生任何运行态可见性变化，只是把既有刻意窄化写成可复算、可失败的契约。
+- 守卫不把「选择器字符串/像素值文本出现」当作正确性证明：它比较的是集合等式与声明模式。

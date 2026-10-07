@@ -596,14 +596,18 @@ verify.frontend.style_system.guard: guard.prod.forbid
 verify.frontend.standard_list_scroll_contract.guard: guard.prod.forbid
 	@python3 scripts/verify/frontend_standard_list_scroll_contract_guard.py
 
-.PHONY: verify.frontend.delivery_hardening.guard verify.frontend.delivery_hardening.inventory verify.frontend.release_navigation_policy.guard
+.PHONY: verify.frontend.delivery_hardening.guard verify.frontend.delivery_hardening.inventory verify.frontend.release_navigation_policy.guard verify.frontend.role_surface_exposure_declaration.guard
 verify.frontend.delivery_hardening.guard: guard.prod.forbid
 	@python3 scripts/verify/frontend_delivery_hardening_guard.py
 
 verify.frontend.delivery_hardening.inventory: guard.prod.forbid
 	@python3 scripts/verify/frontend_delivery_ui_inventory.py
 
-verify.frontend.release_navigation_policy.guard: guard.prod.forbid
+verify.frontend.role_surface_exposure_declaration.guard: guard.prod.forbid
+	@python3 -m unittest scripts/verify/test_role_surface_exposure_declaration_guard.py
+	@python3 scripts/verify/role_surface_exposure_declaration_guard.py
+
+verify.frontend.release_navigation_policy.guard: guard.prod.forbid verify.frontend.role_surface_exposure_declaration.guard
 	@python3 -m unittest scripts/verify/test_frontend_release_navigation_policy_guard.py
 	@python3 scripts/verify/frontend_release_navigation_policy_guard.py
 
