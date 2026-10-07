@@ -786,3 +786,79 @@ CSV：3 个 account 行 `declared→passed`、`阻塞→本轮验收`，`role_au
   因此该 run 内**任何**检查（含纯静态单测）在 `agent.run.resume` 中都只能读作 `stale`，结果索引无法
   体现复用。运行时证据需要环境回读是正确的，但静态/单测证据不依赖运行态，按其输入是否变化即可复用。
   这是 fail-closed 门禁的语义，本轮**未擅自修改**；运行时表面的复用由矩阵台账承担（本次 89/89）。
+
+## 轮次增补：往来款登记工作区「办理事项」按钮不渲染（根因 + 双层修复）
+
+### 现象与决定性证据
+
+用户级浏览器（`wutao` / `sc_demo` @ `http://1.95.85.92:18081`，菜单 987 / action 1192
+`sc.current.account.workspace`）打开办理工作区时，6 个 header「办理事项」按钮完全不渲染。
+
+用受管探针 `.runtime/diag/ws_decisive.mjs`（记录打开工作区 → 选项目全过程的契约请求/响应 + DOM dump）
+取得：
+
+1. **`op=model`（表单实际消费的契约）** 的 `buttonStatus` 停在
+   `visible:false / disabled:false / reasonCode:"ACTION_NOT_VISIBLE_IN_STATE"`，而同行
+   `entitlementEvaluated:false`（`allowed / enabled / disabled` 均为 `true`）。
+2. **选中项目后前端不重新请求契约**：timeline 在 `project_selected` 之后没有新的 `ui.contract.v2` 请求，
+   `buttonStatus` 原样保留 → 契约必须在下发时就带正确的 entitlement 事实。
+3. **前端 presenter 门**：`explicitAuthority` 要求 `status.visible === true` 且
+   `action.entitlementEvaluated === true`。离线复算（`presenter_probe.mjs` + vite `ssrLoadModule`）证明
+   只补状态或只补 ee 都仍为空，两者齐备才出按钮。
+4. **后端装配缺口**：`hydrate_final_action_modifier_status`
+   （`addons/smart_core/core/unified_page_contract_v2_assembler.py`）原先只在 `verdict is False` 分支补记
+   `entitlementEvaluated`；`verdict is True/None`（状态隐藏）分支不补，`entitlementEvaluated:false`
+   从 `sourceTrace` 直接透传。
+5. `action_open`（无 record）是 `ACTION_VISIBILITY_UNRESOLVED`（无 `project_id`）；`op=model` 是
+   `ACTION_NOT_VISIBLE_IN_STATE`（`project_id` 为空 → 声明式 `not project_id` 为真）。**两者都是
+   「未选项目应隐藏」的正确状态**；缺陷只在 entitlement 事实被漏记，且前端无法用实时值重算。
+
+### 修复（各自责任层；未放宽任何 ACL / 字段权限 / 负例，无模型特判）
+
+- **P0 平台内核投影** `addons/smart_core/core/unified_page_contract_v2_assembler.py`：
+  把 `modifier_authoritative`（`native_form_header` + `button.type==object` + `native_locator`）与
+  `permission_resolved`（`allowed/enabled/disabled` 均为 bool）提升到 verdict 判定之前；
+  `verdict is True or verdict is None` 分支在两者成立时补记 `row["entitlementEvaluated"] = True`，
+  随后**仍按原逻辑**设置 `visible:false`（True → `ACTION_NOT_VISIBLE_IN_STATE`；None →
+  `ACTION_VISIBILITY_UNRESOLVED` 且 `disabled=True`）。不改 `allowed/enabled/disabled`。
+- **P0 前端渲染机制** `frontend/apps/web/src/app/presentation/contractFormPresenter.ts`：
+  新增 `STATE_DERIVED_STATUS_REASONS`（仅 `ACTION_NOT_VISIBLE_IN_STATE` /
+  `ACTION_VISIBILITY_UNRESOLVED`）与 `resolveStateDerivedStatus`。仅当状态为**状态派生**、且声明 modifier
+  引用的字段在实时值中**全部存在**时，才把该状态从「authority 拒绝」降级为「按声明 modifier × 实时值
+  重算」；`ACTION_NOT_ALLOWED`、字段 / ACL 策略与合法隐藏照旧阻断（fail-closed）。`explicitAuthority`
+  其余判据不变；另加 single-primary 守卫，契约自有 primary 保持主导。
+
+### 本地判别力（回退即失败）
+
+| 层 | 受管目标 | 结果 |
+| --- | --- | --- |
+| L2 后端 | `make verify.unified_page_contract.v2.runtime` | `Ran 117 tests OK`（含新增 `test_final_modifier_hydration_records_entitlement_for_state_hidden_native_action`；回退修复会 KeyError 失败） |
+| L2 前端 | `make verify.frontend.canonical_form_presenter.unit` | 全绿；`state-derived action visibility cases PASS count=5`、`state-derived primary resolution cases PASS count=2`（回退即失败） |
+| L1 | `make ci.local.iteration` | PASS |
+
+后端新增用例覆盖三个子场景：状态隐藏的原生 header 按钮补记 ee 且 `allowed/enabled/disabled` 不变；
+`project_id=12` 时 `visible=true` 且无 `reasonCode`；非原生行不写 ee。前端新增用例覆盖：基线（无 `project_id`）
+不出现；`project_id=12` 出现；依赖缺失 fail-closed；`reasonCode:ACTION_NOT_ALLOWED` 仍阻断；
+`entitlementEvaluated:false` 仍阻断；单 primary 解析（`form.save` 保持 primary，业务按钮保持 secondary）。
+
+端到端离线复算：对真实 `op=model` 契约先跑后端 `hydrate_final_action_modifier_status`
+（产出 `.runtime/diag/contract_model_ws_hydrated.json`，6 行 ee=True），再以 `VALUES='{"project_id":12}'`
+跑 presenter → actionBar 为 `form.save`(primary) +
+`borrow_company / repay_company / account_transfer / view_current_account`(secondary)；空 `project_id`
+基线不出现。
+
+### 运行台账对齐（本轮）
+
+- run `FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE` 的 `scope` 增补 `addons/smart_core/`（本层改动首次进入该 run），
+  新增检查 `contract_v2_final_modifier_entitlement`、`frontend_canonical_form_presenter_state_derived`；
+  `make agent.run.resume` 由 `reconcile` 恢复为 `resolved`（`outside_scope=[]`），`make ci.local.iteration` 恢复 PASS。
+  仅补齐本轮真实改动范围，未放宽任何门禁。
+
+### 未完成（下一步）
+
+1. 由受管入口下发到日常运行态并做**真实浏览器**复验：`make daily.runtime.candidate.bundle_sync` →
+   `make daily.runtime.source_revision.align`（重启即重载 addon）→ 远端
+   `ENV=dev ENV_FILE=.env.dev DB_NAME=sc_demo make verify.frontend.build` 重建 `dist-dev`；
+   然后复跑 `/a/1192?menu_id=987` 选项目 → 6 个「办理事项」按钮出现，空项目基线仍隐藏。
+2. 再按原 `next_exact_step` 把 `verify.system_user_experience.business_form_user_perspective`
+   重定位到声明交付入口，并出 89 条交付面的用户级验收结论。
