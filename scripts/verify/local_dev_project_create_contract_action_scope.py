@@ -55,6 +55,239 @@ def _layout_occurrence_integrity(contract):
     }
 
 
+
+def _declared_section_title(node):
+    for key in ("title", "string", "label", "semanticTitle"):
+        value = str(node.get(key) or "").strip()
+        if value:
+            return value
+    return ""
+
+
+def _walk_contract_nodes(nodes, visit):
+    for node in nodes if isinstance(nodes, list) else []:
+        if not isinstance(node, dict):
+            continue
+        visit(node)
+        _walk_contract_nodes(node.get("children"), visit)
+
+
+def _declared_group_sections(contract):
+    """Project the contract-declared native business sections and their fields.
+
+    The record surface must render the sections the contract declares. This is
+    the declaration side of the render binding: the browser probe asserts the
+    rendered native structure carries exactly these headings and fields.
+    """
+    sections = []
+
+    def collect(nodes, enclosing):
+        for node in nodes if isinstance(nodes, list) else []:
+            if not isinstance(node, dict):
+                continue
+            node_type = str(node.get("type") or "").strip().lower()
+            if node_type == "field":
+                if enclosing is not None:
+                    field_name = str(node.get("name") or "").strip()
+                    if field_name:
+                        enclosing["fields"].append({
+                            "name": field_name,
+                            "widget_id": str(node.get("widgetId") or "").strip(),
+                        })
+                continue
+            title = _declared_section_title(node)
+            if node_type == "group" and title:
+                section = {
+                    "name": str(node.get("name") or "").strip(),
+                    "title": title,
+                    "anchor": str((node.get("attributes") or {}).get("data-sc-anchor") or "").strip(),
+                    "fields": [],
+                }
+                sections.append(section)
+                collect(node.get("children"), section)
+                continue
+            collect(node.get("children"), enclosing)
+
+    collect(((contract.get("layoutContract") or {}).get("containerTree") or []), None)
+    return [section for section in sections if section["fields"]]
+
+
+def _declared_widget_visibility(contract):
+    """Project the contract-declared per-occurrence visible status."""
+    visibility = {}
+    for row in ((contract.get("statusContract") or {}).get("widgetStatus") or []):
+        if not isinstance(row, dict):
+            continue
+        widget_id = str(row.get("widgetId") or "").strip()
+        if widget_id:
+            visibility[widget_id] = row.get("visible") is not False
+    return visibility
+
+
+def _record_has_display_value(value):
+    if value is None or value is False:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, (list, tuple, set, dict)):
+        return bool(value)
+    return True
+
+
+def _declared_notebook_tabs(contract):
+    """Project the notebook page labels the contract declares for the surface."""
+    tabs = []
+
+    def visit(node):
+        if str(node.get("type") or "").strip().lower() != "notebook":
+            return
+        for page in node.get("children") or []:
+            if not isinstance(page, dict):
+                continue
+            if str(page.get("type") or "").strip().lower() != "page":
+                continue
+            tabs.append(
+                _declared_section_title(page) or str(page.get("name") or "").strip()
+            )
+
+    _walk_contract_nodes(((contract.get("layoutContract") or {}).get("containerTree") or []), visit)
+    return tabs
+
+
+def _declared_follower_capability(contract, model_name, record_id):
+    """Project the contract-declared follower capability for one record surface.
+
+    This is the declaration side of the follow/unfollow journey. The browser
+    probe consumes it together with the live list-intent response instead of a
+    follower snapshot, because follow state is per current user and can move
+    between the ORM probe and the browser click.
+    """
+    runtime = contract.get("runtimeContract") if isinstance(contract.get("runtimeContract"), dict) else {}
+    collaboration = runtime.get("collaboration") if isinstance(runtime.get("collaboration"), dict) else {}
+    if not collaboration:
+        collaboration = (
+            contract.get("collaboration") if isinstance(contract.get("collaboration"), dict) else {}
+        )
+    followers = collaboration.get("followers") if isinstance(collaboration.get("followers"), dict) else {}
+    if followers.get("enabled") is not True:
+        raise AssertionError(
+            "follower capability is not declared for %s: %s" % (model_name, followers)
+        )
+    actions = followers.get("actions") if isinstance(followers.get("actions"), dict) else {}
+    follow = actions.get("follow") if isinstance(actions.get("follow"), dict) else {}
+    unfollow = actions.get("unfollow") if isinstance(actions.get("unfollow"), dict) else {}
+    declaration = {
+        "model": model_name,
+        "record_id": int(record_id),
+        "label": str(followers.get("label") or "").strip(),
+        "list_intent": str(followers.get("list_intent") or "").strip(),
+        "update_intent": str(followers.get("update_intent") or "").strip(),
+        "follow_label": str(follow.get("label") or "").strip(),
+        "follow_enabled": follow.get("enabled") is True,
+        "unfollow_label": str(unfollow.get("label") or "").strip(),
+        "unfollow_enabled": unfollow.get("enabled") is True,
+    }
+    if (
+        declaration["list_intent"] != "chatter.followers.list"
+        or declaration["update_intent"] != "chatter.followers.update"
+        or not declaration["follow_enabled"]
+        or not declaration["unfollow_enabled"]
+        or not declaration["follow_label"]
+        or not declaration["unfollow_label"]
+        or declaration["follow_label"] == declaration["unfollow_label"]
+    ):
+        raise AssertionError(
+            "follower declaration is not governed for %s: %s" % (model_name, declaration)
+        )
+    return declaration
+
+
+
+def _declared_relation_collection(contract, field_name):
+    """Project the contract-declared relation collection for one one2many field.
+
+    This is the declaration side of the record relation-area check. The retired
+    floorplan relation region no longer exists on the record surface, so the
+    browser probe consumes the declared collection (component key, relation,
+    capability policies and column count) instead of a region selector.
+    """
+    layout = contract.get("layoutContract") if isinstance(contract.get("layoutContract"), dict) else {}
+    nodes = []
+
+    def visit(node):
+        if isinstance(node, list):
+            for item in node:
+                visit(item)
+            return
+        if not isinstance(node, dict):
+            return
+        if (
+            str(node.get("type") or "").strip().lower() == "field"
+            and str(node.get("name") or node.get("fieldCode") or "").strip() == field_name
+        ):
+            nodes.append(node)
+        visit(node.get("children"))
+        visit(node.get("widgetList"))
+
+    visit(layout.get("containerTree") or [])
+    if len(nodes) != 1:
+        raise AssertionError(
+            "declared relation collection %s is not unique: %s" % (field_name, len(nodes))
+        )
+    node = nodes[0]
+    field_info = node.get("fieldInfo") if isinstance(node.get("fieldInfo"), dict) else {}
+    subview = field_info.get("subview") if isinstance(field_info.get("subview"), dict) else {}
+    policies = subview.get("policies") if isinstance(subview.get("policies"), dict) else {}
+    tree = subview.get("tree") if isinstance(subview.get("tree"), dict) else {}
+    columns = tree.get("columns") if isinstance(tree.get("columns"), list) else []
+    row_actions = tree.get("row_actions") if isinstance(tree.get("row_actions"), list) else []
+    declaration = {
+        "field": field_name,
+        "component_key": str(node.get("componentKey") or "").strip(),
+        "relation_model": str(field_info.get("relation") or "").strip(),
+        "readonly": node.get("readonly") is True,
+        "can_create": policies.get("can_create") is True,
+        "can_inline_edit": policies.get("inline_edit") is True,
+        "can_unlink": policies.get("can_unlink") is True,
+        "column_count": len(columns),
+        "row_action_count": len(row_actions),
+    }
+    if (
+        not declaration["component_key"]
+        or not declaration["relation_model"]
+        or declaration["column_count"] < 1
+        or "can_create" not in policies
+        or "inline_edit" not in policies
+        or "can_unlink" not in policies
+    ):
+        raise AssertionError(
+            "declared relation collection %s is incomplete: %s" % (field_name, declaration)
+        )
+    # The routed field node mirrors the same policies on its inner widget
+    # descriptor; a capability drift between the two is a contract defect.
+    def visit_widgets(value):
+        if isinstance(value, list):
+            for item in value:
+                visit_widgets(item)
+            return
+        if not isinstance(value, dict):
+            return
+        descriptor = value.get("fieldDescriptor") if isinstance(value.get("fieldDescriptor"), dict) else {}
+        nested = descriptor.get("subview") if isinstance(descriptor.get("subview"), dict) else {}
+        mirrored = nested.get("policies") if isinstance(nested.get("policies"), dict) else {}
+        for key in ("can_create", "inline_edit", "can_unlink"):
+            if key in mirrored and mirrored.get(key) != policies.get(key):
+                raise AssertionError(
+                    "declared relation collection %s mirrors divergent policies: %s"
+                    % (field_name, mirrored)
+                )
+        visit_widgets(value.get("widgetList"))
+
+    visit_widgets(node.get("widgetList"))
+    return declaration
+
+
+
 user = env.ref("smart_construction_demo.sc_demo_user_test_admin")
 action = env.ref("smart_construction_core.action_project_initiation")
 menu = env.ref("smart_construction_core.menu_sc_project_initiation")
@@ -63,11 +296,27 @@ workspace_action = env.ref("smart_construction_core.action_sc_project_list")
 workspace_menu = env.ref("smart_construction_core.menu_sc_project_project")
 payment_action = env.ref("smart_construction_core.action_payment_request_user_payment_apply")
 payment_menu = env.ref("smart_construction_core.menu_sc_user_payment_apply")
-payment_record = env["payment.request"].sudo().search([
-    ("name", "=", "DEMO-PR-FLOORPLAN-001"),
-], limit=1)
-if not payment_record:
-    raise RuntimeError("governed payment request DriverHost probe fixture is missing")
+# Resolve the governed fixture by its stable xmlid instead of a hardcoded name:
+# the managed reset step renames the carrier (DEMO-PR-FLOORPLAN-002, ...) whenever
+# the previous carrier already holds ledger history, and it rebinds this xmlid to
+# the live record. The probe must walk the declared draft carrier, so a missing,
+# renamed-away or non-draft fixture fails closed here instead of timing out in the
+# middle of a write journey.
+payment_record = env.ref(
+    "smart_construction_demo.payment_request_floorplan_demo_record",
+    raise_if_not_found=False,
+)
+if not payment_record or payment_record._name != "payment.request":
+    raise RuntimeError(
+        "governed payment request DriverHost probe fixture is missing: run "
+        "'make local.dev.reset_payment_request_fixture'"
+    )
+if payment_record.state != "draft":
+    raise RuntimeError(
+        "governed payment request DriverHost probe fixture is not in its declared draft "
+        "state (state=%s): run 'make local.dev.reset_payment_request_fixture'"
+        % payment_record.state
+    )
 user_env = env(user=user.id, context={
     **env.context,
     "allowed_company_ids": user.company_ids.ids,
@@ -114,6 +363,76 @@ record_collaboration_contract = (
 ) or {}
 if record_collaboration_contract.get("user_search_intent") != "collaboration.users.search":
     raise AssertionError("project collaboration user search intent was not exact: %s" % record_collaboration_contract)
+
+# The 项目台账 entry is the single project record surface. It must resolve to
+# the unified native overview declaration (view_project_overview_form) through
+# native authority and must project the declared sections; a notebook tab is
+# only asserted when the declaration itself declares one.
+workspace_payload = {
+    **payload,
+    "action_id": int(workspace_action.id),
+    "menu_id": int(workspace_menu.id),
+    "record_id": int(project_record.id),
+    "render_profile": "readonly",
+}
+workspace_result = UiContractV2Handler(user_env, payload=workspace_payload).run(payload=workspace_payload)
+workspace_data = (
+    workspace_result.data
+    if hasattr(workspace_result, "data") and isinstance(workspace_result.data, dict)
+    else {}
+)
+if not getattr(workspace_result, "ok", False):
+    raise RuntimeError("project workspace Contract V2 failed: %s" % workspace_result)
+workspace_structure_contract = workspace_data.get("formStructureContract") or {}
+workspace_governance = (
+    (workspace_structure_contract.get("sourceAuthority") or {}).get("governance_source") or {}
+)
+overview_view = env.ref("smart_construction_core.view_project_overview_form")
+if (
+    workspace_governance.get("formStructureAuthority") != "native_authority"
+    or workspace_structure_contract.get("layoutPolicy") != "container_tree_authority"
+    or workspace_structure_contract.get("mode") != "native_structured_form"
+    or int(workspace_governance.get("resolvedViewId") or 0) != int(overview_view.id)
+):
+    raise AssertionError("project workspace is not projected from the unified overview declaration: %s" % {
+        "form_structure_authority": workspace_governance.get("formStructureAuthority"),
+        "layout_policy": workspace_structure_contract.get("layoutPolicy"),
+        "mode": workspace_structure_contract.get("mode"),
+        "resolved_view_id": workspace_governance.get("resolvedViewId"),
+        "overview_view_id": overview_view.id,
+    })
+workspace_sections = _declared_group_sections(workspace_data)
+if not workspace_sections:
+    raise AssertionError(
+        "project workspace declaration exposed no native business sections: %s"
+        % (workspace_structure_contract.get("objectProfile") or {})
+    )
+# The record surface renders the declared sections; within a declared section the
+# readonly fact rule omits only empty, non-relation facts. The browser probe must
+# therefore require every declared-and-visible field that carries a value on this
+# record, and must reject any rendered field that the declaration does not place
+# there. Both bounds come from the declaration plus the record, not from a
+# hardcoded field list.
+workspace_visibility = _declared_widget_visibility(workspace_data)
+workspace_field_names = [
+    field["name"] for section in workspace_sections for field in section["fields"]
+]
+workspace_row = project_record.read(workspace_field_names)[0]
+for section in workspace_sections:
+    for field in section["fields"]:
+        field["visible"] = workspace_visibility.get(field["widget_id"], True)
+        field["valued"] = _record_has_display_value(workspace_row.get(field["name"]))
+    section["must_render_fields"] = [
+        field["name"] for field in section["fields"] if field["visible"] and field["valued"]
+    ]
+workspace_structure_projection = {
+    "form_structure_authority": workspace_governance.get("formStructureAuthority"),
+    "layout_policy": workspace_structure_contract.get("layoutPolicy"),
+    "mode": workspace_structure_contract.get("mode"),
+    "resolved_view_id": int(workspace_governance.get("resolvedViewId") or 0),
+    "notebook_tabs": _declared_notebook_tabs(workspace_data),
+    "sections": workspace_sections,
+}
 
 record_rules = [
     row
@@ -274,17 +593,83 @@ if (
         "render_profile": data.get("render_profile"),
         "form_governance": data.get("form_governance"),
     })
-field_roles = ((data.get("formStructureContract") or {}).get("fieldRoles") or {})
+form_structure_contract = data.get("formStructureContract") or {}
+governance_source = (
+    (form_structure_contract.get("sourceAuthority") or {}).get("governance_source") or {}
+)
+field_roles = form_structure_contract.get("fieldRoles") or {}
 expected_roles = {
     "intake_next_action_display": "task",
     "intake_blocking_reason_display": "risk",
 }
-actual_roles = {
-    field_name: (field_roles.get(field_name) or {}).get("role")
-    for field_name in expected_roles
+expected_anchor_groups = {
+    "intake_next_action_display": "current_task",
+    "intake_blocking_reason_display": "intake_risk",
 }
-if actual_roles != expected_roles:
-    raise AssertionError("project intake semantic roles are incomplete: %s" % actual_roles)
+actual_roles = {}
+anchor_groups = {}
+anchor_sections = {}
+# U-C4 G12 retired the entry-level structure declaration for 项目立项 (724 /
+# view 1503): the resolved native view owns field placement, so the contract
+# projects formStructureAuthority=native_authority with
+# layoutPolicy=container_tree_authority / mode=native_structured_form and the
+# compatibility re-layout that produced fieldRoles is closed. The declared
+# business-group identity (current_task / intake_risk) is carried by the native
+# arch data-sc-anchor groups and must be projected through the container tree.
+# Assert the carrier the declaration actually names instead of the retired one;
+# do not re-open the closed re-layout and do not drop the coverage.
+if governance_source.get("formStructureAuthority") == "native_authority":
+    if (
+        form_structure_contract.get("layoutPolicy") != "container_tree_authority"
+        or form_structure_contract.get("mode") != "native_structured_form"
+    ):
+        raise AssertionError("project intake native authority is not projected: %s" % {
+            "form_structure_authority": governance_source.get("formStructureAuthority"),
+            "layout_policy": form_structure_contract.get("layoutPolicy"),
+            "mode": form_structure_contract.get("mode"),
+        })
+    if field_roles or governance_source.get("fieldSemanticRoles"):
+        raise AssertionError("project intake re-opened the retired compatibility layout: %s" % {
+            "field_roles": field_roles,
+            "field_semantic_roles": governance_source.get("fieldSemanticRoles"),
+        })
+
+    def _section_label(node):
+        for key in ("title", "string", "label"):
+            label = str(node.get(key) or "").strip()
+            if label:
+                return label
+        return ""
+
+    def _collect_anchor_groups(nodes, enclosing=None):
+        for node in nodes if isinstance(nodes, list) else []:
+            if not isinstance(node, dict):
+                continue
+            node_type = str(node.get("type") or "").strip().lower()
+            node_name = str(node.get("name") or "").strip()
+            if node_type == "field":
+                if node_name in expected_anchor_groups and node_name not in anchor_groups:
+                    anchor_groups[node_name] = enclosing[0] if enclosing else ""
+                    if enclosing:
+                        anchor_sections[enclosing[0]] = enclosing[1]
+                continue
+            _collect_anchor_groups(
+                node.get("children"),
+                (node_name, _section_label(node)) if node_type == "group" else enclosing,
+            )
+
+    _collect_anchor_groups((data.get("layoutContract") or {}).get("containerTree") or [])
+    if anchor_groups != expected_anchor_groups:
+        raise AssertionError("project intake native semantic anchors are incomplete: %s" % anchor_groups)
+    if any(not label for label in anchor_sections.values()):
+        raise AssertionError("project intake native section headings are not declared: %s" % anchor_sections)
+else:
+    actual_roles = {
+        field_name: (field_roles.get(field_name) or {}).get("role")
+        for field_name in expected_roles
+    }
+    if actual_roles != expected_roles:
+        raise AssertionError("project intake semantic roles are incomplete: %s" % actual_roles)
 statuses = {
     str(row.get("btnId") or ""): row
     for row in ((data.get("statusContract") or {}).get("buttonStatus") or [])
@@ -329,6 +714,52 @@ def _handler_data(handler_class, params):
         raise AssertionError("collaboration handler failed: %r" % (result,))
     return data
 
+
+payment_record_payload = {
+    **payload,
+    "action_id": int(payment_action.id),
+    "menu_id": int(payment_menu.id),
+    "record_id": int(payment_record.id),
+    "render_profile": "readonly",
+}
+payment_record_result = UiContractV2Handler(user_env, payload=payment_record_payload).run(
+    payload=payment_record_payload
+)
+payment_record_data = (
+    payment_record_result.data
+    if hasattr(payment_record_result, "data") and isinstance(payment_record_result.data, dict)
+    else {}
+)
+if not getattr(payment_record_result, "ok", False):
+    raise RuntimeError("payment request Contract V2 failed: %s" % payment_record_result)
+payment_record_integrity = _layout_occurrence_integrity(payment_record_data)
+if any(
+    payment_record_integrity[key]
+    for key in ("missing_widgets", "missing_statuses", "missing_descriptors")
+):
+    raise AssertionError(
+        "payment request Contract V2 occurrence integrity failed: %s" % payment_record_integrity
+    )
+
+# The record relation area consumes the declared detail collection instead of
+# the retired floorplan relation region. The browser probe binds the rendered
+# relation field to this declaration.
+payment_detail_declaration = [
+    _declared_relation_collection(payment_record_data, "outflow_line_ids"),
+]
+
+# The follow/unfollow journey is declared by the contract (intents + action
+# labels) and resolved against the live per-user list authority in the browser.
+# The handler round-trip below stays as backend evidence only; it deliberately
+# does not become the browser expectation, because follower state is per current
+# user and a captured snapshot can go stale before the browser clicks.
+# The declaration is bound to the surface the browser journeys actually load:
+# the 项目台账 workspace entry (519) for project.project and the user payment
+# apply entry (809) for payment.request.
+follower_declaration = [
+    _declared_follower_capability(workspace_data, project_record._name, project_record.id),
+    _declared_follower_capability(payment_record_data, payment_record._name, payment_record.id),
+]
 
 follower_journeys = []
 for target_record in (project_record, payment_record):
@@ -553,7 +984,19 @@ print("LOCAL_DEV_PROJECT_CREATE_ACTION_SCOPE_JSON=" + json.dumps({
         "label": save_action.get("label"),
         "presentation": save_action.get("presentation"),
     },
-    "intake_semantic_roles": actual_roles,
+    "workspace_structure_contract": workspace_structure_projection,
+    "intake_semantic_contract": {
+        "form_structure_authority": governance_source.get("formStructureAuthority"),
+        "layout_policy": form_structure_contract.get("layoutPolicy"),
+        "mode": form_structure_contract.get("mode"),
+        "field_roles": field_roles,
+        "anchor_groups": anchor_groups,
+        "anchor_sections": anchor_sections,
+        "roles": actual_roles,
+    },
+    "payment_record_occurrence_integrity": payment_record_integrity,
+    "payment_detail_declaration": payment_detail_declaration,
+    "follower_declaration": follower_declaration,
     "follower_journeys": follower_journeys,
     "attachment_delete_journeys": attachment_delete_journeys,
     "message_delete_journeys": message_delete_journeys,
