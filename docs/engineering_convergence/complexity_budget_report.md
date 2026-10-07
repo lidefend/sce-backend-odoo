@@ -92,7 +92,7 @@ Generated from repository source files. This report is informational during the 
 | 1395 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1389 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1381 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
-| 1358 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
+| 1366 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1320 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1320 | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
@@ -123,7 +123,7 @@ Generated from repository source files. This report is informational during the 
 | 1117 | Python source | `scripts/ops/codex_agent_controller.py` |
 | 1100 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1096 | Python source | `addons/smart_construction_core/models/core/payment_ledger.py` |
-| 1095 | JavaScript source | `scripts/verify/local_dev_project_create_contract_driver_probe.mjs` |
+| 1096 | JavaScript source | `scripts/verify/local_dev_project_create_contract_driver_probe.mjs` |
 | 1094 | JavaScript source | `scripts/verify/list_search_group_usability_audit.js` |
 | 1094 | JavaScript source | `scripts/verify/pfl035_payment_request_runtime_acceptance.mjs` |
 | 1093 | Python source | `addons/smart_core/handlers/load_contract.py` |
@@ -267,7 +267,7 @@ Generated from repository source files. This report is informational during the 
 | 1395 | warning | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1389 | warning | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1381 | warning | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
-| 1358 | warning | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
+| 1366 | warning | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1339 | warning | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1320 | warning | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1320 | warning | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
