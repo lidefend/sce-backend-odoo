@@ -96,3 +96,22 @@
 
 还原本批提交即可（守卫、单测、make 接线、goal/run/record 文本与两处 goal 文档修复）；
 不涉及产品代码、数据库或运行时状态。
+
+## 7. 主线集成与终局退役（2026-10-09）
+
+- 候选 `919afd12`（`ae82151a` 守卫与台账修复 + `919afd12` 生成物刷新）经平台受保护 PR 合并：
+  **PR #628**，合并提交 **`c2cd29c3`**（`--squash`），`origin/main` 由 `84032881` 前进到
+  `c2cd29c3`；`git rev-parse 919afd12^{tree} == c2cd29c3^{tree}`（`15ebdc2f`），squash 承载完整内容。
+- 合并前绑定复核：`headRefOid=919afd12`、`baseRefOid=84032881`、`mergeStateStatus=CLEAN`、
+  `mergeable=MERGEABLE`、`reviewDecision=""`（所有者规则：必需 CI 通过即可合并）；四项必需检查
+  `public_guard` / `merge_policy_gate` / `professional_quality_gate` / `frontend_release_gate`
+  在精确头全 `pass`，精确头 `ci.local.quick` 回执 **REUSE**。
+- 合并后回读：PR `state=MERGED`、`mergedAt=2026-10-08T22:53:42Z`、`mergeCommit=c2cd29c3`；main 上
+  该 push 的四项必需检查同样全 `success`；工作区干净。
+- **终局退役**：本 goal/run 翻 `completed`，`.agent/active-runs.json` 不再绑定
+  `audit/agent-ledger-consistency-guard-20261009`，main 上再无索引项指向已合并的本专题分支。
+  按 `pr.merge.local_quick_gate` 的设计，`.agent`/`docs` 记账候选默认必须随相邻产品候选同行；
+  本专题的 run 已实质完成且**不存在**相邻候选，故按该门的显式指引
+  （`PR_MERGE_BOOKKEEPING_TERMINAL_RETIRE`）走一次真实的终局退役，全批只跑一次 Quick。
+- 边界：合并不触发产品部署；日常运行态仍服务 `bfb38367` / `sc_demo` / 前端产物 `b0311c6f`；
+  未主张版本发布或产品交付。
