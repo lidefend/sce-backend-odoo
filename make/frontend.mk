@@ -1221,3 +1221,4 @@ verify.frontend.business_entry.matrix.evidence_scope.status: guard.prod.forbid
 verify.frontend.business_entry.evidence_scope.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/evidence_scope.py scripts/verify/business_entry_matrix_incremental.py scripts/verify/business_entry_matrix_scope_seed.py
 	@python3 -m unittest scripts.ops.test_evidence_scope scripts.verify.test_business_entry_matrix_incremental
+	@node scripts/verify/business_entry_matrix_reuse_identity.test.mjs
