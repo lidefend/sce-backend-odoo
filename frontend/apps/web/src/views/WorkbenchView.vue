@@ -303,7 +303,7 @@ const tiles = computed<EnrichedWorkbenchTile[]>(() => {
   const rawTiles = Array.isArray(scene.value?.tiles) ? (scene.value?.tiles as WorkbenchTile[]) : [];
   if (!Array.isArray(rawTiles)) return [];
   return rawTiles.map((tile) => {
-    const policy = evaluateCapabilityPolicy({ source: tile, available: session.capabilities });
+    const policy = evaluateCapabilityPolicy({ source: tile, available: session.capabilities, catalog: session.capabilityCatalog });
     return {
       ...tile,
       policy,

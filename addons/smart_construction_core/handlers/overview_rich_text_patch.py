@@ -39,6 +39,9 @@ from odoo.addons.smart_core.utils.idempotency import (
     replay_window_seconds,
 )
 
+from odoo.addons.smart_construction_core.handlers.reason_codes import (
+    REASON_DONE,
+)
 from odoo.addons.smart_construction_core.services import overview_rich_text_patch_service as svc
 
 
@@ -333,7 +336,7 @@ class OverviewRichTextPatchHandler(BaseIntentHandler):
                 "content_after": stored_after,
                 "max_length": svc.MAX_LENGTH,
                 "success": True,
-                "reason_code": "DONE",
+                "reason_code": REASON_DONE,
                 "message": "项目概况已更新（服务端净化后落库）",
                 "done_at": fields.Datetime.to_string(fields.Datetime.now()),
             },

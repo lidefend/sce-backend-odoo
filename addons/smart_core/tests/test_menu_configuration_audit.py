@@ -973,6 +973,63 @@ class TestMenuConfigurationAudit(unittest.TestCase):
         self.assertEqual(set(result["data"]["policies"].keys()), {291, 292, 379})
         self.assertNotIn(42, {row["id"] for row in result["data"]["menus"]})
 
+    def test_menu_config_panel_rows_carry_projected_handling_state(self):
+        company = types.SimpleNamespace(id=7, display_name="测试公司", name="测试公司")
+        user = _User([])
+        business_root = _Menu(291, "智慧施工管理平台")
+        project_center = _Menu(292, "项目中心", parent=business_root, sequence=20)
+        visible_entry = _Menu(379, "项目台账", parent=project_center, sequence=10)
+        menus = _MenuModel([business_root, project_center, visible_entry])
+        policies = _PolicyModel(
+            [
+                _Policy(1, business_root, company=company),
+                _Policy(2, project_center, company=company),
+                _Policy(3, visible_entry, company=company),
+            ],
+            user=user,
+        )
+        env = _Env(
+            {
+                "ir.ui.menu": menus,
+                "ir.model.data": _ModelDataModel([]),
+                "ui.menu.config.policy": policies,
+                "res.company": _CompanyModel([company]),
+            },
+            company=company,
+            user=user,
+        )
+        handler = self.module.MenuConfigurationLoadHandler(
+            env=env,
+            params={"company_id": 7, "root_menu_id": 291, "menu_ids": [291, 292, 379]},
+        )
+        handler._group_option_records = lambda menus, policies: _RecordSet([])
+        handler._expand_with_parent_ids = lambda menus: [int(menu.id) for menu in menus]
+
+        result = handler.handle({"params": handler.params})
+
+        rows = result["data"]["menus"]
+        vocabulary = set(self.module.MENU_HANDLING_STATES)
+        self.assertTrue(rows)
+        self.assertTrue(all(row.get("handling_state") in vocabulary for row in rows))
+        expected = {state: 0 for state in vocabulary}
+        for row in rows:
+            expected[row["handling_state"]] += 1
+        self.assertEqual(result["data"]["handling_state_summary"], expected)
+        self.assertEqual(sum(expected.values()), len(rows))
+        self.assertEqual(
+            result["data"]["handling_state_vocabulary"],
+            list(self.module.MENU_HANDLING_STATES),
+        )
+        source_authority = result["meta"]["source_authority"]
+        self.assertEqual(
+            source_authority["handling_state_vocabulary"],
+            list(self.module.MENU_HANDLING_STATES),
+        )
+        self.assertEqual(
+            source_authority["handling_state_contract"],
+            self.module.MENU_HANDLING_STATE_CONTRACT,
+        )
+
     def test_menu_config_save_rejects_menu_outside_business_root(self):
         company = types.SimpleNamespace(id=7, display_name="测试公司", name="测试公司")
         user = _User([])
@@ -3043,6 +3100,31 @@ class TestMenuConfigurationAudit(unittest.TestCase):
         self.assertEqual(runtime["states"]["293"]["runtime_state"], "visible_release_navigation_group")
         self.assertFalse(runtime["states"]["483"]["runtime_visible"])
         self.assertEqual(runtime["states"]["483"]["runtime_state"], "configured_visible_runtime_absent")
+
+
+    def test_attach_menu_handling_state_projects_declared_vocabulary(self):
+        module = _load_handler()
+        handler = object.__new__(module.MenuConfigurationLoadHandler)
+        rows = [
+            {"id": 291, "menu_id": 291},
+            {"id": 293, "menu_id": 293},
+            {"id": 410, "menu_id": 410},
+            {"id": 999, "menu_id": 999},
+        ]
+        runtime = {"states": {"291": {"runtime_visible": True}, "293": {"runtime_visible": False}}}
+
+        summary = handler._attach_menu_handling_state(
+            rows,
+            {293: {"visible": True}, 999: {"visible": False}},
+            runtime,
+        )
+
+        self.assertEqual(
+            [row["handling_state"] for row in rows],
+            ["visible", "hidden", "unconfigured", "hidden"],
+        )
+        self.assertEqual(summary, {"visible": 1, "hidden": 2, "unconfigured": 1})
+        self.assertEqual(module.MENU_HANDLING_STATES, ("visible", "hidden", "unconfigured"))
 
 
 if __name__ == "__main__":

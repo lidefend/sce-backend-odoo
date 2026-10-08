@@ -151,6 +151,9 @@ def _load_handler_module():
     _install_module("odoo.addons")
     _install_module("odoo.addons.smart_construction_core")
     handlers_pkg = _install_module("odoo.addons.smart_construction_core.handlers")
+    # 声明包路径：handler 会从本模块 handlers.reason_codes 导入原因码常量，
+    # 无 __path__ 的假包会让该真实依赖解析失败（与 smart_core.* 的真实绑定一致）。
+    handlers_pkg.__path__ = [str(_ROOT / "handlers")]
     smart_core_mod = _install_module("odoo.addons.smart_core")
     core_mod = _install_module("odoo.addons.smart_core.core")
     utils_mod = _install_module("odoo.addons.smart_core.utils")

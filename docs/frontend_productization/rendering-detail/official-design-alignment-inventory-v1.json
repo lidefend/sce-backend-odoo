@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "019db41b89e02fc6564f7ab3abebcaff96eca5b78776a5b8e368d41bd0789f4b",
+  "inputDigest": "9e62c4d4dec59272bbbd5dec4f0e1786c3fd5d98cb6474f3d027d60bed4292be",
   "internalVendorSelectorGaps": [],
   "productAppearanceVariants": [
     {
@@ -74,13 +74,12 @@
         "frontend/apps/web/src/components/product-list/CollectionMobileRecordRow.vue",
         "frontend/apps/web/src/components/product-list/CollectionRowCell.vue",
         "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
-        "frontend/apps/web/src/components/template/FormSection.vue",
         "frontend/apps/web/src/views/AccountActivationView.vue",
         "frontend/apps/web/src/views/LoginView.vue",
         "frontend/apps/web/src/views/PasswordRecoveryView.vue"
       ],
       "selectors": [
-        ".sc-btn[data-appearance='auth-link']"
+        ".sc-btn[data-appearance='auth-link'], .sc-btn[data-appearance='readonly-relation']"
       ],
       "status": "registered_product_variance"
     },
@@ -396,6 +395,18 @@
       "status": "registered_product_variance"
     },
     {
+      "appearance": "readonly-relation",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/template/FormSection.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='auth-link'], .sc-btn[data-appearance='readonly-relation']",
+        ".sc-btn[data-appearance='readonly-relation']"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
       "appearance": "record-title",
       "consumers": [
         "frontend/apps/web/src/components/design-system/ScInput.vue",
@@ -518,6 +529,7 @@
       "appearance": "structured-content",
       "consumers": [
         "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/page/blocks/BlockEntryGrid.vue",
         "frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue",
         "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue"
       ],
@@ -580,7 +592,8 @@
       "selectors": [
         ".collection-search-control .sc-icon-button[data-appearance='toolbar-menu-toggle']",
         ".sc-btn[data-appearance='toolbar-menu-toggle'], .sc-icon-button[data-appearance='toolbar-menu-toggle']",
-        ".sc-btn[data-appearance='toolbar-menu-toggle'].active, .sc-btn[data-appearance='toolbar-menu-toggle'][aria-expanded='true'], .sc-icon-button[data-appearance='toolbar-menu-toggle'][aria-expanded='true']"
+        ".sc-btn[data-appearance='toolbar-menu-toggle'].active, .sc-btn[data-appearance='toolbar-menu-toggle'][aria-expanded='true'], .sc-icon-button[data-appearance='toolbar-menu-toggle'][aria-expanded='true']",
+        "/* The compact height above keeps the toggle aligned with the desktop search row. On the narrow layout the declared touch target wins for every toolbar control, so the same declared control keeps its reachable size instead of inheriting the desktop alignment height. The media block follows the rule it overrides, so the declared surface size resolves deterministically. */ .collection-search-control .sc-icon-button[data-appearance='toolbar-menu-toggle']"
       ],
       "status": "registered_product_variance"
     },
@@ -657,17 +670,17 @@
   "schemaVersion": "frontend.official-design-alignment.inventory.v1",
   "scope": "formal P0/P1 frontend TDesign driver and product adapter styling",
   "summary": {
-    "formalStyleSourceCount": 218,
+    "formalStyleSourceCount": 221,
     "internalVendorSelectorGapCount": 0,
     "officialPublicTokenCount": 240,
     "orphanedProductAppearanceVariantCount": 0,
-    "productAppearanceVariantCount": 41,
-    "projectPublicTokenOverrideCount": 41,
+    "productAppearanceVariantCount": 42,
+    "projectPublicTokenOverrideCount": 52,
     "unknownProjectTokenOverrideCount": 0,
     "visualLiteralGapCount": 0
   },
   "themeTokens": {
-    "inheritedOfficialTokenCount": 199,
+    "inheritedOfficialTokenCount": 188,
     "officialPublicTokens": [
       "--td-bg-color-component",
       "--td-bg-color-component-active",
@@ -929,14 +942,25 @@
       "--td-brand-color-focus",
       "--td-brand-color-hover",
       "--td-brand-color-light",
+      "--td-comp-padding",
       "--td-component-border",
       "--td-component-stroke",
       "--td-error-color",
       "--td-error-color-focus",
+      "--td-font-body-large",
+      "--td-font-body-medium",
+      "--td-font-body-small",
       "--td-font-family",
       "--td-font-family-medium",
+      "--td-font-headline-small",
+      "--td-font-mark-medium",
+      "--td-font-mark-small",
       "--td-font-size-body-medium",
       "--td-font-size-body-small",
+      "--td-font-title-extra",
+      "--td-font-title-large",
+      "--td-font-title-medium",
+      "--td-font-title-small",
       "--td-line-height-body-medium",
       "--td-radius-default",
       "--td-radius-medium",

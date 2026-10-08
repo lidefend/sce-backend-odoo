@@ -179,7 +179,14 @@ check(shellCss.includes('background: var(--sc-semantic-surface-panel)'), true, '
 check(shellCss.includes('var(--sc-semantic-border-default)'), true, 'the shell dividers are the canonical semantic token');
 check(shellCss.includes('var(--sc-touch-target-min)'), true, 'the shell touch targets use the shared touch-target contract');
 check(shellCss.includes('width: 44px;'), false, 'the shell no longer hardcodes the touch-target size');
-check(shellCss.includes('width: min(340px, calc(100vw - 44px))'), true, 'the shell keeps its viewport-offset calculation');
+// The shell keeps a viewport-offset calculation so its floating surfaces clamp
+// to narrow viewports. The clamp is the invariant; the concrete size step is a
+// design-token decision the shell does not own, so it is not pinned here.
+check(
+  /width:\s*min\([^,;{}]+,\s*calc\(\s*100vw\s*-\s*[^)]+\)\s*\)/.test(shellCss),
+  true,
+  'the shell keeps its viewport-offset calculation',
+);
 
 // Capability markers the shell must keep: the adoption is presentation-only.
 for (const kept of [

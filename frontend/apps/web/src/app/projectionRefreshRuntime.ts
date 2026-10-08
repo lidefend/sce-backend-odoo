@@ -38,8 +38,11 @@ export async function executeProjectionRefresh(ctx: ProjectionRefreshContext) {
     }
   }
   const elapsed = Date.now() - startedAt;
+  // Client-only trace label for the local projection-refresh step.  The
+  // ``local:`` namespace cannot collide with a dispatched contract intent, so
+  // it is never mistaken for one (see scripts/verify/frontend_decision_authority.py).
   ctx.recordTrace?.({
-    intent: 'projection.refresh',
+    intent: 'local:projection_refresh',
     writeMode: targets.join(','),
     latencyMs: elapsed,
   });

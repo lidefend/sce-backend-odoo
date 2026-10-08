@@ -39,6 +39,9 @@ from odoo.addons.smart_core.utils.idempotency import (
     replay_window_seconds,
 )
 
+from odoo.addons.smart_construction_core.handlers.reason_codes import (
+    REASON_DONE,
+)
 from odoo.addons.smart_construction_core.services import boq_line_patch_service as svc
 
 
@@ -337,7 +340,7 @@ class BoqLinePatchHandler(BaseIntentHandler):
                 "qty_remain": qty_remain,
                 "version_total_amount": round(version_total, 2),
                 "success": True,
-                "reason_code": "DONE",
+                "reason_code": REASON_DONE,
                 "message": "工程量已更新（服务端权威重算）",
                 "done_at": fields.Datetime.to_string(fields.Datetime.now()),
             },

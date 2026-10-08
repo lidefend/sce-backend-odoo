@@ -25700,7 +25700,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 532,
+      "test_refs": 536,
       "request_schema_hint": [
         "company_id",
         "credential",
@@ -27481,7 +27481,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 24,
+      "test_refs": 26,
       "request_schema_hint": [
         "_debug",
         "capability",
@@ -32823,7 +32823,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 0,
+      "test_refs": 3,
       "request_schema_hint": [
         "access_mode",
         "action_id",
@@ -34117,7 +34117,7 @@
       ],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 11,
+      "test_refs": 12,
       "request_schema_hint": [
         "home_action_id",
         "root_xmlid",
@@ -38246,7 +38246,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 129,
+      "test_refs": 131,
       "request_schema_hint": [
         "op",
         "source_mode"

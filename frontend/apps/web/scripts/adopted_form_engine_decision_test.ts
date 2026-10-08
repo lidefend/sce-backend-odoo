@@ -161,9 +161,9 @@ class AdoptedSurface {
           showErrorMessage: false,
         }, () => {
           const itemRules = this.options.rulesOnItems
-            ? buildContractFormRules(owner.fields.value)
+            ? buildContractFormRules(this.fields.value)
             : {};
-          return owner.renderedFields().map((item) => h(
+          return this.renderedFields().map((item) => h(
             TDesignFormItem as never,
             {
               label: item.label,

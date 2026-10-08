@@ -240,7 +240,7 @@ check(() => assert.deepEqual(describeRecordActionDenials([{ operation: 'unlink',
 check(() => assert.deepEqual(describeRecordActionDenials([{ operation: 'write', allowed: true, reasonCode: 'MODEL_ACCESS_DENIED' }]), []), 'allowed operations never show stale denial');
 check(() => assert.deepEqual(describeRecordActionDenials(resolveContractV2RecordActionStates(null)), []), 'missing contract does not invent reasons');
 check(() => assert.deepEqual(describeRecordActionDenials([{ operation: 'duplicate', allowed: false, reasonCode: 'MODEL_ACCESS_DENIED' }]), []), 'no unsupported copy action manufactured');
-check(() => assert.deepEqual(describeRecordActionDenials([{ operation: 'unlink', allowed: false, reasonCode: 'NEW_BACKEND_REASON' }]), ['不可删除：当前契约未允许此操作']), 'unknown reasons stay neutral and denied');
+check(() => assert.deepEqual(describeRecordActionDenials([{ operation: 'unlink', allowed: false, reasonCode: 'NEW_BACKEND_REASON' }]), ['不可删除：当前页面未允许此操作']), 'unknown reasons stay neutral and denied');
 check(() => assert.match(pageSource, /data-record-action-denials/), 'shared header notice consumes the denial projection');
 
 console.log(`[frontend_contract_record_action_state] PASS cases=${cases}`);

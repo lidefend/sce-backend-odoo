@@ -1,0 +1,61 @@
+schema_version: 1
+goal:
+  id: SAVED-SEARCH-CAPABILITY-UNIT-RECOVERY
+  title: frontend_quick_gate_red_item_root_cause_recovery
+  status: active
+  objective: >-
+    Restore `make verify.frontend.quick.gate` to green on main and report one
+    complete detection conclusion for the runtime-contract-driven frontend
+    surface. The gate was red on seven targets. Five were stale-consumer or
+    harness-dependency defects in test tools and test scripts (saved-search AST
+    seal binding, renamed record-action copy, the form-engine `owner` closure
+    regression, and three composition/recovery harnesses that had drifted from
+    the shipped components); one was an obsolete guard that still asserted a
+    contract-driven readonly panel was derived from `renderMode`; one was a real
+    product-layer visual-literal gap in the TDesign navigation drawer padding.
+    Fix the owning layer of each, without relaxing a gate, assertion, ACL, field
+    permission or negative case.
+  product_boundary:
+    formal_product_layer: P0
+    layer_target: >-
+      P4 local make gate plus its test tools; P0/P1 frontend render mechanism for
+      the shared spacing-token and navigation-drawer padding literal
+    module: >-
+      addons/smart_core/tests/test_saved_search_capability_projection.py;
+      scripts/verify/frontend_contract_record_action_state.test.mjs;
+      frontend/apps/web/scripts/*_test.ts;
+      scripts/verify/frontend_professional_collaboration_guard.py;
+      frontend/apps/web/src/styles/tokens/component.css;
+      frontend/packages/ui/src/kits/tdesign/theme.css
+    standard_vs_user_specific: >-
+      platform mechanism (P0) for the generic spacing token and official drawer
+      adapter; ops delivery tool (P4) for the gates and their test tools
+    why_here: >-
+      Each red item was produced in the layer that owns the failing behaviour:
+      the test tools and harnesses own their dependency binding, the shell/list
+      composition tests own the shipped component structure they assert, the
+      collaboration guard owns the declared-panel readonly rule, and the drawer
+      padding literal is owned by the generic token layer.
+    why_not_elsewhere:
+      - no_assertion_acl_permission_or_negative_case_was_relaxed
+      - no_business_model_special_case_or_field_level_override_was_added
+      - no_relaxation_of_the_gate_entry_or_its_registered_targets
+      - no_database_fixture_or_runtime_write
+  product_result:
+    statement: >-
+      verify.frontend.quick.gate is green on the reconstructed worktree and the
+      navigation drawer consumes the shared zero-spacing token instead of a raw
+      literal
+    independently_acceptable: true
+  baseline:
+    branch: fix/saved-search-capability-unit-dependency-binding-20261008
+    full_sha: c9e4823899a1b834d3d0941b0578905f466e1c87
+    source: origin/main
+  acceptance:
+    - verify_frontend_quick_gate_reports_zero_failed_targets
+    - each_restored_target_reports_non_zero_tests_and_zero_failures
+    - the_professional_collaboration_guard_still_fails_closed_on_a_renderMode_derived_panel
+    - the_drawer_padding_is_a_declared_token_with_no_visual_literal_gap
+    - no_product_model_contract_schema_or_permission_behaviour_changed
+  rollback:
+    - revert_the_test_tool_and_token_commits_together

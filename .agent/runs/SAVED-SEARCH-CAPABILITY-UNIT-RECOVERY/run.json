@@ -1,0 +1,290 @@
+{
+  "schema_version": 1,
+  "id": "SAVED-SEARCH-CAPABILITY-UNIT-RECOVERY",
+  "branch": "fix/saved-search-capability-unit-dependency-binding-20261008",
+  "status": "active",
+  "baseline_sha": "c9e4823899a1b834d3d0941b0578905f466e1c87",
+  "goal": ".agent/goals/SAVED-SEARCH-CAPABILITY-UNIT-RECOVERY.yaml",
+  "record": "docs/ops/iterations/saved_search_capability_unit_recovery_20261008.md",
+  "scope": [
+    ".agent/",
+    "addons/smart_construction_core/handlers/",
+    "addons/smart_construction_core/tests/",
+    "addons/smart_core/handlers/",
+    "addons/smart_core/tests/",
+    "docs/",
+    "frontend/apps/web/scripts/",
+    "frontend/apps/web/src/",
+    "frontend/packages/schema/src/",
+    "frontend/packages/ui/src/",
+    "make/",
+    "scripts/audit/",
+    "scripts/verify/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Registered local Make gate entry; pure-python unit test with a stubbed Odoo import surface. No database, service or runtime access."
+  },
+  "checks": {
+    "saved_search_capability_unit": {
+      "target": "verify.frontend.saved_search_capability.unit",
+      "inputs": [
+        "addons/smart_core/tests/test_saved_search_capability_projection.py",
+        "addons/smart_core/handlers/ui_contract_v2_authority.py",
+        "addons/smart_core/app_config_engine/models/app_search_config.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_record_action_state": {
+      "target": "verify.frontend.contract_record_action_state.unit",
+      "inputs": [
+        "scripts/verify/frontend_contract_record_action_state.test.mjs",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "frontend/apps/web/src/app/contracts/v2/store.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "adopted_form_engine_decision": {
+      "target": "verify.frontend.adopted_form_engine_decision.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/adopted_form_engine_decision_test.ts",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/template/contractFormValidationRules.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+        "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue",
+        "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "standard_collection_composition": {
+      "target": "verify.frontend.standard_collection_composition.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/standard_collection_composition_test.ts",
+        "frontend/apps/web/scripts/list_surface_component_test.mjs",
+        "frontend/apps/web/src/app/presentation/standardListComposition.ts",
+        "frontend/apps/web/src/app/presentation/standardDetailComposition.ts",
+        "frontend/apps/web/src/app/presentation/standardPageType.ts",
+        "frontend/apps/web/src/components/design-system/ScDescriptions.vue",
+        "frontend/apps/web/src/components/product-list/ListSurfaceHeader.vue",
+        "frontend/apps/web/src/components/product-list/ProductListHeader.vue",
+        "frontend/apps/web/src/components/product-list/ProductListSurface.vue",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/src/pages/contractForm/standardDetailCompositionRuntime.ts",
+        "frontend/apps/web/src/styles/product-patterns.css",
+        "frontend/apps/web/src/styles/tokens/pattern.css",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "standard_shell_composition": {
+      "target": "verify.frontend.standard_shell_composition.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/standard_shell_composition_test.ts",
+        "frontend/apps/web/src/App.vue",
+        "frontend/apps/web/src/layouts/AppShell.css",
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/src/styles/tokens/pattern.css",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_form_save_failure_recovery": {
+      "target": "verify.frontend.contract_form_save_failure_recovery.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/contract_form_save_failure_recovery_test.ts",
+        "frontend/apps/web/src/api/client.ts",
+        "frontend/apps/web/src/app/businessValidationError.ts",
+        "frontend/apps/web/src/pages/contractForm/saveRecordHelpers.ts",
+        "frontend/apps/web/src/pages/contractForm/recordHydration.ts",
+        "frontend/apps/web/src/pages/contractForm/fieldUtils.ts",
+        "frontend/apps/web/src/pages/contractForm/standardFormCompositionRuntime.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "professional_collaboration": {
+      "target": "verify.frontend.professional_collaboration.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/professional_collaboration_model_test.ts",
+        "scripts/verify/frontend_professional_collaboration_guard.py",
+        "scripts/verify/test_frontend_professional_collaboration_guard.py",
+        "frontend/apps/web/src/pages/contractForm/",
+        "addons/smart_core/handlers/",
+        "addons/smart_core/core/",
+        "addons/smart_core/app_config_engine/services/view_Parser/",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "rendering_detail_state": {
+      "target": "verify.frontend.rendering_detail_state.unit",
+      "inputs": [
+        "scripts/verify/frontend_rendering_detail_state_guard.py",
+        "scripts/verify/frontend_inline_state_guard.py",
+        "scripts/audit/generate_frontend_rendering_detail_inventory.py",
+        "scripts/audit/",
+        "docs/frontend_productization/rendering-detail/",
+        "frontend/apps/web/src/",
+        "frontend/packages/ui/src/",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_quick_gate": {
+      "target": "verify.frontend.quick.gate",
+      "inputs": [
+        "frontend/apps/web/scripts/",
+        "frontend/apps/web/src/",
+        "frontend/packages/ui/src/",
+        "scripts/verify/",
+        "scripts/audit/",
+        "addons/smart_core/tests/",
+        "addons/smart_core/handlers/",
+        "addons/smart_core/core/",
+        "addons/smart_core/app_config_engine/",
+        "docs/frontend_productization/rendering-detail/",
+        "make/frontend.mk",
+        "docs/frontend_productization/decision-authority-inventory-v1.json",
+        "docs/contract/exports/"
+      ],
+      "kind": "offline"
+    },
+    "contract_drift_guard": {
+      "target": "verify.contract_drift.guard",
+      "inputs": [
+        "scripts/verify/contract_drift_guard.sh",
+        "scripts/verify/side_effect_intent_policy_guard.py",
+        "addons/smart_construction_core/handlers/",
+        "addons/smart_core/handlers/",
+        "addons/smart_core/utils/reason_codes.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_catalog": {
+      "target": "verify.contract.catalog",
+      "inputs": [
+        "docs/contract/cases.yml",
+        "docs/contract/exports/",
+        "scripts/verify/intent_cases_integrity_guard.py",
+        "scripts/verify/intent_cases_catalog_guard.py",
+        "scripts/verify/intent_catalog_case_coverage_guard.py",
+        "scripts/verify/contract_catalog_determinism_guard.py",
+        "make/contract.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_decision_authority": {
+      "target": "verify.frontend.decision_authority.unit",
+      "inputs": [
+        "scripts/verify/frontend_decision_authority.py",
+        "scripts/verify/frontend_decision_authority_guard.py",
+        "scripts/verify/test_frontend_decision_authority_guard.py",
+        "docs/frontend_productization/decision-authority-inventory-v1.json",
+        "docs/contract/exports/intent_catalog.json",
+        "frontend/apps/web/src/pages/",
+        "frontend/apps/web/src/views/",
+        "frontend/apps/web/src/app/",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "menu_handling_state_projection": {
+      "target": "verify.business_config.unit",
+      "inputs": [
+        "addons/smart_core/handlers/menu_configuration.py",
+        "addons/smart_core/tests/test_menu_configuration_audit.py",
+        "scripts/verify/lowcode_config_boundary_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "capability_policy": {
+      "target": "verify.frontend.capability_policy.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/capabilityPolicyCore.js",
+        "frontend/apps/web/src/app/capabilityPolicy.ts",
+        "frontend/apps/web/src/stores/session.ts",
+        "frontend/packages/schema/src/index.ts",
+        "scripts/verify/fe_capability_policy_smoke.js",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "component_driver_takeover": {
+      "target": "verify.frontend.component_driver_takeover.unit",
+      "inputs": [
+        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        "docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json",
+        "frontend/packages/ui/src/primitives.ts",
+        "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts",
+        "frontend/apps/web/src/",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "scene_entry_contract": {
+      "target": "verify.frontend.scene_entry_contract.unit",
+      "inputs": [
+        "frontend/apps/web/src/views/",
+        "frontend/apps/web/scripts/",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "style_system_guard": {
+      "target": "verify.frontend.style_system.guard",
+      "inputs": [
+        "frontend/apps/web/src/styles/",
+        "frontend/packages/ui/src/kits/tdesign/theme.css",
+        "scripts/verify/frontend_style_system_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "boq_dangerous_import_capability": {
+      "target": "verify.boq.dangerous.import.capability",
+      "inputs": [
+        "addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py",
+        "addons/smart_construction_core/handlers/boq_dangerous_import.py",
+        "addons/smart_construction_core/handlers/reason_codes.py",
+        "addons/smart_construction_core/services/boq_dangerous_import_service.py",
+        "addons/smart_core/utils/reason_codes.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "boq_line_patch_capability": {
+      "target": "verify.boq.line.patch.capability",
+      "inputs": [
+        "addons/smart_construction_core/tests/test_boq_line_patch_handler.py",
+        "addons/smart_construction_core/handlers/boq_line_patch.py",
+        "addons/smart_construction_core/handlers/reason_codes.py",
+        "addons/smart_construction_core/services/boq_line_patch_service.py",
+        "addons/smart_core/utils/reason_codes.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "overview_rich_text_patch_capability": {
+      "target": "verify.overview.rich.text.patch.capability",
+      "inputs": [
+        "addons/smart_construction_core/tests/test_overview_rich_text_patch_handler.py",
+        "addons/smart_construction_core/handlers/overview_rich_text_patch.py",
+        "addons/smart_construction_core/handlers/reason_codes.py",
+        "addons/smart_construction_core/services/overview_rich_text_patch_service.py",
+        "addons/smart_core/utils/reason_codes.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Merge-lane blocker fixed at its owning layer: the three handler stub loaders now bind the real handlers package path (addons/smart_construction_core/tests/*), matching the existing real-path binding of smart_core.core/utils in the same loader; no assertion relaxed, no product semantics changed. run scope reconciled to include addons/smart_construction_core/tests/ (metadata correction). Affected L2 re-run PASS: boq_dangerous_import_capability 29, boq_line_patch_capability 17, overview_rich_text_patch_capability 30. Next exact step: run make ci.delivery.freeze.prepare to refresh content-bound generated evidence, commit test-tool fix + record + generated evidence, then run one make ci.local.quick on the clean frozen HEAD (no make overrides) to obtain the merge prerequisite receipt, push to GitHub origin, re-satisfy PR #612 required checks on the new head, and merge via protected PR. Batch status only; do not claim version release or product delivery."
+}

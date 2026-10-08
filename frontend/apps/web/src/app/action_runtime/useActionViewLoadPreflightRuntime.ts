@@ -83,6 +83,7 @@ type ExecuteLoadPreflightOptions = {
   sceneReadyDefaultSortRaw: unknown;
   sceneDefaultSortRaw: unknown;
   sessionCapabilities: unknown;
+  sessionCapabilityCatalog: unknown;
   currentSortRaw: string;
   activeContractFilterKey: string;
   activeSavedFilterKey: string;
@@ -126,7 +127,7 @@ type ExecuteLoadPreflightOptions = {
   extractListOrderFromContract: (contract: ContractV2NormalizedStore) => string;
   resolveLoadPreflightSortValue: (input: Dict) => string;
   resolveLoadPreflightContractLimit: (input: Dict) => number;
-  evaluateCapabilityPolicy: (input: { source: unknown; available: unknown; required?: string[] }) => { state?: unknown; missing?: unknown };
+  evaluateCapabilityPolicy: (input: { source: unknown; available: unknown; required?: string[]; catalog?: unknown }) => { state?: unknown; missing?: unknown };
   resolveLoadCapabilityRedirectPayload: (input: Dict) => Dict;
   resolveModelFromContract: (contract: ContractV2NormalizedStore) => string;
   resolveActionViewResolvedModel: (input: Dict) => string;
@@ -337,6 +338,7 @@ export function useActionViewLoadPreflightRuntime() {
       source: nextMeta,
       available: options.sessionCapabilities,
       required: resolveActionRequiredCapabilities(nextMeta),
+      catalog: options.sessionCapabilityCatalog,
     });
     const capabilityGuardPayload = options.resolveLoadCapabilityRedirectPayload({
       stateRaw: policy.state,

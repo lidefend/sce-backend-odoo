@@ -1455,7 +1455,7 @@ export const useSessionStore = defineStore('session', {
           state: String(item.state || '').toUpperCase() || '',
           capability_state: String(item.capability_state || '').toLowerCase() || '',
           reason: String(item.reason || ''),
-          reason_code: String(item.reason_code || ''),
+          reason_code: String(item.capability_state_reason || item.reason_code || ''),
           group_key: String(item.group_key || ''),
           group_label: String(item.group_label || ''),
         };

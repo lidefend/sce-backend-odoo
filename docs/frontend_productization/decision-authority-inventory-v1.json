@@ -1,0 +1,1518 @@
+{
+  "schemaVersion": 1,
+  "kind": "frontend_decision_authority_inventory",
+  "goal": "customised frontend derives everything except rendering/interaction from the runtime contract",
+  "decisionScopes": [
+    "frontend/apps/web/src/pages",
+    "frontend/apps/web/src/views",
+    "frontend/apps/web/src/app"
+  ],
+  "rules": [
+    {
+      "key": "R1_capability_literal_gate",
+      "mode": "invariant_zero",
+      "pattern": "\\bhasCapability\\(\\s*['\\\"]([^'\\\"]+)['\\\"]",
+      "rationale": "A capability gate keyed by a frontend literal is frontend-owned authorisation logic; capability requirements must come from the declared contract source of the surface.",
+      "suggestion": "Read the required capabilities from the contract/provider declaration instead of naming a capability literal in the renderer."
+    },
+    {
+      "key": "R2_intent_literal",
+      "mode": "ledger",
+      "pattern": "\\bintent\\s*:\\s*['\\\"]([^'\\\"]+)['\\\"]",
+      "rationale": "An intent identifier selects a backend behaviour.  Every intent literal must resolve to the published intent contract.",
+      "suggestion": "Use a published contract intent, register the literal in this ledger as a projectable gap when no contract intent exists yet, or declare it as a client-only trace label (client_telemetry_trace) when it never selects backend behaviour."
+    },
+    {
+      "key": "R3_router_literal_destination",
+      "mode": "render_interaction_class",
+      "pattern": "\\brouter\\.(?:push|replace)\\(\\s*\\{\\s*(?:name|path)\\s*:\\s*['\\\"]([^'\\\"]*)['\\\"]|\\brouter\\.(?:push|replace)\\(\\s*['\\\"]([^'\\\"]*)['\\\"]",
+      "rationale": "A navigation destination is part of the frontend shell; the router table and page shell are frontend-owned by definition.",
+      "suggestion": "No contract carrier is required.  Record the destination as a shell navigation decision rather than projecting it."
+    },
+    {
+      "key": "R4_business_state_literal",
+      "mode": "ledger_or_declared_ui",
+      "pattern": "\\b(?:state|status)\\s*===\\s*['\\\"]([^'\\\"]+)['\\\"]",
+      "rationale": "A comparison against a state/status literal is a decision.  UI state machine values are declared render/interaction; any other value is a business decision that needs a contract authority.",
+      "suggestion": "Consume the business state from the contract projection, or register a projectable gap if the backend does not publish it yet."
+    },
+    {
+      "key": "R5_action_id_literal",
+      "mode": "invariant_zero",
+      "pattern": "\\baction_?[Ii]d\\s*:\\s*['\\\"]([^'\\\"]+)['\\\"]",
+      "rationale": "A frontend-literal action/XML id selects backend metadata directly and bypasses the published action surface.",
+      "suggestion": "Read the action identity from the contract action surface."
+    }
+  ],
+  "renderInteractionClasses": {
+    "ui_state_machine": {
+      "literals": [
+        "blocked",
+        "denied",
+        "editing",
+        "empty",
+        "error",
+        "failed",
+        "forbidden",
+        "idle",
+        "loading",
+        "not-found",
+        "not_found",
+        "notice",
+        "ok",
+        "pass",
+        "pending",
+        "preview",
+        "ready",
+        "saved",
+        "saving",
+        "success",
+        "warning"
+      ],
+      "scope": "R4_business_state_literal"
+    },
+    "navigation_shell": {
+      "rules": [
+        "R3_router_literal_destination"
+      ]
+    },
+    "client_telemetry_trace": {
+      "literals": [
+        "local:projection_refresh"
+      ],
+      "scope": "R2_intent_literal",
+      "guardAssertion": "frontend_decision_authority.check_client_trace_label_declaration"
+    }
+  },
+  "invariants": [
+    {
+      "rule": "R1_capability_literal_gate",
+      "expectedOccurrences": 0,
+      "suggestion": "Read the required capabilities from the contract/provider declaration instead of naming a capability literal in the renderer."
+    },
+    {
+      "rule": "R5_action_id_literal",
+      "expectedOccurrences": 0,
+      "suggestion": "Read the action identity from the contract action surface."
+    }
+  ],
+  "decisions": [
+    {
+      "decisionKey": "R2_intent_literal|ui.contract.v2|frontend/apps/web/src/app/contracts/v2/client.ts",
+      "rule": "R2_intent_literal",
+      "literal": "ui.contract.v2",
+      "path": "frontend/apps/web/src/app/contracts/v2/client.ts",
+      "lines": [
+        125
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "docs/contract/exports/intent_catalog.json",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R2_intent_literal|local:projection_refresh|frontend/apps/web/src/app/projectionRefreshRuntime.ts",
+      "rule": "R2_intent_literal",
+      "literal": "local:projection_refresh",
+      "path": "frontend/apps/web/src/app/projectionRefreshRuntime.ts",
+      "lines": [
+        45
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared client-only telemetry trace label; it is recorded to the local trace log and is never dispatched as a backend intent",
+      "declaredClass": "client_telemetry_trace",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R2_intent_literal|search.favorite.delete|frontend/apps/web/src/app/runtime/savedSearchSubmission.ts",
+      "rule": "R2_intent_literal",
+      "literal": "search.favorite.delete",
+      "path": "frontend/apps/web/src/app/runtime/savedSearchSubmission.ts",
+      "lines": [
+        22,
+        36
+      ],
+      "occurrences": 2,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/handlers/search_favorite_set.py:174",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R2_intent_literal|chatter.post|frontend/apps/web/src/pages/contractForm/NativeCollaborationPanel.vue",
+      "rule": "R2_intent_literal",
+      "literal": "chatter.post",
+      "path": "frontend/apps/web/src/pages/contractForm/NativeCollaborationPanel.vue",
+      "lines": [
+        151
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "docs/contract/exports/intent_catalog.json",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R2_intent_literal|chatter.post|frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationComposer.vue",
+      "rule": "R2_intent_literal",
+      "literal": "chatter.post",
+      "path": "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationComposer.vue",
+      "lines": [
+        78
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "docs/contract/exports/intent_catalog.json",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R2_intent_literal|chatter.post|frontend/apps/web/src/pages/contractForm/useNativeChatterRuntime.ts",
+      "rule": "R2_intent_literal",
+      "literal": "chatter.post",
+      "path": "frontend/apps/web/src/pages/contractForm/useNativeChatterRuntime.ts",
+      "lines": [
+        59,
+        273
+      ],
+      "occurrences": 2,
+      "classification": "contract-derived",
+      "evidence": "docs/contract/exports/intent_catalog.json",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R2_intent_literal|chatter.post|frontend/apps/web/src/pages/contractForm/useRecordCollaborationPresentation.ts",
+      "rule": "R2_intent_literal",
+      "literal": "chatter.post",
+      "path": "frontend/apps/web/src/pages/contractForm/useRecordCollaborationPresentation.ts",
+      "lines": [
+        37
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "docs/contract/exports/intent_catalog.json",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R2_intent_literal|system.init|frontend/apps/web/src/pages/contractForm/useRecordContractSemantics.ts",
+      "rule": "R2_intent_literal",
+      "literal": "system.init",
+      "path": "frontend/apps/web/src/pages/contractForm/useRecordContractSemantics.ts",
+      "lines": [
+        106
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "docs/contract/exports/intent_catalog.json",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R2_intent_literal|system.init|frontend/apps/web/src/views/ActionView.vue",
+      "rule": "R2_intent_literal",
+      "literal": "system.init",
+      "path": "frontend/apps/web/src/views/ActionView.vue",
+      "lines": [
+        1385
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "docs/contract/exports/intent_catalog.json",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R2_intent_literal|release.operator.surface|frontend/apps/web/src/views/ReleaseOperatorView.vue",
+      "rule": "R2_intent_literal",
+      "literal": "release.operator.surface",
+      "path": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+      "lines": [
+        598
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/handlers/release_operator.py:82",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R2_intent_literal|api.data|frontend/apps/web/src/views/SceneHealthView.vue",
+      "rule": "R2_intent_literal",
+      "literal": "api.data",
+      "path": "frontend/apps/web/src/views/SceneHealthView.vue",
+      "lines": [
+        209,
+        301
+      ],
+      "occurrences": 2,
+      "classification": "contract-derived",
+      "evidence": "docs/contract/exports/intent_catalog.json",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R2_intent_literal|system.init|frontend/apps/web/src/views/SceneView.vue",
+      "rule": "R2_intent_literal",
+      "literal": "system.init",
+      "path": "frontend/apps/web/src/views/SceneView.vue",
+      "lines": [
+        516
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "docs/contract/exports/intent_catalog.json",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R2_intent_literal|api.data|frontend/apps/web/src/views/WorkbenchView.vue",
+      "rule": "R2_intent_literal",
+      "literal": "api.data",
+      "path": "frontend/apps/web/src/views/WorkbenchView.vue",
+      "lines": [
+        299
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "docs/contract/exports/intent_catalog.json",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R2_intent_literal|ui.contract|frontend/apps/web/src/views/WorkbenchView.vue",
+      "rule": "R2_intent_literal",
+      "literal": "ui.contract",
+      "path": "frontend/apps/web/src/views/WorkbenchView.vue",
+      "lines": [
+        297,
+        298
+      ],
+      "occurrences": 2,
+      "classification": "contract-derived",
+      "evidence": "docs/contract/exports/intent_catalog.json",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R2_intent_literal|ui.contract.v2|frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigProductExperience.ts",
+      "rule": "R2_intent_literal",
+      "literal": "ui.contract.v2",
+      "path": "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigProductExperience.ts",
+      "lines": [
+        76
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "docs/contract/exports/intent_catalog.json",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R3_router_literal_destination|/|frontend/apps/web/src/pages/ContractFormPage.vue",
+      "rule": "R3_router_literal_destination",
+      "literal": "/",
+      "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
+      "lines": [
+        67
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "shell_navigation_destination",
+      "declaredClass": "navigation_shell",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R3_router_literal_destination|action|frontend/apps/web/src/pages/ModelListPage.vue",
+      "rule": "R3_router_literal_destination",
+      "literal": "action",
+      "path": "frontend/apps/web/src/pages/ModelListPage.vue",
+      "lines": [
+        24
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "shell_navigation_destination",
+      "declaredClass": "navigation_shell",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R3_router_literal_destination|scene|frontend/apps/web/src/pages/contractForm/sceneBlockAction.ts",
+      "rule": "R3_router_literal_destination",
+      "literal": "scene",
+      "path": "frontend/apps/web/src/pages/contractForm/sceneBlockAction.ts",
+      "lines": [
+        27
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "shell_navigation_destination",
+      "declaredClass": "navigation_shell",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R3_router_literal_destination|/login|frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+      "rule": "R3_router_literal_destination",
+      "literal": "/login",
+      "path": "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+      "lines": [
+        524
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "shell_navigation_destination",
+      "declaredClass": "navigation_shell",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R3_router_literal_destination|access-denied|frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+      "rule": "R3_router_literal_destination",
+      "literal": "access-denied",
+      "path": "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+      "lines": [
+        528
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "shell_navigation_destination",
+      "declaredClass": "navigation_shell",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R3_router_literal_destination|/|frontend/apps/web/src/views/AccessDeniedView.vue",
+      "rule": "R3_router_literal_destination",
+      "literal": "/",
+      "path": "frontend/apps/web/src/views/AccessDeniedView.vue",
+      "lines": [
+        23
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "shell_navigation_destination",
+      "declaredClass": "navigation_shell",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R3_router_literal_destination|scene|frontend/apps/web/src/views/ActionView.vue",
+      "rule": "R3_router_literal_destination",
+      "literal": "scene",
+      "path": "frontend/apps/web/src/views/ActionView.vue",
+      "lines": [
+        1375
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "shell_navigation_destination",
+      "declaredClass": "navigation_shell",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R3_router_literal_destination|/|frontend/apps/web/src/views/LoginView.vue",
+      "rule": "R3_router_literal_destination",
+      "literal": "/",
+      "path": "frontend/apps/web/src/views/LoginView.vue",
+      "lines": [
+        311
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "shell_navigation_destination",
+      "declaredClass": "navigation_shell",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R3_router_literal_destination|/activate-account|frontend/apps/web/src/views/LoginView.vue",
+      "rule": "R3_router_literal_destination",
+      "literal": "/activate-account",
+      "path": "frontend/apps/web/src/views/LoginView.vue",
+      "lines": [
+        303
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "shell_navigation_destination",
+      "declaredClass": "navigation_shell",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R3_router_literal_destination|/password-recovery|frontend/apps/web/src/views/LoginView.vue",
+      "rule": "R3_router_literal_destination",
+      "literal": "/password-recovery",
+      "path": "frontend/apps/web/src/views/LoginView.vue",
+      "lines": [
+        307
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "shell_navigation_destination",
+      "declaredClass": "navigation_shell",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R3_router_literal_destination|/|frontend/apps/web/src/views/MenuView.vue",
+      "rule": "R3_router_literal_destination",
+      "literal": "/",
+      "path": "frontend/apps/web/src/views/MenuView.vue",
+      "lines": [
+        101,
+        248
+      ],
+      "occurrences": 2,
+      "classification": "excluded-render-interaction",
+      "reason": "shell_navigation_destination",
+      "declaredClass": "navigation_shell",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R3_router_literal_destination|/|frontend/apps/web/src/views/NotFoundView.vue",
+      "rule": "R3_router_literal_destination",
+      "literal": "/",
+      "path": "frontend/apps/web/src/views/NotFoundView.vue",
+      "lines": [
+        25
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "shell_navigation_destination",
+      "declaredClass": "navigation_shell",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R3_router_literal_destination|/|frontend/apps/web/src/views/PlaceholderView.vue",
+      "rule": "R3_router_literal_destination",
+      "literal": "/",
+      "path": "frontend/apps/web/src/views/PlaceholderView.vue",
+      "lines": [
+        57,
+        64
+      ],
+      "occurrences": 2,
+      "classification": "excluded-render-interaction",
+      "reason": "shell_navigation_destination",
+      "declaredClass": "navigation_shell",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R3_router_literal_destination|/|frontend/apps/web/src/views/WorkbenchView.vue",
+      "rule": "R3_router_literal_destination",
+      "literal": "/",
+      "path": "frontend/apps/web/src/views/WorkbenchView.vue",
+      "lines": [
+        402
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "shell_navigation_destination",
+      "declaredClass": "navigation_shell",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R3_router_literal_destination|/access-denied|frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigScopeLifecycle.ts",
+      "rule": "R3_router_literal_destination",
+      "literal": "/access-denied",
+      "path": "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigScopeLifecycle.ts",
+      "lines": [
+        121
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "shell_navigation_destination",
+      "declaredClass": "navigation_shell",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R3_router_literal_destination|/login|frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigScopeLifecycle.ts",
+      "rule": "R3_router_literal_destination",
+      "literal": "/login",
+      "path": "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigScopeLifecycle.ts",
+      "lines": [
+        120
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "shell_navigation_destination",
+      "declaredClass": "navigation_shell",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|success|frontend/apps/web/src/app/action_semantics.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "success",
+      "path": "frontend/apps/web/src/app/action_semantics.ts",
+      "lines": [
+        65
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|disabled|frontend/apps/web/src/app/canonicalNavigation.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "disabled",
+      "path": "frontend/apps/web/src/app/canonicalNavigation.ts",
+      "lines": [
+        155
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "frontend/apps/web/src/stores/session.ts:406",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|deny|frontend/apps/web/src/app/capabilityPolicyCore.js",
+      "rule": "R4_business_state_literal",
+      "literal": "deny",
+      "path": "frontend/apps/web/src/app/capabilityPolicyCore.js",
+      "lines": [
+        102
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/utils/contract_governance_capabilities.py:131",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|deny_ungranted|frontend/apps/web/src/app/capabilityPolicyCore.js",
+      "rule": "R4_business_state_literal",
+      "literal": "deny_ungranted",
+      "path": "frontend/apps/web/src/app/capabilityPolicyCore.js",
+      "lines": [
+        78
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/core/system_init_payload_builder.py:204",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|disabled_capability|frontend/apps/web/src/app/capabilityPolicyCore.js",
+      "rule": "R4_business_state_literal",
+      "literal": "disabled_capability",
+      "path": "frontend/apps/web/src/app/capabilityPolicyCore.js",
+      "lines": [
+        116
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/docs/Contract-2.0-Spec.md:247",
+      "contractEvidence": "addons/smart_core/docs/Contract-2.0-Spec.md:249",
+      "guardAssertion": "frontend_decision_authority.check_capability_projection_consumption",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|disabled_permission|frontend/apps/web/src/app/capabilityPolicyCore.js",
+      "rule": "R4_business_state_literal",
+      "literal": "disabled_permission",
+      "path": "frontend/apps/web/src/app/capabilityPolicyCore.js",
+      "lines": [
+        120
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/docs/Contract-2.0-Spec.md:247",
+      "contractEvidence": "addons/smart_core/docs/Contract-2.0-Spec.md:249",
+      "guardAssertion": "frontend_decision_authority.check_capability_projection_consumption",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|allow|frontend/apps/web/src/app/contracts/v2/schema.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "allow",
+      "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
+      "lines": [
+        1466
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/utils/contract_governance_capabilities.py:120",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|coming_soon|frontend/apps/web/src/app/contracts/v2/schema.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "coming_soon",
+      "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
+      "lines": [
+        1466
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/utils/contract_governance_capabilities.py:133",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|deny|frontend/apps/web/src/app/contracts/v2/schema.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "deny",
+      "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
+      "lines": [
+        1466
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/utils/contract_governance_capabilities.py:131",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|pending|frontend/apps/web/src/app/contracts/v2/schema.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "pending",
+      "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
+      "lines": [
+        1466
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|READY|frontend/apps/web/src/app/homeActionResolver.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "READY",
+      "path": "frontend/apps/web/src/app/homeActionResolver.ts",
+      "lines": [
+        54,
+        60
+      ],
+      "occurrences": 2,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/governance/scene_normalizer.py:371",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|denied|frontend/apps/web/src/app/pageIdentity.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "denied",
+      "path": "frontend/apps/web/src/app/pageIdentity.ts",
+      "lines": [
+        134,
+        171,
+        175
+      ],
+      "occurrences": 3,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|empty|frontend/apps/web/src/app/pageIdentity.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "empty",
+      "path": "frontend/apps/web/src/app/pageIdentity.ts",
+      "lines": [
+        165
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|loading|frontend/apps/web/src/app/pageIdentity.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "loading",
+      "path": "frontend/apps/web/src/app/pageIdentity.ts",
+      "lines": [
+        165
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|not-found|frontend/apps/web/src/app/pageIdentity.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "not-found",
+      "path": "frontend/apps/web/src/app/pageIdentity.ts",
+      "lines": [
+        134,
+        167,
+        175
+      ],
+      "occurrences": 3,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|editing|frontend/apps/web/src/app/pageIdentityAdapters.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "editing",
+      "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
+      "lines": [
+        94,
+        101
+      ],
+      "occurrences": 2,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|empty|frontend/apps/web/src/app/pageIdentityAdapters.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "empty",
+      "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
+      "lines": [
+        103,
+        125
+      ],
+      "occurrences": 2,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|error|frontend/apps/web/src/app/pageIdentityAdapters.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "error",
+      "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
+      "lines": [
+        80,
+        103,
+        125
+      ],
+      "occurrences": 3,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|idle|frontend/apps/web/src/app/pageIdentityAdapters.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "idle",
+      "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
+      "lines": [
+        103
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|loading|frontend/apps/web/src/app/pageIdentityAdapters.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "loading",
+      "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
+      "lines": [
+        80,
+        103
+      ],
+      "occurrences": 2,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|ok|frontend/apps/web/src/app/pageIdentityAdapters.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "ok",
+      "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
+      "lines": [
+        125
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|saving|frontend/apps/web/src/app/pageIdentityAdapters.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "saving",
+      "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
+      "lines": [
+        94
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|enabled|frontend/apps/web/src/app/runtime/actionViewLoadGuardRuntime.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "enabled",
+      "path": "frontend/apps/web/src/app/runtime/actionViewLoadGuardRuntime.ts",
+      "lines": [
+        23
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/docs/Contract-2.0-Spec.md:247",
+      "contractEvidence": "addons/smart_core/docs/Contract-2.0-Spec.md:249",
+      "guardAssertion": "frontend_decision_authority.check_capability_projection_consumption",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|error|frontend/apps/web/src/pages/ContractFormPage.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "error",
+      "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
+      "lines": [
+        60,
+        66
+      ],
+      "occurrences": 2,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|loading|frontend/apps/web/src/pages/ContractFormPage.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "loading",
+      "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
+      "lines": [
+        42,
+        68,
+        70
+      ],
+      "occurrences": 3,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|empty|frontend/apps/web/src/pages/KanbanPage.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "empty",
+      "path": "frontend/apps/web/src/pages/KanbanPage.vue",
+      "lines": [
+        33
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|error|frontend/apps/web/src/pages/KanbanPage.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "error",
+      "path": "frontend/apps/web/src/pages/KanbanPage.vue",
+      "lines": [
+        9,
+        18
+      ],
+      "occurrences": 2,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|empty|frontend/apps/web/src/pages/ListPage.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "empty",
+      "path": "frontend/apps/web/src/pages/ListPage.vue",
+      "lines": [
+        30
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|error|frontend/apps/web/src/pages/ListPage.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "error",
+      "path": "frontend/apps/web/src/pages/ListPage.vue",
+      "lines": [
+        15
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|published|frontend/apps/web/src/pages/contractForm/BoundFormSettingsPanel.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "published",
+      "path": "frontend/apps/web/src/pages/contractForm/BoundFormSettingsPanel.vue",
+      "lines": [
+        188,
+        215
+      ],
+      "occurrences": 2,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/core/view_contract_presence.py:60",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|LOCKED|frontend/apps/web/src/pages/contractForm/contractRuntimeVm.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "LOCKED",
+      "path": "frontend/apps/web/src/pages/contractForm/contractRuntimeVm.ts",
+      "lines": [
+        70
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/governance/scene_normalizer.py:385",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|pending|frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "pending",
+      "path": "frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts",
+      "lines": [
+        115,
+        199
+      ],
+      "occurrences": 3,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|reverted|frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "reverted",
+      "path": "frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts",
+      "lines": [
+        201
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "form-designer local operation-log status (client-side undo/pending ledger); it never leaves the browser and encodes no business rule.",
+      "evidence": "frontend/apps/web/src/pages/contractForm/types.ts:220",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|saved|frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "saved",
+      "path": "frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts",
+      "lines": [
+        200
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|overdue|frontend/apps/web/src/pages/contractForm/professionalCollaborationModel.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "overdue",
+      "path": "frontend/apps/web/src/pages/contractForm/professionalCollaborationModel.ts",
+      "lines": [
+        276
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/handlers/chatter_activity_update.py:39",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|pending|frontend/apps/web/src/pages/contractForm/professionalCollaborationModel.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "pending",
+      "path": "frontend/apps/web/src/pages/contractForm/professionalCollaborationModel.ts",
+      "lines": [
+        276
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/handlers/chatter_activity_update.py:39",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|error|frontend/apps/web/src/pages/contractForm/runtimeStateReducer.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "error",
+      "path": "frontend/apps/web/src/pages/contractForm/runtimeStateReducer.ts",
+      "lines": [
+        40
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|pending|frontend/apps/web/src/pages/contractForm/useFormConfigOperationLog.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "pending",
+      "path": "frontend/apps/web/src/pages/contractForm/useFormConfigOperationLog.ts",
+      "lines": [
+        60,
+        63
+      ],
+      "occurrences": 2,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|loading|frontend/apps/web/src/views/ActionView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "loading",
+      "path": "frontend/apps/web/src/views/ActionView.vue",
+      "lines": [
+        3
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|saved|frontend/apps/web/src/views/ActionView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "saved",
+      "path": "frontend/apps/web/src/views/ActionView.vue",
+      "lines": [
+        3006
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|active|frontend/apps/web/src/views/ApiKeyManagementView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "active",
+      "path": "frontend/apps/web/src/views/ApiKeyManagementView.vue",
+      "lines": [
+        58,
+        210
+      ],
+      "occurrences": 2,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/models/auth_credential_policy.py:24",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|expired|frontend/apps/web/src/views/ApiKeyManagementView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "expired",
+      "path": "frontend/apps/web/src/views/ApiKeyManagementView.vue",
+      "lines": [
+        210
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/models/auth_credential_policy.py:24",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|ready|frontend/apps/web/src/views/BusinessConfigSurfaceView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "ready",
+      "path": "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue",
+      "lines": [
+        335,
+        340
+      ],
+      "occurrences": 2,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|hidden|frontend/apps/web/src/views/MenuConfigView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "hidden",
+      "path": "frontend/apps/web/src/views/MenuConfigView.vue",
+      "lines": [
+        275,
+        366
+      ],
+      "occurrences": 2,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/handlers/menu_configuration.py:349",
+      "contractEvidence": "docs/product/menu_configuration_runtime_boundary_v1.md:73",
+      "guardAssertion": "frontend_decision_authority.check_menu_handling_state_projection_consumption",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|unconfigured|frontend/apps/web/src/views/MenuConfigView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "unconfigured",
+      "path": "frontend/apps/web/src/views/MenuConfigView.vue",
+      "lines": [
+        276
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/handlers/menu_configuration.py:37",
+      "contractEvidence": "docs/product/menu_configuration_runtime_boundary_v1.md:73",
+      "guardAssertion": "frontend_decision_authority.check_menu_handling_state_projection_consumption",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|visible|frontend/apps/web/src/views/MenuConfigView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "visible",
+      "path": "frontend/apps/web/src/views/MenuConfigView.vue",
+      "lines": [
+        274,
+        365
+      ],
+      "occurrences": 2,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/handlers/menu_configuration.py:349",
+      "contractEvidence": "docs/product/menu_configuration_runtime_boundary_v1.md:73",
+      "guardAssertion": "frontend_decision_authority.check_menu_handling_state_projection_consumption",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|preview|frontend/apps/web/src/views/ReleaseOperatorView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "preview",
+      "path": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+      "lines": [
+        492
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|released|frontend/apps/web/src/views/ReleaseOperatorView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "released",
+      "path": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+      "lines": [
+        492
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/delivery/release_audit_trail_service.py:167",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|error|frontend/apps/web/src/views/SceneContractBlockGridView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "error",
+      "path": "frontend/apps/web/src/views/SceneContractBlockGridView.vue",
+      "lines": [
+        4
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|loading|frontend/apps/web/src/views/SceneContractBlockGridView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "loading",
+      "path": "frontend/apps/web/src/views/SceneContractBlockGridView.vue",
+      "lines": [
+        3
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|disabled_permission|frontend/apps/web/src/views/SceneView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "disabled_permission",
+      "path": "frontend/apps/web/src/views/SceneView.vue",
+      "lines": [
+        990
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/docs/Contract-2.0-Spec.md:247",
+      "contractEvidence": "addons/smart_core/docs/Contract-2.0-Spec.md:249",
+      "guardAssertion": "frontend_decision_authority.check_capability_projection_consumption",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|error|frontend/apps/web/src/views/SceneView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "error",
+      "path": "frontend/apps/web/src/views/SceneView.vue",
+      "lines": [
+        2,
+        49
+      ],
+      "occurrences": 2,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|forbidden|frontend/apps/web/src/views/SceneView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "forbidden",
+      "path": "frontend/apps/web/src/views/SceneView.vue",
+      "lines": [
+        64
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|idle|frontend/apps/web/src/views/SceneView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "idle",
+      "path": "frontend/apps/web/src/views/SceneView.vue",
+      "lines": [
+        73,
+        79,
+        84,
+        89,
+        95,
+        135,
+        159,
+        164,
+        165
+      ],
+      "occurrences": 9,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|loading|frontend/apps/web/src/views/SceneView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "loading",
+      "path": "frontend/apps/web/src/views/SceneView.vue",
+      "lines": [
+        16,
+        34,
+        43
+      ],
+      "occurrences": 3,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|disabled_capability|frontend/apps/web/src/views/WorkbenchView.vue",
+      "rule": "R4_business_state_literal",
+      "literal": "disabled_capability",
+      "path": "frontend/apps/web/src/views/WorkbenchView.vue",
+      "lines": [
+        462
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/docs/Contract-2.0-Spec.md:247",
+      "contractEvidence": "addons/smart_core/docs/Contract-2.0-Spec.md:249",
+      "guardAssertion": "frontend_decision_authority.check_capability_projection_consumption",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|discarded|frontend/apps/web/src/views/businessConfigSurface/changeSetPresentation.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "discarded",
+      "path": "frontend/apps/web/src/views/businessConfigSurface/changeSetPresentation.ts",
+      "lines": [
+        115
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/model/ui_business_config_change_set.py:63",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|failed|frontend/apps/web/src/views/businessConfigSurface/changeSetPresentation.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "failed",
+      "path": "frontend/apps/web/src/views/businessConfigSurface/changeSetPresentation.ts",
+      "lines": [
+        39,
+        47
+      ],
+      "occurrences": 2,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|published|frontend/apps/web/src/views/businessConfigSurface/changeSetPresentation.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "published",
+      "path": "frontend/apps/web/src/views/businessConfigSurface/changeSetPresentation.ts",
+      "lines": [
+        40
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/core/view_contract_presence.py:60",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|superseded|frontend/apps/web/src/views/businessConfigSurface/changeSetPresentation.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "superseded",
+      "path": "frontend/apps/web/src/views/businessConfigSurface/changeSetPresentation.ts",
+      "lines": [
+        115
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/model/ui_business_config_change_set.py:64",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|archived|frontend/apps/web/src/views/businessConfigSurface/formatters.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "archived",
+      "path": "frontend/apps/web/src/views/businessConfigSurface/formatters.ts",
+      "lines": [
+        161
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/models/ui_base_contract_asset.py:46",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|blocked|frontend/apps/web/src/views/businessConfigSurface/formatters.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "blocked",
+      "path": "frontend/apps/web/src/views/businessConfigSurface/formatters.ts",
+      "lines": [
+        151
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|draft|frontend/apps/web/src/views/businessConfigSurface/formatters.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "draft",
+      "path": "frontend/apps/web/src/views/businessConfigSurface/formatters.ts",
+      "lines": [
+        160
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/models/release_management.py:24",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|notice|frontend/apps/web/src/views/businessConfigSurface/formatters.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "notice",
+      "path": "frontend/apps/web/src/views/businessConfigSurface/formatters.ts",
+      "lines": [
+        153
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|pass|frontend/apps/web/src/views/businessConfigSurface/formatters.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "pass",
+      "path": "frontend/apps/web/src/views/businessConfigSurface/formatters.ts",
+      "lines": [
+        154
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|published|frontend/apps/web/src/views/businessConfigSurface/formatters.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "published",
+      "path": "frontend/apps/web/src/views/businessConfigSurface/formatters.ts",
+      "lines": [
+        159
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/core/view_contract_presence.py:60",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|ready|frontend/apps/web/src/views/businessConfigSurface/formatters.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "ready",
+      "path": "frontend/apps/web/src/views/businessConfigSurface/formatters.ts",
+      "lines": [
+        228
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|warning|frontend/apps/web/src/views/businessConfigSurface/formatters.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "warning",
+      "path": "frontend/apps/web/src/views/businessConfigSurface/formatters.ts",
+      "lines": [
+        152
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    }
+  ],
+  "summary": {
+    "totalFindings": 139,
+    "distinctDecisions": 99,
+    "byRule": {
+      "R2_intent_literal": 19,
+      "R3_router_literal_destination": 18,
+      "R4_business_state_literal": 102
+    },
+    "byClassification": {
+      "contract-derived": 51,
+      "excluded-render-interaction": 88
+    },
+    "unclassified": 0,
+    "contractDerived": 51,
+    "contractProjectableGaps": 0,
+    "frontendLogicDefects": 0,
+    "excludedRenderInteraction": 88
+  }
+}

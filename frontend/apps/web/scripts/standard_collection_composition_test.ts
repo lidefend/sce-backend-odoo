@@ -210,7 +210,16 @@ check(surfaceSource.includes("appearance=\"table\""), true, 'the official list c
 check(surfaceSource.includes(':deep(.t-'), false, 'the official list card adds no selector of its own onto the vendor internals');
 check(surfaceSource.includes('appearance="table"'), true, 'the zero body padding comes from the primitive appearance, not a vendor override');
 check(surfaceSource.includes('<slot v-else />'), false, 'standard list no longer has a legacy pass-through path');
-check(listPageSource.includes('<ProductListSurface v-else-if="status === \'empty\'">'), true, 'empty results retain the same official composition');
+// The empty branch is declared by the page status and must render through the
+// same official container as the populated branch: an empty result set is a
+// state of the query list, not a different page type.
+const emptyBranchStart = listPageSource.indexOf("status === 'empty'");
+const populatedBranchStart = listPageSource.indexOf('<template v-else>');
+const emptyBranch = emptyBranchStart >= 0 && populatedBranchStart > emptyBranchStart
+  ? listPageSource.slice(emptyBranchStart, populatedBranchStart)
+  : '';
+check(emptyBranch.includes('<ProductListSurface>'), true, 'empty results retain the same official composition');
+check((listPageSource.match(/<ProductListSurface>/g) || []).length, 2, 'empty and populated results both route through the official list container');
 
 const headerSource = readSource('frontend/apps/web/src/components/product-list/ProductListHeader.vue');
 check(headerSource.includes('<template #suffix>'), true, 'the official query row renders a search affordance inside the search input');

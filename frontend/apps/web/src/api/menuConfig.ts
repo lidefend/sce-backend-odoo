@@ -16,6 +16,7 @@ export interface MenuConfigMenu {
   xmlid: string;
   group_ids: number[];
   group_names: string[];
+  handling_state?: string;
   children?: MenuConfigMenu[];
 }
 

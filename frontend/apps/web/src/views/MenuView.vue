@@ -106,7 +106,7 @@ async function resolve() {
       const entryTarget = result.meta?.entry_target && typeof result.meta.entry_target === 'object'
         ? result.meta.entry_target as Record<string, unknown>
         : null;
-      const policy = evaluateCapabilityPolicy({ source: result.node?.meta, available: session.capabilities });
+      const policy = evaluateCapabilityPolicy({ source: result.node?.meta, available: session.capabilities, catalog: session.capabilityCatalog });
       if (policy.state !== 'enabled') {
         await router.replace({
           name: 'workbench',
@@ -191,7 +191,7 @@ async function resolve() {
           });
           return;
         }
-        const policy = evaluateCapabilityPolicy({ source: result.target.meta, available: session.capabilities });
+        const policy = evaluateCapabilityPolicy({ source: result.target.meta, available: session.capabilities, catalog: session.capabilityCatalog });
         if (policy.state !== 'enabled') {
           await router.replace({
             name: 'workbench',
