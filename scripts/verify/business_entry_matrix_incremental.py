@@ -31,12 +31,19 @@ import datetime
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CHECK = 'verify.frontend.business_entry.matrix.browser'
+RUNTIME_VERSION_PATH = '/api/runtime-version'
+BUNDLE_IDENTITY_KEY = 'frontend_build_sha256'
+BUNDLE_IDENTITY_ENV = 'SC_ACCEPTANCE_FRONTEND_BUILD_SHA'
+BUNDLE_FINGERPRINT = re.compile(r'^[0-9a-f]{64}$')
 SCOPE_ADAPTER = 'scripts/verify/business_entry_matrix_scope.mjs'
 BROWSER_PROBE = 'scripts/verify/business_entry_matrix_browser.mjs'
 ENGINE = 'scripts/ops/evidence_scope.py'
@@ -103,6 +110,34 @@ def load_json(path: Path) -> dict:
         return json.loads(Path(path).read_text(encoding='utf-8'))
     except (OSError, json.JSONDecodeError) as exc:
         raise IncrementalError(f"cannot read the JSON document {path}: {exc}") from exc
+
+
+def resolve_reuse_bundle_identity(base_url: str, *, timeout: float = 20.0) -> str:
+    """Read the served frontend bundle identity the reuse decision must bind.
+
+    The deployed commit changes on every mainline merge, including merges that
+    never rebuild the frontend, so binding it re-walked every declared entry on
+    every deployment. The served artifact fingerprint the runtime publishes as
+    ``frontend_build_sha256`` changes exactly when the served bundle changed,
+    which is the input the entry assertions actually depend on.
+
+    This is deliberately fail-closed rather than fail-hard: a runtime that does
+    not publish a bundle fingerprint cannot prove cross-bundle equivalence, so
+    the caller degrades to the deployed revision (the previous, conservative
+    behaviour) and reports the degraded key instead of silently reusing across
+    bundles. The probe independently refuses any bundle that does not match the
+    value bound here, so the observation stays bound to the bundle it names.
+    """
+    url = str(base_url or '').strip().rstrip('/')
+    if not url:
+        return ''
+    try:
+        with urllib.request.urlopen(f'{url}{RUNTIME_VERSION_PATH}', timeout=timeout) as response:
+            payload = json.loads(response.read().decode('utf-8'))
+    except (OSError, ValueError, urllib.error.URLError):
+        return ''
+    value = str(payload.get(BUNDLE_IDENTITY_KEY) or '').strip().lower() if isinstance(payload, dict) else ''
+    return value if BUNDLE_FINGERPRINT.fullmatch(value) else ''
 
 
 def require_environment() -> dict:
@@ -191,7 +226,15 @@ def main(argv: list[str] | None = None) -> int:
                         help='plan document that binds planned_affected when re-folding existing evidence')
     args = parser.parse_args(argv)
 
-    require_environment()
+    environment = require_environment()
+    bundle_identity = resolve_reuse_bundle_identity(environment['SC_ACCEPTANCE_FRONTEND_URL'])
+    if bundle_identity:
+        os.environ[BUNDLE_IDENTITY_ENV] = bundle_identity
+        print(f"[business-entry-incremental] reuse identity binds {BUNDLE_IDENTITY_KEY}={bundle_identity}")
+    else:
+        os.environ.pop(BUNDLE_IDENTITY_ENV, None)
+        print(f"[business-entry-incremental] WARN the runtime published no {BUNDLE_IDENTITY_KEY}; reuse degrades "
+              f"to the deployed revision and every entry re-opens on a new deployment")
     if args.full:
         _require(bool(args.reason.strip()), '--full re-collects every entry and requires an explicit --reason')
     if args.record_existing:
@@ -223,7 +266,7 @@ def main(argv: list[str] | None = None) -> int:
             Path(args.plan),
             run_dir=run_dir,
             ledger=ledger,
-            environment=require_environment(),
+            environment=environment,
             database=os.environ.get('SC_ACCEPTANCE_DATABASE', '') or os.environ.get('DB_NAME', ''),
         )
 

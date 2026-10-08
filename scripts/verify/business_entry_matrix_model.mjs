@@ -195,8 +195,17 @@ export function universalCapabilities(candidateOrder, states) {
 // this entry's outcome, so they are bound into the key fingerprint.
 const CONSUMED_ROW_FIELDS = [
   'menu_xmlid', 'action_xmlid', 'label', 'domain', 'model', 'scope_disposition',
-  'batch', 'role_authority', 'rendering_path', 'acceptance_status',
+  'batch', 'role_authority', 'rendering_path',
 ];
+
+// Row fields that record an outcome rather than declare an input. They must
+// never enter the fingerprint: a declaration-driven check exists so that
+// recording a result cannot invalidate the observation that produced it.
+// `acceptance_status` is written when a batch is closed, so binding it made the
+// closing commit re-open every row it had just closed (observed as three
+// consecutive 89-key re-walks on the same governance runtime with no changed
+// input). The status still travels as provenance, so a change stays visible.
+export const ROW_OUTCOME_FIELDS = ['acceptance_status'];
 
 export function canonicalJson(value) {
   if (value === null || typeof value !== 'object') return JSON.stringify(value === undefined ? null : value);
@@ -246,30 +255,46 @@ export function entryFingerprint({ row, behaviour, environment, derived, modelRe
 }
 
 // Identity that governs reuse. Every browser assertion here runs against the
-// bundle the target serves, so the served revision is part of the identity: a
-// candidate built from another revision may render another surface, and reusing
-// the older observation would report coverage the run never produced. A genuine
-// no-op redeploy keeps the same revision and therefore keeps every reusable
-// unit. What invalidates an entry is a change to its declared inputs (row,
-// overlay behaviour, derived denial), to the model/probe assertions, to the
-// governed runtime it was measured on (base url, database, acting login,
-// candidate order), or to the served revision it was measured against.
+// bundle the target serves, so the served *bundle* is part of the identity: a
+// candidate built from another bundle may render another surface, and reusing
+// the older observation would report coverage the run never produced.
 //
-// The revision is the only served-bundle identity the probe can verify live: it
-// reads the served source_revision/git_sha and refuses any other value before an
-// entry runs. Bundle content beyond the revision stays provenance on the units
-// document, so an in-place rebuild of the same revision remains a recorded
-// carry-forward decision rather than a silently reused observation.
-export function environmentIdentity({ baseUrl, database, login, candidateOrder, servedRevision }) {
+// The bundle identity is the served frontend artifact fingerprint the runtime
+// publishes as `frontend_build_sha256`, not the deployed commit. The commit
+// changes on every mainline merge, including merges that never rebuild the
+// frontend, so binding the commit re-walked every entry on every deployment and
+// destroyed the incremental lane. The artifact fingerprint changes exactly when
+// the served bundle changed, which is the input the assertions depend on. The
+// probe still binds the *deployment* revision, so an observation is only taken
+// on the declared deployment; that revision is recorded as provenance.
+//
+// Fail-closed: when the runtime declares no bundle fingerprint, reuse degrades
+// to the deployed revision (never silently across bundles), and the caller
+// records `reuse_identity_key=served_revision` so the degradation is visible.
+export const BUNDLE_IDENTITY_KEY = 'frontend_build_sha256';
+export const FALLBACK_IDENTITY_KEY = 'served_revision';
+const BUNDLE_FINGERPRINT = /^[0-9a-f]{64}$/;
+
+export function reuseIdentityKey({ bundleFingerprint } = {}) {
+  return BUNDLE_FINGERPRINT.test(String(bundleFingerprint || '').trim().toLowerCase())
+    ? BUNDLE_IDENTITY_KEY
+    : FALLBACK_IDENTITY_KEY;
+}
+
+export function environmentIdentity({ baseUrl, database, login, candidateOrder, servedRevision, bundleFingerprint }) {
   const revision = String(servedRevision || '').trim();
   if (!revision) {
     throw new Error('environmentIdentity: the served revision is required to bind reuse');
   }
-  return {
+  const environment = {
     base_url: String(baseUrl || ''),
     database: String(database || ''),
     login: String(login || ''),
     denied_role_candidates: candidateOrder.map(String),
-    served_revision: revision,
   };
+  const bundle = String(bundleFingerprint || '').trim().toLowerCase();
+  if (BUNDLE_FINGERPRINT.test(bundle)) {
+    return { ...environment, [BUNDLE_IDENTITY_KEY]: bundle };
+  }
+  return { ...environment, [FALLBACK_IDENTITY_KEY]: revision };
 }

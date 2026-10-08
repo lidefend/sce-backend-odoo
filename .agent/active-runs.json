@@ -1,9 +1,8 @@
 {
-  "schema_version": 1,
   "branches": {
     "codex/daily-dev-mainline-acceptance-refresh-20261008": ".agent/runs/DAILY-DEV-MAINLINE-ACCEPTANCE-REFRESH/run.json",
-    "codex/page-size-consumption-and-matrix-reuse-20261008": ".agent/runs/FE-HIERARCHICAL-WORKSHEET-USABLE-READY/run.json",
     "fix/actionview-surface-contract-pending-gate-20261008": ".agent/runs/FE-HIERARCHICAL-WORKSHEET-USABLE-READY/run.json",
-    "fix/relation-entry-option-limit-projection-20261009": ".agent/runs/FE-HIERARCHICAL-WORKSHEET-USABLE-READY/run.json"
-  }
+    "fix/evidence-scope-served-bundle-identity-20261009": ".agent/runs/FE-HIERARCHICAL-WORKSHEET-USABLE-READY/run.json"
+  },
+  "schema_version": 1
 }

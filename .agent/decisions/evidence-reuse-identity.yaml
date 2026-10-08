@@ -51,9 +51,45 @@ decision:
         declared surface on every deploy is the failure mode this decision exists
         to remove.
       control: >
-        Carrying evidence across a deploy requires a recorded deterministic impact
-        analysis in the same run record; a change judged surface-affecting is
-        invalidated by its declared input or by the model/probe revision.
+        Carrying evidence across a deploy is now decided by the served artifact
+        fingerprint the runtime publishes (`frontend_build_sha256`, computed from
+        the served dist by the governed frontend build entry): a deploy that served
+        another bundle invalidates every declared unit, and a deploy that served the
+        same bundle cannot have changed the rendering surface. No per-deploy human
+        judgement is required, and when the runtime publishes no artifact
+        fingerprint the identity degrades to the deployed revision in a recorded,
+        visible way instead of reusing across bundles.
+
+  enforcement:
+
+    code_authority:
+      - scripts/verify/business_entry_matrix_model.mjs#reuseIdentityKey
+      - scripts/verify/business_entry_matrix_model.mjs#environmentIdentity
+      - scripts/verify/business_entry_matrix_browser.mjs#served_bundle_binding
+      - scripts/verify/business_entry_matrix_incremental.py#resolve_reuse_bundle_identity
+      - scripts/ops/evidence_scope.py#plan_units
+
+    mechanised_control:
+      served_artifact_fingerprint_key: frontend_build_sha256
+      served_artifact_fingerprint_source: /api/runtime-version (declared by make daily.runtime.frontend.build)
+      served_artifact_fingerprint_asserted_by_probe: SC_ACCEPTANCE_FRONTEND_BUILD_SHA
+      degradation_when_absent: served_revision
+      degradation_visibility: provenance.reuse_identity_key
+      outcome_fields_excluded_from_fingerprints:
+        - acceptance_status
+
+    compliance_gap_closed:
+      date: "2026-10-09"
+      statement: >
+        Between 2026-10-07 and 2026-10-09 the code bound `served_revision` as a
+        validity input, contradicting `validity_key_excludes` above. Every mainline
+        deployment therefore re-opened every declared unit, including deployments
+        that never rebuilt the frontend: three consecutive 89-key re-walks were
+        observed on one unchanged governance runtime, and a targeted 6-key request
+        was absorbed into a full re-walk. The recorded decision was not enforced by
+        any mechanism, which is the durable lesson: a recorded reuse rule without a
+        code authority is indistinguishable from an unrecorded one.
+      evidence: docs/ops/iterations/hierarchical_worksheet_usable_ready_20261008.md#11
 
   reason:
 

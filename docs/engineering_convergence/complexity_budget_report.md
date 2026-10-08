@@ -151,12 +151,12 @@ Generated from repository source files. This report is informational during the 
 | 901 | Python source | `addons/smart_core/tests/test_execute_button_server_action_boundaries.py` |
 | 897 | Python source | `addons/smart_core/utils/idempotency.py` |
 | 896 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
+| 892 | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
 | 886 | Python source | `addons/smart_construction_core/models/core/equipment_management.py` |
 | 886 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 886 | Python source | `scripts/verify/release_capability_audit.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 877 | Python source | `addons/smart_core/app_config_engine/models/app_search_config.py` |
-| 872 | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
 | 868 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 862 | Python source | `scripts/release/release_candidate.py` |
 | 861 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
