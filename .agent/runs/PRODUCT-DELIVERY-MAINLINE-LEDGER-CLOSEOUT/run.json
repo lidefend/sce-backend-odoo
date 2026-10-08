@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "id": "PRODUCT-DELIVERY-MAINLINE-LEDGER-CLOSEOUT",
+  "branch": "audit/product-delivery-mainline-ledger-closeout-20261008",
+  "status": "completed",
+  "baseline_sha": "d89818e93d8127456c3071d5fe49b5e6690e886e",
+  "goal": ".agent/goals/PRODUCT-DELIVERY-MAINLINE-LEDGER-CLOSEOUT.yaml",
+  "record": "docs/ops/iterations/product_delivery_mainline_ledger_closeout_20261008.md",
+  "scope": [
+    ".agent/",
+    "docs/ops/iterations/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Bookkeeping only. No runtime is exercised; every referenced merge/PR/Quick receipt belongs to the already-merged owning run and is cited, not re-collected."
+  },
+  "checks": {
+    "run_index_terminal_state": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Closed. The product-delivery mainline chain and the completed workspace/CI/contract ledgers were reconciled to their terminal state: 21 goals whose runs were already completed and whose work is integrated in main were flipped to completed, and FE-TPL-OFFICIAL-TEMPLATE-ADOPTION was superseded by FE-TPL-RENDER-EVIDENCE-RECONCILIATION. .agent/active-runs.json is left in its empty terminal state on main so no index entry points at a merged branch; on main make agent.run.resume reports unregistered (ACTIVE-RUN-INDEX-DANGLING-CLOSEOUT precedent). Genuinely open product work that this batch does NOT close and that still blocks an overall product-delivery claim is reported in the record: P1-BUSINESS-FACT-PROFESSIONALIZATION (Batch-G review_pending, H/I/J planned), BUSINESS-ENTRY-SURFACE-NORMALIZATION (batch-2 verification_pending, batch-3 planned), the four FORM-*-CLOSURE verification_pending goals, NATIVE-VIEW-CONTRACT-CAPABILITY-CLOSURE (planned), BACKEND-CONTRACT-SLO-TELEMETRY (owner-gated follow-ups b-residual/c/e), and the unclosed P4 meta goals (GITEE-TEMPORARY-INTEGRATION, AGENT-CONTROLLER-CHECKPOINT-RECOVERY, P4-INCREMENTAL-RESUME, REPO-BASELINE-AUDIT, P4-GOVERNED-DELIVERY-FREEZE-EFFICIENCY). Batch acceptance done; mainline integration done; version release NOT claimed; overall product delivery NOT claimed (owner judgment)."
+}

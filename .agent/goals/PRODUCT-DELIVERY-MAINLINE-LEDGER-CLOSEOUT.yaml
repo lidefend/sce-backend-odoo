@@ -1,0 +1,28 @@
+goal:
+  id: PRODUCT-DELIVERY-MAINLINE-LEDGER-CLOSEOUT
+  title: close_out_the_product_delivery_mainline_and_completed_workspace_ledgers
+  status: completed
+  formal_product_layer: P4
+  layer_target: agent_run_ledger_closeout
+  objective: >-
+    Reconcile the .agent goal ledger with the already-merged execution history.
+    The product-delivery mainline chain (daily user-perspective acceptance,
+    mainline deployment, runtime candidate return, mainline-integration
+    closeout, ledger entry unification, FE template render-evidence
+    reconciliation, and the formal-surface runtime-audit contract binding) and
+    the completed workspace/CI/contract ledgers were already integrated into
+    main, but their goal records still read active/in_progress. This batch flips
+    exactly those goals to their terminal state, supersedes the replaced
+    FE-TPL-OFFICIAL-TEMPLATE-ADOPTION goal, and records the closing evidence.
+    Bookkeeping only: it changes no product, contract, test, gate, workflow,
+    runtime or credential behaviour, and it does NOT claim version release or
+    overall product delivery.
+  run: .agent/runs/PRODUCT-DELIVERY-MAINLINE-LEDGER-CLOSEOUT/run.json
+  exclusions:
+    - product_changes
+    - contract_changes
+    - assertion_or_audit_relaxation
+    - baseline_raises
+    - product_deployment
+    - production_access
+    - credential_rotation

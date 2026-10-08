@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: BACKEND-CONTRACT-SUPPLY-CHAIN-ATTESTATION
   title: backend_contract_supply_chain_attestation
-  status: active
+  status: completed
   formal_product_layer: P0
   supporting_layer: P4
   layer_target: smart_core

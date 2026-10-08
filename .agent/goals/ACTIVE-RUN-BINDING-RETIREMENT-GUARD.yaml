@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: ACTIVE-RUN-BINDING-RETIREMENT-GUARD
   title: close_the_active_run_binding_retirement_loop
-  status: in_progress
+  status: completed
   formal_product_layer: P4
   layer_target: governed_branch_retirement_tooling
   module:

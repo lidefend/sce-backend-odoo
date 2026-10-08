@@ -1,6 +1,6 @@
 goal:
   id: CI-SCHEDULED-FULL-LANE-RECOVERY-B
-  status: active
+  status: completed
   formal_product_layer: P4
   objective: Restore the green scheduled full CI lane for the batches after #529: repair the scene-component-bridge guard's two text-analysis defects (comment-named environment read, declaration body brace after an object type), and refresh the full-lane-only guards whose structural baselines #525 (official template adoption, 2d164a1f) invalidated, without relaxing any assertion and without raising a decrease-only baseline.
   run: .agent/runs/CI-SCHEDULED-FULL-LANE-RECOVERY-B/run.json

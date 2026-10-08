@@ -1,6 +1,6 @@
 goal:
   id: WORKSPACE-SUPERSEDED-RETIREMENT-CLOSEOUT
-  status: active
+  status: completed
   formal_product_layer: P4
   objective: >-
     Close out WORKSPACE-SUPERSEDED-RETIREMENT after PR #538 mainline integration:

@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: DAILY-DEV-MAINLINE-DEPLOYMENT
   title: daily_dev_mainline_deployment
-  status: active
+  status: completed
   formal_product_layer: P4
   layer_target: daily_dev_runtime_repo
   module:

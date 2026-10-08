@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: BACKEND-CONTRACT-L4-CLOSURE
   title: backend_contract_lifecycle_l4_runtime_evidence_governance
-  status: active
+  status: completed
   formal_product_layer: P0
   supporting_layer: P4
   layer_target: smart_core

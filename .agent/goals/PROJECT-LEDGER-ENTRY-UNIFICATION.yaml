@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: PROJECT-LEDGER-ENTRY-UNIFICATION
   title: unify_project_ledger_and_project_information_edit_into_one_entry
-  status: in_progress
+  status: completed
   formal_product_layer: P1
   layer_target: smart_construction_core_project_center_entry_surface
   module:

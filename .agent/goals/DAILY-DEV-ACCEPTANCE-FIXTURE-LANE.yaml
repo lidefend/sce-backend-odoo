@@ -1,6 +1,6 @@
 goal:
   id: DAILY-DEV-ACCEPTANCE-FIXTURE-LANE
-  status: complete
+  status: completed
   formal_product_layer: P4
   module: ops_delivery_tool
   objective: >-

@@ -1,6 +1,6 @@
 goal:
   id: CI-SCHEDULED-FULL-LANE-RECOVERY-C
-  status: active
+  status: completed
   formal_product_layer: P1
   objective: >-
     Close the remaining scheduled full-lane failure of frontend_release_gate that the
