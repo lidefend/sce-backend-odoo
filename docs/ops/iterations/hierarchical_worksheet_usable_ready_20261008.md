@@ -321,4 +321,69 @@ ListPage 分支：`viewMode` 可由路由/模型元数据先推导为 `tree` →
   （`ListPage.vue` 在 HEAD 上本就没有 `.footer-row-label`）。四项均不在
   `public_guard` / `merge_policy_gate` / `professional_quality_gate` / `frontend_release_gate` 路径上。
 - 环境 DENY 结论继续单独保留（仅作重建/快照车道阻断），未泛化为「环境全部通过」。
-- 四边界：批次验收进行中；主线集成 / 版本发布 / 产品交付未声明。
+- 四边界（截至 PR #623 合并后）：主线集成完成（PR #623 → `fd783922`，四项必需检查 pass）；列表范围复核完成（89/89、`problems=0`）；批次验收进行中（其后发现 `options_limit` 投影缺口，见第 10 节）；版本发布 / 产品交付未声明。
+
+## 10. relation_entry 选项取数规模的通用投影缺口（PR #623 之后，2026-10-09）
+
+### 10.1 怎么发现的
+
+PR #623 修复 surface 门禁后，在最终 served revision `fd783922` 上复核列表范围：
+**89/89、`problems=0`**（此前 80/89 整页失败）。但顶层残留 1 条 pageerror：
+
+```
+pageerror: 契约缺少合法声明 relation_entry.options_limit：前端不停机兜底，等待声明层补齐
+```
+
+历史三份证据（`514e1b51` / `7a0fb870` / `d2d51935`）均无此错误 —— 它一直存在，只是被先前的整页崩溃掩盖。
+
+### 10.2 根因：不是后端没声明，是前端通用投影丢了声明键
+
+运行态探针（`.runtime/diag/relation_entry_probe.mjs`，取 `project.project` 表单 v2 契约）核实：
+后端 **44/44** 处 `relation_entry` 都下发 `options_limit=80` / `options_search_limit=40` / `search_dialog`。
+
+缺口在 P0 前端通用投影：`frontend/apps/web/src/pages/contractForm/relationDescriptor.ts` 的
+`relationEntry()` 是白名单投影，把这三个声明键丢掉了；消费点
+`relationOptionsLimit(entry)` / `relationOptionsSearchLimit(entry)` 从投影对象上读
+`entry.options_limit`，取到 `undefined` → `requireDeclaredNumber` 抛 `ContractGapError`。
+
+即：**声明层完备、消费原语正确，责任落在「投影没有原样透出声明」这一层**。
+
+同时暴露一条更重的记账缺陷：台账 `closedContractDefects` 里 `CD-20261008-FRONTEND-SELECTED-LIMIT`
+曾以「关联选项条数来自 relation_entry.options_limit/options_search_limit」声称闭合，但其
+`closureEvidence` 根本没包含消费文件，也没有行为锁 —— 这是一次**无证据的闭合声明**。该缺陷已在
+`reVerified` 中如实记录并补证。
+
+### 10.3 修复（保持责任层）
+
+- `relationEntry()` 原样透出 `options_limit` / `options_search_limit`（键名沿用声明形状 snake_case），
+  不夹取、不补默认值；缺失/非法仍由 `requireDeclaredNumber` 停机。
+- 台账新增 declarationBindings 第 4 条：`declaredBy=page_assembler._build_relation_entry_for_field`、
+  `consumedBy=relationDescriptor.ts`、`onMissing=stop`、`stopSymbol=requireDeclaredNumber`，
+  并修正 `CD-20261008-FRONTEND-SELECTED-LIMIT` 的证据链。bindings 3→4。
+- 未放宽断言、未加模型特判、未改后端。
+
+### 10.4 行为锁（基线先绿，再证注入被检出）
+
+新增 `frontend/apps/web/scripts/relation_entry_option_limits_test.ts`，挂入
+`verify.frontend.professional_relation_field.unit`：
+
+1. **基线**：声明存在时投影必须带键且 `relationOptionsLimit` 返回声明值本身
+   （用非默认值 33/17，防前端常量冒充声明）；同时锁「投影必须携带消费所需键」集合。
+2. **负例**：声明缺失 → `ContractGapError`（`defect.missing` 精确、指向 page_assembler）；非法值
+   （0 / 负数）→ 同样停机而非夹取；整段 `relation_entry` 缺失 → 停机。
+3. **锁自证**：临时移除投影键后基线用例 FAIL（负面控制），证明该锁确实拦得住原始缺陷。
+
+`cases=6`。不扩全局测试框架、不以字符串/常量出现本身当作正确性证明。
+
+### 10.5 本轮验证与边界
+
+- 定向：`verify.frontend.professional_relation_field.unit`（含新锁 6 例）、
+  `verify.frontend.contract_basis.unit`（11 例 + guard bindings=4）、
+  `verify.frontend.dev.incremental.unit`（24 例）、`typecheck.strict`、
+  contractForm 页面规则命中的 `canonical_form_presenter` / `primitive_adapter` /
+  `product_page_pattern` / `page_pattern_reference_parity` / `style_system.guard`、
+  `verify.frontend.contract_basis.enforce` —— 全 PASS。
+- `make ci.local.iteration` PASS：`unmappedPaths=[]`、`unmappedManualL2=false`。
+- 环境 DENY 结论继续单独保留，未泛化。
+- 四边界：本轮批次修复进行中；主线集成需待本分支 PR 通过四项必需检查后声明，且其后在最终
+  served revision 上只做「受影响关系字段」的定向运行态复核（不重跑 89 键矩阵）。
