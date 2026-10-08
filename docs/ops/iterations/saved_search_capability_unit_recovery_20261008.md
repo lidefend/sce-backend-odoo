@@ -201,3 +201,23 @@ PASS: every scoped decision is contract-derived, a recorded projectable gap, or 
   + 前端决策权属台账/守卫 + quick gate 全目标重跑通过，`-k` 单次全量 `GATE_EXIT=0`，57 个 unittest 入口 / 1030 用例，含本节 P0 投影闭环）。
 - 主线集成 / 版本发布 / 产品交付：本批不主张。
 - 运行态契约链（§4.C）：待运行态凭据前置恢复后单独取证，本轮不主张通过。
+
+### 6.1 本次 P0 投影闭环的候选身份与结果索引
+
+- 基线：`c9e4823899a1b834d3d0941b0578905f466e1c87`；候选 HEAD：**`cc4bedff`**（clean，无未跟踪文件）。
+- 分层提交（同一分支、同一产品结果，按 P0/P1 责任层拆分，便于独立回滚）：
+  - `5f2f6919` P0 后端契约投影：`addons/smart_core/handlers/menu_configuration.py` + 用例。
+  - `c5a19c15` P0 前端契约消费：能力态/菜单处置态投影消费 + `local:` trace 标签 + schema 声明补齐 + 由前端源派生的 rendering-detail 清单刷新。
+  - `cc4bedff` P4 台账/守卫与生成物：`frontend_decision_authority.py` / guard / 15 用例 / capability 冒烟计数 / `make/frontend.mk` / 台账导出 / 本记录 / run 索引。
+- 结果索引：`.agent/runs/SAVED-SEARCH-CAPABILITY-UNIT-RECOVERY/run.json`，**17 项 check 全部 `reusable`**（绑定当前 clean HEAD）。
+- 受影响 L2 门禁：`make verify.frontend.quick.gate`（`GATE_EXIT=0`）+ `verify.business_config.unit`（236）+ 计划推荐的
+  `verify.frontend.scene_entry_contract.unit`（217）、`verify.frontend.style_system.guard`（2，另含 2 条 size-advisory，非失败）。
+- L1：`make ci.local.iteration` → `PASS change_state=clean coverage=L1_only`。
+
+### 6.2 本轮显式跳过项（附理由，非"通过"）
+
+- **`make ci.local.quick` 未运行**：按 `AGENTS.md` 最新所有者分工（2026-09-23）节，本地 Quick 已降级为可显式诊断项，
+  不再是普通 Gitee 候选推送前置；另按本项目既有环境结论，依赖受管运行环境的重建/快照车道存在未恢复的挂载独占 DENY 前置，
+  在恢复前不进入依赖它的运行验收。因此本轮不以 Quick 作为结论依据，也不宣称"环境全部通过"。
+- **独立复核未在本轮完成**：独立复核需由另一执行器或远端 PR 复核通道完成；本记录只提供精确候选身份供其绑定。
+- **主线集成 / 版本发布 / 产品交付**：均未主张。

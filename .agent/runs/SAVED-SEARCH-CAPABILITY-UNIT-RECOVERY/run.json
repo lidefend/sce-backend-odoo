@@ -228,8 +228,26 @@
         "make/frontend.mk"
       ],
       "kind": "offline"
+    },
+    "scene_entry_contract": {
+      "target": "verify.frontend.scene_entry_contract.unit",
+      "inputs": [
+        "frontend/apps/web/src/views/",
+        "frontend/apps/web/scripts/",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "style_system_guard": {
+      "target": "verify.frontend.style_system.guard",
+      "inputs": [
+        "frontend/apps/web/src/styles/",
+        "frontend/packages/ui/src/kits/tdesign/theme.css",
+        "scripts/verify/frontend_style_system_guard.py"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "P0 projection gaps closed 7->0 at their owning layers (capability state/reason consumption, per-menu handling_state projected by smart_core, local:projection_refresh client trace label) and pinned by new fail-closed guard assertions; ledger re-exported. Next exact step: (1) record receipts for the re-run targets at the current tree (menu_handling_state_projection, capability_policy, component_driver_takeover, rendering_detail_state, frontend_decision_authority, contract_drift_guard, frontend_quick_gate, plus the three make/frontend.mk-affected units); (2) commit the three layers separately; (3) one exact-head ci.local.quick on a clean frozen HEAD. Do not relax any assertion, and do not claim mainline/deployment/user-delivery completion."
+  "next_exact_step": "P0 projection gaps closed 7->0 at their owning layers and pinned by new fail-closed guard assertions; ledger re-exported; receipts recorded for all 17 registered checks at clean candidate cc4bedff (three layer commits: 5f2f6919 backend projection, c5a19c15 frontend consumption, cc4bedff ledger/guard). Local L1 ci.local.iteration PASS and the affected L2 gates (verify.frontend.quick.gate GATE_EXIT=0, verify.business_config.unit, scene_entry_contract, style_system.guard) PASS. Local ci.local.quick is intentionally NOT run: per the newest owner policy it is no longer a candidate-push prerequisite, and the governed rebuild/snapshot lane still carries an unresolved mount-exclusivity DENY. Next exact step (owner scheduling): route candidate cc4bedff to independent review and the remote PR gates; do not relax any assertion and do not claim mainline/deployment/user-delivery completion from this batch."
 }
