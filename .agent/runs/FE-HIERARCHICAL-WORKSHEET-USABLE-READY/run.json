@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "id": "FE-HIERARCHICAL-WORKSHEET-USABLE-READY",
-  "branch": "fix/actionview-surface-contract-pending-gate-20261008",
+  "branch": "fix/relation-entry-option-limit-projection-20261009",
   "status": "active",
-  "baseline_sha": "d2d519350f3d17eadb183aa7daa2e7f640142a1a",
+  "baseline_sha": "fd7839223a697cbb3534498a2f915c8ec1bec8ef",
   "goal": ".agent/goals/FE-HIERARCHICAL-WORKSHEET-USABLE-READY.yaml",
   "record": "docs/ops/iterations/hierarchical_worksheet_usable_ready_20261008.md",
   "scope": [
@@ -66,7 +66,7 @@
       "kind": "offline",
       "result": {
         "status": "passed",
-        "detail": "guard PASS bindings=3 exemptions=3 logic_sites=3 open_defects=0; unittest Ran 11 tests OK",
+        "detail": "guard PASS bindings=4 exemptions=3 logic_sites=3 open_defects=0; unittest Ran 11 tests OK",
         "stage_identity": {
           "head": "d2d519350f3d17eadb183aa7daa2e7f640142a1a",
           "dirty": true
@@ -177,13 +177,27 @@
           "dirty": true
         }
       }
+    },
+    "relation_entry_option_limits": {
+      "target": "verify.frontend.professional_relation_field.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts",
+        "frontend/apps/web/src/pages/contractForm/one2manyColumnOptionsRuntime.ts",
+        "frontend/apps/web/scripts/relation_entry_option_limits_test.ts",
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [
     "环境 DENY：两个挂载者同属一个项目，不足以证明满足独占要求；相关环境前置未恢复前不进入依赖它的运行验收（沿用原结论，不泛化）。",
-    "PR #622（d2d51935）部署后日常服务器 80/89 业务入口整页失败；根因已定位并修复（ActionView 契约未就绪先渲染 surface），待在最终 served revision 上复核列表范围。"
+    "PR #622（d2d51935）80/89 整页失败已由 PR #623 修复并在 served revision fd783922 上复核为 89/89、problems=0（列表范围已收口，不再重跑矩阵）。",
+    "本轮新暴露的 relation_entry.options_limit/options_search_limit 契约投影缺口已在本分支修复并加行为锁；待在最终 served revision 上做一次受影响关系字段的定向运行态复核（不重跑 89 键矩阵）。"
   ],
-  "next_exact_step": "1) 修正 run 记账（branch/baseline/checks/evidence） -> 2) make ci.local.iteration + 受影响非零 L2 定向（action_view_surface_gate_runtime.unit / action_view_page_size_runtime.unit / contract_basis.unit / 受影响守卫） -> 3) make ci.delivery.freeze.prepare 后在 clean HEAD 提交 -> 4) 一次 make ci.local.quick -> 5) make pr.push + make pr.create（github），等四项必需检查通过后按所有者规则 make pr.merge -> 6) 按受管入口重建日常前端：main.sync / daily.runtime.main.bundle_sync / daily.runtime.source_revision.align / daily.runtime.frontend.build / daily.runtime.record_identity.resolve -> 7) 在最终 served revision 上做一次列表范围定向复核（复用未变证据，不重跑 89 键矩阵）后按四边界报告。",
+  "next_exact_step": "1) 受影响非零 L2 定向：verify.frontend.professional_relation_field.unit / verify.frontend.contract_basis.unit / verify.frontend.dev.incremental.unit + typecheck.strict -> 2) make ci.delivery.freeze.prepare -> clean HEAD 提交 -> 3) 一次 make ci.local.quick（可分片） -> 4) make pr.push + make pr.create（github），四项必需检查通过后按所有者规则 make pr.merge -> 5) 受管重建日常前端（main.sync / daily.runtime.main.bundle_sync / source_revision.align / frontend.build / record_identity.resolve；无 addons 变更则不升级模块） -> 6) 在最终 served revision 上做一次受影响关系字段的定向运行态复核（复用未变证据）后按四边界报告。",
   "evidence": {
     "local": [
       "make verify.frontend.action_view_surface_gate_runtime.unit (PASS cases=10，新增行为锁)",
@@ -196,7 +210,11 @@
       "受影响守卫全 PASS：style_system.guard / contract_runtime.guard / page_contract.orchestration_consumption.guard / workspace_content_alignment.guard / page_identity / delivery_hardening.guard / grouped_rows_runtime.guard / hierarchy_browser.architecture.guard / unified_page_contract.v2.web_consumer",
       "make ci.delivery.freeze.prepare (PASS candidate=unfrozen；生成报告已刷新、ci.generated_evidence.preflight PASS)",
       "既有失败(不属本轮，均不在四项必需检查路径)：frontend_list_contract_rendering_guard、navigation_contract_boundary_guard(未接任何 make/workflow)；frontend_platform_runtime_config_guard(minimum_surface 车道)；frontend_contract_query_context_guard(dev_test 车道)",
-      "运行态证据(前序结论，复用)：artifacts/frontend-business-entry-matrix/incremental/20261008T144718Z-ec2ec3d9f94c/summary.json (PR #622 部署后 80/89 整页失败，全部 unknown-presentation)"
+      "运行态证据(前序结论，复用)：artifacts/frontend-business-entry-matrix/incremental/20261008T144718Z-ec2ec3d9f94c/summary.json (PR #622 部署后 80/89 整页失败，全部 unknown-presentation)",
+      "本轮新增锁：frontend/apps/web/scripts/relation_entry_option_limits_test.ts 纳入 verify.frontend.professional_relation_field.unit（baseline 先证声明存在按声明消费 33/17；再证声明缺失/非法/整段缺失均 ContractGapError 停机；负面控制已确认移除投影键即 FAIL）",
+      "契约台账 docs/architecture/frontend_contract_basis_ledger.json 新增 declarationBinding（relation_entry.options_limit/options_search_limit，declaredBy=page_assembler._build_relation_entry_for_field）；bindings 3->4，guard/enforce PASS",
+      "运行态证据（本轮根因判定）：项目表单 v2 契约 44/44 处 relation_entry 均下发 options_limit=80 / options_search_limit=40 / search_dialog；缺口纯在前端 relationEntry() 白名单投影丢键（.runtime/diag/relation_entry_probe.mjs）",
+      "主线集成（前序）：PR #623 已合并 = fd783922，四项必需检查全 pass"
     ],
     "previous_run": ".agent/runs/DAILY-DEV-MAINLINE-ACCEPTANCE-REFRESH/run.json",
     "commits": [
@@ -211,6 +229,12 @@
         "layer": "P4",
         "subject": "bind the served revision into business-entry matrix reuse",
         "closes": "served-revision-absent-from-reuse-identity"
+      },
+      {
+        "sha": "（本分支待提交）",
+        "layer": "P0",
+        "subject": "project the declared relation_entry option limits through the generic projection",
+        "closes": "CD-20261008-FRONTEND-SELECTED-LIMIT (consumption path made effective)"
       }
     ]
   },

@@ -41,6 +41,20 @@
       "stopSymbol": "contract-pending",
       "regressionGuard": "verify.frontend.action_view_surface_gate_runtime.unit",
       "behaviourTest": "frontend/apps/web/scripts/action_view_surface_gate_runtime_test.ts"
+    },
+    {
+      "surface": "关系字段候选取数规模（relation_entry.options_limit / options_search_limit）",
+      "declared": "relation_entry.options_limit / relation_entry.options_search_limit",
+      "declaredBy": "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+      "declaredMethod": "_build_relation_entry_for_field",
+      "declaredSymbol": "\"options_limit\": 80",
+      "consumedBy": "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
+      "consumedSymbol": "relationOptionsLimit(entry",
+      "onMissing": "stop",
+      "stopSymbol": "requireDeclaredNumber",
+      "stopDetail": "relationDescriptor 消费声明值即 requireDeclaredNumber(entry?.options_limit / entry?.options_search_limit)，缺失或非法抛 ContractGapError 停机；relationEntry() 投影必须原样透出声明键，不得夹取或补前端默认。",
+      "regressionGuard": "verify.frontend.professional_relation_field.unit",
+      "behaviourTest": "frontend/apps/web/scripts/relation_entry_option_limits_test.ts"
     }
   ],
   "registeredMechanismExemptions": [
@@ -112,8 +126,12 @@
         "frontend/apps/web/src/pages/ListPage.vue",
         "frontend/apps/web/src/views/ActionView.vue",
         "frontend/apps/web/src/app/action_runtime/useActionViewScopedMetricsRuntime.ts",
-        "frontend/apps/web/src/app/runtime/unifiedPageContractLitePilot.ts"
-      ]
+        "frontend/apps/web/src/app/runtime/unifiedPageContractLitePilot.ts",
+        "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts",
+        "frontend/apps/web/scripts/relation_entry_option_limits_test.ts"
+      ],
+      "reVerified": "CD-20261008-FRONTEND-SELECTED-LIMIT 关闭时曾声称 relation_entry.options_limit/options_search_limit 已由前端消费，但 relationEntry() 白名单投影丢弃了这两个声明键，导致消费点必抛 ContractGapError（运行时表现为 pageerror，非停机面）。本轮补齐通用投影责任：relationEntry() 原样透出声明键，新增 declarationBinding 与行为锁（relation_entry_option_limits_test.ts）绑定「声明存在即按声明消费 / 声明缺失或非法即停机」，负例先证基线正常再证注入被检出。"
     },
     {
       "id": "CD-20261008-CONTRACT-PARAM-FALLBACK",
