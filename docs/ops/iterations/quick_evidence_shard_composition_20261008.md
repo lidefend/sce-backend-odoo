@@ -78,3 +78,23 @@ run 记录：`.agent/runs/QUICK-EVIDENCE-SHARD-COMPOSITION/run.json` 的
 加 `make ci.local.quick.compose QUICK_SHARDS=N EXPECTED_HEAD=<sha>` 产出，或由一次整体
 `make ci.local.quick` 产出；两种来源对验证器与合并前置完全等价。本专题改动 `make/`+`scripts/`，
 属非记账类候选，`pr.merge.local_quick_gate` 必走 fail-closed 全量路径，不会被记账短路跳过。
+
+## 6. 收口
+
+- 候选 `e6e434c14efed0406e64da767e86c1fb41b81d31`（tree `50e6ca28deee54dc5dbd2ae1dd63a9fe37ae5f25`），
+  分支 `codex/quick-evidence-shard-composition-20261008`，基线 `579b2e16…`。
+- 精确 head 回执**由分片 + 组合路径产出**：`QUICK_SHARDS=2 QUICK_SHARD=0/1 make ci.local.quick.shard`
+  → `QUICK_SHARDS=2 EXPECTED_HEAD=<sha> make ci.local.quick.compose`，`verify` 通过，回执
+  `.git/codex/evidence/ci.local.quick/e6e434c1….json`，组合审计 `<head>/composition.json`。
+- PR #618 四项必需检查（`public_guard`、`merge_policy_gate`、`professional_quality_gate`、
+  `frontend_release_gate`）在精确 head 全 success；`ENV=dev make pr.merge PR=618 EXPECTED_HEAD=e6e434c1…`
+  经受保护 PR 流程 squash 合并为 `429a7f78f5f606dde6188148b463e0e35e35326a`；
+  合并前置 `pr.merge.local_quick_gate` 走 `REUSE`（复用组合回执，未重跑）。
+- 本专题 run/goal 已标记完成；`.agent/active-runs.json` 回到空终态。
+- 合并后 `origin/main` = `429a7f78`。
+
+**状态边界**：批次验收完成 + 主线集成完成；**版本发布未主张，产品交付未主张**。
+
+**遗留（后续小候选，非本批缺陷）**：`main()` 对非 `run` 模式的 stdout 标签统一打印 `VERIFIED`，
+`shard` 模式记录 part 时也会显示 `VERIFIED`（实为 `RECORDED`）；回执/part 内容与门禁不受影响，
+未在本候选内改动以避免重新冻结头。

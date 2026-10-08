@@ -1,0 +1,22 @@
+goal:
+  id: QUICK-EVIDENCE-SHARD-COMPOSITION-RETIREMENT
+  status: completed
+  formal_product_layer: P4
+  objective: >-
+    Retire the QUICK-EVIDENCE-SHARD-COMPOSITION run ledger after PR #618 (head
+    e6e434c1, squash 429a7f78) merged the sharded frozen-head Quick evidence
+    composition into main. Mark the run and goal completed with the recorded
+    mainline-integration and frozen-candidate evidence and return
+    .agent/active-runs.json to its empty terminal state, so no index entry points
+    at the merged codex/quick-evidence-shard-composition-20261008 branch.
+    Bookkeeping only: it changes no product, contract, test, gate, workflow,
+    runtime or credential behaviour.
+  run: .agent/runs/QUICK-EVIDENCE-SHARD-COMPOSITION-RETIREMENT/run.json
+  exclusions:
+    - product_changes
+    - contract_changes
+    - assertion_or_audit_relaxation
+    - baseline_raises
+    - product_deployment
+    - production_access
+    - credential_rotation

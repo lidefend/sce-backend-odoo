@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "id": "QUICK-EVIDENCE-SHARD-COMPOSITION-RETIREMENT",
+  "branch": "audit/quick-evidence-shard-composition-retirement-20261008",
+  "status": "completed",
+  "baseline_sha": "429a7f78f5f606dde6188148b463e0e35e35326a",
+  "goal": ".agent/goals/QUICK-EVIDENCE-SHARD-COMPOSITION-RETIREMENT.yaml",
+  "record": "docs/ops/iterations/quick_evidence_shard_composition_20261008.md",
+  "scope": [
+    ".agent/",
+    "docs/ops/iterations/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Bookkeeping only. No runtime is exercised; the referenced frozen-candidate Quick receipt and remote-gate results belong to the already-merged QUICK-EVIDENCE-SHARD-COMPOSITION run (PR #618, merge commit 429a7f78f5f606dde6188148b463e0e35e35326a)."
+  },
+  "checks": {
+    "run_index_terminal_state": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Retired. The QUICK-EVIDENCE-SHARD-COMPOSITION run is completed with its mainline-integration evidence recorded (PR #618, head e6e434c14efed0406e64da767e86c1fb41b81d31, squash-merged as 429a7f78f5f606dde6188148b463e0e35e35326a) and its frozen candidate proved by two bounded shards composed into one schema-3 receipt; .agent/active-runs.json is returned to its empty terminal state so no index entry points at the merged branch. On main, make agent.run.resume then reports unregistered, matching the ACTIVE-RUN-INDEX-DANGLING-CLOSEOUT precedent. Deletion of the merged branch belongs to the separate governed branch.retire.historical lane, not to this batch."
+}

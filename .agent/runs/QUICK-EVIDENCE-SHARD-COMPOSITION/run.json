@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "QUICK-EVIDENCE-SHARD-COMPOSITION",
   "branch": "codex/quick-evidence-shard-composition-20261008",
-  "status": "active",
+  "status": "completed",
   "baseline_sha": "579b2e1689711f6e6432b8832987f62ee6ba9d48",
   "goal": ".agent/goals/QUICK-EVIDENCE-SHARD-COMPOSITION.yaml",
   "record": "docs/ops/iterations/quick_evidence_shard_composition_20261008.md",
@@ -31,5 +31,33 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Run make ci.delivery.freeze.prepare, review the generated changes, commit the candidate (the MERGE-LANE-BOOKKEEPING-CANDIDATE-GUARD run/goal retirement rides along), freeze the clean full fingerprint, prove the frozen head with sharded ci.local.quick.shard plus ci.local.quick.compose (or one monolithic ci.local.quick), push to the GitHub origin, re-satisfy the four required checks on the exact head, and merge. Batch acceptance only; do not claim version release or product delivery."
+  "next_exact_step": "Run make ci.delivery.freeze.prepare, review the generated changes, commit the candidate (the MERGE-LANE-BOOKKEEPING-CANDIDATE-GUARD run/goal retirement rides along), freeze the clean full fingerprint, prove the frozen head with sharded ci.local.quick.shard plus ci.local.quick.compose (or one monolithic ci.local.quick), push to the GitHub origin, re-satisfy the four required checks on the exact head, and merge. Batch acceptance only; do not claim version release or product delivery.",
+  "evidence": {
+    "candidate_head": "e6e434c14efed0406e64da767e86c1fb41b81d31",
+    "candidate_tree": "50e6ca28deee54dc5dbd2ae1dd63a9fe37ae5f25",
+    "frozen_candidate_local_quick_receipt": ".git/codex/evidence/ci.local.quick/e6e434c14efed0406e64da767e86c1fb41b81d31.json",
+    "receipt_produced_by": "QUICK_SHARDS=2 ci.local.quick.shard (x2) + QUICK_SHARDS=2 EXPECTED_HEAD=<sha> ci.local.quick.compose; equivalent to one monolithic ci.local.quick",
+    "composition": ".git/codex/evidence/ci.local.quick/e6e434c14efed0406e64da767e86c1fb41b81d31/composition.json",
+    "mainline_integration": {
+      "status": "completed",
+      "pull_requests": [
+        618
+      ],
+      "merge_commit": "429a7f78f5f606dde6188148b463e0e35e35326a",
+      "base_before_merge": "579b2e1689711f6e6432b8832987f62ee6ba9d48",
+      "required_checks_on_exact_head": [
+        "public_guard",
+        "merge_policy_gate",
+        "professional_quality_gate",
+        "frontend_release_gate"
+      ]
+    },
+    "evidence_checks": {
+      "verify.branch.governance.consistency": {
+        "status": "passed",
+        "test_count": 50
+      }
+    },
+    "boundaries": "batch acceptance + mainline integration only; version release and product delivery not claimed"
+  }
 }
