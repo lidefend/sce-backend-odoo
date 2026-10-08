@@ -186,6 +186,7 @@ export interface AppInitResponse {
     label?: string;
     state?: string;
     capability_state?: string;
+    capability_state_reason?: string;
     reason?: string;
     reason_code?: string;
     delivery_level?: 'exclusive' | 'shared' | 'placeholder';

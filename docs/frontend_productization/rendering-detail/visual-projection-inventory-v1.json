@@ -2532,7 +2532,7 @@
     },
     {
       "category": "collection",
-      "digest": "83d36ce6b49c11e5d6b66f4b527456e326c1f2badd5e67047ccd7320c78a4bd0",
+      "digest": "4165d51c86371d5b87d0437ac9ad9a039ad458242bb9b6082f79223c2ed38789",
       "nativeStyleSelectors": [],
       "path": "views/ActionView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2627,7 +2627,7 @@
     },
     {
       "category": "other",
-      "digest": "94176ceb120301845fe79b3d4b8ce30b40cdc31e7704147be23ec7072d9d535c",
+      "digest": "4df66eb688897e56c15b0411078d7ec369a84d5e6b7d95d221dd675dd5a9e1c5",
       "nativeStyleSelectors": [],
       "path": "views/MenuConfigView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2637,7 +2637,7 @@
     },
     {
       "category": "other",
-      "digest": "4c2c6a03a5517bd304f2c3e4bb0e49bcbc34e6116b4945a990926920d16bf7d9",
+      "digest": "355f32dda50c3dd40b26683f7d84fac07fb4ef68b4c19d34e4c37951ffc0e2db",
       "nativeStyleSelectors": [],
       "path": "views/MenuView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2782,7 +2782,7 @@
     },
     {
       "category": "other",
-      "digest": "fcfc86f25d89942009007e6c9a4dd3339254c6432bb7d2202fef52e7803cf596",
+      "digest": "6a5a122389de4b7a8925b8c21f9ef681ba70961468d5dd46a96b81351de0129d",
       "nativeStyleSelectors": [],
       "path": "views/SceneView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2813,7 +2813,7 @@
     },
     {
       "category": "dashboard",
-      "digest": "85c1ae28aa8d211b0b0912fe2153174563b240e07d8c7099de7859774c512327",
+      "digest": "3050ec593c7adc8bf7743d2969cb4de64c1df7e1de858bdd8ebe599ccf7d5be5",
       "nativeStyleSelectors": [],
       "path": "views/WorkbenchView.vue",
       "referenceNativeStyleSelectors": [],
@@ -3000,7 +3000,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "98e113a3dabc580539cb318417ace831ed6aa5b0368d9ca1423a4ff7a3e21292",
+  "currentInputDigest": "d5a803f01769622628dd428fbf87169663ba7e40c4ffe8937d604d370c62fc27",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

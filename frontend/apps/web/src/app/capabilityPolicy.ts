@@ -5,7 +5,14 @@ export type CapabilityPolicyState = 'enabled' | 'disabled_capability' | 'disable
 export type CapabilityPolicy = {
   state: CapabilityPolicyState;
   missing: string[];
+  /** Contract `capability_state_reason` of the blocking capability, when published. */
+  reason_code: string;
+  reason: string;
+  /** `contract` when the state came from the projected capability_state, `contract-grant` when read from the contract grant set. */
+  authority: 'contract' | 'contract-grant';
 };
+
+export type CapabilityCatalog = Record<string, { capability_state?: unknown; state?: unknown; reason_code?: unknown; capability_state_reason?: unknown; reason?: unknown }>;
 
 export function evaluateCapabilityPolicy(options: {
   source?: unknown;
@@ -13,6 +20,7 @@ export function evaluateCapabilityPolicy(options: {
   available?: string[] | null;
   groups?: string[];
   userGroups?: string[];
+  catalog?: CapabilityCatalog | null;
 }): CapabilityPolicy {
   return evaluateCapabilityPolicyCore(options) as CapabilityPolicy;
 }

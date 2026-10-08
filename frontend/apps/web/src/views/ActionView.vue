@@ -2654,6 +2654,7 @@ const {
     sceneReadyDefaultSortRaw: '',
     sceneDefaultSortRaw: '',
     sessionCapabilities: session.capabilities,
+    sessionCapabilityCatalog: session.capabilityCatalog,
     currentSortRaw: sortValue.value,
     activeContractFilterKey: activeContractFilterKey.value,
     activeSavedFilterKey: activeSavedFilterKey.value,

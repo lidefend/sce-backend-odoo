@@ -972,7 +972,7 @@ async function resolveScene() {
       validationHint.value = `必填字段：${requiredFields.slice(0, 5).join('、')}${requiredFields.length > 5 ? ' 等' : ''}`;
     }
 
-    const policy = evaluateCapabilityPolicy({ required: resolvedScene.capabilities || [], available: session.capabilities });
+    const policy = evaluateCapabilityPolicy({ required: resolvedScene.capabilities || [], available: session.capabilities, catalog: session.capabilityCatalog });
     if (policy.state !== 'enabled') {
       const missing = Array.isArray(policy.missing) ? policy.missing : [];
       const details = missing

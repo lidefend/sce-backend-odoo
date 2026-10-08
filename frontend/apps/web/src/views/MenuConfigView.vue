@@ -321,14 +321,6 @@ function runtimeStateForMenu(menu: MenuConfigMenu | null | undefined): MenuConfi
   return states[String(menu.id)] || states[String(menu.menu_id)] || null;
 }
 
-function isMenuShownInHandling(menu: MenuConfigMenu | null | undefined) {
-  if (!menu) return false;
-  const state = runtimeStateForMenu(menu);
-  if (state) return Boolean(state.runtime_visible);
-  const draft = drafts[menu.id];
-  return Boolean(draft?.policy_id && draft.visible);
-}
-
 function isMenuConfigSurfaceMenu(menu: MenuConfigMenu | null | undefined) {
   if (!menu) return false;
   if (isRuntimeMenuGroup(menu)) return true;
@@ -352,16 +344,20 @@ function menuHandlingStateLabel(menu: MenuConfigMenu | null | undefined) {
     }
     return '办理面显示';
   }
-  const draft = menu ? drafts[menu.id] : null;
   if (state && state.runtime_visibility_reason === 'hidden_permission') return '当前用户不可见';
   if (state && state.runtime_visibility_reason === 'configured_visible_runtime_absent') return '当前未进入导航';
-  return draft?.policy_id ? '当前隐藏' : '候选';
+  return menuHandlingStateClass(menu) === 'unconfigured' ? '候选' : '当前隐藏';
 }
 
+// The handling-state vocabulary is declared by the backend menu-config
+// projection (addons/smart_core/handlers/menu_configuration.py
+// MENU_HANDLING_STATES).  The renderer only renders ``menu.handling_state``;
+// an unprojected row falls back to the fail-closed ``unconfigured`` bucket.
+const CONTRACT_MENU_HANDLING_STATES = new Set(['visible', 'hidden', 'unconfigured']);
+
 function menuHandlingStateClass(menu: MenuConfigMenu | null | undefined) {
-  if (isMenuShownInHandling(menu)) return 'visible';
-  const draft = menu ? drafts[menu.id] : null;
-  return draft?.policy_id ? 'hidden' : 'unconfigured';
+  const projected = String(menu?.handling_state || '').trim();
+  return CONTRACT_MENU_HANDLING_STATES.has(projected) ? projected : 'unconfigured';
 }
 
 function menuTreeStateLabel(menu: MenuConfigMenu | null | undefined) {
