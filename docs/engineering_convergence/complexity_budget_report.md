@@ -137,7 +137,7 @@ Generated from repository source files. This report is informational during the 
 | 1013 | Python source | `addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py` |
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
 | 1004 | Python source | `scripts/verify/local_dev_project_create_contract_action_scope.py` |
-| 989 | Python source | `addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py` |
+| 992 | Python source | `addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py` |
 | 989 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 965 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 958 | Python source | `addons/smart_construction_core/tests/test_cost_fact_model_v2.py` |

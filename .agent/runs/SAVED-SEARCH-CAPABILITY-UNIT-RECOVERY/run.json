@@ -9,6 +9,7 @@
   "scope": [
     ".agent/",
     "addons/smart_construction_core/handlers/",
+    "addons/smart_construction_core/tests/",
     "addons/smart_core/handlers/",
     "addons/smart_core/tests/",
     "docs/",
@@ -246,8 +247,44 @@
         "scripts/verify/frontend_style_system_guard.py"
       ],
       "kind": "offline"
+    },
+    "boq_dangerous_import_capability": {
+      "target": "verify.boq.dangerous.import.capability",
+      "inputs": [
+        "addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py",
+        "addons/smart_construction_core/handlers/boq_dangerous_import.py",
+        "addons/smart_construction_core/handlers/reason_codes.py",
+        "addons/smart_construction_core/services/boq_dangerous_import_service.py",
+        "addons/smart_core/utils/reason_codes.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "boq_line_patch_capability": {
+      "target": "verify.boq.line.patch.capability",
+      "inputs": [
+        "addons/smart_construction_core/tests/test_boq_line_patch_handler.py",
+        "addons/smart_construction_core/handlers/boq_line_patch.py",
+        "addons/smart_construction_core/handlers/reason_codes.py",
+        "addons/smart_construction_core/services/boq_line_patch_service.py",
+        "addons/smart_core/utils/reason_codes.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "overview_rich_text_patch_capability": {
+      "target": "verify.overview.rich.text.patch.capability",
+      "inputs": [
+        "addons/smart_construction_core/tests/test_overview_rich_text_patch_handler.py",
+        "addons/smart_construction_core/handlers/overview_rich_text_patch.py",
+        "addons/smart_construction_core/handlers/reason_codes.py",
+        "addons/smart_construction_core/services/overview_rich_text_patch_service.py",
+        "addons/smart_core/utils/reason_codes.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "P0 projection gaps closed 7->0 at their owning layers and pinned by new fail-closed guard assertions; ledger re-exported; receipts recorded for all 17 registered checks at clean candidate cc4bedff (three layer commits: 5f2f6919 backend projection, c5a19c15 frontend consumption, cc4bedff ledger/guard). Local L1 ci.local.iteration PASS and the affected L2 gates (verify.frontend.quick.gate GATE_EXIT=0, verify.business_config.unit, scene_entry_contract, style_system.guard) PASS. Local ci.local.quick is intentionally NOT run: per the newest owner policy it is no longer a candidate-push prerequisite, and the governed rebuild/snapshot lane still carries an unresolved mount-exclusivity DENY. Next exact step (owner scheduling): route candidate cc4bedff to independent review and the remote PR gates; do not relax any assertion and do not claim mainline/deployment/user-delivery completion from this batch."
+  "next_exact_step": "Merge-lane blocker fixed at its owning layer: the three handler stub loaders now bind the real handlers package path (addons/smart_construction_core/tests/*), matching the existing real-path binding of smart_core.core/utils in the same loader; no assertion relaxed, no product semantics changed. run scope reconciled to include addons/smart_construction_core/tests/ (metadata correction). Affected L2 re-run PASS: boq_dangerous_import_capability 29, boq_line_patch_capability 17, overview_rich_text_patch_capability 30. Next exact step: run make ci.delivery.freeze.prepare to refresh content-bound generated evidence, commit test-tool fix + record + generated evidence, then run one make ci.local.quick on the clean frozen HEAD (no make overrides) to obtain the merge prerequisite receipt, push to GitHub origin, re-satisfy PR #612 required checks on the new head, and merge via protected PR. Batch status only; do not claim version release or product delivery."
 }

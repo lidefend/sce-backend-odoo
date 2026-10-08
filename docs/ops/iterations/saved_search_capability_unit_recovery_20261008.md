@@ -221,3 +221,57 @@ PASS: every scoped decision is contract-derived, a recorded projectable gap, or 
   在恢复前不进入依赖它的运行验收。因此本轮不以 Quick 作为结论依据，也不宣称"环境全部通过"。
 - **独立复核未在本轮完成**：独立复核需由另一执行器或远端 PR 复核通道完成；本记录只提供精确候选身份供其绑定。
 - **主线集成 / 版本发布 / 产品交付**：均未主张。
+
+## 7. 合并车道补正：`ci.local.quick` 红项根因与处置（2026-10-08 同日追加）
+
+### 7.1 红项事实
+
+`make pr.merge PR=612` 的合并前置 `pr.merge.local_quick_gate`（`make/codex.mk`）在无 Quick 回执时
+fail-closed 调用 `make ci.local.quick`。该 Quick 在 `verify.boq.dangerous.import.capability` 处退出 2：
+
+```
+addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py:187 _load_handler_module()
+addons/smart_construction_core/handlers/boq_dangerous_import.py:42
+  from odoo.addons.smart_construction_core.handlers.reason_codes import (REASON_DONE,)
+ModuleNotFoundError: No module named '...handlers.reason_codes';
+'odoo.addons.smart_construction_core.handlers' is not a package
+```
+
+**说明**：本分支对齐产品面后，三个 handler 与模块内既有 `reason_codes` 声明载体保持同源导入（真实运行时
+`handlers` 是 package，导入正常）。红项只出现在桩加载场景。
+
+### 7.2 根因（责任层与边界）
+
+- **责任层：P4 测试装载器**，不是产品投影/权限语义。
+- 三个桩测试的 `_load_handler_module()` 把 `odoo.addons.smart_construction_core.handlers` 注册为**无 `__path__` 的假包**，
+  同一函数内 `smart_core` / `core` / `utils` 却按真实目录绑定 `__path__` —— 装载器**声明与真实模块布局不一致**，
+  使「handler 从本模块 `handlers.reason_codes` 导入原因码」这一真实依赖在桩下无法解析。
+- 未放宽任何断言、未加业务/模型特判、未改产品语义；`reason_codes.py` 仍是从
+  `odoo.addons.smart_core.utils.reason_codes` 重导出的声明载体。
+
+### 7.3 处置
+
+- 三个桩测试的装载器显式绑定真实包路径：`handlers_pkg.__path__ = [str(_ROOT / "handlers")]`
+  （与同函数内 `smart_core.*` 的既有真实绑定一致）。
+- run scope 补齐 `addons/smart_construction_core/tests/`（此前漏声明，属**元数据纠正**，非放宽范围）；
+  越界集合清零后 run 恢复 `resolved`。
+
+### 7.4 本轮重跑（受影响 L2）
+
+| 目标 | 用例 | 结果 |
+| --- | --- | --- |
+| `verify.boq.dangerous.import.capability` | 29 | PASS |
+| `verify.boq.line.patch.capability` | 17 | PASS |
+| `verify.overview.rich.text.patch.capability` | 30（21+9） | PASS |
+
+三条已写入 run 索引（`boq_dangerous_import_capability` / `boq_line_patch_capability` /
+`overview_rich_text_patch_capability`，均 `passed`）。
+
+### 7.5 系统性缺口（本轮暴露，已记录）
+
+- **迭代 L2 集与冻结 Quick 集不一致**：`verify.frontend.quick.gate` **不含**上述 boq capability 目标，
+  只有 `ci.local.quick` 覆盖 → 迭代期用 quick.gate 收口会漏掉该类桩装载缺陷。后续迭代若改动
+  `addons/smart_construction_core/handlers/` 或对应桩测试，应把 `ci.local.quick` 的 handler 能力目标纳入
+  L2 影响集（本条为入口选择规则，不是新增全局测试框架）。
+- **合并入口 fail-closed 语义**：`pr.merge` 在无 Quick 回执时强制执行 Quick；故本轮 §6.2 关于“Quick 非推送前置”
+  的结论**不适用于合并车道**，合并前必须在 clean 冻结 HEAD 上取得 Quick 回执。
