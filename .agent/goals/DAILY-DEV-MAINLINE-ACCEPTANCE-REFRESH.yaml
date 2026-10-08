@@ -1,0 +1,63 @@
+schema_version: 1
+goal:
+  id: DAILY-DEV-MAINLINE-ACCEPTANCE-REFRESH
+  title: refresh_the_daily_development_runtime_to_the_current_mainline_and_reclose_user_acceptance
+  status: in_progress
+  formal_product_layer: P4
+  layer_target:
+    - daily_runtime_lane
+    - business_entry_acceptance_harness
+  module:
+    - make/codex.mk
+    - make/frontend.mk
+    - scripts/verify/business_entry_matrix_browser.mjs
+  objective: >-
+    The deployed daily development runtime still serves the pre-mainline revision
+    24e05cd54685645498843bf29b222fed3f595d9e, while the accepted user-level evidence was closed on that
+    same revision. main has since advanced to 7a0fb87006dfbd0381c4a06705a300242ef52311 with
+    user-visible frontend and backend changes (per-menu handling_state projection, projected capability
+    and menu handling consumption, login-envelope consumer realignment, declared REASON_DONE
+    consumption). Refresh the governed daily runtime to the exact current mainline through the existing
+    entries, re-resolve the fixture record identity through the managed resolver, and re-close the
+    user-level acceptance reuse-first, so the acceptance baseline and the deployed revision agree again.
+    No assertion, ACL, field permission, negative case or required check is relaxed, and no release or
+    overall product-delivery status is claimed.
+  product_boundary:
+    standard_vs_user_specific: >-
+      Delivery/verification activity on the registered daily runtime lane. No industry or customer
+      semantics are introduced; the product code itself is not modified by this batch.
+    why_here: >-
+      The daily runtime lane, the acceptance harness and the record-identity resolver are the governed
+      carriers for user-level acceptance in this repository.
+    why_not_elsewhere:
+      - no_product_module_or_frontend_change_from_this_batch
+      - no_new_environment_database_port_volume_or_credential_authority
+      - no_assertion_acl_field_permission_or_negative_case_relaxation
+      - no_release_publication_or_mainline_merge_claimed_by_this_batch
+  product_result:
+    statement: >-
+      The daily development runtime serves the exact current mainline revision, its acceptance fixture
+      and record identity are re-resolved through the governed entries, and the user-level acceptance
+      over the formal business-entry surface is re-closed on that revision with reuse-first evidence.
+    independently_acceptable: true
+  baseline:
+    branch: codex/daily-dev-mainline-acceptance-refresh-20261008
+    full_sha: 7a0fb87006dfbd0381c4a06705a300242ef52311
+    source: origin/main
+    deployed_revision_before: 24e05cd54685645498843bf29b222fed3f595d9e
+  acceptance:
+    - daily_runtime_serves_the_exact_expected_mainline_revision
+    - served_database_matches_the_declared_acceptance_database
+    - fixture_record_identity_resolved_by_the_managed_resolver_with_a_unique_match
+    - user_level_business_entry_acceptance_reports_no_remaining_failures_and_zero_console_errors
+    - negative_authority_cases_still_fail_closed
+    - affected_entries_are_reverified_and_unchanged_entries_are_reused
+  exclusions:
+    - product_code_change
+    - assertion_acl_permission_or_negative_case_relaxation
+    - release_publication
+    - production_access
+    - credential_rotation
+    - new_runtime_profile_or_database_lane
+  rollback:
+    - restore_the_previous_served_revision_through_the_same_governed_alignment_entry
