@@ -2,7 +2,13 @@
   "schema_version": 1,
   "id": "DAILY-DEV-MAINLINE-ACCEPTANCE-REFRESH",
   "branch": "codex/daily-dev-mainline-acceptance-refresh-20261008",
-  "status": "active",
+  "status": "superseded",
+  "superseded_by": {
+    "id": "FE-HIERARCHICAL-WORKSHEET-USABLE-READY",
+    "run": ".agent/runs/FE-HIERARCHICAL-WORKSHEET-USABLE-READY/run.json",
+    "date": "2026-10-09",
+    "reason": "The only acceptance gap this run carried (2/89 declared business entries, menu_sc_p1_expense_contract and menu_sc_payment_execution) was closed by the FE-HIERARCHICAL-WORKSHEET-USABLE-READY topic, which delivered the contract-declared hierarchical-worksheet page_size publication plus frontend consumption and the usable=>ready data-state semantics through PR #621..#626 into main b28d4499. docs/product/frontend_business_entry_acceptance_v1.csv now reports 89/89 passed. The runtime-refresh objective was carried out through the governed daily runtime lane; no product or gate change belongs to this run."
+  },
   "baseline_sha": "7a0fb87006dfbd0381c4a06705a300242ef52311",
   "goal": ".agent/goals/DAILY-DEV-MAINLINE-ACCEPTANCE-REFRESH.yaml",
   "record": "docs/ops/iterations/daily_dev_mainline_acceptance_refresh_20261008.md",
@@ -154,12 +160,11 @@
     }
   },
   "blockers": [
-    "GOAL ACCEPTANCE GAP: user_level_business_entry_acceptance_reports_no_remaining_failures is not met - 2 of the 89 declared business entries stay exception: smart_construction_core.menu_sc_p1_expense_contract and smart_construction_core.menu_sc_payment_execution.",
-    "ROOT CAUSE (evidence-backed, not a probe artifact): both pages render the whole-table HierarchicalWorksheet whose data source hardcodes limit=5000 and loops to exhaustion, so construction.contract.expense (8,513 rows) and sc.payment.execution (38,568 rows) are fully pulled into the browser; declared data-state reaches 'ready' only around 41s while the matrix harness navigates with waitUntil=networkidle (30s) - the surface works, but no bounded navigation wait can observe it.",
-    "WHY THIS RUN CANNOT CLOSE IT: the goal excludes product_code_change and assertion_acl_permission_or_negative_case_relaxation, so neither a worksheet product change nor a gate change may be made inside this run without a new authorization.",
-    "MAINLINE INTEGRATION IS DONE for the P4 tooling batch (PR #620 merged); the daily runtime still serves 7a0fb870 while main is a2213be3, a P4 tooling/docs-only delta with zero product-surface change."
+    "SUPERSEDED 2026-10-09 - not a live blocker. The recorded 2/89 gap (smart_construction_core.menu_sc_p1_expense_contract, smart_construction_core.menu_sc_payment_execution) was a whole-table HierarchicalWorksheet usability defect; it was fixed by FE-HIERARCHICAL-WORKSHEET-USABLE-READY (contract-declared sheet page_size + usable=>ready data-state), merged through PR #621..#626 into main b28d4499.",
+    "docs/product/frontend_business_entry_acceptance_v1.csv records 89/89 acceptance_status=passed; no remaining failing declared entry is attributed to this run.",
+    "No assertion, ACL, field permission, negative case or required check was relaxed, and no product-code change was made inside this run."
   ],
-  "next_exact_step": "Owner judgment required before any further write: choose how to close the 2 worksheet entries. Recommended (A, product, contract-faithful): have the HierarchicalWorksheet declare data-state='ready' once the surface is usable (first page rendered) and surface background completion separately, so the declared state machine - which the harness already consumes - means 'usable' instead of 'fully loaded'; needs a new authorized P0 frontend batch. (B) give the worksheet real paging that consumes the contract-declared views.tree.page_size (needs a paging UI plus a declared total; largest blast radius, all worksheet entries). (C) replace the harness's global waitUntil=networkidle navigation heuristic with the declared-state wait and a bounded deadline sized for a whole-table surface (in-repo precedent: scripts/verify/frontend_system_audit.mjs documents the same class of fix); this changes the effective time budget, so it is a gate change requiring explicit owner authorization. After the decision: implement the chosen fix in one new governed batch, re-walk only the affected worksheet entries (a justified real re-walk), and keep the local docs/run.json bookkeeping riding along with that candidate - a standalone bookkeeping PR is refused by pr.merge.",
+  "next_exact_step": "Superseded and retired 2026-10-09. Every deliverable of this run now lives in FE-HIERARCHICAL-WORKSHEET-USABLE-READY and in the governed daily runtime lane; this ledger keeps the historical P4 tooling batch record (PR #620, merge a2213be3). It is closed so that no index entry keeps pointing at the merged codex/daily-dev-mainline-acceptance-refresh-20261008 branch. Bookkeeping only: no product, contract, test, gate, workflow, runtime or credential behaviour is changed. Deletion of the merged branch belongs to the separate governed branch.retire.historical lane.",
   "evidence": {
     "record": "docs/ops/iterations/daily_dev_mainline_acceptance_refresh_20261008.md",
     "runtime_receipts": ".runtime/agent-runs/DAILY-DEV-MAINLINE-ACCEPTANCE-REFRESH/bundle_sync.log, source_revision_align.log, record_identity_resolve.log, readonly_probe.log, frontend_build.log, readonly_probe_frontend_refresh.log, negative_closures_frontend_refresh.log, matrix_incremental.log, ledger_before_refold.json, ledger_refold_mapping_fix.log, matrix_reverify_2keys.log, evidence_scope_status.log, evidence_scope_unit.log",

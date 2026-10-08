@@ -670,3 +670,20 @@ sections=[] / 无 product_workspace` 并断言全部被检出为 `false`；重�
   18 + 36 tests OK、guard PASS（含 `modelRights:{write:'true'}` 字符串 fail-closed → `/r/`）。
 - diag 证据：`.runtime/final-acceptance/ledger-readonly-closure-bfb38367/{list_and_record_contract.json,list_status_profile.json,ledger_rows_profiles.json}`。
 - 边界：本轮产品代码 0 变更；未触碰 ACL / 字段权限 / 合法隐藏规则；环境 DENY 结论继续单独保留（§11.6）。
+
+## 15. 批次合并：PR #626 进入 `main`（2026-10-09）
+
+- 候选分支 `fix/user-acceptance-detail-closure-20261009`，评审头 `84376430a5a88149c4e4057049b6c60d4e256530`
+  （`chore(generated)` 复杂度证据刷新，工作区干净）。
+- 精确头 `84376430` 上四项必需检查全部 `success`：`merge_policy_gate`、`professional_quality_gate`、
+  `public_guard`、`frontend_release_gate`；其余 `release_candidate_gate`、`python310_runtime_compatibility`、
+  `professional_authorization`、`public_guard_classify`、`classify` 亦 success；`fast`、`wait_for_candidate_checks`、
+  一项 `classify` 为可信风险分类的显式 skip（可接受）。
+- `make pr.merge PR=626 EXPECTED_HEAD=84376430…` 走平台受保护 PR 合并；`pr.merge.local_quick_gate`
+  **REUSE** 精确头 `ci.local.quick` receipt（未重跑套件）。合并方式 `--squash`：
+  合并提交 `b28d449948f77b2f7f0d72bc7ef913b323d51e0d`（`Merge PR #626`，单亲 `bfb383678824…`），
+  与 `#614–#625` 的既有惯例一致。
+- 回读：PR #626 `state=MERGED`、`mergedAt=2026-10-08T21:45:42Z`、`mergeCommit=b28d4499…`；
+  `origin/main=b28d4499…`；`84376430^{tree} == b28d4499^{tree}`（`a9d32af1…`，squash 承载完整内容）。
+- **边界**：合并不触发产品部署。日常运行态仍服务 `main bfb38367` / 产物 `b0311c6f…` / `sc_demo`；
+  本批次**不主张**版本发布完成或产品交付完成。环境 DENY 结论继续单独保留（§11.6），本批次不依赖它、也不泛化。
