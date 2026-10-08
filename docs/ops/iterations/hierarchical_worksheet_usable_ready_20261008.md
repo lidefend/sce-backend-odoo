@@ -149,5 +149,77 @@
 
 ## 7. 边界状态
 
-批次验收：进行中（本地 L1/L2 定向通过，待运行时重走）。
+批次验收：进行中（本地 L1/L2 定向通过；运行态重走改到「主线合并 → 重建服务端产物」之后，见 8.6）。
 主线集成 / 版本发布 / 产品交付：未声明完成。
+
+## 8. 部署后发现运行态回归与根因（2026-10-08 续）
+
+### 8.1 现象
+
+PR #621 合并（main `514e1b51`）并按受管入口重建日常服务器前端后，普通列表入口在运行态
+渲染即失败，业务入口矩阵探针报：
+
+- `smart_construction_core.menu_sc_p1_expense_contract: the runtime declared no recognised presentation surface (declared by nothing)`
+- `smart_construction_core.menu_sc_payment_execution: 同上`
+- `console.error: [ActionView] render failed ContractGapError: 契约缺少合法声明 search.defaults.page_size_options`
+
+### 8.2 根因（首次产生位置）
+
+声明层**没有问题**。直连 `/api/v1/intent`（`ui.contract.v2` / `op=action_open`）实测两份契约都带
+`searchContract.defaults.page_size_options=[10,20,50]`、`page_size_range={min:1,max:200}`；
+用前端 `decodeContractV2Snapshot` 直接解码该应答也 `[OK]`。缺口在**前端消费形状**：
+
+- `frontend/apps/web/src/app/runtime/actionViewListPageSizeRuntime.ts` 直接从入参顶层读
+  `searchContract.defaults`；
+- 调用方 `ActionView.vue:2990/2991`（以及 `:2386` 的指标扫描上界）传入的是 `ContractV2NormalizedStore`，
+  契约快照只挂在 `store.snapshot` 之下，顶层没有 `searchContract`；
+- 因此查询恒得 `{}` → `requireDeclaredNumberList(undefined)` → `ContractGapError` → 列表页渲染中止 →
+  探针判定「未声明任何可识别呈现面」。
+
+该解析器签名原为 `contract: unknown`，正是它让错误形状通过了类型检查。这不是「未识别 widget 导致错误默认值」，
+也不是字段权限拒绝：声明存在且合法，纯粹是消费层拿错了载体。
+
+### 8.3 修复责任层
+
+P0 前端渲染机制（契约消费层），**未改声明层、未加前端兜底、未做付款模型特判**：
+
+- 解析器改为类型化接收 `ContractV2NormalizedStore | null`，并通过既有规范访问器
+  `resolveContractV2SearchContract(store)` 读取，前端不再自拼键路径；
+- 载体形状漂移改由**编译期类型签名**拦截（`verify.frontend.typecheck.strict` 覆盖）；
+- 声明缺失仍然停机（`ContractGapError` 语义不变）。
+
+### 8.4 行为锁与证伪
+
+新增 `frontend/apps/web/scripts/action_view_list_page_size_runtime_test.ts`，用**生产 store 工厂**驱动
+**生产解析器**，锁定：声明原样消费、第二份声明给出第二份结果（证明不是前端常量）、缺失即停机、
+「顶层 `searchContract` 不是载体」这一回归形状必须停机。挂入
+`verify.frontend.action_view_page_size_runtime.unit`（quick / pr / release 三条前端车道）。
+
+证伪：临时把解析器换回部署版实现，同一测试以**完全相同的线上报错**失败
+（`ContractGapError search.defaults.page_size_options`），换回修复版 `PASS cases=11`。
+
+### 8.5 复现出的体系缺口：复用身份里没有服务端修订
+
+更值得注意的是这条回归是怎么「没被发现」的：`108/108` 的列表通过证据是在服务端 `f4279416` 上采集的，
+换包到 `514e1b51` 后仍被判为**可复用**，所以只重走了 2 个键。
+
+- `scripts/verify/business_entry_matrix_model.mjs::environmentIdentity` 原只绑定
+  `base_url / database / login / denied_role_candidates`，并显式注释「故意排除服务端包修订」，
+  约定由执行者「带着记录在案的 impact analysis」跨部署携带证据 —— 但没有任何机制**强制**这份分析存在。
+- 处理（本次一并收口）：把**服务端修订**纳入复用身份。该值不是执行者声明，而是探针每次实测的
+  `source_revision/git_sha`，并且探针在跑任何条目之前就拒绝不匹配的值；同修订的原样重部署不产生失效
+  （复用效率保持），换修订则**强制**把上一代包上采集的证据判为 stale。
+  `environmentIdentity` 现在对空修订直接拒绝，后续调用方无法悄悄省略。
+- 锁定：`scripts/verify/business_entry_matrix_reuse_identity.test.mjs`（基线可绑定 / 同身份指纹稳定 /
+  换修订指纹改变 / 空修订拒绝），挂入 `verify.frontend.business_entry.evidence_scope.unit`。
+
+即：这条机制把「静默复用」改成了「要么同修订复用，要么重新取证」，正对应迭代效率要求
+（能复用先复用）与证据有效性要求（输入变了必须失效）的交叉点。
+
+### 8.6 当前边界与下一步
+
+- 因为 8.5 的复用身份现在绑定服务端修订，运行态复核必须落在**最终服务端修订**上：
+  顺序固定为 主线合并 → `make daily.runtime.*` 受管重建 → 在最终 served revision 上做**一次列表范围复核**。
+- 受影响的浏览器证据按新规则全部判为 stale（这是预期结果，不是缺陷）：日常前端从 `f4279416` 换代到
+  当前修订，上一代包上采集的条目不得继续复用。
+- 环境 DENY 结论继续单独保留（两个挂载者同属一个项目不足以证明独占），未泛化为「环境全部通过」。

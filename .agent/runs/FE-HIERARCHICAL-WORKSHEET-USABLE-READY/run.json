@@ -117,22 +117,68 @@
           "dirty": true
         }
       }
+    },
+    "action_view_page_size_runtime": {
+      "target": "verify.frontend.action_view_page_size_runtime.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/runtime/actionViewListPageSizeRuntime.ts",
+        "frontend/apps/web/src/app/contracts/v2/store.ts",
+        "frontend/apps/web/scripts/action_view_list_page_size_runtime_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "business_entry_evidence_scope": {
+      "target": "verify.frontend.business_entry.evidence_scope.unit",
+      "inputs": [
+        "scripts/ops/evidence_scope.py",
+        "scripts/ops/test_evidence_scope.py",
+        "scripts/verify/business_entry_matrix_incremental.py",
+        "scripts/verify/business_entry_matrix_scope.mjs",
+        "scripts/verify/business_entry_matrix_scope_seed.py",
+        "scripts/verify/business_entry_matrix_model.mjs",
+        "scripts/verify/business_entry_matrix_reuse_identity.test.mjs",
+        "scripts/verify/test_business_entry_matrix_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [
-    "环境 DENY：两个挂载者同属一个项目，不足以证明满足独占要求；相关环境前置未恢复前不进入依赖它的运行验收（沿用原结论，不泛化）。"
+    "环境 DENY：两个挂载者同属一个项目，不足以证明满足独占要求；相关环境前置未恢复前不进入依赖它的运行验收（沿用原结论，不泛化）。",
+    "运行态列表复核待日常前端受管重建到最终 served revision 后执行一次（因复用身份现绑定 served revision，上一代包证据按预期全部 stale）。"
   ],
-  "next_exact_step": "1) L1/L2 定向门全绿并写入本地 receipt：hierarchical_worksheet.unit(cases=10)、rendering_detail_state.unit(76 tests)、contract_basis.unit(11 tests+guard open_defects=0)、scene_contract.consumption.guard、contract_basis.enforce、guard.registry。2) 冻结候选：make ci.delivery.freeze.prepare（enforce 门已可放行）→ 按 P0 前端 / P0 后端 / P4 记录守卫分提交 → make pr.push → make pr.create。3) 精确 head 跑一次 make ci.local.quick，等远端四项必需检查通过后按所有者规则合并。4) 受管重建日常前端（make daily.runtime.frontend.build）并仅对两个受影响工作表入口做一次有理由的真实重走，复核 data-state 快速 ready、0 console error。",
+  "next_exact_step": "1) 提交记录第 8 节与 run.json -> 2) 重跑 cheap 门（verify.frontend.contract_basis.unit / verify.guard.registry / ci.local.iteration）确认 bookkeeping 变更不破坏，并对两条新锁用 agent.run.begin/record 落 receipt（action_view_page_size_runtime=11、business_entry_evidence_scope） -> 3) 冻结候选：clean HEAD 上跑一次 make ci.local.quick（EXPECTED_HEAD 绑定本 HEAD） -> 4) make pr.push + make pr.create（origin=github），等远端四项必需检查 public_guard / merge_policy_gate / professional_quality_gate / frontend_release_gate 通过后按所有者规则 make pr.merge -> 5) make main.sync 后按受管入口重建日常前端：daily.runtime.main.bundle_sync / daily.runtime.source_revision.align / daily.runtime.frontend.build / daily.runtime.record_identity.resolve -> 6) 在最终 served revision 上做一次列表范围复核（verify.frontend.business_entry.matrix.incremental + SC_ENTRY_SCOPE_REVERIFY_REASON），通过后按四边界报告。",
   "evidence": {
     "local": [
+      "make verify.frontend.action_view_page_size_runtime.unit (cases=11, PASS；证伪：换回部署版解析器复现完全相同的 ContractGapError search.defaults.page_size_options)",
+      "make verify.frontend.contract_basis.unit (Ran 11 tests OK; guard PASS bindings=2 exemptions=3 logic_sites=3 open_defects=0)",
+      "make verify.frontend.contract_basis.enforce (exit 0)",
+      "make verify.frontend.business_entry.evidence_scope.unit (PASS；含 business_entry_matrix_reuse_identity.test.mjs 10 cases)",
+      "make verify.guard.registry (AUDIT PASS 1400 scripts / 88-88 orphans / 186-186 unwired)",
+      "make ci.generated_reports.guard (PASS)",
+      "make ci.local.iteration (PASS change_state=clean)",
+      "make verify.frontend.typecheck.strict (exit 0)",
+      "make verify.frontend.build (success, local only, not deployed)",
       "make verify.frontend.hierarchical_worksheet.unit (cases=10, PASS)",
       "make verify.frontend.rendering_detail_state.unit (Ran 76 tests OK + 3 inventory --check PASS)",
-      "make verify.frontend.contract_basis.unit (Ran 11 tests OK; guard PASS open_defects=0)",
-      "make verify.frontend.contract_basis.enforce (exit 0)",
       "make verify.frontend.scene_contract.consumption.guard (PASS)",
-      "make verify.guard.registry (AUDIT PASS)",
       "addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py (Ran 22 tests, OK)"
     ],
-    "previous_run": ".agent/runs/DAILY-DEV-MAINLINE-ACCEPTANCE-REFRESH/run.json"
+    "previous_run": ".agent/runs/DAILY-DEV-MAINLINE-ACCEPTANCE-REFRESH/run.json",
+    "commits": [
+      {
+        "sha": "f4b24c21",
+        "layer": "P0",
+        "subject": "consume the list page-size declaration through its contract store",
+        "closes": "CD-20261008-PAGE-SIZE-CONSUMPTION-SHAPE"
+      },
+      {
+        "sha": "912a49f3",
+        "layer": "P4",
+        "subject": "bind the served revision into business-entry matrix reuse",
+        "closes": "served-revision-absent-from-reuse-identity"
+      }
+    ]
   }
 }
