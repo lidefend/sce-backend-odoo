@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4626`
+- Scanned files: `4627`
 - Files requiring split plan: `61`
 - Files above warning threshold: `112`
 
@@ -55,7 +55,7 @@ Generated from repository source files. This report is informational during the 
 | 1841 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1801 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1761 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
-| 1725 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
+| 1727 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1713 | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
 | 1678 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1659 | YAML workflow | `scripts/verify/registry.yaml` |
@@ -238,7 +238,7 @@ Generated from repository source files. This report is informational during the 
 | 1841 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1801 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1761 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
-| 1725 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
+| 1727 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1713 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
 | 1678 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1659 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
