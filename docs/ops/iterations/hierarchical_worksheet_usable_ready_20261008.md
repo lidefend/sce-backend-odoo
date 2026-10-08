@@ -613,3 +613,60 @@ sections=[] / 无 product_workspace` 并断言全部被检出为 `false`；重�
   它在 `product_workspace` 路径上惰性，真实规模由 `CurrentWorkItemService` 决定。
 - 环境 DENY 结论继续单独保留（第 11.6 节），本轮未依赖它，也不泛化为「环境全部通过」。
 - 未宣称：89 入口全部可用、创建/编辑写入能力已验收（`form-profiles` 为声明口径）、版本发布/产品交付完成。
+
+## 14. 项目台账 `/f/` ↔ `readonly` 观察项收口（served `main bfb38367`，2026-10-09）
+
+### 14.1 这是当前唯一的未决产品策略项
+
+出处 `docs/ops/iterations/daily_dev_user_acceptance_completion_20261006.md` §4.1：列表声明
+`model_write_authority=true` 并据此打开 `/f/project.project/<id>`，但记录契约给出 `effectiveRenderProfile=readonly`；
+提问「是否为产品策略」。
+
+### 14.2 事实（served bfb38367 / sc_demo / wutao，前端真实 op）
+
+- **列表契约**（`op:action_open`，action 506 / menu 379）：`modelRights={read,write,create,unlink,duplicate:true}`，
+  同时 `globalStatus.effectiveRenderProfile="readonly"`、`pageAuth="read"`；`actionRuleList` 只有 2 条规则，
+  其中 `page.row` 的 `target` **全部为 null** —— 该列表**不声明**正式 `record_entry`。
+- **记录契约**（`op:model`，model=`project.project`，record_id=581，action 506 / menu 379）：
+  `effectiveRenderProfile="edit"`、`pageAuth="edit"`、`effectiveRecordCapabilities.write=true`、
+  workflow `editability="editable"`、`workflowPhase=draft`（记录 `PRJ260581`）。
+- **台账当前可见 20 行**逐行记录契约：`edit=20`、`readonly=0`。
+- **served 车道产物**（`.runtime/final-acceptance/detail-lane-bfb38367/detail-only-{light,dark}.json`）：
+  `/f/project.project/581` 记为 `edit-form-observation-without-save`，记录检查 8/8 通过，
+  `denied_requests=0`、`console_errors=0`。
+
+### 14.3 定性：不是契约自相矛盾，是「模型级写权限」与「记录/状态级有效可编辑性」两个不同权威
+
+- **入口路由**（`/f/` vs `/r/`）的唯一来源是后端声明的 `statusContract.globalStatus.modelRights.write`
+  （`recordEntryFromModelRights`）。该列表未声明正式 `record_entry`，因此走这条**已声明的通用机制**；
+  非布尔值一律 fail-closed 到 `/r/`（`frontend/apps/web/src/app/runtime/recordEntryContract.ts` 头注释）。
+- **记录面 profile** 由 P0 `addons/smart_core/utils/contract_governance_form_render.py::resolve_render_profile`
+  （由 ORM 生效权限计算）产生，并由 P1 工作流**收窄**：`addons/smart_construction_core/core_extension.py`
+  （`editability in {readonly,locked}` → `pageAuth=read` + `effectiveRenderProfile=readonly`）经
+  `models/support/workflow_contract_service.py::_editability`。
+- 两个权威职责不同：`modelRights` = 模型级能力（决定入口路由）；`effectiveRenderProfile` = 该记录**当前**有效可编辑性。
+  当记录被状态/审批锁住时，`/f/`（可写入口）+ `readonly`（该记录当前不可写）是设计内的 fail-closed 收窄，**不是矛盾**；
+  且 `506/379` 在 `route_authority` 内，不产生 403。
+- **既有锁已把该配对判为合法**：`scripts/verify/test_frontend_list_surface_search_contract.py` 断言
+  `/f/<model>/<id>` 可声明 `edit` **或** `readonly`，只对 `/r/` + 非 readonly 抛错；P1 收窄由
+  `addons/smart_construction_core/tests/test_workflow_contract_backend.py`、`test_core_extension_v2_finalize.py` 锁定。
+
+因此：**不放宽任何断言、不改产品代码、不加任何模型特判**；探针把 readonly 记录记 `not_applicable` 的口径本身正确
+（绝不当作编辑通过）。也不以 `critical` 覆盖 ACL / 字段权限 / 合法隐藏规则。
+
+### 14.4 观察项在 served 身份上已不可复现，其来源期已被「项目台账入口统一」取代
+
+- 原始 readonly 观测出现在旧基线 `5ba6398e`（产物 `detail-closeout-5ba6398e/light.json`：581 surface=`readonly-detail`）。
+- 其后合入的 **PR #594**（`90484d88`，`PROJECT-LEDGER-ENTRY-UNIFICATION`，即所有者批准的
+  「项目台账 × 项目信息编辑 统一为唯一入口」）退役了遗留表单视图 `view_sc_product_project_information_edit_form_v1`，
+  把台账统一到 `view_project_overview_form`，并新增运行契约锁 `addons/smart_construction_core/tests/test_project_ledger_runtime_contract.py`。
+- served `bfb38367` 上同一记录同一入口解析为 `edit`，台账 20 行全 `edit`。
+- 说明：历史基线在可变 `sc_demo` 上的**精确**触发条件（记录当时的状态/审批锁，或遗留入口面的权限投影）不再重新取证；
+  两种成因都是合法收窄，均非契约自相矛盾。收口以当前 served 身份的事实为准。
+
+### 14.5 证据与边界
+
+- 机制锁（本轮引用重跑）：`make verify.frontend.collection_view_semantics.unit` → `record_entry_contract_test: ok`、
+  18 + 36 tests OK、guard PASS（含 `modelRights:{write:'true'}` 字符串 fail-closed → `/r/`）。
+- diag 证据：`.runtime/final-acceptance/ledger-readonly-closure-bfb38367/{list_and_record_contract.json,list_status_profile.json,ledger_rows_profiles.json}`。
+- 边界：本轮产品代码 0 变更；未触碰 ACL / 字段权限 / 合法隐藏规则；环境 DENY 结论继续单独保留（§11.6）。

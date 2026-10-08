@@ -225,6 +225,10 @@ Owner acceptance entry: `http://1.95.85.92:18081/`（自定义前端），口令
 1. **`项目台账` 的 `/f/` ↔ `readonly` profile 观察项**：列表声明 `model_write_authority=true` 并据此
    打开 `/f/project.project/<id>`，但记录契约给出 `effectiveRenderProfile=readonly`。探针按既有策略记为
    not_applicable（绝不当成编辑通过）；是否为产品策略需所有者确认。这是当前唯一的未决产品策略项。
+   **已于 2026-10-09 收口（本项不再是未决）**：定性为「模型级写权限（决定 `/f/` 入口）与记录/状态级
+   有效可编辑性」两个不同权威，记录被状态/审批锁住时 `/f/` + `readonly` 是设计内 fail-closed 收窄，非契约矛盾；
+   且 served `bfb38367` 上已不可复现（同一记录解析为 `edit`、台账整表无 readonly 行）。证据与判据见
+   `docs/ops/iterations/hierarchical_worksheet_usable_ready_20261008.md` §14。
 2. 已关闭项：
    - 关系打开投影缺陷：已修复、已合入 main（PR #589 → `dd75f83c`）、已在大运行态复验（§3.8、§3.9）。
    - 测试资产登记：`scripts/verify/record_relation_roundtrip_acceptance.js` 已由

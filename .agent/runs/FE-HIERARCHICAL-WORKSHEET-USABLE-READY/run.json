@@ -216,7 +216,7 @@
     "列表范围（PR #624，served 4ee151ef / 产物 b0311c6f）已收口，不再重跑 89 键矩阵；详情车道与关系往返在 served main bfb38367（同产物 b0311c6f）通过（批次记录第 12 节）；创建/编辑（form-profiles）与工作台（workbench-only）最小证据差额已收口（第 13 节）。",
     "残留依赖（非阻断）：复用身份的区分力依赖受管前端构建的可复现性；若构建引入非确定内容，表现为保守地全量重走（安全方向）。"
   ],
-  "next_exact_step": "1) 详情、创建/编辑（声明口径）、工作台三条最小证据差额已在 served main bfb38367（产物 b0311c6f）收口；工作台失败已定性为 P4 探针过时断言并修复+锁定，非契约缺陷（第 13 节，含证伪记录）。2) 本轮产品代码 0 变更；改动为 P4 探针/契约锁/规划器。3) 待办（需所有者指令）：是否在 clean HEAD 走 ci.delivery.freeze.prepare -> 一次 ci.local.quick -> pr.push/create；或先处理保留的环境 DENY（独立专题）。89 键列表矩阵不重跑。",
+  "next_exact_step": "1) 唯一未决产品策略项（项目台账 /f/ ↔ readonly）已按「合法记录/状态级收窄、非契约缺陷」在 served main bfb38367 收口并记账（第 14 节），台账整表当前无 readonly 行，产品代码 0 变更、未放宽断言、未加模型特判。2) 本轮其余最小证据差额（详情、创建/编辑声明口径、工作台）已在第 12/13 节收口。3) 待办（需所有者指令）：是否在 clean HEAD 走 ci.delivery.freeze.prepare -> 一次 ci.local.quick -> pr.push/create；或先处理保留的环境 DENY（独立专题）。89 键列表矩阵不重跑。",
   "evidence": {
     "local": [
       "make verify.frontend.business_entry.evidence_scope.unit（PASS：py 27 例 + js cases=23）",
@@ -234,7 +234,12 @@
       "工作台 workbench-only 首轮 FAIL 已定性为 P4 探针过时断言，非契约缺陷：my.work.summary 在 product_workspace 分支先于读取 limit/limit_each/page_size 返回（my_work_summary.py:723-752），载荷由 CurrentWorkItemService 决定；实测带/不带 12/4/12 的 product_workspace 结果一致（todo=2/initiated=0），无产品行为变化；前端 PR #621 属已归档决议 CD-20261008-API-ENVELOPE-DEFAULT-LIMIT",
       "修复（P4）：dailyHomeSummaryMatches 改为锁定声明消费（product_workspace=true、不携带前端自造 limit/limit_each/page_size、page=1/sort_by=priority/sort_dir=desc）+ 实际行为（ok=true 且 product_workspace.sections 非空）；契约锁 test_frontend_list_surface_search_contract 同步负例先行，22 例 OK",
       "工作台受影响车道重跑一次（workbench-only 明暗 1440/390）：PASS，console/page/failed/denied=0，router-workspace-home 明暗 summaryResponses=1、officialCards=3；产物 .runtime/final-acceptance/forms-workbench-bfb38367/workbench-only-{light,dark}.json",
-      "迭代效率机制（P4 规划器）：探针改动路由到 verify.frontend.list_surface_search_contract.unit；docs/ 纯叙述文档并入 NON_SOURCE_PATH_PREFIXES（依 OPS-DECISION-002 documentation_only_change 不失效）；ci.local.iteration unmappedPathCount 2->0、manualNonZeroL2Required true->false，探针目标自动入选；dev.incremental.unit 27 例 OK"
+      "迭代效率机制（P4 规划器）：探针改动路由到 verify.frontend.list_surface_search_contract.unit；docs/ 纯叙述文档并入 NON_SOURCE_PATH_PREFIXES（依 OPS-DECISION-002 documentation_only_change 不失效）；ci.local.iteration unmappedPathCount 2->0、manualNonZeroL2Required true->false，探针目标自动入选；dev.incremental.unit 27 例 OK",
+      "项目台账 /f/ ↔ readonly 观察项收口（served main bfb38367 / 产物 b0311c6f / sc_demo / wutao，批次记录第 14 节）：前端真实 op 采证 —— 列表契约（op:action_open，action 506 / menu 379）modelRights.write=true 且 globalStatus.effectiveRenderProfile=readonly / pageAuth=read，page.row 规则不声明正式 record_entry；记录契约（op:model，project.project/581，506/379）effectiveRenderProfile=edit / pageAuth=edit / effectiveRecordCapabilities.write=true / workflow editability=editable / phase=draft；台账当前可见 20 行记录契约全部 edit、readonly=0",
+      "定性（非契约缺陷）：入口路由由后端声明的 modelRights.write 决定（recordEntryFromModelRights，非布尔 fail-closed 到 /r/），记录面 profile 由 P0 contract_governance_form_render.resolve_render_profile + P1 core_extension 工作流收窄（editability in {readonly,locked} -> readonly）产生；二者职责不同，记录被状态/审批锁住时 /f/ + readonly 是设计内 fail-closed 收窄。既有锁已判合法：test_frontend_list_surface_search_contract（/f/ 可声明 edit 或 readonly）、test_workflow_contract_backend、test_core_extension_v2_finalize（P1 收窄）",
+      "观察项不可复现：原始 readonly 观测在旧基线 5ba6398e（产物 detail-closeout-5ba6398e/light.json），其后 PR #594（90484d88，PROJECT-LEDGER-ENTRY-UNIFICATION，项目台账 x 项目信息编辑统一为唯一入口）退役遗留表单视图并统一到 view_project_overview_form；served bfb38367 同一记录解析为 edit",
+      "机制锁本轮引用重跑（两条均为该结论的带锁证据）：make verify.frontend.collection_view_semantics.unit -> record_entry_contract_test: ok、18 + 36 tests OK、guard PASS（含 modelRights:{write:'true'} 字符串 fail-closed -> /r/）；make verify.frontend.list_surface_search_contract.unit -> Ran 22 tests OK（/f/<model>/<id> 可声明 edit 或 readonly，仅 /r/ + 非 readonly 抛错）",
+      "diag 证据：.runtime/final-acceptance/ledger-readonly-closure-bfb38367/{list_and_record_contract.json,list_status_profile.json,ledger_rows_profiles.json}"
     ],
     "previous_run": "PR #624（候选 771d4de3）修复 relation_entry.options_limit/options_search_limit 通用投影丢失；合并提交 4ee151ef；日常服务器受管重建到 4ee151ef，产物指纹 b0311c6f…（entry_asset index-Yv56wmel.js），未升级模块。",
     "commits": [
