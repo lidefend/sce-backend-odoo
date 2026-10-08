@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: QUICK-EVIDENCE-SHARD-COMPOSITION
   title: quick_suite_sharded_evidence_composition
-  status: active
+  status: completed
   formal_product_layer: P4
   objective: >-
     Make the frozen-head ci.local.quick evidence composable instead of all-or-nothing. Today

@@ -1,6 +1,4 @@
 {
   "schema_version": 1,
-  "branches": {
-    "codex/quick-evidence-shard-composition-20261008": ".agent/runs/QUICK-EVIDENCE-SHARD-COMPOSITION/run.json"
-  }
+  "branches": {}
 }

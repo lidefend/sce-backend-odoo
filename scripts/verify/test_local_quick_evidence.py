@@ -311,6 +311,11 @@ class ShardCompositionTests(unittest.TestCase):
         part[key] = value
         path.write_text(json.dumps(part), encoding="utf-8")
 
+    def test_only_verify_reports_a_pure_verification_label(self) -> None:
+        self.assertEqual(evidence.result_label("verify"), "VERIFIED")
+        for mode in ("run", "shard", "compose"):
+            self.assertEqual(evidence.result_label(mode), "RECORDED", mode)
+
     def test_shards_compose_into_one_verifiable_exact_head_receipt(self) -> None:
         calls = self._run_all_shards()
         manifest = list(MANIFEST_TARGETS)
