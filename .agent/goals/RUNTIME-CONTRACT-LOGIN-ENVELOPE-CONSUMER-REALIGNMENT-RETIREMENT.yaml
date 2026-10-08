@@ -1,0 +1,22 @@
+schema_version: 1
+goal:
+  id: RUNTIME-CONTRACT-LOGIN-ENVELOPE-CONSUMER-REALIGNMENT-RETIREMENT
+  status: completed
+  formal_product_layer: P4
+  objective: >-
+    Retire the RUNTIME-CONTRACT-LOGIN-ENVELOPE-CONSUMER-REALIGNMENT run ledger after PR #614
+    (head a9ce7528, base 6c30c919) merged into main as merge commit d04b9fa1. Mark the run and
+    goal completed with the recorded mainline-integration and frozen-candidate ci.local.quick
+    evidence and return .agent/active-runs.json to its empty terminal state, so no index entry
+    points at the merged fix/runtime-contract-login-envelope-consumer-realignment-20261008 branch.
+    Bookkeeping only: it changes no product, contract, test, gate, workflow, runtime or
+    credential behaviour.
+  run: .agent/runs/RUNTIME-CONTRACT-LOGIN-ENVELOPE-CONSUMER-REALIGNMENT-RETIREMENT/run.json
+  exclusions:
+    - product_changes
+    - contract_changes
+    - assertion_or_audit_relaxation
+    - baseline_raises
+    - product_deployment
+    - production_access
+    - credential_rotation

@@ -1,6 +1,4 @@
 {
   "schema_version": 1,
-  "branches": {
-    "fix/runtime-contract-login-envelope-consumer-realignment-20261008": ".agent/runs/RUNTIME-CONTRACT-LOGIN-ENVELOPE-CONSUMER-REALIGNMENT/run.json"
-  }
+  "branches": {}
 }
