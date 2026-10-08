@@ -123,6 +123,15 @@ RULES = (
     # reuse engine. A change to any of them moves the derivation or the reuse
     # decision, so route all of them to the engine unit test instead of letting
     # the matrix scripts fall through to the typecheck fallback.
+    # The released list-surface acceptance probe carries a contract lock: editing the
+    # probe without running its lock let a stale assertion survive until the daily
+    # lane failed. Route the probe and its lock to the same non-zero unit target.
+    Rule((
+        "scripts/verify/frontend_list_surface_structure_browser.mjs",
+        "scripts/verify/test_frontend_list_surface_search_contract.py",
+    ), (
+        "verify.frontend.list_surface_search_contract.unit",
+    )),
     Rule((
         "scripts/verify/business_entry_matrix_",
         "scripts/verify/business_entry_negative_closures.mjs",
@@ -138,10 +147,13 @@ RULES = (
 )
 FALLBACK_TARGET = "verify.frontend.typecheck.strict"
 FORBIDDEN_DEVELOPMENT_TARGET_PARTS = ("quick", "build", "browser", "release", "fingerprint")
-# Run bookkeeping carries no frontend source input: reconciling `.agent/` state
-# must never be reported as an unmapped product path, otherwise every continuation
-# would demand a manual L2 selection that has nothing to select.
-NON_SOURCE_PATH_PREFIXES = (".agent/",)
+# Run bookkeeping and narrative documentation carry no frontend source input:
+# reconciling `.agent/` state or writing an iteration record must never be reported
+# as an unmapped product path, otherwise every continuation or record update would
+# demand a manual L2 selection that has nothing to select. Narrative docs are a
+# documentation-only change, which the recorded reuse decision
+# (.agent/decisions/evidence-reuse-identity.yaml) states does not invalidate a unit.
+NON_SOURCE_PATH_PREFIXES = (".agent/", "docs/")
 
 
 def select_targets(paths: list[str]) -> list[str]:

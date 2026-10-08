@@ -758,11 +758,21 @@ function dailyLandingMatches(currentUrl, defaultRoute, baseUrl) {
     && [...expected.searchParams].every(([key, value]) => current.searchParams.get(key) === value);
 }
 
+// The workspace home consumes the my.work.summary contract; it must not carry its
+// own product fetch scale. PR #621 removed the frontend-held 12/4/12 envelope
+// defaults (ledger CD-20261008-API-ENVELOPE-DEFAULT-LIMIT), and the
+// product_workspace projection ignores limit/limit_each/page_size entirely, so a
+// magic-number assertion on the transport params proves nothing about behaviour.
+// Lock the declared consumption (surface flag, the sort/paging the frontend owns,
+// and the absence of a frontend-invented scale) plus the actual projected result.
 function dailyHomeSummaryMatches(row) {
-  return row.intent === 'my.work.summary' && row.params?.product_workspace === true
-    && row.params?.limit === 12 && row.params?.limit_each === 4 && row.params?.page_size === 12
-    && row.params?.page === 1 && row.params?.sort_by === 'priority' && row.params?.sort_dir === 'desc'
-    && (row.response?.ok === true || row.response?.result?.ok === true);
+  const envelope = row.response?.result?.ok !== undefined ? row.response.result : row.response;
+  if (row.intent !== 'my.work.summary' || row.params?.product_workspace !== true) return false;
+  if (['limit', 'limit_each', 'page_size'].some(key => row.params?.[key] !== undefined)) return false;
+  if (row.params?.page !== 1 || row.params?.sort_by !== 'priority' || row.params?.sort_dir !== 'desc') return false;
+  if (envelope?.ok !== true) return false;
+  const sections = envelope.data?.product_workspace?.sections;
+  return Array.isArray(sections) && sections.length > 0;
 }
 
 function dailyDetailContractMatches(row, expected) {

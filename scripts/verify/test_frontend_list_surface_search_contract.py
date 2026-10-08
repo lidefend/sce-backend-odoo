@@ -164,9 +164,20 @@ assert.equal(dailyRecordEntry(list,{id:4},sourceEntry).path,'/r/payment.request/
 list.actionContract.actionRuleList[0].target={record_entry:{model:'payment.request',record_id:'${id}',entry_intent:'explicit_readonly',model_write_authority:true}};
 assert.equal(dailyRecordEntry(list,{id:4},sourceEntry).path,'/r/payment.request/4');
 assert.throws(()=>dailyRecordEntry({...list,actionContract:{actionRuleList:[]}},{id:4},sourceEntry),/no declared row opener/);
-const summary = {intent:'my.work.summary',params:{product_workspace:true,limit:12,limit_each:4,page_size:12,page:1,sort_by:'priority',sort_dir:'desc'},response:{ok:true}};
+const workspace = {sections:[{key:'todo',count:1}]};
+const summary = {intent:'my.work.summary',params:{product_workspace:true,page:1,sort_by:'priority',sort_dir:'desc'},response:{ok:true,data:{product_workspace:workspace}}};
 assert(dailyHomeSummaryMatches(summary));
+// The workspace home consumes the my.work.summary contract and must not carry its
+// own product fetch scale (PR #621 removed the frontend-held 12/4/12 envelope
+// defaults; the product_workspace projection ignores limit/limit_each/page_size).
+for (const key of ['limit','limit_each','page_size']) assert(!dailyHomeSummaryMatches({...summary,params:{...summary.params,[key]:12}}),key);
 assert(!dailyHomeSummaryMatches({...summary,params:{...summary.params,product_workspace:false}}));
+assert(!dailyHomeSummaryMatches({...summary,params:{...summary.params,page:2}}));
+assert(!dailyHomeSummaryMatches({...summary,params:{...summary.params,sort_by:'id'}}));
+assert(!dailyHomeSummaryMatches({...summary,response:{ok:false,data:{product_workspace:workspace}}}));
+// The projected workspace must actually be built, not just acknowledged.
+assert(!dailyHomeSummaryMatches({...summary,response:{ok:true,data:{product_workspace:{sections:[]}}}}));
+assert(!dailyHomeSummaryMatches({...summary,response:{ok:true,data:{}}}));
 assert.equal([summary].slice(1).filter(dailyHomeSummaryMatches).length,0);
 const expected = {model:'payment.request',recordId:4,actionId:8,menuId:9};
 const contract = {intent:'ui.contract.v2',params:{record_id:4,action_id:8,menu_id:9},response:{ok:true,data:{pageInfo:{model:'payment.request',viewType:'form'},dataContract:{mainData:{id:4}}}}};

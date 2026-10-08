@@ -521,3 +521,95 @@ run 第 7 步「回到产品交付主线」的首个执行单：**只收详情�
 - 观察（本轮未改代码）：纯叙述性 `docs/ops/iterations/*.md` 在 `ci.local.iteration` 中被计为 `unmappedPath`
   （`NON_SOURCE_PATH_PREFIXES` 当前只豁免 `.agent/`），使记录性文档改动也带出 `manualNonZeroL2Required=true`。
   按「只修确认失败」本轮不动规划器，登记为迭代效率候选（与第 9.5 节同类）。
+
+## 13. 创建/编辑与工作台的最小证据差额收口（served `main bfb38367`，2026-10-09）
+
+### 13.1 触发与入口
+
+同一受管入口 `make verify.daily_dev.list_surface.readonly.browser`，`LIST_SURFACE_DAILY_OBSERVATION_SCOPE`
+分别取 `form-profiles` / `workbench-only`，明暗各一次，1440/390；复用 12.1 的受管后端与构建产物
+（`source_revision=bfb38367…`、`frontend_build_sha256=b0311c6f…4957`、`database=sc_demo`、fixture 未变）。
+本轮未重跑 89 键列表矩阵，未重建后端/前端。
+
+### 13.2 创建/编辑面（`form-profiles`）：PASS，但按声明口径记录
+
+`records` 12/12、`runtime_errors=0`、`denied/console/page=0`。实际生效的断言是 `declared_edit_entry`
+（编辑页 `/f/project.project/581?menu_id=379&action_id=506`，明暗各观察一次）。
+
+`declared_create_entry / declared_create_contract / declared_create_renderer` 全部为
+**`not_applicable`（声明文案："create authority is not declared for this list"）**。也就是说本车道证明的是
+「契约声明了什么就观察什么」，**不是**创建/编辑写入能力的证明。该口径与
+`daily_dev_user_acceptance_completion_20261006.md` §3.5 一致，沿用不重新解释。
+
+### 13.3 工作台面：首轮 FAIL 的定性与根因（**不是契约缺陷**）
+
+首轮 `workbench-only` 明暗均 `passed=false`，失败信息 `current daily home summary response missing`
+（`scripts/verify/frontend_list_surface_structure_browser.mjs:1047`）。失败运行
+`console/page/failed/denied = 0`；`my.work.summary` 请求**确实发出且 HTTP 200**（请求参数为
+`product_workspace=true, page=1, sort_by=priority, sort_dir=desc, section/source/reason_code=all, search=''`），
+只是不满足探针 `dailyHomeSummaryMatches` 里硬编码的 `limit===12 && limit_each===4 && page_size===12`。
+
+责任判定（实证，非推测）：
+
+- **后端**：`my.work.summary` 在 `product_workspace` 为真时**先返回**（`addons/smart_construction_core/handlers/my_work_summary.py:723-752`），
+  根本没有读取 `limit/limit_each/page_size`；工作台载荷由 `CurrentWorkItemService`（→ `PaymentRequestWorkItemService`）
+  自带规模构建。这三个参数在该路径上是**惰性参数**。
+- **实测**：同一账号同一 fixture，带 `12/4/12` 与不带（走默认）两个请求的 `product_workspace` 结果完全一致
+  （`todo`=2、`initiated`=0），**无产品行为变化**。
+- **前端**：PR #621 移除前端持有的 `12/4/12`，属于已归档决议 `CD-20261008-API-ENVELOPE-DEFAULT-LIMIT`
+  （信封缺省由后端声明层承担，`my_work_summary` 在列）的落地，方向正确。
+- **探针**：`dailyHomeSummaryMatches` 仍冻结了 PR #621 之前的前端常量，属于 **P4 验收工具的过时断言**。
+
+因此先前「这是契约缺声明」的假设**被证伪**：工作台面既无契约缺失，也无产品行为变化；失败全部归属探针断言。
+
+### 13.4 修复（保持责任层，P4）：把魔法数字换成「声明消费 + 实际行为」
+
+`dailyHomeSummaryMatches` 改为锁定三件事，不再断言任何前端已不再持有的数字：
+
+1. **声明消费**：请求为 `my.work.summary` 且 `product_workspace===true`，并且**不携带**前端自造的产品取数规模
+   （`limit`/`limit_each`/`page_size` 任一出现即判否）；排序/分页仍是前端合法持有的 `page=1, sort_by=priority, sort_dir=desc`。
+2. **契约结果**：信封 `ok===true`。
+3. **实际行为**：`data.product_workspace.sections` 必须是被真正构建出来的非空数组（投影缺失或为空判否）。
+
+负例先行（先证未注入的基线正常，再证注入被检出）：契约锁
+`scripts/verify/test_frontend_list_surface_search_contract.py::test_daily_read_boundary_executes_real_predicate`
+按真实基线构造 `summary` 先断言 `dailyHomeSummaryMatches(summary)===true`，再逐一注入
+`product_workspace=false / limit=12 / limit_each=12 / page_size=12 / page=2 / sort_by=id / ok=false /
+sections=[] / 无 product_workspace` 并断言全部被检出为 `false`；重跑 `verify.frontend.list_surface_search_contract.unit` 22 例 OK（未放空断言）。
+
+### 13.5 结果（受影响车道重跑一次）
+
+`workbench-only` 明暗各重跑一次（探针是本轮唯一变化的执行输入），1440/390 全部通过：
+
+- `passed=true`，`console_errors/page_errors/failed_responses/denied_requests = 0`。
+- 观察：`declared-theme`（light/dark 各自 `resolved` 正确）、`declared-default-landing`（`/s/projects.list`，
+  `projects.list`）、`router-workspace-home` 明暗各 `summaryResponses=1`、`officialCards=3`。
+- 产物：`.runtime/final-acceptance/forms-workbench-bfb38367/workbench-only-{light,dark}.json`；
+  `form-profiles` 明暗产物为本目录同批 `form-profiles-{light,dark}.json`。
+
+**复用裁定**：`form-profiles` 车道不执行工作台分支（`DAILY && (scope==='all' || WORKBENCH_ONLY)` 之外的 scope 跳过），
+其断言不依赖本次改动，按「测试工具改动只失效依赖它的结果」沿用通过证据，未重跑。
+
+### 13.6 迭代效率：把本轮暴露的两处浪费做成机制（P4）
+
+本轮暴露两处系统性浪费，按「发现效率问题立即处理」当场收口在规划器 `scripts/verify/frontend_dev_incremental.py`：
+
+- **探针改动无人路由**：改 `frontend_list_surface_structure_browser.mjs` 落进 `unmappedPaths`，其契约锁
+  `verify.frontend.list_surface_search_contract.unit` 只能靠人工 grep 才会被想起来。现补规则把
+  探针与其锁测试路由到该非零单测；否则过时断言会一路漂到日常车道才暴露（正是本轮）。
+- **纯叙述性文档要求人工 L2**：`docs/**`（本轮为 `docs/ops/iterations/*.md`）无任何映射即要求
+  `manualNonZeroL2Required=true`，而按已归档复用决议 `OPS-DECISION-002`，`documentation_only_change`
+  **不失效**任何单元。现把 `docs/` 并入 `NON_SOURCE_PATH_PREFIXES`（仅当无映射时豁免；被规则映射的
+  `docs/architecture/frontend_contract_basis_ledger.json` 仍照旧路由到契约门）。
+
+证据：改动后 `make ci.local.iteration` 的 `unmappedPathCount` 2 → **0**、`manualNonZeroL2Required` true → **false**，
+且 `verify.frontend.list_surface_search_contract.unit` 自动进入推荐目标。行为锁 `verify.frontend.dev.incremental.unit`
+新增 3 例（探针路由、叙述文档不触发人工 L2、受管台账仍走契约门）后 27 例 OK。
+
+### 13.7 边界与残留
+
+- 责任层：本轮产品代码 0 变更；改动集中在 P4 验收探针、其契约锁与规划器（均为既有受管工具的扩展）。
+- 证伪记录（供后续不再反复）：工作台 `my.work.summary` 的取数规模**不是**未声明缺口，不要在契约层「补」它；
+  它在 `product_workspace` 路径上惰性，真实规模由 `CurrentWorkItemService` 决定。
+- 环境 DENY 结论继续单独保留（第 11.6 节），本轮未依赖它，也不泛化为「环境全部通过」。
+- 未宣称：89 入口全部可用、创建/编辑写入能力已验收（`form-profiles` 为声明口径）、版本发布/产品交付完成。
