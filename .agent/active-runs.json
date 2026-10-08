@@ -1,4 +1,6 @@
 {
   "schema_version": 1,
-  "branches": {}
+  "branches": {
+    "fix/model-layer-contract-governance-import-boundary-20261008": ".agent/runs/MODEL-LAYER-CONTRACT-GOVERNANCE-IMPORT-BOUNDARY/run.json"
+  }
 }

@@ -9,6 +9,7 @@ from . import capability_matrix_service
 from . import portal_dashboard_service
 from . import portal_execute_button_service
 from . import contract_governance_overrides
+from . import workflow_contract_profile_registry
 from . import my_work_aggregate_service
 from . import project_dashboard_builders
 from . import project_dashboard_service

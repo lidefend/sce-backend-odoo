@@ -1,0 +1,71 @@
+schema_version: 1
+goal:
+  id: MODEL-LAYER-CONTRACT-GOVERNANCE-IMPORT-BOUNDARY
+  title: p1_model_layer_p0_contract_governance_import_boundary
+  status: active
+  formal_product_layer: P1
+  objective: >-
+    Restore the P1 model-layer import boundary that `scripts/verify/model_ui_dependency_guard.py`
+    has enforced since the clean product baseline: `smart_construction_core/models/**`
+    must not import the P0 contract-governance mechanism
+    (`odoo.addons.smart_core.utils.contract_governance`).  The violation was
+    introduced when the industry workflow service began reading the P0
+    externally-owned workflow-profile registry: `addons/smart_construction_core/models/support/workflow_contract_service.py`
+    imported `workflow_contract_profiles` directly, so `verify.boundary.import_guard`
+    failed on `model_ui_dependency_guard`.  Move that registry read into the module's
+    services layer (the module's already-sanctioned place for consuming P0 contract
+    governance and an existing `models -> services` precedent) so the model layer is
+    UI/contract-mechanism free again.  Behaviour is unchanged: the same P0 registry is
+    read, the same external profiles are merged, and the guard is not relaxed.
+  product_boundary:
+    formal_product_layer: P1
+    layer_target: >-
+      smart_construction_core (models/support/workflow_contract_service.py plus a new
+      services/workflow_contract_profile_registry.py accessor)
+    module: >-
+      addons/smart_construction_core/models/support/workflow_contract_service.py;
+      addons/smart_construction_core/services/workflow_contract_profile_registry.py;
+      addons/smart_construction_core/services/__init__.py
+    standard_vs_user_specific: >-
+      construction-industry standard-product layering: the industry model layer must not
+      depend on the P0 contract-governance UI mechanism; the sanctioned consumption point
+      is the industry services layer.
+    why_here: >-
+      The guard forbids only `smart_construction_core/models/**`; the offending import is
+      in that model layer.  The module already consumes P0 contract governance from
+      `services/contract_governance_overrides.py` and already imports a local service from
+      a model (`models/support/product_policy_sync.py` -> `services.locked_menu_policy_contract`),
+      so the owning layer already has the correct carrier.
+    why_not_elsewhere:
+      - no_guard_prefix_or_assertion_relaxation
+      - no_contract_governance_registry_prefix_gaming
+      - no_p0_env_seam_added
+      - no_frontend_change
+      - no_model_special_case
+      - no_acl_field_permission_or_hidden_rule_change
+  product_result:
+    statement: >-
+      The P1 model layer no longer imports the P0 contract-governance mechanism, the
+      externally-owned workflow profiles are still merged at read time through a single
+      services-layer seam, and `verify.model.ui_dependency.guard` / `verify.boundary.import_guard`
+      pass with no assertion relaxed.
+    independently_acceptable: true
+  baseline:
+    branch: fix/model-layer-contract-governance-import-boundary-20261008
+    full_sha: dba12da58ccbb1ca8a77542f9ff38baa626dea42
+    source: origin/main
+  acceptance:
+    - the_model_layer_registry_read_moves_to_the_services_layer
+    - the_external_profiles_are_still_merged_with_unchanged_behaviour
+    - verify_model_ui_dependency_guard_passes
+    - verify_boundary_import_guard_passes
+    - no_guard_assertion_acls_or_field_permissions_relaxed
+  exclusions:
+    - contract_schema_changes
+    - assertion_or_audit_relaxation
+    - baseline_raises
+    - product_deployment
+    - production_access
+    - credential_rotation
+  rollback:
+    - revert_the_services_accessor_and_the_model_import_together
