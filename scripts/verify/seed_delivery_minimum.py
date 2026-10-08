@@ -6,7 +6,7 @@ import base64
 import json
 from pathlib import Path
 
-from python_http_smoke_utils import env_value, get_base_url, http_post_json, obtain_runtime_probe_token
+from python_http_smoke_utils import env_value, extract_login_token, get_base_url, http_post_json, obtain_runtime_probe_token
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -33,8 +33,7 @@ def _login(intent_url: str, db_name: str, login: str, password: str) -> tuple[bo
     )
     if status >= 400 or not isinstance(payload, dict) or payload.get("ok") is not True:
         return False, ""
-    data = payload.get("data") if isinstance(payload.get("data"), dict) else {}
-    token = str(data.get("token") or "").strip()
+    token = extract_login_token(payload)
     return bool(token), token
 
 

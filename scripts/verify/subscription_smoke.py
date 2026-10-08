@@ -4,6 +4,7 @@ import json
 import os
 from intent_smoke_utils import require_ok
 from python_http_smoke_utils import (
+    extract_login_token,
     get_base_url,
     http_get_json,
     http_post_json,
@@ -35,7 +36,7 @@ def main():
         intent_url, login_payload, headers={"X-Anonymous-Intent": "1"}
     )
     require_ok(status, login_resp, "login")
-    token = (login_resp.get("data") or {}).get("token")
+    token = extract_login_token(login_resp)
     if not token:
         raise RuntimeError("login response missing token")
     auth_header = {"Authorization": f"Bearer {token}"}

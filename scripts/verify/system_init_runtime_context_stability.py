@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 
 from intent_smoke_utils import require_ok
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import extract_login_token, get_base_url, http_post_json
 
 ART_DIR = Path("artifacts/backend")
 JSON_OUT = ART_DIR / "system_init_runtime_context_stability.json"
@@ -21,7 +21,7 @@ def _login(intent_url: str, db_name: str, login: str, password: str) -> str:
         headers={"X-Anonymous-Intent": "1"},
     )
     require_ok(status, resp, "login")
-    token = ((resp or {}).get("data") or {}).get("token")
+    token = extract_login_token(resp)
     if not token:
         raise RuntimeError("login missing token")
     return str(token)

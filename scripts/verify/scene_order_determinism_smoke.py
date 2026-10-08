@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 
 from intent_smoke_utils import require_ok
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import extract_login_token, get_base_url, http_post_json
 
 
 def _login(intent_url: str, *, db_name: str, login: str, password: str) -> str | None:
@@ -16,8 +16,7 @@ def _login(intent_url: str, *, db_name: str, login: str, password: str) -> str |
     )
     if status != 200 or not payload.get("ok"):
         return None
-    data = payload.get("data") if isinstance(payload.get("data"), dict) else {}
-    token = data.get("token")
+    token = extract_login_token(payload)
     return str(token) if token else None
 
 

@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 
 from intent_smoke_utils import require_ok
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import extract_login_token, get_base_url, http_post_json
 
 
 def _artifact_dir() -> Path:
@@ -28,9 +28,7 @@ def _artifact_dir() -> Path:
 
 
 def _token_from_login(login_resp: dict) -> str:
-    data = login_resp.get("data") if isinstance(login_resp.get("data"), dict) else {}
-    session = data.get("session") if isinstance(data.get("session"), dict) else {}
-    token = session.get("token") or data.get("token")
+    token = extract_login_token(login_resp)
     if not token:
         raise RuntimeError("login response missing token")
     return str(token)

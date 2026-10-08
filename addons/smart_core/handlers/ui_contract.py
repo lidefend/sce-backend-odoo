@@ -378,7 +378,15 @@ class UiContractHandler(BaseIntentHandler):
                 source_mode=source_mode,
                 inject_contract_mode=False,
             )
-        return apply_contract_governance(data, contract_mode, inject_contract_mode=False)
+        # The delivery data must carry the surface the request resolved to; the
+        # fallback previously dropped it and normalized every payload to user,
+        # which mislabelled hud/native delivery data (meta stayed correct).
+        return apply_contract_governance(
+            data,
+            contract_mode,
+            contract_surface=contract_surface,
+            inject_contract_mode=False,
+        )
 
     # ---------------- op 实现 ----------------
     def _op_nav(self, ctx):

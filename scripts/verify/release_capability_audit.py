@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import extract_login_token, get_base_url, http_post_json
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -122,8 +122,7 @@ def _login(intent_url: str, db_name: str, login: str, password: str) -> tuple[bo
     )
     if status >= 400 or not isinstance(payload, dict) or payload.get("ok") is not True:
         return False, "", payload if isinstance(payload, dict) else {}
-    data = payload.get("data") if isinstance(payload.get("data"), dict) else {}
-    token = str(data.get("token") or "").strip()
+    token = extract_login_token(payload)
     return bool(token), token, payload
 
 

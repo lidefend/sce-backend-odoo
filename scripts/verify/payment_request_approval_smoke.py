@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import urllib.error
 import urllib.request
+from python_http_smoke_utils import extract_login_token
 
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8069").rstrip("/")
 DB_NAME = os.getenv("DB_NAME") or os.getenv("DB") or "sc_demo"
@@ -455,7 +456,7 @@ def main() -> int:
     ensure_envelope(login_resp, "login")
     if not login_resp.get("ok"):
         raise AssertionError(f"login failed: {login_resp.get('error')}")
-    token = str(((login_resp.get("data") or {}).get("token") or "")).strip()
+    token = extract_login_token(login_resp)
     if not token:
         raise AssertionError("login token missing")
     summary["steps"].append({"step": "login", "ok": True})

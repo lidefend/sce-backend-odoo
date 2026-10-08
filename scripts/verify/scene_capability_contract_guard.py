@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 
 from intent_smoke_utils import require_ok
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import extract_login_token, get_base_url, http_post_json
 
 ROOT = Path(__file__).resolve().parents[2]
 ARTIFACT_JSON = ROOT / "artifacts" / "scene_capability_contract_guard.json"
@@ -48,8 +48,7 @@ def _login(intent_url: str, *, db_name: str, login: str, password: str):
     )
     if status != 200:
         return None
-    data = login_resp.get("data") if isinstance(login_resp, dict) else {}
-    token = data.get("token") if isinstance(data, dict) else None
+    token = extract_login_token(login_resp) or None
     if not token:
         return None
     return str(token)
@@ -120,7 +119,14 @@ def main() -> None:
     if login:
         probe_source = "env:E2E_LOGIN" if os.getenv("E2E_LOGIN") else probe_source
 
-    demo_pwd = os.getenv("E2E_ROLE_MATRIX_DEFAULT_PASSWORD") or "demo"
+    # The governed local.dev profile declares its demo credential in
+    # SC_DEMO_USER_PASSWORD; a hardcoded default silently failed every
+    # legacy demo role login and reported them as zero capabilities.
+    demo_pwd = (
+        os.getenv("E2E_ROLE_MATRIX_DEFAULT_PASSWORD")
+        or os.getenv("SC_DEMO_USER_PASSWORD")
+        or "demo"
+    )
     prod_like_pwd = os.getenv("E2E_PROD_LIKE_PASSWORD") or "prod_like"
     default_pwd_map = {
         "admin": password,
