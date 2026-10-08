@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: SAVED-SEARCH-CAPABILITY-UNIT-RECOVERY
   title: frontend_quick_gate_red_item_root_cause_recovery
-  status: active
+  status: completed
   objective: >-
     Restore `make verify.frontend.quick.gate` to green on main and report one
     complete detection conclusion for the runtime-contract-driven frontend

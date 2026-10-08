@@ -1,6 +1,4 @@
 {
   "schema_version": 1,
-  "branches": {
-    "fix/saved-search-capability-unit-dependency-binding-20261008": ".agent/runs/SAVED-SEARCH-CAPABILITY-UNIT-RECOVERY/run.json"
-  }
+  "branches": {}
 }

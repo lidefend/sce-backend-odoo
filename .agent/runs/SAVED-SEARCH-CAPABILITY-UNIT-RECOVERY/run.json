@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "SAVED-SEARCH-CAPABILITY-UNIT-RECOVERY",
   "branch": "fix/saved-search-capability-unit-dependency-binding-20261008",
-  "status": "active",
+  "status": "completed",
   "baseline_sha": "c9e4823899a1b834d3d0941b0578905f466e1c87",
   "goal": ".agent/goals/SAVED-SEARCH-CAPABILITY-UNIT-RECOVERY.yaml",
   "record": "docs/ops/iterations/saved_search_capability_unit_recovery_20261008.md",
@@ -286,5 +286,38 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Merge-lane blocker fixed at its owning layer: the three handler stub loaders now bind the real handlers package path (addons/smart_construction_core/tests/*), matching the existing real-path binding of smart_core.core/utils in the same loader; no assertion relaxed, no product semantics changed. run scope reconciled to include addons/smart_construction_core/tests/ (metadata correction). Affected L2 re-run PASS: boq_dangerous_import_capability 29, boq_line_patch_capability 17, overview_rich_text_patch_capability 30. Next exact step: run make ci.delivery.freeze.prepare to refresh content-bound generated evidence, commit test-tool fix + record + generated evidence, then run one make ci.local.quick on the clean frozen HEAD (no make overrides) to obtain the merge prerequisite receipt, push to GitHub origin, re-satisfy PR #612 required checks on the new head, and merge via protected PR. Batch status only; do not claim version release or product delivery."
+  "next_exact_step": "Completed and retired. The seven red verify.frontend.quick.gate targets were fixed at their owning layers (five stale-consumer/harness dependency bindings, one obsolete readonly-panel guard, one real P0 visual-literal gap in the shared navigation-drawer padding token), with no gate, assertion, ACL, field permission or negative case relaxed. Mainline integration: PR #612 (head 614a248b5525f6859a5928feddbe5a8a2e29148d, base main c9e48238) merged through the protected PR flow as merge commit 5ba44a1f0454fb1a507fe88c4d886b72fd437dd9 after all four required checks passed on the exact head, and the merge-lane ci.local.quick prerequisite reused the exact-head receipt for 614a248b. One extra merge-lane blocker (the handler stub loader package binding in the boq capability tests) was fixed at its P4 test-tool owner and re-verified. This ledger is retired: .agent/active-runs.json is back to its empty terminal state so no index entry points at the merged fix/saved-search-capability-unit-dependency-binding-20261008 branch, and on main make agent.run.resume reports unregistered (ACTIVE-RUN-INDEX-CLOSEOUT / -DANGLING-CLOSEOUT precedent). Status boundaries: batch acceptance done; mainline integration done; version release NOT claimed; product delivery NOT claimed. Deletion of the merged fix branch belongs to the separate branch.retire.historical lane.",
+  "evidence": {
+    "candidate_head": "614a248b5525f6859a5928feddbe5a8a2e29148d",
+    "candidate_tree": "e9aed46b87bd21530090380bafc20860138f2adb",
+    "frozen_candidate_local_quick_receipt": ".git/codex/evidence/ci.local.quick/614a248b5525f6859a5928feddbe5a8a2e29148d.json",
+    "mainline_integration": {
+      "status": "completed",
+      "pull_requests": [
+        612
+      ],
+      "merge_commit": "5ba44a1f0454fb1a507fe88c4d886b72fd437dd9",
+      "base_before_merge": "c9e4823899a1b834d3d0941b0578905f466e1c87",
+      "required_checks_on_exact_head": [
+        "public_guard",
+        "merge_policy_gate",
+        "professional_quality_gate",
+        "frontend_release_gate"
+      ]
+    },
+    "merge_lane_extra_fix": {
+      "owner_layer": "P4 test tool (stub loader package binding)",
+      "targets": [
+        "verify.boq.dangerous.import.capability",
+        "verify.boq.line.patch.capability",
+        "verify.overview.rich.text.patch.capability"
+      ],
+      "test_counts": {
+        "verify.boq.dangerous.import.capability": 29,
+        "verify.boq.line.patch.capability": 17,
+        "verify.overview.rich.text.patch.capability": 30
+      }
+    },
+    "boundaries": "batch acceptance + mainline integration only; version release and product delivery not claimed"
+  }
 }

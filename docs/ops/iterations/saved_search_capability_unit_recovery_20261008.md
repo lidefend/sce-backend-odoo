@@ -275,3 +275,24 @@ ModuleNotFoundError: No module named '...handlers.reason_codes';
   L2 影响集（本条为入口选择规则，不是新增全局测试框架）。
 - **合并入口 fail-closed 语义**：`pr.merge` 在无 Quick 回执时强制执行 Quick；故本轮 §6.2 关于“Quick 非推送前置”
   的结论**不适用于合并车道**，合并前必须在 clean 冻结 HEAD 上取得 Quick 回执。
+
+### 7.6 合并结果与 run 收口（2026-10-08 同日）
+
+- 精确候选冻结 HEAD：**`614a248b5525f6859a5928feddbe5a8a2e29148d`**（clean，`tree=e9aed46b`）。
+- clean HEAD 上一次 `make ci.local.quick` → **PASS**，回执
+  `.git/codex/evidence/ci.local.quick/614a248b…json`；`make pr.push`（受管入口，`authoritative_remote=origin`）推送成功。
+- PR #612 四项必需检查对**该精确 head**重新通过：`public_guard` / `merge_policy_gate` /
+  `professional_quality_gate` / `frontend_release_gate`。
+- `make pr.merge PR=612 EXPECTED_HEAD=614a248b… PR_MERGE_METHOD=merge`：
+  `[pr.merge.local_quick_gate] REUSE: exact-head ci.local.quick evidence verified` → 受保护 PR 合并成功。
+- 合并提交：**`5ba44a1f0454fb1a507fe88c4d886b72fd437dd9`**（"Merge PR #612"），`origin/main` 由
+  `c9e48238` 前进到 `5ba44a1f`；已回读确认候选 head 为 main 祖先。
+- 合并车道额外阻断（§7.1–7.5 的桩装载缺陷）为**同一次合并内**修复，未另开候选。
+
+**收口（本轮）**：run 与 goal 标记 `completed`；`.agent/active-runs.json` 回到空终态，任何索引项都不再指向
+已合并的 `fix/saved-search-capability-unit-dependency-binding-20261008`；main 上 `make agent.run.resume`
+将报 `unregistered`（沿用 `ACTIVE-RUN-INDEX-CLOSEOUT` / `-DANGLING-CLOSEOUT` 先例）。
+已合并分支的删除属独立的 `branch.retire.historical` 车道，不在本批内。
+
+**边界**：本条只主张**批次验收 + 主线集成**；**版本发布**与**产品交付**未主张。
+详情面收口、创建/编辑与工作台最小证据差额属后续批次，不在本 run 结论内。
