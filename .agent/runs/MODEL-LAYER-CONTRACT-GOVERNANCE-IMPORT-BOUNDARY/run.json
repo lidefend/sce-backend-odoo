@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "MODEL-LAYER-CONTRACT-GOVERNANCE-IMPORT-BOUNDARY",
   "branch": "fix/model-layer-contract-governance-import-boundary-20261008",
-  "status": "active",
+  "status": "completed",
   "baseline_sha": "dba12da58ccbb1ca8a77542f9ff38baa626dea42",
   "goal": ".agent/goals/MODEL-LAYER-CONTRACT-GOVERNANCE-IMPORT-BOUNDARY.yaml",
   "record": "docs/ops/iterations/model_layer_contract_governance_import_boundary_20261008.md",
@@ -49,5 +49,25 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "P1 model-layer boundary restored: workflow_contract_service._external_profile_by_model now reads the P0 externally-owned workflow-profile registry through the new services-layer accessor smart_construction_core.services.workflow_contract_profile_registry.external_workflow_contract_profiles, and the model layer no longer imports smart_core.utils.contract_governance. verify.boundary.import_guard FAIL->PASS (model_ui_dependency_guard PASS, 163 model files scanned, 0 violations); verify.native_view.workflow_action_coverage PASS (8+54 tests); make ci.local.iteration PASS. Behaviour lock via local.dev.test TestWorkflowContractBackend is byte-identical to the stashed baseline on sc_dev_demo (1 failed / 8 errors of 31, same 9 tests), i.e. pre-existing demo-data drift, unrelated to this relocation and not fixed here. Next exact step: commit the P1 change, run make ci.delivery.freeze.prepare, freeze the clean HEAD, run one make ci.local.quick, publish the PR, re-satisfy the four required checks on the exact head, and merge. Batch acceptance only; do not claim version release or product delivery."
+  "next_exact_step": "Completed and retired. The P1 model-layer boundary was restored at its owning layer: workflow_contract_service._external_profile_by_model now reads the P0 externally-owned workflow-profile registry through the new services-layer accessor smart_construction_core.services.workflow_contract_profile_registry.external_workflow_contract_profiles, and the model layer no longer imports smart_core.utils.contract_governance; no guard prefix, assertion, ACL, field permission or negative case was relaxed. Mainline integration: PR #616 (head f833b860ddeafdd7ca1502e8220c7d135125f941) merged through the protected PR flow as merge commit 5c028d03fe6069340515886b498740d348291755 after all four required checks passed on the exact head; the merge-lane ci.local.quick prerequisite reused the exact-head receipt for f833b860 (no rerun). This ledger is retired: .agent/active-runs.json is back to its empty terminal state so no index entry points at the merged fix/model-layer-contract-governance-import-boundary-20261008 branch, and on main make agent.run.resume reports unregistered. The same candidate also installs the merge-lane bookkeeping guard (pr.merge.local_quick_gate) that the follow-up efficiency complaint required. Status boundaries: batch acceptance done; mainline integration done; version release NOT claimed; product delivery NOT claimed. Deletion of the merged fix branch belongs to the separate branch.retire.historical lane.",
+  "evidence": {
+    "candidate_head": "f833b860ddeafdd7ca1502e8220c7d135125f941",
+    "candidate_tree": "5682c8e52292d6c7370849ee9c626d07d925c929",
+    "frozen_candidate_local_quick_receipt": ".git/codex/evidence/ci.local.quick/f833b860ddeafdd7ca1502e8220c7d135125f941.json",
+    "mainline_integration": {
+      "status": "completed",
+      "pull_requests": [
+        616
+      ],
+      "merge_commit": "5c028d03fe6069340515886b498740d348291755",
+      "base_before_merge": "dba12da58ccbb1ca8a77542f9ff38baa626dea42",
+      "required_checks_on_exact_head": [
+        "public_guard",
+        "merge_policy_gate",
+        "professional_quality_gate",
+        "frontend_release_gate"
+      ]
+    },
+    "boundaries": "batch acceptance + mainline integration only; version release and product delivery not claimed"
+  }
 }

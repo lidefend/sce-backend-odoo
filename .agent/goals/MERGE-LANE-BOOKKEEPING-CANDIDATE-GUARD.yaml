@@ -1,0 +1,59 @@
+schema_version: 1
+goal:
+  id: MERGE-LANE-BOOKKEEPING-CANDIDATE-GUARD
+  title: merge_lane_bookkeeping_candidate_short_circuit
+  status: active
+  formal_product_layer: P4
+  objective: >-
+    Close the iteration-efficiency defect found while iterating this topic: `make ci.local.quick`
+    is an exact-candidate producer with no self-reuse branch, and the merge prerequisite
+    `pr.merge.local_quick_gate` previously had only two paths (reuse the exact-head receipt, or run
+    the whole suite once). The policy layer already requires reuse-first, but the mechanical layer had
+    no bookkeeping short-circuit, so "change only the ledger and freeze one more candidate" bought no
+    new coverage and always paid one more full suite run (e.g. PR #613, the pure `chore(agent)`
+    retirement commit 2ff12544). Add a scope-bound trusted-risk short-circuit to the merge gate so a
+    candidate whose entire diff versus its base is confined to `.agent/` and `docs/` is rejected
+    explicitly before the suite starts, plus an explicit terminal-retirement acknowledgement. This
+    only adds a check: no assertion, ACL, field permission, negative case or required remote check is
+    relaxed, and an existing exact-head receipt is still reused first.
+  product_boundary:
+    formal_product_layer: P4
+    layer_target: >-
+      pr.merge.local_quick_gate in make/codex.mk, its unit test
+      scripts/verify/test_branch_governance_consistency_guard.py, and the rule text in
+      docs/ops/codex_workspace_execution_rules.md
+    module: make/codex.mk
+    standard_vs_user_specific: platform/delivery mechanism only; no industry or customer semantics
+    why_here: >-
+      The merge prerequisite and the policy text are the mechanical carriers of this constraint; the
+      quick-suite producer and the merge gate both live in this layer.
+    why_not_elsewhere:
+      - no_product_module_change
+      - no_frontend_renderer_change
+      - no_assertion_acl_field_permission_or_negative_case_relaxation
+      - no_required_remote_check_removed
+      - no_use_of_the_unit_test_harness_skip_variable_in_production
+  product_result:
+    statement: >-
+      A bookkeeping-only candidate (diff versus its base confined to `.agent/` and `docs/`) with no
+      exact-head Quick receipt is rejected by `pr.merge.local_quick_gate` before any suite run, with
+      the changed paths printed and a clear bundling instruction; any candidate that touches a
+      product path, or whose base cannot be resolved, still takes the fail-closed reuse/run path.
+    independently_acceptable: true
+  baseline:
+    branch: codex/merge-lane-bookkeeping-candidate-guard-20261008
+    full_sha: 5c028d03fe6069340515886b498740d348291755
+    source: origin/main
+  acceptance:
+    - bookkeeping_only_candidate_without_receipt_is_rejected_before_the_suite_runs
+    - product_path_candidate_still_takes_the_fail_closed_path
+    - terminal_retirement_acknowledgement_uses_the_normal_path
+    - unresolvable_base_ref_cannot_yield_a_skip
+    - no_assertion_acl_field_permission_negative_case_or_required_check_relaxed
+  exclusions:
+    - product_deployment
+    - production_access
+    - credential_rotation
+    - incremental_quick_dependency_mapping
+  rollback:
+    - revert_the_gate_insertion_and_its_unit_tests_together
