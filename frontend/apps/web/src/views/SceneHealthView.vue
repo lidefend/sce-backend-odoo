@@ -303,7 +303,6 @@ async function loadCompanies() {
         op: 'list',
         model: 'res.company',
         fields: ['id', 'name'],
-        limit: 50,
         order: 'id asc',
       },
     });
@@ -322,7 +321,6 @@ async function loadHealth() {
     const companyId = companyIdText.value ? Number(companyIdText.value) : undefined;
     const response = await fetchSceneHealth({
       mode: 'full',
-      limit: 100,
       offset: 0,
       ...(companyId ? { company_id: companyId } : {}),
     });

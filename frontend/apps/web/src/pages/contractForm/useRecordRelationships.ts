@@ -95,6 +95,8 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     relationSearchColumnsFromContract,
     relationSearchDialog,
     relationSearchDialogContract,
+    relationOptionsLimit,
+    relationOptionsSearchLimit,
     relationSearchLimit,
     relationSearchOrder,
     relationSearchReadFields,
@@ -317,6 +319,8 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
         dynamicDomainDependencyFields(descriptor).length || runtimeRelationDomain(name).length,
       ),
       currentValue: formData[name],
+      optionsLimit: relationOptionsLimit(entry),
+      optionsSearchLimit: relationOptionsSearchLimit(entry),
       isDeniedError: (err) =>
         err instanceof ApiError &&
         (err.status === 403 || String(err.reasonCode || '').toUpperCase() === 'PERMISSION_DENIED'),
@@ -339,7 +343,6 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
   async function fetchRelationOptions(
     name: string,
     keyword: string,
-    limit = 80,
   ): Promise<RelationOption[]> {
     const descriptor = effectiveFieldDescriptor(name);
     const relation = relationModel(name);
@@ -349,7 +352,8 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
       relation,
       canRead: entry?.canRead === true,
       keyword,
-      limit,
+      optionsLimit: relationOptionsLimit(entry),
+      optionsSearchLimit: relationOptionsSearchLimit(entry),
       fetchOptions: async (search, limitValue) => {
         const listed = await listContractFormRecords({
           model: relation,
@@ -395,7 +399,6 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
   async function fetchRelationSearchRows(
     name: string,
     keyword: string,
-    limit = 120,
   ): Promise<RelationSearchRow[]> {
     const descriptor = effectiveFieldDescriptor(name);
     const relation = relationModel(name);
@@ -413,7 +416,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
         columns.length ? columns : fallbackRelationSearchColumns(descriptor),
         dialog,
       ),
-      limit: relationSearchLimit(dialog, limit),
+      limit: relationSearchLimit(dialog),
       order: relationSearchOrder(dialog),
       domain,
       search_term: String(keyword || '').trim() || undefined,
@@ -449,7 +452,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
 
   async function runRelationSearch() {
     await runRelationSearchFromRuntime({
-      fetchRows: (fieldName, keyword) => fetchRelationSearchRows(fieldName, keyword, 120),
+      fetchRows: (fieldName, keyword) => fetchRelationSearchRows(fieldName, keyword),
       sanitizeError: (error, fallback) =>
         sanitizeUiErrorMessage(error instanceof Error ? error.message : error, fallback),
     });

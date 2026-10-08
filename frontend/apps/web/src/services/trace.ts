@@ -35,13 +35,20 @@ export interface SuggestedActionKindStat {
 }
 
 const STORAGE_KEY = 'sc_frontend_traces_v0_3';
-const MAX_ENTRIES = 200;
+/**
+ * 客户端诊断缓冲容量（本地 trace ring buffer，无后端契约载体，不承载产品语义）。
+ * 仅本地诊断用途；产品面取数规模一律由契约声明决定。
+ */
+export const TRACE_BUFFER_MAX_ENTRIES = 200;
+/** 诊断缓冲导出的默认条数与 Top-K 默认条数（同上，仅本地诊断）。 */
+const DEFAULT_TRACE_EXPORT_LIMIT = 50;
+const DEFAULT_TRACE_TOP_K = 5;
 const TRACE_UPDATE_EVENT = 'sc:trace-updated';
 
 export function recordTrace(event: TraceEvent) {
   const list = getTraceLog();
   list.unshift({ ...event, event_type: event.event_type || 'intent' });
-  const sliced = list.slice(0, MAX_ENTRIES);
+  const sliced = list.slice(0, TRACE_BUFFER_MAX_ENTRIES);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(sliced));
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(TRACE_UPDATE_EVENT));
@@ -96,7 +103,7 @@ function normalizeSuggestedActionTrace(event: TraceEvent): SuggestedActionTraceR
 }
 
 export function listSuggestedActionTraces(filter: SuggestedActionTraceFilter = {}): SuggestedActionTraceRow[] {
-  const limit = Math.max(1, Number(filter.limit || 50));
+  const limit = Math.max(1, Number(filter.limit ?? DEFAULT_TRACE_EXPORT_LIMIT));
   const targetKind = String(filter.kind || '').trim().toLowerCase();
   const expectedSuccess = typeof filter.success === 'boolean' ? filter.success : null;
   const sinceTs = Number(filter.since_ts || 0);
@@ -123,7 +130,7 @@ export function exportSuggestedActionTraces(filter: SuggestedActionTraceFilter =
     filter: {
       kind: String(filter.kind || '').trim() || undefined,
       success: typeof filter.success === 'boolean' ? filter.success : undefined,
-      limit: Math.max(1, Number(filter.limit || 50)),
+      limit: Math.max(1, Number(filter.limit ?? DEFAULT_TRACE_EXPORT_LIMIT)),
       since_ts: Number(filter.since_ts || 0) > 0 ? Number(filter.since_ts) : undefined,
     },
     summary: {
@@ -146,16 +153,16 @@ export function summarizeSuggestedActionTraceFilter(filter: SuggestedActionTrace
   return parts.join(', ');
 }
 
-export function rankSuggestedActionKinds(limit = 5): SuggestedActionKindStat[] {
+export function rankSuggestedActionKinds(limit = DEFAULT_TRACE_TOP_K): SuggestedActionKindStat[] {
   const stats = new Map<string, number>();
-  for (const row of listSuggestedActionTraces({ limit: MAX_ENTRIES })) {
+  for (const row of listSuggestedActionTraces({ limit: TRACE_BUFFER_MAX_ENTRIES })) {
     const key = row.kind;
     stats.set(key, (stats.get(key) || 0) + 1);
   }
   return [...stats.entries()]
     .map(([kind, count]) => ({ kind, count }))
     .sort((a, b) => b.count - a.count || a.kind.localeCompare(b.kind))
-    .slice(0, Math.max(1, Number(limit || 5)));
+    .slice(0, Math.max(1, Number(limit ?? DEFAULT_TRACE_TOP_K)));
 }
 
 export function createTraceId() {

@@ -447,6 +447,8 @@
       :on-row-click="handleCollectionRowClick"
       :on-page-change="handleListPageChange"
       :on-page-limit-change="handleListPageLimitChange"
+      :page-size-options="listPageSizeOptions"
+      :page-size-range="listPageSizeRange"
       :on-create="openCreateRecord"
       @column-visibility-change="handleListColumnVisibilityChange"
       @column-order-change="handleListColumnOrderChange"
@@ -883,6 +885,7 @@ import {
   uniqueFields,
 } from '../app/runtime/actionViewRequestRuntime';
 import { resolvePreferredActionViewMode, resolveRouteSelectionState } from '../app/runtime/actionViewContractLoadRuntime';
+import { resolveActionViewPageSizeOptions, resolveActionViewPageSizeRange } from '../app/runtime/actionViewListPageSizeRuntime';
 import {
   resolveActionViewResolvedModel,
 } from '../app/runtime/actionViewLoadGuardRuntime';
@@ -2379,6 +2382,8 @@ const {
   isCompletedState,
   resolveCollectionAmount,
   resolveCollectionMetricFields,
+  // 指标扫描的取数规模同源契约声明（列表页每页条数声明上界），前端不持有产品常量。
+  resolveDeclaredScopePageLimit: () => resolveActionViewPageSizeRange(actionContract.value).max,
 });
 
 const {
@@ -2982,9 +2987,13 @@ function handleListPageChange(offset: number): void {
   clearSelection();
 }
 
+const listPageSizeOptions = computed(() => resolveActionViewPageSizeOptions(actionContract.value));
+const listPageSizeRange = computed(() => resolveActionViewPageSizeRange(actionContract.value));
+
 function handleListPageLimitChange(limit: number): void {
-  const normalized = Math.min(Math.max(Math.trunc(Number(limit || 0)), 1), 200);
-  if (!Number.isFinite(normalized) || normalized <= 0) return;
+  const normalized = Math.trunc(Number(limit));
+  // 可选集合由契约声明；前端只接受声明内的值，不自造范围或夹取。
+  if (!Number.isFinite(normalized) || !listPageSizeOptions.value.includes(normalized)) return;
   listLimitOverride.value = normalized;
   contractLimit.value = normalized;
   listOffset.value = 0;

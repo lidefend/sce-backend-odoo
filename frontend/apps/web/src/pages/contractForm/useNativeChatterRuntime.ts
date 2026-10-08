@@ -214,7 +214,7 @@ export function useNativeChatterRuntime(params: {
     }
     usersLoading.value = true;
     try {
-      const response = await searchCollaborationUsers({ intent, query, limit: 20 });
+      const response = await searchCollaborationUsers({ intent, query });
       const items = Array.isArray(response.items) ? response.items : [];
       const merged = new Map<number, CollaborationUserOption>();
       userOptions.value.forEach((item) => {

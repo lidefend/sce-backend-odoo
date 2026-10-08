@@ -8,6 +8,11 @@
 - 先声明 `Layer Target / Module / Reason`，再实施改动。
 - 严禁跨层实现功能（业务逻辑不得进入 Page/Frontend，数据库访问不得进入 Scene）。
 - 平台能力统一归属 `addons/smart_core`，行业模块不得重复实现平台内核。
+- 运行时契约是唯一产品事实来源：后端配置声明产品，前端只消费契约渲染与交互；
+  前端不得自造、兜底或推导契约未声明的产品语义，契约缺失必须在声明层补齐。
+- 前端判断即停机机制：出现没有契约依据的前端判断必须立即停机并回到声明层要结果
+  （运行时 `ContractGapError`、静态守卫、交付冻结门三层 fail-closed）；台账
+  `docs/architecture/frontend_contract_basis_ledger.json`，决策 `ARCH-DECISION-002`。
 
 ## 核心参考
 - 详细规则：`docs/architecture/ai_development_guard.md`

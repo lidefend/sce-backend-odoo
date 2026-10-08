@@ -305,6 +305,7 @@
 </template>
 <script setup lang="ts">
 import { computed, h, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue';
+import { requireDeclaredNumber, requireDeclaredNumberList } from '../app/contract/contractGap';
 import StatusPanel from '../components/StatusPanel.vue';
 import AttachmentViewer from '../components/attachment/AttachmentViewer.vue';
 import ScInlineState from '../components/design-system/ScInlineState.vue';
@@ -421,6 +422,8 @@ const props = defineProps<{
   listTotalCount?: number | null;
   listOffset?: number;
   listLimit?: number;
+  pageSizeOptions?: number[];
+  pageSizeRange?: { min: number; max: number };
   listAggregates?: Record<string, Record<string, unknown>>;
   columnOptions?: ColumnOption[];
   columnVisibility?: Record<string, boolean>;
@@ -1040,8 +1043,10 @@ const groupSampleLimitOptions = computed(() => {
   return normalized.length ? normalized : [3];
 });
 const groupDefaultSampleLimit = computed(() => {
-  const raw = Number(props.listProfile?.grouping?.default_sample_limit || 0);
-  const candidate = Number.isFinite(raw) && raw > 0 ? Math.trunc(raw) : groupSampleLimitOptions.value[0];
+  const candidate = requireDeclaredNumber(props.listProfile?.grouping?.default_sample_limit, {
+    missing: 'list_profile.grouping.default_sample_limit',
+    requiredDeclarationLayer: 'P0:smart_core:contract_governance_list_surface',
+  });
   return groupSampleLimitOptions.value.includes(candidate) ? candidate : groupSampleLimitOptions.value[0];
 });
 const effectiveGroupSampleLimit = computed(() => {
@@ -1118,12 +1123,27 @@ const someSelected = computed(() => {
   if (!rows.length || allSelected.value) return false;
   return rows.some((id) => selectedIdSet.value.has(id));
 });
+const declaredPageSizeRange = computed(() => ({
+  min: requireDeclaredNumber(props.pageSizeRange?.min, {
+    missing: 'search.defaults.page_size_range.min',
+    requiredDeclarationLayer: 'P0:smart_core:app_search_config.get_search_contract',
+  }),
+  max: requireDeclaredNumber(props.pageSizeRange?.max, {
+    missing: 'search.defaults.page_size_range.max',
+    requiredDeclarationLayer: 'P0:smart_core:app_search_config.get_search_contract',
+  }),
+}));
 const listLimit = computed(() => {
   if (observedListLimit.value > 0) return observedListLimit.value;
-  const limit = Number(props.listLimit || 40);
-  return Number.isFinite(limit) && limit > 0 ? Math.trunc(limit) : 40;
+  return requireDeclaredNumber(props.listLimit, {
+    missing: 'search.defaults.limit',
+    requiredDeclarationLayer: 'P0:smart_core:app_search_config.get_search_contract',
+  });
 });
-const pageLimitOptions = computed(() => [10, 20, 50]);
+const pageLimitOptions = computed(() => requireDeclaredNumberList(props.pageSizeOptions, {
+  missing: 'search.defaults.page_size_options',
+  requiredDeclarationLayer: 'P0:smart_core:app_search_config.get_search_contract',
+}));
 const listTotal = computed(() => {
   if (props.listTotalCount === null || typeof props.listTotalCount === 'undefined') return null;
   const raw = Number(props.listTotalCount);
@@ -1264,7 +1284,7 @@ function selectPage(page: number) {
 }
 
 function applyPageLimitValue(raw: number) {
-  const normalized = resolveCollectionPageLimit(raw, listLimit.value);
+  const normalized = resolveCollectionPageLimit(raw, listLimit.value, declaredPageSizeRange.value);
   pageLimitInput.value = String(normalized);
   if (normalized === listLimit.value) return;
   observedListLimit.value = normalized;

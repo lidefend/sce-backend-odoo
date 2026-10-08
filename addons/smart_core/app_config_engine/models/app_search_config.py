@@ -6,6 +6,11 @@ import json, hashlib, logging
 
 _logger = logging.getLogger(__name__)
 
+# P0 声明：列表页可选的每页条数。前端只消费，不自行决定可选集合或范围。
+DEFAULT_PAGE_SIZE_OPTIONS = (10, 20, 50)
+# P0 声明：每页条数的合法范围（前端不自行夹取）。
+DEFAULT_PAGE_SIZE_RANGE = {"min": 1, "max": 200}
+
 try:
     from lxml import etree
 except Exception:
@@ -92,7 +97,12 @@ class AppSearchConfig(models.Model):
                 group_by=groupby_candidates,
                 facets={"enabled": True},
                 custom=custom_search,
-                defaults={"limit": 20, "order": getattr(self.env[model_name], "_order", "id desc") or "id desc"}
+                defaults={
+                    "limit": 20,
+                    "order": getattr(self.env[model_name], "_order", "id desc") or "id desc",
+                    "page_size_options": list(DEFAULT_PAGE_SIZE_OPTIONS),
+                    "page_size_range": dict(DEFAULT_PAGE_SIZE_RANGE),
+                }
             )
 
             # 5) 稳定哈希并落库
@@ -353,7 +363,7 @@ class AppSearchConfig(models.Model):
           "group_by":      [ group_by 候选 ],
           "facets":        { "enabled": true },
           "custom":        { "filters": { "fields": [...] }, "group_by": { "fields": [...] }, "favorites": {...} },
-          "defaults":      { "limit":20, "order":"id desc" }
+          "defaults":      { "limit":20, "order":"id desc", "page_size_options":[10,20,50] }
         }
         """
         # 稳定排序（避免哈希抖动）
@@ -391,7 +401,7 @@ class AppSearchConfig(models.Model):
                 "group_by": {"enabled": False, "fields": []},
                 "favorites": {"save_enabled": False},
             },
-            "defaults": defaults or {"limit": 20, "order": "id desc"}
+            "defaults": defaults or {"limit": 20, "order": "id desc", "page_size_options": list(DEFAULT_PAGE_SIZE_OPTIONS), "page_size_range": dict(DEFAULT_PAGE_SIZE_RANGE)}
         }
 
     def _source_contract(self, model_name):

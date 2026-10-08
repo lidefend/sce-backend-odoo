@@ -85,9 +85,7 @@ export function buildBatchUpdateRequest(options: {
     assigneeId: options.assigneeId,
     ifMatchMap: options.ifMatchMap,
     idempotencyKey: options.idempotencyKey,
-    failedPreviewLimit: 12,
     failedOffset: 0,
-    failedLimit: 12,
     exportFailedCsv: true,
     context: options.context,
   };

@@ -11,8 +11,8 @@ TRACE_PATH = ROOT / "frontend/apps/web/src/services/trace.ts"
 
 REQUIRED = [
     "export interface SuggestedActionKindStat",
-    "export function rankSuggestedActionKinds(limit = 5)",
-    "listSuggestedActionTraces({ limit: MAX_ENTRIES })",
+    "export function rankSuggestedActionKinds(limit = DEFAULT_TRACE_TOP_K)",
+    "listSuggestedActionTraces({ limit: TRACE_BUFFER_MAX_ENTRIES })",
     ".sort((a, b) => b.count - a.count || a.kind.localeCompare(b.kind))",
 ]
 

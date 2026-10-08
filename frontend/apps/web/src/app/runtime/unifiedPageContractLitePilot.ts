@@ -1,4 +1,5 @@
 import type { NavMeta } from '@sc/schema';
+import { requireDeclaredNumber } from '../contract/contractGap';
 import {
   extractLitePreviewEnvelope,
   isUnifiedPageContractLite,
@@ -98,6 +99,19 @@ function normalizeSelection(raw: unknown): Array<[string, string]> | undefined {
   return rows.length ? rows : undefined;
 }
 
+/**
+ * 过渡试点投影不得自造产品语义：lite 契约（v2.0 冻结）未声明列表取数规模时，
+ * 这里必须停机回声明层要结果，而不是补一个前端常量。
+ * 声明归属：P0 smart_core lite 适配器的 v2.1 冻结变更（需独立受管批次）。
+ */
+function declaredLiteSearchDefaults(lite: UnifiedPageContractLite): Dict {
+  const root = lite as unknown as Dict;
+  const search = root.searchContract && typeof root.searchContract === 'object'
+    ? (root.searchContract as Dict)
+    : {};
+  return search.defaults && typeof search.defaults === 'object' ? (search.defaults as Dict) : {};
+}
+
 export function adaptLiteContractToActionViewContract(lite: UnifiedPageContractLite): Dict {
   const widgets = collectWidgets(lite.layoutContract.containerList);
   const statusByWidgetId = lite.statusContract.widgetStatus.reduce<Record<string, { visible: boolean; readonly: boolean; required: boolean; disabled: boolean }>>((acc, row) => {
@@ -175,7 +189,11 @@ export function adaptLiteContractToActionViewContract(lite: UnifiedPageContractL
     },
     search: {
       defaults: {
-        limit: 40,
+        // 原为前端常量 40：投影自造产品语义属于契约缺陷，改为原样消费声明、缺失即停机。
+        limit: requireDeclaredNumber(declaredLiteSearchDefaults(lite).limit, {
+          missing: 'lite.searchContract.defaults.limit',
+          requiredDeclarationLayer: 'P0:smart_core:unified_page_contract_lite_adapter',
+        }),
       },
     },
     meta: {

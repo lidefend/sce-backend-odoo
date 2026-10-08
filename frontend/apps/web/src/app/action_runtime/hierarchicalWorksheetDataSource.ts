@@ -1,4 +1,7 @@
 import { listRecords } from '../../api/data';
+import { requireDeclaredNumber } from '../contract/contractGap';
+export { ContractGapError, isContractGapError } from '../contract/contractGap';
+export type { ContractDefectRef } from '../contract/contractGap';
 import type { WorksheetDomainTab } from './hierarchicalWorksheetDomainTabs';
 
 export { resolveWorksheetDomainTabs, applyWorksheetDomainTab } from './hierarchicalWorksheetDomainTabs';
@@ -41,6 +44,8 @@ export type WorksheetSheetConfig = {
   context?: WorksheetDict;
   /** 数据域 tab（G7.3；后端 config 未注入时前端无 tab，行为与旧契约一致） */
   domain_tabs?: WorksheetDomainTab[];
+  /** 契约声明的页大小（首屏可用批次规模）；前端原样消费，缺失或非法即停机。 */
+  page_size?: number;
   order: string;
 };
 export type WorksheetNode = {
@@ -55,6 +60,58 @@ export type WorksheetNode = {
   recordIds?: number[];
 };
 
+/**
+ * 消费契约声明的首屏页大小。声明由装配层通过受管通道发布
+ * （`hierarchical_worksheet.page_size` → 上下文 `hierarchy_page_size` → native tree
+ * `page_size` → 平台缺省），前端只消费声明值：不提供默认值、不夹取范围。
+ * 声明缺失或非法即抛出 `ContractGapError`，由调用方进入显式停机状态。
+ */
+export function requireDeclaredPageSize(sheet: WorksheetSheetConfig): number {
+  return requireDeclaredNumber(sheet.page_size, {
+    missing: 'config.sheet.page_size',
+    requiredDeclarationLayer: 'P0:smart_core:page_assembler._inject_native_hierarchical_worksheet',
+  });
+}
+
+/**
+ * 后台续载批次大小：登记的渲染/传输机制常量（请求分块）。它不属于产品语义，
+ * 不改变用户可见集合、权限或状态，只决定整表续载的请求分块规模。
+ */
+export const WORKSHEET_DRAIN_PAGE_LIMIT = 5000;
+/**
+ * 后台续载批次之间的让渡间隔（毫秒）。整表续载不能独占连接：批次之间让出
+ * 一段时间，让页面在网络批次之间沉降，而不是从首屏开始连续占满连接。
+ */
+export const WORKSHEET_DRAIN_BATCH_YIELD_MS = 800;
+
+export type WorksheetLoadResult = {
+  roots: WorksheetNode[];
+  nodesById: Map<number, WorksheetNode>;
+  recordsByNode: Map<number, WorksheetDict>;
+  sourceRows: WorksheetDict[];
+  recordCount: number;
+};
+
+/**
+ * 首个批次已到齐、工作表可以实际使用时回调一次。之后仍会在后台续载到整表，
+ * 因此“可用”不再等价于“已全量加载”。
+ */
+export type WorksheetLoadHooks = { onUsable?: (result: WorksheetLoadResult) => void };
+
+export type WorksheetListSource = typeof listRecords;
+
+export type WorksheetLoadOptions = {
+  /** 数据读取入口（默认 `listRecords`）；测试注入替代实现以绑定声明消费行为。 */
+  list?: WorksheetListSource;
+  firstPageLimit?: number;
+  drainPageLimit?: number;
+  drainBatchYieldMs?: number;
+};
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => { setTimeout(resolve, ms); });
+}
+
 function records(value: unknown): WorksheetDict[] {
   const payload = value && typeof value === 'object' ? value as WorksheetDict : {};
   return Array.isArray(payload.records) ? payload.records as WorksheetDict[] : [];
@@ -64,32 +121,46 @@ export function relationId(value: unknown): number {
   return Array.isArray(value) ? Number(value[0] || 0) : Number(value || 0);
 }
 
-async function loadAll(model: string, fields: string[], domain: unknown[], order: string, context?: WorksheetDict): Promise<WorksheetDict[]> {
+type LoadAllOptions = {
+  list: WorksheetListSource;
+  firstPageLimit: number;
+  drainPageLimit: number;
+  drainBatchYieldMs: number;
+  onBatch?: (rows: WorksheetDict[]) => void;
+};
+
+async function loadAll(
+  model: string,
+  fields: string[],
+  domain: unknown[],
+  order: string,
+  context: WorksheetDict | undefined,
+  options: LoadAllOptions,
+): Promise<WorksheetDict[]> {
   const output: WorksheetDict[] = [];
-  const limit = 5000;
-  for (let offset = 0; ; offset += limit) {
-    const response = await listRecords({ model, fields, domain, context, order, offset, limit });
+  let offset = 0;
+  let limit = Math.max(1, options.firstPageLimit);
+  for (;;) {
+    const response = await options.list({ model, fields, domain, context, order, offset, limit });
     const batch = records(response);
     output.push(...batch);
+    // Snapshot the arrived rows: the usable declaration must describe the first
+    // batch as it was, not the array that the background drain keeps growing.
+    options.onBatch?.(output.slice());
     if (batch.length < limit) return output;
+    offset += limit;
+    limit = Math.max(1, options.drainPageLimit);
+    if (options.drainBatchYieldMs > 0) await sleep(options.drainBatchYieldMs);
   }
 }
 
-export async function loadHierarchicalWorksheet(
+/** 由已到齐的行构建工作表结果；首屏可用与整表完成共用同一份构建语义。 */
+function buildWorksheet(
   hierarchy: WorksheetHierarchyConfig,
   sheet: WorksheetSheetConfig,
-): Promise<{
-  roots: WorksheetNode[];
-  nodesById: Map<number, WorksheetNode>;
-  recordsByNode: Map<number, WorksheetDict>;
-  sourceRows: WorksheetDict[];
-  recordCount: number;
-}> {
-  const sheetPromise = loadAll(sheet.model, sheet.fields, sheet.domain, sheet.order, sheet.context);
-  const hierarchyPromise = hierarchy.navigation_mode === 'sheet_groups'
-    ? Promise.resolve([] as WorksheetDict[])
-    : loadAll(hierarchy.model, hierarchy.fields, hierarchy.domain, hierarchy.order, hierarchy.context);
-  const [hierarchyRows, sheetRows] = await Promise.all([hierarchyPromise, sheetPromise]);
+  hierarchyRows: WorksheetDict[],
+  sheetRows: WorksheetDict[],
+): WorksheetLoadResult {
   const nodes = new Map<number, WorksheetNode>();
   hierarchyRows.forEach((row) => {
     const id = Number(row.id || 0);
@@ -163,6 +234,44 @@ export async function loadHierarchicalWorksheet(
     ? sheetRows.filter((row) => itemValues.has(String(row[sheet.row_kind_field] || ''))).length
     : sheetRows.length;
   return { roots, nodesById: nodes, recordsByNode, sourceRows: sheetRows, recordCount };
+}
+
+export async function loadHierarchicalWorksheet(
+  hierarchy: WorksheetHierarchyConfig,
+  sheet: WorksheetSheetConfig,
+  hooks: WorksheetLoadHooks = {},
+  options: WorksheetLoadOptions = {},
+): Promise<WorksheetLoadResult> {
+  const tuning = {
+    list: options.list || listRecords,
+    firstPageLimit: options.firstPageLimit ?? requireDeclaredPageSize(sheet),
+    drainPageLimit: options.drainPageLimit ?? WORKSHEET_DRAIN_PAGE_LIMIT,
+    drainBatchYieldMs: options.drainBatchYieldMs ?? WORKSHEET_DRAIN_BATCH_YIELD_MS,
+  };
+  const stage = {
+    hierarchy: [] as WorksheetDict[],
+    sheet: [] as WorksheetDict[],
+    hierarchyUsable: hierarchy.navigation_mode === 'sheet_groups',
+    sheetUsable: false,
+    emitted: false,
+  };
+  const emitUsable = () => {
+    if (stage.emitted || !stage.hierarchyUsable || !stage.sheetUsable) return;
+    stage.emitted = true;
+    hooks.onUsable?.(buildWorksheet(hierarchy, sheet, stage.hierarchy, stage.sheet));
+  };
+  const hierarchyPromise = hierarchy.navigation_mode === 'sheet_groups'
+    ? Promise.resolve([] as WorksheetDict[])
+    : loadAll(hierarchy.model, hierarchy.fields, hierarchy.domain, hierarchy.order, hierarchy.context, {
+        ...tuning,
+        onBatch: (rows) => { stage.hierarchy = rows; stage.hierarchyUsable = true; emitUsable(); },
+      });
+  const sheetPromise = loadAll(sheet.model, sheet.fields, sheet.domain, sheet.order, sheet.context, {
+    ...tuning,
+    onBatch: (rows) => { stage.sheet = rows; stage.sheetUsable = true; emitUsable(); },
+  });
+  const [hierarchyRows, sheetRows] = await Promise.all([hierarchyPromise, sheetPromise]);
+  return buildWorksheet(hierarchy, sheet, hierarchyRows, sheetRows);
 }
 
 export function collectNodeIds(node: WorksheetNode): Set<number> {

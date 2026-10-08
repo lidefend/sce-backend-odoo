@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "id": "FE-HIERARCHICAL-WORKSHEET-USABLE-READY",
+  "branch": "codex/hierarchical-worksheet-usable-ready-20261008",
+  "status": "active",
+  "baseline_sha": "a2213be342500f4cd56a578346711ca7a8c04d9e",
+  "goal": ".agent/goals/FE-HIERARCHICAL-WORKSHEET-USABLE-READY.yaml",
+  "record": "docs/ops/iterations/hierarchical_worksheet_usable_ready_20261008.md",
+  "scope": [
+    "addons/smart_core/",
+    "frontend/apps/web/src/",
+    "frontend/apps/web/scripts/",
+    "make/",
+    "scripts/verify/",
+    "scripts/audit/",
+    "docs/frontend_productization/rendering-detail/",
+    "docs/architecture/",
+    "docs/ops/iterations/",
+    "docs/audit/guard_registry/",
+    ".agent/",
+    "AGENTS.md",
+    "ARCHITECTURE_GUARD.md",
+    "docs/engineering_convergence/",
+    "contracts/generated/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools and node/esbuild bundles; no database or service access for this stage",
+    "runtime_stage": "daily runtime browser re-walk follows after the local gates pass"
+  },
+  "checks": {
+    "worksheet_unit": {
+      "target": "verify.frontend.hierarchical_worksheet.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/action_runtime/hierarchicalWorksheetDataSource.ts",
+        "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
+        "frontend/apps/web/scripts/hierarchical_worksheet_load_stage_test.ts",
+        "frontend/apps/web/scripts/hierarchical_worksheet_interaction_test.ts",
+        "addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "rendering_detail": {
+      "target": "verify.frontend.rendering_detail_state.unit",
+      "inputs": [
+        "scripts/audit/generate_frontend_rendering_detail_inventory.py",
+        "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
+        "docs/frontend_productization/rendering-detail/component-professionalization-inventory-v1.json",
+        "docs/frontend_productization/rendering-detail/visual-projection-inventory-v1.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_basis": {
+      "target": "verify.frontend.contract_basis.unit",
+      "inputs": [
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "scripts/verify/test_frontend_contract_basis_guard.py",
+        "frontend/apps/web/src/app/contract/",
+        "frontend/apps/web/src/app/action_runtime/hierarchicalWorksheetDataSource.ts",
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline",
+      "result": {
+        "status": "passed",
+        "detail": "guard PASS bindings=1 exemptions=3 logic_sites=3 open_defects=0; unittest Ran 11 tests OK",
+        "stage_identity": {
+          "head": "a2213be342500f4cd56a578346711caa8c04d9e",
+          "dirty": true
+        }
+      }
+    },
+    "consumption_guard": {
+      "target": "verify.frontend.scene_contract.consumption.guard",
+      "inputs": [
+        "scripts/verify/frontend_scene_contract_consumption_guard.py",
+        "frontend/apps/web/src/app/action_runtime/hierarchicalWorksheetDataSource.ts",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_basis_enforce": {
+      "target": "verify.frontend.contract_basis.enforce",
+      "inputs": [
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "scripts/verify/test_frontend_contract_basis_guard.py",
+        "make/frontend.mk",
+        "make/ci.mk"
+      ],
+      "kind": "offline",
+      "result": {
+        "status": "passed",
+        "detail": "open_defects=0 后机制放行，交付冻结前置门 exit 0（不再是 failed_by_design）",
+        "stage_identity": {
+          "head": "a2213be342500f4cd56a578346711caa8c04d9e",
+          "dirty": true
+        }
+      }
+    },
+    "guard_registry": {
+      "target": "verify.guard.registry",
+      "inputs": [
+        "scripts/verify/registry.yaml",
+        "scripts/verify/guard_registry_audit.py",
+        "docs/audit/guard_registry/guard_registry.json"
+      ],
+      "kind": "offline",
+      "result": {
+        "status": "passed",
+        "detail": "1400 scripts / 1312 referenced / 88-88 orphans / 1 retired / 186-186 unwired AUDIT PASS",
+        "stage_identity": {
+          "head": "a2213be342500f4cd56a578346711caa8c04d9e",
+          "dirty": true
+        }
+      }
+    }
+  },
+  "blockers": [
+    "环境 DENY：两个挂载者同属一个项目，不足以证明满足独占要求；相关环境前置未恢复前不进入依赖它的运行验收（沿用原结论，不泛化）。"
+  ],
+  "next_exact_step": "1) L1/L2 定向门全绿并写入本地 receipt：hierarchical_worksheet.unit(cases=10)、rendering_detail_state.unit(76 tests)、contract_basis.unit(11 tests+guard open_defects=0)、scene_contract.consumption.guard、contract_basis.enforce、guard.registry。2) 冻结候选：make ci.delivery.freeze.prepare（enforce 门已可放行）→ 按 P0 前端 / P0 后端 / P4 记录守卫分提交 → make pr.push → make pr.create。3) 精确 head 跑一次 make ci.local.quick，等远端四项必需检查通过后按所有者规则合并。4) 受管重建日常前端（make daily.runtime.frontend.build）并仅对两个受影响工作表入口做一次有理由的真实重走，复核 data-state 快速 ready、0 console error。",
+  "evidence": {
+    "local": [
+      "make verify.frontend.hierarchical_worksheet.unit (cases=10, PASS)",
+      "make verify.frontend.rendering_detail_state.unit (Ran 76 tests OK + 3 inventory --check PASS)",
+      "make verify.frontend.contract_basis.unit (Ran 11 tests OK; guard PASS open_defects=0)",
+      "make verify.frontend.contract_basis.enforce (exit 0)",
+      "make verify.frontend.scene_contract.consumption.guard (PASS)",
+      "make verify.guard.registry (AUDIT PASS)",
+      "addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py (Ran 22 tests, OK)"
+    ],
+    "previous_run": ".agent/runs/DAILY-DEV-MAINLINE-ACCEPTANCE-REFRESH/run.json"
+  }
+}

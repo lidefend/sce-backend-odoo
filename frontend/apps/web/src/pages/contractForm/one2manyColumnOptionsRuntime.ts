@@ -10,6 +10,8 @@ export type One2manyColumnOptionsDependencies = {
   relationOrder: typeof import('./relationDescriptor').relationOrder;
   relationReadFields: typeof import('./relationDescriptor').relationReadFields;
   relationModelFromDescriptor: typeof import('./relationDescriptor').relationModel;
+  relationOptionsLimit: typeof import('./relationDescriptor').relationOptionsLimit;
+  relationOptionsSearchLimit: typeof import('./relationDescriptor').relationOptionsSearchLimit;
   fieldType: typeof import('./fieldUtils').fieldType;
   normalizeRelationIds: typeof import('./fieldUtils').normalizeRelationIds;
   formData: Record<string, unknown>;
@@ -41,6 +43,8 @@ export function createOne2manyColumnOptionsRuntime(
     relationEntry,
     relationModelFromDescriptor,
     relationOptionsFromRecords,
+    relationOptionsLimit,
+    relationOptionsSearchLimit,
     relationOrder,
     relationReadFields,
     route,
@@ -89,7 +93,8 @@ export function createOne2manyColumnOptionsRuntime(
       relation,
       canRead: entry.canRead,
       keyword,
-      limit: String(keyword || '').trim() ? 40 : 80,
+      optionsLimit: relationOptionsLimit(entry),
+      optionsSearchLimit: relationOptionsSearchLimit(entry),
       fetchOptions: async (search: string, limit: number) => {
         const listed = await listContractFormRecords({
           model: relation,

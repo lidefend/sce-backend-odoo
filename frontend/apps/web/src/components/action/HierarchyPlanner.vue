@@ -108,6 +108,7 @@ import {
   type HierarchyTreeNode,
 } from '../../app/action_runtime/hierarchyCollectionDataSource';
 import { formatDisplayValue } from '../../utils/display';
+import { requireDeclaredNumber } from '../../app/contract/contractGap';
 import ScButton from '../design-system/ScButton.vue';
 import ScTable from '../design-system/ScTable.vue';
 import ScEmptyState from '../design-system/ScEmptyState.vue';
@@ -162,11 +163,10 @@ const levels = computed<HierarchyLevelConfig[]>(() => {
 });
 const listConfig = computed(() => {
   const raw = props.config.list && typeof props.config.list === 'object' ? props.config.list as Dict : {};
-  const requestedPageSize = Number(raw.page_size || 5000);
   return {
     model: String(raw.model || ''), fields: Array.isArray(raw.fields) ? raw.fields.map(String) : [], bindings: raw.bindings && typeof raw.bindings === 'object' ? raw.bindings as Dict : {},
     order: String(raw.order || 'id asc'),
-    pageSize: Number.isFinite(requestedPageSize) ? Math.max(1, Math.min(20000, requestedPageSize)) : 5000,
+    pageSize: requireDeclaredNumber(raw.page_size, { missing: 'config.list.page_size', requiredDeclarationLayer: 'P0:smart_core:page_assembler._inject_native_hierarchy_planner' }),
     domain: Array.isArray(raw.domain) ? raw.domain : [],
   };
 });

@@ -1,6 +1,7 @@
 import { getPublicAuthPageContracts } from '../services/accountActivation';
 import { defineStore } from 'pinia';
 import type { AppInitResponse, CanonicalNavigationModel, LoginResponse, NavMeta, NavNode, RecordContextContract, RecordContextOption } from '@sc/schema';
+import { optionalDeclaredNumber, requireDeclaredNumber } from '../app/contract/contractGap';
 import { intentRequest } from '../api/intents';
 import { ApiError } from '../api/client';
 import { config } from '../config';
@@ -441,7 +442,10 @@ function normalizeRecordContext(raw: unknown): RecordContextContract | null {
       intent: asText(selector.intent),
       search_param: asText(selector.search_param),
       selected_id_param: asText(selector.selected_id_param),
-      limit: Number(selector.limit || 0) || undefined,
+      limit: optionalDeclaredNumber(selector.limit, {
+        missing: 'record_context.selector.limit',
+        requiredDeclarationLayer: 'P0:smart_core:project_context.build_record_context_contract',
+      }),
       label: asText(selector.label),
       all_label: asText(selector.all_label),
       placeholder: asText(selector.placeholder),
@@ -1804,7 +1808,10 @@ export const useSessionStore = defineStore('session', {
           ...(this.recordContext?.request_context || {}),
           [searchParam]: search,
           [selectedIdParam]: this.recordContext?.selected?.id || undefined,
-          limit: selector.limit || 20,
+          limit: requireDeclaredNumber(selector.limit, {
+            missing: 'record_context.selector.limit',
+            requiredDeclarationLayer: 'P0:smart_core:project_context.build_record_context_contract',
+          }),
         },
       });
       if (!isCurrentContextEpoch(requestEpoch) || requestSequence !== recordSearchRequestSequence) return this.recordContext;

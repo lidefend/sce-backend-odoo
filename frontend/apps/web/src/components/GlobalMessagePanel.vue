@@ -260,7 +260,6 @@ async function loadUsers() {
     const result = await searchCollaborationUsers({
       intent: 'collaboration.users.search',
       query: userQuery.value,
-      limit: 12,
     });
     userOptions.value = result.items || [];
   } catch {
@@ -280,7 +279,7 @@ async function loadConversations() {
   if (!canUseMessages.value) return;
   loadingConversations.value = true;
   try {
-    const result = await fetchGlobalConversations({ limit: 40 });
+    const result = await fetchGlobalConversations({});
     conversations.value = result.items || [];
     if (!composeMode.value && activeConversationKey.value && !conversations.value.some((item) => item.key === activeConversationKey.value)) {
       startNewConversation();
@@ -297,7 +296,7 @@ async function loadMessagesForConversation(conversationKey: string) {
   loadingMessages.value = true;
   error.value = '';
   try {
-    const result = await fetchGlobalMessages({ limit: 80, conversation_key: conversationKey });
+    const result = await fetchGlobalMessages({ conversation_key: conversationKey });
     messages.value = result.items || [];
   } catch (err) {
     error.value = err instanceof Error ? err.message : '消息加载失败';

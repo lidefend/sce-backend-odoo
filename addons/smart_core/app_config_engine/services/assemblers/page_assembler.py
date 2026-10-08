@@ -1168,6 +1168,18 @@ class PageAssembler:
         presentation = tree.get("collection_presentation") if isinstance(tree.get("collection_presentation"), dict) else {}
         raw = effective_context.get("hierarchical_worksheet") if isinstance(effective_context, dict) else {}
         raw = raw if isinstance(raw, dict) else {}
+        # Contract-declared presentation page size for this surface. It flows from the
+        # same governed channel as the collection surface -- explicit profile
+        # declaration, then the context override, then the native tree page size, then
+        # the platform default -- so the frontend consumes a declaration instead of
+        # inventing its own paging constant.
+        try:
+            worksheet_page_size = int(
+                raw.get("page_size") or effective_context.get("hierarchy_page_size") or tree.get("page_size") or 50
+            )
+        except (TypeError, ValueError):
+            worksheet_page_size = 50
+        worksheet_page_size = max(1, min(20000, worksheet_page_size))
         fields_map = data.get("fields") if isinstance(data.get("fields"), dict) else {}
         navigation_mode = str(raw.get("navigation_mode") or "relation").strip()
         binding_field = str(raw.get("binding_field") or "").strip()
@@ -1378,6 +1390,7 @@ class PageAssembler:
                     "model": str(head.get("model") or "").strip(),
                     "fields": read_fields,
                     "columns": columns,
+                    "page_size": worksheet_page_size,
                     "binding_field": binding_field,
                     "ordinal_field": str(raw.get("ordinal_field") or "").strip(),
                     "presentation_mode": str(raw.get("presentation_mode") or "hierarchy").strip(),
@@ -3718,6 +3731,10 @@ class PageAssembler:
                 "reason_code": reason_code,
                 "inline_create": inline_create,
                 "search_dialog": search_dialog,
+                # P0 声明：关系字段候选取数规模（空关键字 / 有关键字）。
+                # 前端只消费，不再自行选择 relation option 的取数条数。
+                "options_limit": 80,
+                "options_search_limit": 40,
                 "ui_labels": {
                     "search_more": _("搜索更多..."),
                     "quick_create": _("快速新建..."),
@@ -4178,11 +4195,12 @@ class PageAssembler:
             view_page_size = None
 
             try:
-                # 从 assembled 中优先读取 view 契约里的 columns/default_order
-                arch = {}
-                view_cols_cfg = list(assembled["views"].get(list_vt, {}).get("columns") or []) \
-                                or list(arch.get("columns") or [])
-                view_order_cfg = assembled["views"].get(list_vt, {}).get("default_order") or arch.get("order")
+                # 从 assembled 中优先读取 view 契约里的 columns/default_order/page_size
+                assembled_views = assembled.get("views") if isinstance(assembled, dict) else None
+                arch = assembled_views.get(list_vt) if isinstance(assembled_views, dict) else None
+                arch = arch if isinstance(arch, dict) else {}
+                view_cols_cfg = list(arch.get("columns") or [])
+                view_order_cfg = arch.get("default_order") or arch.get("order")
                 view_page_size = arch.get("page_size")
             except Exception:
                 pass

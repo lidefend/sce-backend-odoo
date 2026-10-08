@@ -92,9 +92,8 @@ async function load() {
   errorMessage.value = '';
   workspace.value = null;
   try {
-    const result = await fetchMyWorkSummary(80, 80, {
+    const result = await fetchMyWorkSummary(undefined, undefined, {
       page: 1,
-      pageSize: 80,
       sortBy: 'write_date',
       sortDir: 'desc',
     });

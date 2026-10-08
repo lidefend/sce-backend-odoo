@@ -151,7 +151,7 @@ BATCH_BINDINGS = {
     "p0-navigation-hierarchy-composite-completion-v1": {
         "frontend/apps/web/src/components/MenuTree.vue": {"tdesignmenu": {"attrs": {"data-semantic-component": "MenuTree", "data-semantic-driver": "tdesign-menu", ":data-state": "nodes.length ? 'ready' : 'empty'"}}},
         "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue": {"tdesignmenuitem": {"attrs": {"data-navigation-node": "canonical"}}, "tdesignsubmenu": {"attrs": {"data-navigation-node": "canonical"}}},
-        "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue": {"section": {"attrs": {"data-semantic-component": "HierarchicalWorksheet", ":aria-busy": "loading || undefined"}}},
+        "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue": {"section": {"attrs": {"data-semantic-component": "HierarchicalWorksheet", ":data-load-state": "backgroundLoading ? 'loading' : 'ready'", ":aria-busy": "loading || undefined"}}},
         "frontend/apps/web/src/components/action/HierarchyBrowser.vue": {"section": {"attrs": {"data-semantic-component": "HierarchyBrowser", ":aria-busy": "loading || undefined"}}},
         "frontend/apps/web/src/components/action/HierarchyPlanner.vue": {"section": {"attrs": {"data-semantic-component": "HierarchyPlanner", ":aria-busy": "loading || undefined"}}},
         "frontend/apps/web/src/components/action/HierarchyTreeNode.vue": {"div": {"attrs": {"data-semantic-component": "HierarchyTreeNode", ":data-state": "node.children.length ? 'branch' : 'leaf'"}}},

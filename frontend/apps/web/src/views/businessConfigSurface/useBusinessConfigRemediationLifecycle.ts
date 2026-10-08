@@ -161,8 +161,6 @@ export function useBusinessConfigRemediationLifecycle(deps: BusinessConfigRemedi
         role_key: scopeRole.value,
         root_menu_xmlid: rootMenuXmlid.value || undefined,
         include_all_root_menu_actions: Boolean(coverageScan.value?.include_all_root_menu_actions),
-        limit: 1000,
-        batch_limit: 300,
       });
       await rescanCoverageAfterBootstrap();
       const failedNames = (result.results || [])
