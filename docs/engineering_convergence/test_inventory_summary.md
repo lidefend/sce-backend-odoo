@@ -4,13 +4,13 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1471`
+- Total assets: `1473`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `188`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `1058`
+- PR dedupe candidates: `1060`
 
 ## By Layer
 
@@ -21,7 +21,7 @@ Generated from `test_inventory.csv`.
 | unit | 274 |
 | odoo_integration | 113 |
 | e2e | 47 |
-| security | 38 |
+| security | 40 |
 | frontend_acceptance | 37 |
 | gate | 2 |
 | data_migration | 2 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1277 |
+| pr_candidate | 1279 |
 | integration_candidate | 140 |
 | release_candidate | 45 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 1058 |
+| deduplicate_before_required | 1060 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 139 |
 | keep_release_only | 45 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1279 |
+| <5m | 1281 |
 | 10-30m | 141 |
 | 30-60m | 47 |
 | unknown | 3 |
@@ -157,15 +157,15 @@ Generated from `test_inventory.csv`.
 | test owner | 275 |
 | backend owner | 113 |
 | qa owner | 47 |
+| security owner | 40 |
 | frontend owner | 38 |
-| security owner | 38 |
 | data owner | 2 |
 
 ## By Directory
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1299 |
+| scripts/verify | 1301 |
 | scripts/ops | 79 |
 | frontend/apps/web/scripts | 43 |
 | scripts/ci | 25 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-180 | security | `scripts/verify/auth_credential_frontend_guard.py` | security owner |
 | T-ASSET-181 | unit | `scripts/verify/auto_degrade_smoke_report.py` | test owner |
 | T-ASSET-185 | governance | `scripts/verify/backend_boundary_guard.py` | architecture owner |
-| ... | ... | 978 more | ... |
+| ... | ... | 980 more | ... |
 
 ## Dedupe Hotspots
 
