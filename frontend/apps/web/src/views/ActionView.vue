@@ -11,11 +11,23 @@
     <component :is="viewMode === 'dashboard' ? DashboardPattern : CollectionPattern">
     <!-- Page intent: 在列表场景中先判断状态，再给出下一步可执行动作。 -->
     <StatusPanel
-      v-if="renderErrorMessage"
+      v-if="surfaceDisplayState === 'render-error'"
       title="页面渲染失败"
       :message="renderErrorMessage"
       variant="error"
       :on-retry="reload"
+    />
+    <StatusPanel
+      v-else-if="surfaceDisplayState === 'load-error'"
+      title="页面加载失败"
+      :message="vm.page.errorMessage"
+      variant="error"
+      :on-retry="reload"
+    />
+    <ProductLoadingSkeleton
+      v-else-if="surfaceDisplayState === 'contract-pending'"
+      :title="vm.page.title || '业务列表'"
+      :loading-label="`正在载入${vm.page.title || '业务列表'}`"
     />
     <ActionSurfaceRendererHost
       v-else
@@ -770,6 +782,7 @@ import IntentConfirmationDialog from '../components/business/IntentConfirmationD
 import ProductPageHeader from '../components/product-page-header/ProductPageHeader.vue';
 import CollectionPattern from '../components/product-page-patterns/CollectionPattern.vue';
 import CollectionFilterChip from '../components/product-list/CollectionFilterChip.vue';
+import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import DashboardPattern from '../components/product-page-patterns/DashboardPattern.vue';
 import { contractContentLayoutMode, resolveContentLayoutMode } from '../components/design-system/pageWidth';
 import { getUserViewPreference, setUserViewPreference } from '../api/preferences';
@@ -886,6 +899,7 @@ import {
 } from '../app/runtime/actionViewRequestRuntime';
 import { resolvePreferredActionViewMode, resolveRouteSelectionState } from '../app/runtime/actionViewContractLoadRuntime';
 import { resolveActionViewPageSizeOptions, resolveActionViewPageSizeRange } from '../app/runtime/actionViewListPageSizeRuntime';
+import { resolveActionViewSurfaceDisplayState } from '../app/runtime/actionViewSurfaceGateRuntime';
 import {
   resolveActionViewResolvedModel,
 } from '../app/runtime/actionViewLoadGuardRuntime';
@@ -2026,6 +2040,14 @@ const { vm } = useActionPageModel({
     entries: hudEntries,
   },
 });
+
+// surface 的展示形态与全部展示数据都来自契约投影：契约未就绪前不渲染任何依赖
+// 契约声明的 surface（停机等契约），否则会在 store 为 null 时消费声明并停机整页。
+const surfaceDisplayState = computed(() => resolveActionViewSurfaceDisplayState({
+  renderError: renderErrorMessage.value,
+  hasContract: actionContract.value !== null,
+  loadError: vm.value.page.errorMessage || '',
+}));
 const {
   resolveWorkspaceContextQuery,
   resolveCarryQuery,

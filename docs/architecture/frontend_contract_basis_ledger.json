@@ -28,6 +28,19 @@
       "stopSymbol": "ContractGapError",
       "regressionGuard": "verify.frontend.action_view_page_size_runtime.unit",
       "behaviourTest": "frontend/apps/web/scripts/action_view_list_page_size_runtime_test.ts"
+    },
+    {
+      "surface": "ActionView surface 展示形态（tree/kanban/analysis 与全部展示数据）",
+      "declared": "ui.contract.v2 规范化契约投影是否就绪（ContractV2NormalizedStore 载体本身）",
+      "declaredBy": "frontend/apps/web/src/app/contracts/v2/store.ts",
+      "declaredMethod": "createContractV2Store",
+      "declaredSymbol": "createContractV2Store",
+      "consumedBy": "frontend/apps/web/src/app/runtime/actionViewSurfaceGateRuntime.ts",
+      "consumedSymbol": "resolveActionViewSurfaceDisplayState",
+      "onMissing": "stop",
+      "stopSymbol": "contract-pending",
+      "regressionGuard": "verify.frontend.action_view_surface_gate_runtime.unit",
+      "behaviourTest": "frontend/apps/web/scripts/action_view_surface_gate_runtime_test.ts"
     }
   ],
   "registeredMechanismExemptions": [
