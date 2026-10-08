@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "id": "MODEL-LAYER-CONTRACT-GOVERNANCE-IMPORT-BOUNDARY",
+  "branch": "fix/model-layer-contract-governance-import-boundary-20261008",
+  "status": "active",
+  "baseline_sha": "dba12da58ccbb1ca8a77542f9ff38baa626dea42",
+  "goal": ".agent/goals/MODEL-LAYER-CONTRACT-GOVERNANCE-IMPORT-BOUNDARY.yaml",
+  "record": "docs/ops/iterations/model_layer_contract_governance_import_boundary_20261008.md",
+  "scope": [
+    ".agent/",
+    "docs/",
+    "addons/smart_construction_core/models/support/",
+    "addons/smart_construction_core/services/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Registered offline Make verify targets only (static AST guards and in-process unit tests). The behaviour lock reuses the existing P0 registry unit and, if the governed runtime prerequisite is present, the workflow-contract backend Odoo test through its registered entry; no production access, no credential rotation."
+  },
+  "checks": {
+    "model_ui_dependency_guard": {
+      "target": "verify.model.ui_dependency.guard",
+      "inputs": [
+        "scripts/verify/model_ui_dependency_guard.py",
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "addons/smart_construction_core/services/workflow_contract_profile_registry.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "boundary_import_guard": {
+      "target": "verify.boundary.import_guard",
+      "inputs": [
+        "scripts/verify/boundary_import_guard.py",
+        "scripts/verify/model_ui_dependency_guard.py",
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "workflow_contract_profile_loader": {
+      "target": "verify.native_view.workflow_action_coverage",
+      "inputs": [
+        "scripts/verify/workflow_contract_profile_loader.py",
+        "scripts/verify/test_workflow_contract_profile_loader.py",
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "P1 model-layer boundary restored: workflow_contract_service._external_profile_by_model now reads the P0 externally-owned workflow-profile registry through the new services-layer accessor smart_construction_core.services.workflow_contract_profile_registry.external_workflow_contract_profiles, and the model layer no longer imports smart_core.utils.contract_governance. verify.boundary.import_guard FAIL->PASS (model_ui_dependency_guard PASS, 163 model files scanned, 0 violations); verify.native_view.workflow_action_coverage PASS (8+54 tests); make ci.local.iteration PASS. Behaviour lock via local.dev.test TestWorkflowContractBackend is byte-identical to the stashed baseline on sc_dev_demo (1 failed / 8 errors of 31, same 9 tests), i.e. pre-existing demo-data drift, unrelated to this relocation and not fixed here. Next exact step: commit the P1 change, run make ci.delivery.freeze.prepare, freeze the clean HEAD, run one make ci.local.quick, publish the PR, re-satisfy the four required checks on the exact head, and merge. Batch acceptance only; do not claim version release or product delivery."
+}
