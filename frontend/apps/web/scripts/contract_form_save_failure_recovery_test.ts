@@ -84,6 +84,12 @@ function buildHarness(options: {
     focusFirstValidationError: async () => undefined,
     formConflict: ref(false),
     formCreateContextFromState: () => ({}),
+    // The shipped composable keys every save operation to the bound surface, so
+    // the harness must publish the same surface identity inputs the page does:
+    // component activity, route identity, route owner identity and session scope.
+    isComponentActive: ref(true),
+    formRouteIdentity: () => 'x.document|action|1|||',
+    formRouteOwnerIdentity: () => 'action|1',
     formData: options.formData,
     formUiLabel: (key: string) => key,
     formFields: ref({ title: { type: 'char' }, links: { type: 'many2many' } }),
@@ -96,7 +102,7 @@ function buildHarness(options: {
     one2manyValidation: ref({ cellErrors: {}, issues: [] }),
     originalValues,
     recordId: ref(options.recordId),
-    route: { query: {} },
+    route: { fullPath: '/action/1', path: '/action/1', query: {} },
     recordVersionPolicy: () => false,
     recordVersionToken: ref(''),
     reload: async () => { calls.reloads += 1; },
@@ -105,7 +111,7 @@ function buildHarness(options: {
     router,
     sanitizeUiErrorMessage,
     sceneReadyFormSurface: ref({ nextSceneKey: '', nextSceneRoute: '' }),
-    session: { loadAppInit: async () => undefined, logout: async () => undefined },
+    session: { loadAppInit: async () => undefined, logout: async () => undefined, token: 'harness-token', user: { id: 1 }, recordContext: {} },
     showOne2manyErrors: ref(false),
     snapshotOriginalFormValues,
     status: ref('ok'),

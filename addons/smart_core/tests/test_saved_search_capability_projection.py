@@ -7,7 +7,9 @@ save_enabled。旧的 `save_enabled: True` 常量无法同时满足这些断言�
 """
 from __future__ import annotations
 
+import ast
 import importlib.util
+import logging
 import sys
 import types
 import unittest
@@ -15,6 +17,32 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 SEARCH_PATH = ROOT / "addons/smart_core/app_config_engine/models/app_search_config.py"
+AUTHORITY_PATH = ROOT / "addons/smart_core/handlers/ui_contract_v2_authority.py"
+
+
+def _load_module_definitions(path: Path, stubs: dict) -> dict:
+    """执行模块自身的顶层定义，只把外部 import 换成替身。
+
+    一个只用到单个函数的用例，不应该手工拼装该函数的模块级依赖：seal 边界后来
+    新增了发布版本引用与投递观测两个顶层 helper，而手工列举的命名空间不会同步，
+    于是用例静默报 NameError。执行全部非 import 的顶层语句后，被测函数能拿到真实
+    的传递依赖，只有外部 import 面需要替身。future import 属于 import 语句，这里
+    显式补回，否则抽取出来的定义会提前求值注解。
+    """
+    tree = ast.parse(path.read_text(), filename=str(path))
+    body = [
+        node for node in tree.body
+        if not isinstance(node, (ast.Import, ast.ImportFrom))
+    ]
+    future = ast.ImportFrom(module="__future__", names=[ast.alias(name="annotations")], level=0)
+    module = ast.fix_missing_locations(ast.Module(body=[future, *body], type_ignores=[]))
+    namespace = {
+        "__name__": "smart_core_test_ui_contract_v2_authority",
+        "__file__": str(path),
+        **stubs,
+    }
+    exec(compile(module, str(path), "exec"), namespace)
+    return namespace
 
 
 class _FieldFactory:
@@ -327,24 +355,36 @@ class CachedFavoriteRuntimeTests(unittest.TestCase):
             record.refresh_saved_search_runtime({'saved_filters': [{'id': 7}]}, 'x.demo', action_id=775)
 
     def test_runtime_seal_refreshes_before_sealing(self):
-        import ast
-        from typing import Any
-        path = ROOT / 'addons/smart_core/handlers/ui_contract_v2_authority.py'
-        tree = ast.parse(path.read_text())
-        function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'seal_runtime_contract')
         events = []
+
         class Search:
             def refresh_saved_search_runtime(self, contract, model, action_id=None):
                 events.append(('refresh', model, action_id))
                 contract['saved_filters'] = []
-        owner = types.SimpleNamespace(env={'app.search.config': Search()}, SOURCE_KIND='test', VERSION='1', source_authority_contract=lambda: {})
+
         def seal(contract, **kwargs):
             events.append(('seal', len(contract['searchContract']['saved_filters'])))
             return contract
-        namespace = {'Any': Any, 'seal_unified_page_contract': seal}
-        exec(compile(ast.Module(body=[function], type_ignores=[]), str(path), 'exec'), namespace)
+
+        namespace = _load_module_definitions(AUTHORITY_PATH, {
+            'logging': logging,
+            'seal_unified_page_contract': seal,
+            'verify_unified_page_contract_integrity': lambda _sealed: (True, ''),
+            'build_observation': lambda **kwargs: kwargs,
+            'emit_observation_line': lambda _observation, **_kwargs: True,
+            'resolve_published_version_ref': lambda *_args, **_kwargs: '',
+            '_slo_store': types.SimpleNamespace(persist_line=lambda *_args, **_kwargs: None),
+        })
+        owner = types.SimpleNamespace(
+            env={'app.search.config': Search()},
+            SOURCE_KIND='test',
+            VERSION='1',
+            source_authority_contract=lambda: {},
+        )
         contract = {'searchContract': {'saved_filters': [{'id': 7}]}}
-        namespace['seal_runtime_contract'](owner, contract, {'model': 'x.demo'}, 'ui.contract', 'r', 't', 'web_pc', action_id=775)
+        namespace['seal_runtime_contract'](
+            owner, contract, {'model': 'x.demo'}, 'ui.contract', 'r', 't', 'web_pc', action_id=775,
+        )
         self.assertEqual(events, [('refresh', 'x.demo', 775), ('seal', 0)])
 
 

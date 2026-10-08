@@ -1,5 +1,7 @@
 /* Token v1 component compatibility aliases. Component-local values stay out of pages. */
 :root {
+  /* The zero step of the spacing scale: flush surfaces, not a hidden padding. */
+  --sc-space-none: 0px;
   --sc-space-2xs: calc(var(--sc-base-space-2xs) * 1px);
   --sc-space-xs: calc(var(--sc-base-space-xs) * 1px);
   --sc-space-sm: calc(var(--sc-base-space-sm) * 1px);

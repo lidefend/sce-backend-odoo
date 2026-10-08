@@ -93,10 +93,16 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("activity update handler must independently enforce explicit backend authority")
     if "canReplyCollaborationMessage(entry)" not in timeline:
         failures.append("message reply presentation must consume explicit backend authority")
-    if ':readonly="renderModel.identity.mode === \'readonly\'"' not in driver_host:
-        failures.append("task Floorplan collaboration must follow the canonical render mode instead of forcing readonly")
-    if ':readonly="renderMode === \'readonly\'"' not in canonical_surface:
-        failures.append("canonical native surface collaboration must preserve readonly mode")
+    # The collaboration panel mode is a contract declaration, never a form render
+    # mode: the host must forward the declared panel props and must not re-derive
+    # the panel's readonly state from `renderMode` (see the blocked-surface ruling
+    # in docs/ops/iterations/frontend_business_entry_acceptance_gap_closure_20261007.md).
+    if ':readonly="renderModel.identity.mode' in driver_host:
+        failures.append("task Floorplan collaboration must consume the declared panel mode instead of overriding it with the form render mode")
+    if "v-bind=\"collaborationPanelProps\"" not in canonical_surface:
+        failures.append("canonical native surface must forward the declared collaboration panel props")
+    if ':readonly="renderMode === \'readonly\'"' in canonical_surface:
+        failures.append("canonical native surface must not derive the collaboration panel mode from the form render mode")
     if "entry.message?.can_reply !== true" not in chatter_runtime or "entry.message.reply_intent !== 'chatter.post'" not in chatter_runtime or "parent_id: replyTarget.value?.id" not in chatter_runtime or "exactReplyAuthorized" not in chatter_runtime:
         failures.append("message reply handler must enforce exact backend authority and preserve the parent relation")
     if "entry.message?.can_reply === true" not in model or "entry.message.reply_intent === 'chatter.post'" not in model:

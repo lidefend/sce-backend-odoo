@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "871a07b992913e6e0203e7f8dc2ca05b9fd723d0ccf3a9b45e8e2bc114848bbd",
+  "sourceIdentity": "d5c34d04d07c7ffb7e93d808bb1e848c48e661b85db1b5e0f432b91976ccb851",
   "generatorDigest": "fdd67ff39f993f5be71125b5d4ddb58b7576a4b20a63bd900eb370b1e61e1a83",
   "ownershipDigest": "b26592aaf6b86ea982de2733542dd3998c93f6373f6478961b6c0fe34082837e",
-  "inputDigest": "0039b35325c31e8432b53fecd223bf70e1b99f747a639421652eca767bd7129c",
+  "inputDigest": "ce98adf2a7317fee0f7c148f4d7269be7c11d08d161536a1d3674126337c864a",
   "scope": "repository formal-product frontend Vue rendering-detail sources, including external <template src> files",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -863,9 +863,7 @@
       "formalProductLayer": "P0",
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
-      "stateTypes": [
-        "focus"
-      ],
+      "stateTypes": [],
       "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-shared-utility-scene-completion-v1"
@@ -1290,9 +1288,7 @@
       "formalProductLayer": "P0",
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
-      "stateTypes": [
-        "disabled"
-      ],
+      "stateTypes": [],
       "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
@@ -1312,9 +1308,7 @@
       "formalProductLayer": "P0",
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
-      "stateTypes": [
-        "focus"
-      ],
+      "stateTypes": [],
       "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
@@ -1897,7 +1891,9 @@
       "formalProductLayer": "P0",
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
-      "stateTypes": [],
+      "stateTypes": [
+        "empty"
+      ],
       "rawControls": {},
       "governedStatePrimitives": [
         "ScInlineState"

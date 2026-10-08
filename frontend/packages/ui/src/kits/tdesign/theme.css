@@ -689,8 +689,8 @@
 /* The navigation adapter uses the official drawer's overlay and animation.
  * Public padding variables keep its single navigation scroll owner flush. */
 .sc-design-drawer--navigation {
-  --td-comp-paddingTB-l: 0px;
-  --td-comp-paddingLR-l: 0px;
+  --td-comp-paddingTB-l: var(--sc-space-none);
+  --td-comp-paddingLR-l: var(--sc-space-none);
   border-radius: 0;
 }
 .sc-design-drawer--navigation [data-semantic-component='ScDrawer'] {

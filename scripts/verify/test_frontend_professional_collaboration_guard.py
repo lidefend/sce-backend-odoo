@@ -119,16 +119,31 @@ class ProfessionalCollaborationGuardTests(unittest.TestCase):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("ContractFormDriverHost.vue"):
-                return value.replace(':readonly="renderModel.identity.mode === \'readonly\'"', "readonly")
+                return value.replace(
+                    "<NativeCollaborationPanel",
+                    "<NativeCollaborationPanel :readonly=\"renderModel.identity.mode === 'readonly'\"",
+                    1,
+                )
             return value
-        self.assertTrue(any("canonical render mode" in item for item in validate(read_text)))
-    def test_canonical_native_surface_must_preserve_readonly_mode(self):
+        self.assertTrue(any("consume the declared panel mode" in item for item in validate(read_text)))
+    def test_canonical_native_surface_must_not_derive_panel_mode_from_render_mode(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("CanonicalNativeFormSurface.vue"):
-                return value.replace(':readonly="renderMode === \'readonly\'"', "")
+                return value.replace(
+                    "<NativeCollaborationPanel",
+                    "<NativeCollaborationPanel :readonly=\"renderMode === 'readonly'\"",
+                    1,
+                )
             return value
-        self.assertTrue(any("canonical native surface" in item for item in validate(read_text)))
+        self.assertTrue(any("must not derive the collaboration panel mode" in item for item in validate(read_text)))
+    def test_canonical_native_surface_must_forward_declared_panel_props(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("CanonicalNativeFormSurface.vue"):
+                return value.replace('v-bind="collaborationPanelProps"', "", 1)
+            return value
+        self.assertTrue(any("must forward the declared collaboration panel props" in item for item in validate(read_text)))
     def test_activity_update_missing_authority_cannot_fail_open(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
