@@ -1,6 +1,6 @@
 goal:
   id: MAINLINE-INTEGRATION-CLOSEOUT
-  status: active
+  status: completed
   formal_product_layer: P4
   objective: Close out the mainline in-flight surface after the GitHub recovery window - align the product page header guard typography assertions with the official font tokens adopted by PR #525 (the scheduled full lane would otherwise fail at verify.frontend.release.unit), close PR #522 whose deliverables are already integrated via bc98f5e65, and complete the two finished-but-open runs (GITHUB-RECOVERY merged as PR #523, P4-INCREMENTAL-RESUME merged as PR #524) plus the stale active-runs bindings they left behind.
   exclusions:

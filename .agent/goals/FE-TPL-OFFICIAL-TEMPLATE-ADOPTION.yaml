@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: FE-TPL-OFFICIAL-TEMPLATE-ADOPTION
   title: custom_frontend_rendering_and_interaction_return_to_official_template_compositions
-  status: active
+  status: superseded
   formal_product_layer: P0
   supporting_layer: P4
   layer_target: frontend_contract_consumption_and_standard_page_compositions

@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: ACTIVE-RUN-INDEX-DANGLING-CLOSEOUT
   title: retire_the_dangling_active_run_index_bindings_after_the_formal_surface_closeout
-  status: in_progress
+  status: completed
   formal_product_layer: P4
   layer_target: engineering_context_run_index
   module:

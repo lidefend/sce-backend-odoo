@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: REMOTE-BRANCH-BACKLOG-RETIREMENT-C
   title: unproven_codex_backlog_reference_retirement
-  status: in_progress
+  status: completed
   formal_product_layer: P4
   layer_target: governed_historical_remote_reference_retirement
   module:

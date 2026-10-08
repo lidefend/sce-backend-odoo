@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: WORKSPACE-WORKTREE-CLOSURE
   title: workspace_worktree_closure
-  status: active
+  status: completed
   formal_product_layer: P4
   layer_target: ops_delivery_tool
   module:

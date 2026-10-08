@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: DAILY-ACCEPTANCE-ENTRY-DBNAME-CLI-CONSTRAINT
   title: record_the_command_line_db_name_constraint_for_the_daily_acceptance_publish_entry
-  status: in_progress
+  status: completed
   formal_product_layer: P4
   layer_target: ops_daily_acceptance_entry
   module:

@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: DAILY-RUNTIME-CANDIDATE-RETURN
   title: daily_runtime_detached_candidate_to_main_normalization
-  status: in_progress
+  status: completed
   formal_product_layer: P4
   layer_target: governed_daily_runtime_mainline_deployment_entry
   module:
