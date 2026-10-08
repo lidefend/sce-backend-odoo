@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "id": "RUNTIME-CONTRACT-LOGIN-ENVELOPE-CONSUMER-REALIGNMENT-RETIREMENT",
+  "branch": "audit/runtime-contract-login-envelope-consumer-realignment-retirement-20261008",
+  "status": "completed",
+  "baseline_sha": "d04b9fa1925391d98b10549c29b95b8c9f047350",
+  "goal": ".agent/goals/RUNTIME-CONTRACT-LOGIN-ENVELOPE-CONSUMER-REALIGNMENT-RETIREMENT.yaml",
+  "record": "docs/ops/iterations/runtime_contract_login_envelope_consumer_realignment_20261008.md",
+  "scope": [
+    ".agent/",
+    "docs/ops/iterations/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Bookkeeping only. No runtime is exercised; the referenced frozen-candidate Quick receipt, mainline merge and remote required checks belong to the already-merged RUNTIME-CONTRACT-LOGIN-ENVELOPE-CONSUMER-REALIGNMENT run (PR #614, merge commit d04b9fa1)."
+  },
+  "checks": {
+    "run_index_terminal_state": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Retired. The RUNTIME-CONTRACT-LOGIN-ENVELOPE-CONSUMER-REALIGNMENT run is completed with its mainline-integration evidence recorded (PR #614 head a9ce7528 merged as d04b9fa1) and its frozen candidate a9ce7528 holding an exact-head ci.local.quick PASS receipt, and .agent/active-runs.json is back to its empty terminal state so no index entry points at the merged fix/runtime-contract-login-envelope-consumer-realignment-20261008 branch. On main, make agent.run.resume then reports unregistered, matching the ACTIVE-RUN-INDEX-CLOSEOUT / -DANGLING-CLOSEOUT precedent. Branch deletion of the merged fix branch belongs to the separate governed branch.retire.historical lane, not to this batch."
+}

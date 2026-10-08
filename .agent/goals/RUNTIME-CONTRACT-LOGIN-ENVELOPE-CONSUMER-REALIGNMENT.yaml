@@ -1,7 +1,7 @@
 goal:
   id: RUNTIME-CONTRACT-LOGIN-ENVELOPE-CONSUMER-REALIGNMENT
   title: runtime_contract_login_envelope_consumer_realignment
-  status: active
+  status: completed
   formal_product_layer: P4
   objective: >-
     The runtime-contract verification family (verify.contract.surface_mapping_guard,

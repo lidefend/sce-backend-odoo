@@ -161,3 +161,24 @@ DENY 项（见 §5），但不能用它解释本族失败。
 
 - L1 `make ci.local.iteration`、L2 定向非零测试、冻结 clean HEAD、完整指纹、一次
   `make ci.local.quick`、独立复核与 PR 发布。整体分支目标**未标记完成**。
+
+## 8. 合并结果与 run 收口（2026-10-08 同日）
+
+- 精确候选冻结 HEAD：**`a9ce7528db6464702395be3d7108f35abdab19db`**（clean，`tree=2f87e7d4`）。
+- clean HEAD 上一次 `make ci.local.quick` → **PASS**（620s），回执
+  `.git/codex/evidence/ci.local.quick/a9ce7528…json`；`make pr.push`（受管入口，`authoritative_remote=origin`）推送成功。
+- PR #614 四项必需检查对**该精确 head**重新通过：`public_guard` / `merge_policy_gate` /
+  `professional_quality_gate` / `frontend_release_gate`；辅助检查
+  `classify` / `public_guard_classify` / `professional_authorization` /
+  `python310_runtime_compatibility` / `release_candidate_gate` 均 pass。
+- `make pr.merge PR=614 EXPECTED_HEAD=a9ce7528…`：
+  `[pr.merge.local_quick_gate] REUSE: exact-head ci.local.quick evidence verified` → 受保护 PR 合并成功（squash）。
+- 合并提交：**`d04b9fa1925391d98b10549c29b95b8c9f047350`**（"Merge PR #614"），`origin/main` 由
+  `6c30c919` 前进到 `d04b9fa1`；已回读确认候选 head 为 main 祖先。
+
+**收口（本轮）**：run 与 goal 标记 `completed`；`.agent/active-runs.json` 回到空终态，任何索引项都不再指向
+已合并的 `fix/runtime-contract-login-envelope-consumer-realignment-20261008`；main 上
+`make agent.run.resume` 将报 `unregistered`（沿用 `ACTIVE-RUN-INDEX-CLOSEOUT` / `-DANGLING-CLOSEOUT` 先例）。
+已合并分支的删除属独立的 `branch.retire.historical` 车道，不在本批内。
+
+**边界**：本条只主张**批次验收 + 主线集成**；**版本发布**与**产品交付**未主张。
