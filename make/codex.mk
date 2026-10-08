@@ -1053,6 +1053,15 @@ verify.agent.resume.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/agent_run_context.py scripts/verify/test_agent_run_context.py
 	@python3 -m unittest scripts.verify.test_agent_run_context
 
+# P4 ledger consistency: goal/run status drift, dangling active-run index entries
+# and unreadable goal documents become mechanically detected defects instead of a
+# manual ledger re-audit every round. Read-only over .agent; never mutates it.
+.PHONY: verify.agent.ledger.unit
+verify.agent.ledger.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/agent_ledger_consistency_guard.py scripts/verify/test_agent_ledger_consistency_guard.py
+	@python3 -m unittest scripts.verify.test_agent_ledger_consistency_guard
+	@python3 scripts/verify/agent_ledger_consistency_guard.py
+
 .PHONY: agent.run.begin
 agent.run.begin: guard.prod.forbid
 	@python3 scripts/ops/agent_run_context.py --begin "$(AGENT_CHECK)"

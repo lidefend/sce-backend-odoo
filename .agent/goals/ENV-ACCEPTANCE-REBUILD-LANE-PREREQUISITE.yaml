@@ -1,7 +1,7 @@
 goal:
   id: ENV-ACCEPTANCE-REBUILD-LANE-PREREQUISITE
   title: acceptance_rebuild_lane_environment_prerequisite_is_verified_and_recorded
-  status: in_progress
+  status: completed
   formal_product_layer: P4
   layer_target:
     - acceptance_runtime_rebuild_prerequisite

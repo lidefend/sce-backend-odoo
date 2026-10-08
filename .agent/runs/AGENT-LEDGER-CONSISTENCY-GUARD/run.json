@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "id": "AGENT-LEDGER-CONSISTENCY-GUARD",
+  "branch": "audit/agent-ledger-consistency-guard-20261009",
+  "status": "active",
+  "baseline_sha": "8403288112ef8133595de5be76270d9d8cbdf82d",
+  "goal": ".agent/goals/AGENT-LEDGER-CONSISTENCY-GUARD.yaml",
+  "record": "docs/ops/iterations/agent_ledger_consistency_guard_20261009.md",
+  "scope": [
+    "scripts/verify/",
+    "make/",
+    ".agent/",
+    "docs/ops/iterations/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools and workspace Python dependencies; the guard reads only the .agent ledger and never mutates a ledger, database or service"
+  },
+  "checks": {
+    "ledger_guard": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        ".agent/context.yaml",
+        ".agent/active-runs.json",
+        ".agent/goals/",
+        ".agent/runs/",
+        "make/codex.mk",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "resume_unit": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "guard_registry": {
+      "target": "verify.guard.registry",
+      "inputs": [
+        "scripts/verify/registry.yaml",
+        "scripts/verify/guard_registry_audit.py",
+        "docs/audit/guard_registry/guard_registry.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run verify.agent.ledger.unit, verify.agent.resume.unit, verify.guard.registry and ci.local.iteration on this branch, then record the results and publish one cleaned candidate through make pr.push."
+}
