@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "FE-HIERARCHICAL-WORKSHEET-USABLE-READY",
-  "branch": "codex/hierarchical-worksheet-usable-ready-20261008",
+  "branch": "codex/page-size-consumption-and-matrix-reuse-20261008",
   "status": "active",
   "baseline_sha": "a2213be342500f4cd56a578346711ca7a8c04d9e",
   "goal": ".agent/goals/FE-HIERARCHICAL-WORKSHEET-USABLE-READY.yaml",
@@ -180,5 +180,11 @@
         "closes": "served-revision-absent-from-reuse-identity"
       }
     ]
+  },
+  "continuation": {
+    "reason": "the previous same-name remote ref is the already squash-merged head of PR #621 (88e5db43; single-parent merge 514e1b51 with an identical tree), so the governed push lane correctly refuses a non-fast-forward and force push is hard-banned",
+    "action": "continued the candidate on a fresh codex/* branch at the same commit, per allowlist section C (git checkout -b <new-allowed-branch>); the stale merged remote ref is left in place and can be retired later once no run carrier names it",
+    "predecessor_branch": "codex/hierarchical-worksheet-usable-ready-20261008",
+    "predecessor_commit": "0c43a0120575ddc87a50a342cb24071955ed71d6"
   }
 }

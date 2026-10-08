@@ -223,3 +223,22 @@ P0 前端渲染机制（契约消费层），**未改声明层、未加前端兜
 - 受影响的浏览器证据按新规则全部判为 stale（这是预期结果，不是缺陷）：日常前端从 `f4279416` 换代到
   当前修订，上一代包上采集的条目不得继续复用。
 - 环境 DENY 结论继续单独保留（两个挂载者同属一个项目不足以证明独占），未泛化为「环境全部通过」。
+
+### 8.7 候选发布分支的受管续接（2026-10-08）
+
+准备推送时发现 GitHub 上同名分支 `codex/hierarchical-worksheet-usable-ready-20261008` 仍指向
+`s88e5db43`/`88e5db43`，而它正是 **PR #621 已合并的 head**（合并提交 `514e1b51` 为单亲提交，
+树与该 head 逐字节一致，即 squash 合并）。因此本次候选与远端同名 ref 必然分叉：
+
+- `make pr.push` 正确拒绝非快进（`! [rejected] ... (non-fast-forward)`）；
+- 强推被 allowlist 硬禁（仅在受管退役/切换入口内允许 `--force-with-lease`）；
+- 受管退役入口 `make branch.retire.historical` 会把「仍被运行时载体（`.agent`）引用的分支」
+  直接跳过，不做放宽。
+
+处理：按 allowlist C 段允许的 `git checkout -b <new-allowed-branch>`，在同一提交
+`0c43a012` 上以新分支 `codex/page-size-consumption-and-matrix-reuse-20261008` 续接本候选，
+并把 run 绑定一并更新到新分支；旧的已合并远端 ref 保持原状（不删除、不强推），
+待本次运行关闭、不再有载体引用它之后，再用受管入口清理残留引用。
+
+副作用（如实记录）：分支名变化使上一轮 8 条本地 receipt 按 `branch` 条件失效，
+需在新分支名下重新落 receipt，并对新 HEAD 重新跑**一次**`make ci.local.quick`。
