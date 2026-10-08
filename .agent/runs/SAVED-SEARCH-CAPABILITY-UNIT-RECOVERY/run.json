@@ -11,6 +11,7 @@
     "addons/smart_construction_core/handlers/",
     "addons/smart_core/tests/",
     "docs/",
+    "make/",
     "frontend/apps/web/scripts/",
     "frontend/apps/web/src/",
     "frontend/packages/ui/src/",
@@ -146,7 +147,9 @@
         "addons/smart_core/core/",
         "addons/smart_core/app_config_engine/",
         "docs/frontend_productization/rendering-detail/",
-        "make/frontend.mk"
+        "make/frontend.mk",
+        "docs/frontend_productization/decision-authority-inventory-v1.json",
+        "docs/contract/exports/"
       ],
       "kind": "offline"
     },
@@ -174,8 +177,23 @@
         "make/contract.mk"
       ],
       "kind": "offline"
+    },
+    "frontend_decision_authority": {
+      "target": "verify.frontend.decision_authority.unit",
+      "inputs": [
+        "scripts/verify/frontend_decision_authority.py",
+        "scripts/verify/frontend_decision_authority_guard.py",
+        "scripts/verify/test_frontend_decision_authority_guard.py",
+        "docs/frontend_productization/decision-authority-inventory-v1.json",
+        "docs/contract/exports/intent_catalog.json",
+        "frontend/apps/web/src/pages/",
+        "frontend/apps/web/src/views/",
+        "frontend/apps/web/src/app/",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the construction-core reason_code declaration fix and the refreshed contract catalog export as their own layer-owned commits, then reconcile the run status and hand off with the contract-family detection conclusion (runtime role-matrix login chain remains environment-gated)."
+  "next_exact_step": "Batch record is current: the frontend decision-authority ledger landed and the quick gate was rerun at the new identity (165 PASS), so the scoped conclusion holds for the declared rules. Next exact step, one layer at a time: (1) close the 7 recorded contract-projectable-gaps as a P0 backend-contract projection change (project capability state/reason, per-menu handling state, and register or rename the `projection.refresh` trace key) and re-run `verify.frontend.decision_authority.unit`; (2) separately obtain the runtime role-matrix login credential prerequisite so the contract family items in section 4.C can be evidenced under the governed entry instead of remaining un-concluded. Do not relax any assertion to close either one."
 }

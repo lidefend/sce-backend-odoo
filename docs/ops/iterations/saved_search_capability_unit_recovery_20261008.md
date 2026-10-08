@@ -127,8 +127,70 @@ make verify.frontend.quick.gate        # /tmp/fe_gate_final2.log → GATE_EXIT=0
 未结论的部分有两条，都是前置而非缺陷：一条运行态登录链（凭据面），一条受管档案前置（`local.clean`）。
 两者都需在受管入口下重跑取证，不得用放宽、跳过或换库替代。
 
-## 5. 状态边界
+## 5. 前端决策权属台账：`除渲染/交互外全部契约驱动` 的可判定结论
 
-- 批次验收：本批（7 个门禁红项目标 + 1 项 token 补齐 + 1 项契约漂移修复 + 目录导出刷新 + 独立复核）。
+用户提问："现在的结论能支撑自定义前端除了渲染与交互外的所有逻辑都来自契约驱动的终极目标吗？"
+本轮把该命题从叙述升级为**可判定检查**，并给出结论。
+
+### 5.1 新增权威与守卫（唯一来源 + fail-closed）
+
+- `scripts/verify/frontend_decision_authority.py`：台账唯一来源。声明 5 条检测规则
+  （R1 字面能力门 / R2 字面 intent / R3 字面路由 / R4 业务状态字面 / R5 字面 action_id），
+  扫描 `frontend/apps/web/src/{pages,views,app}`（排除 node_modules，去注释行）。
+- `docs/frontend_productization/decision-authority-inventory-v1.json`：生成并提交的台账，可在 diff 中评审。
+- `scripts/verify/frontend_decision_authority_guard.py`：fail-closed 守卫。
+- `scripts/verify/test_frontend_decision_authority_guard.py`：11 个用例，含负例
+  （先证明未注入的基线干净，再注入新决策，守卫必须检出）。
+- `make verify.frontend.decision_authority.{unit,guard,export}`，并作为前置挂入 `verify.frontend.quick.gate`。
+
+判定语义（每个命中必须落三类之一，否则 FAIL）：
+
+1. `contract-derived`：消费后端契约投影。R2 中该分类的断言必须能在
+   `docs/contract/exports/intent_catalog.json` 找到同名 intent —— 这是**结构校验**，不是字符串冻结。
+2. `contract-projectable-gap`：前端决策当前没有契约载体、但可由后端投影。这是到目标的**唯一合法剩余距离**。
+3. `excluded-render-interaction`：声明的渲染/交互半区（UI 状态机 allowlist + 导航 shell 规则）。
+
+### 5.2 实测结论（`make verify.frontend.decision_authority.unit`，含守卫）
+
+```
+findings=137 distinct=97 contract-derived=43 projectable-gaps=7
+frontend-logic-defects=0 render-interaction=87 unclassified=0
+PASS: every scoped decision is contract-derived, a recorded projectable gap, or declared render/interaction
+```
+
+- 不变式 R1（字面能力门）与 R5（字面 action_id）在声明范围内命中数均为 **0**。
+- R2 全部 intent 字面命中已发布 intent 目录（结构校验通过）。
+- **结论**：在声明的扫描面与声明的规则集下，"除渲染/交互外全部契约驱动"成立；
+  该成立是**有条件的、可复核的、只减不增的**——台账给出唯一缺口清单（5.3），
+  任何新增未登记决策都会被守卫判红。
+
+### 5.3 剩余缺口（`contract-projectable-gap`，逐条可行动）
+
+| decision | 位置 | 缺口 |
+|---|---|---|
+| `disabled_capability` | `frontend/apps/web/src/app/capabilityPolicyCore.js:7` | 能力态词表在前端计算；后端已发布 `PERMISSION_DENIED` 与 `allow/readonly/deny/pending/coming_soon`，但未投影该状态名 |
+| `disabled_permission` | `frontend/apps/web/src/app/capabilityPolicyCore.js:12` | 前端按用户组重算权限拒绝，后端已有 `PERMISSION_DENIED`，应改为投影 |
+| `disabled_permission` | `frontend/apps/web/src/views/SceneView.vue:990` | 同上，消费点 |
+| `disabled_capability` | `frontend/apps/web/src/views/WorkbenchView.vue:462` | 同上，消费点 |
+| `enabled` | `frontend/apps/web/src/app/runtime/actionViewLoadGuardRuntime.ts:23` | 依赖前端 `CapabilityPolicyState`，应消费投影态 |
+| `unconfigured` | `frontend/apps/web/src/views/MenuConfigView.vue:364` | 菜单处置态由渲染侧本地 `policy_id` 推导；后端只发布 `unconfigured_hidden_count` |
+| `projection.refresh` | `frontend/apps/web/src/app/projectionRefreshRuntime.ts:42` | intent 命名空间字面未在契约目录声明（仅作本地 trace 标签），须登记或改名 |
+
+**边界声明（不放宽）**：这些 gap 只表示"投影责任仍在前端"，不等于页面出现错误行为；
+本批不下调任何既有验收断言，也不把 gap 记为通过或已修复。它们属于后续批次的实际工作项。
+
+### 5.4 结论的适用范围（诚实边界）
+
+- 规则集是**有限**的：覆盖"字面能力门 / 字面 intent / 字面路由 / 字面业务状态 / 字面 action_id"五类形状；
+  非字面形式（先赋值再比较、间接表驱动等）不在检出面内，属已知残余面。
+- 渲染/交互半区来自**声明类**（UI 状态机 allowlist + 导航 shell 规则），不是逐文件豁免；
+  守卫打印分类计数，任何未落入声明类或台账的命中都会判红。
+- 本结论仅是**批次验收**级。运行态凭据链与 `local.clean` 档案前置（§4.C）仍未结论。
+
+## 6. 状态边界
+
+
+- 批次验收：本批（7 个门禁红项目标 + 1 项 token 补齐 + 1 项契约漂移修复 + 目录导出刷新 + 独立复核
+  + 前端决策权属台账/守卫 + quick gate 重跑 165 PASS）。
 - 主线集成 / 版本发布 / 产品交付：本批不主张。
 - 运行态契约链（§4.C）：待运行态凭据前置恢复后单独取证，本轮不主张通过。
