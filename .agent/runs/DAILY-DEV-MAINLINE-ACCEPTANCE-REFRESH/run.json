@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-DEV-MAINLINE-ACCEPTANCE-REFRESH",
+  "branch": "codex/daily-dev-mainline-acceptance-refresh-20261008",
+  "status": "active",
+  "baseline_sha": "7a0fb87006dfbd0381c4a06705a300242ef52311",
+  "goal": ".agent/goals/DAILY-DEV-MAINLINE-ACCEPTANCE-REFRESH.yaml",
+  "record": "docs/ops/iterations/daily_dev_mainline_acceptance_refresh_20261008.md",
+  "scope": [
+    ".agent/",
+    "docs/ops/iterations/"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Registered daily runtime lane on the external daily development server (ssh host sc-root, remote root /opt/projects/repos/sce-product-odoo, database sc_demo, env dev, nginx 1.95.85.92:18081). Reads and writes only through the existing governed Make entries daily.runtime.main.bundle_sync, daily.runtime.source_revision.align, daily.runtime.record_identity.resolve and the declaration-driven business-entry acceptance harness; each mutating entry requires its own explicit confirmation token and performs an authoritative readback. No new environment, database, port, volume or credential is created."
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Registered. Confirm the live served revision, then run daily.runtime.main.bundle_sync for 7a0fb870 with expected-old-sha 24e05cd5, daily.runtime.source_revision.align, daily.runtime.record_identity.resolve, and then the reuse-first user-level acceptance (verify.daily_dev.acceptance.readonly.probe plus verify.frontend.business_entry.matrix.browser.incremental) with ACCEPTANCE_TARGET_SHA=7a0fb870.",
+  "evidence": {}
+}
