@@ -467,3 +467,57 @@ summary provenance，未触碰任何 entry 断言）。
   （安全方向），不构成误复用。
 - 环境 DENY 结论继续**单独保留**，仅作重建/快照车道阻断，未泛化为「环境全部通过」。
 - 四边界：批次验收（本节）通过；主线集成待本分支 PR 通过四项必需检查后声明；版本发布与产品交付另判。
+
+## 12. 详情车道与关系往返在 served `main bfb38367` 上的收口（2026-10-09）
+
+### 12.1 触发与受管重建
+
+run 第 7 步「回到产品交付主线」的首个执行单：**只收详情，不碰已通过的列表**。先把权威
+`main` 精确 SHA 提升到日常运行态（`sc-root:/opt/projects/repos/sce-product-odoo`，`sc_demo`）。
+
+| 受管入口 | 结果 |
+| --- | --- |
+| `daily.runtime.main.bundle_sync` | PASS `old_sha=4ee151ef…` → `source_sha=bfb38367…`，`normalized_from_candidate=false` |
+| `daily.runtime.source_revision.align` | PASS 声明并重启，`/api/runtime-version` 回读 `source_revision=bfb38367…` |
+| `daily.runtime.frontend.build` | PASS `rebuilt=true reused=false`；产物指纹 `b0311c6f39e3…4957`、entry `index-Yv56wmel.js`，与 `4ee151ef` **相同**（本轮无前端源码变化） |
+| `daily.runtime.record_identity.resolve` | PASS 受管解析出 10 类记录身份（project 2014 / contract 1719 / settlement 3624 / payment_request 36178 / payment_execution 170345 / lifecycle 2022 / companies a=21 b=22 等） |
+
+读回：`source_revision=bfb38367882467e081c9eab2feff6e880a71687e`、
+`frontend_build_sha256=b0311c6f39e3de5e5706933217e3fc99d572411c81133d6c8e010b2efd5a4957`、`database=sc_demo`。
+
+### 12.2 详情实际效果（1440 / 390 × 明暗）
+
+入口 `make verify.daily_dev.list_surface.readonly.browser`，`LIST_SURFACE_DAILY_OBSERVATION_SCOPE=detail-only`，
+受管 daily 只读档（弱口令确认信封 key 集固定、TTL < 10 分钟，未手拼凭据）。
+
+| 运行 | 产物 | 结果 |
+| --- | --- | --- |
+| light | `.runtime/final-acceptance/detail-lane-bfb38367/detail-only-light.json` | `passed=true`，`record_checks` 8/8（1440 + 390 各 `declared_entry_route`/`exact_record_contract`/`declared_renderer`/`return_to_source`），`runtime_errors=0`、`denied_requests=0`、`console_errors=0` |
+| dark | `.runtime/final-acceptance/detail-lane-bfb38367/detail-only-dark.json` | 同上；声明主题 `resolved=dark` |
+
+`servedIdentity`（探针自证）：`servedSha=bfb38367…`、`servedDatabase=sc_demo`、
+`frontendBuildSha256=b0311c6f…4957`。
+
+### 12.3 关系“点击打开 → 返回原记录 → 标签和动作恢复”（一次真实往返）
+
+声明驱动探针 `scripts/verify/record_relation_roundtrip_acceptance.js`：捕获页面自身消费的
+`ui.contract.v2`，只对契约声明 `can_read` 的关系控件做**真实点击**，再按前端自身发出的 `return_*`
+契约校验回退（不是 handler 诊断）。源记录 `construction.contract.income/2331`（action 578 / menu 904，
+契约声明 14 个关系条目）。
+
+- 4 个声明可打开条目全部 `opened`：`project_id` → `/f/project.project/1245`（声明 `696/376`）、
+  `partner_id`（`786/598`）、`handler_id`（`723/438`）、`tax_id`（无 action/menu 声明）。
+- 往返：`project_id` 回退后 `path/title/statusbar/tabs/actions` 全部恢复，`error_free=true`。
+- `denied_requests=0`、`console_errors=0`。
+- 原台账记录的「关联跳转返回 403」**不再复现**：`project_id` 现在声明的打开入口 `696/376` 在
+  `navigation.route_authority` 内，不再落到 `access-denied`。
+
+### 12.4 边界
+
+- 责任层：P4（运行态验收）；本批次产品代码 0 变更。
+- 本执行单只收详情；**创建/编辑与工作台**的最小证据差额是下一执行单，89 键列表矩阵不重跑。
+- 产物指纹与 `4ee151ef` 相同，说明本轮（PR #625）无前端源码变化；详情与关系证据按当前 served 身份重新绑定。
+- 环境 DENY 结论继续单独保留（见第 11.6 节），本批次未依赖它。
+- 观察（本轮未改代码）：纯叙述性 `docs/ops/iterations/*.md` 在 `ci.local.iteration` 中被计为 `unmappedPath`
+  （`NON_SOURCE_PATH_PREFIXES` 当前只豁免 `.agent/`），使记录性文档改动也带出 `manualNonZeroL2Required=true`。
+  按「只修确认失败」本轮不动规划器，登记为迭代效率候选（与第 9.5 节同类）。
