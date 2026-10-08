@@ -7,7 +7,9 @@ from odoo import api, models
 from odoo.addons.smart_construction_core.models.support import operating_metrics as opm
 from odoo.tools.float_utils import float_compare
 
-from odoo.addons.smart_core.utils.contract_governance import workflow_contract_profiles
+from odoo.addons.smart_construction_core.services.workflow_contract_profile_registry import (
+    external_workflow_contract_profiles,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -1167,7 +1169,7 @@ class ScWorkflowContractService(models.AbstractModel):
         through the P0 registry; the industry layer merges it instead of
         declaring rules for a model it does not own.
         """
-        return workflow_contract_profiles()
+        return external_workflow_contract_profiles()
 
     @api.model
     def _profile_is_executable(self, model_name, profile):
