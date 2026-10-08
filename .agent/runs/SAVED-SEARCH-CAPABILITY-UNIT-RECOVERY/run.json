@@ -8,13 +8,14 @@
   "record": "docs/ops/iterations/saved_search_capability_unit_recovery_20261008.md",
   "scope": [
     ".agent/",
+    "addons/smart_construction_core/handlers/",
     "addons/smart_core/tests/",
     "docs/",
     "frontend/apps/web/scripts/",
     "frontend/apps/web/src/",
     "frontend/packages/ui/src/",
-    "scripts/verify/",
-    "scripts/audit/"
+    "scripts/audit/",
+    "scripts/verify/"
   ],
   "environment": {
     "kind": "offline",
@@ -148,8 +149,33 @@
         "make/frontend.mk"
       ],
       "kind": "offline"
+    },
+    "contract_drift_guard": {
+      "target": "verify.contract_drift.guard",
+      "inputs": [
+        "scripts/verify/contract_drift_guard.sh",
+        "scripts/verify/side_effect_intent_policy_guard.py",
+        "addons/smart_construction_core/handlers/",
+        "addons/smart_core/handlers/",
+        "addons/smart_core/utils/reason_codes.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_catalog": {
+      "target": "verify.contract.catalog",
+      "inputs": [
+        "docs/contract/cases.yml",
+        "docs/contract/exports/",
+        "scripts/verify/intent_cases_integrity_guard.py",
+        "scripts/verify/intent_cases_catalog_guard.py",
+        "scripts/verify/intent_catalog_case_coverage_guard.py",
+        "scripts/verify/contract_catalog_determinism_guard.py",
+        "make/contract.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "Record per-target receipts and the aggregate verify.frontend.quick.gate receipt from the all-green run, refresh the batch record evidence section, then run ci.local.iteration and commit the affected scope on this branch."
+  "next_exact_step": "Commit the construction-core reason_code declaration fix and the refreshed contract catalog export as their own layer-owned commits, then reconcile the run status and hand off with the contract-family detection conclusion (runtime role-matrix login chain remains environment-gated)."
 }

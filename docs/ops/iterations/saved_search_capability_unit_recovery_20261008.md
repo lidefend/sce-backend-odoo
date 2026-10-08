@@ -60,23 +60,61 @@ make verify.frontend.quick.gate        # /tmp/fe_gate_final2.log → GATE_EXIT=0
 | professional_collaboration | `verify.frontend.professional_collaboration.unit` | passed | 82 |
 | rendering_detail_state | `verify.frontend.rendering_detail_state.unit` | passed | 76 |
 | frontend_quick_gate | `verify.frontend.quick.gate` | passed | 164 |
+| contract_drift_guard | `verify.contract_drift.guard` | passed | 11 |
+| contract_catalog | `verify.contract.catalog` | passed | 6 |
 
 日志中出现的 `FAIL incomplete={'internalVendorSelectorGapCount': 1}` 是
 `scripts/audit/test_generate_frontend_official_design_alignment_inventory` 的**负例预期输出**，
 其后的真实运行输出为 `PASS summary={... 'internalVendorSelectorGapCount': 0, 'visualLiteralGapCount': 0}`；
 `saved_search` 日志中的 `RuntimeError: ir.filters unavailable` 同样是用例内构造的负例路径。
 
-## 4. 检测结论与残留
+## 4. 契约族交叉检测结论（运行时契约驱动）
 
-- `verify.frontend.quick.gate`：**全绿**（exit 0；164 条 PASS 行，0 失败目标）。它是本轮唯一已知的
-  本地前端契约阻断入口，现在没有未决红项。
-- 未纳入本轮主张的层：远端必需 CI（`frontend_release_gate` 等）、受管 Quick、部署与用户级验收。
-  本报告只主张**批次验收**，不主张主线集成 / 版本发布 / 产品交付。
-- 已知守门缺口（不在本轮职责、仅记录）：`frontend_release_gate` 的 pnpm 链**不覆盖** python/node
-  契约目标，因此这类漂移只能在本地 quick gate 或 `ci.local.quick` 暴露；若要根治需在 P4 门禁层
-  单独立项。
+在门禁全绿之后，对**契约族**（`verify.contract*` / `gate.contract*`，共 50 个注册目标）做了一次
+交叉检测。结论分三类：
+
+**A. 已通过（离线）**：`verify.contract.structure_lock`（domains=14, fingerprint=current）、
+`verify.contract.schema.declaration.sync`（version=2.2.0 status=stable）、`verify.contract.subviews.guard`、
+`verify.contract.operation_gateway.guard`、`verify.contract.page_v1_zero_residue.guard`、
+`verify.contract.parse_boundary.guard`、`verify.contract.native_integrity_guard`、
+`verify.contract.production_chain.guard`、`verify.contract.envelope.guard`、
+`verify.contract.governance.coverage`、`verify.contract.scene_coverage.brief`、
+`verify.contract.catalog`、`verify.scene.contract.shape`、`verify.business.core_journey.guard`、
+`verify.role.capability_floor.prod_like`、
+`verify.contract_drift.guard`（修复后）。
+
+**B. 本轮发现的真实缺口并已修复**：
+
+- `verify.contract_drift.guard` 报 `hard-coded reason_code literals`：
+  `addons/smart_construction_core/handlers/boq_line_patch.py`、`boq_dangerous_import.py`、
+  `overview_rich_text_patch.py` 各写死 `"reason_code": "DONE"`，而同族
+  `my_work_complete.py` 已从 `smart_construction_core/handlers/reason_codes.py` 消费 `REASON_DONE`。
+  这是**声明未被消费**的契约漂移。修法：三个 handler 改为导入并消费 `REASON_DONE`，清零字面量；
+  取值仍是 `DONE`，无行为变化。修复后该目标 PASS（含 idempotency 声明扫描与
+  `verify.intent.side_effect_policy_guard`：policy_items=11 intents_scanned=122）。
+- `docs/contract/exports/intent_catalog.json` 相对当前工作树陈旧（`test_refs` 未随本轮用例变化刷新）。
+  `make verify.contract.catalog` 重新导出，`contract_catalog_determinism_guard` PASS，证明是可复现的
+  确定性产物而非噪声。
+
+**C. 运行环境前置未满足（不计为产品缺口）**：以下目标需要在**已注册运行态**上以角色矩阵登录，
+本轮本地未提供该凭据面，因此未取得结论，也未被放宽：
+
+- `verify.contract.surface_mapping_guard` → `RuntimeError: missing token`
+- `verify.scene_catalog_runtime_alignment_guard` /
+  `verify.scene_capability.contract.guard` → `all role-matrix logins failed:
+  sc_fx_pm,sc_fx_executive,sc_fx_finance,sc_fx_contract_admin,sc_fx_project_member,
+  sc_fx_material_user,sc_fx_cost_user,admin,demo_pm,demo_finance,demo_role_executive`。
+- 由此级联：`artifacts/scene_capability_contract_guard.json` 未生成 →
+  `verify.role.capability_floor.guard`（提示先跑 `make verify.capability.schema`）→
+  `verify.business.capability_baseline.report`、`verify.backend.architecture.full.report`、
+  `verify.contract.governance.brief`、`verify.contract.evidence.guard` 一并失败。
+  这五项的失败是**同一运行态前置**的下游级联，不是独立缺陷。
+
+因此"完整运行时契约驱动"的结论是：**离线契约族无未决红项**；唯一未结论的是一条运行态登录链，
+其状态为**环境前置未满足**（需在受管运行态上以既有凭据入口重跑，不得用放宽或跳过替代）。
 
 ## 5. 状态边界
 
-- 批次验收：本批（7 个红项目标 + 1 项 token 补齐 + 独立复核）。
+- 批次验收：本批（7 个门禁红项目标 + 1 项 token 补齐 + 1 项契约漂移修复 + 目录导出刷新 + 独立复核）。
 - 主线集成 / 版本发布 / 产品交付：本批不主张。
+- 运行态契约链（§4.C）：待运行态凭据前置恢复后单独取证，本轮不主张通过。
