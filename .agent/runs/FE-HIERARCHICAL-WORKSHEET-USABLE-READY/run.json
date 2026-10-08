@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "id": "FE-HIERARCHICAL-WORKSHEET-USABLE-READY",
-  "branch": "fix/evidence-scope-served-bundle-identity-20261009",
+  "branch": "fix/user-acceptance-detail-closure-20261009",
   "status": "active",
-  "baseline_sha": "4ee151ef4735dff9ee9e9ab3dc69b0800eb68fdf",
+  "baseline_sha": "bfb38367882467e081c9eab2feff6e880a71687e",
   "goal": ".agent/goals/FE-HIERARCHICAL-WORKSHEET-USABLE-READY.yaml",
   "record": "docs/ops/iterations/hierarchical_worksheet_usable_ready_20261008.md",
   "scope": [
