@@ -113,3 +113,15 @@
 - **C（探针面）**：把 harness 的全局 `waitUntil=networkidle` 导航启发式替换为"等待声明状态 + 有界截止时间"。仓库内已有同类裁决先例（`scripts/verify/frontend_form_system_audit.mjs` 记录"表单审计依赖全局 networkidle 导致持续请求页面误超时 → 改为 domcontentloaded 后等待声明状态"）。但它改变有效时间预算，属于门禁变更，必须由所有者显式授权。
 
 选定后：在**一个新的受管批次**内实施单一修法，仅对受影响的工作表入口做一次有理由的真实重走；`docs/` 与 run 记账随该候选同行提交（`pr.merge` 拒绝独立记账 PR）。
+
+## 7. 退役（2026-10-09）：本 run 置 `superseded`
+
+- 本 run 唯一未决的 2/89 声明业务入口 `exception`（`smart_construction_core.menu_sc_p1_expense_contract`、`smart_construction_core.menu_sc_payment_execution`）
+  已由 **`FE-HIERARCHICAL-WORKSHEET-USABLE-READY`** 处置：契约声明工作表 `page_size`、前端消费声明值、
+  「首屏可用即 `data-state=ready`、后台加载另行声明」，经 PR #621…#626 进入 `main b28d4499`。
+- 现行台账 `docs/product/frontend_business_entry_acceptance_v1.csv` = **89/89 `acceptance_status=passed`**，本 run 不再持有未决项。
+- 处置：`.agent/runs/DAILY-DEV-MAINLINE-ACCEPTANCE-REFRESH/run.json` 与 `.agent/goals/DAILY-DEV-MAINLINE-ACCEPTANCE-REFRESH.yaml`
+  置 `status=superseded` 并记录 `superseded_by`；`.agent/active-runs.json` 移除
+  `codex/daily-dev-mainline-acceptance-refresh-20261008` 映射。**不改写历史提交**；本 run 的 P4 工具批次记录（PR #620，合并 `a2213be3`）保留为历史。
+- 本 run 未主张、也未被替代的内容：**版本发布**与**产品交付**状态不变（均未主张），
+  且**未**放宽任何断言、ACL、字段权限、负例或必需检查。

@@ -1,9 +1,5 @@
 {
   "branches": {
-    "audit/environment-rebuild-lane-prerequisite-20261009": ".agent/runs/ENV-ACCEPTANCE-REBUILD-LANE-PREREQUISITE/run.json",
-    "codex/daily-dev-mainline-acceptance-refresh-20261008": ".agent/runs/DAILY-DEV-MAINLINE-ACCEPTANCE-REFRESH/run.json",
-    "fix/actionview-surface-contract-pending-gate-20261008": ".agent/runs/FE-HIERARCHICAL-WORKSHEET-USABLE-READY/run.json",
-    "fix/evidence-scope-served-bundle-identity-20261009": ".agent/runs/FE-HIERARCHICAL-WORKSHEET-USABLE-READY/run.json",
     "fix/user-acceptance-detail-closure-20261009": ".agent/runs/FE-HIERARCHICAL-WORKSHEET-USABLE-READY/run.json"
   },
   "schema_version": 1
