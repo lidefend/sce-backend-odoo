@@ -95,6 +95,22 @@ run 记录：`.agent/runs/QUICK-EVIDENCE-SHARD-COMPOSITION/run.json` 的
 
 **状态边界**：批次验收完成 + 主线集成完成；**版本发布未主张，产品交付未主张**。
 
-**遗留（后续小候选，非本批缺陷）**：`main()` 对非 `run` 模式的 stdout 标签统一打印 `VERIFIED`，
-`shard` 模式记录 part 时也会显示 `VERIFIED`（实为 `RECORDED`）；回执/part 内容与门禁不受影响，
-未在本候选内改动以避免重新冻结头。
+### 6.1 收口期暴露并修复的两处潜在缺陷（同一收口候选内）
+
+终端退役会让 `pr.merge` 走 fail-closed 全量回退（记账类候选没有精确 head 回执），
+正是在这条真实路径上，套件抓到两处既有潜在缺陷：
+
+1. **门禁测试 harness 不密闭**（PR #617 引入的真实缺陷）：
+   `scripts/verify/test_branch_governance_consistency_guard.py` 的 `HARNESS_CONTROLLED_VARS`
+   只剥离了 `EXPECTED_HEAD/PR/PR_MERGE_*/MAKEFLAGS/...`，未剥离新增的
+   `PR_MERGE_BOOKKEEPING_TERMINAL_RETIRE` / `PR_MERGE_BOOKKEEPING_BASE_REF` /
+   `PR_MERGE_LOCAL_QUICK_GATE_SKIP`。当套件被终端退役路径带着这些环境变量运行时，
+   `test_bookkeeping_only_candidate_is_denied_before_running_quick` 会误取
+   「已确认/已跳过」分支并返回 0，导致**终端退役本身无法合并**。修复：把三个控制变量加入剥离列表，
+   并新增 `test_ambient_bookkeeping_controls_cannot_unblock_a_bookkeeping_candidate` 锁住该行为
+   （负例已验证：移除剥离项后该测试失败）。
+2. **shard/compose 的 stdout 标签误报**：`main()` 对非 `run` 模式统一打印 `VERIFIED`，
+   而 `shard`/`compose` 实际是**记录**证据。修复：`result_label(mode)` —— 只有 `verify` 打印
+   `VERIFIED`，`run`/`shard`/`compose` 打印 `RECORDED`；新增单测锁定映射。
+
+两处修复均不改变回执/part 内容与门禁强度，未放宽任何断言、ACL、字段权限、负例或必需目标。

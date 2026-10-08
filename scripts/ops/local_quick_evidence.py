@@ -369,6 +369,11 @@ def compose(root: Path, shards: int, expected_head: str) -> Path:
     return receipt
 
 
+def result_label(mode: str) -> str:
+    """Only `verify` reports a pure verification; the other modes write evidence."""
+    return "VERIFIED" if mode == "verify" else "RECORDED"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("mode", choices=("run", "verify", "shard", "compose"))
@@ -413,7 +418,7 @@ def main() -> int:
         print(f"[local_quick_evidence] MISS {exc}")
         return 2
     if path is not None:
-        print(f"[local_quick_evidence] {'RECORDED' if args.mode == 'run' else 'VERIFIED'} {path}")
+        print(f"[local_quick_evidence] {result_label(args.mode)} {path}")
     return 0
 
 

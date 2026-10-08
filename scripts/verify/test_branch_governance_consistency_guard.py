@@ -8,6 +8,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import branch_governance_consistency_guard as guard
 
@@ -36,6 +37,15 @@ HARNESS_CONTROLLED_VARS = (
     "MAKEFLAGS",
     "MAKELEVEL",
     "MFLAGS",
+    # A real terminal-goal retirement runs the fallback suite with
+    # PR_MERGE_BOOKKEEPING_TERMINAL_RETIRE set, and the bookkeeping short-circuit
+    # reads PR_MERGE_BOOKKEEPING_BASE_REF / PR_MERGE_LOCAL_QUICK_GATE_SKIP. If the
+    # harness inherited any of them, the bookkeeping-only candidate test would
+    # silently take the acknowledged / skipped path and fail inside
+    # `make ci.local.quick` on the very retirement candidate that set them.
+    "PR_MERGE_BOOKKEEPING_TERMINAL_RETIRE",
+    "PR_MERGE_BOOKKEEPING_BASE_REF",
+    "PR_MERGE_LOCAL_QUICK_GATE_SKIP",
 )
 
 
@@ -361,6 +371,25 @@ class LocalQuickEvidenceGateTests(unittest.TestCase):
         self.assertNotIn("bookkeeping-only candidate", completed.stdout)
         self.assertIn("running make ci.local.quick", completed.stdout)
         self.assertEqual(len(calls), 2)
+
+    def test_ambient_bookkeeping_controls_cannot_unblock_a_bookkeeping_candidate(self) -> None:
+        """The harness must be hermetic: an ambient terminal-retire acknowledgement
+        (or a pre-set skip / base ref) leaking from a real `make pr.merge` must not
+        turn a bookkeeping-only candidate into a merged one on its own."""
+        ambient = {
+            "PR_MERGE_BOOKKEEPING_TERMINAL_RETIRE": "ambient leak",
+            "PR_MERGE_BOOKKEEPING_BASE_REF": "refs/heads/ambient",
+            "PR_MERGE_LOCAL_QUICK_GATE_SKIP": "1",
+        }
+        with mock.patch.dict(os.environ, ambient):
+            completed, calls = self.run_gate(
+                evidence_mode="miss_then_hit",
+                changed_files=(".agent/active-runs.json", "docs/ops/example.md"),
+            )
+        self.assertNotEqual(completed.returncode, 0, completed.stdout)
+        self.assertIn("bookkeeping-only candidate", completed.stdout)
+        self.assertNotIn("running make ci.local.quick", completed.stdout)
+        self.assertEqual(len(calls), 1)
 
     def test_shard_composition_candidate_is_not_bookkeeping_only(self) -> None:
         """A candidate that adds make/ and scripts/ paths must never be

@@ -8,11 +8,13 @@
   "record": "docs/ops/iterations/quick_evidence_shard_composition_20261008.md",
   "scope": [
     ".agent/",
-    "docs/ops/iterations/"
+    "docs/ops/iterations/",
+    "scripts/ops/",
+    "scripts/verify/"
   ],
   "environment": {
     "kind": "offline",
-    "authority": "Bookkeeping only. No runtime is exercised; the referenced frozen-candidate Quick receipt and remote-gate results belong to the already-merged QUICK-EVIDENCE-SHARD-COMPOSITION run (PR #618, merge commit 429a7f78f5f606dde6188148b463e0e35e35326a)."
+    "authority": "Offline bookkeeping plus two bounded P4 test-tool fixes with no runtime dependency. The referenced frozen-candidate Quick receipt and remote-gate results belong to the already-merged QUICK-EVIDENCE-SHARD-COMPOSITION run (PR #618, merge commit 429a7f78f5f606dde6188148b463e0e35e35326a)."
   },
   "checks": {
     "run_index_terminal_state": {
@@ -22,8 +24,18 @@
         "scripts/verify/test_agent_run_context.py"
       ],
       "kind": "offline"
+    },
+    "bookkeeping_gate_hermeticity": {
+      "target": "verify.branch.governance.consistency",
+      "inputs": [
+        "scripts/verify/test_branch_governance_consistency_guard.py",
+        "scripts/ops/local_quick_evidence.py",
+        "scripts/verify/test_local_quick_evidence.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "Retired. The QUICK-EVIDENCE-SHARD-COMPOSITION run is completed with its mainline-integration evidence recorded (PR #618, head e6e434c14efed0406e64da767e86c1fb41b81d31, squash-merged as 429a7f78f5f606dde6188148b463e0e35e35326a) and its frozen candidate proved by two bounded shards composed into one schema-3 receipt; .agent/active-runs.json is returned to its empty terminal state so no index entry points at the merged branch. On main, make agent.run.resume then reports unregistered, matching the ACTIVE-RUN-INDEX-DANGLING-CLOSEOUT precedent. Deletion of the merged branch belongs to the separate governed branch.retire.historical lane, not to this batch."
+  "next_exact_step": "Close out the topic. The QUICK-EVIDENCE-SHARD-COMPOSITION run is completed with its mainline-integration evidence recorded (PR #618, head e6e434c14efed0406e64da767e86c1fb41b81d31, squash-merged as 429a7f78f5f606dde6188148b463e0e35e35326a) and its frozen candidate proved by two bounded shards composed into one schema-3 receipt; .agent/active-runs.json is returned to its empty terminal state so no index entry points at the merged branch. The same candidate lands two latent P4 test-tool defects that the terminal-retirement path exposed: (1) the branch-governance harness did not strip the ambient PR_MERGE_BOOKKEEPING_TERMINAL_RETIRE / PR_MERGE_BOOKKEEPING_BASE_REF / PR_MERGE_LOCAL_QUICK_GATE_SKIP controls, so the bookkeeping-only candidate test failed inside the very fallback suite a terminal retirement runs; (2) shard/compose modes printed VERIFIED although they record evidence. No assertion, ACL, field permission, negative case or required target was relaxed. Deletion of the merged branch belongs to the separate governed branch.retire.historical lane."
 }

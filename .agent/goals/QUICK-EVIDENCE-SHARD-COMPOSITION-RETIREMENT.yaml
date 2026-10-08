@@ -3,14 +3,18 @@ goal:
   status: completed
   formal_product_layer: P4
   objective: >-
-    Retire the QUICK-EVIDENCE-SHARD-COMPOSITION run ledger after PR #618 (head
+    Close out the QUICK-EVIDENCE-SHARD-COMPOSITION topic after PR #618 (head
     e6e434c1, squash 429a7f78) merged the sharded frozen-head Quick evidence
-    composition into main. Mark the run and goal completed with the recorded
-    mainline-integration and frozen-candidate evidence and return
-    .agent/active-runs.json to its empty terminal state, so no index entry points
-    at the merged codex/quick-evidence-shard-composition-20261008 branch.
-    Bookkeeping only: it changes no product, contract, test, gate, workflow,
-    runtime or credential behaviour.
+    composition into main. Retire its run ledger: mark the run and goal completed
+    with the recorded mainline-integration and frozen-candidate evidence and
+    return .agent/active-runs.json to its empty terminal state, so no index entry
+    points at the merged codex/quick-evidence-shard-composition-20261008 branch.
+    The same candidate fixes the two latent P4 test-tool defects the terminal
+    retirement path exposed: the branch-governance harness now strips the ambient
+    PR_MERGE_BOOKKEEPING_TERMINAL_RETIRE / PR_MERGE_BOOKKEEPING_BASE_REF /
+    PR_MERGE_LOCAL_QUICK_GATE_SKIP controls, and shard/compose modes report
+    RECORDED rather than VERIFIED. It relaxes no assertion, ACL, field permission,
+    negative case or required target and changes no product or contract behaviour.
   run: .agent/runs/QUICK-EVIDENCE-SHARD-COMPOSITION-RETIREMENT/run.json
   exclusions:
     - product_changes
