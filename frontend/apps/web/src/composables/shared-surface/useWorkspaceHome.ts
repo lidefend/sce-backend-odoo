@@ -92,7 +92,7 @@ export function useWorkspaceHome() {
     error.value = '';
     workWorkspace.value = null;
     try {
-      const result = await fetchMyWorkSummary(12, 4, { page: 1, pageSize: 12, sortBy: 'priority', sortDir: 'desc' });
+      const result = await fetchMyWorkSummary(undefined, undefined, { page: 1, sortBy: 'priority', sortDir: 'desc' });
       if (isCurrentContextEpoch(requestEpoch) && requestSequence === loadRequestSequence) workWorkspace.value = result.product_workspace || null;
     } catch {
       if (isCurrentContextEpoch(requestEpoch) && requestSequence === loadRequestSequence) {

@@ -1,4 +1,5 @@
 import type { FieldDescriptor } from '@sc/schema';
+import { requireDeclaredNumber } from '../../app/contract/contractGap';
 import { toPositiveInt } from '../../app/contractRuntime';
 import { normalizeModelWriteAuthority, normalizeRecordOpenIntent } from '../../app/runtime/recordEntryContract';
 import { cleanRelationDisplayLabel, fieldType, normalizeRelationIds } from './fieldUtils';
@@ -534,9 +535,25 @@ export function relationSearchReadFields(columns: RelationSearchColumn[], dialog
   return Array.from(out);
 }
 
-export function relationSearchLimit(dialog: Record<string, unknown>, fallback = 120) {
-  const limitValue = Number(dialog.limit || fallback || 120);
-  return Number.isFinite(limitValue) && limitValue > 0 ? Math.min(Math.trunc(limitValue), 200) : 120;
+export function relationSearchLimit(dialog: Record<string, unknown>) {
+  return requireDeclaredNumber(dialog.limit, {
+    missing: 'relation_entry.search_dialog.limit',
+    requiredDeclarationLayer: 'P0:smart_core:page_assembler._build_relation_search_dialog_contract',
+  });
+}
+
+export function relationOptionsLimit(entry: Record<string, unknown> | null) {
+  return requireDeclaredNumber(entry?.options_limit, {
+    missing: 'relation_entry.options_limit',
+    requiredDeclarationLayer: 'P0:smart_core:page_assembler._build_relation_entry_for_field',
+  });
+}
+
+export function relationOptionsSearchLimit(entry: Record<string, unknown> | null) {
+  return requireDeclaredNumber(entry?.options_search_limit, {
+    missing: 'relation_entry.options_search_limit',
+    requiredDeclarationLayer: 'P0:smart_core:page_assembler._build_relation_entry_for_field',
+  });
 }
 
 export function relationSearchOrder(dialog: Record<string, unknown>) {

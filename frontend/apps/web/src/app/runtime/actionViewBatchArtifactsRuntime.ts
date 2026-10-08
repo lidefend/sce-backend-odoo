@@ -1,3 +1,4 @@
+import { requireDeclaredNumber } from '../contract/contractGap';
 type Dict = Record<string, unknown>;
 
 export type ActionViewBatchRequest = {
@@ -44,7 +45,10 @@ export function resolveBatchFailurePagingState(options: {
 } {
   return {
     nextFailedOffset: Number(options.result.failed_page_offset || 0) + options.previewLength,
-    nextFailedLimit: Number(options.result.failed_page_limit || 12) || 12,
+    nextFailedLimit: requireDeclaredNumber(options.result.failed_page_limit, {
+      missing: 'batch_result.failed_page_limit',
+      requiredDeclarationLayer: 'P0:smart_core:api_data_batch._apply_failed_page',
+    }),
     hasMoreFailures: Boolean(options.result.failed_has_more),
   };
 }

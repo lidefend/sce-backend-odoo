@@ -30,7 +30,7 @@ export async function fetchGlobalConversations(params: {
   return intentRequest<{ items: GlobalMessageConversation[]; total_unread?: number }>({
     intent: 'global.message.conversations',
     params: {
-      limit: params.limit ?? 30,
+      limit: params.limit,
     },
   });
 }
@@ -43,7 +43,7 @@ export async function fetchGlobalMessages(params: {
   return intentRequest<{ items: GlobalMessageItem[]; latest_id?: number }>({
     intent: 'global.message.inbox',
     params: {
-      limit: params.limit ?? 40,
+      limit: params.limit,
       since_id: params.since_id || undefined,
       conversation_key: params.conversation_key || undefined,
     },

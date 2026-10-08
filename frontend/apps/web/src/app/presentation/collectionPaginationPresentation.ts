@@ -46,9 +46,14 @@ export function resolveCollectionPageJump(input: {
   };
 }
 
-export function resolveCollectionPageLimit(value: unknown, currentLimit: unknown): number {
-  const fallback = Math.min(Math.max(wholeNumber(currentLimit, 40), 1), 200);
+export function resolveCollectionPageLimit(
+  value: unknown,
+  currentLimit: unknown,
+  range: { min: number; max: number },
+): number {
+  const clamp = (raw: number) => Math.min(Math.max(Math.trunc(raw), range.min), range.max);
+  const fallback = clamp(wholeNumber(currentLimit, range.min));
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return fallback;
-  return Math.min(Math.max(Math.trunc(parsed), 1), 200);
+  return clamp(parsed);
 }

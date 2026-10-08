@@ -432,6 +432,7 @@ import { createNavigationSelectionSnapshot } from '../app/navigationSelectionCor
 import type { BusinessScopeOperationOption, CanonicalNavigationNode, NavNode, RecordContextOption } from '@sc/schema';
 import {
   exportSuggestedActionTraces,
+  TRACE_BUFFER_MAX_ENTRIES,
   getLatestSuggestedActionTrace,
   getTraceUpdateEventName,
   rankSuggestedActionKinds,
@@ -1324,7 +1325,7 @@ function sinceTsFromHours(hours: number) {
 
 function exportSuggestedActionJson(filter: { success?: boolean; kind?: string; since_ts?: number } = {}, suffix = 'all') {
   try {
-    const content = exportSuggestedActionTraces({ ...filter, limit: 200 });
+    const content = exportSuggestedActionTraces({ ...filter, limit: TRACE_BUFFER_MAX_ENTRIES });
     const now = new Date().toISOString().replace(/[:.]/g, '-');
     downloadTextAsFile(`suggested-action-traces-${sanitizeExportSuffix(suffix)}-${now}.json`, content);
     const filterSummary = summarizeSuggestedActionTraceFilter(filter);

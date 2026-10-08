@@ -1,7 +1,6 @@
-type Dict = Record<string, unknown>;
+import { requireDeclaredNumber } from '../contract/contractGap';
 
-const DEFAULT_ACTION_VIEW_LIMIT = 20;
-const LEGACY_ACTION_VIEW_DEFAULT_LIMIT = 80;
+type Dict = Record<string, unknown>;
 
 export function resolveActionViewSortSeed(options: {
   currentSortRaw?: unknown;
@@ -30,11 +29,15 @@ export function resolveActionViewSortSeed(options: {
   return 'id desc';
 }
 
+/**
+ * 列表首屏每页条数的唯一来源：契约 `searchContract.defaults.limit`。
+ * 前端不再持有缺省值，也不自行夹取范围；声明缺失即停机回声明层。
+ */
 export function resolveActionViewContractLimit(limitRaw?: unknown): number {
-  const normalized = Number(limitRaw || DEFAULT_ACTION_VIEW_LIMIT);
-  if (!Number.isFinite(normalized) || normalized <= 0) return DEFAULT_ACTION_VIEW_LIMIT;
-  const limit = Math.min(Math.trunc(normalized), 200);
-  return limit === LEGACY_ACTION_VIEW_DEFAULT_LIMIT ? DEFAULT_ACTION_VIEW_LIMIT : limit;
+  return requireDeclaredNumber(limitRaw, {
+    missing: 'search.defaults.limit',
+    requiredDeclarationLayer: 'P0:smart_core:app_search_config.get_search_contract',
+  });
 }
 
 export function buildActionViewListRequest(options: {

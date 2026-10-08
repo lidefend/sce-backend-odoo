@@ -1,3 +1,4 @@
+import { requireDeclaredNumber } from '../contract/contractGap';
 type Dict = Record<string, unknown>;
 
 export type ActionViewGroupSummaryItem = {
@@ -53,7 +54,10 @@ export function mapActionViewGroupedRows(options: {
   const groupPaging = options.groupPagingRaw && typeof options.groupPagingRaw === 'object'
     ? (options.groupPagingRaw as Dict)
     : {};
-  const fallbackPageSize = Number(groupPaging.page_size || 0) || options.groupSampleLimit || 3;
+  const fallbackPageSize = requireDeclaredNumber(groupPaging.page_size, {
+    missing: 'group_paging.page_size',
+    requiredDeclarationLayer: 'P0:smart_core:api_data api.data.list grouped page',
+  });
   const maxItems = Number(options.maxItems || 12) > 0 ? Number(options.maxItems || 12) : 12;
   return options.groupedRowsRaw
     .map((item) => {

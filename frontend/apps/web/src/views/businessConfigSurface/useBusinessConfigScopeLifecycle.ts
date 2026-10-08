@@ -141,7 +141,6 @@ export function useBusinessConfigScopeLifecycle(deps: BusinessConfigScopeLifecyc
         role_key: scopeRole.value || session.roleSurface?.role_code || undefined,
         root_menu_xmlid: rootMenuXmlid.value || undefined,
         include_all_root_menu_actions: false,
-        limit: 1000,
       });
       hydrateSelectedCoverageRowFromScan();
     } catch (err) {
@@ -165,7 +164,6 @@ export function useBusinessConfigScopeLifecycle(deps: BusinessConfigScopeLifecyc
         role_key: scopeRole.value || session.roleSurface?.role_code || undefined,
         root_menu_xmlid: rootMenuXmlid.value || undefined,
         include_all_root_menu_actions: true,
-        limit: 1000,
       });
       hydrateSelectedCoverageRowFromScan();
     } catch (err) {
@@ -189,7 +187,6 @@ export function useBusinessConfigScopeLifecycle(deps: BusinessConfigScopeLifecyc
         role_key: scopeRole.value || session.roleSurface?.role_code || undefined,
         root_menu_xmlid: rootMenuXmlid.value || undefined,
         include_all_root_menu_actions: Boolean(coverageScan.value?.include_all_root_menu_actions),
-        limit: 1000,
       });
       hydrateSelectedCoverageRowFromScan();
     } catch (err) {

@@ -1,5 +1,5 @@
 <template>
-  <section class="worksheet" :aria-label="labels.surface_aria" data-semantic-component="HierarchicalWorksheet" :data-state="loading ? 'loading' : errorMessage ? 'error' : sourceRows.length ? 'ready' : 'empty'" :aria-busy="loading || undefined">
+  <section class="worksheet" :aria-label="labels.surface_aria" data-semantic-component="HierarchicalWorksheet" :data-state="loading ? 'loading' : errorMessage ? 'error' : sourceRows.length ? 'ready' : 'empty'" :data-load-state="backgroundLoading ? 'loading' : 'ready'" :aria-busy="loading || undefined">
     <ProductListHeader
       class="worksheet-head"
       :loading="loading"
@@ -152,6 +152,7 @@
 import { computed, h, nextTick, onActivated, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import { formatDisplayValue } from '../../utils/display';
+import { requireDeclaredNumber } from '../../app/contract/contractGap';
 import { formatMonetaryDisplayValue, normalizeMonetaryDigits, resolveCurrencyDisplayLabel } from '../template/formSection.mapper';
 import {
   applyWorksheetDomainTab,
@@ -161,6 +162,7 @@ import {
   resolveWorksheetDomainTabs,
   type WorksheetDict,
   type WorksheetHierarchyConfig,
+  type WorksheetLoadResult,
   type WorksheetNode,
   type WorksheetSheetConfig,
 } from '../../app/action_runtime/hierarchicalWorksheetDataSource';
@@ -227,6 +229,8 @@ const recordsByNode = ref(new Map<number, WorksheetDict>());
 const sourceRows = ref<WorksheetDict[]>([]);
 const recordCount = ref(0);
 const loading = ref(false);
+/** 首个批次到齐后仍在后台续载整表时的独立进度声明；与“可用”解耦。 */
+const backgroundLoading = ref(false);
 const errorMessage = ref('');
 const keyword = ref('');
 const selectedNavigationNode = ref<WorksheetNode | null>(null);
@@ -487,12 +491,7 @@ function findRecordById(recordId: number): WorksheetDict | null {
   return null;
 }
 
-/** 整表权威 reload（成功提交后与基线漂移后；金额链全由服务端重算，本地不形成事实） */
-async function reloadWorksheet(): Promise<void> {
-  const result = await loadHierarchicalWorksheet(
-    hierarchyConfig.value,
-    applyWorksheetDomainTab(sheetConfig.value, activeDomainTab.value),
-  );
+function applyWorksheetResult(result: WorksheetLoadResult): void {
   roots.value = result.roots;
   nodesById.value = result.nodesById;
   recordsByNode.value = result.recordsByNode;
@@ -500,6 +499,30 @@ async function reloadWorksheet(): Promise<void> {
   recordCount.value = result.recordCount;
   if (selectedNode.value) selectedNode.value = nodesById.value.get(selectedNode.value.id) || selectedNode.value;
   if (selectedRecord.value) selectedRecord.value = findRecordById(Number(selectedRecord.value.id || 0));
+}
+
+/**
+ * 整表权威 reload（成功提交后与基线漂移后；金额链全由服务端重算，本地不形成事实）。
+ * 首个批次到齐即声明可用（loading=false），整表续载只更新独立的后台进度声明，
+ * 因此“可用”不再等价于“已全量加载”。
+ */
+async function reloadWorksheet(): Promise<void> {
+  const result = await loadHierarchicalWorksheet(
+    hierarchyConfig.value,
+    applyWorksheetDomainTab(sheetConfig.value, activeDomainTab.value),
+    {
+      onUsable: (usable) => {
+        applyWorksheetResult(usable);
+        expandAll();
+        loading.value = false;
+        backgroundLoading.value = true;
+      },
+    },
+  );
+  applyWorksheetResult(result);
+  expandAll();
+  loading.value = false;
+  backgroundLoading.value = false;
 }
 
 /** 数据域 tab 切换（G7.3）：换 domain 权威重载，编辑会话/选中态复位避免悬空行 */
@@ -581,7 +604,7 @@ function displayCell(entry: VisibleEntry, column: Column): string {
 function isVarianceCell(entry: VisibleEntry, column: Column): boolean {
   if (!entry.record || column.field !== sheetConfig.value.variance_field) return false;
   const value = Number(entry.record[column.field] || 0);
-  return Number.isFinite(value) && Math.abs(value) > Number(sheetConfig.value.variance_tolerance || 0);
+  return Number.isFinite(value) && Math.abs(value) > requireDeclaredNumber(sheetConfig.value.variance_tolerance, { missing: 'config.sheet.variance_tolerance', requiredDeclarationLayer: 'P0:smart_core:page_assembler._inject_native_hierarchical_worksheet', min: 0, integer: false });
 }
 function selectEntry(entry: VisibleEntry) {
   selectedNode.value = entry.node;

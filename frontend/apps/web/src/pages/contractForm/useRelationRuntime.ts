@@ -230,6 +230,8 @@ export function useRelationRuntime() {
     canRead: boolean;
     hasDynamicFallback: boolean;
     currentValue: unknown;
+    optionsLimit: number;
+    optionsSearchLimit: number;
     fetchOptions: (keyword: string, limit: number) => Promise<RelationOption[]>;
     isDeniedError: (error: unknown) => boolean;
   }): Promise<RelationOption[]> {
@@ -252,7 +254,7 @@ export function useRelationRuntime() {
     // requests now, so a late response for an earlier keyword must neither
     // repaint the panel nor become selectable.
     try {
-      const mapped = await params.fetchOptions(search, search ? 40 : 80);
+      const mapped = await params.fetchOptions(search, search ? params.optionsSearchLimit : params.optionsLimit);
       if (!isCurrent()) return [];
       if (search && !mapped.length && params.hasDynamicFallback) {
         return queryRelationOptions({ ...params, keyword: '' });
@@ -274,12 +276,14 @@ export function useRelationRuntime() {
     relation: string;
     canRead: boolean;
     keyword: string;
-    limit?: number;
+    optionsLimit: number;
+    optionsSearchLimit: number;
     fetchOptions: (keyword: string, limit: number) => Promise<RelationOption[]>;
   }): Promise<RelationOption[]> {
     const relation = String(params.relation || '').trim();
     if (!relation || !params.canRead || deniedRelationModels.has(relation)) return [];
-    return params.fetchOptions(String(params.keyword || '').trim(), params.limit || 80);
+    const keyword = String(params.keyword || '').trim();
+    return params.fetchOptions(keyword, keyword ? params.optionsSearchLimit : params.optionsLimit);
   }
 
   return {

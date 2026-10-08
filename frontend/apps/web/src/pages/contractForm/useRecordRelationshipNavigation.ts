@@ -195,7 +195,7 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
     const inline = relationInlineCreate(descriptor);
     if (entry?.canCreate !== true || !inline.enabled || !inline.createOnNoMatch) return;
     try {
-      const existing = await fetchRelationOptions(fieldName, label, 20);
+      const existing = await fetchRelationOptions(fieldName, label);
       const exact = existing.find((item) => item.label.trim().toLowerCase() === label.trim().toLowerCase());
       if (exact) {
         setMany2oneOption(fieldName, exact);

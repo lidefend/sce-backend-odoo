@@ -32,7 +32,7 @@ export function buildActionViewLoadContractResetState(): {
     contractViewType: '',
     actionContract: null,
     resolvedModelRef: '',
-    contractLimit: 20,
+    contractLimit: 0,
   };
 }
 

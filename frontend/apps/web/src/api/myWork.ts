@@ -179,9 +179,13 @@ export async function executeProductMyWorkAction(action: ProductMyWorkAction, re
   });
 }
 
+/**
+ * `limit` / `limit_each` / `pageSize` 均为声明层（`my.work.summary`）缺省值：
+ * 前端不持有产品取数规模，未显式传入时由后端声明缺省决定。
+ */
 export async function fetchMyWorkSummary(
-  limit = 20,
-  limitEach = 8,
+  limit?: number,
+  limitEach?: number,
   options?: {
     page?: number;
     pageSize?: number;

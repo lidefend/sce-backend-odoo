@@ -125,7 +125,7 @@ export function trimRetainedActivityPages<T extends RetainedActivityPageLike>(
   activeKey: string,
   limit: number,
 ): T[] {
-  const normalizedLimit = Math.max(1, Math.trunc(Number(limit || 0)));
+  const normalizedLimit = Math.max(1, Math.trunc(Number(limit)));
   const keep = [...pages];
   while (keep.length > normalizedLimit) {
     const removable = keep

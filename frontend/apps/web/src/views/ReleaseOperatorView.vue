@@ -598,7 +598,6 @@ async function loadSurface() {
       intent: 'release.operator.surface',
       params: {
         product_key: selectedProduct.value,
-        action_limit: 20,
       },
     });
     surface.value = payload;

@@ -182,7 +182,7 @@ export async function searchCollaborationUsers(params: {
     intent: params.intent,
     params: {
       query: params.query || '',
-      limit: params.limit ?? 20,
+      limit: params.limit,
     },
   });
 }

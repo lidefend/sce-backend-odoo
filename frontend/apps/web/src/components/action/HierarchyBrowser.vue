@@ -130,6 +130,7 @@ import {
   type HierarchyTreeNode as HierarchyNode,
 } from '../../app/action_runtime/hierarchyCollectionDataSource';
 import { formatDisplayValue } from '../../utils/display';
+import { requireDeclaredNumber } from '../../app/contract/contractGap';
 import ScButton from '../design-system/ScButton.vue';
 import ScTable from '../design-system/ScTable.vue';
 import ScEmptyState from '../design-system/ScEmptyState.vue';
@@ -169,7 +170,7 @@ const levels = computed<LevelConfig[]>(() => {
 });
 const listConfig = computed(() => {
   const raw = props.config.list && typeof props.config.list === 'object' ? props.config.list as Dict : {};
-  return { model: String(raw.model || ''), fields: Array.isArray(raw.fields) ? raw.fields.map(String) : ['id', 'name'], columns: (Array.isArray(raw.columns) ? raw.columns : []).map((row) => row as Column), bindings: raw.bindings && typeof raw.bindings === 'object' ? raw.bindings as Dict : {}, order: String(raw.order || 'id asc'), pageSize: Math.max(10, Math.min(200, Number(raw.page_size || 50))) };
+  return { model: String(raw.model || ''), fields: Array.isArray(raw.fields) ? raw.fields.map(String) : ['id', 'name'], columns: (Array.isArray(raw.columns) ? raw.columns : []).map((row) => row as Column), bindings: raw.bindings && typeof raw.bindings === 'object' ? raw.bindings as Dict : {}, order: String(raw.order || 'id asc'), pageSize: requireDeclaredNumber(raw.page_size, { missing: 'config.list.page_size', requiredDeclarationLayer: 'P0:smart_core:page_assembler._inject_native_hierarchy_browser' }) };
 });
 const detailConfig = computed(() => {
   const raw = props.config.detail && typeof props.config.detail === 'object' ? props.config.detail as Dict : {};
