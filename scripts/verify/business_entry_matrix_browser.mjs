@@ -39,6 +39,12 @@ import {
 const BASE = (process.env.SC_ACCEPTANCE_FRONTEND_URL || process.env.FRONTEND_URL || '').replace(/\/$/, '');
 const DB = process.env.SC_ACCEPTANCE_DATABASE || process.env.DB_NAME || 'sc_demo';
 const EXPECTED_SHA = process.env.SC_ACCEPTANCE_TARGET_SHA || '';
+// The served frontend artifact fingerprint the run is bound to. When the reuse
+// lane declares one, the served runtime must publish it: an observation is only
+// valid against the bundle it was measured on, and the artifact fingerprint (not
+// the deploying commit) is what changes when the rendering surface changed.
+const EXPECTED_BUNDLE = (process.env.SC_ACCEPTANCE_FRONTEND_BUILD_SHA || '').trim().toLowerCase();
+const BUNDLE_FINGERPRINT = /^[0-9a-f]{64}$/;
 const LOGIN = process.env.ACCEPTANCE_LOGIN || '';
 const PASSWORD = process.env.ACCEPTANCE_PASSWORD || '';
 const CSV_PATH = process.env.SC_ENTRY_MATRIX_CSV || 'docs/product/frontend_business_entry_acceptance_v1.csv';
@@ -709,6 +715,18 @@ async function main() {
   if (String(served.database || '') !== DB) {
     throw new Error(`served database ${served.database} != ${DB}`);
   }
+  const servedBundle = String(served.frontend_build_sha256 || '').trim().toLowerCase();
+  if (EXPECTED_BUNDLE) {
+    if (!BUNDLE_FINGERPRINT.test(EXPECTED_BUNDLE)) {
+      throw new Error(`SC_ACCEPTANCE_FRONTEND_BUILD_SHA ${EXPECTED_BUNDLE} is not a sha256 fingerprint`);
+    }
+    if (!BUNDLE_FINGERPRINT.test(servedBundle)) {
+      throw new Error('the runtime published no frontend_build_sha256, so the declared served bundle cannot be bound');
+    }
+    if (servedBundle !== EXPECTED_BUNDLE) {
+      throw new Error(`served frontend build ${servedBundle} != bound SC_ACCEPTANCE_FRONTEND_BUILD_SHA ${EXPECTED_BUNDLE}`);
+    }
+  }
 
   browser = await launchChromium({ headless: true });
   const context = await browser.newContext({ locale: 'zh-CN' });
@@ -828,6 +846,8 @@ async function main() {
     generated_at: new Date().toISOString(),
     target_sha: EXPECTED_SHA,
     served_revision: servedRevisionId,
+    frontend_build_sha256: servedBundle,
+    reuse_identity_key: BUNDLE_FINGERPRINT.test(EXPECTED_BUNDLE) ? 'frontend_build_sha256' : 'served_revision',
     base_url: BASE,
     database: DB,
     login: LOGIN,

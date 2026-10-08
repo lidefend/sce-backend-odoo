@@ -129,6 +129,108 @@ class EmitResultsStatusTests(unittest.TestCase):
         self.assertTrue(document["surface_ok"])
 
 
+class EmitUnitsIdentityTests(unittest.TestCase):
+    """The declared surface must bind the served bundle, not the deploying commit.
+
+    Binding the deployed commit made every mainline merge re-open all declared
+    entries, including merges that never rebuilt the frontend. The identity must
+    therefore carry the served artifact fingerprint, keep the deployment
+    revision as provenance only, and degrade visibly when the runtime publishes
+    no fingerprint.
+    """
+
+    BUNDLE = "c" * 64
+
+    def _emit(self, tmpdir: Path, env_extra: dict) -> dict:
+        (tmpdir / "matrix.csv").write_text(_CSV, encoding="utf-8")
+        (tmpdir / "overlay.json").write_text(
+            json.dumps({"denied_role_candidates": [], "entries": {}, "defaults": {}}), encoding="utf-8"
+        )
+        (tmpdir / "closures.json").write_text(
+            json.dumps({"schema": "business_entry_negative_closures.v1", "candidates": {}}), encoding="utf-8"
+        )
+        out = tmpdir / "units.json"
+        env = dict(os.environ)
+        env.update(
+            {
+                "SC_ACCEPTANCE_TARGET_SHA": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+                "SC_ENTRY_MATRIX_CSV": str(tmpdir / "matrix.csv"),
+                "SC_ENTRY_MATRIX_OVERLAY": str(tmpdir / "overlay.json"),
+                "SC_ENTRY_MATRIX_CLOSURES": str(tmpdir / "closures.json"),
+            }
+        )
+        for key in ("SC_ACCEPTANCE_FRONTEND_BUILD_SHA",):
+            env.pop(key, None)
+        env.update(env_extra)
+        result = subprocess.run(
+            ["node", str(SCOPE_ADAPTER), "--emit-units", str(out)],
+            cwd=REPO_ROOT, env=env, check=False, text=True, capture_output=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return json.loads(out.read_text(encoding="utf-8"))
+
+    def test_the_declared_identity_binds_the_served_artifact_fingerprint(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            document = self._emit(Path(tmp), {"SC_ACCEPTANCE_FRONTEND_BUILD_SHA": self.BUNDLE})
+        self.assertEqual(document["identity"]["frontend_build_sha256"], self.BUNDLE)
+        self.assertNotIn("served_revision", document["identity"])
+        self.assertEqual(document["provenance"]["reuse_identity_key"], "frontend_build_sha256")
+        self.assertEqual(document["provenance"]["served_revision"],
+                         "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
+
+    def test_a_runtime_without_a_fingerprint_degrades_to_the_deployment_revision(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            document = self._emit(Path(tmp), {})
+        self.assertNotIn("frontend_build_sha256", document["identity"])
+        self.assertEqual(document["identity"]["served_revision"],
+                         "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
+        self.assertEqual(document["provenance"]["reuse_identity_key"], "served_revision")
+
+    def test_a_malformed_declared_fingerprint_degrades_instead_of_binding(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            document = self._emit(Path(tmp), {"SC_ACCEPTANCE_FRONTEND_BUILD_SHA": "not-a-fingerprint"})
+        self.assertNotIn("frontend_build_sha256", document["identity"])
+        self.assertEqual(document["provenance"]["reuse_identity_key"], "served_revision")
+
+
+class ReuseBundleResolutionTests(unittest.TestCase):
+    """The resolved artifact fingerprint decides whether reuse is incremental."""
+
+    def _response(self, payload) -> mock.MagicMock:
+        response = mock.MagicMock()
+        response.read.return_value = json.dumps(payload).encode("utf-8")
+        response.__enter__ = lambda instance: instance
+        response.__exit__ = lambda instance, *args: False
+        return response
+
+    def test_the_published_fingerprint_is_adopted(self) -> None:
+        with mock.patch.object(incremental.urllib.request, "urlopen",
+                               return_value=self._response({"frontend_build_sha256": "D" * 64})) as called:
+            resolved = incremental.resolve_reuse_bundle_identity("http://runtime.invalid:18081/")
+        self.assertEqual(resolved, "d" * 64)
+        self.assertEqual(called.call_args.args[0], "http://runtime.invalid:18081/api/runtime-version")
+
+    def test_a_runtime_without_a_fingerprint_degrades(self) -> None:
+        with mock.patch.object(incremental.urllib.request, "urlopen",
+                               return_value=self._response({"source_revision": "e" * 40})):
+            self.assertEqual(incremental.resolve_reuse_bundle_identity("http://runtime.invalid:18081"), "")
+
+    def test_a_malformed_fingerprint_is_not_adopted(self) -> None:
+        with mock.patch.object(incremental.urllib.request, "urlopen",
+                               return_value=self._response({"frontend_build_sha256": "unknown"})):
+            self.assertEqual(incremental.resolve_reuse_bundle_identity("http://runtime.invalid:18081"), "")
+
+    def test_an_unreachable_runtime_degrades_instead_of_failing(self) -> None:
+        with mock.patch.object(incremental.urllib.request, "urlopen",
+                               side_effect=incremental.urllib.error.URLError("refused")):
+            self.assertEqual(incremental.resolve_reuse_bundle_identity("http://runtime.invalid:18081"), "")
+
+    def test_a_blank_base_url_degrades_without_calling_the_runtime(self) -> None:
+        with mock.patch.object(incremental.urllib.request, "urlopen") as called:
+            self.assertEqual(incremental.resolve_reuse_bundle_identity("   "), "")
+        called.assert_not_called()
+
+
 class OutputDirResolutionTests(unittest.TestCase):
     def test_missing_env_falls_back_under_the_default_directory(self) -> None:
         resolved = incremental.resolve_output_dir({}, stamp='20260101T000000Z', selection='a,b')

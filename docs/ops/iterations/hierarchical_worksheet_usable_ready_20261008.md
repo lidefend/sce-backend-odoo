@@ -387,3 +387,83 @@ pageerror: 契约缺少合法声明 relation_entry.options_limit：前端不停�
 - 环境 DENY 结论继续单独保留，未泛化。
 - 四边界：本轮批次修复进行中；主线集成需待本分支 PR 通过四项必需检查后声明，且其后在最终
   served revision 上只做「受影响关系字段」的定向运行态复核（不重跑 89 键矩阵）。
+
+## 11. 迭代效率缺口：复用身份绑定错对象（P4 验收工具）
+
+### 11.1 现象与量化
+
+受管入口 `verify.frontend.business_entry.matrix.incremental` 上做**定向 6 键**请求，范围引擎却判定
+`requested=6 / affected=89 / execute=89`，实际重走全量（约 30 分钟）。账本历史进一步显示：同一治理运行态上
+连续三次全量重走（15:12 / 16:34 / 17:43，每次 89 键、`planned_affected` 全 89），而这些重走没有一次是
+因为声明输入真的变了。用户多轮反馈的「本地/定向复用没生效、反复无用工作」即此。
+
+### 11.2 根因（实证，非推测）
+
+- **不是范围引擎的比较逻辑写错。** 以当前账本重放 `plan`：`affected=0 / reusable=89`。
+- 真正的缺陷是**复用身份绑定了错的对象**：`environmentIdentity()` 把 `served_revision`（**部署 commit sha**）
+  写进每个 unit 的指纹与账本身份。于是任何一次 mainline 部署都让 89 键全部失效——包括只改后端、文档或
+  与本验收面无关的合并。
+- **该缺陷与已记录裁决相冲突**：`.agent/decisions/evidence-reuse-identity.yaml`（OPS-DECISION-002）早已写明
+  `served_bundle_revision_role: provenance`、`validity_key_excludes: [served_bundle_revision]`，但代码从未执行
+  该裁决。这是「记录在案的裁决未被机制执行」——比写错代码更值得记档。
+- 次要自失效：`acceptance_status` 是**结果字段**（批次收口时写回 CSV），却属于指纹输入
+  `CONSUMED_ROW_FIELDS`，于是「收口」这一动作会让刚收口的行重新失效。
+
+### 11.3 修复（保持责任层，P4）
+
+- 复用身份改为运行态自报的**受管前端产物指纹** `frontend_build_sha256`：由
+  `/api/runtime-version` 发布、由受管入口 `daily.runtime.frontend.build` 用
+  `scripts/verify/frontend_build_fingerprint.sh` 按 dist 内容计算。部署 commit 只作 provenance。
+  产物指纹恰好在「服务端渲染面真的变了」时变化，正是断言依赖的输入。
+- **fail-closed 降级**：运行态没有发布产物指纹时回退到部署 revision（等于旧保守行为，绝不跨产物复用），
+  并在 units 文档 `provenance.reuse_identity_key=served_revision` 与入口输出中显式可见。
+- 探针在声明 `SC_ACCEPTANCE_FRONTEND_BUILD_SHA` 时校验服务端 `frontend_build_sha256` 一致，并把产物身份
+  写进 `summary.json`；探针仍独立校验部署 revision 与 database，观测只能发生在声明的部署上。
+- `acceptance_status` 移出指纹输入，改记为 provenance（结果不再污染输入）。
+- `frontend_dev_incremental.py` 规则补 `test_business_entry_matrix_incremental.py` 与
+  `business_entry_matrix_scope_seed.py`：此前入口自身的测试文件落到 typecheck 兜底，`unmappedPaths=1`。
+
+### 11.4 证据（负例先证基线）
+
+离线（受管 adapter + 引擎，不跑浏览器）：
+
+| 输入 | 结果 |
+| --- | --- |
+| 同产物 + 同部署 revision | `affected=0 / reusable=89` |
+| 同产物 + **不同部署 commit**（`0000…`） | `affected=0 / reusable=89`（本次修复目标） |
+| 不同产物指纹 | `affected=89`（原防护保留） |
+| 旧方案 units 文档（identity 含 `served_revision`） | `affected=89`（fail-closed，不跨身份方案静默复用） |
+
+账本迁移（零执行）：`--record-existing` 把 `20261008T171004Z` 的 89 键观测重折到新指纹。绑定条件已核：
+部署 `4ee151ef`、产物 `b0311c6f…`（`frontend-build.json`: `entry_asset=index-Yv56wmel.js`，
+服务端 `/index.html` 当前即该产物）、`sc_demo`、CSV 未变；探针改动为 assertion-neutral（只加产物绑定与
+summary provenance，未触碰任何 entry 断言）。
+
+活体定向（同一治理运行态）：
+
+```
+[business-entry-incremental] reuse identity binds frontend_build_sha256=b0311c6f39e3…4957
+[business-entry-incremental] reusable=89 affected=0
+[business-entry-incremental] executing 6 entries
+[business-entry-matrix] ok=true entries=6 problems=0 console_errors=0
+```
+
+- `selection.json`：`execute == requested`（6），`reused=89`，`re_evidenced=6`。
+- 无理由请求同一 6 键 → `DENY … already covered with unchanged inputs`，退出码 2，**零执行**（复用优先闸门未放宽）。
+- 定向单测：`verify.frontend.business_entry.evidence_scope.unit`（`Ran 27 tests OK` + JS `cases=23`）、
+  `verify.frontend.dev.incremental.unit`（`Ran 24 tests OK`）、`verify.guard.registry` PASS、
+  `make ci.local.iteration` PASS（`unmappedPaths=[]`、`manualNonZeroL2Required=false`）。
+
+### 11.5 效率结论
+
+- 同产物换部署：89 键 → **0 键**（此前每次部署必然全量）。
+- 定向复核：约 30 分钟 → 约 3.5 分钟（6 键）。
+- 未变通过的层按规则直接复用，未重跑无关门禁。
+
+### 11.6 边界与残留
+
+- **责任层**：P4（ops 交付工具与验收夹具）；无 P0/P1 产品语义、无后端契约、无前端渲染改动。
+- 残留依赖：产物指纹的区分力依赖前端构建可复现性。若构建引入时间戳等非确定内容，表现为「保守地全量重走」
+  （安全方向），不构成误复用。
+- 环境 DENY 结论继续**单独保留**，仅作重建/快照车道阻断，未泛化为「环境全部通过」。
+- 四边界：批次验收（本节）通过；主线集成待本分支 PR 通过四项必需检查后声明；版本发布与产品交付另判。

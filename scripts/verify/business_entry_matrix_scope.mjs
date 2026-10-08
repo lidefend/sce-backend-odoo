@@ -21,6 +21,7 @@ import {
   entryFingerprint,
   environmentIdentity,
   fileRevision,
+  reuseIdentityKey,
   loadMatrix,
   loadOverlay,
   overlayFor,
@@ -40,6 +41,11 @@ const CLOSURES_PATH = process.env.SC_ENTRY_MATRIX_CLOSURES
 const BASE = (process.env.SC_ACCEPTANCE_FRONTEND_URL || '').replace(/\/$/, '');
 const DATABASE = process.env.SC_ACCEPTANCE_DATABASE || process.env.DB_NAME || 'sc_demo';
 const SERVED_REVISION = process.env.SC_ACCEPTANCE_TARGET_SHA || '';
+// The served frontend artifact fingerprint the runtime publishes as
+// `frontend_build_sha256` (declared by the governed frontend build entry). It is
+// the reuse input that changes exactly when the served bundle changed, which is
+// what the entry assertions actually depend on.
+const BUNDLE_FINGERPRINT = (process.env.SC_ACCEPTANCE_FRONTEND_BUILD_SHA || '').trim().toLowerCase();
 const LOGIN = process.env.ACCEPTANCE_LOGIN || '';
 const NEUTRAL_REVISION = (process.env.SC_ENTRY_MATRIX_PROBE_ASSERTION_NEUTRAL || '').trim();
 
@@ -81,7 +87,7 @@ function surface() {
   const states = candidateStates(order, closures.candidates);
   const identity = environmentIdentity({
     baseUrl: BASE, database: DATABASE, login: LOGIN, candidateOrder: order,
-    servedRevision: SERVED_REVISION,
+    servedRevision: SERVED_REVISION, bundleFingerprint: BUNDLE_FINGERPRINT,
   });
   const modelRevision = fileRevision(ROOT, MODEL_INPUTS);
   const probeHash = fileRevision(ROOT, PROBE_INPUTS);
@@ -113,7 +119,12 @@ function surface() {
     schema: UNITS_SCHEMA,
     check: CHECK,
     identity,
-    provenance: { served_revision: SERVED_REVISION, observed_at: new Date().toISOString() },
+    provenance: {
+      served_revision: SERVED_REVISION,
+      frontend_build_sha256: BUNDLE_FINGERPRINT,
+      reuse_identity_key: reuseIdentityKey({ bundleFingerprint: BUNDLE_FINGERPRINT }),
+      observed_at: new Date().toISOString(),
+    },
     tool_revision: {
       model: modelRevision,
       probe: probeHash,
@@ -133,7 +144,7 @@ if (args['emit-units']) {
     .filter(([, value]) => Number(value.nav_targets || 0) === 0)
     .map(([role]) => role);
   const undecidable = Object.entries(document.derived).filter(([, value]) => !value.candidate).map(([key]) => key);
-  console.log(`[business-entry-scope] units=${document.units.length} ineligible_candidates=${ineligible.length} undecidable=${undecidable.length}`);
+  console.log(`[business-entry-scope] units=${document.units.length} ineligible_candidates=${ineligible.length} undecidable=${undecidable.length} reuse_identity_key=${document.provenance.reuse_identity_key}=${document.provenance[document.provenance.reuse_identity_key] || 'absent'}`);
   if (undecidable.length) {
     console.log(`[business-entry-scope] undecidable: ${undecidable.slice(0, 10).join(', ')}`);
   }
