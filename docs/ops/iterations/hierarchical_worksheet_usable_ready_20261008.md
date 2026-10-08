@@ -242,3 +242,83 @@ P0 前端渲染机制（契约消费层），**未改声明层、未加前端兜
 
 副作用（如实记录）：分支名变化使上一轮 8 条本地 receipt 按 `branch` 条件失效，
 需在新分支名下重新落 receipt，并对新 HEAD 重新跑**一次**`make ci.local.quick`。
+
+## 9. ActionView surface 契约未就绪先渲染（PR #622 部署回归）— 2026-10-08
+
+### 9.1 事实：部署后 80/89 业务入口整页失败
+
+PR #622（`d2d51935`）部署到日常开发服务器后，89 个业务入口里 **80 个整页失败**：
+
+- 证据 `artifacts/frontend-business-entry-matrix/incremental/20261008T144718Z-ec2ec3d9f94c/summary.json`：
+  `ok=false`、`entries=89`、`problems=80`、`console_errors=162`，80 个键全为 `unknown-presentation`
+  （"the runtime declared no recognised presentation surface"）。
+- 162 条 console error 全部同一条：`[ActionView] render failed ContractGapError: 契约缺少合法声明
+  search.defaults.page_size_options：前端不停机兜底，等待声明层补齐`。
+- 通过的 9 键为 kanban 1 / form 5 / aggregate 2 / admin 1，**无一 table**。
+- 历史对照：`7a0fb870`（#619 之前）89 键几乎全通过；`514e1b51`（#621）仅 2 键失败。
+
+### 9.2 根因：契约投影未就绪就先渲染 surface
+
+`ActionView.vue` 模板在 `actionContract.value === null`（规范化契约投影未就绪）时就已经进入
+ListPage 分支：`viewMode` 可由路由/模型元数据先推导为 `tree` → `resolveContentKind('tree')` →
+`vm.content.kind === 'list'`，于是列表分支上的 `:page-size-options="listPageSizeOptions"` 提前求值
+`resolveActionViewPageSizeOptions(null)` → 抛 `ContractGapError` → 整页停机、声明不出任何展示面。
+
+只有 ListPage 分支绑定了该 prop，所以失败面精确等于 table/hierarchical 入口。
+
+已排除项（均有证据，勿重复排查）：后端声明正常（直连 intent 返回
+`searchContract.defaults.page_size_options=[10,20,50]`）；浏览器收到的响应正常；解码器 / store /
+解析器离线链路正确；线上包确实含新代码。完整调用栈落在模板 `h(...)` → compute
+`listPageSizeOptions` → 解析器 → 抛错处，且当刻 `actionContract` 为 `null`。
+
+### 9.3 责任层与修复
+
+**P0 前端渲染机制**（通用渲染行为，无行业/客户语义；不是 P1）。新增
+`frontend/apps/web/src/app/runtime/actionViewSurfaceGateRuntime.ts`，唯一判据
+`resolveActionViewSurfaceDisplayState({renderError, hasContract, loadError})`，判定顺序固定：
+
+1. `render-error`（渲染期契约缺口等错误）；
+2. `surface`（契约已就绪，含 surface 自己的错误态）；
+3. `load-error`（契约未就绪且加载已失败）；
+4. `contract-pending`（契约未就绪 → 停机等契约，只渲染加载骨架）。
+
+`ActionView.vue` 模板按此四分；契约未就绪**不渲染 surface、不猜形态、不兜底默认值**，
+`ContractGapError` 硬停机语义不变。未放宽 `requireDeclaredNumberList` 断言，未改声明层，
+未加前端默认 `[10,20,50]`，未加付款模型特判。
+
+### 9.4 行为锁
+
+新增 `frontend/apps/web/scripts/action_view_surface_gate_runtime_test.ts`（`PASS cases=10`），用生产
+`createContractV2Store` 驱动生产判据 + 生产 `resolveActionViewPageSizeOptions`，锁定：契约就绪 →
+`surface` 且同刻声明可消费；未就绪 → `contract-pending` 且绝不为 `surface`（负例先证基线正常再注入）；
+未就绪却渲染 surface 时那条消费链必抛 `ContractGapError(missing='search.defaults.page_size_options')`；
+未就绪+加载失败 → `load-error`；就绪+加载失败 → 仍 `surface`；render-error 优先；四态穷尽可达。
+挂入 `verify.frontend.action_view_surface_gate_runtime.unit`（quick / pr / release 三条前端车道）。
+
+契约台账新增 declarationBindings 第 3 条（ActionView surface 展示形态，`onMissing: stop`，
+`stopSymbol: contract-pending`）。
+
+### 9.5 迭代效率：把「未映射」缺口按类补齐（机制修正，非本次业务修复）
+
+`make ci.local.iteration` 的增量规划器把本次改动里的契约台账、规划器自身、make 目标定义都判成
+「未映射」，等于把最小复用退回人工挑目标。按「发现效率问题立即处理」补齐：
+
+- 台账 `docs/architecture/frontend_contract_basis_ledger.json` 与契约守卫 →
+  `verify.frontend.contract_basis.unit` / `.enforce`（此前改台账无人推荐重跑守卫）；
+- 规划器自身与 `make/frontend.mk` → `verify.frontend.dev.incremental.unit`；
+- 新增锁：**RULES 里推荐的每个目标都必须在 makefile 中有定义**（防目标名漂移把最小复用变成
+  make 直接报错）；
+- `.agent/` 运行记账不再计入 `unmappedPaths`：续跑时只动 run 记账不该要求「人工挑一个 L2」。
+
+`verify.frontend.dev.incremental.unit` 由 20 例增至 **24 例 OK**；规划器对当前工作区输出
+`unmappedPaths=[]`、`manualNonZeroL2Required=false`。
+
+### 9.6 边界与报告
+
+- 4 项既有守卫失败（`frontend_list_contract_rendering_guard`、`frontend_platform_runtime_config_guard`、
+  `frontend_contract_query_context_guard`、`navigation_contract_boundary_guard`）**不属本轮**：前两个未接
+  任何 make/workflow 入口，另两个只在 minimum_surface / dev_test 车道；断言指向本轮未改的文件
+  （`ListPage.vue` 在 HEAD 上本就没有 `.footer-row-label`）。四项均不在
+  `public_guard` / `merge_policy_gate` / `professional_quality_gate` / `frontend_release_gate` 路径上。
+- 环境 DENY 结论继续单独保留（仅作重建/快照车道阻断），未泛化为「环境全部通过」。
+- 四边界：批次验收进行中；主线集成 / 版本发布 / 产品交付未声明。

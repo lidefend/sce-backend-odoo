@@ -72,6 +72,38 @@ RULES = (
     ), (
         "verify.frontend.style_system.guard",
     )),
+    # ActionView 的 surface 展示形态与列表分页声明都由契约投影消费；改动入口视图
+    # 或两个消费运行时都要跑对应行为锁，否则契约消费回归只能在部署面上暴露。
+    Rule((
+        "/views/ActionView.vue",
+        "/app/runtime/actionViewSurfaceGateRuntime.ts",
+        "/app/runtime/actionViewListPageSizeRuntime.ts",
+    ), (
+        "verify.frontend.action_view_surface_gate_runtime.unit",
+        "verify.frontend.action_view_page_size_runtime.unit",
+        "verify.frontend.contract_basis.unit",
+        "verify.frontend.style_system.guard",
+    )),
+    # 契约基础台账与它的守卫是 contract_basis 行为锁的直接输入。改台账/守卫
+    # 却落到「未映射」会让这份完整性缺口只能靠人工挑目标，甚至漏跑到交付冻结。
+    Rule((
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "scripts/verify/test_frontend_contract_basis_guard.py",
+    ), (
+        "verify.frontend.contract_basis.unit",
+        "verify.frontend.contract_basis.enforce",
+    )),
+    # 规划器自身的代码与它推荐的 make 目标定义是同一份契约：改规划器或改
+    # make/frontend.mk 的目标名都要跑规划器自己的行为锁，否则「目标名漂移」会
+    # 让最小复用变成 make 直接报错，又退回人工全量。
+    Rule((
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk",
+    ), (
+        "verify.frontend.dev.incremental.unit",
+    )),
     Rule(("/pages/contractForm/", "/components/template/"), (
         "verify.frontend.canonical_form_presenter.unit",
         "verify.frontend.primitive_adapter.unit",
@@ -102,6 +134,10 @@ RULES = (
 )
 FALLBACK_TARGET = "verify.frontend.typecheck.strict"
 FORBIDDEN_DEVELOPMENT_TARGET_PARTS = ("quick", "build", "browser", "release", "fingerprint")
+# Run bookkeeping carries no frontend source input: reconciling `.agent/` state
+# must never be reported as an unmapped product path, otherwise every continuation
+# would demand a manual L2 selection that has nothing to select.
+NON_SOURCE_PATH_PREFIXES = (".agent/",)
 
 
 def select_targets(paths: list[str]) -> list[str]:
@@ -189,7 +225,12 @@ def print_plan(paths: list[str], *, source: str = "explicit_paths", checks: dict
     blocked = {target for target, states in grouped.items() if "failed" in states}
     targets.update(grouped)
     targets.difference_update(reusable | blocked)
-    unmapped_paths = [path for path in paths if not select_targets([path])]
+    unmapped_paths = [
+        path
+        for path in paths
+        if not select_targets([path])
+        and not path.replace("\\", "/").startswith(NON_SOURCE_PATH_PREFIXES)
+    ]
     payload = {
         "schemaVersion": 1,
         "scopeSource": source,
