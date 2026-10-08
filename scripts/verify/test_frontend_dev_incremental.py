@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import re
 import json
 import subprocess
 import tempfile
@@ -10,6 +11,7 @@ from pathlib import Path
 
 from scripts.verify.frontend_dev_incremental import (
     FALLBACK_TARGET,
+    RULES,
     iteration_plan,
     print_plan,
     select_targets,
@@ -87,6 +89,82 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         for path in ratcheted:
             with self.subTest(path=path):
                 self.assertIn("verify.frontend.style_system.guard", select_targets([path]))
+
+    def test_contract_basis_ledger_and_guard_changes_route_to_the_contract_gate(self) -> None:
+        # The ledger and its guard are the direct inputs of the contract-basis
+        # behavioural lock. A change to either one that falls through as
+        # "unmapped" leaves the completeness gap to be found only at delivery
+        # freeze time, so both must route to the contract gate explicitly.
+        for path in (
+            "docs/architecture/frontend_contract_basis_ledger.json",
+            "scripts/verify/frontend_contract_basis_guard.py",
+            "scripts/verify/test_frontend_contract_basis_guard.py",
+        ):
+            with self.subTest(path=path):
+                targets = select_targets([path])
+                self.assertIn("verify.frontend.contract_basis.unit", targets)
+                self.assertIn("verify.frontend.contract_basis.enforce", targets)
+
+    def test_planner_change_routes_to_the_planner_behaviour_lock(self) -> None:
+        # The planner code, its lock and the makefile that defines the target
+        # names are one contract. Without this route a renamed target turns
+        # "reuse the smallest affected check" into a hard make failure.
+        for path in (
+            "scripts/verify/frontend_dev_incremental.py",
+            "scripts/verify/test_frontend_dev_incremental.py",
+            "make/frontend.mk",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.frontend.dev.incremental.unit"],
+                )
+
+    def test_every_recommended_target_is_defined_by_a_makefile(self) -> None:
+        # A recommendation that no makefile defines would break the smallest
+        # affected check and push the reader back to a manual, broad run.
+        makefiles = sorted((Path(__file__).resolve().parents[2] / "make").glob("*.mk"))
+        self.assertTrue(makefiles)
+        text = "\n".join(path.read_text(encoding="utf-8") for path in makefiles)
+        targets = sorted({target for rule in RULES for target in rule.targets} | {FALLBACK_TARGET})
+        self.assertTrue(targets)
+        for target in targets:
+            with self.subTest(target=target):
+                self.assertRegex(text, rf"(?m)^{re.escape(target)}:")
+
+    def test_run_bookkeeping_alone_is_not_an_unmapped_product_path(self) -> None:
+        # Reconciling `.agent/` state carries no frontend source input: reporting
+        # it as unmapped would demand a manual L2 selection with nothing to pick.
+        output = io.StringIO()
+        with redirect_stdout(output):
+            self.assertEqual(
+                print_plan(
+                    [
+                        ".agent/active-runs.json",
+                        ".agent/runs/TEST/run.json",
+                    ]
+                ),
+                0,
+            )
+        payload = json.loads(output.getvalue().split("] ", 1)[1])
+        self.assertEqual(payload["unmappedPaths"], [])
+        self.assertFalse(payload["manualNonZeroL2Required"])
+
+    def test_real_unmapped_path_still_requires_manual_l2(self) -> None:
+        output = io.StringIO()
+        with redirect_stdout(output):
+            self.assertEqual(
+                print_plan(
+                    [
+                        ".agent/active-runs.json",
+                        "addons/smart_core/models/example.py",
+                    ]
+                ),
+                0,
+            )
+        payload = json.loads(output.getvalue().split("] ", 1)[1])
+        self.assertEqual(payload["unmappedPaths"], ["addons/smart_core/models/example.py"])
+        self.assertTrue(payload["manualNonZeroL2Required"])
 
     def test_template_consumer_change_recommends_primitive_adapter(self) -> None:
         targets = select_targets(
