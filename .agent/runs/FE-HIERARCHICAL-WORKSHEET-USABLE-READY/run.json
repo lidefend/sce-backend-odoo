@@ -212,7 +212,7 @@
     }
   },
   "blockers": [
-    "环境 DENY（独立保留、不泛化）：两个挂载者同属一个项目，不足以证明满足独占要求；相关环境前置未恢复前不进入依赖它的运行验收（沿用 §11.6）。本批次不依赖它。",
+    "环境 DENY 已由独立专题 ENV-ACCEPTANCE-REBUILD-LANE-PREREQUISITE 复核并解除（2026-10-09）：历史 DENY 的两个挂载者中，受管验证后端 sc-backend-odoo-acceptance 已不存在，每个受管卷只剩一个 consumer，make acceptance.runtime.baseline_recovery.audit 现 rc=0 PASS；该历史叙述属已消失前提的残留，不再作为本 run 的阻断项（沿用「不泛化」原则，结论仅限 rebuild/snapshot 环境前置）。",
     "列表范围（PR #624，served 4ee151ef / 产物 b0311c6f）与详情/关系往返（served main bfb38367，同产物）、创建-编辑与工作台最小证据差额均已在批次记录第 12–14 节收口，并经 PR #626 合并进 main（b28d4499）；89 键矩阵不重跑。",
     "残留依赖（非阻断）：复用身份的区分力依赖受管前端构建的可复现性；若构建引入非确定内容，表现为保守地全量重走（安全方向）。"
   ],

@@ -1,0 +1,31 @@
+goal:
+  id: ENV-ACCEPTANCE-REBUILD-LANE-PREREQUISITE
+  title: acceptance_rebuild_lane_environment_prerequisite_is_verified_and_recorded
+  status: in_progress
+  formal_product_layer: P4
+  layer_target:
+    - acceptance_runtime_rebuild_prerequisite
+    - scripts_dev_frontend_acceptance_baseline_rebuild
+    - agent_run_records
+  module:
+    - scripts/dev/frontend_acceptance_baseline_rebuild.sh
+    - make/dev.mk
+    - .agent/runs/ENV-ACCEPTANCE-REBUILD-LANE-PREREQUISITE/run.json
+    - docs/ops/iterations/environment_rebuild_lane_prerequisite_20261009.md
+  objective: >-
+    复核并落档「验收运行时 rebuild/snapshot 车道的环境独占前置」。历史 DENY 的成因是卷
+    sc_fe_r2_p1_01_odoo 同时被两个挂载者持有（sc-backend-odoo-acceptance 受管验证后端 18082
+    与 compose carrier sc-fe-r2-p1-01-odoo-1 19083），同项目成员不足以证明独占。本专题只做
+    受管只读审计、规则完整性单测与台账核对：核清两个容器职责、确认非当前挂载者现状、复验
+    受管审计，并按既有结论更新台账中残留的环境叙述；不改审计规则、不动 docker 容器。
+  acceptance:
+    - acceptance.runtime.baseline_recovery.audit 在受管入口上 PASS，且每个卷的挂载消费者身份被逐一记录
+    - make verify.acceptance.runtime.baseline_rebuild.unit 非零通过，含 foreign-owner / undeclared-oneoff / 非 odoo 多消费者的 fail-closed 负例
+    - 历史 DENY 的两个挂载者职责被核清，其当前状态（存在/不存在）有只读证据
+    - 台账中残留的环境 DENY 叙述被更新为已核清状态；历史提交不改写
+  exclusions:
+    - 不放宽审计规则、断言或 fail-closed 边界
+    - 不直接操作 docker 容器绕过 DENY；不 rm/stop/start 任何产品容器
+    - 不执行 rebuild/snapshot，不启动或停止数据库与服务
+    - 不新增环境、端口、卷、凭据或运行时 profile
+  rollback: revert 本专题的台账提交（goal/run/record 文本）；无产品代码或运行时状态可回滚。

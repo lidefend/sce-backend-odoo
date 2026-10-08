@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "id": "ENV-ACCEPTANCE-REBUILD-LANE-PREREQUISITE",
+  "branch": "audit/environment-rebuild-lane-prerequisite-20261009",
+  "status": "active",
+  "baseline_sha": "b28d449948f77b2f7f0d72bc7ef913b323d51e0d",
+  "goal": ".agent/goals/ENV-ACCEPTANCE-REBUILD-LANE-PREREQUISITE.yaml",
+  "record": "docs/ops/iterations/environment_rebuild_lane_prerequisite_20261009.md",
+  "scope": [
+    "scripts/dev/",
+    "scripts/verify/",
+    "make/",
+    "docs/ops/iterations/",
+    ".agent/"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "existing owner-authorized isolated local acceptance runtime (sc-fe-r2-p1-01) and the governed read-only entry make acceptance.runtime.baseline_recovery.audit; offline unit tests reuse existing workspace dependencies. No container/service/database mutation and no new environment or credential authority."
+  },
+  "checks": {
+    "baseline_rebuild_rule": {
+      "target": "verify.acceptance.runtime.baseline_rebuild.unit",
+      "inputs": [
+        "scripts/dev/frontend_acceptance_baseline_rebuild.sh",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/dev/frontend_acceptance_operation_entry.sh",
+        "scripts/verify/test_frontend_acceptance_baseline_rebuild.py",
+        "scripts/verify/test_frontend_acceptance_runtime_profile.py",
+        "scripts/verify/test_frontend_release_ci_identity.py",
+        "scripts/verify/frontend_acceptance_environment_source_guard.py",
+        "config/frontend/acceptance_environments_v1.json",
+        "make/dev.mk"
+      ],
+      "kind": "offline"
+    },
+    "guard_registry": {
+      "target": "verify.guard.registry",
+      "inputs": [
+        "scripts/verify/registry.yaml",
+        "scripts/verify/guard_registry_audit.py",
+        "docs/audit/guard_registry/guard_registry.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "无（历史环境 DENY 的成因已在当前环境消失：每个受管卷只有一个挂载者，audit PASS；见本 run evidence 与批次记录）。"
+  ],
+  "next_exact_step": "环境前置已复验并落档。剩余可选动作（需所有者指令）：在 owner 协调的重建/快照窗口内进入 rebuild/snapshot 车道；本专题不执行 rebuild，也不改动任何容器。台账提交随下一个产品候选进入 PR。",
+  "evidence": {
+    "local": [
+      "受管只读审计：make acceptance.runtime.baseline_recovery.audit → rc=0 PASS；precheck 逐卷输出 declared_consumers=1（db/redis/odoo 三卷 owner_project=sc-fe-r2-p1-01）；audit 输出分类 platform_internal_acceptance、fixture_allowed=true、customer_business_data_allowed=false；日志 .runtime/environment-rebuild-lane-20261009/audit.log",
+      "挂载消费者身份（docker ps -aq --filter volume=<v> 逐个 inspect）：sc_fe_r2_p1_01_db<-sc-fe-r2-p1-01-db-1(project=sc-fe-r2-p1-01 service=db oneoff=False running)；sc_fe_r2_p1_01_redis<-sc-fe-r2-p1-01-redis-1(service=redis oneoff=False running)；sc_fe_r2_p1_01_odoo<-sc-fe-r2-p1-01-odoo-1(service=odoo oneoff=False running)；证据 .runtime/environment-rebuild-lane-20261009/consumer_inventory.txt",
+      "历史 DENY 的两个挂载者职责核清：sc-backend-odoo-acceptance = 受管验证后端（BACKEND_ACCEPTANCE_NAME，端口 18082，由 make backend.acceptance.up/down 生命周期管理）；sc-fe-r2-p1-01-odoo-1 = sc-fe-r2-p1-01 compose carrier（端口 19083）。当前 docker inspect sc-backend-odoo-acceptance → no such object；18082 无监听；18081（sc-local-dev nginx，sc_demo 日常开发）在服务",
+      "非当前挂载者已不存在（无需通过受管入口处理）：sc-backend-odoo-acceptance 缺失，且每个卷只剩一个 consumer；因此即使按未放宽的严格计数（consumers==1）当前也已满足，而 main 上的规则（一个非 oneoff carrier + 仅声明名 oneoff）同样 PASS",
+      "重建车道 carrier 前置：/tmp/sc-frontend-acceptance.pid 不存在（受管前端 carrier 已停）；无 ssh -L/-R、socat、sshuttle、autossh 端口转发残留",
+      "规则完整性（非零离线单测，证明审计未被放宽）：make verify.acceptance.runtime.baseline_rebuild.unit → Ran 50 tests OK；frontend_acceptance_environment_source_guard PASS（含 foreign-owner / undeclared oneoff / 非 odoo 多消费者 fail-closed 负例）",
+      "另一项历史 standing 环境项：make verify.frontend.fixture.guard 现已 PASS（denied DB_NAME=sc_demo/postgres/arbitrary/empty 各 exit=20，sc_dev_demo 指纹未变），不再是 main 上的失败项"
+    ]
+  },
+  "continuation": {
+    "reason": "independent platform/environment topic carved out from FE-HIERARCHICAL-WORKSHEET-USABLE-READY's retained environment DENY blocker",
+    "action": "verify the rebuild/snapshot-lane exclusivity prerequisite through governed read-only entries and record the cleared state; the sibling product run's stale DENY blocker is corrected in the same commit"
+  }
+}
