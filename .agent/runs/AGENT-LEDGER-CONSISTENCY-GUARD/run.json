@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "AGENT-LEDGER-CONSISTENCY-GUARD",
   "branch": "audit/agent-ledger-consistency-guard-20261009",
-  "status": "active",
+  "status": "completed",
   "baseline_sha": "8403288112ef8133595de5be76270d9d8cbdf82d",
   "goal": ".agent/goals/AGENT-LEDGER-CONSISTENCY-GUARD.yaml",
   "record": "docs/ops/iterations/agent_ledger_consistency_guard_20261009.md",
@@ -51,5 +51,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Run verify.agent.ledger.unit, verify.agent.resume.unit, verify.guard.registry and ci.local.iteration on this branch, then record the results and publish one cleaned candidate through make pr.push."
+  "next_exact_step": "Completed and retired 2026-10-09. The ledger consistency guard is integrated on main via PR #628 (candidate 919afd12, merge commit c2cd29c3): make verify.agent.ledger.unit is green (15 tests plus the guard), make verify.agent.resume.unit is green, make verify.guard.registry reports AUDIT PASS, and ci.delivery.freeze.prepare now depends on the guard so a delivery freeze cannot pass a drifted ledger. The real drift the guard found was closed at its owning layer (ENV-ACCEPTANCE-REBUILD-LANE-PREREQUISITE goal is terminal, CI-SCHEDULED-FULL-LANE-RECOVERY.yaml is valid YAML again) and the two owner-held residuals stay open only through allowlist entries that cite an existing recorded decision. This ledger is retired to its terminal state and .agent/active-runs.json no longer binds this branch, so on main no index entry points at the merged audit/agent-ledger-consistency-guard-20261009 branch."
 }

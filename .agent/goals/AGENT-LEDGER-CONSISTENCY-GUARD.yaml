@@ -1,7 +1,7 @@
 goal:
   id: AGENT-LEDGER-CONSISTENCY-GUARD
   title: agent_run_and_goal_ledger_consistency_is_mechanically_enforced
-  status: active
+  status: completed
   formal_product_layer: P4
   layer_target:
     - agent_run_records

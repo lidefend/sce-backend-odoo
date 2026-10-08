@@ -1,6 +1,5 @@
 {
   "branches": {
-    "audit/agent-ledger-consistency-guard-20261009": ".agent/runs/AGENT-LEDGER-CONSISTENCY-GUARD/run.json",
     "fix/user-acceptance-detail-closure-20261009": ".agent/runs/FE-HIERARCHICAL-WORKSHEET-USABLE-READY/run.json"
   },
   "schema_version": 1
