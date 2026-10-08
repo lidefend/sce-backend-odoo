@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "id": "MERGED-BRANCH-RETIREMENT-RETENTION",
+  "branch": "audit/merged-branch-retirement-retention-20261008",
+  "status": "completed",
+  "baseline_sha": "2f1ca4e08164851b879ea7eb352ce90076c18cb2",
+  "goal": ".agent/goals/MERGED-BRANCH-RETIREMENT-RETENTION.yaml",
+  "record": "docs/ops/iterations/frontend_business_entry_acceptance_gap_closure_20261007.md",
+  "scope": [
+    ".agent/",
+    "docs/ops/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Bookkeeping and read-only assessment only. `make branch.retire.historical` ran in dry-run (no APPLY, no recovery bundle) against the live origin main 2f1ca4e08164851b879ea7eb352ce90076c18cb2. No runtime, database, port, volume or credential authority is created or exercised, and no reference is deleted."
+  },
+  "checks": {
+    "retire_entry": {
+      "target": "verify.branch.retire.historical",
+      "inputs": [
+        "scripts/ops/retire_historical_branch_refs.py",
+        "scripts/ops/test_retire_historical_branch_refs.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "evidence": {
+    "entrypoint": "make branch.retire.historical HISTORICAL_RETIREMENT_EXPECTED_MAIN=2f1ca4e08164851b879ea7eb352ce90076c18cb2 HISTORICAL_RETIREMENT_REMOTE=origin HISTORICAL_RETIREMENT_EMIT_INVENTORY=... HISTORICAL_RETIREMENT_EMIT_MANIFEST=... (then a read-only --report assessment)",
+    "expected_main": "2f1ca4e08164851b879ea7eb352ce90076c18cb2",
+    "emitted_manifest_sha256": "f930fa615b8c53b09e79c711647abd6753818a4718f811ee76845a99dba512cd",
+    "dry_run_outcome": "assessment_only",
+    "eligible": 0,
+    "skipped": 4,
+    "deleted": 0,
+    "apply_invoked": false,
+    "receipt": "docs/ops/manifests/historical_branch_retirement_assessment_20261008.json"
+  },
+  "next_exact_step": "Completed as an assessment/retention record. The governed lane returned eligible=0 skipped=4 for the ancestry-contained candidates and never admitted the two squash-merged tips; every blocker is a runtime-carrier reference held by the candidate's own run ledger execution identity field under .agent/, which is load-bearing (resolve_run requires it to equal the registered branch) and therefore cannot be cleared without falsifying the ledger. Per the lane's fail-closed design and the REMOTE-BRANCH-BACKLOG-RETIREMENT 'remain by design' precedent, the merged branches are retained; no reference was deleted, no carrier was cleared and no guard, assertion, prefix policy or audit was relaxed. This batch registered its run for the working window and returns .agent/active-runs.json to its empty terminal state in the same commit, because the batch is complete on creation and leaves no live work, matching REMOTE-BRANCH-CARRIER-RETIREMENT-B. Nothing here blocks mainline work."
+}

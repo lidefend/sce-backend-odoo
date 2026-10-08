@@ -1376,3 +1376,34 @@ CSV：3 个 account 行 `declared→passed`、`阻塞→本轮验收`，`role_au
 - **批次验收**：完成。**主线集成**：完成（PR #607、PR #608）。
 - **版本发布**：未主张（未部署版本、未做 release snapshot）。**产品交付**：未主张。
 - 本批无产品、契约、测试、门禁、工作流、运行态或凭据行为变更，仅台账收口。
+
+## 续轮 8（2026-10-08）：已合并分支退役评估（受管入口裁决 = 保留）
+
+### 执行入口与身份
+- `make branch.retire.historical`（**只读 dry-run**：`--emit-inventory/--emit-manifest` + `--report`，**无 `APPLY`、无 recovery bundle、无删除**）。
+- 绑定 `origin/main` = `2f1ca4e08164851b879ea7eb352ce90076c18cb2`；emit manifest `sha256=f930fa615b8c53b09e79c711647abd6753818a4718f811ee76845a99dba512cd`。
+- 证据：`docs/ops/manifests/historical_branch_retirement_assessment_20261008.json`。
+
+### 裁决结果：`eligible=0 skipped=4`，删除 0
+| 候选（ancestry 已 contained） | tip | 裁决 | 原因 |
+| --- | --- | --- | --- |
+| `audit/acceptance-harness-login-contract-retirement-20261007` | `1d8d2863` | skip | 被 `.agent/runs/ACCEPTANCE-HARNESS-LOGIN-CONTRACT-ALIGNMENT-RETIREMENT/run.json` 的 `branch` 字段引用 |
+| `audit/daily-acceptance-mainline-continuation-20261006` | `500d6f91` | skip | 被 `DAILY-ACCEPTANCE-MAINLINE-CONTINUATION(-RETIREMENT)` 的 goal/run 引用 |
+| `audit/daily-acceptance-mainline-continuation-retirement-20261007` | `03d02790` | skip | 被其后继 retirement run 的 `branch` 字段引用 |
+| `fix/acceptance-harness-login-token-contract-20261007` | `a298e9d4` | skip | 被 `ACCEPTANCE-HARNESS-LOGIN-CONTRACT-ALIGNMENT(-RETIREMENT)` 的 goal/run 引用 |
+
+另有 2 个本批 squash 合并分支**根本不进 ancestry manifest**（tip 非 `main` 祖先，status `unmerged`），且同样带载体引用：
+- `fix/frontend-business-entry-contract-payment-closure-20261007`（`9c64154f`，squash #608）
+- `audit/frontend-business-entry-acceptance-gap-closure-retirement-20261008`（`cf02b067`，squash #609）
+
+### 根因（体系层）
+- 退役入口把 `scripts/config/deploy/make/.agent/.github` 当载体根做**纯文本**扫描；而 run 台账的 `"branch"` 是**执行身份字段**（`resolve_run` 要求其等于 `active-runs.json` 注册的分支），退役 run 又恰好执行在它要退役的分支上 ⇒ **自引用死锁**。
+- 该字段**不可清**：改 `main` 或置空＝篡改台账身份。先例（`REMOTE-BRANCH-CARRIER-RETIREMENT`/`-B`）只清过**非承重**载体（goal 的 `baseline.branch`、run 的 retained-list、test fixture 占位名），从未改过 run 执行身份，故本批按既有契约属 **"by design 保留"**（与 `REMOTE-BRANCH-BACKLOG-RETIREMENT` 记载一致）。
+
+### 清单事实（`origin`，非 `main`）
+- 头总数 73 = contained 4 / unmerged 45 / protected 19 / outside-prefix 5；local-only 无（除 `main`）。
+- 兄弟分支 `fix/frontend-business-entry-acceptance-closure-20261007`（`25532a53`，无载体引用）仍 `unmerged`，与 main 分叉 130 文件 / −12046 行，属独立决策，不在"已合并"范围。
+
+### 边界
+- 本批**未删除任何引用**、**未清任何载体**、**未放宽任何守卫/断言/前缀策略/审计**、**未改写台账身份**。
+- 若日后要真正退役这批分支，需**另行授权**的 P4 变更（把"已完成且未注册的 run 的 `branch` 视为历史记录而非活跃载体"），并需独立复核 —— 本批不推进。

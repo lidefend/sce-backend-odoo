@@ -1,0 +1,88 @@
+{
+  "ancestry_contained_candidates": [
+    {
+      "assessment": "skip",
+      "assessment_reasons": [
+        "referenced by runtime carrier: .agent/runs/ACCEPTANCE-HARNESS-LOGIN-CONTRACT-ALIGNMENT-RETIREMENT/run.json"
+      ],
+      "branch": "audit/acceptance-harness-login-contract-retirement-20261007",
+      "execution": null,
+      "local_sha": "1d8d286368a8b001e0047bbe2c1899c2fb5ba7d1",
+      "remote_sha": "1d8d286368a8b001e0047bbe2c1899c2fb5ba7d1"
+    },
+    {
+      "assessment": "skip",
+      "assessment_reasons": [
+        "referenced by runtime carrier: .agent/goals/DAILY-ACCEPTANCE-MAINLINE-CONTINUATION-RETIREMENT.yaml, .agent/runs/DAILY-ACCEPTANCE-MAINLINE-CONTINUATION-RETIREMENT/run.json, .agent/runs/DAILY-ACCEPTANCE-MAINLINE-CONTINUATION/run.json"
+      ],
+      "branch": "audit/daily-acceptance-mainline-continuation-20261006",
+      "execution": null,
+      "local_sha": "500d6f913681dbe00dbd84de5bd17a5ca7f15780",
+      "remote_sha": "500d6f913681dbe00dbd84de5bd17a5ca7f15780"
+    },
+    {
+      "assessment": "skip",
+      "assessment_reasons": [
+        "referenced by runtime carrier: .agent/runs/DAILY-ACCEPTANCE-MAINLINE-CONTINUATION-RETIREMENT/run.json"
+      ],
+      "branch": "audit/daily-acceptance-mainline-continuation-retirement-20261007",
+      "execution": null,
+      "local_sha": "03d0279092a81400f3249485df8965e186f61405",
+      "remote_sha": "03d0279092a81400f3249485df8965e186f61405"
+    },
+    {
+      "assessment": "skip",
+      "assessment_reasons": [
+        "referenced by runtime carrier: .agent/goals/ACCEPTANCE-HARNESS-LOGIN-CONTRACT-ALIGNMENT-RETIREMENT.yaml, .agent/runs/ACCEPTANCE-HARNESS-LOGIN-CONTRACT-ALIGNMENT-RETIREMENT/run.json, .agent/runs/ACCEPTANCE-HARNESS-LOGIN-CONTRACT-ALIGNMENT/run.json"
+      ],
+      "branch": "fix/acceptance-harness-login-token-contract-20261007",
+      "execution": null,
+      "local_sha": "a298e9d45b68bce445d8b3940161e99369e0efb6",
+      "remote_sha": "a298e9d45b68bce445d8b3940161e99369e0efb6"
+    }
+  ],
+  "apply_invoked": false,
+  "assessed_at": "2026-10-08",
+  "conclusion": "Retention by design. No reference was deleted, no carrier was cleared and no guard, assertion, prefix policy or audit was relaxed. Re-consideration would require a separately authorized P4 change either to the carrier rule (treat a completed, unregistered run's branch field as historical rather than a live carrier) or to the ledger design, under explicit owner authorization and independent review.",
+  "deleted_reference_count": 0,
+  "dry_run_outcome": "assessment_only",
+  "eligible": 0,
+  "entrypoint": "make branch.retire.historical",
+  "expected_main": "2f1ca4e08164851b879ea7eb352ce90076c18cb2",
+  "inventory_counts": {
+    "contained": 4,
+    "outside_governed_prefixes": 5,
+    "protected": 19,
+    "references_excluding_main": 73,
+    "unmerged": 45
+  },
+  "manifest_sha256": "f930fa615b8c53b09e79c711647abd6753818a4718f811ee76845a99dba512cd",
+  "not_contained_squash_merged": [
+    {
+      "branch": "fix/frontend-business-entry-contract-payment-closure-20261007",
+      "carriers": [
+        ".agent/goals/FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE-RETIREMENT.yaml",
+        ".agent/runs/FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE-RETIREMENT/run.json",
+        ".agent/runs/FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE/run.json"
+      ],
+      "merge_proof": "squash-merged as 286a6e11 (PR #608, head 9c64154f); tip is not an ancestor of origin/main",
+      "remote_sha": "9c64154f1943efa3c95d79a9076e1114d94d1a67"
+    },
+    {
+      "branch": "audit/frontend-business-entry-acceptance-gap-closure-retirement-20261008",
+      "carriers": [
+        ".agent/runs/FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE-RETIREMENT/run.json"
+      ],
+      "merge_proof": "squash-merged as 2f1ca4e0 (PR #609, head cf02b067); tip is not an ancestor of origin/main",
+      "remote_sha": "cf02b067632dff4ec03f48c1959182291451b2b7"
+    }
+  ],
+  "open_pr_check": "github",
+  "precedent": "REMOTE-BRANCH-BACKLOG-RETIREMENT records the same class of branches as 'remain by design'; the REMOTE-BRANCH-CARRIER-RETIREMENT/-B precedents cleared only non-load-bearing carriers (a goal baseline.branch, a run retained list and test-fixture placeholder names), never a run execution identity field.",
+  "recovery_bundle": null,
+  "remote": "origin",
+  "root_cause": "Every candidate is named by its own run ledger under .agent/ — the run.json \"branch\" field is the run's execution identity, and resolve_run requires it to equal the branch registered in .agent/active-runs.json. The carrier scan therefore reports 'referenced by runtime carrier' and the lane fails closed. That field cannot be cleared or repointed without falsifying the recorded ledger identity, so retirement is refused by design.",
+  "schema_version": 1,
+  "skipped": 4,
+  "topic": "merged historical branch retirement assessment (governed lane, dry-run only)"
+}
