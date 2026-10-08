@@ -1,0 +1,28 @@
+schema_version: 1
+goal:
+  id: MERGED-BRANCH-RETIREMENT-RETENTION
+  title: assess_merged_historical_branch_retirement_and_record_governed_retention
+  status: completed
+  formal_product_layer: P4
+  layer_target: ops_delivery_historical_branch_retirement_lane
+  module:
+    - scripts/ops/retire_historical_branch_refs.py
+    - scripts/ops/agent_run_context.py
+  objective: >-
+    Run the governed historical-branch retirement entry against the merged
+    branches proposed for cleanup and record its exact verdict. No reference is
+    deleted: the lane reports eligible=0 skipped=4 because every candidate is
+    referenced by its own run ledger execution identity under .agent/, and the
+    two squash-merged tips are not ancestry-contained. This batch records the
+    assessment (bound to the emitted manifest SHA-256 and the live origin/main)
+    so the retention is governed and reproducible. It clears no carrier, changes
+    no guard, assertion, prefix policy or audit, and deletes nothing.
+  run: .agent/runs/MERGED-BRANCH-RETIREMENT-RETENTION/run.json
+  exclusions:
+    - reference_deletion
+    - carrier_reference_clearing
+    - guard_or_assertion_relaxation
+    - ledger_identity_rewrite
+    - product_changes
+    - product_deployment
+    - credential_rotation
