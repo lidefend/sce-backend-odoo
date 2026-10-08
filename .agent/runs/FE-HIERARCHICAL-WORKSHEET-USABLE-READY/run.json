@@ -212,11 +212,11 @@
     }
   },
   "blockers": [
-    "环境 DENY：两个挂载者同属一个项目，不足以证明满足独占要求；相关环境前置未恢复前不进入依赖它的运行验收（沿用原结论，不泛化）。",
-    "列表范围（PR #624，served 4ee151ef / 产物 b0311c6f）已收口，不再重跑 89 键矩阵；详情车道与关系往返在 served main bfb38367（同产物 b0311c6f）通过（批次记录第 12 节）；创建/编辑（form-profiles）与工作台（workbench-only）最小证据差额已收口（第 13 节）。",
+    "环境 DENY（独立保留、不泛化）：两个挂载者同属一个项目，不足以证明满足独占要求；相关环境前置未恢复前不进入依赖它的运行验收（沿用 §11.6）。本批次不依赖它。",
+    "列表范围（PR #624，served 4ee151ef / 产物 b0311c6f）与详情/关系往返（served main bfb38367，同产物）、创建-编辑与工作台最小证据差额均已在批次记录第 12–14 节收口，并经 PR #626 合并进 main（b28d4499）；89 键矩阵不重跑。",
     "残留依赖（非阻断）：复用身份的区分力依赖受管前端构建的可复现性；若构建引入非确定内容，表现为保守地全量重走（安全方向）。"
   ],
-  "next_exact_step": "1) 唯一未决产品策略项（项目台账 /f/ ↔ readonly）已按「合法记录/状态级收窄、非契约缺陷」在 served main bfb38367 收口并记账（第 14 节），台账整表当前无 readonly 行，产品代码 0 变更、未放宽断言、未加模型特判。2) 本轮其余最小证据差额（详情、创建/编辑声明口径、工作台）已在第 12/13 节收口。3) 待办（需所有者指令）：是否在 clean HEAD 走 ci.delivery.freeze.prepare -> 一次 ci.local.quick -> pr.push/create；或先处理保留的环境 DENY（独立专题）。89 键列表矩阵不重跑。",
+  "next_exact_step": "批次已并入主线：PR #626 合并为 b28d4499（origin/main），候选内容 84376430 与合并树一致；四项必需检查在精确头全绿，ci.local.quick receipt 已 REUSE。主线各边界状态：批验收=完成；主线集成=本批已完成（main=b28d4499）；版本发布/产品交付=未主张。剩余（需所有者指令，均为独立边界）：① 环境 DENY 独立专题（两个挂载者同属一项目，不足以证明独占；不泛化）；② 是否基于新 main b28d4499 走一次日常受管重建并做一轮产品验收。89 键列表矩阵不重跑。",
   "evidence": {
     "local": [
       "make verify.frontend.business_entry.evidence_scope.unit（PASS：py 27 例 + js cases=23）",
@@ -239,32 +239,48 @@
       "定性（非契约缺陷）：入口路由由后端声明的 modelRights.write 决定（recordEntryFromModelRights，非布尔 fail-closed 到 /r/），记录面 profile 由 P0 contract_governance_form_render.resolve_render_profile + P1 core_extension 工作流收窄（editability in {readonly,locked} -> readonly）产生；二者职责不同，记录被状态/审批锁住时 /f/ + readonly 是设计内 fail-closed 收窄。既有锁已判合法：test_frontend_list_surface_search_contract（/f/ 可声明 edit 或 readonly）、test_workflow_contract_backend、test_core_extension_v2_finalize（P1 收窄）",
       "观察项不可复现：原始 readonly 观测在旧基线 5ba6398e（产物 detail-closeout-5ba6398e/light.json），其后 PR #594（90484d88，PROJECT-LEDGER-ENTRY-UNIFICATION，项目台账 x 项目信息编辑统一为唯一入口）退役遗留表单视图并统一到 view_project_overview_form；served bfb38367 同一记录解析为 edit",
       "机制锁本轮引用重跑（两条均为该结论的带锁证据）：make verify.frontend.collection_view_semantics.unit -> record_entry_contract_test: ok、18 + 36 tests OK、guard PASS（含 modelRights:{write:'true'} 字符串 fail-closed -> /r/）；make verify.frontend.list_surface_search_contract.unit -> Ran 22 tests OK（/f/<model>/<id> 可声明 edit 或 readonly，仅 /r/ + 非 readonly 抛错）",
-      "diag 证据：.runtime/final-acceptance/ledger-readonly-closure-bfb38367/{list_and_record_contract.json,list_status_profile.json,ledger_rows_profiles.json}"
+      "diag 证据：.runtime/final-acceptance/ledger-readonly-closure-bfb38367/{list_and_record_contract.json,list_status_profile.json,ledger_rows_profiles.json}",
+      "PR #626 合并：make pr.merge PR=626 EXPECTED_HEAD=84376430…（平台受保护 PR，--squash）；pr.merge.local_quick_gate REUSE 精确头 receipt（未重跑套件）；合并提交 b28d449948f7…「Merge PR #626」，原 bfb383678824… 为其唯一父提交",
+      "合并前绑定复核：PR #626 headRefOid=84376430…、baseRefOid=bfb38367…、mergeStateStatus=CLEAN、mergeable=MERGEABLE、reviewDecision=\"\"（所有者规则：必需 CI 通过即可合并）；四项必需检查 merge_policy_gate/professional_quality_gate/public_guard/frontend_release_gate 均 success 且 head_sha=84376430a…",
+      "合并后回读：PR #626 state=MERGED/mergedAt=2026-10-08T21:45:42Z/mergeCommit=b28d4499…；origin/main=b28d4499…；git diff 84376430^{tree} == b28d4499^{tree}（a9d32af1…，squash 承载完整内容）",
+      "边界：合并不触发产品部署；日常运行态仍服务 main bfb38367 / 产物 b0311c6f… / sc_demo；未主张版本发布或产品交付完成"
     ],
-    "previous_run": "PR #624（候选 771d4de3）修复 relation_entry.options_limit/options_search_limit 通用投影丢失；合并提交 4ee151ef；日常服务器受管重建到 4ee151ef，产物指纹 b0311c6f…（entry_asset index-Yv56wmel.js），未升级模块。",
+    "previous_run": "PR #626（候选 84376430，分支 fix/user-acceptance-detail-closure-20261009）经平台受保护 PR 合并（--squash）为 b28d4499「Merge PR #626」，origin/main 由 bfb38367 前进到 b28d4499；精确头四项必需检查全 success 且 REUSE 精确头 ci.local.quick receipt。合并不触发产品部署，日常运行态仍服务 bfb38367/产物 b0311c6f/sc_demo。（更早：PR #624 修复 relation_entry.options_limit 通用投影，合并 4ee151ef。）",
     "commits": [
       {
-        "sha": "f4b24c21",
-        "layer": "P0",
-        "subject": "consume the list page-size declaration through its contract store",
-        "closes": "CD-20261008-PAGE-SIZE-CONSUMPTION-SHAPE"
+        "sha": "3e58cd96",
+        "layer": "P4/bookkeeping",
+        "subject": "resume the product-delivery run on the user-acceptance detail closure branch",
+        "closes": "run-resume-binding"
       },
       {
-        "sha": "912a49f3",
+        "sha": "97ce8ca9",
+        "layer": "docs",
+        "subject": "close the detail lane and relation roundtrip on the served main head",
+        "closes": "detail-lane-and-relation-roundtrip-evidence"
+      },
+      {
+        "sha": "7e075be2",
         "layer": "P4",
-        "subject": "bind the served revision into business-entry matrix reuse",
-        "closes": "served-revision-absent-from-reuse-identity"
+        "subject": "consume the declared my.work.summary contract on the workspace home",
+        "closes": "workbench-magic-number-assertion (probe, not a contract defect)"
       },
       {
-        "sha": "（本分支待提交）",
-        "layer": "P0",
-        "subject": "project the declared relation_entry option limits through the generic projection",
-        "closes": "CD-20261008-FRONTEND-SELECTED-LIMIT (consumption path made effective)"
+        "sha": "ac2bef06",
+        "layer": "docs",
+        "subject": "close the project-ledger /f/ vs readonly observation on the served head",
+        "closes": "project-ledger-f-vs-readonly-observation"
+      },
+      {
+        "sha": "84376430",
+        "layer": "generated",
+        "subject": "refresh the content-bound complexity evidence for the frozen candidate",
+        "closes": "freeze-prepare-generated-evidence"
       }
     ]
   },
   "continuation": {
-    "reason": "PR #624 merged into main as 4ee151ef; this task continues the same goal on a fresh allowed branch for the evidence-scope reuse-identity fix",
-    "action": "fix/evidence-scope-served-bundle-identity-20261009 started from main 4ee151ef; the reuse identity now binds the served artifact fingerprint instead of the deploying commit"
+    "reason": "PR #626 merged into main as b28d4499 (--squash); the branch candidate 84376430 is now carried by main with an identical tree",
+    "action": "record the merge and boundary status in the run and the living batch record; the batch/mainline integration is closed, version release and product delivery remain separate, unclaimed boundaries"
   }
 }
