@@ -1,0 +1,60 @@
+schema_version: 1
+goal:
+  id: QUICK-EVIDENCE-SHARD-COMPOSITION
+  title: quick_suite_sharded_evidence_composition
+  status: active
+  formal_product_layer: P4
+  objective: >-
+    Make the frozen-head ci.local.quick evidence composable instead of all-or-nothing. Today
+    `scripts/ops/local_quick_evidence.py` signs exactly one monolithic receipt bound to head+tree+scan
+    coverage and the verifier only accepts that shape, so a frozen head can only be proved by one
+    complete suite run: an interrupted or partially failed run proves nothing, and the required
+    target list cannot be covered by several bounded invocations. Add a declared, mechanically
+    derived required-target manifest for `ci.local.quick.run`, per-shard part receipts bound to the
+    same head+tree, and a compose step that (a) proves the union of parts equals the manifest exactly,
+    (b) requires every part to be passed and bound to the identical head and tree, and (c) revalidates
+    the scanner coverage proofs before signing the same schema-3 receipt the existing verifier and the
+    merge prerequisite already consume. Composition never crosses heads or trees, and no assertion,
+    ACL, field permission, negative case or required check is relaxed.
+  product_boundary:
+    formal_product_layer: P4
+    layer_target: >-
+      scripts/ops/local_quick_evidence.py plus its make entrypoints in make/ci.mk and its unit test
+      scripts/verify/test_local_quick_evidence.py
+    module: scripts/ops/local_quick_evidence.py
+    standard_vs_user_specific: platform/delivery evidence mechanism only; no industry or customer semantics
+    why_here: >-
+      The receipt producer and the verifier consumed by pr.merge.local_quick_gate live here; the
+      required-target list is the prerequisite list of ci.local.quick.run next to it.
+    why_not_elsewhere:
+      - no_product_module_change
+      - no_frontend_renderer_change
+      - no_gate_assertion_acl_field_permission_or_negative_case_relaxation
+      - no_cross_head_or_cross_tree_composition
+      - no_required_target_removed_from_the_manifest
+  product_result:
+    statement: >-
+      A frozen head can be proved by bounded shard invocations that compose into one receipt the
+      existing verifier and merge prerequisite accept, provided the union of shard targets equals the
+      declared ci.local.quick.run prerequisite list exactly, every shard passed on the identical head
+      and tree, and the scanner coverage proofs are revalidated; any missing, extra, duplicated,
+      mis-ordered or differently-bound part is rejected.
+    independently_acceptable: true
+  baseline:
+    branch: codex/quick-evidence-shard-composition-20261008
+    full_sha: 579b2e1689711f6e6432b8832987f62ee6ba9d48
+    source: origin/main
+  acceptance:
+    - shards_compose_into_one_verifiable_exact_head_receipt
+    - union_of_parts_must_equal_the_declared_manifest_exactly
+    - every_part_must_bind_the_identical_head_and_tree
+    - scanner_coverage_proofs_are_revalidated_before_signing
+    - no_assertion_acl_field_permission_negative_case_or_required_target_relaxed
+  exclusions:
+    - product_deployment
+    - production_access
+    - credential_rotation
+    - cross_head_evidence_reuse
+    - parallel_shard_execution
+  rollback:
+    - revert the shard and compose entrypoints together; the monolithic run and verify path is unchanged

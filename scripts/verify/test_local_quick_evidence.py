@@ -19,6 +19,8 @@ assert SPEC and SPEC.loader
 evidence = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(evidence)
 
+MANIFEST_TARGETS = ("guard.prod.forbid", "verify.alpha", "verify.beta", "verify.gamma", "verify.delta")
+
 
 class LocalQuickEvidenceTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -240,6 +242,201 @@ class LocalQuickEvidenceTests(unittest.TestCase):
         )
         self.assertNotEqual(completed.returncode, 0)
         self.assertIn("invalid choice", completed.stdout)
+
+
+
+class ShardCompositionTests(unittest.TestCase):
+    """The declared manifest drives real shard slicing, and only an identical
+    head+tree union may compose into the standard exact-head receipt."""
+
+    def setUp(self) -> None:
+        self.environment = mock.patch.dict(
+            os.environ,
+            {key: "" for key in ("MAKEFLAGS", "MFLAGS", "MAKEOVERRIDES", "MAKEFILES", evidence.scans.COVERAGE_ENV)},
+        )
+        self.environment.start()
+        self.addCleanup(self.environment.stop)
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = Path(self.temporary.name)
+        subprocess.run(["git", "init", "-q", str(self.root)], check=True)
+        (self.root / "tracked.txt").write_text("baseline\n", encoding="utf-8")
+        (self.root / "make").mkdir()
+        (self.root / "make/ci.mk").write_text(
+            "ci.local.quick.run: " + " ".join(MANIFEST_TARGETS) + "\n", encoding="utf-8"
+        )
+        for path in set(evidence.scans.COMMON_AUTHORITY).union(*evidence.scans.AUTHORITY.values()):
+            target = self.root / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("fixture authority\n")
+        subprocess.run(["git", "-C", str(self.root), "add", "."], check=True)
+        subprocess.run(
+            ["git", "-C", str(self.root), "-c", "user.name=Codex Test",
+             "-c", "user.email=codex-test@example.invalid", "commit", "-q", "-m", "fixture"],
+            check=True,
+        )
+        self.head = subprocess.run(
+            ["git", "-C", str(self.root), "rev-parse", "HEAD"],
+            check=True, text=True, stdout=subprocess.PIPE,
+        ).stdout.strip()
+
+    def tearDown(self) -> None:
+        self.temporary.cleanup()
+
+    def _record_scan_success(self) -> None:
+        for kind in evidence.scans.AUTHORITY:
+            evidence.scans.record_scan_success(self.root, kind)
+
+    def _runner(self, calls):
+        def runner(command, **kwargs):
+            calls.append(command)
+            if "env" in kwargs:
+                with mock.patch.dict(os.environ, kwargs["env"]):
+                    self._record_scan_success()
+            return subprocess.CompletedProcess(command, 0)
+        return runner
+
+    def _run_all_shards(self, shards=2, calls=None):
+        calls = [] if calls is None else calls
+        with mock.patch.object(evidence, "is_linked_worktree", return_value=False):
+            for index in range(shards):
+                evidence.run_shard(self.root, shards, index, runner=self._runner(calls))
+        return calls
+
+    def _part_path(self, index, shards=2):
+        return evidence.shard_part_path(self.root, self.head, index, shards)
+
+    def _tamper(self, index, key, value, shards=2):
+        path = self._part_path(index, shards)
+        part = json.loads(path.read_text(encoding="utf-8"))
+        part[key] = value
+        path.write_text(json.dumps(part), encoding="utf-8")
+
+    def test_shards_compose_into_one_verifiable_exact_head_receipt(self) -> None:
+        calls = self._run_all_shards()
+        manifest = list(MANIFEST_TARGETS)
+        self.assertEqual(calls[0], ["make", "--no-print-directory", *manifest[0::2]])
+        self.assertEqual(calls[1], ["make", "--no-print-directory", *manifest[1::2]])
+        receipt = evidence.compose(self.root, 2, self.head)
+        self.assertEqual(evidence.verify(self.root, self.head), receipt)
+        payload = json.loads(receipt.read_text(encoding="utf-8"))
+        self.assertEqual(payload["head"], self.head)
+        self.assertEqual(payload["suite"], evidence.SUITE)
+        self.assertEqual(payload["producer"], evidence.PRODUCER)
+        self.assertEqual(payload["coverage"]["protocol"], evidence.scans.COVERAGE_PROTOCOL)
+        composition = json.loads(
+            (evidence.shard_root(self.root, self.head) / "composition.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual([part["index"] for part in composition["parts"]], [0, 1])
+
+    def test_missing_shard_part_cannot_compose(self) -> None:
+        with mock.patch.object(evidence, "is_linked_worktree", return_value=False):
+            evidence.run_shard(self.root, 2, 0, runner=self._runner([]))
+        with self.assertRaisesRegex(evidence.EvidenceError, "no part receipt"):
+            evidence.compose(self.root, 2, self.head)
+        self.assertFalse(evidence.evidence_path(self.root, self.head).exists())
+
+    def test_part_with_extra_or_reordered_targets_is_rejected(self) -> None:
+        self._run_all_shards()
+        self._tamper(1, "targets", list(MANIFEST_TARGETS[1::2]) + ["verify.injected"])
+        with self.assertRaisesRegex(evidence.EvidenceError, "does not carry the declared shard targets"):
+            evidence.compose(self.root, 2, self.head)
+        self._tamper(1, "targets", list(reversed(MANIFEST_TARGETS[1::2])))
+        with self.assertRaisesRegex(evidence.EvidenceError, "does not carry the declared shard targets"):
+            evidence.compose(self.root, 2, self.head)
+        self.assertFalse(evidence.evidence_path(self.root, self.head).exists())
+
+    def test_part_bound_to_another_candidate_is_rejected(self) -> None:
+        self._run_all_shards()
+        self._tamper(1, "tree", "b" * 40)
+        with self.assertRaisesRegex(evidence.EvidenceError, "binds another candidate"):
+            evidence.compose(self.root, 2, self.head)
+        self._tamper(1, "tree", evidence.git(self.root, "rev-parse", "HEAD^{tree}"))
+        self._tamper(0, "head", "c" * 40)
+        with self.assertRaisesRegex(evidence.EvidenceError, "binds another candidate"):
+            evidence.compose(self.root, 2, self.head)
+
+    def test_unpassed_shard_is_rejected(self) -> None:
+        self._run_all_shards()
+        self._tamper(0, "status", "failed")
+        with self.assertRaisesRegex(evidence.EvidenceError, "not a passed shard"):
+            evidence.compose(self.root, 2, self.head)
+
+    def test_shard_layout_mismatch_is_rejected(self) -> None:
+        self._run_all_shards()
+        self._tamper(0, "shards", 3)
+        with self.assertRaisesRegex(evidence.EvidenceError, "layout is invalid"):
+            evidence.compose(self.root, 2, self.head)
+
+    def test_compose_revalidates_scanner_coverage_proofs(self) -> None:
+        self._run_all_shards()
+        folder = evidence.shard_root(self.root, self.head) / "scan-proofs"
+        for kind in evidence.scans.AUTHORITY:
+            (folder / (kind + ".json")).unlink()
+        with self.assertRaisesRegex(evidence.EvidenceError, "scanner proof missing or invalid"):
+            evidence.compose(self.root, 2, self.head)
+        self.assertFalse(evidence.evidence_path(self.root, self.head).exists())
+
+    def test_failed_shard_issues_no_part(self) -> None:
+        def runner(command, **_kwargs):
+            return subprocess.CompletedProcess(command, 23)
+
+        with mock.patch.object(evidence, "is_linked_worktree", return_value=False):
+            with self.assertRaisesRegex(evidence.QuickRunFailed, "receipt not issued"):
+                evidence.run_shard(self.root, 2, 0, runner=runner)
+        self.assertFalse(self._part_path(0).exists())
+
+    def test_shard_requires_a_clean_primary_worktree(self) -> None:
+        unused = mock.Mock()
+        with mock.patch.object(evidence, "is_linked_worktree", return_value=True):
+            with self.assertRaisesRegex(evidence.EvidenceError, "primary worktree"):
+                evidence.run_shard(self.root, 2, 0, runner=unused)
+        with self.assertRaisesRegex(evidence.EvidenceError, "shards must be"):
+            evidence.run_shard(self.root, 0, 0, runner=unused)
+        with self.assertRaisesRegex(evidence.EvidenceError, "inside"):
+            evidence.run_shard(self.root, 2, 2, runner=unused)
+        unused.assert_not_called()
+
+    def test_dirty_worktree_cannot_record_a_shard(self) -> None:
+        (self.root / "dirty.txt").write_text("dirty\n", encoding="utf-8")
+        with mock.patch.object(evidence, "is_linked_worktree", return_value=False):
+            with self.assertRaisesRegex(evidence.EvidenceError, "clean worktree"):
+                evidence.run_shard(self.root, 2, 0, runner=mock.Mock())
+        self.assertFalse(self._part_path(0).exists())
+
+
+class DeclaredManifestTests(unittest.TestCase):
+    def _manifest_root(self, text):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        make = Path(directory.name) / "make"
+        make.mkdir()
+        (make / "ci.mk").write_text(text, encoding="utf-8")
+        return Path(directory.name)
+
+    def test_real_declared_manifest_is_literal_and_unique(self) -> None:
+        targets = evidence.required_targets(ROOT)
+        self.assertGreater(len(targets), 1)
+        self.assertEqual(targets[0], "guard.prod.forbid")
+        self.assertEqual(len(set(targets)), len(targets))
+        self.assertTrue(all(not token.startswith("$") and "%" not in token and ":" not in token for token in targets))
+        self.assertIn("verify.ui_contract.delivery_surface.unit", targets)
+
+    def test_declared_manifest_drift_is_rejected(self) -> None:
+        cases = {
+            "duplicate": "ci.local.quick.run: guard.prod.forbid verify.a verify.a\n",
+            "line_continuation": "ci.local.quick.run: guard.prod.forbid verify.a \\\n\tverify.b\n",
+            "variable": "ci.local.quick.run: guard.prod.forbid $(EXTRA)\n",
+            "pattern": "ci.local.quick.run: guard.prod.forbid verify.%\n",
+            "target_prefix": "ci.local.quick.run: guard.prod.forbid verify.a:dep\n",
+            "wrong_first": "ci.local.quick.run: verify.a guard.prod.forbid\n",
+            "duplicate_row": "ci.local.quick.run: guard.prod.forbid verify.a\nci.local.quick.run: guard.prod.forbid\n",
+            "absent": "# no declaration here\n",
+        }
+        for name, text in cases.items():
+            with self.subTest(name=name):
+                with self.assertRaises(evidence.EvidenceError):
+                    evidence.required_targets(self._manifest_root(text))
+
 
 
 if __name__ == "__main__":

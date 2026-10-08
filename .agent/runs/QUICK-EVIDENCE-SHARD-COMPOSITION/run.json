@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "id": "QUICK-EVIDENCE-SHARD-COMPOSITION",
+  "branch": "codex/quick-evidence-shard-composition-20261008",
+  "status": "active",
+  "baseline_sha": "579b2e1689711f6e6432b8832987f62ee6ba9d48",
+  "goal": ".agent/goals/QUICK-EVIDENCE-SHARD-COMPOSITION.yaml",
+  "record": "docs/ops/iterations/quick_evidence_shard_composition_20261008.md",
+  "scope": [
+    ".agent/",
+    "docs/",
+    "make/",
+    "scripts/ops/",
+    "scripts/verify/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Registered offline unit test with an isolated git fixture, a fake suite runner and fake scanner handshakes. No database, service, runtime, credential or production access."
+  },
+  "checks": {
+    "local_quick_evidence_composition_unit": {
+      "target": "verify.branch.governance.consistency",
+      "inputs": [
+        "scripts/ops/local_quick_evidence.py",
+        "scripts/ci/trusted_scan_scope.py",
+        "make/ci.mk",
+        "scripts/verify/test_local_quick_evidence.py",
+        "scripts/verify/test_branch_governance_consistency_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run make ci.delivery.freeze.prepare, review the generated changes, commit the candidate (the MERGE-LANE-BOOKKEEPING-CANDIDATE-GUARD run/goal retirement rides along), freeze the clean full fingerprint, prove the frozen head with sharded ci.local.quick.shard plus ci.local.quick.compose (or one monolithic ci.local.quick), push to the GitHub origin, re-satisfy the four required checks on the exact head, and merge. Batch acceptance only; do not claim version release or product delivery."
+}

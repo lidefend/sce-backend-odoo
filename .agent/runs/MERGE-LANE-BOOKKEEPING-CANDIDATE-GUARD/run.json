@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "MERGE-LANE-BOOKKEEPING-CANDIDATE-GUARD",
   "branch": "codex/merge-lane-bookkeeping-candidate-guard-20261008",
-  "status": "active",
+  "status": "completed",
   "baseline_sha": "5c028d03fe6069340515886b498740d348291755",
   "goal": ".agent/goals/MERGE-LANE-BOOKKEEPING-CANDIDATE-GUARD.yaml",
   "record": "docs/ops/iterations/merge_lane_bookkeeping_candidate_guard_20261008.md",
@@ -29,5 +29,26 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Implement and verify the bookkeeping short-circuit in pr.merge.local_quick_gate: reuse an existing exact-head receipt first, then reject a bookkeeping-only candidate (empty-base-resolvable diff confined to .agent/ and docs/) with exit 13 before the suite starts, keep an explicit PR_MERGE_BOOKKEEPING_TERMINAL_RETIRE acknowledgement, and stay fail-closed for any product path or unresolvable base. Unit tests added to scripts/verify/test_branch_governance_consistency_guard.py (20 tests). Next exact step: run make ci.local.iteration plus make verify.branch.governance.consistency, run make ci.delivery.freeze.prepare, commit, freeze the clean HEAD, run one make ci.local.quick, push to GitHub origin, re-satisfy the four required checks on the exact head, and merge. Batch acceptance only; do not claim version release or product delivery."
+  "next_exact_step": "Completed and retired. pr.merge.local_quick_gate now short-circuits bookkeeping-only candidates: an existing exact-head receipt is still reused first, then a candidate whose diff versus git merge-base HEAD ${PR_MERGE_BOOKKEEPING_BASE_REF:-origin/main} is non-empty and entirely confined to .agent/ and docs/ is rejected with exit 13 before any suite run, with an explicit PR_MERGE_BOOKKEEPING_TERMINAL_RETIRE acknowledgement for real terminal goal retirements; every product path, an empty diff, or an unresolvable base stays fail-closed. No assertion, ACL, field permission, negative case or required remote check was relaxed. Mainline integration: PR #617 (head fc8a7878e0629b794224d06b99461080e2c77912) merged through the protected PR flow as merge commit 579b2e1689711f6e6432b8832987f62ee6ba9d48 after the four required checks passed on the exact head; the merge-lane ci.local.quick prerequisite reused the exact-head receipt (no rerun). This ledger is retired by the adjacent candidate (codex/quick-evidence-shard-composition-20261008) that carries its bookkeeping, so the retirement itself cost no extra ci.local.quick run. Status boundaries: batch acceptance done; mainline integration done; version release NOT claimed; product delivery NOT claimed.",
+  "evidence": {
+    "candidate_head": "fc8a7878e0629b794224d06b99461080e2c77912",
+    "candidate_tree": "91bf806555d87d1c751b113deecc2506fe26ecc3",
+    "frozen_candidate_local_quick_receipt": ".git/codex/evidence/ci.local.quick/fc8a7878e0629b794224d06b99461080e2c77912.json",
+    "mainline_integration": {
+      "status": "completed",
+      "pull_requests": [
+        617
+      ],
+      "merge_commit": "579b2e1689711f6e6432b8832987f62ee6ba9d48",
+      "base_before_merge": "5c028d03fe6069340515886b498740d348291755",
+      "required_checks_on_exact_head": [
+        "public_guard",
+        "merge_policy_gate",
+        "professional_quality_gate",
+        "frontend_release_gate"
+      ]
+    },
+    "bookkeeping_retirement_carried_by": "codex/quick-evidence-shard-composition-20261008",
+    "boundaries": "batch acceptance + mainline integration only; version release and product delivery not claimed"
+  }
 }

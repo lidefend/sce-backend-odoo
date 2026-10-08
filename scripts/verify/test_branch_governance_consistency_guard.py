@@ -362,6 +362,26 @@ class LocalQuickEvidenceGateTests(unittest.TestCase):
         self.assertIn("running make ci.local.quick", completed.stdout)
         self.assertEqual(len(calls), 2)
 
+    def test_shard_composition_candidate_is_not_bookkeeping_only(self) -> None:
+        """A candidate that adds make/ and scripts/ paths must never be
+        short-circuited as bookkeeping-only, even when it also carries the
+        .agent/ and docs/ run-record bookkeeping this topic depends on."""
+        completed, calls = self.run_gate(
+            evidence_mode="miss_then_hit",
+            changed_files=(
+                ".agent/active-runs.json",
+                ".agent/runs/QUICK-EVIDENCE-SHARD-COMPOSITION/run.json",
+                "docs/ops/iterations/quick_evidence_shard_composition_20261008.md",
+                "make/ci.mk",
+                "scripts/ops/local_quick_evidence.py",
+                "scripts/verify/test_local_quick_evidence.py",
+            ),
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout)
+        self.assertNotIn("bookkeeping-only candidate", completed.stdout)
+        self.assertIn("running make ci.local.quick", completed.stdout)
+        self.assertEqual(len(calls), 2)
+
     def test_terminal_retirement_acknowledgement_uses_the_normal_path(self) -> None:
         completed, calls = self.run_gate(
             evidence_mode="miss_then_hit",
