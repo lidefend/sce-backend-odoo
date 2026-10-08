@@ -39,6 +39,9 @@ from odoo.addons.smart_core.utils.idempotency import (
     replay_window_seconds,
 )
 
+from odoo.addons.smart_construction_core.handlers.reason_codes import (
+    REASON_DONE,
+)
 from odoo.addons.smart_construction_core.services import boq_dangerous_import_service as svc
 
 DANGEROUS_GROUP = "smart_construction_core.group_sc_cap_boq_dangerous_import"
@@ -689,7 +692,7 @@ class BoqDangerousImportExecuteHandler(_DangerousImportHandlerBase):
                 "version_code": version.code,
                 "project_id": version.project_id.id,
                 "success": True,
-                "reason_code": "DONE",
+                "reason_code": REASON_DONE,
                 "message": "危险导入(%s)执行完成" % ctx_params["mode"],
                 "lines_deleted": lines_deleted,
                 "lines_updated": lines_updated,
