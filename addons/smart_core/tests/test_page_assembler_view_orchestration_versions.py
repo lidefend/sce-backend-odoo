@@ -870,6 +870,42 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
         self.assertEqual(presentation["config"]["sheet"]["row_kind_field"], "row_kind")
         self.assertIn("row_kind", presentation["config"]["sheet"]["fields"])
         self.assertEqual(presentation["config"]["sheet"]["order"], "source_index, sequence, id")
+        # Contract-declared presentation page size. The surface must publish a
+        # declaration the frontend can consume, derived from the governed channel:
+        # explicit profile declaration, then the context key, then the native tree,
+        # then the platform default.
+        self.assertEqual(presentation["config"]["sheet"]["page_size"], 50)
+
+        context_declared = copy.deepcopy(data)
+        context_declared_context = copy.deepcopy(context)
+        context_declared_context["hierarchy_page_size"] = 321
+        self.assembler._inject_native_collection_presentation(context_declared, context_declared_context)
+        self.assertEqual(
+            context_declared["views"]["tree"]["collection_presentation"]["config"]["sheet"]["page_size"],
+            321,
+            "the context page size must be published to the worksheet surface",
+        )
+
+        profile_declared = copy.deepcopy(data)
+        profile_declared_context = copy.deepcopy(context)
+        profile_declared_context["hierarchy_page_size"] = 321
+        profile_declared_context["hierarchical_worksheet"]["page_size"] = 77
+        self.assembler._inject_native_collection_presentation(profile_declared, profile_declared_context)
+        self.assertEqual(
+            profile_declared["views"]["tree"]["collection_presentation"]["config"]["sheet"]["page_size"],
+            77,
+            "an explicit profile declaration must win over the shared context key",
+        )
+
+        bounded = copy.deepcopy(data)
+        bounded_context = copy.deepcopy(context)
+        bounded_context["hierarchy_page_size"] = 999999
+        self.assembler._inject_native_collection_presentation(bounded, bounded_context)
+        self.assertEqual(
+            bounded["views"]["tree"]["collection_presentation"]["config"]["sheet"]["page_size"],
+            20000,
+            "a declared page size must stay inside the governed bound",
+        )
         self.assertEqual(presentation["config"]["sheet"]["variance_field"], "amount")
         self.assertEqual(presentation["config"]["sheet"]["variance_tolerance"], 0.005)
         self.assertEqual(presentation["config"]["detail"]["tabs"][0]["fields"][0]["field"], "description")

@@ -1474,7 +1474,9 @@ class BusinessConfigCoverageBootstrapMissingHandler(BusinessConfigCoverageBootst
         params = self.params if isinstance(self.params, dict) else {}
         role_key = _to_text(params.get("role_key") or params.get("roleKey"))
         view_id = _to_int(params.get("view_id") or params.get("viewId"))
-        raw_batch_limit = _to_int(params.get("batch_limit") or params.get("batchLimit")) or 100
+        # P0 声明：批量补齐每次处理的页面数。前端只消费，不再传 batch_limit；
+        # 未显式传入时使用声明缺省（补齐流程按可处理上限执行），上限仍为 300。
+        raw_batch_limit = _to_int(params.get("batch_limit") or params.get("batchLimit")) or 300
         batch_limit = max(1, min(raw_batch_limit, 300))
         scan = BusinessConfigCoverageScanHandler.handle(self)
         rows = (scan.get("data") or {}).get("items") if isinstance(scan, dict) else []
