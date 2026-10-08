@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import json
 import os
+import sys
 import time
 from pathlib import Path
 from datetime import datetime
@@ -11,6 +12,12 @@ from urllib.error import HTTPError, URLError
 
 ROOT = Path(__file__).resolve().parents[2]
 GROUPED_SNAPSHOT_BASELINE = ROOT / "scripts" / "verify" / "baselines" / "e2e_grouped_rows_signature.json"
+
+VERIFY_DIR = ROOT / "scripts" / "verify"
+if str(VERIFY_DIR) not in sys.path:
+    sys.path.insert(0, str(VERIFY_DIR))
+
+from python_http_smoke_utils import extract_login_token  # noqa: E402
 
 
 def _load_env_value_from_file(env_path: str, key: str) -> str | None:
@@ -324,7 +331,7 @@ def main():
         )
     if not login_resp.get("ok"):
         raise RuntimeError(f"login failed: {login_resp}")
-    token = (login_resp.get("data") or {}).get("token")
+    token = extract_login_token(login_resp)
     if not token:
         raise RuntimeError("login response missing token")
 

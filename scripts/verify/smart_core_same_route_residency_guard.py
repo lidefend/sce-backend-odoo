@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import sys
 
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import extract_login_token, get_base_url, http_post_json
 
 
 def _post(
@@ -39,7 +39,7 @@ def main() -> int:
 
     status, login_resp = _post(intent_url, None, "login", {"db": db_name, "login": login, "password": password}, db_name=db_name)
     _assert_ok(status, login_resp, "login")
-    token = (((login_resp.get("data") or {}) if isinstance(login_resp.get("data"), dict) else {}).get("session") or {}).get("token")
+    token = extract_login_token(login_resp)
     if not str(token or "").strip():
         raise RuntimeError("login response missing data.session.token")
 

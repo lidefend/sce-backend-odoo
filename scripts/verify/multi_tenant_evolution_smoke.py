@@ -6,7 +6,7 @@ import json
 import os
 from pathlib import Path
 
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import extract_login_token, get_base_url, http_post_json
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -53,7 +53,7 @@ def main() -> int:
         errors.append("primary db login failed")
         token = ""
     else:
-        token = str(((payload_login.get("data") or {}).get("token")) or "")
+        token = extract_login_token(payload_login)
         if not token:
             errors.append("primary db token missing")
 

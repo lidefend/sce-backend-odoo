@@ -6,7 +6,7 @@ import json
 import os
 from pathlib import Path
 
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import extract_login_token, get_base_url, http_post_json
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -39,8 +39,7 @@ def _login(intent_url: str, db_name: str, login: str, password: str) -> str:
             )
             if status != 200 or not isinstance(body, dict) or body.get("ok") is not True:
                 continue
-            data = body.get("data") if isinstance(body.get("data"), dict) else {}
-            token = str(data.get("token") or "").strip()
+            token = extract_login_token(body)
             if token:
                 return token
     secret = str(os.getenv("SC_BOOTSTRAP_SECRET") or os.getenv("BOOTSTRAP_SECRET") or "").strip()
@@ -52,8 +51,7 @@ def _login(intent_url: str, db_name: str, login: str, password: str) -> str:
             headers={"X-Anonymous-Intent": "1"},
         )
         if status == 200 and isinstance(body, dict) and body.get("ok") is True:
-            data = body.get("data") if isinstance(body.get("data"), dict) else {}
-            token = str(data.get("token") or "").strip()
+            token = extract_login_token(body)
             if token:
                 return token
     return ""

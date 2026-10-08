@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 
 from intent_smoke_utils import require_ok
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import extract_login_token, get_base_url, http_post_json
 
 REQUIRED_TOP_LEVEL_KEYS = ("ok", "data", "meta")
 
@@ -34,9 +34,7 @@ def main() -> None:
     )
     _assert_envelope(login_resp, label="login")
     require_ok(status, login_resp, "login")
-    login_data = (login_resp.get("data") or {}) if isinstance(login_resp.get("data"), dict) else {}
-    session = login_data.get("session") if isinstance(login_data.get("session"), dict) else {}
-    token = session.get("token") or login_data.get("token")
+    token = extract_login_token(login_resp)
     if not token:
         raise RuntimeError("login response missing token")
 

@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 
 from intent_smoke_utils import require_ok
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import extract_login_token, get_base_url, http_post_json
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -70,8 +70,7 @@ def _login(intent_url: str, db_name: str, login: str, password: str) -> str:
     )
     if status != 200:
         return ""
-    data = resp.get("data") if isinstance(resp.get("data"), dict) else {}
-    return str(data.get("token") or "").strip()
+    return extract_login_token(resp)
 
 
 def _system_init(intent_url: str, token: str, contract_mode: str) -> dict:

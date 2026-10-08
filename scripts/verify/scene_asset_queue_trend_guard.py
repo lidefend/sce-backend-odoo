@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from intent_smoke_utils import require_ok
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import extract_login_token, get_base_url, http_post_json
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -52,7 +52,7 @@ def _fetch_asset_queue() -> dict:
         headers={"X-Anonymous-Intent": "1"},
     )
     require_ok(status, login_resp, "login")
-    token = ((login_resp.get("data") or {}).get("token") or "")
+    token = extract_login_token(login_resp)
     if not token:
         raise RuntimeError("login response missing token")
 

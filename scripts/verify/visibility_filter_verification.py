@@ -6,7 +6,7 @@ import json
 import os
 from pathlib import Path
 
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import extract_login_token, get_base_url, http_post_json
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -51,7 +51,7 @@ def _login(intent_url: str, db_name: str, login: str, password: str) -> str:
     )
     if st >= 400 or body.get("ok") is not True:
         return ""
-    return _norm(((body.get("data") or {}).get("token")))
+    return extract_login_token(body)
 
 
 def _system_init_scenes(intent_url: str, token: str) -> tuple[int, list[str]]:

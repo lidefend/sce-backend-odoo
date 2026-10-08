@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import extract_login_token, get_base_url, http_post_json
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -70,7 +70,7 @@ def main() -> int:
     status, login_resp = _post(intent_url, None, "login", {"db": db_name, "login": login, "password": password}, db_name=db_name)
     if status >= 400 or login_resp.get("ok") is not True:
         errors.append(f"login failed: status={status}")
-    token = (((login_resp.get("data") or {}) if isinstance(login_resp.get("data"), dict) else {}).get("session") or {}).get("token")
+    token = extract_login_token(login_resp)
     if not str(token or "").strip():
         errors.append("login token missing")
 

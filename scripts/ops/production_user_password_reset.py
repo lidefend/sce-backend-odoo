@@ -257,8 +257,7 @@ def verify_http_access(tool_root: Path, base_url: str, database: str, login: str
         {"intent": "login", "params": {"db": database, "login": login, "password": password}},
         headers={**db_headers, "X-Anonymous-Intent": "1"},
     )
-    login_data = helper.unwrap_data(login_payload)
-    token = str(login_data.get("token") or "").strip()
+    token = helper.session_token_from_login(login_payload)
     if login_status != 200 or login_payload.get("ok") is not True or not token:
         raise PasswordResetError("new-password HTTP login verification failed")
     headers = {**db_headers, "Authorization": f"Bearer {token}"}

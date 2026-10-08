@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "id": "RUNTIME-CONTRACT-LOGIN-ENVELOPE-CONSUMER-REALIGNMENT",
+  "branch": "fix/runtime-contract-login-envelope-consumer-realignment-20261008",
+  "status": "active",
+  "baseline_sha": "6c30c91922b0337e0f0c9b038ded9e405e5cf54d",
+  "goal": ".agent/goals/RUNTIME-CONTRACT-LOGIN-ENVELOPE-CONSUMER-REALIGNMENT.yaml",
+  "record": "docs/ops/iterations/runtime_contract_login_envelope_consumer_realignment_20261008.md",
+  "scope": [
+    ".agent/",
+    "docs/",
+    "make/",
+    "scripts/audit/",
+    "scripts/e2e/",
+    "scripts/ops/",
+    "scripts/release/",
+    "scripts/verify/",
+    "addons/smart_core/handlers/ui_contract.py",
+    "addons/smart_core/tests/"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Registered local.dev profile (project sc-local-dev, database sc_dev_demo, port 8070) plus the registered local make gate entrypoints; the shared reader unit and the new guard are offline. No production access, no credential rotation."
+  },
+  "checks": {
+    "login_envelope_consumption_guard": {
+      "target": "verify.login_envelope.consumption.guard",
+      "inputs": [
+        "scripts/verify/login_envelope_consumption_guard.py",
+        "scripts/verify/test_login_envelope_consumption_guard.py",
+        "scripts/verify/python_http_smoke_utils.py",
+        "make/dev_test.mk",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "surface_mapping_guard": {
+      "target": "verify.contract.surface_mapping_guard",
+      "inputs": [
+        "scripts/verify/surface_mapping_guard.py",
+        "scripts/verify/python_http_smoke_utils.py",
+        "addons/smart_core/handlers/ui_contract.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "runtime"
+    },
+    "scene_capability_contract_guard": {
+      "target": "verify.scene_capability.contract.guard",
+      "inputs": [
+        "scripts/verify/scene_capability_contract_guard.py",
+        "scripts/verify/baselines/role_capability_floor_prod_like.json",
+        "scripts/verify/python_http_smoke_utils.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "runtime"
+    },
+    "scene_catalog_runtime_alignment_guard": {
+      "target": "verify.scene.catalog.runtime_alignment.guard",
+      "inputs": [
+        "scripts/verify/scene_catalog_runtime_alignment_guard.py",
+        "scripts/verify/python_http_smoke_utils.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "runtime"
+    },
+    "contract_ordering_smoke": {
+      "target": "verify.contract.ordering.smoke",
+      "inputs": [
+        "scripts/verify/scene_order_determinism_smoke.py",
+        "scripts/verify/python_http_smoke_utils.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "runtime"
+    },
+    "contract_mode_smoke": {
+      "target": "verify.contract.mode.smoke",
+      "inputs": [
+        "scripts/verify/contract_mode_smoke.py",
+        "scripts/verify/python_http_smoke_utils.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "runtime"
+    },
+    "contract_view_type_semantic_smoke": {
+      "target": "verify.contract.view_type_semantic.smoke",
+      "inputs": [
+        "scripts/verify/contract_view_type_semantic_smoke.py",
+        "scripts/verify/python_http_smoke_utils.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "runtime"
+    },
+    "contract_assembler_semantic_smoke": {
+      "target": "verify.contract.assembler.semantic.smoke",
+      "inputs": [
+        "scripts/verify/contract_assembler_semantic_smoke.py",
+        "scripts/verify/role_capability_floor_prod_like.py",
+        "scripts/verify/baselines/role_capability_floor_prod_like.json",
+        "make/dev_test.mk"
+      ],
+      "kind": "runtime"
+    },
+    "role_capability_floor_prod_like": {
+      "target": "verify.role.capability_floor.prod_like",
+      "inputs": [
+        "scripts/verify/role_capability_floor_prod_like.py",
+        "scripts/verify/baselines/role_capability_floor_prod_like.json",
+        "make/dev_test.mk"
+      ],
+      "kind": "runtime"
+    },
+    "ui_contract_delivery_surface_unit": {
+      "target": "verify.ui_contract.delivery_surface.unit",
+      "inputs": [
+        "addons/smart_core/handlers/ui_contract.py",
+        "addons/smart_core/tests/test_ui_contract_delivery_surface_alignment.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "verify.contract.evidence.guard requires the grouped-governance generated evidence (ci.generated_evidence.* / freeze prepare); regenerate in the frozen-candidate stage and recheck."
+  ],
+  "next_exact_step": "Run L1 make ci.local.iteration and the affected non-zero offline units, commit the P4 and P0 layer-owned changes, run make ci.delivery.freeze.prepare, then freeze the clean HEAD, run one make ci.local.quick and publish the PR.",
+  "evidence": {}
+}

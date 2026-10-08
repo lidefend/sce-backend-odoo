@@ -3,6 +3,13 @@ import json
 import os
 import sys
 import urllib.request
+from pathlib import Path
+
+_VERIFY_DIR = Path(__file__).resolve().parent
+if str(_VERIFY_DIR) not in sys.path:
+    sys.path.insert(0, str(_VERIFY_DIR))
+
+from python_http_smoke_utils import extract_login_token  # noqa: E402
 
 BASE_URL = os.getenv('BASE_URL', 'http://localhost:8069').rstrip('/')
 DB_NAME = os.getenv('DB_NAME') or os.getenv('DB') or 'sc_demo'
@@ -43,7 +50,7 @@ def main() -> int:
     for expected_role, login, password in ROLE_USERS:
         login_payload = post_intent('login', {'db': DB_NAME, 'login': login, 'password': password}, anonymous=True)
         ensure_ok(login_payload, f'login:{login}')
-        token = ((login_payload.get('data') or {}).get('token') or '').strip()
+        token = extract_login_token(login_payload)
         if not token:
             raise AssertionError(f'login:{login} missing token')
 

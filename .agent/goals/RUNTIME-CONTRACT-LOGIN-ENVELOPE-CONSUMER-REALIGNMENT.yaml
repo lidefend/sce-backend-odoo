@@ -1,0 +1,79 @@
+goal:
+  id: RUNTIME-CONTRACT-LOGIN-ENVELOPE-CONSUMER-REALIGNMENT
+  title: runtime_contract_login_envelope_consumer_realignment
+  status: active
+  formal_product_layer: P4
+  objective: >-
+    The runtime-contract verification family (verify.contract.surface_mapping_guard,
+    verify.scene_catalog.runtime_alignment.guard, verify.scene_capability.contract.guard,
+    verify.contract.ordering.smoke, verify.contract.mode.smoke,
+    verify.contract.view_type_semantic.smoke, verify.contract.assembler.semantic.smoke and
+    the capability-floor cascade) could not reach a conclusion under the governed local.dev
+    profile. Proven root cause: the declared login envelope moved to
+    data.session.token in the clean product baseline (addons/smart_core/handlers/login.py:323),
+    keeping a deprecated compat-only top-level data.token alias, but a large family of
+    scripts/ consumers still read only data.token. They therefore fail with
+    "missing token" even with valid credentials, and the failures were previously
+    misclassified as an environment prerequisite. Realign every such consumer onto the
+    shared python_http_smoke_utils.extract_login_token reader, add a fail-closed guard so
+    the class cannot regress, and provision the declared bootstrap service identity through
+    its existing governed entry so the runtime probe path works.
+  product_boundary:
+    formal_product_layer: P4
+    layer_target: >-
+      scripts/verify/**, scripts/e2e/**, scripts/audit/**, scripts/ops/**,
+      scripts/release/** login-envelope consumers plus one new fail-closed guard target
+    module: >-
+      scripts/verify/python_http_smoke_utils.py (shared reader, unchanged contract);
+      scripts/verify/login_envelope_consumption_guard.py (new guard);
+      scripts/verify/scene_capability_contract_guard.py (governed credential seam);
+      make/dev_test.mk (guard targets);
+      addons/smart_core/handlers/ui_contract.py (P0 producer surface metadata);
+      addons/smart_core/tests/test_ui_contract_delivery_surface_alignment.py (new P0 unit)
+    standard_vs_user_specific: >-
+      ops delivery tool (P4) for the verification tool family and its gate, plus one P0
+      platform-mechanism correction: the ui.contract delivery data must publish the surface
+      the request resolved to. No industry or customer semantics, no model special case,
+      no ACL or field-permission change. A second P4 correction aligns the role-matrix
+      verifier with the governed credential declaration.
+    why_here: >-
+      The login producer is correct and its declared shape is data.session.token; the
+      defect is in the consumers of that declared shape, which live in the P4 verification
+      tooling layer. The surface mislabelling is the inverse case and lives in the P0
+      contract producer (ui_contract delivery shaping), whose declared contract is
+      contract_surface_spec_v1; the credential seam lives in the same P4 verification
+      family that hardcoded a stale password.
+    why_not_elsewhere:
+      - no_login_contract_or_envelope_change
+      - no_producer_compat_alias_added_or_removed
+      - no_assertion_acl_field_permission_or_negative_case_relaxed
+      - p0_producer_change_is_surface_metadata_only_no_model_special_case
+      - no_acl_field_permission_or_hidden_rule_override
+      - no_frontend_change
+  product_result:
+    statement: >-
+      The runtime-contract verification family consumes the declared login envelope and the
+      declared local credentials through their declared seams, a fail-closed guard prevents
+      any scripts/ consumer from reading only the deprecated data.token path again, and the
+      ui.contract delivery data publishes the surface the request actually resolved to.
+    independently_acceptable: true
+  baseline:
+    branch: fix/runtime-contract-login-envelope-consumer-realignment-20261008
+    full_sha: 6c30c91922b0337e0f0c9b038ded9e405e5cf54d
+    source: origin/main
+  acceptance:
+    - every_migrated_consumer_reads_the_declared_session_token_path_or_the_shared_reader
+    - the_login_envelope_consumption_guard_passes_and_fails_closed_on_an_injected_naive_reader
+    - each_affected_runtime_contract_target_is_rerun_and_reports_its_true_result
+    - the_surface_a_request_declares_is_published_in_the_delivery_data_for_user_and_hud
+    - the_role_matrix_verifier_consumes_the_governed_demo_credential_declaration
+    - no_product_model_contract_schema_or_permission_behaviour_changed
+  exclusions:
+    - business_semantics_and_contract_schema_unchanged
+    - no_acl_field_permission_or_hidden_rule_override
+    - assertion_or_audit_relaxation
+    - baseline_raises
+    - product_deployment
+    - credential_rotation
+  rollback:
+    - revert_the_consumer_and_guard_commits_together

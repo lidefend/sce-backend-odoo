@@ -7,6 +7,7 @@ import os
 import sys
 import urllib.request
 from typing import Any
+from python_http_smoke_utils import extract_login_token
 
 
 BASE_URL = os.getenv("BASE_URL", "http://127.0.0.1").rstrip("/")
@@ -75,7 +76,7 @@ def _post(intent: str, params: dict[str, Any], token: str | None = None) -> dict
 
 def _login() -> str:
     payload = _post("login", {"login": LOGIN, "password": PASSWORD})
-    token = (((payload.get("data") or {}).get("session") or {}).get("token") or (payload.get("data") or {}).get("token") or "")
+    token = extract_login_token(payload)
     if not token:
         raise RuntimeError("login response missing token")
     return str(token)

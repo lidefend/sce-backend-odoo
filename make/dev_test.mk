@@ -596,6 +596,15 @@ verify.contract.parse_boundary.guard: guard.prod.forbid
 verify.contract.production_chain.guard: guard.prod.forbid
 	@python3 scripts/verify/contract_production_chain_guard.py
 
+.PHONY: verify.login_envelope.consumption.guard
+verify.login_envelope.consumption.guard: guard.prod.forbid
+	@PYTHONPATH=scripts/verify python3 -m unittest scripts.verify.test_login_envelope_consumption_guard
+	@python3 scripts/verify/login_envelope_consumption_guard.py
+
+.PHONY: verify.ui_contract.delivery_surface.unit
+verify.ui_contract.delivery_surface.unit: guard.prod.forbid
+	@python3 addons/smart_core/tests/test_ui_contract_delivery_surface_alignment.py
+
 verify.runtime.surface.dashboard.report: guard.prod.forbid verify.scene.catalog.runtime_alignment.guard verify.role.capability_floor.prod_like
 	@python3 scripts/verify/runtime_surface_dashboard_report.py
 

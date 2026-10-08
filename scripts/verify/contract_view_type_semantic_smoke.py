@@ -6,7 +6,7 @@ import os
 from typing import Any
 
 from intent_smoke_utils import require_ok
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import extract_login_token, get_base_url, http_post_json
 
 DEFAULT_REQUIRED_VIEW_TYPES = ("pivot", "graph", "calendar", "gantt", "activity", "dashboard")
 DEFAULT_OPTIONAL_VIEW_TYPES: tuple[str, ...] = ()
@@ -127,7 +127,7 @@ def main() -> None:
         headers={"X-Anonymous-Intent": "1"},
     )
     require_ok(status, login_resp, "login")
-    token = (_extract_data(login_resp)).get("token")
+    token = extract_login_token(login_resp)
     if not token:
         raise RuntimeError("login response missing token")
 

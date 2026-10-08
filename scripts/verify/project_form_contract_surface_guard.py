@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 
 from intent_smoke_utils import require_ok
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import extract_login_token, get_base_url, http_post_json
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -52,8 +52,7 @@ def _login_token(intent_url: str, db_name: str, login: str, password: str) -> st
         headers={"X-Anonymous-Intent": "1"},
     )
     require_ok(status, resp, f"login({login})")
-    data = resp.get("data") if isinstance(resp.get("data"), dict) else {}
-    token = str(data.get("token") or "").strip()
+    token = extract_login_token(resp)
     if not token:
         raise RuntimeError(f"login({login}) missing token")
     return token

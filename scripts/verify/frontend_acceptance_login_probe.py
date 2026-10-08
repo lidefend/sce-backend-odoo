@@ -7,6 +7,7 @@ import json
 import os
 from urllib import error as urlerror
 from urllib import request as urlrequest
+from python_http_smoke_utils import extract_login_token
 
 
 DATABASE = "sc_frontend_acceptance"
@@ -81,9 +82,7 @@ def probe() -> int:
         return 2
 
     envelope = _envelope(payload)
-    data = envelope.get("data") if isinstance(envelope.get("data"), dict) else {}
-    session = data.get("session") if isinstance(data.get("session"), dict) else {}
-    token_present = bool(session.get("token") or data.get("token"))
+    token_present = bool(extract_login_token(envelope))
     if status >= 400 or envelope.get("ok") is not True or not token_present:
         diagnostic = _safe_diagnostic(status, content_type, payload)
         print(f"[acceptance.login.probe] FAIL {diagnostic}")

@@ -5,9 +5,17 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from pathlib import Path
+
+_VERIFY_DIR = Path(__file__).resolve().parents[1] / "verify"
+if str(_VERIFY_DIR) not in sys.path:
+    sys.path.insert(0, str(_VERIFY_DIR))
+
+from python_http_smoke_utils import extract_login_token  # noqa: E402
 
 
 BASE_URL = os.environ.get("R10E_BASE_URL", "http://127.0.0.1:18089").rstrip("/")
@@ -110,7 +118,7 @@ def main() -> int:
         {"intent": "login", "params": {"db": EXPECTED_DB, "login": LOGIN, "password": PASSWORD}},
         {"X-Anonymous-Intent": "1"},
     )
-    token = (login_body.get("data") or {}).get("token") if isinstance(login_body, dict) else None
+    token = extract_login_token(login_body) if isinstance(login_body, dict) else None
     if login_status != 200 or not login_body.get("ok") or not token:
         raise SystemExit("isolated matrix login failed")
 

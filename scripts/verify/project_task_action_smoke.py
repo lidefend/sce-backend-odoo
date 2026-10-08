@@ -9,6 +9,7 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
+from python_http_smoke_utils import extract_login_token
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -98,7 +99,7 @@ def _login() -> str:
     resp = _request_intent("login", {"db": DB_NAME, "login": LOGIN, "password": PASSWORD}, anonymous=True)
     if not resp.get("ok"):
         raise AssertionError(f"login failed: {resp.get('error')}")
-    token = str(((resp.get("data") or {}).get("token") or "")).strip()
+    token = extract_login_token(resp)
     if not token:
         raise AssertionError("login token missing")
     return token

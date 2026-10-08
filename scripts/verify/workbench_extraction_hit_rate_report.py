@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from intent_smoke_utils import require_ok
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import extract_login_token, get_base_url, http_post_json
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -78,8 +78,7 @@ def _login(intent_url: str, db_name: str, login: str, password_candidates: list[
             headers={"X-Anonymous-Intent": "1"},
         )
         if status == 200 and bool(resp.get("ok")):
-            data = resp.get("data") if isinstance(resp.get("data"), dict) else {}
-            token = _to_text(data.get("token"))
+            token = extract_login_token(resp)
             if token:
                 return token
             failures.append(f"password={password}: missing token")

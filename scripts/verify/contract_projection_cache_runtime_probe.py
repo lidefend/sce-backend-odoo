@@ -6,6 +6,7 @@ import os
 import time
 from pathlib import Path
 from urllib import request as urlrequest
+from python_http_smoke_utils import extract_login_token
 
 
 def env_file_value(path, key):
@@ -132,7 +133,7 @@ def main():
         {"intent": "login", "params": {"db": db_name, "login": login, "password": password}},
         {"X-Anonymous-Intent": "1"},
     )
-    token = (login_response.get("data") or {}).get("token")
+    token = extract_login_token(login_response)
     if not login_response.get("ok") or not token:
         raise RuntimeError(f"login failed: {login_response}")
 

@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import extract_login_token, get_base_url, http_post_json
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -97,8 +97,7 @@ def _login() -> str:
         {"db": DB_NAME, "login": LOGIN, "password": PASSWORD},
         anonymous=True,
     )
-    data = payload.get("data") if isinstance(payload.get("data"), dict) else {}
-    token = str(data.get("token") or "").strip()
+    token = extract_login_token(payload)
     if status >= 400 or payload.get("ok") is not True or not token:
         raise AssertionError(f"login failed status={status} error={payload.get('error')}")
     return token

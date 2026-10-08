@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from itertools import combinations
 from pathlib import Path
 from typing import Any
@@ -12,6 +13,12 @@ from urllib.error import HTTPError, URLError
 
 
 ROOT = Path(__file__).resolve().parents[2]
+VERIFY_DIR = ROOT / "scripts" / "verify"
+if str(VERIFY_DIR) not in sys.path:
+    sys.path.insert(0, str(VERIFY_DIR))
+
+from python_http_smoke_utils import extract_login_token  # noqa: E402
+
 OUT_JSON = ROOT / "artifacts" / "audit" / "role_nav_diff.latest.json"
 OUT_MD = ROOT / "artifacts" / "audit" / "role_nav_diff.latest.md"
 
@@ -85,7 +92,7 @@ def run_for_role(role_code: str, login: str, password: str) -> dict[str, Any]:
     )
     if status >= 400 or not login_resp.get("ok"):
         return {"role": role_code, "login": login, "error": f"login_failed:{status}", "detail": login_resp}
-    token = str(((login_resp.get("data") or {}).get("token") or "")).strip()
+    token = extract_login_token(login_resp)
     if not token:
         return {"role": role_code, "login": login, "error": "token_missing"}
 

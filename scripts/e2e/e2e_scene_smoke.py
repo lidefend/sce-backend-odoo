@@ -16,6 +16,12 @@ if str(COMMON_DIR) not in sys.path:
 
 from scene_legacy_contract import require_deprecation_headers, require_deprecation_payload  # noqa: E402
 
+VERIFY_DIR = Path(__file__).resolve().parents[1] / "verify"
+if str(VERIFY_DIR) not in sys.path:
+    sys.path.insert(0, str(VERIFY_DIR))
+
+from python_http_smoke_utils import extract_login_token  # noqa: E402
+
 
 def _load_env_value_from_file(env_path: str, key: str) -> str | None:
     if not env_path or not os.path.isfile(env_path):
@@ -186,7 +192,7 @@ def main():
         )
     if not login_resp.get("ok"):
         raise RuntimeError(f"login failed: {login_resp}")
-    token = (login_resp.get("data") or {}).get("token")
+    token = extract_login_token(login_resp)
     if not token:
         raise RuntimeError("login response missing token")
 
