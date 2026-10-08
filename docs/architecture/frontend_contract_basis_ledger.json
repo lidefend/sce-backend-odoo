@@ -15,6 +15,19 @@
       "stopSymbol": "ContractGapError",
       "regressionGuard": "verify.frontend.scene_contract.consumption.guard",
       "behaviourTest": "frontend/apps/web/scripts/hierarchical_worksheet_load_stage_test.ts"
+    },
+    {
+      "surface": "ActionView/ListPage 每页条数面",
+      "declared": "searchContract.defaults.page_size_options / page_size_range",
+      "declaredBy": "addons/smart_core/app_config_engine/models/app_search_config.py",
+      "declaredMethod": "get_search_contract",
+      "declaredSymbol": "\"page_size_options\": list(DEFAULT_PAGE_SIZE_OPTIONS)",
+      "consumedBy": "frontend/apps/web/src/app/runtime/actionViewListPageSizeRuntime.ts",
+      "consumedSymbol": "resolveContractV2SearchContract",
+      "onMissing": "stop",
+      "stopSymbol": "ContractGapError",
+      "regressionGuard": "verify.frontend.action_view_page_size_runtime.unit",
+      "behaviourTest": "frontend/apps/web/scripts/action_view_list_page_size_runtime_test.ts"
     }
   ],
   "registeredMechanismExemptions": [
@@ -102,6 +115,20 @@
         "frontend/apps/web/src/app/runtime/actionViewLoadResultRuntime.ts",
         "frontend/apps/web/src/pages/ListPage.vue",
         "frontend/apps/web/scripts/hierarchical_worksheet_load_stage_test.ts"
+      ]
+    },
+    {
+      "id": "CD-20261008-PAGE-SIZE-CONSUMPTION-SHAPE",
+      "missing": "列表页分页声明运行时载体形状（searchContract.defaults.page_size_options/page_size_range）",
+      "surface": "ActionView/ListPage 每页条数面（menu_sc_p1_expense_contract / menu_sc_payment_execution 等列表入口）",
+      "discoveredBy": "PR #621 部署到日常服务器后，普通列表入口渲染即报 ContractGapError search.defaults.page_size_options，业务入口矩阵探针判定“未声明任何可识别呈现面”。声明层实际已发布 defaults.page_size_options=[10,20,50]、page_size_range={min:1,max:200}；缺口来自前端消费形状。",
+      "requiredDeclarationLayer": "P0 前端渲染机制（契约消费层）：声明由 P0:smart_core:app_search_config.get_search_contract 提供，消费必须走同一契约规范化载体",
+      "resolution": "resolveActionViewPageSizeOptions/Range 原以 unknown 接收对象并直接读顶层 searchContract，而调用方 ActionView.vue 传入的是 ContractV2NormalizedStore（快照挂在 .snapshot 下），故恒取到空对象并停机。现改为类型化接收 ContractV2NormalizedStore 并通过规范访问器 resolveContractV2SearchContract 读取；载体形状漂移改由编译期类型签名拦截。新增行为测试以生产 store 工厂驱动生产解析器，锁定声明消费、声明驱动差异与缺失即停机；声明层无改动。",
+      "closureEvidence": [
+        "frontend/apps/web/src/app/runtime/actionViewListPageSizeRuntime.ts",
+        "frontend/apps/web/scripts/action_view_list_page_size_runtime_test.ts",
+        "make/frontend.mk",
+        "scripts/verify/frontend_contract_basis_guard.py"
       ]
     }
   ],
