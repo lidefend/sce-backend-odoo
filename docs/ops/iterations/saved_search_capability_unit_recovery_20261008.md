@@ -80,8 +80,14 @@ make verify.frontend.quick.gate        # /tmp/fe_gate_final2.log → GATE_EXIT=0
 `verify.contract.production_chain.guard`、`verify.contract.envelope.guard`、
 `verify.contract.governance.coverage`、`verify.contract.scene_coverage.brief`、
 `verify.contract.catalog`、`verify.scene.contract.shape`、`verify.business.core_journey.guard`、
-`verify.role.capability_floor.prod_like`、
-`verify.contract_drift.guard`（修复后）。
+`verify.role.capability_floor.prod_like`、`verify.contract_drift.guard`（修复后）、
+`verify.contract.authority_hierarchy.guard`、`verify.contract.handler_boundary.guard`、
+`verify.contract.governed_policy_guard`、`verify.contract.form_field_policy.unit`（4）、
+`verify.contract.probe_routing.unit`（5+3）、`verify.contract.api.mode.smoke`（http://localhost:8070）、
+`product_view_structure_contract_guard`（formal_menu_count=89、resolved view actions=89、surfaces=281）。
+
+以上合计 16 个离线契约目标在本轮取得通过结论；`verify.contract.probe_routing.unit` 在依赖顺序中
+先执行，故单独作为显式目标时显示为 no-op，其两个 unittest 模块已实际执行。
 
 **B. 本轮发现的真实缺口并已修复**：
 
@@ -109,9 +115,17 @@ make verify.frontend.quick.gate        # /tmp/fe_gate_final2.log → GATE_EXIT=0
   `verify.business.capability_baseline.report`、`verify.backend.architecture.full.report`、
   `verify.contract.governance.brief`、`verify.contract.evidence.guard` 一并失败。
   这五项的失败是**同一运行态前置**的下游级联，不是独立缺陷。
+- `verify.contract.ordering.smoke` → `login failed for determinism smoke: admin`；
+  `verify.contract.mode.smoke` → `runtime probe authentication unavailable: source=dev_test_bootstrap`；
+  `verify.contract.view_type_semantic.smoke` → `login response missing token`；
+  `verify.contract.assembler.semantic.smoke`（及其 schema guard）→ 同一运行态探针。
+- `verify.contract.native_view_normalized_map` 的 `contract.view_carrier.export` →
+  `ValueError: carrier collector requires database sc_clean`：该导出绑定 `local.clean`（一次性
+  洁净安装）档案，不是每日开发/样例库；属于**受管档案前置**，不得用其它库替代。
 
-因此"完整运行时契约驱动"的结论是：**离线契约族无未决红项**；唯一未结论的是一条运行态登录链，
-其状态为**环境前置未满足**（需在受管运行态上以既有凭据入口重跑，不得用放宽或跳过替代）。
+因此"完整运行时契约驱动"的结论是：**离线契约族无未决红项**（16 个目标通过，其中 1 个为本轮修复）；
+未结论的部分有两条，都是前置而非缺陷：一条运行态登录链（凭据面），一条受管档案前置（`local.clean`）。
+两者都需在受管入口下重跑取证，不得用放宽、跳过或换库替代。
 
 ## 5. 状态边界
 
