@@ -2,6 +2,11 @@ goal:
   id: CI-SCHEDULED-FULL-LANE-RECOVERY
   status: completed
   formal_product_layer: P4
-  objective: Restore the green scheduled full CI lane (professional_quality_gate, frontend_release_gate, release_candidate_gate) by clearing the accumulated full-lane-only debt: full-scope frontend lint errors in probe/test scripts and playwright vendor-coupling over-baseline probe selectors, without raising any decrease-only baseline.
+  objective: >-
+    Restore the green scheduled full CI lane (professional_quality_gate,
+    frontend_release_gate, release_candidate_gate) by clearing the accumulated
+    full-lane-only debt: full-scope frontend lint errors in probe/test scripts and
+    playwright vendor-coupling over-baseline probe selectors, without raising any
+    decrease-only baseline.
   run: .agent/runs/CI-SCHEDULED-FULL-LANE-RECOVERY/run.json
   exclusions: [baseline_raises, product_deployment, database_writes, production_access]

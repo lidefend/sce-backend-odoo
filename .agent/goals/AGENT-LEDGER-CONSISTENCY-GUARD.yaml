@@ -1,0 +1,54 @@
+goal:
+  id: AGENT-LEDGER-CONSISTENCY-GUARD
+  title: agent_run_and_goal_ledger_consistency_is_mechanically_enforced
+  status: active
+  formal_product_layer: P4
+  layer_target:
+    - agent_run_records
+    - ledger_consistency_guard
+    - delivery_freeze_gate
+  module:
+    - scripts/verify/agent_ledger_consistency_guard.py
+    - scripts/verify/test_agent_ledger_consistency_guard.py
+    - make/codex.mk
+    - make/ci.mk
+    - .agent/goals/ENV-ACCEPTANCE-REBUILD-LANE-PREREQUISITE.yaml
+    - .agent/goals/CI-SCHEDULED-FULL-LANE-RECOVERY.yaml
+    - .agent/runs/AGENT-LEDGER-CONSISTENCY-GUARD/run.json
+    - docs/ops/iterations/agent_ledger_consistency_guard_20261009.md
+  objective: >-
+    Make ".agent goal/run status is out of sync" a mechanically detected defect instead of a
+    recurring manual ledger re-audit. Add a read-only, fail-closed guard that binds a terminal run
+    to a terminal goal, keeps the active-run index pointing at an existing branch-matching
+    non-terminal run, and requires every run record and goal document to stay machine-readable.
+    Owner-kept residuals stay pinned with their recorded authority, and the pin set is a ratchet so
+    a new residual cannot appear silently. Close the real drift found by the guard and fix the one
+    goal document that was not valid YAML.
+  acceptance:
+    - >-
+      make verify.agent.ledger.unit is non-zero and passes: the guard tests prove the synthetic
+      baseline is normal first, then prove each injected drift (terminal mismatch, unknown
+      non-canonical status, dangling/terminal/branch-mismatched index entry, unreadable goal
+      document, unresolvable run goal, duplicate goal id) is detected, plus the real repository
+      ledger checks clean
+    - >-
+      the guard fails closed before a delivery freeze (ci.delivery.freeze.prepare depends on
+      verify.agent.ledger.unit); no ledger residual is relaxed
+    - >-
+      the real drift is closed at its owning layer: ENV-ACCEPTANCE-REBUILD-LANE-PREREQUISITE goal
+      is terminal now that its run is completed, and CI-SCHEDULED-FULL-LANE-RECOVERY.yaml is valid
+      YAML again
+    - >-
+      the two owner-held residuals (BACKEND-CONTRACT-SLO-TELEMETRY, P4-INCREMENTAL-RESUME) stay
+      open only through an allowlist entry that cites an existing recorded decision
+  exclusions:
+    - no relaxation of ACL, field permission, hidden-field or fail-closed audit rules
+    - no product or frontend semantics; P4 ledger and delivery tooling only
+    - >-
+      no normalisation of the owner-pending residual goal statuses (FE-HIERARCHICAL-WORKSHEET-
+      USABLE-READY belongs to another live run; FORM-PAGE-STRUCTURE-PROFESSIONALIZATION and
+      PAYMENT-REQUEST-GOLDEN-FLOORPLAN are recorded owner-held items)
+    - no historical commit rewrite and no branch deletion
+  rollback: >-
+    Revert this topic's commits (guard, tests, make wiring, goal/run/record text and the two goal
+    document fixes); no product code, database or runtime state is affected.
