@@ -227,7 +227,7 @@ P0 前端渲染机制（契约消费层），**未改声明层、未加前端兜
 ### 8.7 候选发布分支的受管续接（2026-10-08）
 
 准备推送时发现 GitHub 上同名分支 `codex/hierarchical-worksheet-usable-ready-20261008` 仍指向
-`s88e5db43`/`88e5db43`，而它正是 **PR #621 已合并的 head**（合并提交 `514e1b51` 为单亲提交，
+`88e5db43`，而它正是 **PR #621 已合并的 head**（合并提交 `514e1b51` 为单亲提交，
 树与该 head 逐字节一致，即 squash 合并）。因此本次候选与远端同名 ref 必然分叉：
 
 - `make pr.push` 正确拒绝非快进（`! [rejected] ... (non-fast-forward)`）；
