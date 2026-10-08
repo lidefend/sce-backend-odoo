@@ -1158,12 +1158,19 @@ verify.frontend.business_entry.matrix.browser: guard.prod.forbid
 # SC_ENTRY_SCOPE_REVERIFY_REASON states why; re-walking every entry needs
 # SC_ENTRY_SCOPE_FULL=1 together with SC_ENTRY_SCOPE_FULL_REASON. The plan this
 # entry consumes is the negative-closure snapshot below, so refresh that first
-# when the principal closures could have moved.
+# when the principal closures could have moved. When only the mapping from an
+# observation to a recorded status was wrong, set SC_ENTRY_SCOPE_RECORD_EXISTING
+# to the bound summary.json together with SC_ENTRY_SCOPE_RECORD_EXISTING_REASON
+# and SC_ENTRY_SCOPE_PLAN=the original selection.json: the entry then re-folds
+# that observation instead of re-walking the surface.
 SC_ENTRY_MATRIX_CLOSURES ?= artifacts/frontend-business-entry-matrix/negative_closures.json
 SC_ENTRY_SCOPE_LEDGER ?= .runtime/evidence-scope/verify.frontend.business_entry.matrix.browser.json
 SC_ENTRY_SCOPE_REVERIFY_REASON ?=
 SC_ENTRY_SCOPE_FULL ?=
 SC_ENTRY_SCOPE_FULL_REASON ?=
+SC_ENTRY_SCOPE_RECORD_EXISTING ?=
+SC_ENTRY_SCOPE_RECORD_EXISTING_REASON ?=
+SC_ENTRY_SCOPE_PLAN ?=
 
 .PHONY: verify.frontend.business_entry.negative_closures verify.frontend.business_entry.matrix.incremental verify.frontend.business_entry.matrix.evidence_scope.status verify.frontend.business_entry.evidence_scope.unit
 
@@ -1178,7 +1185,7 @@ verify.frontend.business_entry.negative_closures: guard.prod.forbid
 verify.frontend.business_entry.matrix.incremental: guard.prod.forbid
 	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)
 	@test -n "$(ACCEPTANCE_LOGIN)" -a -n "$(ACCEPTANCE_PASSWORD)" || (echo "ACCEPTANCE_LOGIN and ACCEPTANCE_PASSWORD must be supplied through the environment"; exit 2)
-	@SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" SC_ACCEPTANCE_TARGET_SHA="$(ACCEPTANCE_TARGET_SHA)" ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" SC_ENTRY_MATRIX_CSV="$(SC_ENTRY_MATRIX_CSV)" SC_ENTRY_MATRIX_OVERLAY="$(SC_ENTRY_MATRIX_OVERLAY)" SC_ENTRY_MATRIX_CLOSURES="$(SC_ENTRY_MATRIX_CLOSURES)" SC_ENTRY_MATRIX_KEYS="$(SC_ENTRY_MATRIX_KEYS)" SC_ENTRY_SCOPE_LEDGER="$(SC_ENTRY_SCOPE_LEDGER)" SC_ENTRY_SCOPE_REVERIFY_REASON="$(SC_ENTRY_SCOPE_REVERIFY_REASON)" SC_ENTRY_SCOPE_FULL="$(SC_ENTRY_SCOPE_FULL)" SC_ENTRY_SCOPE_FULL_REASON="$(SC_ENTRY_SCOPE_FULL_REASON)" SC_ENTRY_WRITE_CONFIRM="$(SC_ENTRY_WRITE_CONFIRM)" SC_ACCEPTANCE_OUTPUT_DIR="$(SC_ACCEPTANCE_OUTPUT_DIR)" python3 scripts/verify/business_entry_matrix_incremental.py
+	@SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" SC_ACCEPTANCE_TARGET_SHA="$(ACCEPTANCE_TARGET_SHA)" ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" SC_ENTRY_MATRIX_CSV="$(SC_ENTRY_MATRIX_CSV)" SC_ENTRY_MATRIX_OVERLAY="$(SC_ENTRY_MATRIX_OVERLAY)" SC_ENTRY_MATRIX_CLOSURES="$(SC_ENTRY_MATRIX_CLOSURES)" SC_ENTRY_MATRIX_KEYS="$(SC_ENTRY_MATRIX_KEYS)" SC_ENTRY_SCOPE_LEDGER="$(SC_ENTRY_SCOPE_LEDGER)" SC_ENTRY_SCOPE_REVERIFY_REASON="$(SC_ENTRY_SCOPE_REVERIFY_REASON)" SC_ENTRY_SCOPE_FULL="$(SC_ENTRY_SCOPE_FULL)" SC_ENTRY_SCOPE_FULL_REASON="$(SC_ENTRY_SCOPE_FULL_REASON)" SC_ENTRY_SCOPE_RECORD_EXISTING="$(SC_ENTRY_SCOPE_RECORD_EXISTING)" SC_ENTRY_SCOPE_RECORD_EXISTING_REASON="$(SC_ENTRY_SCOPE_RECORD_EXISTING_REASON)" SC_ENTRY_SCOPE_PLAN="$(SC_ENTRY_SCOPE_PLAN)" SC_ENTRY_WRITE_CONFIRM="$(SC_ENTRY_WRITE_CONFIRM)" SC_ACCEPTANCE_OUTPUT_DIR="$(SC_ACCEPTANCE_OUTPUT_DIR)" python3 scripts/verify/business_entry_matrix_incremental.py
 
 # Read-only coverage report for the same surface. It executes nothing: it prints
 # how many declared entries are covered, stale, never recorded or blocked.

@@ -298,6 +298,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--reverify-reason", default="", help="justification required to re-execute covered units")
     parser.add_argument("--require-complete", action="store_true",
                         help="fail when any declared unit still needs execution after planning")
+    parser.add_argument("--source", default="",
+                        help="override the recorded provenance recorded for this run")
     return parser.parse_args(argv)
 
 
@@ -337,7 +339,7 @@ def main(argv: list[str] | None = None) -> int:
 
     _require(bool(args.results), "record requires --results")
     results = json.loads(Path(args.results).read_text(encoding="utf-8"))
-    ledger = record_units(document, ledger, results)
+    ledger = record_units(document, ledger, results, source=args.source)
     save_ledger(ledger_file, ledger)
     _emit({"schema": "evidence_scope.record.v1", "check": document["check"], "ledger": str(ledger_file),
            "recorded": sorted(results["results"])}, json_out)

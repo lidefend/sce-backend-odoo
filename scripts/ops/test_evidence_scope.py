@@ -270,6 +270,31 @@ class ValidationTests(unittest.TestCase):
             self.assertEqual(plan["reusable"], ["a"])
 
 
+class RecordedSourceTests(unittest.TestCase):
+    def test_an_explicit_source_overrides_the_results_provenance(self) -> None:
+        document = units_document()
+        results = results_document(document, {"a": "checked"})
+        results["source"] = "artifacts/summary.json"
+        ledger = record_units(document, empty_ledger(), results, source="artifacts/summary.json#record_only")
+        self.assertEqual(ledger["units"]["a"]["source"], "artifacts/summary.json#record_only")
+        self.assertEqual(ledger["runs"][-1]["source"], "artifacts/summary.json#record_only")
+
+    def test_the_cli_accepts_an_explicit_source(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            document = units_document()
+            units_path = directory / "units.json"
+            units_path.write_text(json.dumps(document), encoding="utf-8")
+            results_path = directory / "results.json"
+            results_path.write_text(json.dumps(results_document(document, {"a": "checked"})), encoding="utf-8")
+            ledger_path = directory / "ledger.json"
+            code = scope_main(["record", "--units", str(units_path), "--results", str(results_path),
+                               "--ledger", str(ledger_path), "--source", "artifacts/summary.json#record_only"])
+            self.assertEqual(code, 0)
+            ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+            self.assertEqual(ledger["runs"][-1]["source"], "artifacts/summary.json#record_only")
+
+
 class EngineNeutralityTests(unittest.TestCase):
     def test_engine_is_check_agnostic(self) -> None:
         for check in ("verify.frontend.business_entry.matrix.browser", "verify.other.declared.surface"):

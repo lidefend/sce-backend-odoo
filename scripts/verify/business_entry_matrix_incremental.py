@@ -15,7 +15,10 @@ Consequences that the caller can rely on:
 * a failed entry is not silently retried; it stays blocked until its inputs
   change or the recovery is stated;
 * a full re-walk of every declared entry is only possible with the explicit
-  ``--full --reason`` flag, so the expensive path is never the default.
+  ``--full --reason`` flag, so the expensive path is never the default;
+* a corrected *mapping* can be re-applied to an already-collected observation
+  through ``--record-existing --record-existing-reason``, which executes nothing
+  and re-folds the bound ``summary.json`` instead of re-walking the surface.
 
 The probe itself is unchanged: this entry only supplies the key set and folds
 the resulting ``summary.json`` back into the ledger.
@@ -114,6 +117,59 @@ def require_environment() -> dict:
     return required
 
 
+
+def record_existing(summary_path: Path, plan_path: Path, *, run_dir: Path, ledger: str,
+                    environment: dict, database: str) -> int:
+    """Re-fold an already-collected probe summary into the ledger.
+
+    This exists for exactly one situation: the *mapping* from an observation to
+    a recorded per-unit status was wrong, so the ledger mis-states a run that
+    was actually collected correctly. Re-executing the surface to repair a
+    recording bug would re-collect evidence under unchanged inputs, which the
+    reuse-first contract forbids; re-folding the bound observation repairs the
+    record without touching the runtime.
+
+    It is fail-closed: the summary must be the declared schema, must belong to
+    the exact bound target revision and database, must name the declared entries
+    it covered, and the plan that binds ``planned_affected`` must be supplied.
+    A summary that still carries non-success entries exits non-zero, so a
+    re-fold can never be mistaken for a fresh passing walk.
+    """
+    _require(summary_path.exists(), f"the recorded observation {summary_path} does not exist")
+    summary = load_json(summary_path)
+    _require(summary.get('schema') == 'business_entry_matrix_browser.v1',
+             f"{summary_path}: unexpected schema {summary.get('schema')!r}")
+    expected = environment['SC_ACCEPTANCE_TARGET_SHA']
+    _require(str(summary.get('target_sha') or '') == expected,
+             f"{summary_path}: target_sha {summary.get('target_sha')!r} != bound SC_ACCEPTANCE_TARGET_SHA {expected!r}")
+    served = str(summary.get('served_revision') or '')
+    _require(not served or served == expected,
+             f"{summary_path}: served_revision {served!r} != bound target {expected!r}")
+    observed_database = str(summary.get('database') or '')
+    _require(not database or not observed_database or observed_database == database,
+             f"{summary_path}: database {observed_database!r} != bound database {database!r}")
+    keys = [str(key) for key in (summary.get('selection') or {}).get('keys') or []]
+    _require(bool(keys), f"{summary_path}: the observation names no selected entry, so it cannot cover the surface")
+    _require(plan_path.exists(), f"{plan_path} is required to bind planned_affected for the re-fold")
+
+    results_path = run_dir / 'results.json'
+    run_checked(['node', SCOPE_ADAPTER, '--emit-results', str(results_path),
+                 '--summary', str(summary_path), '--plan', str(plan_path)])
+    recorded = load_json(results_path)
+    statuses = recorded.get('results') or {}
+    non_success = sorted(key for key, status in statuses.items()
+                         if str(status) not in ('passed', 'checked', 'declared', 'reused'))
+    run_checked(['python3', ENGINE, 'record', '--units', str(run_dir / 'units.json'), '--ledger', ledger,
+                 '--results', str(results_path), '--source', f'{summary_path}#record_only',
+                 '--json-out', str(run_dir / 'record.json')])
+    print(f"[business-entry-incremental] RECORD-ONLY re-folded {len(statuses)} entries from {summary_path} "
+          f"({len(non_success)} non-success); no probe was executed")
+    if non_success:
+        print(f"[business-entry-incremental] still non-success: {non_success[:10]}")
+        return 1
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--requested', default=os.environ.get('SC_ENTRY_MATRIX_KEYS', '').strip(),
@@ -127,11 +183,21 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--run-dir', default='', help='override the working directory for units/selection/results')
     parser.add_argument('--ledger', default=os.environ.get('SC_ENTRY_SCOPE_LEDGER', '').strip(),
                         help='override the evidence ledger path')
+    parser.add_argument('--record-existing', default=os.environ.get('SC_ENTRY_SCOPE_RECORD_EXISTING', '').strip(),
+                        help='re-fold this already-collected summary.json with the current mapping; executes nothing')
+    parser.add_argument('--record-existing-reason', default=os.environ.get('SC_ENTRY_SCOPE_RECORD_EXISTING_REASON', '').strip(),
+                        help='justification required to re-fold an existing observation')
+    parser.add_argument('--plan', default=os.environ.get('SC_ENTRY_SCOPE_PLAN', '').strip(),
+                        help='plan document that binds planned_affected when re-folding existing evidence')
     args = parser.parse_args(argv)
 
     require_environment()
     if args.full:
         _require(bool(args.reason.strip()), '--full re-collects every entry and requires an explicit --reason')
+    if args.record_existing:
+        _require(bool(args.record_existing_reason.strip()),
+                 '--record-existing re-folds already-collected evidence and requires an explicit '
+                 '--record-existing-reason')
 
     run_dir = Path(args.run_dir) if args.run_dir else ROOT / '.runtime' / 'evidence-scope' / CHECK
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -144,6 +210,22 @@ def main(argv: list[str] | None = None) -> int:
     emitted = load_json(units_path)
     declared = [str(unit['id']) for unit in emitted['units']]
     print(f"[business-entry-incremental] declared={len(declared)} units")
+
+    if args.record_existing:
+        # Re-fold a bound observation instead of walking the surface. This runs
+        # before the select step on purpose: select would overwrite the original
+        # run's selection.json, and the re-fold must bind the *original* plan.
+        _require(bool(args.plan.strip()),
+                 '--record-existing requires --plan so planned_affected is bound to the run that produced '
+                 'the observation')
+        return record_existing(
+            Path(args.record_existing),
+            Path(args.plan),
+            run_dir=run_dir,
+            ledger=ledger,
+            environment=require_environment(),
+            database=os.environ.get('SC_ACCEPTANCE_DATABASE', '') or os.environ.get('DB_NAME', ''),
+        )
 
     if args.full:
         selection = {

@@ -144,25 +144,34 @@ if (args['emit-units']) {
   const fingerprints = new Map(document.units.map((unit) => [unit.id, unit.fingerprint]));
   const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
   const plan = JSON.parse(fs.readFileSync(planPath, 'utf8'));
+  // Per-unit status is read from the probe's own per-entry record and nothing
+  // else. The probe aggregates a surface verdict (summary.ok / summary.fatal)
+  // for its process exit code; that aggregate must never rewrite a sibling's
+  // outcome. Folding the surface verdict into every unit made one failing entry
+  // stamp every correctly checked sibling as `checked=failed`, which poisons the
+  // reuse ledger and forces a justified re-walk of entries that never regressed.
   const recorded = new Map();
   for (const entry of summary.entries || []) {
     if (entry && entry.entry) recorded.set(String(entry.entry), String(entry.status || 'checked'));
   }
+  // A selected key that produced no per-entry observation carries no proof
+  // whatsoever. That covers a probe that died before the entry loop (fatal) as
+  // well as an interrupted run; either way the unit stays non-reusable instead
+  // of being claimed as checked on the strength of the surface verdict alone.
   for (const key of (summary.selection && summary.selection.keys) || []) {
-    if (!recorded.has(String(key))) recorded.set(String(key), summary.ok === true ? 'checked' : 'failed');
+    if (!recorded.has(String(key))) recorded.set(String(key), 'failed');
   }
   const executed = [...recorded.keys()].filter((key) => fingerprints.has(key));
   const statuses = {};
   for (const key of executed) statuses[key] = recorded.get(key);
-  if (summary.ok !== true) {
-    for (const key of executed) statuses[key] = statuses[key] === 'failed' ? 'failed' : `${statuses[key]}=failed`;
-  }
   const results = {
     schema: RESULTS_SCHEMA,
     check: CHECK,
     planned_affected: (plan.affected || []).map(String),
     executed_units: executed.map((key) => ({ id: key, fingerprint: fingerprints.get(key) })),
     results: statuses,
+    surface_ok: summary.ok === true,
+    surface_fatal: summary.fatal === true,
     source: summaryPath,
   };
   writeJson(args['emit-results'], results);
