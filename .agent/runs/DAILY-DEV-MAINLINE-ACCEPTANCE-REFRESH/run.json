@@ -2,20 +2,134 @@
   "schema_version": 1,
   "id": "DAILY-DEV-MAINLINE-ACCEPTANCE-REFRESH",
   "branch": "codex/daily-dev-mainline-acceptance-refresh-20261008",
-  "status": "active",
+  "status": "verification_pending",
   "baseline_sha": "7a0fb87006dfbd0381c4a06705a300242ef52311",
   "goal": ".agent/goals/DAILY-DEV-MAINLINE-ACCEPTANCE-REFRESH.yaml",
   "record": "docs/ops/iterations/daily_dev_mainline_acceptance_refresh_20261008.md",
   "scope": [
     ".agent/",
-    "docs/ops/iterations/"
+    "docs/ops/iterations/",
+    "scripts/verify/"
   ],
   "environment": {
     "kind": "runtime",
     "authority": "Registered daily runtime lane on the external daily development server (ssh host sc-root, remote root /opt/projects/repos/sce-product-odoo, database sc_demo, env dev, nginx 1.95.85.92:18081). Reads and writes only through the existing governed Make entries daily.runtime.main.bundle_sync, daily.runtime.source_revision.align, daily.runtime.record_identity.resolve and the declaration-driven business-entry acceptance harness; each mutating entry requires its own explicit confirmation token and performs an authoritative readback. No new environment, database, port, volume or credential is created."
   },
-  "checks": {},
+  "checks": {
+    "daily_runtime_bundle_sync": {
+      "target": "verify.daily.runtime.main.bundle_sync",
+      "kind": "unit",
+      "layer": "L3",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/ops/daily_runtime_bundle_sync.py",
+        "scripts/ops/test_daily_runtime_bundle_sync.py"
+      ],
+      "status": "passed",
+      "result": "PASS old 24e05cd5 -> source 7a0fb870, bundle_sha256 8f5757d0...787b"
+    },
+    "daily_runtime_source_revision_align": {
+      "target": "verify.daily.runtime.source_revision.align",
+      "kind": "unit",
+      "layer": "L3",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/ops/daily_runtime_source_revision_align.py",
+        "scripts/ops/test_daily_runtime_source_revision_align.py"
+      ],
+      "status": "passed",
+      "result": "PASS restarted=true, readback source_revision=7a0fb870 database=sc_demo environment=dev"
+    },
+    "daily_runtime_record_identity_resolve": {
+      "target": "verify.daily.runtime.record_identity.resolve",
+      "kind": "unit",
+      "layer": "L3",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/ops/daily_runtime_record_identity_resolve.py",
+        "scripts/ops/test_daily_runtime_record_identity_resolve.py"
+      ],
+      "status": "passed",
+      "result": "PASS served 7a0fb870 / sc_demo, 10 targets resolved uniquely, company a=21 b=22"
+    },
+    "daily_readonly_acceptance_probe": {
+      "target": "verify.daily_dev.acceptance.readonly.probe",
+      "kind": "runtime",
+      "layer": "L4",
+      "inputs": [
+        "make/dev.mk",
+        "scripts/ops/dev_acceptance_release_probe.py",
+        "scripts/verify/lib/frontend_acceptance_environment.mjs",
+        "scripts/verify/frontend_acceptance_environment_cli.mjs",
+        "config/frontend/acceptance_environments_v1.json",
+        "config/acceptance/backend_contract_instance_daily_v1.json"
+      ],
+      "status": "passed",
+      "result": "PASS runtime_identity/login/contract 11-11, errors=[], schema guard PASS, nav_action_count=89"
+    },
+    "business_entry_negative_closures": {
+      "target": "verify.frontend.business_entry.negative_closures",
+      "kind": "runtime",
+      "layer": "L4",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/verify/business_entry_negative_closures.mjs",
+        "scripts/verify/business_entry_matrix_overlay.json"
+      ],
+      "status": "passed",
+      "result": "10 candidates / 2 ineligible; refreshed closures semantically identical to the pre-refresh snapshot"
+    },
+    "business_entry_matrix_incremental": {
+      "target": "verify.frontend.business_entry.matrix.incremental",
+      "kind": "runtime",
+      "layer": "L4",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/verify/business_entry_matrix_incremental.py",
+        "scripts/verify/business_entry_matrix_scope.mjs",
+        "scripts/verify/business_entry_matrix_model.mjs",
+        "scripts/ops/evidence_scope.py",
+        "docs/product/frontend_business_entry_acceptance_v1.csv",
+        "scripts/verify/business_entry_matrix_overlay.json"
+      ],
+      "status": "passed",
+      "result": "declared=89 reusable=89 affected=0; 4 units with a broken source pointer re-verified ok=true problems=0 console_errors=0"
+    },
+    "business_entry_matrix_evidence_scope_status": {
+      "target": "verify.frontend.business_entry.matrix.evidence_scope.status",
+      "kind": "runtime",
+      "layer": "L4",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/verify/business_entry_matrix_scope.mjs",
+        "scripts/ops/evidence_scope.py"
+      ],
+      "status": "passed",
+      "result": "units=89 checked=9 passed=80; stale/uncovered/failed/blocked/never_recorded all 0"
+    },
+    "business_entry_evidence_scope_unit": {
+      "target": "verify.frontend.business_entry.evidence_scope.unit",
+      "kind": "unit",
+      "layer": "L2",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/verify/business_entry_matrix_incremental.py",
+        "scripts/verify/test_business_entry_matrix_incremental.py",
+        "scripts/ops/evidence_scope.py",
+        "scripts/ops/test_evidence_scope.py"
+      ],
+      "status": "passed",
+      "result": "Ran 34 tests OK"
+    }
+  },
   "blockers": [],
-  "next_exact_step": "Registered. Confirm the live served revision, then run daily.runtime.main.bundle_sync for 7a0fb870 with expected-old-sha 24e05cd5, daily.runtime.source_revision.align, daily.runtime.record_identity.resolve, and then the reuse-first user-level acceptance (verify.daily_dev.acceptance.readonly.probe plus verify.frontend.business_entry.matrix.browser.incremental) with ACCEPTANCE_TARGET_SHA=7a0fb870.",
-  "evidence": {}
+  "next_exact_step": "Batch acceptance is closed on the refreshed daily runtime. Remaining: publish the P4 evidence-locality fix (scripts/verify/business_entry_matrix_incremental.py + its focused test) through the governed PR lane and let the remote required checks bind the exact candidate; then report batch/mainline/release/product-delivery statuses separately.",
+  "evidence": {
+    "record": "docs/ops/iterations/daily_dev_mainline_acceptance_refresh_20261008.md",
+    "runtime_receipts": ".runtime/agent-runs/DAILY-DEV-MAINLINE-ACCEPTANCE-REFRESH/bundle_sync.log, source_revision_align.log, record_identity_resolve.log, readonly_probe.log, negative_closures.log, matrix_incremental.log, matrix_reverify_4keys.log, evidence_scope_status.log, evidence_scope_unit.log",
+    "generated_artifacts": "artifacts/backend/daily_dev_acceptance_probe.json, artifacts/backend/acceptance_record_identity.json, artifacts/frontend-business-entry-matrix/negative_closures.json",
+    "ledger": ".runtime/evidence-scope/verify.frontend.business_entry.matrix.browser.json (89 units; 9 file-backed sources verified traceable, 0 problems)",
+    "mainline_integration": "NOT DONE for the P4 evidence-locality fix; requires the governed PR + remote required checks. No release or product-delivery status is claimed.",
+    "module_upgrade": "not_required: 24e05cd5..7a0fb870 addons/ delta is handlers/services/models-support/tests only, with zero views/data/security changes"
+  }
 }

@@ -24,6 +24,8 @@ the resulting ``summary.json`` back into the ledger.
 from __future__ import annotations
 
 import argparse
+import datetime
+import hashlib
 import json
 import os
 import subprocess
@@ -41,12 +43,33 @@ ENGINE = 'scripts/ops/evidence_scope.py'
 # empty/blank value must fall back to the default directory instead of resolving
 # to the repository root (Path('') == '.') and leaking summary.json into the
 # worktree.
+#
+# The fallback is also per-run: the ledger records the summary.json each unit
+# was folded from, so a *fixed* default path would let a later, narrower run
+# overwrite an earlier run's evidence and silently break those source pointers.
+# That would make a targeted reverification destroy an unrelated unit's proof,
+# which is exactly what the reuse-first ledger must never allow.
 DEFAULT_OUTPUT_DIR = 'artifacts/frontend-business-entry-matrix/incremental'
 
 
-def resolve_output_dir(env: dict | None = None) -> Path:
+def default_run_dir(stamp: str, selection: str) -> Path:
+    digest = hashlib.sha256(selection.encode('utf-8')).hexdigest()[:12]
+    return Path(DEFAULT_OUTPUT_DIR) / f'{stamp}-{digest}'
+
+
+def resolve_output_dir(env: dict | None = None, *, stamp: str | None = None, selection: str = '') -> Path:
+    """Resolve this run's evidence directory.
+
+    An explicit ``SC_ACCEPTANCE_OUTPUT_DIR`` is honoured verbatim. Without one
+    the evidence stays under the declared default directory but in a per-run
+    subdirectory, so no run can overwrite another run's recorded evidence.
+    """
     source = os.environ if env is None else env
-    return Path((source.get('SC_ACCEPTANCE_OUTPUT_DIR') or '').strip() or DEFAULT_OUTPUT_DIR)
+    explicit = (source.get('SC_ACCEPTANCE_OUTPUT_DIR') or '').strip()
+    if explicit:
+        return Path(explicit)
+    resolved_stamp = stamp or datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+    return default_run_dir(resolved_stamp, selection)
 
 
 class IncrementalError(RuntimeError):
@@ -115,7 +138,6 @@ def main(argv: list[str] | None = None) -> int:
     units_path = run_dir / 'units.json'
     selection_path = run_dir / 'selection.json'
     results_path = run_dir / 'results.json'
-    output_dir = resolve_output_dir()
     ledger = args.ledger or str(ROOT / '.runtime' / 'evidence-scope' / f'{CHECK}.json')
 
     run_checked(['node', SCOPE_ADAPTER, '--emit-units', str(units_path)])
@@ -152,6 +174,10 @@ def main(argv: list[str] | None = None) -> int:
         print('[business-entry-incremental] REUSE-FIRST nothing to execute; every declared entry is covered '
               'by unchanged inputs')
         return 0
+
+    # Resolve the evidence directory only once the executed key set is known, so
+    # the per-run fallback directory is derived from the inputs that produced it.
+    output_dir = resolve_output_dir(selection=','.join(execute))
 
     print(f"[business-entry-incremental] executing {len(execute)} entr{'y' if len(execute) == 1 else 'ies'}")
     env = dict(os.environ)
