@@ -1,0 +1,68 @@
+decision:
+
+  id:
+    ARCH-DECISION-002
+
+
+  topic:
+    contract_driven_runtime_authority
+
+
+  decision:
+
+    runtime_contract_is_the_single_product_authority: true
+    backend_configuration_declares_the_product: true
+    frontend_only_renders_interacts_and_calls: true
+    deviation_is_a_blocking_boundary_violation: true
+
+
+  rules:
+
+    # Owner direction 2026-10-08: this is the highest responsibility boundary.
+    - every_product_semantic_must_be_declared_in_the_contract_layer
+
+    - frontend_must_not_invent_derive_or_default_undeclared_product_semantics
+
+    - frontend_must_not_fill_a_missing_contract_with_hardcoded_constants_or_specials
+
+    - contract_gaps_are_closed_at_the_declaration_layer_not_at_the_frontend
+
+    - missing_or_invalid_contract_declaration_must_stop_the_surface_not_be_defaulted
+
+    - frontend_defaults_are_forbidden_for_contract_declared_parameters
+
+    - only_registered_transport_or_rendering_mechanism_constants_are_allowed_and_must_not_carry_product_semantics
+
+    - backend_must_declare_product_semantics_explicitly_not_rely_on_frontend_inference
+
+    - the_same_product_surface_must_not_carry_two_competing_authorities
+
+    - declared_but_unconsumed_contract_fields_are_a_boundary_gap
+
+    - product_closure_requires_declaration_consumption_behaviour_binding_evidence
+
+    - selector_text_or_style_literal_presence_is_not_correctness_proof
+
+    # Owner direction 2026-10-08: the mechanism, not merely the convention.
+    - frontend_judgement_must_stop_the_surface_immediately_not_default
+
+    - an_unregistered_frontend_judgement_site_fails_the_static_guard
+
+    - an_open_contract_defect_blocks_the_delivery_freeze_lane
+
+    - closing_a_gap_means_declaration_then_verbatim_consumption_never_a_frontend_fallback
+
+    - the_stop_mechanism_is_bound_to_ledger_record_and_make_target_and_must_stay_wired
+
+
+  related:
+
+    - .agent/decisions/contract-first.yaml
+    - docs/architecture/frontend_contract_basis_ledger.json
+    - docs/architecture/ai_development_guard.md
+    - docs/architecture/backend_contract_boundaries.md
+    - ARCHITECTURE_GUARD.md
+
+
+  status:
+    active

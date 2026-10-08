@@ -1,5 +1,26 @@
 version: 1
 entries:
+- script: test_business_entry_matrix_incremental.py
+  status: active
+  owner: platform-team
+  date: '2026-10-08'
+  wire_or_retire: file-consumed
+  reason: invoked as 'python3 -m unittest scripts.verify.<module>' inside make/frontend.mk;
+    module-form invocation is recorded as a file reference, not a make-target reference
+- script: test_frontend_contract_basis_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-08'
+  wire_or_retire: file-consumed
+  reason: invoked as 'python3 -m unittest scripts.verify.<module>' inside make/frontend.mk
+    (target verify.frontend.contract_basis.unit); module-form invocation is a file reference
+- script: test_login_envelope_consumption_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-08'
+  wire_or_retire: file-consumed
+  reason: invoked as 'PYTHONPATH=scripts/verify python3 -m unittest scripts.verify.<module>'
+    inside make/dev_test.mk; module-form invocation is a file reference
 - script: __init__.py
   status: active
   owner: platform-team

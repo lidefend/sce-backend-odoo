@@ -1,0 +1,32 @@
+schema_version: 1
+goal:
+  id: FE-HIERARCHICAL-WORKSHEET-USABLE-READY
+  title: hierarchical_worksheet_declares_usable_and_publishes_a_contract_declared_page_size
+  status: in_progress
+  formal_product_layer: P0
+  layer_target:
+    - smart_core_page_assembler
+    - frontend_action_runtime
+    - frontend_action_renderer
+  module:
+    - addons/smart_core/app_config_engine/services/assemblers/page_assembler.py
+    - frontend/apps/web/src/app/action_runtime/hierarchicalWorksheetDataSource.ts
+    - frontend/apps/web/src/components/action/HierarchicalWorksheet.vue
+  objective: >-
+    两个工作表入口（smart_construction_core.menu_sc_p1_expense_contract、
+    smart_construction_core.menu_sc_payment_execution）在实测中要等到整表拉完（约 40.4s）才声明
+    data-state=ready，导致矩阵探针 30s 超时。修复分两层：装配层把首屏页大小作为契约声明投给工作表
+    表面（走既有受管通道 raw.page_size -> context.hierarchy_page_size -> native tree.page_size ->
+    平台缺省 50），前端只消费该声明并把首屏限制在 10..200，首个可用批次即声明可用；整表续载作为
+    独立的后台进度声明继续，不改探针等待启发式、不放宽任何断言。
+  acceptance:
+    - verify.frontend.hierarchical_worksheet.unit 非零用例全绿
+    - addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py 全绿且断言声明派生
+    - 受影响两个入口的真实重走：data-state 快速 ready、无 console error
+  exclusions:
+    - 不放宽探针等待启发式或任何断言
+    - 不为付款/合同模型做前端特判
+    - 不新增全局测试框架
+    - 不引入新环境/数据库/端口/卷/凭据授权
+  rollback: >-
+    revert 本批次的 P0 提交（装配层声明 + 前端消费 + 首屏可用声明），工作表回到整表加载后才 ready 的旧行为。

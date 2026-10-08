@@ -1,0 +1,159 @@
+{
+  "schema": "frontend.contract-basis.ledger.v1",
+  "authority": "AGENTS.md + docs/architecture/ai_development_guard.md (最高职责界限：契约驱动运行时)",
+  "rule": "前端除渲染与交互外的一切输入必须来自契约。前端一旦需要做没有契约依据的判断，这个缺口本身就是契约缺陷：必须回到声明层补齐，并由 fail-closed 守卫与行为测试锁定，不得由前端默认值、夹取或特判兜底。",
+  "declarationBindings": [
+    {
+      "surface": "HierarchicalWorksheet",
+      "declared": "config.sheet.page_size",
+      "declaredBy": "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+      "declaredMethod": "_inject_native_hierarchical_worksheet",
+      "declaredSymbol": "\"page_size\": worksheet_page_size",
+      "consumedBy": "frontend/apps/web/src/app/action_runtime/hierarchicalWorksheetDataSource.ts",
+      "consumedSymbol": "requireDeclaredPageSize(sheet)",
+      "onMissing": "stop",
+      "stopSymbol": "ContractGapError",
+      "regressionGuard": "verify.frontend.scene_contract.consumption.guard",
+      "behaviourTest": "frontend/apps/web/scripts/hierarchical_worksheet_load_stage_test.ts"
+    }
+  ],
+  "registeredMechanismExemptions": [
+    {
+      "symbol": "WORKSHEET_DRAIN_PAGE_LIMIT",
+      "file": "frontend/apps/web/src/app/action_runtime/hierarchicalWorksheetDataSource.ts",
+      "class": "transport_chunking",
+      "layer": "P0",
+      "carriesProductSemantics": false,
+      "rationale": "整表续载的请求分块规模，不改变用户可见集合、权限或状态；产品语义仍由契约声明决定。"
+    },
+    {
+      "symbol": "WORKSHEET_DRAIN_BATCH_YIELD_MS",
+      "file": "frontend/apps/web/src/app/action_runtime/hierarchicalWorksheetDataSource.ts",
+      "class": "transport_scheduling",
+      "layer": "P0",
+      "carriesProductSemantics": false,
+      "rationale": "批次之间的让渡间隔，避免整表续载独占连接；不承载产品语义。"
+    },
+    {
+      "symbol": "TRACE_BUFFER_MAX_ENTRIES",
+      "file": "frontend/apps/web/src/services/trace.ts",
+      "class": "client_diagnostic_buffer",
+      "layer": "P0",
+      "carriesProductSemantics": false,
+      "rationale": "本地 trace ring buffer 容量与导出/Top-K 默认条数（DEFAULT_TRACE_EXPORT_LIMIT / DEFAULT_TRACE_TOP_K 同属该缓冲）。诊断缓冲只存本机前端事件，无后端契约载体，不改变用户可见集合、权限或状态；消费方 AppShell.vue 已改为引用该命名常量而非字面量。"
+    }
+  ],
+  "openContractDefects": [],
+  "closedContractDefects": [
+    {
+      "id": "CD-20261008-WORKSHEET-PAGE-SIZE",
+      "missing": "config.sheet.page_size",
+      "surface": "HierarchicalWorksheet (menu_sc_p1_expense_contract / menu_sc_payment_execution)",
+      "discoveredBy": "前端需要按契约决定首屏可用批次规模，但工作表表面没有任何分页声明可消费；此前只能由前端硬编码整表拉取，导致 ready 依赖整表加载完成（实测约 40.4s）。",
+      "requiredDeclarationLayer": "P0:smart_core:page_assembler._inject_native_hierarchical_worksheet",
+      "resolution": "装配层通过受管通道发布 sheet.page_size（profile.page_size → context.hierarchy_page_size → native tree.page_size → 平台缺省 50，并夹取 1..20000，由声明层负责边界）；前端只消费声明值，缺失或非法即停机并报契约缺陷。",
+      "closureEvidence": [
+        "addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py",
+        "frontend/apps/web/scripts/hierarchical_worksheet_load_stage_test.ts"
+      ]
+    },
+    {
+      "id": "CD-20261008-API-ENVELOPE-DEFAULT-LIMIT",
+      "missing": "api/* 请求信封缺省 limit 由前端常量决定",
+      "surface": "api/data.ts, api/globalMessages.ts, api/chatter.ts, services/trace.ts",
+      "discoveredBy": "前端 api 信封在调用方未传 limit 时以前端常量补缺省（?? 40 / ?? 2000），把业务取数规模从前端决定。",
+      "requiredDeclarationLayer": "P0:smart_core（后端信封缺省）+ P0 前端 api 层（只做透传）",
+      "resolution": "前端 api 信封改为原样透传 `limit: params.limit`，不再持有任何产品缺省；信封缺省由后端声明层承担（api_data._read_positive_param / my_work_summary / chatter_timeline / global_messages inbox / collaboration_users）。trace.ts 属客户端诊断缓冲，改由 registeredMechanismExemptions 登记。",
+      "closureEvidence": [
+        "frontend/apps/web/src/api/data.ts",
+        "frontend/apps/web/src/api/globalMessages.ts",
+        "frontend/apps/web/src/api/chatter.ts",
+        "scripts/verify/frontend_contract_basis_guard.py"
+      ]
+    },
+    {
+      "id": "CD-20261008-FRONTEND-SELECTED-LIMIT",
+      "missing": "产品面取数规模（分页/批量）没有契约声明",
+      "surface": "列表页分页（ActionView/ListPage）、关联选项、指标扫描、lite 试点投影、工作表、业务配置/健康/发布运维面",
+      "discoveredBy": "多个产品面前端自行持有每页条数、关联选项条数、批量规模、指标扫描页数与页数上限。",
+      "requiredDeclarationLayer": "P0:smart_core（app_search_config.defaults.page_size_options/page_size_range、page_assembler relation_entry.options_limit/options_search_limit）+ 对应产品面声明",
+      "resolution": "声明层补齐并由前端原样消费：列表页每页条数可选集合与合法范围来自 searchContract.defaults.page_size_options/page_size_range，首屏条数来自 searchContract.defaults.limit，关联选项条数来自 relation_entry.options_limit/options_search_limit，指标扫描分块来自声明上界且扫描上界改为后端声明的 total；SceneHealth/ReleaseOperator/businessConfigSurface 的面板规模改为声明透传；lite 试点投影不再自造 limit，改为消费声明、缺失即 ContractGapError 停机；客户端诊断缓冲登记为机制豁免。",
+      "closureEvidence": [
+        "addons/smart_core/app_config_engine/models/app_search_config.py",
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "addons/smart_core/handlers/business_config_surface.py",
+        "frontend/apps/web/src/app/runtime/actionViewListPageSizeRuntime.ts",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/app/action_runtime/useActionViewScopedMetricsRuntime.ts",
+        "frontend/apps/web/src/app/runtime/unifiedPageContractLitePilot.ts"
+      ]
+    },
+    {
+      "id": "CD-20261008-CONTRACT-PARAM-FALLBACK",
+      "missing": "契约参数缺失时前端补默认值或夹取范围",
+      "surface": "HierarchicalWorksheet / HierarchyBrowser / HierarchyPlanner / ListPage / actionViewLoadResultRuntime / actionViewBatchArtifactsRuntime",
+      "discoveredBy": "工作表与列表相关运行面在契约参数缺失或越界时以前端默认值/夹取兜底，掩盖声明缺口。",
+      "requiredDeclarationLayer": "P0:smart_core:page_assembler（sheet.page_size、group_paging.page_size、failed_page_limit）+ P0 前端消费层",
+      "resolution": "统一改为原样消费声明、缺失即停机（ContractGapError）：requireDeclaredNumber / requireDeclaredNumberList / requireDeclaredPageSize；group_paging.page_size、sheet.page_size、列表每页条数与批量规模不再由前端夹取。",
+      "closureEvidence": [
+        "frontend/apps/web/src/app/contract/contractGap.ts",
+        "frontend/apps/web/src/app/action_runtime/hierarchicalWorksheetDataSource.ts",
+        "frontend/apps/web/src/app/runtime/actionViewLoadResultRuntime.ts",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/scripts/hierarchical_worksheet_load_stage_test.ts"
+      ]
+    }
+  ],
+  "frontendLogicInventory": [
+    {
+      "file": "frontend/apps/web/src/app/presentation/collectionPaginationPresentation.ts",
+      "classes": [
+        "frontend_selected_data_volume"
+      ],
+      "verdict": "renderer_dispatch",
+      "reason": "纯分页算术（offset/page 与上界计算）。limit 由调用方以契约声明值传入，此处的 1/0 仅是除零与上下界数值保护，不承载产品取数规模语义。"
+    },
+    {
+      "file": "frontend/apps/web/src/app/runtime/actionViewGroupDrilldownRuntime.ts",
+      "classes": [
+        "request_default_page_size",
+        "contract_parameter_fallback"
+      ],
+      "verdict": "registered_mechanism",
+      "reason": "分组抽样规模的解析与校验：候选值必须落在契约声明的 grouping.sample_limits 内（normalizeGroupSampleLimitOptions），否则返回 null 由上层回声明层；|| 0 只是路由/选择值的数值解析，不产生新的取数规模。"
+    },
+    {
+      "file": "frontend/apps/web/src/app/runtime/actionViewRouteRuntime.ts",
+      "classes": [
+        "contract_parameter_fallback",
+        "request_default_page_size"
+      ],
+      "verdict": "registered_mechanism",
+      "reason": "路由 query 参数解析（group_sample_limit / group_offset 等的字符串→数值转换）。取值最终由契约声明的 sample_limits 校验，解析缺省不承载产品语义。"
+    }
+  ],
+  "mechanism": {
+    "id": "FRONTEND-JUDGEMENT-STOP",
+    "rule": "前端除渲染与交互外的一切输入必须来自契约；一旦出现没有契约依据的前端判断，立即停机并回到声明层要结果，不得默认值/夹取/特判兜底。",
+    "enforcementLayers": [
+      {
+        "layer": "runtime",
+        "entry": "frontend/apps/web/src/app/contract/contractGap.ts",
+        "behaviour": "消费契约声明时缺失或非法即抛 ContractGapError（requireDeclaredNumber），调用方进入显式停机态。"
+      },
+      {
+        "layer": "static",
+        "entry": "scripts/verify/frontend_contract_basis_guard.py",
+        "behaviour": "扫描 frontend/apps/web/src：出现未登记的前端判断站点即 FAIL（立即停）。"
+      },
+      {
+        "layer": "delivery",
+        "entry": "make verify.frontend.contract_basis.enforce",
+        "behaviour": "存在未闭合契约缺陷（openContractDefects 或 verdict=contract_defect_open）即 FAIL；已挂入 ci.delivery.freeze.prepare 冻结门。"
+      }
+    ],
+    "stopSemantics": "fail-closed：未登记站点或未闭合缺陷都不得放行；收口只能在声明层补齐声明并由前端原样消费。",
+    "allowances": "仅登记在 registeredMechanismExemptions 且 carriesProductSemantics=false 的传输/渲染机制常量可用。"
+  }
+}

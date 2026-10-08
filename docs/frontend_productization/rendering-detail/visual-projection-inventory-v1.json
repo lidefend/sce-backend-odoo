@@ -155,7 +155,7 @@
     },
     {
       "category": "other",
-      "digest": "7d0e5f80eb33c39a818f900b3ebcf3fff8148c302601cf013b19808c4b31f859",
+      "digest": "58fad17dd11551c3b475c04c66706d08fe56958a91bf4dfeb2a5c8e9634f0726",
       "nativeStyleSelectors": [],
       "path": "components/GlobalMessagePanel.vue",
       "referenceNativeStyleSelectors": [
@@ -251,7 +251,7 @@
     },
     {
       "category": "other",
-      "digest": "f23023a49ad94397e1504a06cf3ea524b85434cccc2872bb95ca1e548cde9d7f",
+      "digest": "07414c2619532d1e77ddd403ee967f72b2b567ce3565209180371860b1a0d52c",
       "nativeStyleSelectors": [],
       "path": "components/action/HierarchicalWorksheet.vue",
       "referenceNativeStyleSelectors": [
@@ -271,7 +271,7 @@
     },
     {
       "category": "other",
-      "digest": "bd6dc8e257eb787fa9facea4f469362021753b275599157aa5d8f5895f71249b",
+      "digest": "7422be1bc62878386b77021e049d26de7bdc50aeda0092305b1f291327368b49",
       "nativeStyleSelectors": [],
       "path": "components/action/HierarchyBrowser.vue",
       "referenceNativeStyleSelectors": [],
@@ -289,7 +289,7 @@
     },
     {
       "category": "other",
-      "digest": "910e0fe092a091a5aba0e5803dfe7948e76f20353627d9fbcdd731073bb601e6",
+      "digest": "432bd2e8d4e4f7ec6dbeaff43a646b9c8ec268cf1dd534e28a2041d058c57fa3",
       "nativeStyleSelectors": [],
       "path": "components/action/HierarchyPlanner.vue",
       "referenceNativeStyleSelectors": [],
@@ -2028,7 +2028,7 @@
     },
     {
       "category": "shell",
-      "digest": "34be6ec5b3ce5690bbb9f2db179e30fe3ff61e335566a7c8b06ab7a370e75679",
+      "digest": "df38a24b900eda5e5caa83b0a0a5106ee99287c9f2b7d54fc26d228655d4c089",
       "nativeStyleSelectors": [],
       "path": "layouts/AppShell.vue",
       "referenceNativeStyleSelectors": [],
@@ -2092,7 +2092,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "c4106d8f5177b20732cdc51a6543b9ef090ef1345ff981b2046a2f184c2649d3",
+      "digest": "86ef68fa14636b397a0f78d1104256af86cf0059cae6d69811dd7fdcfb0a1689",
       "nativeStyleSelectors": [],
       "path": "pages/ContractFormPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2116,7 +2116,7 @@
     },
     {
       "category": "collection",
-      "digest": "a49579e83b1009665512c47313a0c147ca8db11fbdb889342cedb0b1f2cc79b1",
+      "digest": "52f560398f4127d8392cb88a93aed3e3361b16eaf668595ed29a1d42f1be90da",
       "nativeStyleSelectors": [],
       "path": "pages/ListPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2532,7 +2532,7 @@
     },
     {
       "category": "collection",
-      "digest": "4165d51c86371d5b87d0437ac9ad9a039ad458242bb9b6082f79223c2ed38789",
+      "digest": "8ea8a4329daff72fa6e7583628d04fbd6715a7c7b3d701093f4e81a14b0967bd",
       "nativeStyleSelectors": [],
       "path": "views/ActionView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2649,7 +2649,7 @@
     },
     {
       "category": "other",
-      "digest": "a559616510410f163cdcb97ecb154d98d122f925d5bef2246679e74bceeb3546",
+      "digest": "2b76b7bd20c75a85e2538b20c76233add425c2cb665b6b25a4b6169886d965bc",
       "nativeStyleSelectors": [],
       "path": "views/MyWorkView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2710,7 +2710,7 @@
     },
     {
       "category": "other",
-      "digest": "018af6ac52a3d0465d4f5399eddd4beb877cc76e0c769e474b8e99c9e6fd323f",
+      "digest": "3650aefffc55f5126fefbbc20e4f15cd44d3f32412b0f9ab8dfd6f40e75be29d",
       "nativeStyleSelectors": [],
       "path": "views/ReleaseOperatorView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2737,7 +2737,7 @@
     },
     {
       "category": "other",
-      "digest": "0683a13a14a2350903d3f987a7c74f906eafe956ca9e66bd626f6c1e04674cad",
+      "digest": "e1eb681b2b39d0c82af8d6e492f124b8e9dd007e8cbcee0593b493e8aec37a57",
       "nativeStyleSelectors": [
         ".actions select"
       ],
@@ -3000,7 +3000,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "d5a803f01769622628dd428fbf87169663ba7e40c4ffe8937d604d370c62fc27",
+  "currentInputDigest": "fa4646853f885b23309295e5f4a500ea4f9ae4d66466c3ec9f0d585d32631747",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
@@ -3213,7 +3213,7 @@
     },
     {
       "category": "other",
-      "digest": "0683a13a14a2350903d3f987a7c74f906eafe956ca9e66bd626f6c1e04674cad",
+      "digest": "e1eb681b2b39d0c82af8d6e492f124b8e9dd007e8cbcee0593b493e8aec37a57",
       "nativeStyleSelectors": [
         ".actions select"
       ],

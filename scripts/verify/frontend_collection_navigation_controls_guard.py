@@ -47,7 +47,7 @@ def validate(
         'resolveCollectionPaginationMode({',
         'resolveCollectionPageOffset({',
         'resolveCollectionPageJump({',
-        'resolveCollectionPageLimit(raw, listLimit.value)',
+        'resolveCollectionPageLimit(raw, listLimit.value, declaredPageSizeRange.value)',
     )
     for marker in list_required:
         if marker not in list_page:

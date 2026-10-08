@@ -28,6 +28,20 @@ REQUIRED = {
         "contract.value?.page_orchestration",
         "fromCanonical.forEach",
     ),
+    # Contract-declared values must be required, never defaulted: a missing or
+    # invalid declaration stops the surface instead of letting the frontend guess.
+    # The stop primitive lives in one shared module so every consumer stops the
+    # same way (mechanism: frontend judgement -> stop -> ask the contract).
+    "frontend/apps/web/src/app/contract/contractGap.ts": (
+        "export class ContractGapError",
+        "export function requireDeclaredNumber(",
+        "requiredDeclarationLayer",
+    ),
+    "frontend/apps/web/src/app/action_runtime/hierarchicalWorksheetDataSource.ts": (
+        "export { ContractGapError, isContractGapError } from '../contract/contractGap';",
+        "export function requireDeclaredPageSize(sheet: WorksheetSheetConfig): number",
+        "requireDeclaredPageSize(sheet)",
+    ),
 }
 FORBIDDEN = (
     "scene_ready_contract_v1",
@@ -39,6 +53,11 @@ FORBIDDEN = (
     "page_orchestration_v1",
     "allowSceneContractFallback",
     "hasV1",
+    # Retired frontend fallbacks for a contract-declared page size.
+    "WORKSHEET_FIRST_PAGE_LIMIT",
+    "WORKSHEET_FIRST_PAGE_MIN",
+    "WORKSHEET_FIRST_PAGE_MAX",
+    "worksheetFirstPageLimit",
 )
 
 

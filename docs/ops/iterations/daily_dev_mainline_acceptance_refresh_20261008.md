@@ -75,11 +75,21 @@
 - **实测重折**（`ledger_refold_mapping_fix.log`）：原 89 条 → **87 `checked` + 2 `exception`**；来源标注 `#record_only`。台账 `runs` 增至 8；重折前快照 `ledger_before_refold.json`。
 - **锁定**：`make verify.frontend.business_entry.evidence_scope.unit` → **Ran 46 tests OK**（在 3.5 的 34 项之上新增 mapping / record-only / `--source` 断言）。
 
+### 3.8 P4 批次并入主线（PR #620）
+
+- 候选：分支 `codex/daily-dev-mainline-acceptance-refresh-20261008`，精确 head `4da5573cff2e9538dd1c3f4cde9952cc2ed4f085`（含 `2b5a9de0` 证据定位、`213fe0ba` 前端产物代际对齐、`2fe2c98c` 台账映射修复、`987260dd` 文档、`4da5573c` 生成物刷新）。
+- 生成物：`make ci.delivery.freeze.prepare` 重算 `test_inventory.csv` / `test_inventory_summary.md` / `complexity_budget_report.md`（新增 1 个 ops 测试资产、扫描文件 +2，资产 ID 位移仅为按路径顺序重编号），`ci.generated_evidence.preflight` PASS。
+- 远端必需检查（精确 head）：`public_guard` / `merge_policy_gate` / `professional_quality_gate` / `frontend_release_gate` 全绿。
+- 合并前置：`make ci.local.quick` 于精确 head 记录回执（`[OK] local quick gate passed`），`make pr.merge` 复用该回执；合并方式 squash，主体 `Merge PR #620`。
+- 回读：PR #620 `state=MERGED`、`mergedAt=2026-10-08T11:41:30Z`、`mergedBy=lidefend`、`mergeCommit=a2213be342500f4cd56a578346711ca7a8c04d9e`；`origin/main` 由 `7a0fb870` → `a2213be3`。
+- 该合并为 **P4 工具/文档 delta**，`addons/`、`frontend/` 产品面无变化；日常运行态仍服务 `7a0fb870`，产品面与主线等价。
+
 ## 4. 状态边界（分开报告）
 
 - **批次验收**：本批（运行态刷新 + 前端产物代际对齐 + 用户级验收复收 + harness 证据定位修复 + 台账记录映射修复）通过；89 项矩阵剩余 2 项 `exception` 已定性为**真实产品缺陷**（见 5），不属本 P4 批次。
-- **主线集成**：本批 harness 改动仍需按受管流程进入 PR 与远端 CI 后判定，本记录不主张已集成。
-- **版本发布 / 产品交付**：均未主张。
+- **主线集成**：**已完成**。PR #620（精确 head `4da5573c`）在四项远端必需检查全绿后合并，`origin/main = a2213be3`（见 3.8）。
+- **版本发布**：未主张。
+- **产品交付**：**未完成**。服务修订上的 89 项声明业务入口中 87 项通过，2 项仍为 `exception`（3.7/5），且该缺口在**本 run 的 goal 边界之外**（`exclusions` 含 `product_code_change` 与断言/ACL/负例放宽），需新授权后才能处置。
 
 ## 5. 剩余与未覆盖
 
@@ -93,3 +103,13 @@
   - 契约缺口：契约仅声明 `dataMeta.limit=20`，**未声明工作表 `page_size`**；前端 5000 为硬编码 fallback。
   - 非本次候选窗口引入：`24e05cd5..7a0fb870` 前端 delta 仅能力/菜单投影（`c5a19c15`），未触工作表数据源；属数据规模驱动的既有产品问题。
   - 最小契约驱动修法（**待授权，独立于本 P4 批次**）：契约声明工作表分页/窗口（如 `dataMeta.context.hierarchical_worksheet.page_size`），前端 `loadAll` 消费声明而非硬编码 5000；不特判付款模型，也不放宽验收断言。
+
+## 6. 剩余缺口的裁决选项（需所有者判断，本 run 不自行实施）
+
+2 项剩余 `exception` 的根因已定性（见 5），可行修法只有三类，取舍属产品语义判断，本 run 的 `exclusions` 不允许自行选择：
+
+- **A（推荐，产品面，契约忠实）**：让 `HierarchicalWorksheet` 在**首屏可用**时即声明 `data-state="ready"`，把"仍在后台加载"作为独立的进度声明暴露。声明的状态机本就由 harness 消费，因此这是让"声明的状态 = 可用"而不是"= 已全量加载"，不涉及放宽断言；影响 P0 前端渲染语义，需新授权的 P0 批次与跨工作表页面的复验。
+- **B（产品面，规模）**：工作表改为真正的分页，消费契约已声明的 `views.tree.page_size`（当前 `HierarchyBrowser` 已这样消费，工作表是唯一的例外）。需要一个分页 UI 与声明式总数；波及**全部**工作表入口，爆炸半径最大。
+- **C（探针面）**：把 harness 的全局 `waitUntil=networkidle` 导航启发式替换为"等待声明状态 + 有界截止时间"。仓库内已有同类裁决先例（`scripts/verify/frontend_form_system_audit.mjs` 记录"表单审计依赖全局 networkidle 导致持续请求页面误超时 → 改为 domcontentloaded 后等待声明状态"）。但它改变有效时间预算，属于门禁变更，必须由所有者显式授权。
+
+选定后：在**一个新的受管批次**内实施单一修法，仅对受影响的工作表入口做一次有理由的真实重走；`docs/` 与 run 记账随该候选同行提交（`pr.merge` 拒绝独立记账 PR）。
