@@ -233,7 +233,13 @@ class ControlledMergeExpectedHeadTests(unittest.TestCase):
 
 
 class LocalQuickEvidenceGateTests(unittest.TestCase):
-    def run_gate(self, *, evidence_mode: str) -> tuple[subprocess.CompletedProcess[str], list[str]]:
+    def run_gate(
+        self,
+        *,
+        evidence_mode: str,
+        changed_files: tuple[str, ...] | None = None,
+        bookkeeping_retire: str | None = None,
+    ) -> tuple[subprocess.CompletedProcess[str], list[str]]:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             bin_dir = root / "bin"
@@ -248,6 +254,11 @@ class LocalQuickEvidenceGateTests(unittest.TestCase):
                 f"  printf '%s\\n' '{FULL_SHA}'\n"
                 "elif [[ \"$1 $2\" == \"status --porcelain=v1\" || \"$1 $2\" == \"status --porcelain\" ]]; then\n"
                 "  exit 0\n"
+                "elif [[ \"$1\" == \"merge-base\" ]]; then\n"
+                "  if [ \"${FAKE_BASE_MODE:?}\" = absent ]; then exit 1; fi\n"
+                "  printf '%s\\n' \"${FAKE_BASE_SHA:?}\"\n"
+                "elif [[ \"$1 $2\" == \"diff --name-only\" ]]; then\n"
+                "  cat \"${FAKE_CHANGED_FILES:?}\"\n"
                 "else\n"
                 "  echo \"unexpected git invocation: $*\" >&2\n"
                 "  exit 90\n"
@@ -272,6 +283,11 @@ class LocalQuickEvidenceGateTests(unittest.TestCase):
             )
             git.chmod(0o755)
             python.chmod(0o755)
+            changed_files_log = root / "changed_files.txt"
+            changed_files_log.write_text(
+                "" if changed_files is None else "\n".join(changed_files) + "\n",
+                encoding="utf-8",
+            )
             environment = harness_environment()
             environment.update(
                 {
@@ -280,8 +296,13 @@ class LocalQuickEvidenceGateTests(unittest.TestCase):
                     "FAKE_EVIDENCE_COUNT": str(evidence_count),
                     "FAKE_EVIDENCE_MODE": evidence_mode,
                     "FAKE_REAL_PYTHON": sys.executable,
+                    "FAKE_BASE_MODE": "absent" if changed_files is None else "present",
+                    "FAKE_BASE_SHA": OTHER_SHA,
+                    "FAKE_CHANGED_FILES": str(changed_files_log),
                 }
             )
+            if bookkeeping_retire is not None:
+                environment["PR_MERGE_BOOKKEEPING_TERMINAL_RETIRE"] = bookkeeping_retire
             completed = subprocess.run(
                 [
                     MAKE,
@@ -317,6 +338,47 @@ class LocalQuickEvidenceGateTests(unittest.TestCase):
         self.assertIn("evidence miss; running fail-closed fallback", completed.stdout)
         self.assertIn("running make ci.local.quick", completed.stdout)
         self.assertIn("PASS", completed.stdout)
+        self.assertEqual(len(calls), 2)
+
+    def test_bookkeeping_only_candidate_is_denied_before_running_quick(self) -> None:
+        completed, calls = self.run_gate(
+            evidence_mode="miss_then_hit",
+            changed_files=(".agent/active-runs.json", "docs/ops/codex_workspace_execution_rules.md"),
+        )
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("bookkeeping-only candidate", completed.stdout)
+        self.assertIn("bookkeeping-path: .agent/active-runs.json", completed.stdout)
+        self.assertIn("ride along with the adjacent product candidate", completed.stdout)
+        self.assertNotIn("running make ci.local.quick", completed.stdout)
+        self.assertEqual(len(calls), 1)
+
+    def test_product_path_candidate_still_runs_fail_closed_fallback(self) -> None:
+        completed, calls = self.run_gate(
+            evidence_mode="miss_then_hit",
+            changed_files=(".agent/active-runs.json", "make/codex.mk"),
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout)
+        self.assertNotIn("bookkeeping-only candidate", completed.stdout)
+        self.assertIn("running make ci.local.quick", completed.stdout)
+        self.assertEqual(len(calls), 2)
+
+    def test_terminal_retirement_acknowledgement_uses_the_normal_path(self) -> None:
+        completed, calls = self.run_gate(
+            evidence_mode="miss_then_hit",
+            changed_files=("docs/ops/example.md",),
+            bookkeeping_retire="terminal goal retirement",
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout)
+        self.assertIn("BOOKKEEPING TERMINAL RETIRE acknowledged", completed.stdout)
+        self.assertNotIn("bookkeeping-only candidate", completed.stdout)
+        self.assertIn("running make ci.local.quick", completed.stdout)
+        self.assertEqual(len(calls), 2)
+
+    def test_unresolvable_base_ref_cannot_yield_a_bookkeeping_skip(self) -> None:
+        completed, calls = self.run_gate(evidence_mode="miss_then_hit", changed_files=None)
+        self.assertEqual(completed.returncode, 0, completed.stdout)
+        self.assertNotIn("bookkeeping-only candidate", completed.stdout)
+        self.assertIn("running make ci.local.quick", completed.stdout)
         self.assertEqual(len(calls), 2)
 
 

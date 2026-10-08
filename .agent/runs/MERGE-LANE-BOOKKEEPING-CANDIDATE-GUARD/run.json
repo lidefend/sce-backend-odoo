@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "id": "MERGE-LANE-BOOKKEEPING-CANDIDATE-GUARD",
+  "branch": "codex/merge-lane-bookkeeping-candidate-guard-20261008",
+  "status": "active",
+  "baseline_sha": "5c028d03fe6069340515886b498740d348291755",
+  "goal": ".agent/goals/MERGE-LANE-BOOKKEEPING-CANDIDATE-GUARD.yaml",
+  "record": "docs/ops/iterations/merge_lane_bookkeeping_candidate_guard_20261008.md",
+  "scope": [
+    ".agent/",
+    "docs/",
+    "make/",
+    "scripts/verify/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Registered offline Make verify target only (in-process unit test with a fake git/gh/python harness and a no-op make). No database, service, runtime, credential or production access."
+  },
+  "checks": {
+    "merge_lane_bookkeeping_gate_unit": {
+      "target": "verify.branch.governance.consistency",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/verify/branch_governance_consistency_guard.py",
+        "scripts/verify/test_branch_governance_consistency_guard.py",
+        "scripts/ops/local_quick_evidence.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Implement and verify the bookkeeping short-circuit in pr.merge.local_quick_gate: reuse an existing exact-head receipt first, then reject a bookkeeping-only candidate (empty-base-resolvable diff confined to .agent/ and docs/) with exit 13 before the suite starts, keep an explicit PR_MERGE_BOOKKEEPING_TERMINAL_RETIRE acknowledgement, and stay fail-closed for any product path or unresolvable base. Unit tests added to scripts/verify/test_branch_governance_consistency_guard.py (20 tests). Next exact step: run make ci.local.iteration plus make verify.branch.governance.consistency, run make ci.delivery.freeze.prepare, commit, freeze the clean HEAD, run one make ci.local.quick, push to GitHub origin, re-satisfy the four required checks on the exact head, and merge. Batch acceptance only; do not claim version release or product delivery."
+}

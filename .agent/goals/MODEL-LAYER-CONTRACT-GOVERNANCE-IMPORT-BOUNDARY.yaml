@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: MODEL-LAYER-CONTRACT-GOVERNANCE-IMPORT-BOUNDARY
   title: p1_model_layer_p0_contract_governance_import_boundary
-  status: active
+  status: completed
   formal_product_layer: P1
   objective: >-
     Restore the P1 model-layer import boundary that `scripts/verify/model_ui_dependency_guard.py`

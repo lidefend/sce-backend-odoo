@@ -76,3 +76,16 @@ addons/smart_construction_core/models/support/workflow_contract_service.py: forb
 ## 5. 边界
 
 本条只主张**批次验收**；主线集成、版本发布、产品交付另行报告。
+
+## 6. 收口
+
+- 精确候选 `f833b860ddeafdd7ca1502e8220c7d135125f941`（tree `5682c8e52292d6c7370849ee9c626d07d925c929`）
+  的 `make ci.local.quick` 回执已签发（`.git/codex/evidence/ci.local.quick/f833b860….json`）。
+- PR #616（head `f833b860…`，base `dba12da5…`）四项必需检查在精确 head 全 success，
+  `make pr.merge` 复用同一 exact-head 回执（`REUSE`）后按受保护 PR 合并为
+  `5c028d03fe6069340515886b498740d348291755`。
+- 本 run/goal 标记 `completed`，`.agent/active-runs.json` 不再保留指向已合并
+  `fix/model-layer-contract-governance-import-boundary-20261008` 分支的索引项。已合并分支的删除属于
+  独立 `branch.retire.historical` 车道。
+- 同一候选内发现的迭代效率缺陷（记账类候选重复支付全量 Quick）另立专题，见
+  `docs/ops/iterations/merge_lane_bookkeeping_candidate_guard_20261008.md`。

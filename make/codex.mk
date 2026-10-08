@@ -430,6 +430,21 @@ pr.merge.local_quick_gate:
 	if python3 scripts/ops/local_quick_evidence.py verify --expected-head "$$EXPECTED" >/dev/null 2>&1; then \
 	  echo "[pr.merge.local_quick_gate] REUSE: exact-head ci.local.quick evidence verified for $$EXPECTED"; exit 0; \
 	fi; \
+	if [ -n "$${PR_MERGE_BOOKKEEPING_TERMINAL_RETIRE:-}" ]; then \
+	  echo "[pr.merge.local_quick_gate] BOOKKEEPING TERMINAL RETIRE acknowledged reason=$${PR_MERGE_BOOKKEEPING_TERMINAL_RETIRE}"; \
+	else \
+	  BB_REF="$${PR_MERGE_BOOKKEEPING_BASE_REF:-origin/main}"; \
+	  BB_BASE="$$(git merge-base "$$EXPECTED" "$$BB_REF" 2>/dev/null || true)"; \
+	  BB_CHANGED=""; \
+	  if [ -n "$$BB_BASE" ]; then BB_CHANGED="$$(git diff --name-only "$$BB_BASE" "$$EXPECTED" 2>/dev/null || true)"; fi; \
+	  if [ -n "$$BB_CHANGED" ] && [ -z "$$(printf "%s\n" "$$BB_CHANGED" | grep -vE "^(\.agent/|docs/)" || true)" ]; then \
+	    echo "[pr.merge.local_quick_gate] DENY: bookkeeping-only candidate (diff vs $$BB_BASE is confined to .agent/ and docs/)"; \
+	    printf "%s\n" "$$BB_CHANGED" | sed "s|^|  bookkeeping-path: |"; \
+	    echo "[pr.merge.local_quick_gate] run/goal/docs bookkeeping must ride along with the adjacent product candidate: ci.local.quick produces one receipt per frozen commit, so a standalone bookkeeping candidate buys a full suite run and no new coverage."; \
+	    echo "[pr.merge.local_quick_gate] for an actual terminal goal retirement, rerun with PR_MERGE_BOOKKEEPING_TERMINAL_RETIRE=<reason>."; \
+	    exit 13; \
+	  fi; \
+	fi; \
 	echo "[pr.merge.local_quick_gate] evidence miss; running fail-closed fallback"; \
 	echo "[pr.merge.local_quick_gate] running make ci.local.quick on $$EXPECTED (this takes several minutes)"; \
 	$(MAKE) --no-print-directory ci.local.quick; \
