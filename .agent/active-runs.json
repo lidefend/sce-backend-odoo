@@ -1,6 +1,4 @@
 {
-  "branches": {
-    "fix/user-acceptance-detail-closure-20261009": ".agent/runs/FE-HIERARCHICAL-WORKSHEET-USABLE-READY/run.json"
-  },
+  "branches": {},
   "schema_version": 1
 }

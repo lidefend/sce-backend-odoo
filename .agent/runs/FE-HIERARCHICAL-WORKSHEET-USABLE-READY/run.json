@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "FE-HIERARCHICAL-WORKSHEET-USABLE-READY",
   "branch": "fix/user-acceptance-detail-closure-20261009",
-  "status": "active",
+  "status": "completed",
   "baseline_sha": "bfb38367882467e081c9eab2feff6e880a71687e",
   "goal": ".agent/goals/FE-HIERARCHICAL-WORKSHEET-USABLE-READY.yaml",
   "record": "docs/ops/iterations/hierarchical_worksheet_usable_ready_20261008.md",
@@ -216,7 +216,7 @@
     "列表范围（PR #624，served 4ee151ef / 产物 b0311c6f）与详情/关系往返（served main bfb38367，同产物）、创建-编辑与工作台最小证据差额均已在批次记录第 12–14 节收口，并经 PR #626 合并进 main（b28d4499）；89 键矩阵不重跑。",
     "残留依赖（非阻断）：复用身份的区分力依赖受管前端构建的可复现性；若构建引入非确定内容，表现为保守地全量重走（安全方向）。"
   ],
-  "next_exact_step": "批次已并入主线：PR #626 合并为 b28d4499（origin/main），候选内容 84376430 与合并树一致；四项必需检查在精确头全绿，ci.local.quick receipt 已 REUSE。主线各边界状态：批验收=完成；主线集成=本批已完成（main=b28d4499）；版本发布/产品交付=未主张。剩余（需所有者指令，均为独立边界）：① 环境 DENY 独立专题（两个挂载者同属一项目，不足以证明独占；不泛化）；② 是否基于新 main b28d4499 走一次日常受管重建并做一轮产品验收。89 键列表矩阵不重跑。",
+  "next_exact_step": "Completed and retired 2026-10-09. The hierarchical worksheet usability batch is integrated on main via PR #626 (candidate 84376430, merge commit b28d4499): the contract declares the first-screen page size and the frontend only consumes that declaration (verify.frontend.hierarchical_worksheet.unit green; the page-assembler version tests green), the affected entries were re-walked to a fast data-state=ready with zero console errors, and the list-surface 89/89, detail/relation round-trip, create/edit and workbench minimum evidence gaps were closed in the batch record sections 12-15. The retained environment DENY is closed by the independent ENV-ACCEPTANCE-REBUILD-LANE-PREREQUISITE topic and stays bounded to the rebuild/snapshot lane. This ledger is retired to its terminal state and .agent/active-runs.json no longer binds fix/user-acceptance-detail-closure-20261009, so on main no index entry points at the merged branch. Batch acceptance done; mainline integration done (main=b28d4499 for that batch); version release NOT claimed; product delivery NOT claimed. The 89-key matrix was not rerun.",
   "evidence": {
     "local": [
       "make verify.frontend.business_entry.evidence_scope.unit（PASS：py 27 例 + js cases=23）",

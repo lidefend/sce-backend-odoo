@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: FE-HIERARCHICAL-WORKSHEET-USABLE-READY
   title: hierarchical_worksheet_declares_usable_and_publishes_a_contract_declared_page_size
-  status: in_progress
+  status: completed
   formal_product_layer: P0
   layer_target:
     - smart_core_page_assembler

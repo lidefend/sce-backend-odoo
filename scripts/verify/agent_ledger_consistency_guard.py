@@ -71,13 +71,6 @@ TERMINAL_MISMATCH_ALLOWLIST: dict[str, dict] = {
 # not normalised in this batch. The set is a ratchet: it must equal the real
 # on-disk set exactly.
 RECORDED_NON_CANONICAL: dict[str, dict] = {
-    "FE-HIERARCHICAL-WORKSHEET-USABLE-READY": {
-        "status": "in_progress",
-        "owner": (
-            "active run bound to branch fix/user-acceptance-detail-closure-20261009; "
-            "normalised to active/completed when that run closes"
-        ),
-    },
     "FORM-PAGE-STRUCTURE-PROFESSIONALIZATION": {
         "status": "verified",
         "owner": (
