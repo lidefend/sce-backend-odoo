@@ -677,7 +677,7 @@ verify.workspace.worktree.guard: guard.prod.forbid
 	@python3 -m unittest scripts/ops/test_safe_worktree_create.py scripts/ops/test_safe_worktree_cleanup.py
 
 # ------------------ Main sync (safe) ------------------
-.PHONY: main.sync daily.runtime.main.bundle_sync verify.daily.runtime.main.bundle_sync daily.runtime.candidate.bundle_sync verify.daily.runtime.candidate.bundle_sync mirror.main.gitee main.cutover.controlled candidate.required_checks.dispatch candidate.mirror.gitee daily.runtime.source_revision.align verify.daily.runtime.source_revision.align
+.PHONY: main.sync daily.runtime.main.bundle_sync verify.daily.runtime.main.bundle_sync daily.runtime.candidate.bundle_sync verify.daily.runtime.candidate.bundle_sync mirror.main.gitee main.cutover.controlled candidate.required_checks.dispatch candidate.mirror.gitee daily.runtime.source_revision.align verify.daily.runtime.source_revision.align daily.runtime.frontend.build verify.daily.runtime.frontend.build
 
 DAILY_RUNTIME_SSH_HOST ?= sc-root
 DAILY_RUNTIME_EXPECTED_SHA ?=
@@ -744,6 +744,41 @@ daily.runtime.source_revision.align: guard.prod.forbid verify.daily.runtime.sour
 		--env-name "$(DAILY_RUNTIME_ENV_NAME)" \
 		--env-file "$(DAILY_RUNTIME_ENV_FILE)" \
 		--report "$(DAILY_RUNTIME_SOURCE_REVISION_REPORT)"
+
+# The daily runtime serves a prebuilt static frontend from the nginx bind mount
+# (`FRONTEND_DIST_DIR`), but the governed code sync only fast-forwards the git
+# tree. A mainline merge that changes frontend sources therefore leaves the
+# *served* bundle one generation behind while `/api/runtime-version` reports the
+# new commit, and user-level acceptance silently exercises the stale rendering
+# surface. This entry builds the served bundle at the exact deployed HEAD with
+# the existing governed `make verify.frontend.build`, computes the artifact
+# fingerprint with the existing governed `frontend_build_fingerprint.sh`,
+# declares that fingerprint as `FRONTEND_BUILD_SHA256` so the runtime revision
+# endpoint exposes the served bundle, recreates the governed runtime, and
+# readbacks both the declared identity and the served entry asset. A recorded
+# receipt for the same exact commit lets an unchanged generation be reused
+# without rebuilding.
+DAILY_RUNTIME_FRONTEND_BUILD_SHA ?=
+DAILY_RUNTIME_FRONTEND_BUILD_DATABASE ?= sc_demo
+DAILY_RUNTIME_FRONTEND_BUILD_BASE_URL ?= http://127.0.0.1:18081
+DAILY_RUNTIME_FRONTEND_BUILD_RECEIPT ?= .runtime/final-acceptance/daily-deployed/frontend-build.json
+DAILY_RUNTIME_FRONTEND_BUILD_REPORT ?= $(DAILY_RUNTIME_FRONTEND_BUILD_RECEIPT)
+
+verify.daily.runtime.frontend.build: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_frontend_build_align.py scripts/ops/test_daily_runtime_frontend_build_align.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_frontend_build_align
+
+daily.runtime.frontend.build: guard.prod.forbid verify.daily.runtime.frontend.build
+	@test "$${CONFIRM_DAILY_RUNTIME_FRONTEND_BUILD:-}" = "BUILD_AND_DECLARE_DAILY_RUNTIME_FRONTEND_AT_DEPLOYED_HEAD" || { echo "exact daily runtime frontend build confirmation is required" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_frontend_build_align.py \
+		--expected-sha "$(DAILY_RUNTIME_FRONTEND_BUILD_SHA)" \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--env-name "$(DAILY_RUNTIME_ENV_NAME)" \
+		--env-file "$(DAILY_RUNTIME_ENV_FILE)" \
+		--database "$(DAILY_RUNTIME_FRONTEND_BUILD_DATABASE)" \
+		--base-url "$(DAILY_RUNTIME_FRONTEND_BUILD_BASE_URL)" \
+		--receipt "$(DAILY_RUNTIME_FRONTEND_BUILD_RECEIPT)" \
+		--report "$(DAILY_RUNTIME_FRONTEND_BUILD_REPORT)"
 
 # The daily runtime has no outgoing-mail sender declared, so product transitions
 # that notify a reviewer fail inside mail.mail._send and roll the whole business
