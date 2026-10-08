@@ -150,6 +150,40 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertEqual(payload["unmappedPaths"], [])
         self.assertFalse(payload["manualNonZeroL2Required"])
 
+    def test_list_surface_probe_change_routes_to_its_contract_lock(self) -> None:
+        # The probe and the contract-lock test that pins its assertions are one
+        # contract: editing either one must run the lock, otherwise a stale
+        # assertion reaches the daily lane before anyone notices.
+        for path in (
+            "scripts/verify/frontend_list_surface_structure_browser.mjs",
+            "scripts/verify/test_frontend_list_surface_search_contract.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.frontend.list_surface_search_contract.unit"],
+                )
+
+    def test_narrative_documentation_is_not_an_unmapped_product_path(self) -> None:
+        # Writing an iteration record is a documentation-only change, which the
+        # recorded reuse decision says does not invalidate a unit. Reporting it as
+        # unmapped demanded a manual L2 selection with nothing to select.
+        output = io.StringIO()
+        with redirect_stdout(output):
+            self.assertEqual(
+                print_plan(["docs/ops/iterations/example_20261009.md"]),
+                0,
+            )
+        payload = json.loads(output.getvalue().split("] ", 1)[1])
+        self.assertEqual(payload["unmappedPaths"], [])
+        self.assertFalse(payload["manualNonZeroL2Required"])
+
+    def test_governed_contract_ledger_still_routes_over_the_docs_exemption(self) -> None:
+        # `docs/` is exempt only when nothing maps it; the governed contract-basis
+        # ledger stays routed to its behavioural gate.
+        targets = select_targets(["docs/architecture/frontend_contract_basis_ledger.json"])
+        self.assertIn("verify.frontend.contract_basis.enforce", targets)
+
     def test_real_unmapped_path_still_requires_manual_l2(self) -> None:
         output = io.StringIO()
         with redirect_stdout(output):

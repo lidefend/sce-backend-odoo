@@ -467,3 +467,206 @@ summary provenance，未触碰任何 entry 断言）。
   （安全方向），不构成误复用。
 - 环境 DENY 结论继续**单独保留**，仅作重建/快照车道阻断，未泛化为「环境全部通过」。
 - 四边界：批次验收（本节）通过；主线集成待本分支 PR 通过四项必需检查后声明；版本发布与产品交付另判。
+
+## 12. 详情车道与关系往返在 served `main bfb38367` 上的收口（2026-10-09）
+
+### 12.1 触发与受管重建
+
+run 第 7 步「回到产品交付主线」的首个执行单：**只收详情，不碰已通过的列表**。先把权威
+`main` 精确 SHA 提升到日常运行态（`sc-root:/opt/projects/repos/sce-product-odoo`，`sc_demo`）。
+
+| 受管入口 | 结果 |
+| --- | --- |
+| `daily.runtime.main.bundle_sync` | PASS `old_sha=4ee151ef…` → `source_sha=bfb38367…`，`normalized_from_candidate=false` |
+| `daily.runtime.source_revision.align` | PASS 声明并重启，`/api/runtime-version` 回读 `source_revision=bfb38367…` |
+| `daily.runtime.frontend.build` | PASS `rebuilt=true reused=false`；产物指纹 `b0311c6f39e3…4957`、entry `index-Yv56wmel.js`，与 `4ee151ef` **相同**（本轮无前端源码变化） |
+| `daily.runtime.record_identity.resolve` | PASS 受管解析出 10 类记录身份（project 2014 / contract 1719 / settlement 3624 / payment_request 36178 / payment_execution 170345 / lifecycle 2022 / companies a=21 b=22 等） |
+
+读回：`source_revision=bfb38367882467e081c9eab2feff6e880a71687e`、
+`frontend_build_sha256=b0311c6f39e3de5e5706933217e3fc99d572411c81133d6c8e010b2efd5a4957`、`database=sc_demo`。
+
+### 12.2 详情实际效果（1440 / 390 × 明暗）
+
+入口 `make verify.daily_dev.list_surface.readonly.browser`，`LIST_SURFACE_DAILY_OBSERVATION_SCOPE=detail-only`，
+受管 daily 只读档（弱口令确认信封 key 集固定、TTL < 10 分钟，未手拼凭据）。
+
+| 运行 | 产物 | 结果 |
+| --- | --- | --- |
+| light | `.runtime/final-acceptance/detail-lane-bfb38367/detail-only-light.json` | `passed=true`，`record_checks` 8/8（1440 + 390 各 `declared_entry_route`/`exact_record_contract`/`declared_renderer`/`return_to_source`），`runtime_errors=0`、`denied_requests=0`、`console_errors=0` |
+| dark | `.runtime/final-acceptance/detail-lane-bfb38367/detail-only-dark.json` | 同上；声明主题 `resolved=dark` |
+
+`servedIdentity`（探针自证）：`servedSha=bfb38367…`、`servedDatabase=sc_demo`、
+`frontendBuildSha256=b0311c6f…4957`。
+
+### 12.3 关系“点击打开 → 返回原记录 → 标签和动作恢复”（一次真实往返）
+
+声明驱动探针 `scripts/verify/record_relation_roundtrip_acceptance.js`：捕获页面自身消费的
+`ui.contract.v2`，只对契约声明 `can_read` 的关系控件做**真实点击**，再按前端自身发出的 `return_*`
+契约校验回退（不是 handler 诊断）。源记录 `construction.contract.income/2331`（action 578 / menu 904，
+契约声明 14 个关系条目）。
+
+- 4 个声明可打开条目全部 `opened`：`project_id` → `/f/project.project/1245`（声明 `696/376`）、
+  `partner_id`（`786/598`）、`handler_id`（`723/438`）、`tax_id`（无 action/menu 声明）。
+- 往返：`project_id` 回退后 `path/title/statusbar/tabs/actions` 全部恢复，`error_free=true`。
+- `denied_requests=0`、`console_errors=0`。
+- 原台账记录的「关联跳转返回 403」**不再复现**：`project_id` 现在声明的打开入口 `696/376` 在
+  `navigation.route_authority` 内，不再落到 `access-denied`。
+
+### 12.4 边界
+
+- 责任层：P4（运行态验收）；本批次产品代码 0 变更。
+- 本执行单只收详情；**创建/编辑与工作台**的最小证据差额是下一执行单，89 键列表矩阵不重跑。
+- 产物指纹与 `4ee151ef` 相同，说明本轮（PR #625）无前端源码变化；详情与关系证据按当前 served 身份重新绑定。
+- 环境 DENY 结论继续单独保留（见第 11.6 节），本批次未依赖它。
+- 观察（本轮未改代码）：纯叙述性 `docs/ops/iterations/*.md` 在 `ci.local.iteration` 中被计为 `unmappedPath`
+  （`NON_SOURCE_PATH_PREFIXES` 当前只豁免 `.agent/`），使记录性文档改动也带出 `manualNonZeroL2Required=true`。
+  按「只修确认失败」本轮不动规划器，登记为迭代效率候选（与第 9.5 节同类）。
+
+## 13. 创建/编辑与工作台的最小证据差额收口（served `main bfb38367`，2026-10-09）
+
+### 13.1 触发与入口
+
+同一受管入口 `make verify.daily_dev.list_surface.readonly.browser`，`LIST_SURFACE_DAILY_OBSERVATION_SCOPE`
+分别取 `form-profiles` / `workbench-only`，明暗各一次，1440/390；复用 12.1 的受管后端与构建产物
+（`source_revision=bfb38367…`、`frontend_build_sha256=b0311c6f…4957`、`database=sc_demo`、fixture 未变）。
+本轮未重跑 89 键列表矩阵，未重建后端/前端。
+
+### 13.2 创建/编辑面（`form-profiles`）：PASS，但按声明口径记录
+
+`records` 12/12、`runtime_errors=0`、`denied/console/page=0`。实际生效的断言是 `declared_edit_entry`
+（编辑页 `/f/project.project/581?menu_id=379&action_id=506`，明暗各观察一次）。
+
+`declared_create_entry / declared_create_contract / declared_create_renderer` 全部为
+**`not_applicable`（声明文案："create authority is not declared for this list"）**。也就是说本车道证明的是
+「契约声明了什么就观察什么」，**不是**创建/编辑写入能力的证明。该口径与
+`daily_dev_user_acceptance_completion_20261006.md` §3.5 一致，沿用不重新解释。
+
+### 13.3 工作台面：首轮 FAIL 的定性与根因（**不是契约缺陷**）
+
+首轮 `workbench-only` 明暗均 `passed=false`，失败信息 `current daily home summary response missing`
+（`scripts/verify/frontend_list_surface_structure_browser.mjs:1047`）。失败运行
+`console/page/failed/denied = 0`；`my.work.summary` 请求**确实发出且 HTTP 200**（请求参数为
+`product_workspace=true, page=1, sort_by=priority, sort_dir=desc, section/source/reason_code=all, search=''`），
+只是不满足探针 `dailyHomeSummaryMatches` 里硬编码的 `limit===12 && limit_each===4 && page_size===12`。
+
+责任判定（实证，非推测）：
+
+- **后端**：`my.work.summary` 在 `product_workspace` 为真时**先返回**（`addons/smart_construction_core/handlers/my_work_summary.py:723-752`），
+  根本没有读取 `limit/limit_each/page_size`；工作台载荷由 `CurrentWorkItemService`（→ `PaymentRequestWorkItemService`）
+  自带规模构建。这三个参数在该路径上是**惰性参数**。
+- **实测**：同一账号同一 fixture，带 `12/4/12` 与不带（走默认）两个请求的 `product_workspace` 结果完全一致
+  （`todo`=2、`initiated`=0），**无产品行为变化**。
+- **前端**：PR #621 移除前端持有的 `12/4/12`，属于已归档决议 `CD-20261008-API-ENVELOPE-DEFAULT-LIMIT`
+  （信封缺省由后端声明层承担，`my_work_summary` 在列）的落地，方向正确。
+- **探针**：`dailyHomeSummaryMatches` 仍冻结了 PR #621 之前的前端常量，属于 **P4 验收工具的过时断言**。
+
+因此先前「这是契约缺声明」的假设**被证伪**：工作台面既无契约缺失，也无产品行为变化；失败全部归属探针断言。
+
+### 13.4 修复（保持责任层，P4）：把魔法数字换成「声明消费 + 实际行为」
+
+`dailyHomeSummaryMatches` 改为锁定三件事，不再断言任何前端已不再持有的数字：
+
+1. **声明消费**：请求为 `my.work.summary` 且 `product_workspace===true`，并且**不携带**前端自造的产品取数规模
+   （`limit`/`limit_each`/`page_size` 任一出现即判否）；排序/分页仍是前端合法持有的 `page=1, sort_by=priority, sort_dir=desc`。
+2. **契约结果**：信封 `ok===true`。
+3. **实际行为**：`data.product_workspace.sections` 必须是被真正构建出来的非空数组（投影缺失或为空判否）。
+
+负例先行（先证未注入的基线正常，再证注入被检出）：契约锁
+`scripts/verify/test_frontend_list_surface_search_contract.py::test_daily_read_boundary_executes_real_predicate`
+按真实基线构造 `summary` 先断言 `dailyHomeSummaryMatches(summary)===true`，再逐一注入
+`product_workspace=false / limit=12 / limit_each=12 / page_size=12 / page=2 / sort_by=id / ok=false /
+sections=[] / 无 product_workspace` 并断言全部被检出为 `false`；重跑 `verify.frontend.list_surface_search_contract.unit` 22 例 OK（未放空断言）。
+
+### 13.5 结果（受影响车道重跑一次）
+
+`workbench-only` 明暗各重跑一次（探针是本轮唯一变化的执行输入），1440/390 全部通过：
+
+- `passed=true`，`console_errors/page_errors/failed_responses/denied_requests = 0`。
+- 观察：`declared-theme`（light/dark 各自 `resolved` 正确）、`declared-default-landing`（`/s/projects.list`，
+  `projects.list`）、`router-workspace-home` 明暗各 `summaryResponses=1`、`officialCards=3`。
+- 产物：`.runtime/final-acceptance/forms-workbench-bfb38367/workbench-only-{light,dark}.json`；
+  `form-profiles` 明暗产物为本目录同批 `form-profiles-{light,dark}.json`。
+
+**复用裁定**：`form-profiles` 车道不执行工作台分支（`DAILY && (scope==='all' || WORKBENCH_ONLY)` 之外的 scope 跳过），
+其断言不依赖本次改动，按「测试工具改动只失效依赖它的结果」沿用通过证据，未重跑。
+
+### 13.6 迭代效率：把本轮暴露的两处浪费做成机制（P4）
+
+本轮暴露两处系统性浪费，按「发现效率问题立即处理」当场收口在规划器 `scripts/verify/frontend_dev_incremental.py`：
+
+- **探针改动无人路由**：改 `frontend_list_surface_structure_browser.mjs` 落进 `unmappedPaths`，其契约锁
+  `verify.frontend.list_surface_search_contract.unit` 只能靠人工 grep 才会被想起来。现补规则把
+  探针与其锁测试路由到该非零单测；否则过时断言会一路漂到日常车道才暴露（正是本轮）。
+- **纯叙述性文档要求人工 L2**：`docs/**`（本轮为 `docs/ops/iterations/*.md`）无任何映射即要求
+  `manualNonZeroL2Required=true`，而按已归档复用决议 `OPS-DECISION-002`，`documentation_only_change`
+  **不失效**任何单元。现把 `docs/` 并入 `NON_SOURCE_PATH_PREFIXES`（仅当无映射时豁免；被规则映射的
+  `docs/architecture/frontend_contract_basis_ledger.json` 仍照旧路由到契约门）。
+
+证据：改动后 `make ci.local.iteration` 的 `unmappedPathCount` 2 → **0**、`manualNonZeroL2Required` true → **false**，
+且 `verify.frontend.list_surface_search_contract.unit` 自动进入推荐目标。行为锁 `verify.frontend.dev.incremental.unit`
+新增 3 例（探针路由、叙述文档不触发人工 L2、受管台账仍走契约门）后 27 例 OK。
+
+### 13.7 边界与残留
+
+- 责任层：本轮产品代码 0 变更；改动集中在 P4 验收探针、其契约锁与规划器（均为既有受管工具的扩展）。
+- 证伪记录（供后续不再反复）：工作台 `my.work.summary` 的取数规模**不是**未声明缺口，不要在契约层「补」它；
+  它在 `product_workspace` 路径上惰性，真实规模由 `CurrentWorkItemService` 决定。
+- 环境 DENY 结论继续单独保留（第 11.6 节），本轮未依赖它，也不泛化为「环境全部通过」。
+- 未宣称：89 入口全部可用、创建/编辑写入能力已验收（`form-profiles` 为声明口径）、版本发布/产品交付完成。
+
+## 14. 项目台账 `/f/` ↔ `readonly` 观察项收口（served `main bfb38367`，2026-10-09）
+
+### 14.1 这是当前唯一的未决产品策略项
+
+出处 `docs/ops/iterations/daily_dev_user_acceptance_completion_20261006.md` §4.1：列表声明
+`model_write_authority=true` 并据此打开 `/f/project.project/<id>`，但记录契约给出 `effectiveRenderProfile=readonly`；
+提问「是否为产品策略」。
+
+### 14.2 事实（served bfb38367 / sc_demo / wutao，前端真实 op）
+
+- **列表契约**（`op:action_open`，action 506 / menu 379）：`modelRights={read,write,create,unlink,duplicate:true}`，
+  同时 `globalStatus.effectiveRenderProfile="readonly"`、`pageAuth="read"`；`actionRuleList` 只有 2 条规则，
+  其中 `page.row` 的 `target` **全部为 null** —— 该列表**不声明**正式 `record_entry`。
+- **记录契约**（`op:model`，model=`project.project`，record_id=581，action 506 / menu 379）：
+  `effectiveRenderProfile="edit"`、`pageAuth="edit"`、`effectiveRecordCapabilities.write=true`、
+  workflow `editability="editable"`、`workflowPhase=draft`（记录 `PRJ260581`）。
+- **台账当前可见 20 行**逐行记录契约：`edit=20`、`readonly=0`。
+- **served 车道产物**（`.runtime/final-acceptance/detail-lane-bfb38367/detail-only-{light,dark}.json`）：
+  `/f/project.project/581` 记为 `edit-form-observation-without-save`，记录检查 8/8 通过，
+  `denied_requests=0`、`console_errors=0`。
+
+### 14.3 定性：不是契约自相矛盾，是「模型级写权限」与「记录/状态级有效可编辑性」两个不同权威
+
+- **入口路由**（`/f/` vs `/r/`）的唯一来源是后端声明的 `statusContract.globalStatus.modelRights.write`
+  （`recordEntryFromModelRights`）。该列表未声明正式 `record_entry`，因此走这条**已声明的通用机制**；
+  非布尔值一律 fail-closed 到 `/r/`（`frontend/apps/web/src/app/runtime/recordEntryContract.ts` 头注释）。
+- **记录面 profile** 由 P0 `addons/smart_core/utils/contract_governance_form_render.py::resolve_render_profile`
+  （由 ORM 生效权限计算）产生，并由 P1 工作流**收窄**：`addons/smart_construction_core/core_extension.py`
+  （`editability in {readonly,locked}` → `pageAuth=read` + `effectiveRenderProfile=readonly`）经
+  `models/support/workflow_contract_service.py::_editability`。
+- 两个权威职责不同：`modelRights` = 模型级能力（决定入口路由）；`effectiveRenderProfile` = 该记录**当前**有效可编辑性。
+  当记录被状态/审批锁住时，`/f/`（可写入口）+ `readonly`（该记录当前不可写）是设计内的 fail-closed 收窄，**不是矛盾**；
+  且 `506/379` 在 `route_authority` 内，不产生 403。
+- **既有锁已把该配对判为合法**：`scripts/verify/test_frontend_list_surface_search_contract.py` 断言
+  `/f/<model>/<id>` 可声明 `edit` **或** `readonly`，只对 `/r/` + 非 readonly 抛错；P1 收窄由
+  `addons/smart_construction_core/tests/test_workflow_contract_backend.py`、`test_core_extension_v2_finalize.py` 锁定。
+
+因此：**不放宽任何断言、不改产品代码、不加任何模型特判**；探针把 readonly 记录记 `not_applicable` 的口径本身正确
+（绝不当作编辑通过）。也不以 `critical` 覆盖 ACL / 字段权限 / 合法隐藏规则。
+
+### 14.4 观察项在 served 身份上已不可复现，其来源期已被「项目台账入口统一」取代
+
+- 原始 readonly 观测出现在旧基线 `5ba6398e`（产物 `detail-closeout-5ba6398e/light.json`：581 surface=`readonly-detail`）。
+- 其后合入的 **PR #594**（`90484d88`，`PROJECT-LEDGER-ENTRY-UNIFICATION`，即所有者批准的
+  「项目台账 × 项目信息编辑 统一为唯一入口」）退役了遗留表单视图 `view_sc_product_project_information_edit_form_v1`，
+  把台账统一到 `view_project_overview_form`，并新增运行契约锁 `addons/smart_construction_core/tests/test_project_ledger_runtime_contract.py`。
+- served `bfb38367` 上同一记录同一入口解析为 `edit`，台账 20 行全 `edit`。
+- 说明：历史基线在可变 `sc_demo` 上的**精确**触发条件（记录当时的状态/审批锁，或遗留入口面的权限投影）不再重新取证；
+  两种成因都是合法收窄，均非契约自相矛盾。收口以当前 served 身份的事实为准。
+
+### 14.5 证据与边界
+
+- 机制锁（本轮引用重跑）：`make verify.frontend.collection_view_semantics.unit` → `record_entry_contract_test: ok`、
+  18 + 36 tests OK、guard PASS（含 `modelRights:{write:'true'}` 字符串 fail-closed → `/r/`）。
+- diag 证据：`.runtime/final-acceptance/ledger-readonly-closure-bfb38367/{list_and_record_contract.json,list_status_profile.json,ledger_rows_profiles.json}`。
+- 边界：本轮产品代码 0 变更；未触碰 ACL / 字段权限 / 合法隐藏规则；环境 DENY 结论继续单独保留（§11.6）。
