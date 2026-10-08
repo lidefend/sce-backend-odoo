@@ -687,3 +687,20 @@ sections=[] / 无 product_workspace` 并断言全部被检出为 `false`；重�
   `origin/main=b28d4499…`；`84376430^{tree} == b28d4499^{tree}`（`a9d32af1…`，squash 承载完整内容）。
 - **边界**：合并不触发产品部署。日常运行态仍服务 `main bfb38367` / 产物 `b0311c6f…` / `sc_demo`；
   本批次**不主张**版本发布完成或产品交付完成。环境 DENY 结论继续单独保留（§11.6），本批次不依赖它、也不泛化。
+
+## 16. 终局退役（2026-10-09）
+
+- 本批次的目录、detail/relation 往返、创建-编辑与工作台最小证据差额均已随 **PR #626** 并入 main
+  （合并提交 `b28d4499…`，§15），主线批次边界已闭合。所有者确认后把本 run 翻终态。
+- 改动：`FE-HIERARCHICAL-WORKSHEET-USABLE-READY` goal `in_progress → completed`；对应 run
+  `active → completed` 并重写 `next_exact_step`；`.agent/active-runs.json` 移除
+  `fix/user-acceptance-detail-closure-20261009` 绑定（`branches` 变为空集），main 上不再有索引项指向
+  已合并的该分支。批次记录新增本节。
+- 台账守卫同步：`RECORDED_NON_CANONICAL` 棘轮由 3 降到 2（移除本 goal 的 `in_progress` 记录态），
+  单测合成夹具改为镜像新现实；守卫要求「棘轮集合与磁盘逐字相等」，故退役与棘轮必须同一次改动完成。
+- 边界：`ENV-ACCEPTANCE-REBUILD-LANE-PREREQUISITE` 独立专题已解除环境 DENY，本退役**不依赖**它、也不泛化
+  为「环境全部通过」。合并不触发产品部署。批次验收=完成；主线集成=完成（该批次 `b28d4499`）；
+  版本发布=未主张；产品交付=未主张。89 键矩阵不重跑。
+- 车道：`.agent`/`docs` 记账候选默认被 `pr.merge.local_quick_gate` 判为 bookkeeping-only；本专题为**真实
+  终局退役**且无相邻产品候选，故按该门显式指引用 `PR_MERGE_BOOKKEEPING_TERMINAL_RETIRE=<reason>`
+  走一次终局退役，全批只跑一次精确头 Quick。

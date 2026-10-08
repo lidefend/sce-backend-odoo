@@ -31,7 +31,7 @@ AUTHORITY = "docs/ops/iterations/product_delivery_mainline_ledger_closeout_20261
 # present, both allowlisted terminal runs are present, and the only index entry
 # points at a live run. This is the clean baseline that negative cases mutate.
 BASE_GOALS = {
-    "FE-HIERARCHICAL-WORKSHEET-USABLE-READY": "in_progress",
+    "SAMPLE-LIVE-RUN": "active",
     "FORM-PAGE-STRUCTURE-PROFESSIONALIZATION": "verified",
     "PAYMENT-REQUEST-GOLDEN-FLOORPLAN": "complete",
     "BACKEND-CONTRACT-SLO-TELEMETRY": "active",
@@ -39,10 +39,7 @@ BASE_GOALS = {
     "ENV-ACCEPTANCE-REBUILD-LANE-PREREQUISITE": "completed",
 }
 BASE_RUNS = {
-    "FE-HIERARCHICAL-WORKSHEET-USABLE-READY": {
-        "status": "active",
-        "branch": "fix/user-acceptance-detail-closure-20261009",
-    },
+    "SAMPLE-LIVE-RUN": {"status": "active", "branch": "fix/sample-live-run"},
     "BACKEND-CONTRACT-SLO-TELEMETRY": {"status": "completed", "branch": "fix/contract-slo-telemetry"},
     "P4-INCREMENTAL-RESUME": {"status": "completed", "branch": "fix/agent-resume-mainline"},
     "ENV-ACCEPTANCE-REBUILD-LANE-PREREQUISITE": {
@@ -51,9 +48,7 @@ BASE_RUNS = {
     },
 }
 BASE_INDEX = {
-    "fix/user-acceptance-detail-closure-20261009": (
-        ".agent/runs/FE-HIERARCHICAL-WORKSHEET-USABLE-READY/run.json"
-    )
+    "fix/sample-live-run": ".agent/runs/SAMPLE-LIVE-RUN/run.json",
 }
 
 
@@ -198,7 +193,7 @@ class AgentLedgerConsistencyGuardTest(unittest.TestCase):
 
     def test_index_branch_mismatch_is_detected(self) -> None:
         self.assertEqual(MODULE.check(self.build()), [])
-        index = {"fix/wrong-branch": ".agent/runs/FE-HIERARCHICAL-WORKSHEET-USABLE-READY/run.json"}
+        index = {"fix/wrong-branch": ".agent/runs/SAMPLE-LIVE-RUN/run.json"}
         errors = MODULE.check(self.build(index=index))
         self.assertTrue(any("declares branch" in e for e in errors), errors)
 
