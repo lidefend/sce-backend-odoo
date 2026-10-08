@@ -4,19 +4,19 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1473`
+- Total assets: `1475`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `188`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `1060`
+- PR dedupe candidates: `1062`
 
 ## By Layer
 
 | Layer | Count |
 | --- | ---: |
-| governance | 572 |
+| governance | 574 |
 | contract | 386 |
 | unit | 274 |
 | odoo_integration | 113 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1279 |
+| pr_candidate | 1281 |
 | integration_candidate | 140 |
 | release_candidate | 45 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 1060 |
+| deduplicate_before_required | 1062 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 139 |
 | keep_release_only | 45 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1281 |
+| <5m | 1283 |
 | 10-30m | 141 |
 | 30-60m | 47 |
 | unknown | 3 |
@@ -152,7 +152,7 @@ Generated from `test_inventory.csv`.
 
 | Owner | Count |
 | --- | ---: |
-| architecture owner | 572 |
+| architecture owner | 574 |
 | platform owner | 386 |
 | test owner | 275 |
 | backend owner | 113 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1301 |
+| scripts/verify | 1303 |
 | scripts/ops | 79 |
 | frontend/apps/web/scripts | 43 |
 | scripts/ci | 25 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-180 | security | `scripts/verify/auth_credential_frontend_guard.py` | security owner |
 | T-ASSET-181 | unit | `scripts/verify/auto_degrade_smoke_report.py` | test owner |
 | T-ASSET-185 | governance | `scripts/verify/backend_boundary_guard.py` | architecture owner |
-| ... | ... | 980 more | ... |
+| ... | ... | 982 more | ... |
 
 ## Dedupe Hotspots
 
