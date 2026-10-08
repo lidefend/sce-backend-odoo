@@ -1,0 +1,22 @@
+goal:
+  id: SAVED-SEARCH-CAPABILITY-UNIT-RECOVERY-RETIREMENT
+  status: completed
+  formal_product_layer: P4
+  objective: >-
+    Retire the SAVED-SEARCH-CAPABILITY-UNIT-RECOVERY run ledger after PR #612
+    (head 614a248b, base c9e48238) merged into main as merge commit 5ba44a1f.
+    Mark the run and goal completed with the recorded mainline-integration and
+    frozen-candidate ci.local.quick evidence and return .agent/active-runs.json
+    to its empty terminal state, so no index entry points at the merged
+    fix/saved-search-capability-unit-dependency-binding-20261008 branch.
+    Bookkeeping only: it changes no product, contract, test, gate, workflow,
+    runtime or credential behaviour.
+  run: .agent/runs/SAVED-SEARCH-CAPABILITY-UNIT-RECOVERY-RETIREMENT/run.json
+  exclusions:
+    - product_changes
+    - contract_changes
+    - assertion_or_audit_relaxation
+    - baseline_raises
+    - product_deployment
+    - production_access
+    - credential_rotation
