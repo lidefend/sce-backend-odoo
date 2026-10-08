@@ -245,19 +245,31 @@ export function entryFingerprint({ row, behaviour, environment, derived, modelRe
   }));
 }
 
-// Identity that governs reuse. It deliberately excludes the served bundle
-// revision: a deploy alone must not invalidate every entry and force a full
-// re-walk. What invalidates an entry is a change to its declared inputs (row,
-// overlay behaviour, derived denial), to the model/probe assertions, or to the
+// Identity that governs reuse. Every browser assertion here runs against the
+// bundle the target serves, so the served revision is part of the identity: a
+// candidate built from another revision may render another surface, and reusing
+// the older observation would report coverage the run never produced. A genuine
+// no-op redeploy keeps the same revision and therefore keeps every reusable
+// unit. What invalidates an entry is a change to its declared inputs (row,
+// overlay behaviour, derived denial), to the model/probe assertions, to the
 // governed runtime it was measured on (base url, database, acting login,
-// candidate order). The served revision is still recorded as provenance on the
-// units document and each ledger run, and the executor carries evidence across
-// a deploy only with a recorded impact analysis.
-export function environmentIdentity({ baseUrl, database, login, candidateOrder }) {
+// candidate order), or to the served revision it was measured against.
+//
+// The revision is the only served-bundle identity the probe can verify live: it
+// reads the served source_revision/git_sha and refuses any other value before an
+// entry runs. Bundle content beyond the revision stays provenance on the units
+// document, so an in-place rebuild of the same revision remains a recorded
+// carry-forward decision rather than a silently reused observation.
+export function environmentIdentity({ baseUrl, database, login, candidateOrder, servedRevision }) {
+  const revision = String(servedRevision || '').trim();
+  if (!revision) {
+    throw new Error('environmentIdentity: the served revision is required to bind reuse');
+  }
   return {
     base_url: String(baseUrl || ''),
     database: String(database || ''),
     login: String(login || ''),
     denied_role_candidates: candidateOrder.map(String),
+    served_revision: revision,
   };
 }

@@ -81,6 +81,7 @@ function surface() {
   const states = candidateStates(order, closures.candidates);
   const identity = environmentIdentity({
     baseUrl: BASE, database: DATABASE, login: LOGIN, candidateOrder: order,
+    servedRevision: SERVED_REVISION,
   });
   const modelRevision = fileRevision(ROOT, MODEL_INPUTS);
   const probeHash = fileRevision(ROOT, PROBE_INPUTS);
