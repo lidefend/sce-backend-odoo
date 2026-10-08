@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "id": "FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE-RETIREMENT",
+  "branch": "audit/frontend-business-entry-acceptance-gap-closure-retirement-20261008",
+  "status": "completed",
+  "baseline_sha": "286a6e1116d2dbb24047347827f6edcd00f932f5",
+  "goal": ".agent/goals/FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE-RETIREMENT.yaml",
+  "record": "docs/ops/iterations/frontend_business_entry_acceptance_gap_closure_20261007.md",
+  "scope": [
+    ".agent/",
+    "docs/ops/iterations/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Bookkeeping only. No runtime is exercised; the referenced daily runtime, contract and remote-gate evidence belongs to the already-merged FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE run (PR #607 / merge commit 24e05cd5 and PR #608 / merge commit 286a6e11)."
+  },
+  "checks": {
+    "run_index_terminal_state": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Retired. The FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE run is completed with its mainline-integration evidence recorded (PR #607 merged as 24e05cd5, PR #608 merged as 286a6e11) and its frozen candidate 9c64154f holding an exact-head ci.local.quick PASS receipt, and .agent/active-runs.json is back to its empty terminal state so no index entry points at the merged fix/frontend-business-entry-contract-payment-closure-20261007 branch. On main, make agent.run.resume then reports unregistered, matching the ACTIVE-RUN-INDEX-DANGLING-CLOSEOUT precedent. Branch deletion of the merged fix branch belongs to the separate governed branch.retire.historical lane, not to this batch."
+}
