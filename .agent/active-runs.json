@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "branches": {
-    "codex/merge-lane-bookkeeping-candidate-guard-20261008": ".agent/runs/MERGE-LANE-BOOKKEEPING-CANDIDATE-GUARD/run.json"
+    "codex/quick-evidence-shard-composition-20261008": ".agent/runs/QUICK-EVIDENCE-SHARD-COMPOSITION/run.json"
   }
 }

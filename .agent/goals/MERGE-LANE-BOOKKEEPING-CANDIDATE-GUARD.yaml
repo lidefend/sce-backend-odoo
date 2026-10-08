@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: MERGE-LANE-BOOKKEEPING-CANDIDATE-GUARD
   title: merge_lane_bookkeeping_candidate_short_circuit
-  status: active
+  status: completed
   formal_product_layer: P4
   objective: >-
     Close the iteration-efficiency defect found while iterating this topic: `make ci.local.quick`

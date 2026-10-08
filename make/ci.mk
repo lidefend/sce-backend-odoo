@@ -726,7 +726,7 @@ verify.unified_page_contract.lite: guard.prod.forbid
 # ----------------------------------------------------------------------
 # v1.1 Engineering Convergence quality entries
 # ----------------------------------------------------------------------
-.PHONY: ci ci.professional.backend ci.local.iteration ci.local.quick ci.local.quick.run ci.delivery.freeze.prepare ci.generated_evidence.preflight ci.generated_reports.guard verify.contract_form_split_evidence refresh.contract_form_split_evidence refresh.generated_reports test.frontend test.unit test.odoo.integration test.contract test.e2e.preflight test.e2e.fixed_data.odoo test.e2e test.all test.inventory test.inventory.summary test.e2e.matrix architecture.module_dependency_map architecture.complexity_report architecture.complexity_baseline_lock architecture.split_plan_queue github.remote_execution_plan security.secret_scan security.secrets.scan security.personal_data_scan security.legacy_credential_guard verify.repository.clean_history verify.python_name_binding verify.menu_config_tree_editor.behavior verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix ci.tenant.pro03.demo.dispatch verify.contract.structure_lock verify.ci.scheduled_gates
+.PHONY: ci ci.professional.backend ci.local.iteration ci.local.quick ci.local.quick.run ci.local.quick.shard ci.local.quick.compose ci.delivery.freeze.prepare ci.generated_evidence.preflight ci.generated_reports.guard verify.contract_form_split_evidence refresh.contract_form_split_evidence refresh.generated_reports test.frontend test.unit test.odoo.integration test.contract test.e2e.preflight test.e2e.fixed_data.odoo test.e2e test.all test.inventory test.inventory.summary test.e2e.matrix architecture.module_dependency_map architecture.complexity_report architecture.complexity_baseline_lock architecture.split_plan_queue github.remote_execution_plan security.secret_scan security.secrets.scan security.personal_data_scan security.legacy_credential_guard verify.repository.clean_history verify.python_name_binding verify.menu_config_tree_editor.behavior verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix ci.tenant.pro03.demo.dispatch verify.contract.structure_lock verify.ci.scheduled_gates
 
 verify.ci.scheduled_gates: guard.prod.forbid verify.github_actions.security
 	@python3 -m py_compile scripts/verify/frontend_release_gate.py scripts/verify/test_frontend_release_gate.py scripts/verify/ci_artifact_host_write_guard.py scripts/verify/test_ci_artifact_host_write_guard.py
@@ -910,7 +910,25 @@ ci.local.iteration: guard.prod.forbid verify.baseline.iteration.execution.policy
 ci.local.quick: guard.prod.forbid
 	@python3 scripts/ops/local_quick_evidence.py run
 
-.NOTPARALLEL: ci.local.quick.run ci.generated_evidence.preflight
+# Sharded composition of the exact-head ci.local.quick evidence.
+#
+# The monolithic run above signs one receipt only after the whole declared target
+# list passes, so an interrupted or partially failed candidate proves nothing and
+# a long suite cannot be split. These two entrypoints prove the identical receipt
+# from bounded shard parts: each part is bound to the same head+tree, the union of
+# the parts must equal the ci.local.quick.run prerequisite list exactly, and the
+# scanner coverage proofs are revalidated before the standard receipt is signed.
+# Shards run serially and never cross heads or trees; no assertion, ACL, field
+# permission, negative case or required target is relaxed.
+ci.local.quick.shard: guard.prod.forbid
+	@test -n "$(QUICK_SHARDS)" -a -n "$(QUICK_SHARD)" || { echo "[DENY] ci.local.quick.shard requires QUICK_SHARDS=<n> QUICK_SHARD=<i>"; exit 2; }
+	@python3 scripts/ops/local_quick_evidence.py shard --shards "$(QUICK_SHARDS)" --shard "$(QUICK_SHARD)"
+
+ci.local.quick.compose: guard.prod.forbid
+	@test -n "$(QUICK_SHARDS)" || { echo "[DENY] ci.local.quick.compose requires QUICK_SHARDS=<n>"; exit 2; }
+	@python3 scripts/ops/local_quick_evidence.py compose --shards "$(QUICK_SHARDS)" $(if $(strip $(EXPECTED_HEAD)),--expected-head "$(EXPECTED_HEAD)")
+
+.NOTPARALLEL: ci.local.quick.run ci.local.quick.shard ci.local.quick.compose ci.generated_evidence.preflight
 
 ci.local.quick.run: guard.prod.forbid ci.generated_evidence.preflight verify.contract.page_v1_zero_residue.guard security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.formal_product_field_purity verify.tenant_extension_storage architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2 verify.backend.contract_lifecycle.authority verify.menu_config_tree_editor.behavior verify.g1.acceptance.baseline verify.visualization.chart.capability verify.boq.export.capability verify.write.idempotency.capability verify.boq.dangerous.import.capability verify.boq.line.patch.capability verify.overview.rich.text.patch.capability verify.pr.push.unit verify.frontend.dev.incremental.unit verify.frontend.chart_engine.guard verify.frontend.chart_dataset.unit verify.frontend.boq_line_patch.unit verify.frontend.overview_rich_text.unit verify.frontend.lint.src verify.login_envelope.consumption.guard verify.ui_contract.delivery_surface.unit
 	@python3 scripts/verify/contract_form_runtime_state_protocol_guard.py

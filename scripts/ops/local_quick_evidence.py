@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -18,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
 import trusted_scan_scope as scans
 
 SCHEMA_VERSION = 3
+COMPOSITION_SCHEMA = 1
 SUITE = "ci.local.quick"
 PRODUCER = scans.PRODUCER
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
@@ -182,21 +184,228 @@ def verify(root: Path, expected_head: str) -> Path:
     return path
 
 
+def atomic_json(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            json.dump(payload, stream, ensure_ascii=False, sort_keys=True)
+            stream.write("\n")
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def required_targets(root: Path) -> list[str]:
+    """The declared required target list, derived from the makefile so it cannot drift."""
+    try:
+        source = (root / "make/ci.mk").read_text(encoding="utf-8")
+    except OSError as exc:
+        raise EvidenceError(f"cannot read the declared quick target list: {exc}") from exc
+    rows = [line for line in source.splitlines() if line.startswith("ci.local.quick.run:")]
+    if len(rows) != 1:
+        raise EvidenceError("ci.local.quick.run must be declared exactly once")
+    row = rows[0]
+    if row.rstrip().endswith("\\"):
+        raise EvidenceError("ci.local.quick.run prerequisites must not be line-continued")
+    tokens = row.split(":", 1)[1].split()
+    if not tokens or tokens[0] != "guard.prod.forbid":
+        raise EvidenceError("ci.local.quick.run prerequisites must start with guard.prod.forbid")
+    if any(token.startswith("$") or "%" in token or ":" in token for token in tokens):
+        raise EvidenceError("ci.local.quick.run prerequisites must be literal target names")
+    if len(set(tokens)) != len(tokens):
+        raise EvidenceError("ci.local.quick.run prerequisites must not repeat a target")
+    return tokens
+
+
+def shard_root(root: Path, head: str) -> Path:
+    return evidence_path(root, head).with_suffix("")
+
+
+def shard_part_path(root: Path, head: str, index: int, shards: int) -> Path:
+    return shard_root(root, head) / "parts" / f"shard-{index}-of-{shards}.json"
+
+
+def _checked_shard_layout(shards: object, index: object) -> tuple[int, int]:
+    if isinstance(shards, bool) or not isinstance(shards, int) or not 1 <= shards <= 64:
+        raise EvidenceError("shards must be an integer between 1 and 64")
+    if isinstance(index, bool) or not isinstance(index, int) or not 0 <= index < shards:
+        raise EvidenceError("shard index must be inside [0, shards)")
+    return shards, index
+
+
+def run_shard(root: Path, shards: int, index: int, runner=subprocess.run) -> Path:
+    """Run one bounded shard of the declared quick target list and record its part receipt."""
+    require_safe_make_environment()
+    shards, index = _checked_shard_layout(shards, index)
+    root = repository_root(root)
+    if is_linked_worktree(root):
+        raise EvidenceError("sharded quick evidence is only supported in the primary worktree")
+    if git(root, "status", "--porcelain=v1", "--untracked-files=all"):
+        raise EvidenceError("shard evidence requires a clean worktree at start")
+    start_head = git(root, "rev-parse", "HEAD")
+    if not FULL_SHA.fullmatch(start_head):
+        raise EvidenceError("shard start HEAD identity is invalid")
+    root, tree = require_exact_clean_head(root, start_head)
+    manifest = required_targets(root)
+    targets = manifest[index::shards]
+    if not targets:
+        raise EvidenceError("this shard covers no required target")
+    folder = shard_root(root, start_head) / "scan-proofs"
+    folder.mkdir(parents=True, exist_ok=True)
+    coverage = scans.coverage_snapshot(root)
+    atomic_json(folder / "launch.json", {"root": str(root), "head": start_head, "tree": tree, "coverage": coverage})
+    environment = os.environ.copy()
+    environment[scans.COVERAGE_ENV] = str(folder)
+    completed = runner(
+        ["make", "--no-print-directory", *targets],
+        cwd=root,
+        env=environment,
+        check=False,
+        text=True,
+    )
+    if completed.returncode:
+        raise QuickRunFailed(completed.returncode)
+    require_exact_clean_head(root, start_head)
+    part = {
+        "schema_version": COMPOSITION_SCHEMA,
+        "suite": SUITE,
+        "head": start_head,
+        "tree": tree,
+        "shards": shards,
+        "index": index,
+        "targets": targets,
+        "status": "passed",
+        "coverage": coverage,
+    }
+    path = shard_part_path(root, start_head, index, shards)
+    atomic_json(path, part)
+    return path
+
+
+def _loaded_shard_part(root: Path, head: str, tree: str, manifest: list[str], shards: int, index: int) -> dict:
+    path = shard_part_path(root, head, index, shards)
+    try:
+        part = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise EvidenceError(f"shard {index} of {shards} has no part receipt") from exc
+    except (OSError, json.JSONDecodeError) as exc:
+        raise EvidenceError(f"shard {index} of {shards} part receipt is unreadable") from exc
+    if not isinstance(part, dict) or set(part) != {
+        "schema_version", "suite", "head", "tree", "shards", "index", "targets", "status", "coverage",
+    }:
+        raise EvidenceError(f"shard {index} of {shards} part receipt shape is invalid")
+    if part["schema_version"] != COMPOSITION_SCHEMA or part["suite"] != SUITE:
+        raise EvidenceError(f"shard {index} of {shards} part receipt identity is invalid")
+    if part["head"] != head or part["tree"] != tree:
+        raise EvidenceError(f"shard {index} of {shards} part receipt binds another candidate")
+    if part["shards"] != shards or part["index"] != index:
+        raise EvidenceError(f"shard {index} of {shards} part receipt layout is invalid")
+    if part["status"] != "passed":
+        raise EvidenceError(f"shard {index} of {shards} is not a passed shard")
+    if part["targets"] != manifest[index::shards]:
+        raise EvidenceError(f"shard {index} of {shards} does not carry the declared shard targets")
+    return part
+
+
+def compose(root: Path, shards: int, expected_head: str) -> Path:
+    """Compose passed shards of one identical candidate into the standard exact-head receipt."""
+    shards, _ = _checked_shard_layout(shards, 0)
+    root, tree = require_exact_clean_head(root, expected_head)
+    manifest = required_targets(root)
+    covered: list[str] = []
+    parts: list[dict] = []
+    coverage = scans.coverage_snapshot(root)
+    for index in range(shards):
+        part = _loaded_shard_part(root, expected_head, tree, manifest, shards, index)
+        if part["coverage"] != coverage:
+            raise EvidenceError(f"shard {index} of {shards} coverage snapshot changed")
+        covered.extend(part["targets"])
+        path = shard_part_path(root, expected_head, index, shards)
+        parts.append({
+            "index": index,
+            "path": path.relative_to(root).as_posix(),
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        })
+    # Strided parts concatenate to a permutation of the manifest, so order is
+    # bound by the per-part target check above; here the union must still cover
+    # the declared list exactly, with no missing, extra or duplicated target.
+    if sorted(covered) != sorted(manifest):
+        raise EvidenceError("the shard union does not cover the declared quick target list exactly")
+    folder = shard_root(root, expected_head) / "scan-proofs"
+    for kind in scans.AUTHORITY:
+        path = folder / (kind + ".json")
+        try:
+            if path.is_symlink():
+                raise ValueError("symlink proof")
+            proof = json.loads(path.read_text(encoding="utf-8"))
+            base = proof.get("base") if isinstance(proof, dict) else None
+            expected = {
+                "protocol": scans.COVERAGE_PROTOCOL, "kind": kind, "head": expected_head, "tree": tree,
+                "coverage": coverage["scanners"][kind],
+                "mode": "incremental" if base else "full", "base": base,
+            }
+            if proof != expected:
+                raise ValueError("proof mismatch")
+            if base:
+                if not isinstance(base, str) or not FULL_SHA.fullmatch(base):
+                    raise ValueError("invalid base")
+                git(root, "merge-base", "--is-ancestor", base, expected_head)
+        except (OSError, ValueError, KeyError, TypeError, EvidenceError) as exc:
+            raise EvidenceError(f"actual successful scanner proof missing or invalid: {kind}") from exc
+    receipt = _write_receipt_after_success(root, expected_head, coverage)
+    atomic_json(shard_root(root, expected_head) / "composition.json", {
+        "schema_version": COMPOSITION_SCHEMA,
+        "suite": SUITE,
+        "head": expected_head,
+        "tree": tree,
+        "shards": shards,
+        "parts": parts,
+        "manifest_sha256": hashlib.sha256(json.dumps(manifest).encode("utf-8")).hexdigest(),
+        "coverage_sha256": hashlib.sha256(json.dumps(coverage, sort_keys=True).encode("utf-8")).hexdigest(),
+        "receipt": receipt.relative_to(root).as_posix() if receipt.is_relative_to(root) else str(receipt),
+    })
+    return receipt
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("run", "verify"))
+    parser.add_argument("mode", choices=("run", "verify", "shard", "compose"))
     parser.add_argument("--root", type=Path, default=Path.cwd())
     parser.add_argument("--expected-head")
+    parser.add_argument("--shards", type=int)
+    parser.add_argument("--shard", type=int, dest="shard_index")
     args = parser.parse_args()
     try:
         if args.mode == "run":
-            if args.expected_head is not None:
-                raise EvidenceError("run mode does not accept --expected-head")
+            if args.expected_head is not None or args.shards is not None or args.shard_index is not None:
+                raise EvidenceError("run mode does not accept --expected-head, --shards or --shard")
             path = run_quick(args.root)
-        else:
+        elif args.mode == "verify":
             if args.expected_head is None:
                 raise EvidenceError("verify mode requires --expected-head")
+            if args.shards is not None or args.shard_index is not None:
+                raise EvidenceError("verify mode does not accept --shards or --shard")
             path = verify(args.root, args.expected_head)
+        elif args.mode == "shard":
+            if args.shards is None or args.shard_index is None:
+                raise EvidenceError("shard mode requires --shards and --shard")
+            if args.expected_head is not None:
+                raise EvidenceError("shard mode does not accept --expected-head")
+            path = run_shard(args.root, args.shards, args.shard_index)
+        else:
+            if args.shards is None:
+                raise EvidenceError("compose mode requires --shards")
+            if args.shard_index is not None:
+                raise EvidenceError("compose mode does not accept --shard")
+            head = args.expected_head
+            if head is None:
+                head = subprocess.run(
+                    ["git", "-C", str(args.root), "rev-parse", "HEAD"],
+                    check=True, text=True, stdout=subprocess.PIPE,
+                ).stdout.strip()
+            path = compose(args.root, args.shards, head)
     except QuickRunFailed as exc:
         print(f"[local_quick_evidence] FAIL {exc}")
         return exc.returncode
