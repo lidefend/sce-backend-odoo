@@ -30,6 +30,14 @@ PLATFORM_ADMIN_GROUP = "smart_core.group_smart_core_admin"
 REASON_MENU_CONFIG_SCOPE_VIOLATION = "MENU_CONFIG_SCOPE_VIOLATION"
 _logger = logging.getLogger(__name__)
 
+# Declared vocabulary of the per-menu handling state the configuration surface
+# renders.  The backend owns the projection; the renderer must not derive it
+# from the local policy id.  Contract:
+# docs/product/menu_configuration_runtime_boundary_v1.md section 3.
+MENU_HANDLING_STATES = ("visible", "hidden", "unconfigured")
+MENU_HANDLING_STATE_SOURCE = "runtime_navigation_v1"
+MENU_HANDLING_STATE_CONTRACT = "docs/product/menu_configuration_runtime_boundary_v1.md"
+
 
 def _to_int(value: Any) -> int:
     try:
@@ -300,7 +308,47 @@ class MenuConfigurationLoadHandler(BaseIntentHandler):
             "projection_only": True,
             "no_business_fact_authority": cls.NO_BUSINESS_FACT_AUTHORITY,
             "runtime_carrier": cls.INTENT_TYPE,
+            "handling_state_vocabulary": list(MENU_HANDLING_STATES),
+            "handling_state_source": MENU_HANDLING_STATE_SOURCE,
+            "handling_state_contract": MENU_HANDLING_STATE_CONTRACT,
         }
+
+    def _attach_menu_handling_state(
+        self,
+        rows: list[dict],
+        configured_by_menu: dict[int, dict],
+        runtime_state: dict,
+    ) -> dict[str, int]:
+        """Project the per-menu handling state for the configuration surface.
+
+        The state is ``visible`` when the released runtime navigation shows the
+        menu, else ``hidden`` when a configuration intent exists for it, else
+        ``unconfigured``.  The renderer only renders this value; it must not
+        re-derive it from the presence of a local policy id.
+        """
+        states = runtime_state.get("states") if isinstance(runtime_state, dict) else None
+        states = states if isinstance(states, dict) else {}
+        configured_ids = {int(key or 0) for key in configured_by_menu}
+        summary = {state: 0 for state in MENU_HANDLING_STATES}
+        for row in rows if isinstance(rows, list) else []:
+            if not isinstance(row, dict):
+                continue
+            menu_id = _to_int(row.get("id") or row.get("menu_id"))
+            state_row = states.get(str(menu_id)) if menu_id else None
+            runtime_visible = (
+                _to_bool(state_row.get("runtime_visible"), False)
+                if isinstance(state_row, dict)
+                else False
+            )
+            if runtime_visible:
+                handling_state = "visible"
+            elif menu_id and menu_id in configured_ids:
+                handling_state = "hidden"
+            else:
+                handling_state = "unconfigured"
+            row["handling_state"] = handling_state
+            summary[handling_state] += 1
+        return summary
 
     def _ensure_access(self):
         user = self.env.user
@@ -912,6 +960,9 @@ class MenuConfigurationLoadHandler(BaseIntentHandler):
             if int(menu_id or 0) in scoped_menu_ids
         }
         runtime_state = self._runtime_navigation_state(policy_by_menu, effective_menu_rows)
+        handling_state_summary = self._attach_menu_handling_state(
+            effective_menu_rows, policy_by_menu, runtime_state
+        )
 
         groups = self._group_option_records(menus, policies)
         group_rows = [
@@ -932,6 +983,8 @@ class MenuConfigurationLoadHandler(BaseIntentHandler):
                 "policies": policy_by_menu,
                 "runtime": runtime_state,
                 "groups": group_rows,
+                "handling_state_summary": handling_state_summary,
+                "handling_state_vocabulary": list(MENU_HANDLING_STATES),
             },
             "meta": {
                 "intent": self.INTENT_TYPE,
