@@ -20,7 +20,7 @@
       "mode": "ledger",
       "pattern": "\\bintent\\s*:\\s*['\\\"]([^'\\\"]+)['\\\"]",
       "rationale": "An intent identifier selects a backend behaviour.  Every intent literal must resolve to the published intent contract.",
-      "suggestion": "Use a published contract intent, or register the literal in this ledger as a projectable gap when no contract intent exists yet."
+      "suggestion": "Use a published contract intent, register the literal in this ledger as a projectable gap when no contract intent exists yet, or declare it as a client-only trace label (client_telemetry_trace) when it never selects backend behaviour."
     },
     {
       "key": "R3_router_literal_destination",
@@ -75,6 +75,13 @@
       "rules": [
         "R3_router_literal_destination"
       ]
+    },
+    "client_telemetry_trace": {
+      "literals": [
+        "local:projection_refresh"
+      ],
+      "scope": "R2_intent_literal",
+      "guardAssertion": "frontend_decision_authority.check_client_trace_label_declaration"
     }
   },
   "invariants": [
@@ -104,18 +111,18 @@
       "ownerLayer": "P0_frontend_renderer_consumer"
     },
     {
-      "decisionKey": "R2_intent_literal|projection.refresh|frontend/apps/web/src/app/projectionRefreshRuntime.ts",
+      "decisionKey": "R2_intent_literal|local:projection_refresh|frontend/apps/web/src/app/projectionRefreshRuntime.ts",
       "rule": "R2_intent_literal",
-      "literal": "projection.refresh",
+      "literal": "local:projection_refresh",
       "path": "frontend/apps/web/src/app/projectionRefreshRuntime.ts",
       "lines": [
-        42
+        45
       ],
       "occurrences": 1,
-      "classification": "contract-projectable-gap",
-      "evidence": "frontend/apps/web/src/app/projectionRefreshRuntime.ts:42",
-      "gap": "`projection.refresh` is emitted as a local projection-refresh trace label but is not declared in the published intent catalog; either declare it in the contract/telemetry vocabulary or rename the trace key so it cannot be mistaken for a contract intent.",
-      "ownerLayer": "P0_backend_contract_projector + P0_frontend_renderer_consumer"
+      "classification": "excluded-render-interaction",
+      "reason": "declared client-only telemetry trace label; it is recorded to the local trace log and is never dispatched as a backend intent",
+      "declaredClass": "client_telemetry_trace",
+      "ownerLayer": "P0_frontend_renderer"
     },
     {
       "decisionKey": "R2_intent_literal|search.favorite.delete|frontend/apps/web/src/app/runtime/savedSearchSubmission.ts",
@@ -544,18 +551,45 @@
       "ownerLayer": "P0_frontend_renderer_consumer"
     },
     {
+      "decisionKey": "R4_business_state_literal|deny|frontend/apps/web/src/app/capabilityPolicyCore.js",
+      "rule": "R4_business_state_literal",
+      "literal": "deny",
+      "path": "frontend/apps/web/src/app/capabilityPolicyCore.js",
+      "lines": [
+        102
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/utils/contract_governance_capabilities.py:131",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|deny_ungranted|frontend/apps/web/src/app/capabilityPolicyCore.js",
+      "rule": "R4_business_state_literal",
+      "literal": "deny_ungranted",
+      "path": "frontend/apps/web/src/app/capabilityPolicyCore.js",
+      "lines": [
+        78
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/core/system_init_payload_builder.py:204",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
       "decisionKey": "R4_business_state_literal|disabled_capability|frontend/apps/web/src/app/capabilityPolicyCore.js",
       "rule": "R4_business_state_literal",
       "literal": "disabled_capability",
       "path": "frontend/apps/web/src/app/capabilityPolicyCore.js",
       "lines": [
-        18
+        116
       ],
       "occurrences": 1,
-      "classification": "contract-projectable-gap",
-      "evidence": "frontend/apps/web/src/app/capabilityPolicyCore.js:7",
-      "gap": "capability state vocabulary is computed in the renderer (`evaluateCapabilityPolicy`); the backend publishes reason codes (e.g. PERMISSION_DENIED, capability states allow/readonly/deny/pending/coming_soon) but not this renderer state name.  Project a capability state/reason from the contract and consume it here.",
-      "ownerLayer": "P0_backend_contract_projector + P0_frontend_renderer_consumer"
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/docs/Contract-2.0-Spec.md:247",
+      "contractEvidence": "addons/smart_core/docs/Contract-2.0-Spec.md:249",
+      "guardAssertion": "frontend_decision_authority.check_capability_projection_consumption",
+      "ownerLayer": "P0_frontend_renderer_consumer"
     },
     {
       "decisionKey": "R4_business_state_literal|disabled_permission|frontend/apps/web/src/app/capabilityPolicyCore.js",
@@ -563,13 +597,14 @@
       "literal": "disabled_permission",
       "path": "frontend/apps/web/src/app/capabilityPolicyCore.js",
       "lines": [
-        21
+        120
       ],
       "occurrences": 1,
-      "classification": "contract-projectable-gap",
-      "evidence": "frontend/apps/web/src/app/capabilityPolicyCore.js:12",
-      "gap": "the renderer decides a permission denial from group membership; the backend already publishes PERMISSION_DENIED reason codes, so the decision should be projected instead of recomputed in the browser.",
-      "ownerLayer": "P0_backend_contract_projector + P0_frontend_renderer_consumer"
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/docs/Contract-2.0-Spec.md:247",
+      "contractEvidence": "addons/smart_core/docs/Contract-2.0-Spec.md:249",
+      "guardAssertion": "frontend_decision_authority.check_capability_projection_consumption",
+      "ownerLayer": "P0_frontend_renderer_consumer"
     },
     {
       "decisionKey": "R4_business_state_literal|allow|frontend/apps/web/src/app/contracts/v2/schema.ts",
@@ -810,10 +845,11 @@
         23
       ],
       "occurrences": 1,
-      "classification": "contract-projectable-gap",
-      "evidence": "frontend/apps/web/src/app/runtime/actionViewLoadGuardRuntime.ts:23",
-      "gap": "the load-guard consumes the renderer-computed capability policy state (`CapabilityPolicyState`); it should consume a projected capability state/reason from the contract instead.",
-      "ownerLayer": "P0_backend_contract_projector + P0_frontend_renderer_consumer"
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/docs/Contract-2.0-Spec.md:247",
+      "contractEvidence": "addons/smart_core/docs/Contract-2.0-Spec.md:249",
+      "guardAssertion": "frontend_decision_authority.check_capability_projection_consumption",
+      "ownerLayer": "P0_frontend_renderer_consumer"
     },
     {
       "decisionKey": "R4_business_state_literal|error|frontend/apps/web/src/pages/ContractFormPage.vue",
@@ -1048,7 +1084,7 @@
       "literal": "saved",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        3005
+        3006
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1105,11 +1141,13 @@
       "path": "frontend/apps/web/src/views/MenuConfigView.vue",
       "lines": [
         275,
-        370
+        366
       ],
       "occurrences": 2,
       "classification": "contract-derived",
-      "evidence": "addons/smart_core/handlers/menu_configuration.py:268",
+      "evidence": "addons/smart_core/handlers/menu_configuration.py:349",
+      "contractEvidence": "docs/product/menu_configuration_runtime_boundary_v1.md:73",
+      "guardAssertion": "frontend_decision_authority.check_menu_handling_state_projection_consumption",
       "ownerLayer": "P0_frontend_renderer_consumer"
     },
     {
@@ -1121,10 +1159,11 @@
         276
       ],
       "occurrences": 1,
-      "classification": "contract-projectable-gap",
-      "evidence": "addons/smart_core/model/ui_menu_config_policy.py:446",
-      "gap": "the menu handling state `unconfigured` is derived in the renderer from the presence of a local policy id; the backend publishes unconfigured_hidden_count but not a per-menu state.  Project the per-menu handling state so the renderer only renders it.",
-      "ownerLayer": "P0_backend_contract_projector + P0_frontend_renderer_consumer"
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/handlers/menu_configuration.py:37",
+      "contractEvidence": "docs/product/menu_configuration_runtime_boundary_v1.md:73",
+      "guardAssertion": "frontend_decision_authority.check_menu_handling_state_projection_consumption",
+      "ownerLayer": "P0_frontend_renderer_consumer"
     },
     {
       "decisionKey": "R4_business_state_literal|visible|frontend/apps/web/src/views/MenuConfigView.vue",
@@ -1133,11 +1172,13 @@
       "path": "frontend/apps/web/src/views/MenuConfigView.vue",
       "lines": [
         274,
-        369
+        365
       ],
       "occurrences": 2,
       "classification": "contract-derived",
-      "evidence": "addons/smart_core/handlers/menu_configuration.py:249",
+      "evidence": "addons/smart_core/handlers/menu_configuration.py:349",
+      "contractEvidence": "docs/product/menu_configuration_runtime_boundary_v1.md:73",
+      "guardAssertion": "frontend_decision_authority.check_menu_handling_state_projection_consumption",
       "ownerLayer": "P0_frontend_renderer_consumer"
     },
     {
@@ -1204,10 +1245,11 @@
         990
       ],
       "occurrences": 1,
-      "classification": "contract-projectable-gap",
-      "evidence": "frontend/apps/web/src/app/capabilityPolicyCore.js:12",
-      "gap": "the renderer decides a permission denial from group membership; the backend already publishes PERMISSION_DENIED reason codes, so the decision should be projected instead of recomputed in the browser.",
-      "ownerLayer": "P0_backend_contract_projector + P0_frontend_renderer_consumer"
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/docs/Contract-2.0-Spec.md:247",
+      "contractEvidence": "addons/smart_core/docs/Contract-2.0-Spec.md:249",
+      "guardAssertion": "frontend_decision_authority.check_capability_projection_consumption",
+      "ownerLayer": "P0_frontend_renderer_consumer"
     },
     {
       "decisionKey": "R4_business_state_literal|error|frontend/apps/web/src/views/SceneView.vue",
@@ -1285,10 +1327,11 @@
         462
       ],
       "occurrences": 1,
-      "classification": "contract-projectable-gap",
-      "evidence": "frontend/apps/web/src/app/capabilityPolicyCore.js:7",
-      "gap": "capability state vocabulary is computed in the renderer (`evaluateCapabilityPolicy`); the backend publishes reason codes (e.g. PERMISSION_DENIED, capability states allow/readonly/deny/pending/coming_soon) but not this renderer state name.  Project a capability state/reason from the contract and consume it here.",
-      "ownerLayer": "P0_backend_contract_projector + P0_frontend_renderer_consumer"
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/docs/Contract-2.0-Spec.md:247",
+      "contractEvidence": "addons/smart_core/docs/Contract-2.0-Spec.md:249",
+      "guardAssertion": "frontend_decision_authority.check_capability_projection_consumption",
+      "ownerLayer": "P0_frontend_renderer_consumer"
     },
     {
       "decisionKey": "R4_business_state_literal|discarded|frontend/apps/web/src/views/businessConfigSurface/changeSetPresentation.ts",
@@ -1455,22 +1498,21 @@
     }
   ],
   "summary": {
-    "totalFindings": 137,
-    "distinctDecisions": 97,
+    "totalFindings": 139,
+    "distinctDecisions": 99,
     "byRule": {
       "R2_intent_literal": 19,
       "R3_router_literal_destination": 18,
-      "R4_business_state_literal": 100
+      "R4_business_state_literal": 102
     },
     "byClassification": {
-      "contract-derived": 43,
-      "contract-projectable-gap": 7,
-      "excluded-render-interaction": 87
+      "contract-derived": 51,
+      "excluded-render-interaction": 88
     },
     "unclassified": 0,
-    "contractDerived": 43,
-    "contractProjectableGaps": 7,
+    "contractDerived": 51,
+    "contractProjectableGaps": 0,
     "frontendLogicDefects": 0,
-    "excludedRenderInteraction": 87
+    "excludedRenderInteraction": 88
   }
 }

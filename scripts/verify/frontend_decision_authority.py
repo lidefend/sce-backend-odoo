@@ -99,8 +99,10 @@ RULES: tuple[Detector, ...] = (
             "literal must resolve to the published intent contract."
         ),
         suggestion=(
-            "Use a published contract intent, or register the literal in this "
-            "ledger as a projectable gap when no contract intent exists yet."
+            "Use a published contract intent, register the literal in this "
+            "ledger as a projectable gap when no contract intent exists yet, or "
+            "declare it as a client-only trace label (client_telemetry_trace) "
+            "when it never selects backend behaviour."
         ),
     ),
     Detector(
@@ -183,6 +185,14 @@ DECLARED_RENDER_INTERACTION_RULES = {
     "R3_router_literal_destination": "shell_navigation_destination",
 }
 
+# R2 intent literals that are *not* contract intents: client-only trace labels
+# written to the local trace log.  They never leave the browser and never select
+# backend behaviour, so they belong to the observability half of the sentence.
+# Adding a value here is a conscious, reviewable act; the guard asserts that the
+# label is genuinely emitted and is never dispatched as a backend intent.
+CLIENT_TELEMETRY_TRACE_CLASS = "client_telemetry_trace"
+DECLARED_CLIENT_TRACE_LITERALS = frozenset({"local:projection_refresh"})
+
 
 def _derived(evidence: str) -> dict:
     return {"classification": "contract-derived", "evidence": evidence}
@@ -221,15 +231,6 @@ AUTHORITY: dict[str, dict] = {
     "R2_intent_literal|system.init": _derived("docs/contract/exports/intent_catalog.json"),
     "R2_intent_literal|ui.contract": _derived("docs/contract/exports/intent_catalog.json"),
     "R2_intent_literal|ui.contract.v2": _derived("docs/contract/exports/intent_catalog.json"),
-    "R2_intent_literal|projection.refresh": _gap(
-        "frontend/apps/web/src/app/projectionRefreshRuntime.ts:42",
-        (
-            "`projection.refresh` is emitted as a local projection-refresh trace "
-            "label but is not declared in the published intent catalog; either "
-            "declare it in the contract/telemetry vocabulary or rename the trace "
-            "key so it cannot be mistaken for a contract intent."
-        ),
-    ),
     # --- R4: business state literals with a backend authority ---
     "R4_business_state_literal|active": _derived(
         "addons/smart_core/models/auth_credential_policy.py:24"
@@ -258,9 +259,12 @@ AUTHORITY: dict[str, dict] = {
     "R4_business_state_literal|expired": _derived(
         "addons/smart_core/models/auth_credential_policy.py:24"
     ),
-    "R4_business_state_literal|hidden": _derived(
-        "addons/smart_core/handlers/menu_configuration.py:268"
-    ),
+    "R4_business_state_literal|hidden": {
+        "classification": "contract-derived",
+        "evidence": "addons/smart_core/handlers/menu_configuration.py:349",
+        "contractEvidence": "docs/product/menu_configuration_runtime_boundary_v1.md:73",
+        "guardAssertion": "frontend_decision_authority.check_menu_handling_state_projection_consumption",
+    },
     "R4_business_state_literal|LOCKED": _derived(
         "addons/smart_core/governance/scene_normalizer.py:385"
     ),
@@ -279,45 +283,41 @@ AUTHORITY: dict[str, dict] = {
     "R4_business_state_literal|superseded": _derived(
         "addons/smart_core/model/ui_business_config_change_set.py:64"
     ),
-    "R4_business_state_literal|visible": _derived(
-        "addons/smart_core/handlers/menu_configuration.py:249"
-    ),
-    # --- R4: frontend-owned vocabulary that should be projected ---
-    "R4_business_state_literal|disabled_capability": _gap(
-        "frontend/apps/web/src/app/capabilityPolicyCore.js:7",
-        (
-            "capability state vocabulary is computed in the renderer "
-            "(`evaluateCapabilityPolicy`); the backend publishes reason codes "
-            "(e.g. PERMISSION_DENIED, capability states allow/readonly/deny/"
-            "pending/coming_soon) but not this renderer state name.  Project a "
-            "capability state/reason from the contract and consume it here."
-        ),
-    ),
-    "R4_business_state_literal|disabled_permission": _gap(
-        "frontend/apps/web/src/app/capabilityPolicyCore.js:12",
-        (
-            "the renderer decides a permission denial from group membership; the "
-            "backend already publishes PERMISSION_DENIED reason codes, so the "
-            "decision should be projected instead of recomputed in the browser."
-        ),
-    ),
-    "R4_business_state_literal|enabled": _gap(
-        "frontend/apps/web/src/app/runtime/actionViewLoadGuardRuntime.ts:23",
-        (
-            "the load-guard consumes the renderer-computed capability policy state "
-            "(`CapabilityPolicyState`); it should consume a projected capability "
-            "state/reason from the contract instead."
-        ),
-    ),
-    "R4_business_state_literal|unconfigured": _gap(
-        "addons/smart_core/model/ui_menu_config_policy.py:446",
-        (
-            "the menu handling state `unconfigured` is derived in the renderer "
-            "from the presence of a local policy id; the backend publishes "
-            "unconfigured_hidden_count but not a per-menu state.  Project the "
-            "per-menu handling state so the renderer only renders it."
-        ),
-    ),
+    "R4_business_state_literal|visible": {
+        "classification": "contract-derived",
+        "evidence": "addons/smart_core/handlers/menu_configuration.py:349",
+        "contractEvidence": "docs/product/menu_configuration_runtime_boundary_v1.md:73",
+        "guardAssertion": "frontend_decision_authority.check_menu_handling_state_projection_consumption",
+    },
+    # --- R4: capability availability, now consumed from the contract projection ---
+    "R4_business_state_literal|disabled_capability": {
+        "classification": "contract-derived",
+        "evidence": "addons/smart_core/docs/Contract-2.0-Spec.md:247",
+        "contractEvidence": "addons/smart_core/docs/Contract-2.0-Spec.md:249",
+        "guardAssertion": "frontend_decision_authority.check_capability_projection_consumption",
+    },
+    "R4_business_state_literal|disabled_permission": {
+        "classification": "contract-derived",
+        "evidence": "addons/smart_core/docs/Contract-2.0-Spec.md:247",
+        "contractEvidence": "addons/smart_core/docs/Contract-2.0-Spec.md:249",
+        "guardAssertion": "frontend_decision_authority.check_capability_projection_consumption",
+    },
+    "R4_business_state_literal|enabled": {
+        "classification": "contract-derived",
+        "evidence": "addons/smart_core/docs/Contract-2.0-Spec.md:247",
+        "contractEvidence": "addons/smart_core/docs/Contract-2.0-Spec.md:249",
+        "guardAssertion": "frontend_decision_authority.check_capability_projection_consumption",
+    },
+    "R4_business_state_literal|unconfigured": {
+        "classification": "contract-derived",
+        "evidence": "addons/smart_core/handlers/menu_configuration.py:37",
+        "contractEvidence": "docs/product/menu_configuration_runtime_boundary_v1.md:73",
+        "guardAssertion": "frontend_decision_authority.check_menu_handling_state_projection_consumption",
+    },
+    "R4_business_state_literal|deny_ungranted": {
+        "classification": "contract-derived",
+        "evidence": "addons/smart_core/core/system_init_payload_builder.py:204",
+    },
     # --- R4: chatter activity status consumed from the contract ---
     (
         "R4_business_state_literal|pending|"
@@ -407,6 +407,18 @@ def _classify(finding: Finding) -> dict:
             "declaredClass": "navigation_shell",
         }
     if (
+        finding.rule == "R2_intent_literal"
+        and finding.literal in DECLARED_CLIENT_TRACE_LITERALS
+    ):
+        return {
+            "classification": "excluded-render-interaction",
+            "reason": (
+                "declared client-only telemetry trace label; it is recorded to "
+                "the local trace log and is never dispatched as a backend intent"
+            ),
+            "declaredClass": CLIENT_TELEMETRY_TRACE_CLASS,
+        }
+    if (
         finding.rule == "R4_business_state_literal"
         and finding.literal in DECLARED_UI_STATE_LITERALS
     ):
@@ -423,6 +435,159 @@ def _classify(finding: Finding) -> dict:
             "render/interaction by declaring the class explicitly"
         ),
     }
+
+
+_CAPABILITY_POLICY_CORE = "frontend/apps/web/src/app/capabilityPolicyCore.js"
+_CONTRACT_CAPABILITY_VOCABULARY = ("allow", "readonly", "deny", "pending", "coming_soon")
+_CAPABILITY_CALL = "evaluateCapabilityPolicy("
+
+
+def _balanced_call_args(text: str, open_index: int) -> str:
+    """Return the argument text of the call whose ``(`` sits at ``open_index``."""
+    depth = 0
+    for index in range(open_index, len(text)):
+        char = text[index]
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth == 0:
+                return text[open_index + 1:index]
+    return text[open_index + 1:]
+
+
+def check_capability_projection_consumption(read_text=None, root: Path = ROOT) -> list[str]:
+    """Pin the capability-state projection consumption.
+
+    Contract-2.0-Spec section 2.0 publishes ``capability_state`` /
+    ``capability_state_reason`` and forbids the renderer from inferring the
+    state.  Dropping the projection path would silently reopen the recorded
+    gap, so the consumption itself is asserted here.
+    """
+    if read_text is None:
+
+        def read_text(rel_path: str) -> str:
+            return (root / rel_path).read_text(encoding="utf-8", errors="ignore")
+
+    failures: list[str] = []
+    core = read_text(_CAPABILITY_POLICY_CORE)
+    for token in _CONTRACT_CAPABILITY_VOCABULARY:
+        if f"'{token}'" not in core:
+            failures.append(
+                f"{_CAPABILITY_POLICY_CORE} no longer declares the contract capability "
+                f"state {token!r}; the renderer must consume, not infer, the state"
+            )
+    for token in ("catalog", "capability_state"):
+        if token not in core:
+            failures.append(
+                f"{_CAPABILITY_POLICY_CORE} no longer consumes the projected capability "
+                f"state ({token!r} missing)"
+            )
+
+    for path in _iter_sources(root):
+        rel = path.relative_to(root).as_posix()
+        if rel == _CAPABILITY_POLICY_CORE:
+            continue
+        text = read_text(rel)
+        index = 0
+        while True:
+            position = text.find(_CAPABILITY_CALL, index)
+            if position < 0:
+                break
+            index = position + 1
+            after = text[position + len(_CAPABILITY_CALL) - 1]
+            if after != "(":
+                continue  # e.g. evaluateCapabilityPolicyCore(
+            args = _balanced_call_args(text, position + len(_CAPABILITY_CALL) - 1)
+            if "catalog" not in args:
+                line = text.count("\n", 0, position) + 1
+                failures.append(
+                    f"{rel}:{line} calls evaluateCapabilityPolicy without the projected "
+                    "capability catalog"
+                )
+    return failures
+
+
+_MENU_CONFIG_VIEW = "frontend/apps/web/src/views/MenuConfigView.vue"
+_MENU_CONFIG_HANDLER = "addons/smart_core/handlers/menu_configuration.py"
+_MENU_HANDLING_STATE_VOCABULARY = ("visible", "hidden", "unconfigured")
+_MENU_HANDLING_STATE_DERIVATIONS = (
+    "draft?.policy_id ? 'hidden'",
+    "draft?.policy_id ? '当前隐藏'",
+)
+
+
+def check_menu_handling_state_projection_consumption(read_text=None, root: Path = ROOT) -> list[str]:
+    """Pin the projected per-menu handling state consumption.
+
+    The menu configuration surface must render the handling state the backend
+    projects.  Deriving ``hidden``/``unconfigured`` in the renderer from the
+    presence of a local policy id would silently reopen the recorded gap, so
+    both the consumption and the backend projection are asserted here.
+    """
+    if read_text is None:
+
+        def read_text(rel_path: str) -> str:
+            return (root / rel_path).read_text(encoding="utf-8", errors="ignore")
+
+    failures: list[str] = []
+    view = read_text(_MENU_CONFIG_VIEW)
+    if "handling_state" not in view:
+        failures.append(
+            f"{_MENU_CONFIG_VIEW} no longer consumes the projected menu handling "
+            "state; the renderer must render it, not derive it"
+        )
+    for derivation in _MENU_HANDLING_STATE_DERIVATIONS:
+        if derivation in view:
+            failures.append(
+                f"{_MENU_CONFIG_VIEW} derives the menu handling state from the local "
+                f"draft policy id again ({derivation!r})"
+            )
+    handler = read_text(_MENU_CONFIG_HANDLER)
+    if "handling_state" not in handler:
+        failures.append(
+            f"{_MENU_CONFIG_HANDLER} no longer projects the per-menu handling state"
+        )
+    for token in _MENU_HANDLING_STATE_VOCABULARY:
+        if f'"{token}"' not in handler:
+            failures.append(
+                f"{_MENU_CONFIG_HANDLER} no longer declares the menu handling state "
+                f"{token!r} in its projection vocabulary"
+            )
+    return failures
+
+
+_PROJECTION_REFRESH_RUNTIME = "frontend/apps/web/src/app/projectionRefreshRuntime.ts"
+_DISPATCH_CALLS = ("intentRequest", "apiRequest", "requestIntent", "request(", "dispatchIntent")
+
+
+def check_client_trace_label_declaration(read_text=None, root: Path = ROOT) -> list[str]:
+    """Pin the declared client-only trace labels.
+
+    A declared client trace label must be genuinely emitted by its runtime and
+    must never be dispatched as a backend intent -- otherwise it would be a
+    contract intent masquerading as local telemetry.
+    """
+    if read_text is None:
+
+        def read_text(rel_path: str) -> str:
+            return (root / rel_path).read_text(encoding="utf-8", errors="ignore")
+
+    failures: list[str] = []
+    text = read_text(_PROJECTION_REFRESH_RUNTIME)
+    for literal in sorted(DECLARED_CLIENT_TRACE_LITERALS):
+        if literal not in text:
+            failures.append(
+                f"declared client trace label {literal!r} is not emitted by "
+                f"{_PROJECTION_REFRESH_RUNTIME}; remove the stale declaration"
+            )
+    for call in _DISPATCH_CALLS:
+        if call in text:
+            failures.append(
+                f"{_PROJECTION_REFRESH_RUNTIME} dispatches a backend request "
+                f"({call!r}); a client-only trace label must not select backend behaviour"
+            )
+    return failures
 
 
 def build_inventory(read_text=None, root: Path = ROOT) -> dict:
@@ -483,6 +648,13 @@ def build_inventory(read_text=None, root: Path = ROOT) -> dict:
             },
             "navigation_shell": {
                 "rules": sorted(DECLARED_RENDER_INTERACTION_RULES),
+            },
+            CLIENT_TELEMETRY_TRACE_CLASS: {
+                "literals": sorted(DECLARED_CLIENT_TRACE_LITERALS),
+                "scope": "R2_intent_literal",
+                "guardAssertion": (
+                    "frontend_decision_authority.check_client_trace_label_declaration"
+                ),
             },
         },
         "invariants": [
@@ -568,6 +740,16 @@ def reconcile(read_text=None, root: Path = ROOT, compare_committed: bool = False
                     "classified contract-derived but is not declared in the "
                     "published intent catalog"
                 )
+
+    failures.extend(
+        check_capability_projection_consumption(read_text=read_text, root=root)
+    )
+    failures.extend(
+        check_menu_handling_state_projection_consumption(read_text=read_text, root=root)
+    )
+    failures.extend(
+        check_client_trace_label_declaration(read_text=read_text, root=root)
+    )
 
     if compare_committed:
         if not INVENTORY_PATH.exists():

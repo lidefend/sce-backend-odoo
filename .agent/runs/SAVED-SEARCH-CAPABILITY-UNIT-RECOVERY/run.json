@@ -9,12 +9,14 @@
   "scope": [
     ".agent/",
     "addons/smart_construction_core/handlers/",
+    "addons/smart_core/handlers/",
     "addons/smart_core/tests/",
     "docs/",
-    "make/",
     "frontend/apps/web/scripts/",
     "frontend/apps/web/src/",
+    "frontend/packages/schema/src/",
     "frontend/packages/ui/src/",
+    "make/",
     "scripts/audit/",
     "scripts/verify/"
   ],
@@ -192,8 +194,42 @@
         "make/frontend.mk"
       ],
       "kind": "offline"
+    },
+    "menu_handling_state_projection": {
+      "target": "verify.business_config.unit",
+      "inputs": [
+        "addons/smart_core/handlers/menu_configuration.py",
+        "addons/smart_core/tests/test_menu_configuration_audit.py",
+        "scripts/verify/lowcode_config_boundary_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "capability_policy": {
+      "target": "verify.frontend.capability_policy.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/capabilityPolicyCore.js",
+        "frontend/apps/web/src/app/capabilityPolicy.ts",
+        "frontend/apps/web/src/stores/session.ts",
+        "frontend/packages/schema/src/index.ts",
+        "scripts/verify/fe_capability_policy_smoke.js",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "component_driver_takeover": {
+      "target": "verify.frontend.component_driver_takeover.unit",
+      "inputs": [
+        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        "docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json",
+        "frontend/packages/ui/src/primitives.ts",
+        "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts",
+        "frontend/apps/web/src/",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "Batch record is current: the frontend decision-authority ledger landed and the quick gate was rerun at the new identity (165 PASS), so the scoped conclusion holds for the declared rules. Next exact step, one layer at a time: (1) close the 7 recorded contract-projectable-gaps as a P0 backend-contract projection change (project capability state/reason, per-menu handling state, and register or rename the `projection.refresh` trace key) and re-run `verify.frontend.decision_authority.unit`; (2) separately obtain the runtime role-matrix login credential prerequisite so the contract family items in section 4.C can be evidenced under the governed entry instead of remaining un-concluded. Do not relax any assertion to close either one."
+  "next_exact_step": "P0 projection gaps closed 7->0 at their owning layers (capability state/reason consumption, per-menu handling_state projected by smart_core, local:projection_refresh client trace label) and pinned by new fail-closed guard assertions; ledger re-exported. Next exact step: (1) record receipts for the re-run targets at the current tree (menu_handling_state_projection, capability_policy, component_driver_takeover, rendering_detail_state, frontend_decision_authority, contract_drift_guard, frontend_quick_gate, plus the three make/frontend.mk-affected units); (2) commit the three layers separately; (3) one exact-head ci.local.quick on a clean frozen HEAD. Do not relax any assertion, and do not claim mainline/deployment/user-delivery completion."
 }

@@ -11,6 +11,9 @@ ROOT = Path(__file__).resolve().parents[2]
 WORKBENCH = "frontend/apps/web/src/views/WorkbenchView.vue"
 LIST_PAGE = "frontend/apps/web/src/pages/ListPage.vue"
 ANCHOR = "import { computed, h, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue';"
+MENU_CONFIG_VIEW = "frontend/apps/web/src/views/MenuConfigView.vue"
+MENU_CONFIG_HANDLER = "addons/smart_core/handlers/menu_configuration.py"
+PROJECTION_REFRESH = "frontend/apps/web/src/app/projectionRefreshRuntime.ts"
 
 
 def _real_read_text(path: str) -> str:
@@ -140,6 +143,63 @@ class FrontendDecisionAuthorityGuardTests(unittest.TestCase):
                 result = authority.reconcile(compare_committed=True)
         self.assertTrue(
             any("out of sync" in item for item in result["failures"]),
+            result["failures"],
+        )
+
+    def test_menu_handling_state_derivation_is_detected(self):
+        """Deriving the handling state locally must fail the projection guard."""
+        read_text = _injecting_read_text(
+            MENU_CONFIG_VIEW,
+            "  const projected = String(menu?.handling_state || '').trim();\n"
+            "  return CONTRACT_MENU_HANDLING_STATES.has(projected) ? projected : 'unconfigured';",
+            "  const draft = menu ? drafts[menu.id] : null;\n"
+            "  return draft?.policy_id ? 'hidden' : 'unconfigured';",
+        )
+        result = authority.reconcile(read_text=read_text)
+        self.assertTrue(
+            any("derives the menu handling state" in item for item in result["failures"]),
+            result["failures"],
+        )
+
+    def test_backend_menu_handling_state_projection_is_pinned(self):
+        """Dropping the backend projection must fail the consumption guard."""
+        base = _real_read_text
+
+        def read_text(path: str) -> str:
+            value = base(path)
+            if path == MENU_CONFIG_HANDLER:
+                return value.replace("handling_state", "menu_handling_projection")
+            return value
+
+        result = authority.reconcile(read_text=read_text)
+        self.assertTrue(
+            any("no longer projects the per-menu handling state" in item for item in result["failures"]),
+            result["failures"],
+        )
+
+    def test_declared_client_trace_label_must_be_emitted(self):
+        """A declared client trace label that is no longer emitted is stale."""
+        read_text = _injecting_read_text(
+            PROJECTION_REFRESH,
+            "intent: 'local:projection_refresh'",
+            "intent: 'local:some_other_label'",
+        )
+        result = authority.reconcile(read_text=read_text)
+        self.assertTrue(
+            any("is not emitted by" in item for item in result["failures"]),
+            result["failures"],
+        )
+
+    def test_declared_client_trace_label_must_not_dispatch(self):
+        """A client-only trace label dispatching a backend request is a defect."""
+        read_text = _injecting_read_text(
+            PROJECTION_REFRESH,
+            "  ctx.recordTrace?.({",
+            "  await intentRequest({ intent: 'local:projection_refresh' });\n  ctx.recordTrace?.({",
+        )
+        result = authority.reconcile(read_text=read_text)
+        self.assertTrue(
+            any("dispatches a backend request" in item for item in result["failures"]),
             result["failures"],
         )
 

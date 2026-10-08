@@ -153,31 +153,38 @@ make verify.frontend.quick.gate        # /tmp/fe_gate_final2.log → GATE_EXIT=0
 ### 5.2 实测结论（`make verify.frontend.decision_authority.unit`，含守卫）
 
 ```
-findings=137 distinct=97 contract-derived=43 projectable-gaps=7
-frontend-logic-defects=0 render-interaction=87 unclassified=0
+findings=139 distinct=99 contract-derived=51 projectable-gaps=0
+frontend-logic-defects=0 render-interaction=88 unclassified=0
 PASS: every scoped decision is contract-derived, a recorded projectable gap, or declared render/interaction
 ```
 
 - 不变式 R1（字面能力门）与 R5（字面 action_id）在声明范围内命中数均为 **0**。
 - R2 全部 intent 字面命中已发布 intent 目录（结构校验通过）。
-- **结论**：在声明的扫描面与声明的规则集下，"除渲染/交互外全部契约驱动"成立；
-  该成立是**有条件的、可复核的、只减不增的**——台账给出唯一缺口清单（5.3），
-  任何新增未登记决策都会被守卫判红。
+- `contract-projectable-gap` 由 **7 → 0**（关闭方式见 5.3），`unclassified` 保持 **0**。
+- **结论**：在声明的扫描面与声明的规则集下，"除渲染/交互外全部契约驱动"成立，
+  且本轮已不存在"投影责任仍在前端"的登记缺口。该成立仍是有条件的、可复核的、只减不增的
+  ——任何新增未登记决策都会被守卫判红。
 
-### 5.3 剩余缺口（`contract-projectable-gap`，逐条可行动）
+### 5.3 缺口关闭记录（7 → 0，`contract-projectable-gap` 清零）
 
-| decision | 位置 | 缺口 |
-|---|---|---|
-| `disabled_capability` | `frontend/apps/web/src/app/capabilityPolicyCore.js:7` | 能力态词表在前端计算；后端已发布 `PERMISSION_DENIED` 与 `allow/readonly/deny/pending/coming_soon`，但未投影该状态名 |
-| `disabled_permission` | `frontend/apps/web/src/app/capabilityPolicyCore.js:12` | 前端按用户组重算权限拒绝，后端已有 `PERMISSION_DENIED`，应改为投影 |
-| `disabled_permission` | `frontend/apps/web/src/views/SceneView.vue:990` | 同上，消费点 |
-| `disabled_capability` | `frontend/apps/web/src/views/WorkbenchView.vue:462` | 同上，消费点 |
-| `enabled` | `frontend/apps/web/src/app/runtime/actionViewLoadGuardRuntime.ts:23` | 依赖前端 `CapabilityPolicyState`，应消费投影态 |
-| `unconfigured` | `frontend/apps/web/src/views/MenuConfigView.vue:364` | 菜单处置态由渲染侧本地 `policy_id` 推导；后端只发布 `unconfigured_hidden_count` |
-| `projection.refresh` | `frontend/apps/web/src/app/projectionRefreshRuntime.ts:42` | intent 命名空间字面未在契约目录声明（仅作本地 trace 标签），须登记或改名 |
+7 条缺口**不是**通过放宽断言、增加豁免或调低判定关闭的；每一条都把投影责任移回它的所有者层，
+再由新增的 fail-closed 守卫断言钉住，防止回退。
 
-**边界声明（不放宽）**：这些 gap 只表示"投影责任仍在前端"，不等于页面出现错误行为；
-本批不下调任何既有验收断言，也不把 gap 记为通过或已修复。它们属于后续批次的实际工作项。
+| # | 原缺口 | 所有者层与修法 | 契约/证据 | 守卫断言 |
+|---|---|---|---|---|
+| 1 | `disabled_capability` / `disabled_permission`（`capabilityPolicyCore.js`、`SceneView.vue`、`WorkbenchView.vue`） | P0 前端契约消费：从渲染侧重算改为投影消费 `capability_state` + `capability_state_reason`；后端契约已发布该字段，前端 schema 声明补齐（`frontend/packages/schema/src/index.ts`） | `addons/smart_core/docs/Contract-2.0-Spec.md:247-249`（`allow \| readonly \| deny \| pending \| coming_soon`，明确"不允许前端自行推断状态"）；`docs/contract/exports/intent_catalog.json` 字段 `capabilities[].capability_state_reason` | `frontend_decision_authority.check_capability_projection_consumption` + `verify.frontend.capability_policy.unit` |
+| 2 | `enabled`（`actionViewLoadGuardRuntime.ts`） | P0 前端契约消费：消费同一投影态，不再依赖前端 `CapabilityPolicyState` 字面 | 同上 | 同上 |
+| 3 | `unconfigured` / `hidden` / `visible`（`MenuConfigView.vue`） | P0 后端契约投影：`smart_core` 新增每菜单 `handling_state` 词表与投影（`addons/smart_core/handlers/menu_configuration.py:37` 词表、`:349` 逐行投影），渲染侧删除本地 `policy_id` 推导 | `docs/product/menu_configuration_runtime_boundary_v1.md` §3 状态模型（投影映射：`visible_*`→`visible`，`hidden_*`→`hidden`，`candidate`/无配置意图→`unconfigured`） | `frontend_decision_authority.check_menu_handling_state_projection_consumption` + `addons/smart_core/tests/test_menu_configuration_audit.py` |
+| 4 | `projection.refresh`（`projectionRefreshRuntime.ts`） | P0 前端渲染机制：本地 trace 标签改用 `local:` 命名空间（`local:projection_refresh`），与契约 intent 命名空间显式隔离；不伪装成契约 intent | 契约 intent 目录不含该名；`frontend:dispatch` 面不得发射该字面 | `frontend_decision_authority.check_client_trace_label_declaration`（声明类 `client_telemetry_trace`） |
+
+守卫侧同步：`scripts/verify/frontend_decision_authority.py` 新增声明类 `client_telemetry_trace` 与
+`DECLARED_CLIENT_TRACE_LITERALS`，新增上述两个 fail-closed 检查并接入 `reconcile()`；
+`scripts/verify/test_frontend_decision_authority_guard.py` 由 11 → **15** 个用例
+（含"本地推导被检出""后端投影被钉住""client trace 未发射被检出""client trace 不得 dispatch"
+四个负例/正例）。台账 `docs/frontend_productization/decision-authority-inventory-v1.json` 重新导出。
+
+**边界声明（不放宽）**：`contract-derived` 是**结构校验**结果（消费面确实消费了已发布的契约字段/词表），
+不是"页面一定正确"的证明；本轮未下调任何既有验收断言，也未把任何未取证项记为通过。
 
 ### 5.4 结论的适用范围（诚实边界）
 
@@ -191,6 +198,6 @@ PASS: every scoped decision is contract-derived, a recorded projectable gap, or 
 
 
 - 批次验收：本批（7 个门禁红项目标 + 1 项 token 补齐 + 1 项契约漂移修复 + 目录导出刷新 + 独立复核
-  + 前端决策权属台账/守卫 + quick gate 重跑 165 PASS）。
+  + 前端决策权属台账/守卫 + quick gate 全目标重跑通过，`-k` 单次全量 `GATE_EXIT=0`，57 个 unittest 入口 / 1030 用例，含本节 P0 投影闭环）。
 - 主线集成 / 版本发布 / 产品交付：本批不主张。
 - 运行态契约链（§4.C）：待运行态凭据前置恢复后单独取证，本轮不主张通过。
