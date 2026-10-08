@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE",
   "branch": "fix/frontend-business-entry-contract-payment-closure-20261007",
-  "status": "active",
+  "status": "completed",
   "baseline_sha": "8c2b8dda27856cd31715cbb0c4e214aefbfda41a",
   "goal": ".agent/goals/FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE.yaml",
   "record": "docs/ops/iterations/frontend_business_entry_acceptance_gap_closure_20261007.md",
@@ -404,5 +404,42 @@
     "VERDICT 2026-10-08 (single consolidated user-level acceptance verdict over the 89-entry delivery surface, served revision 24e05cd54685645498843bf29b222fed3f595d9e / sc_demo / ENV=dev): 89/89 covered - state_counts {checked:9, passed:80}, stale=0, uncovered=0, undecidable=0. The 9 checked units carry declaration fingerprints equal to the approved F7B7C2EE 89-unit baseline (row-level equivalence); the 80 passed are reused by the evidence engine's unchanged-input analysis (daily-f4279416-full 80 entries ok=true problems=[] plus daily-aed39bc5 and daily-ce8b77bf-incremental deltas). Payment-apply row re-evidenced this round: incremental summary ok=true problems=[] console_errors=[] target_sha=served_revision=24e05cd5, record_id 36179, workflow_actions [save_draft, submit, cancel]. Negatives: 19-case lane ok=true leaked_entries=[], delta2 ok=true leaked_entries=[], negative_closures.json 10 candidates leaked_entries=[]. Two ineligible candidates (fixture_role_executive, fixture_role_partner_manager) released_navigation_targets=0 so a denial is indistinguishable from missing navigation - recorded as uncovered, NOT as failure. Historical excluded lanes (daily-ce8b77bf-full, daily-f4279416-matrix/notrun, daily-f4279416-project-center, daily-f4279416-workbench, daily-f7b7c2ee-workbench, recon-presentations) are not counted as this round's evidence. Remaining failures on the deployed revision: NONE. This is batch acceptance only - not a version-release and not a product-delivery claim; the branch goal stays NOT complete.",
     "RESOLVED 2026-10-08 (vendor-coupling L1 gate, P4 probe ownership): make verify.frontend.playwright_vendor_coupling.guard now PASSES (vendor_internal_selector files=21 total=104 <= recorded 109, rc=0, 7 unit tests OK). Root cause: scripts/verify/local_dev_project_create_contract_driver_probe.mjs read the workspace section heading with a load-bearing fallback of the TDesign internal class .t-card__title, raising this file's literal vendor-internal-selector count to 2 over the declared baseline of 1 - the probe reaches the guard via verify.frontend.quick.gate, so this was a real delivery-gate blocker, not only a cosmetic L1 nit. Fix (tightening only, no product/ACL/field-permission/negative change, no baseline raise): the probe now consumes the renderer's declared public surface - ':scope > header h3, :scope > header button' when the container renders a native header, otherwise the root's data-group-title that NativeFormTreeRenderer already publishes (and which the probe already captured as title). Detail-card sections render through ScCard so tag=DIV and there is no native header, which is why the fallback was needed. Assertion strength unchanged, proven by equivalence not assertion: on the governed local.dev fixture the declared title and the rendered heading are byte-identical for all five workspace sections (基本信息 / 计划与责任 / 责任矩阵 / 项目说明 / 协作资料) before and after. Revalidated: make verify.local.dev.project_create_contract_action_scope rc=0 with the same workspace sections (drivers=1, errors=[]); evidence .runtime/final-acceptance/vendor-coupling-probe-fix/local_dev_project_create_contract_action_scope.log. Only the probe's own check (verify.local.dev.project_create_contract_action_scope) is invalidated and refreshed; the 89-entry matrix, detail lane and relation round trip do not depend on this probe, so their passed evidence is carried forward."
   ],
-  "next_exact_step": "Product-acceptance goal on the governed daily runtime (http://1.95.85.92:18081, sc_demo, ENV=dev), now serving git_sha 24e05cd54685645498843bf29b222fed3f595d9e (PR #607 squash-merged; merge != deployment, but this revision IS deployed and its runtime-version readback was aligned). (1) DONE 2026-10-08: PR #607 merged as 24e05cd5 and the daily runtime rebuilt/upgraded, frontend bundle rebuilt and source_revision aligned; 89/89 entry-matrix scope reuse verified and the payment-apply row re-evidenced incrementally. (2) DONE 2026-10-08: detail lane closed on served 24e05cd5 - detail-only 8/8, form-profiles 12/12, workbench-only rc=0 in light and dark after the probe's declared-marker fix. (3) DONE 2026-10-08: one real declared-relation round trip re-evidenced on 24e05cd5 (4/4 declared-openable entries opened, return restored, denied=0, console=0). (4) DONE 2026-10-08: single consolidated user-level acceptance verdict over the 89-entry surface produced on the deployed revision - 89/89 covered (checked 9 + passed 80), stale 0, uncovered 0, problems=[], console_errors=0, negatives 19/19 with leaked_entries=[], remaining failures = NONE; two ineligible candidates recorded as uncovered, not failures; historical excluded lanes listed with reasons. (ALL STEPS 1-5 DONE as of 2026-10-08; no remaining failing item is recorded for this run, so the only outstanding action is the owner's overall close-out decision on the branch goal.) (5) DONE 2026-10-08: the pre-existing vendor-coupling L1 guard failure is closed at its P4 probe owner without raising any baseline - the project-create probe now reads the renderer's declared data-group-title instead of the TDesign .t-card__title, the guard passes (104 <= 109) and the probe re-passes rc=0 with byte-identical workspace sections. Keep the branch goal NOT complete: no version-release and no product-delivery claim. Report batch acceptance (done this round) / mainline integration (done for PR #607) / version release (not claimed) / product delivery (not claimed) separately."
+  "next_exact_step": "Completed and retired. PR #607 (squash 24e05cd5) and PR #608 (head 9c64154f -> squash 286a6e11) merged into main with all four required checks success on the exact head; the frozen candidate 9c64154f has an exact-head ci.local.quick PASS receipt. The consolidated user-level acceptance verdict over the 89-entry surface is closed on the deployed revision 24e05cd5 (89/89 covered, stale 0, uncovered 0, problems=[], console_errors=0, negatives 19/19 with leaked_entries=[], remaining failures none). The vendor-coupling L1 gate is closed at its P4 probe owner without raising any baseline. This ledger is retired to its terminal state: .agent/active-runs.json is back to its empty terminal state so no index entry points at the merged fix branch, and on main make agent.run.resume reports unregistered (ACTIVE-RUN-INDEX-DANGLING-CLOSEOUT precedent). Batch acceptance done; mainline integration done; version release NOT claimed; product delivery NOT claimed. Deletion of the merged fix branch belongs to the separate branch.retire.historical lane.",
+  "evidence": {
+    "candidate_head": "9c64154f1943efa3c95d79a9076e1114d94d1a67",
+    "mainline_integration": {
+      "status": "completed",
+      "pull_requests": [
+        607,
+        608
+      ],
+      "merge_commits": {
+        "607": "24e05cd54685645498843bf29b222fed3f595d9e",
+        "608": "286a6e1116d2dbb24047347827f6edcd00f932f5"
+      },
+      "heads": {
+        "607": "25845e9757f920b35874d60fbea8f58686ae7a28",
+        "608": "9c64154f1943efa3c95d79a9076e1114d94d1a67"
+      },
+      "required_checks": "public_guard, merge_policy_gate, professional_quality_gate, frontend_release_gate all success on the exact head 9c64154f1943efa3c95d79a9076e1114d94d1a67",
+      "note": "A merge does not deploy; the deployed served revision readback used by the acceptance verdict is 24e05cd5."
+    },
+    "frozen_candidate_quick": {
+      "head": "9c64154f1943efa3c95d79a9076e1114d94d1a67",
+      "receipt": ".git/codex/evidence/ci.local.quick/9c64154f1943efa3c95d79a9076e1114d94d1a67.json",
+      "result": "PASS"
+    },
+    "acceptance_verdict": {
+      "revision_served": "24e05cd54685645498843bf29b222fed3f595d9e",
+      "environment": "http://1.95.85.92:18081 ENV=dev DB_NAME=sc_demo",
+      "coverage": "89/89 formal business frontend entries (checked 9 + passed 80); stale 0; uncovered 0; problems=[]; console_errors=0",
+      "negatives": "19/19 leaked_entries=[]; delta2 ok=true; negative_closures.json leaked_entries=[]",
+      "remaining_failures": "none on the deployed revision",
+      "uncovered_not_failed": [
+        "fixture_role_executive",
+        "fixture_role_partner_manager"
+      ],
+      "boundary": "Batch acceptance only. Not a version-release claim and not a product-delivery claim."
+    }
+  }
 }

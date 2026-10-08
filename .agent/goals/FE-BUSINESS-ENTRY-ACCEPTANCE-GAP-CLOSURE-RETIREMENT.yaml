@@ -1,0 +1,22 @@
+goal:
+  id: FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE-RETIREMENT
+  status: completed
+  formal_product_layer: P4
+  objective: >-
+    Retire the FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE run ledger after PR #607
+    (squash 24e05cd5) and PR #608 (head 9c64154f, squash 286a6e11) merged into
+    main. Mark the run and goal completed with the recorded mainline-integration
+    and frozen-candidate evidence and return .agent/active-runs.json to its empty
+    terminal state, so no index entry points at the merged
+    fix/frontend-business-entry-contract-payment-closure-20261007 branch.
+    Bookkeeping only: it changes no product, contract, test, gate, workflow,
+    runtime or credential behaviour.
+  run: .agent/runs/FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE-RETIREMENT/run.json
+  exclusions:
+    - product_changes
+    - contract_changes
+    - assertion_or_audit_relaxation
+    - baseline_raises
+    - product_deployment
+    - production_access
+    - credential_rotation

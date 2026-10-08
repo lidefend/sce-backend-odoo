@@ -1353,3 +1353,26 @@ CSV：3 个 account 行 `declared→passed`、`阻塞→本轮验收`，`role_au
 - 守卫恢复通过；`verify.frontend.quick.gate` 的该项阻断解除。
 - 该修复只影响探针执行路径：`verify.local.dev.project_create_contract_action_scope` 结果已刷新，
   89 条矩阵 / 详情车道 / 关系往返**不依赖**该探针，其既有通过证据继续复用。
+
+## 续轮 7（2026-10-08）：run 退役（台账收口）
+
+### 身份与依据
+- 冻结候选 HEAD `9c64154f1943efa3c95d79a9076e1114d94d1a67`；合并后 `origin/main` = `286a6e1116d2dbb24047347827f6edcd00f932f5`。
+- 主线集成：**PR #607**（head `25845e97`，squash `24e05cd5`）+ **PR #608**（head `9c64154f`，squash `286a6e11`）均已合并；
+  四项必需检查 `public_guard`、`merge_policy_gate`、`professional_quality_gate`、`frontend_release_gate`
+  在精确 HEAD 上全部 success。合并不等于部署，验收裁决绑定的 deployed served revision 仍为 `24e05cd5`。
+- 冻结候选 Quick：`.git/codex/evidence/ci.local.quick/9c64154f1943efa3c95d79a9076e1114d94d1a67.json` → PASS。
+
+### 退役动作（纯台账）
+- `FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE` 的 run 与 goal 置为 `completed`，并回填 `evidence`（主线集成、冻结候选 Quick、89 条验收裁决）。
+- `.agent/active-runs.json` 回到空终止态 `{"schema_version":1,"branches":{}}`，使任何索引项都不再指向已合并的
+  `fix/frontend-business-entry-contract-payment-closure-20261007` 分支。
+- 注册离线退役 run `FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE-RETIREMENT`（check `run_index_terminal_state` → `verify.agent.resume.unit`）。
+- 复验：`make verify.agent.resume.unit` → 30 tests OK；main 上 `make agent.run.resume` → `unregistered`
+  （沿用 `ACTIVE-RUN-INDEX-DANGLING-CLOSEOUT` 先例）。
+- 已合并 `fix/...` 分支的删除属于独立的 `branch.retire.historical` 车道，**不在本批**。
+
+### 状态边界（最终）
+- **批次验收**：完成。**主线集成**：完成（PR #607、PR #608）。
+- **版本发布**：未主张（未部署版本、未做 release snapshot）。**产品交付**：未主张。
+- 本批无产品、契约、测试、门禁、工作流、运行态或凭据行为变更，仅台账收口。

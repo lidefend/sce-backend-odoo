@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE
   title: close_the_declared_gaps_of_the_89_formal_business_frontend_entries
-  status: in_progress
+  status: completed
   formal_product_layer: P1
   layer_target: smart_construction_core_project_center_and_contract_center_entry_surfaces
   module:
