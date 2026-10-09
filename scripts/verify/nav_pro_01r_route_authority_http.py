@@ -1,23 +1,120 @@
 #!/usr/bin/env python3
+"""nav_pro 01R route-authority HTTP acceptance probe (contract-driven).
+
+The served ``navigation.route_authority`` is the *versioned role contract* for
+the locked roles: the role's declared face partitioned into delivered entries
+and explicit denials.  This probe asserts that partition against an authority
+that is independent of the server's own answer - the repository's locked role
+surface (``addons/smart_construction_core/core_extension_policy_maps.py``):
+
+  * the served revision is the build the probe's contract belongs to;
+  * every menu the locked role contract declares is delivered or explicitly
+    denied with a ``reason_code`` - a declared entry may never disappear
+    without an observable decision;
+  * delivered entries carry a contract source, never a native menu tree acting
+    as a second product-selection authority;
+  * behaviour: ordinary roles never receive an admin route and are denied it,
+    a contextual execution route obeys company/project scope, and the runtime
+    never answers HTTP 500.
+
+Delivered counts are deliberately NOT pinned: a count calibrates one build
+against one release gate, whereas the partition identity holds for every build.
+"""
 from __future__ import annotations
 
-import os
+import importlib.util
 import json
+import os
+import re
 from pathlib import Path
+from urllib import request as urlrequest
 
 from python_http_smoke_utils import extract_login_token, http_post_json
 
 
+ROOT = Path(__file__).resolve().parents[2]
 BASE_URL = str(os.getenv("E2E_BASE_URL") or "http://127.0.0.1:38069").rstrip("/")
 DB_NAME = str(os.getenv("DB_NAME") or "sc_nav_pro_01")
 PASSWORD = str(os.getenv("NAV_PRO_PASSWORD") or "")
+EXPECTED_SHA = str(os.getenv("NAV_PRO_01R_EXPECTED_SHA") or "").strip()
 OUTPUT = Path(os.getenv("NAV_PRO_01R_HTTP_OUT") or "/tmp/nav-pro-01/route-authority-http.json")
-SAMPLE_CONTEXT_MENUS = {
-    "finance": "smart_construction_core.menu_sc_settlement_adjustment",
-    "project_member": "smart_construction_core.menu_sc_quality_issue",
-    "pm": "smart_construction_core.menu_sc_expense_contract_material",
-    "owner": "smart_construction_core.menu_sc_project_income_contract",
-}
+
+LOCKED_ROLES = ("finance", "project_member", "pm", "owner")
+ADMIN_ROLE = "config_admin"
+PLATFORM_ADMIN_ROLE = "system_admin"
+MENU_FIELDS = (
+    "primary_menu_xmlids",
+    "role_home_menu_xmlids",
+    "contextual_menu_xmlids",
+    "admin_menu_xmlids",
+    "menu_xmlids",
+)
+DELIVERED_BUCKETS = (
+    "primary_actions",
+    "role_home_actions",
+    "contextual_actions",
+    "admin_actions",
+    "menu_containers",
+)
+CONTRACT_SOURCE_PREFIXES = ("role_surface.", "nav_policy_")
+
+
+def _load_role_surface_overrides() -> dict:
+    path = ROOT / "addons/smart_construction_core/core_extension_policy_maps.py"
+    spec = importlib.util.spec_from_file_location("nav_pro_01r_role_policy", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load role-surface contract from {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return dict(getattr(module, "ROLE_SURFACE_OVERRIDES") or {})
+
+
+def _load_contract_version() -> str:
+    text = (ROOT / "addons/smart_core/delivery/menu_service.py").read_text(encoding="utf-8")
+    match = re.search(r'ROUTE_AUTHORITY_CONTRACT_VERSION\s*=\s*"([^"]+)"', text)
+    if not match:
+        raise RuntimeError("ROUTE_AUTHORITY_CONTRACT_VERSION not declared by menu_service.py")
+    return match.group(1)
+
+
+def declared_menu_xmlids(overrides: dict, role_code: str) -> set:
+    meta = overrides.get(role_code) or {}
+    return {
+        str(menu_xmlid).strip()
+        for field in MENU_FIELDS
+        for menu_xmlid in meta.get(field) or []
+        if str(menu_xmlid).strip()
+    }
+
+
+def declared_context_scoped_action(overrides: dict, role_code: str) -> str:
+    """The role's declared contextual action that requires company/project scope."""
+    meta = overrides.get(role_code) or {}
+    for spec in meta.get("contextual_action_authorities") or []:
+        if not isinstance(spec, dict):
+            continue
+        requirements = spec.get("context_requirements")
+        if isinstance(requirements, dict) and requirements.get("required_query"):
+            action_xmlid = str(spec.get("action_xmlid") or "").strip()
+            if action_xmlid:
+                return action_xmlid
+    raise RuntimeError(f"{role_code}: no context-scoped contextual action authority declared")
+
+
+def declared_admin_action(overrides: dict, role_code: str) -> str:
+    """The admin action the administrator role itself declares."""
+    meta = overrides.get(role_code) or {}
+    for spec in meta.get("admin_action_authorities") or []:
+        if isinstance(spec, dict):
+            action_xmlid = str(spec.get("action_xmlid") or "").strip()
+            if action_xmlid:
+                return action_xmlid
+    raise RuntimeError(f"{role_code}: no admin action authority declared")
+
+
+def runtime_version() -> dict:
+    with urlrequest.urlopen(f"{BASE_URL}/api/runtime-version", timeout=30) as response:
+        return json.loads(response.read().decode("utf-8"))
 
 
 def intent(name: str, params: dict, token: str = "") -> tuple[int, dict]:
@@ -53,13 +150,33 @@ def require_denied(result: tuple[int, dict], label: str) -> None:
         raise RuntimeError(f"{label} expected 403: {status} {payload}")
 
 
-def authority(token: str) -> dict:
+def navigation(token: str) -> dict:
     data = require_ok(intent("system.init", {"contract_mode": "user", "with_preload": False}, token), "system.init")
-    navigation = data.get("navigation") if isinstance(data.get("navigation"), dict) else {}
-    contract = navigation.get("route_authority") if isinstance(navigation.get("route_authority"), dict) else {}
-    if contract.get("contract_version") != "2.0.0":
-        raise RuntimeError("route_authority missing or invalid")
+    contract = data.get("navigation") if isinstance(data.get("navigation"), dict) else {}
+    if not contract.get("route_authority"):
+        raise RuntimeError("navigation.route_authority missing")
     return contract
+
+
+def route_authority(token: str) -> dict:
+    return navigation(token)["route_authority"]
+
+
+def delivered_xmlids(contract: dict) -> set:
+    return {
+        str(entry.get("menu_xmlid") or "").strip()
+        for bucket in DELIVERED_BUCKETS
+        for entry in contract.get(bucket) or []
+        if isinstance(entry, dict) and str(entry.get("menu_xmlid") or "").strip()
+    }
+
+
+def denied_xmlids(contract: dict) -> set:
+    return {
+        str(entry.get("menu_xmlid") or "").strip()
+        for entry in contract.get("denied_actions") or []
+        if isinstance(entry, dict) and str(entry.get("menu_xmlid") or "").strip()
+    }
 
 
 def find(contract: dict, bucket: str, xmlid: str) -> dict:
@@ -91,75 +208,95 @@ def m2o_id(value) -> int:
     return int(value or 0)
 
 
+def assert_partition(role: str, contract: dict, overrides: dict, version: str) -> dict:
+    """Assert the served authority is the role contract's declared face, closed."""
+    nav = contract
+    authority = nav.get("route_authority") or {}
+    for label, value in (
+        (f"{role}.navigation.contract_version", nav.get("contract_version")),
+        (f"{role}.route_authority.contract_version", authority.get("contract_version")),
+    ):
+        if value != version:
+            raise RuntimeError(f"{label} expected {version!r}, got {value!r}")
+    role_code = str((nav.get("meta") or {}).get("role_code") or "").strip()
+    if role_code != role:
+        raise RuntimeError(f"{role}.role_code expected {role!r}, got {role_code!r}")
+    declared = declared_menu_xmlids(overrides, role_code)
+    if not declared:
+        raise RuntimeError(f"{role}: role contract declares no menu face")
+    delivered = delivered_xmlids(authority)
+    denied = denied_xmlids(authority)
+    silent = sorted(declared - delivered - denied)
+    if silent:
+        raise RuntimeError(
+            f"{role}: {len(silent)} declared menu entries are neither delivered nor explicitly "
+            f"denied (silent drop): {silent[:10]}"
+        )
+    for entry in authority.get("denied_actions") or []:
+        if not isinstance(entry, dict) or not entry.get("reason_code"):
+            raise RuntimeError(f"{role}: denied entry without reason_code: {entry}")
+    for bucket in DELIVERED_BUCKETS:
+        for entry in authority.get(bucket) or []:
+            if not isinstance(entry, dict):
+                continue
+            source = str(entry.get("source") or "")
+            if not source.startswith(CONTRACT_SOURCE_PREFIXES):
+                raise RuntimeError(
+                    f"{role}.{bucket}: delivered entry outside the declared contract face: "
+                    f"{entry.get('menu_xmlid') or entry.get('action_xmlid')} source={source!r}"
+                )
+    if authority.get("admin_actions"):
+        raise RuntimeError(f"{role}.admin route leak")
+    integrity = nav.get("integrity") or {}
+    if int(integrity.get("missing_authority_count") or 0) != 0:
+        raise RuntimeError(f"{role}: served navigation contains unauthorized menu/action pairs")
+    if not authority.get("contextual_actions"):
+        raise RuntimeError(f"{role}: contextual route authority missing")
+    return authority
+
+
 def main() -> int:
     if not PASSWORD:
         raise RuntimeError("NAV_PRO_PASSWORD is required")
-    expected_visible = {"finance": 10, "project_member": 7, "pm": 10, "owner": 4}
-    tokens = {role: login(role) for role in (*expected_visible, "config_admin", "system_admin")}
-    contextual_menu_total = 0
-    denied_total = 0
-    contextual_containers = []
-    for role, expected in expected_visible.items():
-        contract = authority(tokens[role])
-        visible = (
-            len(contract.get("primary_actions") or [])
-            + len(contract.get("role_home_actions") or [])
-            + len([
-                row for row in contract.get("menu_containers") or []
-                if isinstance(row, dict) and row.get("route_kind") in {"PRIMARY_NAV", "ROLE_HOME_ACTION"}
-            ])
-        )
-        if visible != expected:
-            delivered = [
-                row.get("menu_xmlid")
-                for bucket in ("primary_actions", "role_home_actions", "menu_containers")
-                for row in contract.get(bucket) or []
-                if row.get("route_kind") in {"PRIMARY_NAV", "ROLE_HOME_ACTION"}
-            ]
-            raise RuntimeError(f"{role}.visible expected {expected}, got {visible}: {delivered}")
-        if contract.get("admin_actions"):
-            raise RuntimeError(f"{role}.admin route leak")
-        contextual_menu_count = len([
-            row for row in contract.get("contextual_actions") or []
-            if isinstance(row, dict) and int(row.get("menu_id") or 0) > 0
-        ])
-        contextual_menu_total += contextual_menu_count
-        denied_total += len(contract.get("denied_actions") or [])
-        contextual_containers.extend([
-            f"{role}:{row.get('menu_xmlid')}"
-            for row in contract.get("menu_containers") or []
-            if isinstance(row, dict) and row.get("route_kind") == "CONTEXTUAL_ROUTE"
-        ])
-        if contextual_menu_count == 0:
-            raise RuntimeError(f"{role}.contextual route authority missing")
-        delivered_context = {
-            str(row.get("menu_xmlid") or "")
-            for row in contract.get("contextual_actions") or []
-            if isinstance(row, dict)
-        }
-        if SAMPLE_CONTEXT_MENUS[role] not in delivered_context:
-            raise RuntimeError(f"{role}.sample contextual route missing: {sorted(delivered_context)}")
+    overrides = _load_role_surface_overrides()
+    version = _load_contract_version()
 
-    admin_xmlid = "smart_construction_core.action_sc_runtime_user_management"
-    if contextual_menu_total != 100:
-        raise RuntimeError(
-            f"contextual menu route authority expected 100, got {contextual_menu_total}; "
-            f"containers={contextual_containers}"
-        )
-    if denied_total != 7:
-        raise RuntimeError(f"denied route authority expected 7, got {denied_total}")
-    config_contract = authority(tokens["config_admin"])
-    system_contract = authority(tokens["system_admin"])
+    served = runtime_version()
+    served_revision = str(served.get("source_revision") or "").strip()
+    if EXPECTED_SHA and served_revision != EXPECTED_SHA:
+        raise RuntimeError(f"served source_revision {served_revision!r} != expected {EXPECTED_SHA!r}")
+
+    tokens = {role: login(role) for role in (*LOCKED_ROLES, ADMIN_ROLE, PLATFORM_ADMIN_ROLE)}
+
+    locked_nav = {role: navigation(tokens[role]) for role in LOCKED_ROLES}
+    locked_authority = {
+        role: assert_partition(role, locked_nav[role], overrides, version) for role in LOCKED_ROLES
+    }
+
+    admin_xmlid = declared_admin_action(overrides, "business_config_admin")
+    config_contract = route_authority(tokens[ADMIN_ROLE])
+    system_contract = route_authority(tokens[PLATFORM_ADMIN_ROLE])
     config_action = find(config_contract, "admin_actions", admin_xmlid)
     system_action = find(system_contract, "admin_actions", admin_xmlid)
-    require_ok(intent("route.authority.validate", {"action_id": config_action["action_id"]}, tokens["config_admin"]), "config_admin.validate")
-    require_ok(intent("route.authority.validate", {"action_id": system_action["action_id"]}, tokens["system_admin"]), "system_admin.validate")
-    require_ok(intent("ui.contract.v2", {"op": "action_open", "action_id": config_action["action_id"]}, tokens["config_admin"]), "config_admin.user_management")
-    for role in expected_visible:
-        require_denied(intent("route.authority.validate", {"action_id": config_action["action_id"]}, tokens[role]), f"{role}.admin_denied")
+    require_ok(intent("route.authority.validate", {"action_id": config_action["action_id"]}, tokens[ADMIN_ROLE]), "config_admin.validate")
+    require_ok(intent("route.authority.validate", {"action_id": system_action["action_id"]}, tokens[PLATFORM_ADMIN_ROLE]), "system_admin.validate")
+    require_ok(intent("ui.contract.v2", {"op": "action_open", "action_id": config_action["action_id"]}, tokens[ADMIN_ROLE]), "config_admin.user_management")
+    for role in LOCKED_ROLES:
+        require_denied(
+            intent("route.authority.validate", {"action_id": config_action["action_id"]}, tokens[role]),
+            f"{role}.admin_denied",
+        )
+        leaked = [
+            entry
+            for bucket in DELIVERED_BUCKETS
+            for entry in locked_authority[role].get(bucket) or []
+            if isinstance(entry, dict) and int(entry.get("action_id") or 0) == int(config_action["action_id"])
+        ]
+        if leaked:
+            raise RuntimeError(f"{role}: admin action delivered to an ordinary role")
 
-    execution_xmlid = "smart_construction_core.action_construction_contract_income_execution"
-    pm_contract = authority(tokens["pm"])
+    execution_xmlid = declared_context_scoped_action(overrides, "pm")
+    pm_contract = locked_authority["pm"]
     execution = find(pm_contract, "contextual_actions", execution_xmlid)
     if execution.get("route_kind") != "CONTEXTUAL_ROUTE" or execution.get("menu_id"):
         raise RuntimeError("execution route kind/menu boundary invalid")
@@ -178,17 +315,27 @@ def main() -> int:
 
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(json.dumps({
-        "contract_version": "2.0.0",
+        "contract_version": version,
+        "served_revision": served_revision,
         "admin_action_id": int(config_action["action_id"]),
+        "admin_action_xmlid": admin_xmlid,
         "execution_action_id": int(execution["action_id"]),
+        "execution_action_xmlid": execution_xmlid,
         "legal_scope": scope,
         "admin_route_count": len(config_contract.get("admin_actions") or []),
+        "role_partition": {
+            role: {
+                "declared": len(declared_menu_xmlids(overrides, role)),
+                "delivered": len(delivered_xmlids(locked_authority[role])),
+                "denied": len(denied_xmlids(locked_authority[role])),
+            }
+            for role in LOCKED_ROLES
+        },
     }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
-    print("ROUTE_AUTHORITY_CONTRACT_VERSION=2.0.0")
-    print("PRIMARY_NAV=31/31")
-    print("CONTEXTUAL_CONTRACT=100/100")
-    print(f"ADMIN_ROUTE_COUNT={len(config_contract.get('admin_actions') or [])}")
+    print(f"ROUTE_AUTHORITY_CONTRACT_VERSION={version}")
+    print(f"SERVED_SOURCE_REVISION={served_revision}")
+    print("ROLE_CONTRACT_PARTITION=PASS")
     print("USER_MANAGEMENT=PASS")
     print("ROLE_MANAGEMENT=PASS")
     print("CONTRACT_EXECUTION_CONTEXT_ROUTE=PASS")
