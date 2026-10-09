@@ -1103,6 +1103,64 @@ class MenuService:
                 "reason_code": "PRODUCT_ENTRY_NOT_DEFINED",
             })
 
+        # The declared ACTION face is closed the same way as the declared MENU
+        # face. A contextual/admin action authority that is neither delivered nor
+        # explicitly denied would be an unobservable contract defect: the
+        # declaration promises a route the runtime never admits (for example an
+        # action whose model ACL does not grant the declared operation to this
+        # principal). Record an explicit decision instead of narrowing silently.
+        declared_action_xmlids = {
+            str(spec.get("action_xmlid") or "").strip()
+            for field in ("contextual_action_authorities", "admin_action_authorities")
+            for spec in surface.get(field) or []
+            if isinstance(spec, dict) and str(spec.get("action_xmlid") or "").strip()
+        }
+        accounted_action_xmlids = {
+            str(item.get("action_xmlid") or "").strip()
+            for bucket in buckets.values()
+            for item in bucket
+            if isinstance(item, dict) and str(item.get("action_xmlid") or "").strip()
+        }
+        for action_xmlid in sorted(declared_action_xmlids - accounted_action_xmlids):
+            action = self.env.ref(action_xmlid, raise_if_not_found=False)
+            if action and str(getattr(action, "_name", "") or "") == "ir.actions.act_window":
+                # The build defines the action, but the request principal is not
+                # admitted for the declared operation. This is a real permission
+                # boundary, never overridden here.
+                buckets["denied_actions"].append({
+                    "action_xmlid": action_xmlid,
+                    "route_kind": "DENIED",
+                    "menu_id": 0,
+                    "menu_xmlid": "",
+                    "action_id": int(action.id),
+                    "name": str(action.name or "").strip(),
+                    "model": str(action.res_model or "").strip(),
+                    "view_modes": [],
+                    "route": "/a/%d" % int(action.id),
+                    "allowed_operation": "none",
+                    "required_capability": "product_denied",
+                    "context_requirements": {},
+                    "source": "role_surface.declared.not_authorized",
+                    "reason_code": "PRODUCT_ENTRY_NOT_AUTHORIZED",
+                })
+                continue
+            buckets["denied_actions"].append({
+                "action_xmlid": action_xmlid,
+                "route_kind": "DENIED",
+                "menu_id": 0,
+                "menu_xmlid": "",
+                "action_id": 0,
+                "name": "",
+                "model": "",
+                "view_modes": [],
+                "route": "",
+                "allowed_operation": "none",
+                "required_capability": "product_denied",
+                "context_requirements": {},
+                "source": "role_surface.declared.undefined",
+                "reason_code": "PRODUCT_ENTRY_NOT_DEFINED",
+            })
+
         for bucket_name, bucket in buckets.items():
             deduped = {}
             for item in bucket:

@@ -29,5 +29,17 @@
             <field name="sequence">30</field>
             <field name="active">True</field>
         </record>
+        <!-- The governed menu-configuration leaf must follow the same wave-one
+             re-hang as ``表单配置`` and ``字段管理``.  Its earlier parent,
+             ``menu_sc_lowcode_system_config_group``, is retired (inactive) by
+             this same overlay, so leaving the leaf under it kept a declared
+             admin/config delivery target unreachable while the role surface and
+             the released configuration baseline still declared it. -->
+        <record id="menu_ui_menu_config_policy_business_config" model="ir.ui.menu">
+            <field name="name">菜单配置</field>
+            <field name="parent_id" ref="smart_construction_core.menu_sc_business_config_center"/>
+            <field name="sequence">40</field>
+            <field name="active">True</field>
+        </record>
     </data>
 </odoo>

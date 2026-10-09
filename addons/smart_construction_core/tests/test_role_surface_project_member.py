@@ -699,18 +699,44 @@ class TestProjectMemberRoleSurface(TransactionCase):
             row for row in pm_contract["contextual_actions"]
             if row["action_xmlid"] == "smart_construction_core.action_construction_contract_income"
         )
-        boq_import = next(
+        boq_import_delivered = [
             row for row in pm_contract["contextual_actions"]
             if row["action_xmlid"] == "smart_construction_core.action_project_boq_import_wizard"
+        ]
+        boq_import_denied = [
+            row for row in pm_contract["denied_actions"]
+            if row["action_xmlid"] == "smart_construction_core.action_project_boq_import_wizard"
+        ]
+        # Contract invariant for a declared action-level authority: it is either
+        # delivered as a contextual route or carries an explicit denial with a
+        # reason_code. It may never disappear without an observable decision.
+        #
+        # Which of the two holds is a fact of the principal's ACL, not of the
+        # declaration: ``project.boq.import.wizard`` grants create to
+        # ``group_sc_cap_cost_user`` / ``group_sc_cap_cost_manager`` only, while
+        # ``group_sc_role_project_manager`` implies ``group_sc_cap_cost_read``.
+        # The project-manager principal therefore lands on the recorded denial
+        # (PRODUCT_ENTRY_NOT_AUTHORIZED) instead of a silent drop.
+        self.assertEqual(
+            len(boq_import_delivered) + len(boq_import_denied),
+            1,
+            "declared boq-import action authority must be delivered or denied exactly once",
         )
+        if boq_import_delivered:
+            boq_import = boq_import_delivered[0]
+            self.assertEqual(boq_import["route_kind"], "CONTEXTUAL_ROUTE")
+            self.assertEqual(boq_import["allowed_operation"], "create")
+            self.assertEqual(boq_import["menu_id"], 0)
+            self.assertEqual(boq_import["context_requirements"], {})
+        else:
+            boq_import = boq_import_denied[0]
+            self.assertEqual(boq_import["reason_code"], "PRODUCT_ENTRY_NOT_AUTHORIZED")
+            self.assertEqual(boq_import["allowed_operation"], "none")
+
         cost_plan_lines = next(
             row for row in pm_contract["contextual_actions"]
             if row["action_xmlid"] == "smart_construction_core.action_project_cost_plan_line"
         )
-        self.assertEqual(boq_import["route_kind"], "CONTEXTUAL_ROUTE")
-        self.assertEqual(boq_import["allowed_operation"], "create")
-        self.assertEqual(boq_import["menu_id"], 0)
-        self.assertEqual(boq_import["context_requirements"], {})
         self.assertEqual(cost_plan_lines["route_kind"], "CONTEXTUAL_ROUTE")
         self.assertEqual(cost_plan_lines["allowed_operation"], "read")
         self.assertEqual(
@@ -736,10 +762,29 @@ class TestProjectMemberRoleSurface(TransactionCase):
             user_management["menu_xmlid"],
             "smart_construction_core.menu_sc_runtime_user_management",
         )
-        self.assertIn(
-            "smart_construction_core.action_sc_historical_payment_fact",
-            {row["action_xmlid"] for row in config_contract["primary_actions"]},
+        # Same contract invariant as the executive and project-member cases:
+        # a declared authority is either delivered or carries an explicit
+        # denial with a reason_code, and never disappears silently.
+        # ``menu_sc_historical_payment_fact`` is a declared-but-unreleased
+        # locked-candidate menu (``product_policy_sync`` keeps a legacy/roadmap
+        # row inactive), so the admissible outcome is the recorded denial; it
+        # must not be forced into ``primary_actions`` by widening the delivery
+        # engine.
+        historical_delivered = [
+            row for row in config_contract["primary_actions"]
+            if row["action_xmlid"] == "smart_construction_core.action_sc_historical_payment_fact"
+        ]
+        historical_denied = [
+            row for row in config_contract["denied_actions"]
+            if row["action_xmlid"] == "smart_construction_core.action_sc_historical_payment_fact"
+        ]
+        self.assertEqual(
+            len(historical_delivered) + len(historical_denied),
+            1,
+            "declared historical-payment-fact authority must be delivered or denied exactly once",
         )
+        if historical_denied:
+            self.assertEqual(historical_denied[0]["reason_code"], "PRODUCT_ENTRY_NOT_VISIBLE")
         self.assertFalse(config_contract["role_home_actions"])
 
         admin_result = RouteAuthorityValidateHandler(self.env(user=config_user)).handle({

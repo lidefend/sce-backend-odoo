@@ -50,6 +50,10 @@ MENU_FIELDS = (
     "admin_menu_xmlids",
     "menu_xmlids",
 )
+ACTION_FIELDS = (
+    "contextual_action_authorities",
+    "admin_action_authorities",
+)
 DELIVERED_BUCKETS = (
     "primary_actions",
     "role_home_actions",
@@ -252,6 +256,34 @@ def denied_xmlids(contract: dict) -> set:
     }
 
 
+def declared_action_xmlids(overrides: dict, role_code: str) -> set:
+    """Action authorities the role contract declares (action-level, no menu carrier)."""
+    meta = overrides.get(role_code) or {}
+    return {
+        str(spec.get("action_xmlid") or "").strip()
+        for field in ACTION_FIELDS
+        for spec in meta.get(field) or []
+        if isinstance(spec, dict) and str(spec.get("action_xmlid") or "").strip()
+    }
+
+
+def delivered_action_xmlids(contract: dict) -> set:
+    return {
+        str(entry.get("action_xmlid") or "").strip()
+        for bucket in DELIVERED_BUCKETS
+        for entry in contract.get(bucket) or []
+        if isinstance(entry, dict) and str(entry.get("action_xmlid") or "").strip()
+    }
+
+
+def denied_action_xmlids(contract: dict) -> set:
+    return {
+        str(entry.get("action_xmlid") or "").strip()
+        for entry in contract.get("denied_actions") or []
+        if isinstance(entry, dict) and str(entry.get("action_xmlid") or "").strip()
+    }
+
+
 def find(contract: dict, bucket: str, xmlid: str) -> dict:
     rows = [row for row in contract.get(bucket) or [] if isinstance(row, dict) and row.get("action_xmlid") == xmlid]
     if len(rows) != 1:
@@ -304,6 +336,15 @@ def assert_partition(role: str, contract: dict, overrides: dict, version: str) -
         raise RuntimeError(
             f"{role}: {len(silent)} declared menu entries are neither delivered nor explicitly "
             f"denied (silent drop): {silent[:10]}"
+        )
+    declared_actions = declared_action_xmlids(overrides, role_code)
+    delivered_actions = delivered_action_xmlids(authority)
+    denied_actions = denied_action_xmlids(authority)
+    silent_actions = sorted(declared_actions - delivered_actions - denied_actions)
+    if silent_actions:
+        raise RuntimeError(
+            f"{role}: {len(silent_actions)} declared action authorities are neither delivered "
+            f"nor explicitly denied (silent drop): {silent_actions[:10]}"
         )
     for entry in authority.get("denied_actions") or []:
         if not isinstance(entry, dict) or not entry.get("reason_code"):

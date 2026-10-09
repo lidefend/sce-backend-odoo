@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 <template>
-  <ScPage class="page sc-page sc-product-workspace-stack" data-product-page-mode="list" data-semantic-component="ActionView" :data-collection-state="status" :aria-busy="status === 'loading' || undefined" :content-layout="actionContentLayoutMode">
+  <ScPage class="page sc-page sc-product-workspace-stack" data-product-page-mode="list" data-semantic-component="ActionView" :data-collection-state="status" :data-can-create="canCreateRecord" :data-can-edit="canEditRecord" :aria-busy="status === 'loading' || undefined" :content-layout="actionContentLayoutMode">
     <ProductPageHeader :title="vm.page.title || '业务列表'" :subtitle="vm.page.subtitle" :presentation-mode="viewMode === 'dashboard' ? 'dashboard' : 'collection'" render-profile="readonly">
       <template v-if="!standardListOperationsInCard" #actions>
         <ScButton data-page-action="reload" variant="secondary" size="small" type="button" :disabled="isUiBusy" @click="reload"><ScIcon name="refresh" :size="16" />{{ toolbarUiLabel('refresh', '刷新') }}</ScButton>

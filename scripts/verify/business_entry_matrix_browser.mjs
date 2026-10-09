@@ -161,14 +161,20 @@ function attachCapture(page, state) {
       const data = envelopeData(body);
       const params = (payload && payload.params) || {};
       const mainData = (data && data.dataContract && data.dataContract.mainData) || {};
+      const globalStatus = (data && data.statusContract && data.statusContract.globalStatus) || {};
       state.contracts.push({
         url: response.url(),
         op: String(params.op || ''),
+        action_id: Number(params.action_id || 0),
+        menu_id: Number(params.menu_id || 0),
+        record_id: Number(params.record_id || 0),
         model: String(params.model || ''),
         view_type: String(params.view_type || ''),
         render_profile: String(params.render_profile || ''),
         mainData,
         mainDataKeys: Object.keys(mainData),
+        globalStatus,
+        effectiveRecordCapabilities: (globalStatus && globalStatus.effectiveRecordCapabilities) || null,
         workflow: (data && data.workflowContract) || null,
         layoutContract: (data && data.layoutContract) || {},
       });
@@ -523,6 +529,29 @@ async function openFirstRecord(page, state, presentation) {
   return await waitForRecordContract(state, since);
 }
 
+// The collection surface's create/edit affordance is not a page decision: the
+// contract declares `effectiveRecordCapabilities` and the surface must render
+// exactly what that declaration allows. This binds the declaration the entry's
+// own list contract published to the declaration the rendered surface carries,
+// so neither side can drift without failing the entry. It never invents an
+// expectation: a capability the contract does not publish is not asserted.
+function declaredCollectionCapabilities(state, actionId) {
+  const rows = state.contracts.filter((row) => Number(row.action_id) === Number(actionId));
+  for (let index = rows.length - 1; index >= 0; index -= 1) {
+    const row = rows[index];
+    const effective = row.effectiveRecordCapabilities || {};
+    const modelRights = (row.globalStatus && row.globalStatus.modelRights) || {};
+    if (Object.keys(effective).length || Object.keys(modelRights).length) {
+      return {
+        create: effective.create === true,
+        write: modelRights.write === true,
+        contract_url: row.url,
+      };
+    }
+  }
+  return null;
+}
+
 // Bind a record ui.contract.v2 envelope to the entry result. Company and
 // declared workflow actions are read from the envelope, never invented.
 function applyRecordContract(record, contract, behaviour, sessionCompany, entryKey) {
@@ -615,6 +644,29 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
   }
   if (spec.expectsRecords && status === 'empty' && rendered > 0) {
     fail(`${entryKey}: declared collection state empty but ${rendered} record surface(s) were rendered`);
+  }
+  if (presentation === 'table' || presentation === 'kanban') {
+    const declared = declaredCollectionCapabilities(state, navTarget.action_id);
+    const surface = page.locator('[data-semantic-component="ActionView"]').first();
+    const observedCreate = await surface.getAttribute('data-can-create');
+    const observedEdit = await surface.getAttribute('data-can-edit');
+    record.declared_collection_capabilities = declared;
+    record.observed_create_capability = observedCreate;
+    record.observed_edit_capability = observedEdit;
+    observations.push({
+      entry: entryKey, stage: 'collection_capability',
+      declared_create: declared ? declared.create : null,
+      declared_write: declared ? declared.write : null,
+      observed_create: observedCreate, observed_edit: observedEdit,
+      contract_url: declared ? declared.contract_url : '',
+    });
+    if (!declared) {
+      fail(`${entryKey}: the collection surface published no declared collection capability contract`);
+    } else if (observedCreate !== String(declared.create)) {
+      fail(`${entryKey}: declared create authority=${declared.create} does not match the rendered surface declaration=${observedCreate}`);
+    } else if (observedEdit !== String(declared.write)) {
+      fail(`${entryKey}: declared edit authority=${declared.write} does not match the rendered surface declaration=${observedEdit}`);
+    }
   }
   if (presentation === 'aggregate') {
     // A report entry declares a pivot/graph surface; the product still promises
