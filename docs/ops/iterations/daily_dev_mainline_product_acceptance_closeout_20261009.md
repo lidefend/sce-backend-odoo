@@ -818,3 +818,43 @@ main 车道，候选车道检查保留但尚无回执。
    `runtime_identity`/`contract` 全 PASS，`errors=[]`）；
 3. 写回执后 `daily_acceptance_readback` 回到 `reusable`，台账恢复 `28 reusable / 2 not_run / 0 stale`。
 
+
+### 13.11 部署闭环复用的第二次实跑：`upgrade_mode=reused` 端到端成立（`51e7cdc0`）
+
+§13.10 只证明了"同码复用"的**拒绝路径**（同 SHA 不可重复同步）。要证明复用**真正生效**，
+必须换一个新的候选 revision（`51e7cdc0`，仅文档/台账提交，未改 `addons/smart_core`），
+再用同一个受管入口 `make daily.runtime.candidate.release` 部署一次。三项显式确认与
+`DAILY_CANDIDATE_EXPECTED_OLD_SHA=a81fad7e…` 未变：
+
+- `daily.runtime.candidate.bundle_sync` PASS：`a81fad7e` → `51e7cdc0`，
+  `deployment_mode=candidate`、`origin_main_mutated=false`（`.runtime/final-acceptance/daily-deployed/candidate-bundle-sync.json`）。
+- `daily.runtime.source_revision.align` PASS：`.env.dev` 的 `SC_SOURCE_REVISION` 写入 `51e7cdc0`，
+  `restarted=true`、`rolled_back=false`，服务端读回 `served.git_sha=51e7cdc0…`
+  （`source-revision-align.json`）。
+- `daily.runtime.published_face.converge` PASS：**`upgrade_mode="reused"`**，
+  `upgrade_reuse_reason="deployed module tree is byte-identical to the last verified upgrade"`，
+  `module_upgrade_returncode=0` 且 `guard_status=PASS`；写回 `module_tree_ids={"smart_core":"1544cbc20706b9fd85c8f98259c71395d1ce663f"}`
+  与 §13.10 首次 `run` 时**逐字节一致**（`published-face-converge.json`）。
+- 发布面仍按契约重冻结：`construction.standard`/`construction.preview` 各 90 条已发布页面，
+  `snapshot_version=daily-navigation-standard-51e7cdc0853b`。
+
+**度量**：本轮部署墙钟约 42s，对比 §13.10 首次（`upgrade_mode=run`，含一次 `mod.upgrade smart_core`）
+约 185s，省约 143s；省下的正是被复用的 `mod.upgrade`。该墙钟为执行器终端观测（attested），
+机器可复算的部分是 `upgrade_mode=reused` 与 `module_tree_ids` 一致。
+
+**复用不放松任何东西**：复用判定要求"声明的模块 git tree oid == 远端已部署 tree oid"；
+本地对"声称 reused 但 tree 与声明不符"直接拒绝并回退到运行升级（`verify.daily.runtime.published_face.converge` 22/22）。
+发布面在（可能被复用的）升级之后**仍然重新冻结**，并由 release-gate guard 复证。
+
+**部署带来的正确连带（第二次）**：服务端 SHA 再次变化，`daily_acceptance_readback` 旧回执
+（绑定 `a81fad7e` 的读回）按机制失效。受管顺序恢复：
+1. `make daily.runtime.record_identity.resolve`（`DAILY_RUNTIME_EXPECTED_SHA=51e7cdc0…`）→
+   `served_revision=remote_head=51e7cdc0`，刷新 `artifacts/backend/acceptance_record_identity.json`；
+2. 重跑 `make verify.daily_dev.acceptance.readonly.probe`：PASS（`served_sha=51e7cdc0`，
+   `runtime_identity`/`contract` 全 PASS，`errors=[]`，`nav_required_action_mismatches=[]`）；
+3. 写回执后 `daily_acceptance_readback` 回到 `reusable`，台账恢复 `28 reusable / 2 not_run`。
+
+**边界**：本轮为效率批次的部署闭环验证，不改变四态结论——批次验收=效率批次进行中、
+主线集成=未做（用户"先不执行进入主线"）、版本发布=日常运行时候选、产品交付=未完成。
+`a81fad7e`→`51e7cdc0` 是候选 revision 推进，**不含** `addons/smart_core` 代码变化，
+不触发模块升级。

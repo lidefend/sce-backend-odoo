@@ -318,10 +318,10 @@
   },
   "blockers": [
     "Mainline integration is not authorized: the user instructed \"先不执行进入主线\". The verified candidate is deployed to the daily runtime only; PR push, remote gates and merge remain pending and must not be described as integrated.",
-    "browser_login_return_authority (verify.nav.pro01r.route_authority.browser) still needs the governed nav_pro_{config_admin,system_admin,pm,project_member} fixture provisioned on sc_demo through nav.pro01.runtime.prepare inside the remote compose. Its earlier blocking prerequisite (\"missing task evidence: finance smart_construction_core.menu_sc_settlement_adjustment\") was a served-tree/module-generation gap; the runtime is now at 4b7f9a46 with smart_core upgraded and the published face re-frozen, so the prepare step can be attempted. No assertion may be relaxed.",
+    "browser_login_return_authority (verify.nav.pro01r.route_authority.browser) still needs the governed nav_pro_{config_admin,system_admin,pm,project_member} fixture provisioned on sc_demo through nav.pro01.runtime.prepare inside the remote compose. Its earlier blocking prerequisite (\"missing task evidence: finance smart_construction_core.menu_sc_settlement_adjustment\") was a served-tree/module-generation gap; the runtime is now at 51e7cdc0 with smart_core upgraded (published face re-frozen, upgrade_mode=reused) and the record identity / readonly readback restored, so the prepare step can be attempted. No assertion may be relaxed.",
     "Run-ledger reuse boundary: runtime lanes are no longer re-derived each round. scripts/ops/agent_run_context.py now reuses a kind=runtime receipt when its check declares an authoritative environment `readback` artifact whose content is hashed into the check's dependency state (commit f64e258e, AGENTS.md Layered Validation Efficiency + iterations note 13.9). A runtime check without a declared readback is still never reusable and a runtime run environment is still non-reusable. `daily_acceptance_readback` is now reusable through artifacts/backend/daily_dev_acceptance_probe.json."
   ],
-  "next_exact_step": "Iteration-efficiency closeout (this round): `ci.local.iteration` 36.8s -> 6.9s (8a1ef8ab); frontend typecheck 23.4s -> 10.3s warm (39a86b2f); the deploy loop no longer re-runs `mod.upgrade` when the declared module git tree oid equals the deployed one (3ee08386); runtime receipts are now reusable through a declared authoritative environment readback (f64e258e, 40/40). Next, in order: (1) on explicit user confirmation, run the real `daily.runtime.candidate.release` once to prove upgrade_mode=reused end-to-end (remote write, not yet initiated); (2) keep the unchanged product-closeout order: provision the nav_pro_* fixture then run the one real click-open/return journey (verify.nav.pro01r.route_authority.browser), then, on explicit authorization, push/PR/merge.",
+  "next_exact_step": "Iteration-efficiency closeout (this round) is proven end-to-end and recorded: ci.local.iteration 36.8s -> 6.9s (8a1ef8ab); frontend typecheck 23.4s -> 10.3s warm (39a86b2f); the deploy loop reuses the module upgrade when the declared module git tree oid equals the deployed one (3ee08386), now proven live (a81fad7e -> 51e7cdc0, upgrade_mode=reused, ~42s vs ~185s); runtime receipts are reusable through a declared authoritative environment readback (f64e258e, 40/40) and the daily_acceptance_readback receipt was restored on 51e7cdc0. Next, in order: (1) provision the governed nav_pro_{config_admin,system_admin,pm,project_member} fixture then run the one real click-open/return journey (verify.nav.pro01r.route_authority.browser) on the daily runtime - this is the still-not_run browser_login_return_authority boundary and its first step is to resolve how nav.pro01.runtime.prepare is pointed at the sc_demo daily runtime through a governed entry (no hand-assembled compose/credentials); (2) then the unchanged product-closeout order: on explicit user authorization, push/PR and merge. No assertion may be relaxed.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -679,6 +679,38 @@
         },
         "note": "bundle_sync refuses the same SHA, so the reused proof needs a distinct candidate revision",
         "readback_rebind": "served SHA change correctly invalidated daily_acceptance_readback; refreshed via daily.runtime.record_identity.resolve + readonly probe re-run (PASS), receipt reusable again"
+      },
+      "deploy_loop_module_upgrade_reuse_live_proof": {
+        "commit_within_lane": "3ee08386 (mechanism) proven live on candidate a81fad7e -> 51e7cdc0",
+        "candidate_sha": "51e7cdc0853b9d8e4732ae9c11b9869a0959b030",
+        "previous_deployed_sha": "a81fad7e222da0835a2f2632c3410ff6f7c27de2",
+        "entry": "make daily.runtime.candidate.release",
+        "sub_entries": {
+          "daily_runtime_candidate_bundle_sync": "PASS (deployment_mode=candidate, origin_main_mutated=false)",
+          "daily_runtime_source_revision_align": "PASS (restarted=true, rolled_back=false, served.git_sha=51e7cdc0)",
+          "daily_runtime_published_face_converge": "PASS (upgrade_mode=reused, module_upgrade_returncode=0, guard_status=PASS)"
+        },
+        "upgrade_mode": "reused",
+        "upgrade_reuse_reason": "deployed module tree is byte-identical to the last verified upgrade",
+        "module_tree_ids": {
+          "smart_core": "1544cbc20706b9fd85c8f98259c71395d1ce663f"
+        },
+        "module_tree_ids_identical_to_first_run": true,
+        "published_face_refrozen": true,
+        "published_snapshot_version": "daily-navigation-standard-51e7cdc0853b",
+        "published_page_count": 90,
+        "measured_wall_clock_seconds": {
+          "first_deploy_run_mode": 185,
+          "second_deploy_reused_mode": 42
+        },
+        "measurement_kind": "executor-observed wall clock (attested); the machine-recomputable part is upgrade_mode=reused and the identical module_tree_ids",
+        "not_relaxed": "reuse requires declared module git tree oid == remote deployed tree oid; an unproven 'reused' claim is rejected locally and falls back to running the upgrade; the published face is still re-frozen after the (possibly reused) upgrade and re-proved by the release-gate guard; verify.daily.runtime.published_face.converge 22/22",
+        "readback_restored_after_deploy": {
+          "record_identity": "daily.runtime.record_identity.resolve -> served_revision=remote_head=51e7cdc0",
+          "readonly_probe": "verify.daily_dev.acceptance.readonly.probe PASS (served_sha=51e7cdc0, errors=[])",
+          "ledger": "daily_acceptance_readback re-recorded on clean 51e7cdc0; reuse summary 28 reusable / 2 not_run"
+        },
+        "boundary": "candidate revision advance only; addons/smart_core unchanged, so no module upgrade is triggered"
       }
     }
   },
@@ -688,12 +720,12 @@
   },
   "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced.",
   "stage_identity": {
-    "head": "8a1ef8ab1c20f74c868741206adb0d4eb39d06fc",
+    "head": "51e7cdc0853b9d8e4732ae9c11b9869a0959b030",
     "dirty_scope": [
       ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json",
       "docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md"
     ],
     "kind": "iteration",
-    "note": "iteration identity: the product/verification layer is 4b7f9a46 and the daily runtime serves that exact revision (source_revision=git_sha=4b7f9a469a3af9e10d59c6a0013360db8cacab80, database=sc_demo, frontend_build_sha256=a3f477a4b7ccaf81433a84a0e5192cc31cd350d21033870e764dd53ce80c4d1a). The dirty scope above is documentation plus the regenerated record-identity evidence, which are not runtime inputs; they are committed in the same layer. baseline_sha is the run-registration acceptance baseline and an ancestor of HEAD, not the current stage identity."
+    "note": "iteration identity: the product/verification layer is 51e7cdc0 and the daily runtime serves that exact revision (source_revision=git_sha=51e7cdc0853b9d8e4732ae9c11b9869a0959b030, database=sc_demo, frontend_build_sha256=a3f477a4b7ccaf81433a84a0e5192cc31cd350d21033870e764dd53ce80c4d1a). The dirty scope above is documentation plus the regenerated record-identity/readback evidence, which are not module inputs; they are committed in the same layer. baseline_sha is the run-registration acceptance baseline and an ancestor of HEAD, not the current stage identity."
   }
 }
