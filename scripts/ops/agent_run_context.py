@@ -130,6 +130,8 @@ def resolve_run(root: Path) -> tuple[str, dict] | None:
             raise RunError('check requires explicit dependency path strings')
         for value in check['inputs']:
             dependency_path(root, value)
+        if 'readback' in check:
+            readback_path(root, check['readback'])
     if run.get('status') not in ('planned', 'active', 'blocked', 'verification_pending', 'completed', 'superseded'):
         raise RunError('invalid run status')
     return relative, run
@@ -153,8 +155,45 @@ def dependency_path(root: Path, value: str) -> Path:
     return path
 
 
+READBACK_ROOTS = ('.runtime', 'artifacts')
+
+
+def readback_path(root: Path, readback) -> str:
+    """Validate a declared authoritative-environment readback artifact.
+
+    A runtime receipt may only be reused through the exact artifact that proves
+    the environment identity it recorded; the artifact is hashed into the
+    check's dependency state below. It must live in the ignored runtime-evidence
+    area, never in a source/tool path, so it can never masquerade as code.
+    """
+    if (not isinstance(readback, dict) or set(readback) != {'artifact'}
+            or not isinstance(readback['artifact'], str) or not readback['artifact']):
+        raise RunError('readback must declare exactly an artifact path string')
+    value = readback['artifact']
+    path = Path(value)
+    if path.is_absolute() or '..' in path.parts:
+        raise RunError(f'expected repository-relative path: {value}')
+    if not path.parts or path.parts[0] not in READBACK_ROOTS:
+        raise RunError('readback artifact must live under .runtime or artifacts')
+    candidate = root / path
+    if candidate.is_symlink():
+        raise RunError(f'symlink path is unsupported: {value}')
+    if not candidate.resolve().is_relative_to(root.resolve()):
+        raise RunError(f'path escapes worktree: {value}')
+    return value
+
+
 def dependency_state(root: Path, check: dict) -> dict:
     state = {}
+    if 'readback' in check:
+        value = readback_path(root, check['readback'])
+        path = root / value
+        if not path.exists():
+            state[value] = None
+        elif path.is_dir():
+            raise RunError('readback artifact must be a file, not a directory')
+        else:
+            state[value] = [hashlib.sha256(path.read_bytes()).hexdigest(), path.stat().st_mode & 0o777]
     for value in check['inputs']:
         path = dependency_path(root, value)
         if not path.exists():
@@ -200,7 +239,9 @@ def evaluate(root: Path, run: dict, check_id: str) -> dict:
             return dict(result, status='failed', reason='previous failure unchanged; diagnose before retry')
         if type(receipt.get('test_count')) is not int or receipt['test_count'] <= 0:
             raise RunError('non-zero test count missing')
-        if check.get('kind') != 'offline' or run['environment'].get('kind') != 'offline':
+        if 'readback' not in check and check.get('kind') != 'offline':
+            raise RunError('runtime evidence requires authoritative environment readback')
+        if run['environment'].get('kind') != 'offline':
             raise RunError('runtime evidence requires authoritative environment readback')
         return dict(result, status='reusable', reason='declared inputs and original log unchanged', test_count=receipt['test_count'])
     except (RunError, OSError, KeyError, TypeError) as exc:
