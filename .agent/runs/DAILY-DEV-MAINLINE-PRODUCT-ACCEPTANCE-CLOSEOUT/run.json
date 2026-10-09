@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT",
   "branch": "audit/daily-dev-mainline-product-acceptance-closeout-20261009",
-  "status": "active",
+  "status": "verification_pending",
   "baseline_sha": "aea2c19bbe4edb2a13fbf908255e918e18f3a299",
   "goal": ".agent/goals/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT.yaml",
   "record": "docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md",
@@ -47,14 +47,50 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Run the three offline daily-runtime verify targets, then align the daily runtime to main with the governed daily.runtime.main.bundle_sync + daily.runtime.source_revision.align + daily.runtime.frontend.build entries, read back /api/runtime-version, and run one bounded readonly acceptance re-read. Reuse the accepted evidence for the matrix; hand the login verification and the product-delivery boundary to the owner.",
+  "next_exact_step": "Technical acceptance is complete at the latest mainline identity. Hand the daily runtime (http://1.95.85.92:18081/, login wutao, database sc_demo) to the owner for the login-based product-delivery judgement; on owner confirmation, retire this run (status=completed and remove the active-runs.json mapping). Do not rerun the 89/108 acceptance matrix (unchanged inputs).",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
       "the only acceptance-tool change in that range is PR #626's dailyHomeSummaryMatches tightening (plus routing rules); its affected assertion was re-run and passed in the living batch record section 13",
       "the single owner-decision item (项目台账 /f/ <-> readonly, daily_dev_user_acceptance_completion_20261006 section 4.1) was closed 2026-10-09 in hierarchical_worksheet_usable_ready_20261008 section 14",
       "frontend artifact depends only on frontend sources (unchanged), so the accepted artifact b0311c6f remains the current one"
-    ]
+    ],
+    "runtime_acceptance": {
+      "served_identity": {
+        "source_revision": "aea2c19bbe4edb2a13fbf908255e918e18f3a299",
+        "git_sha": "aea2c19bbe4edb2a13fbf908255e918e18f3a299",
+        "database": "sc_demo",
+        "environment": "dev",
+        "frontend_build_sha256": "b0311c6f39e3de5e5706933217e3fc99d572411c81133d6c8e010b2efd5a4957"
+      },
+      "record_identity_resolve": {
+        "entry": "daily.runtime.record_identity.resolve",
+        "served_revision": "aea2c19bbe4edb2a13fbf908255e918e18f3a299",
+        "targets": 10,
+        "status": "PASS"
+      },
+      "readonly_probe": {
+        "entry": "verify.daily_dev.acceptance.readonly.probe",
+        "status": "PASS",
+        "nav_action_count": 89,
+        "nav_leaf_count": 89,
+        "nav_forbidden_label_hits": 0,
+        "nav_required_path_misses": 0,
+        "contract_checks_passed": 11,
+        "contract_approved_semantic_sha256": "40db30a893c6c854253331469696175cba13b50c4245b97b1e2c208cb0e6223b",
+        "contract_login": "fixture_role_finance",
+        "contract_uid": 210
+      },
+      "credential_fact": {
+        "note": "daily runtime fixture_role_finance uses the owner-fixed simple password 123456, not the isolated local fixture default scdevpass; supplied explicitly via SC_ACCEPTANCE_FIXTURE_PASSWORD for the contract credential without skipping or weakening any check"
+      },
+      "reuse_basis": [
+        "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
+        "the only acceptance-tool change in that range is PR #626's dailyHomeSummaryMatches tightening (plus routing rules); its affected assertion was re-run and passed in the living batch record section 13",
+        "the single owner-decision item (项目台账 /f/ <-> readonly, daily_dev_user_acceptance_completion_20261006 section 4.1) was closed 2026-10-09 in hierarchical_worksheet_usable_ready_20261008 section 14",
+        "frontend artifact depends only on frontend sources (unchanged), so the accepted artifact b0311c6f remains the current one"
+      ]
+    }
   },
   "continuation": {
     "reason": "successor to the retired FE-HIERARCHICAL-WORKSHEET-USABLE-READY run (merged PR #626) and the closed MAINLINE-BASELINE-BINDING anchor",
