@@ -703,3 +703,17 @@ main 车道，候选车道检查保留但尚无回执。
    并以权威读回（模块状态/写入时间）证明可跳过；这是**写操作复用**，必须可回滚，不能想当然跳过。
 2. **运行态回执仍不可复用**（见 §12.5）：需要"声明式权威环境读回"（fail-closed）才能让 runtime 车道复用。
    两项目前都写在 run 的 `blockers` / `next_exact_step` 里，不在本轮擅自扩大改动面。
+### 13.7 前端类型检查：把"重复"降到编译器内部（`39a86b2f`）
+
+`verify.frontend.typecheck.strict` 每次都对整棵源码树从零解析（主工程 +
+`tsconfig.strict.json` 严格子工程各一次）。按 §11.8 的结论，该目标**不产出测试计数**，
+按既有契约无法进入"回执可复用"集合，因此它只能靠**自身**把重复降到最低。
+
+`typecheck` / `typecheck:strict` 现在带 `--incremental`，程序图缓存在已被 `.gitignore`
+覆盖的 `node_modules/.cache/vue-tsc/`（按文件内容与编译选项做键）。
+
+- **实测**（`make verify.frontend.typecheck.strict`）：冷态 23.4s → 热态 **10.3s**。
+- **失败闭合验证**（不是"跑过就算"）：热态缓存存在时注入
+  `const probe: number = "..."`，该目标**仍然失败**（exit 2，报 `TS2322`）；
+  删除该文件后恢复 exit 0。即陈旧程序图**不会**掩盖新诊断。
+- 诊断集合、`include` 列表、严格开关**一律未改**；变的只是"从什么状态开始算"。
