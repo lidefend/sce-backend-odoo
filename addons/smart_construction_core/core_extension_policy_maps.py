@@ -35,7 +35,9 @@ ROLE_SURFACE_OVERRIDES = {
             # 用户原生可见该菜单时才生成路由，所以只读项目角色看不到这个入口。
             "smart_construction_core.menu_sc_product_team_loan_deduction_v1",
         ],
-        "role_home_menu_xmlids": [],
+        "role_home_menu_xmlids": [
+            "smart_construction_core.menu_sc_workspace_home",
+        ],
         "contextual_menu_xmlids": [
             # U-C4 G08：875 工作台三个派发目标单据的路由。这三张单据的创建/
             # 读取权限本就授予项目中心经办/审批（见 sc.financing.loan /
@@ -103,7 +105,9 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_root",
         ],
         "primary_menu_xmlids": [],
-        "role_home_menu_xmlids": [],
+        "role_home_menu_xmlids": [
+            "smart_construction_core.menu_sc_workspace_home",
+        ],
         "contextual_menu_xmlids": [],
         "admin_menu_xmlids": [],
         "denied_menu_xmlids": [],
@@ -129,7 +133,9 @@ ROLE_SURFACE_OVERRIDES = {
         "primary_menu_xmlids": [
             "smart_construction_core.menu_sc_historical_payment_fact",
         ],
-        "role_home_menu_xmlids": [],
+        "role_home_menu_xmlids": [
+            "smart_construction_core.menu_sc_workspace_home",
+        ],
         "contextual_menu_xmlids": [],
         "contextual_action_authorities": [
             {
@@ -173,7 +179,9 @@ ROLE_SURFACE_OVERRIDES = {
         "deny_all_navigation": False,
         "menu_xmlids": [],
         "primary_menu_xmlids": [],
-        "role_home_menu_xmlids": [],
+        "role_home_menu_xmlids": [
+            "smart_construction_core.menu_sc_workspace_home",
+        ],
         "contextual_menu_xmlids": [],
         "admin_menu_xmlids": [
             "smart_construction_core.menu_ui_menu_config_policy_business_config",
@@ -203,7 +211,9 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_plan_report",
             "smart_construction_core.menu_sc_construction_diary",
         ],
-        "role_home_menu_xmlids": [],
+        "role_home_menu_xmlids": [
+            "smart_construction_core.menu_sc_workspace_home",
+        ],
         "contextual_menu_xmlids": [
             "smart_construction_core.menu_sc_site_documents",
             "smart_construction_core.menu_sc_project_wbs",
@@ -272,7 +282,9 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_tender_registration",
             "smart_construction_core.menu_sc_tender_registration_fee",
         ],
-        "role_home_menu_xmlids": [],
+        "role_home_menu_xmlids": [
+            "smart_construction_core.menu_sc_workspace_home",
+        ],
         "contextual_menu_xmlids": [
             "smart_construction_core.menu_sc_project_wbs",
             "smart_construction_core.menu_sc_project_kanban",
@@ -402,7 +414,9 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_product_current_account_v1",
             "smart_construction_core.menu_sc_product_company_project_refund_v1",
         ],
-        "role_home_menu_xmlids": [],
+        "role_home_menu_xmlids": [
+            "smart_construction_core.menu_sc_workspace_home",
+        ],
         "contextual_menu_xmlids": [
             "smart_construction_core.menu_sc_invoice_output",
             "smart_construction_core.menu_sc_output_invoice_change_registration",
@@ -491,7 +505,9 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_company_document_archive",
             "smart_construction_core.menu_sc_document_borrow",
         ],
-        "role_home_menu_xmlids": [],
+        "role_home_menu_xmlids": [
+            "smart_construction_core.menu_sc_workspace_home",
+        ],
         "contextual_menu_xmlids": [
             "smart_construction_core.menu_sc_site_documents",
             "smart_construction_core.menu_sc_project_wbs",
@@ -596,7 +612,7 @@ NAV_MENU_SCENE_MAP = {
     "smart_construction_core.menu_sc_project_management_scene": "project.management",
     "smart_construction_core.menu_sc_project_cost_code": "config.project_cost_code",
     "smart_construction_core.menu_sc_project_dashboard": "projects.dashboard",
-    "smart_construction_core.menu_sc_history_todo": "workspace.home",
+    "smart_construction_core.menu_sc_workspace_home": "workspace.home",
     "smart_construction_core.menu_sc_operating_metrics_project": "dashboard.company",
     "smart_construction_core.menu_sc_dashboard_cost_cockpit_fact": "cost.control",
     "smart_construction_core.menu_sc_dictionary": "data.dictionary",

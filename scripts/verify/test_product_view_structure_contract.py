@@ -53,6 +53,31 @@ class ProductViewStructureContractTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             policy_menu_rows({"products": []})
 
+    def test_declared_scene_entry_is_not_a_view_structure_row(self):
+        policy = {"products": [{"capabilities": [
+            {"enabled": True, "release_state": "released", "menu_xmlid": "x.menu", "res_model": "x.model"},
+            {"enabled": True, "release_state": "released", "menu_xmlid": "x.home", "res_model": "",
+             "disposition_policy": "scene_entry", "entry_target_policy": "scene_entry",
+             "target_scene_key": "workspace.home"},
+        ]}]}
+        self.assertEqual([row["menu_xmlid"] for row in policy_menu_rows(policy)], ["x.menu"])
+
+    def test_declared_scene_entry_without_scene_key_fails(self):
+        policy = {"products": [{"capabilities": [
+            {"enabled": True, "release_state": "released", "menu_xmlid": "x.home", "res_model": "",
+             "entry_target_policy": "scene_entry"},
+        ]}]}
+        with self.assertRaises(ValueError):
+            policy_menu_rows(policy)
+
+    def test_declared_scene_entry_with_res_model_fails(self):
+        policy = {"products": [{"capabilities": [
+            {"enabled": True, "release_state": "released", "menu_xmlid": "x.home", "res_model": "x.model",
+             "disposition_policy": "scene_entry", "target_scene_key": "workspace.home"},
+        ]}]}
+        with self.assertRaises(ValueError):
+            policy_menu_rows(policy)
+
     def test_zero_surfaces_fails(self):
         value = deepcopy(self.manifest)
         value["entries"][0]["surfaces"] = []

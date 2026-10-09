@@ -446,7 +446,7 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         contract = CONTRACT.load_locked_menu_policy_contract(self.baseline, self.checksum)
         self.assertEqual(
             contract["sha256"],
-            "bc4274a30eaa8e6bb2ca7f28cd2a399a0a477a393119b9f75b06072fd82bb8d1",
+            "bcefc90c4ef5bf61b32806fd75afea6eaaa93cb513c9d970d86dfb14bb5f0551",
         )
         declared = self._declared_menu_count(contract)
         for product_key in CONTRACT.REQUIRED_PRODUCT_KEYS:
@@ -586,6 +586,115 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         self.assertEqual(len(CONTRACT.baseline_rows(contract, "construction.standard")), declared)
         self.assertEqual(len(CONTRACT.baseline_rows(contract, "construction.preview")), declared)
         self.assertNotEqual(standard["product_key"], preview["product_key"])
+
+
+# 过渡台账：契约尚未声明 scene 身份、而由代码常量承载的入口身份。
+# 只允许随契约收敛而删除；新增即失败（新增一条 = 又出现一个声明点）。
+TRANSITIONAL_UNDECLARED_SCENE_MENU_KEYS = (
+    "smart_construction_core.menu_sc_project_initiation",
+    "smart_construction_core.menu_sc_project_project",
+    "smart_construction_core.menu_sc_project_management_scene",
+    "smart_construction_core.menu_sc_project_cost_code",
+    "smart_construction_core.menu_sc_project_dashboard",
+    "smart_construction_core.menu_sc_operating_metrics_project",
+    "smart_construction_core.menu_sc_dashboard_cost_cockpit_fact",
+    "smart_construction_core.menu_sc_dictionary",
+    "smart_construction_core.menu_payment_request",
+)
+
+# 过渡台账：契约当前声明的入口身份数量。只允许单调递增。
+TRANSITIONAL_DECLARED_SCENE_ENTRY_COUNT = 1
+
+
+class SceneEntryIdentityContractTests(unittest.TestCase):
+    """Lock navigation_dual_track_contract_v1.md 2.7 / 2.8.
+
+    入口身份必须由契约声明；代码常量只能镜像契约，不能自成事实源。
+    断言声明消费与契约内部一致性，不以文本出现作为正确性证明。
+    """
+
+    def setUp(self):
+        self.baseline = ROOT / "scripts/verify/baselines/formal_business_product_menu_policy_v1.json"
+        self.payload = json.loads(self.baseline.read_text(encoding="utf-8"))
+
+    def _menus(self):
+        for product in self.payload["products"]:
+            for group in product.get("menu_groups") or []:
+                for menu in group.get("menus") or []:
+                    yield product["product_key"], menu
+
+    def _declared_scene_entries(self):
+        return [
+            (product_key, menu)
+            for product_key, menu in self._menus()
+            if str(menu.get("target_scene_key") or "").strip()
+        ]
+
+    def test_scene_declaration_fields_are_mutually_consistent(self):
+        """契约内 scene 身份声明必须三处一致，不能只声明一半。"""
+        for _product_key, menu in self._menus():
+            with self.subTest(menu=menu.get("menu_xmlid")):
+                declared = bool(str(menu.get("target_scene_key") or "").strip())
+                self.assertEqual(declared, menu.get("entry_target_policy") == "scene_entry")
+                self.assertEqual(declared, menu.get("disposition_policy") == "scene_entry")
+
+    def test_declared_scene_route_consumes_the_declared_identity(self):
+        """路由必须是契约声明的 scene 身份的投影，而不是另算一套。"""
+        declared = self._declared_scene_entries()
+        self.assertGreaterEqual(
+            len({str(_menu["target_scene_key"]).strip() for _pk, _menu in declared}),
+            TRANSITIONAL_DECLARED_SCENE_ENTRY_COUNT,
+            "contract scene declaration must be a monotone ratchet; "
+            "when a declaration lands, raise TRANSITIONAL_DECLARED_SCENE_ENTRY_COUNT",
+        )
+        seen = set()
+        for _product_key, menu in declared:
+            scene_key = str(menu["target_scene_key"]).strip()
+            seen.add(scene_key)
+            with self.subTest(menu=menu.get("menu_xmlid")):
+                self.assertEqual(menu.get("route"), f"/s/{scene_key}")
+                self.assertEqual(str(menu.get("scene_key") or "").strip(), scene_key)
+        if declared:
+            self.assertTrue(seen)
+
+    def test_declared_scene_entries_keep_the_native_authorization_base(self):
+        """R-A3: scene 不新开授权通道，授权仍由原生 model ACL + record rule 收口。"""
+        for _product_key, menu in self._declared_scene_entries():
+            with self.subTest(menu=menu.get("menu_xmlid")):
+                self.assertEqual(menu.get("locked_data_policy"), "odoo_model_acl_and_record_rules")
+                self.assertNotEqual(str(menu.get("target_scene_key") or "").strip(), "")
+                self.assertFalse(
+                    str(menu.get("target_scene_key") or "").strip()
+                    and not str(menu.get("route") or "").startswith("/s/"),
+                    "a declared scene entry must route through the scene channel",
+                )
+
+    def test_code_scene_map_mirrors_the_released_contract(self):
+        """代码常量只能镜像契约；不得承载契约未声明的入口身份。"""
+        declared = {
+            menu.get("menu_xmlid"): str(menu.get("target_scene_key") or "").strip()
+            for _product_key, menu in self._menus()
+        }
+        policy = _load_policy_maps_module()
+        code_map = dict(policy.NAV_MENU_SCENE_MAP)
+        self.assertTrue(code_map, "NAV_MENU_SCENE_MAP must not be empty")
+        undeclared = []
+        for menu_xmlid, scene_key in code_map.items():
+            contract_scene = declared.get(menu_xmlid)
+            if contract_scene:
+                self.assertEqual(
+                    scene_key,
+                    contract_scene,
+                    f"{menu_xmlid} scene identity drifted from the released contract",
+                )
+                continue
+            undeclared.append(menu_xmlid)
+        self.assertEqual(
+            sorted(undeclared),
+            sorted(TRANSITIONAL_UNDECLARED_SCENE_MENU_KEYS),
+            "code scene constants may only shrink as the contract converges; "
+            "retire an entry by declaring it in the contract, never by adding a new code constant",
+        )
 
 
 if __name__ == "__main__":

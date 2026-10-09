@@ -112,6 +112,7 @@ ROLE_GROUPS_CAPABILITY_FALLBACK = {
 ROLE_PRECEDENCE = ("business_config_admin", "executive", "owner", "pm", "finance")
 
 NAV_MENU_SCENE_MAP = {
+    "smart_construction_core.menu_sc_workspace_home": "workspace.home",
     "smart_construction_core.menu_sc_project_initiation": "projects.intake",
     "smart_construction_core.menu_sc_project_manage": "project.management",
     "smart_construction_core.menu_sc_project_project": "projects.list",

@@ -45,8 +45,15 @@ class AcceptanceActionCountTests(unittest.TestCase):
         return {"navigation_policy": navigation}
 
     def test_daily_policy_resolves_from_the_versioned_contract(self):
-        self.assertEqual(resolve_daily_action_count(ROOT), 89)
-        self.assertGreaterEqual(resolve_daily_action_count(ROOT), 1)
+        # The delivered count is contract data, not a release constant: assert
+        # the whole resolution chain lands on the declared versioned contract
+        # field.  Carrier consistency (contract paths == declared count) is
+        # owned by verify.product.menu.release_manifest_v2.guard.
+        declared = json.loads(
+            (ROOT / "scripts/verify/baselines/formal_business_product_menu_policy_v1.json").read_text(encoding="utf-8")
+        )["policy_strategy"]["effective_menu_count_per_product"]
+        self.assertEqual(resolve_daily_action_count(ROOT), declared)
+        self.assertGreaterEqual(declared, 1)
 
     def test_pinned_count_fails_closed(self):
         for key in ("min_actions", "max_actions", "action_count"):
@@ -109,10 +116,13 @@ class LockedRoleSurfaceTests(unittest.TestCase):
         daily = json.loads(
             (ROOT / "config/frontend/acceptance_environments_v1.json").read_text(encoding="utf-8")
         )["profiles"]["daily"]
-        self.assertEqual(resolve_action_count(daily, ROOT, principal_role="finance"), 45)
-        self.assertEqual(resolve_action_count(daily, ROOT, principal_role="pm"), 24)
-        self.assertEqual(resolve_action_count(daily, ROOT, principal_role="owner"), 5)
-        self.assertEqual(resolve_action_count(daily, ROOT, principal_role="project_member"), 10)
+        # Counts follow the locked role surface, not a release constant: each
+        # role's authoritative_navigation.json identity list gained the declared
+        # action-less role-home scene entry, so the locked count moves with it.
+        self.assertEqual(resolve_action_count(daily, ROOT, principal_role="finance"), 46)
+        self.assertEqual(resolve_action_count(daily, ROOT, principal_role="pm"), 25)
+        self.assertEqual(resolve_action_count(daily, ROOT, principal_role="owner"), 6)
+        self.assertEqual(resolve_action_count(daily, ROOT, principal_role="project_member"), 11)
         self.assertGreaterEqual(resolve_action_count(daily, ROOT, principal_role="business_config_admin"), 1)
 
     def test_roles_with_different_surfaces_disagree(self):

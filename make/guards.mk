@@ -146,6 +146,16 @@ verify.acceptance_action_count.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/acceptance_action_count.py scripts/verify/test_acceptance_action_count.py
 	@python3 scripts/verify/test_acceptance_action_count.py
 
+# The product view structure contract guard fails closed before it inspects the
+# tracked baseline, and the guard and the runtime exporter share
+# scripts/contract/product_view_structure_common.py. Its unit test is therefore
+# the owning-layer entry for the declared scene entry shape (route A: a scene
+# entry carries a target_scene_key, not a res_model). This binds that test to a
+# registered target instead of riding on the governed runtime export lane.
+.PHONY: verify.product_view_structure.contract.unit
+verify.product_view_structure.contract.unit: guard.prod.forbid
+	@PYTHONPATH="$(ROOT_DIR)" python3 -m unittest scripts.verify.test_product_view_structure_contract
+
 verify.daily_dev.acceptance.env.guard:
 	@node scripts/verify/frontend_acceptance_environment_test.mjs
 	@node scripts/verify/frontend_form_editability_discovery_test.mjs

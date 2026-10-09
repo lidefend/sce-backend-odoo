@@ -59,11 +59,16 @@ export function createNavigationSelectionSnapshot(node, routeAuthority) {
     : resolved.target;
   const menuId = positiveInteger(target?.menu_id);
   const actionId = positiveInteger(target?.action_id || target?.meta?.action_id);
-  if (!menuId || !actionId) return null;
+  if (!menuId) return null;
 
+  // One identity rule for every entry, identical to findRouteAuthority:
+  // the server-owned (menu_id, action_id) pair.  A scene entry simply has no
+  // business action (action_id 0); where it navigates is decided by the
+  // server-owned entry_target, never by a second frontend rule.
   const authority = authorityEntries(routeAuthority).find((entry) => (
-    positiveInteger(entry?.menu_id) === menuId
-    && positiveInteger(entry?.action_id) === actionId
+    actionId > 0
+      ? positiveInteger(entry?.action_id) === actionId
+      : positiveInteger(entry?.menu_id) === menuId
   ));
   if (!authority) return null;
 
@@ -79,7 +84,9 @@ export function createNavigationSelectionSnapshot(node, routeAuthority) {
     : null;
   const sceneKey = String(target?.scene_key || entryTarget?.scene_key || '').trim();
   const meta = cloneJson(target?.meta || {});
-  meta.action_id = actionId;
+  if (actionId) {
+    meta.action_id = actionId;
+  }
   meta.menu_id = menuId;
 
   return deepFreeze({
