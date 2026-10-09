@@ -180,6 +180,7 @@ Generated from repository source files. This report is informational during the 
 | 488 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
 | 423 | Shell script | `scripts/demo/verify.sh` |
+| 356 | Shell script | `scripts/ops/git_safe_push.sh` |
 | 345 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |
 | 343 | YAML workflow | `.github/workflows/infra-stage-gate.yml` |
 | 333 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
@@ -187,7 +188,6 @@ Generated from repository source files. This report is informational during the 
 | 308 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 305 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 302 | Shell script | `scripts/deploy/prod_sim_fresh_replay.sh` |
-| 298 | Shell script | `scripts/ops/git_safe_push.sh` |
 | 289 | Shell script | `scripts/ci/orm_result_guard.sh` |
 | 287 | Shell script | `scripts/common/frontend_release_ci_identity.sh` |
 
