@@ -1073,3 +1073,78 @@ main 车道，候选车道检查保留但尚无回执。
 - 待裁决（登记，不掩盖）：discover 型 `system_admin` 面的原生配置投影交付了 `menu_sc_business_config_workbench`，
   而其 `admin_menu_xmlids` 未声明该条目。需产品裁决：补全声明，或收窄投影。
 
+
+## 13.16 顺序解决两项未过验收：创建/编辑能力绑定 + 工作台最小证据差额（日常环境一次刷新 + 一次列表复核）
+
+**一、本轮顺序（用户指令"顺序 解决"）**
+
+1. 先补创建/编辑与工作台的最小证据差额；
+2. 再统一验证（复用未变证据 + 一次环境刷新 + 一次列表范围复核）。
+
+**二、一次受管环境刷新（唯一一次）**
+
+日常开发服务器 `http://1.95.85.92:18081`（DB `sc_demo`）按受管入口顺序刷新，`c3424962 → 5220db8b`：
+
+- `make daily.runtime.candidate.bundle_sync`：候选分支 bundle 同步（`bundle_base_sha=c3424962`，`origin_main_mutated=false`）。
+- `make daily.runtime.source_revision.align`：运行身份声明为 `5220db8b`（改写 `.env.dev` 且自带备份/回滚）。
+- `make daily.runtime.published_face.converge`（`DAILY_RUNTIME_PUBLISHED_FACE_UPGRADE_MODULES=smart_core,smart_construction_core`）：
+  **升级两个模块**——本次候选同时改了 P0 投影代码（`smart_core/delivery/menu_service.py`）与 P1 视图
+  （`menu_product_configuration_wave1.xml`），只重建前端不会验证后端修复。发布面按锁定契约重冻：
+  `construction.standard` / `construction.preview` 各 90 个发布菜单，守卫 PASS。
+- `make daily.runtime.frontend.build`：按部署 HEAD 重建前端并声明产物指纹。
+
+回读（`.runtime/final-acceptance/daily-deployed/runtime-version-readback.json`）：
+
+```
+source_revision      = 5220db8b35a7596a26b930bae9e034c78dce9b8a
+frontend_build_sha256= 1f46b03308983f7fe0c5b1d7a48f619af67e59391b40f07a0f19c41b07901b35
+entry_asset          = index-vn0WKFxi.js
+database             = sc_demo
+```
+
+**三、一次列表范围复核（`verify.frontend.business_entry.matrix.incremental`）**
+
+- 先刷新负例闭包快照（`verify.frontend.business_entry.negative_closures`，10 候选 / 1 不适用），
+  使拒绝角色计划绑定当前闭包，而不是旧快照。
+- 复用判定：`reuse_identity = frontend_build_sha256`，本产物指纹变化 → 89 单元全部 affected；
+  完整重走 **89/89**。
+- 结果：`ok=true, completeness=complete, problems=0, console_errors=0`；拒绝角色覆盖 **89/89，0 未覆盖**。
+- **新增 `collection_capability` 绑定**：76 个 table/kanban 入口把"该入口自己列表契约发布的声明"
+  （`effectiveRecordCapabilities.create` / `globalStatus.modelRights.write`）与"渲染面声明"
+  （`data-can-create` / `data-can-edit`）逐条绑定，**0 处不一致**；契约未发布的字段一律不断言。
+- 唯一异常为 `menu_sc_p1_expense_contract`（支出合同，`hierarchical`）一次 `page.goto(networkidle)` 30s 导航超时；
+  按声明理由隔离复跑后 PASS（`hierarchical`，`ready`，50 条，`record_id=3827`，工作流 `[activate, complete, cancel]`），
+  定性为**重表面瞬时加载超时，非产品缺陷**。台账最终 89/89 全部 `checked`。
+
+**四、授权探针（同一刷新后的服务身份）**
+
+- `verify.nav.pro01r.route_authority.http`：`ROUTE_AUTHORITY_CONTRACT_VERSION=2.0.0`，
+  `ROLE_CONTRACT_PARTITION / USER_MANAGEMENT / ROLE_MANAGEMENT / CONTRACT_EXECUTION_CONTEXT_ROUTE /
+  ORDINARY_USER_ADMIN_DENIAL / CROSS_COMPANY_CONTEXT_DENIAL` 全 PASS，`HTTP_500=0`
+  （含本轮新增的 action 声明面分区与 `silent_actions` fail-closed 断言）。
+- `verify.nav.pro01r.route_authority.browser`：`USER_MANAGEMENT_REACHABLE=true`、`ROLE_MANAGEMENT_REACHABLE=true`、
+  `OLD_ACTION_EXECUTION_AUTHORIZED_DIRECT_REACHABLE=true`、`ORDINARY_USER_ADMIN_DENIAL=PASS`、
+  `CROSS_COMPANY_CONTEXT_DENIAL=PASS`、`UNAUTHORIZED_ROUTE_DATA_REQUESTS=0`、`DIRECT_ROUTE_500=0`。
+
+**五、证据复用与门禁修正**
+
+- 日常部署链路的单元收据与 `c31db98f` 时记录的十一个守卫/类型检查收据**全部复用**；
+  只有 `browser_login_return_authority` 的声明输入（`scripts/verify/nav_pro_01r_route_authority_http.py`）发生漂移，故重跑。
+- 两个运行时类检查（`browser_login_return_authority`、`business_entry_matrix_recollect`）补齐
+  `readback.artifact`（`.runtime/final-acceptance/daily-deployed/runtime-version-readback.json`），
+  否则按运行纪律只能被判 `stale`。
+- 新增受管检查 `agent_ledger_consistency_unit`（`verify.agent.ledger.unit`，15 tests），
+  并把它**真实读取**的 `.agent` 台账（`context.yaml`、`active-runs.json`、`runs/`、`goals/`）纳入声明输入：
+  原先这些路径未声明，导致 run 台账被改写后旧绿灯仍可复用——这是本轮修正的取证依赖缺口。
+
+**六、四态（不夸大）**
+
+批次验收=进行中（本轮两项未过验收已顺序解决）/ 主线集成=未做（未授权进 main）/ 版本发布=日常运行时候选 /
+产品交付=未完成。PR 推送、远端门禁与合入仍**必须等待用户显式授权**；独立复核（外部角色）仍待执行。
+
+**七、登记未决（不掩盖）**
+
+- 产品裁决：discover 型 `system_admin` 面的原生配置投影交付了 `menu_sc_business_config_workbench`，
+  而其 `admin_menu_xmlids` 未声明该条目。既有证据不足以判为缺陷，未强改。
+- 环境 DENY：重建/快照车道仍受两个挂载者阻断，仅作为该车道的结论，绑定实际入口依赖与独立复核依据，
+  不泛化为"环境全部通过"；`rendering_detail_state` 的排除沿用既有裁决，不重复证明。

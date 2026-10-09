@@ -112,7 +112,10 @@
         "scripts/verify/nav_pro_01r_route_authority_http.py",
         "scripts/verify/nav_pro_01r_route_authority_browser.mjs"
       ],
-      "kind": "runtime"
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/final-acceptance/daily-deployed/runtime-version-readback.json"
+      }
     },
     "business_entry_matrix_recollect": {
       "target": "verify.frontend.business_entry.matrix.incremental",
@@ -123,7 +126,10 @@
         "scripts/verify/business_entry_matrix_incremental.py",
         "scripts/ops/evidence_scope.py"
       ],
-      "kind": "runtime"
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/final-acceptance/daily-deployed/runtime-version-readback.json"
+      }
     },
     "business_entry_matrix_capture_resilience_unit": {
       "target": "verify.frontend.business_entry.evidence_scope.unit",
@@ -377,14 +383,28 @@
         "addons/smart_construction_core/views/core/project_overview_views.xml",
         "addons/smart_core/handlers/ui_contract_v2.py"
       ]
+    },
+    "agent_ledger_consistency_unit": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk",
+        ".agent/context.yaml",
+        ".agent/active-runs.json",
+        ".agent/runs",
+        ".agent/goals"
+      ],
+      "note": "declared inputs include the .agent ledger this guard actually reads; without them a run.json/run-ledger edit could silently keep a stale green result"
     }
   },
   "blockers": [
-    "Mainline integration is not authorized: the user instructed \"先不执行进入主线\". The verified candidate c31db98f is a local audit-branch commit only; PR push, remote gates and merge remain pending and must not be described as integrated.",
-    "The daily runtime still serves c3424962; the c31db98f backend/menu/front-end changes are not yet deployed. Browser-layer evidence for the creation/edit capability binding and the route-authority readback therefore require the one consolidated governed refresh before they can be collected.",
-    "Open product decision (registered, not hidden): the native configuration projection delivered menu_sc_business_config_workbench for the discover-capable system_admin surface although its admin_menu_xmlids does not declare that entry."
+    "Mainline integration is not authorized: the user instructed \"先不执行进入主线\". The verified candidate c31db98f (deployed to the daily dev runtime as 5220db8b) is a bounded audit-branch result only; PR push, remote gates and merge remain pending and must not be described as integrated.",
+    "Open product decision (registered, not hidden): the native configuration projection delivered menu_sc_business_config_workbench for the discover-capable system_admin surface although its admin_menu_xmlids does not declare that entry. Not judged a defect on the collected evidence; it needs a product ruling (declare the entry vs narrow the projection).",
+    "Environment DENY (registered, not generalised): the rebuild/snapshot lane is still blocked by the two mounters - a single DENY conclusion bound to the actual entry dependency and an independent review, not an \"environment fully passes\" statement. rendering_detail_state stays excluded on the existing ruling and is not re-proved here."
   ],
-  "next_exact_step": "Ordered closeout on branch audit/daily-dev-mainline-product-acceptance-closeout-20261009 at candidate c31db98f (clean). (1) DONE: the two owning-layer declared-delivery defects are closed at P0 smart_core (declared ACTION face now closed like the MENU face) and P1 wave one (menu_ui_menu_config_policy_business_config re-hung on the product-configuration center), with the historical-payment-fact test assertion aligned to the existing delivered-or-denied-exactly-once invariant; no assertion relaxed, no ACL bypass, no model special case. Verified by 25/25 targeted ORM tests, eleven guards, front-end typecheck and 28/28 ledger ORM tests, all recorded in .runtime/agent-runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT and logged under .runtime/eff/rec/closeout-20261010/. (2) NEXT: the remaining minimal-evidence gap for creation/edit and the workbench needs one consolidated governed daily-runtime refresh (backend upgrade + front-end artifact), then a single targeted browser run: verify.frontend.business_entry.matrix.incremental plus verify.nav.pro01r.route_authority.browser with its declared readback artifact. (3) THEN: one consolidated verification pass and the user-facing acceptance readback; PR push / merge still require explicit authorization.",
+  "next_exact_step": "Daily-runtime product acceptance closeout on branch audit/daily-dev-mainline-product-acceptance-closeout-20261009 at clean HEAD 5220db8b. (1) DONE: the two owning-layer declared-delivery defects are closed at P0 smart_core (declared ACTION face now closed like the MENU face) and P1 wave one (menu_ui_menu_config_policy_business_config re-hung on the product-configuration center), with the historical-payment-fact assertion aligned and no assertion relaxed. (2) DONE (this round, ordered resolution of the two outstanding acceptance gaps): the creation/edit capability binding and the workbench minimal-evidence gap are closed by the ONE consolidated governed daily-runtime refresh (daily.runtime.candidate.bundle_sync -> source_revision.align -> published_face.converge with modules smart_core,smart_construction_core -> frontend.build) followed by one list-scope walk: verify.frontend.business_entry.matrix.incremental = 89/89 units checked, problems 0, console errors 0, denied-role coverage 89/89 with 0 uncovered, and the new declaration->rendering collection-capability binding matched on all 76 table/kanban entries (the single hierarchical navigation-timeout exception was isolated and re-run, then passed); verify.nav.pro01r.route_authority.http and .browser both PASS against the refreshed served revision. (3) THEN: the four-state separation stays 批次验收 in progress / 主线集成 not done / 版本发布 daily candidate only / 产品交付 not complete. PR push, remote gates and merge still require explicit user authorization.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -1005,6 +1025,57 @@
         "fact": "for the discover-capable system_admin surface, the native configuration projection delivered menu_sc_business_config_workbench while the surface admin_menu_xmlids did not declare it (declared_not_delivered: menu_sc_workspace_home is the role-home carrier).",
         "status": "registered, not silently closed; needs a product decision (complete the declaration vs narrow the projection)"
       }
+    },
+    "round_20261010_daily_runtime_refresh_and_entry_matrix": {
+      "refresh": {
+        "entry_chain": "make daily.runtime.candidate.bundle_sync -> make daily.runtime.source_revision.align -> make daily.runtime.published_face.converge -> make daily.runtime.frontend.build",
+        "deployed_revision": "5220db8b35a7596a26b930bae9e034c78dce9b8a",
+        "previous_revision": "c3424962e05c31b184718c779b8c6b0e5553cc92",
+        "modules_upgraded": [
+          "smart_core",
+          "smart_construction_core"
+        ],
+        "upgrade_reason": "the candidate changes the P0 projection code (smart_core/delivery/menu_service.py) and a P1 view (menu_product_configuration_wave1.xml), so both module trees moved; a front-end-only rebuild would not have exercised the backend fix",
+        "published_face": "construction.standard and construction.preview re-frozen from the locked contract; released menus 90/90; guard PASS",
+        "served_readback": {
+          "source_revision": "5220db8b35a7596a26b930bae9e034c78dce9b8a",
+          "frontend_build_sha256": "1f46b03308983f7fe0c5b1d7a48f619af67e59391b40f07a0f19c41b07901b35",
+          "entry_asset": "index-vn0WKFxi.js",
+          "database": "sc_demo"
+        },
+        "readback_artifact": ".runtime/final-acceptance/daily-deployed/runtime-version-readback.json"
+      },
+      "reuse": {
+        "note": "the daily-runtime deploy-chain unit receipts and the eleven guard/typecheck receipts recorded at c31db98f were reused unchanged: only browser_login_return_authority had a drifted declared input (scripts/verify/nav_pro_01r_route_authority_http.py) and was re-run.",
+        "negative_closures": "artifacts/frontend-business-entry-matrix/negative_closures.json refreshed before the walk (10 candidates, 1 ineligible) so the denied-role plan bound the current closures"
+      },
+      "matrix": {
+        "entry": "make verify.frontend.business_entry.matrix.incremental (DB_NAME=sc_demo, ACCEPTANCE_TARGET_SHA=5220db8b..., ACCEPTANCE_LOGIN=wutao)",
+        "summary": "artifacts/frontend-business-entry-matrix/20261010-closeout-daily/summary.json",
+        "reuse_identity": "frontend_build_sha256=1f46b03308983f7fe0c5b1d7a48f619af67e59391b40f07a0f19c41b07901b35",
+        "result": "89/89 units checked, ok=true, problems 0, console_errors 0, authority negatives 89/89 covered with 0 uncovered",
+        "collection_capability_binding": "76 table/kanban entries bound the entry's own list-contract declaration (effectiveRecordCapabilities.create / modelRights.write) to the rendered surface declaration (data-can-create / data-can-edit); 0 mismatches. No capability the contract does not publish was asserted.",
+        "isolated_exception": "smart_construction_core.menu_sc_p1_expense_contract timed out once on page.goto(networkidle, 30s) for /a/579?menu_id=905 and was re-run in isolation under a stated reverify reason; it then passed (hierarchical, ready, 50 records, record_id 3827, workflow [activate, complete, cancel]). Classification: transient load timeout on a heavy hierarchical surface, not a product defect.",
+        "ledger": ".runtime/evidence-scope/verify.frontend.business_entry.matrix.browser.json (89 units, all checked)"
+      },
+      "route_authority": {
+        "http": "PASS against served 5220db8b: contract 2.0.0, ROLE_CONTRACT_PARTITION / USER_MANAGEMENT / ROLE_MANAGEMENT / CONTRACT_EXECUTION_CONTEXT_ROUTE / ORDINARY_USER_ADMIN_DENIAL / CROSS_COMPANY_CONTEXT_DENIAL all PASS, HTTP_500=0 (includes the new declared-action-face partition and the fail-closed silent_actions invariant)",
+        "browser": "PASS: USER_MANAGEMENT_REACHABLE=true, ROLE_MANAGEMENT_REACHABLE=true, OLD_ACTION_EXECUTION_AUTHORIZED_DIRECT_REACHABLE=true, ORDINARY_USER_ADMIN_DENIAL=PASS, CROSS_COMPANY_CONTEXT_DENIAL=PASS, UNAUTHORIZED_ROUTE_DATA_REQUESTS=0, DIRECT_ROUTE_500=0",
+        "metadata": ".runtime/nav-pro-01/route-authority-http.json"
+      },
+      "ledger_dependency_fix": {
+        "check": "agent_ledger_consistency_unit (verify.agent.ledger.unit)",
+        "fact": "the guard reads .agent/context.yaml, .agent/active-runs.json, .agent/runs/*/run.json and .agent/goals/*.yaml but declared none of them as inputs, so a run-ledger edit could leave a stale green receipt reusable",
+        "fix": "declare those ledger paths as the check's inputs; result 15 tests PASS plus guard PASS (goals=93 runs=71)"
+      },
+      "logs": [
+        ".runtime/eff/rec/closeout-20261010/daily_candidate_bundle_sync.log",
+        ".runtime/eff/rec/closeout-20261010/daily_runtime_source_revision_align.log",
+        ".runtime/eff/rec/closeout-20261010/daily_runtime_published_face_converge.log",
+        ".runtime/eff/rec/closeout-20261010/daily_runtime_frontend_build.log",
+        ".runtime/eff/rec/closeout-20261010/business_entry_matrix_incremental.log",
+        ".runtime/eff/rec/closeout-20261010/agent_ledger_consistency_unit.log"
+      ]
     }
   },
   "continuation": {
@@ -1014,8 +1085,8 @@
   "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced.",
   "stage_identity": {
     "kind": "iteration",
-    "head": "c31db98febf5b07b4930a2795c3dc0e6d93265e0",
+    "head": "5220db8b35a7596a26b930bae9e034c78dce9b8a",
     "dirty_scope": [],
-    "note": "iteration identity: local candidate c31db98f (P0 declared-face closure + P1 configuration-menu re-hang) on top of 8eb4be6b (menu-closeout declaration alignment) / b79c2c26 / 03393078 / c3424962. The daily runtime still serves c3424962 until the consolidated refresh; only documentation/ledger commits follow c31db98f."
+    "note": "iteration identity: current clean branch HEAD 5220db8b (docs/agent record) carrying the verified candidate c31db98f (P0 declared-ACTION-face closure + P1 configuration-leaf re-hang + front-end rendered-capability declaration) on top of 8eb4be6b / abdaf3b1 / b79c2c26 / 03393078 / c3424962. 5220db8b differs from c31db98f only by documentation/agent-run records, so the deployed product behaviour is the c31db98f candidate. The daily dev runtime now serves this exact revision with the rebuilt front-end bundle."
   }
 }
