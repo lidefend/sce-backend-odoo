@@ -7,6 +7,7 @@
   "goal": ".agent/goals/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT.yaml",
   "record": "docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md",
   "scope": [
+    "AGENTS.md",
     ".agent/",
     "docs/",
     "make/",
@@ -272,7 +273,10 @@
         "config/frontend/authoritative_navigation.json",
         "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
         "make/dev.mk"
-      ]
+      ],
+      "readback": {
+        "artifact": "artifacts/backend/daily_dev_acceptance_probe.json"
+      }
     },
     "agent_resume_ledger_unit": {
       "target": "verify.agent.resume.unit",
@@ -315,9 +319,9 @@
   "blockers": [
     "Mainline integration is not authorized: the user instructed \"先不执行进入主线\". The verified candidate is deployed to the daily runtime only; PR push, remote gates and merge remain pending and must not be described as integrated.",
     "browser_login_return_authority (verify.nav.pro01r.route_authority.browser) still needs the governed nav_pro_{config_admin,system_admin,pm,project_member} fixture provisioned on sc_demo through nav.pro01.runtime.prepare inside the remote compose. Its earlier blocking prerequisite (\"missing task evidence: finance smart_construction_core.menu_sc_settlement_adjustment\") was a served-tree/module-generation gap; the runtime is now at 4b7f9a46 with smart_core upgraded and the published face re-frozen, so the prepare step can be attempted. No assertion may be relaxed.",
-    "Run-ledger reuse boundary (by design, not a defect): scripts/ops/agent_run_context.py only auto-reuses declared offline checks; a kind=runtime receipt is never auto-reusable and is reported as stale with \"runtime evidence requires authoritative environment readback\" (locked by scripts/verify/test_agent_run_context.py::test_runtime_receipt_never_auto_reused). The authoritative readback for this batch therefore lives in .runtime/final-acceptance/daily-deployed/*.json plus the recorded receipt .runtime/agent-runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/daily_acceptance_readback.json. Reuse for runtime lanes requires a declared authoritative-environment-readback mechanism, which is outstanding P4 work."
+    "Run-ledger reuse boundary: runtime lanes are no longer re-derived each round. scripts/ops/agent_run_context.py now reuses a kind=runtime receipt when its check declares an authoritative environment `readback` artifact whose content is hashed into the check's dependency state (commit f64e258e, AGENTS.md Layered Validation Efficiency + iterations note 13.9). A runtime check without a declared readback is still never reusable and a runtime run environment is still non-reusable. `daily_acceptance_readback` is now reusable through artifacts/backend/daily_dev_acceptance_probe.json."
   ],
-  "next_exact_step": "Iteration-efficiency closeout (this round, continued): `ci.local.iteration` 36.8s -> 6.9s (commit 8a1ef8ab) and frontend typecheck 23.4s -> 10.3s warm (commit 39a86b2f). The deploy loop's unconditional `mod.upgrade smart_core` (~180s) is now reused when the declared module git tree oid equals the deployed one, re-resolved on the remote before any skip (commit 3ee08386, 22/22 tests; docs section 13.8). Next, in order: (1) on explicit user confirmation, run the real `daily.runtime.candidate.release` once to prove upgrade_mode=reused end-to-end (remote write, not yet initiated); (2) author the declared authoritative-environment readback (fail-closed) so kind=runtime receipts can be reused instead of re-derived each round (blockers[2]); (3) keep the unchanged product-closeout order: nav_pro_* fixture then the real click-open/return journey, then (on explicit authorization) PR/merge.",
+  "next_exact_step": "Iteration-efficiency closeout (this round): `ci.local.iteration` 36.8s -> 6.9s (8a1ef8ab); frontend typecheck 23.4s -> 10.3s warm (39a86b2f); the deploy loop no longer re-runs `mod.upgrade` when the declared module git tree oid equals the deployed one (3ee08386); runtime receipts are now reusable through a declared authoritative environment readback (f64e258e, 40/40). Next, in order: (1) on explicit user confirmation, run the real `daily.runtime.candidate.release` once to prove upgrade_mode=reused end-to-end (remote write, not yet initiated); (2) keep the unchanged product-closeout order: provision the nav_pro_* fixture then run the one real click-open/return journey (verify.nav.pro01r.route_authority.browser), then, on explicit authorization, push/PR/merge.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -652,6 +656,18 @@
         "tests": "make verify.daily.runtime.published_face.converge 22/22 OK",
         "not_relaxed": "The face is still frozen after the (possibly reused) upgrade and the release-gate guard still proves it; the declared upgrade (`CODEX_NEED_UPGRADE`/`CODEX_MODULES`) coupling is unchanged; `--force-upgrade` is the explicit drift-repair path.",
         "runtime_proof": "L3/L4 real deploy showing upgrade_mode=reused is pending explicit user confirmation (remote write)."
+      },
+      "runtime_receipt_reuse": {
+        "commit": "f64e258e",
+        "change": "A runtime check may declare a `readback` artifact (authoritative environment readback) under the ignored runtime-evidence area; its content is hashed into the check's dependency state, so a regenerated readback for a changed environment invalidates the runtime receipt exactly like any other changed input.",
+        "measured": {
+          "daily_acceptance_readback_seconds_reused": 25,
+          "status_change": "stale -> reusable"
+        },
+        "fail_closed": "No declared readback -> runtime check stays non-reusable; runtime run environment stays non-reusable; missing artifact blocks begin; malformed/absolute/escaping/symlinked/out-of-area readback path rejected at run resolution.",
+        "tests": "make verify.agent.resume.unit 40/40 OK (six new cases)",
+        "not_relaxed": "No product assertion, gate, credential guard or fallback path relaxed.",
+        "docs": "AGENTS.md Layered Validation Efficiency bullet + iterations note 13.9"
       }
     }
   },

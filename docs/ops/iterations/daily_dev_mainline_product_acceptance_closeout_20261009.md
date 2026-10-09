@@ -756,3 +756,39 @@ main 车道，候选车道检查保留但尚无回执。
 `reuse_hint` 全条件、真仓库 `module_tree_ids` 解析与拒绝、`--force-upgrade` 忽略命中回执）。
 新登记检查 `daily_runtime_published_face_converge`（`verify.daily.runtime.published_face.converge`）已写回执。
 **L3/L4 实测**（真实部署走一次并确认 `upgrade_mode=reused`）待用户确认后执行——本轮不擅自发起远端写。
+
+### 13.9 运行态回执可复用：声明式权威环境读回（fail-closed）
+
+**现象与度量**：`agent_run_context` 过去对**任何** `kind=runtime` 的检查一律判定
+`stale`（原因：`runtime evidence requires authoritative environment readback`），
+所以 `daily_acceptance_readback`（只读探针，~25s）以及后续浏览器车道的回执**每轮都要重新取证**。
+这是"体系化复用"最大的缺口。
+
+**根因**：账本要求在复用前证明"受管环境身份未变"，但当时**没有任何声明式读回载体**，
+只能保守地一律重跑。缺的是"载体"，不是"是否该复用"的判断。
+
+**修正（与 §13.8 同构：便宜的读回跑、昂贵的车道复用）**：
+
+- 检查可以声明一个**权威环境读回**：`"readback": {"artifact": "<path>"}`，路径必须落在被忽略的
+  运行时证据区（`.runtime/` 或 `artifacts/`），**不得**是源码/工具路径（否则它会伪装成代码）。
+- `dependency_state` 把该 artifact 的 `sha256`（含权限位）并入检查的依赖状态；因此
+  **环境变化 → 受管入口重写读回 → 摘要变化 → 回执失效（stale）**，与任何其它输入变化同等对待。
+- `evaluate` 只对"声明了 readback 的 runtime 检查"放行复用；**未声明 readback 的 runtime 检查
+  仍然永不自动复用**；`run.environment.kind == runtime` 依旧不可复用（保持既有硬约束）。
+- **fail-closed**：readback 缺失 → `begin` 直接拒绝（`declared dependency is missing`）；
+  读回被重写 / 环境身份变化 → `stale`；声明形状非法（非 `{artifact}`、绝对路径、`..`、越界、
+  非运行时证据区、符号链接）→ `resolve_run` 直接拒绝。
+
+**未放宽任何断言**：只新增了"复核用的声明式载体"，没有修改任何产品断言、门禁或回退路径；
+未声明的 runtime 车道行为与之前完全一致（一律 stale）。
+
+**实测**：`daily_acceptance_readback` 声明
+`artifacts/backend/daily_dev_acceptance_probe.json`（受管只读探针输出）后重跑探针并写回执，
+状态由 `stale` → **`reusable`**；`make verify.agent.resume.unit` **40/40 PASS**
+（新增 6 个：未声明 readback 不可复用、读回不变可复用、读回变化失效、读回缺失阻断、
+越界/源码路径拒绝、声明形状校验）。
+
+**证据卫生纠偏**：复跑探针时暴露了两点——(1) `daily` 剖面对弱口令 `123456` 要求
+`SC_ACCEPTANCE_DAILY_CREDENTIAL_CONFIRMATION`（绑定 runId/expiresAt 的 JSON）；
+(2) 合同探针账号 `fixture_role_finance` 的口令由 `ACCEPTANCE_CONTRACT_PASSWORD` 提供。
+两者都通过既有受管入口满足，**未放宽任何凭据守卫**。
