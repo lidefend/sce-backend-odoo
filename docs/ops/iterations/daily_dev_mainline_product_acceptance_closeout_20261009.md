@@ -792,3 +792,29 @@ main 车道，候选车道检查保留但尚无回执。
 `SC_ACCEPTANCE_DAILY_CREDENTIAL_CONFIRMATION`（绑定 runId/expiresAt 的 JSON）；
 (2) 合同探针账号 `fixture_role_finance` 的口令由 `ACCEPTANCE_CONTRACT_PASSWORD` 提供。
 两者都通过既有受管入口满足，**未放宽任何凭据守卫**。
+
+### 13.10 部署闭环复用实跑（日常运行时候选 `a81fad7e`）
+
+按 §13.8 的实施做了一次真实部署（受管入口 `make daily.runtime.candidate.release`，
+三项显式确认；未手工拼装任何 Compose/SHA）：
+
+- `daily.runtime.candidate.bundle_sync` PASS：`4b7f9a46` → `a81fad7e`，
+  `origin_main_mutated=false`，`deployment_mode=candidate`。
+- `daily.runtime.source_revision.align` PASS：`.env.dev` 的 `SC_SOURCE_REVISION` 写入 `a81fad7e`，
+  `restarted=true`、`rolled_back=false`，服务端读回 `served.source_revision=a81fad7e`。
+- `daily.runtime.published_face.converge` PASS：**首次必然 `upgrade_mode=run`**（上一份回执没有
+  `module_tree_ids`，属正确的保守引导），并写回绑定身份
+  `module_tree_ids={"smart_core":"1544cbc20706b9fd85c8f98259c71395d1ce663f"}`。
+
+**同码复用的实跑验证**：`daily.runtime.candidate.bundle_sync` 明确拒绝把**同一 SHA** 再同步一次
+（`candidate SHA must differ from the daily runtime SHA`），这是防呆而不是缺陷；因此第二段
+复用证明需要一个**新的候选 revision**（文档/台账提交即可，不改 `addons/smart_core`）。
+
+**部署带来的正确连带**：服务端 SHA 变化后，`daily_acceptance_readback` 的旧回执（绑定 `4b7f9a46` 的
+读回）按机制失效——实测正是如此。按受管顺序恢复：
+1. `make daily.runtime.record_identity.resolve`（`CONFIRM_DAILY_RUNTIME_RECORD_IDENTITY=…`，
+   `DAILY_RUNTIME_EXPECTED_SHA=a81fad7e…`）刷新 `artifacts/backend/acceptance_record_identity.json`；
+2. 重跑 `make verify.daily_dev.acceptance.readonly.probe`：PASS（`served_sha=a81fad7e`，
+   `runtime_identity`/`contract` 全 PASS，`errors=[]`）；
+3. 写回执后 `daily_acceptance_readback` 回到 `reusable`，台账恢复 `28 reusable / 2 not_run / 0 stale`。
+

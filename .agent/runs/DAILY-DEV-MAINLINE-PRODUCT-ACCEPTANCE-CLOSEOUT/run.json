@@ -668,6 +668,17 @@
         "tests": "make verify.agent.resume.unit 40/40 OK (six new cases)",
         "not_relaxed": "No product assertion, gate, credential guard or fallback path relaxed.",
         "docs": "AGENTS.md Layered Validation Efficiency bullet + iterations note 13.9"
+      },
+      "deploy_loop_upgrade_reuse_live": {
+        "candidate": "a81fad7e222da0835a2f2632c3410ff6f7c27de2",
+        "entry": "make daily.runtime.candidate.release (three explicit confirmations)",
+        "result": "bundle_sync PASS 4b7f9a46 -> a81fad7e; source_revision.align PASS (served readback a81fad7e); published_face.converge PASS",
+        "first_run_upgrade_mode": "run (bootstrap: the previous receipt carried no module_tree_ids)",
+        "module_tree_ids": {
+          "smart_core": "1544cbc20706b9fd85c8f98259c71395d1ce663f"
+        },
+        "note": "bundle_sync refuses the same SHA, so the reused proof needs a distinct candidate revision",
+        "readback_rebind": "served SHA change correctly invalidated daily_acceptance_readback; refreshed via daily.runtime.record_identity.resolve + readonly probe re-run (PASS), receipt reusable again"
       }
     }
   },
