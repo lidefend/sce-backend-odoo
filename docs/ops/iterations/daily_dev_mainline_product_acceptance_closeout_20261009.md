@@ -1190,3 +1190,57 @@ database             = sc_demo
 裁决为"设计内行为，无代码改动"，已登记进 run（`round_20261010_declared_delivery_face.open_decision`）。
 唯一待办是**所有者确认**：若所有者要求 `表单配置` 必须退出平台管理员面，正确责任层是
 **动作/菜单的组声明**（`smart_core.group_smart_core_admin`），而不是角色锚点清单。
+## 13.18 冻结准备 + 独立复核：一处门禁漂移与一处无回执主张的处理
+
+**一、冻结准备**
+
+`make ci.delivery.freeze.prepare` PASS，重生成了受内容约束的生成物（契约结构指纹、测试清单、E2E 旅程矩阵、模块依赖图、
+复杂度预算、拆分队列、GitHub 远端执行计划、组件接管清单），以 docs/evidence-only 提交落盘。
+
+**二、第一次 Quick 失败（唯一失败点）与其受管修复**
+
+- `make ci.local.quick` → `verify.g1.acceptance.baseline` FAIL：
+  `fingerprint drift for config/frontend/acceptance_environments_v1.json: recorded ed8f4e79c12e..., actual 618179c62f5c...`。
+- 根因：本分支早前提交改过验收环境配置，但未刷新 G1 基线自指纹（`d106d2dd` 引入）。
+- 修复：走受管刷新入口
+  `python3 scripts/verify/g1_acceptance_baseline_guard.py --write --baseline-sha 3f424993c9f378aaeedd2f26080545ad37ea3f8e`
+  （保留原记录的 G1 切点，仅更新漂移资产的 sha256 与 `collected_at`），随后守卫 PASS。
+- 失败后按"收集同层独立失败"要求，把 `ci.local.quick.run` 里 g1 之后的全部目标单独跑完：**全部 PASS**，
+  说明该漂移是唯一阻断点。
+
+**三、独立复核（外部只读执行器，非同实现者）**
+
+绑定身份：冻结 HEAD `edc7bcd6`，工作区指纹 digest `8beba69b…c36a42`（8093 条），
+baseline `aea2c19b`（`.runtime/delivery-freeze/worktree-fingerprint.json`）。
+
+- **已证实**：P0 声明 ACTION 面闭合（`menu_service.py` 的 declared vs accounted 分区补记显式拒绝，
+  未覆盖 ACL/字段权限、无模型特判）；P1 wave-one 叶重挂且停用集未改；验收 summary 字段级主张（89 条、problems 0、
+  console 0、76 条声明→渲染绑定 0 不一致）；hierarchical 隔离复跑真 PASS；运行读回身份（5220db8b / 1f46b033…）；
+  system_admin 三条声明权威与 `DISCOVERED_PRIMARY_NAV / delivery_engine.nav` 归因；台账 35 个目标均真实存在、输入齐备。
+- **阻断性发现（已解决）**：上一轮 `targeted_orm`（`user_data_boundary`，25 tests，0 failed/0 error）**没有回执**，
+  且工作区内仅存的三份同标签日志全部为失败且早于修复提交。处理：在冻结候选上**实跑同一受管目标**，
+  现得 `0 failed, 0 error(s) of 25 tests`（`sc_dev_demo`），回执
+  `.runtime/eff/rec/closeout-20261010/targeted_orm_user_data_boundary.log`。上一轮缺回执的事实已如实登记，不掩盖。
+- **记录的限定（不夸大）**：
+  1. `20261010-closeout-daily/summary.json` 的 `ok=true` 由 completeness+problems 推导，**内含 1 条 `status=exception`**，
+     因此该文件本身不得被读作"89/89 已渲染"；渲染覆盖由隔离复跑 + 证据账本补齐（89 units，88 条来自本次走查 + 1 条来自隔离复跑）。
+  2. `negative_closures.json` 无 `served_revision`，属来源/计划输入，不能绑定单一 bundle。
+  3. `docs/contract/snapshots/system_init_intent_admin.json` 是冻结 golden（最后内容提交 `c0a6e9e2`），
+     记录交付形状，其本身不是"当前候选运行行为"证据。
+
+**四、断言变更披露（非放宽）**
+
+`c31db98f` 同时改了 `addons/smart_construction_core/tests/test_role_surface_project_member.py`：
+历史付款事实 / boq 导入的声明型 action 断言，从"必须交付为 `CONTEXTUAL_ROUTE`"改为
+"**交付或带 `reason_code` 的显式拒绝，恰好一次**"（与既有 executive / project-member 用例一致）。
+交付分支保留原 `route_kind` / `allowed_operation` 断言不变；新增分支只在主体 ACL 不容许所声明操作时可达且必须带显式原因码——
+**是"消除静默消失"的收紧，不是承认原先被禁止的交付**。
+行为影响：`project_manager` 主体现在收到显式拒绝 `PRODUCT_ENTRY_NOT_AUTHORIZED` 而不是的一条无法执行的入口
+（`project.boq.import.wizard` 的 create 只授予 cost_user/cost_manager 能力组，而 project_manager 组只隐含 cost 只读能力），
+即前端不再展示该主体无法执行的入口。
+
+**五、状态**
+
+批次验收=进行中 / 主线集成=未做 / 版本发布=日常运行时候选 / 产品交付=未完成。
+下一步：在修复后的记录上重新冻结身份 → 跑唯一一次 exact-head `ci.local.quick` → `pr.push.gitee` 并让远端必需检查运行；
+合并仍按所有者 CI 通过规则执行。

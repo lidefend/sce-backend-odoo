@@ -404,7 +404,7 @@
     "Owner acknowledgement pending (registered, not hidden): one finding previously listed as an open product decision is now resolved by evidence as designed behaviour with no code change - the discover-capable system_admin surface delivers menu_sc_business_config_workbench (表单配置) while its role-surface admin_menu_xmlids lists only menu_ui_menu_config_policy_business_config. The delivery is covered by three declared authorities (the action's groups_id declares smart_core.group_smart_core_admin; the P1 native-config root menu_sc_business_config_center is declared and the leaf is not excluded; role_surface.system_admin.system_configuration_visible=true) and the delivered contract output attributes it as route_kind=DISCOVERED_PRIMARY_NAV / source=delivery_engine.nav. Only the owner's acknowledgement (or the alternative ruling to remove the entry from the platform-admin face, owned by the group declaration layer) is outstanding.",
     "Environment DENY (registered, not generalised): the rebuild/snapshot lane is still blocked by the two mounters - a single DENY conclusion bound to the actual entry dependency and an independent review, not an \"environment fully passes\" statement. rendering_detail_state stays excluded on the existing ruling and is not re-proved here."
   ],
-  "next_exact_step": "Daily-runtime product acceptance closeout on branch audit/daily-dev-mainline-product-acceptance-closeout-20261009, clean HEAD as recorded in stage_identity. (1) DONE: the two owning-layer declared-delivery defects are closed at P0 smart_core (declared ACTION face closed like the MENU face) and P1 wave one (menu_ui_menu_config_policy_business_config re-hung on the product-configuration center), with no assertion relaxed. (2) DONE: the creation/edit capability binding and the workbench minimal-evidence gap are closed by the one consolidated governed daily-runtime refresh (daily.runtime.candidate.bundle_sync -> source_revision.align -> published_face.converge with modules smart_core,smart_construction_core -> frontend.build) followed by one list-scope walk: verify.frontend.business_entry.matrix.incremental = 89/89 units checked, problems 0, console errors 0, denied-role coverage 89/89 with 0 uncovered, and the declaration->rendering collection-capability binding matched on all 76 table/kanban entries (the single hierarchical navigation-timeout exception was isolated and re-run, then passed); verify.nav.pro01r.route_authority.http and .browser both PASS against the refreshed served revision. (3) DONE: the registered open product decision on the system_admin native-configuration delivery is resolved by evidence as designed behaviour (no code change); only owner acknowledgement (or the alternative group-layer ruling) is outstanding. (4) NEXT: independent review by an external non-author role bound to the frozen full fingerprint, then freeze preparation and one exact-head Quick; PR push, remote gates and merge still require explicit user authorization. The four-state separation stays 批次验收 in progress / 主线集成 not done / 版本发布 daily candidate only / 产品交付 not complete.",
+  "next_exact_step": "Daily-runtime product acceptance closeout on branch audit/daily-dev-mainline-product-acceptance-closeout-20261009. (1) DONE: the two owning-layer declared-delivery defects are closed at P0 smart_core and P1 wave one with no assertion relaxed. (2) DONE: the creation/edit capability binding and the workbench minimal-evidence gap are closed by the one consolidated governed daily-runtime refresh plus one list-scope walk (89/89 units, problems 0, console errors 0, denied-role coverage 89/89, 76/76 declaration-to-rendering bindings). (3) DONE: the registered system_admin config-face decision is resolved by evidence as designed behaviour with no code change. (4) DONE (this round): freeze preparation; the first Quick surfaced a G1 self-fingerprint drift that was refreshed through its governed entry; the external read-only independent review bound to the frozen fingerprint substantiated the P0/P1 and acceptance-evidence claims, and its one blocking finding (an unsubstantiated targeted-ORM PASS claim with no retained receipt) was resolved by re-running that governed target at the frozen candidate (25/25 with a receipt). (5) NEXT: re-freeze the identity over the repaired record, run the single exact-head ci.local.quick, then publish through pr.push.gitee and let the remote required checks run; merge stays governed by the owner's CI-pass rule. The four-state separation stays 批次验收 in progress / 主线集成 not done / 版本发布 daily candidate only / 产品交付 not complete until those steps land.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -1003,7 +1003,7 @@
         "fix": "re-hang the leaf on menu_sc_business_config_center like its sibling governed leaves; no assertion relaxed."
       },
       "verification": {
-        "targeted_orm": "make ENV=dev ENV_FILE=.env.dev MODULE=smart_construction_core TEST_TAGS=user_data_boundary test.safe -> 0 failed, 0 error(s) of 25 tests",
+        "targeted_orm": "make ENV=dev ENV_FILE=.env.dev MODULE=smart_construction_core TEST_TAGS=user_data_boundary test.safe -> 0 failed, 0 error(s) of 25 tests (sc_dev_demo); receipt log .runtime/eff/rec/closeout-20261010/targeted_orm_user_data_boundary.log",
         "guards": [
           "verify.nav.pro01r.route_authority.unit",
           "verify.product.menu.runtime_closeout.guard",
@@ -1018,7 +1018,14 @@
           "verify.contract.project_ledger_entry_carrier.orm (28 tests)"
         ],
         "logs": ".runtime/eff/rec/closeout-20261010/",
-        "local_frontend_build": "make local.dev.frontend -> dist-dev rebuilt and served on 127.0.0.1:18081 (entry assets/index-B1QjP7q-.js)"
+        "local_frontend_build": "make local.dev.frontend -> dist-dev rebuilt and served on 127.0.0.1:18081 (entry assets/index-B1QjP7q-.js)",
+        "targeted_orm_receipt_note": "the independent review found the earlier round's identical claim unsubstantiated: no receipt was retained in the declared log directory and the only three on-disk logs carrying that tag were failures predating the fix commit. The claim was therefore re-earned at the frozen candidate by re-running the same governed target, which passed 25/25 and now has a receipt; the previous round's missing receipt is recorded, not hidden.",
+        "assertion_alignment": {
+          "path": "addons/smart_construction_core/tests/test_role_surface_project_member.py",
+          "change": "the historical-payment-fact / boq-import declared action authority assertion moved from 'must be delivered as CONTEXTUAL_ROUTE' to the 'delivered or explicitly denied exactly once' invariant (denial must carry a reason_code), matching the existing executive and project-member cases",
+          "not_a_relaxation": "the delivered branch keeps the original route_kind/allowed_operation assertions unchanged; the new branch only becomes reachable for a principal whose ACL does not admit the declared operation, and it must carry an explicit reason_code - the change removes a silent drop, it does not admit a previously forbidden delivery",
+          "behavioural_effect": "a project-manager principal now receives the boq-import wizard as an explicit denial (PRODUCT_ENTRY_NOT_AUTHORIZED) instead of a contextual route, because project.boq.import.wizard grants create only to the cost-manager/cost-user capability groups while the project-manager group implies the cost read capability only; the front-end therefore stops offering an entry the principal could not perform"
+        }
       },
       "open_decision": {
         "item": "contract-face-external delivery",
@@ -1090,6 +1097,44 @@
         ".runtime/eff/rec/closeout-20261010/business_entry_matrix_incremental.log",
         ".runtime/eff/rec/closeout-20261010/agent_ledger_consistency_unit.log"
       ]
+    },
+    "independent_review_round_20261010": {
+      "reviewer": "external read-only executor (separate agent, fresh context, no write authority), not the author of the candidate",
+      "bound_identity": {
+        "frozen_head": "edc7bcd6b84a5ab415c76de2953c4a44b29a502f",
+        "worktree_fingerprint_digest": "8beba69b3a0b0ef16ce21b3fb3b429b726888921fcd8008ed7fcd8b2ddc36a42",
+        "worktree_fingerprint_path_count": 8093,
+        "baseline_sha": "aea2c19bbe4edb2a13fbf908255e918e18f3a299",
+        "fingerprint_artifact": ".runtime/delivery-freeze/worktree-fingerprint.json"
+      },
+      "substantiated": [
+        "P0 declared ACTION face closure in smart_core/delivery/menu_service.py (declared-vs-accounted partition now yields an explicit denial reason_code, no ACL/field-permission override, no per-model special case)",
+        "P1 wave-one leaf re-hung on menu_sc_business_config_center with the deactivation set unchanged",
+        "the acceptance summary's field-level claims (89 entries, problems 0, console errors 0, 76 declaration-to-rendering bindings with 0 mismatch)",
+        "the isolated hierarchical re-run really passed (ready, 50 records, activate/complete/cancel)",
+        "the runtime readback identity (served_revision 5220db8b, frontend_build_sha256 1f46b033...)",
+        "the three declared authorities behind the system_admin config-face ruling and the delivered attribution DISCOVERED_PRIMARY_NAV / delivery_engine.nav",
+        "run ledger self-consistency: all 35 declared check targets exist in make, all declared inputs exist, the three blockers are honestly registered"
+      ],
+      "blocking_finding": {
+        "item": "the round's targeted_orm PASS claim had no receipt and was contradicted by the only on-disk logs carrying that tag",
+        "resolution": "re-run at the frozen candidate under the same governed target -> 0 failed, 0 error(s) of 25 tests, receipt retained (see verification.targeted_orm_receipt_note)"
+      },
+      "limitations_recorded": [
+        "artifacts/frontend-business-entry-matrix/20261010-closeout-daily/summary.json reports ok=true while containing 1 entry with status=exception; ok is derived from completeness+problems only, so this summary alone must not be read as '89/89 rendered'. The rendered coverage is completed and traceable through the isolated re-run plus the evidence ledger (.runtime/evidence-scope/verify.frontend.business_entry.matrix.browser.json = 89 units, 88 from the daily walk and 1 from the isolated re-run).",
+        "artifacts/frontend-business-entry-matrix/negative_closures.json carries no served_revision, so it cannot be bound to one bundle; it is a source/planning input rather than an identity-complete receipt.",
+        "docs/contract/snapshots/system_init_intent_admin.json is a frozen golden baseline (last content commit c0a6e9e2) used as a version derivation source; it documents the delivered shape but is not by itself current-run behaviour evidence."
+      ]
+    },
+    "delivery_freeze_round_20261010": {
+      "freeze_prepare": "make ci.delivery.freeze.prepare PASS; regenerated the content-bound reports (contract structure fingerprint, test inventory, E2E journey matrix, module dependency map, complexity budget, split plan queue, GitHub remote execution plan, component-driver takeover inventory) and committed them as a docs/evidence-only commit",
+      "first_quick_attempt": {
+        "command": "make ci.local.quick",
+        "result": "FAIL at verify.g1.acceptance.baseline",
+        "root_cause": "recorded self-fingerprint drift for config/frontend/acceptance_environments_v1.json (recorded ed8f4e79c12e..., actual 618179c62f5c...): an earlier commit on this branch changed the acceptance-environments config without refreshing the G1 baseline evidence",
+        "fix": "python3 scripts/verify/g1_acceptance_baseline_guard.py --write --baseline-sha 3f424993c9f378aaeedd2f26080545ad37ea3f8e (the governed refresh entry, preserving the recorded G1 branch cut point); the resulting diff touches only the drifted asset fingerprint and collected_at",
+        "post_fix": "the remaining ci.local.quick.run targets were executed and all PASS, so the drift was the only blocker"
+      }
     }
   },
   "continuation": {
