@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT",
+  "branch": "audit/daily-dev-mainline-product-acceptance-closeout-20261009",
+  "status": "active",
+  "baseline_sha": "aea2c19bbe4edb2a13fbf908255e918e18f3a299",
+  "goal": ".agent/goals/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT.yaml",
+  "record": "docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md",
+  "scope": [
+    ".agent/",
+    "docs/",
+    "make/",
+    "scripts/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing governed daily-runtime Make entrypoints (daily.runtime.*) and offline unit tests; the daily runtime write itself is an explicitly confirmed governed entry, not a hand-assembled stack",
+    "runtime_stage": "the daily runtime alignment and the bounded readback follow after the offline unit gates pass; served identity is read live from http://1.95.85.92:18081/api/runtime-version"
+  },
+  "checks": {
+    "daily_runtime_bundle_sync": {
+      "target": "verify.daily.runtime.main.bundle_sync",
+      "inputs": [
+        "scripts/ops/daily_runtime_bundle_sync.py",
+        "scripts/ops/test_daily_runtime_bundle_sync.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "daily_runtime_source_revision_align": {
+      "target": "verify.daily.runtime.source_revision.align",
+      "inputs": [
+        "scripts/ops/daily_runtime_source_revision_align.py",
+        "scripts/ops/test_daily_runtime_source_revision_align.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "daily_runtime_frontend_build": {
+      "target": "verify.daily.runtime.frontend.build",
+      "inputs": [
+        "scripts/ops/daily_runtime_frontend_build_align.py",
+        "scripts/ops/test_daily_runtime_frontend_build_align.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run the three offline daily-runtime verify targets, then align the daily runtime to main with the governed daily.runtime.main.bundle_sync + daily.runtime.source_revision.align + daily.runtime.frontend.build entries, read back /api/runtime-version, and run one bounded readonly acceptance re-read. Reuse the accepted evidence for the matrix; hand the login verification and the product-delivery boundary to the owner.",
+  "evidence": {
+    "reuse_basis": [
+      "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
+      "the only acceptance-tool change in that range is PR #626's dailyHomeSummaryMatches tightening (plus routing rules); its affected assertion was re-run and passed in the living batch record section 13",
+      "the single owner-decision item (项目台账 /f/ <-> readonly, daily_dev_user_acceptance_completion_20261006 section 4.1) was closed 2026-10-09 in hierarchical_worksheet_usable_ready_20261008 section 14",
+      "frontend artifact depends only on frontend sources (unchanged), so the accepted artifact b0311c6f remains the current one"
+    ]
+  },
+  "continuation": {
+    "reason": "successor to the retired FE-HIERARCHICAL-WORKSHEET-USABLE-READY run (merged PR #626) and the closed MAINLINE-BASELINE-BINDING anchor",
+    "action": "align the daily runtime identity to the latest main and close out the user product acceptance boundary"
+  }
+}

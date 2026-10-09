@@ -1,0 +1,28 @@
+schema_version: 1
+goal:
+  id: DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT
+  title: align_the_daily_dev_runtime_to_latest_main_and_close_out_user_product_acceptance
+  status: active
+  formal_product_layer: P4
+  layer_target: ops_delivery_daily_runtime_acceptance
+  module:
+    - .agent
+    - docs/ops/iterations
+    - make
+    - scripts/ops
+  objective: >-
+    在最新主线（main = aea2c19bbe4e）上收口产品用户视角验收：产品代码相对已验收态
+    bfb38367 零变化、唯一变更的验收探针已在 PR #626 内自证、唯一未决项已由批次记录 §14 收口，
+    因此不重跑验收矩阵；只把日常开发运行态的身份对齐到最新主线（同一产品、同一前端产物），
+    做一次受管有界回读，再由所有者登录核对并判定产品交付边界。
+  acceptance:
+    - 日常运行态 /api/runtime-version 回读 source_revision == main 精确 SHA
+    - 前端产物指纹与已验收态一致（无前端源变化 -> 复用 b0311c6f）
+    - 有界只读回读在 aligned 身份上通过；不重跑验收矩阵
+  exclusions:
+    - 不重跑 89/108 键验收矩阵（输入未变，属禁止的冗余复验）
+    - 不放宽 ACL/字段权限/断言；不新增环境/数据库/端口/卷/凭据授权
+    - 不改产品代码/契约/运行时语义
+  rollback: >-
+    运行态对齐为受管入口可逆操作：source_revision 对齐脚本在失败时恢复 env 文件；
+    如需回退，按同一入口把 bundle/source_revision 指回 bfb38367 并重启。
