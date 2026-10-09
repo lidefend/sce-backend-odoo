@@ -82,8 +82,15 @@ That target only accepts `ENV=dev`, `ENV_FILE=.env.dev`, and `DB_NAME=sc_demo`;
 command-line variable, or `env.matrix.check`'s `DB`/`BD` alias probe fails with
 `DB alias broken: expected sc_matrix_alias got 'sc_demo'`. It also requires
 `ACCEPTANCE_BASE_URL=http://127.0.0.1:18081` and
-`ACCEPTANCE_LOGIN=wutao`, a non-empty `ACCEPTANCE_PASSWORD`, and
-`ACCEPTANCE_NAV_MIN_ACTIONS=90`, `ACCEPTANCE_NAV_MAX_ACTIONS=90`, and
+`ACCEPTANCE_LOGIN=wutao`, a non-empty `ACCEPTANCE_PASSWORD`, and a locked
+principal-role-scoped action count. The daily profile declares
+`navigation_policy.action_count_authority` with `scope: locked_role_surface`,
+`principal_role`, and a `role_surfaces` map binding each accepted role to its
+authoritative versioned source, so the count is derived by
+`scripts/verify/acceptance_action_count.py` instead of being pinned, and the
+probe fails closed (`role_code_unexpected`) when the runtime role drifts from the
+declared principal role. For the current principal role (`business_config_admin`)
+that yields `ACCEPTANCE_NAV_MIN_ACTIONS=89`, `ACCEPTANCE_NAV_MAX_ACTIONS=89`, and
 `ACCEPTANCE_NAV_FORBIDDEN_LABELS=用户核对菜单,用户数据验收,用户验收,直营项目系统菜单`.
 `ACCEPTANCE_NAV_REQUIRED_PATHS` must include the locked daily product path
 sample covering customer, supplier, project ledger, general contract,
@@ -92,6 +99,12 @@ company archive, and input invoice entries.
 `ACCEPTANCE_NAV_REQUIRED_ACTIONS` must pin that same sample to locked runtime
 action ids.
 `ACCEPTANCE_PROBE_OUTPUT=artifacts/backend/dev_acceptance_release_probe.json`.
+The accepted menu count is never pinned: the daily profile declares
+`navigation_policy.action_count_authority` (versioned contract, exact mode,
+locked_role_surface scope, principal role plus per-role authoritative sources) and
+the lanes derive both values with `scripts/verify/acceptance_action_count.py`, so a
+contracted surface iteration is a contract data change while a delivered/contract
+disagreement still fails the probe.
 The frontend build output must stay `FRONTEND_DIST_DIR=./frontend/apps/web/dist-dev`,
 and `VITE_ODOO_DB`, `VITE_APP_ENV`, `VITE_BUILD_MODE`, and
 `VITE_BUILD_OUT_DIR` must not be overridden. `VITE_PLATFORM_ADMIN_DB` must stay

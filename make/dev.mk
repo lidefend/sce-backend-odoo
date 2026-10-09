@@ -834,8 +834,14 @@ DAILY_ACCEPTANCE_CONTRACT_DECLARATION ?= config/acceptance/backend_contract_inst
 ACCEPTANCE_CONTRACT_PASSWORD ?= $(SC_ACCEPTANCE_FIXTURE_PASSWORD)
 DAILY_ACCEPTANCE_REQUIRE_CONTRACT ?= 1
 DAILY_ACCEPTANCE_FIXTURE_CONFIRM ?= ENSURE_DAILY_DEV_ACCEPTANCE_FIXTURE
-DAILY_ACCEPTANCE_NAV_MIN_ACTIONS ?= $(shell python3 -c 'import json; print(json.load(open("config/frontend/acceptance_environments_v1.json", encoding="utf-8"))["profiles"]["daily"]["navigation_policy"]["min_actions"])')
-DAILY_ACCEPTANCE_NAV_MAX_ACTIONS ?= $(shell python3 -c 'import json; print(json.load(open("config/frontend/acceptance_environments_v1.json", encoding="utf-8"))["profiles"]["daily"]["navigation_policy"]["max_actions"])')
+# The accepted navigation action count is only determinate once a concrete role
+# is locked.  The daily lane declares its principal role and resolves the count
+# for that role from the versioned contract surface (never pinned here), so a
+# contracted surface iteration is a data change while a delivered/contract or
+# role-identity disagreement still fails the probe.
+DAILY_ACCEPTANCE_NAV_MIN_ACTIONS ?= $(shell python3 scripts/verify/acceptance_action_count.py)
+DAILY_ACCEPTANCE_NAV_MAX_ACTIONS ?= $(shell python3 scripts/verify/acceptance_action_count.py)
+DAILY_ACCEPTANCE_NAV_PRINCIPAL_ROLE ?= $(shell python3 scripts/verify/acceptance_action_count.py --role)
 DAILY_ACCEPTANCE_NAV_FORBIDDEN_LABELS ?= $(shell python3 -c 'import json; print(",".join(json.load(open("config/frontend/acceptance_environments_v1.json", encoding="utf-8"))["profiles"]["daily"]["navigation_policy"]["forbidden_labels"]))')
 DAILY_ACCEPTANCE_NAV_REQUIRED_PATHS ?= $(shell python3 -c 'import json; print(",".join(json.load(open("config/frontend/acceptance_environments_v1.json", encoding="utf-8"))["profiles"]["daily"]["navigation_policy"]["required_paths"]))')
 DAILY_PRODUCT_NAVIGATION_PRODUCT_KEY ?= construction.standard
@@ -850,7 +856,7 @@ verify.daily_dev.acceptance.readonly.probe: guard.prod.forbid
 	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)
 	@SC_ACCEPTANCE_PROFILE=daily SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" node scripts/verify/frontend_acceptance_environment_cli.mjs --tool daily-release-probe --operation readonly --expected-sha "$(ACCEPTANCE_TARGET_SHA)" --login "$(ACCEPTANCE_LOGIN)" --api-url "$(ACCEPTANCE_BASE_URL)"
 	@test -n "$$ACCEPTANCE_LOGIN" -a -n "$$ACCEPTANCE_PASSWORD" || (echo "daily readonly credentials must be supplied through environment"; exit 2)
-	@SC_ACCEPTANCE_EXPECTED_SHA="$(ACCEPTANCE_TARGET_SHA)" DB_NAME="$(DB_NAME)" ACCEPTANCE_BASE_URL="$(ACCEPTANCE_BASE_URL)" ACCEPTANCE_NAV_MIN_ACTIONS="$(DAILY_ACCEPTANCE_NAV_MIN_ACTIONS)" ACCEPTANCE_NAV_MAX_ACTIONS="$(DAILY_ACCEPTANCE_NAV_MAX_ACTIONS)" ACCEPTANCE_NAV_FORBIDDEN_LABELS="$(DAILY_ACCEPTANCE_NAV_FORBIDDEN_LABELS)" ACCEPTANCE_NAV_REQUIRED_PATHS="$(DAILY_ACCEPTANCE_NAV_REQUIRED_PATHS)" ACCEPTANCE_NAV_REQUIRED_ACTIONS="" ACCEPTANCE_CONTRACT_DECLARATION="$(DAILY_ACCEPTANCE_CONTRACT_DECLARATION)" ACCEPTANCE_RECORD_RESOLUTION="$(ACCEPTANCE_RECORD_RESOLUTION)" ACCEPTANCE_CONTRACT_PASSWORD="$(ACCEPTANCE_CONTRACT_PASSWORD)" ACCEPTANCE_REQUIRE_CONTRACT="$(DAILY_ACCEPTANCE_REQUIRE_CONTRACT)" ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" python3 scripts/ops/dev_acceptance_release_probe.py
+	@SC_ACCEPTANCE_EXPECTED_SHA="$(ACCEPTANCE_TARGET_SHA)" DB_NAME="$(DB_NAME)" ACCEPTANCE_BASE_URL="$(ACCEPTANCE_BASE_URL)" ACCEPTANCE_NAV_MIN_ACTIONS="$(DAILY_ACCEPTANCE_NAV_MIN_ACTIONS)" ACCEPTANCE_NAV_MAX_ACTIONS="$(DAILY_ACCEPTANCE_NAV_MAX_ACTIONS)" ACCEPTANCE_NAV_FORBIDDEN_LABELS="$(DAILY_ACCEPTANCE_NAV_FORBIDDEN_LABELS)" ACCEPTANCE_NAV_REQUIRED_PATHS="$(DAILY_ACCEPTANCE_NAV_REQUIRED_PATHS)" ACCEPTANCE_NAV_REQUIRED_ACTIONS="" ACCEPTANCE_NAV_PRINCIPAL_ROLE="$(DAILY_ACCEPTANCE_NAV_PRINCIPAL_ROLE)" ACCEPTANCE_CONTRACT_DECLARATION="$(DAILY_ACCEPTANCE_CONTRACT_DECLARATION)" ACCEPTANCE_RECORD_RESOLUTION="$(ACCEPTANCE_RECORD_RESOLUTION)" ACCEPTANCE_CONTRACT_PASSWORD="$(ACCEPTANCE_CONTRACT_PASSWORD)" ACCEPTANCE_REQUIRE_CONTRACT="$(DAILY_ACCEPTANCE_REQUIRE_CONTRACT)" ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" python3 scripts/ops/dev_acceptance_release_probe.py
 	@ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" python3 scripts/verify/dev_acceptance_release_probe_schema_guard.py
 
 # --- daily development acceptance fixture lane -------------------------------
@@ -960,6 +966,7 @@ release.dev.acceptance.publish: guard.prod.forbid check-compose-project check-co
 
 release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_MIN_ACTIONS := $(DAILY_ACCEPTANCE_NAV_MIN_ACTIONS)
 release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_MAX_ACTIONS := $(DAILY_ACCEPTANCE_NAV_MAX_ACTIONS)
+release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_PRINCIPAL_ROLE := $(DAILY_ACCEPTANCE_NAV_PRINCIPAL_ROLE)
 release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_FORBIDDEN_LABELS := $(DAILY_ACCEPTANCE_NAV_FORBIDDEN_LABELS)
 release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_REQUIRED_PATHS := $(DAILY_ACCEPTANCE_NAV_REQUIRED_PATHS)
 release.daily_dev.acceptance.publish: guard.prod.forbid verify.daily_dev.acceptance.env.guard env.matrix.check verify.daily_dev.runtime_repo.clean verify.daily_dev.product_menu_release_gate.guard release.dev.acceptance.publish

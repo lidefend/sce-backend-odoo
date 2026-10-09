@@ -6,6 +6,13 @@ from typing import Dict, List
 from odoo.addons.smart_core.core.navigation_entry_target import build_scene_entry_target
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
 
+# The platform owns one landing surface that is always authorized for an
+# authenticated principal.  A role policy may declare a richer ordered candidate
+# list, but the platform-safe landing stays the guaranteed terminal candidate so
+# the first hop can never be sent to a scene the published route authority does
+# not grant.
+PLATFORM_SAFE_LANDING_SCENE = "workspace.home"
+
 ROLE_SURFACE_MAP = {
     "restricted": {
         "label": "Restricted User",
@@ -15,27 +22,33 @@ ROLE_SURFACE_MAP = {
     },
     "owner": {
         "label": "Owner",
-        "landing_scene_candidates": ["portal.dashboard", "workspace.home"],
+        "landing_scene_candidates": ["workspace.home", "portal.dashboard"],
         "menu_xmlids": [],
     },
     "pm": {
         "label": "Project Manager",
-        "landing_scene_candidates": ["portal.dashboard", "workspace.home"],
+        "landing_scene_candidates": ["workspace.home", "portal.dashboard"],
         "menu_xmlids": [],
         "menu_blocklist_xmlids": [],
     },
     "finance": {
         "label": "Finance",
-        "landing_scene_candidates": ["portal.dashboard", "workspace.home"],
+        "landing_scene_candidates": ["workspace.home", "portal.dashboard"],
         "menu_xmlids": [],
     },
     "executive": {
         "label": "Executive",
-        "landing_scene_candidates": ["portal.dashboard", "workspace.home"],
+        "landing_scene_candidates": ["workspace.home", "portal.dashboard"],
         "menu_xmlids": [],
     },
 }
 
+# Bootstrap defaults only.  The released runtime always supplies the role
+# catalog through the ``smart_core_identity_profile`` extension hook, which
+# projects the versioned product contract (``role_catalog``).  These literals
+# exist so a standalone kernel install still resolves fail-closed instead of
+# raising; they are never the delivered product role policy and they are
+# asserted against the contract by the role-catalog alignment guard.
 ROLE_GROUPS_EXPLICIT = {
     "executive": set(),
     "pm": set(),
@@ -48,6 +61,12 @@ ROLE_GROUPS_CAPABILITY_FALLBACK = {
 }
 
 ROLE_PRECEDENCE = ("executive", "pm", "finance")
+# Roles that are not part of the ordering but still grant a first-class
+# capability surface; roles that only act as a capability fallback; and the
+# synthetic role used when real groups match no declared role.
+BOOTSTRAP_CAPABILITY_ROLE_CODES: tuple = ()
+BOOTSTRAP_CAPABILITY_FALLBACK_ORDER: tuple = ()
+BOOTSTRAP_SYNTHETIC_ROLE_CODES: tuple = ("restricted",)
 SOURCE_KIND = "role_identity_surface_projection"
 SOURCE_AUTHORITIES = ("res.groups", "smart_core_identity_profile", "nav_scene_candidates")
 NO_BUSINESS_FACT_AUTHORITY = True
@@ -75,6 +94,10 @@ class IdentityResolver:
         self._role_groups_explicit = ROLE_GROUPS_EXPLICIT
         self._role_groups_capability_fallback = ROLE_GROUPS_CAPABILITY_FALLBACK
         self._role_precedence = ROLE_PRECEDENCE
+        self._capability_fallback_order = BOOTSTRAP_CAPABILITY_FALLBACK_ORDER
+        self._capability_role_codes = BOOTSTRAP_CAPABILITY_ROLE_CODES
+        self._synthetic_role_codes = BOOTSTRAP_SYNTHETIC_ROLE_CODES
+        self._role_meta = {}
         profile = self._load_extension_identity_profile()
         if not isinstance(profile, dict):
             return
@@ -100,6 +123,37 @@ class IdentityResolver:
             normalized = tuple(str(item).strip() for item in role_precedence if str(item).strip())
             if normalized:
                 self._role_precedence = normalized
+        # The capability order, capability roles and synthetic fallback role
+        # are contract data too.  They default to whatever the provider
+        # declared, so the resolver never hard-codes a product role name or a
+        # role count: a runtime that extends the catalog is picked up here
+        # without a code change.
+        self._capability_fallback_order = tuple(self._role_groups_capability_fallback)
+        capability_fallback_order = profile.get("capability_fallback_order")
+        if isinstance(capability_fallback_order, (tuple, list)):
+            normalized_order = tuple(str(item).strip() for item in capability_fallback_order if str(item).strip())
+            if normalized_order:
+                self._capability_fallback_order = normalized_order
+        self._capability_role_codes = tuple(
+            role for role in self._role_groups_explicit if role not in self._role_precedence
+        )
+        capability_role_codes = profile.get("capability_role_codes")
+        if isinstance(capability_role_codes, (tuple, list)):
+            self._capability_role_codes = tuple(
+                str(item).strip() for item in capability_role_codes if str(item).strip()
+            )
+        self._synthetic_role_codes = BOOTSTRAP_SYNTHETIC_ROLE_CODES
+        synthetic_role_codes = profile.get("synthetic_role_codes")
+        if isinstance(synthetic_role_codes, (tuple, list)):
+            normalized_synthetic = tuple(str(item).strip() for item in synthetic_role_codes if str(item).strip())
+            if normalized_synthetic:
+                self._synthetic_role_codes = normalized_synthetic
+        role_meta = profile.get("role_meta")
+        self._role_meta = (
+            {str(role): dict(meta) for role, meta in role_meta.items() if isinstance(meta, dict)}
+            if isinstance(role_meta, dict)
+            else {}
+        )
 
     def _load_extension_identity_profile(self):
         if self._env is None:
@@ -123,20 +177,13 @@ class IdentityResolver:
         if explicit_hits:
             surface_roles = [role for role in self._role_precedence if role in explicit_hits]
             dominant_role = next(
-                (
-                    role
-                    for role in surface_roles
-                    if bool((self._role_surface_map.get(role) or {}).get("exclusive_surface"))
-                ),
+                (role for role in surface_roles if self._role_is_exclusive_surface(role)),
                 "",
             )
             if dominant_role:
                 surface_roles = [dominant_role]
                 explicit_hits = {dominant_role: explicit_hits[dominant_role]}
-            role_codes = [
-                role for role in surface_roles
-                if (self._role_surface_map.get(role) or {}).get("identity_role", True) is not False
-            ] or surface_roles
+            role_codes = [role for role in surface_roles if self._role_is_identity_role(role)] or surface_roles
             return role_codes, {
                 "source": "explicit",
                 "primary_role": role_codes[0],
@@ -146,40 +193,41 @@ class IdentityResolver:
                 "matched_groups_by_role": explicit_hits,
             }
 
-        project_member_hits = sorted((self._role_groups_explicit.get("project_member") or set()) & user_xmlids)
-        if project_member_hits:
-            return ["project_member"], {
-                "source": "capability_role",
-                "primary_role": "project_member",
-                "effective_roles": ["project_member"],
-                "matched_groups": project_member_hits,
-                "matched_groups_by_role": {"project_member": project_member_hits},
-            }
+        for capability_role in self._capability_role_codes:
+            capability_hits = sorted(
+                (self._role_groups_explicit.get(capability_role) or set()) & user_xmlids
+            )
+            if capability_hits:
+                return [capability_role], {
+                    "source": "capability_role",
+                    "primary_role": capability_role,
+                    "effective_roles": [capability_role],
+                    "matched_groups": capability_hits,
+                    "matched_groups_by_role": {capability_role: capability_hits},
+                }
 
-        capability_hits: Dict[str, List[str]] = {}
-        for role in ("pm", "finance"):
+        capability_fallback_hits: Dict[str, List[str]] = {}
+        for role in self._capability_fallback_order:
             hits = sorted((self._role_groups_capability_fallback.get(role) or set()) & user_xmlids)
             if hits:
-                capability_hits[role] = hits
-        if capability_hits:
-            surface_roles = [role for role in ("pm", "finance") if role in capability_hits]
-            role_codes = [
-                role for role in surface_roles
-                if (self._role_surface_map.get(role) or {}).get("identity_role", True) is not False
-            ] or surface_roles
+                capability_fallback_hits[role] = hits
+        if capability_fallback_hits:
+            surface_roles = [role for role in self._capability_fallback_order if role in capability_fallback_hits]
+            role_codes = [role for role in surface_roles if self._role_is_identity_role(role)] or surface_roles
             return role_codes, {
                 "source": "capability_fallback",
                 "primary_role": role_codes[0],
                 "effective_roles": role_codes,
                 "surface_roles": surface_roles,
-                "matched_groups": capability_hits[role_codes[0]],
-                "matched_groups_by_role": capability_hits,
+                "matched_groups": capability_fallback_hits[role_codes[0]],
+                "matched_groups_by_role": capability_fallback_hits,
             }
 
-        return ["restricted"], {
+        terminal_role = self._synthetic_role_codes[0] if self._synthetic_role_codes else "restricted"
+        return [terminal_role], {
             "source": "no_authoritative_role",
-            "primary_role": "restricted",
-            "effective_roles": ["restricted"],
+            "primary_role": terminal_role,
+            "effective_roles": [terminal_role],
             "matched_groups": [],
             "matched_groups_by_role": {},
         }
@@ -189,18 +237,45 @@ class IdentityResolver:
         return role_code
 
     def _pick_landing_scene(self, scene_candidates: List[str], scene_keys: set) -> str:
-        for candidate in scene_candidates:
-            # workspace.home is the platform-owned safe landing surface.  It is
-            # available independently from the optional startup scene subset,
-            # so an explicit role policy may select it without a scene-registry
-            # entry being preloaded in the current boot payload.
-            if candidate == "workspace.home" or candidate in scene_keys:
+        candidates = [
+            str(candidate or "").strip()
+            for candidate in (scene_candidates or [])
+            if str(candidate or "").strip()
+        ]
+        # The platform-safe landing is appended as the guaranteed terminal
+        # candidate: it is available independently from the optional startup
+        # scene subset, so a declared role policy can always be satisfied
+        # without a scene-registry entry being preloaded in the boot payload.
+        if PLATFORM_SAFE_LANDING_SCENE not in candidates:
+            candidates.append(PLATFORM_SAFE_LANDING_SCENE)
+        for candidate in candidates:
+            if candidate == PLATFORM_SAFE_LANDING_SCENE or candidate in scene_keys:
                 return candidate
-        if "portal.dashboard" in scene_keys:
-            return "portal.dashboard"
-        if "workspace.home" in scene_keys:
-            return "workspace.home"
-        return "portal.dashboard"
+        return PLATFORM_SAFE_LANDING_SCENE
+
+    def _role_is_exclusive_surface(self, role_code: str) -> bool:
+        """True when the role owns the surface to the exclusion of the others.
+
+        Declared by the contract role catalog when present, otherwise by the
+        provider's role surface declaration.  This is presentation ordering
+        only; it never widens or narrows real group visibility.
+        """
+        meta = self._role_meta.get(role_code)
+        if isinstance(meta, dict) and "exclusive_surface" in meta:
+            return meta.get("exclusive_surface") is True
+        return bool((self._role_surface_map.get(role_code) or {}).get("exclusive_surface"))
+
+    def _role_is_identity_role(self, role_code: str) -> bool:
+        """True when the role may be reported as the principal's identity."""
+        meta = self._role_meta.get(role_code)
+        if isinstance(meta, dict) and "identity_role" in meta:
+            return meta.get("identity_role") is not False
+        return (self._role_surface_map.get(role_code) or {}).get("identity_role", True) is not False
+
+    @property
+    def terminal_role_code(self) -> str:
+        """The declared synthetic role a principal without a role resolves to."""
+        return self._synthetic_role_codes[0] if self._synthetic_role_codes else "restricted"
 
     def _merge_role_meta(self, role_code: str, role_meta: dict, role_surface_overrides: dict | None) -> dict:
         merged = dict(role_meta or {})
@@ -268,7 +343,7 @@ class IdentityResolver:
         identity_role_codes: List[str] | None = None,
     ) -> dict:
         role_metas = []
-        restricted_meta = self._role_surface_map.get("restricted") or {}
+        restricted_meta = self._role_surface_map.get(self.terminal_role_code) or {}
         for role_code in surface_role_codes:
             base = self._role_surface_map.get(role_code) or restricted_meta
             role_metas.append(self._merge_role_meta(role_code, base, role_surface_overrides))

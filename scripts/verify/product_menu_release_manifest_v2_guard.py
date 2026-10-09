@@ -13,6 +13,13 @@ from xml.etree import ElementTree
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+import sys as _sys
+
+if str(Path(__file__).resolve().parent) not in _sys.path:
+    _sys.path.insert(0, str(Path(__file__).resolve().parent))
+import acceptance_action_count as _acceptance_action_count  # noqa: E402
+
 CONTRACT = ROOT / "config/product_menu_contract_v1.json"
 BASELINE = ROOT / "scripts/verify/baselines/formal_business_product_menu_policy_v1.json"
 ACCEPTANCE = ROOT / "config/frontend/acceptance_environments_v1.json"
@@ -23,9 +30,14 @@ EXPECTED_CENTERS = [
     "工作台", "项目中心", "合同中心", "成本中心", "财务中心",
     "税务中心", "会计账务中心", "报表中心", "行政中心", "产品配置",
 ]
-EXPECTED_CONTRACT_MENU_COUNT = 89
+# The delivered menu count is a versioned contract value, not a frozen
+# constant: the product surface is expected to iterate.  This guard protects
+# the invariant that the contract baseline, the product contract projection,
+# the capability declaration and the daily acceptance lock all agree on the
+# same declared count, so a menu can never be added to one carrier only.
+DECLARED_MENU_COUNT_FIELD = "effective_menu_count_per_product"
+DECLARED_CAPABILITY_COUNT_FIELD = "effective_capability_count_per_product"
 EXPECTED_ACCOUNTING_MENU_COUNT = 6
-EXPECTED_FORMAL_MENU_COUNT = EXPECTED_CONTRACT_MENU_COUNT
 
 
 def _contract_paths(payload: dict) -> set[tuple[str, ...]]:
@@ -53,19 +65,33 @@ def _contract_paths(payload: dict) -> set[tuple[str, ...]]:
 def main() -> int:
     errors: list[str] = []
     try:
+        baseline = json.loads(BASELINE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"ERROR: locked policy baseline unreadable: {exc}")
+        return 1
+    strategy = baseline.get("policy_strategy") or {}
+    declared_menu_count = strategy.get(DECLARED_MENU_COUNT_FIELD)
+    declared_capability_count = strategy.get(DECLARED_CAPABILITY_COUNT_FIELD)
+    if not isinstance(declared_menu_count, int) or declared_menu_count <= 0:
+        errors.append(f"locked policy must declare a positive integer {DECLARED_MENU_COUNT_FIELD}")
+        declared_menu_count = -1
+    if declared_capability_count != declared_menu_count:
+        errors.append(
+            "locked policy capability count must equal the declared menu count "
+            f"({declared_capability_count!r} != {declared_menu_count!r})"
+        )
+    EXPECTED_FORMAL_MENU_COUNT = declared_menu_count
+
+    try:
         contract_paths = _contract_paths(json.loads(CONTRACT.read_text(encoding="utf-8")))
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         errors.append(str(exc))
         contract_paths = set()
-    if len(contract_paths) != EXPECTED_CONTRACT_MENU_COUNT:
-        errors.append(f"product contract must contain exactly {EXPECTED_CONTRACT_MENU_COUNT} action pages")
-
-    baseline = json.loads(BASELINE.read_text(encoding="utf-8"))
-    strategy = baseline.get("policy_strategy") or {}
-    if strategy.get("effective_menu_count_per_product") != EXPECTED_FORMAL_MENU_COUNT:
-        errors.append("locked policy menu count is not the complete 90-page product surface")
-    if strategy.get("effective_capability_count_per_product") != EXPECTED_FORMAL_MENU_COUNT:
-        errors.append("locked policy capability count is not 90")
+    if len(contract_paths) != EXPECTED_FORMAL_MENU_COUNT:
+        errors.append(
+            f"product contract must project exactly the locked declared count "
+            f"({EXPECTED_FORMAL_MENU_COUNT}), got {len(contract_paths)}"
+        )
     for product in baseline.get("products") or []:
         groups = product.get("menu_groups") or []
         if [row.get("group_label") for row in groups] != EXPECTED_CENTERS:
@@ -74,7 +100,9 @@ def main() -> int:
         rows = [menu for group in groups for menu in group.get("menus") or []]
         xmlids = [str(row.get("menu_xmlid") or "") for row in rows]
         if len(rows) != EXPECTED_FORMAL_MENU_COUNT or len(set(xmlids)) != EXPECTED_FORMAL_MENU_COUNT:
-            errors.append(f"{product.get('product_key')} must contain 90 unique menu identities")
+            errors.append(
+                f"{product.get('product_key')} must contain {EXPECTED_FORMAL_MENU_COUNT} unique menu identities"
+            )
         actual_contract_paths: set[tuple[str, ...]] = set()
         accounting_count = 0
         for row in rows:
@@ -102,8 +130,42 @@ def main() -> int:
 
     acceptance = json.loads(ACCEPTANCE.read_text(encoding="utf-8"))
     daily = (((acceptance.get("profiles") or {}).get("daily") or {}).get("navigation_policy") or {})
-    if daily.get("min_actions") != EXPECTED_FORMAL_MENU_COUNT or daily.get("max_actions") != EXPECTED_FORMAL_MENU_COUNT:
-        errors.append("daily acceptance must lock exactly 90 visible action pages")
+    authority = daily.get("action_count_authority")
+    if not isinstance(authority, dict):
+        errors.append("daily acceptance must declare action_count_authority instead of a pinned menu count")
+    else:
+        if authority.get("kind") != "versioned_contract" or authority.get("mode") != "exact":
+            errors.append("daily acceptance action_count_authority must be a versioned_contract in exact mode")
+        if authority.get("scope") != "locked_role_surface":
+            errors.append("daily acceptance action_count_authority must scope to the locked principal role")
+        principal = str(authority.get("principal_role") or "").strip()
+        surfaces = authority.get("role_surfaces")
+        if not principal:
+            errors.append("daily acceptance action_count_authority must declare the principal role under test")
+        if not isinstance(surfaces, dict) or not surfaces:
+            errors.append("daily acceptance action_count_authority must declare role_surfaces")
+        elif principal:
+            if principal not in surfaces:
+                errors.append(f"daily acceptance has no authoritative surface for principal role {principal}")
+            authority_surface = surfaces.get(principal) or {}
+            if authority_surface.get("kind") != "installed_capability_surface":
+                errors.append("daily principal role must resolve through the installed capability surface")
+            if Path(str(authority_surface.get("path") or "")).as_posix() != BASELINE.relative_to(ROOT).as_posix():
+                errors.append("daily acceptance action_count_authority must point at the locked policy baseline")
+            if authority_surface.get("field") != f"policy_strategy.{DECLARED_MENU_COUNT_FIELD}":
+                errors.append("daily acceptance action_count_authority must bind the declared menu count field")
+            # Every declared role surface must actually resolve, so a stale or
+            # unresolvable role binding can never silently pass.
+            for role in sorted(surfaces):
+                try:
+                    _acceptance_action_count.resolve_action_count(
+                        {"navigation_policy": daily}, ROOT, principal_role=role
+                    )
+                except _acceptance_action_count.ActionCountAuthorityError as exc:
+                    errors.append(f"daily role surface unresolved for {role}: {exc}")
+    for pinned in ("min_actions", "max_actions", "action_count"):
+        if pinned in daily:
+            errors.append(f"daily acceptance must not pin a numeric menu count ({pinned})")
 
     module_manifest = ast.literal_eval(MANIFEST.read_text(encoding="utf-8"))
     completion_path = "views/menu_product_contract_completion_v1.xml"

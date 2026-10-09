@@ -49,6 +49,27 @@ FORMAL_ACTION_ONLY_MENU_TARGETS = {
 # installing the independent tax-certificate model, action, and menu.
 FORMAL_BUSINESS_DECISION_REQUIRED_TARGETS = {}
 
+# Declarative per-role landing surface carried by the versioned product contract.
+# The platform identity resolver only projects this data; it is never derived
+# from business facts and never hard-coded per role in runtime code.
+ROLE_SURFACE_KEY = "role_surface"
+ROLE_SURFACE_LANDING_FIELD = "landing_scene_candidates"
+PLATFORM_SAFE_LANDING_SCENE = "workspace.home"
+
+# Product default role set carried by the same versioned contract.  The
+# catalog is a shipped default that a runtime may extend; it is never an
+# authorization by itself.  Every non-synthetic role must bind at least one
+# real group xmlid, because the delivered authority is always the
+# intersection of the declaration with the principal's real group and
+# record-rule visibility.
+ROLE_CATALOG_KEY = "role_catalog"
+ROLE_CATALOG_ROLES_FIELD = "default_roles"
+ROLE_CATALOG_GROUP_FIELD = "group_xmlids"
+# Optional capability groups for a role that also acts as a capability
+# fallback.  When present they are the single declaration for the
+# fallback binding, so the resolver never hard-codes a role order.
+ROLE_CATALOG_CAPABILITY_GROUP_FIELD = "capability_group_xmlids"
+
 # Versioned definitions for action-only targets that are not installed by the
 # module data set. They are created only inside the formal initialization
 # transaction and receive the stable XMLID above before a policy can use them.
@@ -164,6 +185,168 @@ def _validate_product(product: dict, product_key: str) -> None:
         )
 
 
+def _role_surface(product: dict) -> dict:
+    surface = product.get(ROLE_SURFACE_KEY)
+    return surface if isinstance(surface, dict) else {}
+
+
+def _validate_role_surface(product: dict, product_key: str) -> None:
+    """Validate the declarative role landing surface, when the product declares one."""
+    if ROLE_SURFACE_KEY not in product:
+        return
+    surface = product.get(ROLE_SURFACE_KEY)
+    if not isinstance(surface, dict):
+        raise LockedMenuPolicyContractError(
+            "LOCKED_MENU_ROLE_SURFACE_INVALID", f"{product_key} role_surface must be an object"
+        )
+    roles = surface.get("roles")
+    if not isinstance(roles, dict) or not roles:
+        raise LockedMenuPolicyContractError(
+            "LOCKED_MENU_ROLE_SURFACE_INVALID", f"{product_key} role_surface.roles must be a non-empty object"
+        )
+    safe_scene = _text(surface.get("platform_safe_landing_scene")) or PLATFORM_SAFE_LANDING_SCENE
+    if safe_scene != PLATFORM_SAFE_LANDING_SCENE:
+        raise LockedMenuPolicyContractError(
+            "LOCKED_MENU_ROLE_SURFACE_INVALID",
+            f"{product_key} platform_safe_landing_scene must be {PLATFORM_SAFE_LANDING_SCENE}",
+        )
+    for role_code, role_meta in roles.items():
+        role_key = _text(role_code)
+        if not role_key:
+            raise LockedMenuPolicyContractError(
+                "LOCKED_MENU_ROLE_SURFACE_INVALID", f"{product_key} role_surface role code is empty"
+            )
+        if not isinstance(role_meta, dict):
+            raise LockedMenuPolicyContractError(
+                "LOCKED_MENU_ROLE_SURFACE_INVALID", f"{product_key} role_surface.{role_key} must be an object"
+            )
+        candidates = role_meta.get(ROLE_SURFACE_LANDING_FIELD)
+        if not isinstance(candidates, list) or not candidates:
+            raise LockedMenuPolicyContractError(
+                "LOCKED_MENU_ROLE_SURFACE_INVALID",
+                f"{product_key} role_surface.{role_key}.{ROLE_SURFACE_LANDING_FIELD} must be a non-empty list",
+            )
+        for candidate in candidates:
+            if not _text(candidate):
+                raise LockedMenuPolicyContractError(
+                    "LOCKED_MENU_ROLE_SURFACE_INVALID",
+                    f"{product_key} role_surface.{role_key} has an empty landing candidate",
+                )
+        # Fail closed: a declared role landing must always be able to reach the
+        # platform-safe landing surface, so a released role can never be sent to
+        # a scene the published route authority does not grant.
+        if safe_scene not in {_text(item) for item in candidates}:
+            raise LockedMenuPolicyContractError(
+                "LOCKED_MENU_ROLE_SURFACE_INVALID",
+                f"{product_key} role_surface.{role_key} must include {safe_scene}",
+            )
+
+
+def _validate_role_catalog(payload: dict, products: dict) -> None:
+    """Validate the declared default role catalog and its landing alignment.
+
+    Fail-closed rules: roles are unique and non-empty, precedence is an integer,
+    every non-synthetic role binds at least one group xmlid (permission
+    alignment), capability roles must be declared roles, and every catalog role
+    must also carry a declared landing surface so a recognised role can never be
+    left without a first hop.
+    """
+    if ROLE_CATALOG_KEY not in payload:
+        return
+    catalog = payload.get(ROLE_CATALOG_KEY)
+    if not isinstance(catalog, dict):
+        raise LockedMenuPolicyContractError(
+            "LOCKED_MENU_ROLE_CATALOG_INVALID", f"{ROLE_CATALOG_KEY} must be an object"
+        )
+    rows = catalog.get(ROLE_CATALOG_ROLES_FIELD)
+    if not isinstance(rows, list) or not rows:
+        raise LockedMenuPolicyContractError(
+            "LOCKED_MENU_ROLE_CATALOG_INVALID",
+            f"{ROLE_CATALOG_KEY}.{ROLE_CATALOG_ROLES_FIELD} must be a non-empty list",
+        )
+    seen: set[str] = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            raise LockedMenuPolicyContractError(
+                "LOCKED_MENU_ROLE_CATALOG_INVALID", f"{ROLE_CATALOG_KEY} role must be an object"
+            )
+        role_code = _text(row.get("role_code"))
+        if not role_code:
+            raise LockedMenuPolicyContractError(
+                "LOCKED_MENU_ROLE_CATALOG_INVALID", f"{ROLE_CATALOG_KEY} role_code is empty"
+            )
+        if role_code in seen:
+            raise LockedMenuPolicyContractError(
+                "LOCKED_MENU_ROLE_CATALOG_INVALID", f"{ROLE_CATALOG_KEY} duplicate role_code {role_code}"
+            )
+        seen.add(role_code)
+        if not isinstance(row.get("precedence"), int):
+            raise LockedMenuPolicyContractError(
+                "LOCKED_MENU_ROLE_CATALOG_INVALID", f"{ROLE_CATALOG_KEY}.{role_code} precedence must be an integer"
+            )
+        groups = row.get(ROLE_CATALOG_GROUP_FIELD)
+        if not isinstance(groups, list) or not groups:
+            raise LockedMenuPolicyContractError(
+                "LOCKED_MENU_ROLE_CATALOG_INVALID",
+                f"{ROLE_CATALOG_KEY}.{role_code} must bind at least one group xmlid",
+            )
+        for group in groups:
+            if not _text(group):
+                raise LockedMenuPolicyContractError(
+                    "LOCKED_MENU_ROLE_CATALOG_INVALID", f"{ROLE_CATALOG_KEY}.{role_code} has an empty group xmlid"
+                )
+        capability_groups = row.get(ROLE_CATALOG_CAPABILITY_GROUP_FIELD)
+        if capability_groups is not None:
+            if not isinstance(capability_groups, list) or not capability_groups:
+                raise LockedMenuPolicyContractError(
+                    "LOCKED_MENU_ROLE_CATALOG_INVALID",
+                    f"{ROLE_CATALOG_KEY}.{role_code}.{ROLE_CATALOG_CAPABILITY_GROUP_FIELD} must be a non-empty list",
+                )
+            for group in capability_groups:
+                if not _text(group):
+                    raise LockedMenuPolicyContractError(
+                        "LOCKED_MENU_ROLE_CATALOG_INVALID",
+                        f"{ROLE_CATALOG_KEY}.{role_code} has an empty capability group xmlid",
+                    )
+    synthetic = catalog.get("synthetic_role_codes")
+    if synthetic is not None and (
+        not isinstance(synthetic, list) or any(not _text(item) for item in synthetic)
+    ):
+        raise LockedMenuPolicyContractError(
+            "LOCKED_MENU_ROLE_CATALOG_INVALID", f"{ROLE_CATALOG_KEY}.synthetic_role_codes must be a list of strings"
+        )
+    for field in ("capability_role_codes", "capability_fallback_order"):
+        values = catalog.get(field)
+        if values is None:
+            continue
+        if not isinstance(values, list) or any(not _text(item) for item in values):
+            raise LockedMenuPolicyContractError(
+                "LOCKED_MENU_ROLE_CATALOG_INVALID", f"{ROLE_CATALOG_KEY}.{field} must be a list of strings"
+            )
+        unknown = sorted({_text(item) for item in values} - seen)
+        if unknown:
+            raise LockedMenuPolicyContractError(
+                "LOCKED_MENU_ROLE_CATALOG_INVALID",
+                f"{ROLE_CATALOG_KEY}.{field} names undeclared roles {unknown}",
+            )
+    declared_surface_roles: set[str] = set()
+    for product_key in REQUIRED_PRODUCT_KEYS:
+        roles = _role_surface(products.get(product_key) or {}).get("roles")
+        if isinstance(roles, dict):
+            declared_surface_roles.update(_text(code) for code in roles if _text(code))
+    for product_key in REQUIRED_PRODUCT_KEYS:
+        if not _role_surface(products.get(product_key) or {}):
+            raise LockedMenuPolicyContractError(
+                "LOCKED_MENU_ROLE_CATALOG_INVALID",
+                f"{product_key} declares {ROLE_CATALOG_KEY} but no {ROLE_SURFACE_KEY} landing surface",
+            )
+    missing_landing = sorted((seen | {_text(item) for item in (synthetic or [])}) - declared_surface_roles)
+    if missing_landing:
+        raise LockedMenuPolicyContractError(
+            "LOCKED_MENU_ROLE_CATALOG_INVALID",
+            f"{ROLE_CATALOG_KEY} role(s) without a declared landing surface: {missing_landing}",
+        )
+
 def load_locked_menu_policy_contract(
     baseline_path: str | Path | None = None,
     checksum_path: str | Path | None = None,
@@ -206,6 +389,8 @@ def load_locked_menu_policy_contract(
         raise LockedMenuPolicyContractError("LOCKED_MENU_BASELINE_PRODUCT_MISMATCH", f"missing={missing}")
     for product_key in REQUIRED_PRODUCT_KEYS:
         _validate_product(by_key[product_key], product_key)
+        _validate_role_surface(by_key[product_key], product_key)
+    _validate_role_catalog(payload, by_key)
     return {
         "path": str(baseline),
         "sha256": actual_sha256,
@@ -225,6 +410,94 @@ def baseline_rows(contract: dict, product_key: str) -> list[tuple[str, str, str]
         for menu in group.get("menus") or []
         if isinstance(group, dict) and isinstance(menu, dict)
     ]
+
+
+def product_role_surface(contract: dict, product_key: str) -> dict:
+    """Declared role landing surface for one product, or an empty object."""
+    products = contract.get("products") if isinstance(contract, dict) else {}
+    product = products.get(product_key) if isinstance(products, dict) else None
+    if not isinstance(product, dict):
+        raise LockedMenuPolicyContractError("LOCKED_MENU_BASELINE_PRODUCT_MISMATCH", product_key)
+    return _role_surface(product)
+
+
+def role_landing_candidates(contract: dict, product_key: str) -> dict:
+    """role_code -> declared landing scene candidate list for one product."""
+    roles = product_role_surface(contract, product_key).get("roles")
+    declared: dict = {}
+    if not isinstance(roles, dict):
+        return declared
+    for role_code, role_meta in roles.items():
+        role_key = _text(role_code)
+        if not role_key or not isinstance(role_meta, dict):
+            continue
+        candidates = role_meta.get(ROLE_SURFACE_LANDING_FIELD)
+        if isinstance(candidates, list):
+            declared[role_key] = [str(item).strip() for item in candidates if _text(item)]
+    return declared
+
+
+def role_catalog(contract: dict) -> dict:
+    """Declared default role catalog, or an empty object when absent."""
+    payload = contract.get("payload") if isinstance(contract, dict) else {}
+    catalog = payload.get(ROLE_CATALOG_KEY) if isinstance(payload, dict) else None
+    return catalog if isinstance(catalog, dict) else {}
+
+
+def role_catalog_bindings(contract: dict) -> dict:
+    """``role_code -> group xmlids`` ordered by declared precedence."""
+    rows = role_catalog(contract).get(ROLE_CATALOG_ROLES_FIELD)
+    ordered = sorted(
+        (row for row in rows if isinstance(row, dict)) if isinstance(rows, list) else [],
+        key=lambda row: (row.get("precedence") or 0, _text(row.get("role_code"))),
+    )
+    bindings: dict = {}
+    for row in ordered:
+        role_code = _text(row.get("role_code"))
+        if not role_code:
+            continue
+        bindings[role_code] = [_text(group) for group in row.get(ROLE_CATALOG_GROUP_FIELD) or [] if _text(group)]
+    return bindings
+
+
+def role_catalog_resolution(contract: dict) -> dict:
+    """Ordered role codes plus the declared capability and synthetic roles."""
+    catalog = role_catalog(contract)
+    bindings = role_catalog_bindings(contract)
+    rows = catalog.get(ROLE_CATALOG_ROLES_FIELD)
+    metadata = {}
+    for row in rows if isinstance(rows, list) else []:
+        if not isinstance(row, dict):
+            continue
+        role_code = _text(row.get("role_code"))
+        if not role_code:
+            continue
+        metadata[role_code] = {
+            "label": _text(row.get("label")) or role_code,
+            "identity_role": row.get("identity_role", True) is not False,
+            "exclusive_surface": row.get("exclusive_surface") is True,
+        }
+    capability_roles = [_text(item) for item in catalog.get("capability_role_codes") or [] if _text(item)]
+    return {
+        "precedence": tuple(bindings.keys()),
+        "bindings": bindings,
+        "metadata": metadata,
+        "capability_role_codes": tuple(capability_roles),
+        "capability_fallback_order": tuple(
+            _text(item) for item in catalog.get("capability_fallback_order") or [] if _text(item)
+        ),
+        "capability_groups": {
+            _text(row.get("role_code")): [
+                _text(group) for group in row.get(ROLE_CATALOG_CAPABILITY_GROUP_FIELD) or [] if _text(group)
+            ]
+            for row in rows if isinstance(row, dict)
+            and _text(row.get("role_code")) in {_text(item) for item in catalog.get("capability_fallback_order") or []}
+        },
+        "synthetic_role_codes": tuple(
+            _text(item) for item in catalog.get("synthetic_role_codes") or [] if _text(item)
+        ),
+        "catalog_version": _text(catalog.get("catalog_version")),
+    }
 
 
 def policy_rows(menu_groups: Iterable[dict]) -> list[tuple[str, str, str]]:

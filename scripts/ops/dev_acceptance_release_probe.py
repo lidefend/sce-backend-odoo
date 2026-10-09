@@ -301,6 +301,7 @@ def probe_login(
     nav_forbidden_labels: list[str] | None = None,
     nav_required_paths: list[str] | None = None,
     nav_required_actions: dict[str, int] | None = None,
+    expected_role_code: str | None = None,
 ) -> dict[str, Any]:
     if not login or not password:
         return {"enabled": False}
@@ -395,6 +396,14 @@ def probe_login(
         result["checks"]["nav_paths_sample"] = [row["path"] for row in nav_rows[:80]]
         if not result["checks"]["role_code"]:
             errors.append("role_code_missing")
+        # Contract-driven acceptance: the menu count is only determinate for a
+        # locked role, so a runtime identity that drifts away from the declared
+        # principal role must fail rather than be silently measured against the
+        # wrong locked surface.
+        if expected_role_code:
+            result["checks"]["role_code_expected"] = expected_role_code
+            if result["checks"]["role_code"] != expected_role_code:
+                errors.append("role_code_unexpected")
         if result["checks"]["nav_node_count"] <= 0:
             errors.append("nav_empty")
         if result["checks"]["nav_action_count"] <= 0:
@@ -1001,6 +1010,7 @@ def main() -> int:
     parser.add_argument("--nav-forbidden-labels", default=os.getenv("ACCEPTANCE_NAV_FORBIDDEN_LABELS", ""))
     parser.add_argument("--nav-required-paths", default=os.getenv("ACCEPTANCE_NAV_REQUIRED_PATHS", ""))
     parser.add_argument("--nav-required-actions", default=os.getenv("ACCEPTANCE_NAV_REQUIRED_ACTIONS", ""))
+    parser.add_argument("--nav-principal-role", default=os.getenv("ACCEPTANCE_NAV_PRINCIPAL_ROLE", ""))
     parser.add_argument("--contract-declaration", default=os.getenv("ACCEPTANCE_CONTRACT_DECLARATION", ""))
     parser.add_argument("--record-resolution", default=os.getenv("ACCEPTANCE_RECORD_RESOLUTION", ""))
     parser.add_argument("--schema-asset", default=os.getenv("ACCEPTANCE_SCHEMA_ASSET", ""))
@@ -1037,6 +1047,7 @@ def main() -> int:
             nav_forbidden_labels=_split_csv(args.nav_forbidden_labels),
             nav_required_paths=_split_csv(args.nav_required_paths),
             nav_required_actions=_parse_required_actions(args.nav_required_actions),
+            expected_role_code=args.nav_principal_role.strip() or None,
         ) if runtime_identity.get("status") == "PASS" else {"enabled": bool(args.login), "status": "NOT_RUN", "reason": "runtime_identity_not_verified"},
     }
     if not args.contract_declaration:

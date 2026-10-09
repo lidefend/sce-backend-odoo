@@ -44,6 +44,110 @@
     ],
     "runtime_projection": "locked_complete_product_contract_plus_approved_current_accounting"
   },
+  "role_catalog": {
+    "catalog_version": "v1",
+    "source_authority": "formal_business_product_menu_policy.v1",
+    "basis": "product default role set, delivered as contract data",
+    "delivery_rule": "default_roles is the shipped product baseline and is extendable: a runtime may add roles that bind to real res.groups. A role is never an authorization in itself - the delivered authority is always the intersection of the declaration with the principal's real group/record-rule visibility, so a role declaration can never widen access. Every non-synthetic role must bind at least one group xmlid, otherwise it cannot be delivered.",
+    "synthetic_role_codes": [
+      "restricted"
+    ],
+    "capability_role_codes": [
+      "project_member"
+    ],
+    "capability_fallback_order": [
+      "pm",
+      "finance"
+    ],
+    "default_roles": [
+      {
+        "role_code": "system_admin",
+        "label": "系统管理员",
+        "precedence": 10,
+        "exclusive_surface": true,
+        "group_xmlids": [
+          "smart_core.group_smart_core_admin"
+        ]
+      },
+      {
+        "role_code": "business_full",
+        "label": "业务全功能",
+        "precedence": 20,
+        "exclusive_surface": true,
+        "group_xmlids": [
+          "smart_construction_core.group_sc_business_full"
+        ]
+      },
+      {
+        "role_code": "business_config_admin",
+        "label": "业务配置管理员",
+        "precedence": 30,
+        "group_xmlids": [
+          "smart_construction_core.group_sc_cap_business_config_admin"
+        ]
+      },
+      {
+        "role_code": "executive",
+        "label": "管理层",
+        "precedence": 40,
+        "group_xmlids": [
+          "smart_construction_core.group_sc_role_executive"
+        ]
+      },
+      {
+        "role_code": "owner",
+        "label": "企业负责人",
+        "precedence": 50,
+        "group_xmlids": [
+          "smart_construction_core.group_sc_role_owner"
+        ]
+      },
+      {
+        "role_code": "pm",
+        "label": "项目经理",
+        "precedence": 60,
+        "group_xmlids": [
+          "smart_construction_core.group_sc_role_project_manager",
+          "smart_construction_core.group_sc_role_project_user"
+        ],
+        "capability_group_xmlids": [
+          "smart_construction_core.group_sc_cap_project_manager",
+          "smart_construction_core.group_sc_cap_project_user"
+        ]
+      },
+      {
+        "role_code": "finance",
+        "label": "财务主管",
+        "precedence": 70,
+        "group_xmlids": [
+          "smart_construction_core.group_sc_role_finance_manager",
+          "smart_construction_core.group_sc_role_finance_user"
+        ],
+        "capability_group_xmlids": [
+          "smart_construction_core.group_sc_cap_finance_user",
+          "smart_construction_core.group_sc_cap_finance_manager"
+        ]
+      },
+      {
+        "role_code": "cost",
+        "label": "成本管理",
+        "precedence": 80,
+        "group_xmlids": [
+          "smart_construction_core.group_sc_cap_cost_manager",
+          "smart_construction_core.group_sc_cap_cost_user",
+          "smart_construction_core.group_sc_role_cost_user"
+        ]
+      },
+      {
+        "role_code": "project_member",
+        "label": "项目成员",
+        "precedence": 90,
+        "group_xmlids": [
+          "smart_construction_core.group_sc_cap_project_read"
+        ]
+      }
+    ]
+  },
   "products": [
     {
       "access_level": "public",
@@ -6137,6 +6241,99 @@
         "no_business_fact_authority": true,
         "projection_only": true,
         "rebuildable": true
+      },
+      "role_surface": {
+        "source_authority": {
+          "authorities": [
+            "formal_business_product_menu_policy.v1"
+          ],
+          "kind": "formal_product_role_surface_policy",
+          "no_business_fact_authority": true,
+          "projection_only": true,
+          "rebuildable": true
+        },
+        "authority_field": "landing_scene_candidates",
+        "platform_safe_landing_scene": "workspace.home",
+        "delivery_rule": "role landing surface is declarative contract data; the platform identity resolver projects it and guarantees workspace.home as the final safe candidate, so first hop stays authorized without frontend logic",
+        "roles": {
+          "restricted": {
+            "landing_scene_candidates": [
+              "workspace.home"
+            ]
+          },
+          "project_member": {
+            "landing_scene_candidates": [
+              "workspace.home",
+              "projects.list",
+              "projects.ledger"
+            ]
+          },
+          "business_full": {
+            "landing_scene_candidates": [
+              "workspace.home",
+              "projects.list"
+            ]
+          },
+          "business_config_admin": {
+            "landing_scene_candidates": [
+              "workspace.home",
+              "projects.list",
+              "projects.ledger",
+              "projects.intake"
+            ]
+          },
+          "system_admin": {
+            "landing_scene_candidates": [
+              "workspace.home"
+            ]
+          },
+          "owner": {
+            "landing_scene_candidates": [
+              "workspace.home",
+              "projects.list",
+              "projects.intake",
+              "project.initiation"
+            ]
+          },
+          "pm": {
+            "landing_scene_candidates": [
+              "workspace.home",
+              "portal.dashboard",
+              "projects.ledger",
+              "projects.list",
+              "projects.intake",
+              "project.management",
+              "project.dashboard",
+              "my_work.workspace"
+            ]
+          },
+          "finance": {
+            "landing_scene_candidates": [
+              "workspace.home",
+              "finance.payment_requests",
+              "projects.ledger",
+              "projects.list"
+            ]
+          },
+          "executive": {
+            "landing_scene_candidates": [
+              "workspace.home",
+              "portal.dashboard",
+              "project.management",
+              "projects.list",
+              "projects.ledger",
+              "projects.intake",
+              "project.initiation"
+            ]
+          },
+          "cost": {
+            "landing_scene_candidates": [
+              "workspace.home",
+              "projects.list",
+              "projects.ledger"
+            ]
+          }
+        }
       },
       "product_key": "construction.standard",
       "scene_binding_diagnostics": {},
@@ -12237,6 +12434,99 @@
         "no_business_fact_authority": true,
         "projection_only": true,
         "rebuildable": true
+      },
+      "role_surface": {
+        "source_authority": {
+          "authorities": [
+            "formal_business_product_menu_policy.v1"
+          ],
+          "kind": "formal_product_role_surface_policy",
+          "no_business_fact_authority": true,
+          "projection_only": true,
+          "rebuildable": true
+        },
+        "authority_field": "landing_scene_candidates",
+        "platform_safe_landing_scene": "workspace.home",
+        "delivery_rule": "role landing surface is declarative contract data; the platform identity resolver projects it and guarantees workspace.home as the final safe candidate, so first hop stays authorized without frontend logic",
+        "roles": {
+          "restricted": {
+            "landing_scene_candidates": [
+              "workspace.home"
+            ]
+          },
+          "project_member": {
+            "landing_scene_candidates": [
+              "workspace.home",
+              "projects.list",
+              "projects.ledger"
+            ]
+          },
+          "business_full": {
+            "landing_scene_candidates": [
+              "workspace.home",
+              "projects.list"
+            ]
+          },
+          "business_config_admin": {
+            "landing_scene_candidates": [
+              "workspace.home",
+              "projects.list",
+              "projects.ledger",
+              "projects.intake"
+            ]
+          },
+          "system_admin": {
+            "landing_scene_candidates": [
+              "workspace.home"
+            ]
+          },
+          "owner": {
+            "landing_scene_candidates": [
+              "workspace.home",
+              "projects.list",
+              "projects.intake",
+              "project.initiation"
+            ]
+          },
+          "pm": {
+            "landing_scene_candidates": [
+              "workspace.home",
+              "portal.dashboard",
+              "projects.ledger",
+              "projects.list",
+              "projects.intake",
+              "project.management",
+              "project.dashboard",
+              "my_work.workspace"
+            ]
+          },
+          "finance": {
+            "landing_scene_candidates": [
+              "workspace.home",
+              "finance.payment_requests",
+              "projects.ledger",
+              "projects.list"
+            ]
+          },
+          "executive": {
+            "landing_scene_candidates": [
+              "workspace.home",
+              "portal.dashboard",
+              "project.management",
+              "projects.list",
+              "projects.ledger",
+              "projects.intake",
+              "project.initiation"
+            ]
+          },
+          "cost": {
+            "landing_scene_candidates": [
+              "workspace.home",
+              "projects.list",
+              "projects.ledger"
+            ]
+          }
+        }
       },
       "product_key": "construction.preview",
       "scene_binding_diagnostics": {},

@@ -27,36 +27,121 @@
           "frontend_logfile": "/tmp/sc-frontend-acceptance.log"
         }
       },
-      "allowed_operations": ["readonly", "simulated-write", "isolated-write", "managed-service"],
+      "allowed_operations": [
+        "readonly",
+        "simulated-write",
+        "isolated-write",
+        "managed-service"
+      ],
       "fixture_required_for_write": true,
-      "credential_env": {"login": "E2E_LOGIN", "password": "SC_ACCEPTANCE_FIXTURE_PASSWORD"},
-      "role_bindings": {"finance": "fixture_role_finance", "project_member": "fixture_role_project_a_member", "project_manager": "fixture_role_pm", "owner": "fixture_role_owner", "contract_operator": "fixture_role_contract_operator", "config_admin": "fixture_role_config_admin"}
+      "credential_env": {
+        "login": "E2E_LOGIN",
+        "password": "SC_ACCEPTANCE_FIXTURE_PASSWORD"
+      },
+      "role_bindings": {
+        "finance": "fixture_role_finance",
+        "project_member": "fixture_role_project_a_member",
+        "project_manager": "fixture_role_pm",
+        "owner": "fixture_role_owner",
+        "contract_operator": "fixture_role_contract_operator",
+        "config_admin": "fixture_role_config_admin"
+      }
     },
     "test": {
       "environment": "test",
       "target_mode": "managed",
       "base_url": "http://127.0.0.1:5175",
       "database": "sc_frontend_acceptance",
-      "allowed_operations": ["readonly", "simulated-write", "isolated-write", "managed-service"],
+      "allowed_operations": [
+        "readonly",
+        "simulated-write",
+        "isolated-write",
+        "managed-service"
+      ],
       "fixture_required_for_write": true,
-      "credential_env": {"login": "E2E_LOGIN", "password": "SC_ACCEPTANCE_FIXTURE_PASSWORD"},
-      "role_bindings": {"finance": "fixture_role_finance", "project_member": "fixture_role_project_a_member", "project_manager": "fixture_role_pm", "owner": "fixture_role_owner", "contract_operator": "fixture_role_contract_operator", "config_admin": "fixture_role_config_admin"}
+      "credential_env": {
+        "login": "E2E_LOGIN",
+        "password": "SC_ACCEPTANCE_FIXTURE_PASSWORD"
+      },
+      "role_bindings": {
+        "finance": "fixture_role_finance",
+        "project_member": "fixture_role_project_a_member",
+        "project_manager": "fixture_role_pm",
+        "owner": "fixture_role_owner",
+        "contract_operator": "fixture_role_contract_operator",
+        "config_admin": "fixture_role_config_admin"
+      }
     },
     "daily": {
       "environment": "dev",
       "target_mode": "external",
       "base_url_required": true,
       "database": "sc_demo",
-      "allowed_operations": ["readonly"],
+      "allowed_operations": [
+        "readonly"
+      ],
       "expected_sha_required": true,
       "target_identity_required": true,
-      "credential_env": {"login": "ACCEPTANCE_LOGIN", "password": "ACCEPTANCE_PASSWORD"},
+      "credential_env": {
+        "login": "ACCEPTANCE_LOGIN",
+        "password": "ACCEPTANCE_PASSWORD"
+      },
       "role_bindings_env": "SC_ACCEPTANCE_ROLE_BINDINGS_JSON",
       "runtime_identity_path": "/api/runtime-version",
       "navigation_policy": {
-        "min_actions": 89,
-        "max_actions": 89,
-        "forbidden_labels": ["用户核对菜单", "用户数据验收", "用户验收", "直营项目系统菜单", "物资与分包", "后续上线"],
+        "action_count_authority": {
+          "kind": "versioned_contract",
+          "mode": "exact",
+          "scope": "locked_role_surface",
+          "principal_role": "business_config_admin",
+          "note": "A menu count is only determinate once a concrete role is locked, because each role sees a different contracted surface.  The daily lane therefore declares the principal role under test and the authoritative versioned source for that role; the count is derived from that source, never pinned here.  An unlisted principal role fails closed.",
+          "role_surfaces": {
+            "business_config_admin": {
+              "kind": "installed_capability_surface",
+              "path": "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+              "field": "policy_strategy.effective_menu_count_per_product",
+              "note": "Configuration admin discovers the installed contracted product surface instead of an enumerated navigation list."
+            },
+            "finance": {
+              "kind": "locked_role_navigation_manifest",
+              "path": "config/frontend/authoritative_navigation.json",
+              "roles_field": "roles",
+              "count_field": "expected_count",
+              "identity_field": "leaf_keys"
+            },
+            "pm": {
+              "kind": "locked_role_navigation_manifest",
+              "path": "config/frontend/authoritative_navigation.json",
+              "roles_field": "roles",
+              "count_field": "expected_count",
+              "identity_field": "leaf_keys"
+            },
+            "owner": {
+              "kind": "locked_role_navigation_manifest",
+              "path": "config/frontend/authoritative_navigation.json",
+              "roles_field": "roles",
+              "count_field": "expected_count",
+              "identity_field": "leaf_keys"
+            },
+            "project_member": {
+              "kind": "locked_role_navigation_manifest",
+              "path": "config/frontend/authoritative_navigation.json",
+              "roles_field": "roles",
+              "count_field": "expected_count",
+              "identity_field": "leaf_keys",
+              "manifest_role": "project_a_member",
+              "note": "The published manifest keys this role as project_a_member."
+            }
+          }
+        },
+        "forbidden_labels": [
+          "用户核对菜单",
+          "用户数据验收",
+          "用户验收",
+          "直营项目系统菜单",
+          "物资与分包",
+          "后续上线"
+        ],
         "required_paths": [
           "系统菜单 / 工作台 / 数据总览",
           "系统菜单 / 项目中心 / 项目创建 / 新项目立项",
@@ -90,11 +175,16 @@
       "target_mode": "external",
       "base_url_required": true,
       "database_required": true,
-      "allowed_operations": ["production-safe-smoke"],
+      "allowed_operations": [
+        "production-safe-smoke"
+      ],
       "expected_sha_required": true,
       "target_identity_required": true,
       "redaction_required": true,
-      "credential_env": {"login": "ACCEPTANCE_LOGIN", "password": "ACCEPTANCE_PASSWORD"},
+      "credential_env": {
+        "login": "ACCEPTANCE_LOGIN",
+        "password": "ACCEPTANCE_PASSWORD"
+      },
       "role_bindings_env": "SC_ACCEPTANCE_ROLE_BINDINGS_JSON",
       "runtime_identity_path": "/api/runtime-version"
     }

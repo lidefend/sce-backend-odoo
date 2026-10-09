@@ -11,7 +11,9 @@
     "docs/",
     "make/",
     "scripts/",
-    "frontend/"
+    "frontend/",
+    "addons/",
+    "config/"
   ],
   "environment": {
     "kind": "offline",
@@ -136,10 +138,132 @@
       "kind": "offline",
       "status": "PASS",
       "detail": "18 isolated scenarios, including the conflicting-base DENY (exit 7, zero push and zero remote access) and the explicit override; real-git control: git merge-tree --write-tree 58c04a60 c6937377 -> exit 1 (guard fires), 79908fdf HEAD -> exit 0 (guard silent)"
+    },
+    "role_surface_landing_contract_unit": {
+      "target": "verify.role_surface.landing.contract.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+        "addons/smart_construction_core/services/locked_menu_policy_contract.py",
+        "addons/smart_construction_core/services/role_surface_contract.py",
+        "scripts/release/test_locked_menu_policy_contract.py",
+        "make/ci.mk"
+      ]
+    },
+    "role_surface_exposure_declaration": {
+      "target": "verify.frontend.role_surface_exposure_declaration.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/role_surface_exposure_declaration_guard.py",
+        "scripts/verify/test_role_surface_exposure_declaration_guard.py",
+        "addons/smart_core/identity/identity_resolver.py"
+      ]
+    },
+    "acceptance_action_count_unit": {
+      "target": "verify.acceptance_action_count.unit",
+      "kind": "offline",
+      "status": "PASS",
+      "detail": "14 tests; locked_role_surface resolves per role (finance=45, pm=24, owner=5, project_member=10, business_config_admin=89); unlisted principal role and pinned counts fail closed",
+      "inputs": [
+        "scripts/verify/acceptance_action_count.py",
+        "scripts/verify/test_acceptance_action_count.py",
+        "config/frontend/acceptance_environments_v1.json",
+        "config/frontend/authoritative_navigation.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json"
+      ]
+    },
+    "product_menu_release_manifest_v2": {
+      "target": "verify.product.menu.release_manifest_v2.guard",
+      "kind": "offline",
+      "status": "PASS",
+      "detail": "PRODUCT_MENU_RELEASE_MANIFEST_V2_GUARD=PASS centers=10 contract_pages=89 accounting_pages=6 total=89; daily role surfaces all resolve",
+      "inputs": [
+        "scripts/verify/product_menu_release_manifest_v2_guard.py",
+        "config/frontend/acceptance_environments_v1.json"
+      ]
+    },
+    "frontend_release_navigation_policy": {
+      "target": "verify.frontend.release_navigation_policy.guard",
+      "kind": "offline",
+      "status": "PASS",
+      "detail": "PASS roles=4 released_leaf_identities=84",
+      "inputs": [
+        "scripts/verify/frontend_release_navigation_policy_guard.py",
+        "config/frontend/authoritative_navigation.json",
+        "addons/smart_construction_core/core_extension_policy_maps.py"
+      ]
+    },
+    "contract_structure_lock": {
+      "target": "verify.contract.structure_lock",
+      "kind": "offline",
+      "status": "PASS",
+      "detail": "PASS",
+      "inputs": [
+        "scripts/ci/enforce_contract_structure_lock.py"
+      ]
+    },
+    "environment_topology_guard": {
+      "target": "verify.environment.topology.guard",
+      "kind": "offline",
+      "status": "PASS",
+      "detail": "PASS; daily navigation tokens derived from the locked principal role",
+      "inputs": [
+        "scripts/verify/environment_topology_guard.py",
+        "scripts/verify/acceptance_action_count.py"
+      ]
+    },
+    "dev_acceptance_release_probe_schema_guard": {
+      "target": "verify.dev.acceptance.release_probe.schema.guard",
+      "kind": "offline",
+      "status": "PASS",
+      "detail": "PASS; binds runtime role_code to the declared role_code_expected",
+      "inputs": [
+        "scripts/verify/dev_acceptance_release_probe_schema_guard.py",
+        "scripts/ops/dev_acceptance_release_probe.py"
+      ]
+    },
+    "scene_role_policy_consistency": {
+      "target": "verify.scene.role.policy.consistency.guard",
+      "kind": "offline",
+      "status": "PASS",
+      "detail": "contract-driven declared role set; PASS",
+      "inputs": [
+        "scripts/verify/scene_role_policy_consistency_guard.py",
+        "addons/smart_construction_scene/data/sc_scene_layout.xml"
+      ]
+    },
+    "scene_role_surface_consistency": {
+      "target": "verify.scene.role.surface.consistency.guard",
+      "kind": "offline",
+      "status": "PASS",
+      "detail": "PASS role_count=10, r3_scene_count=22",
+      "inputs": [
+        "scripts/verify/scene_role_surface_consistency_guard.py",
+        "addons/smart_construction_core/core_extension_policy_maps.py"
+      ]
+    },
+    "frontend_auth_credential": {
+      "target": "verify.frontend.auth_credential.guard",
+      "kind": "offline",
+      "status": "PASS",
+      "detail": "PASS",
+      "inputs": [
+        "scripts/verify/auth_credential_frontend_guard.py"
+      ]
+    },
+    "frontend_auth_surface": {
+      "target": "verify.frontend.auth_surface.guard",
+      "kind": "offline",
+      "status": "PASS",
+      "detail": "PASS",
+      "inputs": [
+        "scripts/verify/frontend_auth_surface_guard.py"
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "PR #632 merged: main = 79908fdf (parent 58c04a60), four gates green on the PR head and on the main push, no open PRs, worktree clean. This candidate carries the OPS-DECISION-004 push conflict guard (scripts/ops/git_safe_push.sh) together with the ledger record for #632, so the bookkeeping rides with the tool change instead of buying a standalone Quick. Remaining after it merges: the owner product-delivery judgement on the daily runtime (http://1.95.85.92:18081/, wutao/123456, sc_demo). Do not rerun the matrix for unchanged inputs.",
+  "next_exact_step": "The role-scoped acceptance count mechanism is implemented and its affected offline gates pass (see evidence.role_scoped_action_count). Next: refresh the daily runtime through the governed daily.runtime.*/local.dev.* entrypoints so the new role catalog, landing projection and role-scoped count are actually served, then read back system.init for the daily principal (role_code must equal the declared principal_role) and confirm the served navigation count matches the locked role surface. The P0/P1 landing projection remains unproven in a served instance until that readback is captured.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -218,11 +342,67 @@
       "why": "PR #632 showed that a conflicted branch silently dispatches zero gate runs; the rule already existed in OPS-DECISION-003 but had no enforcement, so the check moved into the push gate",
       "affected_layers": "P4 ops delivery tool only; no product, contract, frontend or backend behaviour",
       "skipped_layers": "L3/L4 runtime and browser checks are unaffected by a push-lane shell guard; ci.local.quick still runs once at the frozen head before merge"
+    },
+    "role_surface_landing_contract": {
+      "intent": "A: make the first hop a declared, versioned contract fact and remove the frontend-side landing guess.",
+      "root_cause": "role_surface.landing_path resolved to /s/projects.list while the published route authority for that principal granted zero routes on projects.list; the client resolves the first hop from role_surface.landing_path before any authority check, so login landed on a denied entry (当前角色无权访问此业务入口). The same payload's platform default_route (workspace.home) was safe: two authorities disagreed about the first hop.",
+      "ownership": "P0 platform kernel owns the platform-safe landing scene and the candidate selection; the role landing policy itself is declarative contract data carried by the versioned product menu policy contract (P1 construction standard surface).",
+      "changes": [
+        "contract: scripts/verify/baselines/formal_business_product_menu_policy_v1.json gains products[].role_surface (platform_safe_landing_scene + per-role landing_scene_candidates); .sha256 lock and the sha256 pin in scripts/release/test_locked_menu_policy_contract.py were re-locked together (sha256=62459b2dc1c467e888296b237aefde0e24ac1b0db5b3489ad446194afcca22a9)",
+        "loader: addons/smart_construction_core/services/locked_menu_policy_contract.py validates the declared role surface fail-closed (non-empty roles, non-empty candidates, every role must include the platform-safe landing) and exposes role_landing_candidates()",
+        "projection: new addons/smart_construction_core/services/role_surface_contract.py overlays only landing_scene_candidates from the contract onto the provider slot; when the contract cannot be read it returns no overlay and the P0 resolver still guarantees the platform-safe landing",
+        "P0: addons/smart_core/identity/identity_resolver.py adds PLATFORM_SAFE_LANDING_SCENE and rewrites _pick_landing_scene so declared order wins and the platform-safe landing is the guaranteed terminal candidate; the implicit portal.dashboard preference/return is removed",
+        "P1 wiring: both smart_construction_core and smart_construction_scene identity profiles + system_init role-surface providers now read the contract projection"
+      ],
+      "checks": {
+        "verify.role_surface.landing.contract.unit": "PASS, 24/24 (scripts/release/test_locked_menu_policy_contract.py) + baseline_policy_integrity_guard PASS",
+        "verify.frontend.role_surface_exposure_declaration.guard": "PASS roles=9 excluded=1 universe=89 pending=0 narrowed=211 no_role=0; unit 10/10",
+        "scripts/ci/enforce_contract_structure_lock.py": "PASS domains=14 fingerprint=current (required professional/CI gate)",
+        "scripts/verify/product_menu_release_manifest_v2_guard.py": "PASS centers=10 contract_pages=89 accounting_pages=6 total=89 (menu counts unchanged)"
+      },
+      "preexisting_not_this_round": [
+        "addons/smart_core/tests/test_identity_resolver_entry_target.py: 1 of 14 fails (test_multi_role_project_manager_keeps_project_intake_executable_surface). Reproduced on unmodified HEAD via `git archive HEAD addons/smart_core addons/smart_construction_core | tar -x -C /tmp/base_check` (11 tests, 1 failure). Already recorded twice in this repository (docs/ops/iterations/business_entry_surface_normalization_batch_1_20260913.md, docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md) as a stash-verified baseline failure. Not fixed here: the assertion is about pm's declared menu_xmlids membership (menu_sc_project_initiation), which is outside this layer's declared scope and could move the released menu exposure.",
+        "verify.contract.view_structure (scripts/verify/product_view_structure_contract_guard.py) reports 6 errors identically on HEAD and with the new baseline: the committed contracts/generated/product_view_structure_contract.json records formal_menu_policy_sha256=80b5c7d5..., which matches neither HEAD (a10e35be...) nor the new contract (62459b2d...), plus stale candidate-fingerprint provenance. That target is not a member of any aggregate gate; refreshing it needs the governed runtime export lane.",
+        "verify.scene.role.surface.consistency.guard: its text-anchor extractor resolves the first literal after the ROLE_SURFACE_OVERRIDES anchor, which is an unrelated list-profile dict, identically on HEAD and now; the committed docs/audit/scene_role_surface_consistency_report.md is stale. A corrected extraction yields errors=0 but surfaces two separate follow-ups (ALLOWED_ROLE_CODES still lists only 4 roles vs 10 real ones; scene portal.shortcuts declares role_variant cost_manager with no role-surface override). The bogus regenerated report was reverted, not carried in the candidate."
+      ]
+    },
+    "role_scoped_action_count": {
+      "root_cause": "The acceptance lanes pinned a single navigation menu count (89) for the whole product regardless of which role was under test. A menu count is only determinate once a concrete role is locked, because each role sees a different contracted surface; measuring every identity against the admin surface is not contract-driven acceptance.",
+      "ownership": "P4 acceptance tooling (config/frontend acceptance policy + scripts/verify + scripts/ops probe + make wiring). No P0/P1 business semantics, ACL widening or model special-casing.",
+      "change": [
+        "config/frontend/acceptance_environments_v1.json daily navigation_policy.action_count_authority is now scope=locked_role_surface with a declared principal_role and a role_surfaces map binding each accepted role to its authoritative versioned source (installed_capability_surface for business_config_admin; locked_role_navigation_manifest identities for finance/pm/owner/project_member).",
+        "scripts/verify/acceptance_action_count.py resolves the count per role from that declaration (never a pinned number), rejects pinned min/max/action_count, fails closed for an unlisted principal role or a manifest count that disagrees with its locked identity list, and exposes --role.",
+        "scripts/ops/dev_acceptance_release_probe.py adds role_code_expected and fails closed with role_code_unexpected when the runtime system.init role drifts from the declared principal role.",
+        "make/dev.mk derives DAILY_ACCEPTANCE_NAV_PRINCIPAL_ROLE and forwards ACCEPTANCE_NAV_PRINCIPAL_ROLE through the daily publish and probe entries; make/guards.mk forwards it into the daily env guard.",
+        "scripts/verify/product_menu_release_manifest_v2_guard.py, daily_dev_acceptance_env_guard.py, dev_acceptance_release_probe_schema_guard.py and environment_topology_guard.py consume the shared resolver; the two runbooks document that a count is only determinate per locked role."
+      ],
+      "resolved_counts": {
+        "business_config_admin": 89,
+        "finance": 45,
+        "pm": 24,
+        "owner": 5,
+        "project_member": 10
+      },
+      "checks": [
+        "verify.acceptance_action_count.unit",
+        "verify.product.menu.release_manifest_v2.guard",
+        "verify.frontend.release_navigation_policy.guard",
+        "verify.scene.role.policy.consistency.guard",
+        "verify.scene.role.surface.consistency.guard",
+        "verify.frontend.auth_surface.guard",
+        "verify.frontend.auth_credential.guard",
+        "verify.contract.structure_lock",
+        "verify.role_surface.landing.contract.unit",
+        "verify.frontend.role_surface_exposure_declaration.guard",
+        "verify.environment.topology.guard",
+        "verify.dev.acceptance.release_probe.schema.guard"
+      ],
+      "unresolved": "A runtime readback that logs in the daily principal and confirms the served navigation count against the locked role surface is still pending; it requires the governed daily runtime refresh (L3/L4), so the effect on a served instance is not yet proven by this offline evidence."
     }
   },
   "continuation": {
     "reason": "successor to the retired FE-HIERARCHICAL-WORKSHEET-USABLE-READY run (merged PR #626) and the closed MAINLINE-BASELINE-BINDING anchor",
     "action": "align the daily runtime identity to the latest main and close out the user product acceptance boundary"
   },
-  "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts)."
+  "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced."
 }

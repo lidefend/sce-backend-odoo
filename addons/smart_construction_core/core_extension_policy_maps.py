@@ -115,7 +115,7 @@ ROLE_SURFACE_OVERRIDES = {
     },
     "business_config_admin": {
         "label": "业务配置管理员",
-        "landing_scene_candidates": ["projects.list", "projects.ledger", "projects.intake"],
+        "landing_scene_candidates": ["workspace.home", "projects.list", "projects.ledger", "projects.intake"],
         # The primary role owns the landing surface, while the released
         # construction catalogue is still intersected with the user's native
         # Odoo ACL-visible menu facts.  This composes existing business
@@ -191,7 +191,7 @@ ROLE_SURFACE_OVERRIDES = {
     },
     "owner": {
         "label": "企业负责人",
-        "landing_scene_candidates": ["workspace.home", "projects.list", "projects.intake"],
+        "landing_scene_candidates": ["workspace.home", "projects.list", "projects.intake", "project.initiation"],
         "menu_xmlids": [
             "smart_construction_core.menu_sc_project_center",
             "smart_construction_core.menu_sc_contract_center",
@@ -231,7 +231,16 @@ ROLE_SURFACE_OVERRIDES = {
     },
     "pm": {
         "label": "项目经理",
-        "landing_scene_candidates": ["workspace.home", "portal.dashboard", "projects.ledger", "projects.list", "projects.intake"],
+        "landing_scene_candidates": [
+            "workspace.home",
+            "portal.dashboard",
+            "projects.ledger",
+            "projects.list",
+            "projects.intake",
+            "project.management",
+            "project.dashboard",
+            "my_work.workspace",
+        ],
         "menu_xmlids": [
             "smart_construction_core.menu_sc_project_center",
             "smart_construction_core.menu_sc_contract_center",
@@ -438,7 +447,15 @@ ROLE_SURFACE_OVERRIDES = {
     },
     "executive": {
         "label": "管理层",
-        "landing_scene_candidates": ["portal.dashboard", "project.management", "projects.list", "projects.ledger", "projects.intake"],
+        "landing_scene_candidates": [
+            "workspace.home",
+            "portal.dashboard",
+            "project.management",
+            "projects.list",
+            "projects.ledger",
+            "projects.intake",
+            "project.initiation",
+        ],
         "menu_xmlids": [
             "smart_construction_core.menu_sc_root",
             "smart_construction_core.menu_sc_projection_root",

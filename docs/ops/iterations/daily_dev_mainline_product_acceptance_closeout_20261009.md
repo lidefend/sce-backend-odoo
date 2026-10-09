@@ -213,3 +213,55 @@ Baseline: `aea2c19bbe4edb2a13fbf908255e918e18f3a299`（`main`，PR #630 退役�
 - **主线集成**：修复提交在候选分支；未并入 `main`（未主张集成状态）。
 - **版本发布**：未主张（日常 dev 运行态对齐，非正式版本发布）。
 - **产品交付**：技术证据就绪，**待所有者登录核对**（`http://1.95.85.92:18081/`，`wutao/123456`，库 `sc_demo`）。
+
+## 7. 角色锁定驱动的验收数量机制（P4）
+
+### 7.1 根因
+
+验收侧 `ACCEPTANCE_NAV_MIN_ACTIONS/MAX_ACTIONS` 原来是一个**与角色无关的全局常量 89**。
+但菜单数量只有在**具体角色锁定后**才确定：不同角色看到的是不同的契约交付面
+（`business_config_admin` 发现已安装能力面=89，而 `finance`=45、`pm`=24、`owner`=5、
+`project_member`=10）。用管理员面去度量其他身份，等价于**验收未契约驱动**——这是本轮
+用户判定"前面一直按 89 验收是不对的"的直接原因。
+
+### 7.2 机制（锁定机制，不锁定数字）
+
+`config/frontend/acceptance_environments_v1.json` 的 daily `navigation_policy.action_count_authority`
+改为 `scope: locked_role_surface`，显式声明：
+
+- `principal_role`：本次验收锁定的主体角色；
+- `role_surfaces`：每个受验角色 → 其权威版本化来源
+  - `business_config_admin` → `installed_capability_surface`（产品契约 `policy_strategy.effective_menu_count_per_product`）；
+  - `finance`/`pm`/`owner`/`project_member` → `locked_role_navigation_manifest`
+    （`config/frontend/authoritative_navigation.json` 的已锁清单长度，且 `expected_count` 必须等于清单去重身份数）。
+
+解析由单一来源 `scripts/verify/acceptance_action_count.py` 完成：数量**派生**而非钉死；
+未列入 `role_surfaces` 的 principal 角色、或清单声明数与锁定身份数不一致，一律 fail-closed。
+
+运行态闭环：`scripts/ops/dev_acceptance_release_probe.py` 新增 `role_code_expected`，
+当 `system.init` 返回的 `role_code` 偏离声明的 `principal_role` 时报 `role_code_unexpected`，
+避免"角色漂移 + 数量断言"错配后被静默放过。
+
+### 7.3 归属与边界
+
+- 全部改动在 **P4 验收工具层**（`config/frontend` 验收策略 + `scripts/verify` + `scripts/ops` 探针 + `make` 接线）。
+  P0/P1 业务语义、ACL、字段权限、负例断言一律未放宽，也不含模型特判。
+- 89 仍作为 `business_config_admin` 的**派生结果**出现，不再是任何地方的输入常量。
+
+### 7.4 检查（离线，均通过）
+
+| 目标 | 结果 |
+| --- | --- |
+| `verify.acceptance_action_count.unit` | 14 tests PASS（finance=45/pm=24/owner=5/project_member=10/business_config_admin=89；未列角色与钉死数字 fail-closed） |
+| `verify.product.menu.release_manifest_v2.guard` | PASS centers=10 contract_pages=89 accounting_pages=6 total=89；各角色来源均可解析 |
+| `verify.frontend.release_navigation_policy.guard` | PASS roles=4 released_leaf_identities=84 |
+| `verify.scene.role.policy.consistency.guard` / `verify.scene.role.surface.consistency.guard` | PASS（角色集由契约声明驱动） |
+| `verify.contract.structure_lock` / `verify.frontend.auth_surface.guard` / `verify.frontend.auth_credential.guard` | PASS |
+| `verify.environment.topology.guard` / `verify.dev.acceptance.release_probe.schema.guard` | PASS |
+| `make ci.local.iteration` | PASS（L1, dirty） |
+
+### 7.5 未决
+
+运行态读回尚未取得：需要经受管 `daily.runtime.*`/`local.dev.*` 入口刷新日常运行态（属冻结候选的
+L3/L4 动作，需先冻结并推送候选），再以真实登录确认 served 导航数与锁定角色面一致。在此之前，
+本机制在**服务实例上的效果未经证明**。
