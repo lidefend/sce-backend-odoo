@@ -401,6 +401,7 @@ class MenuService:
             "required_capability": "product_denied",
             "context_requirements": {},
             "source": "role_surface.denied_menu_xmlids",
+            "reason_code": "PRODUCT_ENTRY_NOT_RELEASED",
         }
 
     @staticmethod
@@ -1039,11 +1040,78 @@ class MenuService:
                     if target.get(field):
                         entry[field] = target[field]
 
+        # Contract-declared role surfaces must never be narrowed silently: a
+        # declared menu that is neither delivered nor explicitly denied would be
+        # an unobservable contract defect. Close the partition here, after every
+        # delivery branch, so a declared entry is never both delivered and denied
+        # and never disappears without an explicit reason_code.
+        declared_menu_xmlids = {
+            str(menu_xmlid or "").strip()
+            for field, _bucket, _route_kind in menu_fields
+            for menu_xmlid in surface.get(field) or []
+        }
+        declared_menu_xmlids.discard("")
+        accounted_menu_xmlids = {
+            str(item.get("menu_xmlid") or "").strip()
+            for bucket in buckets.values()
+            for item in bucket
+            if isinstance(item, dict)
+        }
+        for menu_xmlid in sorted(declared_menu_xmlids - accounted_menu_xmlids):
+            entry = self._denied_route_entry(menu_xmlid)
+            if entry:
+                buckets["denied_actions"].append(
+                    {**entry, "reason_code": "PRODUCT_ENTRY_NOT_VISIBLE"}
+                )
+                continue
+            menu = self.env.ref(menu_xmlid, raise_if_not_found=False)
+            if menu and str(getattr(menu, "_name", "")) == "ir.ui.menu" and int(menu.id or 0) > 0:
+                buckets["denied_actions"].append({
+                    "action_xmlid": "",
+                    "route_kind": "DENIED",
+                    "menu_id": int(menu.id),
+                    "menu_xmlid": menu_xmlid,
+                    "action_id": 0,
+                    "name": str(menu.name or "").strip(),
+                    "model": "",
+                    "view_modes": [],
+                    "route": "/m/%d" % int(menu.id),
+                    "allowed_operation": "none",
+                    "required_capability": "product_denied",
+                    "context_requirements": {},
+                    "source": "role_surface.declared.not_delivered",
+                    "reason_code": "PRODUCT_ENTRY_NOT_VISIBLE",
+                })
+                continue
+            # The contract declared an entry this build does not define. Record an
+            # explicit, id-less denial instead of inventing a route, so the defect
+            # stays observable and fails the partition closed.
+            buckets["denied_actions"].append({
+                "action_xmlid": "",
+                "route_kind": "DENIED",
+                "menu_id": 0,
+                "menu_xmlid": menu_xmlid,
+                "action_id": 0,
+                "name": "",
+                "model": "",
+                "view_modes": [],
+                "route": "",
+                "allowed_operation": "none",
+                "required_capability": "product_denied",
+                "context_requirements": {},
+                "source": "role_surface.declared.undefined",
+                "reason_code": "PRODUCT_ENTRY_NOT_DEFINED",
+            })
+
         for bucket_name, bucket in buckets.items():
-            deduped = {
-                (int(item.get("action_id") or 0), int(item.get("menu_id") or 0)): item
-                for item in bucket
-            }
+            deduped = {}
+            for item in bucket:
+                action_id = int(item.get("action_id") or 0)
+                menu_id = int(item.get("menu_id") or 0)
+                identity = (action_id, menu_id, "") if (menu_id or action_id) else (
+                    0, 0, str(item.get("menu_xmlid") or "")
+                )
+                deduped[identity] = item
             bucket[:] = list(deduped.values())
             bucket.sort(key=lambda item: (str(item.get("action_xmlid") or item.get("menu_xmlid") or ""), int(item.get("menu_id") or 0)))
         return {

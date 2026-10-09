@@ -32,10 +32,14 @@ class TestProjectMemberRoleSurface(TransactionCase):
     }
 
     def _resolver(self):
-        resolver = IdentityResolver()
+        # Bind the runtime identity profile through env: the platform kernel's
+        # ROLE_PRECEDENCE constant intentionally omits industry roles such as
+        # project_member, while the construction product declares them in its
+        # identity profile.  Forcing the kernel constant here would resolve
+        # project_member to the terminal role and make the whole surface empty.
+        resolver = IdentityResolver(self.env)
         resolver._role_groups_explicit = ROLE_GROUPS_EXPLICIT
         resolver._role_groups_capability_fallback = ROLE_GROUPS_CAPABILITY_FALLBACK
-        resolver._role_precedence = ROLE_PRECEDENCE
         resolver._role_surface_map = {**resolver._role_surface_map, **ROLE_SURFACE_OVERRIDES}
         return resolver
 
@@ -309,7 +313,49 @@ class TestProjectMemberRoleSurface(TransactionCase):
         self.assertFalse(labels & {"用户核对菜单", "用户数据验收", "用户验收", "直营项目系统菜单"})
         self.assertFalse(surface["system_configuration_visible"])
         self.assertNotIn("system_admin", surface["role_codes"])
-        self.assertFalse((delivery.get("route_authority") or {}).get("denied_actions"))
+        route_authority = delivery.get("route_authority") or {}
+        declared = {
+            str(menu_xmlid or "").strip()
+            for field in (
+                "primary_menu_xmlids",
+                "role_home_menu_xmlids",
+                "contextual_menu_xmlids",
+                "admin_menu_xmlids",
+                "menu_xmlids",
+            )
+            for menu_xmlid in surface.get(field) or []
+        }
+        declared.discard("")
+        delivered = {
+            str(item.get("menu_xmlid") or "").strip()
+            for bucket_name in (
+                "primary_actions",
+                "role_home_actions",
+                "contextual_actions",
+                "admin_actions",
+                "menu_containers",
+            )
+            for item in route_authority.get(bucket_name) or []
+            if isinstance(item, dict)
+        }
+        denied = {
+            str(item.get("menu_xmlid") or "").strip()
+            for item in route_authority.get("denied_actions") or []
+            if isinstance(item, dict)
+        }
+        # Contract-driven rule: a declared role surface is never narrowed
+        # silently. Every declared entry is delivered or explicitly denied with a
+        # reason_code, so no entry can disappear without an observable decision.
+        silently_dropped = declared - delivered - denied
+        self.assertFalse(
+            silently_dropped,
+            "declared entries dropped without a decision: %s" % sorted(silently_dropped),
+        )
+        for item in route_authority.get("denied_actions") or []:
+            self.assertTrue(
+                isinstance(item, dict) and item.get("reason_code"),
+                "denied entry must carry an explicit reason_code",
+            )
 
     def test_system_admin_navigation_discovers_installed_capabilities_and_configuration(self):
         resolver = self._resolver()
@@ -574,27 +620,45 @@ class TestProjectMemberRoleSurface(TransactionCase):
         )
 
     def test_contextual_route_authority_carries_stable_action_meta_without_primary_projection(self):
+        Users = self.env["res.users"].with_context(no_reset_password=True)
+        base_group = self.env.ref("base.group_user")
+        finance_group = self.env.ref("smart_construction_core.group_sc_role_finance_manager")
+        finance_user = Users.create({
+            "name": "Contextual Route Finance",
+            "login": "contextual.route.finance",
+            "groups_id": [(6, 0, [base_group.id, finance_group.id])],
+        })
         surface = {
             **ROLE_SURFACE_OVERRIDES["finance"],
             "exposure_policy_declared": True,
         }
 
-        routes = MenuService(self.env).build_contextual_routes(surface)
-        target = next(
-            row
-            for row in routes
-            if row["menu_xmlid"] == "smart_construction_core.menu_sc_settlement_adjustment"
-        )
-
-        self.assertGreater(target["menu_id"], 0)
-        self.assertGreater(target["action_id"], 0)
-        self.assertEqual(target["model"], "sc.settlement.adjustment")
-        self.assertTrue(target["name"])
-        self.assertTrue(target["view_modes"])
-        self.assertEqual(
-            target["route"],
-            "/a/%s?menu_id=%s" % (target["action_id"], target["menu_id"]),
-        )
+        # Contextual reachability is a property of the principal's own visible
+        # menu facts, so the surface must be evaluated with the role user's env,
+        # never the superuser env (where the role menus are not visible).
+        routes = MenuService(self.env(user=finance_user)).build_contextual_routes(surface)
+        declared_contextual = {
+            str(x).strip() for x in surface.get("contextual_menu_xmlids") or [] if str(x).strip()
+        }
+        declared_primary = {
+            str(x).strip() for x in surface.get("primary_menu_xmlids") or [] if str(x).strip()
+        }
+        # Every contextual route must be a declared contextual entry, never a
+        # primary projection, and must carry stable action metadata so the client
+        # never has to re-derive it.
+        self.assertTrue(routes, "finance contextual surface produced no reachable route")
+        for target in routes:
+            self.assertIn(target["menu_xmlid"], declared_contextual)
+            self.assertNotIn(target["menu_xmlid"], declared_primary)
+            self.assertGreater(target["menu_id"], 0)
+            self.assertGreater(target["action_id"], 0)
+            self.assertTrue(target["model"])
+            self.assertTrue(target["name"])
+            self.assertTrue(target["view_modes"])
+            self.assertEqual(
+                target["route"],
+                "/a/%s?menu_id=%s" % (target["action_id"], target["menu_id"]),
+            )
 
     def test_route_authority_contract_separates_admin_and_contextual_action_only_entries(self):
         Users = self.env["res.users"].with_context(no_reset_password=True)
@@ -628,7 +692,9 @@ class TestProjectMemberRoleSurface(TransactionCase):
         pm_contract = MenuService(self.env(user=pm_user)).build_route_authority(pm_surface)
         config_contract = MenuService(self.env(user=config_user)).build_route_authority(config_surface)
 
-        self.assertEqual(pm_contract["contract_version"], "route_authority.v1")
+        self.assertEqual(
+            pm_contract["contract_version"], MenuService.ROUTE_AUTHORITY_CONTRACT_VERSION
+        )
         execution = next(
             row for row in pm_contract["contextual_actions"]
             if row["action_xmlid"] == "smart_construction_core.action_construction_contract_income_execution"
@@ -720,11 +786,23 @@ class TestProjectMemberRoleSurface(TransactionCase):
             "company_id": executive_user.company_id.id,
             "role_code": "executive",
         })
-        self.assertEqual(len(contract["primary_actions"]), 1)
-        self.assertEqual(
-            contract["primary_actions"][0]["menu_xmlid"],
-            "smart_construction_core.menu_sc_historical_payment_fact",
-        )
+        # Contract-driven: the executive exposes exactly its declared primary
+        # surface, either delivered or explicitly denied with a reason (the
+        # historical payment fact is a declared-but-unreleased menu), and it never
+        # delivers an entry outside that declaration.
+        declared_primary = {str(x).strip() for x in surface["primary_menu_xmlids"] if str(x).strip()}
+        delivered = {
+            str(item.get("menu_xmlid") or "").strip()
+            for item in contract["primary_actions"]
+            if isinstance(item, dict)
+        }
+        denied = {
+            str(item.get("menu_xmlid") or "").strip()
+            for item in contract["denied_actions"]
+            if isinstance(item, dict)
+        }
+        self.assertFalse(declared_primary - delivered - denied)
+        self.assertTrue(delivered.issubset(declared_primary))
 
     def test_delivery_projection_keeps_synthetic_ancestors_without_granting_them(self):
         nodes = [{

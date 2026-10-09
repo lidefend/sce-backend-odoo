@@ -14,7 +14,6 @@ ROLE_SURFACE_OVERRIDES = {
         "menu_xmlids": [
             "smart_construction_core.menu_sc_project_center",
             "smart_construction_core.menu_sc_contract_center",
-            "smart_construction_core.menu_sc_construction_center",
         ],
         "primary_menu_xmlids": [
             "smart_construction_core.menu_sc_project_project",
@@ -492,7 +491,6 @@ ROLE_SURFACE_OVERRIDES = {
         "menu_xmlids": [
             "smart_construction_core.menu_sc_project_center",
             "smart_construction_core.menu_sc_contract_center",
-            "smart_construction_core.menu_sc_construction_center",
         ],
         "primary_menu_xmlids": [
             "smart_construction_core.menu_sc_project_project",
