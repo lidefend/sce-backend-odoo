@@ -64,10 +64,15 @@ USER_ACCEPTANCE_PRODUCT_MENU_XMLIDS = {
 # roadmap, duplicate or incomplete menu facts unpublished. They remain valid
 # XMLIDs/action authorities for migration and audit, but policy convergence
 # must not reactivate their native menu rows after the final XML overlay.
+#
+# ``menu_sc_project_ledger_group_v2`` is intentionally absent: it is a
+# RELEASED_FOUNDATION level-two group in the P1 product menu contract
+# (config/product_menu_contract_v1.json, 项目中心 / 项目台账) and holds the
+# released ``menu_sc_project_project`` record entry, so suppressing it here
+# would hide a released menu.
 LOCKED_TARGET_UNPUBLISHED_MENU_XMLIDS = {
     "smart_construction_core.menu_sc_workbench_my_approval_fact",
     "smart_construction_core.menu_sc_project_overview_group_v2",
-    "smart_construction_core.menu_sc_project_ledger_group_v2",
     "smart_construction_core.menu_sc_project_planning_group_v2",
     "smart_construction_core.menu_sc_project_organization_group_v2",
     "smart_construction_core.menu_sc_project_milestone_group_v2",
