@@ -46,6 +46,7 @@ FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
 LOGIN = re.compile(r"^[A-Za-z0-9@._-]+$")
 PRODUCT_KEY = re.compile(r"^[a-z0-9._-]+$")
+MODULE_KEY = re.compile(r"^[a-z][a-z0-9_]*$")
 
 
 class ConvergeError(RuntimeError):
@@ -56,11 +57,12 @@ REMOTE_CONVERGE = r'''
 import fcntl, json, os, re, shutil, subprocess, sys
 from pathlib import Path
 
-expected_sha, env_name, env_file, database, login, product_keys_arg, remote_root = sys.argv[1:8]
+expected_sha, env_name, env_file, database, login, product_keys_arg, modules_arg, remote_root = sys.argv[1:9]
 fixed_root = Path("/opt/projects/repos/sce-product-odoo")
 root = Path(remote_root)
 full_sha = re.compile(r"^[0-9a-f]{40}$")
 product_keys = [item for item in product_keys_arg.split(",") if item]
+modules = [item for item in modules_arg.split(",") if item]
 
 def emit(payload, code):
     print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
@@ -105,6 +107,36 @@ env.update(
     }
 )
 make_bin = shutil.which("make") or "/usr/bin/make"
+
+# The published face is frozen *from* the locked contract through the module code
+# that projects it, so the projection code must be live before the freeze: a face
+# frozen from stale projection code silently publishes the previous contract.
+upgrade_returncode = 0
+upgrade_tail = ""
+if modules:
+    upgrade = subprocess.run(
+        [make_bin, "mod.upgrade", "MODULE=" + ",".join(modules)],
+        cwd=str(root),
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    upgrade_returncode = int(upgrade.returncode)
+    upgrade_tail = (upgrade.stdout or "")[-1500:]
+    if upgrade_returncode:
+        emit(
+            {
+                "status": "FAIL",
+                "reason": "MODULE_UPGRADE_FAILED",
+                "head": head,
+                "modules": modules,
+                "module_upgrade_returncode": upgrade_returncode,
+                "module_upgrade_tail": upgrade_tail,
+            },
+            1,
+        )
+
 proc = subprocess.run(
     [make_bin, "release.daily_product_navigation.converge"],
     cwd=str(root),
@@ -197,6 +229,8 @@ emit(
         "products": products,
         "refreshes": refreshes,
         "guard_status": str((guard or {}).get("status") or ""),
+        "modules": modules,
+        "module_upgrade_returncode": upgrade_returncode,
         "converge_returncode": int(proc.returncode),
         "converge_tail": (proc.stdout or "")[-1500:],
     },
@@ -214,7 +248,18 @@ def parse_product_keys(raw: str) -> list[str]:
     return keys
 
 
-def preflight(expected_sha: str, ssh_host: str, login: str, product_keys: list[str]) -> None:
+def parse_modules(raw: str) -> list[str]:
+    modules = [item.strip() for item in str(raw or "").split(",") if item.strip()]
+    if any(not MODULE_KEY.fullmatch(item) for item in modules):
+        raise ConvergeError("upgrade modules must be a comma-separated module name list")
+    if len(set(modules)) != len(modules):
+        raise ConvergeError("upgrade modules must be unique")
+    return modules
+
+
+def preflight(
+    expected_sha: str, ssh_host: str, login: str, product_keys: list[str], modules: list[str]
+) -> None:
     if os.environ.get("CONFIRM_DAILY_RUNTIME_PUBLISHED_FACE") != CONFIRMATION:
         raise ConvergeError("exact daily runtime published-face confirmation is required")
     if not FULL_SHA.fullmatch(expected_sha or ""):
@@ -225,10 +270,18 @@ def preflight(expected_sha: str, ssh_host: str, login: str, product_keys: list[s
         raise ConvergeError("the daily full-product principal must be a plain login")
     if not product_keys:
         raise ConvergeError("product keys must be a non-empty comma-separated product key list")
+    if any(not MODULE_KEY.fullmatch(item) for item in modules):
+        raise ConvergeError("upgrade modules must be a comma-separated module name list")
 
 
 def remote_command(
-    expected_sha: str, env_name: str, env_file: str, database: str, login: str, product_keys: list[str]
+    expected_sha: str,
+    env_name: str,
+    env_file: str,
+    database: str,
+    login: str,
+    product_keys: list[str],
+    modules: list[str],
 ) -> str:
     return " ".join(
         shlex.quote(item)
@@ -242,6 +295,7 @@ def remote_command(
             database,
             login,
             ",".join(product_keys),
+            ",".join(modules),
             REMOTE_ROOT,
         )
     )
@@ -259,8 +313,9 @@ def converge(
     database: str,
     login: str,
     product_keys: list[str],
+    modules: list[str],
 ) -> dict[str, object]:
-    preflight(expected_sha, ssh_host, login, product_keys)
+    preflight(expected_sha, ssh_host, login, product_keys, modules)
     command = [
         "ssh",
         "-o",
@@ -272,7 +327,7 @@ def converge(
         "-o",
         "ServerAliveCountMax=4",
         ssh_host,
-        remote_command(expected_sha, env_name, env_file, database, login, product_keys),
+        remote_command(expected_sha, env_name, env_file, database, login, product_keys, modules),
     ]
     result = run(command)
     stdout = result.stdout.decode(errors="replace")
@@ -294,6 +349,7 @@ def converge(
         or evidence.get("remote_root") != REMOTE_ROOT
         or sorted(evidence.get("product_keys") or []) != sorted(product_keys)
         or evidence.get("guard_status") != "PASS"
+        or sorted(evidence.get("modules") or []) != sorted(modules)
     ):
         raise ConvergeError("daily runtime published-face evidence differs from the declared scope")
     for row in evidence.get("products") or []:
@@ -315,12 +371,18 @@ def main() -> int:
     parser.add_argument("--ssh-host", required=True, help="governed ssh host alias of the daily runtime")
     parser.add_argument("--login", required=True, help="daily full-product release-acceptance principal")
     parser.add_argument("--product-keys", default=DEFAULT_PRODUCT_KEYS, help="declared published product scope")
+    parser.add_argument(
+        "--upgrade-modules",
+        default="",
+        help="modules whose projection code must be live before the face is frozen (empty to skip)",
+    )
     parser.add_argument("--env-name", default=DEFAULT_ENV_NAME)
     parser.add_argument("--env-file", default=DEFAULT_ENV_FILE)
     parser.add_argument("--database", default=DEFAULT_DATABASE)
     parser.add_argument("--report", required=True, help="report path for the governed evidence envelope")
     args = parser.parse_args()
     product_keys = parse_product_keys(args.product_keys)
+    modules = parse_modules(args.upgrade_modules)
     evidence = converge(
         args.expected_sha,
         args.ssh_host,
@@ -329,6 +391,7 @@ def main() -> int:
         args.database,
         args.login,
         product_keys,
+        modules,
     )
     report = {
         "schema": "daily.runtime.published_face_converge.v1",
@@ -341,6 +404,7 @@ def main() -> int:
         "login": args.login,
         "database": args.database,
         "product_keys": product_keys,
+        "upgrade_modules": modules,
         **evidence,
     }
     target = Path(args.report)

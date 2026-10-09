@@ -727,7 +727,7 @@ daily.runtime.candidate.bundle_sync: guard.prod.forbid verify.daily.runtime.cand
 # var, so the served identity can lag the deployed tree and make the acceptance
 # identity check bind a stale value. This entry declares the exact running HEAD,
 # restarts, readbacks the served endpoint and restores the env file on failure.
-DAILY_RUNTIME_SOURCE_REVISION_SHA ?=
+DAILY_RUNTIME_SOURCE_REVISION_SHA ?= $(DAILY_CANDIDATE_EXPECTED_SHA)
 DAILY_RUNTIME_ENV_NAME ?= dev
 DAILY_RUNTIME_ENV_FILE ?= .env.dev
 DAILY_RUNTIME_SOURCE_REVISION_REPORT ?= .runtime/final-acceptance/daily-deployed/source-revision-align.json
@@ -867,10 +867,17 @@ daily.runtime.record_identity.resolve: guard.prod.forbid verify.daily.runtime.re
 # re-freeze every published product snapshot from the locked contract, reload the
 # served runtime, then re-prove the released face through the release-gate guard.
 # `daily.runtime.candidate.release` is the single daily deploy entry; the two
-# faces must not be released separately.
+# faces must not be released separately.  The served identity is declared before
+# the published face is refreshed, because the face is frozen through the module
+# code at that exact revision and the acceptance identity check reads the served
+# revision back.
 DAILY_RUNTIME_PUBLISHED_FACE_EXPECTED_SHA ?= $(DAILY_CANDIDATE_EXPECTED_SHA)
 DAILY_RUNTIME_PUBLISHED_FACE_LOGIN ?= $(DAILY_PRODUCT_MENU_FULL_PRODUCT_LOGIN)
 DAILY_RUNTIME_PUBLISHED_FACE_PRODUCT_KEYS ?= construction.standard,construction.preview
+# The published face is frozen *from* the locked contract through the module code
+# that projects it, so the projection code must be live before the freeze; a face
+# frozen from stale projection code silently publishes the previous contract.
+DAILY_RUNTIME_PUBLISHED_FACE_UPGRADE_MODULES ?= smart_core
 DAILY_RUNTIME_PUBLISHED_FACE_REPORT ?= .runtime/final-acceptance/daily-deployed/published-face-converge.json
 
 verify.daily.runtime.published_face.converge: guard.prod.forbid
@@ -885,9 +892,10 @@ daily.runtime.published_face.converge: guard.prod.forbid verify.daily.runtime.pu
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--login "$(DAILY_RUNTIME_PUBLISHED_FACE_LOGIN)" \
 		--product-keys "$(DAILY_RUNTIME_PUBLISHED_FACE_PRODUCT_KEYS)" \
+		--upgrade-modules "$(DAILY_RUNTIME_PUBLISHED_FACE_UPGRADE_MODULES)" \
 		--report "$(DAILY_RUNTIME_PUBLISHED_FACE_REPORT)"
 
-daily.runtime.candidate.release: guard.prod.forbid daily.runtime.candidate.bundle_sync daily.runtime.published_face.converge
+daily.runtime.candidate.release: guard.prod.forbid daily.runtime.candidate.bundle_sync daily.runtime.source_revision.align daily.runtime.published_face.converge
 
 mirror.main.gitee: guard.prod.forbid
 	@bash scripts/ops/mirror_main_gitee.sh
