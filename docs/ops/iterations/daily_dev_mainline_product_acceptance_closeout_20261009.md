@@ -1145,6 +1145,48 @@ database             = sc_demo
 **七、登记未决（不掩盖）**
 
 - 产品裁决：discover 型 `system_admin` 面的原生配置投影交付了 `menu_sc_business_config_workbench`，
-  而其 `admin_menu_xmlids` 未声明该条目。既有证据不足以判为缺陷，未强改。
+  而其 `admin_menu_xmlids` 未声明该条目。**已于 §13.17 按证据裁决为"设计内已声明交付、非缺陷、无代码改动"**，
+  仅余所有者确认（替代裁决的正确责任层为动作/菜单组声明，而非角色锚点清单）。
 - 环境 DENY：重建/快照车道仍受两个挂载者阻断，仅作为该车道的结论，绑定实际入口依赖与独立复核依据，
   不泛化为"环境全部通过"；`rendering_detail_state` 的排除沿用既有裁决，不重复证明。
+## 13.17 顺序解决：`system_admin` 原生配置面声明缺口裁决（证据绑定，无代码改动）
+
+**一、事实（已复核，非推测）**
+
+- `docs/contract/snapshots/system_init_intent_admin.json`（`system_admin` 面）中，`表单配置`
+  （`smart_construction_core.menu_sc_business_config_workbench`）以
+  `route_kind=DISCOVERED_PRIMARY_NAV`、`source=delivery_engine.nav`、`required_capability=menu_action_read` 交付；
+  `菜单配置`（`menu_ui_menu_config_policy_business_config`）来自 `role_surface.admin_menu_xmlids` 的 `ADMIN_ROUTE`。
+- `system_admin` 的 `role_surface.admin_menu_xmlids` 只有 `menu_ui_menu_config_policy_business_config`，
+  且 `discover_installed_capabilities=true`、`system_configuration_visible=true`。
+
+**二、裁决：这是设计内的已声明交付，不是未注册交付面，也不是缺陷**
+
+三条独立声明权威共同覆盖该交付：
+
+1. **动作组声明**：`addons/smart_construction_core/views/support/business_config_workbench_views.xml` —
+   `action_sc_business_config_workbench.groups_id` 显式包含 `smart_core.group_smart_core_admin`
+   （另有 `group_sc_cap_business_config_admin`、`smart_core.group_smart_core_business_config_admin`），
+   平台管理员主体本来就对该入口有 ACL 声明。
+2. **根作用域投影声明**：`addons/smart_construction_core/core_extension_hook_facts.py` —
+   原生配置根为已声明的 `menu_sc_business_config_center`（`smart_core_native_config_root_menu_xmlid`），
+   且该叶未列入 `native_config_delivery_excluded_menu_xmlids`；即"配置应用面"的归属是根 + 排除清单，而不是角色锚点清单。
+3. **角色面声明**：`core_extension_policy_maps.py` 中 `system_admin.system_configuration_visible=true`，
+   由 `smart_core.security.platform_admin.can_manage_system_configuration` 执行。
+
+交付输出本身带有完整来源（`source`、`route_kind`、`entry_target`、`capability_key`、`source_authority`），
+说明它来自已声明的 discovery 机制，而不是"无来源的越界交付"。
+
+**三、为什么另两个选项在责任层上是错的**
+
+- **补进 `role_surface.system_admin.admin_menu_xmlids`**：会与已有声明重复，并且会改动 `system_admin` 已发布的导航面，
+  进而需要重冻发布面/快照。`admin_menu_xmlids` 在 discover 型面上是**锚点清单**，不是完备枚举；
+  引擎的声明面闭合是单向的（声明未交付 = 缺陷），这正是既有设计。责任层不在这里。
+- **收紧 `native_config_delivery_excluded_menu_xmlids`**：排除清单是部署级、对所有管理员主体生效的，
+  无法只表达 `system_admin` 这一条边界。
+
+**四、结论与唯一待办**
+
+裁决为"设计内行为，无代码改动"，已登记进 run（`round_20261010_declared_delivery_face.open_decision`）。
+唯一待办是**所有者确认**：若所有者要求 `表单配置` 必须退出平台管理员面，正确责任层是
+**动作/菜单的组声明**（`smart_core.group_smart_core_admin`），而不是角色锚点清单。
