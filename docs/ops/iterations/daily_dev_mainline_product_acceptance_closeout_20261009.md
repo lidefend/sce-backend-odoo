@@ -897,3 +897,71 @@ main 车道，候选车道检查保留但尚无回执。
 **不得**再出现任何 pin 数字。方法：只读诊断 `/tmp/nav_diag{3,4,5,6}.py`。
 
 **边界**：本轮只取证与记账，**未**改动判据、**未**动产品代码；P0 交付引擎修复与探针重写待执行。
+
+### 13.13 关联跳转 403 与列表选择框定位超时：两项验收缺陷闭环（2026-10-10 第 13 轮续）
+
+**结论先行**：用户报告的两项实际验收未通过项，都在**属主层**修复，没有放宽任何断言。
+
+**一、关联跳转返回 403 —— P1 声明层漂移（已修）**
+
+事实链（远程只读证据）：
+
+1. pm 角色契约（`ROLE_SURFACE_OVERRIDES["pm"]`）把关联跳转动作为 751
+   `action_construction_contract_income_execution`；
+2. 锁定产品契约 `scripts/verify/baselines/formal_business_product_menu_policy_v1.json`
+   （生产镜像 `/opt/sce-product/contracts/`，由 `locked_menu_policy_contract.py` 服务）**不包含 751**；
+3. 发布面同模型的已发布入口是 `menu_sc_p1_income_contract`(904) / action 578，
+   `res_model=construction.contract.income`，tree+form；
+4. 运行时 `filter_route_authority_by_publication`（`addons/smart_core/delivery/menu_service.py`）
+   因此把 751 记为 `PRODUCT_ENTRY_NOT_RELEASED`，关联跳转没有任何可达目标，前端呈现 403；
+5. 同时发现同一动作存在两个上下文载体（action 578/751 与 menu 904/485 混用），违反唯一性。
+
+修复（`c3424962`，P1 声明层对齐，**不是**放宽发布闸门）：pm 块移除 `menu_sc_project_income_contract`，
+把 `contextual_action_authorities` 的目标由 751 改为发布面已发布的 578，保留全部
+`context_requirements`（company_id/project_id/contract_id）。
+
+**这就是"产品册有、发布没有对齐"的准确表述**：声明面向用户承诺了一个发布闸门从未发布的入口。
+产品册（旧用户确认基线 `scripts/verify/baselines/user_confirmed_formal_menu_policy_62.json`，
+60 项 released，含 751 + menu 485）与发布基线（90 项）之间存在漂移；按既定口径必须
+**修声明对齐发布，而不是放宽发布闸门**。
+
+**二、列表选择框验收定位超时 —— 取证侧未按契约消费（已修）**
+
+车道 `scripts/verify/nav_pro_01r_route_authority_*` 有三处自造推断：
+
+1. 以 `/a/<action_id>` 自造入口，忽略契约条目自带的可消费 `route`（`/a/723?menu_id=438`）。
+   前端对无 `menu_id` 的裸 action 路由有既有且**被守卫测试锁定**的 fail-closed 规则
+   （`routeAuthority.ts::findRouteAuthority` 只接受 `menu_id===0` 或 `CONTEXTUAL_ROUTE`），
+   于是把"未按契约打开"误报成"入口不可达"；
+2. 硬编码页面文案（"用户账号与权限"），而契约声明入口名为"人员档案"；
+3. 要求治理权限字段在**没有激活其所属章节**前就可见——该表单是章节化懒渲染。
+
+修复（`03393078`）：探针从服务端契约读取入口 `route`/`name`/`model`/`formStructureContract`，
+并从治理声明 `addons/smart_core/utils/contract_governance_enterprise_forms.py::permission_fields`
+解析权限字段；浏览器车道按契约 route 打开、断言行选择框可用、按契约章节 label 激活后再要求字段。
+
+**按契约能力分层（非放宽）**：`allowed_operation != read` 的可写面**必须**渲染治理声明的权限字段；
+`allowed_operation == read` 的只读面只断言记录路由绑定契约 model 且确实渲染了字段——渲染哪些字段
+属前端职责，契约不保证字段集合，不作推断。`config_admin` 面为 `write`、`system_admin` 面为 `read`，
+两者断言因此不同，均来自契约条目事实。
+
+**三、验证（绑定服务端精确版本）**
+
+- 部署：`make daily.runtime.candidate.release`，`DAILY_CANDIDATE_EXPECTED_SHA=c3424962…`、
+  `OLD_SHA=99ac1479…`、`UPGRADE_MODULES=smart_core,smart_construction_core`；
+  bundle-sync / source-revision-align / published-face-converge 三项 PASS，服务端
+  `source_revision=c3424962e05c31b184718c779b8c6b0e5553cc92`。
+- HTTP 探针：`ROLE_CONTRACT_PARTITION=PASS`、`CONTRACT_EXECUTION_CONTEXT_ROUTE=PASS`、`HTTP_500=0`。
+- 浏览器旅程：`USER_MANAGEMENT_REACHABLE`、`OLD_ACTION_EXECUTION_AUTHORIZED_DIRECT_REACHABLE`、
+  `ORDINARY_USER_ADMIN_DENIAL=PASS`、`CROSS_COMPANY_CONTEXT_DENIAL=PASS`、
+  `UNAUTHORIZED_ROUTE_DATA_REQUESTS=0`、`DIRECT_ROUTE_500=0` 全 PASS。
+- 收据：`.runtime/agent-runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/browser_login_return_authority.json`
+  （passed，16 断言，head=`03393078`，log `.runtime/nav-pro-01/lane-execution.log`
+  sha256=`6f8b309c…`）。
+
+**四、边界与遗留**
+
+- 四态：批次验收=进行中 / 主线集成=未做（用户"先不执行进入主线"）/ 版本发布=日常运行时候选 / 产品交付=未完成。
+- 仍报告**不修**（属主层另计，P0 交付引擎语义）：`build_route_authority` 的静默丢弃与契约面外交付。
+- 待用户裁决：`scripts/verify/product_menu_runtime_closeout_guard.py` 在本分支与 `origin/main` 均失败
+  （`missing active=False overlays: menu_sc_project_ledger_group_v2`），与本次改动无关。

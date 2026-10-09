@@ -330,10 +330,10 @@
   },
   "blockers": [
     "Mainline integration is not authorized: the user instructed \"先不执行进入主线\". The verified candidate is deployed to the daily runtime only; PR push, remote gates and merge remain pending and must not be described as integrated.",
-    "Run-ledger reuse boundary: runtime lanes are no longer re-derived each round. scripts/ops/agent_run_context.py now reuses a kind=runtime receipt when its check declares an authoritative environment `readback` artifact whose content is hashed into the check's dependency state (commit f64e258e, AGENTS.md Layered Validation Efficiency + iterations note 13.9). A runtime check without a declared readback is still never reusable and a runtime run environment is still non-reusable. `daily_acceptance_readback` is now reusable through artifacts/backend/daily_dev_acceptance_probe.json.",
-    "browser_login_return_authority (verify.nav.pro01r.route_authority.browser) is fixture-ready and its root cause is now closed at code level: the served navigation.route_authority partitions each locked role's versioned contract face into delivered entries and explicit PRODUCT_ENTRY_NOT_RELEASED denials (addons/smart_core/delivery/menu_service.py::build_route_authority). The HTTP producer's pinned counts were a fourth, unrelated calibration and config/frontend/authoritative_navigation.json is a stale 2026-07 browser-audit snapshot, so the lane must be bound to the contract-partition invariant, not to numbers. Residual defects: 6 contract-declared primary entries are silently unaccounted (not delivered and not denied) and 4 delivered entries sit outside the declared role face (native-nav augmentation, menu_service.py:985-1010). Both are P0 delivery-engine semantics and are reported for the owning-layer fix; no assertion was relaxed."
+    "P0 delivery-engine residue still reported, not fixed here: build_route_authority silently drops contract-declared entries that are neither delivered nor explicitly denied, and the native nav tree augmentation delivers entries outside the declared role face. Both are owning-layer (P0) semantics.",
+    "Pre-existing mainline drift awaiting owner adjudication: scripts/verify/product_menu_runtime_closeout_guard.py fails with 'missing active=False overlays: menu_sc_project_ledger_group_v2' on this branch and on origin/main alike; it is independent of this closeout's changes."
   ],
-  "next_exact_step": "Iteration-efficiency closeout is proven and recorded; the nav_pro fixture is landed on sc_demo through daily.runtime.nav_pro_fixture.prepare. The route-authority lane's former 'authority ruling' is resolved into a code-level root cause: navigation.route_authority = versioned role-surface contract partitioned into delivered vs PRODUCT_ENTRY_NOT_RELEASED, so the acceptance producer must assert that partition (declared == delivered + explicitly denied; delivered subset of declared) plus the behavioural assertions, never pinned counts. Next, in order: (1) rewrite scripts/verify/nav_pro_01r_route_authority_http.py to that contract-driven form and run the one real browser journey verify.nav.pro01r.route_authority.browser; (2) fix the P0 delivery engine (record declared-but-unresolved entries; stop the native nav tree from selecting entries outside the contract) so the 6 silent drops and 4 outside-surface deliveries close; (3) on explicit user authorization, push/PR and merge. No assertion may be relaxed.",
+  "next_exact_step": "The two reported acceptance failures are closed at their owning layer. (1) Relation-jump 403: the pm contract declared action 751 (action_construction_contract_income_execution), which the locked product contract never published, so filter_route_authority_by_publication marked it PRODUCT_ENTRY_NOT_RELEASED and the jump had no reachable target; c3424962 rebinds the pm contract relation authority to the released action 578 (menu_sc_p1_income_contract/904, same model construction.contract.income) and removes the duplicate contextual carrier. (2) List selection-box acceptance locator timeout: the lane re-derived /a/<action_id> and hardcoded copy instead of consuming the served contract; 03393078 makes the HTTP probe consume the contract-declared route/name/model/form structure and makes the browser lane open the declared route, assert the row selection control, activate the contract-declared chapter owning the governance permission field, and treat a contract read-only surface as read-only. Served runtime c3424962; HTTP probe and browser journey both PASS. Remaining, in order: (1) the reported P0 delivery-engine residue (declared-but-unresolved entries recorded; native nav tree must stop selecting entries outside the contract); (2) owner adjudication of the pre-existing product_menu_runtime_closeout_guard drift that also fails on origin/main (missing active=False overlays: menu_sc_project_ledger_group_v2); (3) explicit user authorization before any push/PR/merge. No assertion may be relaxed.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -887,6 +887,38 @@
         "probe_fix_plan": "rewrite scripts/verify/nav_pro_01r_route_authority_http.py so per-role expectations resolve from the versioned role-surface contract and assert the partition invariant (declared == delivered + explicitly-denied; delivered subset of declared) plus every behavioural assertion (admin leak, contextual reachability, 403 admin denial, cross-company/project scope, HTTP_500==0). Remove every pinned count.",
         "method": "read-only HTTP diagnostics on the served runtime: /tmp/nav_diag.py, nav_diag3.py, nav_diag4.py, nav_diag5.py, nav_diag6.py; contract read from addons/smart_construction_core/core_extension_policy_maps.py::ROLE_SURFACE_OVERRIDES"
       }
+    },
+    "route_authority_lane_closeout": {
+      "relation_jump_403": {
+        "owning_layer": "P1 construction standard declaration face (smart_construction_core ROLE_SURFACE_OVERRIDES)",
+        "root_cause": "pm contract declared action 751 (action_construction_contract_income_execution) and menu 485; the locked product contract (formal_business_product_menu_policy_v1.json) publishes action 578 / menu 904 and never publishes 751, so filter_route_authority_by_publication recorded PRODUCT_ENTRY_NOT_RELEASED and the jump had no reachable target",
+        "product_catalogue_vs_release": "the old user-confirmed baseline user_confirmed_formal_menu_policy_62.json (60 released, includes 751 + menu 485) drifted from the release baseline (90 entries); the declared face promised an entry the release gate never published",
+        "decision": "align the declaration to the release, never relax the gate; no ACL/field-permission override, no payment-model special case",
+        "fix_commit": "c3424962e05c31b184718c779b8c6b0e5553cc92"
+      },
+      "list_selection_box_locator": {
+        "owning_layer": "P4 acceptance tooling (scripts/verify/nav_pro_01r_route_authority_*)",
+        "root_cause": "the lane re-derived /a/<action_id> and hardcoded copy instead of consuming the served contract; the SPA correctly denies a menu-bound bare action route (findRouteAuthority fail-closed rule), and the chapter-scoped permission field was required before its chapter was activated",
+        "fix_commit": "0339307806497edb6cacd64fc58008c4f0d9c316",
+        "assertion_policy": "writable surface (allowed_operation != read) must render the governance-declared permission field; read-only surface asserts only the contract model route and that the record rendered fields; no assertion relaxed"
+      },
+      "served_identity": {
+        "source_revision": "c3424962e05c31b184718c779b8c6b0e5553cc92",
+        "database": "sc_demo",
+        "environment": "dev",
+        "deploy_entry": "make daily.runtime.candidate.release",
+        "deploy_confirmations": [
+          "CONFIRM_DAILY_CANDIDATE_BUNDLE_SYNC",
+          "CONFIRM_DAILY_RUNTIME_SOURCE_REVISION_ALIGN",
+          "CONFIRM_DAILY_RUNTIME_PUBLISHED_FACE"
+        ],
+        "upgrade_modules": [
+          "smart_core",
+          "smart_construction_core"
+        ]
+      },
+      "receipt": ".runtime/agent-runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/browser_login_return_authority.json",
+      "log": ".runtime/nav-pro-01/lane-execution.log"
     }
   },
   "continuation": {
@@ -895,12 +927,9 @@
   },
   "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced.",
   "stage_identity": {
-    "head": "51e7cdc0853b9d8e4732ae9c11b9869a0959b030",
-    "dirty_scope": [
-      ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json",
-      "docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md"
-    ],
+    "head": "0339307806497edb6cacd64fc58008c4f0d9c316",
+    "dirty_scope": [],
     "kind": "iteration",
-    "note": "iteration identity: the product/verification layer is 51e7cdc0 and the daily runtime serves that exact revision (source_revision=git_sha=51e7cdc0853b9d8e4732ae9c11b9869a0959b030, database=sc_demo, frontend_build_sha256=a3f477a4b7ccaf81433a84a0e5192cc31cd350d21033870e764dd53ce80c4d1a). The dirty scope above is documentation plus the regenerated record-identity/readback evidence, which are not module inputs; they are committed in the same layer. baseline_sha is the run-registration acceptance baseline and an ancestor of HEAD, not the current stage identity."
+    "note": "iteration identity: local candidate 03393078 (P4 acceptance-lane contractization) on top of c3424962 (P1 route-authority declaration alignment). The daily runtime serves c3424962 (source_revision=git_sha=c3424962e05c31b184718c779b8c6b0e5553cc92, database=sc_demo, frontend_build_sha256=a3f477a4b7ccaf81433a84a0e5192cc31cd350d21033870e764dd53ce80c4d1a); the acceptance-lane change is a P4 test tool and is deliberately not deployed. Receipt-bound evidence is .runtime/agent-runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/browser_login_return_authority.json (passed, head=03393078)."
   }
 }
