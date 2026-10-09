@@ -42,11 +42,11 @@
     "frontend_typecheck": {
       "target": "verify.frontend.typecheck.strict",
       "inputs": [
+        "frontend/apps/web/src",
         "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
         "frontend/apps/web/package.json",
-        "frontend/apps/web/src/app/routeAuthority.ts",
-        "frontend/apps/web/src/views/LoginView.vue",
-        "frontend/apps/web/scripts/route_authority_guard_test.ts"
+        "frontend/apps/web/vite.config.ts"
       ],
       "kind": "offline"
     },
@@ -62,29 +62,41 @@
       ],
       "kind": "offline"
     },
+    "daily_runtime_main_bundle_sync": {
+      "target": "verify.daily.runtime.main.bundle_sync",
+      "inputs": [
+        "scripts/ops/daily_runtime_bundle_sync.py",
+        "scripts/ops/test_daily_runtime_bundle_sync.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
     "daily_runtime_candidate_bundle_sync": {
       "target": "verify.daily.runtime.candidate.bundle_sync",
       "inputs": [
-        "make/codex.mk",
-        "scripts/ops/daily_runtime_bundle_sync.py"
+        "scripts/ops/daily_candidate_bundle_sync.py",
+        "scripts/ops/test_daily_candidate_bundle_sync.py",
+        "make/codex.mk"
       ],
-      "kind": "runtime"
+      "kind": "offline"
     },
     "daily_runtime_source_revision_align": {
       "target": "verify.daily.runtime.source_revision.align",
       "inputs": [
         "scripts/ops/daily_runtime_source_revision_align.py",
-        "scripts/ops/test_daily_runtime_source_revision_align.py"
+        "scripts/ops/test_daily_runtime_source_revision_align.py",
+        "make/codex.mk"
       ],
-      "kind": "runtime"
+      "kind": "offline"
     },
     "daily_runtime_frontend_build": {
       "target": "verify.daily.runtime.frontend.build",
       "inputs": [
         "scripts/ops/daily_runtime_frontend_build_align.py",
-        "scripts/ops/test_daily_runtime_frontend_build_align.py"
+        "scripts/ops/test_daily_runtime_frontend_build_align.py",
+        "make/codex.mk"
       ],
-      "kind": "runtime"
+      "kind": "offline"
     },
     "browser_login_return_authority": {
       "target": "verify.nav.pro01r.route_authority.browser",
@@ -164,7 +176,14 @@
       "kind": "offline",
       "inputs": [
         "scripts/verify/product_menu_release_manifest_v2_guard.py",
-        "config/frontend/acceptance_environments_v1.json"
+        "scripts/verify/acceptance_action_count.py",
+        "config/frontend/acceptance_environments_v1.json",
+        "config/product_menu_contract_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+        "config/frontend/authoritative_navigation.json",
+        "addons/smart_construction_core/__manifest__.py",
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
       ]
     },
     "frontend_release_navigation_policy": {
@@ -182,6 +201,17 @@
       "inputs": [
         "scripts/ci/enforce_contract_structure_lock.py"
       ]
+    },
+    "product_view_structure_contract_unit": {
+      "target": "verify.product_view_structure.contract.unit",
+      "inputs": [
+        "scripts/contract/product_view_structure_common.py",
+        "scripts/verify/product_view_structure_contract_guard.py",
+        "scripts/verify/test_product_view_structure_contract.py",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
     },
     "environment_topology_guard": {
       "target": "verify.environment.topology.guard",
@@ -233,6 +263,7 @@
       "target": "verify.daily_dev.acceptance.readonly.probe",
       "kind": "runtime",
       "inputs": [
+        "artifacts/backend/acceptance_record_identity.json",
         "scripts/ops/dev_acceptance_release_probe.py",
         "scripts/verify/dev_acceptance_release_probe_schema_guard.py",
         "scripts/verify/acceptance_action_count.py",
@@ -250,10 +281,23 @@
         "scripts/verify/test_agent_run_context.py",
         "make/codex.mk"
       ]
+    },
+    "frontend_navigation_initialization_race_unit": {
+      "target": "verify.frontend.navigation_initialization_race.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_navigation_initialization_race.test.mjs",
+        "frontend/apps/web/src/app/navigationSelectionCore.js",
+        "make/runtime_ops.mk"
+      ]
     }
   },
-  "blockers": [],
-  "next_exact_step": "The role-locked landing/catalog projection and the role-scoped navigation count are now proven on the served daily instance (d106d2dd: role_code=business_config_admin, nav_action_count=89, negative control rejected), and the run ledger reuse engine is repaired and populated (12/25 reusable). Next: publish the batch PR for this candidate branch (owner pre-authorized one PR per verified batch), then reconcile main and re-read the served identity. Remaining bounded residual: give the 6 guard-only offline targets and frontend_typecheck test-bearing entry points so they can join the reusable set.",
+  "blockers": [
+    "daily_acceptance_readback (verify.daily_dev.acceptance.readonly.probe) is deployment-gated: the workspace versioned contract resolves 90 nav actions for the locked principal role while the served runtime d106d2dd still serves 89. Recovery is commit -> merge -> deploy + module upgrade, then re-read. The assertion must not be lowered to 89.",
+    "browser_login_return_authority (verify.nav.pro01r.route_authority.browser) prerequisite is not recovered: the nav_pro_{config_admin,system_admin,pm,project_member} login subjects do not exist on sc_demo and must be provisioned through the governed nav.pro01.runtime.prepare inside the remote sc-backend-odoo-dev compose. The prepare step is itself rejected on the served tree d106d2dd with \"missing task evidence: finance smart_construction_core.menu_sc_settlement_adjustment\", so it depends on the same deploy + module upgrade.",
+    "The product layer of this batch is committed as dde30179c7d631c3aeaf89be90093626a0f02e49; the docs and run record are being committed in the same layer. User-level acceptance of this batch's product surface on the daily runtime is impossible until this commit is pushed, merged and the daily runtime is deployed and module-upgraded (the new anchor is a menu record)."
+  ],
+  "next_exact_step": "Batch product layer committed as dde30179 (18 files: P1 native menu record smart_construction_core.menu_sc_workspace_home (角色首页) + versioned contract declaration, contract baseline 89->90, P0 menu_service action-less entry projection, product_view_structure_common declared-scene-entry shape, frontend navigationSelectionCore single identity rule, and the bound guards/tests). Ledger unchanged: 28 declared checks, reusable 18 / not_run 9 / stale 0 / failed 1. Next, in order: (1) push the commit and open the Gitee PR through the governed entry (pr.push.gitee), let the remote gates run, and merge via the protected PR flow once the required checks pass on the exact head; (2) deploy the new mainline to the daily runtime and module-upgrade it (the new anchor is a menu record, so the upgrade is required for the 90th nav action to serve); (3) re-run verify.daily_dev.acceptance.readonly.probe at the new served SHA (it must turn PASS; the assertion must not be lowered to 89); (4) provision the nav_pro_* fixture through the governed nav.pro01.runtime.prepare inside the remote compose and run verify.nav.pro01r.route_authority.browser as one real click-open -> return -> tab/action restore journey.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -468,5 +512,17 @@
     "reason": "successor to the retired FE-HIERARCHICAL-WORKSHEET-USABLE-READY run (merged PR #626) and the closed MAINLINE-BASELINE-BINDING anchor",
     "action": "align the daily runtime identity to the latest main and close out the user product acceptance boundary"
   },
-  "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced."
+  "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced.",
+  "stage_identity": {
+    "head": "dde30179c7d631c3aeaf89be90093626a0f02e49",
+    "dirty_scope": [
+      ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json",
+      "docs/architecture/menu_scene_anchor_policy_v1.md",
+      "docs/architecture/navigation_dual_track_contract_v1.md",
+      "docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md",
+      "docs/product/product_menu_contract_v1.md"
+    ],
+    "kind": "iteration",
+    "note": "iteration identity: HEAD plus explicit dirty scope. baseline_sha above is the run-registration acceptance baseline and is an ancestor of HEAD; it is not the current stage identity. The product/contract/guard layer of this batch is now committed as dde30179; the docs and run record of the same layer are still dirty in this step."
+  }
 }

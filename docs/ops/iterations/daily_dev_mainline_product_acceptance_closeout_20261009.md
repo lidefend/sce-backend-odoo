@@ -323,3 +323,262 @@ Baseline: `aea2c19bbe4edb2a13fbf908255e918e18f3a299`（`main`，PR #630 退役�
 后 7 条**不产出非零测试计数**，按现行契约无法记为可复用证据，只能每轮重跑（各约 2–3s）。
 **残余**：给这些目标补带测试计数的入口，是其加入可复用集的有界后续项；
 这不能通过放宽"非零测试计数"规则来绕过。
+
+### 8.4 声明纠偏：stale 2 → 0（未重跑任何测试）
+
+`make agent.run.resume` 此前报 `stale=2`（`daily_runtime_source_revision_align`、
+`daily_runtime_frontend_build`），交接时被解读为"运行时车道环境未对齐"。逐项比对**回执原文**后确认
+与产品、环境均无关，是三处**声明缺陷**：
+
+1. **kind 误声明。** 这两个目标是纯离线单测入口（`py_compile` + 单测运行器），
+   `make/codex.mk:735/767`；其回执本身记录的也是 `kind=offline`。但 `run.json` 把它们声明为
+   `kind=runtime`，而本 run 的 `environment.kind=offline`。复用引擎对 `kind!=offline` 的检查
+   恒抛 `runtime evidence requires authoritative environment readback`
+   （`scripts/ops/agent_run_context.py` `evaluate()`），即**结构上永远不可能转为可复用**——
+   这类检查只要声明成 runtime，就必然每轮重跑。
+2. **漏依赖。** 两条检查声明的 `inputs` 只有 2 项，回执记录的是 3 项（含 `make/codex.mk`）。
+   同一缺陷更明显的一例：`daily_runtime_candidate_bundle_sync` 声明的输入是 **main 车道**
+   脚本 `daily_runtime_bundle_sync.py`，而 `make/codex.mk:711` 该目标实际执行的是
+   `daily_candidate_bundle_sync.py` / `test_daily_candidate_bundle_sync.py`。
+3. **未被索引的证据。** main 车道回执（`9 tests`、`status=passed`、`log_sha256` 校验通过）
+   文件名是 `daily_runtime_bundle_sync.json`，与任何已声明检查 id 都不匹配，因此从未被读取，
+   一直计入 `not_run`。
+
+**修正内容（不含任何断言放宽、不含任何测试重跑）：**
+
+- 两条检查 `kind` `runtime → offline`（与回执及目标实际执行内容一致）。
+- 两条检查 `inputs` 补回 `make/codex.mk`（回执记录的完整依赖集）。
+- `daily_runtime_candidate_bundle_sync` 的 `inputs` 改为其目标真实执行的依赖。
+- 新增检查 id `daily_runtime_main_bundle_sync` 绑定 `verify.daily.runtime.main.bundle_sync`，
+  并将既有回执重命名使其可被索引（**保留证据，未删除**）。
+
+| | 检查数 | reusable | not_run | stale |
+| --- | --- | --- | --- | --- |
+| 8.3 移交态 | 26 | 13 | 11 | 2 |
+| 本轮声明纠偏后 | 27 | **16** | 11 | **0** |
+
+**边界（必须与"运行时已对齐"区分）：** 上述 reusable 只证明**离线单测**通过，**不等于**日常
+运行态已完成身份对齐。真实运行时写入是受确认串约束的受管入口
+`make daily.runtime.source_revision.align` / `daily.runtime.frontend.build`，它们不是 `verify.*`
+目标，无法进入 run 的检查索引；其效果由 runtime 类读回检查承载
+（`browser_login_return_authority`、`business_entry_matrix_recollect`、`daily_acceptance_readback`），
+三者目前仍为 `not_run`。
+
+**待所有者裁定：** 候选车道与 main 车道两个 bundle-sync 检查现并存；本 run 声明的运行路径是
+main 车道，候选车道检查保留但尚无回执。
+
+## 9. 前端 `.js` 边界裁定（P0 渲染机制，所有者决定 A）
+
+### 9.1 事实
+
+- `frontend/apps/web/src` 下共 **7 个 `.js`**，**全部为既有文件**，本批次未新增：
+  `app/actionViewRouteLeaseCore.js`、`app/capabilityCore.js`、`app/capabilityPolicyCore.js`、
+  `app/navigationSelectionCore.js`、`app/view_state.js`、`app/resolvers/menuResolverCore.js`、
+  `app/resolvers/sceneRegistryCore.js`。引入来源：`401bcb3b`（干净产品基线）5 个、
+  `5baaa048`（RC14）1 个、`c5a19c15` 1 个。本批次 dirty 中只有
+  `navigationSelectionCore.js` 被修改。
+- 源码规模：`497` 个 `.ts`、`226` 个 `.vue`、`0` 个 `.mjs`/`.jsx`（前端源码内）。
+
+### 9.2 为什么是 `.js`（既定策略，不是疏漏）
+
+- 这些文件是自 `.vue` 抽出的**纯函数 core**，唯一目的是让验证脚本用**裸 node 直接 import**，
+  无需 TS 装载或构建：`scripts/verify/fe_view_state_smoke.js` 用
+  `require(.../view_state.js)`，`scripts/verify/frontend_navigation_initialization_race.test.mjs:5`
+  直接 `import ... navigationSelectionCore.js`。
+- 主 tsconfig 保持 `allowJs=true / checkJs=false / strict=false`，strict 边界只覆盖
+  `src/contracts/**/*.ts`、`src/api/scene.ts`、`src/views/SceneHealthView.vue`，
+  见 `docs/ops/stage_defs/phase_10_5_frontend_type_recovery.md`（遗留类型债隔离期）。
+
+### 9.3 边界结论
+
+- 内容扫描：7 个文件无模型名、字段名、行业语义。唯一 `res_model` 命中是
+  `menuResolverCore.js:86` 的**透传读取**（`meta.model = node?.native_model || actionMeta.res_model`），
+  不是硬编码业务判断。
+- 职责是"契约产物 → 渲染/交互"所需的归一与选择（capability 状态映射、菜单解析、导航选择、
+  空/错状态派生、路由租约竞态判定），属 **P0 前端渲染机制**，**不构成前端越界做业务逻辑**，
+  也**不需要等契约补缺**。
+
+### 9.4 已确认缺口与处置
+
+- 缺口：这 7 个文件**同时逃过** `vue-tsc`（`checkJs=false`）与 ESLint（`--ext .ts,.vue`），
+  即前端逻辑密度最高的部分零静态检查，仅由 node 冒烟/单测保底。
+- **所有者裁定（A）**：本轮不扩改动，保持现状；把「收敛为 `.ts`」与「纳入 ESLint + 受限
+  `checkJs` 白名单（不改扩展名）」登记为**后续 P4 迭代项**，不并入本批次。
+- 附带观测：全量 `vue-tsc`（`497` `.ts` + `226` `.vue`，无 incremental/tsBuildInfo）实测 ≥10 分钟。
+  本批次前端改动只有 `navigationSelectionCore.js`，其对口验证是 2 秒的
+  `verify.frontend.navigation_initialization_race.unit`（已跑、35 tests、可复用）。
+  全量 typecheck 的**定向化/缓存化**同为后续 P4 项，须先立项再改，不直接大改门禁。
+
+## 10. 契约行与守卫规则对齐：声明式场景入口（route A 判别联合的最后一环）
+
+### 10.1 现象
+
+`make verify.contract.view_structure` 在**本批之前与之后都 FAIL**，但失败形态不同：
+
+| | 该守卫的裁决 |
+| --- | --- |
+| 基线（HEAD policy） | 6 条陈旧绑定错误 |
+| 本批（新增 `角色首页` 契约行） | **提前 `raise` 一条冲突**，把上述 6 条全部掩盖 |
+
+即本批新增的契约行与其守卫规则**不兼容**：守卫没跑到陈旧绑定检查就中止了。
+
+### 10.2 根因
+
+`scripts/contract/product_view_structure_common.py::policy_menu_rows` 对每条
+`enabled && release_state == "released"` 的能力**硬性要求** `menu_xmlid && res_model`，
+缺一即 `conflicts.append(...)`，循环结束后 `raise ValueError("; ".join(sorted(conflicts)))`
+（该 raise 是 fail-closed，本身没问题）。
+
+但 route A（所有者已批准）的**声明式场景入口**按设计**没有模型承载面**：
+`disposition_policy/entry_target_policy == "scene_entry"`，`action_xmlid=""`、`res_model=""`，
+授权基准是原生菜单锚点 + 服务端角色化契约投影，执行目标是 `target_scene_key`
+（见 `docs/architecture/menu_scene_anchor_policy_v1.md`「Identity (Single Source)」）。因此它
+**必然**触发该冲突。
+
+关键：`policy_menu_rows` 同时被**导出器**（`scripts/contract/export_product_view_structure.py:273`）
+与**守卫**（`scripts/verify/product_view_structure_contract_guard.py:68`）消费。若不一并修正，
+发布车道的运行时导出同样会 `raise`，形成"契约声明了却永远导不出来"的死结。
+
+### 10.3 判定
+
+这不是"断言太严"，而是**守卫与导出器未建模 route A 的判别联合**——与 §9 同类的体系缺口。
+
+### 10.4 修正（fail-closed，未放宽任何既有断言）
+
+`policy_menu_rows` 先判断是否为声明式场景入口：
+
+- 是：要求 `menu_xmlid` **且** `target_scene_key`，并**禁止**声明 `res_model`；满足后从
+  view structure 行集中**排除**（场景入口无视图结构面，不应进入该清单）。
+  缺 `target_scene_key` 或误带 `res_model` → 仍然 `raise`。
+- 否：原规则**逐字不变**（`menu_xmlid && res_model`）。
+
+### 10.5 证据
+
+- 新增 3 条单测（场景入口被排除 / 缺 `target_scene_key` 失败 / 误带 `res_model` 失败）；
+  `scripts/verify/test_product_view_structure_contract.py` 22 → **25**。
+- 新增受管入口 `make verify.product_view_structure.contract.unit`（`make/guards.mk`），
+  沿用 §8.2 的**窄绑定**模式：守卫单元测试绑定到带测试计数的入口，而不是搭在
+  `verify.contract.view_structure` 或发布导出车道上。
+- 回执：`25 tests`、`status=passed`、可复用（`source_head=f631cf04`）。
+
+### 10.6 结果与边界
+
+- `make verify.contract.view_structure` 回到**与 HEAD 完全一致的 6 条错误**：
+  `formal menu coverage differs from policy`、4 条 candidate fingerprint provenance
+  （`baseline_sha` / `scope_manifest_sha256` / `digest` / `branch`）、
+  `formal menu policy hash mismatch`。即**本批不再引入新的失败模式**。
+- 这 6 条属**发布/导出车道的受管产物重生成项**：`contracts/generated/product_view_structure_contract.json`
+  记录 `formal_menu_policy_sha256=80b5c7d5bb...`（与 HEAD policy `bc4274a3...`、本批 policy
+  `bcefc90c...` 均不同）并绑定旧分支 `feature/native-view-action-semantics-closure-v1` /
+  `git_head=01a29b14`。该目标**不属于任何聚合门禁**，重生成必须走受管运行时导出车道
+  （`make contract.view_structure.export` → `gate.contract.view_structure`），**不得 offline 手改**。
+
+### 10.7 账本现状
+
+| | 检查数 | reusable | not_run | stale | failed |
+| --- | --- | --- | --- | --- | --- |
+| 本轮声明纠偏后（§8.4） | 27 | 16 | 11 | 0 | 0 |
+| 叠加本节窄绑定入口 | **28** | **17** | 11 | 0 | 0 |
+
+## 11. 运行态读回车道（本轮执行：两个结论 + 一个部署闸门 + 一个前置未就绪）
+
+环境身份先核实：`sc-root:/opt/projects/repos/sce-product-odoo` 树处于 `d106d2dd` 且**干净**，
+`COMPOSE_PROJECT_NAME=sc-backend-odoo-dev`、`DB_NAME=sc_demo`、`NGINX_PORT=18081`、
+`SC_SOURCE_REVISION=d106d2dd…`、`FRONTEND_BUILD_SHA256=8bd99a72…f266`；
+`/api/runtime-version` 回读与之一致。**注意**：本机 `sc-local-dev` 组合也占用 18081，所有日常车道调用
+必须显式传 `ACCEPTANCE_BASE_URL`/`FRONTEND_URL=http://1.95.85.92:18081`，不得落到缺省 `127.0.0.1`。
+
+### 11.1 离线守卫批量执行（7 条全部 PASS，其中 1 条转为可复用）
+
+| 检查 | 目标 | 结果 |
+| --- | --- | --- |
+| `daily_runtime_candidate_bundle_sync` | `verify.daily.runtime.candidate.bundle_sync` | PASS，**6 tests**，回执可复用 |
+| `contract_structure_lock` | `verify.contract.structure_lock` | PASS（`domains=14`） |
+| `scene_role_policy_consistency` | `verify.scene.role.policy.consistency.guard` | PASS（payload 25 / role_variants 22） |
+| `scene_role_surface_consistency` | `verify.scene.role.surface.consistency.guard` | PASS（roles 10 / r3 scenes 22 / warnings 17） |
+| `frontend_auth_credential` | `verify.frontend.auth_credential.guard` | PASS（sensitive_screenshot=0 / trace 0） |
+| `frontend_auth_surface` | `verify.frontend.auth_surface.guard` | PASS（contract_pages=3） |
+| `dev_acceptance_release_probe_schema_guard` | `verify.dev.acceptance.release.schema.guard` | PASS |
+
+6 条纯守卫 + `frontend_typecheck` 仍**不产出非零测试计数**，按 §8.3 的既有契约无法进入可复用集
+（"给这些目标补带测试计数的入口"是其**有界后续项**，不放宽"非零测试计数"规则）。
+`scene_role_surface_consistency` 会重写 `docs/audit/scene_role_surface_consistency_report.md`，
+本轮差异仅时间戳，已还原，不并入本批 diff。
+
+### 11.2 列表矩阵复用（`business_entry_matrix_recollect`）：未执行任何浏览器走查
+
+`make verify.frontend.business_entry.matrix.incremental`（`ACCEPTANCE_TARGET_SHA=d106d2dd…`、
+`DB_NAME=sc_demo`、base `http://1.95.85.92:18081`）：
+
+- 复用身份由运行态发布：`FRONTEND_BUILD_SHA256=8bd99a72…f266`，与台账记录一致。
+- `declared=89 units / reusable=89 / affected=0` → `REUSE-FIRST nothing to execute`，退出码 0，**未打开浏览器**。
+- 日志 `.runtime/eff/rec/business_entry_matrix_recollect.log`。
+- 结论：列表面在本批下**零回归**（这正是"能复用必须先复用"应有的形态：4 秒、零走查）。
+
+### 11.3 日常只读探针（`daily_acceptance_readback`）：唯一失败 = 部署闸门
+
+首次运行暴露 3 个错误。逐项定位后，**只有一个是契约事实**，另两个是验收前置的绑定/产物错误：
+
+| 错误 | 归属层 | 事实与处置 |
+| --- | --- | --- |
+| `contract_probe_auth_failed` | 调用绑定（非产品） | 契约探针以 `fixture_role_finance` 取会话；日常库该 fixture 口令为固定开发口令，而 `ACCEPTANCE_CONTRACT_PASSWORD` 缺省继承了隔离 profile 的 `scdevpass`。实测：`scdevpass` → `AccessDenied`，固定开发口令 → `uid=210`。按真实凭据传入后消失。 |
+| `record_resolution_served_sha_mismatch` | P4 受管产物（非产品） | `artifacts/backend/acceptance_record_identity.json` 绑旧 SHA（本地 `aea2c19b` / 远端 `6c8e07f7`），served 为 `d106d2dd`。走受管入口 `make daily.dev.acceptance_contract.resolve`（远端、`sc-backend-odoo-dev`、`sc_demo`，入口自身先 HTTP 校验 `served_sha==ACCEPTANCE_TARGET_SHA`，不符即 DENY）重生成后消失。 |
+| `nav_action_count_below_min` | **契约/部署闸门** | 本批新增 `角色首页` 契约行 → 工作区解析 `acceptance_action_count=90`（`role=business_config_admin`）；served 运行态仍是 `d106d2dd`（89）。 |
+
+前置修正后在同一 served SHA 重跑，结果收敛为**唯一失败**：
+
+- `runtime_identity`：PASS（served `d106d2dd`、`database=sc_demo`、`frontend_build_sha256=8bd99a72…f266`）。
+- `frontend`：PASS。
+- `contract`：**11/11 全 PASS**、`errors=[]`；custody 1 048 331 bytes / sha256 `7c249c12…`。
+- `login`：FAIL，`errors=["nav_action_count_below_min"]`；`nav_action_count=89`、违禁标签命中 0、
+  必需路径缺失 0、`role_code=business_config_admin` 一致。
+
+**裁定（不放宽断言）**：`DAILY_ACCEPTANCE_NAV_MIN_ACTIONS/MAX_ACTIONS` 由版本化契约解析——
+本批使契约 89 → 90，而运行态尚未承载本批改动，该断言**按设计必然失败**，且**不得**改成 89 来"通过"；
+它是"工作区契约与部署面不一致"的**正确告警**。回执记为 `status=failed`、`test_count=11`
+（= 契约面 `required_checks` 数），语义为"已诊断、未变前置不得重试"。
+
+### 11.4 `browser_login_return_authority`：前置未就绪，未执行
+
+`verify.nav.pro01r.route_authority.browser` 的登录主体是
+`nav_pro_{config_admin,system_admin,pm,project_member}`。实测日常库 `sc_demo` 上这 4 个登录**不存在**
+（`AUTH_REQUIRED`）；它们由受管入口 `make nav.pro01.runtime.prepare`（需在远端
+`sc-backend-odoo-dev` 组合内执行）建立。故本检查本轮**前置未就绪、未执行**；
+不得以 handler 诊断替代一次真实"点击打开 → 返回 → 标签/动作恢复"走查（该走查是详情收口的硬要求）。
+
+### 11.5 声明纠偏（本轮新增，未放宽任何断言）
+
+`daily_acceptance_readback` 的 `inputs` 补入 `artifacts/backend/acceptance_record_identity.json`：
+探针确实消费该受管解析产物（`ACCEPTANCE_RECORD_RESOLUTION`），原声明漏依赖，会允许
+"产物换了而结果被当作未变"。这是"输入列表必须包含测试工具与依赖"的最小修正。
+
+### 11.6 边界：本批回归口径 ≠ 运行态已对齐
+
+`daily_acceptance_readback` 的失败**不代表本批产品缺陷**，而是**本批尚未部署**。本批的产品面
+（`角色首页` 场景入口、场景/角色契约统一、`menu_service` 投影、前端 `navigationSelectionCore.js`）
+只有经 **commit → 合并 → 部署 + 模块升级**（新锚点是菜单记录）才会出现在 `sc_demo` 运行态；
+在此之前用户视角验收**不可能**通过，也无法用只读探针替代。
+
+### 11.7 账本现状
+
+| | 检查数 | reusable | not_run | stale | failed |
+| --- | --- | --- | --- | --- | --- |
+| §10.7 | 28 | 17 | 11 | 0 | 0 |
+| 本轮 | 28 | **18** | 9 | 0 | **1** |
+
+`not_run` 9 = 3 条 runtime 读回（`browser_login_return_authority` 前置未就绪；
+`business_entry_matrix_recollect` 已按复用优先执行、零走查；`daily_acceptance_readback` 另有回执）
++ `frontend_typecheck` + 5 条纯守卫目标（非零计数契约外，见 §8.3）。
+
+### 11.8 `frontend_typecheck`（本轮实测）+ 其声明输入修正
+
+- **实测**：`make verify.frontend.typecheck.strict`（`vue-tsc --noEmit` 主项目 + `-p tsconfig.strict.json`
+  严格子项目）于 HEAD `f631cf04` **EXIT=0**，无任何诊断输出；日志
+  `.runtime/eff/rec/frontend_typecheck.log`。即本批（唯一前端改动是 `navigationSelectionCore.js`）
+  之后，前端**全量严格类型检查通过**。
+- 仍**不建回执**：该目标不产出测试计数，按 §8.3 的既有契约无法进入可复用集（其"定向化/缓存化"
+  已由 §9.4 登记为后续 P4 项）。本轮结果以本记录 + 原始日志承载。
+- **声明输入修正（防假复用）**：该检查原 `inputs` 只列了 5 个文件（`tsconfig.json`、`package.json`
+  与 3 个被点名文件），**不含被检查的源码树**，若将来被记为可复用，`src` 中任一处改动都不会使其失效——
+  这是**不成立的复用边界**。现改为真实依赖集合：`frontend/apps/web/src`（**目录**，逐文件哈希）、
+  `tsconfig.json`、`tsconfig.strict.json`、`package.json`、`vite.config.ts`。未放宽任何断言。
