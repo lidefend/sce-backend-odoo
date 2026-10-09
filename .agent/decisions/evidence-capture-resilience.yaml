@@ -1,0 +1,100 @@
+decision:
+
+  id:
+    OPS-DECISION-003
+
+  topic:
+    evidence_capture_resilience
+
+  owner_approval:
+    status: confirmed
+    date: "2026-10-09"
+
+  decision:
+
+    observation_is_incremental_not_all_or_nothing:
+      statement: >
+        A declaration-driven surface walk is an iterative act. It must reach the
+        final all-passing state through bounded steps, and an interrupted step must
+        leave a usable partial observation instead of an empty conclusion.
+      per_entry_persistence:
+        - the probe writes its observation after every concluded entry
+        - OUT_DIR/entries.jsonl is append-only per-entry evidence
+        - OUT_DIR/summary.json is rewritten atomically as a partial document
+        - SIGINT/SIGTERM persist the reached conclusions before exiting
+      partial_observation_semantics:
+        - the document declares completeness: complete | partial
+        - a partial document proves only the entries it carries
+        - an unreached entry is recorded neither as a pass nor as a failure
+        - the recorder narrows planned_affected to the units actually executed
+        - an unreached unit therefore stays never-recorded and the next pass resumes it
+      bounded_session_recovery:
+        - a rejected intent (HTTP 401 on a declared intent) is detected on the response stream
+        - the probe re-authenticates once and retries only that entry
+        - a retried attempt's partial conclusions are discarded before the retry
+        - recovery failure aborts the pass as a partial observation instead of burning the selection
+        - a genuine product assertion failure is never retried
+      resume_within_identity:
+        - a previous partial document for the same identity is resumed
+        - identity = target revision + served bundle + base url + database + acting login + selected keys
+        - only entries inside the current selection are resumed
+
+  must_not:
+    - raise_an_unreached_entry_to_a_failure_just_because_the_surface_verdict_was_false
+    - retry_a_product_assertion_failure
+    - resume_a_sibling_batch_verdict_into_a_narrower_pass
+    - treat_a_partial_document_as_a_passed_surface
+
+  invalidates_a_partial_observation:
+    - served_bundle_change
+    - target_revision_change
+    - base_url_database_or_login_change
+    - selected_key_set_change
+    - probe_assertion_change
+
+  does_not_invalidate_a_partial_observation:
+    - a_narrower_follow_up_selection
+    - an_unrelated_entry_failure_in_a_sibling_batch
+
+  accepted_risk:
+
+    - id: masked_transient_by_retry
+      statement: >
+        A one-attempt retry after a lost session could mask a product defect that
+        only manifests as a navigation timeout.
+      control: >
+        The retry is reachable only when the runtime rejected an intent or the
+        entry raised, and it requires a successful re-authentication that
+        re-observes the released navigation. A product assertion failure returns
+        normally and is reported as the outcome it is; the retry never touches it.
+
+  enforcement:
+
+    code_authority:
+      - scripts/verify/business_entry_matrix_browser.mjs#buildOutput
+      - scripts/verify/business_entry_matrix_browser.mjs#persistOutput
+      - scripts/verify/business_entry_matrix_browser.mjs#appendEntry
+      - scripts/verify/business_entry_matrix_browser.mjs#restorePartialObservation
+      - scripts/verify/business_entry_matrix_browser.mjs#ensureSession
+      - scripts/verify/business_entry_matrix_scope.mjs#emit-results
+      - scripts/verify/business_entry_matrix_incremental.py#partial_fold_plan
+      - scripts/ops/evidence_scope.py#plan_units
+
+    mechanised_control:
+      completeness_field: summary.json#completeness
+      unreached_recording_rule: never recorded, so never blocked
+      retry_bound: SC_ENTRY_MATRIX_MAX_ATTEMPTS
+      unit_tests: scripts/verify/test_business_entry_matrix_incremental.py#PartialFoldPlanTests
+
+    related_decision:
+      - OPS-DECISION-002
+
+  reason:
+
+    - a_run_that_only_concludes_at_the_end_proves_nothing_when_it_is_interrupted
+    - one_lost_session_cascaded_into_83_empty_conclusions_on_a_single_failing_pass
+    - an_iterative_surface_must_assume_it_will_not_pass_in_one_pass
+    - unreached_and_failed_are_different_states_and_must_not_be_conflated
+
+  status:
+    active

@@ -166,22 +166,34 @@ if (args['emit-units']) {
   for (const entry of summary.entries || []) {
     if (entry && entry.entry) recorded.set(String(entry.entry), String(entry.status || 'checked'));
   }
-  // A selected key that produced no per-entry observation carries no proof
-  // whatsoever. That covers a probe that died before the entry loop (fatal) as
-  // well as an interrupted run; either way the unit stays non-reusable instead
-  // of being claimed as checked on the strength of the surface verdict alone.
+  // An interrupted run declares `completeness:partial` and carries only the
+  // entries it actually concluded. Those unreached units are not recorded — not
+  // as a pass and not as a failure — so the next incremental pass still sees
+  // them as never-recorded and resumes from them. A document that does not
+  // declare partiality (an older probe, or a fatal exit with no observation at
+  // all) keeps the fail-closed behaviour: a selected key with no per-entry
+  // observation carries no proof whatsoever and stays non-reusable.
+  const partial = String(summary.completeness || '') === 'partial';
   for (const key of (summary.selection && summary.selection.keys) || []) {
-    if (!recorded.has(String(key))) recorded.set(String(key), 'failed');
+    if (recorded.has(String(key))) continue;
+    if (partial) continue;
+    recorded.set(String(key), 'failed');
   }
   const executed = [...recorded.keys()].filter((key) => fingerprints.has(key));
   const statuses = {};
   for (const key of executed) statuses[key] = recorded.get(key);
+  // A partial observation did not finish the plan it was given. Narrow the
+  // declared plan to the units this run actually reached so the recorder never
+  // claims the unreached ones; they stay unrecorded and are picked up next pass.
+  const plannedAll = (plan.affected || []).map(String);
+  const plannedAffected = partial ? plannedAll.filter((key) => executed.includes(key)) : plannedAll;
   const results = {
     schema: RESULTS_SCHEMA,
     check: CHECK,
-    planned_affected: (plan.affected || []).map(String),
+    planned_affected: plannedAffected,
     executed_units: executed.map((key) => ({ id: key, fingerprint: fingerprints.get(key) })),
     results: statuses,
+    partial,
     surface_ok: summary.ok === true,
     surface_fatal: summary.fatal === true,
     source: summaryPath,
