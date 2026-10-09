@@ -157,6 +157,17 @@ class DailyRuntimePublishedFaceConvergeTests(unittest.TestCase):
         with self.assertRaisesRegex(module.ConvergeError, "invalid"):
             self._converge(b"", returncode=1)
 
+    def test_converge_surfaces_the_module_upgrade_tail(self) -> None:
+        # A bare reason code costs another full diagnostic round trip: the entry
+        # must carry the upgrade output that explains the failure.
+        failed = evidence(
+            status="FAIL",
+            reason="MODULE_UPGRADE_FAILED",
+            module_upgrade_tail="guard.codex.fast.upgrade: mode=fast blocked the upgrade",
+        )
+        with self.assertRaisesRegex(module.ConvergeError, "codex.fast.upgrade"):
+            self._converge(failed)
+
 
 COUPLE_TARGET = "daily.runtime.candidate.release:"
 FACE_TARGET = "daily.runtime.published_face.converge:"
@@ -196,6 +207,14 @@ class DailyRuntimeCandidateReleaseCouplingTests(unittest.TestCase):
             self._makefile_text(),
             r"DAILY_RUNTIME_PUBLISHED_FACE_UPGRADE_MODULES \?= smart_core",
         )
+
+    def test_face_freeze_declares_the_intentional_module_upgrade(self) -> None:
+        # ``guard.codex.fast.upgrade`` blocks an undeclared upgrade, so a freeze that
+        # cannot declare its own upgrade intent can never make new projection code
+        # live and silently re-freezes the previous contract.
+        source = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn('"CODEX_NEED_UPGRADE": "1"', source)
+        self.assertIn('"CODEX_MODULES": ",".join(modules)', source)
 
     def _recipe(self, target: str) -> str:
         lines = self._makefile_text().splitlines()

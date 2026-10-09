@@ -104,6 +104,12 @@ env.update(
         "PRODUCT_MENU_CATALOG_FULL_PRODUCT_LOGIN": login,
         "PRODUCT_MENU_CATALOG_PRODUCT_KEYS": product_keys_arg,
         "CONFIRM_DAILY_PRODUCT_NAVIGATION_SNAPSHOT": "RELEASE_EXACT_DAILY_PRODUCT_NAVIGATION",
+        # ``guard.codex.fast.upgrade`` refuses a module upgrade under CODEX_MODE=fast
+        # unless the intent is declared.  This entry upgrades exactly the projection
+        # modules whose code must be live before the face is frozen, so it declares
+        # that intent the same way the governed ``make dev.mk`` upgrade wrappers do.
+        "CODEX_NEED_UPGRADE": "1",
+        "CODEX_MODULES": ",".join(modules),
     }
 )
 make_bin = shutil.which("make") or "/usr/bin/make"
@@ -339,9 +345,11 @@ def converge(
     if not isinstance(evidence, dict):
         raise ConvergeError("daily runtime published-face evidence is invalid")
     if evidence.get("status") != "PASS":
+        tail = str(evidence.get("module_upgrade_tail") or "").strip()
         raise ConvergeError(
             "daily runtime published face did not converge: "
             f"{evidence.get('reason') or 'unknown'} (snapshot={evidence.get('products')})"
+            + (f" module_upgrade_tail={tail[-800:]}" if tail else "")
         )
     if (
         evidence.get("expected_sha") != expected_sha
