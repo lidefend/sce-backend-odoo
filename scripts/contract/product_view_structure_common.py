@@ -174,6 +174,23 @@ def collect_references(occurrences: Iterable[dict[str, Any]]) -> dict[str, list[
     return {"field_occurrences": fields, "action_occurrences": actions}
 
 
+SCENE_ENTRY_POLICIES = ("scene_entry",)
+
+
+def is_declared_scene_entry(row: dict[str, Any]) -> bool:
+    """A declared scene entry carries no business action and no model surface.
+
+    Route A identity: such an entry is authorized through its native menu anchor
+    plus the server-owned role-scoped contract projection, and it executes through
+    the declared ``entry_target`` / ``target_scene_key`` instead of an action
+    model. It therefore has no view structure to export and must not be treated as
+    a model-bearing released capability.
+    """
+    declared = {str(row.get("disposition_policy") or "").strip(),
+                str(row.get("entry_target_policy") or "").strip()}
+    return any(policy in declared for policy in SCENE_ENTRY_POLICIES)
+
+
 def policy_menu_rows(policy: dict[str, Any]) -> list[dict[str, Any]]:
     rows_by_menu: dict[str, dict[str, Any]] = {}
     conflicts: list[str] = []
@@ -185,6 +202,12 @@ def policy_menu_rows(policy: dict[str, Any]) -> list[dict[str, Any]]:
                 continue
             menu_xmlid = str(row.get("menu_xmlid") or "").strip()
             model = str(row.get("res_model") or "").strip()
+            if is_declared_scene_entry(row):
+                if not menu_xmlid or not str(row.get("target_scene_key") or "").strip():
+                    conflicts.append("declared scene entry requires menu_xmlid and target_scene_key")
+                elif model:
+                    conflicts.append("declared scene entry must not declare res_model")
+                continue
             if not menu_xmlid or not model:
                 conflicts.append("released capability requires menu_xmlid and res_model")
                 continue

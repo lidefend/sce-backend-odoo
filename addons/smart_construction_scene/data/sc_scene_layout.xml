@@ -532,7 +532,7 @@
                         'default_actions': ['open_cost_analysis', 'open_finance_center', 'open_risk_center'],
                         'focus_zones': ['domain_entries', 'frequent_entries']
                     },
-                    'cost_manager': {
+                    'cost': {
                         'default_actions': ['open_cost_analysis', 'open_finance_center', 'open_contract_center'],
                         'focus_zones': ['domain_entries']
                     }

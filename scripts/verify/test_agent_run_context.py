@@ -16,6 +16,7 @@ class RunContextTest(unittest.TestCase):
         self.git('init', '-q', '-b', 'fix/test')
         self.git('config', 'user.name', 'Test')
         self.git('config', 'user.email', 'test@example.invalid')
+        self.write('make/guards.mk', 'verify.test:\n\t@true\n')
         self.write('source/a.py', 'one')
         self.write('tools/test.py', 'tool')
         self.git('add', '.')
@@ -52,6 +53,23 @@ class RunContextTest(unittest.TestCase):
 
     def check(self):
         return summary(self.root)['checks']['unit']
+
+    def test_undeclared_kind_is_rejected(self):
+        del self.run['checks']['unit']['kind']; self.save()
+        with self.assertRaises(RunError): resolve_run(self.root)
+
+    def test_declaration_level_verdict_is_rejected(self):
+        for verdict in ('status', 'detail'):
+            self.run['checks']['unit'][verdict] = 'PASS'; self.save()
+            with self.assertRaises(RunError): resolve_run(self.root)
+            del self.run['checks']['unit'][verdict]
+
+    def test_unknown_make_target_is_rejected(self):
+        self.run['checks']['unit']['target'] = 'verify.does.not.exist'; self.save()
+        with self.assertRaises(RunError): resolve_run(self.root)
+
+    def test_reuse_summary_reports_unreusable_checks(self):
+        self.assertEqual(summary(self.root)['check_reuse_summary'], {'not_run': 1})
 
     def test_direct_branch_resolution(self):
         self.assertEqual(resolve_run(self.root)[1]['id'], 'TEST')
@@ -145,6 +163,55 @@ class RunContextTest(unittest.TestCase):
     def test_runtime_receipt_never_auto_reused(self):
         self.run['environment']['kind'] = 'runtime'; self.save(); self.receipt()
         self.assertEqual(self.check()['status'], 'stale')
+
+    def test_runtime_check_without_declared_readback_is_never_reused(self):
+        # A runtime *check* with no declared authoritative readback must never be
+        # reused, even in an offline environment: nothing proves the environment.
+        self.run['checks']['unit']['kind'] = 'runtime'; self.save()
+        self.receipt()
+        result = self.check()
+        self.assertEqual(result['status'], 'stale', result)
+        self.assertIn('authoritative environment readback', result['reason'])
+
+    def test_runtime_check_reuses_through_an_unchanged_readback(self):
+        self.write('.runtime/probe.json', '{"served_sha": "aaaa"}')
+        self.run['checks']['unit']['kind'] = 'runtime'
+        self.run['checks']['unit']['readback'] = {'artifact': '.runtime/probe.json'}
+        self.save()
+        self.receipt()
+        result = self.check()
+        self.assertEqual(result['status'], 'reusable', result)
+        self.assertEqual(result['test_count'], 2)
+
+    def test_runtime_check_readback_change_invalidates(self):
+        # A regenerated readback for a changed environment is a changed input, so
+        # the runtime receipt is invalidated exactly like any other input.
+        self.write('.runtime/probe.json', '{"served_sha": "aaaa"}')
+        self.run['checks']['unit']['kind'] = 'runtime'
+        self.run['checks']['unit']['readback'] = {'artifact': '.runtime/probe.json'}
+        self.save()
+        self.receipt()
+        self.write('.runtime/probe.json', '{"served_sha": "bbbb"}')
+        self.assertEqual(self.check()['status'], 'stale')
+
+    def test_runtime_check_missing_readback_blocks_the_run(self):
+        self.run['checks']['unit']['kind'] = 'runtime'
+        self.run['checks']['unit']['readback'] = {'artifact': '.runtime/absent.json'}
+        self.save()
+        with self.assertRaises(RunError):
+            begin(self.root, 'unit')
+
+    def test_readback_outside_the_runtime_evidence_area_is_rejected(self):
+        for artifact in ('source/a.py', '.git/config', 'probe.json'):
+            self.run['checks']['unit']['readback'] = {'artifact': artifact}; self.save()
+            with self.assertRaises(RunError):
+                resolve_run(self.root)
+
+    def test_readback_declaration_shape_is_validated(self):
+        for bad in ({}, {'artifact': '.runtime/probe.json', 'extra': 1}, {'artifact': 7}, 'probe.json'):
+            self.run['checks']['unit']['readback'] = bad; self.save()
+            with self.assertRaises(RunError):
+                resolve_run(self.root)
 
     def test_input_declaration_change_invalidates(self):
         self.receipt(); self.run['checks']['unit']['inputs'].append('record.md'); self.save()

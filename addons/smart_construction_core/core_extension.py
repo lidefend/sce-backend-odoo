@@ -4,6 +4,8 @@ from copy import deepcopy
 from typing import Any, Dict, List
 from odoo.tools.safe_eval import safe_eval
 
+from odoo.addons.smart_construction_core.services import role_surface_contract as _role_surface_contract
+from odoo.addons.smart_construction_core.services import role_catalog_contract as _role_catalog_contract
 from odoo.addons.smart_core.core.delivery_menu_defaults import register_current_project_scope_model
 from odoo.addons.smart_core.core.project_context import (
     register_business_scope_exempt_model,
@@ -750,6 +752,17 @@ def _sc_inject_workflow_contract(env, contract, source, *, model, view_type):
 
 ROLE_SURFACE_OVERRIDES = _policy_maps.ROLE_SURFACE_OVERRIDES
 
+def _contract_role_surface_overrides() -> dict:
+    """Role landing surface projected from the versioned product contract.
+
+    The released role landing policy is contract data; the code map above keeps
+    the menu/exposure declarations plus a declared baseline landing that the
+    contract must cover.  Landing candidates are always taken from the contract
+    so adjusting the first hop stays a metadata change with zero code drift.
+    """
+    overrides, _receipt = _role_surface_contract.apply_contract_role_landing(ROLE_SURFACE_OVERRIDES)
+    return overrides
+
 ROLE_GROUPS_EXPLICIT = _policy_maps.ROLE_GROUPS_EXPLICIT
 
 ROLE_GROUPS_CAPABILITY_FALLBACK = _policy_maps.ROLE_GROUPS_CAPABILITY_FALLBACK
@@ -899,12 +912,49 @@ def _build_project_action_rows(env, user) -> List[Dict[str, Any]]:
     return _system_init_rows.build_project_action_rows(env, user)
 
 
-def smart_core_identity_profile(env):
-    return {
-        "role_surface_map": ROLE_SURFACE_OVERRIDES,
+def _contract_role_catalog_maps() -> tuple[dict, dict]:
+    """Project the versioned role catalog over the code-declared role maps.
+
+    The shipped default role set and every role's group binding are contract
+    data; the code map below stays as the declared baseline that the contract
+    must cover, and as the fail-safe fallback when the contract is unreadable.
+    A runtime may therefore extend the role set (bound to real res.groups)
+    without a code change, and a role can never widen real group visibility.
+    """
+    base = {
+        "role_precedence": ROLE_PRECEDENCE,
         "role_groups_explicit": ROLE_GROUPS_EXPLICIT,
         "role_groups_capability_fallback": ROLE_GROUPS_CAPABILITY_FALLBACK,
-        "role_precedence": ROLE_PRECEDENCE,
+        "role_meta": {
+            role: {
+                key: meta[key]
+                for key in ("label", "identity_role", "exclusive_surface")
+                if key in meta
+            }
+            for role, meta in ROLE_SURFACE_OVERRIDES.items()
+            if isinstance(meta, dict)
+        },
+        "capability_role_codes": (),
+        "capability_fallback_order": (),
+        "synthetic_role_codes": (),
+    }
+    return _role_catalog_contract.apply_contract_role_catalog(base)
+
+
+def smart_core_identity_profile(env):
+    del env
+    role_catalog_maps, _receipt = _contract_role_catalog_maps()
+    return {
+        "role_surface_map": _contract_role_surface_overrides(),
+        "role_groups_explicit": role_catalog_maps.get("role_groups_explicit") or ROLE_GROUPS_EXPLICIT,
+        "role_groups_capability_fallback": role_catalog_maps.get("role_groups_capability_fallback")
+        or ROLE_GROUPS_CAPABILITY_FALLBACK,
+        "role_precedence": role_catalog_maps.get("role_precedence") or ROLE_PRECEDENCE,
+        "role_meta": role_catalog_maps.get("role_meta") or {},
+        "capability_role_codes": role_catalog_maps.get("capability_role_codes") or (),
+        "capability_fallback_order": role_catalog_maps.get("capability_fallback_order") or (),
+        "synthetic_role_codes": role_catalog_maps.get("synthetic_role_codes") or (),
+        "role_catalog_receipt": _receipt,
     }
 
 
@@ -1181,7 +1231,7 @@ def get_system_init_fact_contributions(env, user, context=None):
     try:
         module_facts = {
             "role_surface_override_provider": _hook_facts.role_surface_override_provider(
-                ROLE_SURFACE_OVERRIDES
+                _contract_role_surface_overrides()
             ),
         }
 

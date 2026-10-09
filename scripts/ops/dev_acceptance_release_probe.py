@@ -301,6 +301,7 @@ def probe_login(
     nav_forbidden_labels: list[str] | None = None,
     nav_required_paths: list[str] | None = None,
     nav_required_actions: dict[str, int] | None = None,
+    expected_role_code: str | None = None,
 ) -> dict[str, Any]:
     if not login or not password:
         return {"enabled": False}
@@ -388,21 +389,50 @@ def probe_login(
         ]
         result["checks"]["nav_node_count"] = len(nav_rows)
         result["checks"]["nav_action_count"] = sum(1 for row in nav_rows if row.get("action_id"))
-        result["checks"]["nav_leaf_count"] = sum(1 for row in nav_rows if row.get("child_count") == 0)
+        nav_leaf_count = sum(1 for row in nav_rows if row.get("child_count") == 0)
+        result["checks"]["nav_leaf_count"] = nav_leaf_count
+        # The count authority resolves the product's *effective menu count*, and a
+        # released product menu may be a contract-declared scene/route entry that
+        # owns no business action. Counting only action-bearing nodes therefore
+        # under-counts the contracted surface by exactly those declared entries, so
+        # the contracted population is the released entry population: every
+        # navigation leaf owns either an action or a declared entry target, which
+        # the canonical projection already enforces fail-closed.
+        result["checks"]["nav_admitted_entry_count"] = nav_leaf_count
+        release_gate = (
+            navigation.get("meta", {}).get("platform_release_gate")
+            if isinstance(navigation, dict) and isinstance(navigation.get("meta"), dict)
+            else None
+        )
+        gate_kept_leaf_count = release_gate.get("kept_leaf_count") if isinstance(release_gate, dict) else None
+        result["checks"]["nav_gate_kept_leaf_count"] = gate_kept_leaf_count
+        if isinstance(gate_kept_leaf_count, int) and gate_kept_leaf_count > 0 and nav_leaf_count != gate_kept_leaf_count:
+            # The released entry population is what the navigation release gate
+            # actually admitted; a served leaf set that disagrees with it is drift,
+            # not a counting difference.
+            errors.append("nav_entry_count_gate_mismatch")
         result["checks"]["nav_forbidden_label_hits"] = forbidden_hits[:50]
         result["checks"]["nav_required_path_misses"] = required_path_misses
         result["checks"]["nav_required_action_mismatches"] = required_action_mismatches
         result["checks"]["nav_paths_sample"] = [row["path"] for row in nav_rows[:80]]
         if not result["checks"]["role_code"]:
             errors.append("role_code_missing")
+        # Contract-driven acceptance: the menu count is only determinate for a
+        # locked role, so a runtime identity that drifts away from the declared
+        # principal role must fail rather than be silently measured against the
+        # wrong locked surface.
+        if expected_role_code:
+            result["checks"]["role_code_expected"] = expected_role_code
+            if result["checks"]["role_code"] != expected_role_code:
+                errors.append("role_code_unexpected")
         if result["checks"]["nav_node_count"] <= 0:
             errors.append("nav_empty")
         if result["checks"]["nav_action_count"] <= 0:
             errors.append("nav_action_empty")
-        if nav_min_actions is not None and result["checks"]["nav_action_count"] < nav_min_actions:
-            errors.append("nav_action_count_below_min")
-        if nav_max_actions is not None and result["checks"]["nav_action_count"] > nav_max_actions:
-            errors.append("nav_action_count_above_max")
+        if nav_min_actions is not None and result["checks"]["nav_admitted_entry_count"] < nav_min_actions:
+            errors.append("nav_entry_count_below_min")
+        if nav_max_actions is not None and result["checks"]["nav_admitted_entry_count"] > nav_max_actions:
+            errors.append("nav_entry_count_above_max")
         if forbidden_hits:
             errors.append("nav_forbidden_label_hits")
         if required_path_misses:
@@ -1001,6 +1031,7 @@ def main() -> int:
     parser.add_argument("--nav-forbidden-labels", default=os.getenv("ACCEPTANCE_NAV_FORBIDDEN_LABELS", ""))
     parser.add_argument("--nav-required-paths", default=os.getenv("ACCEPTANCE_NAV_REQUIRED_PATHS", ""))
     parser.add_argument("--nav-required-actions", default=os.getenv("ACCEPTANCE_NAV_REQUIRED_ACTIONS", ""))
+    parser.add_argument("--nav-principal-role", default=os.getenv("ACCEPTANCE_NAV_PRINCIPAL_ROLE", ""))
     parser.add_argument("--contract-declaration", default=os.getenv("ACCEPTANCE_CONTRACT_DECLARATION", ""))
     parser.add_argument("--record-resolution", default=os.getenv("ACCEPTANCE_RECORD_RESOLUTION", ""))
     parser.add_argument("--schema-asset", default=os.getenv("ACCEPTANCE_SCHEMA_ASSET", ""))
@@ -1037,6 +1068,7 @@ def main() -> int:
             nav_forbidden_labels=_split_csv(args.nav_forbidden_labels),
             nav_required_paths=_split_csv(args.nav_required_paths),
             nav_required_actions=_parse_required_actions(args.nav_required_actions),
+            expected_role_code=args.nav_principal_role.strip() or None,
         ) if runtime_identity.get("status") == "PASS" else {"enabled": bool(args.login), "status": "NOT_RUN", "reason": "runtime_identity_not_verified"},
     }
     if not args.contract_declaration:

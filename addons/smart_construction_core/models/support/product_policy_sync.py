@@ -16,6 +16,7 @@ from odoo.addons.smart_construction_core.services.locked_menu_policy_contract im
     LockedMenuPolicyContractError,
     assert_policy_matches_locked_contract,
     canonical_group_label,
+    declared_scene_entry_key,
     load_locked_menu_policy_contract,
 )
 
@@ -63,10 +64,15 @@ USER_ACCEPTANCE_PRODUCT_MENU_XMLIDS = {
 # roadmap, duplicate or incomplete menu facts unpublished. They remain valid
 # XMLIDs/action authorities for migration and audit, but policy convergence
 # must not reactivate their native menu rows after the final XML overlay.
+#
+# ``menu_sc_project_ledger_group_v2`` is intentionally absent: it is a
+# RELEASED_FOUNDATION level-two group in the P1 product menu contract
+# (config/product_menu_contract_v1.json, 项目中心 / 项目台账) and holds the
+# released ``menu_sc_project_project`` record entry, so suppressing it here
+# would hide a released menu.
 LOCKED_TARGET_UNPUBLISHED_MENU_XMLIDS = {
     "smart_construction_core.menu_sc_workbench_my_approval_fact",
     "smart_construction_core.menu_sc_project_overview_group_v2",
-    "smart_construction_core.menu_sc_project_ledger_group_v2",
     "smart_construction_core.menu_sc_project_planning_group_v2",
     "smart_construction_core.menu_sc_project_organization_group_v2",
     "smart_construction_core.menu_sc_project_milestone_group_v2",
@@ -517,16 +523,31 @@ class ScProductPolicy(models.Model):
             for menu in group.get("menus") or []:
                 row = dict(menu)
                 menu_xmlid = _text(row.get("menu_xmlid") or row.get("page_key") or row.get("menu_key"))
-                action_xmlid = _text(row.get("action_xmlid")) or FORMAL_ACTION_ONLY_MENU_TARGETS.get(menu_xmlid, "")
+                # A declared scene entry carries no business action: its identity is
+                # the native menu anchor plus the declared scene, and it is authorized
+                # by the same (menu_id, action_id=0) pair as any other entry. It is
+                # never routed through an action-only target.
+                scene_key = declared_scene_entry_key(row)
+                action_xmlid = "" if scene_key else (
+                    _text(row.get("action_xmlid")) or FORMAL_ACTION_ONLY_MENU_TARGETS.get(menu_xmlid, "")
+                )
                 if FORMAL_BUSINESS_DECISION_REQUIRED_TARGETS.get(menu_xmlid) == action_xmlid:
                     raise LockedMenuPolicyContractError(
                         "BUSINESS_DECISION_REQUIRED",
                         f"{product_key} unresolved disposition {menu_xmlid} -> {action_xmlid}",
                     )
                 menu_rec = self.env.ref(menu_xmlid, raise_if_not_found=False) if menu_xmlid else False
-                action = menu_rec.action if menu_rec else (
-                    self._resolve_or_create_formal_initialization_action(action_xmlid) if action_xmlid else False
-                )
+                if scene_key:
+                    if not menu_rec:
+                        raise LockedMenuPolicyContractError(
+                            "LOCKED_MENU_BASELINE_NORMALIZATION_MISMATCH",
+                            f"{product_key} declared scene entry requires a native menu anchor {menu_xmlid}",
+                        )
+                    action = False
+                else:
+                    action = menu_rec.action if menu_rec else (
+                        self._resolve_or_create_formal_initialization_action(action_xmlid) if action_xmlid else False
+                    )
                 if not menu_rec and not action_xmlid:
                     raise LockedMenuPolicyContractError(
                         "LOCKED_MENU_BASELINE_NORMALIZATION_MISMATCH",
@@ -538,28 +559,34 @@ class ScProductPolicy(models.Model):
                     and menu_xmlid not in LOCKED_TARGET_UNPUBLISHED_MENU_XMLIDS
                 ):
                     menu_rec.sudo().write({"active": True})
-                if not action:
+                if not action and not scene_key:
                     raise LockedMenuPolicyContractError(
                         "LOCKED_MENU_BASELINE_NORMALIZATION_MISMATCH",
                         f"{product_key} unresolved action {action_xmlid or menu_xmlid}",
                     )
-                resolved_action_xmlid = action.get_external_id().get(action.id, "") or ""
+                resolved_action_xmlid = (action.get_external_id().get(action.id, "") or "") if action else ""
                 if action_xmlid and resolved_action_xmlid != action_xmlid:
                     raise LockedMenuPolicyContractError(
                         "LOCKED_MENU_BASELINE_NORMALIZATION_MISMATCH",
                         f"{product_key} action identity mismatch {menu_xmlid}",
                     )
-                action_id = int(action.id or 0)
+                action_id = int(action.id or 0) if action else 0
                 menu_id = int(menu_rec.id or 0) if menu_rec else 0
-                action_res_model = _text(getattr(action, "res_model", ""))
+                action_res_model = _text(getattr(action, "res_model", "")) if action else ""
                 locked_res_model = _text(row.get("res_model") or row.get("model"))
                 if locked_res_model and action_res_model != locked_res_model:
                     raise LockedMenuPolicyContractError(
                         "LOCKED_MENU_BASELINE_NORMALIZATION_MISMATCH",
                         f"{product_key} action model mismatch {menu_xmlid}",
                     )
-                res_model = action_res_model or locked_res_model
-                route = "/a/%s?menu_id=%s" % (action_id, menu_id) if menu_id else "/a/%s" % action_id
+                if scene_key:
+                    # A declared scene entry has no action route: the server owns the
+                    # scene channel and the frontend never derives it.
+                    res_model = ""
+                    route = "/s/%s" % scene_key
+                else:
+                    res_model = action_res_model or locked_res_model
+                    route = "/a/%s?menu_id=%s" % (action_id, menu_id) if menu_id else "/a/%s" % action_id
                 row.update(
                     {
                         "menu_xmlid": menu_xmlid,

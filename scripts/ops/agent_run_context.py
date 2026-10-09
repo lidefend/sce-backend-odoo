@@ -21,6 +21,29 @@ class RunError(ValueError):
     pass
 
 
+MAKE_TARGET_RE = re.compile(r'^([A-Za-z0-9][A-Za-z0-9_.-]*)\s*:(?!=)')
+PHONY_RE = re.compile(r'^\s*\.PHONY\s*:(.*)$')
+
+
+def defined_make_targets(root: Path) -> set[str]:
+    """Every target the Makefile fragments declare, so a check cannot cite a
+    non-existent entry point: an unexecutable check can never be recorded or
+    reused, which silently degrades the ledger into repeated re-runs."""
+    targets: set[str] = set()
+    files = [root / 'Makefile', *sorted((root / 'make').glob('*.mk'))]
+    for path in files:
+        if not path.is_file():
+            continue
+        for line in path.read_text(encoding='utf-8', errors='replace').splitlines():
+            match = MAKE_TARGET_RE.match(line)
+            if match:
+                targets.add(match.group(1))
+            phony = PHONY_RE.match(line)
+            if phony:
+                targets.update(phony.group(1).split())
+    return targets
+
+
 def git(root: Path, *args: str) -> str:
     result = subprocess.run(['git', '-C', str(root), *args], capture_output=True, text=True)
     if result.returncode:
@@ -89,14 +112,26 @@ def resolve_run(root: Path) -> tuple[str, dict] | None:
     for field in ('goal', 'record'):
         if not local_path(root, run[field]).is_file():
             raise RunError(f'missing {field} file')
-    for check in run['checks'].values():
+    make_targets = defined_make_targets(root)
+    for check_id, check in run['checks'].items():
         if not isinstance(check, dict) or not re.fullmatch(r'verify\.[a-zA-Z0-9_.-]+', check.get('target', '')):
-            raise RunError('check must name a registered verify target')
+            raise RunError(f'check {check_id} must name a registered verify target')
+        if check.get('kind') not in ('offline', 'runtime'):
+            raise RunError(f"check {check_id} must declare kind offline|runtime; "
+                           'an undeclared kind is never reusable and silently forces a rerun')
+        for verdict in ('status', 'detail'):
+            if verdict in check:
+                raise RunError(f'check {check_id} must not declare {verdict}; the receipt written by '
+                               'make agent.run.record is the only verdict; keep narrative in the run record')
+        if check['target'] not in make_targets:
+            raise RunError(f"check {check_id} names target {check['target']!r}, which no Makefile fragment defines")
         if (not isinstance(check.get('inputs'), list) or not check['inputs']
                 or not all(isinstance(value, str) for value in check['inputs'])):
             raise RunError('check requires explicit dependency path strings')
         for value in check['inputs']:
             dependency_path(root, value)
+        if 'readback' in check:
+            readback_path(root, check['readback'])
     if run.get('status') not in ('planned', 'active', 'blocked', 'verification_pending', 'completed', 'superseded'):
         raise RunError('invalid run status')
     return relative, run
@@ -120,8 +155,45 @@ def dependency_path(root: Path, value: str) -> Path:
     return path
 
 
+READBACK_ROOTS = ('.runtime', 'artifacts')
+
+
+def readback_path(root: Path, readback) -> str:
+    """Validate a declared authoritative-environment readback artifact.
+
+    A runtime receipt may only be reused through the exact artifact that proves
+    the environment identity it recorded; the artifact is hashed into the
+    check's dependency state below. It must live in the ignored runtime-evidence
+    area, never in a source/tool path, so it can never masquerade as code.
+    """
+    if (not isinstance(readback, dict) or set(readback) != {'artifact'}
+            or not isinstance(readback['artifact'], str) or not readback['artifact']):
+        raise RunError('readback must declare exactly an artifact path string')
+    value = readback['artifact']
+    path = Path(value)
+    if path.is_absolute() or '..' in path.parts:
+        raise RunError(f'expected repository-relative path: {value}')
+    if not path.parts or path.parts[0] not in READBACK_ROOTS:
+        raise RunError('readback artifact must live under .runtime or artifacts')
+    candidate = root / path
+    if candidate.is_symlink():
+        raise RunError(f'symlink path is unsupported: {value}')
+    if not candidate.resolve().is_relative_to(root.resolve()):
+        raise RunError(f'path escapes worktree: {value}')
+    return value
+
+
 def dependency_state(root: Path, check: dict) -> dict:
     state = {}
+    if 'readback' in check:
+        value = readback_path(root, check['readback'])
+        path = root / value
+        if not path.exists():
+            state[value] = None
+        elif path.is_dir():
+            raise RunError('readback artifact must be a file, not a directory')
+        else:
+            state[value] = [hashlib.sha256(path.read_bytes()).hexdigest(), path.stat().st_mode & 0o777]
     for value in check['inputs']:
         path = dependency_path(root, value)
         if not path.exists():
@@ -167,7 +239,9 @@ def evaluate(root: Path, run: dict, check_id: str) -> dict:
             return dict(result, status='failed', reason='previous failure unchanged; diagnose before retry')
         if type(receipt.get('test_count')) is not int or receipt['test_count'] <= 0:
             raise RunError('non-zero test count missing')
-        if check.get('kind') != 'offline' or run['environment'].get('kind') != 'offline':
+        if 'readback' not in check and check.get('kind') != 'offline':
+            raise RunError('runtime evidence requires authoritative environment readback')
+        if run['environment'].get('kind') != 'offline':
             raise RunError('runtime evidence requires authoritative environment readback')
         return dict(result, status='reusable', reason='declared inputs and original log unchanged', test_count=receipt['test_count'])
     except (RunError, OSError, KeyError, TypeError) as exc:
@@ -182,8 +256,11 @@ def summary(root: Path) -> dict:
     paths = delta_paths(root, run['baseline_sha'])
     outside = [p for p in paths if not any(p == s or (s.endswith('/') and p.startswith(s)) for s in run['scope'])]
     checks = {key: evaluate(root, run, key) for key in run['checks']}
+    reuse: dict[str, int] = {}
+    for value in checks.values():
+        reuse[value['status']] = reuse.get(value['status'], 0) + 1
     state = 'closed' if run['status'] in ('completed', 'superseded') else ('reconcile' if outside else 'resolved')
-    return {'status': state, 'run': relative,
+    return {'status': state, 'run': relative, 'check_reuse_summary': reuse,
             'branch': run['branch'], 'head': git(root, 'rev-parse', 'HEAD'),
             'dirty': git(root, 'status', '--porcelain=v1', '--untracked-files=all'),
             'baseline_sha': run['baseline_sha'], 'run_status': run['status'], 'record': run['record'],

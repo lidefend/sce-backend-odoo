@@ -7,6 +7,14 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from acceptance_action_count import (  # noqa: E402
+    ActionCountAuthorityError,
+    resolve_action_count,
+    resolve_daily_principal_role,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -16,6 +24,13 @@ CLI = ROOT / "scripts/verify/frontend_acceptance_environment_cli.mjs"
 
 def main() -> int:
     policy = json.loads(POLICY.read_text(encoding="utf-8"))["profiles"]["daily"]
+    try:
+        accepted_action_count = resolve_action_count(policy, ROOT)
+        principal_role = resolve_daily_principal_role(ROOT)
+    except (ActionCountAuthorityError, KeyError, OSError, json.JSONDecodeError) as exc:
+        print("[daily_dev_acceptance_env_guard] FAIL")
+        print(f"- action count authority unresolved: {exc}")
+        return 2
     child_env = os.environ.copy()
     child_env["SC_ACCEPTANCE_PROFILE"] = "daily"
     child_env["SC_ACCEPTANCE_FRONTEND_URL"] = os.getenv("ACCEPTANCE_BASE_URL", "").strip()
@@ -35,8 +50,9 @@ def main() -> int:
         "ENV": policy["environment"],
         "ENV_FILE": ".env.dev",
         "DB_NAME": policy["database"],
-        "ACCEPTANCE_NAV_MIN_ACTIONS": str(policy["navigation_policy"]["min_actions"]),
-        "ACCEPTANCE_NAV_MAX_ACTIONS": str(policy["navigation_policy"]["max_actions"]),
+        "ACCEPTANCE_NAV_MIN_ACTIONS": str(accepted_action_count),
+        "ACCEPTANCE_NAV_MAX_ACTIONS": str(accepted_action_count),
+        "ACCEPTANCE_NAV_PRINCIPAL_ROLE": principal_role,
         "ACCEPTANCE_NAV_FORBIDDEN_LABELS": ",".join(policy["navigation_policy"]["forbidden_labels"]),
         "ACCEPTANCE_NAV_REQUIRED_PATHS": ",".join(policy["navigation_policy"]["required_paths"]),
         "ACCEPTANCE_PROBE_OUTPUT": "artifacts/backend/dev_acceptance_release_probe.json",

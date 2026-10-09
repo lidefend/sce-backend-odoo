@@ -663,7 +663,7 @@ def list_scene_entries() -> List[Dict[str, Any]]:
         },
         {
             "code": "portal.dashboard",
-            "name": "角色首页",
+            "name": "门户工作台",
             "target": {"route": "/"},
         },
         {
@@ -750,7 +750,7 @@ def list_scene_entries() -> List[Dict[str, Any]]:
             "name": "角色首页",
             "target": {
                 "route": "/s/workspace.home",
-                "menu_xmlid": "smart_construction_core.menu_sc_history_todo",
+                "menu_xmlid": "smart_construction_core.menu_sc_workspace_home",
                 "intent": "workspace.home.enter",
             },
         },

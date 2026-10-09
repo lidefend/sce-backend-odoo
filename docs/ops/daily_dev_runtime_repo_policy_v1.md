@@ -74,6 +74,37 @@ The tool may run from the governance/main worktree while reading a separate
 clean topic worktree through `DAILY_CANDIDATE_SOURCE_REPOSITORY`; that source
 must have the authoritative GitHub `origin`, exact branch, and exact SHA.
 
+A daily candidate deployment has two faces that were previously released by
+separate lanes: the code/rendering face (bundle sync, module upgrade, served
+revision, built frontend) and the published product face (the active
+edition-release snapshot the navigation release gate actually reads). Only the
+published face decides whether an entry may be opened, so deploying a contract
+change without re-freezing it silently dropped declared, user-visible entries
+from the gated navigation. Deploy a candidate through the single coupled entry:
+
+```bash
+CONFIRM_DAILY_CANDIDATE_BUNDLE_SYNC=SYNC_EXACT_DAILY_CANDIDATE_SHA_WITH_BUNDLE \
+CONFIRM_DAILY_RUNTIME_PUBLISHED_FACE=REFRESH_DAILY_RUNTIME_PUBLISHED_FACE_FROM_LOCKED_CONTRACT \
+make daily.runtime.candidate.release \
+  DAILY_CANDIDATE_SOURCE_REPOSITORY=/absolute/path/to/topic-worktree \
+  DAILY_CANDIDATE_SOURCE_BRANCH=feature/example \
+  DAILY_CANDIDATE_EXPECTED_SHA=<candidate-full-sha> \
+  DAILY_CANDIDATE_EXPECTED_OLD_SHA=<current-daily-full-sha> \
+  DAILY_RUNTIME_SSH_HOST=sc-root \
+  DAILY_RUNTIME_PUBLISHED_FACE_LOGIN=<daily-full-product-login>
+```
+
+It binds the exact candidate revision, re-freezes every published product
+snapshot from the locked contract through
+`release.daily_product_navigation.converge`, reloads the served runtime and
+re-proves the released face with
+`verify.daily_dev.product_menu_release_gate.guard`. The run fails closed when the
+contract, the product policy, the active snapshot, the gate and the gated
+navigation disagree, so a stale published face cannot be deployed silently. The
+refresh step alone is also available as
+`make daily.runtime.published_face.converge`. Releasing the two faces through
+separate manual lanes is not an accepted daily procedure.
+
 After owner acceptance, open or update the PR and merge through protected
 `main`. A later main-mode deployment replaces the candidate runtime. Candidate
 rejection returns to the previously recorded accepted SHA; it never rewrites

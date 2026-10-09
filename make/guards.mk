@@ -137,11 +137,31 @@ verify.daily_dev.runtime_repo.clean:
 	 bash scripts/ops/daily_dev_runtime_repo_guard.sh
 	@$(MAKE) --no-print-directory verify.daily_dev.customer_addons.runtime
 
+# Role-scoped acceptance count mechanism: the accepted navigation count is only
+# determinate once a concrete role is locked, so this check owns the resolver and
+# its own entry point instead of riding on the broad daily env guard (narrow
+# binding keeps input-based reuse narrow).
+.PHONY: verify.acceptance_action_count.unit
+verify.acceptance_action_count.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/acceptance_action_count.py scripts/verify/test_acceptance_action_count.py
+	@python3 scripts/verify/test_acceptance_action_count.py
+
+# The product view structure contract guard fails closed before it inspects the
+# tracked baseline, and the guard and the runtime exporter share
+# scripts/contract/product_view_structure_common.py. Its unit test is therefore
+# the owning-layer entry for the declared scene entry shape (route A: a scene
+# entry carries a target_scene_key, not a res_model). This binds that test to a
+# registered target instead of riding on the governed runtime export lane.
+.PHONY: verify.product_view_structure.contract.unit
+verify.product_view_structure.contract.unit: guard.prod.forbid
+	@PYTHONPATH="$(ROOT_DIR)" python3 -m unittest scripts.verify.test_product_view_structure_contract
+
 verify.daily_dev.acceptance.env.guard:
 	@node scripts/verify/frontend_acceptance_environment_test.mjs
 	@node scripts/verify/frontend_form_editability_discovery_test.mjs
-	@python3 -m py_compile scripts/verify/daily_dev_acceptance_env_guard.py
-	@SC_ACCEPTANCE_PROFILE=daily SC_ACCEPTANCE_EXPECTED_SHA="$$(git rev-parse HEAD)" ENV="$(ENV)" ENV_FILE="$(ENV_FILE)" DB_NAME="$(DB_NAME)" ACCEPTANCE_BASE_URL="$(ACCEPTANCE_BASE_URL)" ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" ACCEPTANCE_NAV_MIN_ACTIONS="$(ACCEPTANCE_NAV_MIN_ACTIONS)" ACCEPTANCE_NAV_MAX_ACTIONS="$(ACCEPTANCE_NAV_MAX_ACTIONS)" ACCEPTANCE_NAV_FORBIDDEN_LABELS="$(ACCEPTANCE_NAV_FORBIDDEN_LABELS)" ACCEPTANCE_NAV_REQUIRED_PATHS="$(ACCEPTANCE_NAV_REQUIRED_PATHS)" ACCEPTANCE_NAV_REQUIRED_ACTIONS="$(ACCEPTANCE_NAV_REQUIRED_ACTIONS)" ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" FRONTEND_DIST_DIR="$(FRONTEND_DIST_DIR)" VITE_API_BASE_URL="$(VITE_API_BASE_URL)" VITE_API_PROXY_TARGET="$(VITE_API_PROXY_TARGET)" VITE_ODOO_DB="$(VITE_ODOO_DB)" VITE_ODOO_DB_LOCKED="$(VITE_ODOO_DB_LOCKED)" VITE_APP_ENV="$(VITE_APP_ENV)" VITE_BUILD_MODE="$(VITE_BUILD_MODE)" VITE_BUILD_OUT_DIR="$(VITE_BUILD_OUT_DIR)" VITE_DELIVERY_MODE="$(VITE_DELIVERY_MODE)" VITE_FEATURE_FLAGS="$(VITE_FEATURE_FLAGS)" VITE_LITE_CONTRACT_PILOT="$(VITE_LITE_CONTRACT_PILOT)" VITE_LITE_CONTRACT_ROLLOUT="$(VITE_LITE_CONTRACT_ROLLOUT)" VITE_PLATFORM_ADMIN_DB="$(VITE_PLATFORM_ADMIN_DB)" VITE_TENANT="$(VITE_TENANT)" python3 scripts/verify/daily_dev_acceptance_env_guard.py
+	@python3 -m py_compile scripts/verify/daily_dev_acceptance_env_guard.py scripts/verify/acceptance_action_count.py
+	@python3 scripts/verify/test_acceptance_action_count.py
+	@SC_ACCEPTANCE_PROFILE=daily SC_ACCEPTANCE_EXPECTED_SHA="$$(git rev-parse HEAD)" ENV="$(ENV)" ENV_FILE="$(ENV_FILE)" DB_NAME="$(DB_NAME)" ACCEPTANCE_BASE_URL="$(ACCEPTANCE_BASE_URL)" ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" ACCEPTANCE_NAV_MIN_ACTIONS="$(ACCEPTANCE_NAV_MIN_ACTIONS)" ACCEPTANCE_NAV_MAX_ACTIONS="$(ACCEPTANCE_NAV_MAX_ACTIONS)" ACCEPTANCE_NAV_FORBIDDEN_LABELS="$(ACCEPTANCE_NAV_FORBIDDEN_LABELS)" ACCEPTANCE_NAV_REQUIRED_PATHS="$(ACCEPTANCE_NAV_REQUIRED_PATHS)" ACCEPTANCE_NAV_REQUIRED_ACTIONS="$(ACCEPTANCE_NAV_REQUIRED_ACTIONS)" ACCEPTANCE_NAV_PRINCIPAL_ROLE="$(ACCEPTANCE_NAV_PRINCIPAL_ROLE)" ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" FRONTEND_DIST_DIR="$(FRONTEND_DIST_DIR)" VITE_API_BASE_URL="$(VITE_API_BASE_URL)" VITE_API_PROXY_TARGET="$(VITE_API_PROXY_TARGET)" VITE_ODOO_DB="$(VITE_ODOO_DB)" VITE_ODOO_DB_LOCKED="$(VITE_ODOO_DB_LOCKED)" VITE_APP_ENV="$(VITE_APP_ENV)" VITE_BUILD_MODE="$(VITE_BUILD_MODE)" VITE_BUILD_OUT_DIR="$(VITE_BUILD_OUT_DIR)" VITE_DELIVERY_MODE="$(VITE_DELIVERY_MODE)" VITE_FEATURE_FLAGS="$(VITE_FEATURE_FLAGS)" VITE_LITE_CONTRACT_PILOT="$(VITE_LITE_CONTRACT_PILOT)" VITE_LITE_CONTRACT_ROLLOUT="$(VITE_LITE_CONTRACT_ROLLOUT)" VITE_PLATFORM_ADMIN_DB="$(VITE_PLATFORM_ADMIN_DB)" VITE_TENANT="$(VITE_TENANT)" python3 scripts/verify/daily_dev_acceptance_env_guard.py
 
 # Daily runtime drift guard for the published product navigation.
 #

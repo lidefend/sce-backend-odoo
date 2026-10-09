@@ -278,6 +278,7 @@ class EditionReleaseSnapshotService:
                         "action_id": int(menu.get("action_id") or 0),
                         "menu_xmlid": _text(menu.get("menu_xmlid")),
                         "res_model": _text(menu.get("res_model")),
+                        "scene_key": _text(menu.get("scene_key") or menu.get("target_scene_key")),
                     }
                 )
         return rows
@@ -294,6 +295,7 @@ class EditionReleaseSnapshotService:
                 "action_id": int(row.get("action_id") or 0),
                 "menu_xmlid": _text(row.get("menu_xmlid")),
                 "res_model": _text(row.get("res_model")),
+                "scene_key": _text(row.get("scene_key")),
             }
             for row in sorted(pages, key=lambda item: _text(item.get("page_key")))
         ]
@@ -354,6 +356,7 @@ class EditionReleaseSnapshotService:
             "action_id": _to_int(page.get("action_id")),
             "menu_xmlid": _text(page.get("menu_xmlid")),
             "res_model": _text(page.get("res_model")),
+            "scene_key": _text(page.get("scene_key")),
         }
 
     def _issue(self, code: str, page: dict[str, Any], message: str) -> dict[str, Any]:

@@ -66,14 +66,50 @@ async function main() {
       const page = await context.newPage();
       const state = capture(page);
       await login(page, role);
-      await expectList(page, `/a/${META.admin_action_id}`, `${role}.user_management`);
+      const formSpec = (META.admin_form_by_role || {})[role] || {};
+      const adminPath = String(formSpec.route || (META.admin_route_by_role || {})[role] || META.admin_action_route || '').trim()
+        || `/a/${META.admin_action_id}`;
+      await expectList(page, adminPath, `${role}.user_management`);
       const body = await page.locator('body').innerText();
-      check(/用户账号与权限|用户账号/.test(body), `${role}: user management title missing`);
+      const adminName = String(META.admin_action_name || '').trim();
+      check(adminName.length > 0 && body.includes(adminName),
+        `${role}: contract-declared entry name ${JSON.stringify(adminName)} missing`);
+      // The list must expose a usable row selection control (the bulk-select box
+      // the acceptance lane drives), then a row must open its record form.
+      const rowCheckbox = page.locator('.desktop-record-table tbody tr input[type=checkbox]').first();
+      await rowCheckbox.waitFor({ timeout: 45000 });
       const firstRow = page.locator('.desktop-record-table tbody tr').first();
       await firstRow.waitFor({ timeout: 45000 });
       await firstRow.click();
       await page.waitForURL((url) => url.pathname.startsWith('/f/') || url.pathname.startsWith('/r/'), { timeout: 45000 });
-      await page.locator('[data-field-name="sc_user_role_group_ids"]').waitFor({ timeout: 45000 });
+      // The contract entry declares the surface's writability. A writable
+      // surface must render the governance permission field, which the
+      // contract-declared form layout scopes inside a chapter: activate the
+      // declared chapter, then require the field. A read-only surface only has
+      // to render fields declared by its own form contract.
+      const permField = String(formSpec.permission_field || '').trim();
+      const permLabel = String(formSpec.permission_label || '').trim();
+      const writable = String(formSpec.allowed_operation || '').trim() !== 'read';
+      if (writable) {
+        check(permField.length > 0 && permLabel.length > 0,
+          `${role}: writable surface declares no permission field`);
+        const fieldLocator = page.locator(`[data-field-name="${permField}"]`).first();
+        if (!(await fieldLocator.isVisible().catch(() => false))) {
+          const chapterEntry = page.getByText(permLabel, { exact: true }).first();
+          await chapterEntry.waitFor({ timeout: 45000 });
+          await chapterEntry.click();
+        }
+        await fieldLocator.waitFor({ timeout: 45000 });
+      } else {
+        // Read-only surface: the contract only fixes the entry, the model and
+        // the allowed operation; which fields the read-only record view renders
+        // is a renderer decision.  Assert the bound model route and that the
+        // record actually rendered fields, and do not infer a field set.
+        const contractModel = String(formSpec.model || '').trim();
+        check(new URL(page.url()).pathname.includes(contractModel),
+          `${role}: record route ${new URL(page.url()).pathname} is outside contract model ${contractModel}`);
+        await page.locator('[data-field-name]').first().waitFor({ timeout: 45000 });
+      }
       check(state.http500.length === 0 && state.pageErrors.length === 0, `${role}: browser/runtime errors`);
       report[role] = 'PASS';
       await context.close();

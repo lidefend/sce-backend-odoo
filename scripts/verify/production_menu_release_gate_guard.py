@@ -252,13 +252,14 @@ def _assert_runtime_gate(product_key: str, policy_meta: dict, baseline: dict) ->
     delivery_env = env(user=int(full_product_user.id))  # noqa: F821
     native_facts = MenuFactService(delivery_env).export_visible_menu_facts()
     native_nav = MenuService._menu_fact_tree_as_native(native_facts.tree)
+    role_surface = {
+        "role_code": "business_full",
+        "exposure_policy_declared": True,
+        "discover_installed_capabilities": True,
+    }
     delivery = DeliveryEngine(delivery_env).build(
         data={
-            "role_surface": {
-                "role_code": "business_full",
-                "exposure_policy_declared": True,
-                "discover_installed_capabilities": True,
-            },
+            "role_surface": dict(role_surface),
             "scenes": [],
             "capabilities": [],
         },
@@ -278,6 +279,27 @@ def _assert_runtime_gate(product_key: str, policy_meta: dict, baseline: dict) ->
         raise AssertionError(f"{product_key} forbidden runtime menu paths: {forbidden_paths[:20]}")
     if not gated_nav:
         raise AssertionError(f"{product_key} gated runtime nav is empty")
+    # Matching the policy and the gate page count is not proof that the face can
+    # be served: ``system.init`` still runs the canonical navigation projection
+    # last, and a published node that owns neither a target nor children makes
+    # that projection fail closed for every user of the product.  Run the same
+    # projection here so the guard fails where the runtime would.
+    canonical_authority = MenuService(delivery_env).build_route_authority(
+        dict(role_surface),
+        nav=gated_nav,
+    )
+    # Mirror the exact tail of ``system.init``: reconcile the tree with its
+    # response-local authority, then project.  A node that survives both and
+    # still owns neither a target nor children makes the runtime fail closed.
+    canonical_source = MenuService.filter_nav_by_route_authority(gated_nav, canonical_authority)
+    try:
+        canonical_nav = MenuService.project_canonical_navigation(
+            canonical_source, canonical_authority
+        )
+    except Exception as exc:
+        raise AssertionError(
+            f"{product_key} published face fails the canonical navigation projection: {exc}"
+        ) from exc
     top_groups = [_node_label(node) for node in _formal_group_nodes(gated_nav) if isinstance(node, dict)]
     missing_groups = [label for label in EXPECTED_FORMAL_TOP_GROUPS if label not in top_groups]
     if missing_groups:
@@ -302,6 +324,7 @@ def _assert_runtime_gate(product_key: str, policy_meta: dict, baseline: dict) ->
         "gate_page_count": int(gate.get("page_count") or 0),
         "raw_nav_node_count": sum(1 for _path, _node in _walk(raw_nav)),
         "gated_nav_node_count": sum(1 for _path, _node in _walk(gated_nav)),
+        "canonical_projected_node_count": sum(1 for _path, _node in _walk(canonical_nav)),
         "top_groups": top_groups,
         "guard_user": _text(full_product_user.login),
         "gate_meta": gate_meta,

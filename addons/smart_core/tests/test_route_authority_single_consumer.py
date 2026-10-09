@@ -118,6 +118,9 @@ class RouteAuthoritySingleConsumerTest(unittest.TestCase):
             "params": None,
             "self": None,
         }
+        scope["_select_route_entry"] = _compile(
+            _extract_method(HANDLER_PATH, None, "_select_route_entry"), scope
+        )
         handle = _compile(_extract_method(HANDLER_PATH, "RouteAuthorityValidateHandler", "handle"), scope)
         env = SimpleNamespace(companies=SimpleNamespace(ids=[21]), user=SimpleNamespace(id=210))
         owner = SimpleNamespace(
@@ -158,6 +161,60 @@ class RouteAuthoritySingleConsumerTest(unittest.TestCase):
         result = call({"action_id": 424242})
         self.assertFalse(result.ok)
         self.assertEqual(result.reason, "ROUTE_ACTION_NOT_AUTHORIZED")
+
+    def test_the_validate_gate_resolves_an_action_through_its_action_scoped_entry(self):
+        # The product navigation legitimately points a menu at an action that
+        # also has an action-scoped route (no carrier menu).  The SPA resolves
+        # that tuple through the action-scoped entry, so the gate must agree
+        # instead of demanding a globally unique action.
+        call = self._handler()
+        self.published["primary_actions"].append({
+            "action_id": 777,
+            "menu_id": 0,
+            "model": "sc.financing.loan",
+            "action_xmlid": "smart_construction_core.action_loan",
+            "route_kind": "ADMIN_ROUTE",
+            "context_requirements": {},
+        })
+        result = call({"action_id": 777})
+        self.assertTrue(result.ok)
+        self.assertEqual(result.data["menu_id"], 0)
+        self.assertEqual(result.data["route_kind"], "ADMIN_ROUTE")
+
+    def test_the_validate_gate_keeps_a_carrier_only_action_resolvable(self):
+        result = self._handler()({"action_id": 777})
+        self.assertTrue(result.ok)
+        self.assertEqual(result.data["menu_id"], 547)
+
+    def test_the_validate_gate_fails_closed_on_unresolvable_carrier_ambiguity(self):
+        call = self._handler()
+        self.published["primary_actions"].append({
+            "action_id": 777,
+            "menu_id": 984,
+            "model": "sc.financing.loan",
+            "action_xmlid": "smart_construction_core.action_loan",
+            "route_kind": "PRIMARY_NAV",
+            "context_requirements": {},
+        })
+        result = call({"action_id": 777})
+        self.assertFalse(result.ok)
+        self.assertEqual(result.reason, "ROUTE_ACTION_NOT_AUTHORIZED")
+
+    def test_the_validate_gate_still_enforces_scoped_context_requirements(self):
+        call = self._handler()
+        self.published["admin_actions"].append({
+            "action_id": 777,
+            "menu_id": 0,
+            "model": "sc.financing.loan",
+            "action_xmlid": "smart_construction_core.action_loan",
+            "route_kind": "CONTEXTUAL_ROUTE",
+            "context_requirements": {"required_query": ["project_id"]},
+        })
+        denied = call({"action_id": 777})
+        self.assertFalse(denied.ok)
+        self.assertEqual(denied.reason, "ROUTE_CONTEXT_REQUIRED")
+        allowed = call({"action_id": 777, "project_id": 31})
+        self.assertTrue(allowed.ok)
 
     # ------------------------------------------------------------------ #
     # the dispatch carrier pin -- the workspace hands back one route

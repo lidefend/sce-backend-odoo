@@ -1119,6 +1119,13 @@ verify.repository.public_old_sha:
 	@python3 scripts/verify/test_public_old_commit_probe.py
 	@python3 scripts/verify/public_old_commit_probe.py --url "$(OLD_PUBLIC_COMMIT_URL)"
 
+.PHONY: verify.role_surface.landing.contract.unit
+verify.role_surface.landing.contract.unit: guard.prod.forbid
+	@python3 -m py_compile addons/smart_construction_core/services/locked_menu_policy_contract.py addons/smart_construction_core/services/role_surface_contract.py scripts/release/test_locked_menu_policy_contract.py
+	@python3 scripts/verify/baseline_policy_integrity_guard.py
+	@python3 scripts/release/test_locked_menu_policy_contract.py
+	@echo "[verify.role_surface.landing.contract.unit] PASS"
+
 .PHONY: verify.construction.create_defaults.unit
 verify.construction.create_defaults.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_construction_create_default_hooks

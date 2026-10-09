@@ -188,4 +188,51 @@ assert.throws(
   (error) => error instanceof CanonicalNavigationError && error.code === 'CANONICAL_NAVIGATION_STATE_MISMATCH',
 );
 
-console.log('[canonical_navigation_model_test] PASS cases=12');
+// A contract-declared scene entry (no business action, explicit entry_target)
+// must project as an enabled target instead of failing closed.
+const declaredAuthority: RouteAuthorityContract = {
+  ...structuredClone(authority),
+  role_home_actions: [{
+    action_xmlid: '', route_kind: 'ROLE_HOME_ACTION', menu_id: 1004,
+    menu_xmlid: 'smart_construction_core.menu_sc_workspace_home', action_id: 0,
+    name: '角色首页', model: '', view_modes: [], domain: '', context: '',
+    route: '/s/workspace.home', scene_key: 'workspace.home',
+    entry_target: { type: 'scene', scene_key: 'workspace.home', route: '/s/workspace.home' },
+    allowed_operation: 'read', required_capability: 'menu_container_visible',
+    context_requirements: {}, source: 'nav.declared_entry',
+  }],
+};
+const declaredNav: NavNode[] = [{
+  key: 'system.entry.1004', menu_id: 1004, label: '角色首页',
+  canonical_navigation: {
+    schema_version: '1.0', key: 'system.entry.1004', menu_id: 1004, action_id: null,
+    parent_chain: [], label: '角色首页', icon: null, route: '/s/workspace.home',
+    authority: {
+      state: 'allowed', source: 'nav.declared_entry',
+      key: 'ROLE_HOME_ACTION:smart_construction_core.menu_sc_workspace_home:workspace.home',
+    },
+    state: 'enabled', disabled_reason: null, order: 0,
+  },
+  children: [],
+}];
+const declaredModel = createCanonicalNavigationModel(declaredNav, declaredAuthority);
+const declaredNode = canonicalNavigationNodeByMenuId(declaredModel.nodes, 1004);
+assert.ok(declaredNode);
+assert.equal(declaredNode.state, 'enabled');
+assert.equal(declaredNode.route, '/s/workspace.home');
+assert.equal(declaredNode.actionId, null);
+assert.equal(
+  declaredNode.authority.key,
+  'ROLE_HOME_ACTION:smart_construction_core.menu_sc_workspace_home:workspace.home',
+);
+
+// The projection must still reject an actionless leaf with no declared authority.
+assert.throws(
+  () => createCanonicalNavigationModel(
+    structuredClone(declaredNav),
+    { ...structuredClone(authority), role_home_actions: [] },
+  ),
+  (error) => error instanceof CanonicalNavigationError && error.code === 'CANONICAL_NAVIGATION_EMPTY_NODE',
+);
+
+console.log('[canonical_navigation_model_test] PASS cases=14');

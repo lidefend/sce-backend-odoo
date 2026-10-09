@@ -47,6 +47,21 @@ REQUIRED = {
         "collectContractV2ButtonStatusById",
         "status.disabled",
     ),
+    "docs/architecture/navigation_dual_track_contract_v1.md": (
+        "## 2.7 目标态职责表",
+        "入口身份（用户看到哪个入口）",
+        "**R-A1**",
+        "**R-A3**",
+        "**R-A5**",
+        "## 2.8 过渡期 → 目标态切换判据",
+        "## 2.9 §4.3 与 menu_scene_anchor_policy 的口径统一",
+    ),
+    "docs/architecture/menu_scene_anchor_policy_v1.md": (
+        "## Identity (Single Source)",
+        "declared by the contract",
+        "must not be replaced by scene",
+        "## Transition → Target Switch",
+    ),
 }
 
 FORBIDDEN = {

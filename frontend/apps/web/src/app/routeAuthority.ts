@@ -54,14 +54,30 @@ function positiveInteger(value: unknown): number {
   return Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : 0;
 }
 
-function normalizeEntry(value: unknown, expectedKind: RouteAuthorityKind, allowContainer = false): RouteAuthorityEntry | null {
+function normalizeEntry(
+  value: unknown,
+  expectedKind: RouteAuthorityKind,
+  allowContainer = false,
+  allowDeclaredTarget = false,
+): RouteAuthorityEntry | null {
   const row = record(value);
   const actionId = positiveInteger(row.action_id);
   const actionXmlid = String(row.action_xmlid || '').trim();
   const menuId = positiveInteger(row.menu_id);
   const menuXmlid = String(row.menu_xmlid || '').trim();
   const menuBoundAction = actionId > 0 && menuId > 0 && Boolean(menuXmlid);
-  if ((!actionId || (!actionXmlid && !menuBoundAction)) && !(allowContainer && menuId > 0)) return null;
+  // A contract-declared target entry (scene / record / url) carries no business
+  // action; it is authorized by the same (menu_id, action_id 0) pair the backend
+  // ``role_home_actions`` bucket publishes.  Admission stays fail-closed: the
+  // entry must declare an explicit entry_target or scene_key.
+  const declaredTarget = allowDeclaredTarget
+    && menuId > 0
+    && (Object.keys(record(row.entry_target)).length > 0 || Boolean(String(row.scene_key || '').trim()));
+  if (
+    (!actionId || (!actionXmlid && !menuBoundAction))
+    && !(allowContainer && menuId > 0)
+    && !declaredTarget
+  ) return null;
   if (String(row.route_kind || '') !== expectedKind) return null;
   return {
     action_xmlid: actionXmlid,
@@ -91,8 +107,12 @@ export function normalizeRouteAuthorityContract(value: unknown): RouteAuthorityC
   if (String(row.contract_version || '') !== '2.0.0') return null;
   if (String(row.schema_version || '') !== '2.0.0') return null;
   const scope = record(row.principal_scope);
-  const normalizeBucket = (key: string, kind: RouteAuthorityKind) => (
-    Array.isArray(row[key]) ? row[key].map((item) => normalizeEntry(item, kind)).filter(Boolean) as RouteAuthorityEntry[] : []
+  const normalizeBucket = (key: string, kind: RouteAuthorityKind, allowDeclaredTarget = false) => (
+    Array.isArray(row[key])
+      ? row[key]
+        .map((item) => normalizeEntry(item, kind, false, allowDeclaredTarget))
+        .filter(Boolean) as RouteAuthorityEntry[]
+      : []
   );
   return {
     contract_version: '2.0.0',
@@ -112,7 +132,7 @@ export function normalizeRouteAuthorityContract(value: unknown): RouteAuthorityC
         })
         .filter(Boolean) as RouteAuthorityEntry[]
       : [],
-    role_home_actions: normalizeBucket('role_home_actions', 'ROLE_HOME_ACTION'),
+    role_home_actions: normalizeBucket('role_home_actions', 'ROLE_HOME_ACTION', true),
     contextual_actions: normalizeBucket('contextual_actions', 'CONTEXTUAL_ROUTE'),
     admin_actions: normalizeBucket('admin_actions', 'ADMIN_ROUTE'),
     denied_actions: normalizeBucket('denied_actions', 'DENIED'),

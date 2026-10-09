@@ -4,11 +4,13 @@ from __future__ import annotations
 from typing import Any
 
 from odoo.addons.smart_construction_scene import scene_registry
+from odoo.addons.smart_construction_core.services import role_surface_contract as _role_surface_contract
+from odoo.addons.smart_construction_core.services import role_catalog_contract as _role_catalog_contract
 
 ROLE_SURFACE_OVERRIDES = {
     "business_config_admin": {
         "label": "业务配置管理员",
-        "landing_scene_candidates": ["projects.list", "projects.ledger", "projects.intake"],
+        "landing_scene_candidates": ["workspace.home", "projects.list", "projects.ledger", "projects.intake"],
         "menu_xmlids": [
             "smart_construction_core.menu_sc_root",
             "smart_construction_core.menu_sc_business_config_center",
@@ -20,7 +22,7 @@ ROLE_SURFACE_OVERRIDES = {
     },
     "owner": {
         "label": "企业负责人",
-        "landing_scene_candidates": ["workspace.home", "projects.list", "project.initiation", "projects.intake"],
+        "landing_scene_candidates": ["workspace.home", "projects.list", "projects.intake", "project.initiation"],
         "menu_xmlids": [
             "smart_construction_core.menu_sc_project_center",
             "smart_construction_core.menu_sc_contract_center",
@@ -30,11 +32,12 @@ ROLE_SURFACE_OVERRIDES = {
         "label": "项目经理",
         "landing_scene_candidates": [
             "workspace.home",
+            "portal.dashboard",
+            "projects.ledger",
+            "projects.list",
+            "projects.intake",
             "project.management",
             "project.dashboard",
-            "projects.intake",
-            "projects.list",
-            "projects.ledger",
             "my_work.workspace",
         ],
         "menu_xmlids": [
@@ -60,12 +63,13 @@ ROLE_SURFACE_OVERRIDES = {
     "executive": {
         "label": "管理层",
         "landing_scene_candidates": [
+            "workspace.home",
             "portal.dashboard",
             "project.management",
             "projects.list",
             "projects.ledger",
-            "project.initiation",
             "projects.intake",
+            "project.initiation",
         ],
         "menu_xmlids": [
             "smart_construction_core.menu_sc_root",
@@ -108,6 +112,7 @@ ROLE_GROUPS_CAPABILITY_FALLBACK = {
 ROLE_PRECEDENCE = ("business_config_admin", "executive", "owner", "pm", "finance")
 
 NAV_MENU_SCENE_MAP = {
+    "smart_construction_core.menu_sc_workspace_home": "workspace.home",
     "smart_construction_core.menu_sc_project_initiation": "projects.intake",
     "smart_construction_core.menu_sc_project_manage": "project.management",
     "smart_construction_core.menu_sc_project_project": "projects.list",
@@ -447,13 +452,48 @@ def get_intent_handler_contributions():
     return []
 
 
-def smart_core_identity_profile(env):
-    del env
-    return {
-        "role_surface_map": ROLE_SURFACE_OVERRIDES,
+def _contract_role_surface_overrides() -> dict:
+    """Project the versioned contract role landing surface for this provider."""
+    overrides, _receipt = _role_surface_contract.apply_contract_role_landing(ROLE_SURFACE_OVERRIDES)
+    return overrides
+
+
+def _contract_role_catalog_maps() -> tuple[dict, dict]:
+    """Project the versioned role catalog over this provider's role maps."""
+    base = {
+        "role_precedence": ROLE_PRECEDENCE,
         "role_groups_explicit": ROLE_GROUPS_EXPLICIT,
         "role_groups_capability_fallback": ROLE_GROUPS_CAPABILITY_FALLBACK,
-        "role_precedence": ROLE_PRECEDENCE,
+        "role_meta": {
+            role: {
+                key: meta[key]
+                for key in ("label", "identity_role", "exclusive_surface")
+                if key in meta
+            }
+            for role, meta in ROLE_SURFACE_OVERRIDES.items()
+            if isinstance(meta, dict)
+        },
+        "capability_role_codes": (),
+        "capability_fallback_order": (),
+        "synthetic_role_codes": (),
+    }
+    return _role_catalog_contract.apply_contract_role_catalog(base)
+
+
+def smart_core_identity_profile(env):
+    del env
+    role_catalog_maps, _receipt = _contract_role_catalog_maps()
+    return {
+        "role_surface_map": _contract_role_surface_overrides(),
+        "role_groups_explicit": role_catalog_maps.get("role_groups_explicit") or ROLE_GROUPS_EXPLICIT,
+        "role_groups_capability_fallback": role_catalog_maps.get("role_groups_capability_fallback")
+        or ROLE_GROUPS_CAPABILITY_FALLBACK,
+        "role_precedence": role_catalog_maps.get("role_precedence") or ROLE_PRECEDENCE,
+        "role_meta": role_catalog_maps.get("role_meta") or {},
+        "capability_role_codes": role_catalog_maps.get("capability_role_codes") or (),
+        "capability_fallback_order": role_catalog_maps.get("capability_fallback_order") or (),
+        "synthetic_role_codes": role_catalog_maps.get("synthetic_role_codes") or (),
+        "role_catalog_receipt": _receipt,
     }
 
 
@@ -537,7 +577,7 @@ def smart_core_extend_system_init(data, env, user):
             "domain_key": "construction",
             "root_xmlids": ["smart_construction_core.menu_sc_root"],
             "scene_codes": ["projects.intake", "projects.list", "projects.ledger", "my_work.workspace", "project.management"],
-            "role_surface_overrides": ROLE_SURFACE_OVERRIDES,
+            "role_surface_overrides": _contract_role_surface_overrides(),
         }
 
         ext_facts["smart_construction_scene"] = module_facts

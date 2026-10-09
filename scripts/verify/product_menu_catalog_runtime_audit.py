@@ -88,7 +88,7 @@ LAYER_DEFINITIONS = {
 }
 
 SCENE_ONLY_MENU_SCENE_KEYS = {
-    "smart_construction_core.menu_sc_history_todo": "workspace.home",
+    "smart_construction_core.menu_sc_workspace_home": "workspace.home",
 }
 
 DEV_TOKENS = (

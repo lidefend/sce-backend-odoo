@@ -7,11 +7,14 @@
   "goal": ".agent/goals/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT.yaml",
   "record": "docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md",
   "scope": [
+    "AGENTS.md",
     ".agent/",
     "docs/",
     "make/",
     "scripts/",
-    "frontend/"
+    "frontend/",
+    "addons/",
+    "config/"
   ],
   "environment": {
     "kind": "offline",
@@ -25,15 +28,11 @@
         "frontend/apps/web/src/app/routeAuthority.ts",
         "frontend/apps/web/scripts/route_authority_guard_test.ts"
       ],
-      "kind": "offline",
-      "status": "PASS",
-      "detail": "[login_return_authority] PASS cases=13"
+      "kind": "offline"
     },
     "frontend_page_pattern_reference_parity": {
       "target": "verify.frontend.page_pattern_reference_parity.unit",
       "kind": "offline",
-      "status": "PASS",
-      "detail": "surfaces=16; page_pattern_reference_ledger entries=67 owned_gaps=0",
       "inputs": [
         "scripts/verify/frontend_page_pattern_reference_parity_guard.py",
         "scripts/verify/test_frontend_page_pattern_reference_parity_guard.py",
@@ -43,76 +42,94 @@
     },
     "frontend_typecheck": {
       "target": "verify.frontend.typecheck.strict",
-      "status": "PASS",
       "inputs": [
+        "frontend/apps/web/src",
         "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
         "frontend/apps/web/package.json",
-        "frontend/apps/web/src/app/routeAuthority.ts",
-        "frontend/apps/web/src/views/LoginView.vue",
-        "frontend/apps/web/scripts/route_authority_guard_test.ts"
+        "frontend/apps/web/vite.config.ts"
       ],
-      "detail": "executed as: scripts/dev/pnpm_exec.sh -C frontend/apps/web typecheck"
+      "kind": "offline"
     },
     "ci_local_iteration": {
       "target": "verify.baseline.iteration.execution.policy",
-      "status": "PASS",
-      "detail": "L1_only (dirty); make ci.local.iteration PASS",
       "inputs": [
-        "make/frontend.mk",
+        "make/ci.mk",
         "make/codex.mk",
-        "scripts/ops/agent_run_context.py"
-      ]
+        "make/frontend.mk",
+        "scripts/ci/test_trusted_scan_scope.py",
+        "scripts/ci/trusted_scan_scope.py",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/frontend_dev_incremental.py"
+      ],
+      "kind": "offline"
+    },
+    "daily_runtime_main_bundle_sync": {
+      "target": "verify.daily.runtime.main.bundle_sync",
+      "inputs": [
+        "scripts/ops/daily_runtime_bundle_sync.py",
+        "scripts/ops/test_daily_runtime_bundle_sync.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
     },
     "daily_runtime_candidate_bundle_sync": {
       "target": "verify.daily.runtime.candidate.bundle_sync",
-      "status": "PASS",
-      "detail": "remote checkout 3d90df05, origin_main_mutated=false",
       "inputs": [
-        "make/codex.mk",
-        "scripts/ops/daily_runtime_bundle_sync.py"
-      ]
+        "scripts/ops/daily_candidate_bundle_sync.py",
+        "scripts/ops/test_daily_candidate_bundle_sync.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
     },
     "daily_runtime_source_revision_align": {
       "target": "verify.daily.runtime.source_revision.align",
-      "status": "PASS",
-      "detail": "served.source_revision=3d90df05",
       "inputs": [
         "scripts/ops/daily_runtime_source_revision_align.py",
-        "scripts/ops/test_daily_runtime_source_revision_align.py"
-      ]
+        "scripts/ops/test_daily_runtime_source_revision_align.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
     },
     "daily_runtime_frontend_build": {
       "target": "verify.daily.runtime.frontend.build",
-      "status": "PASS",
-      "detail": "frontend_build_sha256=8bd99a72f15a15bd1159d7c65961a5af3ca3dc39ceb3747cdfc8836c83f8f266, entry=index-BCF7hFFL.js",
       "inputs": [
         "scripts/ops/daily_runtime_frontend_build_align.py",
-        "scripts/ops/test_daily_runtime_frontend_build_align.py"
-      ]
+        "scripts/ops/test_daily_runtime_frontend_build_align.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
     },
     "browser_login_return_authority": {
       "target": "verify.nav.pro01r.route_authority.browser",
-      "status": "PASS",
-      "detail": "negative retired /a/1176 -> /s/projects.list (no access-denied); positive /s/projects.list return preserved",
       "inputs": [
         "frontend/apps/web/src/app/routeAuthority.ts",
         "frontend/apps/web/src/app/sessionExpiredRecovery.ts",
         "frontend/apps/web/src/views/LoginView.vue",
         "frontend/apps/web/src/router/index.ts",
-        "make/runtime_ops.mk"
-      ]
+        "make/runtime_ops.mk",
+        "scripts/verify/nav_pro_01_prepare_runtime.py",
+        "scripts/verify/nav_pro_01r_route_authority_http.py",
+        "scripts/verify/nav_pro_01r_route_authority_browser.mjs"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/final-acceptance/daily-deployed/runtime-version-readback.json"
+      }
     },
     "business_entry_matrix_recollect": {
       "target": "verify.frontend.business_entry.matrix.incremental",
-      "status": "PASS",
-      "detail": "89/89 checked (ok=45 empty=38 ready=5 form=true=1); problems=0; console_errors=0; negative authority covered 89/89, leaked 0; independent re-fold by business_entry_matrix_scope.mjs = 89 checked, partial=false; evidence=artifacts/frontend-business-entry-matrix/incremental/20261009-closeout-resume/summary.json",
       "inputs": [
         "scripts/verify/business_entry_matrix_browser.mjs",
         "scripts/verify/business_entry_matrix_model.mjs",
         "scripts/verify/business_entry_matrix_scope.mjs",
         "scripts/verify/business_entry_matrix_incremental.py",
         "scripts/ops/evidence_scope.py"
-      ]
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/final-acceptance/daily-deployed/runtime-version-readback.json"
+      }
     },
     "business_entry_matrix_capture_resilience_unit": {
       "target": "verify.frontend.business_entry.evidence_scope.unit",
@@ -123,9 +140,7 @@
         "scripts/ops/evidence_scope.py",
         "scripts/verify/test_business_entry_matrix_incremental.py"
       ],
-      "kind": "offline",
-      "status": "PASS",
-      "detail": "evidence_scope + incremental 32 tests (PartialFoldPlanTests, partial EmitResults case); reuse_identity 23 cases"
+      "kind": "offline"
     },
     "push_conflict_guard_unit": {
       "target": "verify.pr.push.unit",
@@ -133,13 +148,263 @@
         "scripts/ops/git_safe_push.sh",
         "make/codex.mk"
       ],
+      "kind": "offline"
+    },
+    "role_surface_landing_contract_unit": {
+      "target": "verify.role_surface.landing.contract.unit",
       "kind": "offline",
-      "status": "PASS",
-      "detail": "18 isolated scenarios, including the conflicting-base DENY (exit 7, zero push and zero remote access) and the explicit override; real-git control: git merge-tree --write-tree 58c04a60 c6937377 -> exit 1 (guard fires), 79908fdf HEAD -> exit 0 (guard silent)"
+      "inputs": [
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+        "addons/smart_construction_core/services/locked_menu_policy_contract.py",
+        "addons/smart_construction_core/services/role_surface_contract.py",
+        "scripts/release/test_locked_menu_policy_contract.py",
+        "make/ci.mk"
+      ]
+    },
+    "role_surface_exposure_declaration": {
+      "target": "verify.frontend.role_surface_exposure_declaration.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/role_surface_exposure_declaration_guard.py",
+        "scripts/verify/test_role_surface_exposure_declaration_guard.py",
+        "addons/smart_core/identity/identity_resolver.py"
+      ]
+    },
+    "acceptance_action_count_unit": {
+      "target": "verify.acceptance_action_count.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/acceptance_action_count.py",
+        "scripts/verify/test_acceptance_action_count.py",
+        "config/frontend/acceptance_environments_v1.json",
+        "config/frontend/authoritative_navigation.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json"
+      ]
+    },
+    "product_menu_release_manifest_v2": {
+      "target": "verify.product.menu.release_manifest_v2.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/product_menu_release_manifest_v2_guard.py",
+        "scripts/verify/acceptance_action_count.py",
+        "config/frontend/acceptance_environments_v1.json",
+        "config/product_menu_contract_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+        "config/frontend/authoritative_navigation.json",
+        "addons/smart_construction_core/__manifest__.py",
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
+      ]
+    },
+    "frontend_release_navigation_policy": {
+      "target": "verify.frontend.release_navigation_policy.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_release_navigation_policy_guard.py",
+        "config/frontend/authoritative_navigation.json",
+        "addons/smart_construction_core/core_extension_policy_maps.py"
+      ]
+    },
+    "contract_structure_lock": {
+      "target": "verify.contract.structure_lock",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ci/enforce_contract_structure_lock.py"
+      ]
+    },
+    "product_view_structure_contract_unit": {
+      "target": "verify.product_view_structure.contract.unit",
+      "inputs": [
+        "scripts/contract/product_view_structure_common.py",
+        "scripts/verify/product_view_structure_contract_guard.py",
+        "scripts/verify/test_product_view_structure_contract.py",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "environment_topology_guard": {
+      "target": "verify.environment.topology.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/environment_topology_guard.py",
+        "scripts/verify/acceptance_action_count.py"
+      ]
+    },
+    "dev_acceptance_release_probe_schema_guard": {
+      "target": "verify.dev.acceptance.release.schema.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/dev_acceptance_release_probe_schema_guard.py",
+        "scripts/ops/dev_acceptance_release_probe.py"
+      ]
+    },
+    "scene_role_policy_consistency": {
+      "target": "verify.scene.role.policy.consistency.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/scene_role_policy_consistency_guard.py",
+        "addons/smart_construction_scene/data/sc_scene_layout.xml"
+      ]
+    },
+    "scene_role_surface_consistency": {
+      "target": "verify.scene.role.surface.consistency.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/scene_role_surface_consistency_guard.py",
+        "addons/smart_construction_core/core_extension_policy_maps.py"
+      ]
+    },
+    "frontend_auth_credential": {
+      "target": "verify.frontend.auth_credential.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/auth_credential_frontend_guard.py"
+      ]
+    },
+    "frontend_auth_surface": {
+      "target": "verify.frontend.auth_surface.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_auth_surface_guard.py"
+      ]
+    },
+    "daily_acceptance_readback": {
+      "target": "verify.daily_dev.acceptance.readonly.probe",
+      "kind": "runtime",
+      "inputs": [
+        "artifacts/backend/acceptance_record_identity.json",
+        "scripts/ops/dev_acceptance_release_probe.py",
+        "scripts/verify/dev_acceptance_release_probe_schema_guard.py",
+        "scripts/verify/acceptance_action_count.py",
+        "config/frontend/acceptance_environments_v1.json",
+        "config/frontend/authoritative_navigation.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "make/dev.mk"
+      ],
+      "readback": {
+        "artifact": "artifacts/backend/daily_dev_acceptance_probe.json"
+      }
+    },
+    "agent_resume_ledger_unit": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ]
+    },
+    "frontend_navigation_initialization_race_unit": {
+      "target": "verify.frontend.navigation_initialization_race.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_navigation_initialization_race.test.mjs",
+        "frontend/apps/web/src/app/navigationSelectionCore.js",
+        "make/runtime_ops.mk"
+      ]
+    },
+    "trusted_scan_scope_unit": {
+      "target": "verify.trusted_scan.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ci/trusted_scan_scope.py",
+        "scripts/ci/test_trusted_scan_scope.py",
+        "make/codex.mk",
+        "make/ci.mk"
+      ]
+    },
+    "daily_runtime_published_face_converge": {
+      "target": "verify.daily.runtime.published_face.converge",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/daily_runtime_published_face_converge.py",
+        "scripts/ops/test_daily_runtime_published_face_converge.py",
+        "make/codex.mk"
+      ]
+    },
+    "daily_runtime_nav_pro_fixture_prepare": {
+      "target": "verify.daily.runtime.nav_pro_fixture.prepare",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/daily_runtime_nav_pro_fixture_prepare.py",
+        "scripts/ops/test_daily_runtime_nav_pro_fixture_prepare.py",
+        "make/codex.mk"
+      ]
+    },
+    "product_menu_runtime_closeout_guard": {
+      "target": "verify.product.menu.runtime_closeout.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/product_menu_runtime_closeout_guard.py",
+        "scripts/verify/test_product_menu_runtime_closeout_guard.py",
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_core/__init__.py",
+        "addons/smart_construction_core/__manifest__.py",
+        "addons/smart_construction_core/models/support/product_policy_sync.py",
+        "addons/smart_construction_core/migrations/17.0.0.110/post-migration.py",
+        "addons/smart_construction_core/views/menu_product_administration_wave1.xml",
+        "addons/smart_construction_core/views/menu_product_configuration_wave1.xml",
+        "addons/smart_construction_core/views/menu_product_contract_wave1.xml",
+        "addons/smart_construction_core/views/menu_product_cost_wave1.xml",
+        "addons/smart_construction_core/views/menu_product_finance_wave1.xml",
+        "addons/smart_construction_core/views/menu_product_project_wave1.xml",
+        "addons/smart_construction_core/views/menu_product_reporting_wave1.xml",
+        "addons/smart_construction_core/views/menu_product_tax_wave1.xml",
+        "addons/smart_construction_core/views/menu_product_workbench_wave1.xml",
+        "addons/smart_construction_core/views/menu_product_primary_center_candidate_v1.xml",
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_core/delivery/final_menu_navigation_service.py",
+        "addons/smart_core/handlers/menu_configuration.py",
+        "addons/smart_core/model/ui_menu_config_policy.py",
+        "addons/sc_norm_engine/views/norm_menu.xml",
+        "scripts/ops/formal_product_menu_policy_restore.py"
+      ]
+    },
+    "product_menu_contract_v1_guard": {
+      "target": "verify.product.menu.contract_v1.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/product_menu_contract_v1_guard.py",
+        "scripts/verify/test_product_menu_contract_v1_guard.py",
+        "config/product_menu_contract_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+        "config/frontend/authoritative_navigation.json"
+      ]
+    },
+    "project_ledger_entry_carrier_orm": {
+      "target": "verify.contract.project_ledger_entry_carrier.orm",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/tests/test_project_ledger_runtime_contract.py",
+        "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
+        "addons/smart_construction_core/views/core/project_overview_views.xml",
+        "addons/smart_core/handlers/ui_contract_v2.py"
+      ]
+    },
+    "agent_ledger_consistency_unit": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk",
+        ".agent/context.yaml",
+        ".agent/active-runs.json",
+        ".agent/runs",
+        ".agent/goals"
+      ],
+      "note": "declared inputs include the .agent ledger this guard actually reads; without them a run.json/run-ledger edit could silently keep a stale green result"
     }
   },
-  "blockers": [],
-  "next_exact_step": "PR #632 merged: main = 79908fdf (parent 58c04a60), four gates green on the PR head and on the main push, no open PRs, worktree clean. This candidate carries the OPS-DECISION-004 push conflict guard (scripts/ops/git_safe_push.sh) together with the ledger record for #632, so the bookkeeping rides with the tool change instead of buying a standalone Quick. Remaining after it merges: the owner product-delivery judgement on the daily runtime (http://1.95.85.92:18081/, wutao/123456, sc_demo). Do not rerun the matrix for unchanged inputs.",
+  "blockers": [
+    "Mainline integration is not authorized: the user instructed \"先不执行进入主线\". The verified candidate c31db98f (deployed to the daily dev runtime as 5220db8b) is a bounded audit-branch result only; PR push, remote gates and merge remain pending and must not be described as integrated.",
+    "Owner acknowledgement pending (registered, not hidden): one finding previously listed as an open product decision is now resolved by evidence as designed behaviour with no code change - the discover-capable system_admin surface delivers menu_sc_business_config_workbench (表单配置) while its role-surface admin_menu_xmlids lists only menu_ui_menu_config_policy_business_config. The delivery is covered by three declared authorities (the action's groups_id declares smart_core.group_smart_core_admin; the P1 native-config root menu_sc_business_config_center is declared and the leaf is not excluded; role_surface.system_admin.system_configuration_visible=true) and the delivered contract output attributes it as route_kind=DISCOVERED_PRIMARY_NAV / source=delivery_engine.nav. Only the owner's acknowledgement (or the alternative ruling to remove the entry from the platform-admin face, owned by the group declaration layer) is outstanding.",
+    "Environment DENY (registered, not generalised): the rebuild/snapshot lane is still blocked by the two mounters - a single DENY conclusion bound to the actual entry dependency and an independent review, not an \"environment fully passes\" statement. rendering_detail_state stays excluded on the existing ruling and is not re-proved here."
+  ],
+  "next_exact_step": "Daily-runtime product acceptance closeout on branch audit/daily-dev-mainline-product-acceptance-closeout-20261009. (1) DONE: the two owning-layer declared-delivery defects are closed at P0 smart_core and P1 wave one with no assertion relaxed. (2) DONE: the creation/edit capability binding and the workbench minimal-evidence gap are closed by the one consolidated governed daily-runtime refresh plus one list-scope walk (89/89 units, problems 0, console errors 0, denied-role coverage 89/89, 76/76 declaration-to-rendering bindings). (3) DONE: the registered system_admin config-face decision is resolved by evidence as designed behaviour with no code change. (4) DONE (this round): freeze preparation; the first Quick surfaced a G1 self-fingerprint drift that was refreshed through its governed entry; the external read-only independent review bound to the frozen fingerprint substantiated the P0/P1 and acceptance-evidence claims, and its one blocking finding (an unsubstantiated targeted-ORM PASS claim with no retained receipt) was resolved by re-running that governed target at the frozen candidate (25/25 with a receipt). (5) NEXT: re-freeze the identity over the repaired record, run the single exact-head ci.local.quick, then publish through pr.push.gitee and let the remote required checks run; merge stays governed by the owner's CI-pass rule. The four-state separation stays 批次验收 in progress / 主线集成 not done / 版本发布 daily candidate only / 产品交付 not complete until those steps land.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -218,11 +483,669 @@
       "why": "PR #632 showed that a conflicted branch silently dispatches zero gate runs; the rule already existed in OPS-DECISION-003 but had no enforcement, so the check moved into the push gate",
       "affected_layers": "P4 ops delivery tool only; no product, contract, frontend or backend behaviour",
       "skipped_layers": "L3/L4 runtime and browser checks are unaffected by a push-lane shell guard; ci.local.quick still runs once at the frozen head before merge"
+    },
+    "role_surface_landing_contract": {
+      "intent": "A: make the first hop a declared, versioned contract fact and remove the frontend-side landing guess.",
+      "root_cause": "role_surface.landing_path resolved to /s/projects.list while the published route authority for that principal granted zero routes on projects.list; the client resolves the first hop from role_surface.landing_path before any authority check, so login landed on a denied entry (当前角色无权访问此业务入口). The same payload's platform default_route (workspace.home) was safe: two authorities disagreed about the first hop.",
+      "ownership": "P0 platform kernel owns the platform-safe landing scene and the candidate selection; the role landing policy itself is declarative contract data carried by the versioned product menu policy contract (P1 construction standard surface).",
+      "changes": [
+        "contract: scripts/verify/baselines/formal_business_product_menu_policy_v1.json gains products[].role_surface (platform_safe_landing_scene + per-role landing_scene_candidates); .sha256 lock and the sha256 pin in scripts/release/test_locked_menu_policy_contract.py were re-locked together (sha256=62459b2dc1c467e888296b237aefde0e24ac1b0db5b3489ad446194afcca22a9)",
+        "loader: addons/smart_construction_core/services/locked_menu_policy_contract.py validates the declared role surface fail-closed (non-empty roles, non-empty candidates, every role must include the platform-safe landing) and exposes role_landing_candidates()",
+        "projection: new addons/smart_construction_core/services/role_surface_contract.py overlays only landing_scene_candidates from the contract onto the provider slot; when the contract cannot be read it returns no overlay and the P0 resolver still guarantees the platform-safe landing",
+        "P0: addons/smart_core/identity/identity_resolver.py adds PLATFORM_SAFE_LANDING_SCENE and rewrites _pick_landing_scene so declared order wins and the platform-safe landing is the guaranteed terminal candidate; the implicit portal.dashboard preference/return is removed",
+        "P1 wiring: both smart_construction_core and smart_construction_scene identity profiles + system_init role-surface providers now read the contract projection"
+      ],
+      "checks": {
+        "verify.role_surface.landing.contract.unit": "PASS, 24/24 (scripts/release/test_locked_menu_policy_contract.py) + baseline_policy_integrity_guard PASS",
+        "verify.frontend.role_surface_exposure_declaration.guard": "PASS roles=9 excluded=1 universe=89 pending=0 narrowed=211 no_role=0; unit 10/10",
+        "scripts/ci/enforce_contract_structure_lock.py": "PASS domains=14 fingerprint=current (required professional/CI gate)",
+        "scripts/verify/product_menu_release_manifest_v2_guard.py": "PASS centers=10 contract_pages=89 accounting_pages=6 total=89 (menu counts unchanged)"
+      },
+      "preexisting_not_this_round": [
+        "addons/smart_core/tests/test_identity_resolver_entry_target.py: 1 of 14 fails (test_multi_role_project_manager_keeps_project_intake_executable_surface). Reproduced on unmodified HEAD via `git archive HEAD addons/smart_core addons/smart_construction_core | tar -x -C /tmp/base_check` (11 tests, 1 failure). Already recorded twice in this repository (docs/ops/iterations/business_entry_surface_normalization_batch_1_20260913.md, docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md) as a stash-verified baseline failure. Not fixed here: the assertion is about pm's declared menu_xmlids membership (menu_sc_project_initiation), which is outside this layer's declared scope and could move the released menu exposure.",
+        "verify.contract.view_structure (scripts/verify/product_view_structure_contract_guard.py) reports 6 errors identically on HEAD and with the new baseline: the committed contracts/generated/product_view_structure_contract.json records formal_menu_policy_sha256=80b5c7d5..., which matches neither HEAD (a10e35be...) nor the new contract (62459b2d...), plus stale candidate-fingerprint provenance. That target is not a member of any aggregate gate; refreshing it needs the governed runtime export lane.",
+        "verify.scene.role.surface.consistency.guard: its text-anchor extractor resolves the first literal after the ROLE_SURFACE_OVERRIDES anchor, which is an unrelated list-profile dict, identically on HEAD and now; the committed docs/audit/scene_role_surface_consistency_report.md is stale. A corrected extraction yields errors=0 but surfaces two separate follow-ups (ALLOWED_ROLE_CODES still lists only 4 roles vs 10 real ones; scene portal.shortcuts declares role_variant cost_manager with no role-surface override). The bogus regenerated report was reverted, not carried in the candidate."
+      ]
+    },
+    "role_scoped_action_count": {
+      "root_cause": "The acceptance lanes pinned a single navigation menu count (89) for the whole product regardless of which role was under test. A menu count is only determinate once a concrete role is locked, because each role sees a different contracted surface; measuring every identity against the admin surface is not contract-driven acceptance.",
+      "ownership": "P4 acceptance tooling (config/frontend acceptance policy + scripts/verify + scripts/ops probe + make wiring). No P0/P1 business semantics, ACL widening or model special-casing.",
+      "change": [
+        "config/frontend/acceptance_environments_v1.json daily navigation_policy.action_count_authority is now scope=locked_role_surface with a declared principal_role and a role_surfaces map binding each accepted role to its authoritative versioned source (installed_capability_surface for business_config_admin; locked_role_navigation_manifest identities for finance/pm/owner/project_member).",
+        "scripts/verify/acceptance_action_count.py resolves the count per role from that declaration (never a pinned number), rejects pinned min/max/action_count, fails closed for an unlisted principal role or a manifest count that disagrees with its locked identity list, and exposes --role.",
+        "scripts/ops/dev_acceptance_release_probe.py adds role_code_expected and fails closed with role_code_unexpected when the runtime system.init role drifts from the declared principal role.",
+        "make/dev.mk derives DAILY_ACCEPTANCE_NAV_PRINCIPAL_ROLE and forwards ACCEPTANCE_NAV_PRINCIPAL_ROLE through the daily publish and probe entries; make/guards.mk forwards it into the daily env guard.",
+        "scripts/verify/product_menu_release_manifest_v2_guard.py, daily_dev_acceptance_env_guard.py, dev_acceptance_release_probe_schema_guard.py and environment_topology_guard.py consume the shared resolver; the two runbooks document that a count is only determinate per locked role."
+      ],
+      "resolved_counts": {
+        "business_config_admin": 89,
+        "finance": 45,
+        "pm": 24,
+        "owner": 5,
+        "project_member": 10
+      },
+      "checks": [
+        "verify.acceptance_action_count.unit",
+        "verify.product.menu.release_manifest_v2.guard",
+        "verify.frontend.release_navigation_policy.guard",
+        "verify.scene.role.policy.consistency.guard",
+        "verify.scene.role.surface.consistency.guard",
+        "verify.frontend.auth_surface.guard",
+        "verify.frontend.auth_credential.guard",
+        "verify.contract.structure_lock",
+        "verify.role_surface.landing.contract.unit",
+        "verify.frontend.role_surface_exposure_declaration.guard",
+        "verify.environment.topology.guard",
+        "verify.dev.acceptance.release_probe.schema.guard"
+      ],
+      "unresolved": "RESOLVED 2026-10-09: the served readback is captured (see evidence.served_role_scoped_readback). The daily runtime now serves source_revision d106d2dd with role_code=business_config_admin and nav_action_count=89 against the declared principal_role, and the negative control (finance declared, admin served) is rejected with role_code_unexpected + nav_action_count_above_max. The offline-only caveat no longer applies."
+    },
+    "served_role_scoped_readback": {
+      "question": "does the role-locked landing/catalog projection and the role-scoped navigation count hold on a served instance?",
+      "entry": "make daily.runtime.candidate.bundle_sync -> make daily.runtime.source_revision.align -> verify.daily_dev.acceptance.readonly.probe against http://1.95.85.92:18081, database sc_demo",
+      "served_identity": {
+        "source_revision": "d106d2dd20869940ed535ca497a8bfcc7403ee3c",
+        "database": "sc_demo",
+        "environment": "dev",
+        "frontend_build_sha256": "8bd99a72f15a15bd1159d7c65961a5af3ca3dc39ceb3747cdfc8836c83f8f266",
+        "entry_asset": "index-BCF7hFFL.js",
+        "http_status": 200
+      },
+      "positive": {
+        "status": "PASS",
+        "login": "wutao",
+        "auth_name": "吴涛",
+        "auth_uid": 16,
+        "role_code": "business_config_admin",
+        "role_code_expected": "business_config_admin",
+        "nav_action_count": 89,
+        "nav_node_count": 111,
+        "nav_required_path_misses": [],
+        "nav_required_action_mismatches": [],
+        "nav_forbidden_label_hits": [],
+        "system_init_ok": true,
+        "artifact": ".runtime/daily-readback-candidate.json"
+      },
+      "negative_control": {
+        "declared_principal_role": "finance",
+        "expected_count": 45,
+        "observed_role_code": "business_config_admin",
+        "observed_nav_action_count": 89,
+        "errors": [
+          "role_code_unexpected",
+          "nav_action_count_above_max"
+        ],
+        "meaning": "the count assertion is real: a role drift plus the admin surface is rejected, not silently accepted",
+        "artifact": ".runtime/daily-readback-negative.json"
+      },
+      "ownership": "P4 acceptance tooling; no ACL, field-permission or negative-assertion relaxation and no per-model special case",
+      "boundary": "local stage-scoped evidence; the runtime checks stay kind=runtime and require fresh authoritative readback after any redeploy"
+    },
+    "ledger_reuse_integrity": {
+      "report": "the run ledger carried 21 declaration-level PASS/detail verdicts and the reuse engine could see none of them: make agent.run.resume reported 23/23 checks not_run or stale, so no executed gate could ever be reused and every iteration re-ran the whole offline set",
+      "root_cause": [
+        "scripts/ops/agent_run_context.py reads verdicts only from .runtime/agent-runs/<run>/<check>.json receipts, so a verdict written into run.json was inert and a claimed PASS could coexist with no evidence at all",
+        "the declaration was not required to name a real make target: two checks cited verify.acceptance_action_count.unit and verify.dev.acceptance.release_probe.schema.guard, neither of which any Makefile fragment defines, so those checks could never be executed or recorded",
+        "kind was optional and absent on 7 checks; an absent kind is read as runtime by the reuse engine, so those checks could never become reusable even after a real pass",
+        "executed checks were never written through make agent.run.begin/record, so the input-hash index stayed empty"
+      ],
+      "change": [
+        "agent_run_context.resolve_run now fails closed when a check omits kind, carries a declaration-level status/detail verdict, or names a make target no Makefile fragment defines",
+        "a new make/guards.mk target verify.acceptance_action_count.unit binds the role-scoped count resolver to a test-bearing entry point instead of riding on the broad daily env guard",
+        "summary() now emits check_reuse_summary so reusable/stale/not_run is visible at a glance instead of inferred",
+        "12 offline checks were re-executed through begin/record, producing input-bound receipts",
+        "ci_local_iteration inputs gained make/ci.mk, scripts/verify/frontend_dev_incremental.py and scripts/ci/trusted_scan_scope.py, which its recipe executes but its reuse key had omitted"
+      ],
+      "measured": {
+        "before": {
+          "checks": 23,
+          "reusable": 0,
+          "not_run": 19,
+          "stale": 4
+        },
+        "after": {
+          "checks": 25,
+          "reusable": 12,
+          "not_run": 11,
+          "stale": 2
+        },
+        "not_run_breakdown": "4 runtime checks legitimately awaiting fresh readback, 6 guard-only offline targets and 1 typecheck target that publish no non-zero test count, so they cannot be recorded as reusable evidence under the current contract"
+      },
+      "residual": "a check bound to an entry point that reports no non-zero test count can never enter the reusable set; the 6 guard-only targets and frontend_typecheck are re-run each iteration (about 2-3s each). Giving them test-bearing entry points is the bounded follow-up, not a reason to relax the non-zero-test rule.",
+      "ownership": "P4 ops tooling (scripts/ops, scripts/verify, make/guards.mk); no product semantics"
+    },
+    "snapshot_face_sync_closeout": {
+      "question": "why the published snapshot did not appear to update on the daily runtime",
+      "finding": "The published snapshot itself was already re-frozen on every converge (snapshot_version carries the candidate SHA and refreshes.changed=true). What did not follow were (a) the served code/rendering face and (b) the consumer of the snapshot. Four layered causes were proven: 1) the published face (sc.edition.release.snapshot, which the navigation release gate reads) was released by a lane independent of the code face, so a contract change could be deployed while the gate kept reading the previous contract - fixed by making daily.runtime.candidate.release order bundle_sync -> source_revision.align -> published_face.converge; 2) SC_SOURCE_REVISION stayed at the previous commit, so /api/runtime-version reported a stale served revision even though the tree was updated - fixed by declaring the exact deployed HEAD in the same entry; 3) the face freeze must upgrade the projection module, but guard.codex.fast.upgrade rejected the undeclared upgrade, so the freeze never made the new projection code live - fixed by declaring CODEX_NEED_UPGRADE=1 with CODEX_MODULES and carrying the upgrade tail into the failure message; 4) the canonical projection (server) and its frontend mirror indexed only action_id>0 / menu_containers and rejected the contract-declared scene entry (menu_id 1004, action_id 0), which made every system.init for the locked role return HTTP 500 while the guard reported PASS - fixed by consuming the same declared authority carrier end to end, with the release-gate guard extended to mirror the projection tail.",
+      "served_readback": {
+        "served_sha": "4b7f9a469a3af9e10d59c6a0013360db8cacab80",
+        "database": "sc_demo",
+        "frontend_build_sha256": "a3f477a4b7ccaf81433a84a0e5192cc31cd350d21033870e764dd53ce80c4d1a",
+        "snapshots": {
+          "construction.standard": 39,
+          "construction.preview": 40
+        },
+        "snapshot_version_example": "daily-navigation-standard-4b7f9a46",
+        "gate": {
+          "allowed_page_count": 90,
+          "kept_leaf_count": 90,
+          "removed_leaf_count": 0
+        },
+        "system_init": {
+          "http_status": 200,
+          "ok": true,
+          "nav_node_count": 112,
+          "projected_nodes": 112,
+          "enabled": 94,
+          "container": 18,
+          "disabled": 0
+        },
+        "role_home_entry": {
+          "menu_id": 1004,
+          "action_id": 0,
+          "state": "enabled",
+          "authority_state": "allowed",
+          "authority_source": "nav.declared_entry",
+          "route": "/s/workspace.home"
+        },
+        "positive_probe": {
+          "status": "PASS",
+          "nav_leaf_count": 90,
+          "nav_admitted_entry_count": 90,
+          "nav_gate_kept_leaf_count": 90,
+          "nav_action_count": 89,
+          "nav_required_path_misses": [],
+          "nav_forbidden_label_hits": [],
+          "contract_executed_checks": 11,
+          "role_code": "business_config_admin"
+        },
+        "negative_control": {
+          "status": "FAIL_as_required",
+          "errors": [
+            "role_code_unexpected",
+            "nav_entry_count_above_max"
+          ],
+          "declared_role": "finance",
+          "declared_bounds": [
+            46,
+            46
+          ]
+        },
+        "receipts": [
+          ".runtime/final-acceptance/daily-deployed/candidate-bundle-sync.json",
+          ".runtime/final-acceptance/daily-deployed/source-revision-align.json",
+          ".runtime/final-acceptance/daily-deployed/published-face-converge.json",
+          ".runtime/final-acceptance/daily-deployed/frontend-build.json",
+          ".runtime/final-acceptance/daily-deployed/record-identity-resolve.json",
+          ".runtime/daily-readback-candidate.json",
+          ".runtime/daily-readback-negative.json",
+          "artifacts/backend/daily_dev_acceptance_probe.json",
+          "artifacts/backend/acceptance_record_identity.json"
+        ],
+        "assertion_policy": "not lowered: the contract authority still resolves 90 for the locked principal role; the probe now measures the contracted entry population (released leaves, cross-checked against the release gate kept_leaf_count) instead of the action-bearing subset, and the negative control still fails."
+      },
+      "p0_p1_commits": [
+        "e3ceb585",
+        "a941ce09",
+        "0d9e4500",
+        "4b7f9a46"
+      ],
+      "reuse_boundary": "Runtime checks are not auto-reusable by ledger design; see blockers[2]."
+    },
+    "iteration_efficiency": {
+      "change": "scripts/ci/trusted_scan_scope.py resolves the trusted-scan scope identity in two git processes instead of one per reference and one per authority file.",
+      "defect": "The scan-scope step spent its runtime in Git process startup: 272 refs x 9 candidate snapshots of per-ref `cat-file -t`, plus one `git show` per authority file per revision (11,074 git invocations, ~30s).",
+      "measured": {
+        "ci_local_iteration_seconds": {
+          "before": 36.8,
+          "after": 6.9
+        },
+        "trusted_scan_scope_seconds": {
+          "before": 30.1,
+          "after": 3.3
+        },
+        "git_invocations_in_scope_selection": {
+          "before": 9211,
+          "after": 81
+        }
+      },
+      "equivalence_proof": "authority_digest matched the previous per-file `git show` implementation for 24 historical revisions plus the worktree across all three scanners (0 mismatches); every declared (oid, type) pair is still independently asserted.",
+      "tests": [
+        "scripts/ci/test_trusted_scan_scope.py 30/30 OK",
+        "make security.online_capture.unit OK"
+      ],
+      "commit": "8a1ef8ab1c20f74c868741206adb0d4eb39d06fc",
+      "not_relaxed": "No scan scope, no assertion and no fail-closed path was widened; a missing tip or an authority path absent at a revision still fails closed.",
+      "frontend_typecheck_incremental": {
+        "commit": "39a86b2f8296d9b9675766cfe455f59aa8862d70",
+        "change": "frontend/apps/web/package.json: `typecheck` and `typecheck:strict` use --incremental with a .tsbuildinfo under the ignored node_modules/.cache/vue-tsc.",
+        "measured": {
+          "verify_frontend_typecheck_strict_seconds": {
+            "cold": 23.4,
+            "warm": 10.3
+          }
+        },
+        "fail_closed_proof": "With the warm cache present an injected `const probe: number = \"...\"` still fails the target (exit 2, TS2322); removing the file returns it to exit 0, so a stale program graph cannot mask a new diagnostic.",
+        "not_relaxed": "No diagnostic set, include list or strict option changed; only the starting state of the program graph changed."
+      },
+      "deploy_loop_module_upgrade_reuse": {
+        "commit": "3ee08386",
+        "change": "daily.runtime.published_face.converge no longer re-runs `mod.upgrade smart_core` when the deployed module tree oid is byte-identical to the last verified convergence; the identity is declared as a git tree oid at the exact candidate revision and re-resolved on the remote before any skip.",
+        "measured": {
+          "mod_upgrade_seconds_avoided_per_unchanged_deploy": "~180",
+          "trigger": "skipped only when declared == deployed module tree ids"
+        },
+        "fail_closed": "Unresolved module, missing/stale receipt, mismatched declared set, or a remote `reused` claim whose tree ids differ from the declared ones all fall back to running the upgrade (the local check rejects an unproven reuse claim).",
+        "tests": "make verify.daily.runtime.published_face.converge 22/22 OK",
+        "not_relaxed": "The face is still frozen after the (possibly reused) upgrade and the release-gate guard still proves it; the declared upgrade (`CODEX_NEED_UPGRADE`/`CODEX_MODULES`) coupling is unchanged; `--force-upgrade` is the explicit drift-repair path.",
+        "runtime_proof": "L3/L4 real deploy showing upgrade_mode=reused is pending explicit user confirmation (remote write)."
+      },
+      "runtime_receipt_reuse": {
+        "commit": "f64e258e",
+        "change": "A runtime check may declare a `readback` artifact (authoritative environment readback) under the ignored runtime-evidence area; its content is hashed into the check's dependency state, so a regenerated readback for a changed environment invalidates the runtime receipt exactly like any other changed input.",
+        "measured": {
+          "daily_acceptance_readback_seconds_reused": 25,
+          "status_change": "stale -> reusable"
+        },
+        "fail_closed": "No declared readback -> runtime check stays non-reusable; runtime run environment stays non-reusable; missing artifact blocks begin; malformed/absolute/escaping/symlinked/out-of-area readback path rejected at run resolution.",
+        "tests": "make verify.agent.resume.unit 40/40 OK (six new cases)",
+        "not_relaxed": "No product assertion, gate, credential guard or fallback path relaxed.",
+        "docs": "AGENTS.md Layered Validation Efficiency bullet + iterations note 13.9"
+      },
+      "deploy_loop_upgrade_reuse_live": {
+        "candidate": "a81fad7e222da0835a2f2632c3410ff6f7c27de2",
+        "entry": "make daily.runtime.candidate.release (three explicit confirmations)",
+        "result": "bundle_sync PASS 4b7f9a46 -> a81fad7e; source_revision.align PASS (served readback a81fad7e); published_face.converge PASS",
+        "first_run_upgrade_mode": "run (bootstrap: the previous receipt carried no module_tree_ids)",
+        "module_tree_ids": {
+          "smart_core": "1544cbc20706b9fd85c8f98259c71395d1ce663f"
+        },
+        "note": "bundle_sync refuses the same SHA, so the reused proof needs a distinct candidate revision",
+        "readback_rebind": "served SHA change correctly invalidated daily_acceptance_readback; refreshed via daily.runtime.record_identity.resolve + readonly probe re-run (PASS), receipt reusable again"
+      },
+      "deploy_loop_module_upgrade_reuse_live_proof": {
+        "commit_within_lane": "3ee08386 (mechanism) proven live on candidate a81fad7e -> 51e7cdc0",
+        "candidate_sha": "51e7cdc0853b9d8e4732ae9c11b9869a0959b030",
+        "previous_deployed_sha": "a81fad7e222da0835a2f2632c3410ff6f7c27de2",
+        "entry": "make daily.runtime.candidate.release",
+        "sub_entries": {
+          "daily_runtime_candidate_bundle_sync": "PASS (deployment_mode=candidate, origin_main_mutated=false)",
+          "daily_runtime_source_revision_align": "PASS (restarted=true, rolled_back=false, served.git_sha=51e7cdc0)",
+          "daily_runtime_published_face_converge": "PASS (upgrade_mode=reused, module_upgrade_returncode=0, guard_status=PASS)"
+        },
+        "upgrade_mode": "reused",
+        "upgrade_reuse_reason": "deployed module tree is byte-identical to the last verified upgrade",
+        "module_tree_ids": {
+          "smart_core": "1544cbc20706b9fd85c8f98259c71395d1ce663f"
+        },
+        "module_tree_ids_identical_to_first_run": true,
+        "published_face_refrozen": true,
+        "published_snapshot_version": "daily-navigation-standard-51e7cdc0853b",
+        "published_page_count": 90,
+        "measured_wall_clock_seconds": {
+          "first_deploy_run_mode": 185,
+          "second_deploy_reused_mode": 42
+        },
+        "measurement_kind": "executor-observed wall clock (attested); the machine-recomputable part is upgrade_mode=reused and the identical module_tree_ids",
+        "not_relaxed": "reuse requires declared module git tree oid == remote deployed tree oid; an unproven 'reused' claim is rejected locally and falls back to running the upgrade; the published face is still re-frozen after the (possibly reused) upgrade and re-proved by the release-gate guard; verify.daily.runtime.published_face.converge 22/22",
+        "readback_restored_after_deploy": {
+          "record_identity": "daily.runtime.record_identity.resolve -> served_revision=remote_head=51e7cdc0",
+          "readonly_probe": "verify.daily_dev.acceptance.readonly.probe PASS (served_sha=51e7cdc0, errors=[])",
+          "ledger": "daily_acceptance_readback re-recorded on clean 51e7cdc0; reuse summary 28 reusable / 2 not_run"
+        },
+        "boundary": "candidate revision advance only; addons/smart_core unchanged, so no module upgrade is triggered"
+      }
+    },
+    "nav_pro_route_authority_lane": {
+      "fixture_entry": "daily.runtime.nav_pro_fixture.prepare (new governed P4 entry, commit 0953ac34)",
+      "fixture_landed_on_sc_demo": {
+        "status": "PASS",
+        "served_revision": "51e7cdc0853b9d8e4732ae9c11b9869a0959b030",
+        "served_database": "sc_demo",
+        "users": {
+          "nav_pro_finance": 223,
+          "nav_pro_project_member": 224,
+          "nav_pro_pm": 225,
+          "nav_pro_owner": 226,
+          "nav_pro_config_admin": 227,
+          "nav_pro_system_admin": 228
+        },
+        "carrier": {
+          "project_id": 2023,
+          "partner_id": 9000,
+          "contract_id": 13615,
+          "company_id": 1
+        },
+        "readback_report": ".runtime/final-acceptance/daily-deployed/nav-pro-fixture-prepare.json"
+      },
+      "fixture_defect_fixed_at_owning_layer": {
+        "defect": "scripts/verify/nav_pro_01_prepare_runtime.py created the NAV-PRO-01R contract without assigning the create() result back to `contract`, so the local carrier variable stayed an empty recordset and the created row could not be confirmed from the same readback.",
+        "fix": "assign the created record (scripts/verify/nav_pro_01_prepare_runtime.py); behaviour of the script's own assertions is unchanged.",
+        "found_by": "the new entry's authoritative readback, not by a relaxed assertion"
+      },
+      "route_authority_http_probe_is_not_contract_driven": {
+        "probe": "scripts/verify/nav_pro_01r_route_authority_http.py",
+        "defect": "the probe pins per-role snapshot counts instead of deriving them from a declared authority: expected visible = {finance:10, project_member:7, pm:10, owner:4}, contextual_menu_total == 100, denied_total == 7. This is exactly the 'acceptance must be contract-driven' anti-pattern.",
+        "measured_on_served_51e7cdc0": {
+          "finance": {
+            "visible": 20,
+            "primary_actions": 17,
+            "role_home_actions": 0,
+            "menu_containers": 3,
+            "contextual_actions": 7,
+            "denied_actions": 56
+          },
+          "project_member": {
+            "visible": 7,
+            "primary_actions": 5,
+            "role_home_actions": 0,
+            "menu_containers": 2,
+            "contextual_actions": 4,
+            "denied_actions": 11
+          },
+          "pm": {
+            "visible": 10,
+            "primary_actions": 8,
+            "role_home_actions": 0,
+            "menu_containers": 2,
+            "contextual_actions": 4,
+            "denied_actions": 35
+          },
+          "owner": {
+            "visible": 6,
+            "primary_actions": 4,
+            "role_home_actions": 0,
+            "menu_containers": 2,
+            "contextual_actions": 5,
+            "denied_actions": 19
+          }
+        },
+        "first_failure": "finance.visible expected 10, got 20 (project_member/pm happen to still match; owner is 6 vs the pinned 4)."
+      },
+      "declared_surface_disagrees_with_delivered_surface": {
+        "claim": "the locked role navigation manifest (config/frontend/authoritative_navigation.json roles.<role>.expected_count/leaf_keys, also the declared action_count_authority for these four roles) is NOT the same surface as the delivered navigation.route_authority, and the two disagree in both directions.",
+        "finance": {
+          "declared_manifest": 46,
+          "delivered_union": 26,
+          "declared_not_delivered": 31,
+          "delivered_not_declared": 11
+        },
+        "pm": {
+          "declared_manifest": 25,
+          "delivered_union": 14,
+          "declared_not_delivered": 18,
+          "delivered_not_declared": 7
+        },
+        "owner": {
+          "declared_manifest": 6,
+          "delivered_union": 11,
+          "declared_not_delivered": 3,
+          "delivered_not_declared": 8
+        },
+        "project_member": {
+          "declared_manifest": 11,
+          "delivered_union": 11,
+          "declared_not_delivered": 6,
+          "delivered_not_declared": 6
+        },
+        "governance_state": "config/frontend/role_surface_exposure_declarations_v1.json governs capability-vs-delivery divergence and its guard PASSES (verify.frontend.role_surface_exposure_declaration.guard: roles=9 universe=89 narrowed=211). So the divergences registered there are deliberate product narrowing; the open question is only which declared authority owns the route_authority surface for these four roles.",
+        "not_fixed_by_editing_numbers": "moving 10 -> 20 (or 4 -> 6, 100 -> 20, 7 -> 121) would replace one snapshot pin with another and is explicitly rejected; the fix must bind the probe's expectations to a declared authority."
+      },
+      "blocked_reason": "browser_login_return_authority is fixture-ready but still open: the HTTP producer pinned stale numbers instead of deriving them, and the root cause is now closed at code level (see root_cause_closed) - navigation.route_authority partitions the versioned role-surface contract into delivered vs PRODUCT_ENTRY_NOT_RELEASED, so no count may be pinned and config/frontend/authoritative_navigation.json is a stale 2026-07 audit snapshot, not the delivered surface. Two precise residual defects remain (6 silent drops, 4 outside-surface deliveries) and are owned by the P0 delivery engine.",
+      "diagnostics": "/tmp/nav_diag.py, /tmp/nav_diag2.py (bounded, read-only, served 51e7cdc0)",
+      "root_cause_closed": {
+        "claim": "The three-way disagreement is resolved at code level. navigation.route_authority is NOT a free surface: addons/smart_core/delivery/menu_service.py::build_route_authority partitions the role's CONTRACT face (core_extension_policy_maps.ROLE_SURFACE_OVERRIDES) into delivered entries and explicitly denied entries (reason_code=PRODUCT_ENTRY_NOT_RELEASED). So the delivered count is determinate only once the role IS locked and the released/reachable partition is read; it is not a pinned number and not the July audit snapshot.",
+        "code_paths": [
+          "addons/smart_core/delivery/menu_service.py:844 build_route_authority(role_surface, nav)",
+          "addons/smart_core/delivery/menu_service.py:876 facts = MenuFactService(self.env).export_visible_menu_facts()",
+          "addons/smart_core/delivery/menu_service.py:894-922 declared primary/role_home/contextual/admin entries -> bucket only when the menu is ACL-visible; otherwise the entry is skipped",
+          "addons/smart_core/delivery/menu_service.py:381-404 denied_actions from surface.denied_menu_xmlids",
+          "addons/smart_core/delivery/menu_service.py:530 denied_actions with reason_code=PRODUCT_ENTRY_NOT_RELEASED (release-gate narrowing)",
+          "addons/smart_core/delivery/menu_service.py:985-1010 native nav tree may add PRIMARY_NAV pairs outside the contract for any role"
+        ],
+        "resolved_authority": "the versioned role-surface contract plus the explicit delivered/denied partition; config/frontend/authoritative_navigation.json is a stale 2026-07 browser-audit snapshot and is NOT the delivered surface, and the probe's pins are a fourth, unrelated calibration.",
+        "partition_measured_on_served_51e7cdc0": {
+          "finance": {
+            "declared_primary": 45,
+            "delivered_primary": 17,
+            "denied_not_released": 29,
+            "silently_unaccounted": [
+              "smart_construction_core.menu_sc_historical_payment_fact"
+            ],
+            "delivered_outside_contract": [
+              "smart_construction_core.menu_sc_construction_diary",
+              "smart_construction_core.menu_sc_project_project"
+            ]
+          },
+          "pm": {
+            "declared_primary": 24,
+            "delivered_primary": 8,
+            "denied_not_released": 15,
+            "silently_unaccounted": [
+              "smart_construction_core.menu_sc_tender_registration",
+              "smart_construction_core.menu_sc_tender_registration_fee"
+            ],
+            "delivered_outside_contract": [
+              "smart_construction_core.menu_sc_product_team_loan_deduction_v1"
+            ]
+          },
+          "owner": {
+            "declared_primary": 5,
+            "delivered_primary": 4,
+            "denied_not_released": 2,
+            "silently_unaccounted": [],
+            "delivered_outside_contract": [
+              "smart_construction_core.menu_sc_p1_daily_contract"
+            ]
+          },
+          "project_member": {
+            "declared_primary": 10,
+            "delivered_primary": 5,
+            "denied_not_released": 2,
+            "silently_unaccounted": [
+              "smart_construction_core.menu_sc_company_document_archive",
+              "smart_construction_core.menu_sc_document_borrow",
+              "smart_construction_core.menu_sc_product_team_loan_deduction_v1"
+            ],
+            "delivered_outside_contract": []
+          }
+        },
+        "residual_defects": {
+          "silent_drop": "6 contract-declared primary entries are neither delivered nor recorded as denied (finance 1, pm 2, project_member 3): the contract is not fully accounted, so the narrowing is not always explicit.",
+          "outside_surface_delivery": "4 delivered primary entries are outside the role's declared face (finance 2, pm 1, owner 1); they come from the native-nav augmentation at menu_service.py:985-1010, the same place whose own comment says the native tree must never be a second product-selection authority.",
+          "canvas_of_fix": "P0 delivery engine: record the declared-but-unresolved entries explicitly (fail-closed, nothing silent) and stop the native tree from adding entries outside the contract; P1/P2 data: reconcile the declared face with menu reachability so tolerated residue becomes an explicit PRODUCT_ENTRY_NOT_RELEASED instead of a silent drop."
+        },
+        "probe_fix_plan": "rewrite scripts/verify/nav_pro_01r_route_authority_http.py so per-role expectations resolve from the versioned role-surface contract and assert the partition invariant (declared == delivered + explicitly-denied; delivered subset of declared) plus every behavioural assertion (admin leak, contextual reachability, 403 admin denial, cross-company/project scope, HTTP_500==0). Remove every pinned count.",
+        "method": "read-only HTTP diagnostics on the served runtime: /tmp/nav_diag.py, nav_diag3.py, nav_diag4.py, nav_diag5.py, nav_diag6.py; contract read from addons/smart_construction_core/core_extension_policy_maps.py::ROLE_SURFACE_OVERRIDES"
+      }
+    },
+    "route_authority_lane_closeout": {
+      "relation_jump_403": {
+        "owning_layer": "P1 construction standard declaration face (smart_construction_core ROLE_SURFACE_OVERRIDES)",
+        "root_cause": "pm contract declared action 751 (action_construction_contract_income_execution) and menu 485; the locked product contract (formal_business_product_menu_policy_v1.json) publishes action 578 / menu 904 and never publishes 751, so filter_route_authority_by_publication recorded PRODUCT_ENTRY_NOT_RELEASED and the jump had no reachable target",
+        "product_catalogue_vs_release": "the old user-confirmed baseline user_confirmed_formal_menu_policy_62.json (60 released, includes 751 + menu 485) drifted from the release baseline (90 entries); the declared face promised an entry the release gate never published",
+        "decision": "align the declaration to the release, never relax the gate; no ACL/field-permission override, no payment-model special case",
+        "fix_commit": "c3424962e05c31b184718c779b8c6b0e5553cc92"
+      },
+      "list_selection_box_locator": {
+        "owning_layer": "P4 acceptance tooling (scripts/verify/nav_pro_01r_route_authority_*)",
+        "root_cause": "the lane re-derived /a/<action_id> and hardcoded copy instead of consuming the served contract; the SPA correctly denies a menu-bound bare action route (findRouteAuthority fail-closed rule), and the chapter-scoped permission field was required before its chapter was activated",
+        "fix_commit": "0339307806497edb6cacd64fc58008c4f0d9c316",
+        "assertion_policy": "writable surface (allowed_operation != read) must render the governance-declared permission field; read-only surface asserts only the contract model route and that the record rendered fields; no assertion relaxed"
+      },
+      "served_identity": {
+        "source_revision": "c3424962e05c31b184718c779b8c6b0e5553cc92",
+        "database": "sc_demo",
+        "environment": "dev",
+        "deploy_entry": "make daily.runtime.candidate.release",
+        "deploy_confirmations": [
+          "CONFIRM_DAILY_CANDIDATE_BUNDLE_SYNC",
+          "CONFIRM_DAILY_RUNTIME_SOURCE_REVISION_ALIGN",
+          "CONFIRM_DAILY_RUNTIME_PUBLISHED_FACE"
+        ],
+        "upgrade_modules": [
+          "smart_core",
+          "smart_construction_core"
+        ]
+      },
+      "receipt": ".runtime/agent-runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/browser_login_return_authority.json",
+      "log": ".runtime/nav-pro-01/lane-execution.log"
+    },
+    "round_20261010_declared_delivery_face": {
+      "defect_a": {
+        "owner_layer": "P0 smart_core delivery engine (menu_service.build_route_authority)",
+        "fact": "the declared MENU face was closed (PRODUCT_ENTRY_NOT_VISIBLE) but the declared ACTION face (contextual_action_authorities / admin_action_authorities) was never closed: a declared authority that was neither delivered nor denied disappeared silently. Read-only probe .runtime/diag/action_authority_closure.json reported silent_actions for nav_pro_pm (action_project_boq_import_wizard) while five other roles were clean.",
+        "fix": "close the declared action face exactly like the menu face; the entry is delivered or carries an explicit denial (PRODUCT_ENTRY_NOT_AUTHORIZED when the build defines the action but the principal's ACL does not admit the declared operation, PRODUCT_ENTRY_NOT_DEFINED when the build does not define it). No ACL, field permission or legitimate hiding rule is overridden and no module special case is added."
+      },
+      "defect_b": {
+        "owner_layer": "P1 smart_construction_core release overlay (menu_product_configuration_wave1.xml)",
+        "fact": "wave one re-hung 表单配置 and 字段管理 on the product-configuration center but omitted menu_ui_menu_config_policy_business_config, which stayed parented to the retired inactive menu_sc_lowcode_system_config_group. native_config_app_children therefore returned only ['表单配置'] and the declared admin/config leaf was unreachable while the role surface (admin_menu_xmlids) and the released configuration baseline still declared it.",
+        "fix": "re-hang the leaf on menu_sc_business_config_center like its sibling governed leaves; no assertion relaxed."
+      },
+      "verification": {
+        "targeted_orm": "make ENV=dev ENV_FILE=.env.dev MODULE=smart_construction_core TEST_TAGS=user_data_boundary test.safe -> 0 failed, 0 error(s) of 25 tests (sc_dev_demo); receipt log .runtime/eff/rec/closeout-20261010/targeted_orm_user_data_boundary.log",
+        "guards": [
+          "verify.nav.pro01r.route_authority.unit",
+          "verify.product.menu.runtime_closeout.guard",
+          "verify.product.menu.contract_v1.guard",
+          "verify.frontend.release_navigation_policy.guard",
+          "verify.scene.role.surface.consistency.guard",
+          "verify.product.menu.release_manifest_v2.guard",
+          "verify.frontend.business_entry.evidence_scope.unit",
+          "verify.product.workbench.wave1.guard",
+          "verify.product.finance.center.wave1.guard (script)",
+          "verify.frontend.typecheck.strict",
+          "verify.contract.project_ledger_entry_carrier.orm (28 tests)"
+        ],
+        "logs": ".runtime/eff/rec/closeout-20261010/",
+        "local_frontend_build": "make local.dev.frontend -> dist-dev rebuilt and served on 127.0.0.1:18081 (entry assets/index-B1QjP7q-.js)",
+        "targeted_orm_receipt_note": "the independent review found the earlier round's identical claim unsubstantiated: no receipt was retained in the declared log directory and the only three on-disk logs carrying that tag were failures predating the fix commit. The claim was therefore re-earned at the frozen candidate by re-running the same governed target, which passed 25/25 and now has a receipt; the previous round's missing receipt is recorded, not hidden.",
+        "assertion_alignment": {
+          "path": "addons/smart_construction_core/tests/test_role_surface_project_member.py",
+          "change": "the historical-payment-fact / boq-import declared action authority assertion moved from 'must be delivered as CONTEXTUAL_ROUTE' to the 'delivered or explicitly denied exactly once' invariant (denial must carry a reason_code), matching the existing executive and project-member cases",
+          "not_a_relaxation": "the delivered branch keeps the original route_kind/allowed_operation assertions unchanged; the new branch only becomes reachable for a principal whose ACL does not admit the declared operation, and it must carry an explicit reason_code - the change removes a silent drop, it does not admit a previously forbidden delivery",
+          "behavioural_effect": "a project-manager principal now receives the boq-import wizard as an explicit denial (PRODUCT_ENTRY_NOT_AUTHORIZED) instead of a contextual route, because project.boq.import.wizard grants create only to the cost-manager/cost-user capability groups while the project-manager group implies the cost read capability only; the front-end therefore stops offering an entry the principal could not perform"
+        }
+      },
+      "open_decision": {
+        "item": "contract-face-external delivery",
+        "fact": "for the discover-capable system_admin surface, the native configuration projection delivered menu_sc_business_config_workbench while the surface admin_menu_xmlids did not declare it (declared_not_delivered: menu_sc_workspace_home is the role-home carrier).",
+        "status": "resolved_by_evidence_as_designed_no_code_change; single owner acknowledgement outstanding",
+        "resolution": {
+          "verdict": "not an undeclared face and not a defect: the delivery is covered by three independent declared authorities and is attributed in the delivered contract output to the declared discovery mechanism",
+          "declared_authorities": [
+            "addons/smart_construction_core/views/support/business_config_workbench_views.xml: action_sc_business_config_workbench.groups_id declares smart_core.group_smart_core_admin (plus group_sc_cap_business_config_admin, smart_core.group_smart_core_business_config_admin), so a platform-admin principal is ACL-declared for 表单配置",
+            "addons/smart_construction_core/core_extension_hook_facts.py: the native config root is the declared menu_sc_business_config_center (smart_core_native_config_root_menu_xmlid) and menu_sc_business_config_workbench is not in native_config_delivery_excluded_menu_xmlids, so the root-scoped projection is the declared owner of the config-app face",
+            "addons/smart_construction_core/core_extension_policy_maps.py: role_surface.system_admin.system_configuration_visible=true, enforced by smart_core.security.platform_admin.can_manage_system_configuration"
+          ],
+          "delivered_attribution": "docs/contract/snapshots/system_init_intent_admin.json: 表单配置 is delivered as route_kind=DISCOVERED_PRIMARY_NAV, source=delivery_engine.nav, required_capability=menu_action_read, on a surface with discover_installed_capabilities=true; 菜单配置 is the admin_menu_xmlids ADMIN_ROUTE. admin_menu_xmlids is an anchor list on a discover-capable surface, not a completeness enumeration; the code's declared-face closure is one-directional (declared-not-delivered), by design.",
+          "rejected_alternatives": [
+            "adding the entry to role_surface.system_admin.admin_menu_xmlids is the wrong layer: it duplicates a delivery that already has declared authority and would change the released system_admin nav face plus require a published-face/snapshot re-freeze",
+            "narrowing native_config_delivery_excluded_menu_xmlids would narrow the face for every admin principal, not only system_admin, so it cannot express this boundary"
+          ],
+          "owner_acknowledgement_required": "the owner may still rule that 表单配置 must leave the platform-admin face; the owning layer for that ruling is the action/menu group declaration (smart_core.group_smart_core_admin), not the role-surface anchor list"
+        }
+      }
+    },
+    "round_20261010_daily_runtime_refresh_and_entry_matrix": {
+      "refresh": {
+        "entry_chain": "make daily.runtime.candidate.bundle_sync -> make daily.runtime.source_revision.align -> make daily.runtime.published_face.converge -> make daily.runtime.frontend.build",
+        "deployed_revision": "5220db8b35a7596a26b930bae9e034c78dce9b8a",
+        "previous_revision": "c3424962e05c31b184718c779b8c6b0e5553cc92",
+        "modules_upgraded": [
+          "smart_core",
+          "smart_construction_core"
+        ],
+        "upgrade_reason": "the candidate changes the P0 projection code (smart_core/delivery/menu_service.py) and a P1 view (menu_product_configuration_wave1.xml), so both module trees moved; a front-end-only rebuild would not have exercised the backend fix",
+        "published_face": "construction.standard and construction.preview re-frozen from the locked contract; released menus 90/90; guard PASS",
+        "served_readback": {
+          "source_revision": "5220db8b35a7596a26b930bae9e034c78dce9b8a",
+          "frontend_build_sha256": "1f46b03308983f7fe0c5b1d7a48f619af67e59391b40f07a0f19c41b07901b35",
+          "entry_asset": "index-vn0WKFxi.js",
+          "database": "sc_demo"
+        },
+        "readback_artifact": ".runtime/final-acceptance/daily-deployed/runtime-version-readback.json"
+      },
+      "reuse": {
+        "note": "the daily-runtime deploy-chain unit receipts and the eleven guard/typecheck receipts recorded at c31db98f were reused unchanged: only browser_login_return_authority had a drifted declared input (scripts/verify/nav_pro_01r_route_authority_http.py) and was re-run.",
+        "negative_closures": "artifacts/frontend-business-entry-matrix/negative_closures.json refreshed before the walk (10 candidates, 1 ineligible) so the denied-role plan bound the current closures"
+      },
+      "matrix": {
+        "entry": "make verify.frontend.business_entry.matrix.incremental (DB_NAME=sc_demo, ACCEPTANCE_TARGET_SHA=5220db8b..., ACCEPTANCE_LOGIN=wutao)",
+        "summary": "artifacts/frontend-business-entry-matrix/20261010-closeout-daily/summary.json",
+        "reuse_identity": "frontend_build_sha256=1f46b03308983f7fe0c5b1d7a48f619af67e59391b40f07a0f19c41b07901b35",
+        "result": "89/89 units checked, ok=true, problems 0, console_errors 0, authority negatives 89/89 covered with 0 uncovered",
+        "collection_capability_binding": "76 table/kanban entries bound the entry's own list-contract declaration (effectiveRecordCapabilities.create / modelRights.write) to the rendered surface declaration (data-can-create / data-can-edit); 0 mismatches. No capability the contract does not publish was asserted.",
+        "isolated_exception": "smart_construction_core.menu_sc_p1_expense_contract timed out once on page.goto(networkidle, 30s) for /a/579?menu_id=905 and was re-run in isolation under a stated reverify reason; it then passed (hierarchical, ready, 50 records, record_id 3827, workflow [activate, complete, cancel]). Classification: transient load timeout on a heavy hierarchical surface, not a product defect.",
+        "ledger": ".runtime/evidence-scope/verify.frontend.business_entry.matrix.browser.json (89 units, all checked)"
+      },
+      "route_authority": {
+        "http": "PASS against served 5220db8b: contract 2.0.0, ROLE_CONTRACT_PARTITION / USER_MANAGEMENT / ROLE_MANAGEMENT / CONTRACT_EXECUTION_CONTEXT_ROUTE / ORDINARY_USER_ADMIN_DENIAL / CROSS_COMPANY_CONTEXT_DENIAL all PASS, HTTP_500=0 (includes the new declared-action-face partition and the fail-closed silent_actions invariant)",
+        "browser": "PASS: USER_MANAGEMENT_REACHABLE=true, ROLE_MANAGEMENT_REACHABLE=true, OLD_ACTION_EXECUTION_AUTHORIZED_DIRECT_REACHABLE=true, ORDINARY_USER_ADMIN_DENIAL=PASS, CROSS_COMPANY_CONTEXT_DENIAL=PASS, UNAUTHORIZED_ROUTE_DATA_REQUESTS=0, DIRECT_ROUTE_500=0",
+        "metadata": ".runtime/nav-pro-01/route-authority-http.json"
+      },
+      "ledger_dependency_fix": {
+        "check": "agent_ledger_consistency_unit (verify.agent.ledger.unit)",
+        "fact": "the guard reads .agent/context.yaml, .agent/active-runs.json, .agent/runs/*/run.json and .agent/goals/*.yaml but declared none of them as inputs, so a run-ledger edit could leave a stale green receipt reusable",
+        "fix": "declare those ledger paths as the check's inputs; result 15 tests PASS plus guard PASS (goals=93 runs=71)"
+      },
+      "logs": [
+        ".runtime/eff/rec/closeout-20261010/daily_candidate_bundle_sync.log",
+        ".runtime/eff/rec/closeout-20261010/daily_runtime_source_revision_align.log",
+        ".runtime/eff/rec/closeout-20261010/daily_runtime_published_face_converge.log",
+        ".runtime/eff/rec/closeout-20261010/daily_runtime_frontend_build.log",
+        ".runtime/eff/rec/closeout-20261010/business_entry_matrix_incremental.log",
+        ".runtime/eff/rec/closeout-20261010/agent_ledger_consistency_unit.log"
+      ]
+    },
+    "independent_review_round_20261010": {
+      "reviewer": "external read-only executor (separate agent, fresh context, no write authority), not the author of the candidate",
+      "bound_identity": {
+        "frozen_head": "edc7bcd6b84a5ab415c76de2953c4a44b29a502f",
+        "worktree_fingerprint_digest": "8beba69b3a0b0ef16ce21b3fb3b429b726888921fcd8008ed7fcd8b2ddc36a42",
+        "worktree_fingerprint_path_count": 8093,
+        "baseline_sha": "aea2c19bbe4edb2a13fbf908255e918e18f3a299",
+        "fingerprint_artifact": ".runtime/delivery-freeze/worktree-fingerprint.json"
+      },
+      "substantiated": [
+        "P0 declared ACTION face closure in smart_core/delivery/menu_service.py (declared-vs-accounted partition now yields an explicit denial reason_code, no ACL/field-permission override, no per-model special case)",
+        "P1 wave-one leaf re-hung on menu_sc_business_config_center with the deactivation set unchanged",
+        "the acceptance summary's field-level claims (89 entries, problems 0, console errors 0, 76 declaration-to-rendering bindings with 0 mismatch)",
+        "the isolated hierarchical re-run really passed (ready, 50 records, activate/complete/cancel)",
+        "the runtime readback identity (served_revision 5220db8b, frontend_build_sha256 1f46b033...)",
+        "the three declared authorities behind the system_admin config-face ruling and the delivered attribution DISCOVERED_PRIMARY_NAV / delivery_engine.nav",
+        "run ledger self-consistency: all 35 declared check targets exist in make, all declared inputs exist, the three blockers are honestly registered"
+      ],
+      "blocking_finding": {
+        "item": "the round's targeted_orm PASS claim had no receipt and was contradicted by the only on-disk logs carrying that tag",
+        "resolution": "re-run at the frozen candidate under the same governed target -> 0 failed, 0 error(s) of 25 tests, receipt retained (see verification.targeted_orm_receipt_note)"
+      },
+      "limitations_recorded": [
+        "artifacts/frontend-business-entry-matrix/20261010-closeout-daily/summary.json reports ok=true while containing 1 entry with status=exception; ok is derived from completeness+problems only, so this summary alone must not be read as '89/89 rendered'. The rendered coverage is completed and traceable through the isolated re-run plus the evidence ledger (.runtime/evidence-scope/verify.frontend.business_entry.matrix.browser.json = 89 units, 88 from the daily walk and 1 from the isolated re-run).",
+        "artifacts/frontend-business-entry-matrix/negative_closures.json carries no served_revision, so it cannot be bound to one bundle; it is a source/planning input rather than an identity-complete receipt.",
+        "docs/contract/snapshots/system_init_intent_admin.json is a frozen golden baseline (last content commit c0a6e9e2) used as a version derivation source; it documents the delivered shape but is not by itself current-run behaviour evidence."
+      ]
+    },
+    "delivery_freeze_round_20261010": {
+      "freeze_prepare": "make ci.delivery.freeze.prepare PASS; regenerated the content-bound reports (contract structure fingerprint, test inventory, E2E journey matrix, module dependency map, complexity budget, split plan queue, GitHub remote execution plan, component-driver takeover inventory) and committed them as a docs/evidence-only commit",
+      "first_quick_attempt": {
+        "command": "make ci.local.quick",
+        "result": "FAIL at verify.g1.acceptance.baseline",
+        "root_cause": "recorded self-fingerprint drift for config/frontend/acceptance_environments_v1.json (recorded ed8f4e79c12e..., actual 618179c62f5c...): an earlier commit on this branch changed the acceptance-environments config without refreshing the G1 baseline evidence",
+        "fix": "python3 scripts/verify/g1_acceptance_baseline_guard.py --write --baseline-sha 3f424993c9f378aaeedd2f26080545ad37ea3f8e (the governed refresh entry, preserving the recorded G1 branch cut point); the resulting diff touches only the drifted asset fingerprint and collected_at",
+        "post_fix": "the remaining ci.local.quick.run targets were executed and all PASS, so the drift was the only blocker"
+      }
     }
   },
   "continuation": {
     "reason": "successor to the retired FE-HIERARCHICAL-WORKSHEET-USABLE-READY run (merged PR #626) and the closed MAINLINE-BASELINE-BINDING anchor",
     "action": "align the daily runtime identity to the latest main and close out the user product acceptance boundary"
   },
-  "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts)."
+  "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced.",
+  "stage_identity": {
+    "kind": "iteration",
+    "head": "5220db8b35a7596a26b930bae9e034c78dce9b8a",
+    "dirty_scope": [],
+    "note": "iteration identity: the verified product revision is c31db98f, served on the daily dev runtime as 5220db8b (docs/agent record) with the rebuilt front-end bundle; 5220db8b differs from c31db98f only by documentation/agent-run records. This branch additionally carries docs/agent-only records on top (the declared-delivery record, the governed daily refresh + entry-matrix record, and this evidence-resolution record), so the branch HEAD is not the product revision. | evidence-resolution: the registered system_admin config-face decision was resolved this round as designed behaviour with no code change (evidence.round_20261010_declared_delivery_face.open_decision; iteration record 13.17); this does not change deployed product behaviour."
+  }
 }

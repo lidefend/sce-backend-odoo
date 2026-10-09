@@ -233,6 +233,12 @@ def _check_login(value: object, errors: list[str]) -> str:
             errors.append(f"login.checks.{key} must be int when present")
     if checks.get("role_code") is not None and not isinstance(checks.get("role_code"), str):
         errors.append("login.checks.role_code must be string when present")
+    expected_role = checks.get("role_code_expected")
+    if expected_role is not None:
+        if not isinstance(expected_role, str) or not expected_role:
+            errors.append("login.checks.role_code_expected must be a non-empty string when present")
+        elif checks.get("role_code") != expected_role:
+            errors.append("login.checks.role_code must equal the declared principal role_code_expected")
     for key in ("nav_forbidden_label_hits", "nav_required_path_misses"):
         if checks.get(key) is not None and not _string_list(checks.get(key)):
             errors.append(f"login.checks.{key} must be string list when present")

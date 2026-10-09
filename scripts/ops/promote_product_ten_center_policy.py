@@ -28,6 +28,15 @@ TARGET_CENTERS = (
 LEGACY_SOURCE_CENTERS = frozenset({"物资与分包", "施工管理", "组织行政", "配置中心", "基础设置", "系统设置", "业务配置"})
 
 # center, label, menu XMLID, action XMLID, model, path below center
+# center, label, menu XMLID, scene key, path below center
+# A scene entry is a contracted navigation identity that carries no business
+# action: its identity is the declared scene, its route is the scene channel,
+# and its authorization stays the native (menu_id, action_id=0) pair.
+RELEASED_SCENE_ENTRY_BINDINGS = (
+    ("工作台", "角色首页", "smart_construction_core.menu_sc_workspace_home", "workspace.home", ("角色首页",)),
+)
+
+
 RELEASED_MENU_BINDINGS = (
     ("工作台", "数据总览", "smart_construction_core.menu_sc_operating_metrics_project", "smart_construction_core.action_sc_operating_metrics_project", "sc.operating.metrics.project", ("数据总览",)),
     ("工作台", "项目看板", "smart_construction_core.menu_sc_project_kanban", "smart_construction_core.action_project_dashboard", "project.project", ("项目看板",)),
@@ -162,6 +171,38 @@ def _menu_row(center: str, label: str, menu_xmlid: str, action_xmlid: str, model
     }
 
 
+def _scene_entry_row(center: str, label: str, menu_xmlid: str, scene_key: str, path: tuple[str, ...], *, maturity: str) -> dict:
+    """Contracted navigation entry whose identity is a declared scene.
+
+    It deliberately carries no action_xmlid/res_model: the entry is authorized
+    by the same native (menu_id, action_id=0) pair as any other entry, and the
+    backend owns the route/entry_target projection so the tree cannot drift.
+    """
+    capability_key = "construction.menu.%s" % menu_xmlid.replace(".", "_")
+    domain_label = path[-2] if len(path) > 1 else center
+    route = "/s/%s" % scene_key
+    return {
+        "access_level": "public", "action_xmlid": "",
+        "business_entry_contract_version": "business_entry_disposition.v1",
+        "capability_key": capability_key, "capability_maturity": maturity,
+        "control_granularity": "user_visible_menu_page",
+        "control_object": "P1 施工行业正式产品入口", "disposition_policy": "scene_entry",
+        "enabled": True, "entry_intent": "handling", "entry_intent_label": "办理",
+        "entry_target_policy": "scene_entry", "group_key": f"construction.{center}",
+        "group_label": center, "integration_target": f"{scene_key} {label}", "label": label,
+        "locked_data_policy": "odoo_model_acl_and_record_rules", "menu_key": menu_xmlid,
+        "menu_xmlid": menu_xmlid, "model": "", "name": label, "page_key": menu_xmlid,
+        "page_label": label, "policy_note": "locked_complete_product_menu_surface",
+        "product_domain": center, "product_domain_label": domain_label, "product_key": center,
+        "productization_source": "p1_locked_menu_surface_projection",
+        "release_domain": "construction",
+        "release_state": "released", "res_model": "", "route": route, "scene_key": scene_key,
+        "source_kind": "p1_locked_menu_surface_projection",
+        "target_scene_key": scene_key, "title": label, "view_modes": [],
+        "visible_menu_path": " / ".join(("智慧施工管理平台", center, *path)),
+    }
+
+
 def _capability_from_menu(row: dict) -> dict:
     keys = ("access_level", "capability_key", "capability_maturity", "control_object", "disposition_policy", "enabled", "entry_intent", "entry_intent_label", "entry_target_policy", "group_key", "group_label", "integration_target", "label", "menu_xmlid", "product_domain", "product_domain_label", "product_key", "release_state", "res_model", "source_kind", "target_scene_key", "visible_menu_path")
     capability = {key: row[key] for key in keys if key in row}
@@ -173,6 +214,7 @@ def _capability_from_menu(row: dict) -> dict:
 def promote(payload: dict) -> dict:
     bindings = {(row[0], row[1]) for row in RELEASED_MENU_BINDINGS}
     bindings.update({("会计账务中心", row[0]) for row in ACCOUNTING_MENUS})
+    bindings.update({(row[0], row[1]) for row in RELEASED_SCENE_ENTRY_BINDINGS})
     delivery_by_target = _contract_delivery_by_target()
     expected = set(delivery_by_target)
     if bindings != expected:
@@ -183,6 +225,11 @@ def promote(payload: dict) -> dict:
         if unknown:
             raise ValueError(f"unapproved first-level product center: {sorted(unknown)!r}")
         rows_by_center = {center: [] for center in TARGET_CENTERS}
+        for center, label, menu_xmlid, scene_key, path in RELEASED_SCENE_ENTRY_BINDINGS:
+            rows_by_center[center].append(_scene_entry_row(
+                center, label, menu_xmlid, scene_key, path,
+                maturity=delivery_by_target[(center, label)],
+            ))
         for binding in RELEASED_MENU_BINDINGS:
             rows_by_center[binding[0]].append(_menu_row(
                 *binding,

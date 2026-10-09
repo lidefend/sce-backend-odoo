@@ -22,10 +22,15 @@ WAVES = tuple((ADDON / "views").glob("menu_product_*_wave1.xml")) + (
     ADDON / "views/menu_product_primary_center_candidate_v1.xml",
 )
 
+# Locked-candidate menu facts that must stay closed by an explicit active=False
+# overlay. ``menu_sc_project_ledger_group_v2`` is deliberately NOT listed: it is
+# a RELEASED_FOUNDATION level-two group in the P1 product menu contract
+# (config/product_menu_contract_v1.json, 项目中心 / 项目台账) whose child record
+# entry ``menu_sc_project_project`` is released in the formal product menu policy
+# baseline, so retiring the group would make a released entry unreachable.
 HIDDEN_XMLIDS = {
     "menu_sc_workbench_my_approval_fact",
     "menu_sc_project_overview_group_v2",
-    "menu_sc_project_ledger_group_v2",
     "menu_sc_project_planning_group_v2",
     "menu_sc_project_organization_group_v2",
     "menu_sc_project_milestone_group_v2",

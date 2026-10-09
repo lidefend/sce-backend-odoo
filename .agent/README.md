@@ -70,6 +70,11 @@ reloaded in every tool invocation. Higher-priority AGENTS policies always prevai
 Use `runs/template/run.json` for executable context, and `goal.yaml` for intent.
 `run.json` declares branch, baseline (batch/checkpoint, not automatically origin/main),
 scope, environment reference, check targets, dependency inputs, blockers and next step.
+Each check must name a make target that a Makefile fragment actually defines and must
+declare `kind: offline|runtime`; a declaration-level `status`/`detail` is rejected,
+because the receipt is the only verdict and an inert declared PASS is indistinguishable
+from no evidence. `summary`/`agent.run.resume` report `check_reuse_summary` so the
+reusable/stale/not_run split is visible instead of inferred.
 Inputs may name files or bounded directories (new/deleted children are detected).
 Repository root, `.git`, `.runtime`, traversal and external symlinks are rejected.
 Completed/superseded runs report `closed`; they cannot begin/record further checks.

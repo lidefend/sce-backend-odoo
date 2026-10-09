@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import json
 import re
 import sys
 from datetime import datetime
@@ -21,7 +22,25 @@ REQUIRED_COLUMNS = [
     "owner_module",
     "next_action",
 ]
-ALLOWED_ROLE_CODES = {"owner", "pm", "finance", "executive"}
+BASELINE_CONTRACT = "scripts/verify/baselines/formal_business_product_menu_policy_v1.json"
+
+
+def _declared_role_codes(root: Path) -> set[str]:
+    """Role codes come from the versioned contract catalog, never a literal.
+
+    A guard that hard-codes the role list cannot tell a drifted declaration
+    from a legitimately extended product role set, so it would either miss real
+    drift or block contract iteration.  Fail closed when the catalog is absent.
+    """
+    payload = json.loads((root / BASELINE_CONTRACT).read_text(encoding="utf-8"))
+    catalog = payload.get("role_catalog") or {}
+    rows = catalog.get("default_roles") or []
+    codes = {str(row.get("role_code") or "").strip() for row in rows if isinstance(row, dict)}
+    codes |= {str(item or "").strip() for item in catalog.get("synthetic_role_codes") or []}
+    codes.discard("")
+    if not codes:
+        raise ValueError("role catalog declares no role codes")
+    return codes
 
 
 def _split_row(line: str) -> list[str]:
@@ -133,6 +152,12 @@ def _extract_dict_literal(source: str, anchor: str) -> dict:
     eq_pos = source.find("=", pos)
     if eq_pos < 0:
         raise ValueError(f"missing '=' after anchor: {anchor}")
+    # Only an inline dict literal is a valid anchor.  A re-export such as
+    # ``NAME = _maps.NAME`` must fail closed instead of silently capturing the
+    # next unrelated dict literal below it.
+    tail = source[eq_pos + 1 :]
+    if not tail.lstrip().startswith("{"):
+        raise ValueError(f"anchor is not an inline dict literal: {anchor}")
     start = source.find("{", eq_pos)
     if start < 0:
         raise ValueError(f"missing '{{' after anchor: {anchor}")
@@ -234,7 +259,10 @@ def _write_report(path: Path, summary: dict[str, int], role_rows: list[dict], sc
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate consistency between role_surface_overrides and R3 role_variants.")
     parser.add_argument("--inventory", default="docs/ops/scene_inventory_matrix_latest.md")
-    parser.add_argument("--role-overrides-file", default="addons/smart_construction_core/core_extension.py")
+    parser.add_argument(
+        "--role-overrides-file",
+        default="addons/smart_construction_core/core_extension_policy_maps.py",
+    )
     parser.add_argument("--output", default="docs/audit/scene_role_surface_consistency_report.md")
     parser.add_argument(
         "--scene-files",
@@ -265,7 +293,8 @@ def main() -> int:
 
     role_rows: list[dict] = []
     override_roles = set(role_overrides.keys())
-    invalid_override_roles = sorted(override_roles - ALLOWED_ROLE_CODES)
+    allowed_role_codes = _declared_role_codes(root)
+    invalid_override_roles = sorted(override_roles - allowed_role_codes)
     for role_code in invalid_override_roles:
         errors.append(f"role_surface_overrides: unsupported role code ({role_code})")
 

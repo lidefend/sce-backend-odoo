@@ -253,6 +253,66 @@ class TestIdentityResolverEntryTarget(unittest.TestCase):
             ["workspace.home", "cost.project_budget", "projects.ledger"],
         )
 
+    def test_landing_always_ends_at_the_platform_safe_surface(self):
+        resolver = target.IdentityResolver()
+
+        # A declared candidate the boot payload does not carry must never be
+        # selected; the platform-safe landing is the guaranteed terminal target.
+        self.assertEqual(
+            resolver._pick_landing_scene(["ghost.scene"], {"portal.dashboard"}),
+            "workspace.home",
+        )
+        self.assertEqual(
+            resolver._pick_landing_scene([], set()),
+            "workspace.home",
+        )
+        self.assertEqual(
+            resolver._pick_landing_scene(["portal.dashboard"], set()),
+            "workspace.home",
+        )
+
+    def test_declared_landing_order_is_respected_before_the_safe_fallback(self):
+        resolver = target.IdentityResolver()
+
+        self.assertEqual(
+            resolver._pick_landing_scene(
+                ["projects.list", "workspace.home"],
+                {"projects.list", "workspace.home"},
+            ),
+            "projects.list",
+        )
+        # The platform-safe landing is appended, so a role policy that declares
+        # only unavailable scenes still resolves to the platform-safe surface.
+        self.assertEqual(
+            resolver._pick_landing_scene(["projects.list", "workspace.home"], {"workspace.home"}),
+            "workspace.home",
+        )
+
+    def test_role_surface_landing_path_is_consistent_with_the_picked_scene(self):
+        resolver = target.IdentityResolver()
+        resolver._role_surface_map = {
+            **resolver._role_surface_map,
+            "business_config_admin": {
+                "label": "业务配置管理员",
+                "landing_scene_candidates": ["projects.list", "workspace.home"],
+            },
+        }
+        resolver._role_groups_explicit = {
+            **resolver._role_groups_explicit,
+            "pm": {"smart_construction_core.group_sc_cap_business_config_admin"},
+        }
+        surface = resolver.build_role_surface(
+            {"smart_construction_core.group_sc_cap_business_config_admin"},
+            [],
+            {"workspace.home"},
+        )
+        self.assertEqual(surface["landing_scene_key"], "workspace.home")
+        self.assertEqual(surface["landing_path"], "/s/workspace.home")
+        self.assertEqual(
+            (surface.get("landing_entry_target") or {}).get("route"),
+            "/s/workspace.home",
+        )
+
     def test_unassigned_user_navigation_fails_closed(self):
         resolver = target.IdentityResolver()
         surface = resolver.build_role_surface(set(), [], {"workspace.home"})

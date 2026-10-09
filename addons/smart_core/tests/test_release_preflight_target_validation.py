@@ -112,5 +112,39 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
         self.assertEqual(check.get("issue_count"), 0)
 
 
+    def test_declared_scene_entry_projects_scene_key(self):
+        service = TARGET.EditionReleaseSnapshotService(env={})
+        pages = service._draft_pages_from_policy(
+            {
+                "product_key": "construction.standard",
+                "access_level": "public",
+                "menu_groups": [
+                    {
+                        "group_label": "\u5de5\u4f5c\u53f0",
+                        "menus": [
+                            {
+                                "page_key": "smart_construction_core.menu_sc_workspace_home",
+                                "menu_key": "smart_construction_core.menu_sc_workspace_home",
+                                "menu_xmlid": "smart_construction_core.menu_sc_workspace_home",
+                                "label": "\u89d2\u8272\u9996\u9875",
+                                "route": "/s/workspace.home",
+                                "menu_id": 1004,
+                                "action_id": 0,
+                                "entry_target_policy": "scene_entry",
+                                "target_scene_key": "workspace.home",
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
+
+        self.assertEqual(len(pages), 1)
+        self.assertEqual(pages[0].get("scene_key"), "workspace.home")
+        check = service._target_integrity_check(pages)
+        self.assertFalse(check.get("blocking"))
+        self.assertEqual(check.get("issue_count"), 0)
+
+
 if __name__ == "__main__":
     unittest.main()

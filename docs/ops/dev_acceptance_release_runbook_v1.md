@@ -80,9 +80,20 @@ filestore.
    other than `ENV=dev`, `ENV_FILE=.env.dev`, `DB_NAME=sc_demo`, and
    `ACCEPTANCE_BASE_URL=http://127.0.0.1:18081`; it requires
    `ACCEPTANCE_LOGIN=wutao` and a non-empty `ACCEPTANCE_PASSWORD`, so the
-   publish gate must exercise real login and `system.init`. The daily product
-   navigation baseline requires `ACCEPTANCE_NAV_MIN_ACTIONS=90`,
-   `ACCEPTANCE_NAV_MAX_ACTIONS=90`, and
+   publish gate must exercise real login and `system.init`. A menu count is only
+   determinate once a concrete role is locked. The daily profile therefore
+   declares `navigation_policy.action_count_authority` (a `versioned_contract` in
+   exact mode) with `scope: locked_role_surface`, a `principal_role`, and a
+   `role_surfaces` map binding each accepted role to its authoritative versioned
+   source: `business_config_admin` (the `wutao` login) resolves through the
+   installed capability surface, while `finance`/`pm`/`owner`/`project_member`
+   resolve through their locked navigation manifest identities. Both values are
+   derived by `scripts/verify/acceptance_action_count.py`; the probe additionally
+   fails closed with `role_code_unexpected` when the runtime `system.init`
+   `role_code` drifts from the declared principal role, so a delivered/contract
+   or role-identity disagreement cannot silently pass. For the current principal
+   role (`business_config_admin`) this resolves to
+   `ACCEPTANCE_NAV_MIN_ACTIONS=89`, `ACCEPTANCE_NAV_MAX_ACTIONS=89`, and
    `ACCEPTANCE_NAV_FORBIDDEN_LABELS=用户核对菜单,用户数据验收,用户验收,直营项目系统菜单`.
    It also requires `ACCEPTANCE_NAV_REQUIRED_PATHS` to include the locked daily
    product path sample for customer, supplier, project ledger, general contract,

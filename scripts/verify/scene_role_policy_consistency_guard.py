@@ -5,12 +5,30 @@ from __future__ import annotations
 
 import argparse
 import ast
+import json
 import re
 import sys
 from pathlib import Path
 
 
-ALLOWED_ROLE_CODES = {"owner", "pm", "finance", "executive"}
+BASELINE_CONTRACT = "scripts/verify/baselines/formal_business_product_menu_policy_v1.json"
+
+
+def _declared_role_codes() -> set[str]:
+    """Role codes come from the versioned contract catalog, never a literal."""
+    root = Path(__file__).resolve().parents[2]
+    payload = json.loads((root / BASELINE_CONTRACT).read_text(encoding="utf-8"))
+    catalog = payload.get("role_catalog") or {}
+    codes = {
+        str(row.get("role_code") or "").strip()
+        for row in catalog.get("default_roles") or []
+        if isinstance(row, dict)
+    }
+    codes |= {str(item or "").strip() for item in catalog.get("synthetic_role_codes") or []}
+    codes.discard("")
+    if not codes:
+        raise ValueError("role catalog declares no role codes")
+    return codes
 
 
 def _extract_payload_texts(path: Path) -> list[str]:
@@ -70,7 +88,7 @@ def _scene_key(payload: dict) -> str:
     return str(payload.get("code") or payload.get("key") or "").strip()
 
 
-def _validate_payload(payload: dict) -> list[str]:
+def _validate_payload(payload: dict, allowed_role_codes: set[str]) -> list[str]:
     errors: list[str] = []
     scene_key = _scene_key(payload) or "<unknown>"
     role_variants = payload.get("role_variants")
@@ -90,7 +108,7 @@ def _validate_payload(payload: dict) -> list[str]:
 
     for role_code, policy in role_variants.items():
         normalized_role = str(role_code or "").strip()
-        if normalized_role not in ALLOWED_ROLE_CODES:
+        if normalized_role not in allowed_role_codes:
             errors.append(f"{scene_key}: unsupported role code in role_variants ({normalized_role})")
             continue
         if not isinstance(policy, dict):
@@ -139,6 +157,7 @@ def main() -> int:
     errors: list[str] = []
     payload_count = 0
     role_payload_count = 0
+    allowed_role_codes = _declared_role_codes()
 
     for rel in args.scene_files:
         path = root / rel
@@ -151,7 +170,7 @@ def main() -> int:
             payload_count += 1
             if "role_variants" in payload:
                 role_payload_count += 1
-            errors.extend(_validate_payload(payload))
+            errors.extend(_validate_payload(payload, allowed_role_codes))
 
     if errors:
         print("[scene_role_policy_consistency_guard] FAIL")

@@ -14,6 +14,42 @@ def _positive_int(value) -> int:
     return parsed if parsed > 0 else 0
 
 
+def _select_route_entry(matched: list, menu_id: int):
+    """Resolve one delivered route entry the way the SPA resolves it.
+
+    A single action may legitimately be carried by more than one menu (the
+    product navigation points two menus at one action) and may also have an
+    action-scoped route without a carrier menu.  The client
+    (``frontend/apps/web/src/app/routeAuthority.ts::findRouteAuthority``)
+    therefore resolves the frozen ``(menu_id, action_id)`` tuple, and falls back
+    to the action-scoped entry - the carrier-less route or the contextual route
+    - when it only holds the action.  This gate must answer that same question
+    with that same rule instead of demanding a globally unique action, which
+    would deny a route the contract does deliver.  A genuinely ambiguous request
+    still fails closed.
+    """
+    if not matched:
+        return None
+    if menu_id:
+        pair = [
+            row
+            for row in matched
+            if _positive_int(row.get("menu_id")) == menu_id
+        ]
+        return pair[0] if len(pair) == 1 else None
+    action_scoped = [
+        row
+        for row in matched
+        if _positive_int(row.get("menu_id")) == 0
+        or str(row.get("route_kind") or "") == "CONTEXTUAL_ROUTE"
+    ]
+    if len(action_scoped) == 1:
+        return action_scoped[0]
+    if not action_scoped and len(matched) == 1:
+        return matched[0]
+    return None
+
+
 class RouteAuthorityValidateHandler(BaseIntentHandler):
     INTENT_TYPE = "route.authority.validate"
     DESCRIPTION = "Validate a delivered route authority against current session and record scope"
@@ -125,18 +161,18 @@ class RouteAuthorityValidateHandler(BaseIntentHandler):
         # second derivation here would let this gate answer a different
         # question than the client asked.
         authority = build_runtime_route_authority(self.env)
-        entries = [
+        matched = [
             row
             for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions")
             for row in authority.get(bucket) or []
             if isinstance(row, dict) and _positive_int(row.get("action_id")) == action_id
         ]
-        if len(entries) != 1:
+        entry = _select_route_entry(matched, _positive_int(params.get("menu_id")))
+        if entry is None:
             if any(_positive_int(row.get("action_id")) == action_id and row.get("reason_code") == "PRODUCT_ENTRY_NOT_RELEASED"
                    for row in authority.get("denied_actions") or []):
                 return self._deny("PRODUCT_ENTRY_NOT_RELEASED")
             return self._deny("ROUTE_ACTION_NOT_AUTHORIZED")
-        entry = entries[0]
         requirements = entry.get("context_requirements") if isinstance(entry.get("context_requirements"), dict) else {}
         for key in requirements.get("required_query") or []:
             if not _positive_int(params.get(str(key))):

@@ -90,6 +90,46 @@ scene 只能来自“被声明为 canonical entry 的 action/menu”，不能无
 
 ---
 
+## 2.7 目标态职责表（唯一身份 + 唯一目标）
+
+本节冻结双轨的终态，并消除 §4.3 与 `menu_scene_anchor_policy_v1.md`
+硬规则 1 之间的口径歧义。四类职责各有唯一归属，不得跨层兼任：
+
+| 职责 | 唯一归属 | 说明 |
+| --- | --- | --- |
+| 入口身份（用户看到哪个入口） | **契约声明的 scene 身份** | 正式菜单契约的 `target_scene_key`；这是唯一的入口身份 |
+| 授权匹配（谁能看到/打开） | **`(menu_id, action_id)`** | 授权只能挂在原生 `ir.actions.act_window` → `res_model`（`ir.model.access` + record rule）与 `ir.ui.menu._visible_menu_ids()` |
+| 执行目标（打开什么） | **`entry_target` 判别联合** | `action` / `scene` / `record` / `url`；`scene_key` 只是其中一个字段，不是并行身份 |
+| 来源关系（回到授权底座） | **`primary_action` / `source_ref` / `fallback_strategy`** | scene 必须显式声明其 canonical action 来源 |
+
+硬规则：
+
+- **R-A1**：`action` 是 `native source of truth`，**永久保留**，不得被 scene 全量替代（承接 §2.4/§2.5）。
+- **R-A2**：入口身份必须**由契约声明**；不得由前端、代码常量或裸 `scene_key` 二次推导。
+- **R-A3**：scene 必须声明 `primary_action`/`source_ref`，使授权仍由原生 action/model 收口；scene 不新开授权通道，不承担 ACL。
+- **R-A4**：`action_id` 仅对未声明 scene 的 legacy 节点兜底。
+- **R-A5**：前端若发现入口无契约依据，必须停下来报契约缺陷，**不得自行判断或补规则**。
+
+## 2.8 过渡期 → 目标态切换判据
+
+- **过渡期**：`target_scene_key` 覆盖 < 100%，`action/menu` 轨与 scene 轨并存（见 §8.1）。
+- **切换判据**（必须同时满足，缺一不可）：
+  1. 每个正式业务入口都在契约中声明了 scene 身份（覆盖 100%）；
+  2. 每个声明的 scene 都能解析到 scene registry 中的有效 scene；
+  3. 每个声明的 scene 都显式声明 `primary_action`/`source_ref`，授权仍由原生 action/model 收口；
+  4. 代码常量（`NAV_MENU_SCENE_MAP` / `NAV_ACTION_SCENE_MAP`）不再承载身份，只保留为校验台账。
+- **单调收敛**：过渡期内契约声明数只增不减；代码常量承载的映射只减不增；不得回退。
+
+## 2.9 §4.3 与 menu_scene_anchor_policy 的口径统一
+
+- §4.3「`scene_key` 不是 owner signal」是**过渡期**口径：禁止仅凭节点上恰好携带裸
+  `scene_key` 就改变入口语义。
+- `menu_scene_anchor_policy_v1.md` 硬规则 1「业务菜单必须解析到 `scene_key`」是**目标态**
+  口径：入口身份由契约声明。
+- 两者不冲突，统一为：**owner signal = 契约声明（`scene_source=scene_contract` /
+  `action_type=scene.contract`）加上契约内的 scene 身份字段**；裸 `scene_key` 在过渡期
+  始终不是 owner signal。
+
 ## 3. 双轨定义
 
 ## 3.1 Action/Menu 轨

@@ -16,6 +16,7 @@
   },
   "centers": [
     {"key": "workbench", "name": "工作台", "sequence": 10, "level_two": [
+      {"name": "角色首页", "delivery": "RELEASED_FOUNDATION", "entry_target_policy": "scene_entry", "target_scene_key": "workspace.home"},
       {"name": "数据总览", "delivery": "RELEASED_FOUNDATION"},
       {"name": "项目看板", "delivery": "RELEASED_FOUNDATION"},
       {"name": "待办事项", "delivery": "RELEASED_FOUNDATION"},

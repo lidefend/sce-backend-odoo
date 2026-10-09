@@ -401,6 +401,7 @@ class MenuService:
             "required_capability": "product_denied",
             "context_requirements": {},
             "source": "role_surface.denied_menu_xmlids",
+            "reason_code": "PRODUCT_ENTRY_NOT_RELEASED",
         }
 
     @staticmethod
@@ -540,6 +541,25 @@ class MenuService:
             for row in authority.get(bucket) or []
             if isinstance(row, dict)
         }
+        # Server-owned identity for entries that carry no business action:
+        # a declared target entry (scene / record / url) is authorized by the
+        # same (menu_id, action_id) pair as any action entry, with action_id 0.
+        allowed_targets_by_menu = {}
+        for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions"):
+            for row in authority.get(bucket) or []:
+                if not isinstance(row, dict):
+                    continue
+                try:
+                    target_menu_id = int(row.get("menu_id") or 0)
+                    target_action_id = int(row.get("action_id") or 0)
+                except (TypeError, ValueError):
+                    continue
+                if target_menu_id <= 0 or target_action_id > 0:
+                    continue
+                entry_target = row.get("entry_target")
+                if not isinstance(entry_target, dict) or not entry_target:
+                    continue
+                allowed_targets_by_menu.setdefault(target_menu_id, row)
         allowed_containers = {}
         for row in authority.get("menu_containers") or []:
             if not isinstance(row, dict):
@@ -611,6 +631,26 @@ class MenuService:
             candidate = dict(node)
             candidate["children"] = children
             if not children and action_id <= 0:
+                authorized_target = allowed_targets_by_menu.get(menu_id)
+                if authorized_target:
+                    # The server owns route and entry_target for a declared
+                    # target entry, so the tree cannot drift from the
+                    # released contract.
+                    candidate_meta = dict(meta)
+                    target_payload = authorized_target.get("entry_target")
+                    if isinstance(target_payload, dict) and target_payload:
+                        candidate["entry_target"] = dict(target_payload)
+                        candidate_meta["entry_target"] = dict(target_payload)
+                    target_route = str(authorized_target.get("route") or "").strip()
+                    if target_route:
+                        candidate["route"] = target_route
+                        candidate_meta["route"] = target_route
+                    target_scene = str(authorized_target.get("scene_key") or "").strip()
+                    if target_scene:
+                        candidate["scene_key"] = target_scene
+                        candidate_meta["scene_key"] = target_scene
+                    candidate["meta"] = candidate_meta
+                    return candidate
                 container = allowed_containers.get(menu_id)
                 node_route = str(
                     node.get("route") or meta.get("route") or entry_target.get("route") or ""
@@ -629,6 +669,7 @@ class MenuService:
         authority = route_authority if isinstance(route_authority, dict) else {}
         authority_by_pair = {}
         container_authority_by_menu = {}
+        declared_authority_by_menu = {}
         seen_keys = set()
         seen_menu_ids = set()
         for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions"):
@@ -641,6 +682,18 @@ class MenuService:
                     pair = (0, 0)
                 if pair[0] > 0 and pair[1] > 0:
                     authority_by_pair[pair] = entry
+                elif (
+                    pair[0] > 0
+                    and isinstance(entry.get("entry_target"), dict)
+                    and entry.get("entry_target")
+                ):
+                    # A declared target entry (scene / record / url) carries no
+                    # business action, so it is authorized by the same
+                    # (menu_id, action_id 0) pair ``filter_nav_by_route_authority``
+                    # already admitted upstream.  The canonical projection must
+                    # consume that same carrier instead of rejecting a
+                    # legitimate contract-declared leaf as targetless.
+                    declared_authority_by_menu.setdefault(pair[0], entry)
         for entry in authority.get("menu_containers") or []:
             if not isinstance(entry, dict):
                 continue
@@ -682,6 +735,7 @@ class MenuService:
                 seen_menu_ids.add(menu_id)
             entry = authority_by_pair.get((menu_id, action_id)) if action_id > 0 else None
             container_entry = container_authority_by_menu.get(menu_id) if action_id <= 0 else None
+            declared_entry = declared_authority_by_menu.get(menu_id) if action_id <= 0 else None
             if action_id > 0 and not entry:
                 raise ValueError(
                     "canonical navigation action lacks exact authority: %s/%s" % (menu_id, action_id)
@@ -697,7 +751,9 @@ class MenuService:
             # ``state="container"``; the delivery engine marks every such group
             # ``is_clickable=False`` with ``reason_code=DIRECTORY_ONLY``, so
             # reading the flag alone rejected legitimate directories.
-            owns_target = action_id > 0 or container_entry is not None
+            owns_target = (
+                action_id > 0 or container_entry is not None or declared_entry is not None
+            )
             explicitly_disabled = (
                 availability in {"disabled", "blocked", "unavailable", "denied"}
                 or (
@@ -715,14 +771,14 @@ class MenuService:
                     "disabled canonical navigation node requires a server reason: %s/%s (%s)"
                     % (menu_id, action_id, key)
                 )
-            if action_id <= 0 and not children and not container_entry:
+            if action_id <= 0 and not children and not container_entry and not declared_entry:
                 raise ValueError("canonical navigation node has neither target nor children")
 
             state = (
                 "disabled"
                 if explicitly_disabled
                 else "enabled"
-                if action_id > 0 or container_entry
+                if action_id > 0 or container_entry or declared_entry
                 else "container"
             )
             authority_projection = (
@@ -747,6 +803,20 @@ class MenuService:
                 }
                 if container_entry
                 else {
+                    "state": "allowed",
+                    "source": text(declared_entry.get("source")),
+                    "key": ":".join((
+                        text(declared_entry.get("route_kind")),
+                        text(declared_entry.get("menu_xmlid") or declared_entry.get("menu_id")),
+                        text(
+                            declared_entry.get("scene_key")
+                            or declared_entry.get("action_xmlid")
+                            or declared_entry.get("action_id")
+                        ),
+                    )),
+                }
+                if declared_entry
+                else {
                     "state": "container",
                     "source": "system.init.navigation.nav",
                     "key": "container:%s" % (menu_id or key),
@@ -762,7 +832,7 @@ class MenuService:
                 "parent_chain": list(parents),
                 "label": label,
                 "icon": text(node.get("icon") or meta.get("icon")) or None,
-                "route": text((entry or container_entry or {}).get("route")) or None,
+                "route": text((entry or container_entry or declared_entry or {}).get("route")) or None,
                 "authority": authority_projection,
                 "state": state,
                 "disabled_reason": disabled_reason or None,
@@ -832,7 +902,15 @@ class MenuService:
                 )
                 if entry:
                     buckets[bucket].append(entry)
-                elif fact and isinstance(fact.get("menu_id"), int) and fact.get("menu_id") > 0:
+                elif (
+                    fact
+                    and isinstance(fact.get("menu_id"), int)
+                    and fact.get("menu_id") > 0
+                    # A container must own visible children.  An action-less
+                    # leaf is a contract-declared scene anchor, not a
+                    # directory, so it must not mint a /m/<id> container.
+                    and fact.get("child_ids")
+                ):
                     buckets["menu_containers"].append({
                         "route_kind": route_kind,
                         "menu_id": int(fact["menu_id"]),
@@ -926,6 +1004,27 @@ class MenuService:
                 buckets["primary_actions"].append(entry)
                 authorized_pairs.add(pair)
 
+        # Declared target entries are authorized by the released contract and
+        # carry no business action.  They enter the same bucket shape as any
+        # other entry (menu identity + action_id 0 + entry_target) so the
+        # consumer never has to know two identities; admission stays
+        # fail-closed: leaf only, explicit entry_target, no children.
+        for spec in self._walk_nav_declared_entry_specs(nav if isinstance(nav, list) else []):
+            buckets["role_home_actions"].append({
+                "route_kind": "ROLE_HOME_ACTION",
+                "menu_id": int(spec.get("menu_id") or 0),
+                "menu_xmlid": str(spec.get("menu_xmlid") or "").strip(),
+                "action_id": 0,
+                "name": str(spec.get("name") or "").strip(),
+                "scene_key": str(spec.get("scene_key") or "").strip(),
+                "route": str(spec.get("route") or "").strip() or f"/s/{str(spec.get('scene_key') or '').strip()}",
+                "entry_target": dict(spec.get("entry_target") or {}),
+                "allowed_operation": "read",
+                "required_capability": "menu_container_visible",
+                "context_requirements": {},
+                "source": "nav.declared_entry",
+            })
+
         nav_targets = self._nav_target_index(nav if isinstance(nav, list) else [])
         for bucket_name in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions"):
             for entry in buckets[bucket_name]:
@@ -941,11 +1040,136 @@ class MenuService:
                     if target.get(field):
                         entry[field] = target[field]
 
+        # Contract-declared role surfaces must never be narrowed silently: a
+        # declared menu that is neither delivered nor explicitly denied would be
+        # an unobservable contract defect. Close the partition here, after every
+        # delivery branch, so a declared entry is never both delivered and denied
+        # and never disappears without an explicit reason_code.
+        declared_menu_xmlids = {
+            str(menu_xmlid or "").strip()
+            for field, _bucket, _route_kind in menu_fields
+            for menu_xmlid in surface.get(field) or []
+        }
+        declared_menu_xmlids.discard("")
+        accounted_menu_xmlids = {
+            str(item.get("menu_xmlid") or "").strip()
+            for bucket in buckets.values()
+            for item in bucket
+            if isinstance(item, dict)
+        }
+        for menu_xmlid in sorted(declared_menu_xmlids - accounted_menu_xmlids):
+            entry = self._denied_route_entry(menu_xmlid)
+            if entry:
+                buckets["denied_actions"].append(
+                    {**entry, "reason_code": "PRODUCT_ENTRY_NOT_VISIBLE"}
+                )
+                continue
+            menu = self.env.ref(menu_xmlid, raise_if_not_found=False)
+            if menu and str(getattr(menu, "_name", "")) == "ir.ui.menu" and int(menu.id or 0) > 0:
+                buckets["denied_actions"].append({
+                    "action_xmlid": "",
+                    "route_kind": "DENIED",
+                    "menu_id": int(menu.id),
+                    "menu_xmlid": menu_xmlid,
+                    "action_id": 0,
+                    "name": str(menu.name or "").strip(),
+                    "model": "",
+                    "view_modes": [],
+                    "route": "/m/%d" % int(menu.id),
+                    "allowed_operation": "none",
+                    "required_capability": "product_denied",
+                    "context_requirements": {},
+                    "source": "role_surface.declared.not_delivered",
+                    "reason_code": "PRODUCT_ENTRY_NOT_VISIBLE",
+                })
+                continue
+            # The contract declared an entry this build does not define. Record an
+            # explicit, id-less denial instead of inventing a route, so the defect
+            # stays observable and fails the partition closed.
+            buckets["denied_actions"].append({
+                "action_xmlid": "",
+                "route_kind": "DENIED",
+                "menu_id": 0,
+                "menu_xmlid": menu_xmlid,
+                "action_id": 0,
+                "name": "",
+                "model": "",
+                "view_modes": [],
+                "route": "",
+                "allowed_operation": "none",
+                "required_capability": "product_denied",
+                "context_requirements": {},
+                "source": "role_surface.declared.undefined",
+                "reason_code": "PRODUCT_ENTRY_NOT_DEFINED",
+            })
+
+        # The declared ACTION face is closed the same way as the declared MENU
+        # face. A contextual/admin action authority that is neither delivered nor
+        # explicitly denied would be an unobservable contract defect: the
+        # declaration promises a route the runtime never admits (for example an
+        # action whose model ACL does not grant the declared operation to this
+        # principal). Record an explicit decision instead of narrowing silently.
+        declared_action_xmlids = {
+            str(spec.get("action_xmlid") or "").strip()
+            for field in ("contextual_action_authorities", "admin_action_authorities")
+            for spec in surface.get(field) or []
+            if isinstance(spec, dict) and str(spec.get("action_xmlid") or "").strip()
+        }
+        accounted_action_xmlids = {
+            str(item.get("action_xmlid") or "").strip()
+            for bucket in buckets.values()
+            for item in bucket
+            if isinstance(item, dict) and str(item.get("action_xmlid") or "").strip()
+        }
+        for action_xmlid in sorted(declared_action_xmlids - accounted_action_xmlids):
+            action = self.env.ref(action_xmlid, raise_if_not_found=False)
+            if action and str(getattr(action, "_name", "") or "") == "ir.actions.act_window":
+                # The build defines the action, but the request principal is not
+                # admitted for the declared operation. This is a real permission
+                # boundary, never overridden here.
+                buckets["denied_actions"].append({
+                    "action_xmlid": action_xmlid,
+                    "route_kind": "DENIED",
+                    "menu_id": 0,
+                    "menu_xmlid": "",
+                    "action_id": int(action.id),
+                    "name": str(action.name or "").strip(),
+                    "model": str(action.res_model or "").strip(),
+                    "view_modes": [],
+                    "route": "/a/%d" % int(action.id),
+                    "allowed_operation": "none",
+                    "required_capability": "product_denied",
+                    "context_requirements": {},
+                    "source": "role_surface.declared.not_authorized",
+                    "reason_code": "PRODUCT_ENTRY_NOT_AUTHORIZED",
+                })
+                continue
+            buckets["denied_actions"].append({
+                "action_xmlid": action_xmlid,
+                "route_kind": "DENIED",
+                "menu_id": 0,
+                "menu_xmlid": "",
+                "action_id": 0,
+                "name": "",
+                "model": "",
+                "view_modes": [],
+                "route": "",
+                "allowed_operation": "none",
+                "required_capability": "product_denied",
+                "context_requirements": {},
+                "source": "role_surface.declared.undefined",
+                "reason_code": "PRODUCT_ENTRY_NOT_DEFINED",
+            })
+
         for bucket_name, bucket in buckets.items():
-            deduped = {
-                (int(item.get("action_id") or 0), int(item.get("menu_id") or 0)): item
-                for item in bucket
-            }
+            deduped = {}
+            for item in bucket:
+                action_id = int(item.get("action_id") or 0)
+                menu_id = int(item.get("menu_id") or 0)
+                identity = (action_id, menu_id, "") if (menu_id or action_id) else (
+                    0, 0, str(item.get("menu_xmlid") or "")
+                )
+                deduped[identity] = item
             bucket[:] = list(deduped.values())
             bucket.sort(key=lambda item: (str(item.get("action_xmlid") or item.get("menu_xmlid") or ""), int(item.get("menu_id") or 0)))
         return {
@@ -955,6 +1179,53 @@ class MenuService:
             "principal_scope": principal_scope,
             **buckets,
         }
+
+    @classmethod
+    def _walk_nav_declared_entry_specs(cls, nav: list[dict]) -> list[dict]:
+        """Yield leaf nodes that carry a declared target entry and no action."""
+        out: list[dict] = []
+
+        def walk(node) -> None:
+            if not isinstance(node, dict):
+                return
+            meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+            entry_target = (
+                node.get("entry_target")
+                if isinstance(node.get("entry_target"), dict)
+                else meta.get("entry_target")
+                if isinstance(meta.get("entry_target"), dict)
+                else {}
+            )
+            children = [child for child in node.get("children") or [] if isinstance(child, dict)]
+            scene_key = str(
+                node.get("scene_key") or meta.get("scene_key") or entry_target.get("scene_key") or ""
+            ).strip()
+            try:
+                menu_id = int(node.get("menu_id") or meta.get("menu_id") or 0)
+                action_id = int(node.get("action_id") or meta.get("action_id") or 0)
+            except (TypeError, ValueError):
+                menu_id = action_id = 0
+            if (
+                scene_key
+                and not action_id
+                and not children
+                and menu_id > 0
+                and str(entry_target.get("type") or "").strip() == "scene"
+            ):
+                out.append({
+                    "menu_id": menu_id,
+                    "menu_xmlid": str(node.get("menu_xmlid") or meta.get("menu_xmlid") or "").strip(),
+                    "name": str(node.get("title") or node.get("label") or node.get("name") or "").strip(),
+                    "scene_key": scene_key,
+                    "route": str(node.get("route") or meta.get("route") or entry_target.get("route") or "").strip(),
+                    "entry_target": dict(entry_target),
+                })
+            for child in children:
+                walk(child)
+
+        for node in nav or []:
+            walk(node)
+        return out
 
     @classmethod
     def _filter_role_surface_nodes(cls, nodes: list[dict], role_surface: dict | None) -> list[dict]:

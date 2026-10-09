@@ -88,13 +88,18 @@ REQUIRED_TOKENS = {
 
 
 def _daily_navigation_tokens(errors: list[str]) -> list[str]:
-    """Derive the runbook's navigation values from the acceptance contract."""
+    """Derive the runbook's navigation values from the declared contract authority."""
     try:
-        policy = json.loads(POLICY.read_text(encoding="utf-8"))
-        navigation = policy["profiles"]["daily"]["navigation_policy"]
+        import sys
+
+        if str(Path(__file__).resolve().parent) not in sys.path:
+            sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from acceptance_action_count import resolve_daily_action_count
+
+        count = resolve_daily_action_count(Path(__file__).resolve().parents[2])
         return [
-            f"ACCEPTANCE_NAV_MIN_ACTIONS={navigation['min_actions']}",
-            f"ACCEPTANCE_NAV_MAX_ACTIONS={navigation['max_actions']}",
+            f"ACCEPTANCE_NAV_MIN_ACTIONS={count}",
+            f"ACCEPTANCE_NAV_MAX_ACTIONS={count}",
         ]
     except (OSError, ValueError, KeyError, TypeError) as exc:
         errors.append(f"cannot resolve daily navigation policy: {exc}")
