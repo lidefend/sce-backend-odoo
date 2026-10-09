@@ -582,3 +582,67 @@ main 车道，候选车道检查保留但尚无回执。
   与 3 个被点名文件），**不含被检查的源码树**，若将来被记为可复用，`src` 中任一处改动都不会使其失效——
   这是**不成立的复用边界**。现改为真实依赖集合：`frontend/apps/web/src`（**目录**，逐文件哈希）、
   `tsconfig.json`、`tsconfig.strict.json`、`package.json`、`vite.config.ts`。未放宽任何断言。
+
+## 12. 快照同步问题闭环（2026-10-09 第 12 轮）
+
+### 12.1 事实结论：快照本体一直在同步，缺口在"服务/消费面"
+
+`sc.edition.release.snapshot` 的回执每次都带当前候选 SHA（`snapshot_version=daily-navigation-<sha12>`、
+`refreshes.*.changed=true`、`snapshot_released_page_count=90`），即**快照本身没有滞后**。真正没有跟上的是
+两条别的东西，且都发生在"同步之外"：
+
+| 层 | 现象 | 根因 | 修复 |
+| --- | --- | --- | --- |
+| 发布面 vs 代码面 | 契约已变、闸门仍读上一代契约 | 两个面分属两条独立发布车道 | `daily.runtime.candidate.release` 固定为 `bundle_sync → source_revision.align → published_face.converge` |
+| served 身份 | `/api/runtime-version` 报旧 SHA | `SC_SOURCE_REVISION` 未随树更新 | 同一入口内声明并回读 exact deployed HEAD |
+| 冻结时机 | 新投影代码未生效就冻结 | `guard.codex.fast.upgrade` 拒绝未声明的升级（`MODULE_UPGRADE_FAILED`） | 按受管模式声明 `CODEX_NEED_UPGRADE=1` + `CODEX_MODULES`，并把升级尾部日志带进失败信息 |
+| 消费面（用户可见） | 闸门 PASS 但 `system.init` HTTP 500 | 规范投影只认 `action_id>0` / `menu_containers`，把契约声明的 scene 入口（`menu_id=1004, action_id=0`）判为"无目标节点"并抛错 | 服务端投影与前端镜像共同消费同一"声明授权"载体；发布闸门守卫补齐投影尾部，不再"只跑闸门" |
+
+### 12.2 部署回执（候选 `4b7f9a46`，仅日常运行时，未进 main）
+
+- `daily.runtime.candidate.bundle_sync` PASS；`old 0d9e4500…` → `source_sha 4b7f9a46…`，`origin_main_mutated=false`。
+- `daily.runtime.source_revision.align` PASS；`served.source_revision=git_sha=4b7f9a46…`。
+- `daily.runtime.published_face.converge` PASS（`upgrade_modules=[smart_core]`）；`snapshot_id=39/40`、
+  `daily-navigation-{standard,preview}-4b7f9a46`、`gate_page_count=kept_leaf_count=90`、`guard PASS`。
+- `daily.runtime.frontend.build` PASS；`frontend_build_sha256=a3f477a4…`、`entry_asset=index-Buu4bI2N.js`。
+- 回执：`.runtime/final-acceptance/daily-deployed/{candidate-bundle-sync,source-revision-align,published-face-converge,frontend-build,record-identity-resolve}.json`。
+
+### 12.3 用户视角读回（`wutao/123456`，`sc_demo`）
+
+- `system.init` **HTTP 200**（变更前同账号同库为 **HTTP 500**）；112 个节点全部带 `canonical_navigation` 投影，
+  `enabled=94 / container=18 / disabled=0`。
+- `角色首页`：`menu_id=1004`、`action_id=null`、`state=enabled`、`authority.state=allowed`、
+  `authority.source=nav.declared_entry`、`route=/s/workspace.home`。
+- `navigation.meta.platform_release_gate`：`snapshot_id=39`、`allowed_page_count=kept_leaf_count=90`、
+  `removed_leaf_count=0`。
+
+### 12.4 只读探针 正/负例（断言未放宽）
+
+| 断言 | 正例（`wutao`，`business_config_admin`） | 负例（声明 `finance`/46，实登管理员） |
+| --- | --- | --- |
+| `served_sha` / `frontend_build_sha256` | `4b7f9a46…` PASS / `a3f477a4…` | 同 |
+| contract 段 | 11/11 PASS | PASS |
+| `role_code` vs 声明 | 相等 | **不等** → `role_code_unexpected` |
+| 计数 | `nav_admitted_entry_count=90 == nav_gate_kept_leaf_count=90 == 契约 90` | `90 > 46` → `nav_entry_count_above_max` |
+| 结论 | **PASS** | **FAIL**（按预期） |
+
+计数口径修正（非断言放宽）：契约授权字段名为 `effective_menu_count_per_product`（**菜单条目**数），而探针原先
+只统计 `action_id` 非空的节点；声明式 scene 入口天然没有业务动作，于是"90 条契约 vs 89 个动作节点"永远无法
+同时成立。现按契约人口（受闸门放行的叶子条目）计数，并**新增**与发布闸门 `kept_leaf_count` 的等式校验。
+`nav_action_count=89` 继续作为事实记录。产物：`.runtime/daily-readback-{candidate,negative}.json`、
+`artifacts/backend/daily_dev_acceptance_probe.json`、`artifacts/backend/acceptance_record_identity.json`。
+
+### 12.5 账本复用边界（设计约定，非缺陷）
+
+`make agent.run.record` 已为 `daily_acceptance_readback` 写入绑定身份的回执（39 项断言、日志哈希）。
+但 `scripts/ops/agent_run_context.py` **只自动复用声明的 offline 检查**：`kind=runtime` 的回执一律保持
+`stale`，理由固定为 `runtime evidence requires authoritative environment readback`
+（由 `scripts/verify/test_agent_run_context.py::test_runtime_receipt_never_auto_reused` 锁定）。
+因此 runtime 车道的权威读回在本批由 `.runtime/final-acceptance/daily-deployed/*.json` + 上述回执承载。
+"运行态证据可复用"需要先引入**声明式权威环境读回**机制，登记为下一项 P4 项（见 §13），本轮不擅自改变该约定。
+
+### 12.6 未完成项
+
+1. 浏览器关系交互车道：`nav_pro_*` fixture 受管制备 + `verify.nav.pro01r.route_authority.browser`
+   一次真实"点击打开 → 返回原记录 → 标签/动作恢复"。
+2. 主线集成：等待用户明确授权（本轮指令为"先不执行进入主线"）。

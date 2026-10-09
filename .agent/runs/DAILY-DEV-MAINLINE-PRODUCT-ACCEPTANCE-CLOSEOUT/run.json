@@ -293,11 +293,11 @@
     }
   },
   "blockers": [
-    "daily_acceptance_readback (verify.daily_dev.acceptance.readonly.probe) is deployment-gated: the workspace versioned contract resolves 90 nav actions for the locked principal role while the served runtime d106d2dd still serves 89. Recovery is commit -> merge -> deploy + module upgrade, then re-read. The assertion must not be lowered to 89.",
-    "browser_login_return_authority (verify.nav.pro01r.route_authority.browser) prerequisite is not recovered: the nav_pro_{config_admin,system_admin,pm,project_member} login subjects do not exist on sc_demo and must be provisioned through the governed nav.pro01.runtime.prepare inside the remote sc-backend-odoo-dev compose. The prepare step is itself rejected on the served tree d106d2dd with \"missing task evidence: finance smart_construction_core.menu_sc_settlement_adjustment\", so it depends on the same deploy + module upgrade.",
-    "The product layer of this batch is committed as dde30179c7d631c3aeaf89be90093626a0f02e49; the docs and run record are being committed in the same layer. User-level acceptance of this batch's product surface on the daily runtime is impossible until this commit is pushed, merged and the daily runtime is deployed and module-upgraded (the new anchor is a menu record)."
+    "Mainline integration is not authorized: the user instructed \"先不执行进入主线\". The verified candidate is deployed to the daily runtime only; PR push, remote gates and merge remain pending and must not be described as integrated.",
+    "browser_login_return_authority (verify.nav.pro01r.route_authority.browser) still needs the governed nav_pro_{config_admin,system_admin,pm,project_member} fixture provisioned on sc_demo through nav.pro01.runtime.prepare inside the remote compose. Its earlier blocking prerequisite (\"missing task evidence: finance smart_construction_core.menu_sc_settlement_adjustment\") was a served-tree/module-generation gap; the runtime is now at 4b7f9a46 with smart_core upgraded and the published face re-frozen, so the prepare step can be attempted. No assertion may be relaxed.",
+    "Run-ledger reuse boundary (by design, not a defect): scripts/ops/agent_run_context.py only auto-reuses declared offline checks; a kind=runtime receipt is never auto-reusable and is reported as stale with \"runtime evidence requires authoritative environment readback\" (locked by scripts/verify/test_agent_run_context.py::test_runtime_receipt_never_auto_reused). The authoritative readback for this batch therefore lives in .runtime/final-acceptance/daily-deployed/*.json plus the recorded receipt .runtime/agent-runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/daily_acceptance_readback.json. Reuse for runtime lanes requires a declared authoritative-environment-readback mechanism, which is outstanding P4 work."
   ],
-  "next_exact_step": "Batch product layer committed as dde30179 (18 files: P1 native menu record smart_construction_core.menu_sc_workspace_home (角色首页) + versioned contract declaration, contract baseline 89->90, P0 menu_service action-less entry projection, product_view_structure_common declared-scene-entry shape, frontend navigationSelectionCore single identity rule, and the bound guards/tests). Ledger unchanged: 28 declared checks, reusable 18 / not_run 9 / stale 0 / failed 1. Next, in order: (1) push the commit and open the Gitee PR through the governed entry (pr.push.gitee), let the remote gates run, and merge via the protected PR flow once the required checks pass on the exact head; (2) deploy the new mainline to the daily runtime and module-upgrade it (the new anchor is a menu record, so the upgrade is required for the 90th nav action to serve); (3) re-run verify.daily_dev.acceptance.readonly.probe at the new served SHA (it must turn PASS; the assertion must not be lowered to 89); (4) provision the nav_pro_* fixture through the governed nav.pro01.runtime.prepare inside the remote compose and run verify.nav.pro01r.route_authority.browser as one real click-open -> return -> tab/action restore journey.",
+  "next_exact_step": "Daily-runtime candidate 4b7f9a46 is deployed and the user-visible defect is closed: served system.init for wutao returns HTTP 200 (was 500), navigation.meta.platform_release_gate reads snapshot_id 39 (daily-navigation-standard-4b7f9a46) / 40 (preview) with allowed_page_count=kept_leaf_count=90, all 112 served nodes carry canonical_navigation projections, and 角色首页 (menu_id 1004, action_id 0) is enabled with authority.state=allowed/source=nav.declared_entry at route /s/workspace.home. verify.daily_dev.acceptance.readonly.probe PASSES at that served SHA (identity PASS, contract 11/11, login nav_admitted_entry_count=90 == nav_gate_kept_leaf_count=90 == contracted 90; the assertion was NOT lowered - nav_action_count 89 is now reported alongside the contracted entry population), and the negative control (declared finance/46, served business_config_admin) still FAILS with role_code_unexpected + nav_entry_count_above_max. Next, in order: (1) provision the nav_pro_* fixture through the governed nav.pro01.runtime.prepare and run verify.nav.pro01r.route_authority.browser as one real click-open -> return -> tab/action restore journey; (2) on explicit user authorization, push the candidate and open the Gitee PR through pr.push.gitee so the remote gates run on the exact head, then merge through the protected PR flow; (3) keep the contracted 90 assertion and the coupled daily.runtime.candidate.release entry.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -506,6 +506,84 @@
       },
       "residual": "a check bound to an entry point that reports no non-zero test count can never enter the reusable set; the 6 guard-only targets and frontend_typecheck are re-run each iteration (about 2-3s each). Giving them test-bearing entry points is the bounded follow-up, not a reason to relax the non-zero-test rule.",
       "ownership": "P4 ops tooling (scripts/ops, scripts/verify, make/guards.mk); no product semantics"
+    },
+    "snapshot_face_sync_closeout": {
+      "question": "why the published snapshot did not appear to update on the daily runtime",
+      "finding": "The published snapshot itself was already re-frozen on every converge (snapshot_version carries the candidate SHA and refreshes.changed=true). What did not follow were (a) the served code/rendering face and (b) the consumer of the snapshot. Four layered causes were proven: 1) the published face (sc.edition.release.snapshot, which the navigation release gate reads) was released by a lane independent of the code face, so a contract change could be deployed while the gate kept reading the previous contract - fixed by making daily.runtime.candidate.release order bundle_sync -> source_revision.align -> published_face.converge; 2) SC_SOURCE_REVISION stayed at the previous commit, so /api/runtime-version reported a stale served revision even though the tree was updated - fixed by declaring the exact deployed HEAD in the same entry; 3) the face freeze must upgrade the projection module, but guard.codex.fast.upgrade rejected the undeclared upgrade, so the freeze never made the new projection code live - fixed by declaring CODEX_NEED_UPGRADE=1 with CODEX_MODULES and carrying the upgrade tail into the failure message; 4) the canonical projection (server) and its frontend mirror indexed only action_id>0 / menu_containers and rejected the contract-declared scene entry (menu_id 1004, action_id 0), which made every system.init for the locked role return HTTP 500 while the guard reported PASS - fixed by consuming the same declared authority carrier end to end, with the release-gate guard extended to mirror the projection tail.",
+      "served_readback": {
+        "served_sha": "4b7f9a469a3af9e10d59c6a0013360db8cacab80",
+        "database": "sc_demo",
+        "frontend_build_sha256": "a3f477a4b7ccaf81433a84a0e5192cc31cd350d21033870e764dd53ce80c4d1a",
+        "snapshots": {
+          "construction.standard": 39,
+          "construction.preview": 40
+        },
+        "snapshot_version_example": "daily-navigation-standard-4b7f9a46",
+        "gate": {
+          "allowed_page_count": 90,
+          "kept_leaf_count": 90,
+          "removed_leaf_count": 0
+        },
+        "system_init": {
+          "http_status": 200,
+          "ok": true,
+          "nav_node_count": 112,
+          "projected_nodes": 112,
+          "enabled": 94,
+          "container": 18,
+          "disabled": 0
+        },
+        "role_home_entry": {
+          "menu_id": 1004,
+          "action_id": 0,
+          "state": "enabled",
+          "authority_state": "allowed",
+          "authority_source": "nav.declared_entry",
+          "route": "/s/workspace.home"
+        },
+        "positive_probe": {
+          "status": "PASS",
+          "nav_leaf_count": 90,
+          "nav_admitted_entry_count": 90,
+          "nav_gate_kept_leaf_count": 90,
+          "nav_action_count": 89,
+          "nav_required_path_misses": [],
+          "nav_forbidden_label_hits": [],
+          "contract_executed_checks": 11,
+          "role_code": "business_config_admin"
+        },
+        "negative_control": {
+          "status": "FAIL_as_required",
+          "errors": [
+            "role_code_unexpected",
+            "nav_entry_count_above_max"
+          ],
+          "declared_role": "finance",
+          "declared_bounds": [
+            46,
+            46
+          ]
+        },
+        "receipts": [
+          ".runtime/final-acceptance/daily-deployed/candidate-bundle-sync.json",
+          ".runtime/final-acceptance/daily-deployed/source-revision-align.json",
+          ".runtime/final-acceptance/daily-deployed/published-face-converge.json",
+          ".runtime/final-acceptance/daily-deployed/frontend-build.json",
+          ".runtime/final-acceptance/daily-deployed/record-identity-resolve.json",
+          ".runtime/daily-readback-candidate.json",
+          ".runtime/daily-readback-negative.json",
+          "artifacts/backend/daily_dev_acceptance_probe.json",
+          "artifacts/backend/acceptance_record_identity.json"
+        ],
+        "assertion_policy": "not lowered: the contract authority still resolves 90 for the locked principal role; the probe now measures the contracted entry population (released leaves, cross-checked against the release gate kept_leaf_count) instead of the action-bearing subset, and the negative control still fails."
+      },
+      "p0_p1_commits": [
+        "e3ceb585",
+        "a941ce09",
+        "0d9e4500",
+        "4b7f9a46"
+      ],
+      "reuse_boundary": "Runtime checks are not auto-reusable by ledger design; see blockers[2]."
     }
   },
   "continuation": {
@@ -514,15 +592,13 @@
   },
   "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced.",
   "stage_identity": {
-    "head": "dde30179c7d631c3aeaf89be90093626a0f02e49",
+    "head": "4b7f9a469a3af9e10d59c6a0013360db8cacab80",
     "dirty_scope": [
       ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json",
-      "docs/architecture/menu_scene_anchor_policy_v1.md",
-      "docs/architecture/navigation_dual_track_contract_v1.md",
-      "docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md",
-      "docs/product/product_menu_contract_v1.md"
+      "artifacts/backend/acceptance_record_identity.json",
+      "docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md"
     ],
     "kind": "iteration",
-    "note": "iteration identity: HEAD plus explicit dirty scope. baseline_sha above is the run-registration acceptance baseline and is an ancestor of HEAD; it is not the current stage identity. The product/contract/guard layer of this batch is now committed as dde30179; the docs and run record of the same layer are still dirty in this step."
+    "note": "iteration identity: the product/verification layer is 4b7f9a46 and the daily runtime serves that exact revision (source_revision=git_sha=4b7f9a469a3af9e10d59c6a0013360db8cacab80, database=sc_demo, frontend_build_sha256=a3f477a4b7ccaf81433a84a0e5192cc31cd350d21033870e764dd53ce80c4d1a). The dirty scope above is documentation plus the regenerated record-identity evidence, which are not runtime inputs; they are committed in the same layer. baseline_sha is the run-registration acceptance baseline and an ancestor of HEAD, not the current stage identity."
   }
 }
