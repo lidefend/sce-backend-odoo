@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4637`
+- Scanned files: `4645`
 - Files requiring split plan: `61`
 - Files above warning threshold: `112`
 
@@ -32,9 +32,9 @@ Generated from repository source files. This report is informational during the 
 | 3066 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 3011 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2875 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
+| 2771 | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 2675 | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2515 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
-| 2500 | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 2454 | Python source | `addons/smart_core/handlers/system_init.py` |
 | 2340 | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2225 | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
@@ -47,10 +47,10 @@ Generated from repository source files. This report is informational during the 
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1977 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1963 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 1940 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1932 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1923 | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 1901 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
-| 1890 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1876 | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1841 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1801 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
@@ -66,9 +66,9 @@ Generated from repository source files. This report is informational during the 
 | 1621 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1609 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
+| 1569 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 1568 | Python source | `scripts/verify/test_frontend_standard_preview.py` |
 | 1553 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
-| 1542 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 672 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
@@ -111,17 +111,18 @@ Generated from repository source files. This report is informational during the 
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1207 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
+| 1179 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1169 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1157 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
-| 1148 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1147 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1137 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
+| 1132 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1121 | Python source | `scripts/release/production_backup_restore.py` |
+| 1118 | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
 | 1117 | Python source | `scripts/ops/codex_agent_controller.py` |
-| 1100 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1096 | Python source | `addons/smart_construction_core/models/core/payment_ledger.py` |
 | 1096 | JavaScript source | `scripts/verify/local_dev_project_create_contract_driver_probe.mjs` |
 | 1094 | JavaScript source | `scripts/verify/list_search_group_usability_audit.js` |
@@ -129,11 +130,11 @@ Generated from repository source files. This report is informational during the 
 | 1093 | Python source | `addons/smart_core/handlers/load_contract.py` |
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1080 | Python source | `scripts/verify/test_frontend_product_page_header_guard.py` |
-| 1066 | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
 | 1052 | Python source | `addons/smart_construction_core/models/support/approval_policy.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
 | 1038 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
 | 1023 | Python source | `addons/smart_core/tests/test_business_config_change_set.py` |
+| 1019 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
 | 1018 | Python source | `addons/smart_construction_core/tests/test_workflow_contract_backend.py` |
 | 1013 | Python source | `addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py` |
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
@@ -151,7 +152,6 @@ Generated from repository source files. This report is informational during the 
 | 907 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
 | 901 | Python source | `addons/smart_core/tests/test_execute_button_server_action_boundaries.py` |
 | 897 | Python source | `addons/smart_core/utils/idempotency.py` |
-| 896 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
 | 886 | Python source | `addons/smart_construction_core/models/core/equipment_management.py` |
 | 886 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 886 | Python source | `scripts/verify/release_capability_audit.py` |
@@ -215,9 +215,9 @@ Generated from repository source files. This report is informational during the 
 | 3066 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 3011 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2875 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
+| 2771 | split_plan_required | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 2675 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2515 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
-| 2500 | split_plan_required | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 2454 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
 | 2340 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2225 | split_plan_required | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
@@ -230,10 +230,10 @@ Generated from repository source files. This report is informational during the 
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1977 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1963 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 1940 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1932 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1923 | split_plan_required | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 1901 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
-| 1890 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1876 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1841 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1801 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
@@ -250,10 +250,10 @@ Generated from repository source files. This report is informational during the 
 | 1621 | split_plan_required | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1609 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
+| 1569 | split_plan_required | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 1568 | split_plan_required | Python source | `scripts/verify/test_frontend_standard_preview.py` |
 | 1557 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1553 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
-| 1542 | split_plan_required | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 1521 | split_plan_required | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1497 | warning | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1488 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
