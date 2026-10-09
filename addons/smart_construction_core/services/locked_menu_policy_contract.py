@@ -49,6 +49,14 @@ FORMAL_ACTION_ONLY_MENU_TARGETS = {
 # installing the independent tax-certificate model, action, and menu.
 FORMAL_BUSINESS_DECISION_REQUIRED_TARGETS = {}
 
+# A declared scene entry is a contracted navigation identity that carries no
+# business action. Its identity is the native menu anchor plus the declared
+# scene, and it is authorized by the same (menu_id, action_id=0) pair as every
+# other entry. It has no res_model and no view structure to export, so the
+# scene channel - never an action route - is what it navigates to.
+SCENE_ENTRY_POLICIES = ("scene_entry",)
+SCENE_ENTRY_TARGET_SCENE_KEY_FIELD = "target_scene_key"
+
 # Declarative per-role landing surface carried by the versioned product contract.
 # The platform identity resolver only projects this data; it is never derived
 # from business facts and never hard-coded per role in runtime code.
@@ -100,6 +108,20 @@ class LockedMenuPolicyContractError(RuntimeError):
 
 def _text(value) -> str:
     return str(value or "").strip()
+
+
+def is_declared_scene_entry(row) -> bool:
+    """True when a contract row declares a scene entry with no business action."""
+    source = row if isinstance(row, dict) else {}
+    declared = {_text(source.get("disposition_policy")), _text(source.get("entry_target_policy"))}
+    return any(policy in declared for policy in SCENE_ENTRY_POLICIES)
+
+
+def declared_scene_entry_key(row) -> str:
+    """Declared scene key of a contract row that is a scene entry, else ''."""
+    if not is_declared_scene_entry(row):
+        return ""
+    return _text((row if isinstance(row, dict) else {}).get(SCENE_ENTRY_TARGET_SCENE_KEY_FIELD))
 
 
 def canonical_group_label(value) -> str:

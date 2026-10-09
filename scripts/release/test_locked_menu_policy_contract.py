@@ -669,6 +669,25 @@ class SceneEntryIdentityContractTests(unittest.TestCase):
                     "a declared scene entry must route through the scene channel",
                 )
 
+    def test_runtime_normalization_consumes_the_declared_scene_identity(self):
+        """运行态策略同步必须按契约接受无动作的场景入口，普通菜单不得放行。"""
+        declared = {
+            str(menu.get("menu_xmlid") or "").strip(): str(menu.get("target_scene_key") or "").strip()
+            for _product_key, menu in self._declared_scene_entries()
+        }
+        self.assertTrue(declared, "the contract must declare at least one scene entry")
+        for _product_key, menu in self._menus():
+            menu_xmlid = str(menu.get("menu_xmlid") or "").strip()
+            with self.subTest(menu=menu_xmlid):
+                self.assertEqual(CONTRACT.declared_scene_entry_key(menu), declared.get(menu_xmlid, ""))
+        # A row is only a scene entry through its contract declaration. A menu
+        # that merely lacks an action, or declares the policy without a scene
+        # key, must never take the action-less branch.
+        self.assertEqual(CONTRACT.declared_scene_entry_key({"menu_xmlid": "x.y"}), "")
+        self.assertEqual(CONTRACT.declared_scene_entry_key({"action_xmlid": "x.y"}), "")
+        self.assertEqual(CONTRACT.declared_scene_entry_key({"entry_target_policy": "scene_entry"}), "")
+        self.assertEqual(CONTRACT.declared_scene_entry_key({"disposition_policy": "scene_entry"}), "")
+
     def test_code_scene_map_mirrors_the_released_contract(self):
         """代码常量只能镜像契约；不得承载契约未声明的入口身份。"""
         declared = {
