@@ -380,10 +380,11 @@
     }
   },
   "blockers": [
-    "Mainline integration is not authorized: the user instructed \"先不执行进入主线\". The verified candidate is deployed to the daily runtime only; PR push, remote gates and merge remain pending and must not be described as integrated.",
-    "P0 delivery-engine residue still reported, not fixed here: build_route_authority silently drops contract-declared entries that are neither delivered nor explicitly denied, and the native nav tree augmentation delivers entries outside the declared role face. Both are owning-layer (P0) semantics."
+    "Mainline integration is not authorized: the user instructed \"先不执行进入主线\". The verified candidate c31db98f is a local audit-branch commit only; PR push, remote gates and merge remain pending and must not be described as integrated.",
+    "The daily runtime still serves c3424962; the c31db98f backend/menu/front-end changes are not yet deployed. Browser-layer evidence for the creation/edit capability binding and the route-authority readback therefore require the one consolidated governed refresh before they can be collected.",
+    "Open product decision (registered, not hidden): the native configuration projection delivered menu_sc_business_config_workbench for the discover-capable system_admin surface although its admin_menu_xmlids does not declare that entry."
   ],
-  "next_exact_step": "Ordered closeout on branch audit/daily-dev-mainline-product-acceptance-closeout-20261009 at HEAD abdaf3b1. (1) DONE: the pre-existing mainline menu-closeout drift is fixed at its owning declaration layer; menu_sc_project_ledger_group_v2 is a RELEASED_FOUNDATION group in config/product_menu_contract_v1.json (项目中心 / 项目台账) that carries the released menu_sc_project_project entry, so the stale active=False expectation was removed from scripts/verify/product_menu_runtime_closeout_guard.py HIDDEN_XMLIDS and from product_policy_sync.py LOCKED_TARGET_UNPUBLISHED_MENU_XMLIDS. The guard no longer relaxes any assertion: every remaining HIDDEN_XMLIDS entry still requires an active=False overlay and locked-set membership. Verified by verify.product.menu.runtime_closeout.guard, verify.product.menu.release_manifest_v2.guard, verify.product.menu.contract_v1.guard, verify.frontend.release_navigation_policy.guard, verify.scene.role.surface.consistency.guard and verify.contract.project_ledger_entry_carrier.orm. (2) NEXT: close the P0 delivery-engine residue at its owning layer (smart_core delivery: stop silently dropping contract-declared entries that are neither delivered nor explicitly denied, and stop the native nav tree from delivering entries outside the declared role face); no assertion may be relaxed. (3) THEN: the remaining minimal-evidence gap for creation/edit and the workbench from the original list. (4) FINALLY: consolidated re-verification, one daily runtime refresh, then explicit user authorization before any push/PR/merge.",
+  "next_exact_step": "Ordered closeout on branch audit/daily-dev-mainline-product-acceptance-closeout-20261009 at candidate c31db98f (clean). (1) DONE: the two owning-layer declared-delivery defects are closed at P0 smart_core (declared ACTION face now closed like the MENU face) and P1 wave one (menu_ui_menu_config_policy_business_config re-hung on the product-configuration center), with the historical-payment-fact test assertion aligned to the existing delivered-or-denied-exactly-once invariant; no assertion relaxed, no ACL bypass, no model special case. Verified by 25/25 targeted ORM tests, eleven guards, front-end typecheck and 28/28 ledger ORM tests, all recorded in .runtime/agent-runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT and logged under .runtime/eff/rec/closeout-20261010/. (2) NEXT: the remaining minimal-evidence gap for creation/edit and the workbench needs one consolidated governed daily-runtime refresh (backend upgrade + front-end artifact), then a single targeted browser run: verify.frontend.business_entry.matrix.incremental plus verify.nav.pro01r.route_authority.browser with its declared readback artifact. (3) THEN: one consolidated verification pass and the user-facing acceptance readback; PR push / merge still require explicit authorization.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -969,6 +970,41 @@
       },
       "receipt": ".runtime/agent-runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/browser_login_return_authority.json",
       "log": ".runtime/nav-pro-01/lane-execution.log"
+    },
+    "round_20261010_declared_delivery_face": {
+      "defect_a": {
+        "owner_layer": "P0 smart_core delivery engine (menu_service.build_route_authority)",
+        "fact": "the declared MENU face was closed (PRODUCT_ENTRY_NOT_VISIBLE) but the declared ACTION face (contextual_action_authorities / admin_action_authorities) was never closed: a declared authority that was neither delivered nor denied disappeared silently. Read-only probe .runtime/diag/action_authority_closure.json reported silent_actions for nav_pro_pm (action_project_boq_import_wizard) while five other roles were clean.",
+        "fix": "close the declared action face exactly like the menu face; the entry is delivered or carries an explicit denial (PRODUCT_ENTRY_NOT_AUTHORIZED when the build defines the action but the principal's ACL does not admit the declared operation, PRODUCT_ENTRY_NOT_DEFINED when the build does not define it). No ACL, field permission or legitimate hiding rule is overridden and no module special case is added."
+      },
+      "defect_b": {
+        "owner_layer": "P1 smart_construction_core release overlay (menu_product_configuration_wave1.xml)",
+        "fact": "wave one re-hung 表单配置 and 字段管理 on the product-configuration center but omitted menu_ui_menu_config_policy_business_config, which stayed parented to the retired inactive menu_sc_lowcode_system_config_group. native_config_app_children therefore returned only ['表单配置'] and the declared admin/config leaf was unreachable while the role surface (admin_menu_xmlids) and the released configuration baseline still declared it.",
+        "fix": "re-hang the leaf on menu_sc_business_config_center like its sibling governed leaves; no assertion relaxed."
+      },
+      "verification": {
+        "targeted_orm": "make ENV=dev ENV_FILE=.env.dev MODULE=smart_construction_core TEST_TAGS=user_data_boundary test.safe -> 0 failed, 0 error(s) of 25 tests",
+        "guards": [
+          "verify.nav.pro01r.route_authority.unit",
+          "verify.product.menu.runtime_closeout.guard",
+          "verify.product.menu.contract_v1.guard",
+          "verify.frontend.release_navigation_policy.guard",
+          "verify.scene.role.surface.consistency.guard",
+          "verify.product.menu.release_manifest_v2.guard",
+          "verify.frontend.business_entry.evidence_scope.unit",
+          "verify.product.workbench.wave1.guard",
+          "verify.product.finance.center.wave1.guard (script)",
+          "verify.frontend.typecheck.strict",
+          "verify.contract.project_ledger_entry_carrier.orm (28 tests)"
+        ],
+        "logs": ".runtime/eff/rec/closeout-20261010/",
+        "local_frontend_build": "make local.dev.frontend -> dist-dev rebuilt and served on 127.0.0.1:18081 (entry assets/index-B1QjP7q-.js)"
+      },
+      "open_decision": {
+        "item": "contract-face-external delivery",
+        "fact": "for the discover-capable system_admin surface, the native configuration projection delivered menu_sc_business_config_workbench while the surface admin_menu_xmlids did not declare it (declared_not_delivered: menu_sc_workspace_home is the role-home carrier).",
+        "status": "registered, not silently closed; needs a product decision (complete the declaration vs narrow the projection)"
+      }
     }
   },
   "continuation": {
@@ -978,8 +1014,8 @@
   "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced.",
   "stage_identity": {
     "kind": "iteration",
-    "head": "abdaf3b124a42d31cda4a6c3609f7b72231343c8",
+    "head": "c31db98febf5b07b4930a2795c3dc0e6d93265e0",
     "dirty_scope": [],
-    "note": "iteration identity: local candidate abdaf3b1 (P1 menu-closeout declaration alignment) on top of b79c2c26 (closeout record) / 03393078 (P4 acceptance-lane contractization) / c3424962 (P1 route-authority declaration alignment). The daily runtime still serves c3424962 until the consolidated refresh; the abdaf3b1 change is behaviour-neutral for the served released face because the ledger group is not an entry in the locked menu policy baseline loop."
+    "note": "iteration identity: local candidate c31db98f (P0 declared-face closure + P1 configuration-menu re-hang) on top of 8eb4be6b (menu-closeout declaration alignment) / b79c2c26 / 03393078 / c3424962. The daily runtime still serves c3424962 until the consolidated refresh; only documentation/ledger commits follow c31db98f."
   }
 }

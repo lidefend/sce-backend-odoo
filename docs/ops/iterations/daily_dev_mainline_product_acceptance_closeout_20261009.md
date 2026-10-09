@@ -1020,3 +1020,56 @@ main 车道，候选车道检查保留但尚无回执。
   框架因此判定 `stale`（既有声明机制项，非本轮改动引入）；将在合并收口的日常运行时刷新时
   重跑该车道并补 `readback`。
 - `build_route_authority` 静默丢弃 / 契约面外交付（P0 交付引擎语义）仍未修，按顺序进入下一步。
+
+### 13.15 契约声明面闭合与配置中心重挂（`c31db98f`，2026-10-10 第 14 轮）
+
+**结论先行**：原 run 顺序中的第 2 项（P0 交付引擎残留）不是单点问题，而是**两个属主层缺陷**，均已修复且未放宽任何断言：
+
+1. **P0 `smart_core` 交付引擎：声明的 ACTION 面从未闭合。**
+   交付引擎此前已闭合声明的 **MENU** 面（`PRODUCT_ENTRY_NOT_VISIBLE`），但
+   `contextual_action_authorities` / `admin_action_authorities` 声明的 action 面在既未交付、也未显式拒绝时被**静默丢弃**。
+   只读探针（`.runtime/diag/action_authority_closure.json`）证实 `nav_pro_pm` 的
+   `action_project_boq_import_wizard` 落在 `silent_actions`，其余 5 个角色为空。
+   修法：把 ACTION 面按 MENU 面同一方式闭合——交付或显式拒绝（构建已定义但主体 ACL 不许可 → `PRODUCT_ENTRY_NOT_AUTHORIZED`；
+   构建未定义 → `PRODUCT_ENTRY_NOT_DEFINED`）。**未覆盖** ACL、字段权限或合法隐藏规则，**未加**付款/BOQ 等模型特判。
+   fixture 与代码一致：`group_sc_role_project_manager` 只隐含 `cost_read`，而 BOQ 导入向导 ACL 仅授予
+   `cost_user/cost_manager`，因此拒绝本身**正确**，本次修的是"拒绝必须可观测"。
+
+2. **P1 wave one：配置中心"菜单配置"叶子遗漏重挂。**
+   `views/menu_product_configuration_wave1.xml` 把 `表单配置`、`字段管理` 重挂到 `产品配置` 中心，却漏掉了
+   `menu_ui_menu_config_policy_business_config`；它仍挂在同一轮被关闭（`active=False`）的
+   `menu_sc_lowcode_system_config_group` 之下。
+   只读复核：`native_config_app_children` 只返回 `['表单配置']`；`_build_config_node` 要求**每一层**节点自身在
+   `visible_ids` 中，因此整棵子树（含"菜单配置"）在原生配置投影里被截断，而角色声明面（`admin_menu_xmlids`）
+   与受管配置中心基线仍然声明它 → 声明与交付分叉。
+   修法：按同一 wave one 模式重挂到 `menu_sc_business_config_center`。
+
+**一、测试断言对齐（不放宽）**
+
+- `test_role_surface_project_member.test_route_authority_contract_separates_admin_and_contextual_action_only_entries`：
+  原断言要求 `action_sc_historical_payment_fact` 必须出现在 `primary_actions`。该菜单是**声明但未发布**的锁定候选条目
+  （`product_policy_sync.LOCKED_TARGET_UNPUBLISHED_MENU_XMLIDS` 刻意保持 inactive），因此可采纳结果是**记录在案的拒绝**。
+  断言改为与同文件 executive / project-member 两处**完全相同**的契约不变量："交付或显式拒绝，恰好一次"，
+  且拒绝分支必须带 `PRODUCT_ENTRY_NOT_VISIBLE`。**未放宽**：静默消失仍会失败。
+- `scripts/verify/nav_pro_01r_route_authority_http.py`：新增 action 声明面分区断言（含 `silent_actions` fail-closed）。
+
+**二、验证（候选 `c31db98f`，工作区干净）**
+
+- 定向 ORM：`MODULE=smart_construction_core TEST_TAGS=user_data_boundary test.safe` → **0 failed, 0 error(s) of 25 tests**
+  （分支起点为 1 failed + 1 error；基线 `aea2c19b` 为 3 failed + 1 error）。
+- 守卫（全部 PASS）：`verify.nav.pro01r.route_authority.unit`、`verify.product.menu.runtime_closeout.guard`、
+  `verify.product.menu.contract_v1.guard`、`verify.frontend.release_navigation_policy.guard`、
+  `verify.scene.role.surface.consistency.guard`、`verify.product.menu.release_manifest_v2.guard`、
+  `verify.frontend.business_entry.evidence_scope.unit`、`verify.product.workbench.wave1.guard`、
+  `product_finance_center_wave1_guard.py`、`verify.frontend.typecheck.strict`、
+  `verify.contract.project_ledger_entry_carrier.orm`（28 tests）。
+- 日志：`.runtime/eff/rec/closeout-20261010/`；收据：`.runtime/agent-runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/`。
+- 本地前端产物：`make local.dev.frontend` 重建并在 `127.0.0.1:18081` 服务（入口 `assets/index-B1QjP7q-.js`）。
+
+**三、边界与遗留**
+
+- 四态：批次验收=进行中 / 主线集成=未做（用户"先不执行进入主线"）/ 版本发布=日常运行时候选 / 产品交付=未完成。
+- 日常运行态仍为 `c3424962`；`c31db98f` 的后端、菜单与前端改动**尚未部署**，因此浏览器层证据留到一次受管刷新后统一取证。
+- 待裁决（登记，不掩盖）：discover 型 `system_admin` 面的原生配置投影交付了 `menu_sc_business_config_workbench`，
+  而其 `admin_menu_xmlids` 未声明该条目。需产品裁决：补全声明，或收窄投影。
+
