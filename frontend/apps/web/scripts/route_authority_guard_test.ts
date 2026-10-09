@@ -215,3 +215,25 @@ assert.equal(isAuthorizedSceneNavigation({ ...sceneInput, authority: { ...sceneA
 assert.equal(isAuthorizedSceneNavigation({ ...sceneInput, authority: { ...sceneAuthority, admin_actions: [{ ...sceneGrant, scene_key: undefined }] } }), true);
 assert.equal(isAuthorizedSceneNavigation({ ...sceneInput, authority: { ...sceneAuthority, admin_actions: [{ ...sceneGrant, context_requirements: { record_query: 'record_id' } }] }, query: { record_id: '999' } }), false);
 console.log('[scene_empty_menu_shell] PASS cases=16 authority=final_route_contract');
+
+// Login-return targets must be consumed against the *current* released route
+// authority, exactly like the router guard. A replayed target that the guard
+// would deny (retired/unified entry, mismatched menu binding, missing context)
+// must be dropped so the caller falls back to the contract-declared landing,
+// instead of landing the user on the access-denied page right after login.
+import { authorityBoundTargetResolvable } from '../src/app/routeAuthority';
+const landingScope = { companyId: 3, selectedRecordId: null };
+assert.equal(authorityBoundTargetResolvable(contract, '/s/projects.list', landingScope), true, 'scene routes are not authority-bound');
+assert.equal(authorityBoundTargetResolvable(contract, '/', landingScope), true, 'root is not authority-bound');
+assert.equal(authorityBoundTargetResolvable(contract, '/f/sc.project/12', landingScope), true, 'model form without action/menu is not authority-bound');
+assert.equal(authorityBoundTargetResolvable(contract, '/r/sc.project/12', landingScope), true, 'record routes keep the relation-read intent path');
+assert.equal(authorityBoundTargetResolvable(contract, '/a/51?action_id=51', landingScope), true, 'admin route resolves in the surface');
+assert.equal(authorityBoundTargetResolvable(contract, '/a/41?company_id=3&project_id=9&contract_id=12', landingScope), true, 'contextual route resolves with its declared context');
+assert.equal(authorityBoundTargetResolvable(contract, '/a/41?company_id=3&project_id=9', landingScope), false, 'contextual route without its required record query is dropped');
+assert.equal(authorityBoundTargetResolvable(contract, '/a/999', landingScope), false, 'unknown action target is dropped');
+assert.equal(authorityBoundTargetResolvable(contract, '/a/1176?menu_id=969&action_id=1176', landingScope), false, 'retired unified-entry target is dropped');
+assert.equal(authorityBoundTargetResolvable(discoveredContract, '/f/sc.project/12?action_id=506&menu_id=379', landingScope), true, 'menu-bound action-form target resolves');
+assert.equal(authorityBoundTargetResolvable(discoveredContract, '/f/sc.project/12?action_id=506&menu_id=805', landingScope), false, 'mismatched menu binding is dropped');
+assert.equal(authorityBoundTargetResolvable(null, '/a/51', landingScope), false, 'an absent contract cannot authorize an authority-bound target');
+assert.equal(authorityBoundTargetResolvable(null, '/', landingScope), true, 'an absent contract still allows a non-authority-bound landing');
+console.log('[login_return_authority] PASS cases=13 source=contract_route_authority');
