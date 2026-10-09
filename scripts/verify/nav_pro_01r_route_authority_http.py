@@ -22,6 +22,7 @@ against one release gate, whereas the partition identity holds for every build.
 """
 from __future__ import annotations
 
+import ast
 import importlib.util
 import json
 import os
@@ -75,6 +76,78 @@ def _load_contract_version() -> str:
     if not match:
         raise RuntimeError("ROUTE_AUTHORITY_CONTRACT_VERSION not declared by menu_service.py")
     return match.group(1)
+
+
+def _governance_permission_fields() -> tuple[str, ...]:
+    """The enterprise permission surface fields declared by contract governance."""
+    path = ROOT / "addons/smart_core/utils/contract_governance_enterprise_forms.py"
+    module = ast.parse(path.read_text(encoding="utf-8"))
+    names: set = set()
+    for node in ast.walk(module):
+        if not isinstance(node, ast.Assign):
+            continue
+        for target in node.targets:
+            if isinstance(target, ast.Name) and target.id == "permission_fields":
+                try:
+                    value = ast.literal_eval(node.value)
+                except (ValueError, SyntaxError):
+                    continue
+                if isinstance(value, (set, frozenset, list, tuple)):
+                    names.update(str(item) for item in value)
+    if not names:
+        raise RuntimeError("permission_fields not declared by contract governance")
+    return tuple(sorted(names))
+
+
+def declared_permission_form_field(form_contract: dict) -> tuple[str, str]:
+    """Resolve the governance-declared permission field as the form contract declares it."""
+    roles = form_contract.get("fieldRoles") if isinstance(form_contract.get("fieldRoles"), dict) else {}
+    labels = form_contract.get("fieldLabels") if isinstance(form_contract.get("fieldLabels"), dict) else {}
+    for name in _governance_permission_fields():
+        if name in roles or name in labels:
+            label = str(labels.get(name) or "").strip()
+            if label:
+                return name, label
+    raise RuntimeError("no governance-declared permission field is present in the form contract")
+
+
+def admin_form_assertion(token: str, entry: dict) -> dict:
+    """Bind one administrator role's form assertion to its own contract entry.
+
+    The contract entry declares the consumable route, the model and the allowed
+    operation. A writable surface must expose the governance-declared permission
+    field; a read-only surface only has to render its declared model fields.
+    """
+    model = str(entry.get("model") or "").strip()
+    if not model:
+        raise RuntimeError(f"admin action {entry.get('action_xmlid')} declares no model")
+    _, payload = intent("ui.contract.v2", {
+        "op": "model",
+        "model": model,
+        "view_type": "form",
+        "action_id": int(entry.get("action_id") or 0),
+        "menu_id": int(entry.get("menu_id") or 0),
+    }, token)
+    form = (payload.get("data") or {}).get("formStructureContract") or {}
+    if not isinstance(form, dict) or not form:
+        raise RuntimeError("admin form structure contract missing from ui.contract.v2")
+    try:
+        field, label = declared_permission_form_field(form)
+    except RuntimeError:
+        field, label = "", ""
+    labels = form.get("fieldLabels") if isinstance(form.get("fieldLabels"), dict) else {}
+    roles = form.get("fieldRoles") if isinstance(form.get("fieldRoles"), dict) else {}
+    declared_fields = sorted({str(name) for name in (*labels.keys(), *roles.keys()) if str(name).strip()})
+    if not declared_fields:
+        raise RuntimeError("admin form structure contract declares no field")
+    return {
+        "route": str(entry.get("route") or "").strip(),
+        "model": model,
+        "allowed_operation": str(entry.get("allowed_operation") or "").strip(),
+        "permission_field": field,
+        "permission_label": label,
+        "declared_fields": declared_fields,
+    }
 
 
 def declared_menu_xmlids(overrides: dict, role_code: str) -> set:
@@ -278,9 +351,34 @@ def main() -> int:
     system_contract = route_authority(tokens[PLATFORM_ADMIN_ROLE])
     config_action = find(config_contract, "admin_actions", admin_xmlid)
     system_action = find(system_contract, "admin_actions", admin_xmlid)
+    # The contract entry declares the consumable route for its own action; a
+    # consumer (the acceptance browser lane) must open that declared route rather
+    # than re-deriving `/a/<action_id>`, which the SPA correctly denies for a
+    # menu-bound action (findRouteAuthority fail-closed rule).
+    admin_action_route = str(config_action.get("route") or "").strip()
+    if not admin_action_route.startswith("/a/"):
+        raise RuntimeError(
+            f"admin action {admin_xmlid} declares no consumable route: {admin_action_route!r}"
+        )
+    admin_action_name = str(config_action.get("name") or "").strip()
+    if not admin_action_name:
+        raise RuntimeError(f"admin action {admin_xmlid} declares no display name")
+    admin_route_by_role = {
+        ADMIN_ROLE: admin_action_route,
+        PLATFORM_ADMIN_ROLE: str(system_action.get("route") or "").strip() or admin_action_route,
+    }
     require_ok(intent("route.authority.validate", {"action_id": config_action["action_id"]}, tokens[ADMIN_ROLE]), "config_admin.validate")
     require_ok(intent("route.authority.validate", {"action_id": system_action["action_id"]}, tokens[PLATFORM_ADMIN_ROLE]), "system_admin.validate")
     require_ok(intent("ui.contract.v2", {"op": "action_open", "action_id": config_action["action_id"]}, tokens[ADMIN_ROLE]), "config_admin.user_management")
+    admin_form_by_role = {
+        ADMIN_ROLE: admin_form_assertion(tokens[ADMIN_ROLE], config_action),
+        PLATFORM_ADMIN_ROLE: admin_form_assertion(tokens[PLATFORM_ADMIN_ROLE], system_action),
+    }
+    if not admin_form_by_role[ADMIN_ROLE]["permission_field"]:
+        raise RuntimeError(
+            "business configuration administrator form contract declares no "
+            "governance permission field"
+        )
     for role in LOCKED_ROLES:
         require_denied(
             intent("route.authority.validate", {"action_id": config_action["action_id"]}, tokens[role]),
@@ -319,6 +417,10 @@ def main() -> int:
         "served_revision": served_revision,
         "admin_action_id": int(config_action["action_id"]),
         "admin_action_xmlid": admin_xmlid,
+        "admin_action_route": admin_action_route,
+        "admin_action_name": admin_action_name,
+        "admin_route_by_role": admin_route_by_role,
+        "admin_form_by_role": admin_form_by_role,
         "execution_action_id": int(execution["action_id"]),
         "execution_action_xmlid": execution_xmlid,
         "legal_scope": scope,
