@@ -205,6 +205,29 @@ def record_existing(summary_path: Path, plan_path: Path, *, run_dir: Path, ledge
     return 0
 
 
+def partial_fold_plan(folded: dict, selected_count: int) -> dict:
+    """Decide what a (possibly partial) probe observation may be folded into.
+
+    The engine never silently retries a recorded failure, so an interrupted run
+    that stamped its unreached entries as ``failed`` would block the very
+    entries the next pass must resume. The probe therefore declares
+    ``completeness:partial`` and carries only the conclusions it actually
+    reached; this decides how many of them may be folded, and whether the
+    surface is still incomplete. A partial observation that concluded nothing
+    records nothing, keeping the whole selection affected for the next pass.
+    """
+    executed = folded.get('executed_units') or []
+    partial = folded.get('partial') is True
+    folded_count = len(executed)
+    return {
+        'partial': partial,
+        'record': bool(executed),
+        'folded': folded_count,
+        'selected': selected_count,
+        'unreached': selected_count - folded_count if partial else 0,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--requested', default=os.environ.get('SC_ENTRY_MATRIX_KEYS', '').strip(),
@@ -317,9 +340,21 @@ def main(argv: list[str] | None = None) -> int:
     _require(summary_path.exists(), f"the probe did not produce {summary_path}")
     run_checked(['node', SCOPE_ADAPTER, '--emit-results', str(results_path),
                  '--summary', str(summary_path), '--plan', str(selection_path)])
+    decision = partial_fold_plan(load_json(results_path), len(execute))
+    if not decision['record']:
+        # An interrupted probe that reached no entry leaves nothing to fold. The
+        # whole selection stays unrecorded, so the next pass resumes from it
+        # instead of being refused as a set of unchanged failures.
+        print('[business-entry-incremental] PARTIAL the probe concluded no entry; nothing was recorded and '
+              'the selection stays affected for the next pass')
+        return 1
     run_checked(['python3', ENGINE, 'record', '--units', str(units_path), '--ledger', ledger,
                  '--results', str(results_path), '--json-out', str(run_dir / 'record.json')])
-    print(f"[business-entry-incremental] recorded {len(execute)} entries into {ledger}")
+    print(f"[business-entry-incremental] recorded {decision['folded']} of {decision['selected']} selected entries "
+          f"into {ledger}")
+    if decision['partial']:
+        print(f"[business-entry-incremental] PARTIAL {decision['unreached']} selected entries were not reached; "
+              f"they stay unrecorded and the next pass resumes from them")
     return 0 if probe.returncode == 0 else 1
 
 

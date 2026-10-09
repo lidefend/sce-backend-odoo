@@ -1,4 +1,6 @@
 {
-  "branches": {},
+  "branches": {
+    "audit/daily-dev-mainline-product-acceptance-closeout-20261009": ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json"
+  },
   "schema_version": 1
 }

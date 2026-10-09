@@ -58,6 +58,18 @@ const WRITE_CONFIRM = process.env.SC_ENTRY_WRITE_CONFIRM || '';
 const WRITE_CONFIRM_TOKEN = 'DRIVE_DAILY_SC_DEMO_ENTRY_MATRIX';
 const OUT_DIR = process.env.SC_ACCEPTANCE_OUTPUT_DIR
   || path.join('artifacts', 'frontend-business-entry-matrix', String(Date.now()));
+// The observation is persisted per entry, not once at the end. A single expired
+// session used to make every later navigation time out and the whole run end
+// with zero conclusions, so an interrupted pass proved nothing about the part it
+// did reach. Writing each conclusion as it is produced makes an interrupted run
+// a usable partial observation that the next pass resumes from.
+const SUMMARY_PATH = path.join(OUT_DIR, 'summary.json');
+const ENTRIES_PATH = path.join(OUT_DIR, 'entries.jsonl');
+// Bounded session recovery. A rejected intent drops the app to /login; the
+// probe re-authenticates once and retries that entry instead of letting the rest
+// of the selection cascade into empty conclusions. A genuine product assertion
+// failure is never retried.
+const MAX_ENTRY_ATTEMPTS = Math.max(1, Number(process.env.SC_ENTRY_MATRIX_MAX_ATTEMPTS || 2));
 
 const problems = [];
 const observations = [];
@@ -106,6 +118,14 @@ function attachCapture(page, state) {
     let payload = {};
     try { payload = JSON.parse(request.postData() || '{}'); } catch { return; }
     const intent = String((payload && payload.intent) || '');
+    if (response.status() === 401 && intent) {
+      // The runtime rejected the acting session. Record the loss so the entry
+      // loop can re-authenticate and retry instead of letting the remaining
+      // entries navigate into the login screen and time out.
+      state.authFailureAt = Date.now();
+      state.authFailures = (state.authFailures || 0) + 1;
+      return;
+    }
     if (response.status() >= 400) return;
     if (intent === 'login') {
       // The runtime declares the acting principal's full capability closure
@@ -170,6 +190,33 @@ async function login(page) {
   await page.getByRole('button', { name: /^登录$/ }).click();
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30000 });
   await page.waitForTimeout(2500);
+}
+
+// Re-authenticate when the acting session was lost. Recovery is explicit and
+// bounded: the caller only retries after this reports success, and a recovery
+// that cannot re-observe the released navigation aborts the run instead of
+// burning the rest of the selection on the login screen.
+async function ensureSession(page, state) {
+  let pathname = '';
+  try { pathname = new URL(page.url()).pathname; } catch { /* keep empty */ }
+  const recentlyRejected = Boolean(state.authFailureAt) && Date.now() - state.authFailureAt < 120000;
+  if (!pathname.includes('/login') && !recentlyRejected) return false;
+  state.nav = null;
+  state.user = null;
+  state.authFailureAt = 0;
+  await login(page);
+  const deadline = Date.now() + 15000;
+  while (Date.now() < deadline && (!state.nav || !state.user)) await sleep(300);
+  if (!state.nav || !state.user) {
+    await page.goto(`${BASE}/`, { waitUntil: 'networkidle' }).catch(() => {});
+    const grace = Date.now() + 10000;
+    while (Date.now() < grace && (!state.nav || !state.user)) await sleep(300);
+  }
+  if (!state.nav) {
+    throw new Error('session recovery failed: the released navigation was not re-observed after re-login');
+  }
+  state.sessionRecoveries = (state.sessionRecoveries || 0) + 1;
+  return true;
 }
 
 // The runtime, not the probe, declares an entry's presentation. It publishes
@@ -663,6 +710,114 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
   return record;
 }
 
+// One observation document for the whole run. `completeness` is explicit: a
+// `partial` document proves only the entries it carries, and the recorder must
+// never lift an unobserved entry to a pass or to a failure on the strength of
+// the surface verdict alone.
+function buildOutput({ selected, mutating, servedRevisionId, servedBundle, sessionCompany, summary, completeness }) {
+  return {
+    schema: 'business_entry_matrix_browser.v1',
+    generated_at: new Date().toISOString(),
+    target_sha: EXPECTED_SHA,
+    served_revision: servedRevisionId,
+    frontend_build_sha256: servedBundle,
+    reuse_identity_key: BUNDLE_FINGERPRINT.test(EXPECTED_BUNDLE) ? 'frontend_build_sha256' : 'served_revision',
+    base_url: BASE,
+    database: DB,
+    login: LOGIN,
+    session_company_id: sessionCompany,
+    completeness,
+    selection: {
+      domain: DOMAIN_FILTER || null,
+      keys: KEYS_FILTER,
+      entries: selected.map((entry) => entry.row.menu_xmlid),
+      mutating: mutating.map((entry) => entry.row.menu_xmlid),
+    },
+    entries: summary,
+    observations,
+    console_errors: consoleErrors,
+    problems,
+    ok: completeness === 'complete' && problems.length === 0,
+  };
+}
+
+function persistOutput(output) {
+  fs.mkdirSync(OUT_DIR, { recursive: true });
+  fs.writeFileSync(SUMMARY_PATH, `${JSON.stringify(output, null, 2)}\n`);
+  return output;
+}
+
+function appendEntry(record) {
+  fs.mkdirSync(OUT_DIR, { recursive: true });
+  fs.appendFileSync(ENTRIES_PATH, `${JSON.stringify(record)}\n`);
+}
+
+// Resume support: a previous partial document for the same identity already
+// holds conclusions for part of this selection. Reusing them stops an
+// interrupted pass from being re-walked, while any identity change (served
+// bundle, target revision, database, selected keys) starts a clean observation.
+function restorePartialObservation({ summary }) {
+  if (!fs.existsSync(SUMMARY_PATH)) return 0;
+  let previous;
+  try { previous = JSON.parse(fs.readFileSync(SUMMARY_PATH, 'utf8')); } catch { return 0; }
+  const sameIdentity = previous.schema === 'business_entry_matrix_browser.v1'
+    && String(previous.target_sha || '') === EXPECTED_SHA
+    && String(previous.base_url || '') === BASE
+    && String(previous.database || '') === DB
+    && String(previous.login || '') === LOGIN
+    && JSON.stringify((previous.selection || {}).keys || []) === JSON.stringify(KEYS_FILTER);
+  const previousBundle = String(previous.frontend_build_sha256 || '').toLowerCase();
+  const bundleMatches = !previousBundle || !EXPECTED_BUNDLE || previousBundle === EXPECTED_BUNDLE;
+  // Only conclusions that belong to the *current* selection are resumed. A
+  // narrower follow-up pass must not re-import a sibling batch's verdicts or
+  // problems, which would let an unaffected entry's failure mark this pass.
+  const relevant = (previous.entries || []).filter((record) => record && record.entry
+    && (!KEYS_FILTER.length || KEYS_FILTER.includes(String(record.entry))));
+  // Nothing was concluded for this selection last time (an early fatal), so
+  // there is no entry to reuse and no conclusion worth carrying forward.
+  if (!sameIdentity || !bundleMatches || !relevant.length) return 0;
+  const relevantKeys = new Set(relevant.map((record) => String(record.entry)));
+  const ownsCurrentSelection = (owner) => !KEYS_FILTER.length || relevantKeys.has(owner);
+  let restored = 0;
+  const seen = new Set(summary.map((record) => record.entry));
+  for (const record of relevant) {
+    if (seen.has(record.entry)) continue;
+    seen.add(record.entry);
+    summary.push(record);
+    restored += 1;
+  }
+  for (const problem of previous.problems || []) {
+    // An entry-scoped problem is kept only for an entry this pass resumed; an
+    // authority-level problem names no entry and is always carried forward.
+    const text = String(problem);
+    const owner = text.split(':', 1)[0];
+    const surfaceLevel = text.startsWith('authority:') || text.startsWith('fatal:');
+    if (surfaceLevel || ownsCurrentSelection(owner)) problems.push(problem);
+  }
+  for (const observation of previous.observations || []) {
+    if (!observation || !observation.entry || ownsCurrentSelection(String(observation.entry))) {
+      observations.push(observation);
+    }
+  }
+  for (const error of previous.console_errors || []) consoleErrors.push(error);
+  return restored;
+}
+
+// An interrupted process must still leave the conclusions it reached. The
+// signal handlers use the writer main installs once the identity is bound.
+let partialWriter = null;
+function writePartial(reason) {
+  if (!partialWriter) return false;
+  try { partialWriter(reason); return true; } catch { return false; }
+}
+for (const signal of ['SIGINT', 'SIGTERM']) {
+  process.on(signal, () => {
+    const persisted = writePartial(signal);
+    process.stdout.write(`[business-entry-matrix] INTERRUPTED ${signal}: ${persisted ? 'persisted the completed entries as a partial observation' : 'no identity bound yet, nothing to persist'}\n`);
+    process.exit(130);
+  });
+}
+
 async function deniedRoleNavigation(deniedRole) {
   const context = await browser.newContext({ locale: 'zh-CN' });
   const page = await context.newPage();
@@ -746,20 +901,59 @@ async function main() {
   if (!state.nav) throw new Error('released navigation was not observed from system.init');
 
   const summary = [];
+  const restoredEntries = restorePartialObservation({ summary });
+  if (restoredEntries) {
+    process.stdout.write(`[business-entry-matrix] resumed ${restoredEntries} completed entr${restoredEntries === 1 ? 'y' : 'ies'} from ${SUMMARY_PATH}\n`);
+  }
+  const completedEntries = new Set(summary.map((record) => record.entry));
+  const writeObservation = (completeness) => persistOutput(
+    buildOutput({ selected, mutating, servedRevisionId, servedBundle, sessionCompany, summary, completeness }),
+  );
+  partialWriter = () => writeObservation('partial');
   for (const { row, behaviour } of selected) {
     const entryKey = row.menu_xmlid;
-    const sinceConsole = consoleErrors.length;
+    if (completedEntries.has(entryKey)) continue;
     let record;
-    try {
-      record = await runEntry(page, state, row, behaviour, sessionCompany);
-    } catch (error) {
-      // A single entry must not abort the whole declaration matrix: bind the
-      // failure to this entry and keep covering its siblings.
-      fail(`${entryKey}: entry check raised ${String((error && error.message) || error)}`);
-      record = { entry: entryKey, label: row.label, status: 'exception' };
+    let lastConsoleMark = consoleErrors.length;
+    for (let attempt = 1; ; attempt += 1) {
+      const consoleMark = consoleErrors.length;
+      const problemMark = problems.length;
+      const observationMark = observations.length;
+      const authMark = state.authFailureAt;
+      try {
+        record = await runEntry(page, state, row, behaviour, sessionCompany);
+      } catch (error) {
+        // A single entry must not abort the whole declaration matrix: bind the
+        // failure to this entry and keep covering its siblings.
+        record = {
+          entry: entryKey, label: row.label, status: 'exception',
+          error: String((error && error.message) || error),
+        };
+      }
+      lastConsoleMark = consoleMark;
+      const authLost = Boolean(state.authFailureAt) && state.authFailureAt !== authMark;
+      // Only a lost session (a raised exception, or an intent the runtime
+      // rejected) is retried. A product assertion failure returns normally and
+      // is reported as the outcome it is.
+      if (attempt >= MAX_ENTRY_ATTEMPTS || (record.status !== 'exception' && !authLost)) break;
+      // A recovery that cannot re-observe the released navigation aborts the
+      // pass instead of burning the rest of the selection on the login screen;
+      // the entries already concluded stay persisted as a partial observation.
+      const recovered = await ensureSession(page, state);
+      if (!recovered) break;
+      // The abandoned attempt observed the login screen, not the product
+      // surface; discard its partial conclusions before retrying.
+      problems.length = problemMark;
+      observations.length = observationMark;
+      consoleErrors.length = consoleMark;
+      record = null;
     }
-    record.console_errors = consoleErrors.slice(sinceConsole);
+    if (!record) continue;
+    record.console_errors = consoleErrors.slice(lastConsoleMark);
     summary.push(record);
+    completedEntries.add(entryKey);
+    appendEntry(record);
+    writeObservation('partial');
     await page.goto(`${BASE}/`, { waitUntil: 'networkidle' }).catch(() => {});
   }
 
@@ -839,33 +1033,10 @@ async function main() {
     fail(`authority: ${selected.length - negativeChecked} selected entries have no eligible denied-role candidate whose released navigation was observed and whose capability closure is disjoint from the declared groups`);
   }
 
-  fs.mkdirSync(OUT_DIR, { recursive: true });
-  const ok = problems.length === 0;
-  const output = {
-    schema: 'business_entry_matrix_browser.v1',
-    generated_at: new Date().toISOString(),
-    target_sha: EXPECTED_SHA,
-    served_revision: servedRevisionId,
-    frontend_build_sha256: servedBundle,
-    reuse_identity_key: BUNDLE_FINGERPRINT.test(EXPECTED_BUNDLE) ? 'frontend_build_sha256' : 'served_revision',
-    base_url: BASE,
-    database: DB,
-    login: LOGIN,
-    session_company_id: sessionCompany,
-    selection: {
-      domain: DOMAIN_FILTER || null,
-      keys: KEYS_FILTER,
-      entries: selected.map((entry) => entry.row.menu_xmlid),
-      mutating: mutating.map((entry) => entry.row.menu_xmlid),
-    },
-    entries: summary,
-    observations,
-    console_errors: consoleErrors,
-    problems,
-    ok,
-  };
-  fs.writeFileSync(path.join(OUT_DIR, 'summary.json'), `${JSON.stringify(output, null, 2)}\n`);
-  process.stdout.write(`[business-entry-matrix] ok=${ok} entries=${summary.length} problems=${problems.length} console_errors=${consoleErrors.length}\n`);
+  const output = writeObservation('complete');
+  partialWriter = null;
+  const ok = output.ok;
+  process.stdout.write(`[business-entry-matrix] ok=${ok} completeness=complete entries=${summary.length} problems=${problems.length} console_errors=${consoleErrors.length}\n`);
   for (const problem of problems) process.stdout.write(`  - ${problem}\n`);
   for (const error of consoleErrors.slice(0, 10)) process.stdout.write(`  ! ${error}\n`);
   if (browser) await browser.close().catch(() => {});
@@ -874,18 +1045,21 @@ async function main() {
 
 main().catch(async (error) => {
   fail(`fatal: ${String((error && error.message) || error)}`);
-  try {
-    fs.mkdirSync(OUT_DIR, { recursive: true });
-    fs.writeFileSync(path.join(OUT_DIR, 'summary.json'), `${JSON.stringify({
-      schema: 'business_entry_matrix_browser.v1',
-      generated_at: new Date().toISOString(),
-      target_sha: EXPECTED_SHA,
-      problems,
-      console_errors: consoleErrors,
-      ok: false,
-      fatal: true,
-    }, null, 2)}\n`);
-  } catch { /* best effort */ }
+  if (!writePartial('fatal')) {
+    try {
+      fs.mkdirSync(OUT_DIR, { recursive: true });
+      fs.writeFileSync(SUMMARY_PATH, `${JSON.stringify({
+        schema: 'business_entry_matrix_browser.v1',
+        generated_at: new Date().toISOString(),
+        target_sha: EXPECTED_SHA,
+        completeness: 'partial',
+        problems,
+        console_errors: consoleErrors,
+        ok: false,
+        fatal: true,
+      }, null, 2)}\n`);
+    } catch { /* best effort */ }
+  }
   process.stdout.write(`[business-entry-matrix] FATAL ${problems.join(' | ')}\n`);
   if (browser) await browser.close().catch(() => {});
   process.exit(1);

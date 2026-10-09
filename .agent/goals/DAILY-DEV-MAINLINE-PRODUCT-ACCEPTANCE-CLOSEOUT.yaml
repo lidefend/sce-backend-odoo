@@ -1,0 +1,39 @@
+schema_version: 1
+goal:
+  id: DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT
+  title: align_the_daily_dev_runtime_to_latest_main_and_close_out_user_product_acceptance
+  status: active
+  formal_product_layer: P4
+  layer_target: ops_delivery_daily_runtime_acceptance
+  module:
+    - .agent
+    - docs/ops/iterations
+    - make
+    - scripts/ops
+    - frontend/apps/web
+  layer_note: >-
+    单一工作区/单一 run（所有者要求不另建台账）。本 run 承载两个责任层、提交边界分开：
+    P4 日常运行态身份对齐与用户视角验收收口（含 P4 取证体系机制修复：逐条持久化、
+    有界会话自愈、partial=未到达不记录 的增量续跑），以及一项 P0 前端门禁修复
+    （登录回跳必须消费当前发布的 route_authority，未授权的既有入口不再回放）。
+  objective: >-
+    在最新主线（main = aea2c19bbe4e）上收口产品用户视角验收。所有者登录报障暴露一项 P0 门禁缺陷
+    （会话过期后把契约未授权的既有回跳目标原样回放，登录即落 access-denied）：先按契约投影修复
+    （LoginView 消费当前发布的 route_authority，未授权回跳回落契约落地页），再经受管候选车队把
+    精确 SHA 部署到日常运行态、声明新前端产物指纹，然后在该部署身份上重取用户视角验收矩阵，
+    最后交由所有者登录核对并判定产品交付边界。
+  acceptance:
+    - 日常运行态 /api/runtime-version 回读 source_revision == 部署的精确 SHA
+    - 前端产物指纹由受管构建入口声明，并与实际服务的入口资源一致
+    - 登录回跳目标必须在当前发布的 route_authority 中可解析，否则回落契约声明的落地页
+    - 有界只读回读 + 用户视角矩阵在部署身份上通过
+    - 中断的矩阵取证必须留下可复用 partial 观察，未到达单元不得记为失败，续跑只补未完成项
+  exclusions:
+    - 不放宽 ACL/字段权限/断言；不新增环境/数据库/端口/卷/凭据授权
+    - 不改后端契约、模型、字段或权限语义；不加模型特判
+    - 不放宽 router 授权守卫（纵深防御）；只在登录回跳处收回未授权目标
+    - 前端产物变化后不得复用旧 bundle 的验收证据，必须按车队规则重新取证
+  rollback: >-
+    运行态对齐为受管入口可逆操作：bundle sync / source_revision align / frontend build 在失败时
+    恢复 env 文件并回滚运行态；如需回退，按同一入口把 bundle/source_revision/前端产物指纹指回
+    上一运行态（aea2c19b / b0311c6f）并重启。

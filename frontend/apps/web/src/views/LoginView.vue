@@ -187,6 +187,7 @@ import { executePageContractAction } from '../app/pageContractActionRuntime';
 import { isConfiguredDbPinned, isPlatformAdminEntryRuntime, resolveConfiguredDb } from '../services/dbContext';
 import { config } from '../config';
 import { normalizeLegacyWorkbenchPath } from '../app/routeQuery';
+import { authorityBoundTargetResolvable } from '../app/routeAuthority';
 import {
   clearSessionExpiredReturnPath,
   normalizeSafeLoginReturnPath,
@@ -274,8 +275,19 @@ async function onSubmit() {
     const queryRedirect = typeof route.query.redirect === 'string' ? route.query.redirect : '';
     const rawRedirect = queryRedirect || (recoveringExpiredSession ? readSessionExpiredReturnPath() : '');
     const normalizedRedirect = normalizeSafeLoginReturnPath(normalizeLegacyWorkbenchPath(rawRedirect));
-    const redirect = normalizedRedirect
-      ? normalizedRedirect
+    // A replayed target must still resolve in the *current* released route authority;
+    // otherwise the router guard would deny it and drop the user onto the access-denied
+    // page right after a successful login. Fall back to the contract-declared landing.
+    const returnTarget = normalizedRedirect && authorityBoundTargetResolvable(
+      session.routeAuthority,
+      normalizedRedirect,
+      {
+        companyId: Number(session.recordContext?.company_id || session.recordContext?.selected?.company_id || 0) || null,
+        selectedRecordId: Number(session.recordContext?.selected?.id || 0) || null,
+      },
+    ) ? normalizedRedirect : '';
+    const redirect = returnTarget
+      ? returnTarget
       : isPlatformAdminEntryRuntime() ? '/?platform_admin=1' : session.resolveLandingPath('/');
     await router.push(redirect);
     if (recoveringExpiredSession) clearSessionExpiredReturnPath();

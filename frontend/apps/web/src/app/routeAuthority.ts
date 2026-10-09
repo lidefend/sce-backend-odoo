@@ -217,3 +217,44 @@ export function findRouteAuthority(
   ));
   return entry && routeAuthorityContextAllowed(entry, input.query, input) ? entry : null;
 }
+
+/**
+ * Decide whether a login-return target may be proposed to the router.
+ *
+ * The session-expired recovery and the 401 redirect replay a path the user had
+ * open before the session ended. The router guard denies any authority-bound
+ * route that is absent from the *current* released route authority, so replaying
+ * such a target straight after login drops the user onto the access-denied page.
+ * This consumes the same contract authority the guard consumes: an authority-bound
+ * action/form target must resolve in the current surface. Record routes (/r/) keep
+ * the guard's relation-read intent path and are never decided here.
+ */
+export function authorityBoundTargetResolvable(
+  contract: RouteAuthorityContract | null,
+  target: string,
+  scope: { companyId?: number | null; selectedRecordId?: number | null } = {},
+): boolean {
+  const raw = String(target || '').trim();
+  if (!raw) return false;
+  let parsed: URL;
+  try {
+    parsed = new URL(raw, 'https://sce.invalid');
+  } catch {
+    return false;
+  }
+  const pathname = parsed.pathname;
+  if (!/^\/(a|f)(\/|$)/.test(pathname)) return true;
+  const query: Record<string, unknown> = {};
+  parsed.searchParams.forEach((value, key) => { query[key] = value; });
+  const pathActionId = /^\/a\/(\d+)(?:\/|$)/.exec(pathname);
+  const actionId = Number(pathActionId?.[1] || query.action_id || 0);
+  const menuId = Number(query.menu_id || 0);
+  if (!(actionId > 0 || menuId > 0)) return true;
+  return Boolean(findRouteAuthority(contract, {
+    actionId: Number.isFinite(actionId) ? actionId : 0,
+    menuId: Number.isFinite(menuId) ? menuId : 0,
+    query,
+    companyId: scope.companyId ?? null,
+    selectedRecordId: scope.selectedRecordId ?? null,
+  }));
+}

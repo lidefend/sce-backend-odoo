@@ -117,6 +117,42 @@ class EmitResultsStatusTests(unittest.TestCase):
         self.assertTrue(document["surface_fatal"])
         self.assertEqual(sorted(unit["id"] for unit in document["executed_units"]), ["menu.a", "menu.b"])
 
+    def test_a_partial_run_keeps_unreached_units_unrecorded(self) -> None:
+        """An interrupted probe proves only what it concluded.
+
+        The run reached ``menu.a`` and declared ``completeness:partial``;
+        ``menu.b`` was never executed. Recording ``menu.b`` as a failure would
+        make the next incremental pass refuse to resume it as an unchanged
+        failure, so the unreached unit must stay unrecorded — neither passed nor
+        failed — and the declared plan must be narrowed to what was reached.
+        """
+        document = self._run(
+            {
+                "ok": False,
+                "completeness": "partial",
+                "selection": {"keys": ["menu.a", "menu.b"]},
+                "entries": [{"entry": "menu.a", "status": "checked"}],
+            }
+        )
+        self.assertTrue(document["partial"])
+        self.assertEqual(document["results"], {"menu.a": "checked"})
+        self.assertEqual([unit["id"] for unit in document["executed_units"]], ["menu.a"])
+        self.assertEqual(document["planned_affected"], ["menu.a"])
+
+    def test_a_partial_run_with_no_conclusion_records_nothing(self) -> None:
+        """An interrupted run that reached no entry folds no unit at all."""
+        document = self._run(
+            {
+                "ok": False,
+                "completeness": "partial",
+                "selection": {"keys": ["menu.a", "menu.b"]},
+            }
+        )
+        self.assertTrue(document["partial"])
+        self.assertEqual(document["results"], {})
+        self.assertEqual(document["executed_units"], [])
+        self.assertEqual(document["planned_affected"], [])
+
     def test_successful_surface_records_every_entry_as_checked(self) -> None:
         document = self._run(
             {
@@ -127,6 +163,39 @@ class EmitResultsStatusTests(unittest.TestCase):
         )
         self.assertEqual(document["results"], {"menu.a": "checked", "menu.b": "checked"})
         self.assertTrue(document["surface_ok"])
+
+
+class PartialFoldPlanTests(unittest.TestCase):
+    """Lock the fold decision for an interrupted observation.
+
+    ``partial_fold_plan`` is the single place that decides what a probe
+    observation may be folded into. It must never turn an unreached unit into a
+    recorded failure, and it must never fold an observation that concluded
+    nothing.
+    """
+
+    def test_a_partial_observation_folds_only_its_conclusions(self) -> None:
+        plan = incremental.partial_fold_plan(
+            {"partial": True, "executed_units": [{"id": "menu.a"}]}, selected_count=3
+        )
+        self.assertTrue(plan["partial"])
+        self.assertTrue(plan["record"])
+        self.assertEqual(plan["folded"], 1)
+        self.assertEqual(plan["unreached"], 2)
+
+    def test_a_partial_observation_without_conclusions_folds_nothing(self) -> None:
+        plan = incremental.partial_fold_plan({"partial": True, "executed_units": []}, selected_count=3)
+        self.assertFalse(plan["record"])
+        self.assertEqual(plan["folded"], 0)
+        self.assertEqual(plan["unreached"], 3)
+
+    def test_a_complete_observation_reports_no_unreached_units(self) -> None:
+        plan = incremental.partial_fold_plan(
+            {"executed_units": [{"id": "menu.a"}, {"id": "menu.b"}]}, selected_count=2
+        )
+        self.assertFalse(plan["partial"])
+        self.assertTrue(plan["record"])
+        self.assertEqual(plan["unreached"], 0)
 
 
 class EmitUnitsIdentityTests(unittest.TestCase):
