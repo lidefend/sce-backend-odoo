@@ -697,7 +697,7 @@ class TestProjectMemberRoleSurface(TransactionCase):
         )
         execution = next(
             row for row in pm_contract["contextual_actions"]
-            if row["action_xmlid"] == "smart_construction_core.action_construction_contract_income_execution"
+            if row["action_xmlid"] == "smart_construction_core.action_construction_contract_income"
         )
         boq_import = next(
             row for row in pm_contract["contextual_actions"]

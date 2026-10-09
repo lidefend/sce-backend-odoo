@@ -298,7 +298,6 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_expense_contract_supplement",
             "smart_construction_core.menu_sc_expense_contract_execution",
             "smart_construction_core.menu_sc_contract_income",
-            "smart_construction_core.menu_sc_project_income_contract",
         ],
         "denied_menu_xmlids": [
             "smart_construction_core.menu_sc_project_tender",
@@ -332,7 +331,8 @@ ROLE_SURFACE_OVERRIDES = {
                 "source": "nav_policy_01.pm.cost_plan_compilation_tree_action",
             },
             {
-                "action_xmlid": "smart_construction_core.action_construction_contract_income_execution",
+                # 收入合同执行已并入合同中心“收入合同”发布面；关联跳转按发布动作授权。
+                "action_xmlid": "smart_construction_core.action_construction_contract_income",
                 "allowed_operation": "read",
                 "required_capability": "contract_read",
                 "context_requirements": {
