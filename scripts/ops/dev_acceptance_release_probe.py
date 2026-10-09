@@ -389,7 +389,28 @@ def probe_login(
         ]
         result["checks"]["nav_node_count"] = len(nav_rows)
         result["checks"]["nav_action_count"] = sum(1 for row in nav_rows if row.get("action_id"))
-        result["checks"]["nav_leaf_count"] = sum(1 for row in nav_rows if row.get("child_count") == 0)
+        nav_leaf_count = sum(1 for row in nav_rows if row.get("child_count") == 0)
+        result["checks"]["nav_leaf_count"] = nav_leaf_count
+        # The count authority resolves the product's *effective menu count*, and a
+        # released product menu may be a contract-declared scene/route entry that
+        # owns no business action. Counting only action-bearing nodes therefore
+        # under-counts the contracted surface by exactly those declared entries, so
+        # the contracted population is the released entry population: every
+        # navigation leaf owns either an action or a declared entry target, which
+        # the canonical projection already enforces fail-closed.
+        result["checks"]["nav_admitted_entry_count"] = nav_leaf_count
+        release_gate = (
+            navigation.get("meta", {}).get("platform_release_gate")
+            if isinstance(navigation, dict) and isinstance(navigation.get("meta"), dict)
+            else None
+        )
+        gate_kept_leaf_count = release_gate.get("kept_leaf_count") if isinstance(release_gate, dict) else None
+        result["checks"]["nav_gate_kept_leaf_count"] = gate_kept_leaf_count
+        if isinstance(gate_kept_leaf_count, int) and gate_kept_leaf_count > 0 and nav_leaf_count != gate_kept_leaf_count:
+            # The released entry population is what the navigation release gate
+            # actually admitted; a served leaf set that disagrees with it is drift,
+            # not a counting difference.
+            errors.append("nav_entry_count_gate_mismatch")
         result["checks"]["nav_forbidden_label_hits"] = forbidden_hits[:50]
         result["checks"]["nav_required_path_misses"] = required_path_misses
         result["checks"]["nav_required_action_mismatches"] = required_action_mismatches
@@ -408,10 +429,10 @@ def probe_login(
             errors.append("nav_empty")
         if result["checks"]["nav_action_count"] <= 0:
             errors.append("nav_action_empty")
-        if nav_min_actions is not None and result["checks"]["nav_action_count"] < nav_min_actions:
-            errors.append("nav_action_count_below_min")
-        if nav_max_actions is not None and result["checks"]["nav_action_count"] > nav_max_actions:
-            errors.append("nav_action_count_above_max")
+        if nav_min_actions is not None and result["checks"]["nav_admitted_entry_count"] < nav_min_actions:
+            errors.append("nav_entry_count_below_min")
+        if nav_max_actions is not None and result["checks"]["nav_admitted_entry_count"] > nav_max_actions:
+            errors.append("nav_entry_count_above_max")
         if forbidden_hits:
             errors.append("nav_forbidden_label_hits")
         if required_path_misses:
