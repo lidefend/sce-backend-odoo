@@ -236,4 +236,40 @@ assert.equal(authorityBoundTargetResolvable(discoveredContract, '/f/sc.project/1
 assert.equal(authorityBoundTargetResolvable(discoveredContract, '/f/sc.project/12?action_id=506&menu_id=805', landingScope), false, 'mismatched menu binding is dropped');
 assert.equal(authorityBoundTargetResolvable(null, '/a/51', landingScope), false, 'an absent contract cannot authorize an authority-bound target');
 assert.equal(authorityBoundTargetResolvable(null, '/', landingScope), true, 'an absent contract still allows a non-authority-bound landing');
-console.log('[login_return_authority] PASS cases=13 source=contract_route_authority');
+// A contract-declared scene entry carries no business action, so the backend
+// publishes it in role_home_actions with action_id 0 and an explicit
+// entry_target.  The normalizer must admit exactly that shape.
+const declaredTargetContract = normalizeRouteAuthorityContract({
+  ...raw,
+  role_home_actions: [{
+    route_kind: 'ROLE_HOME_ACTION',
+    menu_id: 1004,
+    menu_xmlid: 'smart_construction_core.menu_sc_workspace_home',
+    action_id: 0,
+    name: '角色首页',
+    scene_key: 'workspace.home',
+    route: '/s/workspace.home',
+    entry_target: { type: 'scene', scene_key: 'workspace.home', route: '/s/workspace.home' },
+    allowed_operation: 'read',
+    required_capability: 'menu_container_visible',
+    context_requirements: {},
+    source: 'nav.declared_entry',
+  }],
+});
+assert.ok(declaredTargetContract);
+assert.equal(declaredTargetContract.role_home_actions.length, 1);
+assert.equal(declaredTargetContract.role_home_actions[0].menu_id, 1004);
+assert.equal(declaredTargetContract.role_home_actions[0].action_id, 0);
+assert.equal(declaredTargetContract.role_home_actions[0].scene_key, 'workspace.home');
+assert.equal(declaredTargetContract.role_home_actions[0].route, '/s/workspace.home');
+
+// An actionless role-home row without any declared target stays rejected, so the
+// admission cannot be widened into "any menu id is authorized".
+const bareRoleHomeContract = normalizeRouteAuthorityContract({
+  ...raw,
+  role_home_actions: [{ route_kind: 'ROLE_HOME_ACTION', menu_id: 1004, action_id: 0, route: '/x' }],
+});
+assert.ok(bareRoleHomeContract);
+assert.equal(bareRoleHomeContract.role_home_actions.length, 0);
+
+console.log('[login_return_authority] PASS cases=16 source=contract_route_authority');

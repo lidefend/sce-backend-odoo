@@ -99,6 +99,70 @@ class TestCanonicalNavigationProjection(TransactionCase):
         self.assertEqual(carrier["state"], "disabled")
         self.assertEqual(carrier["disabled_reason"], "当前账号无权执行此操作")
 
+    @staticmethod
+    def _declared_authority(menu_id, xmlid, scene_key, route):
+        return {
+            "primary_actions": [],
+            "role_home_actions": [{
+                "route_kind": "ROLE_HOME_ACTION",
+                "menu_id": menu_id,
+                "menu_xmlid": xmlid,
+                "action_id": 0,
+                "name": "角色首页",
+                "scene_key": scene_key,
+                "route": route,
+                "entry_target": {"type": "scene", "scene_key": scene_key, "route": route},
+                "allowed_operation": "read",
+                "required_capability": "menu_container_visible",
+                "context_requirements": {},
+                "source": "nav.declared_entry",
+            }],
+            "menu_containers": [],
+        }
+
+    def test_contract_declared_scene_anchor_projects_as_an_enabled_target(self):
+        menu_id = 1004
+        nav = [{
+            "key": "system.entry.1004",
+            "label": "角色首页",
+            "menu_id": menu_id,
+            "menu_xmlid": "smart_construction_core.menu_sc_workspace_home",
+            "action_id": 0,
+            "scene_key": "workspace.home",
+            "route": "/s/workspace.home",
+            "entry_target": {"type": "scene", "scene_key": "workspace.home", "route": "/s/workspace.home"},
+            "children": [],
+        }]
+        projected = MenuService.project_canonical_navigation(
+            nav,
+            self._declared_authority(
+                menu_id,
+                "smart_construction_core.menu_sc_workspace_home",
+                "workspace.home",
+                "/s/workspace.home",
+            ),
+        )
+        carrier = projected[0]["canonical_navigation"]
+        self.assertEqual(carrier["state"], "enabled")
+        self.assertEqual(carrier["route"], "/s/workspace.home")
+        self.assertEqual(carrier["authority"]["state"], "allowed")
+        self.assertEqual(
+            carrier["authority"]["key"],
+            "ROLE_HOME_ACTION:smart_construction_core.menu_sc_workspace_home:workspace.home",
+        )
+
+    def test_actionless_leaf_without_a_declared_entry_still_fails_closed(self):
+        nav = [{
+            "key": "system.entry.1004",
+            "label": "角色首页",
+            "menu_id": 1004,
+            "action_id": 0,
+            "children": [],
+        }]
+        with self.assertRaises(ValueError) as caught:
+            MenuService.project_canonical_navigation(nav, {"primary_actions": [], "menu_containers": []})
+        self.assertIn("neither target nor children", str(caught.exception))
+
     def test_directory_declaring_blocked_availability_still_requires_a_reason(self):
         nav = [{
             "key": "group:catalog.report.center",

@@ -668,6 +668,7 @@ class MenuService:
         authority = route_authority if isinstance(route_authority, dict) else {}
         authority_by_pair = {}
         container_authority_by_menu = {}
+        declared_authority_by_menu = {}
         seen_keys = set()
         seen_menu_ids = set()
         for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions"):
@@ -680,6 +681,18 @@ class MenuService:
                     pair = (0, 0)
                 if pair[0] > 0 and pair[1] > 0:
                     authority_by_pair[pair] = entry
+                elif (
+                    pair[0] > 0
+                    and isinstance(entry.get("entry_target"), dict)
+                    and entry.get("entry_target")
+                ):
+                    # A declared target entry (scene / record / url) carries no
+                    # business action, so it is authorized by the same
+                    # (menu_id, action_id 0) pair ``filter_nav_by_route_authority``
+                    # already admitted upstream.  The canonical projection must
+                    # consume that same carrier instead of rejecting a
+                    # legitimate contract-declared leaf as targetless.
+                    declared_authority_by_menu.setdefault(pair[0], entry)
         for entry in authority.get("menu_containers") or []:
             if not isinstance(entry, dict):
                 continue
@@ -721,6 +734,7 @@ class MenuService:
                 seen_menu_ids.add(menu_id)
             entry = authority_by_pair.get((menu_id, action_id)) if action_id > 0 else None
             container_entry = container_authority_by_menu.get(menu_id) if action_id <= 0 else None
+            declared_entry = declared_authority_by_menu.get(menu_id) if action_id <= 0 else None
             if action_id > 0 and not entry:
                 raise ValueError(
                     "canonical navigation action lacks exact authority: %s/%s" % (menu_id, action_id)
@@ -736,7 +750,9 @@ class MenuService:
             # ``state="container"``; the delivery engine marks every such group
             # ``is_clickable=False`` with ``reason_code=DIRECTORY_ONLY``, so
             # reading the flag alone rejected legitimate directories.
-            owns_target = action_id > 0 or container_entry is not None
+            owns_target = (
+                action_id > 0 or container_entry is not None or declared_entry is not None
+            )
             explicitly_disabled = (
                 availability in {"disabled", "blocked", "unavailable", "denied"}
                 or (
@@ -754,14 +770,14 @@ class MenuService:
                     "disabled canonical navigation node requires a server reason: %s/%s (%s)"
                     % (menu_id, action_id, key)
                 )
-            if action_id <= 0 and not children and not container_entry:
+            if action_id <= 0 and not children and not container_entry and not declared_entry:
                 raise ValueError("canonical navigation node has neither target nor children")
 
             state = (
                 "disabled"
                 if explicitly_disabled
                 else "enabled"
-                if action_id > 0 or container_entry
+                if action_id > 0 or container_entry or declared_entry
                 else "container"
             )
             authority_projection = (
@@ -786,6 +802,20 @@ class MenuService:
                 }
                 if container_entry
                 else {
+                    "state": "allowed",
+                    "source": text(declared_entry.get("source")),
+                    "key": ":".join((
+                        text(declared_entry.get("route_kind")),
+                        text(declared_entry.get("menu_xmlid") or declared_entry.get("menu_id")),
+                        text(
+                            declared_entry.get("scene_key")
+                            or declared_entry.get("action_xmlid")
+                            or declared_entry.get("action_id")
+                        ),
+                    )),
+                }
+                if declared_entry
+                else {
                     "state": "container",
                     "source": "system.init.navigation.nav",
                     "key": "container:%s" % (menu_id or key),
@@ -801,7 +831,7 @@ class MenuService:
                 "parent_chain": list(parents),
                 "label": label,
                 "icon": text(node.get("icon") or meta.get("icon")) or None,
-                "route": text((entry or container_entry or {}).get("route")) or None,
+                "route": text((entry or container_entry or declared_entry or {}).get("route")) or None,
                 "authority": authority_projection,
                 "state": state,
                 "disabled_reason": disabled_reason or None,
