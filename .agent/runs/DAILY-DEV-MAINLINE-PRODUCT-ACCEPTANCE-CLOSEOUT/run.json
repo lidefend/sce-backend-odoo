@@ -27,15 +27,11 @@
         "frontend/apps/web/src/app/routeAuthority.ts",
         "frontend/apps/web/scripts/route_authority_guard_test.ts"
       ],
-      "kind": "offline",
-      "status": "PASS",
-      "detail": "[login_return_authority] PASS cases=13"
+      "kind": "offline"
     },
     "frontend_page_pattern_reference_parity": {
       "target": "verify.frontend.page_pattern_reference_parity.unit",
       "kind": "offline",
-      "status": "PASS",
-      "detail": "surfaces=16; page_pattern_reference_ledger entries=67 owned_gaps=0",
       "inputs": [
         "scripts/verify/frontend_page_pattern_reference_parity_guard.py",
         "scripts/verify/test_frontend_page_pattern_reference_parity_guard.py",
@@ -45,7 +41,6 @@
     },
     "frontend_typecheck": {
       "target": "verify.frontend.typecheck.strict",
-      "status": "PASS",
       "inputs": [
         "frontend/apps/web/tsconfig.json",
         "frontend/apps/web/package.json",
@@ -53,68 +48,65 @@
         "frontend/apps/web/src/views/LoginView.vue",
         "frontend/apps/web/scripts/route_authority_guard_test.ts"
       ],
-      "detail": "executed as: scripts/dev/pnpm_exec.sh -C frontend/apps/web typecheck"
+      "kind": "offline"
     },
     "ci_local_iteration": {
       "target": "verify.baseline.iteration.execution.policy",
-      "status": "PASS",
-      "detail": "L1_only (dirty); make ci.local.iteration PASS",
       "inputs": [
         "make/frontend.mk",
         "make/codex.mk",
-        "scripts/ops/agent_run_context.py"
-      ]
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/ci/trusted_scan_scope.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
     },
     "daily_runtime_candidate_bundle_sync": {
       "target": "verify.daily.runtime.candidate.bundle_sync",
-      "status": "PASS",
-      "detail": "remote checkout 3d90df05, origin_main_mutated=false",
       "inputs": [
         "make/codex.mk",
         "scripts/ops/daily_runtime_bundle_sync.py"
-      ]
+      ],
+      "kind": "runtime"
     },
     "daily_runtime_source_revision_align": {
       "target": "verify.daily.runtime.source_revision.align",
-      "status": "PASS",
-      "detail": "served.source_revision=3d90df05",
       "inputs": [
         "scripts/ops/daily_runtime_source_revision_align.py",
         "scripts/ops/test_daily_runtime_source_revision_align.py"
-      ]
+      ],
+      "kind": "runtime"
     },
     "daily_runtime_frontend_build": {
       "target": "verify.daily.runtime.frontend.build",
-      "status": "PASS",
-      "detail": "frontend_build_sha256=8bd99a72f15a15bd1159d7c65961a5af3ca3dc39ceb3747cdfc8836c83f8f266, entry=index-BCF7hFFL.js",
       "inputs": [
         "scripts/ops/daily_runtime_frontend_build_align.py",
         "scripts/ops/test_daily_runtime_frontend_build_align.py"
-      ]
+      ],
+      "kind": "runtime"
     },
     "browser_login_return_authority": {
       "target": "verify.nav.pro01r.route_authority.browser",
-      "status": "PASS",
-      "detail": "negative retired /a/1176 -> /s/projects.list (no access-denied); positive /s/projects.list return preserved",
       "inputs": [
         "frontend/apps/web/src/app/routeAuthority.ts",
         "frontend/apps/web/src/app/sessionExpiredRecovery.ts",
         "frontend/apps/web/src/views/LoginView.vue",
         "frontend/apps/web/src/router/index.ts",
         "make/runtime_ops.mk"
-      ]
+      ],
+      "kind": "runtime"
     },
     "business_entry_matrix_recollect": {
       "target": "verify.frontend.business_entry.matrix.incremental",
-      "status": "PASS",
-      "detail": "89/89 checked (ok=45 empty=38 ready=5 form=true=1); problems=0; console_errors=0; negative authority covered 89/89, leaked 0; independent re-fold by business_entry_matrix_scope.mjs = 89 checked, partial=false; evidence=artifacts/frontend-business-entry-matrix/incremental/20261009-closeout-resume/summary.json",
       "inputs": [
         "scripts/verify/business_entry_matrix_browser.mjs",
         "scripts/verify/business_entry_matrix_model.mjs",
         "scripts/verify/business_entry_matrix_scope.mjs",
         "scripts/verify/business_entry_matrix_incremental.py",
         "scripts/ops/evidence_scope.py"
-      ]
+      ],
+      "kind": "runtime"
     },
     "business_entry_matrix_capture_resilience_unit": {
       "target": "verify.frontend.business_entry.evidence_scope.unit",
@@ -125,9 +117,7 @@
         "scripts/ops/evidence_scope.py",
         "scripts/verify/test_business_entry_matrix_incremental.py"
       ],
-      "kind": "offline",
-      "status": "PASS",
-      "detail": "evidence_scope + incremental 32 tests (PartialFoldPlanTests, partial EmitResults case); reuse_identity 23 cases"
+      "kind": "offline"
     },
     "push_conflict_guard_unit": {
       "target": "verify.pr.push.unit",
@@ -135,9 +125,7 @@
         "scripts/ops/git_safe_push.sh",
         "make/codex.mk"
       ],
-      "kind": "offline",
-      "status": "PASS",
-      "detail": "18 isolated scenarios, including the conflicting-base DENY (exit 7, zero push and zero remote access) and the explicit override; real-git control: git merge-tree --write-tree 58c04a60 c6937377 -> exit 1 (guard fires), 79908fdf HEAD -> exit 0 (guard silent)"
+      "kind": "offline"
     },
     "role_surface_landing_contract_unit": {
       "target": "verify.role_surface.landing.contract.unit",
@@ -163,8 +151,6 @@
     "acceptance_action_count_unit": {
       "target": "verify.acceptance_action_count.unit",
       "kind": "offline",
-      "status": "PASS",
-      "detail": "14 tests; locked_role_surface resolves per role (finance=45, pm=24, owner=5, project_member=10, business_config_admin=89); unlisted principal role and pinned counts fail closed",
       "inputs": [
         "scripts/verify/acceptance_action_count.py",
         "scripts/verify/test_acceptance_action_count.py",
@@ -176,8 +162,6 @@
     "product_menu_release_manifest_v2": {
       "target": "verify.product.menu.release_manifest_v2.guard",
       "kind": "offline",
-      "status": "PASS",
-      "detail": "PRODUCT_MENU_RELEASE_MANIFEST_V2_GUARD=PASS centers=10 contract_pages=89 accounting_pages=6 total=89; daily role surfaces all resolve",
       "inputs": [
         "scripts/verify/product_menu_release_manifest_v2_guard.py",
         "config/frontend/acceptance_environments_v1.json"
@@ -186,8 +170,6 @@
     "frontend_release_navigation_policy": {
       "target": "verify.frontend.release_navigation_policy.guard",
       "kind": "offline",
-      "status": "PASS",
-      "detail": "PASS roles=4 released_leaf_identities=84",
       "inputs": [
         "scripts/verify/frontend_release_navigation_policy_guard.py",
         "config/frontend/authoritative_navigation.json",
@@ -197,8 +179,6 @@
     "contract_structure_lock": {
       "target": "verify.contract.structure_lock",
       "kind": "offline",
-      "status": "PASS",
-      "detail": "PASS",
       "inputs": [
         "scripts/ci/enforce_contract_structure_lock.py"
       ]
@@ -206,18 +186,14 @@
     "environment_topology_guard": {
       "target": "verify.environment.topology.guard",
       "kind": "offline",
-      "status": "PASS",
-      "detail": "PASS; daily navigation tokens derived from the locked principal role",
       "inputs": [
         "scripts/verify/environment_topology_guard.py",
         "scripts/verify/acceptance_action_count.py"
       ]
     },
     "dev_acceptance_release_probe_schema_guard": {
-      "target": "verify.dev.acceptance.release_probe.schema.guard",
+      "target": "verify.dev.acceptance.release.schema.guard",
       "kind": "offline",
-      "status": "PASS",
-      "detail": "PASS; binds runtime role_code to the declared role_code_expected",
       "inputs": [
         "scripts/verify/dev_acceptance_release_probe_schema_guard.py",
         "scripts/ops/dev_acceptance_release_probe.py"
@@ -226,8 +202,6 @@
     "scene_role_policy_consistency": {
       "target": "verify.scene.role.policy.consistency.guard",
       "kind": "offline",
-      "status": "PASS",
-      "detail": "contract-driven declared role set; PASS",
       "inputs": [
         "scripts/verify/scene_role_policy_consistency_guard.py",
         "addons/smart_construction_scene/data/sc_scene_layout.xml"
@@ -236,8 +210,6 @@
     "scene_role_surface_consistency": {
       "target": "verify.scene.role.surface.consistency.guard",
       "kind": "offline",
-      "status": "PASS",
-      "detail": "PASS role_count=10, r3_scene_count=22",
       "inputs": [
         "scripts/verify/scene_role_surface_consistency_guard.py",
         "addons/smart_construction_core/core_extension_policy_maps.py"
@@ -246,8 +218,6 @@
     "frontend_auth_credential": {
       "target": "verify.frontend.auth_credential.guard",
       "kind": "offline",
-      "status": "PASS",
-      "detail": "PASS",
       "inputs": [
         "scripts/verify/auth_credential_frontend_guard.py"
       ]
@@ -255,15 +225,35 @@
     "frontend_auth_surface": {
       "target": "verify.frontend.auth_surface.guard",
       "kind": "offline",
-      "status": "PASS",
-      "detail": "PASS",
       "inputs": [
         "scripts/verify/frontend_auth_surface_guard.py"
+      ]
+    },
+    "daily_acceptance_readback": {
+      "target": "verify.daily_dev.acceptance.readonly.probe",
+      "kind": "runtime",
+      "inputs": [
+        "scripts/ops/dev_acceptance_release_probe.py",
+        "scripts/verify/dev_acceptance_release_probe_schema_guard.py",
+        "scripts/verify/acceptance_action_count.py",
+        "config/frontend/acceptance_environments_v1.json",
+        "config/frontend/authoritative_navigation.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "make/dev.mk"
+      ]
+    },
+    "agent_resume_ledger_unit": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
       ]
     }
   },
   "blockers": [],
-  "next_exact_step": "The role-scoped acceptance count mechanism is implemented and its affected offline gates pass (see evidence.role_scoped_action_count). Next: refresh the daily runtime through the governed daily.runtime.*/local.dev.* entrypoints so the new role catalog, landing projection and role-scoped count are actually served, then read back system.init for the daily principal (role_code must equal the declared principal_role) and confirm the served navigation count matches the locked role surface. The P0/P1 landing projection remains unproven in a served instance until that readback is captured.",
+  "next_exact_step": "The role-locked landing/catalog projection and the role-scoped navigation count are now proven on the served daily instance (d106d2dd: role_code=business_config_admin, nav_action_count=89, negative control rejected), and the run ledger reuse engine is repaired and populated (12/25 reusable). Next: publish the batch PR for this candidate branch (owner pre-authorized one PR per verified batch), then reconcile main and re-read the served identity. Remaining bounded residual: give the 6 guard-only offline targets and frontend_typecheck test-bearing entry points so they can join the reusable set.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -397,7 +387,81 @@
         "verify.environment.topology.guard",
         "verify.dev.acceptance.release_probe.schema.guard"
       ],
-      "unresolved": "A runtime readback that logs in the daily principal and confirms the served navigation count against the locked role surface is still pending; it requires the governed daily runtime refresh (L3/L4), so the effect on a served instance is not yet proven by this offline evidence."
+      "unresolved": "RESOLVED 2026-10-09: the served readback is captured (see evidence.served_role_scoped_readback). The daily runtime now serves source_revision d106d2dd with role_code=business_config_admin and nav_action_count=89 against the declared principal_role, and the negative control (finance declared, admin served) is rejected with role_code_unexpected + nav_action_count_above_max. The offline-only caveat no longer applies."
+    },
+    "served_role_scoped_readback": {
+      "question": "does the role-locked landing/catalog projection and the role-scoped navigation count hold on a served instance?",
+      "entry": "make daily.runtime.candidate.bundle_sync -> make daily.runtime.source_revision.align -> verify.daily_dev.acceptance.readonly.probe against http://1.95.85.92:18081, database sc_demo",
+      "served_identity": {
+        "source_revision": "d106d2dd20869940ed535ca497a8bfcc7403ee3c",
+        "database": "sc_demo",
+        "environment": "dev",
+        "frontend_build_sha256": "8bd99a72f15a15bd1159d7c65961a5af3ca3dc39ceb3747cdfc8836c83f8f266",
+        "entry_asset": "index-BCF7hFFL.js",
+        "http_status": 200
+      },
+      "positive": {
+        "status": "PASS",
+        "login": "wutao",
+        "auth_name": "吴涛",
+        "auth_uid": 16,
+        "role_code": "business_config_admin",
+        "role_code_expected": "business_config_admin",
+        "nav_action_count": 89,
+        "nav_node_count": 111,
+        "nav_required_path_misses": [],
+        "nav_required_action_mismatches": [],
+        "nav_forbidden_label_hits": [],
+        "system_init_ok": true,
+        "artifact": ".runtime/daily-readback-candidate.json"
+      },
+      "negative_control": {
+        "declared_principal_role": "finance",
+        "expected_count": 45,
+        "observed_role_code": "business_config_admin",
+        "observed_nav_action_count": 89,
+        "errors": [
+          "role_code_unexpected",
+          "nav_action_count_above_max"
+        ],
+        "meaning": "the count assertion is real: a role drift plus the admin surface is rejected, not silently accepted",
+        "artifact": ".runtime/daily-readback-negative.json"
+      },
+      "ownership": "P4 acceptance tooling; no ACL, field-permission or negative-assertion relaxation and no per-model special case",
+      "boundary": "local stage-scoped evidence; the runtime checks stay kind=runtime and require fresh authoritative readback after any redeploy"
+    },
+    "ledger_reuse_integrity": {
+      "report": "the run ledger carried 21 declaration-level PASS/detail verdicts and the reuse engine could see none of them: make agent.run.resume reported 23/23 checks not_run or stale, so no executed gate could ever be reused and every iteration re-ran the whole offline set",
+      "root_cause": [
+        "scripts/ops/agent_run_context.py reads verdicts only from .runtime/agent-runs/<run>/<check>.json receipts, so a verdict written into run.json was inert and a claimed PASS could coexist with no evidence at all",
+        "the declaration was not required to name a real make target: two checks cited verify.acceptance_action_count.unit and verify.dev.acceptance.release_probe.schema.guard, neither of which any Makefile fragment defines, so those checks could never be executed or recorded",
+        "kind was optional and absent on 7 checks; an absent kind is read as runtime by the reuse engine, so those checks could never become reusable even after a real pass",
+        "executed checks were never written through make agent.run.begin/record, so the input-hash index stayed empty"
+      ],
+      "change": [
+        "agent_run_context.resolve_run now fails closed when a check omits kind, carries a declaration-level status/detail verdict, or names a make target no Makefile fragment defines",
+        "a new make/guards.mk target verify.acceptance_action_count.unit binds the role-scoped count resolver to a test-bearing entry point instead of riding on the broad daily env guard",
+        "summary() now emits check_reuse_summary so reusable/stale/not_run is visible at a glance instead of inferred",
+        "12 offline checks were re-executed through begin/record, producing input-bound receipts",
+        "ci_local_iteration inputs gained make/ci.mk, scripts/verify/frontend_dev_incremental.py and scripts/ci/trusted_scan_scope.py, which its recipe executes but its reuse key had omitted"
+      ],
+      "measured": {
+        "before": {
+          "checks": 23,
+          "reusable": 0,
+          "not_run": 19,
+          "stale": 4
+        },
+        "after": {
+          "checks": 25,
+          "reusable": 12,
+          "not_run": 11,
+          "stale": 2
+        },
+        "not_run_breakdown": "4 runtime checks legitimately awaiting fresh readback, 6 guard-only offline targets and 1 typecheck target that publish no non-zero test count, so they cannot be recorded as reusable evidence under the current contract"
+      },
+      "residual": "a check bound to an entry point that reports no non-zero test count can never enter the reusable set; the 6 guard-only targets and frontend_typecheck are re-run each iteration (about 2-3s each). Giving them test-bearing entry points is the bounded follow-up, not a reason to relax the non-zero-test rule.",
+      "ownership": "P4 ops tooling (scripts/ops, scripts/verify, make/guards.mk); no product semantics"
     }
   },
   "continuation": {

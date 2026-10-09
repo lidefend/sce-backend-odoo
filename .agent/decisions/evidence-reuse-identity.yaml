@@ -63,6 +63,8 @@ decision:
   enforcement:
 
     code_authority:
+      - scripts/ops/agent_run_context.py#resolve_run
+      - scripts/ops/agent_run_context.py#summary
       - scripts/verify/business_entry_matrix_model.mjs#reuseIdentityKey
       - scripts/verify/business_entry_matrix_model.mjs#environmentIdentity
       - scripts/verify/business_entry_matrix_browser.mjs#served_bundle_binding
@@ -70,6 +72,14 @@ decision:
       - scripts/ops/evidence_scope.py#plan_units
 
     mechanised_control:
+      ledger_declaration_integrity:
+        enforcement: scripts/ops/agent_run_context.py#resolve_run (fail-closed)
+        rules:
+          - every check must declare kind offline|runtime; an undeclared kind is read as runtime and can never be reused
+          - every check must name a make target a Makefile fragment defines; an unexecutable check can never be recorded
+          - a declaration-level status/detail verdict is rejected; only the begin/record receipt is a verdict
+        added: "2026-10-09"
+        evidence: docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md#8
       served_artifact_fingerprint_key: frontend_build_sha256
       served_artifact_fingerprint_source: /api/runtime-version (declared by make daily.runtime.frontend.build)
       served_artifact_fingerprint_asserted_by_probe: SC_ACCEPTANCE_FRONTEND_BUILD_SHA

@@ -21,6 +21,29 @@ class RunError(ValueError):
     pass
 
 
+MAKE_TARGET_RE = re.compile(r'^([A-Za-z0-9][A-Za-z0-9_.-]*)\s*:(?!=)')
+PHONY_RE = re.compile(r'^\s*\.PHONY\s*:(.*)$')
+
+
+def defined_make_targets(root: Path) -> set[str]:
+    """Every target the Makefile fragments declare, so a check cannot cite a
+    non-existent entry point: an unexecutable check can never be recorded or
+    reused, which silently degrades the ledger into repeated re-runs."""
+    targets: set[str] = set()
+    files = [root / 'Makefile', *sorted((root / 'make').glob('*.mk'))]
+    for path in files:
+        if not path.is_file():
+            continue
+        for line in path.read_text(encoding='utf-8', errors='replace').splitlines():
+            match = MAKE_TARGET_RE.match(line)
+            if match:
+                targets.add(match.group(1))
+            phony = PHONY_RE.match(line)
+            if phony:
+                targets.update(phony.group(1).split())
+    return targets
+
+
 def git(root: Path, *args: str) -> str:
     result = subprocess.run(['git', '-C', str(root), *args], capture_output=True, text=True)
     if result.returncode:
@@ -89,9 +112,19 @@ def resolve_run(root: Path) -> tuple[str, dict] | None:
     for field in ('goal', 'record'):
         if not local_path(root, run[field]).is_file():
             raise RunError(f'missing {field} file')
-    for check in run['checks'].values():
+    make_targets = defined_make_targets(root)
+    for check_id, check in run['checks'].items():
         if not isinstance(check, dict) or not re.fullmatch(r'verify\.[a-zA-Z0-9_.-]+', check.get('target', '')):
-            raise RunError('check must name a registered verify target')
+            raise RunError(f'check {check_id} must name a registered verify target')
+        if check.get('kind') not in ('offline', 'runtime'):
+            raise RunError(f"check {check_id} must declare kind offline|runtime; "
+                           'an undeclared kind is never reusable and silently forces a rerun')
+        for verdict in ('status', 'detail'):
+            if verdict in check:
+                raise RunError(f'check {check_id} must not declare {verdict}; the receipt written by '
+                               'make agent.run.record is the only verdict; keep narrative in the run record')
+        if check['target'] not in make_targets:
+            raise RunError(f"check {check_id} names target {check['target']!r}, which no Makefile fragment defines")
         if (not isinstance(check.get('inputs'), list) or not check['inputs']
                 or not all(isinstance(value, str) for value in check['inputs'])):
             raise RunError('check requires explicit dependency path strings')
@@ -182,8 +215,11 @@ def summary(root: Path) -> dict:
     paths = delta_paths(root, run['baseline_sha'])
     outside = [p for p in paths if not any(p == s or (s.endswith('/') and p.startswith(s)) for s in run['scope'])]
     checks = {key: evaluate(root, run, key) for key in run['checks']}
+    reuse: dict[str, int] = {}
+    for value in checks.values():
+        reuse[value['status']] = reuse.get(value['status'], 0) + 1
     state = 'closed' if run['status'] in ('completed', 'superseded') else ('reconcile' if outside else 'resolved')
-    return {'status': state, 'run': relative,
+    return {'status': state, 'run': relative, 'check_reuse_summary': reuse,
             'branch': run['branch'], 'head': git(root, 'rev-parse', 'HEAD'),
             'dirty': git(root, 'status', '--porcelain=v1', '--untracked-files=all'),
             'baseline_sha': run['baseline_sha'], 'run_status': run['status'], 'record': run['record'],

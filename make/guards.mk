@@ -137,6 +137,15 @@ verify.daily_dev.runtime_repo.clean:
 	 bash scripts/ops/daily_dev_runtime_repo_guard.sh
 	@$(MAKE) --no-print-directory verify.daily_dev.customer_addons.runtime
 
+# Role-scoped acceptance count mechanism: the accepted navigation count is only
+# determinate once a concrete role is locked, so this check owns the resolver and
+# its own entry point instead of riding on the broad daily env guard (narrow
+# binding keeps input-based reuse narrow).
+.PHONY: verify.acceptance_action_count.unit
+verify.acceptance_action_count.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/acceptance_action_count.py scripts/verify/test_acceptance_action_count.py
+	@python3 scripts/verify/test_acceptance_action_count.py
+
 verify.daily_dev.acceptance.env.guard:
 	@node scripts/verify/frontend_acceptance_environment_test.mjs
 	@node scripts/verify/frontend_form_editability_discovery_test.mjs

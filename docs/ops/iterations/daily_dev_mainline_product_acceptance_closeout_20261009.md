@@ -260,8 +260,66 @@ Baseline: `aea2c19bbe4edb2a13fbf908255e918e18f3a299`（`main`，PR #630 退役�
 | `verify.environment.topology.guard` / `verify.dev.acceptance.release_probe.schema.guard` | PASS |
 | `make ci.local.iteration` | PASS（L1, dirty） |
 
-### 7.5 未决
+### 7.5 运行态读回（已取得，闭环）
 
-运行态读回尚未取得：需要经受管 `daily.runtime.*`/`local.dev.*` 入口刷新日常运行态（属冻结候选的
-L3/L4 动作，需先冻结并推送候选），再以真实登录确认 served 导航数与锁定角色面一致。在此之前，
-本机制在**服务实例上的效果未经证明**。
+经受管入口刷新日常运行态后读回（base `http://1.95.85.92:18081`，库 `sc_demo`）：
+
+- `daily.runtime.candidate.bundle_sync`：PASS；old `3d90df05…`，`source_sha=d106d2dd…`，
+  `origin_main_mutated=false`，evidence_ref `refs/daily-candidates/audit/daily-dev-mainline-product-acceptance-closeout-20261009`。
+- `daily.runtime.source_revision.align`（`DAILY_RUNTIME_SOURCE_REVISION_SHA=d106d2dd…`）：PASS；
+  `served.source_revision=d106d2dd…`、`restarted=true`。
+
+`verify.daily_dev.acceptance.readonly.probe` 正/负例：
+
+| 断言 | 正例 | 负例（声明 `finance`/45，实登管理员） |
+| --- | --- | --- |
+| `served_sha` | `d106d2dd…` PASS | `d106d2dd…` PASS |
+| `frontend_build_sha256` | `8bd99a72…f266` | 同 |
+| `role_code` vs `role_code_expected` | `business_config_admin` == 声明 | `business_config_admin` ≠ `finance` |
+| `nav_action_count` | `89`（= 锁定角色面派生值） | `89`（> 45 上限） |
+| 身份 | `吴涛` uid 16，`system_init_ok=true` | 同 |
+| 结论 | **PASS** | **FAIL**：`role_code_unexpected`、`nav_action_count_above_max` |
+
+负例按预期失败，说明数量断言**真实**：角色漂移叠加管理员面会被拒绝，而不是被静默放过。
+产物：`.runtime/daily-readback-candidate.json`、`.runtime/daily-readback-negative.json`。
+本机制在服务实例上的效果自此**已证明**。
+
+## 8. 账本复用完整性（P4，迭代效率根因）
+
+### 8.1 现象与根因
+
+用户反复指出"跑通了的结论不能复用、总是重跑全量"。核查后确认这是**账本机制**的缺陷，不是产品缺陷：
+
+- run 账本里有 **21 条声明级 `status: PASS`/`detail`**，但 `make agent.run.resume` 报告
+  **23/23 全部 `not_run`/`stale`**。原因：`scripts/ops/agent_run_context.py` 只从
+  `.runtime/agent-runs/<run>/<check>.json` 回执读取裁决，写进 `run.json` 的裁决**完全无效**，
+  于是"声称 PASS"与"无任何证据"可以共存。
+- 声明**未要求绑定真实入口**：两条检查引用 `verify.acceptance_action_count.unit` 与
+  `verify.dev.acceptance.release_probe.schema.guard`，而任何 Makefile 分片都**没有定义**这两个目标
+  （真实入口分别是新增的 `verify.acceptance_action_count.unit` 与
+  `verify.dev.acceptance.release.schema.guard`）。无法执行的检查永远无法被记录，也就永远无法复用。
+- `kind` 可选，7 条检查缺省；复用引擎把缺省 `kind` 视为 runtime，**通过也无法转为可复用**。
+- 已执行的检查从未走 `make agent.run.begin/record`，输入哈希索引始终为空。
+
+### 8.2 机制修复
+
+- `resolve_run` 现在对以下情况 **fail-closed**：检查缺 `kind`、携带声明级 `status`/`detail`、
+  或引用任何 Makefile 分片都未定义的目标。声明里不能再出现裁决，叙事留在本记录。
+- 新增 `make/guards.mk` 目标 `verify.acceptance_action_count.unit`，让角色锁定数量解析器绑定到
+  **带测试计数的入口**，不再搭在宽泛的 daily env guard 上（绑定越窄，失效面越窄）。
+- `summary()` 新增 `check_reuse_summary`，可复用/失效/未跑一眼可见，不再靠推断。
+- 12 条离线检查经 `begin/record` 重跑并写入**输入绑定回执**。
+- `ci_local_iteration` 的复用键补上配方实际执行却漏声明的
+  `make/ci.mk`、`scripts/verify/frontend_dev_incremental.py`、`scripts/ci/trusted_scan_scope.py`。
+
+### 8.3 度量与残余
+
+| | 检查数 | reusable | not_run | stale |
+| --- | --- | --- | --- | --- |
+| 修复前 | 23 | **0** | 19 | 4 |
+| 修复后 | 25 | **12** | 11 | 2 |
+
+`not_run` 的 11 条 = 4 条 runtime（按设计需重新读回）+ 6 条纯守卫目标 + `frontend_typecheck`，
+后 7 条**不产出非零测试计数**，按现行契约无法记为可复用证据，只能每轮重跑（各约 2–3s）。
+**残余**：给这些目标补带测试计数的入口，是其加入可复用集的有界后续项；
+这不能通过放宽"非零测试计数"规则来绕过。

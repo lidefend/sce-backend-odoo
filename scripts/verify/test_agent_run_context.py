@@ -16,6 +16,7 @@ class RunContextTest(unittest.TestCase):
         self.git('init', '-q', '-b', 'fix/test')
         self.git('config', 'user.name', 'Test')
         self.git('config', 'user.email', 'test@example.invalid')
+        self.write('make/guards.mk', 'verify.test:\n\t@true\n')
         self.write('source/a.py', 'one')
         self.write('tools/test.py', 'tool')
         self.git('add', '.')
@@ -52,6 +53,23 @@ class RunContextTest(unittest.TestCase):
 
     def check(self):
         return summary(self.root)['checks']['unit']
+
+    def test_undeclared_kind_is_rejected(self):
+        del self.run['checks']['unit']['kind']; self.save()
+        with self.assertRaises(RunError): resolve_run(self.root)
+
+    def test_declaration_level_verdict_is_rejected(self):
+        for verdict in ('status', 'detail'):
+            self.run['checks']['unit'][verdict] = 'PASS'; self.save()
+            with self.assertRaises(RunError): resolve_run(self.root)
+            del self.run['checks']['unit'][verdict]
+
+    def test_unknown_make_target_is_rejected(self):
+        self.run['checks']['unit']['target'] = 'verify.does.not.exist'; self.save()
+        with self.assertRaises(RunError): resolve_run(self.root)
+
+    def test_reuse_summary_reports_unreusable_checks(self):
+        self.assertEqual(summary(self.root)['check_reuse_summary'], {'not_run': 1})
 
     def test_direct_branch_resolution(self):
         self.assertEqual(resolve_run(self.root)[1]['id'], 'TEST')
