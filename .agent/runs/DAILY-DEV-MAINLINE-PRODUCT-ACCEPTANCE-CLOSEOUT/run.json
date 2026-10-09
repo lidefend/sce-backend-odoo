@@ -326,14 +326,64 @@
         "scripts/ops/test_daily_runtime_nav_pro_fixture_prepare.py",
         "make/codex.mk"
       ]
+    },
+    "product_menu_runtime_closeout_guard": {
+      "target": "verify.product.menu.runtime_closeout.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/product_menu_runtime_closeout_guard.py",
+        "scripts/verify/test_product_menu_runtime_closeout_guard.py",
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_core/__init__.py",
+        "addons/smart_construction_core/__manifest__.py",
+        "addons/smart_construction_core/models/support/product_policy_sync.py",
+        "addons/smart_construction_core/migrations/17.0.0.110/post-migration.py",
+        "addons/smart_construction_core/views/menu_product_administration_wave1.xml",
+        "addons/smart_construction_core/views/menu_product_configuration_wave1.xml",
+        "addons/smart_construction_core/views/menu_product_contract_wave1.xml",
+        "addons/smart_construction_core/views/menu_product_cost_wave1.xml",
+        "addons/smart_construction_core/views/menu_product_finance_wave1.xml",
+        "addons/smart_construction_core/views/menu_product_project_wave1.xml",
+        "addons/smart_construction_core/views/menu_product_reporting_wave1.xml",
+        "addons/smart_construction_core/views/menu_product_tax_wave1.xml",
+        "addons/smart_construction_core/views/menu_product_workbench_wave1.xml",
+        "addons/smart_construction_core/views/menu_product_primary_center_candidate_v1.xml",
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_core/delivery/final_menu_navigation_service.py",
+        "addons/smart_core/handlers/menu_configuration.py",
+        "addons/smart_core/model/ui_menu_config_policy.py",
+        "addons/sc_norm_engine/views/norm_menu.xml",
+        "scripts/ops/formal_product_menu_policy_restore.py"
+      ]
+    },
+    "product_menu_contract_v1_guard": {
+      "target": "verify.product.menu.contract_v1.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/product_menu_contract_v1_guard.py",
+        "scripts/verify/test_product_menu_contract_v1_guard.py",
+        "config/product_menu_contract_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+        "config/frontend/authoritative_navigation.json"
+      ]
+    },
+    "project_ledger_entry_carrier_orm": {
+      "target": "verify.contract.project_ledger_entry_carrier.orm",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/tests/test_project_ledger_runtime_contract.py",
+        "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
+        "addons/smart_construction_core/views/core/project_overview_views.xml",
+        "addons/smart_core/handlers/ui_contract_v2.py"
+      ]
     }
   },
   "blockers": [
     "Mainline integration is not authorized: the user instructed \"先不执行进入主线\". The verified candidate is deployed to the daily runtime only; PR push, remote gates and merge remain pending and must not be described as integrated.",
-    "P0 delivery-engine residue still reported, not fixed here: build_route_authority silently drops contract-declared entries that are neither delivered nor explicitly denied, and the native nav tree augmentation delivers entries outside the declared role face. Both are owning-layer (P0) semantics.",
-    "Pre-existing mainline drift awaiting owner adjudication: scripts/verify/product_menu_runtime_closeout_guard.py fails with 'missing active=False overlays: menu_sc_project_ledger_group_v2' on this branch and on origin/main alike; it is independent of this closeout's changes."
+    "P0 delivery-engine residue still reported, not fixed here: build_route_authority silently drops contract-declared entries that are neither delivered nor explicitly denied, and the native nav tree augmentation delivers entries outside the declared role face. Both are owning-layer (P0) semantics."
   ],
-  "next_exact_step": "The two reported acceptance failures are closed at their owning layer. (1) Relation-jump 403: the pm contract declared action 751 (action_construction_contract_income_execution), which the locked product contract never published, so filter_route_authority_by_publication marked it PRODUCT_ENTRY_NOT_RELEASED and the jump had no reachable target; c3424962 rebinds the pm contract relation authority to the released action 578 (menu_sc_p1_income_contract/904, same model construction.contract.income) and removes the duplicate contextual carrier. (2) List selection-box acceptance locator timeout: the lane re-derived /a/<action_id> and hardcoded copy instead of consuming the served contract; 03393078 makes the HTTP probe consume the contract-declared route/name/model/form structure and makes the browser lane open the declared route, assert the row selection control, activate the contract-declared chapter owning the governance permission field, and treat a contract read-only surface as read-only. Served runtime c3424962; HTTP probe and browser journey both PASS. Remaining, in order: (1) the reported P0 delivery-engine residue (declared-but-unresolved entries recorded; native nav tree must stop selecting entries outside the contract); (2) owner adjudication of the pre-existing product_menu_runtime_closeout_guard drift that also fails on origin/main (missing active=False overlays: menu_sc_project_ledger_group_v2); (3) explicit user authorization before any push/PR/merge. No assertion may be relaxed.",
+  "next_exact_step": "Ordered closeout on branch audit/daily-dev-mainline-product-acceptance-closeout-20261009 at HEAD abdaf3b1. (1) DONE: the pre-existing mainline menu-closeout drift is fixed at its owning declaration layer; menu_sc_project_ledger_group_v2 is a RELEASED_FOUNDATION group in config/product_menu_contract_v1.json (项目中心 / 项目台账) that carries the released menu_sc_project_project entry, so the stale active=False expectation was removed from scripts/verify/product_menu_runtime_closeout_guard.py HIDDEN_XMLIDS and from product_policy_sync.py LOCKED_TARGET_UNPUBLISHED_MENU_XMLIDS. The guard no longer relaxes any assertion: every remaining HIDDEN_XMLIDS entry still requires an active=False overlay and locked-set membership. Verified by verify.product.menu.runtime_closeout.guard, verify.product.menu.release_manifest_v2.guard, verify.product.menu.contract_v1.guard, verify.frontend.release_navigation_policy.guard, verify.scene.role.surface.consistency.guard and verify.contract.project_ledger_entry_carrier.orm. (2) NEXT: close the P0 delivery-engine residue at its owning layer (smart_core delivery: stop silently dropping contract-declared entries that are neither delivered nor explicitly denied, and stop the native nav tree from delivering entries outside the declared role face); no assertion may be relaxed. (3) THEN: the remaining minimal-evidence gap for creation/edit and the workbench from the original list. (4) FINALLY: consolidated re-verification, one daily runtime refresh, then explicit user authorization before any push/PR/merge.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -927,9 +977,9 @@
   },
   "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced.",
   "stage_identity": {
-    "head": "0339307806497edb6cacd64fc58008c4f0d9c316",
-    "dirty_scope": [],
     "kind": "iteration",
-    "note": "iteration identity: local candidate 03393078 (P4 acceptance-lane contractization) on top of c3424962 (P1 route-authority declaration alignment). The daily runtime serves c3424962 (source_revision=git_sha=c3424962e05c31b184718c779b8c6b0e5553cc92, database=sc_demo, frontend_build_sha256=a3f477a4b7ccaf81433a84a0e5192cc31cd350d21033870e764dd53ce80c4d1a); the acceptance-lane change is a P4 test tool and is deliberately not deployed. Receipt-bound evidence is .runtime/agent-runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/browser_login_return_authority.json (passed, head=03393078)."
+    "head": "abdaf3b124a42d31cda4a6c3609f7b72231343c8",
+    "dirty_scope": [],
+    "note": "iteration identity: local candidate abdaf3b1 (P1 menu-closeout declaration alignment) on top of b79c2c26 (closeout record) / 03393078 (P4 acceptance-lane contractization) / c3424962 (P1 route-authority declaration alignment). The daily runtime still serves c3424962 until the consolidated refresh; the abdaf3b1 change is behaviour-neutral for the served released face because the ledger group is not an entry in the locked menu policy baseline loop."
   }
 }

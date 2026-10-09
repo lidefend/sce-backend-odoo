@@ -965,3 +965,58 @@ main 车道，候选车道检查保留但尚无回执。
 - 仍报告**不修**（属主层另计，P0 交付引擎语义）：`build_route_authority` 的静默丢弃与契约面外交付。
 - 待用户裁决：`scripts/verify/product_menu_runtime_closeout_guard.py` 在本分支与 `origin/main` 均失败
   （`missing active=False overlays: menu_sc_project_ledger_group_v2`），与本次改动无关。
+
+### 13.14 菜单收口守卫漂移修复：声明对齐已发布契约（`abdaf3b1`，2026-10-10 第 13 轮续）
+
+**结论先行**：`scripts/verify/product_menu_runtime_closeout_guard.py` 报
+`missing active=False overlays: menu_sc_project_ledger_group_v2`（在本分支与 `origin/main` 同时失败）
+是**声明陈旧**，不是发布面缺陷。按"修声明对齐发布"的口径修复，未放宽任何断言。
+
+**一、事实链（已独立复核）**
+
+1. `config/product_menu_contract_v1.json` 中 `centers[1] 项目中心 / level_two[1] 项目台账`
+   与 `children[0] 项目台账` 均为 `delivery=RELEASED_FOUNDATION`（该契约按 label 声明，不含 xmlid）；
+2. 发布基线 `scripts/verify/baselines/formal_business_product_menu_policy_v1.json`
+   两个 product 的 `menu_groups[1].menus[2]` 都含已发布条目
+   `smart_construction_core.menu_sc_project_project`（label `项目台账`）；
+3. 发布导航 `addons/smart_construction_core/views/menu_product_navigation_v2.xml:121`
+   把该记录入口挂在容器组 `menu_sc_project_ledger_group_v2` 之下；容器组 inactive 时，
+   已发布的子项在原生树里不可达；
+4. `Merge PR #594`（`90484d88`）据此把 `views/menu_product_project_wave1.xml:13` 该组改为
+   `<field name="active">True</field>`——这是契约裁决，不是回归。
+
+**二、漂移根因**
+
+裁决后，守卫 `HIDDEN_XMLIDS` 与运行时收敛常量
+`addons/smart_construction_core/models/support/product_policy_sync.py::LOCKED_TARGET_UNPUBLISHED_MENU_XMLIDS`
+仍保留该 xmlid，于是守卫要求一个已不存在的 `active=False` 覆盖，必然失败。
+
+**三、修复（`abdaf3b1`，P1 声明层 + P4 守卫一致性）**
+
+两处同源集合各自移除 `menu_sc_project_ledger_group_v2`，并加注契约理由。
+**未放宽**：守卫仍要求其余每一条 `HIDDEN_XMLIDS` 都存在 `active=False` 覆盖、且都出现在锁定集合中
+（`missing_overlay` / `missing_policy` 两个方向继续 fail-closed）。
+
+**四、验证（干净 HEAD `abdaf3b1`，收据可复用）**
+
+- `verify.product.menu.runtime_closeout.guard`：PASS（`42 unpublished menu facts are closed`）。
+- `verify.product.menu.release_manifest_v2.guard`：PASS（`centers=10 contract_pages=90 accounting_pages=6 total=90`，
+  sha256 `bcefc90c…`）。
+- `verify.product.menu.contract_v1.guard`：PASS（锁定契约内部一致且与运行态对齐）。
+- `verify.frontend.release_navigation_policy.guard`：PASS（`roles=4 released_leaf_identities=88`）。
+- `verify.scene.role.surface.consistency.guard`：PASS（`role_count=10 r3_scene_count=22`）。
+- `verify.contract.project_ledger_entry_carrier.orm`：PASS（`0 failed, 0 error(s) of 28 tests`）。
+- 定向模块测试 `TestProjectLedgerRuntimeContract`：`0 failed, 0 error(s) of 3 tests`。
+
+**五、行为中性说明（为何暂不重跑日常升级）**
+
+`LOCKED_TARGET_UNPUBLISHED_MENU_XMLIDS` 仅在 `product_policy_sync.py:559` 的**锁定基线菜单循环**中消费；
+`menu_sc_project_ledger_group_v2` 不是 `formal_business_product_menu_policy_v1.json` 的菜单条目，
+因此本次移除对已发布运行面**行为中性**。日常运行时不为此单独重跑升级，留到合并收口的一次刷新。
+
+**六、遗留（登记，不掩盖）**
+
+- `browser_login_return_authority` 收据声明为 `runtime` 但未声明权威环境读回 artifact，
+  框架因此判定 `stale`（既有声明机制项，非本轮改动引入）；将在合并收口的日常运行时刷新时
+  重跑该车道并补 `readback`。
+- `build_route_authority` 静默丢弃 / 契约面外交付（P0 交付引擎语义）仍未修，按顺序进入下一步。
