@@ -301,6 +301,15 @@
         "make/codex.mk",
         "make/ci.mk"
       ]
+    },
+    "daily_runtime_published_face_converge": {
+      "target": "verify.daily.runtime.published_face.converge",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/daily_runtime_published_face_converge.py",
+        "scripts/ops/test_daily_runtime_published_face_converge.py",
+        "make/codex.mk"
+      ]
     }
   },
   "blockers": [
@@ -308,7 +317,7 @@
     "browser_login_return_authority (verify.nav.pro01r.route_authority.browser) still needs the governed nav_pro_{config_admin,system_admin,pm,project_member} fixture provisioned on sc_demo through nav.pro01.runtime.prepare inside the remote compose. Its earlier blocking prerequisite (\"missing task evidence: finance smart_construction_core.menu_sc_settlement_adjustment\") was a served-tree/module-generation gap; the runtime is now at 4b7f9a46 with smart_core upgraded and the published face re-frozen, so the prepare step can be attempted. No assertion may be relaxed.",
     "Run-ledger reuse boundary (by design, not a defect): scripts/ops/agent_run_context.py only auto-reuses declared offline checks; a kind=runtime receipt is never auto-reusable and is reported as stale with \"runtime evidence requires authoritative environment readback\" (locked by scripts/verify/test_agent_run_context.py::test_runtime_receipt_never_auto_reused). The authoritative readback for this batch therefore lives in .runtime/final-acceptance/daily-deployed/*.json plus the recorded receipt .runtime/agent-runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/daily_acceptance_readback.json. Reuse for runtime lanes requires a declared authoritative-environment-readback mechanism, which is outstanding P4 work."
   ],
-  "next_exact_step": "Iteration-efficiency closeout (this round): `ci.local.iteration` 36.8s -> 6.9s by removing the O(n) Git process-per-reference/per-file pattern in the trusted-scan scope selector (commit 8a1ef8ab, authority digests proven byte-identical, tests 30/30); frontend typecheck now reuses the vue-tsc program graph 23.4s -> 10.3s with an injected-error fail-closed proof (commit 39a86b2f). Next, in order: (1) the daily runtime still re-runs the smart_core module upgrade on every deploy even when the module code is unchanged - add the same declared-receipt reuse the frontend build already has, bound to the module set plus its code hash, before calling the deploy loop efficient; (2) the run ledger still cannot reuse a kind=runtime receipt, so runtime lanes are re-derived each round - author the declared authoritative-environment readback (fail-closed) that blockers[2] names; (3) keep the unchanged product-closeout order: nav_pro_* fixture then the real click-open/return journey, then (on explicit authorization) PR/merge. Original step: Daily-runtime candidate 4b7f9a46 is deployed and the user-visible defect is closed: served system.init for wutao returns HTTP 200 (was 500), navigation.meta.platform_release_gate reads snapshot_id 39 (daily-navigation-standard-4b7f9a46) / 40 (preview) with allowed_page_count=kept_leaf_count=90, all 112 served nodes carry canonical_navigation projections, and 角色首页 (menu_id 1004, action_id 0) is enabled with authority.state=allowed/source=nav.declared_entry at route /s/workspace.home. verify.daily_dev.acceptance.readonly.probe PASSES at that served SHA (identity PASS, contract 11/11, login nav_admitted_entry_count=90 == nav_gate_kept_leaf_count=90 == contracted 90; the assertion was NOT lowered - nav_action_count 89 is now reported alongside the contracted entry population), and the negative control (declared finance/46, served business_config_admin) still FAILS with role_code_unexpected + nav_entry_count_above_max. Next, in order: (1) provision the nav_pro_* fixture through the governed nav.pro01.runtime.prepare and run verify.nav.pro01r.route_authority.browser as one real click-open -> return -> tab/action restore journey; (2) on explicit user authorization, push the candidate and open the Gitee PR through pr.push.gitee so the remote gates run on the exact head, then merge through the protected PR flow; (3) keep the contracted 90 assertion and the coupled daily.runtime.candidate.release entry.",
+  "next_exact_step": "Iteration-efficiency closeout (this round, continued): `ci.local.iteration` 36.8s -> 6.9s (commit 8a1ef8ab) and frontend typecheck 23.4s -> 10.3s warm (commit 39a86b2f). The deploy loop's unconditional `mod.upgrade smart_core` (~180s) is now reused when the declared module git tree oid equals the deployed one, re-resolved on the remote before any skip (commit 3ee08386, 22/22 tests; docs section 13.8). Next, in order: (1) on explicit user confirmation, run the real `daily.runtime.candidate.release` once to prove upgrade_mode=reused end-to-end (remote write, not yet initiated); (2) author the declared authoritative-environment readback (fail-closed) so kind=runtime receipts can be reused instead of re-derived each round (blockers[2]); (3) keep the unchanged product-closeout order: nav_pro_* fixture then the real click-open/return journey, then (on explicit authorization) PR/merge.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -631,6 +640,18 @@
         },
         "fail_closed_proof": "With the warm cache present an injected `const probe: number = \"...\"` still fails the target (exit 2, TS2322); removing the file returns it to exit 0, so a stale program graph cannot mask a new diagnostic.",
         "not_relaxed": "No diagnostic set, include list or strict option changed; only the starting state of the program graph changed."
+      },
+      "deploy_loop_module_upgrade_reuse": {
+        "commit": "3ee08386",
+        "change": "daily.runtime.published_face.converge no longer re-runs `mod.upgrade smart_core` when the deployed module tree oid is byte-identical to the last verified convergence; the identity is declared as a git tree oid at the exact candidate revision and re-resolved on the remote before any skip.",
+        "measured": {
+          "mod_upgrade_seconds_avoided_per_unchanged_deploy": "~180",
+          "trigger": "skipped only when declared == deployed module tree ids"
+        },
+        "fail_closed": "Unresolved module, missing/stale receipt, mismatched declared set, or a remote `reused` claim whose tree ids differ from the declared ones all fall back to running the upgrade (the local check rejects an unproven reuse claim).",
+        "tests": "make verify.daily.runtime.published_face.converge 22/22 OK",
+        "not_relaxed": "The face is still frozen after the (possibly reused) upgrade and the release-gate guard still proves it; the declared upgrade (`CODEX_NEED_UPGRADE`/`CODEX_MODULES`) coupling is unchanged; `--force-upgrade` is the explicit drift-repair path.",
+        "runtime_proof": "L3/L4 real deploy showing upgrade_mode=reused is pending explicit user confirmation (remote write)."
       }
     }
   },

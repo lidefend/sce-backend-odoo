@@ -695,14 +695,15 @@ main 车道，候选车道检查保留但尚无回执。
 本次只改"用什么方式取到同一结论"。因为 `trusted_scan_scope.py` 本身属于 `COMMON_AUTHORITY`，
 这次改动会让既有的 Quick 覆盖率回执按设计失效一次（下次 Quick 走 full）——这是权威变更的正确表现，不是回退。
 
-### 13.6 剩余效率缺口（已登记，未在本轮实施）
+### 13.6 剩余效率缺口（已登记；第 1 项见 §13.8，第 2 项仍开放）
 
 1. **部署闭环的模块升级无同码复用**：前端构建有"同 commit 复用回执"（`reused` 字段），
    但 `daily.runtime.published_face.converge` 每次都要重跑 `mod.upgrade`（例如 `smart_core`），
    即使模块代码相对上次部署**一字未改**。需要一份绑定"模块集 + 代码哈希 + 已部署 SHA"的有界回执，
    并以权威读回（模块状态/写入时间）证明可跳过；这是**写操作复用**，必须可回滚，不能想当然跳过。
+   **→ 已在 §13.8（`3ee08386`）落地，采用 git tree oid 绑定 + 远端复解析的 fail-closed 形式。**
 2. **运行态回执仍不可复用**（见 §12.5）：需要"声明式权威环境读回"（fail-closed）才能让 runtime 车道复用。
-   两项目前都写在 run 的 `blockers` / `next_exact_step` 里，不在本轮擅自扩大改动面。
+   仍写在 run 的 `blockers` / `next_exact_step` 里，未在本轮擅自扩大改动面。
 ### 13.7 前端类型检查：把"重复"降到编译器内部（`39a86b2f`）
 
 `verify.frontend.typecheck.strict` 每次都对整棵源码树从零解析（主工程 +
@@ -717,3 +718,41 @@ main 车道，候选车道检查保留但尚无回执。
   `const probe: number = "..."`，该目标**仍然失败**（exit 2，报 `TS2322`）；
   删除该文件后恢复 exit 0。即陈旧程序图**不会**掩盖新诊断。
 - 诊断集合、`include` 列表、严格开关**一律未改**；变的只是"从什么状态开始算"。
+
+
+### 13.8 部署闭环：模块代码未变则不再重跑升级（`3ee08386`）
+
+**现象与度量**：`daily.runtime.published_face.converge` 是每日部署三入口之一，
+每次无条件执行 `mod.upgrade smart_core`（约 3 分钟），即使相对上次已验证的收敛
+**模块代码一字未改**。
+
+**根因**：该入口把"发布面必须从最新的投影代码冻结"写成了"每次都必须重跑升级"。
+前端构建早已有"同 commit 复用回执"（`reused` 字段），部署面却沿用"无条件写"。
+
+**修正（fail-closed 的同码判定，不靠时间戳、不靠文件名）**：
+
+- 本地在**精确候选 revision**（`--expected-sha`）解析每个声明模块的 **git tree oid**
+  （`<sha>:addons/<module>` / `<sha>:odoo/addons/<module>`）。tree oid 是目录内容的递归身份，
+  两个 revision 报同一 oid 即模块代码逐字节一致；**任一模块解析不出 → 返回 `None` → 不复用**。
+- 该 tree id 作为**声明**经 argv 传入远端。远端**不看本地结论**，而是对自己的已部署 tree
+  **重新解析**（`git rev-parse --verify HEAD:<base>/<module>`），只有"声明集 == 模块集"
+  且"已部署 oid == 声明 oid"**逐条相等**时才跳过升级，否则照常升级。
+- 回执新增 `upgrade_mode`（`run` / `reused` / `skipped`）、`module_tree_ids`（全 SHA 的已部署树id）、
+  `upgrade_reuse_reason`。
+- 本地证据校验新增：声明了模块时 `upgrade_mode` 必须 ∈ {run, reused}；`module_tree_ids` 必须是
+  与声明**同集合**的全 SHA；**若远端声称 `reused` 但其 `module_tree_ids` 不等于本地声明的
+  `reuse_tree_ids`，则报 `unpublished reuse claim is unproven` 并失败**。
+- 复用提示只从**上一份**回执取，且要求该回执 `status/guard_status` 皆 PASS、`remote_root`、
+  `database`、`upgrade_modules`、`module_tree_ids` **全等**；任何不满足即给空提示（照常升级）。
+- 新增 `--force-upgrade`（`make DAILY_RUNTIME_PUBLISHED_FACE_FORCE_UPGRADE=1`）：代码没变但数据库需
+  重建/对齐时的**漂移修复通道**，显式忽略命中回执。
+
+**未放宽任何东西**：升级（可能被复用）**之后**仍然冻结发布面并跑 release gate 守卫；
+`mod.upgrade` 的声明（`CODEX_NEED_UPGRADE` / `CODEX_MODULES`）与守卫耦合保持不变；
+跳过只发生在"已部署树 == 声明树"这一可被远端独立复算的条件上，**默认永远是重跑**。
+
+**测试**：`make verify.daily.runtime.published_face.converge` **22/22 PASS**
+（新增：argv 携带 tree id、无提示时占位、缺 `upgrade_mode` 拒绝、`reused` 无据拒绝 / 诚实 `reused` 通过、
+`reuse_hint` 全条件、真仓库 `module_tree_ids` 解析与拒绝、`--force-upgrade` 忽略命中回执）。
+新登记检查 `daily_runtime_published_face_converge`（`verify.daily.runtime.published_face.converge`）已写回执。
+**L3/L4 实测**（真实部署走一次并确认 `upgrade_mode=reused`）待用户确认后执行——本轮不擅自发起远端写。
