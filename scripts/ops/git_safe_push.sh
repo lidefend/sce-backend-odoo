@@ -18,6 +18,8 @@ if [[ "${GIT_SAFE_PUSH_FAKE_GIT:-0}" == "1" && "$(basename "$0")" == "git" ]]; t
         else
           printf '%s\n' "${FAKE_HEAD_SHA:-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}"
         fi
+      elif [[ "${2:-}" == "--verify" ]]; then
+        printf '%s\n' "${FAKE_BASE_SHA:-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb}"
       else
         printf '%s\n' "${FAKE_BRANCH:-fix/test-branch}"
       fi
@@ -56,6 +58,16 @@ if [[ "${GIT_SAFE_PUSH_FAKE_GIT:-0}" == "1" && "$(basename "$0")" == "git" ]]; t
           printf '%s\t%s\n' "${FAKE_HEAD_SHA:-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}" "${3}"
         fi
       fi
+      ;;
+    merge-base)
+      if [[ "${2:-}" == "--is-ancestor" ]]; then
+        [[ "${FAKE_BASE_ANCESTOR:-1}" == "1" ]]
+      else
+        printf '%s\n' "${FAKE_BASE_SHA:-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb}"
+      fi
+      ;;
+    merge-tree)
+      [[ "${FAKE_MERGE_CONFLICT:-0}" != "1" ]]
       ;;
     push)
       if [[ "${2:-}" == "-u" ]]; then
@@ -125,6 +137,11 @@ if [[ "${1:-}" == "--self-test" ]]; then
         FAKE_COMPONENT_DRIVER_STALE="${FAKE_COMPONENT_DRIVER_STALE:-0}" \
         FAKE_INVALID_BRANCH="${FAKE_INVALID_BRANCH:-0}" \
         FAKE_GENERATED_REPORTS_STALE="${FAKE_GENERATED_REPORTS_STALE:-0}" \
+        FAKE_BASE_ANCESTOR="${FAKE_BASE_ANCESTOR:-1}" \
+        FAKE_MERGE_CONFLICT="${FAKE_MERGE_CONFLICT:-0}" \
+        FAKE_BASE_SHA="${FAKE_BASE_SHA:-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb}" \
+        GIT_SAFE_PUSH_BASE_REF="${GIT_SAFE_PUSH_BASE_REF:-origin/main}" \
+        GIT_SAFE_PUSH_ALLOW_CONFLICT="${GIT_SAFE_PUSH_ALLOW_CONFLICT:-}" \
         bash "$self" 2>&1
     )"
     status=$?
@@ -139,6 +156,7 @@ if [[ "${1:-}" == "--self-test" ]]; then
   assert_nonzero() { [[ "$status" -ne 0 ]] || fail "$1: expected nonzero status"; }
   assert_zero() { [[ "$status" -eq 0 ]] || fail "$1: expected status 0, got $status"; }
   assert_output() { [[ "$output" == *"$2"* ]] || fail "$1: missing output '$2'"; }
+  assert_no_output() { [[ "$output" != *"$2"* ]] || fail "$1: unexpected output '$2'"; }
   assert_push_count() {
     count="$(awk '$1 == "push" { count++ } END { print count + 0 }' "$log_file")"
     [[ "$count" -eq "$2" ]] || fail "$1: expected $2 push calls, got $count"
@@ -215,7 +233,25 @@ if [[ "${1:-}" == "--self-test" ]]; then
   FAKE_INVALID_BRANCH=1 run_push
   assert_nonzero 'invalid branch name'; assert_output 'invalid branch name' 'invalid local branch name'; assert_push_count 'invalid branch name' 0
 
-  printf 'PASS: git_safe_push isolated scenarios=15 (no real remotes)\n'
+  FAKE_BASE_ANCESTOR=0 FAKE_MERGE_CONFLICT=0 run_push
+  assert_zero 'diverged but clean base'
+  assert_push_count 'diverged but clean base' 1
+  assert_no_output 'diverged but clean base' 'conflict_guard'
+
+  FAKE_BASE_ANCESTOR=0 FAKE_MERGE_CONFLICT=1 run_push
+  assert_nonzero 'conflicting base'
+  assert_output 'conflicting base' 'conflict_guard'
+  assert_output 'conflicting base' 'zero checks'
+  assert_output 'conflicting base' 'recovery_command: git merge origin/main'
+  assert_push_count 'conflicting base' 0
+  assert_remote_access_count 'conflicting base' 0
+
+  FAKE_BASE_ANCESTOR=0 FAKE_MERGE_CONFLICT=1 GIT_SAFE_PUSH_ALLOW_CONFLICT=manual run_push
+  assert_zero 'conflict override'
+  assert_output 'conflict override' 'conflict_guard_override reason=manual'
+  assert_push_count 'conflict override' 1
+
+  printf 'PASS: git_safe_push isolated scenarios=18 (no real remotes)\n'
   exit 0
 fi
 
@@ -259,6 +295,28 @@ fi
 if [[ "$(git rev-parse HEAD)" != "$expected_head" ]]; then
   echo "❌ local HEAD changed during push preflight" >&2
   exit 2
+fi
+
+# A branch that cannot merge into its base produces a CONFLICTING pull request.
+# GitHub cannot build the pull_request merge ref for it, so every gate workflow
+# dispatches nothing at all and the PR check list stays empty ("no checks
+# reported") instead of failing. That reads as "CI not scheduled yet" and costs
+# a whole cycle, so fail closed at the earliest common entry.
+push_base_ref="${GIT_SAFE_PUSH_BASE_REF:-origin/main}"
+if push_base_sha="$(git rev-parse --verify --quiet "${push_base_ref}^{commit}" 2>/dev/null)" &&
+  [[ -n "$push_base_sha" ]] &&
+  ! git merge-base --is-ancestor "$push_base_sha" "$expected_head" 2>/dev/null &&
+  git merge-base "$push_base_sha" "$expected_head" >/dev/null 2>&1 &&
+  ! git merge-tree --write-tree "$push_base_sha" "$expected_head" >/dev/null 2>&1; then
+  if [[ -z "${GIT_SAFE_PUSH_ALLOW_CONFLICT:-}" ]]; then
+    echo "❌ conflict_guard: ${branch} does not merge cleanly with ${push_base_ref} (base=${push_base_sha:0:8})" >&2
+    echo "❌ conflict_guard: the pull_request merge ref cannot be built, so the required gates dispatch zero checks and the PR reads as 'no checks reported'" >&2
+    echo "recovery_command: git merge ${push_base_ref}" >&2
+    echo "recovery_command: make workspace.branch.sync-main (governed entry for a branch whose dependency PR already merged)" >&2
+    echo "override: GIT_SAFE_PUSH_ALLOW_CONFLICT=<reason> (a PR from this branch then receives no checks)" >&2
+    exit 7
+  fi
+  echo "[pr.push] conflict_guard_override reason=${GIT_SAFE_PUSH_ALLOW_CONFLICT} base=${push_base_sha:0:8}" >&2
 fi
 
 remote="${GITHUB_AUTH_REMOTE:-origin}"

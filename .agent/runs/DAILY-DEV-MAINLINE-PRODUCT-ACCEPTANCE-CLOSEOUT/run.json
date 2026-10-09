@@ -126,10 +126,20 @@
       "kind": "offline",
       "status": "PASS",
       "detail": "evidence_scope + incremental 32 tests (PartialFoldPlanTests, partial EmitResults case); reuse_identity 23 cases"
+    },
+    "push_conflict_guard_unit": {
+      "target": "verify.pr.push.unit",
+      "inputs": [
+        "scripts/ops/git_safe_push.sh",
+        "make/codex.mk"
+      ],
+      "kind": "offline",
+      "status": "PASS",
+      "detail": "18 isolated scenarios, including the conflicting-base DENY (exit 7, zero push and zero remote access) and the explicit override; real-git control: git merge-tree --write-tree 58c04a60 c6937377 -> exit 1 (guard fires), 79908fdf HEAD -> exit 0 (guard silent)"
     }
   },
   "blockers": [],
-  "next_exact_step": "Mainline integration done: PR #631 merged, main = 58c04a60 (parent aea2c19b). Only the product-delivery judgement remains: owner login check on the daily runtime (http://1.95.85.92:18081/, wutao/123456, sc_demo). Do not rerun the matrix for unchanged inputs.",
+  "next_exact_step": "PR #632 merged: main = 79908fdf (parent 58c04a60), four gates green on the PR head and on the main push, no open PRs, worktree clean. This candidate carries the OPS-DECISION-004 push conflict guard (scripts/ops/git_safe_push.sh) together with the ledger record for #632, so the bookkeeping rides with the tool change instead of buying a standalone Quick. Remaining after it merges: the owner product-delivery judgement on the daily runtime (http://1.95.85.92:18081/, wutao/123456, sc_demo). Do not rerun the matrix for unchanged inputs.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -183,7 +193,31 @@
         "frontend_release_gate": "pass"
       },
       "local_quick_receipt": "cfc0877d exact-head receipt, reused by pr.merge.local_quick_gate",
-      "post_merge_readback": "PR #631 state=MERGED, merge commit 58c04a60 with parent aea2c19b; deployment not triggered"
+      "post_merge_readback": "PR #631 state=MERGED, merge commit 58c04a60 with parent aea2c19b; deployment not triggered",
+      "ledger_followup": {
+        "pr": 632,
+        "source_head": "196301ef0b3f6bee4863071bd41c41723f6abd78",
+        "resolution": "git merge origin/main with the add/add run.json conflict resolved to the branch ledger; tree identical to c6937377",
+        "merge_commit": "79908fdf7e104ceaa284edff71ef93bb6738c10d",
+        "method": "squash via make pr.merge --match-head-commit (live PR head == EXPECTED_HEAD verified before merge)",
+        "required_checks_on_pr_head": {
+          "public_guard": "pass",
+          "merge_policy_gate": "pass",
+          "professional_quality_gate": "pass",
+          "frontend_release_gate": "pass"
+        },
+        "local_quick_receipt": "196301ef exact-head receipt reused by pr.merge.local_quick_gate",
+        "post_merge_readback": "PR #632 state=MERGED, main = 79908fdf with parent 58c04a60; four gates green on the main push; no open PRs; deployment not triggered"
+      }
+    },
+    "conflict_guard": {
+      "decision": "OPS-DECISION-004",
+      "changed_paths": [
+        "scripts/ops/git_safe_push.sh"
+      ],
+      "why": "PR #632 showed that a conflicted branch silently dispatches zero gate runs; the rule already existed in OPS-DECISION-003 but had no enforcement, so the check moved into the push gate",
+      "affected_layers": "P4 ops delivery tool only; no product, contract, frontend or backend behaviour",
+      "skipped_layers": "L3/L4 runtime and browser checks are unaffected by a push-lane shell guard; ci.local.quick still runs once at the frozen head before merge"
     }
   },
   "continuation": {

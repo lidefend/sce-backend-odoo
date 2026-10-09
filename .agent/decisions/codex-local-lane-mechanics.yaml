@@ -1,4 +1,4 @@
-# OPS-DECISION-003
+# OPS-DECISION-003 (extended by OPS-DECISION-004: conflicted_pr_dispatches_no_checks)
 #
 # Durable execution mechanics for the GitHub delivery lane. It exists because the
 # same three mistakes were re-discovered by hand across several candidates:
@@ -76,6 +76,30 @@ decision:
       resolution_justification: main's side equals the already-merged ancestor content, so the merge is content-neutral
       verification: git diff --quiet <pre-merge-branch-head> origin/main must report identical trees
 
+    conflicted_pr_dispatches_no_checks:
+      id: OPS-DECISION-004
+      statement: >-
+        GitHub builds the pull_request merge ref from the base and the head. When the
+        branch does not merge cleanly with its base that ref cannot be built, so every
+        gate workflow dispatches nothing at all: the pull request reports "no checks
+        reported" and reads as "CI is not scheduled yet" instead of as a failure.
+      consequence: >-
+        a conflicted candidate is indistinguishable from a queued one, so a whole
+        cycle is spent waiting before anyone suspects the branch itself
+      enforcement:
+        gate: make pr.push
+        base_ref: GIT_SAFE_PUSH_BASE_REF (default origin/main)
+        check: >-
+          when the base is not an ancestor of HEAD, dry-run
+          git merge-tree --write-tree <base> <head>
+        outcome: exit 7 before any remote access, with the reconciliation command
+        override: GIT_SAFE_PUSH_ALLOW_CONFLICT=<reason> (the PR then receives no checks)
+      why_enforcement_and_not_a_reminder: >-
+        post_squash_merge_base_normalization above already recorded this rule, and it
+        was violated again on PR #632: a recorded decision does not stop a push, so the
+        rule moved from advice into the push gate itself.
+      unit_target: make verify.pr.push.unit
+
   recorded_instances:
     - candidate: e589676c23e4ef54d0dc1cfc9bce1749e5c7eb3a
       pr: 605
@@ -85,3 +109,14 @@ decision:
         probe self-matched; the push was rejected twice by the complexity report and
         then the split plan queue; origin/main was merged to normalize the base and the
         resulting conflicts resolved to the branch side with identical trees.
+    - candidate: 196301ef0b3f6bee4863071bd41c41723f6abd78
+      pr: 632
+      squash: 79908fdf7e104ceaa284edff71ef93bb6738c10d
+      branch: audit/daily-dev-mainline-product-acceptance-closeout-20261009
+      observations: >-
+        c6937377 was pushed on a branch whose earlier head had already been
+        squash-merged by PR #631, so the ledger commit hit an add/add conflict on
+        run.json; PR #632 reported mergeable=CONFLICTING and dispatched zero workflow
+        runs, which read as a scheduling delay. Reconciling first (git merge
+        origin/main, resolving run.json to the branch ledger) produced a tree identical
+        to c6937377, after which the gates dispatched normally and all four passed.
