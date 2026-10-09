@@ -57,7 +57,7 @@ REMOTE_CONVERGE = r'''
 import fcntl, json, os, re, shutil, subprocess, sys
 from pathlib import Path
 
-expected_sha, env_name, env_file, database, login, product_keys_arg, modules_arg, remote_root = sys.argv[1:9]
+expected_sha, env_name, env_file, database, login, product_keys_arg, modules_arg, reuse_ids_arg, remote_root = sys.argv[1:10]
 fixed_root = Path("/opt/projects/repos/sce-product-odoo")
 root = Path(remote_root)
 full_sha = re.compile(r"^[0-9a-f]{40}$")
@@ -95,6 +95,44 @@ if head != expected_sha:
         1,
     )
 
+# The declared module-tree identity is only a *hint* from the caller: the remote
+# re-resolves every declared module against its own tree and reuses the previous
+# upgrade only when the code is byte-identical. A hint that does not match, an
+# unresolved module, or any doubt falls back to running the upgrade.
+declared_tree_ids = {}
+for row in reuse_ids_arg.split(","):
+    if not row.strip():
+        continue
+    name, _, oid = row.partition("=")
+    name, oid = name.strip(), oid.strip()
+    if not name or not full_sha.fullmatch(oid):
+        declared_tree_ids = {}
+        break
+    declared_tree_ids[name] = oid
+
+def module_tree_id(module):
+    for base in ("addons", "odoo/addons"):
+        probe = subprocess.run(
+            ["git", "rev-parse", "--verify", "-q", "HEAD:%s/%s" % (base, module)],
+            cwd=str(root), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        )
+        if probe.returncode == 0 and full_sha.fullmatch(probe.stdout.strip()):
+            return probe.stdout.strip()
+    return ""
+
+deployed_tree_ids = {module: module_tree_id(module) for module in modules}
+reuse_upgrade = bool(
+    modules
+    and declared_tree_ids
+    and sorted(declared_tree_ids) == sorted(modules)
+    and all(deployed_tree_ids.get(module) == declared_tree_ids[module] for module in modules)
+)
+reuse_reason = (
+    "deployed module tree is byte-identical to the last verified upgrade"
+    if reuse_upgrade
+    else "no matching verified module-tree identity; upgrade stays required"
+)
+
 env = dict(os.environ)
 env.update(
     {
@@ -119,7 +157,11 @@ make_bin = shutil.which("make") or "/usr/bin/make"
 # frozen from stale projection code silently publishes the previous contract.
 upgrade_returncode = 0
 upgrade_tail = ""
-if modules:
+upgrade_mode = "skipped"
+if reuse_upgrade:
+    upgrade_mode = "reused"
+elif modules:
+    upgrade_mode = "run"
     upgrade = subprocess.run(
         [make_bin, "mod.upgrade", "MODULE=" + ",".join(modules)],
         cwd=str(root),
@@ -236,6 +278,9 @@ emit(
         "refreshes": refreshes,
         "guard_status": str((guard or {}).get("status") or ""),
         "modules": modules,
+        "upgrade_mode": upgrade_mode,
+        "module_tree_ids": deployed_tree_ids,
+        "upgrade_reuse_reason": reuse_reason,
         "module_upgrade_returncode": upgrade_returncode,
         "converge_returncode": int(proc.returncode),
         "converge_tail": (proc.stdout or "")[-1500:],
@@ -243,6 +288,62 @@ emit(
     0 if ok else 1,
 )
 '''
+
+
+MODULE_TREE_ROOTS = ("addons", "odoo/addons")
+
+
+def module_tree_ids(repository: Path, expected_sha: str, modules: list[str]) -> dict[str, str] | None:
+    """Git tree oid of every declared module at the exact deployed revision.
+
+    A tree oid is the recursive content identity of the module directory, so two
+    revisions that report the same tree oid carry byte-identical module code. Any
+    module that cannot be resolved, or any git failure, returns None: an unprovable
+    identity must upgrade rather than silently reuse.
+    """
+    if not modules:
+        return {}
+    resolved: dict[str, str] = {}
+    for module in modules:
+        for base in MODULE_TREE_ROOTS:
+            probe = subprocess.run(
+                ["git", "-C", str(repository), "rev-parse", "--verify", "-q", f"{expected_sha}:{base}/{module}"],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+            )
+            oid = probe.stdout.decode("utf-8", "replace").strip() if probe.returncode == 0 else ""
+            if FULL_SHA.fullmatch(oid):
+                resolved[module] = oid
+                break
+        else:
+            return None
+    return resolved
+
+
+def reuse_hint(
+    report_path: str, database: str, modules: list[str], tree_ids: dict[str, str] | None
+) -> dict[str, str]:
+    """Declared module-tree identity from a previous verified face convergence.
+
+    Reuse is only a candidate: the remote re-resolves the deployed trees and runs
+    the upgrade unless they match. Anything unproven returns an empty hint.
+    """
+    if not modules or not tree_ids:
+        return {}
+    try:
+        payload = json.loads(Path(report_path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(payload, dict):
+        return {}
+    if payload.get("status") != "PASS" or payload.get("guard_status") != "PASS":
+        return {}
+    if payload.get("remote_root") != REMOTE_ROOT or payload.get("database") != database:
+        return {}
+    if sorted(payload.get("upgrade_modules") or []) != sorted(modules):
+        return {}
+    if payload.get("module_tree_ids") != tree_ids:
+        return {}
+    return dict(tree_ids)
 
 
 def parse_product_keys(raw: str) -> list[str]:
@@ -288,6 +389,7 @@ def remote_command(
     login: str,
     product_keys: list[str],
     modules: list[str],
+    reuse_tree_ids: dict[str, str],
 ) -> str:
     return " ".join(
         shlex.quote(item)
@@ -302,6 +404,7 @@ def remote_command(
             login,
             ",".join(product_keys),
             ",".join(modules),
+            ",".join(f"{module}={reuse_tree_ids[module]}" for module in sorted(reuse_tree_ids)),
             REMOTE_ROOT,
         )
     )
@@ -320,6 +423,7 @@ def converge(
     login: str,
     product_keys: list[str],
     modules: list[str],
+    reuse_tree_ids: dict[str, str] | None = None,
 ) -> dict[str, object]:
     preflight(expected_sha, ssh_host, login, product_keys, modules)
     command = [
@@ -333,7 +437,8 @@ def converge(
         "-o",
         "ServerAliveCountMax=4",
         ssh_host,
-        remote_command(expected_sha, env_name, env_file, database, login, product_keys, modules),
+        remote_command(expected_sha, env_name, env_file, database, login, product_keys, modules,
+                       reuse_tree_ids or {}),
     ]
     result = run(command)
     stdout = result.stdout.decode(errors="replace")
@@ -358,8 +463,20 @@ def converge(
         or sorted(evidence.get("product_keys") or []) != sorted(product_keys)
         or evidence.get("guard_status") != "PASS"
         or sorted(evidence.get("modules") or []) != sorted(modules)
+        or (modules and evidence.get("upgrade_mode") not in ("run", "reused"))
     ):
         raise ConvergeError("daily runtime published-face evidence differs from the declared scope")
+    if modules:
+        observed = evidence.get("module_tree_ids")
+        if (
+            not isinstance(observed, dict)
+            or sorted(observed) != sorted(modules)
+            or any(not FULL_SHA.fullmatch(str(value)) for value in observed.values())
+        ):
+            raise ConvergeError("daily runtime published-face evidence differs from the declared scope")
+        if evidence.get("upgrade_mode") == "reused" and observed != (reuse_tree_ids or {}):
+            # A remote may only claim reuse for the tree identity the caller declared.
+            raise ConvergeError("daily runtime published-face reuse claim is unproven")
     for row in evidence.get("products") or []:
         if (
             int(row.get("snapshot_id") or 0) <= 0
@@ -388,9 +505,17 @@ def main() -> int:
     parser.add_argument("--env-file", default=DEFAULT_ENV_FILE)
     parser.add_argument("--database", default=DEFAULT_DATABASE)
     parser.add_argument("--report", required=True, help="report path for the governed evidence envelope")
+    parser.add_argument("--repository", default=".", help="local repository holding the exact candidate revision")
+    parser.add_argument(
+        "--force-upgrade",
+        action="store_true",
+        help="run the module upgrade even when the recorded module trees still match",
+    )
     args = parser.parse_args()
     product_keys = parse_product_keys(args.product_keys)
     modules = parse_modules(args.upgrade_modules)
+    tree_ids = module_tree_ids(Path(args.repository), args.expected_sha, modules)
+    reuse_tree_ids = {} if args.force_upgrade else reuse_hint(args.report, args.database, modules, tree_ids)
     evidence = converge(
         args.expected_sha,
         args.ssh_host,
@@ -400,6 +525,7 @@ def main() -> int:
         args.login,
         product_keys,
         modules,
+        reuse_tree_ids,
     )
     report = {
         "schema": "daily.runtime.published_face_converge.v1",

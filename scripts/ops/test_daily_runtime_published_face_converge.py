@@ -5,6 +5,9 @@ import importlib.util
 import json
 import os
 import shlex
+import subprocess
+import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -19,6 +22,7 @@ SPEC.loader.exec_module(module)
 ROOT = Path(__file__).resolve().parents[2]
 SHA = "a" * 40
 OLD_SHA = "b" * 40
+TREE_IDS = {"smart_core": "c" * 40}
 PRODUCTS = ["construction.standard", "construction.preview"]
 MODULES = ["smart_core"]
 
@@ -36,7 +40,7 @@ def product(key: str, **overrides: object) -> dict[str, object]:
     return payload
 
 
-def evidence(**overrides: object) -> bytes:
+def evidence_payload(**overrides: object) -> dict[str, object]:
     payload: dict[str, object] = {
         "status": "PASS",
         "reason": "",
@@ -48,11 +52,17 @@ def evidence(**overrides: object) -> bytes:
         "refreshes": {},
         "guard_status": "PASS",
         "modules": MODULES,
+        "upgrade_mode": "run",
+        "module_tree_ids": dict(TREE_IDS),
         "converge_returncode": 0,
         "converge_tail": "",
     }
     payload.update(overrides)
-    return (json.dumps(payload) + "\n").encode()
+    return payload
+
+
+def evidence(**overrides: object) -> bytes:
+    return (json.dumps(evidence_payload(**overrides)) + "\n").encode()
 
 
 class DailyRuntimePublishedFaceConvergeTests(unittest.TestCase):
@@ -94,7 +104,7 @@ class DailyRuntimePublishedFaceConvergeTests(unittest.TestCase):
 
     def test_remote_command_binds_exact_revision_and_declared_scope(self) -> None:
         command = module.remote_command(
-            SHA, "dev", ".env.dev", "sc_demo", "wutao", PRODUCTS, MODULES
+            SHA, "dev", ".env.dev", "sc_demo", "wutao", PRODUCTS, MODULES, dict(TREE_IDS)
         )
         self.assertEqual(
             shlex.split(command),
@@ -109,17 +119,105 @@ class DailyRuntimePublishedFaceConvergeTests(unittest.TestCase):
                 "wutao",
                 ",".join(PRODUCTS),
                 ",".join(MODULES),
+                "smart_core=" + TREE_IDS["smart_core"],
                 module.REMOTE_ROOT,
             ],
         )
 
-    def _converge(self, stdout: bytes, returncode: int = 0) -> dict[str, object]:
+    def test_remote_command_declares_no_reuse_without_a_hint(self) -> None:
+        command = module.remote_command(
+            SHA, "dev", ".env.dev", "sc_demo", "wutao", PRODUCTS, MODULES, {}
+        )
+        self.assertEqual(shlex.split(command)[-2], "")
+
+    def test_converge_requires_the_upgrade_mode_when_modules_are_declared(self) -> None:
+        incomplete = dict(evidence_payload())
+        incomplete.pop("upgrade_mode")
+        with self.assertRaisesRegex(module.ConvergeError, "declared scope"):
+            self._converge((json.dumps(incomplete) + "\n").encode())
+
+    def test_converge_rejects_an_unproven_reuse_claim(self) -> None:
+        # A remote that skips the upgrade must prove it against the tree identity
+        # the caller declared; a different tree is an unproven claim.
+        claim = evidence(upgrade_mode="reused", module_tree_ids={"smart_core": "d" * 40})
+        with self.assertRaisesRegex(module.ConvergeError, "unproven"):
+            self._converge(claim, reuse_tree_ids=dict(TREE_IDS))
+        honest = evidence(upgrade_mode="reused", module_tree_ids=dict(TREE_IDS))
+        self.assertEqual(self._converge(honest, reuse_tree_ids=dict(TREE_IDS))["status"], "PASS")
+
+    def test_reuse_hint_requires_an_exact_verified_match(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            report = Path(directory) / "published-face-converge.json"
+            payload = {
+                "status": "PASS",
+                "guard_status": "PASS",
+                "remote_root": module.REMOTE_ROOT,
+                "database": "sc_demo",
+                "upgrade_modules": list(MODULES),
+                "module_tree_ids": dict(TREE_IDS),
+            }
+            report.write_text(json.dumps(payload), encoding="utf-8")
+            self.assertEqual(module.reuse_hint(str(report), "sc_demo", MODULES, dict(TREE_IDS)), TREE_IDS)
+            self.assertEqual(module.reuse_hint(str(report), "other_db", MODULES, dict(TREE_IDS)), {})
+            self.assertEqual(module.reuse_hint(str(report), "sc_demo", [], dict(TREE_IDS)), {})
+            self.assertEqual(module.reuse_hint(str(report), "sc_demo", MODULES, {"smart_core": "d" * 40}), {})
+            self.assertEqual(module.reuse_hint(str(report), "sc_demo", MODULES, None), {})
+            payload["status"] = "FAIL"
+            report.write_text(json.dumps(payload), encoding="utf-8")
+            self.assertEqual(module.reuse_hint(str(report), "sc_demo", MODULES, dict(TREE_IDS)), {})
+            self.assertEqual(module.reuse_hint(str(Path(directory) / "absent.json"), "sc_demo", MODULES, dict(TREE_IDS)), {})
+        self.assertEqual(module.reuse_hint("", "sc_demo", [], {}), {})
+
+    def test_module_tree_ids_binds_real_module_trees_or_refuses(self) -> None:
+        head = subprocess.check_output(["git", "-C", str(ROOT), "rev-parse", "HEAD"], text=True).strip()
+        self.assertEqual(module.module_tree_ids(ROOT, head, []), {})
+        resolved = module.module_tree_ids(ROOT, head, ["smart_core"])
+        self.assertIsNotNone(resolved)
+        self.assertRegex(resolved["smart_core"], r"^[0-9a-f]{40}$")
+        self.assertEqual(module.module_tree_ids(ROOT, head, ["smart_core", "absent_module_xyz"]), None)
+        self.assertEqual(module.module_tree_ids(ROOT, "f" * 40, ["smart_core"]), None)
+
+    def test_force_upgrade_ignores_a_matching_receipt(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            report = Path(directory) / "report.json"
+            report.write_text(json.dumps(evidence_payload()), encoding="utf-8")
+            captured = {}
+
+            def fake_converge(*args, **kwargs):
+                captured["reuse"] = args[8]
+                return {"status": "PASS"}
+
+            argv = [
+                "daily_runtime_published_face_converge",
+                "--expected-sha", SHA, "--ssh-host", "sc-root", "--login", "wutao",
+                "--report", str(report), "--repository", str(ROOT),
+            ]
+            with mock.patch.dict(os.environ, {"CONFIRM_DAILY_RUNTIME_PUBLISHED_FACE": module.CONFIRMATION}), \
+                    mock.patch.object(module, "module_tree_ids", return_value=dict(TREE_IDS)), \
+                    mock.patch.object(module, "reuse_hint", return_value=dict(TREE_IDS)), \
+                    mock.patch.object(module, "converge", side_effect=fake_converge), \
+                    mock.patch.object(sys, "argv", argv):
+                self.assertEqual(module.main(), 0)
+            self.assertEqual(captured["reuse"], TREE_IDS)
+
+            with mock.patch.dict(os.environ, {"CONFIRM_DAILY_RUNTIME_PUBLISHED_FACE": module.CONFIRMATION}), \
+                    mock.patch.object(module, "module_tree_ids", return_value=dict(TREE_IDS)), \
+                    mock.patch.object(module, "reuse_hint", return_value=dict(TREE_IDS)), \
+                    mock.patch.object(module, "converge", side_effect=fake_converge), \
+                    mock.patch.object(sys, "argv", argv + ["--force-upgrade"]):
+                self.assertEqual(module.main(), 0)
+            self.assertEqual(captured["reuse"], {})
+
+    def _converge(
+        self, stdout: bytes, returncode: int = 0, reuse_tree_ids: dict[str, str] | None = None
+    ) -> dict[str, object]:
         completed = mock.Mock(returncode=returncode, stdout=stdout, stderr=b"")
         with mock.patch.dict(
             os.environ, {"CONFIRM_DAILY_RUNTIME_PUBLISHED_FACE": module.CONFIRMATION}
         ), mock.patch.object(module, "run", return_value=completed):
             return module.converge(
-                SHA, "sc-root", "dev", ".env.dev", "sc_demo", "wutao", PRODUCTS, MODULES
+                SHA, "sc-root", "dev", ".env.dev", "sc_demo", "wutao", PRODUCTS, MODULES,
+                reuse_tree_ids,
             )
 
     def test_converge_accepts_matching_evidence(self) -> None:

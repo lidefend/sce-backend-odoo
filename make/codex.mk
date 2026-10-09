@@ -878,6 +878,12 @@ DAILY_RUNTIME_PUBLISHED_FACE_PRODUCT_KEYS ?= construction.standard,construction.
 # that projects it, so the projection code must be live before the freeze; a face
 # frozen from stale projection code silently publishes the previous contract.
 DAILY_RUNTIME_PUBLISHED_FACE_UPGRADE_MODULES ?= smart_core
+# The upgrade is only re-run when the declared module trees are not byte-identical
+# to the last verified convergence (the entry binds them by git tree oid and the
+# remote re-resolves them before skipping). Set this non-empty to force the
+# upgrade anyway - the drift-repair path when no code changed but the database
+# must be reconciled.
+DAILY_RUNTIME_PUBLISHED_FACE_FORCE_UPGRADE ?=
 DAILY_RUNTIME_PUBLISHED_FACE_REPORT ?= .runtime/final-acceptance/daily-deployed/published-face-converge.json
 
 verify.daily.runtime.published_face.converge: guard.prod.forbid
@@ -893,6 +899,8 @@ daily.runtime.published_face.converge: guard.prod.forbid verify.daily.runtime.pu
 		--login "$(DAILY_RUNTIME_PUBLISHED_FACE_LOGIN)" \
 		--product-keys "$(DAILY_RUNTIME_PUBLISHED_FACE_PRODUCT_KEYS)" \
 		--upgrade-modules "$(DAILY_RUNTIME_PUBLISHED_FACE_UPGRADE_MODULES)" \
+		--repository "$(CURDIR)" \
+		$(if $(DAILY_RUNTIME_PUBLISHED_FACE_FORCE_UPGRADE),--force-upgrade,) \
 		--report "$(DAILY_RUNTIME_PUBLISHED_FACE_REPORT)"
 
 daily.runtime.candidate.release: guard.prod.forbid daily.runtime.candidate.bundle_sync daily.runtime.source_revision.align daily.runtime.published_face.converge
