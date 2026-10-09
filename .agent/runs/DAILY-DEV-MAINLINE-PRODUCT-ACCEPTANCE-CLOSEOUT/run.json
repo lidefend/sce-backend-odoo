@@ -129,7 +129,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "P0 login-return defect fixed (3d90df05), deployed to the daily runtime (source_revision=3d90df05, frontend_build_sha256=8bd99a72..f266), browser-verified, and the user-perspective matrix re-collected 89/89 with an independent re-fold. The capture-resilience defect is closed (OPS-DECISION-003). Remaining: hand the daily runtime (http://1.95.85.92:18081/, wutao/123456, sc_demo) to the owner for the login-based product-delivery judgement; do not rerun the matrix for unchanged inputs.",
+  "next_exact_step": "Mainline integration done: PR #631 merged, main = 58c04a60 (parent aea2c19b). Only the product-delivery judgement remains: owner login check on the daily runtime (http://1.95.85.92:18081/, wutao/123456, sc_demo). Do not rerun the matrix for unchanged inputs.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -169,6 +169,21 @@
       ],
       "unit_gate": "make verify.frontend.business_entry.evidence_scope.unit PASS",
       "smoke": "1-entry run: partial -> complete (ok=true), second run resumed 1 completed entry without re-walking"
+    },
+    "mainline_integration": {
+      "pr": 631,
+      "source_head": "cfc0877db16bbf9167cc734c88596fdf6e6904c3",
+      "base_main_before": "aea2c19bbe4edb2a13fbf908255e918e18f3a299",
+      "merge_commit": "58c04a601942bbe3dfcb50e7435bdd1d3155faf8",
+      "method": "squash via make pr.merge --match-head-commit (source head == live PR head verified before merge)",
+      "required_checks_on_pr_head": {
+        "public_guard": "pass",
+        "merge_policy_gate": "pass",
+        "professional_quality_gate": "pass",
+        "frontend_release_gate": "pass"
+      },
+      "local_quick_receipt": "cfc0877d exact-head receipt, reused by pr.merge.local_quick_gate",
+      "post_merge_readback": "PR #631 state=MERGED, merge commit 58c04a60 with parent aea2c19b; deployment not triggered"
     }
   },
   "continuation": {
