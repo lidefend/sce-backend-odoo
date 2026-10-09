@@ -54,7 +54,7 @@ contract = env["construction.contract"].sudo().search([
     ("project_id", "=", project.id),
 ], limit=1)
 if not contract:
-    env["construction.contract"].sudo().create({
+    contract = env["construction.contract"].sudo().create({
         "subject": "NAV-PRO-01R Context Contract",
         "type": "out",
         "project_id": project.id,

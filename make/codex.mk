@@ -829,6 +829,35 @@ daily.runtime.lifecycle_fixture.prepare: guard.prod.forbid verify.daily.runtime.
 		--password "$${SC_ACCEPTANCE_FIXTURE_PASSWORD}" \
 		--report "$(DAILY_RUNTIME_LIFECYCLE_FIXTURE_REPORT)"
 
+# The route-authority browser lane authenticates as the governed nav_pro_* users
+# and walks the contract-driven navigation surface on the daily runtime. Those
+# users and the single NAV-PRO-01R carrier are acceptance fixture rows, and
+# `nav.pro01.runtime.prepare` drives the *local* compose stack, so it cannot land
+# them on the deployed daily database. This entry drives the working tree's
+# nav_pro fixture builder through the same governed remote shell carrier the
+# other `daily.runtime.*` entries use (`sc-root`, `ENV=dev`, `.env.dev`,
+# `sc_demo`), binds the exact served revision, and proves the outcome with a
+# readback of the resolved user ids and carrier ids. It writes only acceptance
+# fixture rows inside the owner-authorized daily acceptance scope.
+.PHONY: daily.runtime.nav_pro_fixture.prepare verify.daily.runtime.nav_pro_fixture.prepare
+DAILY_RUNTIME_NAV_PRO_FIXTURE_BASE_URL ?= http://1.95.85.92:18081
+DAILY_RUNTIME_NAV_PRO_FIXTURE_REPORT ?= .runtime/final-acceptance/daily-deployed/nav-pro-fixture-prepare.json
+
+verify.daily.runtime.nav_pro_fixture.prepare: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_nav_pro_fixture_prepare.py scripts/ops/test_daily_runtime_nav_pro_fixture_prepare.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_nav_pro_fixture_prepare
+
+daily.runtime.nav_pro_fixture.prepare: guard.prod.forbid verify.daily.runtime.nav_pro_fixture.prepare
+	@test "$${CONFIRM_DAILY_RUNTIME_NAV_PRO_FIXTURE:-}" = "PROVISION_DAILY_SC_DEMO_NAV_PRO_FIXTURE" || { echo "exact daily runtime nav_pro fixture confirmation is required" >&2; exit 2; }
+	@test -n "$${NAV_PRO_PASSWORD:-}" || { echo "NAV_PRO_PASSWORD must be supplied through the environment" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_nav_pro_fixture_prepare.py \
+		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
+		--database "$(DAILY_RUNTIME_DATABASE)" \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--base-url "$(DAILY_RUNTIME_NAV_PRO_FIXTURE_BASE_URL)" \
+		--password "$${NAV_PRO_PASSWORD}" \
+		--report "$(DAILY_RUNTIME_NAV_PRO_FIXTURE_REPORT)"
+
 # Every browser acceptance lane binds the *served* identity of its fixture
 # carrier, never a locally guessed database id. The daily runtime rebuilds its
 # fixture rows whenever the lifecycle carrier is recreated, so a captured numeric
