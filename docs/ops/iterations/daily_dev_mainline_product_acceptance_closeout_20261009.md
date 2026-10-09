@@ -1244,3 +1244,43 @@ baseline `aea2c19b`（`.runtime/delivery-freeze/worktree-fingerprint.json`）。
 批次验收=进行中 / 主线集成=未做 / 版本发布=日常运行时候选 / 产品交付=未完成。
 下一步：在修复后的记录上重新冻结身份 → 跑唯一一次 exact-head `ci.local.quick` → `pr.push.gitee` 并让远端必需检查运行；
 合并仍按所有者 CI 通过规则执行。
+
+## 13.19 主线集成收口：PR #634 合并（squash）与产品身份一致性结论（2026-10-10 第 15 轮）
+
+**一、冻结候选与远端门禁**
+
+- 冻结候选 `d1511b51`（唯一一次 exact-head `ci.local.quick` PASS，回执
+  `.git/codex/evidence/ci.local.quick/d1511b51aea4e9eb917df410dd8689ee1da1b753.json`）。
+- 远端必需检查（绑定 PR head `d1511b51`）：`public_guard`、`merge_policy_gate`、`professional_quality_gate`、
+  `frontend_release_gate` **全部 pass**；`make pr.merge.prep PR=634` 复核四项并在该 head 上回报 `merge_policy_gate` commit status。
+- 发布前基线身份：PR base == `origin/main` == `f9b03faa`（无基线漂移）；PR head == 冻结候选 == 本地 HEAD。
+
+**二、合并车道与回读**
+
+- 车道选择：**GitHub 是权威远端**，走 `make pr.merge PR=634 EXPECTED_HEAD=d1511b51...`
+  （`gh pr merge --squash --match-head-commit`，与 main 上既有 `Merge PR #NNN` 线性历史一致）；
+  Gitee 临时集成车道（`publish --purpose integration|ci-only`，明确不把新产品改动合入 main）**未使用**。
+- 回读：PR #634 `state=MERGED`，`mergedAt=2026-10-09T19:10:43Z`，merge commit `d690653d`，base main 此前为 `f9b03faa`；
+  `git diff --stat d1511b51 d690653d` **为空**（squash 后树完全一致）；`candidate-in-main` 祖先关系不成立属 squash 预期。
+  合并不触发产品部署。
+- `pr.merge.local_quick_gate` 走 **REUSE** 分支（复用 `d1511b51` 的 exact-head Quick 回执），未重跑套件。
+
+**三、产品身份一致性（本轮复用依据）**
+
+`git diff --stat 5220db8b（日常运行态已服务版本） d1511b51 -- addons/ frontend/ config/ make/ scripts/` **为空**：
+合并进主线的内容与日常运行态**已服务并通过用户视角验收的产品内容完全一致**，差异仅在 `docs/`、`.agent/`、证据记录面。
+因此本轮**不重跑运行态部署、不重取矩阵证据**（复用依据 = 声明的受影响输入未变 + 产品面零差异），符合"按变更影响复用、不按提交重跑"的规则。
+
+**四、台账同步方式（按规则，不单独开记账 PR）**
+
+合并后的 run/台账更新提交保留在分支上。按执行规则，纯 `.agent/` + `docs/` 候选会被
+`pr.merge.local_quick_gate` 判定为 standalone bookkeeping 并拒绝（CI 对每个冻结提交只产出一份回执，
+而记账本身不带来新覆盖），故该记录**随下一项产品候选同行**或按终止退役处理。
+
+**五、保留阻断（单独保留，不泛化）**
+
+环境 DENY（重建/快照车道两个挂载者）仍作为**该车道**的阻断结论登记，绑定实际入口依赖与独立复核依据，不表述为"环境全部通过"。
+
+**六、四态（本轮更新）**
+
+批次验收=完成 / 主线集成=**完成**（PR #634 → `d690653d`）/ 版本发布=日常运行时候选（服务身份 `5220db8b`，产品内容与主线一致）/ 产品交付=**待所有者登录核对判定**。
