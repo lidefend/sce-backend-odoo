@@ -858,3 +858,42 @@ main 车道，候选车道检查保留但尚无回执。
 主线集成=未做（用户"先不执行进入主线"）、版本发布=日常运行时候选、产品交付=未完成。
 `a81fad7e`→`51e7cdc0` 是候选 revision 推进，**不含** `addons/smart_core` 代码变化，
 不触发模块升级。
+
+### 13.12 nav_pro 路线权威车道：根因在代码层闭合（2026-10-09 第 13 轮续）
+
+**结论先行**：`navigation.route_authority` **不是自由面，也不是快照面**。它在
+`addons/smart_core/delivery/menu_service.py::build_route_authority` 中把**角色契约面**
+（`addons/smart_construction_core/core_extension_policy_maps.py::ROLE_SURFACE_OVERRIDES`）**划分**为
+"已交付条目"与"显式拒绝条目"（`reason_code=PRODUCT_ENTRY_NOT_RELEASED`）。因此：
+
+- 数量只在**角色被锁定且读取"已发布/可达划分"之后**才确定——与用户既定口径一致
+  （"发布锁定机制，不锁定数字"）；
+- `config/frontend/authoritative_navigation.json` 是 **2026-07 浏览器审计快照**，**不是**交付面；
+- HTTP 探针里 `{finance:10, project_member:7, pm:10, owner:4}`、`contextual_menu_total==100`、
+  `denied_total==7` 是**第四套**互不相关的历史标定。
+
+**实测划分（served `51e7cdc0`，`sc_demo`，只读 HTTP）**：
+
+| 角色 | 契约声明 primary | 实际交付 primary | 显式拒绝 `PRODUCT_ENTRY_NOT_RELEASED` | 未记账（静默丢弃） | 交付但不在契约面 |
+| --- | --- | --- | --- | --- | --- |
+| finance | 45 | 17 | 29 | 1 | 2 |
+| pm | 24 | 8 | 15 | 2 | 1 |
+| owner | 5 | 4 | 2 | 0 | 1 |
+| project_member | 10 | 5 | 2 | 3 | 0 |
+
+**两个残留缺陷（均已定位到属主层，均为 P0 交付引擎语义）**：
+
+1. **静默丢弃（6 条）**：声明了却既不交付、也不记入拒绝的条目。
+   `build_route_authority` 在 `visible_by_xmlid` 缺少该菜单时**直接跳过**（`menu_service.py:894-922`），
+   不写任何记录。finance 1 / pm 2 / project_member 3。
+2. **契约面外交付（4 条）**：原生导航树在 `menu_service.py:985-1010` 会为**任意角色**补入
+   不在契约里的 `PRIMARY_NAV` 对——与该处注释"never revive the native menu tree as a
+   second product-selection authority"自相矛盾。finance 2（`menu_sc_construction_diary`、
+   `menu_sc_project_project`）/ pm 1 / owner 1。
+
+**验收口径修正（非放宽）**：`scripts/verify/nav_pro_01r_route_authority_http.py` 必须从
+**版本化角色契约**解析期望，断言**划分不变量**（声明 == 交付 + 显式拒绝；交付 ⊆ 声明），
+并保留全部行为断言（admin 泄漏、contextual 可达、403 拒绝、跨公司/跨项目域拒绝、HTTP_500==0）；
+**不得**再出现任何 pin 数字。方法：只读诊断 `/tmp/nav_diag{3,4,5,6}.py`。
+
+**边界**：本轮只取证与记账，**未**改动判据、**未**动产品代码；P0 交付引擎修复与探针重写待执行。

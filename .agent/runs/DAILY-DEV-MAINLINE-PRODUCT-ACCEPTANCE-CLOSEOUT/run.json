@@ -107,7 +107,10 @@
         "frontend/apps/web/src/app/sessionExpiredRecovery.ts",
         "frontend/apps/web/src/views/LoginView.vue",
         "frontend/apps/web/src/router/index.ts",
-        "make/runtime_ops.mk"
+        "make/runtime_ops.mk",
+        "scripts/verify/nav_pro_01_prepare_runtime.py",
+        "scripts/verify/nav_pro_01r_route_authority_http.py",
+        "scripts/verify/nav_pro_01r_route_authority_browser.mjs"
       ],
       "kind": "runtime"
     },
@@ -314,14 +317,23 @@
         "scripts/ops/test_daily_runtime_published_face_converge.py",
         "make/codex.mk"
       ]
+    },
+    "daily_runtime_nav_pro_fixture_prepare": {
+      "target": "verify.daily.runtime.nav_pro_fixture.prepare",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/daily_runtime_nav_pro_fixture_prepare.py",
+        "scripts/ops/test_daily_runtime_nav_pro_fixture_prepare.py",
+        "make/codex.mk"
+      ]
     }
   },
   "blockers": [
     "Mainline integration is not authorized: the user instructed \"先不执行进入主线\". The verified candidate is deployed to the daily runtime only; PR push, remote gates and merge remain pending and must not be described as integrated.",
-    "browser_login_return_authority (verify.nav.pro01r.route_authority.browser) still needs the governed nav_pro_{config_admin,system_admin,pm,project_member} fixture provisioned on sc_demo through nav.pro01.runtime.prepare inside the remote compose. Its earlier blocking prerequisite (\"missing task evidence: finance smart_construction_core.menu_sc_settlement_adjustment\") was a served-tree/module-generation gap; the runtime is now at 51e7cdc0 with smart_core upgraded (published face re-frozen, upgrade_mode=reused) and the record identity / readonly readback restored, so the prepare step can be attempted. No assertion may be relaxed.",
-    "Run-ledger reuse boundary: runtime lanes are no longer re-derived each round. scripts/ops/agent_run_context.py now reuses a kind=runtime receipt when its check declares an authoritative environment `readback` artifact whose content is hashed into the check's dependency state (commit f64e258e, AGENTS.md Layered Validation Efficiency + iterations note 13.9). A runtime check without a declared readback is still never reusable and a runtime run environment is still non-reusable. `daily_acceptance_readback` is now reusable through artifacts/backend/daily_dev_acceptance_probe.json."
+    "Run-ledger reuse boundary: runtime lanes are no longer re-derived each round. scripts/ops/agent_run_context.py now reuses a kind=runtime receipt when its check declares an authoritative environment `readback` artifact whose content is hashed into the check's dependency state (commit f64e258e, AGENTS.md Layered Validation Efficiency + iterations note 13.9). A runtime check without a declared readback is still never reusable and a runtime run environment is still non-reusable. `daily_acceptance_readback` is now reusable through artifacts/backend/daily_dev_acceptance_probe.json.",
+    "browser_login_return_authority (verify.nav.pro01r.route_authority.browser) is fixture-ready and its root cause is now closed at code level: the served navigation.route_authority partitions each locked role's versioned contract face into delivered entries and explicit PRODUCT_ENTRY_NOT_RELEASED denials (addons/smart_core/delivery/menu_service.py::build_route_authority). The HTTP producer's pinned counts were a fourth, unrelated calibration and config/frontend/authoritative_navigation.json is a stale 2026-07 browser-audit snapshot, so the lane must be bound to the contract-partition invariant, not to numbers. Residual defects: 6 contract-declared primary entries are silently unaccounted (not delivered and not denied) and 4 delivered entries sit outside the declared role face (native-nav augmentation, menu_service.py:985-1010). Both are P0 delivery-engine semantics and are reported for the owning-layer fix; no assertion was relaxed."
   ],
-  "next_exact_step": "Iteration-efficiency closeout (this round) is proven end-to-end and recorded: ci.local.iteration 36.8s -> 6.9s (8a1ef8ab); frontend typecheck 23.4s -> 10.3s warm (39a86b2f); the deploy loop reuses the module upgrade when the declared module git tree oid equals the deployed one (3ee08386), now proven live (a81fad7e -> 51e7cdc0, upgrade_mode=reused, ~42s vs ~185s); runtime receipts are reusable through a declared authoritative environment readback (f64e258e, 40/40) and the daily_acceptance_readback receipt was restored on 51e7cdc0. Next, in order: (1) provision the governed nav_pro_{config_admin,system_admin,pm,project_member} fixture then run the one real click-open/return journey (verify.nav.pro01r.route_authority.browser) on the daily runtime - this is the still-not_run browser_login_return_authority boundary and its first step is to resolve how nav.pro01.runtime.prepare is pointed at the sc_demo daily runtime through a governed entry (no hand-assembled compose/credentials); (2) then the unchanged product-closeout order: on explicit user authorization, push/PR and merge. No assertion may be relaxed.",
+  "next_exact_step": "Iteration-efficiency closeout is proven and recorded; the nav_pro fixture is landed on sc_demo through daily.runtime.nav_pro_fixture.prepare. The route-authority lane's former 'authority ruling' is resolved into a code-level root cause: navigation.route_authority = versioned role-surface contract partitioned into delivered vs PRODUCT_ENTRY_NOT_RELEASED, so the acceptance producer must assert that partition (declared == delivered + explicitly denied; delivered subset of declared) plus the behavioural assertions, never pinned counts. Next, in order: (1) rewrite scripts/verify/nav_pro_01r_route_authority_http.py to that contract-driven form and run the one real browser journey verify.nav.pro01r.route_authority.browser; (2) fix the P0 delivery engine (record declared-but-unresolved entries; stop the native nav tree from selecting entries outside the contract) so the 6 silent drops and 4 outside-surface deliveries close; (3) on explicit user authorization, push/PR and merge. No assertion may be relaxed.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -711,6 +723,169 @@
           "ledger": "daily_acceptance_readback re-recorded on clean 51e7cdc0; reuse summary 28 reusable / 2 not_run"
         },
         "boundary": "candidate revision advance only; addons/smart_core unchanged, so no module upgrade is triggered"
+      }
+    },
+    "nav_pro_route_authority_lane": {
+      "fixture_entry": "daily.runtime.nav_pro_fixture.prepare (new governed P4 entry, commit 0953ac34)",
+      "fixture_landed_on_sc_demo": {
+        "status": "PASS",
+        "served_revision": "51e7cdc0853b9d8e4732ae9c11b9869a0959b030",
+        "served_database": "sc_demo",
+        "users": {
+          "nav_pro_finance": 223,
+          "nav_pro_project_member": 224,
+          "nav_pro_pm": 225,
+          "nav_pro_owner": 226,
+          "nav_pro_config_admin": 227,
+          "nav_pro_system_admin": 228
+        },
+        "carrier": {
+          "project_id": 2023,
+          "partner_id": 9000,
+          "contract_id": 13615,
+          "company_id": 1
+        },
+        "readback_report": ".runtime/final-acceptance/daily-deployed/nav-pro-fixture-prepare.json"
+      },
+      "fixture_defect_fixed_at_owning_layer": {
+        "defect": "scripts/verify/nav_pro_01_prepare_runtime.py created the NAV-PRO-01R contract without assigning the create() result back to `contract`, so the local carrier variable stayed an empty recordset and the created row could not be confirmed from the same readback.",
+        "fix": "assign the created record (scripts/verify/nav_pro_01_prepare_runtime.py); behaviour of the script's own assertions is unchanged.",
+        "found_by": "the new entry's authoritative readback, not by a relaxed assertion"
+      },
+      "route_authority_http_probe_is_not_contract_driven": {
+        "probe": "scripts/verify/nav_pro_01r_route_authority_http.py",
+        "defect": "the probe pins per-role snapshot counts instead of deriving them from a declared authority: expected visible = {finance:10, project_member:7, pm:10, owner:4}, contextual_menu_total == 100, denied_total == 7. This is exactly the 'acceptance must be contract-driven' anti-pattern.",
+        "measured_on_served_51e7cdc0": {
+          "finance": {
+            "visible": 20,
+            "primary_actions": 17,
+            "role_home_actions": 0,
+            "menu_containers": 3,
+            "contextual_actions": 7,
+            "denied_actions": 56
+          },
+          "project_member": {
+            "visible": 7,
+            "primary_actions": 5,
+            "role_home_actions": 0,
+            "menu_containers": 2,
+            "contextual_actions": 4,
+            "denied_actions": 11
+          },
+          "pm": {
+            "visible": 10,
+            "primary_actions": 8,
+            "role_home_actions": 0,
+            "menu_containers": 2,
+            "contextual_actions": 4,
+            "denied_actions": 35
+          },
+          "owner": {
+            "visible": 6,
+            "primary_actions": 4,
+            "role_home_actions": 0,
+            "menu_containers": 2,
+            "contextual_actions": 5,
+            "denied_actions": 19
+          }
+        },
+        "first_failure": "finance.visible expected 10, got 20 (project_member/pm happen to still match; owner is 6 vs the pinned 4)."
+      },
+      "declared_surface_disagrees_with_delivered_surface": {
+        "claim": "the locked role navigation manifest (config/frontend/authoritative_navigation.json roles.<role>.expected_count/leaf_keys, also the declared action_count_authority for these four roles) is NOT the same surface as the delivered navigation.route_authority, and the two disagree in both directions.",
+        "finance": {
+          "declared_manifest": 46,
+          "delivered_union": 26,
+          "declared_not_delivered": 31,
+          "delivered_not_declared": 11
+        },
+        "pm": {
+          "declared_manifest": 25,
+          "delivered_union": 14,
+          "declared_not_delivered": 18,
+          "delivered_not_declared": 7
+        },
+        "owner": {
+          "declared_manifest": 6,
+          "delivered_union": 11,
+          "declared_not_delivered": 3,
+          "delivered_not_declared": 8
+        },
+        "project_member": {
+          "declared_manifest": 11,
+          "delivered_union": 11,
+          "declared_not_delivered": 6,
+          "delivered_not_declared": 6
+        },
+        "governance_state": "config/frontend/role_surface_exposure_declarations_v1.json governs capability-vs-delivery divergence and its guard PASSES (verify.frontend.role_surface_exposure_declaration.guard: roles=9 universe=89 narrowed=211). So the divergences registered there are deliberate product narrowing; the open question is only which declared authority owns the route_authority surface for these four roles.",
+        "not_fixed_by_editing_numbers": "moving 10 -> 20 (or 4 -> 6, 100 -> 20, 7 -> 121) would replace one snapshot pin with another and is explicitly rejected; the fix must bind the probe's expectations to a declared authority."
+      },
+      "blocked_reason": "browser_login_return_authority is fixture-ready but still open: the HTTP producer pinned stale numbers instead of deriving them, and the root cause is now closed at code level (see root_cause_closed) - navigation.route_authority partitions the versioned role-surface contract into delivered vs PRODUCT_ENTRY_NOT_RELEASED, so no count may be pinned and config/frontend/authoritative_navigation.json is a stale 2026-07 audit snapshot, not the delivered surface. Two precise residual defects remain (6 silent drops, 4 outside-surface deliveries) and are owned by the P0 delivery engine.",
+      "diagnostics": "/tmp/nav_diag.py, /tmp/nav_diag2.py (bounded, read-only, served 51e7cdc0)",
+      "root_cause_closed": {
+        "claim": "The three-way disagreement is resolved at code level. navigation.route_authority is NOT a free surface: addons/smart_core/delivery/menu_service.py::build_route_authority partitions the role's CONTRACT face (core_extension_policy_maps.ROLE_SURFACE_OVERRIDES) into delivered entries and explicitly denied entries (reason_code=PRODUCT_ENTRY_NOT_RELEASED). So the delivered count is determinate only once the role IS locked and the released/reachable partition is read; it is not a pinned number and not the July audit snapshot.",
+        "code_paths": [
+          "addons/smart_core/delivery/menu_service.py:844 build_route_authority(role_surface, nav)",
+          "addons/smart_core/delivery/menu_service.py:876 facts = MenuFactService(self.env).export_visible_menu_facts()",
+          "addons/smart_core/delivery/menu_service.py:894-922 declared primary/role_home/contextual/admin entries -> bucket only when the menu is ACL-visible; otherwise the entry is skipped",
+          "addons/smart_core/delivery/menu_service.py:381-404 denied_actions from surface.denied_menu_xmlids",
+          "addons/smart_core/delivery/menu_service.py:530 denied_actions with reason_code=PRODUCT_ENTRY_NOT_RELEASED (release-gate narrowing)",
+          "addons/smart_core/delivery/menu_service.py:985-1010 native nav tree may add PRIMARY_NAV pairs outside the contract for any role"
+        ],
+        "resolved_authority": "the versioned role-surface contract plus the explicit delivered/denied partition; config/frontend/authoritative_navigation.json is a stale 2026-07 browser-audit snapshot and is NOT the delivered surface, and the probe's pins are a fourth, unrelated calibration.",
+        "partition_measured_on_served_51e7cdc0": {
+          "finance": {
+            "declared_primary": 45,
+            "delivered_primary": 17,
+            "denied_not_released": 29,
+            "silently_unaccounted": [
+              "smart_construction_core.menu_sc_historical_payment_fact"
+            ],
+            "delivered_outside_contract": [
+              "smart_construction_core.menu_sc_construction_diary",
+              "smart_construction_core.menu_sc_project_project"
+            ]
+          },
+          "pm": {
+            "declared_primary": 24,
+            "delivered_primary": 8,
+            "denied_not_released": 15,
+            "silently_unaccounted": [
+              "smart_construction_core.menu_sc_tender_registration",
+              "smart_construction_core.menu_sc_tender_registration_fee"
+            ],
+            "delivered_outside_contract": [
+              "smart_construction_core.menu_sc_product_team_loan_deduction_v1"
+            ]
+          },
+          "owner": {
+            "declared_primary": 5,
+            "delivered_primary": 4,
+            "denied_not_released": 2,
+            "silently_unaccounted": [],
+            "delivered_outside_contract": [
+              "smart_construction_core.menu_sc_p1_daily_contract"
+            ]
+          },
+          "project_member": {
+            "declared_primary": 10,
+            "delivered_primary": 5,
+            "denied_not_released": 2,
+            "silently_unaccounted": [
+              "smart_construction_core.menu_sc_company_document_archive",
+              "smart_construction_core.menu_sc_document_borrow",
+              "smart_construction_core.menu_sc_product_team_loan_deduction_v1"
+            ],
+            "delivered_outside_contract": []
+          }
+        },
+        "residual_defects": {
+          "silent_drop": "6 contract-declared primary entries are neither delivered nor recorded as denied (finance 1, pm 2, project_member 3): the contract is not fully accounted, so the narrowing is not always explicit.",
+          "outside_surface_delivery": "4 delivered primary entries are outside the role's declared face (finance 2, pm 1, owner 1); they come from the native-nav augmentation at menu_service.py:985-1010, the same place whose own comment says the native tree must never be a second product-selection authority.",
+          "canvas_of_fix": "P0 delivery engine: record the declared-but-unresolved entries explicitly (fail-closed, nothing silent) and stop the native tree from adding entries outside the contract; P1/P2 data: reconcile the declared face with menu reachability so tolerated residue becomes an explicit PRODUCT_ENTRY_NOT_RELEASED instead of a silent drop."
+        },
+        "probe_fix_plan": "rewrite scripts/verify/nav_pro_01r_route_authority_http.py so per-role expectations resolve from the versioned role-surface contract and assert the partition invariant (declared == delivered + explicitly-denied; delivered subset of declared) plus every behavioural assertion (admin leak, contextual reachability, 403 admin denial, cross-company/project scope, HTTP_500==0). Remove every pinned count.",
+        "method": "read-only HTTP diagnostics on the served runtime: /tmp/nav_diag.py, nav_diag3.py, nav_diag4.py, nav_diag5.py, nav_diag6.py; contract read from addons/smart_construction_core/core_extension_policy_maps.py::ROLE_SURFACE_OVERRIDES"
       }
     }
   },
