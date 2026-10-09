@@ -12,6 +12,7 @@ import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Iterable
 
 AUTHORITY = {
     'secrets': ('scripts/ci/secret_scan.py', 'config/security/legacy_credential_fingerprints.json'),
@@ -76,16 +77,63 @@ def receipt_directories(root: Path, common: Path) -> list[Path]:
     return sorted(directories)
 
 
+def revision_blob_sha256(root: Path, revision: str, relative_paths: list[str]) -> dict[str, str]:
+    """Historical authority digests in two Git processes.
+
+    Reading each authority file with its own ``git show`` spawned one process per
+    file per revision, and a candidate sweep re-derived the same revisions once
+    per candidate, so scope selection measured process startup instead of the
+    repository. ``ls-tree`` plus a single ``--batch`` returns the identical
+    sha256 for the identical blob bytes, and a path absent at that revision stays
+    a hard failure exactly as ``git show`` was.
+    """
+    listing = subprocess.run(
+        ['git', '-C', str(root), 'ls-tree', '-r', '-z', revision, '--', *relative_paths],
+        capture_output=True, check=True).stdout
+    blob_by_path: dict[str, str] = {}
+    for row in listing.split(b'\0'):
+        if not row:
+            continue
+        meta, separator, name = row.partition(b'\t')
+        fields = meta.split()
+        if not separator or len(fields) != 3 or fields[1] != b'blob':
+            raise ValueError('unreadable authority revision')
+        blob_by_path[name.decode('utf-8')] = fields[2].decode('ascii')
+    if set(blob_by_path) != set(relative_paths):
+        raise ValueError('unreadable authority revision')
+    ordered = sorted(set(blob_by_path.values()))
+    payload = subprocess.run(
+        ['git', '-C', str(root), 'cat-file', '--batch'],
+        input=''.join(oid + '\n' for oid in ordered).encode('ascii'), capture_output=True, check=True).stdout
+    digest_by_oid: dict[str, str] = {}
+    cursor = 0
+    for oid in ordered:
+        newline = payload.find(b'\n', cursor)
+        header = payload[cursor:newline].split() if newline >= 0 else []
+        if len(header) != 3 or header[0].decode('ascii') != oid or header[1] != b'blob' or not header[2].isdigit():
+            raise ValueError('unreadable authority revision')
+        size = int(header[2])
+        start = newline + 1
+        content = payload[start:start + size]
+        if len(content) != size or payload[start + size:start + size + 1] != b'\n':
+            raise ValueError('unreadable authority revision')
+        digest_by_oid[oid] = hashlib.sha256(content).hexdigest()
+        cursor = start + size + 1
+    if set(digest_by_oid) != set(ordered):
+        raise ValueError('unreadable authority revision')
+    return {relative: digest_by_oid[oid] for relative, oid in blob_by_path.items()}
+
+
 def authority_digest(root: Path, kind: str, revision: str | None = None) -> str:
     """Bind the entire execution chain, including added/deleted Make includes."""
     names = (git(root, 'ls-tree', '-r', '--name-only', '-z', revision).split('\0') if revision else
              (git(root, 'ls-files', '--cached', '--others', '--exclude-standard', '-z')).split('\0'))
     paths = set(COMMON_AUTHORITY + AUTHORITY[kind])
     paths.update(name for name in names if name.startswith('make/') and name.endswith('.mk'))
-    rows = []
-    for relative in sorted(paths):
-        data = source_at(root, revision, relative) if revision else (root / relative).read_bytes()
-        rows.append((relative, hashlib.sha256(data).hexdigest()))
+    ordered = sorted(paths)
+    digests = ({relative: hashlib.sha256((root / relative).read_bytes()).hexdigest() for relative in ordered}
+               if revision is None else revision_blob_sha256(root, revision, ordered))
+    rows = [(relative, digests[relative]) for relative in ordered]
     return hashlib.sha256(json.dumps(rows, separators=(',', ':')).encode()).hexdigest()
 
 
@@ -110,6 +158,34 @@ def coverage_snapshot(root: Path) -> dict:
                'revisions': list(revision_args(kind))} for kind in AUTHORITY}}
 
 
+def ref_object_types(root: Path, oids: Iterable[str]) -> dict[str, str]:
+    """Resolve every referenced tip in one process.
+
+    A per-ref ``cat-file -t`` spawns one Git process per reference, and scope
+    selection validated the same candidate snapshots repeatedly, so the daily
+    iteration entry spent its runtime in process startup rather than in the
+    scan it was scoping. ``--batch-check`` returns the same object type for the
+    same oid and keeps a missing or malformed tip a hard failure, exactly as the
+    per-ref call did.
+    """
+    unique = sorted(set(oids))
+    if not unique:
+        return {}
+    known = set(unique)
+    result = subprocess.run(
+        ['git', '-C', str(root), 'cat-file', '--batch-check=%(objectname) %(objecttype)'],
+        input=''.join(oid + '\n' for oid in unique), text=True, capture_output=True, check=True)
+    types: dict[str, str] = {}
+    for row in result.stdout.splitlines():
+        parts = row.split()
+        if len(parts) != 2 or parts[0] not in known or parts[1] == 'missing':
+            raise ValueError('unreadable scan reference')
+        types[parts[0]] = parts[1]
+    if set(types) != known:
+        raise ValueError('unreadable scan reference')
+    return types
+
+
 def valid_coverage(root: Path, coverage: object, head: str) -> bool:
     if not isinstance(coverage, dict) or set(coverage) != {'protocol', 'scanners'} or coverage['protocol'] != COVERAGE_PROTOCOL:
         return False
@@ -126,7 +202,11 @@ def valid_coverage(root: Path, coverage: object, head: str) -> bool:
         for name, oid, typ in refs:
             if name != 'HEAD' and not name.startswith(('refs/', 'worktree:')): return False
             if kind == 'history' and name != 'HEAD' and not name.startswith(('refs/heads/', 'refs/tags/', 'refs/remotes/')): return False
-            if git(root, 'cat-file', '-t', oid).strip() != typ: return False
+        # Every declared (oid, type) pair stays independently asserted even when
+        # two refs alias one oid, so a tampered snapshot cannot pass by aliasing.
+        pairs = {(oid, typ) for _, oid, typ in refs}
+        types = ref_object_types(root, (oid for oid, _ in pairs))
+        if any(types.get(oid) != typ for oid, typ in pairs): return False
     return True
 
 
@@ -162,10 +242,6 @@ def record_scan_success(root: Path, kind: str, base: str | None = None) -> None:
     temporary = folder / (kind + '.tmp')
     temporary.write_text(json.dumps(proof, sort_keys=True))
     temporary.replace(folder / (kind + '.json'))
-
-
-def source_at(root: Path, base: str, relative: str) -> bytes:
-    return subprocess.check_output(['git', '-C', str(root), 'show', f'{base}:{relative}'], stderr=subprocess.DEVNULL)
 
 
 def select_scope(root: Path, kind: str) -> Scope:
