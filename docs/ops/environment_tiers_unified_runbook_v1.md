@@ -90,7 +90,7 @@ authoritative versioned source, so the count is derived by
 `scripts/verify/acceptance_action_count.py` instead of being pinned, and the
 probe fails closed (`role_code_unexpected`) when the runtime role drifts from the
 declared principal role. For the current principal role (`business_config_admin`)
-that yields `ACCEPTANCE_NAV_MIN_ACTIONS=89`, `ACCEPTANCE_NAV_MAX_ACTIONS=89`, and
+that yields `ACCEPTANCE_NAV_MIN_ACTIONS=90`, `ACCEPTANCE_NAV_MAX_ACTIONS=90`, and
 `ACCEPTANCE_NAV_FORBIDDEN_LABELS=用户核对菜单,用户数据验收,用户验收,直营项目系统菜单`.
 `ACCEPTANCE_NAV_REQUIRED_PATHS` must include the locked daily product path
 sample covering customer, supplier, project ledger, general contract,

@@ -855,6 +855,40 @@ daily.runtime.record_identity.resolve: guard.prod.forbid verify.daily.runtime.re
 		--output "$(ACCEPTANCE_RECORD_RESOLUTION)" \
 		--report "$(DAILY_RUNTIME_RECORD_IDENTITY_REPORT)"
 
+# The daily runtime has two independently released faces: the code/rendering face
+# (`daily.runtime.*`: bundle sync, module upgrade, served revision, built
+# frontend) and the published product face (the active edition-release snapshot
+# that the navigation release gate actually reads). Only the published face
+# decides whether an entry may be opened, so a locked-contract change could reach
+# the served runtime while the published face still froze the previous contract:
+# the gated navigation then silently served the older contract and a declared,
+# user-visible menu entry disappeared with no failing deploy step. This entry
+# owns both faces in one governed sequence - bind the exact candidate revision,
+# re-freeze every published product snapshot from the locked contract, reload the
+# served runtime, then re-prove the released face through the release-gate guard.
+# `daily.runtime.candidate.release` is the single daily deploy entry; the two
+# faces must not be released separately.
+DAILY_RUNTIME_PUBLISHED_FACE_EXPECTED_SHA ?= $(DAILY_CANDIDATE_EXPECTED_SHA)
+DAILY_RUNTIME_PUBLISHED_FACE_LOGIN ?= $(DAILY_PRODUCT_MENU_FULL_PRODUCT_LOGIN)
+DAILY_RUNTIME_PUBLISHED_FACE_PRODUCT_KEYS ?= construction.standard,construction.preview
+DAILY_RUNTIME_PUBLISHED_FACE_REPORT ?= .runtime/final-acceptance/daily-deployed/published-face-converge.json
+
+verify.daily.runtime.published_face.converge: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_published_face_converge.py scripts/ops/test_daily_runtime_published_face_converge.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_published_face_converge
+
+daily.runtime.published_face.converge: guard.prod.forbid verify.daily.runtime.published_face.converge
+	@test "$${CONFIRM_DAILY_RUNTIME_PUBLISHED_FACE:-}" = "REFRESH_DAILY_RUNTIME_PUBLISHED_FACE_FROM_LOCKED_CONTRACT" || { echo "exact daily runtime published-face confirmation is required" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_PUBLISHED_FACE_LOGIN)" || { echo "DAILY_RUNTIME_PUBLISHED_FACE_LOGIN must name the daily full-product principal (set DAILY_PRODUCT_MENU_FULL_PRODUCT_LOGIN or ACCEPTANCE_LOGIN)" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_published_face_converge.py \
+		--expected-sha "$(DAILY_RUNTIME_PUBLISHED_FACE_EXPECTED_SHA)" \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--login "$(DAILY_RUNTIME_PUBLISHED_FACE_LOGIN)" \
+		--product-keys "$(DAILY_RUNTIME_PUBLISHED_FACE_PRODUCT_KEYS)" \
+		--report "$(DAILY_RUNTIME_PUBLISHED_FACE_REPORT)"
+
+daily.runtime.candidate.release: guard.prod.forbid daily.runtime.candidate.bundle_sync daily.runtime.published_face.converge
+
 mirror.main.gitee: guard.prod.forbid
 	@bash scripts/ops/mirror_main_gitee.sh
 
