@@ -646,3 +646,60 @@ main 车道，候选车道检查保留但尚无回执。
 1. 浏览器关系交互车道：`nav_pro_*` fixture 受管制备 + `verify.nav.pro01r.route_authority.browser`
    一次真实"点击打开 → 返回原记录 → 标签/动作恢复"。
 2. 主线集成：等待用户明确授权（本轮指令为"先不执行进入主线"）。
+## 13. 迭代效率闭环（2026-10-09 第 13 轮）：扫描作用域不再用"进程数"换 O(n)
+
+### 13.1 现象与度量
+
+用户反馈"日常迭代这么慢"。先量后改，实测 `make ci.local.iteration`：
+
+| 步骤 | 累计耗时 | 说明 |
+| --- | --- | --- |
+| `agent_run_context` | 0.20s | 台账解析 |
+| `frontend_dev_incremental --plan-worktree` | 0.18s | 受影响面推荐 |
+| `trusted_scan_scope` | **30.1s** | 占整个入口 37s 的 **82%** |
+| 入口合计 | **36.8s** | |
+
+### 13.2 根因：Git 子进程数随仓库规模线性膨胀
+
+`scripts/ci/trusted_scan_scope.py` 只做"作用域选择"，却付出 11,074 次 Git 子进程：
+
+1. `valid_coverage` 对快照里**每一个 ref** 单独跑一次 `git cat-file -t` 校验对象类型。
+   本仓库 272 个 ref × 9 个候选快照 × 3 个扫描器 ≈ 7,300 次调用；
+2. `authority_digest` 对**每一个授权文件**在**每一个 revision** 上单独跑一次 `git show`，约 1,863 次。
+
+两者都与"被扫描内容多少"无关，只与"仓库有多少 ref / 有多少 revision 要复核"有关，
+因此每次迭代都重复付全额成本。
+
+### 13.3 修正：两个进程做完同样的判定（语义严格等价）
+
+- `ref_object_types`：一次 `git cat-file --batch-check` 解析全部 ref tip 的对象类型。
+  **仍然逐条断言**每个声明的 `(oid, type)` 对（共享 oid 不能用一个类型同时满足两条声明）；
+  tip 缺失仍是硬失败。
+- `revision_blob_sha256`：一次 `git ls-tree -r -z` + 一次 `git cat-file --batch` 取回全部授权 blob。
+  某 revision 上缺失的授权路径仍然是硬失败（等价于原先 `git show` 抛错）。
+- 摘要口径未变：仍是 `sha256(json([(path, sha256(content))]))`，仅取数方式改变。
+
+### 13.4 证据
+
+- **等价性**：用旧的逐文件 `git show` 实现重算，与新区间在 **24 个历史 revision + 工作区** × 3 个扫描器上
+  逐条比对，**0 处偏差**。
+- **耗时**：`make ci.local.iteration` **36.8s → 6.9s**；`trusted_scan_scope` **30.1s → 3.3s**；
+  作用域选择内的 Git 调用 **9,211 → 81**。
+- **测试**：`scripts/ci/test_trusted_scan_scope.py` 30/30 PASS；`make security.online_capture.unit` PASS。
+  新登记检查 `trusted_scan_scope_unit`（`verify.trusted_scan.unit`）已写入绑定身份的回执，随后即可复用。
+- 提交：`8a1ef8ab`（`perf(ci): resolve trusted-scan scope identity in two git processes`）。
+
+### 13.5 边界（未放宽任何东西）
+
+作用域判定口径、失败闭合路径、扫描器授权摘要、`scan_authority_changed → full` 的保守逻辑**全部保持不变**；
+本次只改"用什么方式取到同一结论"。因为 `trusted_scan_scope.py` 本身属于 `COMMON_AUTHORITY`，
+这次改动会让既有的 Quick 覆盖率回执按设计失效一次（下次 Quick 走 full）——这是权威变更的正确表现，不是回退。
+
+### 13.6 剩余效率缺口（已登记，未在本轮实施）
+
+1. **部署闭环的模块升级无同码复用**：前端构建有"同 commit 复用回执"（`reused` 字段），
+   但 `daily.runtime.published_face.converge` 每次都要重跑 `mod.upgrade`（例如 `smart_core`），
+   即使模块代码相对上次部署**一字未改**。需要一份绑定"模块集 + 代码哈希 + 已部署 SHA"的有界回执，
+   并以权威读回（模块状态/写入时间）证明可跳过；这是**写操作复用**，必须可回滚，不能想当然跳过。
+2. **运行态回执仍不可复用**（见 §12.5）：需要"声明式权威环境读回"（fail-closed）才能让 runtime 车道复用。
+   两项目前都写在 run 的 `blockers` / `next_exact_step` 里，不在本轮擅自扩大改动面。

@@ -53,12 +53,13 @@
     "ci_local_iteration": {
       "target": "verify.baseline.iteration.execution.policy",
       "inputs": [
-        "make/frontend.mk",
+        "make/ci.mk",
         "make/codex.mk",
-        "scripts/ops/agent_run_context.py",
-        "scripts/verify/frontend_dev_incremental.py",
+        "make/frontend.mk",
+        "scripts/ci/test_trusted_scan_scope.py",
         "scripts/ci/trusted_scan_scope.py",
-        "make/ci.mk"
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/frontend_dev_incremental.py"
       ],
       "kind": "offline"
     },
@@ -290,6 +291,16 @@
         "frontend/apps/web/src/app/navigationSelectionCore.js",
         "make/runtime_ops.mk"
       ]
+    },
+    "trusted_scan_scope_unit": {
+      "target": "verify.trusted_scan.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ci/trusted_scan_scope.py",
+        "scripts/ci/test_trusted_scan_scope.py",
+        "make/codex.mk",
+        "make/ci.mk"
+      ]
     }
   },
   "blockers": [
@@ -297,7 +308,7 @@
     "browser_login_return_authority (verify.nav.pro01r.route_authority.browser) still needs the governed nav_pro_{config_admin,system_admin,pm,project_member} fixture provisioned on sc_demo through nav.pro01.runtime.prepare inside the remote compose. Its earlier blocking prerequisite (\"missing task evidence: finance smart_construction_core.menu_sc_settlement_adjustment\") was a served-tree/module-generation gap; the runtime is now at 4b7f9a46 with smart_core upgraded and the published face re-frozen, so the prepare step can be attempted. No assertion may be relaxed.",
     "Run-ledger reuse boundary (by design, not a defect): scripts/ops/agent_run_context.py only auto-reuses declared offline checks; a kind=runtime receipt is never auto-reusable and is reported as stale with \"runtime evidence requires authoritative environment readback\" (locked by scripts/verify/test_agent_run_context.py::test_runtime_receipt_never_auto_reused). The authoritative readback for this batch therefore lives in .runtime/final-acceptance/daily-deployed/*.json plus the recorded receipt .runtime/agent-runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/daily_acceptance_readback.json. Reuse for runtime lanes requires a declared authoritative-environment-readback mechanism, which is outstanding P4 work."
   ],
-  "next_exact_step": "Daily-runtime candidate 4b7f9a46 is deployed and the user-visible defect is closed: served system.init for wutao returns HTTP 200 (was 500), navigation.meta.platform_release_gate reads snapshot_id 39 (daily-navigation-standard-4b7f9a46) / 40 (preview) with allowed_page_count=kept_leaf_count=90, all 112 served nodes carry canonical_navigation projections, and 角色首页 (menu_id 1004, action_id 0) is enabled with authority.state=allowed/source=nav.declared_entry at route /s/workspace.home. verify.daily_dev.acceptance.readonly.probe PASSES at that served SHA (identity PASS, contract 11/11, login nav_admitted_entry_count=90 == nav_gate_kept_leaf_count=90 == contracted 90; the assertion was NOT lowered - nav_action_count 89 is now reported alongside the contracted entry population), and the negative control (declared finance/46, served business_config_admin) still FAILS with role_code_unexpected + nav_entry_count_above_max. Next, in order: (1) provision the nav_pro_* fixture through the governed nav.pro01.runtime.prepare and run verify.nav.pro01r.route_authority.browser as one real click-open -> return -> tab/action restore journey; (2) on explicit user authorization, push the candidate and open the Gitee PR through pr.push.gitee so the remote gates run on the exact head, then merge through the protected PR flow; (3) keep the contracted 90 assertion and the coupled daily.runtime.candidate.release entry.",
+  "next_exact_step": "Iteration-efficiency closeout (this round): `ci.local.iteration` 36.8s -> 6.9s by removing the O(n) Git process-per-reference/per-file pattern in the trusted-scan scope selector (commit 8a1ef8ab); authority digests proven byte-identical against the previous implementation, tests 30/30. Next, in order: (1) the daily runtime still re-runs the smart_core module upgrade on every deploy even when the module code is unchanged - add the same declared-receipt reuse the frontend build already has, bound to the module set plus its code hash, before calling the deploy loop efficient; (2) the run ledger still cannot reuse a kind=runtime receipt, so runtime lanes are re-derived each round - author the declared authoritative-environment readback (fail-closed) that blockers[2] names; (3) keep the unchanged product-closeout order: nav_pro_* fixture then the real click-open/return journey, then (on explicit authorization) PR/merge. Original step: Daily-runtime candidate 4b7f9a46 is deployed and the user-visible defect is closed: served system.init for wutao returns HTTP 200 (was 500), navigation.meta.platform_release_gate reads snapshot_id 39 (daily-navigation-standard-4b7f9a46) / 40 (preview) with allowed_page_count=kept_leaf_count=90, all 112 served nodes carry canonical_navigation projections, and 角色首页 (menu_id 1004, action_id 0) is enabled with authority.state=allowed/source=nav.declared_entry at route /s/workspace.home. verify.daily_dev.acceptance.readonly.probe PASSES at that served SHA (identity PASS, contract 11/11, login nav_admitted_entry_count=90 == nav_gate_kept_leaf_count=90 == contracted 90; the assertion was NOT lowered - nav_action_count 89 is now reported alongside the contracted entry population), and the negative control (declared finance/46, served business_config_admin) still FAILS with role_code_unexpected + nav_entry_count_above_max. Next, in order: (1) provision the nav_pro_* fixture through the governed nav.pro01.runtime.prepare and run verify.nav.pro01r.route_authority.browser as one real click-open -> return -> tab/action restore journey; (2) on explicit user authorization, push the candidate and open the Gitee PR through pr.push.gitee so the remote gates run on the exact head, then merge through the protected PR flow; (3) keep the contracted 90 assertion and the coupled daily.runtime.candidate.release entry.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -584,6 +595,31 @@
         "4b7f9a46"
       ],
       "reuse_boundary": "Runtime checks are not auto-reusable by ledger design; see blockers[2]."
+    },
+    "iteration_efficiency": {
+      "change": "scripts/ci/trusted_scan_scope.py resolves the trusted-scan scope identity in two git processes instead of one per reference and one per authority file.",
+      "defect": "The scan-scope step spent its runtime in Git process startup: 272 refs x 9 candidate snapshots of per-ref `cat-file -t`, plus one `git show` per authority file per revision (11,074 git invocations, ~30s).",
+      "measured": {
+        "ci_local_iteration_seconds": {
+          "before": 36.8,
+          "after": 6.9
+        },
+        "trusted_scan_scope_seconds": {
+          "before": 30.1,
+          "after": 3.3
+        },
+        "git_invocations_in_scope_selection": {
+          "before": 9211,
+          "after": 81
+        }
+      },
+      "equivalence_proof": "authority_digest matched the previous per-file `git show` implementation for 24 historical revisions plus the worktree across all three scanners (0 mismatches); every declared (oid, type) pair is still independently asserted.",
+      "tests": [
+        "scripts/ci/test_trusted_scan_scope.py 30/30 OK",
+        "make security.online_capture.unit OK"
+      ],
+      "commit": "8a1ef8ab1c20f74c868741206adb0d4eb39d06fc",
+      "not_relaxed": "No scan scope, no assertion and no fail-closed path was widened; a missing tip or an authority path absent at a revision still fails closed."
     }
   },
   "continuation": {
@@ -592,10 +628,9 @@
   },
   "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced.",
   "stage_identity": {
-    "head": "4b7f9a469a3af9e10d59c6a0013360db8cacab80",
+    "head": "8a1ef8ab1c20f74c868741206adb0d4eb39d06fc",
     "dirty_scope": [
       ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json",
-      "artifacts/backend/acceptance_record_identity.json",
       "docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md"
     ],
     "kind": "iteration",
