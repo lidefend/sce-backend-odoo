@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `4650`
 - Files requiring split plan: `63`
-- Files above warning threshold: `111`
+- Files above warning threshold: `112`
 
 ## Split Plan Required
 
@@ -56,8 +56,8 @@ Generated from repository source files. This report is informational during the 
 | 1801 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1761 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1727 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
+| 1722 | YAML workflow | `scripts/verify/registry.yaml` |
 | 1713 | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
-| 1693 | YAML workflow | `scripts/verify/registry.yaml` |
 | 1678 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1668 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1656 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
@@ -168,6 +168,7 @@ Generated from repository source files. This report is informational during the 
 | 845 | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
 | 843 | Python source | `scripts/verify/contract_evidence_guard.py` |
 | 843 | Python source | `scripts/verify/test_scene_r3_action_target_scene_resolution.py` |
+| 838 | Python source | `scripts/verify/guard_registry_audit.py` |
 | 833 | JavaScript source | `scripts/verify/frontend_geometry_scroll_audit.mjs` |
 | 832 | Python source | `scripts/ops/production_acceptance_clone_runtime.py` |
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
@@ -184,7 +185,7 @@ Generated from repository source files. This report is informational during the 
 | 356 | Shell script | `scripts/ops/git_safe_push.sh` |
 | 345 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |
 | 343 | YAML workflow | `.github/workflows/infra-stage-gate.yml` |
-| 333 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
+| 339 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 328 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 314 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |
 | 308 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
@@ -240,8 +241,8 @@ Generated from repository source files. This report is informational during the 
 | 1801 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1761 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1727 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
+| 1722 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 1713 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
-| 1693 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 1678 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1668 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1656 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |

@@ -762,7 +762,7 @@ ci.professional.backend: guard.prod.forbid verify.contract.page_v1_zero_residue.
 	@echo "[OK] professional backend/static quality gate passed"
 
 # Shard 1: verification and security checks
-ci.professional.backend.shard-verify: guard.prod.forbid verify.contract.page_v1_zero_residue.guard verify.guard.registry verify.test.coverage.registry security.legacy_credential_guard verify.repository.clean_history verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.contract.structure_lock verify.unified_page_contract.v2.professional_backend verify.frontend.playwright_vendor_coupling.guard verify.frontend.role_surface_exposure_declaration.guard verify.ci.workflow.contract
+ci.professional.backend.shard-verify: guard.prod.forbid verify.contract.page_v1_zero_residue.guard verify.guard.registry verify.test.coverage.registry security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.contract.structure_lock verify.unified_page_contract.v2.professional_backend verify.frontend.playwright_vendor_coupling.guard verify.frontend.role_surface_exposure_declaration.guard verify.ci.workflow.contract
 	@echo "[OK] professional backend shard-verify passed"
 
 # Shard 2: generated reports and architecture checks

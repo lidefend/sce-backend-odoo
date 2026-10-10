@@ -1,4 +1,33 @@
 version: 1
+# Targets that are actually executed by a required CI check or by the governed
+# local quick lane. Reachability from these anchors is what makes "wired to a
+# make target" mean "enforced by a gate"; ``gate_required`` scripts below must
+# keep at least one referencing target reachable from this anchor set.
+gate_anchors:
+- target: ci.local.quick.run
+  lane: local-quick
+  invoked_by:
+  - scripts/ops/local_quick_evidence.py
+- target: ci.professional.backend.shard-verify
+  lane: remote-professional-backend
+  invoked_by:
+  - .github/workflows/professional_quality_gate.yml
+- target: verify.frontend.pr.unit
+  lane: remote-frontend-standard
+  invoked_by:
+  - frontend/apps/web/package.json
+  - .github/workflows/frontend_release_gate.yml
+- target: verify.frontend.release.audit
+  lane: remote-frontend-full
+  invoked_by:
+  - frontend/apps/web/package.json
+# Scripts that claim required-gate enforcement. A script listed here must have a
+# referencing make target reachable from a declared gate anchor; wiring that
+# only terminates in an un-run aggregate is a recorded defect, not enforcement.
+gate_required:
+- frontend_decision_authority.py
+- frontend_decision_authority_guard.py
+- test_frontend_decision_authority_guard.py
 entries:
 - script: __init__.py
   status: active
