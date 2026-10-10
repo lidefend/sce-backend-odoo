@@ -154,6 +154,7 @@ Generated from repository source files. This report is informational during the 
 | 907 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
 | 901 | Python source | `addons/smart_core/tests/test_execute_button_server_action_boundaries.py` |
 | 897 | Python source | `addons/smart_core/utils/idempotency.py` |
+| 895 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
 | 886 | Python source | `addons/smart_construction_core/models/core/equipment_management.py` |
 | 886 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 886 | Python source | `scripts/verify/release_capability_audit.py` |
@@ -163,7 +164,6 @@ Generated from repository source files. This report is informational during the 
 | 862 | Python source | `scripts/release/release_candidate.py` |
 | 861 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
 | 858 | Python source | `scripts/ops/daily_candidate_data_continuity.py` |
-| 853 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
 | 852 | Python source | `scripts/ops/registry_audit/registry_export.py` |
 | 845 | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
 | 843 | Python source | `scripts/verify/contract_evidence_guard.py` |
