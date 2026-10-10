@@ -2495,3 +2495,66 @@ bash scripts/verify/form_structure_contract_runtime_audit.sh`）→ `make agent.
 - 未改任何产品代码、未放宽任何断言/门禁、未 push/未合并；B4/B5 由"待裁决"升级为"已确证为口径"。
 - 覆盖债（140 个 `@tagged` 分组）与车道级重建/快照 DENY 不变；唯一开放产品交付项仍为**所有者登录核对**
   （`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`）。
+
+### 24-续（3）2026-10-10：服务面 vs 主线拓扑实测与四态台账更正
+
+第 24 轮（含续 1/续 2）的台账里，四态"版本发布"写的是运行态。收尾核对时发现台账
+blockers[2] 仍留有**过期陈述**"the runtime now serves mainline daecaafc"——这对 2026-10-10
+晚几轮之前的时点成立，但续轮把运行态推进到了 `e885d590` 之后就不再成立。本轮不改产品、
+不做新运行验收，只做**一次拓扑实测 + 四态更正**，避免读者把"主线=服务面"当成同一身份。
+
+**一、实测拓扑（本轮命令级证据）**
+
+| 项 | 值 |
+| --- | --- |
+| `origin/main` | `daecaafc6da6c61d92312a464b84468e7d85c486`（Merge PR #637） |
+| 分支 HEAD | `1096895dca8110fe1ad7fcdc182b86636a06b5aa` |
+| 领先 origin/main | **83 提交** |
+| 其中触及产品/工具路径 | **39**（`addons/` `frontend/` `config/`：30 文件 +1568/-302；`make/` `scripts/`：13 文件 +995/-308） |
+| 纯记账 | 44 |
+| 合并就绪 | `git merge-tree --write-tree origin/main HEAD` → **exit 0，零冲突** |
+| 远端同名分支 tip | `9a000714`（落后本地 21 提交） |
+| 服务面 revision | `e885d590b314d310de20a373c4f4c152996e3daf`，`database=sc_demo`，`frontend_build_sha256=bc5a0cac181d5270…` |
+| 服务面 revision 是否为 origin/main 祖先 | **否** |
+
+39 个未入主线的产品/工具提交里，包含**已服务**的 P0 校验器修复 `e885d590`（B1/B2 同一根因）
+与契约作者章节标题生产者 `330fb36d`（B3a），以及 `514c4c11`/`1066b422`（声明修饰符值域单一权威）、
+`5c828da2`/`77e407cc`（声明布局按钮发布授权执行面）、`dde30179`/`d106d2dd`（角色锁定落地与目录投影）、
+`3d90df05`（前端丢弃契约拒绝的登录回跳目标）。早前的 PR #635→`bb6b6e82`、#636→`e2e32ad3`、
+#637→`daecaafc` 集成**已完成**，本 run 历史回执绑定的正是那批身份；它**不覆盖**这 39 个后续提交。
+
+**二、四态更正（报告时严格分开）**
+
+| 状态 | 结论 |
+| --- | --- |
+| 批次验收 | **完成** |
+| 主线集成 | PR #635/#636/#637 **完成**（`daecaafc`）；**后 39 个产品/工具提交未入主线**（含已服务 P0 修复） |
+| 版本发布 | 日常运行态 serve `e885d590`（`sc_demo`，frontend `bc5a0cac…`） |
+| 产品交付 | **待所有者登录核对** |
+
+`blockers[2]` 已按上表改写为实测拓扑（并保留"此前的 daecaafc 陈述在当时为真、现更正"的说明），
+`evidence.round_20261010_served_ahead_of_mainline` 记录了 commit 拆分与合并就绪性。
+
+**三、为何本轮不发布**
+
+受管发布入口 `make pr.push`（`scripts/ops/git_safe_push.sh`）与 `make pr.push.gitee`
+（`scripts/ops/gitee_temporary_integration.py publish`）均为**操作时确认门控**：gitee 车道要求
+`--apply --confirm $(GITEE_INTEGRATION_CONFIRM)` 加 `GITEE_EXPECTED_MAIN`/`EXPECTED_HEAD`，
+正式 PR 车道另需 `GITEE_PR_TOKEN_FILE`。`origin`（github.com/lidefend/sce-backend-odoo）是
+**PUBLIC** 仓库，发布 83 个提交跨越公开边界，属**所有者操作时确认动作**，不是可单方面执行的迭代步骤。
+本轮**刻意未 push**，也未放宽任何守卫/检查/保护来制造该结论。
+
+**四、本轮门禁回执（记账）**
+
+- `make verify.agent.ledger.unit` → **15 项通过**（`goals=93 runs=71 pinned_residuals=2 open_run_allowlist=2`），
+  回执 `.runtime/eff/rec/closeout-20261010-b4b5-native-attribution/rec_agent_ledger_consistency_unit.log`。
+- `make agent.run.resume` → 复用索引 **reusable 46 / stale 1**（与续 2 持平，无新增漂移）。
+- `make ci.local.iteration` → **PASS**（`change_state=dirty scope=unclassified_by_design coverage=L1_only`，
+  next = 风险选择的非零 L2 目标）。
+
+**五、边界**
+
+- 未改产品代码、未放宽断言/门禁、未 push/未合并、未新增运行验收。
+- 覆盖债（140 个 `@tagged` 分组）、车道级重建/快照 DENY、`native_chatter` 命名风险、仓库外客户模块
+  `user_preferences.py` 路径债均**保持登记原样**；20 例增量 chatter 仍待产品裁决。
+- 唯一开放产品交付项仍为**所有者登录核对**（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`）。
