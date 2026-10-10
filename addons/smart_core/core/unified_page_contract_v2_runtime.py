@@ -17,6 +17,12 @@ FORM_STRUCTURE_RUNTIME_CARRIER = "ui.contract.v2.form_structure_contract"
 FORM_PRESENTATION_MODES = frozenset({"task", "workspace"})
 FORM_STRUCTURE_LEGACY_VERSION = "1.0"
 FORM_STRUCTURE_PRESENTATION_VERSION = "1.1"
+# The container tree is the single effective body tree (native_first_form_structure_authority_v1,
+# 2026-09-16 revision).  A formStructureContract must not become a second membership authority, so
+# the policies in this set carry field membership in the tree and publish no independent structural
+# slots.  The declared consumer forbids slots, columns and field membership for exactly that reason
+# (frontend/apps/web/src/app/contracts/v2/schema.ts, decodeFormStructureContract).
+FORM_STRUCTURE_TREE_MEMBERSHIP_POLICIES = frozenset({"container_tree_authority"})
 
 
 def source_authority_contract() -> dict[str, Any]:
@@ -441,9 +447,20 @@ def find_form_structure_contract_issues(contract: dict[str, Any]) -> list[str]:
     known_fields = set(_dict(fields).keys())
     if not known_fields:
         known_fields = _collect_layout_field_names(_list(_dict(contract.get("layoutContract")).get("containerTree")))
+    layout_policy = _text(structure.get("layoutPolicy"))
+    tree_membership_authority = layout_policy in FORM_STRUCTURE_TREE_MEMBERSHIP_POLICIES
     slots = [_dict(row) for row in _list(structure.get("slots")) if isinstance(row, dict)]
-    if not slots:
+    if not slots and not tree_membership_authority:
         issues.append("formStructureContract.slots is required")
+    if tree_membership_authority and (
+        slots or "columns" in structure or _dict(structure.get("fieldRoles"))
+    ):
+        # Mirrors the declared consumption contract: a tree-authority structure that also publishes
+        # its own slots, columns and field membership splits body ownership in two.
+        issues.append(
+            "formStructureContract.container_tree_authority forbids independent structural slots, "
+            "columns and fieldRoles"
+        )
     slot_names: set[str] = set()
     referenced_fields: list[str] = []
     field_slots: dict[str, set[str]] = {}
@@ -514,10 +531,15 @@ def find_form_structure_contract_issues(contract: dict[str, Any]) -> list[str]:
     if governance_field_names:
         for name in sorted(set(referenced_fields) - governance_field_names):
             issues.append(f"formStructureContract references field outside governance: {name}")
-    if layout_fields:
-        allowed_layout_fields = set(referenced_fields)
-        for name in sorted(layout_fields - allowed_layout_fields):
+    if layout_fields and not tree_membership_authority:
+        attributed_layout_fields = set(referenced_fields)
+        for name in sorted(layout_fields - attributed_layout_fields):
             if _is_form_structure_runtime_control_field(name):
+                continue
+            if name not in governance_field_names:
+                # The container tree is the single effective body tree and legitimately carries
+                # native, technical and residual nodes the governed field universe never owned.
+                # Only a governed field the declared slots failed to attribute is a structure defect.
                 continue
             issues.append(f"formStructureContract layout projects field outside structure: {name}")
     return issues

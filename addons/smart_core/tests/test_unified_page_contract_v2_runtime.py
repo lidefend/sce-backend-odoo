@@ -430,8 +430,12 @@ class TestUnifiedPageContractV2Runtime(unittest.TestCase):
 
         self.assertIn("formStructureContract references field outside governance: company_id", issues)
 
-    def test_form_structure_contract_rejects_layout_fields_outside_structure(self):
+    def test_form_structure_contract_rejects_governed_layout_fields_outside_structure(self):
         contract = self._contract()
+        contract["formStructureContract"]["layoutPolicy"] = "overview_then_task_slots"
+        contract["formStructureContract"]["sourceAuthority"]["governance_source"]["fieldNames"].append(
+            "company_id"
+        )
         contract["layoutContract"]["containerTree"][0]["children"].append({"type": "field", "name": "company_id"})
         contract["layoutContract"]["containerTree"][0]["children"].append({"type": "field", "name": "can_review"})
         contract["dataContract"]["dataMeta"]["fields"].update({
@@ -443,6 +447,44 @@ class TestUnifiedPageContractV2Runtime(unittest.TestCase):
 
         self.assertIn("formStructureContract layout projects field outside structure: company_id", issues)
         self.assertNotIn("formStructureContract layout projects field outside structure: can_review", issues)
+
+    def test_slot_structure_tolerates_ungoverned_native_tree_fields(self):
+        contract = self._contract()
+        contract["formStructureContract"]["layoutPolicy"] = "overview_then_task_slots"
+        contract["layoutContract"]["containerTree"][0]["children"].append({
+            "type": "field", "name": "source_created_by",
+        })
+        contract["dataContract"]["dataMeta"]["fields"]["source_created_by"] = {"type": "char"}
+
+        issues = runtime.find_form_structure_contract_issues(contract)
+
+        self.assertNotIn(
+            "formStructureContract layout projects field outside structure: source_created_by", issues
+        )
+
+    def test_container_tree_authority_structure_publishes_no_slots(self):
+        contract = self._contract()
+        structure = contract["formStructureContract"]
+        structure["layoutPolicy"] = "container_tree_authority"
+        structure["slots"] = []
+        structure["fieldRoles"] = {}
+
+        issues = runtime.find_form_structure_contract_issues(contract)
+
+        self.assertNotIn("formStructureContract.slots is required", issues)
+        self.assertEqual(issues, [])
+
+    def test_container_tree_authority_structure_forbids_published_slots(self):
+        contract = self._contract()
+        contract["formStructureContract"]["layoutPolicy"] = "container_tree_authority"
+
+        issues = runtime.find_form_structure_contract_issues(contract)
+
+        self.assertIn(
+            "formStructureContract.container_tree_authority forbids independent structural slots, "
+            "columns and fieldRoles",
+            issues,
+        )
 
 
 if __name__ == "__main__":
