@@ -2078,3 +2078,100 @@ runtime contract has no native notebook`）。故这是"是否要求每个业务
 需所有者对方向裁决），**未 push**、未合并、未标记整体目标完成。
 唯一开放的产品交付项仍为**所有者登录核对**（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`，
 `/f/project.project/581?menu_id=379&action_id=506`）。
+
+---
+
+## 第 22 轮（2026-10-10）：契约署名章节标题通道补回生产端（B3a 修复 + B3b/c/d 工具收口）
+
+**一、本轮定性（承接第 21 轮，B3a 方向已由证据确定，非取舍）**
+
+第 21 轮把 B3a 列为"需所有者裁决方向"。本轮先取决定性证据再动手：
+
+- `git show 2ec2e2df`（该提交自述"contract-spec-v0.1 在途工作，**非完成态**"）删除的行**恰好只有一行**：
+  `_standardize_form_container_semantics(container_tree, model=model, view_type=view_type, source=source)`；
+  同时新增替代机制 `_apply_form_structure_roles_to_tree`。替代者只写 `formStructureRole`（身份），
+  **从不写 `semanticTitle`（标题）**，因此不是等价替换。
+- 消费侧齐备：`nativeBusinessSection.ts:96`、`NativeFormTreeRenderer.vue:892`、`schema.ts:737`、
+  `contractFormPresenter.ts:444`；两个既有 P0 守卫（`form_view_native_structure_boundary_guard.py:127`、
+  `view_orchestration_boundary_guard.py:182`）也声明该标准器"只写 semanticTitle/semanticAnchor 元数据、
+  不得写可见 title/label/string"。
+- 结论：这不是方向取舍，而是**在生产代码中丢失的一行契约接线**。前端早已删除自己的猜测、
+  改为消费契约署名，因此缺生产端＝出厂契约恒不署名章节标题。方向确定为"补回生产端"。
+
+**二、修复**
+
+P0 `addons/smart_core/core/unified_page_contract_v2_assembler.py`
+1. 恢复 `_standardize_form_container_semantics` 生产调用（置于 `_standardize_business_form_default_tabs` 之后）。
+2. 修 `_is_generic_container_label` 的缺陷：`generic` 含 `""`，而 `labels` 只要缺任一 `title/label/string`
+   就含 `""`，集合求交**恒真** → 已署名标题（如「基本信息」）被判为 generic，被结构猜测覆盖。
+   改为"标题非空且不等于任何身份值"。
+
+P4 `scripts/verify`（验证工具，不改产品）
+1. `form_structure_contract_runtime_audit.is_unlabeled_group` 同类 `""` 缺陷修正。
+2. 该审计 notebook 指标原先过滤 `business_form_default_tab_standardizer`——**全仓库不存在该字符串**，
+   结构性恒 0。改为声明式 `NOTEBOOK_PROJECTION_CARRIERS` + `resolve_projection_carriers()` 生产者存在性校验，
+   发明/改名载体直接报错（载体的声明值现为"空集"，因为分页签标准器本身是**有意的 no-op**）。
+3. `form_structure_contract_standardizer_guard` 增补 `production_call_sites()` 断言：守卫只测合成 fixture
+   对死代码照过的盲点被堵住。
+
+**三、负例基线（先证未注入正常，再证注入可检出）**
+
+| 用例 | HEAD（未修） | 本轮（已修） |
+| --- | --- | --- |
+| group 仅带署名标题「基本信息」 | 未署名 | 已署名 |
+| group 有 label、缺 title 兄弟 | 未署名 | 已署名 |
+| 裸技术 group（无任何标题） | 未署名 | 未署名（不变，正确） |
+| 生产接线断言：`_standardize_form_container_semantics` 调用点 | **0** | **1** |
+| 生产接线断言：`_standardize_business_form_default_tabs` | 1 | 1 |
+| `resolve_projection_carriers` 对不存在的载体 | — | 抛错（原为静默恒 0） |
+
+**四、本地 L1/L2 非零证据（全部 EXIT=0）**
+
+- `make verify.form_structure.contract.guard`（12 tests + standardizer guard）
+- `make verify.form_view.native_structure.boundary_guard`
+- `make verify.view.orchestration_boundary_guard`
+- `make verify.form_container_presentation.guard`
+- `make verify.product_view_structure.contract.unit`（25 tests）
+- `make verify.frontend.form_structure_contract_projection.unit`（fields=76 unclassified=0）
+- `make verify.frontend.native_form_structure_responsibility.unit`（cases=12）
+- `make verify.frontend.form_structure_surface_contract.unit`
+
+**五、受管运行态刷新与前后对比（同一 163 模型口径）**
+
+车道：`daily.runtime.candidate.bundle_sync`（PASS，`origin_main_mutated=false`）→
+`daily.runtime.source_revision.align`（PASS，重启后 `served.source_revision=330fb36d`）→
+`daily.runtime.published_face.converge`（PASS，`module_upgrade_returncode=0`，`upgrade_mode=run`，90/90 菜单精确匹配）。
+
+| 指标 | 修复前 `514c4c11` | 修复后 `330fb36d` |
+| --- | --- | --- |
+| `projected_semantic_group_models` | **0** | **163** |
+| `semantic_group_count` / `group_count` | 0 / 996 | **996 / 996** |
+| `unlabeled_group_count>0` 的模型数 | 163 | **0** |
+| `contract_standardized` | 0 | **81** |
+| `contract_needs_attention` | 163 | **82** |
+| `missing_group_semantics` | 163/163 | **0** |
+| `boundary_violation` / `boundary_ok` | 158 / 5 | 158 / 5（不变） |
+| `slots is required`（B1） | 60 | 60（不变） |
+| `field outside structure`（B2） | 2024 | 2024（不变） |
+| `attachment` / `timeline` | 160 / 160 | 160 / 160（不变） |
+
+剩余 82 的缺口直方图 = `missing_contract_notebook/page` 82 + `missing_collaboration/attachment/timeline` 3，
+即第 20/21 轮已定性的 **B4（82 个无 notebook/page 的作用域模型）与 B5（3 个非 chatter 工作台表面）**，
+均为口径问题、非产品债。**B1/B2 前后逐字节不变**，证明本轮修复被限制在章节标题通道，未越界。
+
+报告：`.runtime/final-acceptance/daily-deployed/form_structure_contract_runtime_audit_330fb36d.json`
+（前：`..._1066b422.json`）。
+
+**六、受影响表面浏览器核对（1440）**
+
+`/f/project.project/581?menu_id=379&action_id=506`：`treeCount=1`、`driverErrorCount=0`、`pageErrors=[]`、
+声明可见按钮 6 个各 =1、声明隐藏按钮 5 个各 =0、6 个声明章节标题全部出现、提示块存在、**verdict PASS**。
+（该页原生标题路径本就生效，本轮不改变其呈现；本轮补的是"原本无署名标题的分组"的契约署名。）
+
+**七、边界**
+
+- 本轮为**产品代码变更**（P0 `smart_core`），已按既有受管入口重建/刷新运行态并复验；**未 push**、
+  未合并、未标记整体目标完成。
+- 仍待所有者裁决的 P0 仅剩两项：**B1**（校验尊重 `layoutPolicy` / 投影最小 slot）、
+  **B2**（由被投影布局派生 slot 字段域）。本轮不预先占用其结论。
+- 唯一开放的产品交付项仍为**所有者登录核对**（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`）。
