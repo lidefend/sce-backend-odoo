@@ -728,6 +728,17 @@ verify.unified_page_contract.lite: guard.prod.forbid
 # ----------------------------------------------------------------------
 .PHONY: ci ci.professional.backend ci.local.iteration ci.local.quick ci.local.quick.run ci.local.quick.shard ci.local.quick.compose ci.delivery.freeze.prepare ci.generated_evidence.preflight ci.generated_reports.guard verify.contract_form_split_evidence refresh.contract_form_split_evidence refresh.generated_reports test.frontend test.unit test.odoo.integration test.contract test.e2e.preflight test.e2e.fixed_data.odoo test.e2e test.all test.inventory test.inventory.summary test.e2e.matrix architecture.module_dependency_map architecture.complexity_report architecture.complexity_baseline_lock architecture.split_plan_queue github.remote_execution_plan security.secret_scan security.secrets.scan security.personal_data_scan security.legacy_credential_guard verify.repository.clean_history verify.python_name_binding verify.menu_config_tree_editor.behavior verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix ci.tenant.pro03.demo.dispatch verify.contract.structure_lock verify.ci.scheduled_gates
 
+# Workflow-integrity contract tests: assert the CI entrypoints themselves cannot
+# silently degrade (e.g. an errexit-masked backend suite reporting a truncated
+# scope as a pass). Kept separate from verify.ci.scheduled_gates so the required
+# professional_quality_gate lane enforces it without pulling in the heavy
+# github-actions security sweep.
+.PHONY: verify.ci.workflow.contract
+verify.ci.workflow.contract: guard.prod.forbid
+	@python3 -m py_compile scripts/ci/test_backend_test_suite_dispatch_contract.py
+	@python3 scripts/ci/test_backend_test_suite_dispatch_contract.py
+	@echo "[verify.ci.workflow.contract] PASS"
+
 verify.ci.scheduled_gates: guard.prod.forbid verify.github_actions.security
 	@python3 -m py_compile scripts/verify/frontend_release_gate.py scripts/verify/test_frontend_release_gate.py scripts/verify/ci_artifact_host_write_guard.py scripts/verify/test_ci_artifact_host_write_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_frontend_release_gate.py
@@ -746,12 +757,12 @@ ci: guard.prod.forbid verify.contract.page_v1_zero_residue.guard security.legacy
 # the single authority for frontend install, lint, typecheck, build and browsers.
 # CI invokes the three shards serially because they share the repository
 # artifacts bind mount; container-capable tests run last.
-ci.professional.backend: guard.prod.forbid verify.contract.page_v1_zero_residue.guard verify.guard.registry security.legacy_credential_guard verify.repository.clean_history verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install ci.generated_reports.guard architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2.professional_backend test.unit test.contract test.e2e.preflight
+ci.professional.backend: guard.prod.forbid verify.contract.page_v1_zero_residue.guard verify.guard.registry verify.test.coverage.registry security.legacy_credential_guard verify.repository.clean_history verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install ci.generated_reports.guard architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2.professional_backend test.unit test.contract test.e2e.preflight verify.ci.workflow.contract
 	@git diff --check
 	@echo "[OK] professional backend/static quality gate passed"
 
 # Shard 1: verification and security checks
-ci.professional.backend.shard-verify: guard.prod.forbid verify.contract.page_v1_zero_residue.guard verify.guard.registry security.legacy_credential_guard verify.repository.clean_history verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.contract.structure_lock verify.unified_page_contract.v2.professional_backend verify.frontend.playwright_vendor_coupling.guard verify.frontend.role_surface_exposure_declaration.guard
+ci.professional.backend.shard-verify: guard.prod.forbid verify.contract.page_v1_zero_residue.guard verify.guard.registry verify.test.coverage.registry security.legacy_credential_guard verify.repository.clean_history verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.contract.structure_lock verify.unified_page_contract.v2.professional_backend verify.frontend.playwright_vendor_coupling.guard verify.frontend.role_surface_exposure_declaration.guard verify.ci.workflow.contract
 	@echo "[OK] professional backend shard-verify passed"
 
 # Shard 2: generated reports and architecture checks
@@ -801,6 +812,7 @@ refresh.generated_reports: guard.prod.forbid
 	@python3 scripts/ci/generate_split_plan_queue.py --write
 	@python3 scripts/ci/generate_github_remote_execution_plan.py --write
 	@python3 scripts/ci/generate_contract_structure_fingerprint.py --write
+	@python3 scripts/verify/test_coverage_registry_audit.py --export
 	@echo "[OK] tracked generated reports refreshed; review and commit any changes before push"
 
 verify.tenant.data_responsibility_boundary: guard.prod.forbid

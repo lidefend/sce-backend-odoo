@@ -1,0 +1,2219 @@
+{
+  "version": 1,
+  "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
+  "counts": {
+    "odoo_tags": 155,
+    "gated": 4,
+    "on_demand": 11,
+    "unwired": 140,
+    "odoo_tag_declarations": 362,
+    "gated_declarations": 88,
+    "uncovered_declarations": 274,
+    "ci_unit_scripts": 11,
+    "ci_unit_scripts_wired": 11,
+    "ci_unit_scripts_unwired": 0
+  },
+  "odoo_tags": [
+    {
+      "group": "sc_gate",
+      "status": "gated",
+      "kind": "odoo_tag",
+      "declarations": 60,
+      "files": [
+        "addons/sc_norm_engine/tests/test_boq_norm_link.py",
+        "addons/smart_construction_acceptance_fixture/tests/test_acceptance_fixture_guard.py",
+        "addons/smart_construction_acceptance_fixture/tests/test_execution_freeze.py",
+        "addons/smart_construction_bootstrap/tests/test_locale_baseline.py",
+        "addons/smart_construction_bundle/tests/test_startup_delivery_identity.py",
+        "addons/smart_construction_core/tests/test_acl_matrix_gate.py",
+        "addons/smart_construction_core/tests/test_action_groups_gate.py",
+        "addons/smart_construction_core/tests/test_company_project_refund_workspace.py",
+        "addons/smart_construction_core/tests/test_cost_fact_concurrency_v2.py",
+        "addons/smart_construction_core/tests/test_cost_fact_model_v2.py",
+        "addons/smart_construction_core/tests/test_current_account_workspace.py",
+        "addons/smart_construction_core/tests/test_daily_contract_settlement.py",
+        "addons/smart_construction_core/tests/test_data_permission_surface.py",
+        "addons/smart_construction_core/tests/test_equipment_usage_product.py",
+        "addons/smart_construction_core/tests/test_fund_legacy_readonly_archive.py",
+        "addons/smart_construction_core/tests/test_high_risk_actions.py",
+        "addons/smart_construction_core/tests/test_install_gate.py",
+        "addons/smart_construction_core/tests/test_intent_surface_coverage_gate.py",
+        "addons/smart_construction_core/tests/test_labor_product_capability.py",
+        "addons/smart_construction_core/tests/test_material_supplier_return.py",
+        "addons/smart_construction_core/tests/test_office_asset.py",
+        "addons/smart_construction_core/tests/test_p0_finance_aggregate_gate.py",
+        "addons/smart_construction_core/tests/test_p0_finance_rr_gate.py",
+        "addons/smart_construction_core/tests/test_p0_finance_ui_gate.py",
+        "addons/smart_construction_core/tests/test_p0_ledger_gate.py",
+        "addons/smart_construction_core/tests/test_p0_state_closure.py",
+        "addons/smart_construction_core/tests/test_p1_finance_projection_authority.py",
+        "addons/smart_construction_core/tests/test_p1_funding_authority.py",
+        "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+        "addons/smart_construction_core/tests/test_partner_blacklist_capability.py",
+        "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py",
+        "addons/smart_construction_core/tests/test_policy_document_capability.py",
+        "addons/smart_construction_core/tests/test_product_job.py",
+        "addons/smart_construction_core/tests/test_product_message_notification.py",
+        "addons/smart_construction_core/tests/test_product_numbering_rule.py",
+        "addons/smart_construction_core/tests/test_product_reports.py",
+        "addons/smart_construction_core/tests/test_product_system_settings.py",
+        "addons/smart_construction_core/tests/test_project_context_resolver.py",
+        "addons/smart_construction_core/tests/test_project_salary_product.py",
+        "addons/smart_construction_core/tests/test_project_special_tax_deduction.py",
+        "addons/smart_construction_core/tests/test_project_state_transition_validation.py",
+        "addons/smart_construction_core/tests/test_quality_acceptance_capability.py",
+        "addons/smart_construction_core/tests/test_record_rule_behavior_gate.py",
+        "addons/smart_construction_core/tests/test_role_regression_minimal.py",
+        "addons/smart_construction_core/tests/test_social_fund_capability.py",
+        "addons/smart_construction_core/tests/test_subcontract_cost_registration.py",
+        "addons/smart_construction_core/tests/test_tax_filing.py",
+        "addons/smart_construction_core/tests/test_team_loan_deduction_workspace.py",
+        "addons/smart_construction_core/tests/test_tender_document_advisory.py",
+        "addons/smart_construction_core/tests/test_tier_action_groups_union.py",
+        "addons/smart_construction_core/tests/test_variation_change_chain.py",
+        "addons/smart_construction_portal/tests/test_portal_contract_dashboard.py",
+        "addons/smart_core/tests/test_res_users_audience_group_boundary.py",
+        "addons/smart_license_core/tests/test_license_tier_gate.py",
+        "addons/smart_owner_bundle/tests/test_bundle_registry_consistency.py",
+        "addons/smart_owner_core/tests/test_core_extension_contract.py",
+        "addons/smart_scene/tests/test_scene_resolver_priority.py",
+        "demo_addons/smart_construction_demo/tests/test_demo_showcase_gate.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        ".github/workflows/backend_test_suite.yml :: sc_smoke/${module},sc_gate/${module}"
+      ]
+    },
+    {
+      "group": "sc_smoke",
+      "status": "gated",
+      "kind": "odoo_tag",
+      "declarations": 26,
+      "files": [
+        "addons/smart_construction_core/tests/test_api_data_batch_contract_backend.py",
+        "addons/smart_construction_core/tests/test_api_data_write_unlink_idempotency_backend.py",
+        "addons/smart_construction_core/tests/test_capability_contract_backend.py",
+        "addons/smart_construction_core/tests/test_capability_lint_gate.py",
+        "addons/smart_construction_core/tests/test_capability_registry_service.py",
+        "addons/smart_construction_core/tests/test_contract_link_integrity.py",
+        "addons/smart_construction_core/tests/test_my_work_backend.py",
+        "addons/smart_construction_core/tests/test_payment_request_action_surface_backend.py",
+        "addons/smart_construction_core/tests/test_payment_request_approval_intent_backend.py",
+        "addons/smart_construction_core/tests/test_payment_request_available_actions_backend.py",
+        "addons/smart_construction_core/tests/test_payment_request_permission.py",
+        "addons/smart_construction_core/tests/test_payment_request_work_item_service.py",
+        "addons/smart_construction_core/tests/test_project_dashboard_contract_backend.py",
+        "addons/smart_construction_core/tests/test_project_dashboard_entry_backend.py",
+        "addons/smart_construction_core/tests/test_reason_codes_backend.py",
+        "addons/smart_construction_core/tests/test_risk_action_execute_backend.py",
+        "addons/smart_construction_core/tests/test_scene_governance_payload_backend.py",
+        "addons/smart_construction_core/tests/test_scene_package_payload_backend.py",
+        "addons/smart_construction_core/tests/test_scene_publish_usage_backend.py",
+        "addons/smart_construction_core/tests/test_smoke_3waymatch_flow.py",
+        "addons/smart_construction_core/tests/test_smoke_registry.py",
+        "addons/smart_construction_core/tests/test_smoke_security.py",
+        "addons/smart_construction_core/tests/test_smoke_validator.py",
+        "addons/smart_construction_seed/tests/test_seed_tax_defaults.py",
+        "addons/smart_core/tests/test_intent_smoke.py",
+        "addons/smart_core/tests/test_usage_backend.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        ".github/workflows/backend_test_suite.yml :: sc_smoke/${module},sc_gate/${module}",
+        ".github/workflows/sc_smoke.yml :: sc_smoke"
+      ]
+    },
+    {
+      "group": "sc_regression",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 21,
+      "files": [
+        "addons/sc_norm_engine/tests/test_boq_norm_link.py",
+        "addons/smart_construction_core/tests/test_boq_version_contract.py",
+        "addons/smart_construction_core/tests/test_budget.py",
+        "addons/smart_construction_core/tests/test_contract_center.py",
+        "addons/smart_construction_core/tests/test_cost_compare.py",
+        "addons/smart_construction_core/tests/test_profit_compare.py",
+        "addons/smart_construction_core/tests/test_stock_cost.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "smart_core",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 20,
+      "files": [
+        "addons/smart_core/tests/test_action_dispatcher_server_mapping.py",
+        "addons/smart_core/tests/test_api_data_mutation_failure_atomicity_orm.py",
+        "addons/smart_core/tests/test_business_config_change_set.py",
+        "addons/smart_core/tests/test_intent_dispatcher_permission_error_contract.py",
+        "addons/smart_core/tests/test_intent_permission_menu_visibility.py",
+        "addons/smart_core/tests/test_intent_smoke.py",
+        "addons/smart_core/tests/test_menu_delivery_convergence_service.py",
+        "addons/smart_core/tests/test_narrow_tenant_payload_importer.py",
+        "addons/smart_core/tests/test_native_action_selection_alignment.py",
+        "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py",
+        "addons/smart_core/tests/test_runtime_view_contract_fail_closed.py",
+        "addons/smart_core/tests/test_scene_delivery_policy.py",
+        "addons/smart_core/tests/test_scene_nav_contract_builder.py",
+        "addons/smart_core/tests/test_scene_normalizer_target_resolution.py",
+        "addons/smart_core/tests/test_scene_runtime_contract_chain.py",
+        "addons/smart_core/tests/test_smart_core_model_init_table_recovery.py",
+        "addons/smart_core/tests/test_tenant_extension_storage.py",
+        "addons/smart_core/tests/test_user_activation.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "admin_vis_p3_project_record_rule_orm",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 18,
+      "files": [
+        "addons/smart_core/tests/test_admin_vis_p3_project_record_rule_orm.py",
+        "addons/smart_core/tests/test_um_p1_contract_settlement_visibility_contract_orm.py",
+        "addons/smart_core/tests/test_um_p1_cost_ledger_visibility_contract_orm.py",
+        "addons/smart_core/tests/test_um_p1_interfund_financing_visibility_contract_orm.py",
+        "addons/smart_core/tests/test_um_p1_invoice_deduction_visibility_contract_orm.py",
+        "addons/smart_core/tests/test_um_p1_ownership_visibility_contract_orm.py",
+        "addons/smart_core/tests/test_um_p1_payment_visibility_contract_orm.py",
+        "addons/smart_core/tests/test_um_p2_interfund_relation_aggregation_orm.py",
+        "addons/smart_core/tests/test_um_p2_invoice_relation_aggregation_orm.py",
+        "addons/smart_core/tests/test_um_p2_payment_relation_aggregation_orm.py",
+        "addons/smart_core/tests/test_um_p2_receipt_relation_aggregation_orm.py",
+        "addons/smart_core/tests/test_um_p2_settlement_relation_aggregation_orm.py",
+        "addons/smart_core/tests/test_um_p3_fund_plan_actual_event_allocation_orm.py",
+        "addons/smart_core/tests/test_um_p3_material_settlement_purchase_authority_orm.py",
+        "addons/smart_core/tests/test_um_p3_payment_ledger_request_permission_orm.py",
+        "addons/smart_core/tests/test_um_p3_subcontract_cumulative_amount_orm.py",
+        "addons/smart_core/tests/test_um_p3_subcontract_register_settlement_authority_orm.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "scripts/test/admin_vis_p3_project_record_rule_orm.sh :: admin_vis_p3_project_record_rule_orm"
+      ],
+      "disposition": "class-selected"
+    },
+    {
+      "group": "uc4_native_lowcode",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 17,
+      "files": [
+        "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_daily_contract_settlement_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_data_permission_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_engineering_process_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_hr_payroll_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_invoice_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_light_forms_configuration_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_payment_execution_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_project_initiation_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_project_intake_contract_governance.py",
+        "addons/smart_construction_core/tests/test_receipt_income_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_tax_filing_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "sc_perm",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 11,
+      "files": [
+        "addons/smart_construction_core/tests/test_acl_matrix_gate.py",
+        "addons/smart_construction_core/tests/test_fund_legacy_readonly_archive.py",
+        "addons/smart_construction_core/tests/test_high_risk_actions.py",
+        "addons/smart_construction_core/tests/test_permission_doc_sync.py",
+        "addons/smart_construction_core/tests/test_permission_matrix.py",
+        "addons/smart_construction_core/tests/test_project_progress_read_boundary.py",
+        "addons/smart_construction_core/tests/test_record_rule_behavior_gate.py",
+        "addons/smart_construction_core/tests/test_record_rule_contract_p1.py",
+        "addons/smart_construction_core/tests/test_record_rule_ledger_p1.py",
+        "addons/smart_construction_core/tests/test_role_regression_minimal.py",
+        "addons/smart_construction_core/tests/test_sidebar_menu_visibility_audit.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:ci.gate :: sc_gate,sc_perm",
+        "scripts/ci/ci_gate.sh :: sc_gate,sc_perm"
+      ],
+      "disposition": "class-selected"
+    },
+    {
+      "group": "cost",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 10,
+      "files": [
+        "addons/smart_construction_core/tests/test_boq_version_contract.py",
+        "addons/smart_construction_core/tests/test_budget.py",
+        "addons/smart_construction_core/tests/test_cost_compare.py",
+        "addons/smart_construction_core/tests/test_profit_compare.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "contract",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 8,
+      "files": [
+        "addons/smart_construction_core/tests/test_contract_center.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "user_feedback",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 7,
+      "files": [
+        "addons/smart_construction_core/tests/test_user_feedback_business_views.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.workflow_contract.backend :: /TestUserFeedbackBusinessViews (class selection)"
+      ],
+      "disposition": "class-selected"
+    },
+    {
+      "group": "output_invoice_red_flush",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 5,
+      "files": [
+        "addons/smart_construction_core/tests/test_user_feedback_business_views.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "smoke",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 4,
+      "files": [
+        "addons/smart_construction_core/tests/test_smoke_3waymatch_flow.py",
+        "addons/smart_construction_core/tests/test_smoke_registry.py",
+        "addons/smart_construction_core/tests/test_smoke_security.py",
+        "addons/smart_core/tests/test_intent_smoke.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "sc_upgrade",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 3,
+      "files": [
+        "addons/smart_construction_core/tests/test_permission_doc_sync.py",
+        "addons/smart_construction_core/tests/test_permission_matrix.py",
+        "addons/smart_construction_core/tests/test_sidebar_menu_visibility_audit.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "acceptance_fixture_gate",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 2,
+      "files": [
+        "addons/smart_construction_acceptance_fixture/tests/test_acceptance_fixture_guard.py",
+        "addons/smart_construction_acceptance_fixture/tests/test_execution_freeze.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "api_data_batch_backend",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 2,
+      "files": [
+        "addons/smart_construction_core/tests/test_api_data_batch_contract_backend.py",
+        "addons/smart_construction_core/tests/test_api_data_write_unlink_idempotency_backend.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "boq_version",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 2,
+      "files": [
+        "addons/sc_norm_engine/tests/test_boq_norm_link.py",
+        "addons/smart_construction_core/tests/test_boq_version_contract.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "core_extension_v2_finalize",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 2,
+      "files": [
+        "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
+        "addons/smart_construction_core/tests/test_project_ledger_runtime_contract.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.contract.project_ledger_entry_carrier.orm :: core_extension_v2_finalize test.safe"
+      ],
+      "disposition": "class-selected"
+    },
+    {
+      "group": "cost_fact_projection_v2",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 2,
+      "files": [
+        "addons/smart_construction_core/tests/test_cost_compare.py",
+        "addons/smart_construction_core/tests/test_profit_compare.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "cost_fact_stock_writer",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 2,
+      "files": [
+        "addons/smart_construction_core/tests/test_stock_cost.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "p1_settlement_fact_immutability_v1",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 2,
+      "files": [
+        "addons/smart_construction_core/tests/test_settlement_fact_immutability_v1.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "rr_p1",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 2,
+      "files": [
+        "addons/smart_construction_core/tests/test_record_rule_contract_p1.py",
+        "addons/smart_construction_core/tests/test_record_rule_ledger_p1.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "runtime_view_contract",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 2,
+      "files": [
+        "addons/smart_construction_core/tests/test_runtime_view_contract_cleanup_migration.py",
+        "addons/smart_core/tests/test_runtime_view_contract_fail_closed.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "security_gate",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 2,
+      "files": [
+        "addons/smart_construction_core/tests/test_action_groups_gate.py",
+        "addons/smart_construction_core/tests/test_tier_action_groups_union.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "acceptance_fixture_execution_freeze",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_acceptance_fixture/tests/test_execution_freeze.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.acceptance_fixture.execution_freeze.orm :: acceptance_fixture_execution_freeze test.safe"
+      ],
+      "disposition": "class-selected"
+    },
+    {
+      "group": "acceptance_nav_identity",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_acceptance_nav_contract_identity.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "acl_gate",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_acl_matrix_gate.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "action_dispatcher",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_action_dispatcher_server_mapping.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "admin_vis_patch_a",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_project_authorization_foundation.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "admin_vis_patch_b",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_patch_b_read_aggregate_security.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "api_data_search_fields_extension",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_api_data_search_fields_extension.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "auth_signup",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_auth_signup_policy_isolation.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "business_config_change_set",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_business_config_change_set.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "canonical_navigation_projection",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_canonical_navigation_projection.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make:verify.local.dev.canonical_navigation_projection.orm :: /TestCanonicalNavigationProjection (class selection)"
+      ],
+      "disposition": "class-selected"
+    },
+    {
+      "group": "capability_contract_backend",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_capability_contract_backend.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "capability_registry",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_capability_registry_service.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "chatter_timeline_authorization_orm",
+      "status": "gated",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_chatter_timeline_authorization_orm.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make:test.chatter-timeline.authorization.orm :: chatter_timeline_authorization_orm bash scripts/test/admin_vis_p3_project_record"
+      ]
+    },
+    {
+      "group": "company_project_refund_workspace",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_company_project_refund_workspace.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "contract_dashboard",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_portal/tests/test_portal_contract_dashboard.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "contract_execution_component_profile",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_contract_execution_component_profile.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "contract_handling_page_policy",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_contract_handling_page_policy.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "core_payment_amount_semantics",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_p0_ledger_gate.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "cost_fact_concurrency_v2",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_cost_fact_concurrency_v2.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "cost_fact_v2",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_cost_fact_model_v2.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "current_account_workspace",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_current_account_workspace.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "daily_contract_settlement",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_daily_contract_settlement.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "data_permission_surface",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_data_permission_surface.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "demo_gate",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "demo_addons/smart_construction_demo/tests/test_demo_showcase_gate.py"
+      ],
+      "owner": "demo-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "e2e_fixed_journey",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:test.e2e.fixed_data.odoo :: e2e_fixed_journey CI_LOG=test-e2e-fixed.log CI_ARTIFACT_PURGE=0 bash scripts/ci/",
+        "scripts/ci/generate_test_inventory.py :: e2e_fixed_journey on a clean Odoo test database."
+      ],
+      "disposition": "class-selected"
+    },
+    {
+      "group": "equipment_usage_product",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_equipment_usage_product.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "extension_contract",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_owner_core/tests/test_core_extension_contract.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "form_structure_surface_capability_orm",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_form_structure_surface_capability_orm.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make:verify.local.dev.form_structure_surface_capability.orm :: /TestFormStructureSurfaceCapabilityOrm (class selection)"
+      ],
+      "disposition": "class-selected"
+    },
+    {
+      "group": "formal_form_lowcode",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_user_feedback_business_views.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "fund_legacy_archive",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_fund_legacy_readonly_archive.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "intent_dispatcher_permission_contract",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_intent_dispatcher_permission_error_contract.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "intent_permission_menu_visibility",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_intent_permission_menu_visibility.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "intent_surface_coverage_gate",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_intent_surface_coverage_gate.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "labor_product",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_labor_product_capability.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "locale_baseline",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_bootstrap/tests/test_locale_baseline.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "material_supplier_return",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_material_supplier_return.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "menu_delivery",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_menu_delivery_convergence_service.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "my_work_backend",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_my_work_backend.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "native_action_selection",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_native_action_selection_alignment.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "native_alignment",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "native_tree_presentation_semantic",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_native_tree_presentation_semantic.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "norm",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/sc_norm_engine/tests/test_boq_norm_link.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "office_asset",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_office_asset.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "p0_state",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_p0_state_closure.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "p1_contract_execution_position",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_contract_execution_position.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "p1_contract_payment_allocation",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_contract_payment_allocation_fact.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "p1_finance_projection_authority",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_p1_finance_projection_authority.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "p1_funding_authority",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_p1_funding_authority.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "p1_payment_request",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_p1_payment_request_capability.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "p1_payment_request_concurrency",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_p1_payment_request_capability.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "partner_blacklist",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_partner_blacklist_capability.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "partner_role_alignment",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_user_feedback_business_views.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "payment_domain_permission_isolation",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "payment_request_action_surface_backend",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_payment_request_action_surface_backend.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "payment_request_approval_backend",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_payment_request_approval_intent_backend.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "payment_request_available_actions_backend",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_payment_request_available_actions_backend.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "payment_request_fixture_ownership",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "demo_addons/smart_construction_demo/tests/test_payment_request_floorplan_fixture_ownership.py"
+      ],
+      "owner": "demo-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "payment_request_permission",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_payment_request_permission.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "payment_request_work_item_service",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_payment_request_work_item_service.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "payment_settlement_component_profile",
+      "status": "gated",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_payment_settlement_component_profile.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:test.payment-settlement.component-profile.orm :: payment_settlement_component_profile bash scripts/test/admin_vis_p3_project_reco"
+      ]
+    },
+    {
+      "group": "perm_runtime_uid",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_permission_contract_runtime_uid.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "policy_document",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_policy_document_capability.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "product_job",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_product_job.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "product_message_notification",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_product_message_notification.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "product_numbering_rule",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_product_numbering_rule.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "product_reports",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_product_reports.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "product_system_settings",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_product_system_settings.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "project_context_resolver",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_project_context_resolver.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "project_dashboard_contract_backend",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_project_dashboard_contract_backend.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "project_dashboard_entry_backend",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_project_dashboard_entry_backend.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "project_progress_read_boundary",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_project_progress_read_boundary.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "project_salary_product",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_project_salary_product.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "project_special_tax_deduction",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_project_special_tax_deduction.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "project_state",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_project_state_transition_validation.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "project_structure_component_profile",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_project_structure_component_profile.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "quality_acceptance",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_quality_acceptance_capability.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "r11c_locked_menu",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "r11f2_tax_certificate",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_tax_certificate_registration.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "reason_codes_backend",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_reason_codes_backend.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "registry_consistency",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_owner_bundle/tests/test_bundle_registry_consistency.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "relation_entry_override",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_runtime_view_contract_fail_closed.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make:verify.smart_core.relation_entry_publication.orm :: relation_entry_override test.safe"
+      ],
+      "disposition": "class-selected"
+    },
+    {
+      "group": "release_gate_category_options",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_release_gate_category_options.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "res_users_audience_group",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_res_users_audience_group_boundary.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make:verify.smart_core.res_users_audience_group.orm :: res_users_audience_group test.safe"
+      ],
+      "disposition": "class-selected"
+    },
+    {
+      "group": "risk_action_execute_backend",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_risk_action_execute_backend.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "role_regression_minimal",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_role_regression_minimal.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "rr_gate",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_record_rule_behavior_gate.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "runtime_user_management",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_runtime_user_management.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "sc_approval_policy",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_approval_policy_toggle_backend.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "sc_auth_compat",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_authentication_compatibility.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "sc_auth_credential",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_auth_credential_framework.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "sc_install",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_install_gate.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "sc_native_alignment",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_odoo_native_alignment_boundaries.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "scene_delivery_policy",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_scene_delivery_policy.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "scene_governance_backend",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_scene_governance_payload_backend.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "scene_nav_contract",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_scene_nav_contract_builder.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "scene_package_backend",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_scene_package_payload_backend.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "scene_publish_usage_backend",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_scene_publish_usage_backend.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "scene_resolver",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_scene/tests/test_scene_resolver_priority.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "scene_runtime_chain",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_scene_runtime_contract_chain.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "scene_target",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_scene_normalizer_target_resolution.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "settlement_native_structure",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_contract_handling_page_policy.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "smart_construction_bootstrap",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_bootstrap/tests/test_locale_baseline.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "smart_construction_core",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_auth_signup_policy_isolation.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "smart_construction_portal",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_portal/tests/test_portal_contract_dashboard.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "smart_license_core",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_license_core/tests/test_license_tier_gate.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "smart_owner_bundle",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_owner_bundle/tests/test_bundle_registry_consistency.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "smart_owner_core",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_owner_core/tests/test_core_extension_contract.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "smart_scene",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_scene/tests/test_scene_resolver_priority.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "smoke_3waymatch",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_smoke_3waymatch_flow.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "smoke_registry",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_smoke_registry.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "smoke_security",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_smoke_security.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "smoke_validator",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_smoke_validator.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "social_fund",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_social_fund_capability.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "subcontract_cost_registration",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_subcontract_cost_registration.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "tax_filing",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_tax_filing.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "team_loan_deduction_workspace",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_team_loan_deduction_workspace.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "tenant_extension",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_tenant_extension_storage.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "tenant_payload",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_narrow_tenant_payload_importer.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "tender_award_fact",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_tender_award_fact.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "tender_document",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_tender_document_advisory.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "tier_gate",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_license_core/tests/test_license_tier_gate.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "uc3_native_lowcode",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_policy_document_capability.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "um_p3_core_020_payment_ledger_permission_orm",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_um_p3_payment_ledger_request_permission_orm.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "um_p3_core_034_subcontract_amount_orm",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_um_p3_subcontract_cumulative_amount_orm.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "um_p3_s06_subcontract_cumulative_orm",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_um_p3_subcontract_cumulative_settlement_orm.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "usage_backend",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_usage_backend.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "user_activation",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_user_activation.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "user_activation_http",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_user_activation.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "user_data_boundary",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_role_surface_project_member.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "user_module_product_closure",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_user_module_product_closure.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "variation_change_chain",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_variation_change_chain.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "workflow_contract_backend",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_workflow_contract_backend.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.workflow_contract.backend :: /TestWorkflowContractBackend (class selection)"
+      ],
+      "disposition": "class-selected"
+    }
+  ],
+  "ci_unit_scripts": [
+    {
+      "group": "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+      "status": "gated",
+      "kind": "ci_unit_script",
+      "declarations": 1,
+      "files": [
+        "scripts/ci/test_backend_test_suite_dispatch_contract.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make/ci.mk"
+      ]
+    },
+    {
+      "group": "scripts/ci/test_ci_risk_classifier.py",
+      "status": "gated",
+      "kind": "ci_unit_script",
+      "declarations": 1,
+      "files": [
+        "scripts/ci/test_ci_risk_classifier.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        ".github/workflows/merge_policy_gate.yml",
+        ".github/workflows/professional_quality_gate.yml",
+        ".github/workflows/public_guard.yml"
+      ]
+    },
+    {
+      "group": "scripts/ci/test_ci_risk_workflow_contract.py",
+      "status": "gated",
+      "kind": "ci_unit_script",
+      "declarations": 1,
+      "files": [
+        "scripts/ci/test_ci_risk_workflow_contract.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        ".github/workflows/merge_policy_gate.yml",
+        ".github/workflows/professional_quality_gate.yml",
+        ".github/workflows/public_guard.yml"
+      ]
+    },
+    {
+      "group": "scripts/ci/test_frontend_professional_extension_guard.py",
+      "status": "gated",
+      "kind": "ci_unit_script",
+      "declarations": 1,
+      "files": [
+        "scripts/ci/test_frontend_professional_extension_guard.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        ".github/workflows/public_guard.yml"
+      ]
+    },
+    {
+      "group": "scripts/ci/test_merge_policy_gate.py",
+      "status": "gated",
+      "kind": "ci_unit_script",
+      "declarations": 1,
+      "files": [
+        "scripts/ci/test_merge_policy_gate.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        ".github/workflows/public_guard.yml"
+      ]
+    },
+    {
+      "group": "scripts/ci/test_node_syntax_check.py",
+      "status": "gated",
+      "kind": "ci_unit_script",
+      "declarations": 1,
+      "files": [
+        "scripts/ci/test_node_syntax_check.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make/ci.mk"
+      ]
+    },
+    {
+      "group": "scripts/ci/test_personal_data_scan.py",
+      "status": "gated",
+      "kind": "ci_unit_script",
+      "declarations": 1,
+      "files": [
+        "scripts/ci/test_personal_data_scan.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make/ci.mk"
+      ]
+    },
+    {
+      "group": "scripts/ci/test_release_candidate_gate.py",
+      "status": "gated",
+      "kind": "ci_unit_script",
+      "declarations": 1,
+      "files": [
+        "scripts/ci/test_release_candidate_gate.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        ".github/workflows/public_guard.yml"
+      ]
+    },
+    {
+      "group": "scripts/ci/test_secret_scan.py",
+      "status": "gated",
+      "kind": "ci_unit_script",
+      "declarations": 1,
+      "files": [
+        "scripts/ci/test_secret_scan.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make/ci.mk"
+      ]
+    },
+    {
+      "group": "scripts/ci/test_select_authoritative_workflow_run.py",
+      "status": "gated",
+      "kind": "ci_unit_script",
+      "declarations": 1,
+      "files": [
+        "scripts/ci/test_select_authoritative_workflow_run.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        ".github/workflows/merge_policy_gate.yml",
+        ".github/workflows/public_guard.yml"
+      ]
+    },
+    {
+      "group": "scripts/ci/test_trusted_scan_scope.py",
+      "status": "gated",
+      "kind": "ci_unit_script",
+      "declarations": 1,
+      "files": [
+        "scripts/ci/test_trusted_scan_scope.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make/ci.mk"
+      ]
+    }
+  ]
+}

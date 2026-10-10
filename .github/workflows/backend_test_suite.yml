@@ -204,8 +204,20 @@ jobs:
       - name: Run backend test suite per module
         run: |
           set -uo pipefail
+          # GitHub runs this step with bash -e (errexit). Leaving errexit on
+          # aborts the step on the first failing module, silently skips every
+          # later module, makes the accumulated `failed` flag dead code, and
+          # lets a truncated scope be reported as a pass - exactly how the
+          # 2026-10-09 nightly masked the smart_construction_scene import
+          # failure. Disable errexit explicitly so every planned module runs
+          # and the loop's own assertions decide the outcome.
+          set +e
           failed=0
+          attempted=0
+          planned_odoo="$(printf '%s\n' ${MODULES} | wc -w | tr -d ' ')"
+          planned_python="$(printf '%s\n' ${PYTHON_MODULES} | wc -w | tr -d ' ')"
           for module in ${MODULES}; do
+            attempted=$((attempted + 1))
             echo "===== backend suite: ${module} ====="
             # Each module gets a fresh isolated database: modules must not
             # observe state left behind by earlier modules in the same run.
@@ -272,6 +284,7 @@ jobs:
             fi
           done
           for module in ${PYTHON_MODULES}; do
+            attempted=$((attempted + 1))
             echo "===== backend Python unit suite: ${module} ====="
             test_dir=""
             for root in addons demo_addons; do
@@ -290,6 +303,16 @@ jobs:
               failed=1
             fi
           done
+          # A truncated step must never look like a pass. Assert that the
+          # executed scope equals the resolved module list before trusting
+          # `failed`; an early abort (image/docker/db failure) then fails the
+          # step instead of skipping the remaining modules invisibly.
+          planned_total=$((planned_odoo + planned_python))
+          if [ "${attempted}" -ne "${planned_total}" ]; then
+            echo "::error::backend suite execution truncated: attempted ${attempted} of ${planned_total} planned module run(s)"
+            failed=1
+          fi
+          echo "backend suite executed ${attempted} of ${planned_total} planned module run(s); failed=${failed}"
           test "${failed}" -eq 0
 
       - name: Dump logs on failure

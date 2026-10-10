@@ -1,13 +1,13 @@
 {
   "version": 1,
   "counts": {
-    "active": 1317,
+    "active": 1319,
     "orphan": 87,
     "retired": 1,
-    "unwired": 187,
+    "unwired": 188,
     "unwired_undispositioned": 0,
     "wire_or_retire": {
-      "file-consumed": 187,
+      "file-consumed": 188,
       "wire-pending": 0,
       "retire-pending": 0
     }
@@ -3808,7 +3808,7 @@
       "referenced_by_files": [
         "make/runtime_ops.mk"
       ],
-      "lines": 218
+      "lines": 226
     },
     {
       "script": "form_view_scope_action_projection_audit.py",
@@ -5882,7 +5882,7 @@
         "make/frontend.mk",
         "scripts/verify/test_frontend_professional_collaboration_guard.py"
       ],
-      "lines": 175
+      "lines": 182
     },
     {
       "script": "frontend_professional_component_registry_guard.py",
@@ -14710,6 +14710,24 @@
       "lines": 182
     },
     {
+      "script": "test_coverage_registry_audit.py",
+      "path": "scripts/verify/test_coverage_registry_audit.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "refresh.generated_reports",
+        "test.coverage.registry.export",
+        "test.coverage.registry.seed",
+        "verify.test.coverage.registry"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/ci.mk",
+        "make/guards.mk",
+        "scripts/verify/test_test_coverage_registry_audit.py"
+      ],
+      "lines": 630
+    },
+    {
       "script": "test_daily_acceptance_fixture_lane.py",
       "path": "scripts/verify/test_daily_acceptance_fixture_lane.py",
       "status": "active",
@@ -15552,7 +15570,7 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 206
+      "lines": 220
     },
     {
       "script": "test_frontend_professional_component_registry_guard.py",
@@ -17104,6 +17122,18 @@
         "scripts/verify/tenant_product_payload_boundary_guard.py"
       ],
       "lines": 132
+    },
+    {
+      "script": "test_test_coverage_registry_audit.py",
+      "path": "scripts/verify/test_test_coverage_registry_audit.py",
+      "status": "active",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/guards.mk"
+      ],
+      "lines": 226,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_ui_contract_v2_slo_emission.py",

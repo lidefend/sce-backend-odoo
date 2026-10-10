@@ -7,14 +7,15 @@
   "goal": ".agent/goals/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT.yaml",
   "record": "docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md",
   "scope": [
-    "AGENTS.md",
     ".agent/",
-    "docs/",
-    "make/",
-    "scripts/",
-    "frontend/",
+    ".github/",
+    "AGENTS.md",
     "addons/",
-    "config/"
+    "config/",
+    "docs/",
+    "frontend/",
+    "make/",
+    "scripts/"
   ],
   "environment": {
     "kind": "offline",
@@ -400,6 +401,7 @@
     },
     "nightly_guard_registry_audit": {
       "target": "verify.guard.registry",
+      "kind": "offline",
       "inputs": [
         "make/guards.mk",
         "scripts/verify/guard_registry_audit.py",
@@ -407,7 +409,10 @@
         "scripts/verify/registry.yaml",
         "docs/audit/guard_registry/guard_registry.json"
       ],
-      "kind": "offline"
+      "readback": {
+        "artifact": ".runtime/ci-triage/20261010/nightly_guard_registry_audit.log"
+      },
+      "note": "passed: AUDIT PASS 1406 scripts (1319 referenced, 87/87 orphans acknowledged, 1 retired, 188/188 unwired dispositioned). registry.yaml gained the test_test_coverage_registry_audit.py file-consumed entry; export snapshot refreshed"
     },
     "nightly_collaboration_guard_unit": {
       "target": "verify.frontend.professional_collaboration.unit",
@@ -425,14 +430,42 @@
         "scripts/verify/test_form_structure_authority_unification.py"
       ],
       "kind": "offline"
+    },
+    "test_coverage_registry": {
+      "target": "verify.test.coverage.registry",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/test_coverage_registry_audit.py",
+        "scripts/verify/test_test_coverage_registry_audit.py",
+        "scripts/verify/test_coverage_registry.yaml",
+        "docs/audit/test_coverage_registry/test_coverage_registry.json",
+        "make/guards.mk",
+        "make/ci.mk"
+      ],
+      "readback": {
+        "artifact": ".runtime/ci-triage/20261010/test_coverage_registry.log"
+      },
+      "note": "passed: 17 unit tests OK; audit PASS (tag groups=155 gated=4 on-demand=11 unwired=140; ci unit scripts=11). fail-closed coverage registry; prerequisite of the required professional_quality_gate lane"
+    },
+    "ci_workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+        ".github/workflows/backend_test_suite.yml",
+        "make/ci.mk"
+      ],
+      "readback": {
+        "artifact": ".runtime/ci-triage/20261010/ci_workflow_contract.log"
+      },
+      "note": "passed: 6 tests OK (BackendTestSuiteStepIntegrityTest; errexit/truncation negative cases). asserts the backend per-module step cannot mask a failure via errexit or report a truncated scope as green"
     }
   },
   "blockers": [
     "Owner acknowledgement (registered, now accepted): the discover-capable system_admin surface delivers menu_sc_business_config_workbench while its role-surface admin_menu_xmlids lists only menu_ui_menu_config_policy_business_config. The round ruled this designed (three declared authorities: the action's groups_id declares smart_core.group_smart_core_admin; the P1 native-config root menu_sc_business_config_center is declared and the leaf is not excluded; role_surface.system_admin.system_configuration_visible=true) with no code change, and the owner proceeded on that ruling. The alternative ruling to take 表单配置 off the platform-admin face remains the owner's and its owning layer is the action/menu group declaration (smart_core.group_smart_core_admin), not the role-surface anchor list.",
-    "Product delivery pending the owner's own login verification on the daily runtime (goal objective step: 交由所有者登录核对并判定产品交付边界). The served product content is byte-identical to the merged mainline, so this is a human acceptance step, not an engineering gap.",
-    "Environment DENY (registered, not generalised): the rebuild/snapshot lane is still blocked by the two mounters - a single DENY conclusion bound to the actual entry dependency and an independent review, not an \"environment fully passes\" statement. rendering_detail_state stays excluded on the existing ruling and is not re-proved here."
+    "Known coverage debt, now machine-tracked instead of silent: 140 declared @tagged groups (274 declarations) have no governed selection entry. The registry records each with an owner and a 2026-12-31 review deadline; the audit fails closed on any new un-gated group so the debt can only shrink. Wiring them is follow-on work, not this round."
   ],
-  "next_exact_step": "Nightly CI repair round 2. Round 1 (PR #635 -> main bb6b6e82) was verified green on the required gates but was incomplete: a clean-database dispatch on main (38014917625) proved all Odoo modules pass, including smart_construction_core 471/0 failed, and then exposed the next failure that the 2026-10-09 nightly had masked - the backend Python unit phase aborted on module smart_construction_scene with an ImportError raised during test collection, so 61 of its 71 tests never ran. Root cause is the core_extension.py import added by d106d2dd meeting a unit-test harness that only stubbed smart_core; the fix stubs the smart_construction_core package and its services package (no assertion relaxed), and local discovery is now 71 tests OK. NEXT: (a) push the fix and obtain a fresh clean-database backend_test_suite proof on the exact candidate head; (b) resolve the parallel finding that the uc4_native_lowcode delivery group is not gated anywhere and shows a red on the managed daily database, by comparing it against a fresh-database run (dispatch 38016009174); (c) after this repair round, run the verification-system closeout the owner scheduled, whose first subject is the -e/errexit masking that let one module hide every later check.",
+  "next_exact_step": "Validation-system closeout landed and locally green: (1) backend_test_suite.yml per-module step no longer lets GitHub's bash -e abort the step at the first failing module nor report a truncated scope as a pass; (2) a fail-closed coverage registry binds every declared @tagged group and every scripts/ci unit script to a governed selection entry or an owned disposition (4 gated / 11 on-demand / 140 unwired; 274 declarations of tracked debt), and both verify.guard.registry and verify.test.coverage.registry are prerequisites of the required professional_quality_gate; (3) the previously dead scripts/ci/test_backend_test_suite_dispatch_contract.py is wired through verify.ci.workflow.contract. PR #636 is merged to main as e2e32ad3 and remote run 38017278287 passed on exact head 439cbaa4 (12 modules 0 failed; scene 71 tests OK). Next: commit this closeout on the branch, sync origin/main, run make ci.delivery.freeze.prepare -> freeze clean HEAD -> one make ci.local.quick -> independent review -> make pr.push.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -474,34 +507,12 @@
       "smoke": "1-entry run: partial -> complete (ok=true), second run resumed 1 completed entry without re-walking"
     },
     "mainline_integration": {
-      "pr": 631,
-      "source_head": "cfc0877db16bbf9167cc734c88596fdf6e6904c3",
-      "base_main_before": "aea2c19bbe4edb2a13fbf908255e918e18f3a299",
-      "merge_commit": "58c04a601942bbe3dfcb50e7435bdd1d3155faf8",
-      "method": "squash via make pr.merge --match-head-commit (source head == live PR head verified before merge)",
-      "required_checks_on_pr_head": {
-        "public_guard": "pass",
-        "merge_policy_gate": "pass",
-        "professional_quality_gate": "pass",
-        "frontend_release_gate": "pass"
-      },
-      "local_quick_receipt": "cfc0877d exact-head receipt, reused by pr.merge.local_quick_gate",
-      "post_merge_readback": "PR #631 state=MERGED, merge commit 58c04a60 with parent aea2c19b; deployment not triggered",
-      "ledger_followup": {
-        "pr": 632,
-        "source_head": "196301ef0b3f6bee4863071bd41c41723f6abd78",
-        "resolution": "git merge origin/main with the add/add run.json conflict resolved to the branch ledger; tree identical to c6937377",
-        "merge_commit": "79908fdf7e104ceaa284edff71ef93bb6738c10d",
-        "method": "squash via make pr.merge --match-head-commit (live PR head == EXPECTED_HEAD verified before merge)",
-        "required_checks_on_pr_head": {
-          "public_guard": "pass",
-          "merge_policy_gate": "pass",
-          "professional_quality_gate": "pass",
-          "frontend_release_gate": "pass"
-        },
-        "local_quick_receipt": "196301ef exact-head receipt reused by pr.merge.local_quick_gate",
-        "post_merge_readback": "PR #632 state=MERGED, main = 79908fdf with parent 58c04a60; four gates green on the main push; no open PRs; deployment not triggered"
-      }
+      "pr": 636,
+      "state": "MERGED",
+      "merge_commit": "e2e32ad3da7ef968f09717235d755ea7abace794",
+      "origin_main": "e2e32ad3",
+      "artifact": ".runtime/ci-triage/20261010/pr636_merge_readback.json",
+      "note": "owner 'CI pass then merge' rule honored: four required checks green on the exact PR head, live head matched EXPECTED_HEAD, local-quick receipt reused"
     },
     "conflict_guard": {
       "decision": "OPS-DECISION-004",
@@ -1243,6 +1254,15 @@
         "workflow_classifier_check": "the backend_test_suite classifier finds exactly one python-unit module in the repository (smart_construction_scene); it is green after the fix"
       },
       "owner_layer": "the module's own unit-test harness (P1 module test tooling); no P0 mechanism, contract or frontend change"
+    },
+    "remote_ci_readback": {
+      "exact_head": "439cbaa42d197fb5a8b4f9e67328870f7d699591",
+      "workflow": "backend_test_suite",
+      "run": "38017278287",
+      "conclusion": "success",
+      "artifact": ".runtime/ci-triage/20261010/branch_backend_439cbaa4.log",
+      "reading": "12 module databases each '0 failed, 0 error(s)'; smart_construction_scene Python unit suite 'Ran 71 tests ... OK'",
+      "note": "the masked scene import failure from the 2026-10-09 nightly is closed end-to-end on the merged head"
     }
   },
   "continuation": {
@@ -1252,8 +1272,24 @@
   "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced.",
   "stage_identity": {
     "kind": "iteration",
-    "head": "bb6b6e82da09c35f5c6683e1779b966c4b45d8a1",
-    "dirty_scope": [],
-    "note": "main after the squash merge of PR #635; the merge tree is identical to the frozen candidate 66928d12560897f6eba4aa507389080d5fb50551 (git diff --stat between them is empty), which carried the exact-head ci.local.quick receipt and the four passing required remote checks. The served daily runtime revision is unchanged and holds the earlier merged product content; this round changed no runtime product surface."
+    "head": "439cbaa42d197fb5a8b4f9e67328870f7d699591",
+    "dirty_scope": [
+      ".github/workflows/backend_test_suite.yml",
+      "make/ci.mk",
+      "make/guards.mk",
+      "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+      "scripts/verify/registry.yaml",
+      "scripts/verify/test_coverage_registry_audit.py",
+      "scripts/verify/test_test_coverage_registry_audit.py",
+      "scripts/verify/test_coverage_registry.yaml",
+      "docs/audit/test_coverage_registry/test_coverage_registry.json",
+      "docs/audit/guard_registry/guard_registry.json",
+      "docs/engineering_convergence/complexity_budget_report.md",
+      "docs/engineering_convergence/split_plan_queue.md",
+      "docs/engineering_convergence/test_inventory.csv",
+      "docs/engineering_convergence/test_inventory_summary.md",
+      ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json"
+    ],
+    "note": "round-2 nightly repair (PR #636) is MERGED to main as e2e32ad3; this round is the validation-system closeout carried on the same run per the one-run rule. Dirty scope is uncommitted iteration state, not a frozen candidate."
   }
 }
