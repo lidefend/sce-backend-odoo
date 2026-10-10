@@ -1894,3 +1894,97 @@ PR head == `EXPECTED_HEAD` == 本地 HEAD，`pr.merge.local_quick_gate` 均走 *
 本轮**未 push**、未合并、未标记整体目标完成。剩余唯一开放项为**所有者登录核对**
 （`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`，
 `/f/project.project/581?menu_id=379&action_id=506`）。
+
+## 第 20 轮：运行态审计「未归因基线」的归属层定性 + 守卫路径口径债务登记
+
+提交：仅台账/文档（本分支，未 push）。上一产品提交仍为 `514c4c11`；本轮**不改代码、不放宽断言、不重跑矩阵**。
+取证方式：受管远端 `sc-root:/opt/projects/repos/sce-product-odoo`（`514c4c11`，工作区干净）、
+项目 `sc-backend-odoo-dev`、库 `sc_demo`，**只读** odoo shell，对全部 163 个模型重建契约并取样。
+
+**一、结论摘要（三分类，互不混淆）**
+
+| 读数 | 归属层 | 性质 |
+| --- | --- | --- |
+| `slots is required`=60 | **P0 `smart_core`**（投影 vs 运行态校验自相矛盾） | 真实契约自洽缺口 |
+| `layout projects field outside structure`=2024 处 / 158 模型 | **P0 `smart_core` 投影字段域分裂** | 真实契约自洽缺口 |
+| `missing_group_semantics`=163 | **P4 验证工具**（`scripts/verify/…audit.py` 判定谓词缺陷） | 工具口径债，非产品债 |
+| `missing_contract_notebook/page`=82 | **待单独判定**（审计期望 vs 每模型布局） | 未定性，不引用 |
+| `missing_collaboration_runtime/attachment/timeline`=3 | 待单独判定 | 未定性，不引用 |
+
+本轮本批**自有的两个面**（声明式容器呈现、声明式原生动作裁决）在两口径下均为 0，
+与 `514c4c11` 的运行态契约审计一致；上述读数**都不是本批引入的回归**。
+
+**二、B1 `slots is required`=60 —— P0 同层自相矛盾（已定论）**
+
+- 精确对应：163 个模型中，**恰好 60 个** 满足 `layoutPolicy=container_tree_authority` ∧
+  `formStructureAuthority=native_authority` ∧ `slots=[]`；其余 84 个为 `native_authority`（普通分支，slots>0）、
+  19 个为 `overview_then_task_slots`（`entry_semantic_surface`，slots>0）。**0 例错配**。
+- 生产者：`addons/smart_core/handlers/ui_contract_v2.py:2687` 的 `native_authority` 短路分支，
+  **按其自身声明**（`layoutPolicy: container_tree_authority`、注释「Shared native form owns structure」）
+  有意返回 `"slots": []`、`"fieldRoles": {}`。
+- 校验者：`addons/smart_core/core/unified_page_contract_v2_runtime.py:444-446`
+  **无条件**要求 `slots` 非空，**不读 `layoutPolicy`**。
+- 因而这是**同一层（P0）两个组件对同一契约的相互否定**，不是 P1/P2 数据问题，也不是审计工具问题。
+- 两个方向（均 P0，均无业务特判，需所有者裁决其一）：
+  (a) 校验侧尊重已声明的 `layoutPolicy`（当结构声明「容器树/原生权威」时不要求 slots）；
+  (b) 投影侧在该分支也发布最小 slot 集。**不得用放宽断言或前端兜底来掩盖。**
+
+**三、B2 `field outside structure` —— P0 投影字段域分裂（已定论）**
+
+- `boundary_issues` 的 2024 处 = 审计独立列（`layout_outside_structure`，583 处 / 98 个有 slot 的模型）
+  **加上** 60 个无 slot 模型的全量布局字段（每字段都被判越界）。两者同源，只是无-slot 模型把整个布局都算作越界。
+- 机制：**两套互不相同的字段域**被同一契约同时发布 ——
+  结构面 slot 字段域来自业务办理 profile（`form_structure_common_fields` / `detail_fields` / `amount_fields` / `date_fields`），
+  布局面字段域来自被投影的原生表单 arch（叠加 P1 策略章节）。
+- 运行态证据（越界字段词频）：`source_created_by`/`source_created_at`（原生追溯字段）、`active`、
+  `reject_reason`、`sequence`、`status`、`manager_id`、`company_id`、`currency_id`、`project_id`、`note`、`description`
+  —— 均为**原生 arch / 基础 / 审批字段**，不属于 P1 trace 章节独有内容；因此**P1 不是责任层**。
+- 责任层：**P0 `smart_core` 投影**。运行态不变式「结构必须覆盖其所治理的布局」要求投影
+  **从同一被投影布局派生 slot 字段域**（或在不自洽时 fail-closed），而不是并行读第二份 profile 列表。
+  与所有者「除渲染与交互外，前端不得自行判断；契约必须自洽」的架构要求同源。
+
+**四、B3 `missing_group_semantics`=163 —— P4 审计工具判定谓词缺陷（已定论，非产品债）**
+
+- 确定性反例（可直接复现）：`is_unlabeled_group({"containerType":"group","containerId":"group_basic_info","title":"基本信息"})`
+  返回 **True**。根因：谓词内 `generic = {"", node_type(node)}` 字面量**含空串**，而任意节点的标签集合
+  `{title,label,string,semanticTitle}` 对缺失键恒含 `""`，故 `bool(labels & generic)` **恒真**；
+  唯有携带非技术型 `semanticTitle` 的节点才能逃逸。→ 一个**明显已命名**的分组被判为未命名。
+- 运行态规模（996 个 group 节点 / 163 模型）：该谓词对 **163/163** 模型判定「语义分组为 0」，
+  其中 **141/163** 模型实际含已命名分组（例：`construction.contract` 6 个分组中 3 个为
+  「金额概览 / 审批信息 / 录入信息」，仍被全部计为未命名）。
+- 修正谓词后仍会命中 **158/163**（22 个模型的原生布局只产生**无标签结构包裹分组**），仅 5 个模型转为干净
+  ——因为 `group_count` 统计的是**全部结构分组节点**，而非声明语义分组。
+  故该指标在修正后仍需对「结构包裹分组是否计入」做口径裁决，**当前形态不承载产品信号**。
+- 后果：头条读数「163/163 `contract_needs_attention`」由此指标主导（63 个模型**唯一** gap 即此项），
+  **不得**被引用为产品发现。按政策**不擅自放宽断言**，登记为工具口径债并附反例与修正建议。
+
+**五、B4/B5 未定性项（登记，不引用）**
+
+`missing_contract_notebook=82`/`missing_contract_page=82`（43 个 slots-required + 32 个 outside + 4 个 boundary_ok + 3）
+与 `missing_collaboration_runtime/attachment_contract/timeline=3` 各 3 例，属「审计期望 vs 每模型布局」，
+需各自归属层判定后方可引用。
+
+**六、事实 A：守卫路径口径债务（登记，不改门禁）**
+
+`make verify.form_structure.contract` 的成员 `verify.user_form.preference.boundary_guard` 硬编码
+`ROOT/addons/smart_construction_custom/models/user_preferences.py` 并直接 `read_text`，而
+**`addons/` 下无该模块、`git log --all -- addons/smart_construction_custom` 为空**（从未在本仓库存在）；
+该模块是**仓库边界外的客户定制 addon**，运行态挂载并已安装（受管守卫
+`scripts/verify/daily_dev_customer_addons_runtime_guard.py` 即按运行态校验其存在）。
+本地实测：`FileNotFoundError`。因此聚合目标在本仓库内**不可能通过**。
+本轮只按目标逐条报告，**未改其依赖、未放宽断言**；归属该守卫所有者。
+
+**七、环境 DENY（单独保留，不泛化）**
+
+本结论仅作为**重建/快照车道**的阻断依据，绑定实际入口依赖与独立复核；不得据此宣称「环境全部通过」。
+`rendering_detail_state` 的排除沿用既有证据与裁决，不重复证明。
+
+**八、证据与边界**
+
+- 审计报告：`.runtime/final-acceptance/daily-deployed/form_structure_contract_runtime_audit_1066b422.json`
+- 只读归属扫描（本轮新增，供复核）：
+  `.runtime/agent-runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/form_structure_runtime_audit_baseline_attribution/`
+  （`attribution_summary.json`、`contract_scan_163.json`、`group_nodes_scan_163.json`、`probe_sources/`）
+- 边界：工程侧仍在 `514c4c11` 闭合且已服务；本轮**未 push**、未合并、未标记整体目标完成。
+  唯一开放的产品交付项仍为**所有者登录核对**（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`，
+  `/f/project.project/581?menu_id=379&action_id=506`）。B1/B2 的修复**不在本轮**，需所有者对方向 (a)/(b) 与立项裁决后再动。

@@ -517,9 +517,10 @@
     "Known coverage debt, now machine-tracked instead of silent: 140 declared @tagged groups (274 declarations) have no governed selection entry. The registry records each with an owner and a 2026-12-31 review deadline; the audit fails closed on any new un-gated group so the debt can only shrink. Wiring them is follow-on work, not this round.",
     "Product delivery pending the owner's own login verification on the daily dev runtime. The runtime now serves mainline daecaafc, which includes PR #635's contract-projection fix for the payment-basis (payment facts) body; the served sealed contract reports compatibilityDependencies=[] and no LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW, and the readonly probe passed 39/39 check units. This is a human acceptance step, not an engineering gap. Credentials: wutao/123456, db sc_demo.",
     "RESOLVED and DEPLOYED, still pending the owner's login: the owner-reported form-surface defect (V1 declared container presentation dropped by the renderer; V2 hardcoded 协作记录 in the P0 default surface + frontend legacy fallbacks) is fixed, and its successor defect - the declared modifier value domain being resolved by two different implementations - is fixed systemically in 514c4c11 (see evidence.round_20261010_declared_modifier_value_domain_single_authority). The served daily runtime now carries both (source_revision 514c4c11, frontend_build_sha256 bc5a0cac, entry index-BpKZqOGC.js) and the declaration-driven probe passes at 1440/390 in light and dark. The item stays open only for the owner's own login confirmation of the restored region.",
-    "New observed baseline, unattributed and out of this round's scope: the runtime form-structure contract audit reads 163/163 models as contract_needs_attention and 158/163 as boundary_violation, with missing_group_semantics=163, missing_contract_notebook=82, missing_contract_page=82, 'formStructureContract.slots is required'=60 and 2024 'projects field outside structure' occurrences, while the two facets this batch owns (declared container presentation, declared native action verdicts) are 0. This audit exits 0 by design and has no earlier run recorded at this generation, so these numbers are a first reading, not a regression statement. Determining their owning layer (projection vs. audit expectation vs. genuine product debt) is follow-on work; do not quote them as either a pass or a failure."
+    "ATTRIBUTED (was the 'unattributed baseline' blocker; see evidence.round_20261010_runtime_audit_baseline_attribution). The runtime form-structure audit's broad baseline is now layer-classified by a read-only 163-model contract rebuild on the served runtime: (B1) 'slots is required'=60 is a P0 smart_core self-contradiction - ui_contract_v2.py:2687's native_authority short path returns slots:[] by its own declared layoutPolicy=container_tree_authority while unified_page_contract_v2_runtime.py:444-446 unconditionally requires slots; the 60 match exactly and are the only container_tree_authority models. (B2) 'layout projects field outside structure'=2024/158 models is a P0 smart_core projection split - the structure slot field universe comes from the business-operation profile while the layout field universe comes from the projected native form arch, so the 'structure covers layout' invariant cannot hold by construction; the dominant out-of-structure fields are native-arch/base/approval fields, so P1 is not the owner. (B3) missing_group_semantics=163 is a P4 audit-tool predicate defect, NOT product debt: is_unlabeled_group({'containerType':'group','containerId':'group_basic_info','title':'基本信息'}) returns True because its generic set literal contains '' and every node's label set always contains ''; 141/163 models have named groups the predicate discards, and a corrected predicate would still fire for 158/163 because group_count counts structural wrapper groups. The headline 163/163 contract_needs_attention is therefore driven by B3 and must not be quoted as a product finding. (B4/B5) missing_contract_notebook/page=82 and the three collaboration gaps=3 each remain undetermined. This batch's two owned facets are 0 under both readings, so none of this is a batch regression. No code was changed and no assertion was loosened; B1 needs an owner ruling between (a) honour the declared layoutPolicy in the validator and (b) publish a minimal slot set, and B2 needs its own project.",
+    "Verification-tool path debt (registered, NOT fixed in this round, no gate relaxed): make verify.form_structure.contract cannot pass in-repo because its member verify.user_form.preference.boundary_guard hardcodes addons/smart_construction_custom/models/user_preferences.py and reads it directly; that module does not exist in this repository (git log --all -- addons/smart_construction_custom is empty, absent on origin/main too) - it is a customer-custom addon outside the repository boundary, mounted and installed at runtime (the governed runtime guard scripts/verify/daily_dev_customer_addons_runtime_guard.py checks it live). Local reproduction: FileNotFoundError. Report per-target evidence only; the owning layer is that guard's owner."
   ],
-  "next_exact_step": "Round closed on the engineering side at clean 514c4c11 (served runtime bound to it). Owner-facing verification remains the only open item: log in on the daily dev runtime (wutao/123456, database sc_demo, entry http://1.95.85.92:18081/) and check the project detail form at /f/project.project/581?menu_id=379&action_id=506 - the declared layout buttons must render as declared (6 visible, 5 hidden) and the six declared section titles with the draft hint as a declared alert block. Two carried items are NOT closed by this round: (1) the runtime audit's broad baseline (163 contract_needs_attention / 158 boundary_violation / missing_group_semantics=163 / slots-required=60 / out-of-structure fields=2024) is a first, unattributed reading - it needs its own owning-layer determination before anything is claimed about it; (2) make verify.form_structure.contract cannot pass while addons/smart_construction_custom/models/user_preferences.py is absent from the repository (absent on origin/main too) - report per-target evidence only. No further runtime write is pending; nothing has been pushed.",
+  "next_exact_step": "Engineering is closed for this batch at clean product commit 514c4c11 (the served daily runtime is bound to it; this round added only ledger/doc changes). Two carried items are now ATTRIBUTED rather than open-ended - see evidence.round_20261010_runtime_audit_baseline_attribution and iteration doc section 20: (1) B1 slots-required=60 and B2 field-outside-structure are P0 smart_core contract self-consistency gaps that need an OWNER RULING before any code change (B1 direction (a) honour the declared layoutPolicy in the validator vs (b) publish a minimal slot set; B2 is its own project - derive the structure slot field universe from the projected layout); (2) missing_group_semantics=163 is a P4 audit-tool predicate defect (counterexample recorded) and must not be quoted as product debt; the aggregate make verify.form_structure.contract stays unusable in-repo because its preference-boundary-guard member tests a module that lives outside the repository boundary. The only remaining PRODUCT delivery item is still the owner's own login verification on the daily dev runtime (wutao/123456, database sc_demo, entry http://1.95.85.92:18081/), checking /f/project.project/581?menu_id=379&action_id=506: the declared layout buttons render as declared (6 visible, 5 hidden) and the six declared section titles with the draft hint appear as a declared alert block. No further runtime write is pending; nothing has been pushed.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -1511,6 +1512,68 @@
         ".runtime/final-acceptance/daily-deployed/round4_form_probe_390_dark.json",
         ".runtime/final-acceptance/daily-deployed/form_structure_contract_runtime_audit_1066b422.json"
       ]
+    },
+    "round_20261010_runtime_audit_baseline_attribution": {
+      "question": "The runtime form-structure contract audit's broad baseline (163 contract_needs_attention / 158 boundary_violation / missing_group_semantics=163 / slots-required=60 / out-of-structure=2024) was recorded as a first, unattributed reading. Determine each reading's owning layer: P0 projection responsibility, the audit's own expectation, or genuine product debt.",
+      "identity": "workspace branch audit/daily-dev-mainline-product-acceptance-closeout-20261009, product commit 514c4c1146489ebc0b5b275c01587c57f4a075c9 (clean; this attribution is a ledger/doc-only round, no product code change and no runtime write). Read side: sc-root:/opt/projects/repos/sce-product-odoo @ 514c4c11 (clean), project sc-backend-odoo-dev, database sc_demo, read-only odoo shell rebuilding the v2 contract for all 163 business models.",
+      "source_report": ".runtime/final-acceptance/daily-deployed/form_structure_contract_runtime_audit_1066b422.json",
+      "owning_layer_determination": {
+        "B1_slots_is_required_60_models": {
+          "layer": "P0 smart_core - two components of the SAME layer contradict each other",
+          "producer": "addons/smart_core/handlers/ui_contract_v2.py:2687 native_authority short path returns slots:[] and fieldRoles:{} BY ITS OWN DECLARATION (layoutPolicy=container_tree_authority, comment 'Shared native form owns structure')",
+          "validator": "addons/smart_core/core/unified_page_contract_v2_runtime.py:444-446 unconditionally requires non-empty slots and never reads layoutPolicy",
+          "exact_correspondence": "60/163 models == exactly (layoutPolicy=container_tree_authority AND formStructureAuthority=native_authority AND slots==0); the other 103 split cleanly into native_authority (84, slots>0) and overview_then_task_slots/entry_semantic_surface (19, slots>0). Zero mismatches, zero models with slots>0 still reporting slots-required.",
+          "not": "not P1/P2 data, not an audit-tool artifact",
+          "resolution_options_both_P0_no_business_special_case": [
+            "(a) the validator honours the declared layoutPolicy and drops the slots requirement when the structure declares container-tree/native authority",
+            "(b) the projection publishes a minimal slot set on that path"
+          ],
+          "status": "should not be silently relaxed; owner decides direction before any change"
+        },
+        "B2_field_outside_structure": {
+          "layer": "P0 smart_core projection - two independent field universes published in one contract",
+          "counts": "2024 boundary_issues occurrences over 158 models; the audit's separate layout_outside_structure column is 583 occurrences over the 98 slot-bearing models, and the extra ~1440 is the 60 no-slot models where every layout field is out of structure",
+          "mechanism": "structure slot field universe derives from the business-operation profile (form_structure_common_fields/detail_fields/amount_fields/date_fields); the layout field universe derives from the projected native form arch plus P1 policy sections",
+          "runtime_evidence_out_of_structure_vocabulary": [
+            "source_created_by",
+            "source_created_at",
+            "active",
+            "reject_reason",
+            "sequence",
+            "status",
+            "manager_id",
+            "company_id",
+            "currency_id",
+            "project_id",
+            "note",
+            "description"
+          ],
+          "why_not_p1": "the out-of-structure fields are native-arch/base/approval fields, not P1 trace-section-only content; for the 60 no-slot models the whole layout is unregistered, so the P1 source_trace section is not the owner",
+          "why_here": "the P0 runtime invariant 'the structure must cover the layout it governs' requires the projection to derive the slot field universe from the same projected layout it governs (or fail closed), not from a parallel profile list; this is the same 'single authority / frontend must not re-derive' requirement the owner set as the architectural rule"
+        },
+        "B3_missing_group_semantics_163": {
+          "layer": "P4 verification tool - scripts/verify/form_structure_contract_runtime_audit.py predicate defect, NOT product debt",
+          "deterministic_counterexample": "is_unlabeled_group({'containerType':'group','containerId':'group_basic_info','title':'基本信息'}) returns True",
+          "root_cause": "the predicate's generic set literal contains ''; every node's label set {title,label,string,semanticTitle} always contains '' for its absent keys, so bool(labels & generic) is always truthy; only a node with a non-generic semanticTitle escapes",
+          "runtime_scale": "996 group nodes across 163 models; the predicate finds zero semantic groups for 163/163 models, and 141/163 models actually contain named groups (e.g. construction.contract has 3 of 6 groups named 金额概览/审批信息/录入信息 and all are still counted unlabeled)",
+          "even_after_a_fix": "a corrected predicate still fires for 158/163 because group_count counts structural wrapper groups (22 models produce only unlabeled wrappers); only 5 models flip to clean, so the metric also needs a scope ruling on structural wrappers before it can carry product meaning",
+          "consequence": "the headline 163/163 contract_needs_attention is dominated by this metric (for 63 models missing_group_semantics is the ONLY gap), so it must not be quoted as a product finding",
+          "action_taken": "registered as tool-scope debt with the counterexample and a fix proposal; assertions were NOT loosened"
+        },
+        "B4_B5_undetermined": {
+          "missing_contract_notebook_82_and_page_82": "43 slots-required + 32 outside-structure + 4 boundary_ok + 3 other; audit expectation vs per-model layout - needs its own owning-layer determination before citation",
+          "missing_collaboration_runtime_attachment_timeline_3_each": "needs its own owning-layer determination before citation"
+        },
+        "owned_facets_not_regressed": "this batch's two owned facets are 0 under both broad readings (declared container presentation: presentation_unclassified/dropped=0; declared native action verdicts: missing/incomplete=0; contract_error=0), so none of the above is a regression introduced by this batch"
+      },
+      "artifact": ".runtime/agent-runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/form_structure_runtime_audit_baseline_attribution/",
+      "artifact_contents": [
+        "attribution_summary.json",
+        "contract_scan_163.json",
+        "group_nodes_scan_163.json",
+        "probe_sources/ (fs_scan.py, fs_groups.py, fs_group_probe.py, fs_models.txt)"
+      ],
+      "record_section": "docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md section '第 20 轮'"
     }
   },
   "continuation": {
