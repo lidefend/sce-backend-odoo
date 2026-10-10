@@ -1125,6 +1125,37 @@ class TestSingleStructureResolution(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "STRUCTURE_CONFLICT"):
             helper.diagnose_structure_ownership([config], model="demo.business")
 
+    def test_identifier_only_field_row_stays_a_sparse_policy(self):
+        """A `fields` row without a structure key owns no structure.
+
+        A model-level facts declaration may list a field with an empty payload
+        (``{'name': 'name'}``): it keeps the field in the declared field set and
+        leaves its policy at the native default.  Such a row carries no
+        structure key, so it must not be reported as a competing structural
+        declaration.  The same row plus a structure key must still be detected,
+        otherwise the suppression diagnostic would go blind.
+        """
+        cls = _load_orchestrator()
+        helper = sys.modules["odoo.addons.smart_core.core.form_structure_authority"]
+        # Baseline (un-injected declaration) must be conflict-free.
+        spec = {"composition_mode": "native_semantic_surface", "fields": [{"name": "name"}]}
+        config = _Config({"view_orchestration": {"views": {"form": spec}}})
+        self.assertEqual(helper.structural_form_declarations(spec), {})
+        self.assertEqual(helper.diagnose_structure_ownership([config], model="demo.business"), [])
+        env = _Env({"ui.business.config.contract": _ConfigModel(config.contract_json), "demo.business": _Model()})
+        layout = [{"type": "group", "string": "Native chapter", "children": [
+            {"type": "field", "name": "name"}, {"type": "field", "name": "state"}]}]
+        result = cls(env).compose({"layout": layout}, model_name="demo.business", view_type="form", view_id=34)
+        projection = result["governance"]["view_orchestration"]["form_structure_projection"]
+        # Membership is still declared; only structural ownership is native.
+        self.assertIn("name", projection["field_names"])
+        self.assertEqual(projection["compatibility_dependencies"], [])
+        # Negative control: the injected structure key must still be detected.
+        spec["fields"][0]["sequence"] = 1
+        self.assertEqual(sorted(helper.structural_form_declarations(spec)), ["fields"])
+        with self.assertRaisesRegex(ValueError, "STRUCTURE_CONFLICT"):
+            helper.diagnose_structure_ownership([config], model="demo.business")
+
     def test_native_structure_conflict_names_entry_config_key_and_node(self):
         _load_orchestrator()
         helper = sys.modules["odoo.addons.smart_core.core.form_structure_authority"]

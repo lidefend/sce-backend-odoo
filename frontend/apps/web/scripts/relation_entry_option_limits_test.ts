@@ -17,11 +17,6 @@ import { ContractGapError } from '../src/app/contract/contractGap';
 // only then do the removal cases prove the injection (a dropped declaration) is
 // actually detected.
 
-type Case = {
-  label: string;
-  relationEntryShape: Record<string, unknown> | undefined;
-};
-
 function descriptorWith(relationEntryShape: Record<string, unknown> | undefined) {
   return {
     name: 'project_id',

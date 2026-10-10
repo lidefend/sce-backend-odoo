@@ -74,12 +74,10 @@ function limitsSource(total: number, limits: number[]) {
 }
 
 function pagedSource(total: number, log: string[], gapMs = 0) {
-  let calls = 0;
   return async (params: { offset: number; limit: number; model: string }) => {
     const offset = Number(params.offset || 0);
     const limit = Number(params.limit || 0);
     const size = Math.max(0, Math.min(limit, total - offset));
-    calls += 1;
     log.push(`request:${params.model}@${offset}+${limit}->${size}`);
     if (gapMs) await new Promise((resolve) => setTimeout(resolve, gapMs));
     return { records: rows(size, offset), total } as unknown as { records: Row[] };
