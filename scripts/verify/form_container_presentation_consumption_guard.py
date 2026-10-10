@@ -39,6 +39,20 @@ HANDLERS = ROOT / "addons/smart_core/handlers"
 RENDERER_PATH = ROOT / "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
 VOCABULARY_MARKER = "Declared presentation vocabulary"
 CONTAINER_MERGE = "...declaredPresentationTokens(node),"
+# A declared layout container must reach its declared children.  The recursive
+# child renderer inserts one wrapper node between a container and its children;
+# the renderer must keep that wrapper transparent for every layout-container
+# token it accepts, otherwise the declared grid/flex context is consumed by the
+# wrapper (the overview cards collapsed to one full-width card per row).
+LAYOUT_CONTAINER_WRAPPER_TOKENS = ("row", "d-flex", "d-inline-flex")
+LAYOUT_CONTAINER_WRAPPER_MARKER = (
+    ".native-container.row > .native-form-tree,\n"
+    ".native-container.d-flex > .native-form-tree,\n"
+    ".native-container.d-inline-flex > .native-form-tree {\n"
+    "  display: contents;\n"
+    "}"
+)
+
 
 
 def _load_projection():
@@ -71,6 +85,17 @@ def _renderer_consumption_errors(source: str) -> list[str]:
             "reproduces the whole-region collapse"
         )
     return errors
+
+
+def _renderer_layout_wrapper_errors(source: str) -> list[str]:
+    if LAYOUT_CONTAINER_WRAPPER_MARKER in source:
+        return []
+    return [
+        "every declared layout container token "
+        f"{list(LAYOUT_CONTAINER_WRAPPER_TOKENS)} must make the recursive child wrapper "
+        "transparent (`display: contents`); otherwise the wrapper consumes the declared "
+        "layout context and the declared children fall outside it"
+    ]
 
 
 def _renderer_vocabulary_errors(source: str, vocabulary: frozenset) -> list[str]:
@@ -192,6 +217,12 @@ def _self_test(source: str, vocabulary: frozenset, errors: list[str]) -> None:
     elif not _renderer_consumption_errors(dropped_facet):
         errors.append("self-test: the dropped declared facet was not detected")
 
+    dropped_wrapper = source.replace(LAYOUT_CONTAINER_WRAPPER_MARKER, "", 1)
+    if dropped_wrapper == source:
+        errors.append("self-test could not mutate the declared layout wrapper rule")
+    elif not _renderer_layout_wrapper_errors(dropped_wrapper):
+        errors.append("self-test: a declared layout wrapper that consumes the layout was not detected")
+
     dropped_rule = source.replace(
         ".native-form-tree.native-form-tree .d-flex { display: flex; }", "", 1,
     )
@@ -214,6 +245,7 @@ def main() -> int:
     _self_test(source, vocabulary, errors)
     errors.extend(_renderer_consumption_errors(source))
     errors.extend(_renderer_vocabulary_errors(source, vocabulary))
+    errors.extend(_renderer_layout_wrapper_errors(source))
 
     if errors:
         print("[form_container_presentation_consumption_guard] FAIL")

@@ -37,6 +37,9 @@
   --sc-product-text-body: calc(var(--sc-base-font-size-md) * 1px);
   --sc-product-text-section: calc(var(--sc-base-font-size-lg) * 1px);
   --sc-product-text-title: calc(var(--sc-pattern-page-header-title-size) * 1px);
+  /* Application-readable weight roles: pages consume the alias, never the primitive. */
+  --sc-product-text-weight-bold: var(--sc-base-font-weight-bold);
+  --sc-product-text-weight-semibold: var(--sc-base-font-weight-semibold);
   --sc-product-line-body: 22px;
   --sc-product-table-row-height: var(--sc-table-row-height);
   --sc-product-table-header-height: var(--sc-table-header-height);

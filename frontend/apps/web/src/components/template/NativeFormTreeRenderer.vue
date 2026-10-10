@@ -1466,9 +1466,9 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 .native-form-tree.native-form-tree .h-100 { height: 100%; }
 .native-form-tree.native-form-tree .w-100 { width: 100%; }
 
-.native-form-tree.native-form-tree .h3 { font: var(--sc-font-title-medium); font-weight: var(--sc-base-font-weight-bold); }
+.native-form-tree.native-form-tree .h3 { font: var(--sc-font-title-medium); font-weight: var(--sc-product-text-weight-bold); }
 .native-form-tree.native-form-tree .small { font: var(--sc-font-body-small); }
-.native-form-tree.native-form-tree .fw-bold { font-weight: var(--sc-base-font-weight-bold); }
+.native-form-tree.native-form-tree .fw-bold { font-weight: var(--sc-product-text-weight-bold); }
 .native-form-tree.native-form-tree .text-muted { color: var(--sc-app-text-secondary); }
 .native-form-tree.native-form-tree .text-danger { color: var(--sc-app-danger-text); }
 .native-form-tree.native-form-tree .text-warning { color: var(--sc-app-warning-text); }
@@ -1510,13 +1510,32 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
   color: var(--sc-app-danger-text);
 }
 
+/* A declared layout container must apply to its declared children.  The
+ * recursive child renderer inserts one wrapper node between a container and its
+ * children; that wrapper is a renderer artifact and must not consume the layout
+ * the container declares.  With `row` it swallowed the declared 12-column grid
+ * (every `col-*` child fell outside it and stretched to the full width, so the
+ * overview cards collapsed to one full-width card per row), and with `d-flex`
+ * it swallowed the declared flex context.  Transparent wrapper = declared
+ * layout reaches the declared children. */
+.native-container.row > .native-form-tree,
+.native-container.d-flex > .native-form-tree,
+.native-container.d-inline-flex > .native-form-tree {
+  display: contents;
+}
+/* A declared row child that declares no column token keeps the previous
+ * full-width placement instead of collapsing into a single 1/12 track. */
+.native-container.row > .native-form-tree > .native-container:not(.col-12):not(.col-md-6):not(.col-lg-3):not(.col-lg-12) {
+  grid-column: 1 / -1;
+}
+
 /* Declared product region tokens.  The native arch declares these on its
  * containers; the renderer owns their visual output. */
 .native-form-tree.native-form-tree .sc-project-overview { gap: var(--sc-space-md); }
 .native-form-tree.native-form-tree .sc-project-overview__header { gap: var(--sc-space-md); }
 .native-form-tree.native-form-tree .sc-project-title {
   font: var(--sc-font-title-large);
-  font-weight: var(--sc-base-font-weight-bold);
+  font-weight: var(--sc-product-text-weight-bold);
 }
 .native-form-tree.native-form-tree .sc-project-stage {
   padding: var(--sc-space-sm) var(--sc-space-md);
@@ -1524,7 +1543,7 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
   border-radius: var(--sc-product-panel-radius);
   background: var(--sc-app-muted-bg);
 }
-.native-form-tree.native-form-tree .sc-project-stage__label { font-weight: var(--sc-base-font-weight-semibold); }
+.native-form-tree.native-form-tree .sc-project-stage__label { font-weight: var(--sc-product-text-weight-semibold); }
 .native-form-tree.native-form-tree .sc-project-stage__desc { font: var(--sc-font-body-small); }
 .native-form-tree.native-form-tree .sc-project-stage__req { gap: var(--sc-space-xs); }
 .native-form-tree.native-form-tree .sc-project-next {
@@ -1533,7 +1552,7 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
   border-radius: var(--sc-product-panel-radius);
   background: var(--sc-app-subtle-bg);
 }
-.native-form-tree.native-form-tree .sc-project-next__title { font-weight: var(--sc-base-font-weight-semibold); }
+.native-form-tree.native-form-tree .sc-project-next__title { font-weight: var(--sc-product-text-weight-semibold); }
 .native-form-tree.native-form-tree .sc-project-cards { gap: var(--sc-space-sm); }
-.native-form-tree.native-form-tree .sc-project-cards__title { font-weight: var(--sc-base-font-weight-semibold); }
+.native-form-tree.native-form-tree .sc-project-cards__title { font-weight: var(--sc-product-text-weight-semibold); }
 </style>
