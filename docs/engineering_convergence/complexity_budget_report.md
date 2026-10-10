@@ -57,7 +57,7 @@ Generated from repository source files. This report is informational during the 
 | 1761 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1727 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1713 | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
-| 1680 | YAML workflow | `scripts/verify/registry.yaml` |
+| 1684 | YAML workflow | `scripts/verify/registry.yaml` |
 | 1678 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1656 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1650 | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
@@ -94,10 +94,10 @@ Generated from repository source files. This report is informational during the 
 | 1381 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1376 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
+| 1331 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1320 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1320 | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1305 | Python source | `addons/smart_core/core/view_orchestrator.py` |
-| 1300 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1292 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1287 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1271 | Python source | `scripts/ops/retire_historical_branch_refs.py` |
@@ -240,7 +240,7 @@ Generated from repository source files. This report is informational during the 
 | 1761 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1727 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1713 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
-| 1680 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
+| 1684 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 1678 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1656 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1654 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
@@ -269,10 +269,10 @@ Generated from repository source files. This report is informational during the 
 | 1381 | warning | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1376 | warning | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1339 | warning | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
+| 1331 | warning | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1320 | warning | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1320 | warning | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1305 | warning | Python source | `addons/smart_core/core/view_orchestrator.py` |
-| 1300 | warning | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1292 | warning | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1287 | warning | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 
