@@ -244,29 +244,11 @@ export function isCollaborationSurfaceKind(kind: unknown): boolean {
   );
 }
 
-/** Single authority for "does the subordinate zone carry a collaboration node". */
-export function hasCollaborationNode(
-  nodes: readonly { kind?: unknown }[] | null | undefined,
-): boolean {
-  return Boolean(nodes?.some((node) => isCollaborationSurfaceKind(node.kind)));
-}
-
-/**
- * Single authority for the collaboration region visibility: the runtime
- * capability is an *alternative* to the subordinate node authority, never a
- * condition that can disable it.  Suppression only gates the node authority.
- */
-export function resolveCollaborationVisibility(input: {
-  capability?: unknown;
-  suppressed?: boolean;
-  nodes: readonly { kind?: unknown }[] | null | undefined;
-}): boolean {
-  return Boolean(input.capability)
-    || (!input.suppressed && hasCollaborationNode(input.nodes));
-}
-
 /**
  * The declared collaboration surface for this identity, or null.
+ * Single authority for the region: the contract declares the region or there is
+ * none.  No runtime capability and no subordinate-node heuristic may open a
+ * region the contract did not declare.
  *
  * `undefined` surfaces means the contract cannot declare regions at all, so
  * there is no declaration to find; an empty list means the contract declares

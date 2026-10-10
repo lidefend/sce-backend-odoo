@@ -839,7 +839,7 @@ def _normalize_bracket_property_access(source: str) -> str:
     """Rewrite `x['member']` as `x.member` so bracket spellings compare as dot spellings.
 
     Only identifier-shaped literals are rewritten, so a decoy such as
-    `"hasCollaborationNode.value"` keeps its shape and is still blanked afterwards.
+    `"hasCollaboration.value"` keeps its shape and is still blanked afterwards.
     """
     source = re.sub(r"\[\s*'([A-Za-z_$][\w$]*)'\s*\]", r".\1", source)
     return re.sub(r'\[\s*"([A-Za-z_$][\w$]*)"\s*\]', r".\1", source)
@@ -995,26 +995,28 @@ def _authority_expression_failures(
     return _expression_failures(body, canonical, subject)
 
 
-_COLLABORATION_AUTHORITY = "resolveCollaborationVisibility"
-_COLLABORATION_CAPABILITY_PROP = "props.showCollaborationPanel"
+# The region's single authority is the declared contract surface: the host reads the
+# declaration and gates it on its own dispatch context, and no frontend capability or
+# subordinate-node heuristic may re-open a region the contract did not declare.  The
+# reviewed wiring is `hasCollaboration` below, and the declaration read it consumes.
+_COLLABORATION_AUTHORITY = "declaredCollaborationSurface"
+_COLLABORATION_SURFACE_COMPUTED = "collaborationSurface"
+_COLLABORATION_CANONICAL_SURFACE_READ = "() => declaredCollaborationSurface(props.surfaces)"
 # The panel's own gate.  The region slot renders the native panel only under the host's
 # panel visibility, so the slot can be wired and still render nothing: the panel gate is
 # compared against this authority like the flag delegation is, instead of only being
 # tested for literal falsiness.
 #
-# The page-region contract made the gate a derived authority: a contract that
-# declares its regions decides from the declaration, and only the legacy contract
-# (no declaration at all) still needs the runtime capability conjunct, so the
-# panel gate moved from the raw prop to `collaborationPanelVisible`.  The two
-# reviewed expressions behind it are `hasCollaboration` above and the
-# declaration-aware predicate the guard pins in the runtime VM, so this is a
-# recorded review of the same single authority rather than a second one.
+# The page-region contract made the gate a derived authority: the panel gate is
+# `collaborationPanelVisible`, which is `hasCollaboration` - the declared contract
+# surface, gated on the dispatch-context suppression.  The review of that single
+# authority is the `hasCollaboration` flag check plus the declaration read it
+# consumes, both pinned below; the runtime capability prop is no longer part of the
+# region rule, so nothing here binds it.
 _COLLABORATION_PANEL_GATE = "collaborationPanelVisible"
 _COLLABORATION_SUPPRESSION_PROP = "props.suppressCollaboration"
-_COLLABORATION_SUBORDINATE_ZONE = "props.renderModel?.zones.subordinate"
 _COLLABORATION_KINDS_CONSTANT = "COLLABORATION_SURFACE_KINDS"
 _COLLABORATION_KIND_PREDICATE = "isCollaborationSurfaceKind"
-_COLLABORATION_NODE_AUTHORITY = "hasCollaborationNode"
 _COLLABORATION_DECLARED_KINDS = ("chatter", "activity")
 _COLLABORATION_REGION_SLOT = "#collaboration"
 _COLLABORATION_AUTHORITY_TEST = (
@@ -1027,12 +1029,12 @@ _COLLABORATION_AUTHORITY_TEST_MODULE_IMPORT = (
     "from '../src/pages/contractForm/contractRuntimeVm'"
 )
 _COLLABORATION_AUTHORITY_TEST_SHA256 = (
-    "802487b7eb6843d64e8417476014f996568eca039e35a43d4bce29dd64a149af"
+    "f45616dbec34694eca02a7a5b6ed3e07dd385129646aef69d0b906e32a946abb"
 )
 _COLLABORATION_HOST = "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue"
 _COLLABORATION_VM_MODULE = "frontend/apps/web/src/pages/contractForm/contractRuntimeVm"
 _COLLABORATION_VM_IMPORT_SPECIFIER = "./contractRuntimeVm"
-# The three authorities are single expressions, and the guard binds them by exact
+# The authorities are single expressions, and the guard binds them by exact
 # (whitespace- and bracket-normalized) equality rather than by token presence.  A
 # blacklist of environment-probe spellings was defeated by `globalThis['window']`,
 # `typeof(window)`, `typeof(self)` and `('window' in globalThis)`: each kept every
@@ -1043,11 +1045,13 @@ _COLLABORATION_CANONICAL_KIND_PREDICATE = (
     "(COLLABORATION_SURFACE_KINDSasreadonlystring[]).includes("
     "String(kind||'').trim().toLowerCase(),)"
 )
-_COLLABORATION_CANONICAL_NODE_AUTHORITY = (
-    "Boolean(nodes?.some((node)=>isCollaborationSurfaceKind(node.kind)))"
-)
-_COLLABORATION_CANONICAL_VISIBILITY_RULE = (
-    "Boolean(input.capability)||(!input.suppressed&&hasCollaborationNode(input.nodes))"
+# The declaration read is pinned as a whole body rather than as a sole `return`
+# expression: the authority has to refuse a contract that declares no region at all
+# before it looks for one, so the missing-declaration refusal is part of the rule and
+# not an implementation detail.  `_condense` compares it below.
+_COLLABORATION_CANONICAL_SURFACE_BODY = (
+    "if (!Array.isArray(surfaces)) return null;\n"
+    "  return surfaces.find((surface) => surface.contentKind === 'collaboration-panel') || null;"
 )
 # The page-side props: the attribute names, and the single page authority each one
 # must bind.  They are read as an attribute table (both quote styles, entities
@@ -1451,23 +1455,14 @@ def _innermost_element(source: str, offset: int) -> tuple[str, int, int] | None:
 
 
 _COLLABORATION_EXPECTED_FLAG = (
-    "() => {\n"
-    "  if (contractDeclaresSurfaces.value) {\n"
-    "    return props.suppressCollaboration ? false : Boolean(collaborationSurface.value);\n"
-    "  }\n"
-    "  return resolveCollaborationVisibility({\n"
-    "    capability: props.showCollaborationPanel,\n"
-    "    suppressed: props.suppressCollaboration,\n"
-    "    nodes: props.renderModel?.zones.subordinate,\n"
-    "  });\n"
-    "}"
+    "() => props.suppressCollaboration ? false : Boolean(collaborationSurface.value)"
 )
-# The reviewed flag, reflowed onto one line and with the capability spelled as a
+# The reviewed flag, reflowed onto one line and with the suppression spelled as a
 # bracket property access.  Both are the same expression to the compiler and to the
 # guard's normalizers, so they are accepted samples rather than rewrites.
 _COLLABORATION_EXPECTED_FLAG_REFLOWED = re.sub(r"\s+", " ", _COLLABORATION_EXPECTED_FLAG)
 _COLLABORATION_EXPECTED_FLAG_BRACKET = _COLLABORATION_EXPECTED_FLAG.replace(
-    "props.showCollaborationPanel", "props['showCollaborationPanel']"
+    "props.suppressCollaboration", "props['suppressCollaboration']"
 )
 
 
@@ -1566,26 +1561,28 @@ def _resolved_module_path(origin: str, specifier: str) -> str:
 
 
 def collaboration_flag_failures(host: str, module: str) -> list[str]:
-    """The flag must *be* the delegation, not merely mention the authority.
+    """The flag must *be* the declaration gate, and read only the declaration.
 
     The flag is the *wiring*, not the rule: the rule lives once in the runtime VM
-    module and is proven there by an executable truth table.  A token-level check
-    is not enough - `!resolve...(...)`, `(resolve...(...), false)`,
-    `resolve...(...) || false` and `resolve...(...) ? false : false` all keep every
-    token while destroying the rule, so the whole flag expression has to equal the
-    delegation.
+    module (the declared-surface read, pinned by
+    `collaboration_surface_authority_failures`) and is proven there by an executable
+    truth table, while the host only gates it on its own dispatch context.  A
+    token-level check is not enough - `!Boolean(collaborationSurface.value)`,
+    `(Boolean(...), false)`, `Boolean(...) || false` and
+    `Boolean(...) ? false : false` all keep every token while destroying the gate,
+    so the whole flag expression has to equal the reviewed gate, *and* the computed
+    it reads has to be the declaration read itself rather than a second, local
+    source of truth for the region.
     """
     # `_blank_comments_and_strings` is offset preserving, so it cannot also rewrite
     # `props['showCollaborationPanel']` into `props.showCollaborationPanel` - the
     # bracket spelling is the same expression to the compiler and used to be accepted.
     # Comment blanking runs first (a bracket access inside a comment is not code), then
     # the length changing normalisation, and the string blanking last.
-    body = _computed_argument(
-        _blank_string_literals(
-            _normalize_bracket_property_access(_blank_comments(_script_text(host)))
-        ),
-        "hasCollaboration",
+    script = _blank_string_literals(
+        _normalize_bracket_property_access(_blank_comments(_script_text(host)))
     )
+    body = _computed_argument(script, "hasCollaboration")
     if body is None:
         return ["the collaboration flag is no longer a computed"]
     failures = []
@@ -1593,8 +1590,18 @@ def collaboration_flag_failures(host: str, module: str) -> list[str]:
     expected = _normalize_flag_argument(_COLLABORATION_EXPECTED_FLAG)
     if observed != expected:
         failures.append(
-            "the collaboration flag is no longer exactly the delegation to the single authority "
-            f"(observed `{observed}`)"
+            "the collaboration flag is no longer exactly the suppression gate over the "
+            f"declared contract surface (observed `{observed}`)"
+        )
+    surface_body = _computed_argument(script, _COLLABORATION_SURFACE_COMPUTED)
+    if surface_body is None:
+        failures.append("the collaboration surface is no longer a computed")
+    elif _normalize_flag_argument(surface_body) != _normalize_flag_argument(
+        _COLLABORATION_CANONICAL_SURFACE_READ
+    ):
+        failures.append(
+            "the collaboration surface no longer reads the declared contract surface "
+            f"(observed `{_normalize_flag_argument(surface_body)}`)"
         )
     source = _blank_comments_and_strings(_script_text(host))
     if re.search(
@@ -1687,24 +1694,28 @@ def collaboration_kind_failures(module: str) -> list[str]:
     return failures
 
 
-def collaboration_node_authority_failures(module: str) -> list[str]:
-    """The node authority must stay an existential read that asks the predicate."""
-    return _authority_expression_failures(
-        module,
-        _COLLABORATION_NODE_AUTHORITY,
-        _COLLABORATION_CANONICAL_NODE_AUTHORITY,
-        "the node authority",
-    )
+def collaboration_surface_authority_failures(module: str) -> list[str]:
+    """The declared-surface read must stay the canonical declaration lookup.
 
-
-def collaboration_visibility_rule_failures(module: str) -> list[str]:
-    """The rule must OR the capability with a suppression-gated node authority."""
-    return _authority_expression_failures(
-        module,
-        _COLLABORATION_AUTHORITY,
-        _COLLABORATION_CANONICAL_VISIBILITY_RULE,
-        "the collaboration visibility authority",
-    )
+    It is the runtime VM half of the region authority: the flag check proves the
+    host *reads* the authority, and this proves the authority is still the one
+    reviewed - refusing a contract that declares nothing at all, then taking the
+    declared collaboration surface and nothing else.  The body is pinned as a whole,
+    because "returns null when the contract declares no region" is part of the rule:
+    a read that cannot refuse a missing declaration invents a region, and a read that
+    accepts any content kind accepts a region the contract did not declare.
+    """
+    body, locator_failure = _body_window(module, _COLLABORATION_AUTHORITY)
+    if locator_failure is not None:
+        return [f"the declared collaboration surface authority {locator_failure}"]
+    if _condense(_blank_comments(body)) != _condense(
+        _COLLABORATION_CANONICAL_SURFACE_BODY
+    ):
+        return [
+            "the declared collaboration surface authority is no longer the canonical "
+            f"declaration read (observed `{_condense(_blank_comments(body))}`)"
+        ]
+    return []
 
 
 # Nothing that can *continue* a statement, so a `}` in front of one does not end the
@@ -2408,7 +2419,7 @@ def _collaboration_import_failure(module: str, offset: int) -> str | None:
 def collaboration_module_scope_failures(module: str) -> list[str]:
     """The authority module must not observe the runtime, nor run load-time code.
 
-    The token-level checks above only ever read the three authority bodies, and the
+    The token-level checks above only ever read the authority bodies, and the
     executable proof only ever compares their results - so a module-level statement
     outside them is invisible to both layers.  Worse, the proof's browser-domain
     replay installs `window` *after* importing the module, so a gate evaluated
@@ -3625,20 +3636,13 @@ def collaboration_authority_failures(
         collaboration_flag_failures(host, module)
         + collaboration_module_scope_failures(module)
         + collaboration_kind_failures(module)
-        + collaboration_node_authority_failures(module)
-        + collaboration_visibility_rule_failures(module)
+        + collaboration_surface_authority_failures(module)
         + collaboration_consumption_failures(host)
         + collaboration_proof_failures(makefile, other_make_sources)
     )
 
 
-_COLLABORATION_MODULE_FLAG_CALL = (
-    "resolveCollaborationVisibility({\n"
-    "  capability: props.showCollaborationPanel,\n"
-    "  suppressed: props.suppressCollaboration,\n"
-    "  nodes: props.renderModel?.zones.subordinate,\n"
-    "})"
-)
+_COLLABORATION_MODULE_FLAG_CALL = "Boolean(collaborationSurface.value)"
 _COLLABORATION_MODULE_KINDS = (
     "export const COLLABORATION_SURFACE_KINDS = ['chatter', 'activity'] as const;"
 )
@@ -3647,26 +3651,31 @@ _COLLABORATION_MODULE_KIND_BODY = (
     "    String(kind || '').trim().toLowerCase(),\n"
     "  );"
 )
-_COLLABORATION_MODULE_NODE_BODY = (
-    "return Boolean(nodes?.some((node) => isCollaborationSurfaceKind(node.kind)));"
-)
-_COLLABORATION_MODULE_RULE_BODY = (
-    "return Boolean(input.capability)\n"
-    "    || (!input.suppressed && hasCollaborationNode(input.nodes));"
-)
+# The gate in its `{ return ...; }` block spelling.  `_normalize_flag_argument` undoes
+# redundant parentheses and a block whose sole statement is the `return`, so the
+# samples below prove the normalizer accepts the block *and* still rejects a block
+# that drops the expression: here the block drops the suppression gate.
 _DELEGATION_BLOCK = (
     "() => {\n"
-    "  return resolveCollaborationVisibility({\n"
-    "    capability: props.showCollaborationPanel,\n"
-    "    suppressed: props.suppressCollaboration,\n"
-    "    nodes: props.renderModel?.zones.subordinate,\n"
-    "  });\n"
+    "  return Boolean(collaborationSurface.value);\n"
     "}"
 )
-_DELEGATION_BLOCK_WITHOUT_RETURN = _DELEGATION_BLOCK.replace("return ", "")
+# A block whose gate expression is a bare statement: the arrow returns `undefined`,
+# so this is a permanently falsy flag and must never compare equal to the gate.
+_DELEGATION_BLOCK_WITHOUT_RETURN = (
+    "() => {\n"
+    "  props.suppressCollaboration ? false : Boolean(collaborationSurface.value);\n"
+    "}"
+)
+# The declaration gate in block-return spelling, which the normalizer does undo.
+_DECLARATION_GATE_BLOCK = (
+    "() => {\n"
+    "  return props.suppressCollaboration ? false : Boolean(collaborationSurface.value);\n"
+    "}"
+)
 _COLLABORATION_SHIM_IMPORT = (
     "import {\n"
-    "  resolveCollaborationVisibility,\n"
+    "  declaredCollaborationSurface,\n"
     "} from './collaborationVisibilityShim';\n"
 )
 # `input['capability']` is three characters shorter after
@@ -3697,8 +3706,7 @@ _COLLABORATION_OFFSET_SAMPLE = (
 def _collaboration_module(
     kinds: str = _COLLABORATION_MODULE_KINDS,
     kind_body: str = _COLLABORATION_MODULE_KIND_BODY,
-    node_body: str = _COLLABORATION_MODULE_NODE_BODY,
-    rule_body: str = _COLLABORATION_MODULE_RULE_BODY,
+    surface_body: str = _COLLABORATION_CANONICAL_SURFACE_BODY,
     module_preamble: str = "",
     module_tail: str = "",
 ) -> str:
@@ -3710,17 +3718,10 @@ def _collaboration_module(
         "export function isCollaborationSurfaceKind(kind: unknown): boolean {\n"
         f"  {kind_body}\n"
         "}\n"
-        "export function hasCollaborationNode(\n"
-        "  nodes: readonly { kind?: unknown }[] | null | undefined,\n"
-        "): boolean {\n"
-        f"  {node_body}\n"
-        "}\n"
-        "export function resolveCollaborationVisibility(input: {\n"
-        "  capability?: unknown;\n"
-        "  suppressed?: boolean;\n"
-        "  nodes: readonly { kind?: unknown }[] | null | undefined;\n"
-        "}): boolean {\n"
-        f"  {rule_body}\n"
+        "export function declaredCollaborationSurface(\n"
+        "  surfaces: readonly Record<string, unknown>[] | undefined | null,\n"
+        "): Record<string, unknown> | null {\n"
+        f"  {surface_body}\n"
         "}\n"
         f"{module_tail}"
     )
@@ -3738,6 +3739,7 @@ def _collaboration_host(
     template_tail: str = "",
     script_tail: str = "",
     flag_argument: str | None = None,
+    surface_argument: str | None = None,
     panel_wrapper_open: str = "",
     panel_wrapper_close: str = "",
     carrier_prefix: str = "",
@@ -3745,8 +3747,8 @@ def _collaboration_host(
     carrier_gate: str = "",
     import_line: str = (
         "import {\n"
+        "  declaredCollaborationSurface,\n"
         "  isCollaborationSurfaceKind,\n"
-        "  resolveCollaborationVisibility,\n"
         "} from './contractRuntimeVm';\n"
     ),
 ) -> str:
@@ -3756,9 +3758,10 @@ def _collaboration_host(
     what the region is for: a slot that keeps its gate while its only child is
     removed renders nothing, and the guard binds the panel's own gate as well.
     """
-    # The reviewed flag is the contract-aware predicate, so an unadorned sample
-    # carries it verbatim: only the samples that deliberately rewrite the flag
-    # pass `flag_body`/`flag_argument`, and those spell the old delegation call.
+    # The reviewed flag is the declaration gate, so an unadorned sample carries it
+    # verbatim: only the samples that deliberately rewrite the flag pass
+    # `flag_body`/`flag_argument`, and only the samples that deliberately rewrite the
+    # declaration read pass `surface_argument`.
     if flag_argument is not None:
         argument = flag_argument
     elif flag_body is not None:
@@ -3781,6 +3784,7 @@ def _collaboration_host(
         "</template>\n"
         '<script setup lang="ts">\n'
         f"{import_line}"
+        f"const collaborationSurface = computed({surface_argument or _COLLABORATION_CANONICAL_SURFACE_READ});\n"
         f"const hasCollaboration = computed({argument});\n"
         f"{script_tail}"
         "</script>\n"
@@ -3815,11 +3819,27 @@ _COLLABORATION_LABEL_PAYLOAD_TAIL = (
 )
 
 _COLLABORATION_SELF_CHECK: tuple[tuple[str, str, str, str, bool], ...] = (
-    # accepted: the delegation and the wiring the guard binds
-    ("delegated flag and wired region", _collaboration_host(), _collaboration_module(), _collaboration_makefile(), True),
+    # accepted: the declaration gate and the wiring the guard binds
+    ("declaration-gated flag and wired region", _collaboration_host(), _collaboration_module(), _collaboration_makefile(), True),
     (
-        "reflowed delegation call",
+        "reflowed declaration gate",
         _collaboration_host(flag_argument=_COLLABORATION_EXPECTED_FLAG_REFLOWED),
+        _collaboration_module(),
+        _collaboration_makefile(),
+        True,
+    ),
+    (
+        "declaration gate in block-return spelling",
+        _collaboration_host(flag_argument=_DECLARATION_GATE_BLOCK),
+        _collaboration_module(),
+        _collaboration_makefile(),
+        True,
+    ),
+    (
+        "surface computed in block-return spelling",
+        _collaboration_host(
+            surface_argument="() => { return declaredCollaborationSurface(props.surfaces); }"
+        ),
         _collaboration_module(),
         _collaboration_makefile(),
         True,
@@ -3839,7 +3859,7 @@ _COLLABORATION_SELF_CHECK: tuple[tuple[str, str, str, str, bool], ...] = (
         True,
     ),
     (
-        "legacy delegation rewritten as a block whose sole statement is the return",
+        "declaration gate rewritten as a block that drops the suppression",
         _collaboration_host(flag_argument=_DELEGATION_BLOCK),
         _collaboration_module(),
         _collaboration_makefile(),
@@ -3853,7 +3873,7 @@ _COLLABORATION_SELF_CHECK: tuple[tuple[str, str, str, str, bool], ...] = (
         True,
     ),
     (
-        "flag delegation spelling the capability as a bracket property access",
+        "declaration gate spelling the suppression as a bracket property access",
         _collaboration_host(flag_argument=_COLLABORATION_EXPECTED_FLAG_BRACKET),
         _collaboration_module(),
         _collaboration_makefile(),
@@ -3885,48 +3905,43 @@ _COLLABORATION_SELF_CHECK: tuple[tuple[str, str, str, str, bool], ...] = (
     ),
     # rejected: token-preserving rewrites of the real wiring
     (
-        "flag re-derived locally instead of delegated",
-        _collaboration_host("Boolean(props.showCollaborationPanel) || hasCollaborationNode.value"),
-        _collaboration_module(),
-        _collaboration_makefile(),
-        False,
-    ),
-    (
-        "delegation call left only in a line comment",
+        "flag re-derived locally instead of read from the declaration",
         _collaboration_host(
-            "false // resolveCollaborationVisibility({ capability: props.showCollaborationPanel, "
-            "suppressed: props.suppressCollaboration, nodes: props.renderModel?.zones.subordinate })"
+            "Boolean(props.showCollaborationPanel) "
+            "|| Boolean(props.renderModel?.zones.subordinate?.length)"
         ),
         _collaboration_module(),
         _collaboration_makefile(),
         False,
     ),
     (
-        "delegation kept but a local || short-circuits it",
+        "declaration gate left only in a line comment",
         _collaboration_host(
-            "true || resolveCollaborationVisibility({ capability: props.showCollaborationPanel, "
-            "suppressed: props.suppressCollaboration, nodes: props.renderModel?.zones.subordinate })"
+            "false // props.suppressCollaboration ? false : Boolean(collaborationSurface.value)"
         ),
         _collaboration_module(),
         _collaboration_makefile(),
         False,
     ),
     (
-        "capability dropped from the delegation",
+        "declaration gate kept but a local || short-circuits it",
         _collaboration_host(
-            "resolveCollaborationVisibility({ suppressed: props.suppressCollaboration, "
-            "nodes: props.renderModel?.zones.subordinate })"
+            "true || (props.suppressCollaboration ? false : Boolean(collaborationSurface.value))"
         ),
         _collaboration_module(),
         _collaboration_makefile(),
         False,
     ),
     (
-        "subordinate zone dropped from the delegation",
-        _collaboration_host(
-            "resolveCollaborationVisibility({ capability: props.showCollaborationPanel, "
-            "suppressed: props.suppressCollaboration })"
-        ),
+        "suppression gate dropped from the declaration gate",
+        _collaboration_host("Boolean(collaborationSurface.value)"),
+        _collaboration_module(),
+        _collaboration_makefile(),
+        False,
+    ),
+    (
+        "declaration read dropped for a constant",
+        _collaboration_host("props.suppressCollaboration ? false : true"),
         _collaboration_module(),
         _collaboration_makefile(),
         False,
@@ -4000,28 +4015,28 @@ _COLLABORATION_SELF_CHECK: tuple[tuple[str, str, str, str, bool], ...] = (
     ),
     # rejected: the delegation is kept but its result no longer reaches the flag
     (
-        "flag negated while still calling the authority",
+        "flag negated while still reading the surface",
         _collaboration_host(f"!{_COLLABORATION_MODULE_FLAG_CALL}"),
         _collaboration_module(),
         _collaboration_makefile(),
         False,
     ),
     (
-        "flag discards the authority result with a comma expression",
+        "flag discards the gate result with a comma expression",
         _collaboration_host(f"({_COLLABORATION_MODULE_FLAG_CALL}, false)"),
         _collaboration_module(),
         _collaboration_makefile(),
         False,
     ),
     (
-        "flag short-circuits the authority with a trailing ||",
+        "flag short-circuits the gate with a trailing ||",
         _collaboration_host(f"{_COLLABORATION_MODULE_FLAG_CALL} || false"),
         _collaboration_module(),
         _collaboration_makefile(),
         False,
     ),
     (
-        "flag turns the authority into a constant with a ternary",
+        "flag turns the gate into a constant with a ternary",
         _collaboration_host(f"{_COLLABORATION_MODULE_FLAG_CALL} ? false : false"),
         _collaboration_module(),
         _collaboration_makefile(),
@@ -4030,7 +4045,7 @@ _COLLABORATION_SELF_CHECK: tuple[tuple[str, str, str, str, bool], ...] = (
     (
         "authority shadowed by a host-local declaration",
         _collaboration_host(
-            script_tail="const resolveCollaborationVisibility = () => false;\n",
+            script_tail="const declaredCollaborationSurface = () => false;\n",
         ),
         _collaboration_module(),
         _collaboration_makefile(),
@@ -4045,30 +4060,60 @@ _COLLABORATION_SELF_CHECK: tuple[tuple[str, str, str, str, bool], ...] = (
     ),
     # rejected: the authority redefined underneath the delegation
     (
-        "node authority replaced by a constant",
-        _collaboration_host(),
-        _collaboration_module(node_body="return false;"),
-        _collaboration_makefile(),
-        False,
-    ),
-    (
-        "node authority switched from existential to universal",
-        _collaboration_host(),
-        _collaboration_module(node_body="return Boolean(nodes?.every((node) => isCollaborationSurfaceKind(node.kind)));"),
-        _collaboration_makefile(),
-        False,
-    ),
-    (
-        "node authority no longer asks the kind predicate",
-        _collaboration_host(),
-        _collaboration_module(node_body="return Boolean(nodes?.some((node) => Boolean(node.kind)));"),
-        _collaboration_makefile(),
-        False,
-    ),
-    (
         "declared kinds kept but no longer consumed",
         _collaboration_host(),
         _collaboration_module(kind_body="return false;"),
+        _collaboration_makefile(),
+        False,
+    ),
+    # rejected: the authority read is redefined underneath the flag
+    (
+        "declared surface authority accepts any content kind",
+        _collaboration_host(),
+        _collaboration_module(
+            surface_body=(
+                "if (!Array.isArray(surfaces)) return null;\n"
+                "  return surfaces.find((surface) => Boolean(surface)) || null;"
+            )
+        ),
+        _collaboration_makefile(),
+        False,
+    ),
+    (
+        "declared surface authority no longer refuses a missing declaration",
+        _collaboration_host(),
+        _collaboration_module(
+            surface_body=(
+                "return surfaces.find((surface) => surface.contentKind === "
+                "'collaboration-panel') || null;"
+            )
+        ),
+        _collaboration_makefile(),
+        False,
+    ),
+    (
+        "declared surface authority gated on a runtime environment probe",
+        _collaboration_host(),
+        _collaboration_module(
+            surface_body=(
+                "if (typeof window !== 'undefined') return null;\n  "
+                + _COLLABORATION_CANONICAL_SURFACE_BODY
+            )
+        ),
+        _collaboration_makefile(),
+        False,
+    ),
+    (
+        "declared surface authority switches on the environment inside its body",
+        _collaboration_host(),
+        _collaboration_module(
+            surface_body=(
+                "return typeof document === 'undefined'\n"
+                "    ? surfaces.find((surface) => surface.contentKind === "
+                "'collaboration-panel') || null\n"
+                "    : null;"
+            )
+        ),
         _collaboration_makefile(),
         False,
     ),
@@ -4083,35 +4128,6 @@ _COLLABORATION_SELF_CHECK: tuple[tuple[str, str, str, str, bool], ...] = (
         "a declared collaboration kind dropped",
         _collaboration_host(),
         _collaboration_module(kinds="export const COLLABORATION_SURFACE_KINDS = ['chatter'] as const;"),
-        _collaboration_makefile(),
-        False,
-    ),
-    (
-        "visibility rule AND-s instead of OR-s",
-        _collaboration_host(),
-        _collaboration_module(
-            rule_body="return Boolean(input.capability)\n"
-            "    && (!input.suppressed && hasCollaborationNode(input.nodes));"
-        ),
-        _collaboration_makefile(),
-        False,
-    ),
-    (
-        "visibility rule drops the suppression gate",
-        _collaboration_host(),
-        _collaboration_module(
-            rule_body="return Boolean(input.capability) || hasCollaborationNode(input.nodes);"
-        ),
-        _collaboration_makefile(),
-        False,
-    ),
-    (
-        "visibility rule no longer consults the node authority",
-        _collaboration_host(),
-        _collaboration_module(
-            rule_body="return Boolean(input.capability)\n"
-            "    || (!input.suppressed && Boolean(input.nodes));"
-        ),
         _collaboration_makefile(),
         False,
     ),
@@ -4169,6 +4185,25 @@ _COLLABORATION_SELF_CHECK: tuple[tuple[str, str, str, str, bool], ...] = (
     (
         "flag block body that forgets the return",
         _collaboration_host(flag_argument=_DELEGATION_BLOCK_WITHOUT_RETURN),
+        _collaboration_module(),
+        _collaboration_makefile(),
+        False,
+    ),
+    # rejected: the declaration read is replaced by a local source of truth
+    (
+        "surface computed reads a local surface literal",
+        _collaboration_host(
+            surface_argument="() => ({ contentKind: 'collaboration-panel' })"
+        ),
+        _collaboration_module(),
+        _collaboration_makefile(),
+        False,
+    ),
+    (
+        "surface computed reads the subordinate zone instead of the declaration",
+        _collaboration_host(
+            surface_argument="() => declaredCollaborationSurface(props.renderModel?.zones.subordinate)"
+        ),
         _collaboration_module(),
         _collaboration_makefile(),
         False,
@@ -4271,44 +4306,6 @@ _COLLABORATION_SELF_CHECK: tuple[tuple[str, str, str, str, bool], ...] = (
         _collaboration_makefile(),
         False,
     ),
-    (
-        "node authority gated on a runtime environment probe",
-        _collaboration_host(),
-        _collaboration_module(
-            node_body=(
-                "if (typeof window !== 'undefined') return false;\n  "
-                + _COLLABORATION_MODULE_NODE_BODY
-            )
-        ),
-        _collaboration_makefile(),
-        False,
-    ),
-    (
-        "visibility rule gated on a runtime environment probe",
-        _collaboration_host(),
-        _collaboration_module(
-            rule_body=(
-                "if (typeof window !== 'undefined') return false;\n  "
-                + _COLLABORATION_MODULE_RULE_BODY
-            )
-        ),
-        _collaboration_makefile(),
-        False,
-    ),
-    (
-        "visibility rule switches on the environment inside its return",
-        _collaboration_host(),
-        _collaboration_module(
-            rule_body=(
-                "return typeof window === 'undefined'\n"
-                "    ? Boolean(input.capability)"
-                " || (!input.suppressed && hasCollaborationNode(input.nodes))\n"
-                "    : false;"
-            )
-        ),
-        _collaboration_makefile(),
-        False,
-    ),
     # rejected: the region slot keeps every token but no longer fills the slot
     (
         "region slot nested under an unclosed child of the flag element",
@@ -4339,77 +4336,9 @@ _COLLABORATION_SELF_CHECK: tuple[tuple[str, str, str, str, bool], ...] = (
         _collaboration_makefile(),
         False,
     ),
-    # rejected: gated on one runtime environment in spellings a probe blacklist
-    # missed - each kept every token, killed the region in the browser and stayed
-    # invisible to the node-run proof
-    (
-        "visibility rule gated on a bracket-property environment read",
-        _collaboration_host(),
-        _collaboration_module(
-            rule_body=(
-                "return globalThis['window'] !== undefined\n"
-                "    ? false\n"
-                "    : (Boolean(input.capability)"
-                " || (!input.suppressed && hasCollaborationNode(input.nodes)));"
-            )
-        ),
-        _collaboration_makefile(),
-        False,
-    ),
-    (
-        "visibility rule gated on a parenthesized typeof probe",
-        _collaboration_host(),
-        _collaboration_module(
-            rule_body=(
-                "return typeof(window) !== 'undefined'\n"
-                "    ? false\n"
-                "    : (Boolean(input.capability)"
-                " || (!input.suppressed && hasCollaborationNode(input.nodes)));"
-            )
-        ),
-        _collaboration_makefile(),
-        False,
-    ),
-    (
-        "visibility rule gated on a membership probe",
-        _collaboration_host(),
-        _collaboration_module(
-            rule_body=(
-                "return ('window' in globalThis)\n"
-                "    ? false\n"
-                "    : (Boolean(input.capability)"
-                " || (!input.suppressed && hasCollaborationNode(input.nodes)));"
-            )
-        ),
-        _collaboration_makefile(),
-        False,
-    ),
-    (
-        "visibility rule gated on the `self` binding",
-        _collaboration_host(),
-        _collaboration_module(
-            rule_body=(
-                "return typeof(self) !== 'undefined'\n"
-                "    ? false\n"
-                "    : (Boolean(input.capability)"
-                " || (!input.suppressed && hasCollaborationNode(input.nodes)));"
-            )
-        ),
-        _collaboration_makefile(),
-        False,
-    ),
-    (
-        "visibility rule whose single return is followed by an ASI-separated statement",
-        _collaboration_host(),
-        _collaboration_module(
-            rule_body=(
-                "return false\n    (Boolean(input.capability)"
-                " || (!input.suppressed && hasCollaborationNode(input.nodes)));"
-            )
-        ),
-        _collaboration_makefile(),
-        False,
-    ),
+    # rejected: a declaration read that is only reached under one runtime environment,
+    # in spellings an environment-probe blacklist used to miss - each kept every
+    # token, killed the region in the browser and stayed invisible to the node-run proof
     (
         "compliant predicate body parked in a string literal",
         _collaboration_host(),
@@ -4439,7 +4368,7 @@ _COLLABORATION_SELF_CHECK: tuple[tuple[str, str, str, str, bool], ...] = (
             import_line=(
                 "import {\n"
                 "  isCollaborationSurfaceKind,\n"
-                "  resolveCollaborationVisibility as _rcv,\n"
+                "  declaredCollaborationSurface as _dcs,\n"
                 "} from './contractRuntimeVm';\n"
             )
         ),
@@ -4453,7 +4382,7 @@ _COLLABORATION_SELF_CHECK: tuple[tuple[str, str, str, str, bool], ...] = (
             import_line=(
                 "import { isCollaborationSurfaceKind } from './contractRuntimeVm';\n"
                 "import * as _vm from './collaborationVisibilityShim';\n"
-                "const { resolveCollaborationVisibility } = _vm;\n"
+                "const { declaredCollaborationSurface } = _vm;\n"
             )
         ),
         _collaboration_module(),
@@ -4605,19 +4534,6 @@ _COLLABORATION_SELF_CHECK: tuple[tuple[str, str, str, str, bool], ...] = (
         _collaboration_host(),
         "export { installCollaborationPoison } from './collaborationPoison';\n"
         + _collaboration_module(),
-        _collaboration_makefile(),
-        False,
-    ),
-    (
-        "authority body gated on the runtime environment",
-        _collaboration_host(),
-        _collaboration_module(
-            rule_body=(
-                "return typeof document === 'undefined'\n"
-                "    ? Boolean(input.capability) || (!input.suppressed && hasCollaborationNode(input.nodes))\n"
-                "    : false;"
-            )
-        ),
         _collaboration_makefile(),
         False,
     ),
@@ -6909,7 +6825,7 @@ require(
         form_host, contract_form_vm, frontend_makefile, other_make_sources
     )
     and not collaboration_page_wiring_failures(contract_form_page),
-    "collaboration region must follow the normalized runtime capability or subordinate node authority, "
+    "collaboration region must follow the declared contract surface, "
     "and stay consumed by the host template: "
     + "; ".join(
         collaboration_authority_failures(

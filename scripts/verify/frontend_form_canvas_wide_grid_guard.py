@@ -134,8 +134,8 @@ if "inferredSectionRole" in native_navigation_model:
 for required in (
     "nativeBridge.value?.sectionLinks",
     "contractSurfaceNavigationItems(renderedSurfaces.value)",
-    "legacySurfaceNavigationItems(",
-    "auditAvailable: props.showCollaborationPanel === true && auditEvents.value.length > 0",
+    "const renderedSurfaces = computed(",
+    ':section-surfaces="renderedSurfaces"',
 ):
     if required not in native_driver:
         fail(f"workspace section identity projection missing: {required}")

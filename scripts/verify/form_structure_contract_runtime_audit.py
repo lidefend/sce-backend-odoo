@@ -223,6 +223,33 @@ def runtime_boundary_issues(contract: dict[str, Any]) -> list[str]:
     return find_form_structure_contract_issues(contract)
 
 
+def presentation_facet_issues(tree: list[dict[str, Any]]) -> list[str]:
+    """Every declared container presentation class must be classified and published.
+
+    A class the projection cannot classify means the client receives a declared
+    facet it has no presentation token for; a class that is declared in the arch
+    but missing from the published ``styleToken`` means the declaration was
+    dropped on the way out.  Either one makes the renderer draw an unstyled stack
+    of blocks, which is exactly the defect this check must not let ship quietly.
+    """
+    from odoo.addons.smart_core.handlers.ui_contract_v2_projection import declared_presentation_tokens
+
+    issues: list[str] = []
+    for node in iter_nodes(tree):
+        container_id = _text(node.get("containerId") or node.get("name") or node.get("id")) or "?"
+        declared = {key: value for key, value in node.items() if key != "styleToken"}
+        try:
+            declared_tokens = declared_presentation_tokens(declared, container_id)
+        except ValueError:
+            issues.append(f"presentation_unclassified:{container_id}")
+            continue
+        published = set(_text(node.get("styleToken")).split())
+        missing = [token for token in declared_tokens if token not in published]
+        if missing:
+            issues.append(f"presentation_dropped:{container_id}:{','.join(missing)}")
+    return issues
+
+
 def is_runtime_control_field(name: str) -> bool:
     from odoo.addons.smart_core.core.unified_page_contract_v2_runtime import _is_form_structure_runtime_control_field
 
@@ -341,7 +368,7 @@ def audit_model(env, model: str) -> ContractFormAuditRow:
         if isinstance(governance_source, dict)
         else []
     )
-    boundary_issues = runtime_boundary_issues(contract)
+    boundary_issues = runtime_boundary_issues(contract) + presentation_facet_issues(tree)
     layout_outside_structure = [
         name
         for name in layout_fields

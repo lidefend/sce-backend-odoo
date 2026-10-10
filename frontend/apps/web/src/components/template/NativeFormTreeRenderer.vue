@@ -83,7 +83,7 @@
         <p
           v-else-if="nodeText(node)"
           class="native-static-text"
-          :class="nativeTextPresentationClass(node)"
+          :class="[...nativeTextPresentationClass(node), ...declaredPresentationTokens(node)]"
           :data-native-text-presentation="nativeTextPresentation(node).kind"
           :data-tone="nativeTextPresentation(node).tone"
           :role="nativeTextPresentation(node).role"
@@ -359,7 +359,7 @@
 
       <FormSection
         v-else-if="nodeType(node) === 'field' && fieldSchemasForNodes([node]).length"
-        :class="nodeClassList(node)"
+        :class="[...nodeClassList(node), ...declaredPresentationTokens(node)]"
         :title="fieldSectionTitle(node)"
         :columns="nodeColumns(node)"
         :fields="fieldSchemasForNodes([node])"
@@ -477,6 +477,7 @@ export type NativeFormLayoutNode = {
   visible?: boolean;
   class?: string;
   className?: string;
+  styleToken?: string;
   field_size?: string;
   fieldSize?: string;
   size?: string;
@@ -937,6 +938,7 @@ function containerClass(node: NativeFormLayoutNode) {
   return [
     'native-container',
     `native-container--${nodeType(node) || 'node'}`,
+    ...declaredPresentationTokens(node),
     {
       'native-container--config-hidden': props.fieldConfigEditable && nodeType(node) === 'group' && node.visible === false,
       'native-container--field-drop-target': Boolean(
@@ -957,6 +959,29 @@ function nodeAttributes(node: NativeFormLayoutNode) {
 
 function nodeClassList(node: NativeFormLayoutNode) {
   return String(nodeAttributes(node).class || '').split(/\s+/).map((item) => item.trim()).filter(Boolean);
+}
+
+/**
+ * Presentation tokens declared by the contract for this node.
+ *
+ * The projection publishes every declared container presentation class on the
+ * `styleToken` facet (with the bridge mirroring it on `attributes`).  The
+ * renderer consumes that declaration only: a container must never render as an
+ * unstyled stack of blocks because a declared class was dropped here, and the
+ * renderer must not infer presentation from native markup.
+ */
+function declaredPresentationTokens(node: NativeFormLayoutNode) {
+  const tokens: string[] = [];
+  for (const value of [
+    node?.styleToken,
+    nodeAttributes(node).contractStyleToken,
+    nodeAttributes(node).styleToken,
+  ]) {
+    for (const token of String(value || '').trim().split(/\s+/)) {
+      if (token && !tokens.includes(token)) tokens.push(token);
+    }
+  }
+  return tokens;
 }
 
 function nodeHasClass(node: NativeFormLayoutNode, className: string) {
@@ -1386,4 +1411,107 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
   font: var(--sc-font-body-medium);
   font-weight: 600;
 }
+
+/* ============================ Declared presentation vocabulary ============
+ * The contract declares container presentation on the `styleToken` facet
+ * (`d-flex`, `mb-3`, `card`, `alert alert-info`, `sc-project-stage`, ...).  This
+ * block implements that vocabulary.  It used to be missing entirely, which made
+ * every declared class a no-op and collapsed the project overview region into a
+ * stack of full-width blocks.
+ *
+ * The doubled root class is deliberate: the container rules above already set a
+ * container `display`, so a declared layout token must win on specificity rather
+ * than on stylesheet order.
+ */
+.native-form-tree.native-form-tree .d-flex { display: flex; }
+.native-form-tree.native-form-tree .flex-wrap { flex-wrap: wrap; }
+.native-form-tree.native-form-tree .justify-content-between { justify-content: space-between; }
+.native-form-tree.native-form-tree .align-items-start { align-items: flex-start; }
+.native-form-tree.native-form-tree .align-items-center { align-items: center; }
+.native-form-tree.native-form-tree .gap-2 { gap: var(--sc-space-sm); }
+.native-form-tree.native-form-tree .row {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-content: start;
+}
+.native-form-tree.native-form-tree .g-2 { gap: var(--sc-space-sm); }
+.native-form-tree.native-form-tree .col-12 { grid-column: span 12; }
+@media (min-width: 768px) {
+  .native-form-tree.native-form-tree .col-md-6 { grid-column: span 6; }
+}
+@media (min-width: 1024px) {
+  .native-form-tree.native-form-tree .col-lg-3 { grid-column: span 3; }
+}
+
+.native-form-tree.native-form-tree .mb-1 { margin-bottom: var(--sc-space-2xs); }
+.native-form-tree.native-form-tree .mb-3 { margin-bottom: var(--sc-space-sm); }
+.native-form-tree.native-form-tree .mb-4 { margin-bottom: var(--sc-space-md); }
+.native-form-tree.native-form-tree .mt-1 { margin-top: var(--sc-space-2xs); }
+.native-form-tree.native-form-tree .mt-2 { margin-top: var(--sc-space-xs); }
+.native-form-tree.native-form-tree .px-0 { padding-inline: 0; }
+.native-form-tree.native-form-tree .h-100 { height: 100%; }
+
+.native-form-tree.native-form-tree .h3 { font: var(--sc-font-title-medium); font-weight: var(--sc-base-font-weight-bold); }
+.native-form-tree.native-form-tree .small { font: var(--sc-font-body-small); }
+.native-form-tree.native-form-tree .fw-bold { font-weight: var(--sc-base-font-weight-bold); }
+.native-form-tree.native-form-tree .text-muted { color: var(--sc-app-text-secondary); }
+.native-form-tree.native-form-tree .text-danger { color: var(--sc-app-danger-text); }
+.native-form-tree.native-form-tree .text-warning { color: var(--sc-app-warning-text); }
+
+.native-form-tree.native-form-tree .card {
+  padding: var(--sc-space-sm);
+  border: 1px solid var(--sc-app-border);
+  border-radius: var(--sc-product-panel-radius);
+  background: var(--sc-app-panel);
+}
+.native-form-tree.native-form-tree .card-body { gap: var(--sc-space-xs); }
+.native-form-tree.native-form-tree .alert {
+  padding: var(--sc-space-sm) var(--sc-space-md);
+  border: 1px solid var(--sc-app-info-border);
+  border-radius: var(--sc-product-radius-control);
+  background: var(--sc-app-info-bg);
+  color: var(--sc-app-info-text);
+}
+.native-form-tree.native-form-tree .alert-info {
+  border-color: var(--sc-app-info-border);
+  background: var(--sc-app-info-bg);
+  color: var(--sc-app-info-text);
+}
+.native-form-tree.native-form-tree .alert-warning {
+  border-color: var(--sc-app-warning-border);
+  background: var(--sc-app-warning-bg);
+  color: var(--sc-app-warning-text);
+}
+.native-form-tree.native-form-tree .alert-danger {
+  border-color: var(--sc-app-danger-border);
+  background: var(--sc-app-danger-bg);
+  color: var(--sc-app-danger-text);
+}
+
+/* Declared product region tokens.  The native arch declares these on its
+ * containers; the renderer owns their visual output. */
+.native-form-tree.native-form-tree .sc-project-overview { gap: var(--sc-space-md); }
+.native-form-tree.native-form-tree .sc-project-overview__header { gap: var(--sc-space-md); }
+.native-form-tree.native-form-tree .sc-project-title {
+  font: var(--sc-font-title-large);
+  font-weight: var(--sc-base-font-weight-bold);
+}
+.native-form-tree.native-form-tree .sc-project-stage {
+  padding: var(--sc-space-sm) var(--sc-space-md);
+  border: 1px solid var(--sc-app-border);
+  border-radius: var(--sc-product-panel-radius);
+  background: var(--sc-app-muted-bg);
+}
+.native-form-tree.native-form-tree .sc-project-stage__label { font-weight: var(--sc-base-font-weight-semibold); }
+.native-form-tree.native-form-tree .sc-project-stage__desc { font: var(--sc-font-body-small); }
+.native-form-tree.native-form-tree .sc-project-stage__req { gap: var(--sc-space-xs); }
+.native-form-tree.native-form-tree .sc-project-next {
+  padding: var(--sc-space-sm) var(--sc-space-md);
+  border: 1px solid var(--sc-app-border-strong);
+  border-radius: var(--sc-product-panel-radius);
+  background: var(--sc-app-subtle-bg);
+}
+.native-form-tree.native-form-tree .sc-project-next__title { font-weight: var(--sc-base-font-weight-semibold); }
+.native-form-tree.native-form-tree .sc-project-cards { gap: var(--sc-space-sm); }
+.native-form-tree.native-form-tree .sc-project-cards__title { font-weight: var(--sc-base-font-weight-semibold); }
 </style>

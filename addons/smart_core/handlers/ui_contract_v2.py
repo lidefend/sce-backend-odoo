@@ -90,13 +90,6 @@ ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-governance-2026-10-07-form-st
 FORM_STRUCTURE_SURFACE_POLICY_HOOK = "smart_core_form_structure_surface_policy"
 FORM_STRUCTURE_SURFACE_CONTENT_KINDS = ("collaboration-panel", "audit-timeline")
 FORM_STRUCTURE_SURFACE_AUTHORIZATION_STATES = ("allow", "deny", "pending", "coming_soon")
-FORM_STRUCTURE_DEFAULT_ACTIVITY_SURFACE: dict[str, Any] = {
-    "surface": "activity",
-    "title": "协作记录",
-    "role": "activity",
-    "contentKind": "collaboration-panel",
-    "sourceIdentity": "collaboration-panel",
-}
 
 
 def _surface_text(value: Any) -> str:
@@ -179,22 +172,13 @@ def _normalize_form_structure_surface(raw: Any) -> dict[str, Any] | None:
 def project_form_structure_surfaces(payload: Any, *, capabilities: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     """Project the declared form surfaces for ``formStructureContract``.
 
-    ``payload`` is the product declaration.  When it is not a list the platform
-    declares only the generic collaboration surface for a model that carries
-    chatter or attachments, and declares no role-gated sub-region.
+    ``payload`` is the product declaration.  A region label is product
+    wording, so the generic mechanism declares nothing when the product layer
+    declares nothing: an absent (or non-list) payload yields an empty surface
+    list instead of a platform-invented collaboration surface.
     """
-    declared = payload if isinstance(payload, list) else None
-    if declared is None:
-        caps = capabilities if isinstance(capabilities, dict) else {}
-        if not (caps.get("collaboration") or caps.get("attachments")):
-            return []
-        fallback = dict(FORM_STRUCTURE_DEFAULT_ACTIVITY_SURFACE)
-        fallback["capabilities"] = {
-            "timeline": bool(caps.get("collaboration")),
-            "remarks": bool(caps.get("remarks")),
-            "attachments": bool(caps.get("attachments")),
-        }
-        return [fallback]
+    if not isinstance(payload, list):
+        return []
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
     for row in declared:

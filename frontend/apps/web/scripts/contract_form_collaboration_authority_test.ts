@@ -1,27 +1,26 @@
 /**
  * Executable proof for the collaboration region authority.
  *
- * The collaboration region is visible when the runtime capability is on, or when
- * a subordinate node is a collaboration surface kind and collaboration is not
- * suppressed.  That rule is stated once, in `contractRuntimeVm.ts`; this test
- * executes the real module so the rule cannot be retired by rearranging tokens:
- * an inverted predicate, an emptied kind list, a dead `||` operand or a dropped
- * suppression gate each changes at least one expectation below.
+ * The collaboration region renders when, and only when, the contract declares it
+ * and the dispatch context does not suppress it.  The declaration read is stated
+ * once, in `contractRuntimeVm.ts`; this test executes the real module so the rule
+ * cannot be retired by rearranging tokens: a read that cannot refuse a contract
+ * that declares no region, or that accepts a surface of any content kind, changes
+ * at least one expectation below.
  *
  * The tables run twice: once under node, and once with browser globals installed.
  * A rule that is live under node and inert in the browser is a different rule, and
  * the second pass is what makes that visible here instead of in the product.
  */
 import assert from 'node:assert/strict';
+import type { ContractV2FormStructureSurface } from '../src/app/contracts/v2/types';
 import {
   COLLABORATION_SURFACE_KINDS,
-  hasCollaborationNode,
+  declaredCollaborationSurface,
   isCollaborationSurfaceKind,
-  resolveCollaborationVisibility,
 } from '../src/pages/contractForm/contractRuntimeVm';
 
 const declaredKinds = COLLABORATION_SURFACE_KINDS as readonly string[];
-const node = (kind: unknown) => ({ kind });
 
 const kindCases: Array<[unknown, boolean]> = [
   ['chatter', true],
@@ -39,44 +38,44 @@ const kindCases: Array<[unknown, boolean]> = [
   [{}, false],
 ];
 
-const nodeCases: Array<[Array<{ kind?: unknown }> | null | undefined, boolean]> = [
-  [[], false],
-  [undefined, false],
-  [null, false],
-  [[node('note')], false],
-  [[node(undefined)], false],
-  [[node('chatter')], true],
-  [[node('note'), node('activity')], true],
-  [[node('note'), node('audit')], false],
-  [[node('ACTIVITY')], true],
-];
+/** A declared surface.  `contentKind` is deliberately loose so the table can spell
+ *  a wrong kind; the authority is the only thing that may interpret it. */
+const surface = (contentKind: unknown, title = ''): ContractV2FormStructureSurface => ({
+  surface: `surface-${title}`,
+  title,
+  role: 'activity',
+  contentKind: contentKind as ContractV2FormStructureSurface['contentKind'],
+  sourceIdentity: `source-${title}`,
+});
 
-const visibilityCases: Array<[unknown, boolean | undefined, Array<{ kind?: unknown }>, boolean]> = [
-  [true, false, [], true],
-  [true, true, [], true],
-  [true, true, [node('chatter')], true],
-  [false, false, [], false],
-  [false, true, [], false],
-  [false, false, [node('chatter')], true],
-  [false, true, [node('chatter')], false],
-  [false, false, [node('activity')], true],
-  [false, true, [node('activity')], false],
-  [false, false, [node('note')], false],
-  [false, false, [node('note'), node('activity')], true],
-  [false, true, [node('note'), node('chatter')], false],
-  [undefined, false, [node('chatter')], true],
-  [undefined, true, [node('chatter')], false],
-  [0, false, [node('chatter')], true],
-  ['', false, [node('chatter')], true],
-  [false, undefined, [node('chatter')], true],
-  [false, false, [node('CHATTER')], true],
-  [false, false, [node(' chatter ')], true],
-  [false, false, [node('')], false],
-  ['', true, [], false],
-  [0, true, [], false],
-  ['yes', true, [], true],
-  [1, true, [], true],
-  [false, true, [node('note')], false],
+const first = surface('collaboration-panel', 'first');
+const second = surface('collaboration-panel', 'second');
+const auditTimeline = surface('audit-timeline', 'audit');
+
+type Surfaces = Parameters<typeof declaredCollaborationSurface>[0];
+const asSurfaces = (value: unknown): Surfaces => value as Surfaces;
+
+/**
+ * The declaration read: `undefined` (the contract cannot declare regions at all)
+ * and `[]` (it declares none) both yield no region; anything that is not a list is
+ * not a declaration; only a `collaboration-panel` surface is a region, matched
+ * exactly; and the first declared one wins - the read returns the declared object
+ * itself, not a copy or a re-derived shape.
+ */
+const declarationCases: Array<[unknown, unknown]> = [
+  [undefined, null],
+  [null, null],
+  [[], null],
+  ['collaboration-panel', null],
+  [42, null],
+  [{}, null],
+  [[auditTimeline], null],
+  [[surface('CHATTER')], null],
+  [[surface(undefined)], null],
+  [[surface('')], null],
+  [[first], first],
+  [[auditTimeline, first], first],
+  [[first, second], first],
 ];
 
 /** Run every table.  `environment` only labels the failure messages. */
@@ -101,7 +100,7 @@ function runTables(environment: string): void {
 
   // 2. Kind predicate truth table (case- and whitespace-insensitive).  Every
   // expectation is compared with `strictEqual`, so a truthy-but-not-boolean return
-  // is a failure rather than a pass: the authorities are typed `boolean`, and a
+  // is a failure rather than a pass: the predicate is typed `boolean`, and a
   // weakened return contract must not survive the proof.
   for (const [kind, expected] of kindCases) {
     assert.strictEqual(
@@ -111,51 +110,40 @@ function runTables(environment: string): void {
     );
   }
 
-  // 3. Node authority is an existential test over the subordinate zone.
-  for (const [nodes, expected] of nodeCases) {
-    assert.strictEqual(
-      hasCollaborationNode(nodes),
+  // 3. Declaration read truth table.  `deepStrictEqual` because the returned value
+  // is the declared surface itself: a copy with the same fields is a different
+  // authority than the declaration.
+  for (const [surfaces, expected] of declarationCases) {
+    assert.deepStrictEqual(
+      declaredCollaborationSurface(asSurfaces(surfaces)),
       expected,
-      `nodes ${JSON.stringify(nodes) ?? 'undefined'}${where}`,
+      `surfaces ${JSON.stringify(surfaces) ?? 'undefined'}${where}`,
     );
   }
 
-  // 4. Visibility truth table: capability OR (not suppressed AND node authority).
-  for (const [capability, suppressed, nodes, expected] of visibilityCases) {
-    assert.strictEqual(
-      resolveCollaborationVisibility({ capability, suppressed, nodes }),
-      expected,
-      `capability=${String(capability)} suppressed=${String(suppressed)} `
-        + `nodes=${JSON.stringify(nodes)}${where}`,
-    );
-  }
-
-  // 5. Both operands are load-bearing, and the capability is an alternative.
+  // 4. The declaration is the only input, and the refusal is load-bearing: a
+  // contract that cannot declare regions yields no region even though its runtime
+  // data or capabilities might suggest one.
   assert.strictEqual(
-    resolveCollaborationVisibility({ capability: false, suppressed: false, nodes: [node('chatter')] }),
-    true,
-    `the node authority must be able to switch the region on without the capability${where}`,
+    declaredCollaborationSurface(asSurfaces([auditTimeline, first])),
+    first,
+    `an audit-only prefix must not shadow the declared collaboration region${where}`,
   );
   assert.strictEqual(
-    resolveCollaborationVisibility({ capability: false, suppressed: true, nodes: [node('chatter')] }),
-    false,
-    `suppression must be able to gate the node authority${where}`,
+    declaredCollaborationSurface(asSurfaces([first, second])),
+    first,
+    `the first declared collaboration region is the one published${where}`,
   );
   assert.strictEqual(
-    resolveCollaborationVisibility({ capability: true, suppressed: true, nodes: [] }),
-    true,
-    `the capability is an alternative to the node authority, not a condition on it${where}`,
-  );
-  assert.strictEqual(
-    hasCollaborationNode([node('note')]),
-    false,
-    `a non-collaboration subordinate node must not switch the region on${where}`,
+    declaredCollaborationSurface(asSurfaces('collaboration-panel')),
+    null,
+    `a content kind is not a declaration list${where}`,
   );
 }
 
 runTables('node');
 
-// 6. The same tables with the browser globals present, so a rule that is gated on
+// 5. The same tables with the browser globals present, so a rule that is gated on
 //    `window`/`document`/`navigator`/`self` fails here - under node such a branch
 //    is inert, which is exactly how an environment-gated rule used to pass both
 //    this proof and the wiring guard while the region never rendered.
@@ -207,5 +195,5 @@ for (const [key] of browserGlobals) {
   );
 }
 
-const totalCases = (kindCases.length + nodeCases.length + visibilityCases.length + 4) * 2;
+const totalCases = (kindCases.length + declarationCases.length + 3) * 2;
 console.log(`[contract_form_collaboration_authority] PASS cases=${totalCases}`);

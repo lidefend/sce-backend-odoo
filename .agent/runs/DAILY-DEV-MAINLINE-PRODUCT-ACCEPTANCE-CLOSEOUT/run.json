@@ -463,9 +463,11 @@
   },
   "blockers": [
     "Owner acknowledgement (registered, now accepted): the discover-capable system_admin surface delivers menu_sc_business_config_workbench while its role-surface admin_menu_xmlids lists only menu_ui_menu_config_policy_business_config. The round ruled this designed (three declared authorities: the action's groups_id declares smart_core.group_smart_core_admin; the P1 native-config root menu_sc_business_config_center is declared and the leaf is not excluded; role_surface.system_admin.system_configuration_visible=true) with no code change, and the owner proceeded on that ruling. The alternative ruling to take 表单配置 off the platform-admin face remains the owner's and its owning layer is the action/menu group declaration (smart_core.group_smart_core_admin), not the role-surface anchor list.",
-    "Known coverage debt, now machine-tracked instead of silent: 140 declared @tagged groups (274 declarations) have no governed selection entry. The registry records each with an owner and a 2026-12-31 review deadline; the audit fails closed on any new un-gated group so the debt can only shrink. Wiring them is follow-on work, not this round."
+    "Known coverage debt, now machine-tracked instead of silent: 140 declared @tagged groups (274 declarations) have no governed selection entry. The registry records each with an owner and a 2026-12-31 review deadline; the audit fails closed on any new un-gated group so the debt can only shrink. Wiring them is follow-on work, not this round.",
+    "Product delivery pending the owner's own login verification on the daily dev runtime. The runtime now serves mainline daecaafc, which includes PR #635's contract-projection fix for the payment-basis (payment facts) body; the served sealed contract reports compatibilityDependencies=[] and no LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW, and the readonly probe passed 39/39 check units. This is a human acceptance step, not an engineering gap. Credentials: wutao/123456, db sc_demo.",
+    "RESOLVED in code, not yet deployed: the owner-reported form-surface defect (V1 declared container presentation dropped by the renderer; V2 hardcoded 协作记录 in the P0 default surface + frontend legacy fallbacks) is fixed and locally verified (see evidence.round_20261010_form_presentation_projection_fix). It stays OPEN as a product-delivery item until the served daily runtime carries the fix and the owner's login shows the restored region; no runtime claim is bound to it yet."
   ],
-  "next_exact_step": "Validation-system closeout is DONE and integrated: PR #637 -> main daecaafc (preceded by #636 -> e2e32ad3 and #635 -> bb6b6e82), all four required checks green on the exact heads, and main run 38021052567 proved the repaired backend step executes 14 of 14 planned module runs with failed=0. The branch is content-identical to main; the only remaining tracked change is this bookkeeping update (run ledger + iteration record section 13.20-13.22), which must ride with the next product candidate because a standalone .agent/docs candidate is rejected as bookkeeping-only. Next: owner product-acceptance checkpoint on the daily dev runtime (http://1.95.85.92:18081/, wutao/123456, db sc_demo); remaining tracked coverage debt (140 unwired @tagged groups / 274 declarations, owner-assigned, review_by 2026-12-31) is follow-on work, not this round.",
+  "next_exact_step": "Local fix set is green (guard rebound to the declared contract surface, retired heuristic removed, 15-target L2 batch + strict typecheck PASS, real-file mutation injections caught). Next: (1) commit this candidate on the branch; (2) refresh the served daily runtime at the exact new HEAD through the governed candidate lane (daily.runtime.candidate.bundle_sync -> daily.runtime.source_revision.align -> daily.runtime.frontend.build -> daily.runtime.published_face.converge); (3) re-run the read-only probe and verify.form_structure.contract_runtime.audit so presentation_unclassified/presentation_dropped are 0 and the overview/prompt blocks render with the declared presentation tokens; (4) hand over for the owner's own login verification. make verify.form_structure.contract remains blocked by the pre-existing absent addons/smart_construction_custom module; report per-target evidence instead.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -1272,20 +1274,217 @@
       "artifact": ".runtime/ci-triage/20261010/main_daecaafc_backend_suite.log",
       "reading": "'backend suite executed 14 of 14 planned module run(s); failed=0' (13 module DBs + 1 python unit module); no ::error:: truncation annotation and no nonzero failure count",
       "note": "end-to-end proof that the repaired per-module step reports the full scope instead of masking a truncated one; the literal 'execution truncated' string in the log is GitHub echoing the script source, not runtime output"
+    },
+    "round_20261010_daily_runtime_mainline_refresh": {
+      "trigger": "verified that the served daily runtime lagged mainline: git diff 5220db8b(served) origin/main(daecaafc) over addons/ frontend/ config/ returned 5 files, and git log proved all 5 came from PR #635 (bb6b6e82)",
+      "served_lag_files": [
+        "addons/smart_core/core/form_structure_authority.py (production projection code, +13/-2)",
+        "addons/smart_core/tests/test_view_orchestrator.py",
+        "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
+        "frontend/apps/web/scripts/hierarchical_worksheet_load_stage_test.ts",
+        "frontend/apps/web/scripts/relation_entry_option_limits_test.ts"
+      ],
+      "main_lane_blocked_by_design": "daily.runtime.main.bundle_sync was BLOCKED with 'remote old SHA is not an ancestor of the approved SHA' because #634/#635/#636/#637 were squash merges, so 5220db8b is not an ancestor of daecaafc; no guard was relaxed and no remote ref was hand-edited",
+      "candidate_lane": {
+        "source_branch": "release/daily-runtime-mainline-daecaafc (binds the mainline object daecaafc)",
+        "bundle_sync": "PASS old 5220db8b -> daecaafc; bundle_base_sha=f9b03faa; bundle_sha256=aeabe96f...49c6; evidence_ref=refs/daily-candidates/release/daily-runtime-mainline-daecaafc; origin_main_mutated=false",
+        "source_revision_align": "PASS previous 5220db8b -> daecaafc; env_written=true; restarted=true; rolled_back=false",
+        "published_face_converge": "PASS sha=daecaafc6da6 products=construction.standard,construction.preview",
+        "module_upgrade": "no **/__manifest__.py change between 5220db8b and daecaafc; the converge entry ran the governed mod.upgrade smart_core by module-tree oid",
+        "code_liveness_readback": "remote git hash-object addons/smart_core/core/form_structure_authority.py = 91a3254b...f600 = daecaafc:<path> blob; remote worktree clean"
+      },
+      "frontend_declared_skip": "daily.runtime.frontend.build rebuild was declared-skipped: the build inputs frontend/apps/web/{src,index.html,vite.config.ts,tsconfig.json,package.json,public} are byte-identical between 5220db8b and daecaafc, so the served artifact fingerprint 1f46b033...1b35 and entry asset index-vn0WKFxi.js remain valid for the new revision; the entry's offline unit receipt stays reusable",
+      "runtime_readback": {
+        "record_identity_resolve": "PASS served_revision=daecaafc served_database=sc_demo remote_head=daecaafc; 10 targets uniquely resolved (company a=21 / b=22)",
+        "readonly_probe": "PASS overall on ACCEPTANCE_TARGET_SHA=daecaafc / DB_NAME=sc_demo / http://1.95.85.92:18081 with the fixed dev credential plus a <=10 minute credential envelope: runtime_identity PASS, frontend root 200 and assets/index-vn0WKFxi.js 200, login PASS (wutao uid16, nav_action_count=89, forbidden hits 0, required-path misses 0, role business_config_admin), contract 11/11 true with errors=[], 39/39 check units across contract/frontend/login, schema guard PASS",
+        "artifacts": [
+          "artifacts/backend/daily_dev_acceptance_probe.json",
+          "artifacts/backend/daily_dev_acceptance_probe.contract.json (1047240 bytes, sha256 6a75e201...9ade)",
+          ".runtime/agent-runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/readonly_probe.log",
+          ".runtime/final-acceptance/daily-deployed/published-face-converge.json"
+        ]
+      },
+      "affected_product_surface_evidence": {
+        "basis": "served sealed ui.contract.v2 for payment.request form record 36178 read back from the runtime",
+        "compatibilityDependencies": "[] (non-empty before the fix)",
+        "LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW_occurrences": 0,
+        "payment_facts_section": "data.layoutContract.containerTree[1].children[4] label/string/title = 付款依据",
+        "payment_basis_type_node": "readonly=true, fieldInfo.invisible=false, widget=selection, full selection domain; no visible:false and no auth:\"none\""
+      },
+      "reuse": "frontend_build_sha256 unchanged, so the existing frontend business-entry matrix evidence keeps its identity key and was not re-run (108/108, negatives 5/5, runtime errors 0 stay valid); only daily_acceptance_readback was invalidated by the served-revision change and was re-recorded, returning make agent.run.resume to 40/40 reusable with outside_scope=[]",
+      "credential_boundary": "the fixed dev credential (wutao/123456) applies only to the existing daily/isolated fixture accounts; the daily profile still refuses known weak credentials without a <=10 minute envelope whose fields match CLI/env exactly, so no guard or general login default changed",
+      "environment_deny": "unchanged and not generalised: the rebuild/snapshot lane's two-mounter DENY stays a lane-scoped blocker; rendering_detail_state stays excluded on the existing ruling; this refresh used only existing governed entries and did not touch that lane",
+      "session_hygiene": "no leftover refresh processes and no ssh port forwards after the round (checked); the worktree was returned to the audit branch"
+    },
+    "round_20261010_detail_relation_roundtrip": {
+      "question": "does the detail face still complete a real relation 'click open -> return to the source record -> tabs/actions restored' journey on the currently served revision, and is the previously reported relation-jump 403 absent?",
+      "entry": "existing registered test asset T-ASSET-942, scripts/verify/record_relation_roundtrip_acceptance.js - declaration-driven, not a handler diagnostic: it captures the page's own ui.contract.v2, clicks only relation fields the contract declares readable/openable, verifies the return_* contract the frontend itself emits, walks back and asserts path/title/statusbar/tabs/record-actions before==after, and fails on any 401/403 or console error. No probe framework was extended.",
+      "identity_binding": "served_revision daecaafc / database sc_demo / base http://1.95.85.92:18081 / viewport 1440x1000; source record taken from the governed resolver artifacts/backend/acceptance_record_identity.json (model payment.request, record_id 36178, action_id 780, menu_id 550, company_id 21) - the same record the payment-basis P1 case is sealed on; principal fixture_role_finance, the managed contract-probe principal for that company. No hard-coded record id.",
+      "result": "PASS: declared_entry_count=18; the 3 visible declared relation controls all opened with denied_requests=0 and console_errors=0 - company_id -> /r/res.company/21 (res.company), contract_id -> /r/construction.contract/13610 (construction.contract), settlement_id -> /r/sc.settlement.order/3630 (sc.settlement.order); roundtrip restored path/title/statusbar/tabs/actions all true and error_free true; failures=[]",
+      "artifact": ".runtime/final-acceptance/relation-roundtrip-daecaafc-fixture/20261010T043832/summary.json (6723 bytes, sha256 35f7e406...bedc)",
+      "explained_non_defect": "a first attempt bound the same record to the wutao principal (default company 1) and was correctly refused with PROJECT_SCOPE_DENIED -> /access-denied?reason=PROJECT_SCOPE_DENIED (one 403 on /api/v1/intent), because the delivery-hardening fixture records live in companies 21/22 while the managed contract probe reads them as fixture_role_finance@company 21. Recorded as a principal/company binding fact; no assertion was relaxed and no ACL or field permission was overridden.",
+      "why_this_was_owed": "sections 11.4/12.6.1 require a real click-open-return walkthrough for the detail closeout, explicitly not a handler diagnostic; the route-authority browser lane asserts route/denial authority only, and the last recorded relation roundtrip was bound to served 24e05cd5 (2026-10-07), which the daecaafc refresh invalidated. This run re-binds the journey to the currently served revision on the managed fixture identity."
+    },
+    "round_20261010_form_section_nav_and_hint_projection": {
+      "question": "owner report: 项目表单的章节明显有问题，把提示信息进入章节了 / 违背契约没有发现? -> is the section navigation inventing a chapter out of the draft hint, and is any contract violation undetected?",
+      "identity": "served runtime daecaafc6da6c61d92312a464b84468e7d85c486, database sc_demo, frontend_build_sha256 1f46b033...; route /f/project.project/581?menu_id=379&action_id=506; contract capture .runtime/diag/project-form-section/contract.json; probes dom_probe9/11/12/13.mjs",
+      "nav_is_contract_driven": "falsified the earlier hypothesis that the unnamed hint container is inferred into the nav. The nav has exactly 4 entries and all 4 are declared: 3 x node:<name>:business-section from data-sc-anchor primary groups (sc_project_information_basic/plan/responsibility) and 1 x surface:activity declared in formStructureContract.surfaces[0] (title 协作记录, role activity, contentKind collaboration-panel, sourceIdentity collaboration-panel). Identical at 1440 and 390; no [data-mobile-section-selector] exists. The hint block produces no nav entry and no nav entry targets it.",
+      "hint_node_is_contract_driven": "layoutContract.containerTree[0].children[4] is a declared node: type=container, attributes={class:'alert alert-info', role:status, invisible:\"lifecycle_state != 'draft'\"}, text=保存用于更新项目资料…, plus a normalized top-level modifiers.invisible={kind:field_compare, field:lifecycle_state, operator:'!=', value:'draft'}. So its visibility is a contract fact evaluated via the modifier AST; the raw expression string is a redundant trace, not the authority.",
+      "root_defect_declared_layout_not_consumed": "the real violation: declared container presentation/layout facts in layoutContract are not consumed by the renderer. DOM class census over main.sc-native-contract-tree: sc-project-overview, d-flex, justify-content-between, align-items-start, small, text-muted, h3, alert, alert-info each appear 0 times. NativeFormTreeRenderer.containerClass() returns only native-container / native-container--<type> plus flags and never merges nodeClassList(node); declared classes are only merged on the field-section branch (line 362).",
+      "root_defect_consequence": "the sheet's 11 children flatten into 48 <section class=\"native-container--*\"> blocks, 39 of them with an empty data-group-title. The overview's inline rows break into one-word lines with values pushed to the far right (已有 / 1 / 份合同 / 成本 / 已录入 / 1 / 条) and the draft hint renders as a bare section-level block immediately above the 基本信息 heading - which is what reads as 提示信息进入章节. The callout look is still produced by matching the hardcoded class names in JS (isNativeFeedbackContainer / nativeTextPresentation on 'alert alert-info'), i.e. presentation semantics are re-derived by string matching instead of consumed from a declared contract fact.",
+      "guard_blind_spot": "scripts/verify/form_view_native_structure_boundary_guard.py _frontend_boundary_checks asserts only section identity (visible group + data-sc-anchor + readable title), heading hiding and shared traversal; nothing asserts that declared container classes/structure are consumed, so a whole declared facet can be dropped silently. Separately that guard greps only NativeFormTreeRenderer.vue for forbidden inferred labels, while frontend/apps/web/src/pages/contractForm/nativeSectionNavigation.ts legacySurfaceNavigationItems still hardcodes label 协作记录 + sourceIdentity collaboration-panel and addons/smart_core/handlers/ui_contract_v2.py:93-98 FORM_STRUCTURE_DEFAULT_ACTIVITY_SURFACE hardcodes the same title in P0 - both outside the assertion's file scope, although docs/architecture/form_structure_surface_contract_boundary_v1.md Ownership says the renderer must not hardcode a region label/identity and P0 must not name a product capability key.",
+      "secondary_contract_smell": "formStructureContract.sourceSectionTitles for this form mixes 11 action/button labels (项目设置/去补齐资料/审批通过/审批驳回/启动项目/提交立项/查看阶段要求/查看合同/查看成本/查看财务/查看任务) with the 6 real section titles, because section_titles_from_layout adds every non-field node title including button nodes. Five sibling P1 forms have tests asserting sourceSectionTitles is empty (test_project_initiation/ledger_summary_guarantee/tax_filing/daily_contract_settlement/data_permission native_lowcode); the project form has no such test. The projection matrix marks the field NON_VISUAL (source trace), so it does not drive rendering today.",
+      "ownership": "V1 declared-layout-not-consumed: P0 smart_core projection (layoutContract exports raw native classes as the layout authority with no renderer-neutral layout declaration) + P0 frontend generic container rendering. V2 hardcoded region label: P0 smart_core default surface title + P0 frontend legacy navigation fallback, while the boundary doc assigns titles to P1. No P1 model/view special case is proposed and no ACL/field-permission rule is to be overridden.",
+      "not_reproduced": "the hint was NOT observed as a section-navigation entry on the served runtime at 1440 or 390 on record 581; if the owner's screen shows a nav entry carrying hint text, the exact entry label plus URL/viewport is needed to locate that surface.",
+      "next": "owner go/no-go on the fix approach before any P0 renderer/projection change: (A recommended) projection stops exporting raw native classes as layout authority and declares region layout in a renderer-neutral vocabulary carried by the existing formStructureContract slots/zones, with the renderer consuming only declared layout and a guard asserting every declared layout key is consumed; (B) keep the native container tree and make the renderer honor the declared utility classes. Both must ship with a negative-first guard that fails when a declared facet is dropped.",
+      "guard_mechanism_pinned": {
+        "why_no_guard_could_see_it": "the render-authority classification is self-referential and non-closed, and consumption is declared rather than verified. Three independent mechanical reasons, each verified by reading the entrypoints.",
+        "reason_1_taxonomy_only": "scripts/verify/contract_v2_render_authority_matrix.py compares only its own hardcoded EXPECTED against the schema's properties (build(): missing = schema-derived - EXPECTED, stale = EXPECTED - schema-derived) and raises only on missing/stale. It never compares the taxonomy against what the served contract actually ships, so a shipped key that is absent from the taxonomy cannot be seen at all.",
+        "reason_2_literal_zero": "the same entry prints and stores summary.unclassifiedCount as the literal 0 (contract-v2-render-authority-matrix-v1.json: schemaFieldCount 327, unclassifiedCount 0). It is an assertion about the taxonomy, not a measurement of the contract; nothing can ever be reported as unclassified.",
+        "reason_3_scope_narrower_than_runtime": "the taxonomy's container scope is 11 keys (containerId containerType title span styleToken type name label string children widgetList) and $defs.container in docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json declares exactly those 11 with additionalProperties=false. The served contract's container nodes additionally carry attributes, modifiers, text, nativeLocator and occurrenceIndex - so container.attributes.class is outside the taxonomy and outside the schema definition, i.e. the question 'who consumes the declared container presentation facet?' is never asked anywhere. Each container.* row in the published matrix is nevertheless classified rendered_or_interaction_authority with the free-text consumer 'contractFormPresenter.presentNode', which is a declaration, not a verified read.",
+        "reason_4_file_scope": "scripts/verify/form_view_native_structure_boundary_guard.py _frontend_boundary_checks asserts section identity (visible group + data-sc-anchor + readable title), heading hiding and shared traversal, and its forbidden-hardcoded-label assertion greps only NativeFormTreeRenderer.vue - so the same hardcoded 协作记录 in nativeSectionNavigation.ts and the P0 FORM_STRUCTURE_DEFAULT_ACTIVITY_SURFACE default are outside its file scope.",
+        "no_runtime_schema_validation": "no jsonschema validation of layoutContract.containerTree exists either: addons/smart_core/core/unified_page_contract_v2_assembler.py consumes the schema file for its bytes/SHA binding (schemaSha256 via scripts/verify/contract_schema_declaration_sync.py) and normalizes the tree in code; the schema's additionalProperties=false container definition is never applied to the shipped tree.",
+        "mechanism_fix": "M1 closed-world classification: compute unclassifiedCount as a real set difference between the keys the assembler/served contract ships per node family and the taxonomy, and fail when > 0 - this alone enumerates the dropped facet today. M2 executable consumption binding: every rendered_or_interaction_authority key must bind a negative-first assertion that proves the named consumer reads it (drop the key, the rendered result must change), replacing the free-text consumer string. M3 file-scope closure: the forbidden-hardcoded-region-label assertion must cover the navigation module and the P0 default, not one file.",
+        "why_prior_acceptance_passed": "prior acceptance verified declaration consistency (identity, section anchors, surface declarations, key taxonomy) but never consumption, so a fully declared facet could be dropped by the renderer while every gate stayed green."
+      }
+    },
+    "round_20261010_form_presentation_projection_fix": {
+      "question": "owner ruling A: fix the declared container presentation facet as a generic projection defect without relaxing any acceptance assertion, and close the guard gap that let it ship silently",
+      "identity": "workspace HEAD bff64595 + dirty scope (fix uncommitted); owning layers P0 smart_core projection + P0 generic frontend renderer + P0 region-surface declaration; no P1 model special case and no ACL/field-permission change",
+      "root_cause_confirmed": "the native form arch declares container presentation as CSS classes (sc-project-overview, d-flex, justify-content-between, mb-3, col-md-6, card, alert alert-info, ...). The projection carried them into layoutContract attributes but the renderer consumed no declared presentation token: containerClass() never merged them and the product stylesheet implemented none of the vocabulary (0/9 classes present in the DOM). The declared facet was therefore dropped with no error, which is why the region collapsed into a stack of full-width blocks.",
+      "fix_projection": "ui_contract_v2_projection.declared_presentation_tokens(): every declared container class is classified into the renderer-neutral styleToken facet and published on the normalized node. Product tokens (sc-*), an explicit layout vocabulary, native structural markers (o_*/oe_*) and control-btn markers are each handled by decision; a class the vocabulary cannot classify raises ValueError, so an undeclared facet fails closed instead of shipping silently. field/button/widget nodes are exempt because their presentation is declared by another facet (field presentation, actionContract tier).",
+      "fix_renderer": "NativeFormTreeRenderer declares styleToken on its node type, merges declaredPresentationTokens(node) into containerClass() (the container branch, the field-section branch and the static-text branch), and carries a declared presentation vocabulary block that implements every accepted token (layout/spacing/typography/surface/feedback plus the sc-* project region tokens). nativeTextPresentation.classTokens() also consumes the declared token.",
+      "fix_v2_region_label": "the forbidden hardcoded region label is gone from every declaration site: nativeSectionNavigation.legacySurfaceNavigationItems() deleted, ContractFormDriverHost.vue legacy surface branch + '协作记录' fallback deleted, ObjectTaskPage.vue legacy surface items + fallback deleted, and the P0 FORM_STRUCTURE_DEFAULT_ACTIVITY_SURFACE default removed so an absent product declaration declares no surface instead of a platform-invented 协作记录. Region visibility is now declaration-only (runtime data is never the authority).",
+      "guard_mechanisms_added": [
+        "new scripts/verify/form_container_presentation_consumption_guard.py (+ make verify.form_container_presentation.guard, wired into verify.form_structure.contract[_runtime.audit]): functional, negative-first. It proves the projection derives styleToken, fails closed on an unclassifiable class, ignores native markers/exempt node types, and that the renderer merges the declared facet and implements every accepted token; the renderer checks are self-tested on a mutated source so the guard proves it can fail.",
+        "the guard immediately found a real gap while being written: the vocabulary accepted g-2 but the renderer only implemented .row.g-2, so a standalone g-2 declaration was a no-op. Fixed to a generic .g-2 rule.",
+        "M2 closed: form_view_native_structure_boundary_guard._frontend_boundary_checks now also greps nativeSectionNavigation.ts, ContractFormDriverHost.vue and ObjectTaskPage.vue for 协作记录/历史审计, so a hardcoded region label can no longer hide outside the renderer file.",
+        "M1 partially closed: contract_v2_render_authority_matrix unclassifiedCount is now derived from the produced rows (and raises on an unclassified row) instead of a hardcoded 0; the matrix JSON is byte-identical, so no regeneration churn.",
+        "runtime-level check added to the delivered-contract audit: form_structure_contract_runtime_audit.presentation_facet_issues() re-classifies every delivered containerTree node and fails a model when a declared class is unclassifiable (presentation_unclassified) or missing from the published styleToken (presentation_dropped). This is the missing 'compare the delivered contract, not only the schema registry' link for this defect class."
+      ],
+      "validations": {
+        "L0_identity": "HEAD bff64595 + explicit dirty scope above; not frozen",
+        "L1": "make ci.local.iteration PASS (rc=0, change_state=dirty, coverage=L1_only, receipt=none)",
+        "L2": [
+          "verify.frontend.form_structure_contract_projection.unit PASS fields=76 unclassified=0",
+          "verify.frontend.form_structure_surface_contract.unit PASS",
+          "verify.frontend.native_section_navigation.unit PASS authority=7 next_action=3 content_identity=11 active_tracking=11 structure_consumption=7",
+          "verify.frontend.contract_v2_render_authority.unit PASS fields=327 unclassified=0",
+          "verify.form_container_presentation.guard PASS vocabulary=30 tokens",
+          "scripts/verify/form_view_native_structure_boundary_guard.py PASS",
+          "scripts/verify/frontend_form_canvas_wide_grid_guard.py PASS (+ unittest 5 tests OK)",
+          "verify.frontend.typecheck.strict PASS (rc=0)",
+          "verify.frontend.build PASS (rc=0, dist-dev rebuilt)",
+          "guard_registry_audit PASS 1407 scripts (new guard is referenced by its make target)",
+          "test_coverage_registry_audit PASS all declared groups gated or dispositioned"
+        ],
+        "blast_radius": "all 58 distinct classes declared in form arches across every addons/**/*.xml were classified against the vocabulary: 0 unclassified, so the fail-closed path does not break contract generation for any repository-native view.",
+        "design_tokens": "every CSS custom property used by the new declared-presentation block was verified to exist in the product stylesheet tokens (--sc-space-*, --sc-app-*, --sc-product-*, --sc-font-*, --sc-base-font-weight-*)."
+      },
+      "not_yet": "the fix is NOT yet deployed or accepted: the served daily runtime still runs mainline daecaafc with the previous frontend bundle, so the owner's screen still shows the collapsed region. Runtime refresh (candidate bundle sync -> source revision align -> frontend build -> published face converge) and the owner login verification are the next step. M3 (a containerTree JSON-schema validator) was reviewed and left as a recorded decision: the delivered tree is already validated by the assembler (array + owner binding) and by the strict frontend decoder (required container fields, duplicate container/widget identity), so adding a parallel schema would duplicate guards rather than close a hole; the actual hole was consumption, which the new guard now covers.",
+      "owner_ruling_honoured": "no acceptance assertion was relaxed and no ACL/field-permission override or critical-flag shortcut was introduced; the fix lands in the generic projection + generic renderer + declaration sites only."
+    },
+    "round_20261010_collaboration_authority_rebind": {
+      "status": "passed_local",
+      "purpose": "After the collaboration region was made declaration-driven (V2 in the previous round), the wiring guard still pinned the retired runtime-capability heuristic as the single authority, so it failed against the owner's ruling. The guard was rebound to the declared contract surface and the consumerless heuristic was retired instead of being kept as a second authority.",
+      "changed_paths": [
+        "scripts/verify/frontend_scene_component_bridge_guard.py",
+        "frontend/apps/web/src/pages/contractForm/contractRuntimeVm.ts",
+        "frontend/apps/web/scripts/contract_form_collaboration_authority_test.ts",
+        "docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md"
+      ],
+      "authority": {
+        "single": "declaredCollaborationSurface(props.surfaces)",
+        "flag": "props.suppressCollaboration ? false : Boolean(collaborationSurface.value)",
+        "new_assertion": "the collaborationSurface computed body must equal () => declaredCollaborationSurface(props.surfaces)",
+        "retired": [
+          "contractRuntimeVm.resolveCollaborationVisibility",
+          "contractRuntimeVm.hasCollaborationNode"
+        ],
+        "retired_reason": "zero production consumers once the region became declaration-driven; keeping them would pin a second, non-declaration region rule"
+      },
+      "results": [
+        {
+          "layer": "L2",
+          "check": "python3 scripts/verify/frontend_scene_component_bridge_guard.py",
+          "status": "passed",
+          "detail": "checks=129 collaboration_self_check=259"
+        },
+        {
+          "layer": "L2",
+          "check": "make verify.frontend.contract_form_collaboration_authority.unit",
+          "status": "passed",
+          "detail": "cases=58"
+        },
+        {
+          "layer": "L2",
+          "check": "15-target affected batch",
+          "status": "passed",
+          "detail": "form_container_presentation.guard vocabulary=30; form_view.native_structure.boundary_guard; view.orchestration_boundary_guard; form_view.scope.boundary_guard; scene_component_bridge.guard; scene_component_bridge.unit cases=38; form_structure_surface_contract.unit; native_section_navigation.unit authority=7 content_identity=11; contract_v2_render_authority.unit fields=327 unclassified=0; contract_v2_runtime_policy.unit cases=6 fields=23; canonical_form_presenter.unit cases=177; native_collaboration_presentation.unit; native_form_structure_responsibility.unit cases=12; form_structure_contract_projection.unit fields=76 unclassified=0; form_canvas_layout.guard; BATCH_EXIT=0"
+        },
+        {
+          "layer": "L2",
+          "check": "make verify.frontend.typecheck.strict",
+          "status": "passed",
+          "detail": "RC=0"
+        }
+      ],
+      "mutation_evidence": [
+        "real ContractFormDriverHost.vue flag replaced by Boolean(props.showCollaborationPanel) -> guard FAIL (flag equality)",
+        "real ContractFormDriverHost.vue collaborationSurface computed replaced by a local literal -> guard FAIL (declaration read)",
+        "both mutations reverted; guard PASS again and the file is byte-identical to the reviewed revision"
+      ],
+      "pre_existing_blocker_observed": "make verify.form_structure.contract is unusable on this branch for a reason unrelated to this change: its member verify.user_form.preference.boundary_guard requires addons/smart_construction_custom/models/user_preferences.py, and that path is absent from HEAD (git cat-file -e HEAD:<path> fails; addons/smart_construction_custom* does not exist). Recorded as an owning-layer dependency gap; no assertion was relaxed and no dependency was changed. The new guard's PASS is therefore reported per-target, not as an aggregate-gate pass.",
+      "handover": "Owner login check on the refreshed preview remains the only user-facing step: wutao/123456, database sc_demo, http://1.95.85.92:18081/"
     }
   },
   "continuation": {
     "reason": "successor to the retired FE-HIERARCHICAL-WORKSHEET-USABLE-READY run (merged PR #626) and the closed MAINLINE-BASELINE-BINDING anchor",
-    "action": "align the daily runtime identity to the latest main and close out the user product acceptance boundary"
+    "action": "align the daily runtime identity to the latest main and close out the user product acceptance boundary",
+    "handoff_ready": {
+      "state": "this round is closed at the ledger level; the only open boundary is the owner's own product-acceptance judgment (a human step, not an engineering gap). make agent.run.resume = resolved, 40/40 declared checks reusable, 0 stale.",
+      "worktree": "single worktree /home/lidefend/workspace/sce-backend-odoo on audit/daily-dev-mainline-product-acceptance-closeout-20261009 @ bff64595, dirty = .agent/runs/.../run.json + docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md only. A standalone .agent/docs candidate is rejected as bookkeeping-only, so these two files must ride with the next product candidate.",
+      "branch_relation": "origin/main (daecaafc) is an ANCESTOR of this branch (git log HEAD..origin/main is empty), and git diff HEAD origin/main touches only those two bookkeeping files. The branch is therefore main + bookkeeping only, so the next product candidate can be built on it directly with no branch sync.",
+      "new_task_entry": "register one goal under .agent/goals/ AND .agent/runs/<goal-id>/run.json, then point .agent/active-runs.json at this branch before the first mutation. Do not silently inherit this run. If the new task is a different independently acceptable product result, close this run first (run -> completed/superseded with the goal terminal in the same step) so the ledger guard stays drift-free; extending this run is correct only when the new task belongs to the same accepted result.",
+      "ready_environment": "daily dev runtime serves source_revision daecaafc / database sc_demo / frontend_build_sha256 1f46b033... on http://1.95.85.92:18081; the fixed dev credential is wutao/123456, and the daily readonly probe still requires a <=10 minute envelope whose fields match CLI/env exactly. Delivery-hardening fixture records live in company 21/22 and are read by the managed contract probe as fixture_role_finance.",
+      "reusable_now": "40/40 declared checks reusable; the frontend business-entry matrix keeps its identity key (frontend_build_sha256 unchanged) so its 108/108 list-scope result and 5/5 negatives stay valid; the detail relation roundtrip (click open -> return -> tabs/actions restored) is now bound to the served daecaafc revision.",
+      "known_residues": [
+        "local branch release/daily-runtime-mainline-daecaafc at daecaafc is intentionally left in place: the governed cleanup entry (scripts/ops/branch_cleanup_safe.sh) refuses release/* as a protected prefix",
+        "the rebuild/snapshot-lane DENY stays a lane-scoped blocker and is not an environment-wide verdict",
+        "tracked coverage debt: 140 unwired @tagged groups / 274 declarations, owner-assigned, review_by 2026-12-31",
+        "no leftover refresh processes, browser runs or ssh port forwards after this round"
+      ],
+      "ready_next_candidates": [
+        "owner login acceptance on the daily runtime (the pending human gate)",
+        "detail coverage at 390/mobile and in light/dark themes (not covered by any lane run so far - the relation roundtrip lane is 1440 only)",
+        "wiring the tracked @tagged coverage debt into governed selection entries",
+        "the next product candidate on this branch (its PR carries the two bookkeeping files)"
+      ]
+    }
   },
   "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced.",
   "stage_identity": {
     "kind": "iteration",
-    "head": "697cb589",
+    "head": "bff64595dc135f2a23eb2fbab05ef4194488fe55",
     "dirty_scope": [
       ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json",
-      "docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md"
+      "docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md",
+      "addons/smart_core/handlers/ui_contract_v2.py",
+      "addons/smart_core/handlers/ui_contract_v2_projection.py",
+      "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+      "frontend/apps/web/src/components/template/nativeTextPresentation.ts",
+      "frontend/apps/web/src/pages/contractForm/nativeSectionNavigation.ts",
+      "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue",
+      "frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue",
+      "frontend/apps/web/scripts/form_structure_surface_contract_test.ts",
+      "frontend/apps/web/scripts/native_section_navigation_test.ts",
+      "scripts/verify/form_container_presentation_consumption_guard.py",
+      "scripts/verify/form_view_native_structure_boundary_guard.py",
+      "scripts/verify/form_structure_contract_runtime_audit.py",
+      "scripts/verify/contract_v2_render_authority_matrix.py",
+      "scripts/verify/frontend_form_canvas_wide_grid_guard.py",
+      "make/runtime_ops.mk"
     ],
-    "note": "PR #637 merged to main as daecaafc; the branch is content-identical to main and this round's only remaining tracked change is the bookkeeping update (run ledger + iteration record), which rides with the next product candidate per the standalone-bookkeeping rule. Dirty scope is uncommitted iteration state, not a frozen candidate."
+    "note": "iteration identity for the form presentation projection fix (V1+V2). HEAD is still the bookkeeping commit bff64595; the fix is uncommitted, so this stage identity is a dirty iteration identity and must not be described as frozen. Served daily runtime is unchanged this step: it still serves mainline daecaafc with frontend_build_sha256 1f46b033..., so no runtime claim in this entry is bound to the fix."
   }
 }

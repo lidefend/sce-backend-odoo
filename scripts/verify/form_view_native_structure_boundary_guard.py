@@ -27,6 +27,8 @@ NATIVE_RENDERER_PATH = ROOT / "frontend/apps/web/src/components/template/NativeF
 NATIVE_BUSINESS_SECTION_PATH = ROOT / "frontend/apps/web/src/pages/contractForm/nativeBusinessSection.ts"
 NATIVE_SECTION_NAVIGATION_PATH = ROOT / "frontend/apps/web/src/pages/contractForm/nativeSectionNavigation.ts"
 CONTRACT_FORM_PATH = ROOT / "frontend/apps/web/src/pages/ContractFormPage.vue"
+CONTRACT_FORM_DRIVER_PATH = ROOT / "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue"
+OBJECT_TASK_PAGE_PATH = ROOT / "frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue"
 CONTRACT_MODE_SUPPORT_PATH = ROOT / "frontend/apps/web/src/pages/contractForm/ContractModeSupportPanel.vue"
 LOW_CODE_FIELD_DIALOG_PATH = ROOT / "frontend/apps/web/src/pages/contractForm/LowCodeFieldCreateDialog.vue"
 
@@ -147,6 +149,8 @@ def _frontend_boundary_checks(errors: list[str]) -> None:
     native_business_section = NATIVE_BUSINESS_SECTION_PATH.read_text(encoding="utf-8")
     native_section_navigation = NATIVE_SECTION_NAVIGATION_PATH.read_text(encoding="utf-8")
     contract_form = CONTRACT_FORM_PATH.read_text(encoding="utf-8")
+    contract_form_driver = CONTRACT_FORM_DRIVER_PATH.read_text(encoding="utf-8")
+    object_task_page = OBJECT_TASK_PAGE_PATH.read_text(encoding="utf-8")
     contract_mode_support = CONTRACT_MODE_SUPPORT_PATH.read_text(encoding="utf-8")
     low_code_field_dialog = LOW_CODE_FIELD_DIALOG_PATH.read_text(encoding="utf-8")
     _assert(
@@ -172,6 +176,20 @@ def _frontend_boundary_checks(errors: list[str]) -> None:
         "inferred semantic headings must stay hidden: the renderer must not turn a semantic role into a business label",
         errors,
     )
+    # A region label is product wording declared by the contract.  The check
+    # must cover every file that can build a region navigation entry, not only
+    # the renderer: leaving a hardcoded label in the navigator or the driver
+    # host would let an undeclared region reappear.
+    for relpath, text in (
+        ("nativeSectionNavigation.ts", native_section_navigation),
+        ("ContractFormDriverHost.vue", contract_form_driver),
+        ("ObjectTaskPage.vue", object_task_page),
+    ):
+        _assert(
+            not any(label in text for label in ("协作记录", "历史审计")),
+            f"region labels must stay declared by the contract, not hardcoded in {relpath}",
+            errors,
+        )
     _assert(
         "collectNativeBusinessSections(nodes" in native_renderer
         and "collectNativeBusinessSections(nodes" in native_section_navigation,

@@ -1271,6 +1271,12 @@ baseline `aea2c19b`（`.runtime/delivery-freeze/worktree-fingerprint.json`）。
 合并进主线的内容与日常运行态**已服务并通过用户视角验收的产品内容完全一致**，差异仅在 `docs/`、`.agent/`、证据记录面。
 因此本轮**不重跑运行态部署、不重取矩阵证据**（复用依据 = 声明的受影响输入未变 + 产品面零差异），符合"按变更影响复用、不按提交重跑"的规则。
 
+> **勘误（第 17 轮，2026-10-10）**：上文"产品面零差异"只对该轮的目标候选 `d1511b51` 成立，**不适用于其后主线**。
+> PR #635（`bb6b6e82`）把 `addons/smart_core/core/form_structure_authority.py` 的契约投影修复带入主线后，
+> 运行态 `5220db8b` 与主线 `daecaafc` 之间存在 **1 个生产源差异 + 4 个测试文件差异**，本表述已不再是当前服务态的事实依据。
+> 本轮运行态已按受管入口刷新到 `daecaafc`，完整事实、判定与证据见 §13.23。
+
+
 **四、台账同步方式（按规则，不单独开记账 PR）**
 
 合并后的 run/台账更新提交保留在分支上。按执行规则，纯 `.agent/` + `docs/` 候选会被
@@ -1365,9 +1371,438 @@ PR head == `EXPECTED_HEAD` == 本地 HEAD，`pr.merge.local_quick_gate` 均走 *
 本记录与 `run.json` 更新属纯 `.agent/` + `docs/` 变更，会被 `pr.merge.local_quick_gate`
 判定为 standalone bookkeeping 并拒绝，故**随下一项产品候选同行**。
 
-## 13.22 四态（本轮更新）
+## 13.22 四态（第 16 轮，已被 §13.23 八 取代）
 
 - **批次验收**：完成（验证体系收口三层修复 + 本地全绿 + 负例检出 + exact-head Quick）。
 - **主线集成**：**完成**——PR #637 → `daecaafc`（前置 #635 → `bb6b6e82`、#636 → `e2e32ad3`）。
 - **版本发布**：未主张（无部署动作；日常运行态服务身份未变）。
 - **产品交付**：技术证据就绪，**待所有者登录核对判定**（`http://1.95.85.92:18081/`，`wutao/123456`，库 `sc_demo`）。
+
+
+## 13.23 运行态对齐主线：squash 合并下主线路不可用 → 受管候选车道刷新 + 投影修复的运行态证实（2026-10-10 第 17 轮）
+
+**一、事实澄清：运行态落后主线一个生产投影修复（修正 §13.19 三 的"产品面零差异"）**
+
+- 刷新前服务态：`sc-root:/opt/projects/repos/sce-product-odoo` 为 detached + clean，`HEAD=5220db8b`，
+  `.env.dev` 声明 `SC_SOURCE_REVISION=5220db8b`、`FRONTEND_BUILD_SHA256=1f46b033…1b35`。
+- 主线为 `daecaafc`。`git diff --name-only 5220db8b origin/main -- addons/ frontend/ config/` = **5 个文件**，
+  `git log` 证明**全部来自 PR #635（`bb6b6e82`）**：
+  | 文件 | 变化 | 性质 |
+  | --- | --- | --- |
+  | `addons/smart_core/core/form_structure_authority.py` | +13/-2 | **生产投影代码** |
+  | `addons/smart_core/tests/test_view_orchestrator.py` | +31 | 测试 |
+  | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` | +12 | 测试 |
+  | `frontend/apps/web/scripts/hierarchical_worksheet_load_stage_test.ts` | -2 | 测试脚本 |
+  | `frontend/apps/web/scripts/relation_entry_option_limits_test.ts` | -5 | 测试脚本 |
+- 该生产差异正是 §13.20 记录的"付款依据"契约投影缺陷修复：`structural_form_declarations()` 多了一个
+  `bool(semantic_keys.intersection(row))` 合取，使 identifier-only 行（如 `{"name": …}`）落到结构声明分支，
+  报出假 `LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW` 冲突、`compatibilityDependencies` 变为非空；
+  289 个已声明契约中唯一受影响 body 是 **id 4 的付款事实 body**。
+- 结论：在 `#635` 之前**不能**以"产品面零差异"复用运行态证据；本轮必须先对齐运行态，再谈产品交付收口。
+
+**二、受管刷新：主线路按设计拒绝，改走候选车道（不绕过任何前置）**
+
+- 实测 `git merge-base --is-ancestor 5220db8b daecaafc` **不成立**（#634/#635/#636/#637 均为 squash 合并），
+  因此 `daily.runtime.main.bundle_sync` 的前置 `remote old SHA is not an ancestor of the approved SHA` **按设计 BLOCKED**；
+  未放宽、未手改远端 ref。
+- 在受管 `release/*` 分支（`release/daily-runtime-mainline-daecaafc`，直接绑定主线对象 `daecaafc`）上按既有候选车道执行：
+  1. `daily.runtime.candidate.bundle_sync` **PASS** — `old 5220db8b → source daecaafc`、`bundle_base_sha=f9b03faa`、
+     `bundle_sha256=aeabe96f…49c6`、`evidence_ref=refs/daily-candidates/release/daily-runtime-mainline-daecaafc`、
+     `origin_main_mutated=false`；远端 checkout 后 detached、worktree clean。
+  2. `daily.runtime.source_revision.align` **PASS** — `previous_revision 5220db8b → daecaafc`、`env_written=true`、
+     `restarted=true`、`rolled_back=false`；回读 `git_sha=daecaafc`。
+  3. `daily.runtime.published_face.converge` **PASS** — `sha=daecaafc6da6 products=construction.standard,construction.preview`；
+     发布面按新投影重新冻结并复证闸门（投影代码必须先活，快照才不落后一代）。
+- 升级判定：`git diff --name-only 5220db8b daecaafc -- '**/__manifest__.py'` 为空（无模型/字段/视图/数据/安全变更）；
+  发布面收敛入口按模块树 oid 判定后执行了受管 `mod.upgrade smart_core`（`DAILY_RUNTIME_PUBLISHED_FACE_UPGRADE_MODULES=smart_core`）。
+- 代码存活读回（只读）：`sc-root` 上 `git hash-object addons/smart_core/core/form_structure_authority.py`
+  = `91a3254b…f600` = `daecaafc:<同路径>` 的 blob，且远端 worktree clean → **修复确已生效于被服务的代码树**。
+
+**三、前端层声明跳过（用输入恒等证明，不用重跑求安心）**
+
+- `git diff --name-only 5220db8b daecaafc -- frontend/apps/web/src frontend/apps/web/index.html
+  frontend/apps/web/vite.config.ts frontend/apps/web/tsconfig.json frontend/apps/web/package.json frontend/apps/web/public`
+  **为空** → 进入 `frontend/apps/web/dist-dev` 的构建输入字节完全不变；`frontend/` 整目录差异只有两个 `apps/web/scripts/*_test.ts`。
+- 故服务态产物指纹 `1f46b033…1b35` 与入口资产 `index-vn0WKFxi.js` 对该修订仍然有效（重建不会改变指纹），
+  `daily.runtime.frontend.build` 的**重建被声明跳过**；该入口的离线单测（`verify.daily.runtime.frontend.build`）输入未变，回执 reusable。
+- 依据 = "能复用必须先复用" + 已证明的输入恒等；跳过项按规则显式登记，不表述为"通过"。
+
+**四、运行态只读复核（全部 PASS，39 个检查单位）**
+
+- `daily.runtime.record_identity.resolve`（`DAILY_RUNTIME_EXPECTED_SHA=daecaafc`）：PASS；
+  `served_revision=daecaafc`、`served_database=sc_demo`、`remote_head=daecaafc`；company a=`21`/b=`22`，
+  10 项 target（project / contract / general_contract_carrier / settlement / payment_request /
+  payment_request_company_b / payment_execution / journey_request / work_settlement / lifecycle_project）**唯一解析**。
+- `verify.daily_dev.acceptance.readonly.probe`（`ACCEPTANCE_TARGET_SHA=daecaafc`、`DB_NAME=sc_demo`、
+  base `http://1.95.85.92:18081`、固定开发口令 + ≤10 分钟凭据信封，**未放宽口令 fail-closed 守卫**）：**整体 PASS**
+  - `runtime_identity`：served `daecaafc`、db `sc_demo`、frontend `1f46b033…` → PASS。
+  - `frontend`：根 200、`assets/index-vn0WKFxi.js` 200。
+  - `login`（`wutao`，uid16）：`nav_action_count=89`、`nav_forbidden_label_hits=[]`、`nav_required_path_misses=[]`、
+    `nav_required_action_mismatches=[]`、`role_code=business_config_admin`、`system_init_ok=true`。
+  - `contract`：**11/11**（布尔全 true）、`errors=[]`；声明账号 `fixture_role_finance` 唯一解析到
+    `payment.request` id `36178` / company 21 / menu 550 / action 780。
+  - 检查单位 11+11+17 = **39**；`[dev_acceptance_release_probe_schema_guard] PASS`。
+- 回执/证据：`.runtime/agent-runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/readonly_probe.log`、
+  同目录 `daily_acceptance_readback.json`（受管 begin/record 重录）、
+  `artifacts/backend/daily_dev_acceptance_probe.json` 与 `.contract.json`（1,047,240 bytes，sha256 `6a75e201…9ade`）。
+
+**五、受影响产品面的运行态证据（"付款依据"投影，非 handler 诊断替代）**
+
+直接读回服务态封存契约 `artifacts/backend/daily_dev_acceptance_probe.contract.json`
+（`ui.contract.v2` / `payment.request` / form / record 36178）：
+
+- `data.formStructureContract.sourceAuthority.governance_source.compatibilityDependencies` = **`[]`**（修复前非空）。
+- 全契约文本中 `LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW` 出现 **0 次**。
+- 付款事实区块位于 `data.layoutContract.containerTree[1].children[4]`，其 `label`/`string`/`title` 均为 **付款依据**；
+  其下 `payment_basis_type` 节点 `readonly=true`、`fieldInfo.invisible=false`、`widget=selection`，
+  携带完整 selection 域（`standard_settlement`/`line_settlement`/`material_settlement`/`rental_settlement`/
+  `subcontract_settlement`/`contract`/…），**不存在 `visible:false`，也不存在 `auth:"none"`**。
+
+**六、复用面（不重跑已通过项）**
+
+- 前端产物指纹 `1f46b033…1b35` 未变，仍为既有前端业务入口矩阵证据的身份键 → 按"输入未变即复用"不重跑矩阵，
+  列表范围 108/108、负例 5/5、运行时错误 0 的既有结论继续有效。
+- 服务修订变化只使 `daily_acceptance_readback` 失效（runtime 检查绑定运行态身份），已按受管流程重录；
+  复跑 `make agent.run.resume` = **40/40 reusable、outside_scope=[]**。
+- 固定开发口令（`wutao/123456`）仅作用于既有日常/隔离 fixture 账号；日常 profile 仍**拒绝已知弱口令**，
+  必须提供 ≤10 分钟、字段与 CLI/env 完全一致的凭据信封才可执行只读验收 → 未改变通用登录默认，未放宽任何守卫。
+
+**七、环境 DENY（保留，不泛化）**
+
+- 重建/快照车道的双挂载者 DENY 结论**不变**，仍只作为该车道（重建/快照）的阻断登记；
+  `rendering_detail_state` 的排除沿用既有证据与裁决，本轮不重复证明。
+- 本轮刷新只走既有受管入口（候选同步 / 源修订声明 / 发布面收敛 / 只读探针），未触碰重建或快照车道，
+  因此不构成对该 DENY 的解除，也不表述为"环境全部通过"。
+
+**八、四态（第 17 轮）**
+
+- **批次验收**：完成（验证体系三层修复 + 本轮运行态对齐 + 只读探针 39/39 检查单位 PASS）。
+- **主线集成**：完成（PR #635 → `bb6b6e82`、#636 → `e2e32ad3`、#637 → `daecaafc`）。
+- **版本发布**：日常运行时候选已对齐主线（服务身份 `daecaafc`，含"付款依据"投影修复）；无正式版本发布主张。
+- **产品交付**：技术证据就绪，**待所有者登录核对判定**（`http://1.95.85.92:18081/`，`wutao/123456`，库 `sc_demo`）。
+
+## 13.24 详情收口硬要求闭环：真实关系"点击打开 → 返回原记录 → 标签/动作恢复"重绑当前 served 身份（2026-10-10 第 17 轮续）
+
+**结论先行**：§11.4 与 §12.6.1 要求的详情硬走查（**真实点击**，不得以 handler 诊断替代）
+在**当前 served 修订 `daecaafc`**、**受管解析出的 fixture 记录**上已实测 **PASS**，且此前用户报告的
+"关联跳转返回 403"在该记录上**不可复现**（3 次关系跳转，`denied_requests=0`）。
+
+**一、为什么这一条此前仍属欠账（不是重复取证）**
+
+- §11.4/§12.6.1 明确的硬要求是"点击打开 → 返回原记录 → 标签/动作恢复"的**真实交互**走查；
+  §13.13/§13.16 运行的 `verify.nav.pro01r.route_authority.browser` 断言的是**路由/拒绝权威**
+  （`USER_MANAGEMENT_REACHABLE`、`OLD_ACTION_EXECUTION_AUTHORIZED_DIRECT_REACHABLE`、
+  `ORDINARY_USER_ADMIN_DENIAL`、`CROSS_COMPANY_CONTEXT_DENIAL`、`HTTP_500=0`），
+  它是 `page.goto` 的直达性/拒绝性判定，**不覆盖**"点击关系 → 返回 → 标签/动作恢复"。
+- 最近一次关系往返证据绑定 served `24e05cd5`（2026-10-07，`.runtime/final-acceptance/relation-roundtrip-24e05cd5/`），
+  本轮把运行态刷新到 `daecaafc`（含 PR #635 的 `form_structure_authority.py` 投影修复）后，
+  该证据的服务修订输入已变，按"输入变即失效"必须重绑，不能直接引用。
+
+**二、入口复用（未扩探针框架）**
+
+复用**既有注册资产** `T-ASSET-942`（`scripts/verify/record_relation_roundtrip_acceptance.js`），
+不新增探针框架、不改断言口径。该车道是**声明驱动**的：捕获页面自身消费的 `ui.contract.v2`，
+只对契约声明可读/可开的关系字段控件做真实点击，校验前端自身发出的 `return_*` 契约，
+再回退并断言路径/标题/状态栏/标签/记录动作 `before == after`，全程任一 401/403 或 console 错误即判失败。
+视口 `1440x1000`。
+
+记录身份取**受管解析产物** `artifacts/backend/acceptance_record_identity.json`
+（`payment.request` / record `36178` / action `780` / menu `550` / company `21`），
+主体用该公司的受管契约探测主体 `fixture_role_finance`；**不硬编码记录 id**，不新绑其他记录。
+
+**三、结果（PASS）**
+
+- `declared_entry_count = 18`（契约声明的关系统条目）。
+- 页面上 **3 个可见的已声明关系控件全部成功打开**，`denied_requests = 0`、`console_errors = 0`：
+  - `company_id` → `/r/res.company/21`（`res.company`）
+  - `contract_id` → `/r/construction.contract/13610`（`construction.contract`）
+  - `settlement_id` → `/r/sc.settlement.order/3630`（`sc.settlement.order`）
+- 往返恢复（`roundtrip.field=company_id`）：`path_restored` / `title_restored` / `statusbar_restored` /
+  `tabs_restored` / `actions_restored` **全为 true**，`error_free = true`，`failures = []`。
+- 证据：`.runtime/final-acceptance/relation-roundtrip-daecaafc-fixture/20261010T043832/summary.json`
+  （6,723 bytes，sha256 `35f7e406…bedc`）。
+
+**四、一次被否定的调用方式（记为绑定事实，非产品缺陷，未放宽断言）**
+
+首次尝试把**同一记录**绑到 `wutao`（其会话默认 company 1）主体，被正确地以
+`PROJECT_SCOPE_DENIED` 拒绝（前端落到 `/access-denied?reason=PROJECT_SCOPE_DENIED`，1 次 403 落在 `/api/v1/intent`）。
+原因：交付加固 fixture 记录位于 company `21`/`22`，受管契约探测也以 `fixture_role_finance`@company 21 读取同一记录。
+即这是**主体/公司绑定事实**，不是缺陷；未放宽 ACL/字段权限/断言，也未改绑记录。
+
+**五、仍未覆盖的边界（不夸大）**
+
+- 本车道覆盖 `1440` 视口；**`390` 移动视口与明暗主题的详情核对不在本车道范围**，
+  仍由既有 `verify.frontend.rendering_detail_state.*` 族与既有裁决承载，本轮不重复证明。
+- 本车道为受管运行态 **bounded evidence**（注册资产的受管执行），不是新增的台账检查项；
+  按既有先例（`daily_dev_user_acceptance_completion_20261006.md` §3.4）以验收产物 + 本文承载。
+
+**六、四态（不夸大）**
+
+批次验收=完成（详情硬走查已在当前 served 身份重绑 PASS）/ 主线集成=完成 / 版本发布=日常运行时候选 /
+产品交付=**待所有者登录核对判定**。
+
+## 13.25 本轮收口与新任务就绪契约（2026-10-10 第 17 轮收尾）
+
+**一、本轮收口结果**
+
+- 台账：`make agent.run.resume` = `resolved`，**40/40 声明检查 reusable、0 stale**；唯一曾 stale 的
+  `agent_ledger_consistency_unit` 已按受管 begin→run→record 重录（15 tests OK，`goals=93 runs=71`）。
+- 产品面：详情硬走查（真实"点击打开 → 返回原记录 → 标签/动作恢复"）已在当前 served `daecaafc`
+  重绑 PASS（§13.24）；"付款依据"投影与只读探针 39/39 沿用本轮既有证据（§13.23）。
+- 会话卫生：无残留刷新进程、无浏览器残留、无 ssh 端口转发；运行态仍 `daecaafc` / `sc_demo` / `1f46b033…`。
+
+**二、工作区与分支事实（新任务入场依据）**
+
+- 唯一 worktree `/home/lidefend/workspace/sce-backend-odoo`，分支
+  `audit/daily-dev-mainline-product-acceptance-closeout-20261009` @ `bff64595`。
+- `origin/main`（`daecaafc`）是**本分支祖先**（`git log HEAD..origin/main` 为空），
+  `git diff HEAD origin/main` **只触及两份记账文件**（本 run.json + 本迭代文档）。
+  即：**本分支 = 主线 + 仅账簿**，下一产品候选可直接在此分支构建，**无需先做分支同步**。
+- 两份脏文件**必须随下一产品候选同行**（单独的 `.agent`/`docs` 候选会被判 bookkeeping-only 拒绝）。
+
+**三、新任务登记要求（不得静默继承本 run）**
+
+1. 在 `.agent/goals/` 登记**一个** goal，并建 `.agent/runs/<goal-id>/run.json`；
+2. 首个写入动作前，把 `.agent/active-runs.json` 指到本分支；
+3. 若新任务属于**另一个可独立验收的产品结果**，先关闭本 run（`completed`/`superseded`，
+   并在同一步把 goal 置为终态），否则台账守卫会因"终态 run 残留非终态 goal"报漂移；
+   只有新任务属于同一验收结果时才应扩展本 run。
+
+**四、就绪环境与可复用面**
+
+- 运行态：`http://1.95.85.92:18081`，`source_revision=daecaafc`、`database=sc_demo`、
+  `frontend_build_sha256=1f46b033…`；固定开发口令 `wutao/123456`（日常只读探针仍需 ≤10 分钟、
+  字段与 CLI/env 完全一致的凭据信封）；交付加固 fixture 记录在 company `21`/`22`，
+  受管契约探测主体为 `fixture_role_finance`。
+- 可复用：前端产物指纹未变 → 业务入口矩阵身份键不变（列表 108/108、负例 5/5 继续有效）；
+  详情关系往返已绑当前 served 身份（§13.24）。
+
+**五、有意保留的残留（不清理，避免越权）**
+
+- 本地分支 `release/daily-runtime-mainline-daecaafc`（指向 `daecaafc`，无独有内容）**有意保留**：
+  受管清理入口 `scripts/ops/branch_cleanup_safe.sh` 明确拒绝 `release/*`（受保护前缀），
+  手工删除属越权操作。
+- 重建/快照车道 DENY 仍为**车道级**结论，不泛化；`rendering_detail_state` 排除沿用既有裁决。
+- 覆盖登记债：140 个未接线 `@tagged` 组（274 处声明），已登记属主与 2026-12-31 复核期。
+
+**六、四态（收尾）**
+
+批次验收=完成 / 主线集成=完成 / 版本发布=日常运行时候选（服务身份 `daecaafc`）/ 产品交付=**待所有者登录核对判定**。
+
+## 13.26 章节导航与提示块投影复核（2026-10-10 第 18 轮，所有者缺陷报告）
+
+**一、问题陈述（所有者）**
+
+所有者登录日常开发服务器后报告：**「项目表单的章节明显有问题，把提示信息进入章节了」**，并追问
+**「违背契约没有发现?」**。本节给出运行态复核结论，不新建台账，并入本 run。
+
+**二、复核身份与工具（受管证据）**
+
+- 运行态：`http://1.95.85.92:18081`，`source_revision=daecaafc6da6c61d92312a464b84468e7d85c486`、
+  `database=sc_demo`、`frontend_build_sha256=1f46b033…`（未重建前端）。
+- 路由：`/f/project.project/581?menu_id=379&action_id=506`（action 506 / menu 379 / record 581）。
+- 契约实取：`.runtime/diag/project-form-section/contract.json`；DOM 探针：
+  `dom_probe9.mjs`（导航条目来源）、`dom_probe11.mjs`（提示块几何/视觉）、
+  `dom_probe12.mjs`（390 视口）、`dom_probe13.mjs`（声明 class 消费普查）。
+  产物：`hint-region.png`、`mobile-390.png`。全部为未跟踪诊断产物，不纳入提交。
+
+**三、结论一：章节导航是契约驱动的（推翻"前端猜出章节"的假设）**
+
+导航恰好 4 条，**全部有契约声明来源**：
+
+| 条目 | key | sourceType | 来源声明 |
+| --- | --- | --- | --- |
+| 基本信息 | `node:sc_project_information_basic:business-section` | node | `data-sc-anchor="project-basic"` 的 primary group |
+| 计划与责任 | `node:sc_project_information_plan:business-section` | node | `data-sc-anchor="project-plan-responsibility"` |
+| 责任矩阵 | `node:sc_project_information_responsibility:business-section` | node | `data-sc-anchor="project-responsibility-matrix"` |
+| 协作记录 | `surface:activity` | surface | `formStructureContract.surfaces[0]`（title 协作记录 / role activity / contentKind collaboration-panel） |
+
+- 1440 与 390 视口结果一致；390 无 `[data-mobile-section-selector]`。
+- **提示块不产生导航条目，也没有任何条目指向它**；`data-sc-navigation-role="subordinate"` 的
+  三个 group（项目说明/协作资料/系统追溯）按声明不进主导航。
+- 因此"未命名容器被推断成章节条目"的旧假设**不成立**，不再作为修复依据。
+- 提示块节点本身也是契约声明：`type=container`、`attributes.class="alert alert-info"`、
+  `role=status`，并带**规范化顶层** `modifiers.invisible={kind:field_compare, field:lifecycle_state,
+  operator:'!=', value:'draft'}`。可见性由契约 facts + 修饰符 AST 决定，`attributes.invisible`
+  只是冗余 trace，不是权威。
+
+**四、结论二：真实违背契约的两点（此前未被任何守卫发现）**
+
+**V1（可见症状根因）— 契约声明的容器布局/展示 fact 没有被渲染器消费。**
+
+- DOM class 普查（`main.sc-native-contract-tree` 全树）：`sc-project-overview`、`d-flex`、
+  `justify-content-between`、`align-items-start`、`small`、`text-muted`、`h3`、`alert`、
+  `alert-info` **各出现 0 次**。
+- `NativeFormTreeRenderer.containerClass()` 只返回 `native-container` / `native-container--<type>`
+  与若干 flag，**从不合并 `nodeClassList(node)`**（声明 class 只在 `field`-section 分支第 362 行被合并）。
+- 后果：sheet 的 11 个子节点被拍平成 **48 个块级 `<section>`**，其中 **39 个 `data-group-title=""`**；
+  概览区的行内布局崩塌成逐词换行（`已有 / 1 / 份合同 / 成本 / 已录入 / 1 / 条`，数值被推到最右），
+  草稿提示块渲染成紧贴"基本信息"标题上方的**裸 section 级块**——这正是所有者所说
+  「提示信息进入章节」的可见来源。
+- 更关键的是：气泡外观仍由**前端按硬编码类名匹配**产出（`isNativeFeedbackContainer` /
+  `nativeTextPresentation` 命中 `'alert alert-info'`），即展示语义是前端重新推导的，
+  不是从声明的契约 fact 消费的——与"前端除渲染与交互外一切来自契约"的底线不符。
+
+**V2 — 被文档禁止的硬编码区域标签仍在，且守卫看不到。**
+
+- `docs/architecture/form_structure_surface_contract_boundary_v1.md` §Ownership 明确：
+  渲染器"must not hardcode a region label, region identity or visibility predicate"；
+  P0 `smart_core` "must not name a product capability key"，surface 标题归 P1。
+- 实际仍有两处硬编码 `协作记录`：
+  `frontend/apps/web/src/pages/contractForm/nativeSectionNavigation.ts` 的
+  `legacySurfaceNavigationItems`（label `协作记录` + `sourceIdentity: 'collaboration-panel'`），
+  与 `addons/smart_core/handlers/ui_contract_v2.py:93-98` 的
+  `FORM_STRUCTURE_DEFAULT_ACTIVITY_SURFACE`。
+- 而 `scripts/verify/form_view_native_structure_boundary_guard.py` 的反硬编码断言
+  **只 grep `NativeFormTreeRenderer.vue` 一个文件**，对上述两处**结构性不可见**。
+
+**五、为什么此前没被发现（守卫缺口，事实陈述）**
+
+`form_view_native_structure_boundary_guard.py` 的 `_frontend_boundary_checks` 只断言：
+章节身份（可见 group + `data-sc-anchor` + 可读标题）、标题隐藏、遍历一致性。
+**没有任何断言检查"契约声明的容器布局/展示 fact 是否被消费"**，因此整块声明面被静默丢弃也不会失败。
+同类事实：`formStructureContract.sourceSectionTitles` 在本表单混入 **11 个按钮/动作标签**
+（项目设置/去补齐资料/审批通过/审批驳回/启动项目/提交立项/查看阶段要求/查看合同/查看成本/查看财务/查看任务）
+与 6 个真实章节标题，原因是 `section_titles_from_layout` 把每个非 `field` 节点的 title 都收进来（含 `button`）；
+5 个同族 P1 表单有测试断言该字段为空，**本表单没有对应测试**（该字段被投影矩阵标为 `NON_VISUAL`，
+当前不驱动渲染，因此记为契约卫生问题而非可见缺陷）。
+
+**六、责任层与修复口径（遵 AGENTS.md 边界）**
+
+- V1：P0 `smart_core` 投影（`layoutContract` 把原生 class 当布局权威导出，未声明渲染器中立的布局）
+  + P0 前端通用容器渲染。**不加付款/项目模型特判，不放宽 ACL 或字段权限，不加 `critical` 强制覆盖。**
+- V2：P0 `smart_core` 默认 surface 标题 + P0 前端 legacy 导航回退；标题应按文档归 P1 策略。
+- 修复方案待所有者裁决（A 推荐 / B）：
+  **A**：投影不再把原生 class 当布局权威，改用既有的 `formStructureContract` slots/zones 声明渲染器中立的
+  区域布局，渲染器只消费已声明布局，并配"声明面被丢弃即失败"的负例优先守卫；
+  **B**：保留原生容器树，让渲染器忠实消费声明 class。
+  两者都必须随负例优先守卫一起提交。
+
+**七、未能复现的一点（如实记录，不夸大）**
+
+在受管运行态（record 581，1440 与 390 视口）**没有观察到提示块以章节条目形式出现在导航中**。
+若所有者屏幕上确有携带提示文本的导航条目，需要该条目的**精确标签 + URL + 视口**以定位对应面。
+
+**八、四态（不夸大）**
+
+批次验收=完成 / 主线集成=完成 / 版本发布=日常运行时候选（服务身份 `daecaafc`）/
+产品交付=**待所有者登录核对判定，且本轮新增 V1/V2 两个未修产品缺陷**。
+
+## 13.27 表单声明面投影修复（V1）+ 区域标签声明收口（V2）+ 守卫机制补齐（2026-10-10 第 18 轮，所有者裁决 A）
+
+**身份**：工作区 HEAD `bff64595` + 显式脏范围（本轮修复未提交，故为 iteration 身份，不得称冻结）。
+服务端日常运行态**本轮未变**：仍是主线 `daecaafc` + 上一代前端产物 `1f46b033`，
+因此本节任何结论都不绑定修复后的运行态。
+
+**一、V1 根因（已确证，非猜测）**
+
+原生表单 arch 用 CSS class 声明容器展示（`sc-project-overview` / `d-flex` / `justify-content-between` /
+`mb-3` / `col-md-6` / `card` / `alert alert-info` …）。投影把这些 class 原样带进
+`layoutContract` 的 `attributes`，但**渲染器不消费任何声明展示 token**：`containerClass()` 从不合并它们，
+产品样式表也没有实现该词表（DOM 普查 0/9）。声明面被静默丢弃且无任何报错——这正是区域塌成整宽块堆的原因。
+
+**二、修复（各自责任层，未放宽任何断言）**
+
+| 责任层 | 改动 | 说明 |
+| --- | --- | --- |
+| P0 `smart_core` 投影 | `declared_presentation_tokens()` | 每个声明 class 归入渲染器中立 `styleToken` 并发布到归一化节点；`sc-*` 产品 token、显式布局词表、`o_*/oe_*` 原生结构标记、`btn*` 控件标记分别做出决策；**无法归类的 class 直接 `ValueError` 失败闭合**；`field/button/widget` 豁免（其展示由字段/`actionContract` 面声明） |
+| P0 通用渲染器 | `NativeFormTreeRenderer` | 节点类型新增 `styleToken`；`containerClass()`（含容器分支、field-section 分支、静态文本分支）合并 `declaredPresentationTokens(node)`；新增"声明展示词表"样式块实现全部已接受 token；`nativeTextPresentation` 同样消费声明 token |
+| P0 surface 声明 | 删除硬编码区域标题 | `nativeSectionNavigation.legacySurfaceNavigationItems()` 删除、`ContractFormDriverHost.vue` legacy 分支与 `'协作记录'` 回退删除、`ObjectTaskPage.vue` legacy 条目与回退删除、`ui_contract_v2.FORM_STRUCTURE_DEFAULT_ACTIVITY_SURFACE` 默认值删除（产品不声明即不出现）。区域可见性改为**仅由声明决定**，运行态数据不再是可见性权威 |
+
+**三、守卫机制补齐（本轮授权范围内的 M1/M2/M3）**
+
+- 新增 `scripts/verify/form_container_presentation_consumption_guard.py`（`make verify.form_container_presentation.guard`，
+  已并入 `verify.form_structure.contract` / `verify.form_structure.contract_runtime.audit`）。
+  **功能级、负例优先**：证明投影会派生 `styleToken`、对不可归类 class 失败闭合、忽略原生/豁免节点；
+  证明渲染器合并声明面且词表内每个 token 都有实现；渲染器两项检查用**变异源码自检**，证明守卫真的会失败。
+- 写守卫时立刻抓到真实缺口：词表接受 `g-2`，但渲染器只实现 `.row.g-2`，单独声明的 `g-2` 是空操作 → 已改为通用 `.g-2`。
+- M2 闭合：`form_view_native_structure_boundary_guard` 的反硬编码断言从"只 grep 渲染器"扩展到
+  `nativeSectionNavigation.ts` / `ContractFormDriverHost.vue` / `ObjectTaskPage.vue`，硬编码区域标签无处可藏。
+- M1 部分闭合：`contract_v2_render_authority_matrix` 的 `unclassifiedCount` 改为按产出行派生（出现未归类行即抛错），
+  不再写死 0；矩阵 JSON 字节不变，无重生成抖动。
+- 运行态交付面校验：`form_structure_contract_runtime_audit` 新增 `presentation_facet_issues()`，
+  对**实际交付契约**的每个 `containerTree` 节点重新归类，出现 `presentation_unclassified` / `presentation_dropped`
+  即计为边界违规——补上"只比 registry、不比交付契约"的缺口。
+- M3（`containerTree` JSON-schema）经复核**不新增**：交付树已由装配器（数组 + owner 绑定）与严格前端解码器
+  （容器必填字段、重复 container/widget 身份）校验，再加一层并行 schema 属重复守卫；真正的洞在"消费"，已由新守卫覆盖。
+
+**四、验证结果（第 18 轮，本地）**
+
+- L1：`make ci.local.iteration` PASS（`change_state=dirty`、`coverage=L1_only`、`receipt=none`）。
+- L2（受影响非零）：`form_structure_contract_projection.unit` PASS `fields=76 unclassified=0`；
+  `form_structure_surface_contract.unit` PASS；`native_section_navigation.unit` PASS
+  `authority=7 next_action=3 content_identity=11 active_tracking=11 structure_consumption=7`；
+  `contract_v2_render_authority.unit` PASS `fields=327 unclassified=0`；
+  `form_container_presentation.guard` PASS `vocabulary=30`；
+  `form_view_native_structure_boundary_guard` PASS；`frontend_form_canvas_wide_grid_guard` PASS（含 5 项单测）；
+  `typecheck.strict` PASS；`verify.frontend.build` PASS。
+- 注册表类：`guard_registry_audit` PASS（1407 脚本，新守卫已被 make 目标引用）；`test_coverage_registry_audit` PASS。
+- 影响面：`addons/**/*.xml` 全部 form arch 共 58 个不同 class 全部可归类（**0 个未归类**），
+  失败闭合不会打断任何仓库原生视图的契约生成；新样式块用到的全部设计变量均经确认真实存在。
+
+**五、边界（不夸大）**
+
+修复**未提交、未部署**。服务端仍是 `daecaafc` + 旧前端，所有者屏幕仍会看到塌陷。
+下一步：提交 → 受管候选车道刷新运行态（bundle sync → source revision align → frontend build → published face converge）
+→ 运行态回执 + 交付契约审计（`presentation_unclassified`/`presentation_dropped` 归零）+ 声明词表消费普查
+→ 交所有者登录核对（`wutao/123456` / `sc_demo` / `http://1.95.85.92:18081/`）。
+
+**六、四态（第 18 轮）**
+
+批次验收=本轮修复本地通过、**运行态未收口**；主线集成=完成（`daecaafc`）；
+版本发布=日常运行时候选 `daecaafc`（未含本轮修复）；产品交付=**待所有者登录核对**。
+
+---
+
+## §13.28 协作区接线守卫改绑「契约声明」权威（第 18 轮补，2026-10-10）
+
+**一、触发**
+
+第 18 轮把协作区可见性改为**只由契约声明驱动**（`hasCollaboration = props.suppressCollaboration ? false : Boolean(collaborationSurface.value)`，
+`collaborationSurface = declaredCollaborationSurface(props.surfaces)`）之后，`frontend_scene_component_bridge_guard` 仍把
+`resolveCollaborationVisibility` 当作唯一权威（标志体必须逐字等于旧的委派块、宿主必须导入该符号），于是断言与**所有者裁决**
+直接冲突而 FAIL。这是守卫口径落后于架构裁决，不是产品缺陷。
+
+**二、改法（改绑 + 退役，不新增框架）**
+
+- 单一权威改绑 `declaredCollaborationSurface`：标志体必须逐字等于「抑制门 + 声明读取」；
+  新增一条断言，把中间量 `collaborationSurface` 的 `computed` 体也钉在 `() => declaredCollaborationSurface(props.surfaces)`，
+  堵住「标志体不变、把声明读取换成本地常量」的旁路（旧守卫的同类缺口是 `hasCollaborationNode := () => false`）。
+- VM 侧新增 `collaboration_surface_authority_failures`：以**整段 body**（含"没有声明就返回 null"）为规范式，
+  因为"拒绝未声明的契约"本身就是规则的一部分。
+- 退役无消费者的旧规则：`contractRuntimeVm.ts` 删除 `hasCollaborationNode` / `resolveCollaborationVisibility`
+  （声明驱动落地后**零生产消费者**）；可执行证明 `contract_form_collaboration_authority_test.ts` 重写为
+  **声明读取真值表**（`undefined`/`null`/空表/非表/错误 contentKind/首个命中优先）并保留 node + browser 双域重放；
+  守卫内 15 个「节点权威／运行态规则」负例删除，替换为 9 个针对新权威的负例（本地常量、从属区读取、
+  任意 contentKind、丢失未声明拒绝、环境探针门控等）。`_COLLABORATION_AUTHORITY_TEST_SHA256` 同步更新。
+
+**三、验证（第 18 轮补，本地）**
+
+- `python3 scripts/verify/frontend_scene_component_bridge_guard.py` PASS `checks=129 collaboration_self_check=259`
+- `make verify.frontend.contract_form_collaboration_authority.unit` PASS `cases=58`
+- 定向 L2 批次（15 目标）PASS：`form_container_presentation.guard`（vocabulary=30）、
+  `form_view.native_structure.boundary_guard`、`view.orchestration_boundary_guard`、`form_view.scope.boundary_guard`、
+  `scene_component_bridge.guard`、`scene_component_bridge.unit`(cases=38)、
+  `form_structure_surface_contract.unit`、`native_section_navigation.unit`(authority=7…structure_consumption=7)、
+  `contract_v2_render_authority.unit`(fields=327 unclassified=0)、`contract_v2_runtime_policy.unit`(cases=6 fields=23)、
+  `canonical_form_presenter.unit`(cases=177)、`native_collaboration_presentation.unit`、
+  `native_form_structure_responsibility.unit`(cases=12)、`form_structure_contract_projection.unit`(fields=76 unclassified=0)、
+  `form_canvas_layout.guard`（wide grid 5 单测 + 守卫）
+- `make verify.frontend.typecheck.strict` PASS（RC=0）
+- **真实文件变异注入**（证明守卫绑的是产品而非夹具）：把宿主标志体换成 `Boolean(props.showCollaborationPanel)`
+  → 守卫 FAIL（标志体断言）；把 `collaborationSurface` 的 `computed` 换成本地字面量
+  → 守卫 FAIL（声明读取断言）。两次均已还原，还原后守卫 PASS、文件与受审版本逐字节一致。
+
+**四、既有阻断（与本轮无关，单独保留）**
+
+`make verify.form_structure.contract` 当前**无法运行**：其成员 `verify.user_form.preference.boundary_guard`
+要求 `addons/smart_construction_custom/models/user_preferences.py`，而该路径在本分支 **HEAD 中也不存在**
+（`git cat-file -e HEAD:<path>` 失败，`addons/smart_construction_custom*` 目录不存在）。
+这是注册表/守卫与其依赖层脱节，归属该守卫的所有者；本轮只把它记为**聚合目标不可用的既有阻断**，
+不改其依赖、不放宽断言、也不把本轮新守卫的通过说成"聚合门禁通过"。
+
+**五、边界（不夸大）**
+
+本轮改动**未提交、未部署**；服务端仍是 `daecaafc` + 旧前端产物，所有者屏幕仍会看到塌陷的概览区与提示块。
+下一步：提交 → 受管候选车道刷新运行态 → 运行态回执 + 交付契约审计（`presentation_unclassified`/`presentation_dropped` 归零）
+→ 交所有者登录核对（`wutao/123456` / `sc_demo` / `http://1.95.85.92:18081/`）。
