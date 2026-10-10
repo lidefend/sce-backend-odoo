@@ -100,6 +100,66 @@ decision:
         rule moved from advice into the push gate itself.
       unit_target: make verify.pr.push.unit
 
+    verification_surface_literal_revival:
+      id: OPS-DECISION-005
+      statement: >-
+        the zero-reference surface metric is computed from literal token presence, not
+        from intent. A target name written literally inside a binding execution document
+        (docs/ops/codex_execution_allowlist.md or docs/ops/codex_workspace_execution_rules.md)
+        or anywhere in a non-prose file counts as "referenced", so one sentence that merely
+        mentions the auditor un-registers the registered dead surface and trips the ratchet.
+      consequence: >-
+        the check flips to DENY with stale_target_dispositions, which reads as a regression
+        in unrelated work
+      correction_rule:
+        - do not relax --check
+        - do not unregister a still-true disposition
+        - do not hand-edit the analyzer-written disposition JSON
+        - rephrase the mention so the binding document does not declare the target (name the
+          script or describe the role instead)
+        - registries, baselines, exemptions and retirement trails narrate the surface and must
+          stay out of the consumer index (SELF_DATA_FILES); counting them revived every
+          registered entry the moment they were first committed
+        - never write a real target or script name inside a tracked non-prose file, source
+          comments included; describe the case instead of quoting the name
+        - measure only the tracked state; while a registry is untracked, --check passes against
+          a surface the scanner cannot see and the first commit fails the frozen head
+      why: >-
+        the same defect class was already fixed once for prose docs (batch B2); it reappeared
+        in a normative doc and a Makefile comment during batch C/D
+      unit_target: make audit.verification.lane_coverage.check
+
+    local_quick_sharding_and_receipts:
+      id: OPS-DECISION-006
+      shards: QUICK_SHARDS (default 4) over the ci.local.quick.run declared recipe
+      reuse_signal: a passed part is reused only while head+tree+coverage all match
+      dirty_worktree: >-
+        ci.local.quick fails closed before running the suite; run make ci.local.quick.diagnostic
+        for a receipt-free observation
+      receipt_retention: >-
+        QUICK_RECEIPT_KEEP (default 50) via make ci.local.quick.gc, always keeping the current
+        head and the newest out-of-window ancestor as the incremental base
+      recipe_equivalence: >-
+        compose re-asserts every declared recipe line and runs git diff --check; an unreproduced
+        line fails closed
+      contract_unchanged: ci.local.quick.run keeps its original prerequisites and recipe
+
+    lane_telemetry:
+      id: OPS-DECISION-007
+      statement: >-
+        observability only; recording or reporting never changes a lane's pass conclusion and
+        never replaces a required check
+      lane_names: same single source as the coverage auditor LANES
+      record_store: .git/codex/evidence/lane_telemetry/<lane>.jsonl (append-only)
+      rates: [pass_rate, degraded_rate, integrity_failure_rate]
+      integrity_failure_rate_expected: 0
+      entries:
+        - make lane.telemetry.record
+        - make lane.telemetry.report (TELEMETRY_BY_HEAD=1)
+        - make lane.telemetry.check
+      auto_report: make ci.local.quick records local.quick itself
+      unit_target: make verify.lane.telemetry.unit
+
   recorded_instances:
     - candidate: e589676c23e4ef54d0dc1cfc9bce1749e5c7eb3a
       pr: 605
@@ -120,3 +180,11 @@ decision:
         runs, which read as a scheduling delay. Reconciling first (git merge
         origin/main, resolving run.json to the branch ledger) produced a tree identical
         to c6937377, after which the gates dispatched normally and all four passed.
+    - candidate: 2c61584e682df7b5cb6ca88fffc1e56de5f1dcb6
+      branch: audit/daily-dev-mainline-product-acceptance-closeout-20261009
+      observations: >-
+        batch C/D: while making ci.local.quick shardable and adding lane telemetry, the
+        zero-reference surface check flipped to DENY because the new normative-doc paragraph
+        and the Makefile comment named make audit.verification.lane_coverage literally; both
+        were rephrased (name/describe the auditor instead), no gate was relaxed and no
+        registered disposition was unregistered, and the check returned to PASS.

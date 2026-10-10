@@ -24,15 +24,99 @@ const { chromium } = createRequire(requireBase)('playwright');
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://127.0.0.1:5180';
 const DB_NAME = process.env.DB_NAME || 'sc_demo';
-const LOGIN = process.env.E2E_LOGIN || 'wutao';
-const PASSWORD = process.env.E2E_PASSWORD || '123456';
-const MODEL = process.env.RELATION_MODEL || 'project.project';
-const RECORD_ID = Number(process.env.RELATION_RECORD_ID || 581);
-const ACTION_ID = Number(process.env.RELATION_ACTION_ID || 506);
-const MENU_ID = Number(process.env.RELATION_MENU_ID || 0);
+const LOGIN = process.env.E2E_LOGIN || '';
+const PASSWORD = process.env.E2E_PASSWORD || '';
+const EXPECTED_SHA = process.env.SC_ACCEPTANCE_TARGET_SHA || '';
+// The source record is never a literal in this file. It is resolved from the
+// governed acceptance-record envelope (the same body every other declaration
+// driven lane reads), so a database rebuild that renumbers the fixture cannot
+// leave the probe pointing at whatever record used to hold that id.
+const RESOLUTION_PATH = String(process.env.ACCEPTANCE_RECORD_RESOLUTION || '').trim();
+const RESOLUTION_KEY = String(process.env.RELATION_RESOLUTION_KEY || 'project').trim();
+// A diagnostic may still name a record explicitly, but only explicitly: there
+// is no built-in default, so omitting the resolution can never silently fall
+// back to a stale id.
+const IDENTITY_SOURCE = String(process.env.RELATION_IDENTITY_SOURCE || 'resolution').trim();
 const PINNED_FIELD = String(process.env.RELATION_FIELD || '').trim();
 const MAX_CONTROLS = Number(process.env.RELATION_MAX_CONTROLS || 6);
 const ARTIFACTS_DIR = process.env.ARTIFACTS_DIR || '.runtime/final-acceptance/relation-roundtrip';
+
+let MODEL = '';
+let RECORD_ID = 0;
+let ACTION_ID = 0;
+let MENU_ID = 0;
+let RECORD_IDENTITY = '';
+let EXPECTED_COMPANY_ID = 0;
+let IDENTITY_EVIDENCE = null;
+
+function readResolution() {
+  if (!RESOLUTION_PATH) {
+    throw new Error('ACCEPTANCE_RECORD_RESOLUTION must point at the managed resolution body');
+  }
+  const body = JSON.parse(fs.readFileSync(RESOLUTION_PATH, 'utf8'));
+  if (body && body.schema && body.schema !== 'acceptance.record_identity_resolution.v1') {
+    throw new Error(`unexpected resolution schema ${body.schema}`);
+  }
+  const targets = body && body.targets;
+  if (!targets || typeof targets !== 'object') {
+    throw new Error('managed resolution is not the governed envelope (targets missing)');
+  }
+  const entry = targets[RESOLUTION_KEY];
+  if (!entry) throw new Error(`managed resolution is missing key ${RESOLUTION_KEY}`);
+  const model = String(entry.model || '').trim();
+  if (!model) throw new Error(`resolution ${RESOLUTION_KEY}.model is missing`);
+  for (const key of ['record_id', 'action_id', 'menu_id']) {
+    if (!(Number(entry[key]) > 0)) throw new Error(`resolution ${RESOLUTION_KEY}.${key} is missing`);
+  }
+  // One declared identity, one match: a key that resolves to a model/id pair the
+  // envelope contradicts would make the run ambiguous, so it is refused.
+  if (process.env.RELATION_MODEL && String(process.env.RELATION_MODEL).trim() !== model) {
+    throw new Error(`resolution model ${model} != RELATION_MODEL ${process.env.RELATION_MODEL}`);
+  }
+  MODEL = model;
+  RECORD_ID = Number(entry.record_id);
+  ACTION_ID = Number(entry.action_id);
+  MENU_ID = Number(entry.menu_id);
+  RECORD_IDENTITY = String(entry.record_identity || '').trim();
+  EXPECTED_COMPANY_ID = Number(entry.company_id || 0) || 0;
+  IDENTITY_EVIDENCE = {
+    source: 'managed_resolution',
+    path: RESOLUTION_PATH,
+    key: RESOLUTION_KEY,
+    schema: body.schema || null,
+    producer: body.producer || null,
+    expected_sha: body.expected_sha || null,
+    model,
+    record_id: RECORD_ID,
+    action_id: ACTION_ID,
+    menu_id: MENU_ID,
+    record_identity: RECORD_IDENTITY || null,
+    company_id: EXPECTED_COMPANY_ID || null,
+    declared_start_state: entry.declared_start_state || null,
+  };
+}
+
+function readExplicitIdentity() {
+  const model = String(process.env.RELATION_MODEL || '').trim();
+  const recordId = Number(process.env.RELATION_RECORD_ID || 0);
+  const actionId = Number(process.env.RELATION_ACTION_ID || 0);
+  if (!model || !(recordId > 0) || !(actionId > 0)) {
+    throw new Error('explicit identity needs RELATION_MODEL, RELATION_RECORD_ID and RELATION_ACTION_ID');
+  }
+  MODEL = model;
+  RECORD_ID = recordId;
+  ACTION_ID = actionId;
+  MENU_ID = Number(process.env.RELATION_MENU_ID || 0) || 0;
+  RECORD_IDENTITY = String(process.env.RELATION_RECORD_IDENTITY || '').trim();
+  EXPECTED_COMPANY_ID = Number(process.env.RELATION_COMPANY_ID || 0) || 0;
+  IDENTITY_EVIDENCE = { source: 'explicit_env', model, record_id: RECORD_ID, action_id: ACTION_ID, menu_id: MENU_ID || null };
+}
+
+async function servedRevision() {
+  const response = await fetch(`${FRONTEND_URL}/api/runtime-version`, { headers: { Accept: 'application/json' } });
+  if (!response.ok) throw new Error(`runtime-version status=${response.status}`);
+  return await response.json();
+}
 
 const ts = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
 const outDir = path.join(ARTIFACTS_DIR, ts);
@@ -194,12 +278,24 @@ async function clickAndClassify(page, field, sourcePath) {
 }
 
 async function main() {
+  if (!LOGIN || !PASSWORD) throw new Error('E2E_LOGIN and E2E_PASSWORD are required');
+  if (!EXPECTED_SHA) throw new Error('SC_ACCEPTANCE_TARGET_SHA is required');
+  if (IDENTITY_SOURCE === 'explicit') readExplicitIdentity();
+  else readResolution();
+  const runtime = await servedRevision();
+  const served = String(runtime.git_sha || runtime.source_revision || '');
+  if (served !== EXPECTED_SHA) throw new Error(`served revision ${served} != SC_ACCEPTANCE_TARGET_SHA ${EXPECTED_SHA}`);
+  if (String(runtime.database || '') !== DB_NAME) throw new Error(`served database ${runtime.database} != ${DB_NAME}`);
   const result = {
     schema: 'record-relation-roundtrip-acceptance.v1',
     frontend_url: FRONTEND_URL,
     database: DB_NAME,
     login: LOGIN,
-    source: { model: MODEL, record_id: RECORD_ID, action_id: ACTION_ID, menu_id: MENU_ID },
+    served_revision: served,
+    expected_sha: EXPECTED_SHA,
+    declared_company_id: EXPECTED_COMPANY_ID || null,
+    identity: IDENTITY_EVIDENCE,
+    source: { model: MODEL, record_id: RECORD_ID, action_id: ACTION_ID, menu_id: MENU_ID, record_identity: RECORD_IDENTITY || null },
     status: 'fail',
     artifacts: outDir,
     denied_requests: [],

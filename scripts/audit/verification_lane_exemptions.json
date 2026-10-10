@@ -1,0 +1,624 @@
+{
+  "schema_version": "verification-lane-exemptions/v1",
+  "rationale": "Every lane divergence must be either removed or explicitly registered here with a reason. An unregistered divergence fails `audit.verification.lane_coverage --check`. This is the same wire-or-retire discipline the guard registry uses, applied to lane divergence.",
+  "local_only": [
+    {
+      "script": "scripts/dev/frontend_static_build.sh",
+      "lane_owner": "local.quick",
+      "reason_code": "frontend_build_tooling",
+      "reason": "Frontend build/pnpm wrapper. The frontend build targets own it and it needs the Node/pnpm toolchain, which the deterministic contract suite must not require.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/dev/pnpm_exec.sh",
+      "lane_owner": "local.quick",
+      "reason_code": "frontend_build_tooling",
+      "reason": "Frontend build/pnpm wrapper. The frontend build targets own it and it needs the Node/pnpm toolchain, which the deterministic contract suite must not require.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/ops/git_safe_push.sh",
+      "lane_owner": "local.quick",
+      "reason_code": "push_safety_selftest",
+      "reason": "Self-test of the publication helper. The local pre-publication lane (verify.pr.push.unit) owns it; it asserts nothing about product or contract state.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_dev_incremental.py",
+      "lane_owner": "local.quick",
+      "reason_code": "developer_inner_loop_planner",
+      "reason": "Developer inner-loop incremental planner and its unit. It describes what a local worktree changed and has no meaning as a delivery gate.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_dev_incremental.py",
+      "lane_owner": "local.quick",
+      "reason_code": "developer_inner_loop_planner",
+      "reason": "Developer inner-loop incremental planner and its unit. It describes what a local worktree changed and has no meaning as a delivery gate.",
+      "review_by": "2026-12-31"
+    }
+  ],
+  "remote_only": [
+    {
+      "script": "scripts/ci/frontend_professional_extension_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/ci/python_syntax_check.py",
+      "lane_owner": "remote",
+      "reason_code": "remote_unit_shard",
+      "reason": "Executed by the remote unit/contract shards (test.unit / test.contract / standard_frontend) or is a helper only those shards load. Not a contract-architecture invariant.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/ci/test_node_syntax_check.py",
+      "lane_owner": "remote",
+      "reason_code": "remote_unit_shard",
+      "reason": "Executed by the remote unit/contract shards (test.unit / test.contract / standard_frontend) or is a helper only those shards load. Not a contract-architecture invariant.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/common/check_env.sh",
+      "lane_owner": "remote",
+      "reason_code": "remote_e2e_preflight",
+      "reason": "E2E preflight or environment bootstrap helper that needs a live stack; the remote e2e/preflight lane owns it.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/dev/frontend_acceptance_operation_entry.sh",
+      "lane_owner": "remote",
+      "reason_code": "remote_e2e_preflight",
+      "reason": "E2E preflight or environment bootstrap helper that needs a live stack; the remote e2e/preflight lane owns it.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/e2e/e2e_boq_import_fixed_data_preflight.py",
+      "lane_owner": "remote",
+      "reason_code": "remote_e2e_preflight",
+      "reason": "E2E preflight or environment bootstrap helper that needs a live stack; the remote e2e/preflight lane owns it.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/e2e/e2e_boq_to_wbs_task_preflight.py",
+      "lane_owner": "remote",
+      "reason_code": "remote_e2e_preflight",
+      "reason": "E2E preflight or environment bootstrap helper that needs a live stack; the remote e2e/preflight lane owns it.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/e2e/e2e_settlement_approval_preflight.py",
+      "lane_owner": "remote",
+      "reason_code": "remote_e2e_preflight",
+      "reason": "E2E preflight or environment bootstrap helper that needs a live stack; the remote e2e/preflight lane owns it.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/test_render_odoo_conf.py",
+      "lane_owner": "remote",
+      "reason_code": "remote_unit_shard",
+      "reason": "Executed by the remote unit/contract shards (test.unit / test.contract / standard_frontend) or is a helper only those shards load. Not a contract-architecture invariant.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/auth_credential_frontend_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/collection_view_semantics_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "remote_unit_shard",
+      "reason": "Executed by the remote unit/contract shards (test.unit / test.contract / standard_frontend) or is a helper only those shards load. Not a contract-architecture invariant.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_acceptance_login_probe.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_action_view_page_actions_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_action_view_route_lease_race.test.mjs",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend Node/vitest or Playwright surface executed remotely by the frontend release gate (verify.frontend.release.audit, lane remote.frontend.full). The local exact-head quick lane is deliberately toolchain-free and must not depend on Node/pnpm, so the frontend_release_gate owns enforcement. Exposed by the 2026-10-11 frame fix that added .mjs/.cjs/.ts to the recipe script token frame (and the path boundary that stops frontend/apps/web/scripts/* from being read as a repo-root scripts/*).",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_auth_surface_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_boq_import_preview_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_contract_prompt_action_presentation_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_contract_render_profile.test.mjs",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend Node/vitest or Playwright surface executed remotely by the frontend release gate (verify.frontend.release.audit, lane remote.frontend.full). The local exact-head quick lane is deliberately toolchain-free and must not depend on Node/pnpm, so the frontend_release_gate owns enforcement. Exposed by the 2026-10-11 frame fix that added .mjs/.cjs/.ts to the recipe script token frame (and the path boundary that stops frontend/apps/web/scripts/* from being read as a repo-root scripts/*).",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_dashboard_state_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_decision_authority.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_decision_authority_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_delivery_hardening_browser.mjs",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend Node/vitest or Playwright surface executed remotely by the frontend release gate (verify.frontend.release.audit, lane remote.frontend.full). The local exact-head quick lane is deliberately toolchain-free and must not depend on Node/pnpm, so the frontend_release_gate owns enforcement. Exposed by the 2026-10-11 frame fix that added .mjs/.cjs/.ts to the recipe script token frame (and the path boundary that stops frontend/apps/web/scripts/* from being read as a repo-root scripts/*).",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_dev_process_isolation_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_evidence_capture_guard.test.mjs",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend Node/vitest or Playwright surface executed remotely by the frontend release gate (verify.frontend.release.audit, lane remote.frontend.full). The local exact-head quick lane is deliberately toolchain-free and must not depend on Node/pnpm, so the frontend_release_gate owns enforcement. Exposed by the 2026-10-11 frame fix that added .mjs/.cjs/.ts to the recipe script token frame (and the path boundary that stops frontend/apps/web/scripts/* from being read as a repo-root scripts/*).",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_form_header_action_primitives_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_list_optional_columns_contract_test.ts",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend Node/vitest or Playwright surface executed remotely by the frontend release gate (verify.frontend.release.audit, lane remote.frontend.full). The local exact-head quick lane is deliberately toolchain-free and must not depend on Node/pnpm, so the frontend_release_gate owns enforcement. Exposed by the 2026-10-11 frame fix that added .mjs/.cjs/.ts to the recipe script token frame (and the path boundary that stops frontend/apps/web/scripts/* from being read as a repo-root scripts/*).",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_localized_display_contract_test.ts",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend Node/vitest or Playwright surface executed remotely by the frontend release gate (verify.frontend.release.audit, lane remote.frontend.full). The local exact-head quick lane is deliberately toolchain-free and must not depend on Node/pnpm, so the frontend_release_gate owns enforcement. Exposed by the 2026-10-11 frame fix that added .mjs/.cjs/.ts to the recipe script token frame (and the path boundary that stops frontend/apps/web/scripts/* from being read as a repo-root scripts/*).",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_low_code_field_create_dialog_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_mobile_viewport_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_navigation_audit.test.mjs",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend Node/vitest or Playwright surface executed remotely by the frontend release gate (verify.frontend.release.audit, lane remote.frontend.full). The local exact-head quick lane is deliberately toolchain-free and must not depend on Node/pnpm, so the frontend_release_gate owns enforcement. Exposed by the 2026-10-11 frame fix that added .mjs/.cjs/.ts to the recipe script token frame (and the path boundary that stops frontend/apps/web/scripts/* from being read as a repo-root scripts/*).",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_navigation_initialization_race.test.mjs",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend Node/vitest or Playwright surface executed remotely by the frontend release gate (verify.frontend.release.audit, lane remote.frontend.full). The local exact-head quick lane is deliberately toolchain-free and must not depend on Node/pnpm, so the frontend_release_gate owns enforcement. Exposed by the 2026-10-11 frame fix that added .mjs/.cjs/.ts to the recipe script token frame (and the path boundary that stops frontend/apps/web/scripts/* from being read as a repo-root scripts/*).",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_navigation_shell_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_official_icon_resource_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_performance_budget.test.mjs",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend Node/vitest or Playwright surface executed remotely by the frontend release gate (verify.frontend.release.audit, lane remote.frontend.full). The local exact-head quick lane is deliberately toolchain-free and must not depend on Node/pnpm, so the frontend_release_gate owns enforcement. Exposed by the 2026-10-11 frame fix that added .mjs/.cjs/.ts to the recipe script token frame (and the path boundary that stops frontend/apps/web/scripts/* from being read as a repo-root scripts/*).",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_primitive_adapter_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_product_page_header_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_product_page_pattern_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_professional_audit_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_professional_base_field_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_professional_business_value_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_professional_collaboration_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_professional_component_registry_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_professional_detail_collection_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_professional_relation_field_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_professional_relation_lifecycle_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_professional_workflow_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_relational_action_primitives_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_release_audit.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_release_ci_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_scene_component_bridge_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_state_presentation_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/frontend_static_release_audit.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/python_name_binding_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "remote_unit_shard",
+      "reason": "Executed by the remote unit/contract shards (test.unit / test.contract / standard_frontend) or is a helper only those shards load. Not a contract-architecture invariant.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_common_env_explicit_path.py",
+      "lane_owner": "remote",
+      "reason_code": "remote_unit_shard",
+      "reason": "Executed by the remote unit/contract shards (test.unit / test.contract / standard_frontend) or is a helper only those shards load. Not a contract-architecture invariant.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_acceptance_login_probe.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_action_view_page_actions_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_boq_import_preview_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_contract_prompt_action_presentation_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_dashboard_state_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_decision_authority_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_delivery_hardening_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_form_header_action_primitives_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_low_code_field_create_dialog_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_mobile_viewport_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_navigation_shell_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_product_page_header_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_product_page_pattern_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_professional_audit_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_professional_base_field_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_professional_business_value_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_professional_collaboration_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_professional_component_registry_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_professional_detail_collection_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_professional_relation_field_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_professional_relation_lifecycle_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_professional_workflow_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_relational_action_primitives_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_release_audit.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_release_ci_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_release_gate.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_release_local_entry.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_frontend_state_presentation_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement.",
+      "review_by": "2026-12-31"
+    },
+    {
+      "script": "scripts/verify/test_python_name_binding_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "remote_unit_shard",
+      "reason": "Executed by the remote unit/contract shards (test.unit / test.contract / standard_frontend) or is a helper only those shards load. Not a contract-architecture invariant.",
+      "review_by": "2026-12-31"
+    }
+  ]
+}

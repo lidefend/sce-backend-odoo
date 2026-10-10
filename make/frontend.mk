@@ -1125,6 +1125,28 @@ verify.daily_dev.list_surface.readonly.browser: guard.prod.forbid
 	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)
 	@SC_ACCEPTANCE_PROFILE=daily SC_ACCEPTANCE_OPERATION=readonly SC_ACCEPTANCE_EXPECTED_SHA="$(ACCEPTANCE_TARGET_SHA)" SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_API_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" SC_ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" SC_ACCEPTANCE_REQUIRE_CONTRACT="$(SC_ACCEPTANCE_REQUIRE_CONTRACT)" SC_ACCEPTANCE_CONTRACT_RECEIPT="$(if $(filter command line environment override,$(origin SC_ACCEPTANCE_REQUIRE_CONTRACT)),$(SC_ACCEPTANCE_CONTRACT_RECEIPT),)" SC_ACCEPTANCE_CONTRACT_DECLARATION="$(SC_ACCEPTANCE_CONTRACT_DECLARATION)" LIST_SURFACE_VIEWPORTS=1440,390 node scripts/verify/frontend_list_surface_structure_browser.mjs
 
+# Which declared record the relation lane walks. The key is a stable name in the
+# governed envelope, never a numeric id; the optional field pins one relation.
+RELATION_RESOLUTION_KEY ?=
+RELATION_FIELD ?=
+
+.PHONY: verify.daily_dev.relation_roundtrip.browser
+# Read-only product acceptance for the detail relation surface on the external
+# daily development server: click every relation entry the page's own
+# ui.contract.v2 declares readable/openable, then return and require the source
+# presentation (path, title, statusbar, tabs, record actions) to be restored.
+# Read-only: it never writes the declared record. The record identity is resolved
+# from the governed acceptance-record envelope (ACCEPTANCE_RECORD_RESOLUTION,
+# key RELATION_RESOLUTION_KEY), never a literal id, so a fixture rebuild that
+# renumbers the record cannot leave the lane bound to a stale one.
+#   ACCEPTANCE_TARGET_SHA=<served sha> ACCEPTANCE_LOGIN=<login> \
+#   ACCEPTANCE_PASSWORD=<password> make verify.daily_dev.relation_roundtrip.browser
+verify.daily_dev.relation_roundtrip.browser: guard.prod.forbid
+	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)
+	@test -n "$(ACCEPTANCE_LOGIN)" -a -n "$(ACCEPTANCE_PASSWORD)" || (echo "ACCEPTANCE_LOGIN and ACCEPTANCE_PASSWORD must be supplied through the environment"; exit 2)
+	@test -n "$(ACCEPTANCE_RECORD_RESOLUTION)" -a -f "$(ACCEPTANCE_RECORD_RESOLUTION)" || (echo "ACCEPTANCE_RECORD_RESOLUTION must point at the managed resolution body"; exit 2)
+	@SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" ACCEPTANCE_BASE_URL="$(ACCEPTANCE_BASE_URL)" FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" DB_NAME="$(DB_NAME)" E2E_LOGIN="$(ACCEPTANCE_LOGIN)" E2E_PASSWORD="$(ACCEPTANCE_PASSWORD)" SC_ACCEPTANCE_TARGET_SHA="$(ACCEPTANCE_TARGET_SHA)" ACCEPTANCE_RECORD_RESOLUTION="$(ACCEPTANCE_RECORD_RESOLUTION)" RELATION_RESOLUTION_KEY="$(RELATION_RESOLUTION_KEY)" RELATION_FIELD="$(RELATION_FIELD)" node scripts/verify/record_relation_roundtrip_acceptance.js
+
 .PHONY: verify.frontend.business_entry.lifecycle.browser
 # Owner-authorized product acceptance for the 项目启停管理 formal business entry
 # (project.project lifecycle) on the external daily development server. This lane

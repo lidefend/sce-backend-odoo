@@ -726,7 +726,7 @@ verify.unified_page_contract.lite: guard.prod.forbid
 # ----------------------------------------------------------------------
 # v1.1 Engineering Convergence quality entries
 # ----------------------------------------------------------------------
-.PHONY: ci ci.professional.backend ci.local.iteration ci.local.quick ci.local.quick.run ci.local.quick.shard ci.local.quick.compose ci.delivery.freeze.prepare ci.generated_evidence.preflight ci.generated_reports.guard verify.contract_form_split_evidence refresh.contract_form_split_evidence refresh.generated_reports test.frontend test.unit test.odoo.integration test.contract test.e2e.preflight test.e2e.fixed_data.odoo test.e2e test.all test.inventory test.inventory.summary test.e2e.matrix architecture.module_dependency_map architecture.complexity_report architecture.complexity_baseline_lock architecture.split_plan_queue github.remote_execution_plan security.secret_scan security.secrets.scan security.personal_data_scan security.legacy_credential_guard verify.repository.clean_history verify.python_name_binding verify.menu_config_tree_editor.behavior verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix ci.tenant.pro03.demo.dispatch verify.contract.structure_lock verify.ci.scheduled_gates
+.PHONY: ci ci.professional.backend ci.local.iteration ci.local.quick ci.local.quick.diagnostic ci.local.quick.gc ci.local.quick.run ci.local.quick.shard ci.local.quick.compose lane.telemetry.record lane.telemetry.report lane.telemetry.check verify.lane.telemetry.unit ci.delivery.freeze.prepare ci.generated_evidence.preflight ci.generated_reports.guard verify.contract_form_split_evidence refresh.contract_form_split_evidence refresh.generated_reports test.frontend test.unit test.odoo.integration test.contract test.e2e.preflight test.e2e.fixed_data.odoo test.e2e test.all test.inventory test.inventory.summary test.e2e.matrix architecture.module_dependency_map architecture.complexity_report architecture.complexity_baseline_lock architecture.split_plan_queue github.remote_execution_plan security.secret_scan security.secrets.scan security.personal_data_scan security.legacy_credential_guard verify.repository.clean_history verify.python_name_binding verify.menu_config_tree_editor.behavior verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix ci.tenant.pro03.demo.dispatch verify.contract.structure_lock verify.ci.scheduled_gates
 
 # Workflow-integrity contract tests: assert the CI entrypoints themselves cannot
 # silently degrade (e.g. an errexit-masked backend suite reporting a truncated
@@ -762,7 +762,7 @@ ci.professional.backend: guard.prod.forbid verify.contract.page_v1_zero_residue.
 	@echo "[OK] professional backend/static quality gate passed"
 
 # Shard 1: verification and security checks
-ci.professional.backend.shard-verify: guard.prod.forbid verify.contract.page_v1_zero_residue.guard verify.guard.registry verify.test.coverage.registry security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.contract.structure_lock verify.unified_page_contract.v2.professional_backend verify.frontend.playwright_vendor_coupling.guard verify.frontend.role_surface_exposure_declaration.guard verify.ci.workflow.contract
+ci.professional.backend.shard-verify: guard.prod.forbid verify.contract.page_v1_zero_residue.guard verify.guard.registry verify.test.coverage.registry security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.contract.structure_lock verify.unified_page_contract.v2.professional_backend verify.frontend.playwright_vendor_coupling.guard verify.frontend.role_surface_exposure_declaration.guard verify.ci.workflow.contract verify.contract.architecture.suite
 	@echo "[OK] professional backend shard-verify passed"
 
 # Shard 2: generated reports and architecture checks
@@ -919,8 +919,58 @@ ci.local.iteration: guard.prod.forbid verify.baseline.iteration.execution.policy
 	  echo "[ci.local.iteration] PASS change_state=dirty scope=unclassified_by_design coverage=L1_only receipt=none next=risk_selected_non_zero_L2_targets_required"; \
 	fi
 
+# The frozen-head Quick entry. It shards the declared ci.local.quick.run target
+# list so an interrupted candidate keeps every shard part that already passed,
+# reuse-resumes the parts that still match the identical head+tree+scan
+# authority, and composes the standard exact-head receipt. A dirty tree is
+# refused outright: one receipt is bound to one committed HEAD, so running the
+# whole suite with a silent "evidence disabled" and a zero exit status proved
+# nothing. QUICK_SHARDS tunes the part count; it never changes the covered set,
+# which is always exactly the ci.local.quick.run prerequisite list.
+QUICK_SHARDS ?= 4
+QUICK_RECEIPT_KEEP ?= 50
+
 ci.local.quick: guard.prod.forbid
-	@python3 scripts/ops/local_quick_evidence.py run
+	@python3 scripts/ops/local_quick_evidence.py run --shards "$(QUICK_SHARDS)"
+
+# Explicit receipt-free mode for a dirty development tree. It runs the suite and
+# reports the result, but it issues no exact-head receipt and satisfies no gate.
+ci.local.quick.diagnostic: guard.prod.forbid
+	@python3 scripts/ops/local_quick_evidence.py run --diagnostic
+
+# Bound the receipt folder. Receipts are also the incremental-scan base source,
+# so this keeps the newest QUICK_RECEIPT_KEEP receipts (plus the current HEAD)
+# and drops the older ones with their shard folders.
+ci.local.quick.gc: guard.prod.forbid
+	@python3 scripts/ops/local_quick_evidence.py prune --keep "$(QUICK_RECEIPT_KEEP)"
+
+# Lane telemetry: observability for the declared execution lanes, keyed by the
+# same lane names the verification lane coverage auditor measures. It records
+# real duration, outcome and failure attribution so a lane that is green but
+# keeps paying the full scan is visible instead of merely slow. Recording never
+# runs a lane, signs coverage or relaxes a check.
+LANE ?=
+ENTRYPOINT ?=
+STATUS ?=
+DURATION ?=
+DEGRADED ?=
+FAILURE_OWNER ?=
+TELEMETRY_JSON ?=
+TELEMETRY_BY_HEAD ?=
+
+lane.telemetry.record: guard.prod.forbid
+	@test -n "$(LANE)" -a -n "$(ENTRYPOINT)" -a -n "$(STATUS)" -a -n "$(DURATION)" || { echo "[DENY] lane.telemetry.record requires LANE= ENTRYPOINT= STATUS= DURATION= (optional DEGRADED= FAILURE_OWNER=)"; exit 2; }
+	@python3 scripts/ci/lane_telemetry.py record --lane "$(LANE)" --entrypoint "$(ENTRYPOINT)" --status "$(STATUS)" --duration-seconds "$(DURATION)" $(if $(strip $(DEGRADED)),$(foreach reason,$(DEGRADED),--degraded $(reason))) $(if $(strip $(FAILURE_OWNER)),--failure-owner "$(FAILURE_OWNER)")
+
+lane.telemetry.report: guard.prod.forbid
+	@python3 scripts/ci/lane_telemetry.py report $(if $(strip $(TELEMETRY_JSON)),--json "$(TELEMETRY_JSON)") $(if $(strip $(TELEMETRY_BY_HEAD)),--by-head)
+
+lane.telemetry.check: guard.prod.forbid
+	@python3 scripts/ci/lane_telemetry.py check
+
+verify.lane.telemetry.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ci/lane_telemetry.py scripts/ci/test_lane_telemetry.py
+	@python3 scripts/ci/test_lane_telemetry.py
 
 # Sharded composition of the exact-head ci.local.quick evidence.
 #
@@ -942,7 +992,38 @@ ci.local.quick.compose: guard.prod.forbid
 
 .NOTPARALLEL: ci.local.quick.run ci.local.quick.shard ci.local.quick.compose ci.generated_evidence.preflight
 
-ci.local.quick.run: guard.prod.forbid ci.generated_evidence.preflight verify.contract.page_v1_zero_residue.guard security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.formal_product_field_purity verify.tenant_extension_storage architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2 verify.backend.contract_lifecycle.authority verify.menu_config_tree_editor.behavior verify.g1.acceptance.baseline verify.visualization.chart.capability verify.boq.export.capability verify.write.idempotency.capability verify.boq.dangerous.import.capability verify.boq.line.patch.capability verify.overview.rich.text.patch.capability verify.pr.push.unit verify.frontend.dev.incremental.unit verify.frontend.chart_engine.guard verify.frontend.chart_dataset.unit verify.frontend.boq_line_patch.unit verify.frontend.overview_rich_text.unit verify.frontend.lint.src verify.login_envelope.consumption.guard verify.ui_contract.delivery_surface.unit
+# ---------------------------------------------------------------------------
+# Contract & architecture guard suite - SINGLE SOURCE
+#
+# This target is the one declaration of the contract/architecture guard set.
+# It is consumed as a prerequisite by BOTH the remote required backend gate
+# (ci.professional.backend.shard-verify, invoked by professional_quality_gate.yml)
+# and the local exact-head lane (ci.local.quick.run). A guard can therefore no
+# longer be enforced on only one side. The 2026-10-11 systemic audit found 73
+# guards that ran only locally: "remote green" could not prove contract integrity,
+# and a remote pass could not be reused as a local pass. Adding a guard here wires
+# it to both lanes; there is no second list to keep in sync.
+#
+# Only deterministic static guards belong here. Anything needing a live database,
+# a browser, the pnpm toolchain or developer-local state belongs to a runtime or
+# frontend lane and must not be added here.
+# ---------------------------------------------------------------------------
+.PHONY: verify.contract.architecture.suite
+verify.contract.architecture.suite: \
+	guard.prod.forbid \
+	verify.formal_product_field_purity \
+	verify.tenant_extension_storage \
+	verify.backend.contract_lifecycle.authority \
+	verify.menu_config_tree_editor.behavior \
+	verify.g1.acceptance.baseline \
+	verify.login_envelope.consumption.guard \
+	verify.contract_form_split_evidence \
+	verify.guard.registry \
+	verify.test.coverage.registry \
+	verify.frontend.role_surface_exposure_declaration.guard \
+	verify.frontend.playwright_vendor_coupling.guard \
+	verify.ci.workflow.contract \
+	verify.verification.lane_coverage
 	@python3 scripts/verify/contract_form_runtime_state_protocol_guard.py
 	@scripts/verify/contract_form_runtime_state_behavior_guard.sh
 	@python3 scripts/verify/contract_form_side_effect_regression_guard.py
@@ -1000,8 +1081,12 @@ ci.local.quick.run: guard.prod.forbid ci.generated_evidence.preflight verify.con
 	@python3 scripts/verify/product_client_action_boundary_guard.py
 	@python3 scripts/verify/test_frontend_release_evidence_bundle.py
 	@python3 scripts/ci/node_syntax_check.py
+	@echo "[OK] contract & architecture guard suite passed"
+
+ci.local.quick.run: guard.prod.forbid ci.generated_evidence.preflight verify.contract.page_v1_zero_residue.guard security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2 verify.visualization.chart.capability verify.boq.export.capability verify.write.idempotency.capability verify.boq.dangerous.import.capability verify.boq.line.patch.capability verify.overview.rich.text.patch.capability verify.pr.push.unit verify.frontend.dev.incremental.unit verify.frontend.chart_engine.guard verify.frontend.chart_dataset.unit verify.frontend.boq_line_patch.unit verify.frontend.overview_rich_text.unit verify.frontend.lint.src verify.ui_contract.delivery_surface.unit verify.contract.architecture.suite
 	@git diff --check
 	@echo "[OK] local quick gate passed"
+
 
 test.frontend: guard.prod.forbid verify.menu_config_tree_editor.behavior
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web lint:src

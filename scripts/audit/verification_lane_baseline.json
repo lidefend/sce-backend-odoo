@@ -1,0 +1,53 @@
+{
+  "schema_version": "verification-lane-coverage/v1",
+  "rationale": "Frozen debt ratchet for the verification surface. Every list is an allowance, never a target: a batch may only shrink it. Growth fails --check until it is explicitly reviewed and the baseline is deliberately rewritten.",
+  "review_by": "2026-12-31",
+  "metric_corrections": [
+    {
+      "metric": "max_scripts_unreferenced_anywhere",
+      "previous_reading": 1,
+      "observed_after_correction": 104,
+      "batch": "B2",
+      "defect": "The reference index counted a *mention* as a consumer. Guard registries, inventories and audit reports list every script by name, so writing about dead surface silently revived it and the raw count stayed flattering. Fixed by indexing real imports only."
+    },
+    {
+      "metric": "max_targets_zero_reference",
+      "previous_reading": 336,
+      "observed_after_correction": 759,
+      "batch": "B3",
+      "defect": "Same defect on the make-target half: every docs/*.md $() mention counted as an invocation. Only the two binding execution-policy documents declare an entry point; a report that quotes a target name narrates it. Fixed, which added the 423 targets that this batch registered."
+    },
+    {
+      "metric": "max_remote_only_scripts",
+      "previous_reading": 74,
+      "observed_after_correction": 83,
+      "batch": "B3",
+      "defect": "The recipe script token frame listed only .py/.sh/.js and had no path boundary, so the Node/TS probe surface was invisible to the lane-divergence count. Widening the frame to .mjs/.cjs/.ts exposed 9 genuinely remote-only frontend probes (registered), and the boundary fix removed 138 false 'absent path' readings that came from reading frontend/apps/web/scripts/* as a repo-root scripts/*."
+    },
+    {
+      "metric": "recorded_targets_missing_asset",
+      "previous_reading": null,
+      "observed_after_correction": 226,
+      "batch": "B3",
+      "defect": "New hard-checked register: a make target whose recipe calls a path that is absent from the tree cannot run. 226 targets qualify (187 references to scripts/migration/*, which .gitignore line 116 keeps out of the clean product repository as customer migration collateral, plus relocated or never-added verify/root scripts). Each is registered with an owner, a reason and a review date; 0 may be unregistered."
+    }
+  ],
+  "max_targets_zero_reference": 760,
+  "max_scripts_unreferenced_anywhere": 103,
+  "max_targets_missing_asset_unregistered": 0,
+  "max_stale_missing_asset_dispositions": 0,
+  "recorded_targets_missing_asset": 226,
+  "max_targets_zero_reference_unregistered": 0,
+  "max_scripts_unreferenced_unregistered": 0,
+  "max_stale_target_dispositions": 0,
+  "max_stale_script_dispositions": 0,
+  "max_local_only_scripts": 5,
+  "max_remote_only_scripts": 83,
+  "max_unregistered_local_only_scripts": 0,
+  "max_unregistered_remote_only_scripts": 0,
+  "max_stale_local_only_exemptions": 0,
+  "max_stale_remote_only_exemptions": 0,
+  "recorded_targets_defined": 2189,
+  "recorded_targets_unreached_from_anchor": 2047,
+  "recorded_anchor_union_targets": 148
+}

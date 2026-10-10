@@ -104,7 +104,7 @@ class LocalQuickEvidenceTests(unittest.TestCase):
         with self.assertRaisesRegex(evidence.EvidenceError, "does not match"):
             evidence.verify(self.root, self.head)
 
-    def test_dirty_worktree_cannot_reuse_and_success_does_not_issue_receipt(self) -> None:
+    def test_dirty_worktree_is_refused_before_the_suite_runs(self) -> None:
         (self.root / "untracked.txt").write_text("dirty\n", encoding="utf-8")
         calls: list[list[str]] = []
 
@@ -113,10 +113,58 @@ class LocalQuickEvidenceTests(unittest.TestCase):
             return subprocess.CompletedProcess(command, 0)
 
         with mock.patch.object(evidence, "is_linked_worktree", return_value=False):
-            self.assertIsNone(evidence.run_quick(self.root, runner=runner))
+            with self.assertRaisesRegex(evidence.EvidenceError, "worktree is not clean"):
+                evidence.run_quick(self.root, runner=runner)
+        self.assertEqual(calls, [])
         with self.assertRaisesRegex(evidence.EvidenceError, "must be clean"):
             evidence.verify(self.root, self.head)
-        self.assertEqual(len(calls), 1)
+
+    def test_explicit_diagnostic_runs_the_dirty_suite_without_a_receipt(self) -> None:
+        (self.root / "untracked.txt").write_text("dirty\n", encoding="utf-8")
+        calls: list[list[str]] = []
+
+        def runner(command, **_kwargs):
+            calls.append(command)
+            return subprocess.CompletedProcess(command, 0)
+
+        with mock.patch.object(evidence, "is_linked_worktree", return_value=False):
+            self.assertIsNone(evidence.run_quick(self.root, runner=runner, diagnostic=True))
+        self.assertEqual(calls, [["make", "--no-print-directory", "ci.local.quick.run"]])
+        with self.assertRaisesRegex(evidence.EvidenceError, "must be clean"):
+            evidence.verify(self.root, self.head)
+
+    def test_receipt_retention_keeps_the_newest_window(self) -> None:
+        folder = evidence.evidence_path(self.root, self.head).parent
+        folder.mkdir(parents=True, exist_ok=True)
+        stems = [f"{index:040x}" for index in range(1, 6)]
+        for index, stem in enumerate(stems):
+            path = folder / f"{stem}.json"
+            path.write_text("{}", encoding="utf-8")
+            os.utime(path, (1_000_000 + index, 1_000_000 + index))
+        self.assertEqual(sorted(evidence.prune_receipts(self.root, keep=2, current_head=self.head)), sorted(stems[:3]))
+        self.assertEqual(sorted(path.name for path in folder.glob("*.json")), sorted(f"{s}.json" for s in stems[3:]))
+
+    def test_receipt_retention_requires_a_positive_keep(self) -> None:
+        for keep in (0, -1, True):
+            with self.subTest(keep=keep):
+                with self.assertRaisesRegex(evidence.EvidenceError, "positive integer"):
+                    evidence.prune_receipts(self.root, keep=keep, current_head=self.head)
+
+    def test_receipt_retention_keeps_the_newest_ancestor_outside_the_window(self) -> None:
+        tree = evidence.git(self.root, "rev-parse", "HEAD^{tree}")
+        child = evidence.git(self.root, "-c", "user.name=Test", "-c", "user.email=t@example.invalid",
+                             "commit-tree", tree, "-p", self.head, "-m", "child")
+        evidence.git(self.root, "reset", "--hard", child)
+        folder = evidence.evidence_path(self.root, child).parent
+        folder.mkdir(parents=True, exist_ok=True)
+        parent_receipt = folder / f"{self.head}.json"
+        parent_receipt.write_text("{}", encoding="utf-8")
+        os.utime(parent_receipt, (1_000_000, 1_000_000))
+        newer = folder / f"{'f' * 40}.json"
+        newer.write_text("{}", encoding="utf-8")
+        os.utime(newer, (2_000_000, 2_000_000))
+        self.assertEqual(evidence.prune_receipts(self.root, keep=1, current_head=child), [])
+        self.assertTrue(parent_receipt.exists())
 
     def test_different_head_cannot_reuse_receipt(self) -> None:
         self.run_success()
@@ -262,7 +310,10 @@ class ShardCompositionTests(unittest.TestCase):
         (self.root / "tracked.txt").write_text("baseline\n", encoding="utf-8")
         (self.root / "make").mkdir()
         (self.root / "make/ci.mk").write_text(
-            "ci.local.quick.run: " + " ".join(MANIFEST_TARGETS) + "\n", encoding="utf-8"
+            "ci.local.quick.run: " + " ".join(MANIFEST_TARGETS) + "\n"
+            "\t@git diff --check\n"
+            '\t@echo "[OK] local quick gate passed"\n',
+            encoding="utf-8",
         )
         for path in set(evidence.scans.COMMON_AUTHORITY).union(*evidence.scans.AUTHORITY.values()):
             target = self.root / path
@@ -313,8 +364,56 @@ class ShardCompositionTests(unittest.TestCase):
 
     def test_only_verify_reports_a_pure_verification_label(self) -> None:
         self.assertEqual(evidence.result_label("verify"), "VERIFIED")
-        for mode in ("run", "shard", "compose"):
+        for mode in ("run", "shard", "compose", "prune"):
             self.assertEqual(evidence.result_label(mode), "RECORDED", mode)
+
+    def test_default_entry_shards_and_composes_in_the_primary_worktree(self) -> None:
+        calls: list[list[str]] = []
+        with mock.patch.object(evidence, "is_linked_worktree", return_value=False):
+            receipt = evidence.run_default(self.root, shards=2, runner=self._runner(calls))
+        assert receipt is not None
+        self.assertEqual(evidence.verify(self.root, self.head), receipt)
+        manifest = list(MANIFEST_TARGETS)
+        self.assertEqual(calls, [["make", "--no-print-directory", *manifest[0::2]],
+                                 ["make", "--no-print-directory", *manifest[1::2]]])
+
+    def test_default_entry_keeps_the_single_governed_runner_in_a_linked_worktree(self) -> None:
+        calls: list[list[str]] = []
+        with mock.patch.object(evidence, "is_linked_worktree", return_value=True):
+            evidence.run_default(self.root, shards=2, runner=self._runner(calls))
+        self.assertEqual(calls, [["python3", "scripts/dev/local_dev_frontend_quick.py", "--full-ci-local-quick"]])
+
+    def test_passed_shard_is_reused_on_resume(self) -> None:
+        self._run_all_shards()
+        resumed: list[list[str]] = []
+        with mock.patch.object(evidence, "is_linked_worktree", return_value=False):
+            path = evidence.run_shard(self.root, 2, 0, runner=self._runner(resumed))
+        self.assertEqual(resumed, [])
+        self.assertEqual(path, self._part_path(0))
+
+    def test_shard_is_rerun_when_its_recorded_coverage_is_stale(self) -> None:
+        self._run_all_shards()
+        self._tamper(0, "coverage", {"protocol": "stale"})
+        calls: list[list[str]] = []
+        with mock.patch.object(evidence, "is_linked_worktree", return_value=False):
+            evidence.run_shard(self.root, 2, 0, runner=self._runner(calls))
+        self.assertEqual(len(calls), 1)
+
+    def test_monolithic_recipe_line_absent_from_the_shard_path_fails_closed(self) -> None:
+        (self.root / "make/ci.mk").write_text(
+            "ci.local.quick.run: " + " ".join(MANIFEST_TARGETS) + "\n"
+            "\t@git diff --check\n\t@python3 scripts/verify/a_new_check.py\n",
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(evidence.EvidenceError, "not reproduced by the sharded lane"):
+            evidence.assert_quick_recipe_covered(self.root)
+
+    def test_declared_recipe_requires_a_body(self) -> None:
+        (self.root / "make/ci.mk").write_text(
+            "ci.local.quick.run: " + " ".join(MANIFEST_TARGETS) + "\n", encoding="utf-8"
+        )
+        with self.assertRaisesRegex(evidence.EvidenceError, "declares no recipe"):
+            evidence.assert_quick_recipe_covered(self.root)
 
     def test_shards_compose_into_one_verifiable_exact_head_receipt(self) -> None:
         calls = self._run_all_shards()

@@ -9,9 +9,11 @@ import json
 import os
 import re
 import shlex
+import shutil
 import sys
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 
 
@@ -23,6 +25,17 @@ COMPOSITION_SCHEMA = 1
 SUITE = "ci.local.quick"
 PRODUCER = scans.PRODUCER
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
+# The default sharded lane: one bounded shard is one make invocation over a
+# strided slice of the declared target list, so an interrupted or partially
+# failed candidate keeps the parts that did pass instead of proving nothing.
+DEFAULT_SHARDS = 4
+# Receipts are also the incremental-scan base source (see trusted_scan_scope),
+# so the retained window is the newest receipts by issue time, never a bare age
+# cutoff that could strand the only usable ancestor.
+RECEIPT_RETENTION = 50
+# Recipe lines of ci.local.quick.run that the sharded lane reproduces. Anything
+# else fails closed so a new monolithic-only check cannot be silently dropped.
+REPRODUCED_RECIPE_PREFIXES = ("git diff --check", "echo ")
 
 
 class EvidenceError(RuntimeError):
@@ -96,7 +109,81 @@ def _write_receipt_after_success(root: Path, expected_head: str, coverage: dict)
         temporary.replace(path)
     finally:
         temporary.unlink(missing_ok=True)
+    try:
+        prune_receipts(root, current_head=expected_head)
+    except (OSError, EvidenceError) as exc:
+        # Retention is storage governance, not evidence integrity: the receipt
+        # above is already written and verifiable, so a prune failure must not
+        # turn a passing Quick into a failing one. It is reported, not swallowed.
+        print(f"[local_quick_evidence] WARN receipt retention failed: {exc}")
     return path
+
+
+def _newest_ancestor_receipt(root: Path, head: str, candidates: list[tuple[float, str, Path]]) -> str | None:
+    """The most recently issued receipt head that is still an ancestor of head.
+
+    Receipts drive incremental-scan base selection, so dropping every ancestor
+    would silently force later scans back to full runs. Candidates arrive
+    newest-first, so the first ancestor found is the strongest base candidate
+    and the search stops there.
+    """
+    for _, stem, _ in candidates:
+        if stem == head:
+            continue
+        probe = subprocess.run(
+            ["git", "-C", str(root), "merge-base", "--is-ancestor", stem, head],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        if probe.returncode == 0:
+            return stem
+    return None
+
+
+def prune_receipts(root: Path, keep: int = RECEIPT_RETENTION, current_head: str | None = None) -> list[str]:
+    """Keep the newest exact-head receipts (and their shard folders); drop older ones.
+
+    Receipts feed incremental-scan base selection, so the window is the newest
+    ``keep`` receipts by issue time plus the receipt just signed for
+    ``current_head``; a bare age cutoff could remove the only usable ancestor and
+    silently force every later scan back to a full run. Removal is confined to
+    this worktree's receipt folder and the shard folder of each removed head.
+    Unlike the evidence write itself, an under- or over-retention here never
+    changes what a receipt proves.
+    """
+    if isinstance(keep, bool) or not isinstance(keep, int) or keep < 1:
+        raise EvidenceError("receipt retention must be a positive integer")
+    head = current_head or git(root, "rev-parse", "HEAD")
+    if not FULL_SHA.fullmatch(head):
+        raise EvidenceError("receipt retention needs a full HEAD identity")
+    folder = evidence_path(root, head).parent
+    if not folder.is_dir():
+        return []
+    receipts: list[tuple[float, str, Path]] = []
+    for path in folder.glob("*.json"):
+        try:
+            if path.is_symlink() or not path.is_file() or not FULL_SHA.fullmatch(path.stem):
+                continue
+            receipts.append((path.stat().st_mtime, path.stem, path))
+        except OSError:
+            continue
+    receipts.sort(key=lambda row: (row[0], row[1]), reverse=True)
+    retained = {stem for _, stem, _ in receipts[:keep]} | {head}
+    outside = receipts[keep:]
+    anchor = _newest_ancestor_receipt(root, head, outside)
+    if anchor is not None:
+        retained.add(anchor)
+    removed: list[str] = []
+    for _, stem, path in outside:
+        if stem in retained:
+            continue
+        path.unlink()
+        shard = shard_root(root, stem)
+        if shard.is_dir() and not shard.is_symlink():
+            shutil.rmtree(shard)
+        removed.append(stem)
+    return removed
 
 
 def is_linked_worktree(root: Path) -> bool:
@@ -120,16 +207,46 @@ def require_safe_make_environment() -> None:
             raise EvidenceError("make flags can skip scanner execution or alter its authority")
 
 
-def run_quick(root: Path, runner=subprocess.run) -> Path | None:
+def quick_runner_command(root: Path) -> list[str]:
+    """The governed single-shot suite command for this worktree kind."""
+    return (
+        ["python3", "scripts/dev/local_dev_frontend_quick.py", "--full-ci-local-quick"]
+        if is_linked_worktree(root)
+        else ["make", "--no-print-directory", "ci.local.quick.run"]
+    )
+
+
+def _require_clean_start(root: Path, purpose: str) -> str:
+    if git(root, "status", "--porcelain=v1", "--untracked-files=all"):
+        raise EvidenceError(
+            f"{purpose} requires a clean worktree because one receipt is bound to one exact "
+            "HEAD; commit or stash the change, or run the receipt-free diagnostic entry "
+            "`make ci.local.quick.diagnostic`"
+        )
+    head = git(root, "rev-parse", "HEAD")
+    if not FULL_SHA.fullmatch(head):
+        raise EvidenceError("HEAD identity is invalid")
+    return head
+
+
+def run_quick(root: Path, runner=subprocess.run, diagnostic: bool = False) -> Path | None:
     require_safe_make_environment()
     root = repository_root(root)
     start_status = git(root, "status", "--porcelain=v1", "--untracked-files=all")
     start_head = git(root, "rev-parse", "HEAD") if not start_status else None
     if start_head and not FULL_SHA.fullmatch(start_head): raise EvidenceError("Quick start HEAD identity is invalid")
-    command = (["python3", "scripts/dev/local_dev_frontend_quick.py", "--full-ci-local-quick"]
-               if is_linked_worktree(root) else ["make", "--no-print-directory", "ci.local.quick.run"])
+    command = quick_runner_command(root)
     if start_head is None:
-        print("[ci.local.quick] evidence disabled: worktree was not clean at suite start")
+        if not diagnostic:
+            # A dirty tree can only produce a receipt for a state that does not
+            # exist, so the lane fails closed instead of running the full suite
+            # with a silent "evidence disabled" and a zero exit status.
+            raise EvidenceError(
+                "worktree is not clean: the exact-head quick lane signs one receipt for one "
+                "committed HEAD, so it refuses to run. Commit or stash the change, or use the "
+                "explicit receipt-free diagnostic entry `make ci.local.quick.diagnostic`."
+            )
+        print("[ci.local.quick] DIAGNOSTIC: worktree is not clean; the suite runs but no receipt is issued")
         completed = runner(command, cwd=root, check=False, text=True)
         if completed.returncode: raise QuickRunFailed(completed.returncode)
         return None
@@ -219,6 +336,45 @@ def required_targets(root: Path) -> list[str]:
     return tokens
 
 
+def declared_quick_recipe(root: Path) -> list[str]:
+    """The literal recipe lines of the monolithic ci.local.quick.run entry."""
+    try:
+        source = (root / "make/ci.mk").read_text(encoding="utf-8")
+    except OSError as exc:
+        raise EvidenceError(f"cannot read the declared quick recipe: {exc}") from exc
+    lines = source.splitlines()
+    starts = [index for index, line in enumerate(lines) if line.startswith("ci.local.quick.run:")]
+    if len(starts) != 1:
+        raise EvidenceError("ci.local.quick.run must be declared exactly once")
+    recipe: list[str] = []
+    for line in lines[starts[0] + 1:]:
+        if not line.startswith("\t"):
+            break
+        recipe.append(line[1:].strip().removeprefix("@"))
+    return recipe
+
+
+def assert_quick_recipe_covered(root: Path) -> list[str]:
+    """Fail closed if the monolithic recipe carries a check the sharded lane drops.
+
+    The sharded entry runs the same declared target list but, unlike a single
+    ``make ci.local.quick.run``, never executes that target's own recipe. Every
+    recipe line must therefore be reproduced by the sharded path; a new line
+    fails here instead of silently disappearing from the composed receipt.
+    """
+    recipe = declared_quick_recipe(root)
+    if not recipe:
+        raise EvidenceError("ci.local.quick.run declares no recipe for the sharded lane to reproduce")
+    for line in recipe:
+        if line.startswith(REPRODUCED_RECIPE_PREFIXES):
+            continue
+        raise EvidenceError(
+            "ci.local.quick.run recipe line is not reproduced by the sharded lane: "
+            f"{line!r}; teach scripts/ops/local_quick_evidence.py to reproduce it before sharding"
+        )
+    return recipe
+
+
 def shard_root(root: Path, head: str) -> Path:
     return evidence_path(root, head).with_suffix("")
 
@@ -235,23 +391,32 @@ def _checked_shard_layout(shards: object, index: object) -> tuple[int, int]:
     return shards, index
 
 
-def run_shard(root: Path, shards: int, index: int, runner=subprocess.run) -> Path:
+def run_shard(root: Path, shards: int, index: int, runner=subprocess.run, reuse: bool = True) -> Path:
     """Run one bounded shard of the declared quick target list and record its part receipt."""
     require_safe_make_environment()
     shards, index = _checked_shard_layout(shards, index)
     root = repository_root(root)
     if is_linked_worktree(root):
         raise EvidenceError("sharded quick evidence is only supported in the primary worktree")
-    if git(root, "status", "--porcelain=v1", "--untracked-files=all"):
-        raise EvidenceError("shard evidence requires a clean worktree at start")
-    start_head = git(root, "rev-parse", "HEAD")
-    if not FULL_SHA.fullmatch(start_head):
-        raise EvidenceError("shard start HEAD identity is invalid")
+    start_head = _require_clean_start(root, "shard evidence")
     root, tree = require_exact_clean_head(root, start_head)
     manifest = required_targets(root)
     targets = manifest[index::shards]
     if not targets:
         raise EvidenceError("this shard covers no required target")
+    part_path = shard_part_path(root, start_head, index, shards)
+    if reuse:
+        try:
+            existing = _loaded_shard_part(root, start_head, tree, manifest, shards, index)
+        except EvidenceError:
+            existing = None
+        # A part receipt is reusable only for the identical candidate and while
+        # the scan authority/reference snapshot is unchanged; otherwise it is
+        # re-run. This is what makes an interrupted candidate resume from its
+        # remaining shards instead of repeating the ones that already passed.
+        if existing is not None and existing["coverage"] == scans.coverage_snapshot(root):
+            print(f"[local_quick_evidence] REUSE shard {index}/{shards - 1}: {len(targets)} targets already passed")
+            return part_path
     folder = shard_root(root, start_head) / "scan-proofs"
     folder.mkdir(parents=True, exist_ok=True)
     coverage = scans.coverage_snapshot(root)
@@ -279,9 +444,8 @@ def run_shard(root: Path, shards: int, index: int, runner=subprocess.run) -> Pat
         "status": "passed",
         "coverage": coverage,
     }
-    path = shard_part_path(root, start_head, index, shards)
-    atomic_json(path, part)
-    return path
+    atomic_json(part_path, part)
+    return part_path
 
 
 def _loaded_shard_part(root: Path, head: str, tree: str, manifest: list[str], shards: int, index: int) -> dict:
@@ -314,6 +478,7 @@ def compose(root: Path, shards: int, expected_head: str) -> Path:
     shards, _ = _checked_shard_layout(shards, 0)
     root, tree = require_exact_clean_head(root, expected_head)
     manifest = required_targets(root)
+    assert_quick_recipe_covered(root)
     covered: list[str] = []
     parts: list[dict] = []
     coverage = scans.coverage_snapshot(root)
@@ -354,6 +519,10 @@ def compose(root: Path, shards: int, expected_head: str) -> Path:
                 git(root, "merge-base", "--is-ancestor", base, expected_head)
         except (OSError, ValueError, KeyError, TypeError, EvidenceError) as exc:
             raise EvidenceError(f"actual successful scanner proof missing or invalid: {kind}") from exc
+    # The monolithic entry runs its recipe after the declared targets; the
+    # sharded path never executes that recipe, so reproduce its only semantic
+    # line here instead of dropping the check from the composed receipt.
+    git(root, "diff", "--check")
     receipt = _write_receipt_after_success(root, expected_head, coverage)
     atomic_json(shard_root(root, expected_head) / "composition.json", {
         "schema_version": COMPOSITION_SCHEMA,
@@ -369,6 +538,82 @@ def compose(root: Path, shards: int, expected_head: str) -> Path:
     return receipt
 
 
+def quick_degraded_reasons(root: Path) -> list[str]:
+    """Why this run did not get the cheap scan path it was entitled to.
+
+    A full scan is legitimate when the repository has no usable ancestor receipt
+    or the authority genuinely changed. It is a degradation when the lane could
+    not even prove its own identity (a detached or unreachable mainline), because
+    then every later run pays the full scan for a reason the lane already knows.
+    """
+    reasons: set[str] = set()
+    for kind in scans.AUTHORITY:
+        try:
+            scope = scans.select_scope(root, kind)
+        except Exception:
+            reasons.add("full_scan_fallback")
+            continue
+        if scope.base is not None:
+            continue
+        if scope.reason in ("coverage_identity_unprovable", "untrusted_origin"):
+            reasons.add("detached_from_main")
+        elif scope.reason == "verified_coverage_receipt_missing":
+            reasons.add("receipt_absent")
+    return sorted(reasons)
+
+
+def _observe_quick(root: Path, status: str, duration: float, degraded: list[str],
+                   owner: str | None) -> None:
+    """File one lane observation. Telemetry is observability, not a gate, so a
+    recording failure is reported and never rewrites the Quick outcome."""
+    try:
+        import lane_telemetry
+
+        payload = lane_telemetry.record(
+            root, "local.quick", "ci.local.quick", status, duration, tuple(degraded), owner,
+        )
+        print(f"[local_quick_evidence] telemetry lane={payload['lane']} status={status} "
+              f"degraded={payload['degraded'] or 'none'}")
+    except Exception as exc:
+        print(f"[local_quick_evidence] WARN lane telemetry not recorded: {exc}")
+
+
+def run_default(root: Path, shards: int | None = None, diagnostic: bool = False,
+                runner=subprocess.run) -> Path | None:
+    """The default ci.local.quick entry.
+
+    The primary worktree shards the declared target list so an interrupted
+    candidate keeps every part that already passed and a re-run resumes only the
+    remainder. A linked worktree keeps the single governed runner, because shard
+    parts are only supported in the primary worktree. ``diagnostic`` is the
+    explicit receipt-free mode for a dirty development tree.
+    """
+    if diagnostic:
+        return run_quick(root, runner=runner, diagnostic=True)
+    root = repository_root(root)
+    started = time.monotonic()
+    status, owner, degraded = "passed", None, []
+    try:
+        if is_linked_worktree(root):
+            return run_quick(root, runner=runner)
+        shards = DEFAULT_SHARDS if shards is None else shards
+        _checked_shard_layout(shards, 0)
+        _require_clean_start(root, "the sharded quick lane")
+        for index in range(shards):
+            run_shard(root, shards, index, runner=runner)
+        receipt = compose(root, shards, git(root, "rev-parse", "HEAD"))
+        degraded = quick_degraded_reasons(root)
+        return receipt
+    except QuickRunFailed:
+        status, owner = "failed", "product_defect"
+        raise
+    except EvidenceError:
+        status, owner = "not_run", "validation_tool_defect"
+        raise
+    finally:
+        _observe_quick(root, status, time.monotonic() - started, degraded, owner)
+
+
 def result_label(mode: str) -> str:
     """Only `verify` reports a pure verification; the other modes write evidence."""
     return "VERIFIED" if mode == "verify" else "RECORDED"
@@ -376,34 +621,45 @@ def result_label(mode: str) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("run", "verify", "shard", "compose"))
+    parser.add_argument("mode", choices=("run", "verify", "shard", "compose", "prune"))
     parser.add_argument("--root", type=Path, default=Path.cwd())
     parser.add_argument("--expected-head")
     parser.add_argument("--shards", type=int)
     parser.add_argument("--shard", type=int, dest="shard_index")
+    parser.add_argument("--diagnostic", action="store_true")
+    parser.add_argument("--keep", type=int)
     args = parser.parse_args()
     try:
         if args.mode == "run":
-            if args.expected_head is not None or args.shards is not None or args.shard_index is not None:
-                raise EvidenceError("run mode does not accept --expected-head, --shards or --shard")
-            path = run_quick(args.root)
+            if args.expected_head is not None or args.shard_index is not None or args.keep is not None:
+                raise EvidenceError("run mode does not accept --expected-head, --shard or --keep")
+            path = run_default(args.root, args.shards, args.diagnostic)
         elif args.mode == "verify":
             if args.expected_head is None:
                 raise EvidenceError("verify mode requires --expected-head")
-            if args.shards is not None or args.shard_index is not None:
-                raise EvidenceError("verify mode does not accept --shards or --shard")
+            if args.shards is not None or args.shard_index is not None or args.keep is not None or args.diagnostic:
+                raise EvidenceError("verify mode does not accept --shards, --shard, --keep or --diagnostic")
             path = verify(args.root, args.expected_head)
         elif args.mode == "shard":
             if args.shards is None or args.shard_index is None:
                 raise EvidenceError("shard mode requires --shards and --shard")
-            if args.expected_head is not None:
-                raise EvidenceError("shard mode does not accept --expected-head")
+            if args.expected_head is not None or args.keep is not None or args.diagnostic:
+                raise EvidenceError("shard mode does not accept --expected-head, --keep or --diagnostic")
             path = run_shard(args.root, args.shards, args.shard_index)
+        elif args.mode == "prune":
+            if args.shards is not None or args.shard_index is not None or args.expected_head is not None or args.diagnostic:
+                raise EvidenceError("prune mode does not accept --shards, --shard, --expected-head or --diagnostic")
+            keep = RECEIPT_RETENTION if args.keep is None else args.keep
+            removed = prune_receipts(repository_root(args.root), keep)
+            print(f"[local_quick_evidence] PRUNED {len(removed)} receipt(s); keep={keep}")
+            for stem in removed:
+                print(f"[local_quick_evidence]   removed {stem}")
+            path = None
         else:
             if args.shards is None:
                 raise EvidenceError("compose mode requires --shards")
-            if args.shard_index is not None:
-                raise EvidenceError("compose mode does not accept --shard")
+            if args.shard_index is not None or args.keep is not None or args.diagnostic:
+                raise EvidenceError("compose mode does not accept --shard, --keep or --diagnostic")
             head = args.expected_head
             if head is None:
                 head = subprocess.run(
