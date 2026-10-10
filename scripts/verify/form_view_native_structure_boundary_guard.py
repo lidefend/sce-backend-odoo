@@ -160,8 +160,16 @@ def _frontend_boundary_checks(errors: list[str]) -> None:
         errors,
     )
     _assert(
-        "if (authoritativeBusinessSectionMode.value) return '';" in native_renderer,
-        "inferred semantic headings must stay hidden when authoritative business sections exist",
+        "return resolveNativeSectionHeading(node" in native_renderer,
+        "section headings must resolve through the shared section-identity module, never in the renderer",
+        errors,
+    )
+    _assert(
+        not any(label in native_renderer for label in (
+            "'概览'", "'办理信息'", "'基本资料'", "'风险与提示'",
+            "'关系明细'", "'协作记录'", "'历史审计'",
+        )),
+        "inferred semantic headings must stay hidden: the renderer must not turn a semantic role into a business label",
         errors,
     )
     _assert(

@@ -172,6 +172,20 @@ class ProfessionalCollaborationGuardTests(unittest.TestCase):
                 return value.replace("intent !== 'collaboration.users.search'", "!intent")
             return value
         self.assertTrue(any("user search handler" in item for item in validate(read_text)))
+    def test_collaboration_user_search_cannot_reinject_an_undeclared_page_size(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useNativeChatterRuntime.ts"):
+                return value.replace("searchCollaborationUsers({ intent, query })", "searchCollaborationUsers({ intent, query, limit: 20 })")
+            return value
+        self.assertTrue(any("frontend fallback page size" in item for item in validate(read_text)))
+    def test_collaboration_user_search_boundary_must_pass_the_resolved_intent(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useNativeChatterRuntime.ts"):
+                return value.replace("searchCollaborationUsers({ intent, query })", "searchCollaborationUsers({ intent: 'collaboration.users.search', query })")
+            return value
+        self.assertTrue(any("resolved exact intent" in item for item in validate(read_text)))
     def test_collaboration_user_search_projection_is_required(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")

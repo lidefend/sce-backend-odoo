@@ -127,8 +127,15 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("collaboration user search presentation must require the exact backend intent")
     if "params.userSearchIntent()" not in chatter_runtime or "intent !== 'collaboration.users.search'" not in chatter_runtime:
         failures.append("collaboration user search handler must independently fail closed without exact authority")
-    if "searchCollaborationUsers({ intent, query, limit: 20 })" not in chatter_runtime:
-        failures.append("collaboration user search must carry backend authority into the API boundary")
+    # The declaration layer owns the page size: the backend handler resolves
+    # `limit or 20` and caps it at 50 (addons/smart_core/handlers/collaboration_users.py).
+    # The API boundary must therefore carry the fail-closed exact intent and must
+    # not inject a frontend fallback the contract does not declare; the runtime
+    # contract hard lock forbids frontend-invented product parameters.
+    if "searchCollaborationUsers({ intent, query" not in chatter_runtime:
+        failures.append("collaboration user search must carry the resolved exact intent into the API boundary")
+    if "searchCollaborationUsers({ intent, query, limit: 20 })" in chatter_runtime:
+        failures.append("collaboration user search must not inject a frontend fallback page size owned by the declaration layer")
     if ':data-user-search-readiness="userSearchEnabled ? \'ready\' : \'fail_closed\'"' not in panel or ':user-search-enabled="userSearchEnabled"' not in panel:
         failures.append("collaboration user search presentation must expose fail-closed readiness")
     if 'v-if="userSearchEnabled"' not in composer:

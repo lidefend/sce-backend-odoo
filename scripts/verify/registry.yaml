@@ -1,26 +1,5 @@
 version: 1
 entries:
-- script: test_business_entry_matrix_incremental.py
-  status: active
-  owner: platform-team
-  date: '2026-10-08'
-  wire_or_retire: file-consumed
-  reason: invoked as 'python3 -m unittest scripts.verify.<module>' inside make/frontend.mk;
-    module-form invocation is recorded as a file reference, not a make-target reference
-- script: test_frontend_contract_basis_guard.py
-  status: active
-  owner: platform-team
-  date: '2026-10-08'
-  wire_or_retire: file-consumed
-  reason: invoked as 'python3 -m unittest scripts.verify.<module>' inside make/frontend.mk
-    (target verify.frontend.contract_basis.unit); module-form invocation is a file reference
-- script: test_login_envelope_consumption_guard.py
-  status: active
-  owner: platform-team
-  date: '2026-10-08'
-  wire_or_retire: file-consumed
-  reason: invoked as 'PYTHONPATH=scripts/verify python3 -m unittest scripts.verify.<module>'
-    inside make/dev_test.mk; module-form invocation is a file reference
 - script: __init__.py
   status: active
   owner: platform-team
@@ -1101,6 +1080,13 @@ entries:
   date: '2026-08-06'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_business_entry_matrix_incremental.py
+  status: active
+  owner: platform-team
+  date: '2026-10-08'
+  wire_or_retire: file-consumed
+  reason: invoked as 'python3 -m unittest scripts.verify.<module>' inside make/frontend.mk;
+    module-form invocation is recorded as a file reference, not a make-target reference
 - script: test_codex_preflight.py
   status: orphan
   owner: platform-team
@@ -1221,6 +1207,14 @@ entries:
   date: '2026-09-10'
   wire_or_retire: file-consumed
   reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_frontend_contract_basis_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-08'
+  wire_or_retire: file-consumed
+  reason: invoked as 'python3 -m unittest scripts.verify.<module>' inside make/frontend.mk
+    (target verify.frontend.contract_basis.unit); module-form invocation is a file
+    reference
 - script: test_frontend_form_canvas_wide_grid_guard.py
   status: active
   owner: platform-team
@@ -1416,6 +1410,13 @@ entries:
   date: '2026-09-15'
   wire_or_retire: file-consumed
   reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_login_envelope_consumption_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-08'
+  wire_or_retire: file-consumed
+  reason: invoked as 'PYTHONPATH=scripts/verify python3 -m unittest scripts.verify.<module>'
+    inside make/dev_test.mk; module-form invocation is a file reference
 - script: test_menu_governance_inventory.py
   status: orphan
   owner: platform-team
@@ -1487,11 +1488,14 @@ entries:
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_product_view_structure_contract.py
-  status: orphan
+  status: active
   owner: platform-team
-  date: unknown
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
+  date: '2026-10-09'
+  wire_or_retire: file-consumed
+  reason: invoked as 'PYTHONPATH="$(ROOT_DIR)" python3 -m unittest
+    scripts.verify.test_product_view_structure_contract' inside make/guards.mk (target
+    verify.product_view_structure.contract.unit); module-form invocation is recorded
+    as a file reference, not a make-target reference
 - script: test_retired_p1_alias_view_cleanup_migration.py
   status: orphan
   owner: platform-team

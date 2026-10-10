@@ -1,13 +1,13 @@
 {
   "version": 1,
   "counts": {
-    "active": 1312,
-    "orphan": 88,
+    "active": 1317,
+    "orphan": 87,
     "retired": 1,
-    "unwired": 186,
+    "unwired": 187,
     "unwired_undispositioned": 0,
     "wire_or_retire": {
-      "file-consumed": 186,
+      "file-consumed": 187,
       "wire-pending": 0,
       "retire-pending": 0
     }
@@ -123,6 +123,25 @@
       "lines": 7
     },
     {
+      "script": "acceptance_action_count.py",
+      "path": "scripts/verify/acceptance_action_count.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.acceptance_action_count.unit",
+        "verify.daily_dev.acceptance.env.guard"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev.mk",
+        "make/guards.mk",
+        "scripts/verify/daily_dev_acceptance_env_guard.py",
+        "scripts/verify/environment_topology_guard.py",
+        "scripts/verify/product_menu_release_manifest_v2_guard.py",
+        "scripts/verify/test_acceptance_action_count.py"
+      ],
+      "lines": 187
+    },
+    {
       "script": "action_default_group_contract_audit.py",
       "path": "scripts/verify/action_default_group_contract_audit.py",
       "status": "active",
@@ -188,6 +207,20 @@
       ],
       "lines": 44,
       "wire_or_retire": "file-consumed"
+    },
+    {
+      "script": "agent_ledger_consistency_guard.py",
+      "path": "scripts/verify/agent_ledger_consistency_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.agent.ledger.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/codex.mk",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "lines": 327
     },
     {
       "script": "app_config_engine_boundary_guard.py",
@@ -579,10 +612,12 @@
       "status": "active",
       "referenced_by_make_targets": [
         "verify.backend.architecture.static",
-        "verify.baseline.policy_integrity.guard"
+        "verify.baseline.policy_integrity.guard",
+        "verify.role_surface.landing.contract.unit"
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
+        "make/ci.mk",
         "make/dev_test.mk"
       ],
       "lines": 59
@@ -875,10 +910,9 @@
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/frontend.mk",
-        "scripts/verify/frontend_dev_incremental.py",
         "scripts/verify/test_business_entry_matrix_incremental.py"
       ],
-      "lines": 288
+      "lines": 366
     },
     {
       "script": "business_entry_matrix_scope_seed.py",
@@ -889,7 +923,8 @@
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
-        "make/frontend.mk"
+        "make/frontend.mk",
+        "scripts/verify/frontend_dev_incremental.py"
       ],
       "lines": 263
     },
@@ -1793,7 +1828,7 @@
         "make/dev_test.mk",
         "make/runtime_ops.mk"
       ],
-      "lines": 94
+      "lines": 109
     },
     {
       "script": "contract_business_category_action_audit.py",
@@ -2776,7 +2811,7 @@
         "scripts/verify/environment_topology_guard.py",
         "scripts/verify/test_dev_acceptance_release_identity.py"
       ],
-      "lines": 71
+      "lines": 87
     },
     {
       "script": "daily_dev_customer_addons_runtime_guard.py",
@@ -3023,7 +3058,7 @@
         "make/dev.mk",
         "scripts/verify/test_dev_acceptance_release_identity.py"
       ],
-      "lines": 411
+      "lines": 417
     },
     {
       "script": "direct_acceptance_engineering_settlement_income_projection_audit.py",
@@ -3161,7 +3196,7 @@
         "make/guards.mk",
         "scripts/verify/test_dev_acceptance_release_identity.py"
       ],
-      "lines": 136
+      "lines": 141
     },
     {
       "script": "etag_validation_report.py",
@@ -4477,12 +4512,15 @@
       "path": "scripts/verify/frontend_contract_basis_guard.py",
       "status": "active",
       "referenced_by_make_targets": [
+        "verify.frontend.contract_basis.enforce",
         "verify.frontend.contract_basis.unit"
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/frontend.mk",
-        "scripts/verify/test_frontend_contract_basis_guard.py"
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_contract_basis_guard.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ],
       "lines": 216
     },
@@ -4797,7 +4835,7 @@
         "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
         "scripts/verify/test_frontend_dev_incremental.py"
       ],
-      "lines": 303
+      "lines": 360
     },
     {
       "script": "frontend_dev_process_isolation_guard.py",
@@ -6276,7 +6314,7 @@
         "make/dev_test.mk",
         "scripts/ci/generate_test_inventory.py"
       ],
-      "lines": 81
+      "lines": 88
     },
     {
       "script": "frontend_scene_governance_consumption_guard.py",
@@ -9337,7 +9375,9 @@
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
-        "make/runtime_ops.mk"
+        "make/runtime_ops.mk",
+        "scripts/ops/daily_runtime_nav_pro_fixture_prepare.py",
+        "scripts/ops/test_daily_runtime_nav_pro_fixture_prepare.py"
       ],
       "lines": 77
     },
@@ -9352,7 +9392,7 @@
       "referenced_by_files": [
         "make/runtime_ops.mk"
       ],
-      "lines": 202
+      "lines": 492
     },
     {
       "script": "navigation_contract_boundary_guard.py",
@@ -10791,7 +10831,7 @@
       "referenced_by_files": [
         "make/dev_test.mk"
       ],
-      "lines": 148
+      "lines": 210
     },
     {
       "script": "product_menu_runtime_closeout_guard.py",
@@ -10805,7 +10845,7 @@
         "make/dev_test.mk",
         "scripts/verify/test_product_menu_runtime_closeout_guard.py"
       ],
-      "lines": 182
+      "lines": 187
     },
     {
       "script": "product_primary_center_baseline_guard.py",
@@ -11104,7 +11144,7 @@
         "make/guards.mk",
         "make/runtime_ops.mk"
       ],
-      "lines": 400
+      "lines": 423
     },
     {
       "script": "production_release_flow_guard.py",
@@ -13291,7 +13331,7 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 170
+      "lines": 189
     },
     {
       "script": "scene_role_surface_consistency_guard.py",
@@ -13304,7 +13344,7 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 357
+      "lines": 386
     },
     {
       "script": "scene_sample_registry_diff_guard.py",
@@ -14191,6 +14231,33 @@
       "lines": 72
     },
     {
+      "script": "test_acceptance_action_count.py",
+      "path": "scripts/verify/test_acceptance_action_count.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.acceptance_action_count.unit",
+        "verify.daily_dev.acceptance.env.guard"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/guards.mk"
+      ],
+      "lines": 201
+    },
+    {
+      "script": "test_agent_ledger_consistency_guard.py",
+      "path": "scripts/verify/test_agent_ledger_consistency_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.agent.ledger.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/codex.mk"
+      ],
+      "lines": 225
+    },
+    {
       "script": "test_agent_run_context.py",
       "path": "scripts/verify/test_agent_run_context.py",
       "status": "active",
@@ -14203,7 +14270,7 @@
         "scripts/ci/test_ci_risk_classifier.py",
         "scripts/verify/test_frontend_dev_incremental.py"
       ],
-      "lines": 193
+      "lines": 260
     },
     {
       "script": "test_app_config_engine_authority_guard.py",
@@ -14325,9 +14392,10 @@
       "referenced_by_make_targets": [],
       "referenced_by_workflows": [],
       "referenced_by_files": [
-        "make/frontend.mk"
+        "make/frontend.mk",
+        "scripts/verify/frontend_dev_incremental.py"
       ],
-      "lines": 256,
+      "lines": 427,
       "wire_or_retire": "file-consumed"
     },
     {
@@ -15081,9 +15149,11 @@
       "referenced_by_make_targets": [],
       "referenced_by_workflows": [],
       "referenced_by_files": [
-        "make/frontend.mk"
+        "make/frontend.mk",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ],
-      "lines": 78,
+      "lines": 106,
       "wire_or_retire": "file-consumed"
     },
     {
@@ -15174,9 +15244,10 @@
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/frontend.mk",
-        "scripts/verify/baseline_iteration_execution_policy_guard.py"
+        "scripts/verify/baseline_iteration_execution_policy_guard.py",
+        "scripts/verify/frontend_dev_incremental.py"
       ],
-      "lines": 250
+      "lines": 362
     },
     {
       "script": "test_frontend_finance_center_rollout.py",
@@ -15261,9 +15332,11 @@
       "referenced_by_make_targets": [],
       "referenced_by_workflows": [],
       "referenced_by_files": [
-        "make/frontend.mk"
+        "make/frontend.mk",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ],
-      "lines": 378,
+      "lines": 389,
       "wire_or_retire": "file-consumed"
     },
     {
@@ -16714,11 +16787,14 @@
     {
       "script": "test_product_view_structure_contract.py",
       "path": "scripts/verify/test_product_view_structure_contract.py",
-      "status": "orphan",
+      "status": "active",
       "referenced_by_make_targets": [],
       "referenced_by_workflows": [],
-      "referenced_by_files": [],
-      "lines": 169
+      "referenced_by_files": [
+        "make/guards.mk"
+      ],
+      "lines": 194,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_product_workbench_wave1_guard.py",

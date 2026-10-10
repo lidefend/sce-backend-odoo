@@ -266,7 +266,17 @@ def resolve_form_structure_governance(source_contract: dict[str, Any], configs, 
 
 
 def structural_form_declarations(spec: dict) -> dict:
-    """Sparse field policies annotate native nodes; order/membership owns structure."""
+    """Sparse field policies annotate native nodes; order/membership owns structure.
+
+    A ``fields`` row owns structure only through a structure key (``sequence``, a
+    grouping key, ...).  A row whose keys stay inside the semantic/identifier set
+    (``readonly``, ``visible``, ``name`` ...) is a sparse field policy: it
+    annotates a native node and keeps its membership in the declared field set
+    without claiming structural ownership.  A row that carries nothing but a
+    field identifier is the same sparse policy with an empty payload, so it is
+    not a structure declaration either; that classification is the documented
+    contract of every ``*_p1_form_business_facts_v1`` declaration body.
+    """
     declarations = {}
     semantic_keys = {"readonly", "required", "visible", "help", "widget", "class", "string", "label"}
     for key in ("layout", "sections", "fields", "field_slots", "columns", "cols", "actions", "header_buttons", "node_patches"):
@@ -274,7 +284,6 @@ def structural_form_declarations(spec: dict) -> dict:
         if key == "fields" and isinstance(value, list):
             value = [row for row in value if not (
                 isinstance(row, dict)
-                and bool(semantic_keys.intersection(row))
                 and set(row).issubset(semantic_keys | {"name", "field", "field_name"})
             )]
         if value not in (None, [], {}, ""):
