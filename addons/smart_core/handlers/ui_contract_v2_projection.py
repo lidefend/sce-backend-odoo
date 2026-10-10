@@ -10,6 +10,114 @@ from . import ui_contract_v2_adapters as _adapters
 _CONTAINER_CHILD_KEYS = ("children", "pages", "tabs", "nodes", "items")
 
 
+# --- Declared container presentation ---------------------------------------
+# A native form arch declares presentation with CSS classes on its containers.
+# The product renderer is the Vue front end, which implements its own
+# design-system vocabulary (``sc-*``) plus a small generic layout vocabulary.
+# The projection therefore classifies every declared class into the declared
+# presentation facet (``styleToken``) that the renderer consumes, and fails
+# closed on a class it cannot classify: shipping an unclassified class would
+# reproduce the exact defect where a declared presentation facet is dropped and
+# the region renders as an unstyled stack of blocks.  Native marker prefixes are
+# excluded because they are consumed structurally, not as presentation.
+FORM_PRESENTATION_PRODUCT_PREFIX = "sc-"
+FORM_PRESENTATION_NATIVE_MARKER_PREFIXES = ("o_", "oe_")
+FORM_PRESENTATION_LAYOUT_TOKENS = frozenset({
+    # layout
+    "d-flex", "d-inline-flex", "flex-wrap", "flex-row", "justify-content-between",
+    "justify-content-start", "justify-content-end",
+    "align-items-start", "align-items-center", "gap-2",
+    "row", "g-2", "col-12", "col-md-6", "col-lg-3", "col-lg-12",
+    # spacing / sizing
+    "mb-1", "mb-3", "mb-4", "mt-1", "mt-2", "mt8", "mt16",
+    "ps-1", "pe-0", "pe-2", "px-0", "pb-2", "pb-3",
+    "h-100", "w-100", "w-md-50", "w-lg-25",
+    # typography
+    "h3", "small", "fw-bold", "text-muted", "text-danger", "text-warning",
+    # surfaces / feedback
+    "card", "card-body", "content-group",
+    "alert", "alert-info", "alert-danger", "alert-warning",
+})
+# Native icon glyph classes (``<i class="fa fa-lightbulb-o"/>``) are structural
+# decoration: the icon font supplies the glyph and the renderer consumes the node
+# itself, so no region presentation token is published for them.  They are
+# classified explicitly (never dropped, never published) exactly like the other
+# native markers.
+FORM_PRESENTATION_ICON_MARKER_TOKENS = frozenset({"fa", "fas", "far", "fab", "fad"})
+FORM_PRESENTATION_ICON_MARKER_PREFIXES = ("fa-",)
+# Control markup is native button decoration; the button's presentation is
+# declared by ``actionContract`` (the action presentation tier), not by the arch
+# class.  These classes are therefore classified explicitly instead of either
+# being published as region presentation or dropped without a decision.
+FORM_PRESENTATION_ACTION_MARKERS = frozenset({
+    "btn", "btn-link", "btn-primary", "btn-secondary", "btn-outline-primary",
+})
+# Nodes whose class facet the renderer already consumes (fields) or whose
+# presentation is declared by another contract facet (actions, widgets) are not
+# part of the container presentation facet.
+FORM_PRESENTATION_EXEMPT_NODE_TYPES = frozenset({"field", "button", "widget"})
+
+
+def _declared_node_classes(node: dict[str, Any]) -> list[str]:
+    attributes = node.get("attributes") if isinstance(node.get("attributes"), dict) else {}
+    declared: list[str] = []
+    for value in (
+        attributes.get("class"),
+        attributes.get("className"),
+        node.get("class"),
+        node.get("className"),
+    ):
+        if not isinstance(value, str):
+            continue
+        for token in value.split():
+            if token and token not in declared:
+                declared.append(token)
+    return declared
+
+
+def _node_type(node: dict[str, Any]) -> str:
+    return str(node.get("containerType") or node.get("type") or "section").strip().lower() or "section"
+
+
+def declared_presentation_tokens(node: dict[str, Any], container_id: str) -> list[str]:
+    """Return the renderer-neutral presentation tokens a node declares.
+
+    ``styleToken`` is the declared presentation facet consumed by the renderer.
+    Pre-existing tokens are mechanism-generated and are preserved; every
+    declared CSS class on a container must then classify as either a product
+    presentation token (``sc-*``), a declared layout token, or a native
+    structural/control marker.  Anything else is a declaration the renderer has
+    no token for, so it fails closed instead of shipping a dropped facet.
+    """
+    tokens: list[str] = []
+    existing = node.get("styleToken")
+    if isinstance(existing, str):
+        tokens.extend(token for token in existing.split() if token)
+    if _node_type(node) in FORM_PRESENTATION_EXEMPT_NODE_TYPES:
+        return tokens
+    for token in _declared_node_classes(node):
+        if token.startswith(FORM_PRESENTATION_NATIVE_MARKER_PREFIXES):
+            continue
+        if token in FORM_PRESENTATION_ICON_MARKER_TOKENS:
+            continue
+        if token.startswith(FORM_PRESENTATION_ICON_MARKER_PREFIXES):
+            continue
+        if token in FORM_PRESENTATION_ACTION_MARKERS:
+            continue
+        if not (
+            token.startswith(FORM_PRESENTATION_PRODUCT_PREFIX)
+            or token in FORM_PRESENTATION_LAYOUT_TOKENS
+        ):
+            raise ValueError(
+                f"container {container_id} declares presentation class {token!r} that the "
+                "renderer has no declared token for; declare it in the product presentation "
+                "vocabulary instead of shipping a dropped facet"
+            )
+        if token not in tokens:
+            tokens.append(token)
+    return tokens
+
+
 def form_structure_presentation_mode(authority: Any, declared_mode: Any = "") -> str:
     """Resolve presentation without allowing the renderer to infer authority."""
     if str(declared_mode or "").strip() == "task":
@@ -166,6 +274,7 @@ def normalize_post_projected_container_tree(
                 "",
             )
             node["title"] = label
+            node["styleToken"] = " ".join(declared_presentation_tokens(node, container_id))
             span = node.get("span")
             node["span"] = span if isinstance(span, int) and not isinstance(span, bool) and 1 <= span <= 24 else 24
             if "widgetList" in node and not isinstance(node.get("widgetList"), list):

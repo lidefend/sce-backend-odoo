@@ -265,6 +265,13 @@ def build() -> dict:
                 "classification": "rendered_or_interaction_authority",
                 "consumer": CONSUMERS[definition],
             })
+    unclassified = sorted({row["classification"] for row in rows} - {
+        "decoded_runtime_authority_gap",
+        "validated_non_visual_authority",
+        "rendered_or_interaction_authority",
+    })
+    if unclassified:
+        raise SystemExit(f"render authority matrix has unclassified rows: {unclassified}")
     return {
         "schemaVersion": "contract-v2-render-authority-matrix/v1",
         "schemaAuthority": str(SCHEMA.relative_to(ROOT)),
@@ -280,7 +287,7 @@ def build() -> dict:
             "decodedRuntimeAuthorityGapCount": sum(
                 row["classification"] == "decoded_runtime_authority_gap" for row in rows
             ),
-            "unclassifiedCount": 0,
+            "unclassifiedCount": len(unclassified),
         },
         "rows": rows,
     }
@@ -297,7 +304,8 @@ def main() -> None:
         OUTPUT.write_text(rendered)
     print(
         "[contract_v2_render_authority_matrix] PASS "
-        f"fields={payload['summary']['schemaFieldCount']} unclassified=0"
+        f"fields={payload['summary']['schemaFieldCount']} "
+        f"unclassified={payload['summary']['unclassifiedCount']}"
     )
 
 

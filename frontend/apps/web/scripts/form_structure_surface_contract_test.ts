@@ -23,10 +23,8 @@ import { createContractV2Store } from '../src/app/contracts/v2/store';
 import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 import { resolveContractV2FormStructureSurfaces } from '../src/app/contracts/v2/store';
 import { ContractV2DecodeError } from '../src/app/contracts/v2/schema';
-import {
-  contractSurfaceNavigationItems,
-  legacySurfaceNavigationItems,
-} from '../src/pages/contractForm/nativeSectionNavigation';
+import * as nativeSectionNavigation from '../src/pages/contractForm/nativeSectionNavigation';
+import { contractSurfaceNavigationItems } from '../src/pages/contractForm/nativeSectionNavigation';
 import {
   declaredAuditAuthorized,
   declaredCollaborationSurface,
@@ -223,16 +221,13 @@ assert.throws(
   'an undeclared authorization state must fail decoding',
 );
 
-// The legacy predicate is retained only for a contract that cannot declare
-// surfaces, so a declaring contract can never fall back to it.
-assert.deepEqual(
-  legacySurfaceNavigationItems({ collaborationAvailable: true, auditAvailable: true }).map((item) => item.key),
-  ['surface:activity', 'surface:audit'],
-);
-assert.deepEqual(
-  legacySurfaceNavigationItems({ collaborationAvailable: false, auditAvailable: false }),
-  [],
-  'the legacy predicate only runs when the contract declares no surfaces',
+// There is no fallback path: a contract that cannot declare surfaces declares
+// no region, so no hardcoded region label can survive in the renderer.
+const navigationModule = nativeSectionNavigation as Record<string, unknown>;
+assert.equal(
+  navigationModule.legacySurfaceNavigationItems,
+  undefined,
+  'the renderer must not keep a hardcoded fallback region label',
 );
 
 process.stdout.write('form_structure_surface_contract_test: ok\n');

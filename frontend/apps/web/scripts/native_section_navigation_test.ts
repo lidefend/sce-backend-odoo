@@ -13,8 +13,8 @@ import {
   shouldPreserveAuthoritativeBusinessSections,
   workspaceSectionNavigationItems,
   contractSurfaceNavigationItems,
-  legacySurfaceNavigationItems,
 } from '../src/pages/contractForm/nativeSectionNavigation';
+import * as nativeSectionNavigationModule from '../src/pages/contractForm/nativeSectionNavigation';
 
 assert.equal(sectionRevealTargetsContain('["field:line_ids:relation-collection"]', 'field:line_ids:relation-collection'), true);
 assert.equal(sectionRevealTargetsContain('["field:line_ids:relation-collection-extra"]', 'field:line_ids:relation-collection'), false);
@@ -417,8 +417,14 @@ assert.deepEqual(
   'a relation whose occurrences are all hidden must not produce a dead navigation target',
 );
 
-assert.deepEqual(legacySurfaceNavigationItems({ collaborationAvailable: true, auditAvailable: false }).map((item) => item.role), ['activity']);
-assert.deepEqual(legacySurfaceNavigationItems({ collaborationAvailable: true, auditAvailable: true }).map((item) => item.role), ['activity', 'audit']);
+// No fallback: a contract that cannot declare surfaces declares no region, so a
+// hardcoded region label cannot survive in the navigator.
+const navigationModule = nativeSectionNavigationModule as Record<string, unknown>;
+assert.equal(
+  navigationModule.legacySurfaceNavigationItems,
+  undefined,
+  'the navigator must not keep a hardcoded fallback region label',
+);
 
 // Contract-declared surfaces are consumed as declared: the label, the region
 // identity and the navigation target all come from the declaration, and a

@@ -105,6 +105,39 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 self.assertIn("verify.frontend.contract_basis.unit", targets)
                 self.assertIn("verify.frontend.contract_basis.enforce", targets)
 
+    def test_contract_handler_chain_routes_to_its_backend_unit_suites(self) -> None:
+        # The v2 contract handler chain is asserted by backend unit suites.  It
+        # must not fall through as "unmapped": on 2026-10-10 the chain was edited
+        # while only frontend targets ran, so a runtime NameError in
+        # `project_form_structure_surfaces` broke every served form contract
+        # before this route existed.
+        for path in (
+            "addons/smart_core/handlers/ui_contract_v2.py",
+            "addons/smart_core/handlers/ui_contract_v2_projection.py",
+            "addons/smart_core/core/form_structure_authority.py",
+        ):
+            with self.subTest(path=path):
+                targets = select_targets([path])
+                self.assertIn("verify.business_config.formal_list.unit", targets)
+                self.assertIn("verify.form_structure_authority_unification.unit", targets)
+
+    def test_presentation_vocabulary_change_routes_to_the_parity_guard(self) -> None:
+        # The projection publishes declared presentation tokens and the renderer
+        # implements them.  Editing either side (or the parity guard) must route to
+        # the guard that proves every accepted token has a renderer rule; on
+        # 2026-10-10 the renderer implemented none of the vocabulary while the
+        # projection published it, and the region collapsed on the served contract.
+        for path in (
+            "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+            "addons/smart_core/handlers/ui_contract_v2_projection.py",
+            "scripts/verify/form_container_presentation_consumption_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertIn(
+                    "verify.form_container_presentation.guard",
+                    select_targets([path]),
+                )
+
     def test_planner_change_routes_to_the_planner_behaviour_lock(self) -> None:
         # The planner code, its lock and the makefile that defines the target
         # names are one contract. Without this route a renamed target turns

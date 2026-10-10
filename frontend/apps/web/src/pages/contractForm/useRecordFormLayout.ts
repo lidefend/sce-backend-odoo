@@ -16,7 +16,7 @@ import {
   isNativeLayoutNodeVisible as isNativeLayoutNodeVisibleFromNativeLayout,
   normalizeContractV2ContainersForNativeForm as normalizeContractV2ContainersForNativeFormFromTree,
   resolveNativeButtonLabel as resolveNativeButtonLabelFromNode, resolveNativeFormRootColumns,
-  resolveNativeModifierFieldValue, resolveNativeOccurrenceBehavior,
+  resolveDeclaredModifierFieldValue, resolveNativeOccurrenceBehavior,
   type NativeLayoutLikeNode, type FieldSemanticMeta,
 } from './nativeLayoutUtils';
 import { normalizeNativeFormStatusbar, resolveStatusbarSelectionValue } from './workflowContract';
@@ -74,6 +74,16 @@ export function useRecordFormLayout(context: {
     });
   });
   const runtimeState = (name: string) => runtimeFieldStates.value[name] || { invisible:false, readonly:false, required:false };
+  /**
+   * The contract publishes the authoritative verdict for every declared node:
+   * fields on `statusContract.widgetStatus` (keyed by widgetId), declared action
+   * buttons on `statusContract.buttonStatus` (keyed by the occurrence-bound
+   * `backendIdentity`), and structural containers on
+   * `statusContract.containerStatus` (keyed by containerId).  The renderer must
+   * consume that verdict; it must not fail closed on a node the contract has
+   * already decided, otherwise a visible declared action disappears from the
+   * product surface just because the node carries no widgetId.
+   */
   const runtimeOccurrenceState = (node: NativeFormLayoutNode) => {
     const source = node as Record<string, unknown>;
     const widgetId = String(source.widgetId || '').trim();
@@ -81,7 +91,23 @@ export function useRecordFormLayout(context: {
     const occurrenceIndex = Number(source.occurrenceIndex || 0);
     const isOccurrence = Boolean(nativeLocator && Number.isInteger(occurrenceIndex) && occurrenceIndex > 0);
     if (!isOccurrence) return runtimeState(String(node.name || '').trim());
-    const status = context.v2ContractStore.value?.widgetStatusById.get(widgetId);
+    const store = context.v2ContractStore.value;
+    const action = source.action && typeof source.action === 'object' && !Array.isArray(source.action)
+      ? source.action as Record<string, unknown> : {};
+    const attributes = source.attributes && typeof source.attributes === 'object' && !Array.isArray(source.attributes)
+      ? source.attributes as Record<string, unknown> : {};
+    const backendIdentity = String(
+      action.backendIdentity || action.backend_identity
+      || source.backendIdentity || source.backend_identity
+      || attributes.backendIdentity || attributes.backend_identity || '',
+    ).trim();
+    const containerId = String(source.containerId || source.container_id || '').trim();
+    const widgetStatus = widgetId ? store?.widgetStatusById.get(widgetId) : undefined;
+    const buttonStatus = !widgetStatus && backendIdentity
+      ? store?.buttonStatusByBackendIdentity.get(backendIdentity) : undefined;
+    const containerStatus = !widgetStatus && !buttonStatus && containerId
+      ? store?.containerStatusById.get(containerId) : undefined;
+    const status = widgetStatus || buttonStatus || containerStatus;
     if (!status) return { invisible:true, visible:false, readonly:true, required:true, disabled:true, reasonCode:'V2_OCCURRENCE_STATUS_MISSING' };
     const name = String(node.name || '').trim();
     const runtimePatch = context.onchangeModifiersPatch.value[name] || {};
@@ -89,11 +115,17 @@ export function useRecordFormLayout(context: {
     const live = resolveNativeOccurrenceBehavior(liveSource, evaluateNativeModifierValue);
     const reasonCode = String(status.reasonCode || '').trim();
     const unresolved = /UNRESOLVED|UNSUPPORTED|INVALID|MISSING/.test(reasonCode);
-    const authorityReadonly = status.auth !== 'edit' || (status.disabled === true && unresolved);
+    // Field-level authority (auth/readonly/required) exists only on a field
+    // widget verdict.  A button or container verdict carries none, so it must
+    // not be read as one: doing so would turn a declared visible action into a
+    // disabled/required field state.
+    const declaredAuthority = Boolean(widgetStatus);
+    const authorityReadonly = (declaredAuthority && widgetStatus?.auth !== 'edit')
+      || (status.disabled === true && unresolved);
     const invisible = unresolved ? true : Boolean(live.invisible || status.visible === false);
     return { invisible, visible:!invisible,
-      readonly:Boolean(live.readonly||status.readonly||authorityReadonly||unresolved),
-      required:Boolean(live.required||status.required||unresolved),
+      readonly:Boolean(live.readonly||(declaredAuthority && widgetStatus?.readonly)||authorityReadonly||unresolved),
+      required:Boolean(live.required||(declaredAuthority && widgetStatus?.required)||unresolved),
       disabled:Boolean(authorityReadonly||unresolved), reasonCode };
   };
   const isFieldVisible = (name: string) => {
@@ -201,7 +233,7 @@ export function useRecordFormLayout(context: {
     context.formData[field]=resolveStatusbarSelectionValue(formFields.value[field],value);context.markFieldChanged(field);};
   const nativeStatusbarNodeIdentity=computed(()=>nativeStatusbar.value.field?canonicalNativeStatusbar.value.nodeIdentity:'');
   const modifierMainData=()=>resolveContractV2MainData(context.v2ContractStore.value);
-  const evaluateNativeModifierValue=(value:unknown)=>evaluateNativeModifierValueWithResolver(value,(field)=>resolveNativeModifierFieldValue(context.formData,modifierMainData(),field));
+  const evaluateNativeModifierValue=(value:unknown)=>evaluateNativeModifierValueWithResolver(value,(field)=>resolveDeclaredModifierFieldValue(modifierMainData(),context.formData,field));
   const evaluateNativeActionVisibility=(row:Record<string,unknown>)=>isNativeActionVisible({row,currentState:String(context.formData.state||'').trim(),evaluateModifier:evaluateNativeModifierValue,resolveAction:context.contractActionFromNativeRow});
   function isNativeLayoutNodeVisible(node:NativeFormLayoutNode){const source=node as Record<string,unknown>;if(String(source.nativeLocator||'').trim()&&runtimeOccurrenceState(node).invisible===true)return false;const nodeType=String(source.type||'').trim().toLowerCase();const fieldName=String(source.name||'').trim();if(nodeType==='field'&&fieldName){const semantic=context.fieldSemanticMeta(fieldName);if((semantic.surface_role==='hidden'||semantic.technical)&&!context.showHud.value){return false;}}return isNativeLayoutNodeVisibleFromNativeLayout({node,editable:context.isContractFieldOrderEditable.value,evaluateModifier:evaluateNativeModifierValue,normalizeGroupTitle:normalizeFieldGroupTitle,isGroupVisible:context.effectiveGroupVisible,isFieldVisibleInDraft:(name)=>Object.prototype.hasOwnProperty.call(context.fieldVisibilityDraft,name)?context.fieldVisibilityDraft[name]:undefined,resolveAction:context.contractActionFromNativeRow});}
   function isNativeFieldVisible(name:string,node?:NativeFormLayoutNode){const claim=nativeStatusbarNodeIdentity.value;const claimed=Boolean(claim&&nativeNodeIdentity(node)===claim);return isNativeFieldVisibleFromNativeLayout({name,node,statusField:claimed||!node?nativeStatusbar.value.field:'',showHud:context.showHud.value,renderProfile:context.renderProfile.value,isCreate:!context.recordId.value,isNodeVisible:(item)=>isNativeLayoutNodeVisible(item as NativeFormLayoutNode),resolveDescriptor:(field,item)=>item?(item as any).descriptor||formFields.value[field]:formFields.value[field],resolveFieldLabel:context.contractFieldLabel,semantic:context.fieldSemanticMeta,runtimeState:(field)=>node?runtimeOccurrenceState(node):runtimeState(field),evaluatePolicy:(_field,descriptor)=>({visible:true,required:Boolean(descriptor?.required),readonly:Boolean(descriptor?.readonly)})});}

@@ -368,36 +368,3 @@ export function contractSurfaceNavigationItems(
     sourceIdentity: surface.sourceIdentity,
   }));
 }
-
-/**
- * Legacy visibility predicate for contracts that cannot declare surfaces.
- *
- * It is used only when `formStructureContract.surfaces` is absent; a contract
- * that declares surfaces (including an empty list) is consumed through
- * `contractSurfaceNavigationItems` instead.
- */
-export function legacySurfaceNavigationItems(input: {
-  collaborationAvailable: boolean;
-  auditAvailable: boolean;
-}): WorkspaceSectionNavigationItem[] {
-  const items: WorkspaceSectionNavigationItem[] = [];
-  if (input.collaborationAvailable) items.push({
-    key: 'surface:activity',
-    label: '协作记录',
-    selector: '[data-form-section-target="surface:activity"]',
-    role: 'activity',
-    contentKind: 'collaboration-panel',
-    sourceType: 'surface',
-    sourceIdentity: 'collaboration-panel',
-  });
-  if (input.auditAvailable) items.push({
-    key: 'surface:audit',
-    label: '历史审计',
-    selector: '[data-form-section-target="surface:audit"]',
-    role: 'audit',
-    contentKind: 'audit-timeline',
-    sourceType: 'surface',
-    sourceIdentity: 'professional-audit-timeline',
-  });
-  return items;
-}

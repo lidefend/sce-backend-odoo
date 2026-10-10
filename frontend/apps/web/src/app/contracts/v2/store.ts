@@ -19,6 +19,7 @@ import type {
 } from './types';
 
 import type { ContractV2SourceContext } from './types';
+import { resolveDeclaredModifierFieldValue } from '../../modifierEngine';
 
 export type ContractV2FieldStatusByCode = Record<string, {
   visible?: boolean;
@@ -107,6 +108,13 @@ export function createContractV2Store(snapshot: ContractV2Snapshot): ContractV2N
     actionsById: indexBy<ContractV2ActionRule>(snapshot.actionContract.actionRuleList, (action) => action.actionId),
     widgetStatusById: indexBy<ContractV2WidgetStatus>(snapshot.statusContract.widgetStatus, (status) => status.widgetId),
     buttonStatusById: indexBy<ContractV2ButtonStatus>(snapshot.statusContract.buttonStatus, (status) => status.btnId),
+    // Declared action buttons carry no widgetId; their occurrence-bound
+    // authority key is the contract backendIdentity
+    // (native_button:<type>:<name>:<native_locator>:<occurrence>).
+    buttonStatusByBackendIdentity: indexBy<ContractV2ButtonStatus>(
+      snapshot.statusContract.buttonStatus,
+      (status) => String(status.backendIdentity || '').trim(),
+    ),
     containerStatusById: indexBy<ContractV2ContainerStatus>(snapshot.statusContract.containerStatus, (status) => status.containerId),
     primaryDataSource: primaryDataSource(snapshot),
     unsupported: collectUnsupported(),
@@ -310,6 +318,38 @@ export function resolveContractV2MainData(store: ContractV2NormalizedStore | nul
 
 export function resolveContractV2PrimaryDataSource(store: ContractV2NormalizedStore | null): ContractV2Dictionary {
   return store?.primaryDataSource ? { ...store.primaryDataSource } : {};
+}
+
+/**
+ * The single authoritative value set a declared modifier is evaluated against.
+ *
+ * The producer registers every modifier dependency field (including the
+ * `value_field` side of a field-to-field comparison) as a first-class runtime
+ * dependency and guarantees it in `mainData`; live form values overlay that
+ * snapshot. Render presentation, container layout and the executable-adapter
+ * list must all resolve a declaration from this one union, otherwise two
+ * consumers can disagree about the same declared fact.
+ */
+export function resolveContractV2ModifierValues(
+  store: ContractV2NormalizedStore | null,
+  liveValues?: ContractV2Dictionary,
+): ContractV2Dictionary {
+  const mainData = resolveContractV2MainData(store);
+  const snapshot: ContractV2Dictionary = Object.keys(mainData).length
+    ? mainData
+    : resolveContractV2PrimaryDataSource(store);
+  const merged: ContractV2Dictionary = { ...snapshot };
+  // The overlay decision is not re-derived here: it is the same rule the native
+  // layout consumes per field, so both paths always answer identically.
+  Object.keys(liveValues || {}).forEach((key) => {
+    const value = resolveDeclaredModifierFieldValue(snapshot, liveValues, key);
+    // An undefined entry the snapshot does not declare stays absent instead of
+    // being materialised; whether the key is present is a presence question,
+    // not a second copy of the value rule.
+    if (value === undefined && !Object.prototype.hasOwnProperty.call(snapshot, key)) return;
+    merged[key] = value;
+  });
+  return merged;
 }
 
 export function resolveContractV2ValueSource(store: ContractV2NormalizedStore | null): ContractV2ValueSource {

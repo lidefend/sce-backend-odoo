@@ -523,7 +523,7 @@ verify.user_role_approval_matrix.guard: check-compose-project check-compose-env
 verify.user_permission_view_contract_boundary.guard: check-compose-project check-compose-env
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/user_permission_view_contract_boundary_guard.py
 
-.PHONY: verify.form_structure.contract.guard verify.form_structure.contract_runtime.audit verify.form_structure.contract verify.form_view.native_structure.boundary_guard verify.smart_core.boundary_guard verify.view.orchestration_boundary_guard verify.view.orchestration_product_boundary_guard verify.app_config_engine.boundary_guard verify.view.orchestration_user_surface.browser verify.form_view.orchestration_boundary_guard verify.form_view.scope.boundary_guard verify.user_form.preference.boundary_guard verify.user_form.preference.runtime_audit verify.user_menu.preference.runtime_audit verify.user_menu.reachability.guard verify.industry_form.required_marker_audit verify.industry_list.delete_action_audit verify.application_form.required_marker_audit verify.business_form.productization.standard.guard verify.business_form.productization.audit verify.payment_execution.form_productization.runtime_guard verify.form_view.scope.runtime_chain_guard verify.form_view.scope.action_projection_audit verify.action_default_group.contract_audit
+.PHONY: verify.form_structure.contract.guard verify.form_structure.contract_runtime.audit verify.form_structure.contract verify.form_view.native_structure.boundary_guard verify.form_container_presentation.guard verify.smart_core.boundary_guard verify.view.orchestration_boundary_guard verify.view.orchestration_product_boundary_guard verify.app_config_engine.boundary_guard verify.view.orchestration_user_surface.browser verify.form_view.orchestration_boundary_guard verify.form_view.scope.boundary_guard verify.user_form.preference.boundary_guard verify.user_form.preference.runtime_audit verify.user_menu.preference.runtime_audit verify.user_menu.reachability.guard verify.industry_form.required_marker_audit verify.industry_list.delete_action_audit verify.application_form.required_marker_audit verify.business_form.productization.standard.guard verify.business_form.productization.audit verify.payment_execution.form_productization.runtime_guard verify.form_view.scope.runtime_chain_guard verify.form_view.scope.action_projection_audit verify.action_default_group.contract_audit
 verify.smart_core.boundary_guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/smart_core_boundary_guard.py
 	@python3 scripts/verify/smart_core_boundary_guard.py
@@ -597,6 +597,10 @@ verify.form_view.native_structure.boundary_guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/form_view_native_structure_boundary_guard.py
 	@python3 scripts/verify/form_view_native_structure_boundary_guard.py
 
+verify.form_container_presentation.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/form_container_presentation_consumption_guard.py
+	@python3 scripts/verify/form_container_presentation_consumption_guard.py
+
 verify.view.orchestration_boundary_guard: guard.prod.forbid
 	@python3 -m py_compile addons/smart_core/core/view_orchestration_contract.py addons/smart_core/core/view_orchestrator.py addons/smart_core/model/ui_business_config_contract.py scripts/verify/view_orchestration_boundary_guard.py
 	@python3 scripts/verify/view_orchestration_boundary_guard.py
@@ -607,13 +611,14 @@ verify.view.orchestration_user_surface.browser: guard.prod.forbid check-compose-
 verify.form_view.orchestration_boundary_guard: verify.view.orchestration_boundary_guard
 
 verify.form_structure.contract.guard: guard.prod.forbid
-	@python3 -m py_compile addons/smart_core/core/unified_page_contract_v2_assembler.py scripts/verify/form_structure_contract_standardizer_guard.py scripts/verify/form_structure_contract_runtime_audit.py
+	@python3 -m py_compile addons/smart_core/core/unified_page_contract_v2_assembler.py scripts/verify/form_structure_contract_standardizer_guard.py scripts/verify/form_structure_contract_runtime_audit.py scripts/verify/test_form_structure_contract_runtime_audit.py
+	@python3 -m unittest scripts.verify.test_form_structure_contract_runtime_audit
 	@python3 scripts/verify/form_structure_contract_standardizer_guard.py
 
-verify.form_structure.contract_runtime.audit: guard.prod.forbid check-compose-project check-compose-env verify.form_structure.contract.guard verify.form_view.native_structure.boundary_guard verify.view.orchestration_boundary_guard verify.form_view.scope.boundary_guard verify.user_form.preference.runtime_audit verify.form_view.scope.runtime_chain_guard verify.form_view.scope.action_projection_audit
+verify.form_structure.contract_runtime.audit: guard.prod.forbid check-compose-project check-compose-env verify.form_structure.contract.guard verify.form_view.native_structure.boundary_guard verify.form_container_presentation.guard verify.view.orchestration_boundary_guard verify.form_view.scope.boundary_guard verify.user_form.preference.runtime_audit verify.form_view.scope.runtime_chain_guard verify.form_view.scope.action_projection_audit
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/verify/form_structure_contract_runtime_audit.sh
 
-verify.form_structure.contract: verify.form_view.scope.boundary_guard verify.user_form.preference.boundary_guard verify.user_form.preference.runtime_audit verify.form_view.scope.runtime_chain_guard verify.form_view.scope.action_projection_audit verify.form_view.native_structure.boundary_guard verify.view.orchestration_boundary_guard verify.form_structure.contract_runtime.audit
+verify.form_structure.contract: verify.form_view.scope.boundary_guard verify.user_form.preference.boundary_guard verify.user_form.preference.runtime_audit verify.form_view.scope.runtime_chain_guard verify.form_view.scope.action_projection_audit verify.form_view.native_structure.boundary_guard verify.form_container_presentation.guard verify.view.orchestration_boundary_guard verify.form_structure.contract_runtime.audit
 	@echo "[OK] verify.form_structure.contract done"
 
 history.users.verify: guard.prod.forbid check-compose-project check-compose-env

@@ -29,7 +29,7 @@ import type {
 } from '../contracts/v2/types';
 import type { ContractV2FormStructureRoleName } from '../contracts/v2/types';
 import { canonicalRoleForFormStructureRole } from '../contracts/v2/formStructureRoles';
-import { resolveContractV2SelectorStatus } from '../contracts/v2/store';
+import { resolveContractV2ModifierValues, resolveContractV2SelectorStatus } from '../contracts/v2/store';
 import { evaluateNativeModifierValue } from '../modifierEngine';
 import { resolveContractProfessionalComponent } from './professionalComponentRegistry';
 import { resolveWorkflowActionAvailability } from '../contracts/v2/workflowActionAvailability';
@@ -380,7 +380,7 @@ function presentNode(
     nodeSemantics.slot,
     nodeSemantics.group,
   ]);
-  const currentValues = { ...contractValues, ...(runtimeValues || {}) };
+  const currentValues = resolveContractV2ModifierValues(store, runtimeValues);
   const resolveFieldValue = (field: string) => currentValues[field];
   const layoutInvisible = evaluateNativeModifierValue(containerModifierValue(container, 'invisible'), resolveFieldValue);
   const layoutReadonly = evaluateNativeModifierValue(containerModifierValue(container, 'readonly'), resolveFieldValue);
@@ -663,7 +663,7 @@ export function presentContractV2Form(
     if (identity) actionIdentityCounts.set(identity, (actionIdentityCounts.get(identity) || 0) + 1);
     if (actionId) actionIdCounts.set(actionId, (actionIdCounts.get(actionId) || 0) + 1);
   });
-  const runtimeValuesMerged = { ...contractValues, ...(runtimeValues || {}) };
+  const runtimeValuesMerged = resolveContractV2ModifierValues(store, runtimeValues);
   const stateDerivedKeys = new Set<string>();
   const allActions = snapshot.actionContract.actionRuleList.map((action) => {
     const status = actionStatus(store, action);

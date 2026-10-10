@@ -211,6 +211,26 @@ SURFACE_AUTHORIZATION_STATE_PRODUCERS = (
     ROOT / "addons/smart_core/utils/contract_governance_capabilities.py",
 )
 
+# Backend-authored identity and modifier-declaration vocabulary. The strict store
+# may name these in prose only, and each entry stays bound to the producer that
+# declares it, so a comment cannot silently outlive its backend origin.
+ALLOWED_STRICT_STORE_BACKEND_IDENTITY_TOKENS = {
+    "native_button",
+    "native_locator",
+}
+
+BACKEND_IDENTITY_PRODUCERS = (
+    ROOT / "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+)
+
+ALLOWED_STRICT_STORE_MODIFIER_DECLARATION_TOKENS = {
+    "value_field",
+}
+
+MODIFIER_DECLARATION_PRODUCERS = (
+    ROOT / "addons/smart_core/utils/native_modifier.py",
+)
+
 ALLOWED_STRICT_STORE_SNAKE_CASE_TOKENS = {
     # ContractV2ValueSource.kind; not a payload field read.
     "main_data",
@@ -222,6 +242,10 @@ ALLOWED_STRICT_STORE_SNAKE_CASE_TOKENS = {
     *ALLOWED_STRICT_STORE_DELETE_POLICY_TOKENS,
     # Published capability authorization state, bound to its producer below.
     *ALLOWED_STRICT_SURFACE_AUTHORIZATION_TOKENS,
+    # Backend-authored identity and modifier declaration vocabulary, bound to
+    # their producers below.
+    *ALLOWED_STRICT_STORE_BACKEND_IDENTITY_TOKENS,
+    *ALLOWED_STRICT_STORE_MODIFIER_DECLARATION_TOKENS,
 }
 
 ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
@@ -686,6 +710,24 @@ def main() -> int:
             violations.append(
                 f"{_relative(STRICT_SCHEMA)}: capability authorization state {token} is not declared by the "
                 "backend capability governance producer, so the strict decoder must not accept it"
+            )
+    backend_identity_producer_source = "\n".join(
+        path.read_text(encoding="utf-8") for path in BACKEND_IDENTITY_PRODUCERS
+    )
+    for token in sorted(ALLOWED_STRICT_STORE_BACKEND_IDENTITY_TOKENS):
+        if token not in backend_identity_producer_source:
+            violations.append(
+                f"{_relative(STRICT_STORE)}: backend identity token {token} is not declared by the backend "
+                "identity producers, so the strict store must not name it"
+            )
+    modifier_declaration_producer_source = "\n".join(
+        path.read_text(encoding="utf-8") for path in MODIFIER_DECLARATION_PRODUCERS
+    )
+    for token in sorted(ALLOWED_STRICT_STORE_MODIFIER_DECLARATION_TOKENS):
+        if token not in modifier_declaration_producer_source:
+            violations.append(
+                f"{_relative(STRICT_STORE)}: modifier declaration token {token} is not declared by the backend "
+                "modifier declaration producers, so the strict store must not name it"
             )
     strict_store_snake_tokens = _snake_case_tokens(strict_store_source)
     if strict_store_snake_tokens != ALLOWED_STRICT_STORE_SNAKE_CASE_TOKENS:

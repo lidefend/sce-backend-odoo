@@ -9,15 +9,25 @@ export type NativeTextPresentation = {
 type NativeTextPresentationNode = {
   class?: unknown;
   className?: unknown;
+  styleToken?: unknown;
   attributes?: Record<string, unknown>;
 };
 
+/**
+ * Presentation tokens declared by the contract for this node.
+ *
+ * `styleToken` is the declared presentation facet published by the projection
+ * (the bridge mirrors it on `attributes.contractStyleToken`).  The renderer maps
+ * declared tokens to a presentation; it never invents one from native markup.
+ */
 function classTokens(node: NativeTextPresentationNode): Set<string> {
   const raw = [
     node.class,
     node.className,
+    node.styleToken,
     node.attributes?.class,
     node.attributes?.className,
+    node.attributes?.contractStyleToken,
   ].map((value) => String(value || '').trim()).filter(Boolean).join(' ');
   return new Set(raw.split(/\s+/).filter(Boolean));
 }

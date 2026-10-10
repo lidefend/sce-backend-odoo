@@ -14,7 +14,7 @@ import { buildFormActionExecutionPlan } from '../src/pages/contractForm/actionEx
 import { resolveCanonicalFormActionExecution } from '../src/pages/contractForm/canonicalFormActionExecutor';
 import {
   evaluateNativeModifierValue,
-  resolveNativeModifierFieldValue,
+  resolveDeclaredModifierFieldValue,
   resolveNativeOccurrenceBehavior,
   resolveNativeRelationActiveActions,
 } from '../src/pages/contractForm/nativeLayoutUtils';
@@ -75,16 +75,16 @@ const modifierMainData = { has_active_relation: true };
 const modifierFormData = { type: 'pay', state: 'approved' };
 assert.equal(evaluateNativeModifierValue(
   activeRelationVisibility,
-  (field) => resolveNativeModifierFieldValue(modifierFormData, modifierMainData, field),
+  (field) => resolveDeclaredModifierFieldValue(modifierMainData, modifierFormData, field),
 ), false, 'normalized mainData supplies hidden modifier dependencies omitted from form hydration');
 assert.equal(evaluateNativeModifierValue(
   activeRelationVisibility,
-  (field) => resolveNativeModifierFieldValue({ ...modifierFormData, has_active_relation: false }, modifierMainData, field),
+  (field) => resolveDeclaredModifierFieldValue(modifierMainData, { ...modifierFormData, has_active_relation: false }, field),
 ), true, 'hydrated formData remains authoritative when it contains the dependency');
 
 const evaluateDraftModifier = (value: unknown) => evaluateNativeModifierValue(
   value,
-  (field) => resolveNativeModifierFieldValue({ state: 'draft' }, {}, field),
+  (field) => resolveDeclaredModifierFieldValue({}, { state: 'draft' }, field),
 );
 assert.deepEqual(resolveNativeOccurrenceBehavior({
   type: 'field', name: 'amount', modifiers: {

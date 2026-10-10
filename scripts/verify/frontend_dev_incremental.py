@@ -144,6 +144,34 @@ RULES = (
     ), (
         "verify.frontend.business_entry.evidence_scope.unit",
     )),
+    # The v2 contract handler chain (handler + projection + structure authority)
+    # is consumed by the backend form-contract unit suites.  Without this rule the
+    # chain falls through as an unmapped path, so editing the contract builder
+    # while running only frontend targets left a runtime NameError
+    # (`project_form_structure_surfaces` iterating an undefined name) undetected
+    # locally on 2026-10-10 until the served contract failed for every model.
+    Rule((
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/handlers/ui_contract_v2_projection.py",
+        "addons/smart_core/core/form_structure_authority.py",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+    ), (
+        "verify.business_config.formal_list.unit",
+        "verify.form_structure_authority_unification.unit",
+    )),
+    # The renderer implements the declared presentation vocabulary that the
+    # projection publishes.  Editing the renderer's vocabulary block, the token
+    # set in `ui_contract_v2_projection.py`, or the parity guard itself must route
+    # to that guard: without this route the projection can publish a declared
+    # token the renderer implements no rule for (the whole-region collapse defect)
+    # and no local target reports it, so it only surfaces on the served contract.
+    Rule((
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "addons/smart_core/handlers/ui_contract_v2_projection.py",
+        "scripts/verify/form_container_presentation_consumption_guard.py",
+    ), (
+        "verify.form_container_presentation.guard",
+    )),
 )
 FALLBACK_TARGET = "verify.frontend.typecheck.strict"
 FORBIDDEN_DEVELOPMENT_TARGET_PARTS = ("quick", "build", "browser", "release", "fingerprint")

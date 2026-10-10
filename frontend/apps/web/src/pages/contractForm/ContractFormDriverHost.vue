@@ -47,7 +47,7 @@
         :relation-adapter="relationAdapter"
         :has-collaboration="hasCollaboration"
         :audit-authorized="auditAuthorized"
-        :section-surfaces="contractSurfacesForSections"
+        :section-surfaces="renderedSurfaces"
         :collaboration-title="collaborationTitle"
         @field-change="emit('field-change', $event)"
         @field-action="emit('field-action', $event)"
@@ -155,12 +155,10 @@ import {
   declaredAuditAuthorized,
   declaredCollaborationSurface,
   isCollaborationSurfaceKind,
-  resolveCollaborationVisibility,
 } from './contractRuntimeVm';
 import {
   authoritativeNativeBusinessSections,
   contractSurfaceNavigationItems,
-  legacySurfaceNavigationItems,
   shouldPreserveAuthoritativeBusinessSections,
 } from './nativeSectionNavigation';
 
@@ -292,37 +290,25 @@ const auditEvents = computed<CanonicalAuditEvent[]>(() => resolveProfessionalAud
 // A page region is visible when the contract declares it, and a role-gated
 // sub-region additionally needs an explicit `allow`.  Runtime data (a
 // non-empty timeline) is never the authority.
-const contractDeclaresSurfaces = computed(() => props.surfaces !== undefined);
 const collaborationSurface = computed(() => declaredCollaborationSurface(props.surfaces));
 const auditAuthorized = computed(() => declaredAuditAuthorized(props.surfaces));
-const panelAuditVisible = computed(() => (contractDeclaresSurfaces.value ? auditAuthorized.value : true));
-const panelAuditDeclared = computed(() => contractDeclaresSurfaces.value && auditAuthorized.value);
-const collaborationTitle = computed(() => collaborationSurface.value?.title || '协作记录');
-const hasCollaboration = computed(() => {
-  if (contractDeclaresSurfaces.value) {
-    return props.suppressCollaboration ? false : Boolean(collaborationSurface.value);
-  }
-  return resolveCollaborationVisibility({
-    capability: props.showCollaborationPanel,
-    suppressed: props.suppressCollaboration,
-    nodes: props.renderModel?.zones.subordinate,
-  });
-});
-// `showCollaborationPanel` stays the runtime predicate for a legacy contract;
-// a contract that declares surfaces uses the declaration instead.
-const collaborationPanelVisible = computed(() => (
-  contractDeclaresSurfaces.value
-    ? hasCollaboration.value
-    : hasCollaboration.value && props.showCollaborationPanel === true
+const panelAuditVisible = computed(() => auditAuthorized.value);
+const panelAuditDeclared = computed(() => auditAuthorized.value);
+// The declaration is the only authority for the region identity: the label and
+// the title come from the contract, so the renderer has no fallback wording.
+const collaborationTitle = computed(() => collaborationSurface.value?.title || '');
+// A region renders because the contract declares it, never because runtime data
+// or a capability prop happens to be set.  A contract that declares no surface
+// declares no region.
+const hasCollaboration = computed(() => (
+  props.suppressCollaboration ? false : Boolean(collaborationSurface.value)
 ));
+const collaborationPanelVisible = computed(() => hasCollaboration.value);
 // Only surfaces that actually render become navigation entries, so a
 // suppressed region never leaves a dead entry pointing at nothing.
 const renderedSurfaces = computed(() => (props.surfaces || []).filter((surface) => (
   surface.contentKind === 'collaboration-panel' ? hasCollaboration.value : true
 )));
-const contractSurfacesForSections = computed(() => (
-  contractDeclaresSurfaces.value ? renderedSurfaces.value : undefined
-));
 const nativeBridgeModel = computed<CanonicalFormRenderModel | null>(() => {
   const model = props.renderModel;
   if (!model || model.identity.mode !== 'create' || preserveAuthoritativeBusinessSections.value) return model;
@@ -349,12 +335,7 @@ const floorplanSubordinateNodes = computed(() => floorplan.value.subordinateNode
   .filter(canonicalNodeHasContent));
 const workspaceSectionLinks = computed(() => [
   ...(nativeBridge.value?.sectionLinks || []),
-  ...(contractDeclaresSurfaces.value
-    ? contractSurfaceNavigationItems(renderedSurfaces.value)
-    : legacySurfaceNavigationItems({
-      collaborationAvailable: props.showCollaborationPanel === true,
-      auditAvailable: props.showCollaborationPanel === true && auditEvents.value.length > 0,
-    })),
+  ...contractSurfaceNavigationItems(renderedSurfaces.value),
 ]);
 
 </script>

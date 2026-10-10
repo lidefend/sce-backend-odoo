@@ -223,6 +223,64 @@ def runtime_boundary_issues(contract: dict[str, Any]) -> list[str]:
     return find_form_structure_contract_issues(contract)
 
 
+def presentation_facet_issues(tree: list[dict[str, Any]]) -> list[str]:
+    """Every declared container presentation class must be classified and published.
+
+    A class the projection cannot classify means the client receives a declared
+    facet it has no presentation token for; a class that is declared in the arch
+    but missing from the published ``styleToken`` means the declaration was
+    dropped on the way out.  Either one makes the renderer draw an unstyled stack
+    of blocks, which is exactly the defect this check must not let ship quietly.
+    """
+    from odoo.addons.smart_core.handlers.ui_contract_v2_projection import declared_presentation_tokens
+
+    issues: list[str] = []
+    for node in iter_nodes(tree):
+        container_id = _text(node.get("containerId") or node.get("name") or node.get("id")) or "?"
+        declared = {key: value for key, value in node.items() if key != "styleToken"}
+        try:
+            declared_tokens = declared_presentation_tokens(declared, container_id)
+        except ValueError:
+            issues.append(f"presentation_unclassified:{container_id}")
+            continue
+        published = set(_text(node.get("styleToken")).split())
+        missing = [token for token in declared_tokens if token not in published]
+        if missing:
+            issues.append(f"presentation_dropped:{container_id}:{','.join(missing)}")
+    return issues
+
+
+def declared_action_authority_issues(contract: dict[str, Any]) -> list[str]:
+    """Every declared native action occurrence must publish its authority verdict.
+
+    A native form action declared as an authoritative occurrence is part of the
+    acting user's composed view, so the contract owes the consumer a consumable
+    verdict: boolean ``allowed``/``enabled``/``disabled`` plus
+    ``entitlementEvaluated``.  When the projection omits it, the consumer's
+    declared-consistency gate can only drop the action, so a button the native
+    client renders silently disappears from the product surface.  That silent
+    drop must be exposed here instead of passing as "no boundary issue".
+    """
+    issues: list[str] = []
+    action_contract = contract.get("actionContract")
+    rows = action_contract.get("actionRuleList") if isinstance(action_contract, dict) else []
+    for row in rows or []:
+        if not isinstance(row, dict):
+            continue
+        if _text(row.get("sourceChannel")) != "native_form_layout_button":
+            continue
+        identity = row.get("nativeIdentity")
+        if not isinstance(identity, dict) or identity.get("authoritative") is not True:
+            continue
+        key = _text(row.get("backendIdentity") or row.get("actionKey") or row.get("actionId")) or "?"
+        if row.get("entitlementEvaluated") is not True:
+            issues.append(f"declared_action_verdict_missing:{key}")
+            continue
+        if not all(isinstance(row.get(field), bool) for field in ("allowed", "enabled", "disabled")):
+            issues.append(f"declared_action_verdict_incomplete:{key}")
+    return issues
+
+
 def is_runtime_control_field(name: str) -> bool:
     from odoo.addons.smart_core.core.unified_page_contract_v2_runtime import _is_form_structure_runtime_control_field
 
@@ -239,29 +297,74 @@ def source_carrier(node: dict[str, Any]) -> str:
 
 
 def is_unlabeled_group(node: dict[str, Any]) -> bool:
-    generic = {"", node_type(node)}
+    """Report whether a group carries no authored heading of its own.
+
+    ``identities`` holds the values that are container identities rather than
+    headings: the absence of a label, the container type, and a technical
+    container id/name.  A label is a heading only when it is non-empty and
+    differs from every identity value.  The empty string must never be
+    intersected directly: every node's label set contains it as soon as one of
+    title/label/string is absent, so a set intersection marked every group
+    unlabeled (including groups titled 基本信息) and hid the real coverage.
+    ``semanticTitle`` is the governed contract-authored heading channel and is
+    read through the same identity test.
+    """
+    identities = {"", node_type(node)}
     container_id = _text(node.get("containerId")).lower()
     node_name = _text(node.get("name")).lower()
     if is_technical_container_identifier(container_id):
-        generic.add(container_id)
+        identities.add(container_id)
     if is_technical_container_identifier(node_name):
-        generic.add(node_name)
-    semantic_title = _text(node.get("semanticTitle")).lower()
-    if semantic_title and semantic_title not in generic:
-        return False
-    labels = {
+        identities.add(node_name)
+    labels = (
         _text(node.get("title")).lower(),
         _text(node.get("label")).lower(),
         _text(node.get("string")).lower(),
-        semantic_title,
-    }
-    return bool(labels & generic) or all(not label for label in labels)
+        _text(node.get("semanticTitle")).lower(),
+    )
+    return not any(label and label not in identities for label in labels)
 
 
 def is_technical_container_identifier(value: str) -> bool:
     if not value:
         return False
     return bool(re.fullmatch(r"[a-z0-9_.:-]+", value))
+
+
+# A notebook/tab caption may only be projected by a carrier the producer really
+# stamps.  The governed default-tab standardizer is a declared no-op ("generic
+# tabs such as 主信息 / 业务明细 are semantic guesses and must not be projected
+# as user-visible page titles"), so no carrier is declared today and
+# ``projected_notebook_count`` is expected to be zero.  It used to filter on a
+# carrier string that existed nowhere in the repository, which reported a
+# structural zero while looking like a real measurement.
+NOTEBOOK_PROJECTION_CARRIERS: tuple[str, ...] = ()
+ASSEMBLER_SOURCE_PATH = ROOT / "addons/smart_core/core/unified_page_contract_v2_assembler.py"
+
+
+def assembler_producer_source() -> str:
+    """Return the live assembler source, resolved from the imported module.
+
+    The source is taken from the module that is actually executed - not from a
+    path guess - so the carrier check binds the producer the runtime serves.
+    """
+    import inspect
+    from odoo.addons.smart_core.core import unified_page_contract_v2_assembler as assembler
+
+    return inspect.getsource(assembler)
+
+
+def resolve_projection_carriers(declared: tuple[str, ...], producer_source: str) -> tuple[str, ...]:
+    """Return the declared carriers that the producer source can actually stamp.
+
+    Raise on a declared carrier the producer cannot stamp, so a metric can
+    never again filter on an invented or renamed carrier and report a
+    structural zero as if it were a measurement.
+    """
+    missing = [carrier for carrier in declared if f'"{carrier}"' not in producer_source]
+    if missing:
+        raise RuntimeError("undeclared projection carrier: " + ",".join(missing))
+    return declared
 
 
 def collaboration_from_contract(contract: dict[str, Any]) -> dict[str, Any]:
@@ -341,7 +444,11 @@ def audit_model(env, model: str) -> ContractFormAuditRow:
         if isinstance(governance_source, dict)
         else []
     )
-    boundary_issues = runtime_boundary_issues(contract)
+    boundary_issues = (
+        runtime_boundary_issues(contract)
+        + presentation_facet_issues(tree)
+        + declared_action_authority_issues(contract)
+    )
     layout_outside_structure = [
         name
         for name in layout_fields
@@ -352,9 +459,13 @@ def audit_model(env, model: str) -> ContractFormAuditRow:
     notebooks = [node for node in nodes if node_type(node) == "notebook"]
     pages = [node for node in nodes if node_type(node) == "page"]
     semantic_groups = [node for node in groups if _text(node.get("semanticTitle") or node.get("title")) and not is_unlabeled_group(node)]
+    projection_carriers = resolve_projection_carriers(
+        NOTEBOOK_PROJECTION_CARRIERS,
+        assembler_producer_source() if NOTEBOOK_PROJECTION_CARRIERS else "",
+    )
     projected_notebooks = [
         node for node in notebooks
-        if source_carrier(node) == "business_form_default_tab_standardizer"
+        if source_carrier(node) in projection_carriers
     ]
     projected_semantic_groups = [
         node for node in groups

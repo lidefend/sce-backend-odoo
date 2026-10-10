@@ -2,6 +2,7 @@ import { relationActionOrigin, workItemActionOrigin } from './relationActionOrig
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { computed } from 'vue';
 import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
+import { resolveContractV2ModifierValues } from '../../app/contracts/v2/store';
 import { businessRowErrorKey } from '../../app/businessValidationError';
 import { routeAuthorityEntries } from '../../app/routeAuthority';
 import type { FormSectionFieldChange } from '../../components/template/formSection.types';
@@ -53,7 +54,12 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
       sceneReadyActions,
       v2ButtonStatus,
       v2ActionRuleList: resolveContractV2ActionRules(v2ContractStore.value) as Array<Record<string, unknown>>,
-      values: formData as Record<string, unknown>,
+      // The executable-adapter list must resolve a declared visibility
+      // modifier from the same authoritative union the renderer uses: the
+      // contract's modifier dependency closure plus the live form values.
+      // Resolving it against live form values alone drops the adapter exactly
+      // when the declared state makes the action visible again.
+      values: resolveContractV2ModifierValues(v2ContractStore.value, formData as Record<string, unknown>),
       resolveActionReference: (requested) => resolveAuthorizedWindowActionTarget(
         routeAuthorityEntries(session.routeAuthority),
         requested,

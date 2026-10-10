@@ -38,6 +38,24 @@ class RefusalMarkerGuardTest(unittest.TestCase):
         self.assertNotEqual(result, 0)
         self.assertIn('is not declared by the backend delete policy producers', output)
 
+    def test_backend_identity_token_must_have_a_backend_producer(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'assembler.py'
+            path.write_text('IDENTITY_PREFIX = "unrelated_identity"')
+            with patch.object(guard, 'BACKEND_IDENTITY_PRODUCERS', (path,)), patch.object(guard, '_relative', lambda p: str(p)):
+                result, output = self.run_guard()
+        self.assertNotEqual(result, 0)
+        self.assertIn('is not declared by the backend identity producers', output)
+
+    def test_modifier_declaration_token_must_have_a_backend_producer(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'native_modifier.py'
+            path.write_text('MODIFIER_KEYS = ("unrelated_key",)')
+            with patch.object(guard, 'MODIFIER_DECLARATION_PRODUCERS', (path,)), patch.object(guard, '_relative', lambda p: str(p)):
+                result, output = self.run_guard()
+        self.assertNotEqual(result, 0)
+        self.assertIn('is not declared by the backend modifier declaration producers', output)
+
     def test_backend_cannot_publish_web_refusal_marker(self):
         schema = json.loads(guard.BACKEND_SCHEMA.read_text())
         schema['$defs']['actionRule']['properties']['actionSemanticsInvalid'] = {'type': 'boolean'}

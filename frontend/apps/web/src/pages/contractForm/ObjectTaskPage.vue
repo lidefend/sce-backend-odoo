@@ -429,29 +429,14 @@ const postRelationSectionLinks = computed(() => governedFormStructureSectionNavi
 // A region is declared by the contract, not by the data that happens to be
 // loaded: an authorized audit region renders its own empty state, and an
 // unauthorized one stays hidden even when events exist.
-const contractDeclaresSurfaces = computed(() => props.sectionSurfaces !== undefined);
-const auditRegionVisible = computed(() => (
-  contractDeclaresSurfaces.value
-    ? props.auditAuthorized === true
-    : Boolean(props.hasAudit || props.auditNodes.length || props.auditEvents.length)
+// The declared surfaces are the only authority: a region renders because the
+// contract declares it, and its label comes from that declaration.  Runtime
+// data (a non-empty audit timeline) never decides visibility.
+const auditRegionVisible = computed(() => props.auditAuthorized === true);
+const activityTitle = computed(() => props.collaborationTitle || '');
+const surfaceSectionLinks = computed<WorkspaceSectionNavigationItem[]>(() => (
+  contractSurfaceNavigationItems(props.sectionSurfaces || [])
 ));
-const activityTitle = computed(() => props.collaborationTitle || '协作记录');
-const surfaceSectionLinks = computed<WorkspaceSectionNavigationItem[]>(() => {
-  if (contractDeclaresSurfaces.value) {
-    return contractSurfaceNavigationItems(props.sectionSurfaces || []);
-  }
-  const legacyItems: Array<WorkspaceSectionNavigationItem | null> = [
-    props.hasCollaboration ? {
-      key: 'surface:activity', label: '协作记录', selector: '[data-form-section-target="surface:activity"]', role: 'activity',
-      contentKind: 'collaboration-panel', sourceType: 'surface', sourceIdentity: 'collaboration-panel',
-    } : null,
-    props.auditEvents.length ? {
-      key: 'surface:audit', label: '历史审计', selector: '[data-form-section-target="surface:audit"]', role: 'audit',
-      contentKind: 'audit-timeline', sourceType: 'surface', sourceIdentity: 'professional-audit-timeline',
-    } : null,
-  ];
-  return legacyItems.filter((item): item is WorkspaceSectionNavigationItem => Boolean(item));
-});
 
 function hasUnclassifiedFields(nodes: CanonicalFormNode[]): boolean {
   return nodes.some(function visit(node): boolean {

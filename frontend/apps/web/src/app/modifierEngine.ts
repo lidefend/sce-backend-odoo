@@ -40,6 +40,31 @@ export function isStaticTruthyModifier(value: unknown) {
   return ['1', 'true', 'True'].includes(value.trim());
 }
 
+/**
+ * The single rule that decides which value set a declared modifier field is
+ * evaluated against.
+ *
+ * A live form value wins only when the form actually owns the key and carries a
+ * defined value; otherwise the contract snapshot answers.  Two consumers
+ * resolving the same declared fact from different unions can disagree about it,
+ * and a declared condition that resolves one way in the renderer and another
+ * way in the executor silently inverts a button's visibility.  Every consumer
+ * of a declared modifier therefore resolves its field references through this
+ * function instead of re-deriving a union of its own.
+ */
+export function resolveDeclaredModifierFieldValue(
+  snapshot: Record<string, unknown> | null | undefined,
+  live: Record<string, unknown> | null | undefined,
+  field: string,
+): unknown {
+  const name = String(field || '').trim();
+  if (!name) return undefined;
+  if (live && Object.prototype.hasOwnProperty.call(live, name) && live[name] !== undefined) {
+    return live[name];
+  }
+  return snapshot ? snapshot[name] : undefined;
+}
+
 export function evaluateNativeModifierValue(value: unknown, resolveFieldValue: (field: string) => unknown): boolean {
   if (typeof value === 'boolean') return value;
   if (!value || typeof value !== 'object' || Array.isArray(value)) return isStaticTruthyModifier(value);
@@ -59,7 +84,13 @@ export function evaluateNativeModifierValue(value: unknown, resolveFieldValue: (
   if (!field) return false;
   if (kind === 'field_truthy') return Boolean(resolveFieldValue(field));
   if (kind === 'field_compare') {
-    return compareNativeModifierValue(resolveFieldValue(field), String(row.operator || ''), row.value);
+    // The declared modifier AST compares a field either against a literal or
+    // against another record field (`value_field`). The producer registers
+    // that field as a runtime dependency, so a client that only reads the
+    // literal silently evaluates the wrong branch.
+    const valueField = String(row.value_field || row.valueField || '').trim();
+    const expected = valueField ? resolveFieldValue(valueField) : row.value;
+    return compareNativeModifierValue(resolveFieldValue(field), String(row.operator || ''), expected);
   }
   return false;
 }

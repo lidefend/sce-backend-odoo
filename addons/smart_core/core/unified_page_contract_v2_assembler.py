@@ -1033,6 +1033,17 @@ def _assemble_ui_contract(
         view_type=view_type,
         container_status=contract["statusContract"]["containerStatus"],
     )
+    # The governed section-heading channel.  The contract owns the semantic
+    # title of a form-body group; the native-section renderer may only present
+    # a heading the contract authored.  This writes semanticTitle /
+    # semanticAnchor metadata and never a user-visible title/label/string, so
+    # "declared" stays distinguishable from "missing".
+    _standardize_form_container_semantics(
+        container_tree,
+        model=model,
+        view_type=view_type,
+        source=source,
+    )
     contract["layoutContract"]["containerTree"] = container_tree
     contract["layoutContract"]["componentRegistry"] = _component_registry(component_keys or {"sc.display.text"})
     collection_view_key = "tree" if view_type in {"tree", "list"} else view_type
@@ -2062,12 +2073,17 @@ def _node_has_direct_group_child(node: dict[str, Any]) -> bool:
 
 
 def _is_generic_container_label(node: dict[str, Any]) -> bool:
+    """Report whether a container carries no authored heading of its own.
+
+    ``generic`` holds the values that are container identities rather than
+    headings: the absence of a label, the container type, and a technical
+    container id/name.  A label is a heading only when it is non-empty and
+    differs from every identity value.  The empty string must never be
+    intersected directly: as soon as one of title/label/string is absent the
+    label set contains it, so a set intersection would mark every group
+    generic and would let a structural guess replace an authored title.
+    """
     node_type = _text(node.get("containerType") or node.get("type") or node.get("kind")).lower()
-    labels = {
-        _text(node.get("title")).lower(),
-        _text(node.get("label")).lower(),
-        _text(node.get("string")).lower(),
-    }
     generic = {"", node_type}
     container_id = _text(node.get("containerId")).lower()
     node_name = _text(node.get("name")).lower()
@@ -2075,7 +2091,12 @@ def _is_generic_container_label(node: dict[str, Any]) -> bool:
         generic.add(container_id)
     if _is_technical_container_identifier(node_name):
         generic.add(node_name)
-    return bool(labels & generic) or all(not label for label in labels)
+    labels = (
+        _text(node.get("title")).lower(),
+        _text(node.get("label")).lower(),
+        _text(node.get("string")).lower(),
+    )
+    return not any(label and label not in generic for label in labels)
 
 
 def _is_technical_container_identifier(value: str) -> bool:
@@ -4565,6 +4586,50 @@ def _append_action_schema(contract: dict[str, Any], actions: dict[str, Any], *, 
         contract["statusContract"]["buttonStatus"].append({"btnId": f"btn.{action_key}", "visible": True, "disabled": False})
 
 
+def _native_layout_button_authority(action: dict[str, Any]) -> dict[str, Any] | None:
+    """Publish the entitlement verdict the native form view already decided.
+
+    A declared native form-layout button only reaches the contract because the
+    native view composition kept it for the acting user: Odoo resolves
+    ``get_view`` per user and removes every node whose declared ``groups`` that
+    user does not satisfy.  The authoritative native occurrence identity
+    (``native_identity.authoritative`` plus a ``native_locator``) is therefore
+    the owner's declaration that this button belongs to the acting user's view,
+    and the platform must publish that entitlement as the consumable verdict.
+
+    Without it the action rule carries no ``allowed``/``enabled``/``disabled``
+    facts, so the consumer's declared-consistency gate can only drop the action
+    and a button the native client renders disappears from the product surface.
+    Visibility in a record state stays with the declared ``invisible`` modifier
+    and is never turned into a permission denial here.
+
+    A node that still declares a group restriction is deliberately left
+    unresolved (fail-closed) instead of being authorized by assumption.
+    """
+    identity = _dict(action.get("native_identity") or action.get("nativeIdentity"))
+    if identity.get("authoritative") is not True or not _text(identity.get("native_locator")):
+        return None
+    declared_groups = (
+        _dict(action.get("payload")).get("groups_xmlids")
+        or action.get("groups_xmlids")
+        or action.get("groups")
+    )
+    if _has_action_constraint_value(declared_groups):
+        return None
+    # An owner's explicit deny stays a deny; the platform only supplies the
+    # entitlement evaluation the rule is missing, never overrides a verdict.
+    declared_allowed = action.get("allowed") if isinstance(action.get("allowed"), bool) else None
+    declared_enabled = action.get("enabled") if isinstance(action.get("enabled"), bool) else None
+    granted = declared_allowed is not False and declared_enabled is not False
+    return {
+        "entitlement_evaluated": True,
+        "authorization_allowed": granted,
+        "allowed": granted,
+        "enabled": granted,
+        "disabled": not granted,
+    }
+
+
 def _governed_platform_action_group_rows(ui: dict[str, Any]) -> list[dict[str, Any]]:
     """Return only P0-local mode actions from their single governed carrier."""
     rows: list[dict[str, Any]] = []
@@ -4626,8 +4691,10 @@ def _append_ui_contract_actions(
         if node_type == "button":
             action = _dict(value.get("action"))
             if action and parent_type != "header" and _text(action.get("level")).lower() != "header":
+                authority = _native_layout_button_authority(action) or {}
                 rows.append({
                     **action,
+                    **authority,
                     "_source_channel": "native_form_layout_button",
                     "sourceWidgetId": _text(value.get("containerId"), "page.root"),
                 })
@@ -4824,16 +4891,23 @@ def _append_ui_contract_actions(
                 "route": payload.get("route") or row.get("route"),
                 "target": payload.get("target"),
             }
-            # Model-bound window actions and native ``type=action`` buttons
-            # execute inside the current record authority.  They are not menu
-            # routes, so preserve the Odoo action-button identity for the
-            # governed execute_button adapter instead of flattening them into
-            # an unauthorised /a/:id navigation.
+            # A native ``<button type="action">`` declaration is an Odoo
+            # window-action button on *every* native form carrier (page header,
+            # form body layout, stat button); the declaration is the authority,
+            # never the carrier's channel name.  Such a button executes inside
+            # the current record authority and is not a menu route, so the
+            # platform must preserve the Odoo action-button identity for the
+            # governed ``execute_button`` adapter, which re-authorizes the
+            # action against this very contract rule.  Flattening it into an
+            # unauthorised ``/a/:id`` navigation, or dropping the identity and
+            # leaving an unresolvable ``open`` row, is what silently broke the
+            # declared button.  A model-bound projection keeps the same identity.
+            declared_window_action_button = _text(payload.get("type")).lower() == "action"
             action_button = (
                 source_channel == "bound_model_action"
                 or (
-                    source_channel == "native_form_header"
-                    and _text(payload.get("type")).lower() == "action"
+                    source_channel.startswith("native_form_")
+                    and declared_window_action_button
                 )
             )
             button = ({

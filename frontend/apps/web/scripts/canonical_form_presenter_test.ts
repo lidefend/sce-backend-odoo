@@ -4,7 +4,9 @@ import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 import {
   collectContractV2ButtonStatusById, createContractV2Store,
   resolveContractV2ActionRules, resolveContractV2EffectiveFormCapabilities, resolveContractV2FieldDescriptorMap,
+  resolveContractV2MainData, resolveContractV2ModifierValues,
 } from '../src/app/contracts/v2/store';
+import { resolveDeclaredModifierFieldValue } from '../src/app/modifierEngine';
 import type { ContractV2FormStructureRoleName, ContractV2Snapshot } from '../src/app/contracts/v2/types';
 import {
   CONTRACT_V2_FORM_STRUCTURE_ROLES,
@@ -3685,6 +3687,210 @@ assert.deepEqual(
 );
 
 console.log('[canonical_form_presenter] state-derived action visibility cases PASS count=5');
+
+// ---------------------------------------------------------------------------
+// A declared field-to-field comparison (`field_compare.value_field`) is part of
+// the modifier vocabulary the producer publishes and registers as a runtime
+// dependency.  The renderer, the container layout and the executable-adapter
+// list must resolve it from one authoritative value union, so a state-hidden
+// layout button neither renders nor loses the adapter it needs once the
+// declared state reveals it again.
+// ---------------------------------------------------------------------------
+const STAGE_GAP_BACKEND_IDENTITY = 'native_button:action:556:/form[1]/sheet[1]/div[1]/div[2]/div[1]/div[2]/button[1]:1';
+
+function stageGapLayoutButtonSnapshot(mainDataPatch: Record<string, unknown>) {
+  const candidate = snapshot();
+  // The minimal base rule is completed to the shape a published contract
+  // always carries, so the adapter-coverage gate runs against a representative
+  // model instead of an artifact of the fixture.
+  candidate.actionContract.actionRuleList[0] = {
+    ...candidate.actionContract.actionRuleList[0],
+    actionId: 'action.action_submit',
+    button: { name: 'action_submit', type: 'object' },
+  };
+  candidate.layoutContract.containerTree[0].children.push({
+    containerId: 'button.stage_gap',
+    containerType: 'button',
+    type: 'button',
+    title: '',
+    span: 24,
+    action: { backendIdentity: STAGE_GAP_BACKEND_IDENTITY },
+    children: [],
+    widgetList: [],
+  });
+  candidate.actionContract.actionRuleList.push({
+    actionId: 'action.id.556.2',
+    actionKey: 'id.556.2',
+    label: '去补齐资料',
+    intent: 'execute_button',
+    triggerType: 'click',
+    sourceWidgetId: 'id.556.native.0.children.0.children.1.children.0.children.1.children.0',
+    targetIds: [],
+    dispatchMode: 'server',
+    targetScope: 'page',
+    refreshMode: 'partial',
+    sourceChannel: 'native_form_layout_button',
+    presentationAuthority: 'native_contract',
+    button: { name: '556', type: 'action' },
+    target: { action_ref: '556', view_type: 'tree' },
+    nativeIdentity: {
+      type: 'action',
+      name: '556',
+      string: '去补齐资料',
+      native_locator: '/form[1]/sheet[1]/div[1]/div[2]/div[1]/div[2]/button[1]',
+      occurrence_index: 1,
+    },
+    presentation: { tier: 'overflow' },
+    visibleProfiles: ['create', 'edit', 'readonly'],
+    visible: {
+      attrs: {
+        invisible: {
+          kind: 'any',
+          exprs: [
+            { kind: 'field_compare', field: 'lifecycle_state', operator: '!=', value: 'draft' },
+            {
+              kind: 'field_compare', field: 'sc_stage_required_done',
+              operator: '==', value_field: 'sc_stage_required_total',
+            },
+          ],
+        },
+      },
+    },
+    entitlementEvaluated: true,
+    allowed: true,
+    enabled: true,
+    disabled: false,
+    backendIdentity: STAGE_GAP_BACKEND_IDENTITY,
+  });
+  candidate.statusContract.buttonStatus.push({
+    btnId: 'btn.id.556.2',
+    backendIdentity: STAGE_GAP_BACKEND_IDENTITY,
+    visible: false,
+    disabled: false,
+    reasonCode: 'ACTION_NOT_VISIBLE_IN_STATE',
+  });
+  // A published contract binds every button status to its declared identity.
+  candidate.statusContract.buttonStatus[0] = {
+    ...candidate.statusContract.buttonStatus[0],
+    backendIdentity: 'button:object:action_submit',
+  };
+  candidate.dataContract.mainData = {
+    ...candidate.dataContract.mainData,
+    lifecycle_state: 'draft',
+    sc_stage_required_done: 2,
+    sc_stage_required_total: 3,
+    ...mainDataPatch,
+  };
+  return candidate;
+}
+
+function stageGapModel(mainDataPatch: Record<string, unknown>, liveValues: Record<string, unknown>) {
+  const store = createContractV2Store(decodeContractV2Snapshot(stageGapLayoutButtonSnapshot(mainDataPatch)));
+  const model = presentContractV2Form(store, 'edit', liveValues, { recordPersisted: true });
+  return { store, model };
+}
+
+function stageGapAdapters(store: ReturnType<typeof createContractV2Store>, values: Record<string, unknown>) {
+  // The unfiltered list is what the renderer's adapter-coverage gate consumes.
+  return buildContractFormActions({
+    model: 'x.document',
+    recordId: 7,
+    renderProfile: 'edit',
+    sceneReadyActions: [],
+    v2ButtonStatus: collectContractV2ButtonStatusById(store),
+    v2ActionRuleList: resolveContractV2ActionRules(store) as unknown as Array<Record<string, unknown>>,
+    values,
+  });
+}
+
+function stageGapAdapterCount(store: ReturnType<typeof createContractV2Store>, values: Record<string, unknown>) {
+  return stageGapAdapters(store, values)
+    .filter((entry) => entry.backendIdentity === STAGE_GAP_BACKEND_IDENTITY).length;
+}
+
+// Live form values carry only the rendered form fields; the declared
+// dependency fields live in the contract's mainData snapshot.
+const stageGapLiveValues = { name: 'D-001' };
+
+// Negative control first: while the requirement counters stay open the declared
+// comparison resolves visible, so the button renders and the adapter exists.
+const stageGapOpen = stageGapModel({}, stageGapLiveValues);
+const stageGapOpenActions = collectCanonicalFormActions(stageGapOpen.model)
+  .filter((action) => action.actionRef.actionId === 'action.id.556.2');
+assert.equal(
+  stageGapOpenActions.length, 1,
+  'a declared field-to-field comparison that stays open must still render its button',
+);
+assert.deepEqual(
+  [stageGapOpenActions[0].visible, stageGapOpenActions[0].enabled], [true, true],
+  'the open state must present a visible, executable layout button',
+);
+
+// The adapter list resolves the declaration from the same union the renderer
+// uses, so the rendered visible set stays exactly covered.
+const stageGapSharedValues = resolveContractV2ModifierValues(stageGapOpen.store, stageGapLiveValues);
+assert.equal(
+  stageGapSharedValues.sc_stage_required_total, 3,
+  'the shared modifier value union must include the declared dependency closure',
+);
+const stageGapSharedAdapters = stageGapAdapters(stageGapOpen.store, stageGapSharedValues);
+assert.equal(
+  stageGapSharedAdapters.filter((entry) => entry.backendIdentity === STAGE_GAP_BACKEND_IDENTITY).length, 1,
+  'the shared value union must keep the adapter for a declaration that is visible in state',
+);
+assert.equal(
+  validateCanonicalFormActionExecutors(
+    collectCanonicalFormActions(stageGapOpen.model), stageGapSharedAdapters,
+  ), null,
+  'a state-visible declared action must never be reported as adapter-missing',
+);
+
+// Live form values alone do not carry that closure: resolving the declaration
+// against them drops the adapter while the renderer still shows the button,
+// which is exactly the drift the shared union removes.
+assert.equal(
+  stageGapAdapterCount(stageGapOpen.store, stageGapLiveValues), 0,
+  'live form values alone cannot resolve the contract modifier dependency closure',
+);
+
+// Closed state: the counters are complete, so the declared comparison must hide
+// the button and a hidden action requires no execution adapter.
+const stageGapClosed = stageGapModel({ sc_stage_required_done: 3 }, stageGapLiveValues);
+const stageGapClosedActions = collectCanonicalFormActions(stageGapClosed.model)
+  .filter((action) => action.actionRef.actionId === 'action.id.556.2');
+assert.deepEqual(
+  stageGapClosedActions, [],
+  'a completed requirement comparison (field-to-field) must hide the layout button',
+);
+assert.equal(
+  validateCanonicalFormActionExecutors(
+    collectCanonicalFormActions(stageGapClosed.model),
+    stageGapAdapters(stageGapClosed.store, resolveContractV2ModifierValues(stageGapClosed.store, stageGapLiveValues)),
+  ),
+  null,
+  'a state-hidden declared action must not be reported as adapter-missing',
+);
+
+// The declared value domain is answered by one rule for every consumer: a live
+// entry the form owns but that carries no value must not shadow the contract
+// snapshot the declaration depends on, and the native layout resolver must
+// answer exactly like the presenter's shared union.
+const stageGapUndefinedLive = { ...stageGapLiveValues, sc_stage_required_done: undefined };
+const stageGapUnionWithUndefinedLive = resolveContractV2ModifierValues(
+  stageGapOpen.store, stageGapUndefinedLive,
+);
+assert.equal(
+  stageGapUnionWithUndefinedLive.sc_stage_required_done, 2,
+  'an owned-but-undefined live entry cannot shadow the contract snapshot a declaration depends on',
+);
+assert.equal(
+  resolveDeclaredModifierFieldValue(
+    resolveContractV2MainData(stageGapOpen.store), stageGapUndefinedLive, 'sc_stage_required_done',
+  ), 2,
+  'the native layout resolver must apply the same value-domain rule as the contract presenter',
+);
+
+console.log('[canonical_form_presenter] declared field-to-field action visibility cases PASS count=7');
 
 // A state-revealed primary must not become a second effective primary: the
 // contract's fetch-time primary resolution stays dominant (the workspace case
