@@ -2486,7 +2486,7 @@ bash scripts/verify/form_structure_contract_runtime_audit.sh`）→ `make agent.
 | `fs_audit_after`（json sha `da45f98a…`） | 与已归档 `..._330fb36d.json` **逐字节一致** | 补档 csv/md 后删 |
 | 容器 `sc-backend-odoo-dev-odoo-1:/tmp/fs_*probe*.py` | 探针源码已归档 | 以 `docker exec -u root` 删除（文件属 root，默认 `odoo` 用户无权删） |
 
-非本分支本轮的同期 `/tmp` 遗留（10-04～10-06 的 `probe*`、`sc_daily_probe*`、6 月的 `scbs55_*` 等）
+非本分支本轮的同期 `/tmp` 遗留（10-04～10-06 的 `probe*`、`sc_daily_probe*`、更早的租户基线文件等）
 **不在本轮清理范围**，未触碰。本机仅注册的 `sc-local-dev-*` 容器；另见另一执行器的
 `sc-fe-r2-p1-01-*`（属其工作树，未触碰）。无 SSH 端口转发，无残留构建/验证进程。
 
