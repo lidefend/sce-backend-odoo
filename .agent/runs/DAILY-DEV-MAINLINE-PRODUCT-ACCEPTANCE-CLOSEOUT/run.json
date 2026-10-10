@@ -1959,7 +1959,8 @@
       ],
       "post_readback": {
         "runtime_version": {
-          "product_version": "1.0.0-rc.20",
+          "product_version_source": "VERSION",
+          "product_version_note": "the runtime readback product version equals the single-source VERSION file; the literal is intentionally not duplicated here because verify.product.release.version enforces exactly one occurrence (VERSION plus the one declared derived observation)",
           "source_revision": "0a3836951b403a80daba7b63a25a87f3b85ef394",
           "git_sha": "0a3836951b403a80daba7b63a25a87f3b85ef394",
           "database": "sc_demo",
@@ -1971,6 +1972,15 @@
       },
       "impact_analysis": "git diff --name-only e885d590 0a383695 lists 9 files: .agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json, 4 docs/engineering_convergence files, docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json, docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md, scripts/verify/frontend_v2_policy_projection_guard.py and its test. No frontend/ and no addons/ path changed, which is why the frontend fingerprint legitimately stays bc5a0cac and the smart_core upgrade legitimately reuses.",
       "status": "PASS"
+    },
+    "round_20261011_version_single_source_lane_coverage": {
+      "intent": "owner instruction (同意合并进入主线，稳定主线): publish the A/B round as PR #639 and merge it. The exact-head local Quick then failed, and that failure had to be closed before the merge gate could issue a receipt.",
+      "defect": "make ci.local.quick FAILED at verify.product.release.version with 'product version duplicated outside VERSION: [.agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json]'. Commit 22b98b3e had copied the literal runtime readback product version into evidence.round_20261011_daily_runtime_main_deploy.post_readback.runtime_version, breaking the single-source invariant (exactly one occurrence: VERSION plus the one declared derived observation). The literal exists neither in 8a373beb nor in origin/main; this candidate introduced it.",
+      "owner_layer": "P4 verification-toolchain evidence binding. The ledger now records product_version_source='VERSION' plus a note instead of duplicating the value. No guard, assertion, ACL or negative case was relaxed, and no product (P0-P2) file changed.",
+      "escape_mechanism_investigated": "PR #639 classified as lane=HIGH_RISK, professional_mode=full, reasons [high_risk_path, unknown_path_fail_closed], yet the quality-gate job deliberately downgrades a non-candidate full lane to standard_backend (or standard_frontend / governance). standard_backend was the only professional mode missing make verify.product.release.version, so every remote required check passed on an invariant-broken candidate and only the local exact-head Quick detected it. Naming the reason matters: the remote gate was not 'wrong', it was fed a lane that never declared this check.",
+      "coverage_closure": "make verify.product.release.version added to the standard_backend step of .github/workflows/professional_quality_gate.yml and to the ci.professional.backend.shard-verify prerequisites (the full lane's verification shard, previously also missing it). fast, governance, mainline and standard_frontend already ran it.",
+      "revalidation": "python3 scripts/ci/test_ci_risk_classifier.py 28 tests OK; python3 scripts/ci/test_ci_risk_workflow_contract.py 14 tests OK; python3 scripts/verify/test_github_actions_security_guard.py 15 tests OK plus github_actions_security_guard.py PASS; make verify.ci.workflow.contract PASS; make verify.guard.registry PASS (1408 scripts, 3/3 gate_required enforced); make verify.product.release.version PASS duplicates=0; make ci.generated_evidence.preflight PASS after regenerating docs/engineering_convergence/complexity_budget_report.md (the make/ci.mk change is content-bound).",
+      "status": "PASS (local L1/L2); the PR #639 required gates and the exact-head Quick are re-run on the new head because this commit changes the head."
     },
     "round_20261011_decision_authority_gate_wiring": {
       "intent": "owner instruction (同意顺序执行): execute A then B - fix the decision-authority ledger binding, then close the 'wired to a make target that no required gate runs' hardening.",

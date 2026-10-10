@@ -291,6 +291,12 @@ jobs:
             verify.tenant.payload_boundary \
             verify.tenant.product_legacy_boundary \
             verify.tenant.legacy_xmlid_boundary
+          # Cheap, ORM-free single-source integrity check. fast/governance/
+          # mainline/standard_frontend already run it; an ordinary PR whose
+          # HIGH_RISK/full lane downgrades to standard_backend used to skip it,
+          # so a duplicated VERSION literal passed every remote gate and only
+          # surfaced at the local exact-head Quick.
+          make verify.product.release.version
           make ci.generated_reports.guard architecture.complexity_baseline_lock
           git diff --check
 
