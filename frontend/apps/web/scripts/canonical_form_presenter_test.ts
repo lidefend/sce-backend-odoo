@@ -4,8 +4,9 @@ import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 import {
   collectContractV2ButtonStatusById, createContractV2Store,
   resolveContractV2ActionRules, resolveContractV2EffectiveFormCapabilities, resolveContractV2FieldDescriptorMap,
-  resolveContractV2ModifierValues,
+  resolveContractV2MainData, resolveContractV2ModifierValues,
 } from '../src/app/contracts/v2/store';
+import { resolveDeclaredModifierFieldValue } from '../src/app/modifierEngine';
 import type { ContractV2FormStructureRoleName, ContractV2Snapshot } from '../src/app/contracts/v2/types';
 import {
   CONTRACT_V2_FORM_STRUCTURE_ROLES,
@@ -3870,7 +3871,26 @@ assert.equal(
   'a state-hidden declared action must not be reported as adapter-missing',
 );
 
-console.log('[canonical_form_presenter] declared field-to-field action visibility cases PASS count=6');
+// The declared value domain is answered by one rule for every consumer: a live
+// entry the form owns but that carries no value must not shadow the contract
+// snapshot the declaration depends on, and the native layout resolver must
+// answer exactly like the presenter's shared union.
+const stageGapUndefinedLive = { ...stageGapLiveValues, sc_stage_required_done: undefined };
+const stageGapUnionWithUndefinedLive = resolveContractV2ModifierValues(
+  stageGapOpen.store, stageGapUndefinedLive,
+);
+assert.equal(
+  stageGapUnionWithUndefinedLive.sc_stage_required_done, 2,
+  'an owned-but-undefined live entry cannot shadow the contract snapshot a declaration depends on',
+);
+assert.equal(
+  resolveDeclaredModifierFieldValue(
+    resolveContractV2MainData(stageGapOpen.store), stageGapUndefinedLive, 'sc_stage_required_done',
+  ), 2,
+  'the native layout resolver must apply the same value-domain rule as the contract presenter',
+);
+
+console.log('[canonical_form_presenter] declared field-to-field action visibility cases PASS count=7');
 
 // A state-revealed primary must not become a second effective primary: the
 // contract's fetch-time primary resolution stays dominant (the workspace case

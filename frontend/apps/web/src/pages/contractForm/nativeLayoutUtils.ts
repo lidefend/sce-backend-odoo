@@ -12,9 +12,15 @@ import {
   compareNativeModifierValue,
   evaluateNativeModifierValue,
   isStaticTruthyModifier,
+  resolveDeclaredModifierFieldValue,
 } from '../../app/modifierEngine';
 
-export { compareNativeModifierValue, evaluateNativeModifierValue, isStaticTruthyModifier };
+export {
+  compareNativeModifierValue,
+  evaluateNativeModifierValue,
+  isStaticTruthyModifier,
+  resolveDeclaredModifierFieldValue,
+};
 
 export type NativeLayoutLikeNode = Record<string, unknown> & {
   children?: unknown;
@@ -1040,16 +1046,6 @@ export function resolveNativeRelationActiveActions(
     ? evaluateAction(actions[key])
     : null;
   return { create: verdict('create'), write: verdict('write') };
-}
-
-export function resolveNativeModifierFieldValue(
-  formData: Record<string, unknown>,
-  mainData: Record<string, unknown>,
-  field: string,
-) {
-  const name = String(field || '').trim();
-  if (!name) return undefined;
-  return Object.prototype.hasOwnProperty.call(formData, name) ? formData[name] : mainData[name];
 }
 
 export function nativeNodeWidget(node?: NativeLayoutLikeNode | null) {

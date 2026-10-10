@@ -19,6 +19,7 @@ import type {
 } from './types';
 
 import type { ContractV2SourceContext } from './types';
+import { resolveDeclaredModifierFieldValue } from '../../modifierEngine';
 
 export type ContractV2FieldStatusByCode = Record<string, {
   visible?: boolean;
@@ -334,16 +335,19 @@ export function resolveContractV2ModifierValues(
   liveValues?: ContractV2Dictionary,
 ): ContractV2Dictionary {
   const mainData = resolveContractV2MainData(store);
-  const merged: ContractV2Dictionary = {
-    ...(Object.keys(mainData).length ? mainData : resolveContractV2PrimaryDataSource(store)),
-  };
-  // A live value wins only when the form actually owns the key and carries a
-  // value; an absent or still-undefined entry falls back to the contract
-  // snapshot instead of shadowing it.  This matches the per-field resolution
-  // the native layout consumes, so both paths answer identically.
+  const snapshot: ContractV2Dictionary = Object.keys(mainData).length
+    ? mainData
+    : resolveContractV2PrimaryDataSource(store);
+  const merged: ContractV2Dictionary = { ...snapshot };
+  // The overlay decision is not re-derived here: it is the same rule the native
+  // layout consumes per field, so both paths always answer identically.
   Object.keys(liveValues || {}).forEach((key) => {
-    const value = (liveValues as ContractV2Dictionary)[key];
-    if (value !== undefined) merged[key] = value;
+    const value = resolveDeclaredModifierFieldValue(snapshot, liveValues, key);
+    // An undefined entry the snapshot does not declare stays absent instead of
+    // being materialised; whether the key is present is a presence question,
+    // not a second copy of the value rule.
+    if (value === undefined && !Object.prototype.hasOwnProperty.call(snapshot, key)) return;
+    merged[key] = value;
   });
   return merged;
 }
