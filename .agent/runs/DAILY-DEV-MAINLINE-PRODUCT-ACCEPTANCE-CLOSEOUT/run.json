@@ -418,13 +418,13 @@
       ],
       "kind": "offline"
     },
-    "nightly_backend_sc_gate_suite": {
-      "target": "local.dev.test MODULE=smart_construction_core TEST_TAGS=sc_gate/smart_construction_core",
+    "nightly_structure_authority_unit": {
+      "target": "verify.form_structure_authority_unification.unit",
       "inputs": [
         "addons/smart_core/core/form_structure_authority.py",
-        "addons/smart_core/tests/test_view_orchestrator.py"
+        "scripts/verify/test_form_structure_authority_unification.py"
       ],
-      "kind": "runtime"
+      "kind": "offline"
     }
   },
   "blockers": [
