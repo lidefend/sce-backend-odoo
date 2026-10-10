@@ -1532,6 +1532,15 @@ entries:
   date: '2026-07-23'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_test_coverage_registry_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-10-10'
+  wire_or_retire: file-consumed
+  reason: invoked as 'python3 -m unittest scripts.verify.test_test_coverage_registry_audit'
+    inside make/guards.mk (target verify.test.coverage.registry); module-form invocation
+    is recorded as a file reference, not a make-target reference, while the sibling
+    test_coverage_registry_audit.py is wired through its explicit filename
 - script: test_um_p1_ownership_visibility_contract_guard.py
   status: orphan
   owner: platform-team

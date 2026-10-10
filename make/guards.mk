@@ -220,6 +220,23 @@ guard.retire: guard.prod.forbid
 	@test -n "$(SCRIPT)" || { echo "usage: make guard.retire SCRIPT=<filename> REASON='...'"; exit 2; }
 	@python3 scripts/verify/guard_registry_audit.py --retire "$(SCRIPT)" --reason "$(REASON)"
 
+# ===== R9: declared test coverage registry (Odoo tag / scripts/ci unit script) =====
+# Binds every declared @tagged group and every scripts/ci/test_*.py unit script
+# to a governed selection entry, or records an owned disposition. The 2026-10-09
+# nightly proved an un-gated declared group can be "verified" once by hand and
+# then never re-run; this registry makes that debt machine-checkable.
+.PHONY: verify.test.coverage.registry test.coverage.registry.export test.coverage.registry.seed
+verify.test.coverage.registry: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_test_coverage_registry_audit
+	@python3 scripts/verify/test_coverage_registry_audit.py
+
+test.coverage.registry.export: guard.prod.forbid
+	@python3 scripts/verify/test_coverage_registry_audit.py --export
+
+test.coverage.registry.seed: guard.prod.forbid
+	@python3 scripts/verify/test_coverage_registry_audit.py --seed
+	@$(MAKE) --no-print-directory verify.test.coverage.registry
+
 # ------- G1 acceptance baseline (custom-frontend-integration) -------
 .PHONY: verify.g1.acceptance.baseline
 verify.g1.acceptance.baseline: guard.prod.forbid

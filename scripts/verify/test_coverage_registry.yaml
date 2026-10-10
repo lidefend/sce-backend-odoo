@@ -1,0 +1,1218 @@
+version: 1
+entries:
+- group: acceptance_fixture_execution_freeze
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.acceptance_fixture.execution_freeze.orm :: acceptance_fixture_execution_freeze test.safe'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: acceptance_fixture_gate
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: acceptance_nav_identity
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: acl_gate
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: action_dispatcher
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: admin_vis_p3_project_record_rule_orm
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-team
+  dispose: class-selected
+  gate: 'scripts/test/admin_vis_p3_project_record_rule_orm.sh :: admin_vis_p3_project_record_rule_orm'
+  reason: Reached only through the default tag of scripts/test/admin_vis_p3_project_record_rule_orm.sh
+    (SC_AUTHORIZATION_ORM_TEST_TAGS default) invoked by the hand-run make test.admin-vis-p3-project-record-rule-orm;
+    no scheduled or PR gate selects it.
+- group: admin_vis_patch_a
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: admin_vis_patch_b
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: api_data_batch_backend
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: api_data_search_fields_extension
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: auth_signup
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: boq_version
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: business_config_change_set
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: canonical_navigation_projection
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-team
+  dispose: class-selected
+  gate: 'make:verify.local.dev.canonical_navigation_projection.orm :: /TestCanonicalNavigationProjection
+    (class selection)'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: capability_contract_backend
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: capability_registry
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: company_project_refund_workspace
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: contract
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared 8 times in addons/smart_construction_core/tests/test_contract_center.py; the contract-centre
+    flow has no recurring gate.
+  review_by: '2026-12-31'
+- group: contract_dashboard
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: contract_execution_component_profile
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: contract_handling_page_policy
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: core_extension_v2_finalize
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.contract.project_ledger_entry_carrier.orm :: core_extension_v2_finalize test.safe'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: core_payment_amount_semantics
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: cost
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared in 4 files under addons/smart_construction_core/tests for cost projection work; not
+    referenced by any governed selection entry.
+  review_by: '2026-12-31'
+- group: cost_fact_concurrency_v2
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: cost_fact_projection_v2
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: cost_fact_stock_writer
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: cost_fact_v2
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: current_account_workspace
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: daily_contract_settlement
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: data_permission_surface
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: demo_gate
+  kind: odoo_tag
+  status: unwired
+  owner: demo-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: e2e_fixed_journey
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:test.e2e.fixed_data.odoo :: e2e_fixed_journey CI_LOG=test-e2e-fixed.log CI_ARTIFACT_PURGE=0
+    bash scripts/ci/'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: equipment_usage_product
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: extension_contract
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: form_structure_surface_capability_orm
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-team
+  dispose: class-selected
+  gate: 'make:verify.local.dev.form_structure_surface_capability.orm :: /TestFormStructureSurfaceCapabilityOrm
+    (class selection)'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: formal_form_lowcode
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: fund_legacy_archive
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: intent_dispatcher_permission_contract
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: intent_permission_menu_visibility
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: intent_surface_coverage_gate
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: labor_product
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: locale_baseline
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: material_supplier_return
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: menu_delivery
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: my_work_backend
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: native_action_selection
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: native_alignment
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: native_tree_presentation_semantic
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: norm
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: office_asset
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: output_invoice_red_flush
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared in addons/smart_construction_core/tests/test_user_feedback_business_views.py. The only
+    selection of that file is the single class-method target make verify.workflow_contract.backend (TestUserFeedbackBusinessViews.test_deduction_registration_action_creates_deduction_bill_lines),
+    which does not reach this group.
+  review_by: '2026-12-31'
+- group: p0_state
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: p1_contract_execution_position
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: p1_contract_payment_allocation
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: p1_finance_projection_authority
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: p1_funding_authority
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: p1_payment_request
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: p1_payment_request_concurrency
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: p1_settlement_fact_immutability_v1
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: partner_blacklist
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: partner_role_alignment
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: payment_domain_permission_isolation
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: payment_request_action_surface_backend
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: payment_request_approval_backend
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: payment_request_available_actions_backend
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: payment_request_fixture_ownership
+  kind: odoo_tag
+  status: unwired
+  owner: demo-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: payment_request_permission
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: payment_request_work_item_service
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: perm_runtime_uid
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: policy_document
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: product_job
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: product_message_notification
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: product_numbering_rule
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: product_reports
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: product_system_settings
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: project_context_resolver
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: project_dashboard_contract_backend
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: project_dashboard_entry_backend
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: project_progress_read_boundary
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: project_salary_product
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: project_special_tax_deduction
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: project_state
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: project_structure_component_profile
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: quality_acceptance
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: r11c_locked_menu
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: r11f2_tax_certificate
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: reason_codes_backend
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: registry_consistency
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: relation_entry_override
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-team
+  dispose: class-selected
+  gate: 'make:verify.smart_core.relation_entry_publication.orm :: relation_entry_override test.safe'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: release_gate_category_options
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: res_users_audience_group
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-team
+  dispose: class-selected
+  gate: 'make:verify.smart_core.res_users_audience_group.orm :: res_users_audience_group test.safe'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: risk_action_execute_backend
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: role_regression_minimal
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: rr_gate
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: rr_p1
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: runtime_user_management
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: runtime_view_contract
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: sc_approval_policy
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: sc_auth_compat
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: sc_auth_credential
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: sc_install
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: sc_native_alignment
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: sc_perm
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:ci.gate :: sc_gate,sc_perm'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: sc_regression
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: 'Largest fully un-gated group: declared in 7 files under addons/sc_norm_engine/tests, and no
+    make target, workflow or script references the tag anywhere in the repository.'
+  review_by: '2026-12-31'
+- group: sc_upgrade
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: scene_delivery_policy
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: scene_governance_backend
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: scene_nav_contract
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: scene_package_backend
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: scene_publish_usage_backend
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: scene_resolver
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: scene_runtime_chain
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: scene_target
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: security_gate
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: settlement_native_structure
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: smart_construction_bootstrap
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: smart_construction_core
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: smart_construction_portal
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: smart_core
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared in 18 files under addons/smart_core/tests. The module's own suite is reached only through
+    class-name patterns (make/dev.mk verify.local.dev.*.orm targets select e.g. /smart_core:TestCanonicalNavigationProjection),
+    so the group tag itself never selects anything.
+  review_by: '2026-12-31'
+- group: smart_license_core
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: smart_owner_bundle
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: smart_owner_core
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: smart_scene
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: smoke
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: smoke_3waymatch
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: smoke_registry
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: smoke_security
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: smoke_validator
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: social_fund
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: subcontract_cost_registration
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: tax_filing
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: team_loan_deduction_workspace
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: tenant_extension
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: tenant_payload
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: tender_award_fact
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: tender_document
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: tier_gate
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: uc3_native_lowcode
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: uc4_native_lowcode
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Highest-priority wiring candidate. 16 files under addons/smart_construction_core/tests were
+    delivered as U-C4 and verified once by hand with TEST_TAGS='/smart_construction_core:<Class>' (docs/ops/iterations/uc4_*.md
+    record e.g. '0 failed, 0 error(s) of 9 tests'). No recurring gate selects the tag, so a later regression
+    would not be caught; the 2026-10-09 nightly proved that gap is not theoretical.
+  review_by: '2026-12-31'
+- group: um_p3_core_020_payment_ledger_permission_orm
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: um_p3_core_034_subcontract_amount_orm
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: um_p3_s06_subcontract_cumulative_orm
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: usage_backend
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: user_activation
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: user_activation_http
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: user_data_boundary
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: user_feedback
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.workflow_contract.backend :: /TestUserFeedbackBusinessViews (class selection)'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: user_module_product_closure
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: variation_change_chain
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: workflow_contract_backend
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.workflow_contract.backend :: /TestWorkflowContractBackend (class selection)'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
