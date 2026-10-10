@@ -28,6 +28,18 @@ smart_core_pkg = sys.modules.setdefault("odoo.addons.smart_core", types.ModuleTy
 smart_core_pkg.__path__ = [str(SCENE_DIR.parent / "smart_core")]
 smart_core_core_pkg = sys.modules.setdefault("odoo.addons.smart_core.core", types.ModuleType("odoo.addons.smart_core.core"))
 smart_core_core_pkg.__path__ = [str(SCENE_DIR.parent / "smart_core" / "core")]
+smart_construction_core_pkg = sys.modules.setdefault(
+    "odoo.addons.smart_construction_core",
+    types.ModuleType("odoo.addons.smart_construction_core"),
+)
+smart_construction_core_pkg.__path__ = [str(SCENE_DIR.parent / "smart_construction_core")]
+smart_construction_core_services_pkg = sys.modules.setdefault(
+    "odoo.addons.smart_construction_core.services",
+    types.ModuleType("odoo.addons.smart_construction_core.services"),
+)
+smart_construction_core_services_pkg.__path__ = [
+    str(SCENE_DIR.parent / "smart_construction_core" / "services")
+]
 
 scene_pkg = sys.modules.setdefault("odoo.addons.smart_construction_scene", types.ModuleType("odoo.addons.smart_construction_scene"))
 scene_pkg.__path__ = [str(SCENE_DIR)]
