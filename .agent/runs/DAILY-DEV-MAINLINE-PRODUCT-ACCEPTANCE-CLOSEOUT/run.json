@@ -48,7 +48,8 @@
         "frontend/apps/web/tsconfig.json",
         "frontend/apps/web/tsconfig.strict.json",
         "frontend/apps/web/package.json",
-        "frontend/apps/web/vite.config.ts"
+        "frontend/apps/web/vite.config.ts",
+        "scripts/dev/pnpm_exec.sh"
       ],
       "kind": "offline"
     },
@@ -63,7 +64,9 @@
         "scripts/ops/agent_run_context.py",
         "scripts/verify/frontend_dev_incremental.py",
         "addons/smart_core/core/unified_page_contract_v2_runtime.py",
-        "addons/smart_core/tests/test_unified_page_contract_v2_runtime.py"
+        "addons/smart_core/tests/test_unified_page_contract_v2_runtime.py",
+        "scripts/verify/baseline_iteration_execution_policy_guard.py",
+        "scripts/verify/test_baseline_iteration_execution_policy_guard.py"
       ],
       "kind": "offline"
     },
@@ -388,7 +391,8 @@
         "addons/smart_construction_core/tests/test_project_ledger_runtime_contract.py",
         "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
         "addons/smart_construction_core/views/core/project_overview_views.xml",
-        "addons/smart_core/handlers/ui_contract_v2.py"
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "make/dev.mk"
       ]
     },
     "agent_ledger_consistency_unit": {
@@ -537,7 +541,8 @@
         "addons/smart_core/core/unified_page_contract_v2_runtime.py",
         "addons/smart_core/tests/test_unified_page_contract_v2_runtime.py",
         "scripts/verify/unified_page_contract_v2_runtime_guard.py",
-        "docs/architecture/unified_page_contract_v2/fixtures/runtime_contract_source.json"
+        "docs/architecture/unified_page_contract_v2/fixtures/runtime_contract_source.json",
+        "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py"
       ]
     },
     "business_config_formal_list_unit": {
@@ -545,7 +550,11 @@
       "kind": "offline",
       "inputs": [
         "addons/smart_core/tests/test_unified_page_contract_v2_runtime.py",
-        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py"
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "addons/smart_core/tests/test_load_contract_response_cache.py",
+        "addons/smart_core/tests/test_view_orchestrator.py",
+        "scripts/verify/test_formal_list_configuration_baseline.py",
+        "make/runtime_ops.mk"
       ],
       "note": "carried layer: the P0 boundaries suite asserts the producer side of layoutPolicy."
     }
@@ -558,7 +567,7 @@
     "RESOLVED and DEPLOYED (B1+B2 were one P0 validator defect; see evidence.round_20261010_layout_policy_membership_authority). The runtime form-structure validator did not recognise the structure-membership authority the producer declares, so B1 ('slots is required'=60) and B2 ('layout projects field outside structure'=2024/158 models) were the same defect. B1 was not a choice: ui_contract_v2.py declares layoutPolicy=container_tree_authority with empty slots/fieldRoles (asserted by its own P0 tests), and the declared consumer frontend/apps/web/src/app/contracts/v2/schema.ts::decodeFormStructureContract forbids slots/columns/fieldRoles for that policy - so option (b) 'publish a minimal slot set' would have produced a contract the consumer rejects, leaving option (a) 'honour the declared layoutPolicy' as the only declaration-valid repair. B2's round-21 attribution was corrected: the producer is self-consistent (a read-only 163-model probe measured refs_not_in_layout=0/163 and layout-outside-slots fields inside the governance universe=6/163; every other flagged field is a native/technical/projection residual), so the reverse assertion was a validator over-assertion, not a projection split and not P1. The validator now (1) requires slots only when the declaration does not delegate membership to the tree, (2) newly rejects a tree-authority structure that also publishes slots/columns/fieldRoles (mirroring the declared consumer), and (3) scopes the reverse assertion to governed fields of non-tree-authority policies. No declaration-backed assertion was relaxed. The served daily runtime at e885d590 audits boundary_ok 163 / boundary_violation 0 (was 5/158) with projected_semantic_group_models 163, contract_standardized 81 and zero diffs on every non-boundary column. (B3) missing_group_semantics=163 was two independent defects and is RESOLVED and DEPLOYED - see evidence.round_20261010_contract_authored_section_heading_producer: (B3a, P0 smart_core, real product debt) the contract-authored heading channel semanticTitle had consumers (nativeBusinessSection.ts:96, NativeFormTreeRenderer.vue:892, schema.ts:737) but no producer, because WIP commit 2ec2e2df deleted the only call to _standardize_form_container_semantics and its replacement writes formStructureRole only. The producer is restored and _is_generic_container_label's ''-in-generic defect is fixed; the served runtime audits at projected_semantic_group_models=163 with 996/996 group nodes authored and missing_group_semantics 0. (B3b/B3c/B3d, P4 verification tools, no product change) the audit's is_unlabeled_group predicate, its notebook metric filtering on a carrier that exists nowhere in the repository, and the standardizer guard's failure to assert production wiring are all fixed, with pre/post negative baselines recorded. The residual 82 contract_needs_attention models are exactly (B4) the no-notebook/no-page scope set plus (B5) the 3 non-chatter workspace surfaces, which remain scope questions rather than product debt. This batch's two owned facets are 0 under both readings, so none of this is a batch regression.",
     "Verification-tool path debt (registered, NOT fixed in this round, no gate relaxed): make verify.form_structure.contract cannot pass in-repo because its member verify.user_form.preference.boundary_guard hardcodes addons/smart_construction_custom/models/user_preferences.py and reads it directly; that module does not exist in this repository (git log --all -- addons/smart_construction_custom is empty, absent on origin/main too) - it is a customer-custom addon outside the repository boundary, mounted and installed at runtime (the governed runtime guard scripts/verify/daily_dev_customer_addons_runtime_guard.py checks it live). Local reproduction: FileNotFoundError. Report per-target evidence only; the owning layer is that guard's owner."
   ],
-  "next_exact_step": "B1 and B2 were the same P0 validator defect (the runtime form-structure validator not honouring the declared layoutPolicy) and are fixed, deployed and verified: the served daily runtime at e885d590b314d310de20a373c4f4c152996e3daf audits boundary_ok 163 / boundary_violation 0, with 81/163 contract_standardized and zero diffs on every non-boundary column. Remaining registered work: (B4) notebook/page on the 82 no-notebook/no-page scope models and (B5) collaboration on the 3 non-chatter workspace surfaces - both scope questions, not product debt; the coverage-debt registry (140 tagged groups) is machine-tracked follow-on work; and whether governance should declare a more complete field universe for the native tree (outside-and-governed = 6/163) is its own topic. The product-delivery item is the owner's own login verification (wutao/123456, sc_demo, http://1.95.85.92:18081/). Nothing has been pushed to origin or the public mirrors.",
+  "next_exact_step": "The owner's ruling B ('the runtime form-structure validator must honour the declared layoutPolicy') is implemented, deployed and verified at the served product head e885d590b314d310de20a373c4f4c152996e3daf: the 163-model runtime audit reports boundary_ok 163 / boundary_violation 0, 'slots is required' 60 -> 0 and 'layout projects field outside structure' 2024 -> 0, with 81/163 contract_standardized (B4/B5 unchanged) and zero diffs on every non-boundary column. This round also repaired the reuse index itself: five checks declared incomplete input lists (a test tool or configuration dependency the target actually runs was missing, so a change to it could have been certified as reusable), and the invalidated checks were re-run and re-recorded. Remaining registered work: (B4) notebook/page on the 82 no-notebook/no-page scope models and (B5) collaboration on the 3 non-chatter workspace surfaces - both scope questions, not product debt; the coverage-debt registry (140 tagged groups) is machine-tracked follow-on work; whether governance should declare a more complete field universe for the native tree (outside-and-governed = 6/163) is its own topic. Two checks stay intentionally un-receipted: verify.form_structure.contract_runtime.audit (its authoritative run is the remote deployed-runtime audit at e885d590, whose report is the check's declared readback; the receipt is minted in the freeze/delivery round) and verify.nav.pro01r.route_authority.browser (carried forward by recorded impact analysis - the only changed declared input is make/runtime_ops.mk and its diff contains no nav-lane recipe line). The product-delivery item remains the owner's own login verification (wutao/123456, sc_demo, http://1.95.85.92:18081/). Nothing has been pushed to origin or the public mirrors.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -1688,14 +1697,35 @@
       "layer_correction": "B1 owning layer unchanged (P0 smart_core: the validator contradicted its own producer). B2 owning layer corrected from 'P0 projection split' to 'P0 smart_core validator over-assertion' - no producer defect, no product-behaviour change, no P1 involvement. Labels were corrected in the ledger only; no commit history was rewritten.",
       "follow_on_not_pre_empted": "Whether governance should declare a more complete field universe for the native tree remains its own question (outside-and-governed = 6/163 today). It is an observable governance choice, not a contract defect.",
       "report": ".runtime/final-acceptance/daily-deployed/form_structure_contract_runtime_audit_e885d590.json"
+    },
+    "round_20261010_receipt_index_repair": {
+      "layer": "P4 ops/verification tooling (.agent run ledger); no product code changed",
+      "defect": "Five checks declared an incomplete input list: the governed Make recipe invokes a test tool or configuration file that the check did not declare, so a change to that file would leave the receipt looked-up as reusable and the stale result could be certified as current. The reuse mechanism itself was sound (hash-bound inputs, environment identity, readable original log); the declared dependency sets were not.",
+      "fix": "Declared the missing dependencies: frontend_typecheck += scripts/dev/pnpm_exec.sh; ci_local_iteration += the baseline-iteration policy guard and its unit test; unified_page_contract_v2_runtime_unit += addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py (the second suite the target actually runs); business_config_formal_list_unit += the load-contract cache test, the view-orchestrator test, the formal-list baseline test and make/runtime_ops.mk; project_ledger_entry_carrier_orm += make/dev.mk.",
+      "receipts": "Re-ran and re-recorded through the governed begin/run/record flow (make agent.run.begin -> the governed target -> make agent.run.record), logs under .runtime/eff/rec/closeout-20261010-layout-policy-authority/: frontend.typecheck.strict (1), baseline.iteration.execution.policy / ci.local.iteration (16), contract.structure_lock (14), product_view_structure.contract.unit (25), frontend.navigation_initialization_race.unit (35), unified_page_contract.v2.runtime (23+119), form_structure.contract.guard (12 + standardizer guard), business_config.formal_list.unit (128+9+52+5), agent.ledger.unit (15), project_ledger_entry_carrier.orm (28, local.dev module test on sc_dev_demo), frontend.canonical_form_presenter.unit (177 cases, the suite's own total), frontend.contract_header_action.unit (9 reported assertion groups - the suite prints dimension counts, not a total, so the count is the number of PASS assertion groups in its own log) and frontend.modifiers_runtime.guard (1).",
+      "carry_forward": "verify.nav.pro01r.route_authority.browser is carried forward by deterministic impact analysis instead of being re-run: git diff 5220db8b..HEAD -- make/runtime_ops.mk is 9 insertions / 4 deletions and none of them touch the nav_pro route-authority lane, its dependencies or its assertions, so the recorded assertion set is unaffected by the change that made the receipt input-stale.",
+      "runtime_audit_receipt": "verify.form_structure.contract_runtime.audit stays un-receipted by design: its authoritative run is the remote audit against the served daily runtime at e885d590 and its report is already the check's declared readback artifact (.runtime/final-acceptance/daily-deployed/form_structure_contract_runtime_audit_e885d590.json, plus the transferred original report ..._e885d590.log). Re-running it at the same inputs would be a duplicate audit, so the receipt is minted once in the freeze/delivery round at the frozen fingerprint rather than now.",
+      "reuse_state": "After the repair make agent.run.resume reports the ledger as resolved at reusable/stale/not_run = 45/1/1 (before: 32/8/7). The single remaining stale entry is the nav browser carry-forward above and the single not_run entry is the remote runtime audit whose receipt is minted in the freeze/delivery round; neither is unresolved product work.",
+      "before_after": {
+        "before": {
+          "reusable": 32,
+          "stale": 8,
+          "not_run": 7
+        },
+        "after": {
+          "reusable": 45,
+          "stale": 1,
+          "not_run": 1
+        }
+      }
     }
   },
   "continuation": {
     "reason": "successor to the retired FE-HIERARCHICAL-WORKSHEET-USABLE-READY run (merged PR #626) and the closed MAINLINE-BASELINE-BINDING anchor",
     "action": "align the daily runtime identity to the latest main and close out the user product acceptance boundary",
     "handoff_ready": {
-      "state": "this round is closed at the ledger level; the only open boundary is the owner's own product-acceptance judgment (a human step, not an engineering gap). make agent.run.resume = resolved, 40/40 declared checks reusable, 0 stale.",
-      "worktree": "single worktree /home/lidefend/workspace/sce-backend-odoo on audit/daily-dev-mainline-product-acceptance-closeout-20261009 @ bff64595, dirty = .agent/runs/.../run.json + docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md only. A standalone .agent/docs candidate is rejected as bookkeeping-only, so these two files must ride with the next product candidate.",
+      "state": "This round is closed at the ledger level; the only open boundary is the owner's own product-acceptance judgment (a human step, not an engineering gap). The ruling-B work (B1/B2, one P0 validator defect) is fixed, deployed and verified at the served product head e885d590. The earlier '0 stale' claim was re-measured and corrected: it stood for a different candidate and no longer held, which is why this round re-ran the invalidated checks and repaired five incomplete declared input lists instead of asserting reuse.",
+      "worktree": "single worktree /home/lidefend/workspace/sce-backend-odoo on audit/daily-dev-mainline-product-acceptance-closeout-20261009 @ 43263ec8, dirty = .agent/runs/.../run.json + docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md only. A standalone .agent/docs candidate is rejected as bookkeeping-only, so these two files must ride with the next product candidate.",
       "branch_relation": "origin/main (daecaafc) is an ANCESTOR of this branch (git log HEAD..origin/main is empty), and git diff HEAD origin/main touches only those two bookkeeping files. The branch is therefore main + bookkeeping only, so the next product candidate can be built on it directly with no branch sync.",
       "new_task_entry": "register one goal under .agent/goals/ AND .agent/runs/<goal-id>/run.json, then point .agent/active-runs.json at this branch before the first mutation. Do not silently inherit this run. If the new task is a different independently acceptable product result, close this run first (run -> completed/superseded with the goal terminal in the same step) so the ledger guard stays drift-free; extending this run is correct only when the new task belongs to the same accepted result.",
       "ready_environment": "daily dev runtime serves source_revision daecaafc / database sc_demo / frontend_build_sha256 1f46b033... on http://1.95.85.92:18081; the fixed dev credential is wutao/123456, and the daily readonly probe still requires a <=10 minute envelope whose fields match CLI/env exactly. Delivery-hardening fixture records live in company 21/22 and are read by the managed contract probe as fixture_role_finance.",
@@ -1717,7 +1747,7 @@
   "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced.",
   "stage_identity": {
     "kind": "iteration",
-    "head": "e885d590b314d310de20a373c4f4c152996e3daf",
+    "head": "43263ec8156aeb9c66861637388a870fd1c1e54e",
     "dirty_scope": [
       "docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md",
       ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json"

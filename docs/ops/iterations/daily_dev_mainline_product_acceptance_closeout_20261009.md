@@ -2292,3 +2292,77 @@ P4 `scripts/verify`（验证工具，不改产品）
 - 独立于本轮的后续专题（不占用本轮结论）：「治理是否应为原生树字段声明更完整的字段域」——
   当前 `outside ∩ governance = 6/163`，属可观测的治理选择，非契约缺陷。
 - 唯一开放的产品交付项仍为**所有者登录核对**（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`）。
+
+---
+
+## 24. 第 24 轮（2026-10-10）：复用索引自身的收口 —— 声明输入补全与回执重建
+
+**一、性质与边界**
+
+本轮**无任何产品代码变更**，全部落在 P4 取证体系（`.agent` run 台账与其回执机制）。产品面保持第 23 轮
+结论：日常运行态 serve `e885d590`，163 模型审计 `boundary_ok=163 / boundary_violation=0`。
+
+**二、发现的体系缺陷：假复用（不是"重跑"，而是"错用可复用"）**
+
+交接稿记载"`make agent.run.resume` = resolved，40/40 可复用、0 stale"。本轮**实测推翻**：该判断来自更早的
+候选身份，在 `e885d590` 上已不成立，实际为 **reusable 32 / stale 8 / not_run 7**。逐项归因后发现真实缺陷：
+
+**有 5 个 check 的声明输入不完整**——受管 Make recipe 实际会执行的测试工具或配置依赖未被声明。后果是：
+该文件一旦变化，回执**仍然被判为可复用**，于是"已过期结论"会被索引认证为当前结论。回执机制本体
+（输入哈希、环境身份、原始日志哈希）是健全的，**缺口在这些 check 的声明依赖集**。
+
+| check | 未声明的依赖（目标实际会执行） |
+| --- | --- |
+| `frontend_typecheck` | `scripts/dev/pnpm_exec.sh` |
+| `ci_local_iteration` | `baseline_iteration_execution_policy_guard.py` 及其单测（`ci.local.iteration` 的首个前置） |
+| `unified_page_contract_v2_runtime_unit` | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py`（该目标实际跑的第二套 119 tests） |
+| `business_config_formal_list_unit` | `test_load_contract_response_cache.py`、`test_view_orchestrator.py`、`test_formal_list_configuration_baseline.py`、`make/runtime_ops.mk` |
+| `project_ledger_entry_carrier_orm` | `make/dev.mk`（该 check 的 recipe 所在文件） |
+
+**三、修复与回执重建（受管流程，不手工造回执）**
+
+按 `make agent.run.begin → 受管目标 → make agent.run.record` 逐条重建，日志落在
+`.runtime/eff/rec/closeout-20261010-layout-policy-authority/`：
+
+| check | 计数 | 备注 |
+| --- | --- | --- |
+| `frontend_typecheck` | 1 | vue-tsc strict，10.5s |
+| `ci_local_iteration` | 16 | `verify.baseline.iteration.execution.policy` |
+| `contract_structure_lock` | 14 | domains=14 |
+| `product_view_structure_contract_unit` | 25 | |
+| `frontend_navigation_initialization_race_unit` | 35 | |
+| `unified_page_contract_v2_runtime_unit` | 142 | 23 + 119 |
+| `form_structure_contract_guard` | 13 | 12 tests + standardizer guard |
+| `business_config_formal_list_unit` | 194 | 128+9+52+5 |
+| `agent_ledger_consistency_unit` | 15 | goals=93 runs=71 |
+| `project_ledger_entry_carrier_orm` | 28 | 本地 `sc_dev_demo` 模块测试：0 failed / 0 error |
+| `frontend_canonical_form_presenter_unit` | 177 | 套件自报 cases=177 |
+| `frontend_contract_header_action_unit` | 9 | 该套件只打印维度计数、无总数，故取日志中 PASS 断言组数（其子用例合计 76） |
+| `frontend_modifiers_runtime.guard` | 1 | 单条 PASS |
+
+**四、两条有意保留的"未回执"，均附依据（不是遗漏）**
+
+1. `form_structure_contract_runtime_audit`（`not_run`）：其权威运行是**远端受管运行态**上的 163 模型审计，
+   运行身份即 served `e885d590`，报告已作为该 check 的**声明 readback**
+   （`.runtime/final-acceptance/daily-deployed/form_structure_contract_runtime_audit_e885d590.json`，
+   原始报告另转存为同目录 `..._e885d590.log`）。在输入未变的情况下重跑是同义重复，故回执在
+   **冻结/交付轮**按冻结指纹一次性铸造。
+2. `browser_login_return_authority`（`stale`）：唯一变化的声明输入是 `make/runtime_ops.mk`；本轮给出
+   确定性影响面分析——`git diff 5220db8b..HEAD -- make/runtime_ops.mk` 为 9 增 4 删，**其中不含 nav
+   route-authority 车道的任何 recipe/依赖/断言**，故"使回执输入过期的那次变更"不影响其断言结论，按规则
+   做记录式前向携带而非重跑。
+
+**五、复用索引前后对比**
+
+| 指标 | 修复前 | 修复后 |
+| --- | --- | --- |
+| `reusable` | 32 | **45** |
+| `stale` | 8 | 1（nav browser，已记录影响面分析） |
+| `not_run` | 7 | 1（远端运行态审计，冻结轮铸造回执） |
+
+**六、边界**
+
+- 未 push、未合并、未标记整体目标完成；**未改任何产品代码**，未放宽任何断言或门禁。
+- B4（82 个无 notebook/page 作用域模型）、B5（3 个非 chatter 工作台表面）仍为口径问题；覆盖债
+  （140 个 @tagged 分组）仍由登记表机器跟踪。
+- 唯一开放的产品交付项仍为**所有者登录核对**（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`）。
