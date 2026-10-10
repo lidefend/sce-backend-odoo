@@ -319,6 +319,35 @@ export function resolveContractV2PrimaryDataSource(store: ContractV2NormalizedSt
   return store?.primaryDataSource ? { ...store.primaryDataSource } : {};
 }
 
+/**
+ * The single authoritative value set a declared modifier is evaluated against.
+ *
+ * The producer registers every modifier dependency field (including the
+ * `value_field` side of a field-to-field comparison) as a first-class runtime
+ * dependency and guarantees it in `mainData`; live form values overlay that
+ * snapshot. Render presentation, container layout and the executable-adapter
+ * list must all resolve a declaration from this one union, otherwise two
+ * consumers can disagree about the same declared fact.
+ */
+export function resolveContractV2ModifierValues(
+  store: ContractV2NormalizedStore | null,
+  liveValues?: ContractV2Dictionary,
+): ContractV2Dictionary {
+  const mainData = resolveContractV2MainData(store);
+  const merged: ContractV2Dictionary = {
+    ...(Object.keys(mainData).length ? mainData : resolveContractV2PrimaryDataSource(store)),
+  };
+  // A live value wins only when the form actually owns the key and carries a
+  // value; an absent or still-undefined entry falls back to the contract
+  // snapshot instead of shadowing it.  This matches the per-field resolution
+  // the native layout consumes, so both paths answer identically.
+  Object.keys(liveValues || {}).forEach((key) => {
+    const value = (liveValues as ContractV2Dictionary)[key];
+    if (value !== undefined) merged[key] = value;
+  });
+  return merged;
+}
+
 export function resolveContractV2ValueSource(store: ContractV2NormalizedStore | null): ContractV2ValueSource {
   if (!store) return { kind: 'none', values: {} };
   const fieldCodes = Array.from(store.widgetsByFieldCode.keys());

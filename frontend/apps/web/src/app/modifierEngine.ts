@@ -59,7 +59,13 @@ export function evaluateNativeModifierValue(value: unknown, resolveFieldValue: (
   if (!field) return false;
   if (kind === 'field_truthy') return Boolean(resolveFieldValue(field));
   if (kind === 'field_compare') {
-    return compareNativeModifierValue(resolveFieldValue(field), String(row.operator || ''), row.value);
+    // The declared modifier AST compares a field either against a literal or
+    // against another record field (`value_field`). The producer registers
+    // that field as a runtime dependency, so a client that only reads the
+    // literal silently evaluates the wrong branch.
+    const valueField = String(row.value_field || row.valueField || '').trim();
+    const expected = valueField ? resolveFieldValue(valueField) : row.value;
+    return compareNativeModifierValue(resolveFieldValue(field), String(row.operator || ''), expected);
   }
   return false;
 }
