@@ -397,6 +397,34 @@
         ".agent/goals"
       ],
       "note": "declared inputs include the .agent ledger this guard actually reads; without them a run.json/run-ledger edit could silently keep a stale green result"
+    },
+    "nightly_guard_registry_audit": {
+      "target": "verify.guard.registry",
+      "inputs": [
+        "make/guards.mk",
+        "scripts/verify/guard_registry_audit.py",
+        "scripts/verify/test_guard_registry_audit.py",
+        "scripts/verify/registry.yaml",
+        "docs/audit/guard_registry/guard_registry.json"
+      ],
+      "kind": "offline"
+    },
+    "nightly_collaboration_guard_unit": {
+      "target": "verify.frontend.professional_collaboration.unit",
+      "inputs": [
+        "scripts/verify/frontend_professional_collaboration_guard.py",
+        "scripts/verify/test_frontend_professional_collaboration_guard.py",
+        "frontend/apps/web/src/pages/contractForm/useNativeChatterRuntime.ts"
+      ],
+      "kind": "offline"
+    },
+    "nightly_backend_sc_gate_suite": {
+      "target": "local.dev.test MODULE=smart_construction_core TEST_TAGS=sc_gate/smart_construction_core",
+      "inputs": [
+        "addons/smart_core/core/form_structure_authority.py",
+        "addons/smart_core/tests/test_view_orchestrator.py"
+      ],
+      "kind": "runtime"
     }
   },
   "blockers": [
@@ -404,7 +432,7 @@
     "Product delivery pending the owner's own login verification on the daily runtime (goal objective step: 交由所有者登录核对并判定产品交付边界). The served product content is byte-identical to the merged mainline, so this is a human acceptance step, not an engineering gap.",
     "Environment DENY (registered, not generalised): the rebuild/snapshot lane is still blocked by the two mounters - a single DENY conclusion bound to the actual entry dependency and an independent review, not an \"environment fully passes\" statement. rendering_detail_state stays excluded on the existing ruling and is not re-proved here."
   ],
-  "next_exact_step": "Daily-runtime product acceptance closeout on branch audit/daily-dev-mainline-product-acceptance-closeout-20261009. (1)-(4) DONE in earlier rounds: the two owning-layer declared-delivery defects are closed at P0 smart_core and P1 wave one with no assertion relaxed; the creation/edit capability binding and the workbench minimal-evidence gap are closed by one governed daily-runtime refresh plus one list-scope walk; the registered system_admin config-face decision is resolved by evidence as designed behaviour with no code change; the freeze round surfaced a G1 self-fingerprint drift (refreshed through its governed entry), the external read-only independent review substantiated the P0/P1 and acceptance claims, and its one blocking finding (an unsubstantiated targeted-ORM PASS claim) was resolved by re-running the governed target at the frozen candidate (25/25 with a receipt). (5) DONE THIS ROUND: the single exact-head ci.local.quick passed at d1511b51; the four required remote checks (public_guard, merge_policy_gate, professional_quality_gate, frontend_release_gate) all passed on that head; PR #634 was merged through make pr.merge (squash, --match-head-commit) into main as d690653d with an empty tree diff against the candidate, and the merge triggered no product deployment. (6) NEXT: the owner logs into the daily runtime (http://1.95.85.92:18081, sc_demo, wutao/123456) and rules the product-delivery boundary. The environment DENY rebuild/snapshot blocker stays a separately owned topic and is not re-proved here. Four-state: 批次验收 done / 主线集成 done (PR #634 -> d690653d) / 版本发布 daily runtime candidate only (served 5220db8b, product content identical to the merged mainline) / 产品交付 pending the owner's login verification.",
+  "next_exact_step": "Nightly CI repair round on branch audit/daily-dev-mainline-product-acceptance-closeout-20261009. The 2026-10-09 nightly schedule failed backend_test_suite, professional_quality_gate, frontend_release_gate and release_candidate_gate (cascade). Root causes were located from the remote logs and closed locally with no assertion relaxed: guard registry module-form wiring re-seeded, collaboration guard aligned to the runtime-contract page-size ownership plus two negative cases, eslint dead code removed, and the P0 identifier-only-row classification fixed with a baseline-then-injection test. Local equivalent evidence: sc_gate/smart_construction_core 0 failed of 352 tests, verify.guard.registry AUDIT PASS, collaboration guard 32 tests OK, test_view_orchestrator 52 tests OK, workspace lint 0 errors. NEXT: commit this ledger record, push the candidate, open the PR, let the four required GitHub checks run on the exact head, then merge through the owner CI-pass rule. The seven uc4_native_lowcode failures on sc_dev_demo are outside the nightly gate and are not caused by this repair; they remain a separately owned topic. Product delivery still waits on the owner login verification on the daily runtime.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -1154,6 +1182,18 @@
       "post_merge_readback": "PR #634 state=MERGED mergedAt=2026-10-09T19:10:43Z mergeCommit=d690653d base=main (was f9b03faa); git diff --stat d1511b51 d690653d is empty so the squashed tree is identical; main is not an ancestor of the candidate, which is expected for squash; the merge does not trigger a product deployment",
       "product_identity": "git diff --stat 5220db8b (served daily revision) d1511b51 -- addons/ frontend/ config/ make/ scripts/ is empty: the merged mainline carries exactly the product content already served and accepted on the daily runtime (frontend_build_sha256 1f46b033...). Only docs/.agent/evidence paths differ, so no runtime re-alignment and no matrix re-collection is required.",
       "ledger_sync": "the post-merge run/ledger bookkeeping stays on the branch: per the execution rules a standalone .agent/+docs-only candidate is denied by pr.merge.local_quick_gate, so these records ride along with the next product candidate or a terminal retirement instead of opening a bookkeeping-only PR"
+    },
+    "nightly_ci_repair": {
+      "report": "GitHub nightly schedule 2026-10-09 (UTC) failed four checks. Three are root causes: backend_test_suite (1 of 471 tests), professional_quality_gate (guard registry audit), frontend_release_gate (collaboration guard unit + eslint 2 errors). release_candidate_gate failed only as the downstream cascade of those three (it waits for the exact-head candidate checks).",
+      "root_cause": {
+        "professional_quality_gate": "make/guards.mk wires scripts.verify.<module> in module form, which guard_registry_audit.classify() did not match as a file reference, so test_product_view_structure_contract.py was reported both unwired and stale orphan. Data-only correction through the governed seed entry; no tool change and no assertion relaxed.",
+        "frontend_release_gate": "the collaboration guard still asserted searchCollaborationUsers({ intent, query, limit: 20 }) although the runtime contract hard lock removed the frontend page-size argument (backend collaboration_users.py resolves limit or 20, capped at 50). The guard now requires the resolved exact intent and forbids re-injecting a frontend fallback page size, with two negative cases. The eslint failures were a dead type and an unread counter.",
+        "backend_test_suite": "structural_form_declarations() required bool(semantic_keys.intersection(row)) before classifying a fields row as a sparse policy, so an identifier-only row such as {\"name\": \"name\"} (produced by the field-policy parity closeout, still consumed as declared membership) fell through to a structure declaration and reported a false LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW conflict; compatibilityDependencies became non-empty. The P0 unit test and six P1 declaration bodies already document identifier-only rows as sparse policy, so the extra conjunct was the implementation drift."
+      },
+      "fix": "addons/smart_core/core/form_structure_authority.py drops the extra conjunct; addons/smart_core/tests/test_view_orchestrator.py gains a baseline-then-injection negative case (prove the baseline is clean, then inject sequence and prove detection). A runtime scan of the 289 declared contracts found exactly one affected body (id 4, the payment facts body), so the blast radius is pinned.",
+      "local_equivalent": "sc_gate/smart_construction_core full label on sc_dev_demo: 0 failed, 0 error(s) of 352 tests; verify.guard.registry AUDIT PASS (1317 referenced, 87/87 orphans acknowledged, 187/187 unwired dispositioned); verify.frontend.professional_collaboration.unit 32 tests OK; workspace eslint 0 errors (70 warnings); addons/smart_core/tests/test_view_orchestrator.py 52 tests OK.",
+      "family_failures_not_caused": "The uc4_native_lowcode classes TestExpenseClaimNativeLowcode (4 failures) and TestTaxDeductionNativeLowcode (3 failures) fail on sc_dev_demo. A HEAD-versus-fix A/B on the same governed container produced an identical failure set with identical assertions, and those classes carry no sc_gate/sc_smoke tag (the nightly job runs only TEST_TAGS=sc_gate/<module>,sc_smoke/<module>), so they are outside the nightly gate and are not caused by this repair. They stay a separately owned topic and were not modified.",
+      "repair_commit": "c93036c4"
     }
   },
   "continuation": {
