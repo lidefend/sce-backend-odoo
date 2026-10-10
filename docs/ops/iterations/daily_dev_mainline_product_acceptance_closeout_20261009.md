@@ -2366,3 +2366,41 @@ P4 `scripts/verify`（验证工具，不改产品）
 - B4（82 个无 notebook/page 作用域模型）、B5（3 个非 chatter 工作台表面）仍为口径问题；覆盖债
   （140 个 @tagged 分组）仍由登记表机器跟踪。
 - 唯一开放的产品交付项仍为**所有者登录核对**（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`）。
+
+### 24-续（2026-10-10 本轮续）：运行态审计回执铸造 + 环境残留核查
+
+**一、把最后一条 `not_run` 关闭（受管流程，非重跑取证）**
+
+`verify.form_structure_contract_runtime.audit` 之前只有远端审计报告、没有回执，索引里始终是 `not_run`
+（下轮还会再跑一遍）。本轮按受管流程铸造其回执：`make agent.run.begin` → 受管远端审计
+（注册工作树 `e885d590` 上 `ODOO_CONTAINER=sc-backend-odoo-dev-odoo-1 DB_NAME=sc_demo
+bash scripts/verify/form_structure_contract_runtime_audit.sh`）→ `make agent.run.record`（163 个受审模型契约，
+日志 `.runtime/eff/rec/closeout-20261010-layout-policy-authority/rec_form_structure_contract_runtime_audit.log`）。
+
+**这次重跑的附加价值不是"再证一遍"，而是身份未漂移的独立确认**：新报告与第 23 轮报告**逐字节一致**
+（报告 sha256 `32c01d74e8a129e2…` 不变；`boundary_ok 163`、`81/82`、语义分组 163、
+`attachment/timeline 160/160`），即 served 运行态在两次审计之间没有发生任何契约面漂移。
+
+**二、环境残留核查（只读）**
+
+| 项 | 结论 |
+| --- | --- |
+| 本地 SSH 端口转发 / 隧道 | 无（`ps` 无 `ssh -L/-R/-D` 进程） |
+| 工作区内残留 odoo / vue-tsc / node verify 进程 | 无 |
+| 本机容器 | 仅注册的 `sc-local-dev-*`（4 个，healthy） |
+| 工作树 | 单工作树 `f3a89714`（符合"最多两个工作树"约束） |
+| 本地分支 | `main`、本审计分支、`release/daily-runtime-mainline-daecaafc`（受管清理入口拒绝 `release/*` 保护前缀，已登记残差） |
+| 远端审计临时目录 | 本轮自建 `/tmp/audit_continue` 与第 23 轮 `/tmp/audit_e885d590` 已回收（报告已归档入仓） |
+
+**三、复用索引终态**
+
+| 指标 | 本轮起点 | 终态 |
+| --- | --- | --- |
+| `reusable` | 32 | **46** |
+| `stale` | 8 | **1**（nav browser，已记录影响面分析，非未解释项） |
+| `not_run` | 7 | **0** |
+
+**四、边界（不变）**
+
+未 push、未合并、未改产品代码、未放宽任何断言；B4/B5 与覆盖债不变；车道级重建/快照 DENY 不变；
+唯一开放产品交付项仍为所有者登录核对（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`）。
