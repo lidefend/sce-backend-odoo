@@ -61,7 +61,9 @@
         "scripts/ci/test_trusted_scan_scope.py",
         "scripts/ci/trusted_scan_scope.py",
         "scripts/ops/agent_run_context.py",
-        "scripts/verify/frontend_dev_incremental.py"
+        "scripts/verify/frontend_dev_incremental.py",
+        "addons/smart_core/core/unified_page_contract_v2_runtime.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_runtime.py"
       ],
       "kind": "offline"
     },
@@ -211,7 +213,9 @@
       "target": "verify.contract.structure_lock",
       "kind": "offline",
       "inputs": [
-        "scripts/ci/enforce_contract_structure_lock.py"
+        "scripts/ci/enforce_contract_structure_lock.py",
+        "addons/smart_core/core/unified_page_contract_v2_runtime.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_runtime.py"
       ]
     },
     "product_view_structure_contract_unit": {
@@ -221,7 +225,9 @@
         "scripts/verify/product_view_structure_contract_guard.py",
         "scripts/verify/test_product_view_structure_contract.py",
         "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
-        "make/guards.mk"
+        "make/guards.mk",
+        "addons/smart_core/core/unified_page_contract_v2_runtime.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_runtime.py"
       ],
       "kind": "offline"
     },
@@ -504,10 +510,12 @@
         "scripts/verify/form_structure_contract_runtime_audit.sh",
         "scripts/verify/form_structure_contract_runtime_audit.py",
         "scripts/verify/test_form_structure_contract_runtime_audit.py",
-        "addons/smart_core/core/unified_page_contract_v2_assembler.py"
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/core/unified_page_contract_v2_runtime.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_runtime.py"
       ],
       "readback": {
-        "artifact": ".runtime/final-acceptance/daily-deployed/form_structure_contract_runtime_audit_330fb36d.json"
+        "artifact": ".runtime/final-acceptance/daily-deployed/form_structure_contract_runtime_audit_e885d590.json"
       }
     },
     "form_structure_contract_guard": {
@@ -517,8 +525,29 @@
         "addons/smart_core/core/unified_page_contract_v2_assembler.py",
         "scripts/verify/form_structure_contract_standardizer_guard.py",
         "scripts/verify/form_structure_contract_runtime_audit.py",
-        "scripts/verify/test_form_structure_contract_runtime_audit.py"
+        "scripts/verify/test_form_structure_contract_runtime_audit.py",
+        "addons/smart_core/core/unified_page_contract_v2_runtime.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_runtime.py"
       ]
+    },
+    "unified_page_contract_v2_runtime_unit": {
+      "target": "verify.unified_page_contract.v2.runtime",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_runtime.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_runtime.py",
+        "scripts/verify/unified_page_contract_v2_runtime_guard.py",
+        "docs/architecture/unified_page_contract_v2/fixtures/runtime_contract_source.json"
+      ]
+    },
+    "business_config_formal_list_unit": {
+      "target": "verify.business_config.formal_list.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/tests/test_unified_page_contract_v2_runtime.py",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py"
+      ],
+      "note": "carried layer: the P0 boundaries suite asserts the producer side of layoutPolicy."
     }
   },
   "blockers": [
@@ -526,10 +555,10 @@
     "Known coverage debt, now machine-tracked instead of silent: 140 declared @tagged groups (274 declarations) have no governed selection entry. The registry records each with an owner and a 2026-12-31 review deadline; the audit fails closed on any new un-gated group so the debt can only shrink. Wiring them is follow-on work, not this round.",
     "Product delivery pending the owner's own login verification on the daily dev runtime. The runtime now serves mainline daecaafc, which includes PR #635's contract-projection fix for the payment-basis (payment facts) body; the served sealed contract reports compatibilityDependencies=[] and no LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW, and the readonly probe passed 39/39 check units. This is a human acceptance step, not an engineering gap. Credentials: wutao/123456, db sc_demo.",
     "RESOLVED and DEPLOYED, still pending the owner's login: the owner-reported form-surface defect (V1 declared container presentation dropped by the renderer; V2 hardcoded 协作记录 in the P0 default surface + frontend legacy fallbacks) is fixed, and its successor defect - the declared modifier value domain being resolved by two different implementations - is fixed systemically in 514c4c11 (see evidence.round_20261010_declared_modifier_value_domain_single_authority). The served daily runtime now carries both (source_revision 514c4c11, frontend_build_sha256 bc5a0cac, entry index-BpKZqOGC.js) and the declaration-driven probe passes at 1440/390 in light and dark. The item stays open only for the owner's own login confirmation of the restored region.",
-    "ATTRIBUTED (was the 'unattributed baseline' blocker; see evidence.round_20261010_runtime_audit_baseline_attribution). The runtime form-structure audit's broad baseline is now layer-classified by a read-only 163-model contract rebuild on the served runtime: (B1) 'slots is required'=60 is a P0 smart_core self-contradiction - ui_contract_v2.py:2687's native_authority short path returns slots:[] by its own declared layoutPolicy=container_tree_authority while unified_page_contract_v2_runtime.py:444-446 unconditionally requires slots; the 60 match exactly and are the only container_tree_authority models. (B2) 'layout projects field outside structure'=2024/158 models is a P0 smart_core projection split - the structure slot field universe comes from the business-operation profile while the layout field universe comes from the projected native form arch, so the 'structure covers layout' invariant cannot hold by construction; the dominant out-of-structure fields are native-arch/base/approval fields, so P1 is not the owner. (B3) missing_group_semantics=163 was two independent defects and is now RESOLVED and DEPLOYED - see evidence.round_20261010_contract_authored_section_heading_producer: (B3a, P0 smart_core, real product debt) the contract-authored heading channel semanticTitle had consumers (nativeBusinessSection.ts:96, NativeFormTreeRenderer.vue:892, schema.ts:737) but no producer, because WIP commit 2ec2e2df deleted the only call to _standardize_form_container_semantics and its replacement writes formStructureRole only. The producer is restored and _is_generic_container_label's ''-in-generic defect is fixed; the served runtime audits at projected_semantic_group_models=163 with 996/996 group nodes authored and missing_group_semantics 0, and 81/163 models are now contract_standardized. (B3b/B3c/B3d, P4 verification tools, no product change) the audit's is_unlabeled_group predicate, its notebook metric filtering on a carrier that exists nowhere in the repository, and the standardizer guard's failure to assert production wiring are all fixed, with pre/post negative baselines recorded. The residual 82 contract_needs_attention models are exactly (B4) the no-notebook/no-page scope set plus (B5) the 3 non-chatter workspace surfaces, which remain scope questions rather than product debt. (B4) missing_contract_notebook/page=82 is a scope question, not product debt: all 82 flagged models have notebook_count=0 and page_count=0 while the other 81 models have notebooks. (B5) the three collaboration gaps are 3 non-chatter workspace surfaces (sc.company.project.refund.workspace, sc.current.account.workspace, sc.team.loan.deduction.workspace) - also a scope question. This batch's two owned facets are 0 under both readings, so none of this is a batch regression. No code was changed and no assertion was loosened; B1 needs an owner ruling between (a) honour the declared layoutPolicy in the validator and (b) publish a minimal slot set, and B2 needs its own project.",
+    "RESOLVED and DEPLOYED (B1+B2 were one P0 validator defect; see evidence.round_20261010_layout_policy_membership_authority). The runtime form-structure validator did not recognise the structure-membership authority the producer declares, so B1 ('slots is required'=60) and B2 ('layout projects field outside structure'=2024/158 models) were the same defect. B1 was not a choice: ui_contract_v2.py declares layoutPolicy=container_tree_authority with empty slots/fieldRoles (asserted by its own P0 tests), and the declared consumer frontend/apps/web/src/app/contracts/v2/schema.ts::decodeFormStructureContract forbids slots/columns/fieldRoles for that policy - so option (b) 'publish a minimal slot set' would have produced a contract the consumer rejects, leaving option (a) 'honour the declared layoutPolicy' as the only declaration-valid repair. B2's round-21 attribution was corrected: the producer is self-consistent (a read-only 163-model probe measured refs_not_in_layout=0/163 and layout-outside-slots fields inside the governance universe=6/163; every other flagged field is a native/technical/projection residual), so the reverse assertion was a validator over-assertion, not a projection split and not P1. The validator now (1) requires slots only when the declaration does not delegate membership to the tree, (2) newly rejects a tree-authority structure that also publishes slots/columns/fieldRoles (mirroring the declared consumer), and (3) scopes the reverse assertion to governed fields of non-tree-authority policies. No declaration-backed assertion was relaxed. The served daily runtime at e885d590 audits boundary_ok 163 / boundary_violation 0 (was 5/158) with projected_semantic_group_models 163, contract_standardized 81 and zero diffs on every non-boundary column. (B3) missing_group_semantics=163 was two independent defects and is RESOLVED and DEPLOYED - see evidence.round_20261010_contract_authored_section_heading_producer: (B3a, P0 smart_core, real product debt) the contract-authored heading channel semanticTitle had consumers (nativeBusinessSection.ts:96, NativeFormTreeRenderer.vue:892, schema.ts:737) but no producer, because WIP commit 2ec2e2df deleted the only call to _standardize_form_container_semantics and its replacement writes formStructureRole only. The producer is restored and _is_generic_container_label's ''-in-generic defect is fixed; the served runtime audits at projected_semantic_group_models=163 with 996/996 group nodes authored and missing_group_semantics 0. (B3b/B3c/B3d, P4 verification tools, no product change) the audit's is_unlabeled_group predicate, its notebook metric filtering on a carrier that exists nowhere in the repository, and the standardizer guard's failure to assert production wiring are all fixed, with pre/post negative baselines recorded. The residual 82 contract_needs_attention models are exactly (B4) the no-notebook/no-page scope set plus (B5) the 3 non-chatter workspace surfaces, which remain scope questions rather than product debt. This batch's two owned facets are 0 under both readings, so none of this is a batch regression.",
     "Verification-tool path debt (registered, NOT fixed in this round, no gate relaxed): make verify.form_structure.contract cannot pass in-repo because its member verify.user_form.preference.boundary_guard hardcodes addons/smart_construction_custom/models/user_preferences.py and reads it directly; that module does not exist in this repository (git log --all -- addons/smart_construction_custom is empty, absent on origin/main too) - it is a customer-custom addon outside the repository boundary, mounted and installed at runtime (the governed runtime guard scripts/verify/daily_dev_customer_addons_runtime_guard.py checks it live). Local reproduction: FileNotFoundError. Report per-target evidence only; the owning layer is that guard's owner."
   ],
-  "next_exact_step": "The B3 heading channel is repaired and live: the served daily runtime (sc-root:/opt/projects/repos/sce-product-odoo at 330fb36d, database sc_demo, http://1.95.85.92:18081/) now audits 163/163 models with authored group headings and 81/163 contract_standardized, while B1 (60) and B2 (2024) are unchanged. Two P0 owner rulings remain before any further code change and are NOT pre-empted: (B1) make the validator honour the declared layoutPolicy=container_tree_authority or publish a minimal slot set for the 60 models, and (B2) derive the structure slot field universe from the projected layout it governs so the 'structure covers layout' invariant can hold. Two scope questions remain non-product-debt: (B4) notebook/page on the 82 no-notebook/no-page models and (B5) collaboration on the 3 non-chatter workspace surfaces. The product-delivery item is the owner's own login verification (wutao/123456, sc_demo, http://1.95.85.92:18081/): /f/project.project/581?menu_id=379&action_id=506 renders the 6 declared section headings, the 6 declared visible and 5 declared-hidden buttons, and the declared draft hint, with the heading channel now served from the contract. Nothing has been pushed to origin or the public mirrors; no further runtime write is pending.",
+  "next_exact_step": "B1 and B2 were the same P0 validator defect (the runtime form-structure validator not honouring the declared layoutPolicy) and are fixed, deployed and verified: the served daily runtime at e885d590b314d310de20a373c4f4c152996e3daf audits boundary_ok 163 / boundary_violation 0, with 81/163 contract_standardized and zero diffs on every non-boundary column. Remaining registered work: (B4) notebook/page on the 82 no-notebook/no-page scope models and (B5) collaboration on the 3 non-chatter workspace surfaces - both scope questions, not product debt; the coverage-debt registry (140 tagged groups) is machine-tracked follow-on work; and whether governance should declare a more complete field universe for the native tree (outside-and-governed = 6/163) is its own topic. The product-delivery item is the owner's own login verification (wutao/123456, sc_demo, http://1.95.85.92:18081/). Nothing has been pushed to origin or the public mirrors.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -1645,6 +1674,20 @@
         ],
         "report": ".runtime/final-acceptance/daily-deployed/form_structure_contract_runtime_audit_330fb36d.json (before: form_structure_contract_runtime_audit_1066b422.json)"
       }
+    },
+    "round_20261010_layout_policy_membership_authority": {
+      "question": "Owner ruling B: make the runtime form-structure validator honour the declared layoutPolicy. Round 21 registered B1 ('slots is required'=60) as a choice between (a) honour the declared layoutPolicy and (b) publish a minimal slot set, and B2 ('layout projects field outside structure'=2024) as needing its own project. Is B1 a real choice, and does its repair require B2?",
+      "identity": "workspace branch audit/daily-dev-mainline-product-acceptance-closeout-20261009, code commit e885d590b314d310de20a373c4f4c152996e3daf (clean at commit time); served daily runtime sc-root:/opt/projects/repos/sce-product-odoo at the same sha, database sc_demo, entry http://1.95.85.92:18081/, frontend unchanged (frontend_build_sha256 bc5a0cac181d527072276903ac45f5011a9a8f8a40422f317a96fcac772f906e).",
+      "root_cause": "Both defects are the same P0 validator defect in addons/smart_core/core/unified_page_contract_v2_runtime.py::find_form_structure_contract_issues: it did not recognise the structure-membership authority the producer already declares. Three independent declarations agree - (1) docs/architecture/native_first_form_structure_authority_v1.md (2026-09-16 revision): layoutContract.containerTree carries the single effective tree and formStructureContract must not create a second body tree; (2) the declared consumer frontend/apps/web/src/app/contracts/v2/schema.ts::decodeFormStructureContract forbids slots/columns/fieldRoles when layoutPolicy === 'container_tree_authority' and only asserts the slots -> layout direction; (3) the producer unified_page_contract_v2_assembler.py::_project_form_structure_to_layout prunes slot fieldRefs to fields owned by the final native tree, so it guarantees slots is a subset of tree and never the reverse. B1 is therefore not a choice: the ui_contract_v2.py native_authority short path declares layoutPolicy=container_tree_authority with empty slots/fieldRoles and two P0 tests assert exactly that shape, so 'publish a minimal slot set' (option b) would emit a contract the declared consumer rejects. B2's round-21 attribution ('projection split') was wrong: the producer is self-consistent; the validator asserted an invariant no producer can hold.",
+      "runtime_probe": "New read-only probe (reusable, .runtime/agent-runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/form_structure_runtime_audit_baseline_attribution/probe_sources/fs_coverage_probe.py, raw output coverage_probe_raw.txt) classified the reverse-coverage set on all 163 served models: refs_not_in_layout = 0/163 (the declared direction holds everywhere), layout fields outside the slots that are also in the governance field universe = 6/163, and every remaining flagged field is a native/technical/projection residual (source_created_by 62, source_created_at 56, active 44, attachment_ids 24, currency_id 24, sequence 9). By policy: container_tree_authority 1498, native_authority 547, overview_then_task_slots 156.",
+      "fix": "Runtime module addons/smart_core/core/unified_page_contract_v2_runtime.py: (1) new FORM_STRUCTURE_TREE_MEMBERSHIP_POLICIES plus a tree_membership_authority resolution point; (2) 'formStructureContract.slots is required' is asserted only when the declaration does not delegate membership to the tree (B1 60 -> 0); (3) NEW strengthening mirroring the declared consumer: a tree-authority structure that also publishes slots/columns/fieldRoles is rejected, because it would split body ownership in two; (4) the reverse coverage assertion is scoped to governed fields of non-tree-authority policies ('a governed field the declared slots failed to attribute'), because the single effective tree legitimately carries native/technical/residual nodes the governed field universe never owned (B2 2024 -> 0). No declaration-backed assertion was relaxed: slot -> layout projection, governance field universe, internal-field and duplicate-reference checks are byte-identical.",
+      "test_changes": "addons/smart_core/tests/test_unified_page_contract_v2_runtime.py 19 -> 23 tests, baseline-before-injection order: test_container_tree_authority_structure_publishes_no_slots (baseline asserts no issues), test_container_tree_authority_structure_forbids_published_slots (injection detected), test_form_structure_contract_rejects_governed_layout_fields_outside_structure, test_slot_structure_tolerates_ungoverned_native_tree_fields. The third replaces the previous test_form_structure_contract_rejects_layout_fields_outside_structure, whose fixture declared no layoutPolicy at all (the pre-2026-09-16 model where the structure contract was the body authority); the rewritten case keeps equal strength (a governed field the declared structure failed to attribute is still an error) and no check was deleted.",
+      "local_evidence": "EXIT=0, all non-zero: verify.unified_page_contract.v2.runtime (23 + 119 tests, guard score=6), verify.form_structure.contract.guard (12 tests + standardizer guard), verify.business_config.formal_list.unit (128 + 9 + 52 + 5 tests), verify.form_view.native_structure.boundary_guard, verify.view.orchestration_boundary_guard, verify.form_container_presentation.guard (46 tokens), verify.product_view_structure.contract.unit (25 tests), ci.local.iteration PASS.",
+      "runtime_verification": "Managed lane PASS: daily.runtime.candidate.bundle_sync (old_sha 330fb36d -> source_sha e885d590, origin_main_mutated=false) -> daily.runtime.source_revision.align (served.source_revision=e885d590, database=sc_demo) -> daily.runtime.published_face.converge (module_upgrade_returncode=0, upgrade_mode=run, upgrade_modules=[smart_core], 90/90 menus on both products, snapshot daily-navigation-*-e885d590b314). Post-refresh 163-model audit: boundary_ok 163 / boundary_violation 0 (was 5/158), 'slots is required' 60 -> 0, 'layout projects field outside structure' 2024 -> 0, projected_semantic_group_models 163 (no regression), contract_standardized/needs_attention 81/82 (B4/B5 unchanged), attachment/timeline 160/160, and zero per-model diffs on every non-boundary column.",
+      "impact_scope": "The change is confined to find_form_structure_contract_issues and its new constant. That function has no production call site: grep finds only addons/smart_core/tests and scripts/verify/{unified_page_contract_v2_runtime_guard,form_orchestration_business_usability_audit,form_structure_contract_runtime_audit}.py. Producers and frontend are unchanged, so the rendered surface cannot change and the round-22 1440 browser evidence (/f/project.project/581?menu_id=379&action_id=506 PASS) is reused rather than re-run.",
+      "layer_correction": "B1 owning layer unchanged (P0 smart_core: the validator contradicted its own producer). B2 owning layer corrected from 'P0 projection split' to 'P0 smart_core validator over-assertion' - no producer defect, no product-behaviour change, no P1 involvement. Labels were corrected in the ledger only; no commit history was rewritten.",
+      "follow_on_not_pre_empted": "Whether governance should declare a more complete field universe for the native tree remains its own question (outside-and-governed = 6/163 today). It is an observable governance choice, not a contract defect.",
+      "report": ".runtime/final-acceptance/daily-deployed/form_structure_contract_runtime_audit_e885d590.json"
     }
   },
   "continuation": {
@@ -1674,7 +1717,10 @@
   "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced.",
   "stage_identity": {
     "kind": "iteration",
-    "head": "330fb36d999d97f7ef82ac3f1f09e3bdb7b4e1bc",
-    "dirty_scope": []
+    "head": "e885d590b314d310de20a373c4f4c152996e3daf",
+    "dirty_scope": [
+      "docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md",
+      ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json"
+    ]
   }
 }

@@ -2175,3 +2175,120 @@ P4 `scripts/verify`（验证工具，不改产品）
 - 仍待所有者裁决的 P0 仅剩两项：**B1**（校验尊重 `layoutPolicy` / 投影最小 slot）、
   **B2**（由被投影布局派生 slot 字段域）。本轮不预先占用其结论。
 - 唯一开放的产品交付项仍为**所有者登录核对**（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`）。
+---
+
+## 23. 第 23 轮（2026-10-10）：B1/B2 同一根因收口 —— 运行时校验器按已声明 `layoutPolicy` 尊重成员权威
+
+**一、裁决与定性**
+
+所有者裁决 **B（「校验尊重已声明的 layoutPolicy」）**。本轮把第 21 轮登记的 B1/B2 作为**同一根因**处理：
+`addons/smart_core/core/unified_page_contract_v2_runtime.py::find_form_structure_contract_issues`
+在两条断言上**不承认生产者已声明的结构成员权威**。
+
+判定依据（三源一致，非取舍）：
+
+1. **架构声明**：`docs/architecture/native_first_form_structure_authority_v1.md`（2026-09-16 修订）——
+   「`layoutContract.containerTree` 承载唯一有效树，`formStructureContract` 不另造正文树」。
+2. **已声明消费者**：`frontend/apps/web/src/app/contracts/v2/schema.ts::decodeFormStructureContract`——
+   对 `layoutPolicy === 'container_tree_authority'` **明确禁止** `slots` / `columns` / `fieldRoles`
+   （`'container tree authority forbids independent structural slots, columns and field membership'`），
+   且只做 `slots → layout` **单向**投影校验（`references field not projected by layout`），无反向断言。
+3. **生产者方向**：`unified_page_contract_v2_assembler.py::_project_form_structure_to_layout`
+   ——「Bind the semantic structure to fields owned by the final native tree」，即把 slot 的 `fieldRefs`
+   **裁剪到最终原生树已有字段** ⇒ 生产者保证 `slots ⊆ tree`，从不保证 `tree ⊆ slots`。
+
+**B1 因此不是「(a) 还是 (b)」的取舍**：`ui_contract_v2.py` 的 native_authority 短路径按其声明输出
+`layoutPolicy=container_tree_authority` + `slots:[]` + `fieldRoles:{}`，P0 测试
+（`test_form_structure_contract_uses_native_mode_without_entry_authority`、
+`test_native_authority_can_publish_task_presentation_without_configured_sections`）逐字断言该形状；
+若改走「发布最小 slot 集」，已声明消费者会**拒收**该契约。(b) 在声明上不可行，(a) 被强制。
+
+**B2 的归属纠正**：`layout projects field outside structure` 不是「生产者覆盖缺口」，而是
+**P0 校验器越界断言**（无生产者缺陷、无产品行为变化）。运行态 163 模型只读分类（本轮新增探针
+`probe_sources/fs_coverage_probe.py`）给出判决性数据：
+
+| 分类口径 | 结果 |
+| --- | --- |
+| `refs_not_in_layout`（slot 引用字段缺布局，即声明方向） | **0 / 163 模型**（生产者 100% 守约） |
+| 越界字段 ∩ 治理字段域（真实覆盖缺口候选） | **6 / 163**（其余全部非治理） |
+| 越界字段样例（未受治理） | `source_created_by`(62)、`source_created_at`(56)、`active`(44)、`attachment_ids`(24)、`currency_id`(24)、`sequence`(9) |
+| 按 policy 分布 | `container_tree_authority` 1498、`native_authority` 547、`overview_then_task_slots` 156 |
+
+即：越界字段全部是**原生技术/投影/残留字段**，任何策略下都合法地由唯一有效树承载。
+
+**二、修复（P0 `addons/smart_core/core/unified_page_contract_v2_runtime.py`）**
+
+1. 新增 `FORM_STRUCTURE_TREE_MEMBERSHIP_POLICIES = {"container_tree_authority"}` 与
+   `tree_membership_authority` 判定，作为「成员权威」的单一解析点。
+2. `formStructureContract.slots is required` 只在**非树权威**策略下断言（B1：60 → 0）。
+3. 新增**镜像断言**（与已声明消费者同源，属加强）：树权威结构不得并发发布
+   `slots` / `columns` / `fieldRoles`，否则正文所有权被拆成两份 → 契约 fail closed。
+4. 反向断言收敛为「**受治理字段必须被声明结构归属**」：仅当策略非树权威、且字段属于
+   `sourceAuthority.governance_source.fieldNames` 时才判越界；原生技术/残留字段由唯一有效树承载
+   （B2：2024 → 0）。**未放宽任何受声明支撑的断言**：`slot → layout` 投影、治理字段域、
+   内部字段、重复引用、来源权威等检查逐字不变。
+
+**三、定向单测（负例先证基线再证注入）**
+
+`addons/smart_core/tests/test_unified_page_contract_v2_runtime.py` 19 → **23 tests**（全 EXIT=0）：
+
+| 用例 | 断言 |
+| --- | --- |
+| `test_container_tree_authority_structure_publishes_no_slots` | 基线：树权威 + 空 slots/fieldRoles ⇒ `issues == []` |
+| `test_container_tree_authority_structure_forbids_published_slots` | 注入：树权威并发 slots ⇒ 被检出（新增断言） |
+| `test_form_structure_contract_rejects_governed_layout_fields_outside_structure` | 注入：受治理字段未被 slot 归属 ⇒ 被检出（原断言按声明改写：声明 `overview_then_task_slots` 并把 `company_id` 纳入治理字段域） |
+| `test_slot_structure_tolerates_ungoverned_native_tree_fields` | 负例：非治理原生字段在树中 ⇒ 不误报 |
+
+第 3 行是本轮唯一改动的既有断言：原用例的 fixture **未声明 `layoutPolicy`**（隐含旧「结构契约即正文权威」模型，
+2026-07-20 基线期），与 2026-09-16 原生优先决策冲突。改写后**强度不降**（仍是「被声明的结构域内字段必须被归属」），
+且未删除任何检查项。
+
+**四、本地非零 L1/L2 证据（全部 EXIT=0）**
+
+- `make verify.unified_page_contract.v2.runtime`（23 tests + 119 tests + guard score=6）
+- `make verify.form_structure.contract.guard`（12 tests + standardizer guard）
+- `make verify.business_config.formal_list.unit`（128 + 9 + 52 + 5 tests）
+- `make verify.form_view.native_structure.boundary_guard` / `verify.view.orchestration_boundary_guard` /
+  `verify.form_container_presentation.guard`（46 tokens）
+- `make verify.product_view_structure.contract.unit`（25 tests）
+- `make ci.local.iteration` PASS（`change_state=dirty`，L1 only）
+
+**五、受管运行态刷新与前后对比（同一 163 模型口径）**
+
+车道：`daily.runtime.candidate.bundle_sync`（PASS，`old_sha=330fb36d`→`source_sha=e885d590`，
+`origin_main_mutated=false`）→ `daily.runtime.source_revision.align`（PASS，重启后
+`served.source_revision=e885d590`、`database=sc_demo`、`frontend_build_sha256=bc5a0cac`）
+→ `daily.runtime.published_face.converge`（PASS，`module_upgrade_returncode=0`、`upgrade_mode=run`、
+`upgrade_modules=["smart_core"]`、90/90 菜单 × 2 产品、快照 `daily-navigation-*-e885d590b314`）。
+
+| 指标 | 修复前 `330fb36d` | 修复后 `e885d590` |
+| --- | --- | --- |
+| `boundary_ok` / `boundary_violation` | 5 / **158** | **163 / 0** |
+| `slots is required`（B1） | **60** | **0** |
+| `layout projects field outside structure`（B2） | **2024** | **0** |
+| `projected_semantic_group_models`（B3） | 163 | 163（不回退） |
+| `contract_standardized` / `contract_needs_attention` | 81 / 82 | 81 / 82（B4/B5 作用域口径不变） |
+| `attachment` / `timeline` | 160 / 160 | 160 / 160 |
+| 非边界列逐模型 diff | — | **0** |
+
+报告：`.runtime/final-acceptance/daily-deployed/form_structure_contract_runtime_audit_e885d590.json`
+（前：`..._330fb36d.json`）。分类探针原始输出：
+`.runtime/agent-runs/.../form_structure_runtime_audit_baseline_attribution/coverage_probe_raw.txt`。
+
+**六、影响面与复用判定**
+
+- 改动仅落在 `find_form_structure_contract_issues`（+ 其新增常量）。该函数**无生产调用点**：
+  `grep find_runtime_guard_issues|find_form_structure_contract_issues` 命中仅 tests 与
+  `scripts/verify/{unified_page_contract_v2_runtime_guard,form_orchestration_business_usability_audit,form_structure_contract_runtime_audit}.py`。
+- 因此**渲染面不可能变化**（生产者与前端均未改），第 22 轮的 1440 浏览器证据
+  （`/f/project.project/581?menu_id=379&action_id=506` PASS）继续有效并按规则复用，不重跑矩阵。
+- B1/B2 的责任层修正：B1 = P0 `smart_core` 校验器与生产者自相矛盾；B2 = P0 `smart_core`
+  **校验器越界断言**（非生产者缺口、非 P1）。不因标签改写提交历史。
+
+**七、边界**
+
+- 本轮为 P0 产品代码变更，已按既有受管入口重建/刷新运行态并复验；**未 push**、未合并、未标记整体目标完成。
+- B4（82 个无 notebook/page 作用域模型）与 B5（3 个非 chatter 工作台表面）仍为口径问题，未变。
+- 独立于本轮的后续专题（不占用本轮结论）：「治理是否应为原生树字段声明更完整的字段域」——
+  当前 `outside ∩ governance = 6/163`，属可观测的治理选择，非契约缺陷。
+- 唯一开放的产品交付项仍为**所有者登录核对**（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`）。
