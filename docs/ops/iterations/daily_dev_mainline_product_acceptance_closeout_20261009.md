@@ -1988,3 +1988,93 @@ PR head == `EXPECTED_HEAD` == 本地 HEAD，`pr.merge.local_quick_gate` 均走 *
 - 边界：工程侧仍在 `514c4c11` 闭合且已服务；本轮**未 push**、未合并、未标记整体目标完成。
   唯一开放的产品交付项仍为**所有者登录核对**（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`，
   `/f/project.project/581?menu_id=379&action_id=506`）。B1/B2 的修复**不在本轮**，需所有者对方向 (a)/(b) 与立项裁决后再动。
+
+## 第 21 轮：更正 B3 定性 —— `semanticTitle` 通道「有消费端、无生产端」+ B4/B5 定性
+
+提交：仅台账/文档（本分支，未 push）。**本轮修正第 20 轮的一处不完整结论**，并补齐 B4/B5。
+取证：静态代码事实 + git 历史 + 既有运行态审计报告与只读扫描（不重跑矩阵、不改代码）。
+
+**一、更正：第 20 轮把 B3 定性为「纯 P4 工具缺陷」是**不完整**的**
+
+第 20 轮只证明了审计谓词本身有 bug（该结论仍然成立），但漏掉了让它**恒为真**的真正上游原因。
+本轮查清：`missing_group_semantics`=163 由**两个独立缺陷叠加**产生，其中一个是 **P0 契约生产端缺口**。
+
+**二、B3a（P0，真实契约缺口）：`semanticTitle` 有消费端、无生产端**
+
+- 生产端：`addons/smart_core/core/unified_page_contract_v2_assembler.py:2113`
+  `_apply_semantic_container_annotation()` 会写入 `node["semanticTitle"]` 并打上
+  `sourceAuthority.runtime_carrier = "business_form_semantic_label_standardizer"`。
+- 但其唯一调用者 `_standardize_form_container_semantics()`（同文件 `:2161`）**在生产代码中没有任何调用点**：
+  `grep -rn "_standardize_form_container_semantics" addons/` 只命中定义本身；
+  仅两个 verify 守卫直接调用它（`scripts/verify/form_view_native_structure_boundary_guard.py:127`、
+  `scripts/verify/form_structure_contract_standardizer_guard.py:184/223/255/290`）。
+- 历史：调用点在 WIP 提交 `2ec2e2df`（"在途工作，非完成态"）中被**删除**
+  （`-    _standardize_form_container_semantics(container_tree, model=model, view_type=view_type, source=source)`），
+  同时引入 `_apply_form_structure_roles_to_tree`（`:2551`）。但后者只写 `formStructureRole`，
+  **从不写 `semanticTitle`** —— 它是补充机制，不是等价替换。
+- 消费端（前端确实在读它，因此这不是无害死代码）：
+  - `frontend/apps/web/src/pages/contractForm/nativeBusinessSection.ts:96`：章节标题权威序为
+    锚点身份 → 原生 `title/string/label` → `semanticTitle`；文件注释明确写
+    "the governed form-structure `semanticTitle` written by the backend semantic standardizer"，
+    并声明"渲染器无权发明标题；无契约署名标题则不渲染标题"。
+  - `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue:892`；
+    契约 schema 也声明该键 `frontend/apps/web/src/app/contracts/v2/schema.ts:737`。
+  → **前端在等契约署名，后端永不署名**：无原生标题的分组因此渲染为**无标题**，
+    而标准化器本应为它们生成语义标题。
+- 后果链：标准化器未接线 → 出厂契约中 `semanticTitle` 恒缺失 →
+  审计 `semantic_group_count` / `projected_semantic_group_models` **结构性恒为 0** →
+  `missing_group_semantics` 饱和于 163/163。只读扫描证实：163 模型、996 个分组节点，
+  `semanticTitle` 全为 null（含 `construction.contract` 的「金额概览/审批信息/录入信息」等已命名分组）。
+
+**三、B3b（P4 工具）：审计谓词 `""` 缺陷（第 20 轮已证，保留）**
+
+`scripts/verify/form_structure_contract_runtime_audit.py:299` 的 `is_unlabeled_group()` 中
+`generic = {"", node_type(node)}` 含空串，而节点的标签集合对缺失键恒含 `""`，故 `bool(labels & generic)` 恒真。
+确定性反例仍成立。**即使 B3a 修复，本 bug 也会继续误报只带 `title` 的分组**，故仍需修。
+
+**四、B3c（P4 工具）：审计指标引用了不存在的载体名**
+
+`scripts/verify/form_structure_contract_runtime_audit.py:419` 统计 `runtime_carrier == "business_form_default_tab_standardizer"`
+的节点，但该字符串**在全仓库（除审计脚本外）不存在**（`grep -rn default_tab_standardizer` 仅命中审计脚本）；
+真实的分页签标准化器 `_standardize_business_form_default_tabs` **不写任何 `runtime_carrier`**。
+故 `projected_notebook_models` 结构性恒为 0。
+
+**五、B3d（P4 守卫盲点）：守卫无法发现其对象未被接线**
+
+`verify.form_structure_contract_standardizer_guard` 通过，是因为它在**合成 fixture 上直接调用**该函数验证其行为，
+**没有任何"该函数是否被生产代码接线"的断言**。这正是所有者反复指出的类别：
+"守卫都没有发现"。同类盲点也存在于 `form_view_native_structure_boundary_guard`。
+
+**六、B4 定性：`missing_contract_notebook/page`=82 —— 审计期望 vs 每模型原生结构（非产品债）**
+
+82 个命中模型的 `notebook_count` 与 `page_count` **全部为 0**，而另外 81 个模型**有** notebook；
+分页签标准化器仅在有原生 notebook 时补页签（守卫断言 `project.task should not receive generic tabs when its
+runtime contract has no native notebook`）。故这是"是否要求每个业务表单都必须有契约 notebook"的**口径问题**，
+不是一致性的产品缺陷。需口径裁决后方可引用。
+
+**七、B5 定性：三项协作契约缺失=3 —— 同名非 chatter 表面（非产品债）**
+
+3 个模型为 `sc.company.project.refund.workspace`、`sc.current.account.workspace`、`sc.team.loan.deduction.workspace`，
+`native_chatter=false`、`attachments_enabled=false`、`timeline_enabled=false` —— 均为无 chatter 的 **workspace 表面**。
+审计期望所有业务表单都有协作契约，与这 3 个表面的形态不符。同样属口径问题，需裁决。
+
+**八、结论归并（P0 三项 / P4 三项 / 口径两项 / 守卫一项）**
+
+| 项 | 层 | 性质 | 待办 |
+| --- | --- | --- | --- |
+| B1 `slots is required`=60 | P0 `smart_core` | 投影与校验自相矛盾 | 所有者裁决 (a) 校验尊重 `layoutPolicy` / (b) 投影发布最小 slot |
+| B2 `field outside structure` | P0 `smart_core` | 结构字段域与布局字段域分裂 | 立项目：由被投影布局派生 slot 字段域 |
+| **B3a `semanticTitle` 无生产端** | **P0 `smart_core`** | **契约署名通道缺生产端（前端在消费）** | 所有者裁决：重新接线标准化器 / 改由结构契约 slot 标题署名绑定 |
+| B3b 审计谓词 `""` | P4 工具 | 判定缺陷 | 修谓词 + 回归用例 |
+| B3c 载体名不存在 | P4 工具 | 指标恒 0 | 修正载体名或删除死指标 |
+| B3d 守卫盲点 | P4 守卫 | 无法发现未接线 | 增加"生产接线"断言 |
+| B4 notebook/page=82 | 口径 | 审计期望 vs 原生结构 | 口径裁决 |
+| B5 协作=3 | 口径 | 审计期望 vs 非 chatter 表面 | 口径裁决 |
+| 事实 A 守卫路径 | P4 守卫 | 依赖仓库边界外模块 | 既有登记 |
+
+**九、边界**
+
+工程侧仍在 `514c4c11` 闭合且已服务；本轮**未改任何产品代码**（B1/B2/B3a 均属 P0 契约行为变更，
+需所有者对方向裁决），**未 push**、未合并、未标记整体目标完成。
+唯一开放的产品交付项仍为**所有者登录核对**（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`，
+`/f/project.project/581?menu_id=379&action_id=506`）。
