@@ -4565,6 +4565,50 @@ def _append_action_schema(contract: dict[str, Any], actions: dict[str, Any], *, 
         contract["statusContract"]["buttonStatus"].append({"btnId": f"btn.{action_key}", "visible": True, "disabled": False})
 
 
+def _native_layout_button_authority(action: dict[str, Any]) -> dict[str, Any] | None:
+    """Publish the entitlement verdict the native form view already decided.
+
+    A declared native form-layout button only reaches the contract because the
+    native view composition kept it for the acting user: Odoo resolves
+    ``get_view`` per user and removes every node whose declared ``groups`` that
+    user does not satisfy.  The authoritative native occurrence identity
+    (``native_identity.authoritative`` plus a ``native_locator``) is therefore
+    the owner's declaration that this button belongs to the acting user's view,
+    and the platform must publish that entitlement as the consumable verdict.
+
+    Without it the action rule carries no ``allowed``/``enabled``/``disabled``
+    facts, so the consumer's declared-consistency gate can only drop the action
+    and a button the native client renders disappears from the product surface.
+    Visibility in a record state stays with the declared ``invisible`` modifier
+    and is never turned into a permission denial here.
+
+    A node that still declares a group restriction is deliberately left
+    unresolved (fail-closed) instead of being authorized by assumption.
+    """
+    identity = _dict(action.get("native_identity") or action.get("nativeIdentity"))
+    if identity.get("authoritative") is not True or not _text(identity.get("native_locator")):
+        return None
+    declared_groups = (
+        _dict(action.get("payload")).get("groups_xmlids")
+        or action.get("groups_xmlids")
+        or action.get("groups")
+    )
+    if _has_action_constraint_value(declared_groups):
+        return None
+    # An owner's explicit deny stays a deny; the platform only supplies the
+    # entitlement evaluation the rule is missing, never overrides a verdict.
+    declared_allowed = action.get("allowed") if isinstance(action.get("allowed"), bool) else None
+    declared_enabled = action.get("enabled") if isinstance(action.get("enabled"), bool) else None
+    granted = declared_allowed is not False and declared_enabled is not False
+    return {
+        "entitlement_evaluated": True,
+        "authorization_allowed": granted,
+        "allowed": granted,
+        "enabled": granted,
+        "disabled": not granted,
+    }
+
+
 def _governed_platform_action_group_rows(ui: dict[str, Any]) -> list[dict[str, Any]]:
     """Return only P0-local mode actions from their single governed carrier."""
     rows: list[dict[str, Any]] = []
@@ -4626,8 +4670,10 @@ def _append_ui_contract_actions(
         if node_type == "button":
             action = _dict(value.get("action"))
             if action and parent_type != "header" and _text(action.get("level")).lower() != "header":
+                authority = _native_layout_button_authority(action) or {}
                 rows.append({
                     **action,
+                    **authority,
                     "_source_channel": "native_form_layout_button",
                     "sourceWidgetId": _text(value.get("containerId"), "page.root"),
                 })

@@ -611,7 +611,8 @@ verify.view.orchestration_user_surface.browser: guard.prod.forbid check-compose-
 verify.form_view.orchestration_boundary_guard: verify.view.orchestration_boundary_guard
 
 verify.form_structure.contract.guard: guard.prod.forbid
-	@python3 -m py_compile addons/smart_core/core/unified_page_contract_v2_assembler.py scripts/verify/form_structure_contract_standardizer_guard.py scripts/verify/form_structure_contract_runtime_audit.py
+	@python3 -m py_compile addons/smart_core/core/unified_page_contract_v2_assembler.py scripts/verify/form_structure_contract_standardizer_guard.py scripts/verify/form_structure_contract_runtime_audit.py scripts/verify/test_form_structure_contract_runtime_audit.py
+	@python3 -m unittest scripts.verify.test_form_structure_contract_runtime_audit
 	@python3 scripts/verify/form_structure_contract_standardizer_guard.py
 
 verify.form_structure.contract_runtime.audit: guard.prod.forbid check-compose-project check-compose-env verify.form_structure.contract.guard verify.form_view.native_structure.boundary_guard verify.form_container_presentation.guard verify.view.orchestration_boundary_guard verify.form_view.scope.boundary_guard verify.user_form.preference.runtime_audit verify.form_view.scope.runtime_chain_guard verify.form_view.scope.action_projection_audit

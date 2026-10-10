@@ -250,6 +250,37 @@ def presentation_facet_issues(tree: list[dict[str, Any]]) -> list[str]:
     return issues
 
 
+def declared_action_authority_issues(contract: dict[str, Any]) -> list[str]:
+    """Every declared native action occurrence must publish its authority verdict.
+
+    A native form action declared as an authoritative occurrence is part of the
+    acting user's composed view, so the contract owes the consumer a consumable
+    verdict: boolean ``allowed``/``enabled``/``disabled`` plus
+    ``entitlementEvaluated``.  When the projection omits it, the consumer's
+    declared-consistency gate can only drop the action, so a button the native
+    client renders silently disappears from the product surface.  That silent
+    drop must be exposed here instead of passing as "no boundary issue".
+    """
+    issues: list[str] = []
+    action_contract = contract.get("actionContract")
+    rows = action_contract.get("actionRuleList") if isinstance(action_contract, dict) else []
+    for row in rows or []:
+        if not isinstance(row, dict):
+            continue
+        if _text(row.get("sourceChannel")) != "native_form_layout_button":
+            continue
+        identity = row.get("nativeIdentity")
+        if not isinstance(identity, dict) or identity.get("authoritative") is not True:
+            continue
+        key = _text(row.get("backendIdentity") or row.get("actionKey") or row.get("actionId")) or "?"
+        if row.get("entitlementEvaluated") is not True:
+            issues.append(f"declared_action_verdict_missing:{key}")
+            continue
+        if not all(isinstance(row.get(field), bool) for field in ("allowed", "enabled", "disabled")):
+            issues.append(f"declared_action_verdict_incomplete:{key}")
+    return issues
+
+
 def is_runtime_control_field(name: str) -> bool:
     from odoo.addons.smart_core.core.unified_page_contract_v2_runtime import _is_form_structure_runtime_control_field
 
@@ -368,7 +399,11 @@ def audit_model(env, model: str) -> ContractFormAuditRow:
         if isinstance(governance_source, dict)
         else []
     )
-    boundary_issues = runtime_boundary_issues(contract) + presentation_facet_issues(tree)
+    boundary_issues = (
+        runtime_boundary_issues(contract)
+        + presentation_facet_issues(tree)
+        + declared_action_authority_issues(contract)
+    )
     layout_outside_structure = [
         name
         for name in layout_fields

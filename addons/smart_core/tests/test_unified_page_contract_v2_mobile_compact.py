@@ -2765,6 +2765,128 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             {body_nodes[0]["containerId"], body_nodes[1]["containerId"]},
         )
 
+    def test_native_layout_button_publishes_its_authority_verdict(self):
+        """A declared native layout button must carry a consumable verdict.
+
+        The button reaches the contract because the native view composition kept
+        it for the acting user, so the projection owns its entitlement fact.
+        Without ``allowed``/``enabled``/``disabled`` plus ``entitlementEvaluated``
+        the consumer's declared-consistency gate can only drop the action and a
+        button the native client renders disappears from the product surface.
+        A node without native authority, or one that still declares a group
+        restriction, stays unentitled instead of being authorized by
+        assumption.
+        """
+        def layout_button(name, action_extra=None, level="body"):
+            action = {
+                "name": name,
+                "label": name,
+                "kind": "object",
+                "intent": "execute",
+                "level": level,
+                "groups": [],
+                "payload": {"method": name, "type": "object", "groups_xmlids": []},
+                "visible": {"domain": [], "states": [], "attrs": {}},
+            }
+            action.update(action_extra or {})
+            return {"type": "button", "name": name, "action": action}
+
+        native_identity = {
+            "authoritative": True,
+            "canonical_region": "layout",
+            "projection_region": "layout",
+            "native_locator": "/form[1]/sheet[1]/div[1]/button[1]",
+            "occurrence_index": 1,
+            "name": "action_sc_submit",
+            "type": "object",
+        }
+        contract = assembler.assemble_unified_page_contract_v2(
+            {
+                "model": "x.document",
+                "view_type": "form",
+                "fields": {"state": {"name": "state", "type": "selection"}},
+                "views": {"form": {"layout": [{"type": "sheet", "children": [
+                    layout_button("action_sc_submit", {"native_identity": dict(native_identity)}),
+                    layout_button("undeclared_occurrence"),
+                    layout_button("grouped_button", {
+                        "native_identity": dict(
+                            native_identity,
+                            name="grouped_button",
+                            native_locator="/form[1]/sheet[1]/div[1]/button[3]",
+                        ),
+                        "payload": {
+                            "method": "grouped_button", "type": "object",
+                            "groups_xmlids": ["base.group_system"],
+                        },
+                    }),
+                ]}]}},
+                "record": {"state": "ready"},
+            },
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.native.layout.button.authority",
+        )
+
+        rules = {
+            row["actionKey"]: row
+            for row in contract["actionContract"]["actionRuleList"]
+            if row.get("sourceChannel") == "native_form_layout_button"
+        }
+        declared = rules["action_sc_submit"]
+        self.assertIs(declared["entitlementEvaluated"], True)
+        self.assertIs(declared["authorizationAllowed"], True)
+        self.assertIs(declared["allowed"], True)
+        self.assertIs(declared["enabled"], True)
+        self.assertIs(declared["disabled"], False)
+
+        # The consumer's declared-consistency gate consumes an action only when
+        # entitlementEvaluated is True and allowed/enabled/disabled are all
+        # booleans.  Neither a declared group restriction nor a node without
+        # native authority may satisfy that condition by assumption, so the
+        # projection must leave them unconsumable rather than inventing a
+        # permission verdict.  Assert the gate's actual inputs, not whether an
+        # optional key happens to be present.
+        grouped = rules["grouped_button"]
+        self.assertIsNot(grouped.get("entitlementEvaluated"), True)
+        self.assertIsNot(grouped.get("allowed"), True)
+        undeclared = rules["undeclared_occurrence"]
+        self.assertIsNot(undeclared.get("entitlementEvaluated"), True)
+        self.assertNotIsInstance(undeclared.get("allowed"), bool)
+        self.assertNotIsInstance(undeclared.get("enabled"), bool)
+        self.assertNotIsInstance(undeclared.get("disabled"), bool)
+
+        # A declared deny owned by the declaration survives the projection.
+        denied = assembler.assemble_unified_page_contract_v2(
+            {
+                "model": "x.document",
+                "view_type": "form",
+                "fields": {"state": {"name": "state", "type": "selection"}},
+                "views": {"form": {"layout": [{"type": "sheet", "children": [
+                    layout_button("action_denied", {
+                        "native_identity": dict(
+                            native_identity,
+                            name="action_denied",
+                            native_locator="/form[1]/sheet[1]/div[1]/button[9]",
+                        ),
+                        "allowed": False,
+                        "enabled": False,
+                    }),
+                ]}]}},
+                "record": {"state": "ready"},
+            },
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.native.layout.button.authority.deny",
+        )
+        denied_rule = next(
+            row for row in denied["actionContract"]["actionRuleList"]
+            if row.get("sourceChannel") == "native_form_layout_button"
+        )
+        self.assertIs(denied_rule["entitlementEvaluated"], True)
+        self.assertIs(denied_rule["authorizationAllowed"], False)
+        self.assertIs(denied_rule["allowed"], False)
+        self.assertIs(denied_rule["disabled"], True)
+
     def test_explicit_form_view_rejects_non_native_action_overlays(self):
         native_action = {
             "name": "action_native", "label": "Native", "kind": "object", "intent": "execute",
