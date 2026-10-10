@@ -4870,16 +4870,23 @@ def _append_ui_contract_actions(
                 "route": payload.get("route") or row.get("route"),
                 "target": payload.get("target"),
             }
-            # Model-bound window actions and native ``type=action`` buttons
-            # execute inside the current record authority.  They are not menu
-            # routes, so preserve the Odoo action-button identity for the
-            # governed execute_button adapter instead of flattening them into
-            # an unauthorised /a/:id navigation.
+            # A native ``<button type="action">`` declaration is an Odoo
+            # window-action button on *every* native form carrier (page header,
+            # form body layout, stat button); the declaration is the authority,
+            # never the carrier's channel name.  Such a button executes inside
+            # the current record authority and is not a menu route, so the
+            # platform must preserve the Odoo action-button identity for the
+            # governed ``execute_button`` adapter, which re-authorizes the
+            # action against this very contract rule.  Flattening it into an
+            # unauthorised ``/a/:id`` navigation, or dropping the identity and
+            # leaving an unresolvable ``open`` row, is what silently broke the
+            # declared button.  A model-bound projection keeps the same identity.
+            declared_window_action_button = _text(payload.get("type")).lower() == "action"
             action_button = (
                 source_channel == "bound_model_action"
                 or (
-                    source_channel == "native_form_header"
-                    and _text(payload.get("type")).lower() == "action"
+                    source_channel.startswith("native_form_")
+                    and declared_window_action_button
                 )
             )
             button = ({

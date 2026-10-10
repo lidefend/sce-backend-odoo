@@ -2887,6 +2887,156 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertIs(denied_rule["allowed"], False)
         self.assertIs(denied_rule["disabled"], True)
 
+    def test_native_layout_window_action_button_publishes_its_execution_shape(self):
+        """A native ``<button type="action">`` must declare its executable shape.
+
+        Odoo resolves ``type="action"`` on a form button to a window action and
+        runs it against the current record.  The governed backend adapter for
+        that construct is ``execute_button`` with ``button.type="action"``: it
+        re-authorizes the requested action against this very contract rule and
+        rejects the call unless the row's ``target`` names the same action
+        reference.  Publishing the row with an empty ``button`` and intent
+        ``ui.contract`` therefore promised a window action that no adapter could
+        resolve: the consumer derived ``kind='open'``, found no authorized menu
+        route for a button that is not a route at all, and dropped the row, so
+        the renderer refused the whole form with
+        ``CANONICAL_FORM_ACTION_EXECUTION_ADAPTER_MISSING``.
+
+        The fix belongs to the projection: the *declared native button type* is
+        the authority for the execution shape, on every native form carrier.
+        This test locks the consumable outcome (kind-resolving ``button.type``,
+        matching action reference, unchanged backend identity) instead of any
+        string occurrence.  An ``object`` button keeps its method shape, and a
+        numeric ``object`` method is never re-typed as a window action.
+        """
+        def layout_button(name, action_extra=None):
+            action = {
+                "name": name,
+                "label": name,
+                "kind": "object",
+                "intent": "execute",
+                "level": "body",
+                "groups": [],
+                "payload": {"method": name, "type": "object", "groups_xmlids": []},
+                "visible": {"domain": [], "states": [], "attrs": {}},
+            }
+            action.update(action_extra or {})
+            return {"type": "button", "name": name, "action": action}
+
+        def native_identity(name, button_type, locator):
+            return {
+                "authoritative": True,
+                "canonical_region": "layout",
+                "projection_region": "layout",
+                "native_locator": locator,
+                "occurrence_index": 1,
+                "name": name,
+                "type": button_type,
+            }
+
+        contract = assembler.assemble_unified_page_contract_v2(
+            {
+                "model": "project.project",
+                "view_type": "form",
+                "fields": {"state": {"name": "state", "type": "selection"}},
+                "views": {"form": {"layout": [{"type": "sheet", "children": [
+                    layout_button("556", {
+                        "kind": "open",
+                        "intent": "open",
+                        "native_identity": native_identity(
+                            "556", "action", "/form[1]/sheet[1]/div[1]/button[1]"),
+                        "payload": {
+                            "method": None, "ref": "556", "url": "",
+                            "confirm": "", "groups_xmlids": [], "type": "action",
+                        },
+                    }),
+                    layout_button("action_view_my_tasks", {
+                        "native_identity": native_identity(
+                            "action_view_my_tasks", "object",
+                            "/form[1]/sheet[1]/div[1]/button[2]"),
+                    }),
+                    layout_button("556", {
+                        "native_identity": native_identity(
+                            "556", "object", "/form[1]/sheet[1]/div[1]/button[3]"),
+                    }),
+                ]}]}},
+                "record": {"state": "ready"},
+            },
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.native.layout.window.action.button",
+        )
+
+        rules = [
+            row for row in contract["actionContract"]["actionRuleList"]
+            if row.get("sourceChannel") == "native_form_layout_button"
+        ]
+        by_locator = {
+            (row.get("nativeIdentity") or {}).get("native_locator"): row for row in rules
+        }
+
+        # The declared window-action button resolves to the governed
+        # execute_button adapter: button.type is what derives kind='action', and
+        # the action reference must equal the published button name, because the
+        # adapter re-authorizes the request by comparing exactly those two.
+        window_action = by_locator["/form[1]/sheet[1]/div[1]/button[1]"]
+        self.assertEqual(window_action["intent"], "execute_button")
+        self.assertEqual(window_action["button"], {"name": "556", "type": "action"})
+        self.assertEqual(window_action["target"]["action_ref"], "556")
+        self.assertEqual(
+            window_action["button"]["name"],
+            str(window_action["target"]["action_ref"]),
+        )
+        # The published identity is the native occurrence, and stays stable:
+        # the layout node is bound to the rule by exactly this identity.
+        self.assertEqual(
+            window_action["backendIdentity"],
+            "native_button:action:556:/form[1]/sheet[1]/div[1]/button[1]:1",
+        )
+        # The declared layout node and the action rule share one identity, so the
+        # renderer and the adapter resolve the same declaration.
+        nodes = []
+
+        def collect(node):
+            if isinstance(node, list):
+                for item in node:
+                    collect(item)
+                return
+            if not isinstance(node, dict):
+                return
+            if str(node.get("type") or node.get("kind")).lower() == "button":
+                nodes.append(node)
+                return
+            for key in ("children", "pages", "tabs", "nodes", "items"):
+                collect(node.get(key))
+
+        collect(contract["layoutContract"]["containerTree"])
+        bound = {
+            (node.get("action") or {}).get("backendIdentity"): (node.get("action") or {})
+            for node in nodes
+        }
+        self.assertIn(window_action["backendIdentity"], bound)
+        self.assertEqual(
+            bound[window_action["backendIdentity"]]["actionId"],
+            window_action["actionId"],
+        )
+
+        # An object button keeps its declared method shape and intent.
+        object_button = by_locator["/form[1]/sheet[1]/div[1]/button[2]"]
+        self.assertEqual(object_button["intent"], "execute")
+        self.assertEqual(
+            object_button["button"],
+            {"name": "action_view_my_tasks", "type": "object"},
+        )
+
+        # A numeric method name does not turn an object button into a window
+        # action: the declared native type, not the name shape, is the authority.
+        numeric_object = by_locator["/form[1]/sheet[1]/div[1]/button[3]"]
+        self.assertEqual(numeric_object["intent"], "execute")
+        self.assertEqual(numeric_object["button"], {"name": "556", "type": "object"})
+        self.assertEqual(numeric_object["backendIdentity"],
+                         "native_button:object:556:/form[1]/sheet[1]/div[1]/button[3]:1")
+
     def test_explicit_form_view_rejects_non_native_action_overlays(self):
         native_action = {
             "name": "action_native", "label": "Native", "kind": "object", "intent": "execute",
