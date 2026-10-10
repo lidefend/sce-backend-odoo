@@ -557,17 +557,55 @@
         "make/runtime_ops.mk"
       ],
       "note": "carried layer: the P0 boundaries suite asserts the producer side of layoutPolicy."
+    },
+    "frontend_decision_authority_unit": {
+      "target": "verify.frontend.decision_authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/views/LoginView.vue",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/app/canonicalNavigation.ts",
+        "scripts/verify/frontend_decision_authority.py",
+        "scripts/verify/frontend_decision_authority_guard.py",
+        "scripts/verify/test_frontend_decision_authority_guard.py",
+        "docs/frontend_productization/decision-authority-inventory-v1.json",
+        "make/frontend.mk"
+      ],
+      "note": "PASS 15 tests; findings=139 distinct=99 contract-derived=51 projectable-gaps=0 frontend-logic-defects=0 render-interaction=88 unclassified=0. Now a prerequisite of verify.frontend.pr.unit and verify.frontend.release.unit."
+    },
+    "guard_registry_audit": {
+      "target": "verify.guard.registry",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/guard_registry_audit.py",
+        "scripts/verify/registry.yaml",
+        "scripts/verify/test_guard_registry_audit.py",
+        "docs/audit/guard_registry/guard_registry.json",
+        "make/*.mk",
+        ".github/workflows/*.yml"
+      ],
+      "note": "PASS: 1408 scripts (1321 referenced, 87/87 orphans acknowledged, 1 retired, 188/188 unwired dispositioned, 3/3 gate_required enforced). Reached by the required remote gate through make ci.professional.backend.shard-verify."
+    },
+    "frontend_pr_unit": {
+      "target": "verify.frontend.pr.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/**",
+        "scripts/verify/**",
+        "make/frontend.mk"
+      ],
+      "note": "PASS in 37.9s; this is the target behind the remote standard lane (pnpm -C frontend/apps/web test) and it now executes verify.frontend.decision_authority.unit."
     }
   },
   "blockers": [
     "Owner acknowledgement (registered, now accepted): the discover-capable system_admin surface delivers menu_sc_business_config_workbench while its role-surface admin_menu_xmlids lists only menu_ui_menu_config_policy_business_config. The round ruled this designed (three declared authorities: the action's groups_id declares smart_core.group_smart_core_admin; the P1 native-config root menu_sc_business_config_center is declared and the leaf is not excluded; role_surface.system_admin.system_configuration_visible=true) with no code change, and the owner proceeded on that ruling. The alternative ruling to take 表单配置 off the platform-admin face remains the owner's and its owning layer is the action/menu group declaration (smart_core.group_smart_core_admin), not the role-surface anchor list.",
     "Known coverage debt, now machine-tracked instead of silent: 140 declared @tagged groups (274 declarations) have no governed selection entry. The registry records each with an owner and a 2026-12-31 review deadline; the audit fails closed on any new un-gated group so the debt can only shrink. Wiring them is follow-on work, not this round.",
-    "Product delivery pending the owner's own login verification on the daily dev runtime. The served runtime is e885d590b314d310de20a373c4f4c152996e3daf (database sc_demo, frontend_build_sha256 bc5a0cac...), and that revision is NOT an ancestor of origin/main (daecaafc). An earlier revision of this blocker said 'the runtime now serves mainline daecaafc': that was true before the 2026-10-10 late rounds, and it is corrected here rather than left to make a reader equate mainline with the served face. The exact split is recorded in evidence.round_20261010_served_ahead_of_mainline: of the 83 commits this branch leads origin/main by, 39 touch product/tooling paths (addons/frontend/config: 30 files, +1568/-302; make/scripts: 13 files, +995/-308) and include both the served P0 validator fix e885d590 and the contract-authored heading producer 330fb36d, while 44 are bookkeeping-only. The earlier mainline integration (PR #635 -> bb6b6e82, #636 -> e2e32ad3, #637 -> daecaafc) is complete and is what the historical receipts in this run were bound to; it does not cover these later 39 commits. This is a human acceptance step plus an owner-authorized publication step, not an engineering gap. Credentials: wutao/123456, db sc_demo.",
+    "Product delivery pending the owner's own login verification on the daily dev runtime. The served runtime is e885d590b314d310de20a373c4f4c152996e3daf (database sc_demo, frontend_build_sha256 bc5a0cac...), and that revision is NOT an ancestor of origin/main (daecaafc). An earlier revision of this blocker said 'the runtime now serves mainline daecaafc': that was true before the 2026-10-10 late rounds, and it is corrected here rather than left to make a reader equate mainline with the served face. The exact split is recorded in evidence.round_20261010_served_ahead_of_mainline: of the 83 commits this branch leads origin/main by, 39 touch product/tooling paths (addons/frontend/config: 30 files, +1568/-302; make/scripts: 13 files, +995/-308) and include both the served P0 validator fix e885d590 and the contract-authored heading producer 330fb36d, while 44 are bookkeeping-only. The earlier mainline integration (PR #635 -> bb6b6e82, #636 -> e2e32ad3, #637 -> daecaafc) is complete and is what the historical receipts in this run were bound to; it does not cover these later 39 commits. This is a human acceptance step plus an owner-authorized publication step, not an engineering gap. Credentials: wutao/123456, db sc_demo. Correction (2026-10-11): this split no longer exists. PR #638 merged this branch into main as 0a383695 and the daily dev runtime serves exactly 0a383695, so the served revision equals the mainline revision; the blocker now reduces to the owner's own login acceptance (credentials: wutao/123456, db sc_demo, http://1.95.85.92:18081/).",
     "RESOLVED and DEPLOYED, still pending the owner's login: the owner-reported form-surface defect (V1 declared container presentation dropped by the renderer; V2 hardcoded 协作记录 in the P0 default surface + frontend legacy fallbacks) is fixed, and its successor defect - the declared modifier value domain being resolved by two different implementations - is fixed systemically in 514c4c11 (see evidence.round_20261010_declared_modifier_value_domain_single_authority). The served daily runtime now carries both (source_revision 514c4c11, frontend_build_sha256 bc5a0cac, entry index-BpKZqOGC.js) and the declaration-driven probe passes at 1440/390 in light and dark. The item stays open only for the owner's own login confirmation of the restored region.",
     "RESOLVED and DEPLOYED (B1+B2 were one P0 validator defect; see evidence.round_20261010_layout_policy_membership_authority). The runtime form-structure validator did not recognise the structure-membership authority the producer declares, so B1 ('slots is required'=60) and B2 ('layout projects field outside structure'=2024/158 models) were the same defect. B1 was not a choice: ui_contract_v2.py declares layoutPolicy=container_tree_authority with empty slots/fieldRoles (asserted by its own P0 tests), and the declared consumer frontend/apps/web/src/app/contracts/v2/schema.ts::decodeFormStructureContract forbids slots/columns/fieldRoles for that policy - so option (b) 'publish a minimal slot set' would have produced a contract the consumer rejects, leaving option (a) 'honour the declared layoutPolicy' as the only declaration-valid repair. B2's round-21 attribution was corrected: the producer is self-consistent (a read-only 163-model probe measured refs_not_in_layout=0/163 and layout-outside-slots fields inside the governance universe=6/163; every other flagged field is a native/technical/projection residual), so the reverse assertion was a validator over-assertion, not a projection split and not P1. The validator now (1) requires slots only when the declaration does not delegate membership to the tree, (2) newly rejects a tree-authority structure that also publishes slots/columns/fieldRoles (mirroring the declared consumer), and (3) scopes the reverse assertion to governed fields of non-tree-authority policies. No declaration-backed assertion was relaxed. The served daily runtime at e885d590 audits boundary_ok 163 / boundary_violation 0 (was 5/158) with projected_semantic_group_models 163, contract_standardized 81 and zero diffs on every non-boundary column. (B3) missing_group_semantics=163 was two independent defects and is RESOLVED and DEPLOYED - see evidence.round_20261010_contract_authored_section_heading_producer: (B3a, P0 smart_core, real product debt) the contract-authored heading channel semanticTitle had consumers (nativeBusinessSection.ts:96, NativeFormTreeRenderer.vue:892, schema.ts:737) but no producer, because WIP commit 2ec2e2df deleted the only call to _standardize_form_container_semantics and its replacement writes formStructureRole only. The producer is restored and _is_generic_container_label's ''-in-generic defect is fixed; the served runtime audits at projected_semantic_group_models=163 with 996/996 group nodes authored and missing_group_semantics 0. (B3b/B3c/B3d, P4 verification tools, no product change) the audit's is_unlabeled_group predicate, its notebook metric filtering on a carrier that exists nowhere in the repository, and the standardizer guard's failure to assert production wiring are all fixed, with pre/post negative baselines recorded. The residual 82 contract_needs_attention models are exactly (B4) the no-notebook/no-page scope set plus (B5) the 3 non-chatter workspace surfaces, which remain scope questions rather than product debt. This batch's two owned facets are 0 under both readings, so none of this is a batch regression.",
     "Verification-tool path debt (registered, NOT fixed in this round, no gate relaxed): make verify.form_structure.contract cannot pass in-repo because its member verify.user_form.preference.boundary_guard hardcodes addons/smart_construction_custom/models/user_preferences.py and reads it directly; that module does not exist in this repository (git log --all -- addons/smart_construction_custom is empty, absent on origin/main too) - it is a customer-custom addon outside the repository boundary, mounted and installed at runtime (the governed runtime guard scripts/verify/daily_dev_customer_addons_runtime_guard.py checks it live). Local reproduction: FileNotFoundError. Report per-target evidence only; the owning layer is that guard's owner."
   ],
-  "next_exact_step": "B4/B5 are closed as scope conventions with native-side evidence (see evidence.round_20261010_native_side_attribution_b4_b5) and the ledger is corrected: the served product identity e885d590 is NOT in mainline. Measured topology (evidence.round_20261010_served_ahead_of_mainline): 83 commits ahead of origin/main (daecaafc), of which 39 touch product/tooling paths - including the served P0 validator fix e885d590 and the heading producer 330fb36d - and 44 are bookkeeping-only; git merge-tree --write-tree origin/main HEAD exits 0 with zero conflicts, so the candidate integrates cleanly. The remaining step is therefore an operation-time-confirmed publication of the candidate (make pr.push, or pr.push.gitee with GITEE_INTEGRATION_CONFIRM and the GITEE_* identity inputs; the formal Gitee PR lane additionally needs GITEE_PR_TOKEN_FILE), followed by the remote PR gates and, if the owner elects it, the merge. This round deliberately did not push: origin (github.com/lidefend/sce-backend-odoo) is PUBLIC and every governed publication entry is confirm-gated, so publication is the owner's call. Two further items stay registered as follow-on work rather than this round's closure: the coverage-debt registry (140 tagged groups) and the audit column 'native_chatter' being contract-sourced (a rename should ride with the next product candidate and its fresh runtime audit, because the audit script is a declared input of verify.form_structure.contract_runtime.audit and renaming it in isolation would leave the committed report inconsistent with the script). The only open product-delivery item remains the owner's own login verification (wutao/123456, sc_demo, http://1.95.85.92:18081/).",
+  "next_exact_step": "A/B local round is complete and verified (see evidence.round_20261011_decision_authority_gate_wiring): the ledger re-export is a 7-line-anchor refresh, the decision-authority guard is now a prerequisite of verify.frontend.pr.unit and verify.frontend.release.unit with a recorded negative proof, and verify.guard.registry fails closed when a declared gate_required script loses its required-gate wiring. Next: (1) owner decision on committing/publishing these seven files (the repo is public and every publication entry is confirm-gated, so publication is the owner's call); (2) the registered residual, a dedicated registry re-disposition round for the 43 scripts whose make wiring is only the '-m unittest' module form; (3) the previously registered product-acceptance gaps (detail 390/dark-light, create/edit and workbench minimal evidence) are unchanged by this round.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -1847,6 +1885,124 @@
         "version_release": "the daily dev runtime serves e885d590 with database sc_demo",
         "product_delivery": "pending the owner's own login verification"
       }
+    },
+    "pr638_mainline_integration": {
+      "pr": 638,
+      "pr_url": "https://github.com/lidefend/sce-backend-odoo/pull/638",
+      "base": "main",
+      "pre_merge_main": "daecaafc6da6c61d92312a464b84468e7d85c486",
+      "reviewed_head": "8a373beb9243179fe9be7be406abdb85a07b19cb",
+      "merge_commit": "0a3836951b403a80daba7b63a25a87f3b85ef394",
+      "merge_method": "squash through the protected make pr.merge entry with EXPECTED_HEAD",
+      "required_checks_on_reviewed_head": {
+        "public_guard": "success",
+        "merge_policy_gate": "success",
+        "professional_quality_gate": "success",
+        "frontend_release_gate": "success"
+      },
+      "exact_head_quick": ".git/codex/evidence/ci.local.quick/8a373beb9243179fe9be7be406abdb85a07b19cb.json PASS; it was signed before pr.merge so MAKEOVERRIDES could not invalidate the receipt",
+      "tree_equality": "origin/main tree c5337a12d04be5e46dac97c8eeda4ae25a5db811 equals the reviewed candidate tree; git diff origin/main 8a373beb is empty",
+      "merge_does_not_deploy": "the merge left the daily dev runtime on e885d590; deployment is a separate governed step (see round_20261011_daily_runtime_main_deploy)",
+      "receipt": ".runtime/agent-runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/pr638_mainline_integration/receipt.json"
+    },
+    "round_20261011_daily_runtime_main_deploy": {
+      "intent": "owner instruction: deploy the latest mainline to the daily dev server",
+      "lane": "main, so the served identity is the mainline identity; the remote entry normalises a recorded detached candidate runtime onto main",
+      "local_preparation": "git fetch origin main; git checkout main; git merge --ff-only origin/main (daecaafc -> 0a383695); worktree clean; switched back to the audit branch afterwards",
+      "remote_pre_state": {
+        "head": "e885d590b314d310de20a373c4f4c152996e3daf (detached; recorded as refs/daily-candidates/audit/daily-dev-mainline-product-acceptance-closeout-20261009)",
+        "refs_heads_main": "aea2c19bbe4edb2a13fbf908255e918e18f3a299",
+        "refs_remotes_origin_main": "aea2c19bbe4edb2a13fbf908255e918e18f3a299",
+        "worktree": "clean"
+      },
+      "steps": [
+        {
+          "entry": "make daily.runtime.main.bundle_sync",
+          "inputs": {
+            "DAILY_RUNTIME_EXPECTED_SHA": "0a3836951b403a80daba7b63a25a87f3b85ef394",
+            "DAILY_RUNTIME_EXPECTED_OLD_SHA": "aea2c19bbe4edb2a13fbf908255e918e18f3a299",
+            "DAILY_RUNTIME_EXPECTED_CANDIDATE_SHA": "e885d590b314d310de20a373c4f4c152996e3daf"
+          },
+          "unit": "verify.daily.runtime.main.bundle_sync 9/9 OK",
+          "result": "PASS, changed=true, normalized_from_candidate=true, bundle_sha256=66a49dc45bc922e47071457396aa9b81741c2f07d3b8d20f49d11694d4f711cd (exact-SHA bundle verified, fast-forward only)",
+          "receipt": ".runtime/final-acceptance/daily-deployed/bundle-sync.json"
+        },
+        {
+          "entry": "make daily.runtime.source_revision.align",
+          "inputs": {
+            "DAILY_RUNTIME_SOURCE_REVISION_SHA": "0a3836951b403a80daba7b63a25a87f3b85ef394"
+          },
+          "unit": "verify.daily.runtime.source_revision.align 8/8 OK",
+          "result": "PASS, previous_revision=e885d590, served git_sha=source_revision=0a383695 after the governed restart",
+          "receipt": ".runtime/final-acceptance/daily-deployed/source-revision-align.json"
+        },
+        {
+          "entry": "make daily.runtime.frontend.build",
+          "inputs": {
+            "DAILY_RUNTIME_FRONTEND_BUILD_SHA": "0a3836951b403a80daba7b63a25a87f3b85ef394"
+          },
+          "unit": "verify.daily.runtime.frontend.build 15/15 OK",
+          "result": "PASS, rebuilt=true at the deployed head, fingerprint bc5a0cac181d527072276903ac45f5011a9a8f8a40422f317a96fcac772f906e, entry asset index-BpKZqOGC.js, env_written=false",
+          "note": "the entry rebuilt because no receipt existed for this revision; the fingerprint is unchanged because frontend/ sources are byte-identical between e885d590 and 0a383695, so the served rendering surface is now bound to the deployed head without the surface itself changing",
+          "receipt": ".runtime/final-acceptance/daily-deployed/frontend-build.json"
+        },
+        {
+          "entry": "make daily.runtime.published_face.converge",
+          "inputs": {
+            "DAILY_RUNTIME_PUBLISHED_FACE_EXPECTED_SHA": "0a3836951b403a80daba7b63a25a87f3b85ef394",
+            "DAILY_RUNTIME_PUBLISHED_FACE_LOGIN": "wutao"
+          },
+          "unit": "verify.daily.runtime.published_face.converge 22/22 OK",
+          "result": "PASS, upgrade_mode=reused (the declared smart_core tree cbdbec7a6533fe95d4fdba66b12666d046faf6d3 is byte-identical on the remote, so no module upgrade ran), snapshots construction.standard #75 daily-navigation-standard-0a3836951b40 and construction.preview #76 daily-navigation-preview-0a3836951b40, gate_page_count 90/90 for both, release guard PASS",
+          "receipt": ".runtime/final-acceptance/daily-deployed/published-face-converge.json"
+        }
+      ],
+      "post_readback": {
+        "runtime_version": {
+          "product_version": "1.0.0-rc.20",
+          "source_revision": "0a3836951b403a80daba7b63a25a87f3b85ef394",
+          "git_sha": "0a3836951b403a80daba7b63a25a87f3b85ef394",
+          "database": "sc_demo",
+          "environment": "dev",
+          "frontend_build_sha256": "bc5a0cac181d527072276903ac45f5011a9a8f8a40422f317a96fcac772f906e"
+        },
+        "http": "/index.html 200 text/html; /assets/index-BpKZqOGC.js 200 application/javascript",
+        "remote_repo": "branch main, HEAD=@{upstream}=0a3836951b403a80daba7b63a25a87f3b85ef394, worktree clean"
+      },
+      "impact_analysis": "git diff --name-only e885d590 0a383695 lists 9 files: .agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json, 4 docs/engineering_convergence files, docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json, docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md, scripts/verify/frontend_v2_policy_projection_guard.py and its test. No frontend/ and no addons/ path changed, which is why the frontend fingerprint legitimately stays bc5a0cac and the smart_core upgrade legitimately reuses.",
+      "status": "PASS"
+    },
+    "round_20261011_decision_authority_gate_wiring": {
+      "intent": "owner instruction (同意顺序执行): execute A then B - fix the decision-authority ledger binding, then close the 'wired to a make target that no required gate runs' hardening.",
+      "A_ledger_binding": {
+        "defect": "make verify.frontend.decision_authority.guard FAILED at 0a383695 with 'committed decision-authority ledger is out of sync with the live scan', so the tree carried a red guard even though PR #638's Quick had passed (that Quick never ran this guard).",
+        "nature": "99 decision keys, classifications, summaries and rules are identical; only 7 line anchors drifted: LoginView.vue 303->315 / 307->319 / 311->323, ActionView.vue 1385->1402 / 1375->1392 / 3006->3037, app/canonicalNavigation.ts 155->185. The ledger was exported at cc4bedff (2026-10-08); 3d90df05 (2026-10-09) edited those views without re-exporting.",
+        "action": "make verify.frontend.decision_authority.export; diff is 7 insertions / 7 deletions, line anchors only, no classification, rule or summary change.",
+        "revalidation": "make verify.frontend.decision_authority.unit PASS (15 tests, guard PASS)."
+      },
+      "B1_wiring": {
+        "defect": "the guard was referenced only by verify.frontend.decision_authority.{unit,guard,export} and by verify.frontend.quick.gate, whose only caller verify.round.v0_6.mini is itself unreachable. No required gate executed it, so 'a make target references it' did not mean 'a gate enforces it'.",
+        "enforcement_paths_confirmed": {
+          "remote_frontend_standard": ".github/workflows/frontend_release_gate.yml -> pnpm -C frontend/apps/web test -> make verify.frontend.pr.unit",
+          "remote_frontend_full": ".github/workflows/frontend_release_gate.yml -> pnpm test:release -> make verify.frontend.release.audit -> verify.frontend.release.unit",
+          "remote_backend": ".github/workflows/professional_quality_gate.yml -> make ci.professional.backend.shard-verify",
+          "local": "make ci.local.quick -> scripts/ops/local_quick_evidence.py -> make ci.local.quick.run"
+        },
+        "change": "make/frontend.mk: verify.frontend.pr.unit and verify.frontend.release.unit each gained a prerequisite-only rule for verify.frontend.decision_authority.unit, the same accumulate style already used at make/runtime_ops.mk:2070-2072. No gate, assertion, ACL or negative case was relaxed and no product file changed.",
+        "revalidation": "make verify.frontend.pr.unit PASS (37.9s) with the guard output in the run; make -n verify.frontend.pr.unit and make -n verify.frontend.release.unit both resolve the guard."
+      },
+      "B2_hardening": {
+        "blind_spot": "guard_registry_audit counted 'referenced by some make target' as wired without asking whether that target is executed by any required gate.",
+        "change": "scripts/verify/registry.yaml now declares gate_anchors (ci.local.quick.run, ci.professional.backend.shard-verify, verify.frontend.pr.unit, verify.frontend.release.audit), each with a machine-checked invoked_by source, plus gate_required (the three decision-authority scripts). scripts/verify/guard_registry_audit.py parses the make prerequisite graph (recipes excluded so an echo-only recipe cannot launder a gate), computes reachability from the anchors, fails a stale or aspirational anchor, fails a gate_required script whose wiring no required gate reaches, and exports gate_anchored / gate_enforced / manual_lane_only / gate_required_unenforced counts.",
+        "negative_proof": "baseline normal (audit PASS 3/3 gate_required enforced; make -n verify.frontend.pr.unit resolves the guard) -> injection (both prerequisite-only rules removed) -> make -n verify.frontend.pr.unit resolves the guard 0x and make verify.guard.registry FAILS naming all three scripts as claims gate enforcement but no referencing make target is reachable from a declared gate anchor -> restore -> audit PASS and the guard is back in the lane.",
+        "unit_tests": "scripts/verify/test_guard_registry_audit.py 22 tests PASS (10 existing + 12 new behavioural cases: transitive and accumulating prerequisites, recipe text is not a gate, $(VAR) and % tokens dropped, continuation lines, wired-vs-un-run lane separation, anchor substantiation, shipped registry vs shipped make graph). The audit-level rule is the enforcing one; this file is not yet executed by a gate (see recorded_residual).",
+        "blast_radius_measured_and_rejected": "a repo-wide 'every active script must be reachable from a required gate' rule was measured first: 997 of the script-referenced targets sit on on-demand manual lanes that no CI check invokes, and 154 more are prerequisites of gate-named but unrun aggregates. A hard gate on that rule would be a false-positive generator, so enforcement is bound to the declared gate_required claim instead of the whole registry."
+      },
+      "recorded_residual": {
+        "classify_module_invocation_blind_spot": "classify() matches script wiring by '.py' filename text, so a script invoked only as 'python3 -m unittest scripts.verify.<stem>' has an empty referenced_by_make_targets. Measured 43 such scripts (42 of them currently carrying wire_or_retire: file-consumed). Not changed this round because correcting it forces re-dispositioning those 42 entries and moves the headline 'unwired' count; gate_reachability for the new rule is module-aware, so the new check is unaffected. Owner: platform-team; next step is a dedicated registry re-disposition round.",
+        "verify_frontend_quick_gate": "still an unreferenced aggregate (its only caller verify.round.v0_6.mini is unreachable). It must not be cited as evidence that a guard is enforced."
+      },
+      "status_boundaries": "batch acceptance: this round's scoped changes pass (targeted tests + audit + negative proof). Mainline integration: NOT done for these local changes (not pushed, owner publication not requested). Version release and product delivery: unchanged by this round."
     }
   },
   "continuation": {
@@ -1876,11 +2032,16 @@
   "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced.",
   "stage_identity": {
     "kind": "iteration",
-    "head": "e885d590b314d310de20a373c4f4c152996e3daf",
+    "head": "0a3836951b403a80daba7b63a25a87f3b85ef394",
     "dirty_scope": [
-      "docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md",
-      ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json"
+      "M .agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json",
+      "M docs/audit/guard_registry/guard_registry.json",
+      "M docs/frontend_productization/decision-authority-inventory-v1.json",
+      "M make/frontend.mk",
+      "M scripts/verify/guard_registry_audit.py",
+      "M scripts/verify/registry.yaml",
+      "M scripts/verify/test_guard_registry_audit.py"
     ],
-    "note": "stage head is the verified/served product revision, not the bookkeeping commit that carries it; make agent.run.resume prints the live HEAD separately. The two bookkeeping files ride with the next product candidate and are not part of the product identity."
+    "note": "updated 2026-10-11 (A+B round): mainline head is 0a383695 (PR #638) and the daily dev runtime serves exactly that revision, so the served product identity equals the mainline identity. The live worktree is at 8a373beb on audit/daily-dev-mainline-product-acceptance-closeout-20261009, whose tree equals main's tree, and now carries seven uncommitted files: the decision-authority ledger re-export (A), the frontend gate wiring plus the gate-anchor hardening (B), its regenerated registry export, and this run record. Nothing is pushed. Run status stays verification_pending only for the owner's login acceptance and the registered minimal-evidence gaps."
   }
 }

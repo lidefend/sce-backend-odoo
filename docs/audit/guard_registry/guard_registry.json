@@ -1,7 +1,7 @@
 {
   "version": 1,
   "counts": {
-    "active": 1319,
+    "active": 1321,
     "orphan": 87,
     "retired": 1,
     "unwired": 188,
@@ -10,7 +10,12 @@
       "file-consumed": 188,
       "wire-pending": 0,
       "retire-pending": 0
-    }
+    },
+    "gate_anchors": 4,
+    "gate_enforced": 159,
+    "manual_lane_only": 1162,
+    "gate_required": 3,
+    "gate_required_unenforced": 0
   },
   "scripts": [
     {
@@ -2597,7 +2602,7 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 305
+      "lines": 313
     },
     {
       "script": "contract_version_evolution_drill.py",
@@ -3686,6 +3691,21 @@
       "lines": 242
     },
     {
+      "script": "form_container_presentation_consumption_guard.py",
+      "path": "scripts/verify/form_container_presentation_consumption_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.form_container_presentation.guard"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/runtime_ops.mk",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ],
+      "lines": 369
+    },
+    {
       "script": "form_layout_governance_guard.py",
       "path": "scripts/verify/form_layout_governance_guard.py",
       "status": "orphan",
@@ -3736,9 +3756,10 @@
       "referenced_by_files": [
         "make/runtime_ops.mk",
         "scripts/ci/generate_test_inventory.py",
-        "scripts/verify/form_structure_contract_runtime_audit.sh"
+        "scripts/verify/form_structure_contract_runtime_audit.sh",
+        "scripts/verify/test_form_structure_contract_runtime_audit.py"
       ],
-      "lines": 542
+      "lines": 653
     },
     {
       "script": "form_structure_contract_runtime_audit.sh",
@@ -3749,7 +3770,8 @@
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
-        "make/runtime_ops.mk"
+        "make/runtime_ops.mk",
+        "scripts/verify/test_form_structure_contract_runtime_audit.py"
       ],
       "lines": 31
     },
@@ -3774,7 +3796,7 @@
         "make/runtime_ops.mk",
         "scripts/ci/generate_test_inventory.py"
       ],
-      "lines": 310
+      "lines": 338
     },
     {
       "script": "form_structure_standardization_audit.py",
@@ -3808,7 +3830,7 @@
       "referenced_by_files": [
         "make/runtime_ops.mk"
       ],
-      "lines": 226
+      "lines": 244
     },
     {
       "script": "form_view_scope_action_projection_audit.py",
@@ -4835,7 +4857,7 @@
         "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
         "scripts/verify/test_frontend_dev_incremental.py"
       ],
-      "lines": 360
+      "lines": 388
     },
     {
       "script": "frontend_dev_process_isolation_guard.py",
@@ -6286,7 +6308,7 @@
         "make/frontend.mk",
         "scripts/verify/test_form_structure_authority_unification.py"
       ],
-      "lines": 7146
+      "lines": 7062
     },
     {
       "script": "frontend_scene_contract_auto_render_guard.py",
@@ -6606,7 +6628,7 @@
         "scripts/verify/test_frontend_v2_policy_projection_guard.py",
         "scripts/verify/unified_page_contract_v2_guard_inventory.py"
       ],
-      "lines": 853
+      "lines": 895
     },
     {
       "script": "frontend_workbench_block_migration_guard.py",
@@ -7012,7 +7034,7 @@
         "make/guards.mk",
         "scripts/verify/test_guard_registry_audit.py"
       ],
-      "lines": 654
+      "lines": 838
     },
     {
       "script": "hierarchy_browser_architecture_guard.py",
@@ -9138,7 +9160,7 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 72
+      "lines": 101
     },
     {
       "script": "module_scene_capability_map_report.py",
@@ -14847,6 +14869,19 @@
       "wire_or_retire": "file-consumed"
     },
     {
+      "script": "test_form_structure_contract_runtime_audit.py",
+      "path": "scripts/verify/test_form_structure_contract_runtime_audit.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.form_structure.contract.guard"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/runtime_ops.mk"
+      ],
+      "lines": 134
+    },
+    {
       "script": "test_formal_action_runtime_drift_audit.py",
       "path": "scripts/verify/test_formal_action_runtime_drift_audit.py",
       "status": "orphan",
@@ -15265,7 +15300,7 @@
         "scripts/verify/baseline_iteration_execution_policy_guard.py",
         "scripts/verify/frontend_dev_incremental.py"
       ],
-      "lines": 362
+      "lines": 395
     },
     {
       "script": "test_frontend_finance_center_rollout.py",
@@ -15913,7 +15948,7 @@
       "referenced_by_files": [
         "make/ci.mk"
       ],
-      "lines": 54,
+      "lines": 72,
       "wire_or_retire": "file-consumed"
     },
     {
@@ -16182,7 +16217,7 @@
       "referenced_by_make_targets": [],
       "referenced_by_workflows": [],
       "referenced_by_files": [],
-      "lines": 154
+      "lines": 310
     },
     {
       "script": "test_hr_payroll_document_p2_extraction_migration.py",

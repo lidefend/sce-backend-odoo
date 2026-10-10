@@ -120,6 +120,154 @@ def disposition_failures(name: str, entry: dict | None, item: dict) -> list[str]
     return failures
 
 
+MAKE_RULE_RE = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._/-]*)\s*:(?!=)(.*)$")
+
+
+def parse_make_graph() -> dict[str, set[str]]:
+    """Target -> declared prerequisite targets, accumulating duplicate rules.
+
+    Recipe lines are ignored: reachability must follow declared prerequisites
+    rather than shell text, otherwise a target whose only action is ``echo``
+    would count as a gate for every script mentioned in its recipe. Prerequisite
+    tokens carrying make syntax (``$(...)``, ``%`` patterns, ``=``) are dropped
+    because they cannot be resolved statically.
+    """
+    graph: dict[str, set[str]] = {}
+    for makefile in MAKE_FILES:
+        lines = makefile.read_text(encoding="utf-8", errors="replace").splitlines()
+        index = 0
+        while index < len(lines):
+            raw = lines[index]
+            if raw.startswith("\t") or raw.startswith(".PHONY"):
+                index += 1
+                continue
+            match = MAKE_RULE_RE.match(raw)
+            if not match:
+                index += 1
+                continue
+            name = match.group(1)
+            rest = match.group(2)
+            while (
+                rest.rstrip().endswith("\\")
+                and index + 1 < len(lines)
+                and lines[index + 1].startswith((" ", "\t"))
+            ):
+                index += 1
+                rest = rest.rstrip()[:-1] + " " + lines[index].strip()
+            if "$" not in name and "%" not in name:
+                prereqs: set[str] = set()
+                for token in rest.replace("|", " ").split():
+                    if token.startswith("#"):
+                        break
+                    if any(char in token for char in "$%()="):
+                        continue
+                    prereqs.add(token)
+                graph.setdefault(name, set()).update(prereqs)
+            index += 1
+    return graph
+
+
+def reachable_targets(graph: dict[str, set[str]], roots: list[str]) -> set[str]:
+    """Every target reachable from ``roots`` by following declared prerequisites."""
+    seen: set[str] = set()
+    stack = [root for root in roots if root in graph]
+    while stack:
+        target = stack.pop()
+        if target in seen:
+            continue
+        seen.add(target)
+        stack.extend(graph.get(target, ()))
+    return seen
+
+
+def gate_anchor_failures(doc: dict, graph: dict[str, set[str]]) -> list[str]:
+    """Validate that every declared gate anchor is a substantiated entrypoint."""
+    anchors = doc.get("gate_anchors")
+    if not anchors:
+        return [
+            "registry.yaml declares no gate_anchors: required-gate reachability "
+            "cannot be established"
+        ]
+    failures: list[str] = []
+    for anchor in anchors:
+        target = (anchor or {}).get("target") if isinstance(anchor, dict) else None
+        if not target:
+            failures.append("gate anchor entry lacks a target")
+            continue
+        if target not in graph:
+            failures.append(f"gate anchor '{target}' is not a make target")
+            continue
+        sources = [s for s in (anchor.get("invoked_by") or []) if s]
+        if not sources:
+            failures.append(f"gate anchor '{target}' declares no invoked_by source")
+            continue
+        if not any(
+            (ROOT / source).is_file()
+            and target
+            in (ROOT / source).read_text(encoding="utf-8", errors="replace")
+            for source in sources
+        ):
+            failures.append(
+                f"gate anchor '{target}' is not invoked by any declared source "
+                f"{sources} (stale or aspirational anchor)"
+            )
+    return failures
+
+
+MAKE_MODULE_INVOCATION_RE = re.compile(
+    r"-m\s+unittest\s+((?:scripts\.verify\.)?[A-Za-z_][A-Za-z0-9_]*)"
+)
+
+
+def make_module_invocations() -> dict[str, set[str]]:
+    """Module stem -> make targets that run it through ``python3 -m unittest``.
+
+    ``classify()`` matches the ``.py`` filename textually, so a test invoked only
+    as ``-m unittest scripts.verify.<stem>`` looks unwired. Gate reachability
+    must not reproduce that blind spot.
+    """
+    invocations: dict[str, set[str]] = collections.defaultdict(set)
+    for target, text in parse_make_targets().items():
+        for stem in MAKE_MODULE_INVOCATION_RE.findall(text):
+            invocations[stem.rsplit(".", 1)[-1]].add(target)
+    return invocations
+
+
+def gate_reachability(
+    doc: dict, inventory: list[dict]
+) -> tuple[set[str], dict[str, bool]]:
+    """Map each script to whether a required gate actually reaches its wiring."""
+    graph = parse_make_graph()
+    anchors = [
+        anchor["target"]
+        for anchor in (doc.get("gate_anchors") or [])
+        if isinstance(anchor, dict) and anchor.get("target") in graph
+    ]
+    reachable = reachable_targets(graph, anchors)
+    module_invocations = make_module_invocations()
+    enforced: dict[str, bool] = {}
+    for item in inventory:
+        targets = set(item.get("referenced_by_make_targets") or ())
+        path = item.get("path") or ""
+        if path.endswith(".py"):
+            targets |= module_invocations.get(Path(path).stem, set())
+        enforced[item["script"]] = bool(
+            item.get("referenced_by_workflows")
+        ) or any(target in reachable for target in targets)
+    return reachable, enforced
+
+
+def gate_required_failures(name: str, enforced: bool) -> list[str]:
+    """A ``gate_required`` script must be reached by a declared gate anchor."""
+    if enforced:
+        return []
+    return [
+        f"'{name}' claims gate enforcement but no referencing make target is "
+        f"reachable from a declared gate anchor (wired only to a lane no required "
+        f"gate runs)"
+    ]
+
+
 def load_registry() -> dict:
     if not REGISTRY_PATH.exists():
         return {"version": 1, "entries": []}
@@ -326,6 +474,23 @@ def cmd_export() -> int:
         ),
         "wire_or_retire": disposition_counts,
     }
+    _, gate_enforced = gate_reachability(registry, inventory)
+    gate_required = [name for name in (registry.get("gate_required") or []) if name]
+    counts["gate_anchors"] = len(
+        [a for a in (registry.get("gate_anchors") or []) if isinstance(a, dict)]
+    )
+    counts["gate_enforced"] = sum(
+        1 for e in inventory if gate_enforced.get(e["script"])
+    )
+    counts["manual_lane_only"] = sum(
+        1
+        for e in inventory
+        if e["status"] == STATUS_ACTIVE and not gate_enforced.get(e["script"])
+    )
+    counts["gate_required"] = len(gate_required)
+    counts["gate_required_unenforced"] = sum(
+        1 for name in gate_required if not gate_enforced.get(name, False)
+    )
     EXPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "version": 1,
@@ -432,6 +597,24 @@ def cmd_audit() -> int:
                 f"make/CI (stale entry: run make guard.registry.seed)"
             )
 
+    graph = parse_make_graph()
+    failures.extend(gate_anchor_failures(doc, graph))
+    _, gate_enforced = gate_reachability(doc, inventory)
+    gate_required = [name for name in (doc.get("gate_required") or []) if name]
+    for required in gate_required:
+        if required not in by_name:
+            failures.append(
+                f"gate_required script '{required}' does not match any script "
+                f"under scripts/verify/ (typo or already deleted?)"
+            )
+            continue
+        failures.extend(
+            gate_required_failures(required, gate_enforced.get(required, False))
+        )
+    enforced_required = sum(
+        1 for name in gate_required if gate_enforced.get(name, False)
+    )
+
     # Retired scripts must not be referenced by make targets or workflows.
     make_text = "\n".join(
         m.read_text(encoding="utf-8", errors="replace") for m in MAKE_FILES
@@ -476,7 +659,8 @@ def cmd_audit() -> int:
         f"[guard-registry] AUDIT PASS: {total} scripts "
         f"({total - orphans} referenced, {acked}/{orphans} orphans acknowledged, "
         f"{len(retired_files)} retired, {dispositioned}/{unwired} unwired "
-        f"dispositioned)"
+        f"dispositioned, {enforced_required}/{len(gate_required)} gate_required "
+        f"enforced)"
     )
     return 0
 
