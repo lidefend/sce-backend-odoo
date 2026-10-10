@@ -432,7 +432,7 @@
     "Product delivery pending the owner's own login verification on the daily runtime (goal objective step: 交由所有者登录核对并判定产品交付边界). The served product content is byte-identical to the merged mainline, so this is a human acceptance step, not an engineering gap.",
     "Environment DENY (registered, not generalised): the rebuild/snapshot lane is still blocked by the two mounters - a single DENY conclusion bound to the actual entry dependency and an independent review, not an \"environment fully passes\" statement. rendering_detail_state stays excluded on the existing ruling and is not re-proved here."
   ],
-  "next_exact_step": "Nightly CI repair round on branch audit/daily-dev-mainline-product-acceptance-closeout-20261009. The 2026-10-09 nightly schedule failed backend_test_suite, professional_quality_gate, frontend_release_gate and release_candidate_gate (cascade). Root causes were located from the remote logs and closed locally with no assertion relaxed: guard registry module-form wiring re-seeded, collaboration guard aligned to the runtime-contract page-size ownership plus two negative cases, eslint dead code removed, and the P0 identifier-only-row classification fixed with a baseline-then-injection test. Local equivalent evidence: sc_gate/smart_construction_core 0 failed of 352 tests, verify.guard.registry AUDIT PASS, collaboration guard 32 tests OK, test_view_orchestrator 52 tests OK, workspace lint 0 errors. NEXT: commit this ledger record, push the candidate, open the PR, let the four required GitHub checks run on the exact head, then merge through the owner CI-pass rule. The seven uc4_native_lowcode failures on sc_dev_demo are outside the nightly gate and are not caused by this repair; they remain a separately owned topic. Product delivery still waits on the owner login verification on the daily runtime.",
+  "next_exact_step": "Nightly CI repair round 2. Round 1 (PR #635 -> main bb6b6e82) was verified green on the required gates but was incomplete: a clean-database dispatch on main (38014917625) proved all Odoo modules pass, including smart_construction_core 471/0 failed, and then exposed the next failure that the 2026-10-09 nightly had masked - the backend Python unit phase aborted on module smart_construction_scene with an ImportError raised during test collection, so 61 of its 71 tests never ran. Root cause is the core_extension.py import added by d106d2dd meeting a unit-test harness that only stubbed smart_core; the fix stubs the smart_construction_core package and its services package (no assertion relaxed), and local discovery is now 71 tests OK. NEXT: (a) push the fix and obtain a fresh clean-database backend_test_suite proof on the exact candidate head; (b) resolve the parallel finding that the uc4_native_lowcode delivery group is not gated anywhere and shows a red on the managed daily database, by comparing it against a fresh-database run (dispatch 38016009174); (c) after this repair round, run the verification-system closeout the owner scheduled, whose first subject is the -e/errexit masking that let one module hide every later check.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -1194,6 +1194,55 @@
       "local_equivalent": "sc_gate/smart_construction_core full label on sc_dev_demo: 0 failed, 0 error(s) of 352 tests; verify.guard.registry AUDIT PASS (1317 referenced, 87/87 orphans acknowledged, 187/187 unwired dispositioned); verify.frontend.professional_collaboration.unit 32 tests OK; workspace eslint 0 errors (70 warnings); addons/smart_core/tests/test_view_orchestrator.py 52 tests OK.",
       "family_failures_not_caused": "The uc4_native_lowcode classes TestExpenseClaimNativeLowcode (4 failures) and TestTaxDeductionNativeLowcode (3 failures) fail on sc_dev_demo. A HEAD-versus-fix A/B on the same governed container produced an identical failure set with identical assertions, and those classes carry no sc_gate/sc_smoke tag (the nightly job runs only TEST_TAGS=sc_gate/<module>,sc_smoke/<module>), so they are outside the nightly gate and are not caused by this repair. They stay a separately owned topic and were not modified.",
       "repair_commit": "c93036c4"
+    },
+    "nightly_ci_repair_mainline_integration": {
+      "round": "20261010",
+      "failing_identity": "main d690653dfb8ecc2d0f747bdb0fe0c5151c9ad04f, 2026-10-09 nightly schedule",
+      "remote_failures": {
+        "backend_test_suite": "38004428107 failure (smart_construction_core 1 failed / 471 tests)",
+        "professional_quality_gate": "38001074138 failure (guard-registry AUDIT FAIL: test_product_view_structure_contract.py unwired + stale orphan)",
+        "frontend_release_gate": "38001176119 failure (collaboration guard assertion + eslint 72 problems / 2 errors)",
+        "release_candidate_gate": "38001296965 failure (cascade: waiting on candidate checks, no independent root cause)"
+      },
+      "frozen_candidate": "66928d12560897f6eba4aa507389080d5fb50551",
+      "pull_request": 635,
+      "merge_commit": "bb6b6e82da09c35f5c6683e1779b966c4b45d8a1",
+      "merge_method": "squash (protected make pr.merge, --match-head-commit)",
+      "tree_identical_to_candidate": true,
+      "required_checks_on_exact_candidate_head": {
+        "public_guard": "success",
+        "merge_policy_gate": "success",
+        "professional_quality_gate": "success",
+        "frontend_release_gate": "success",
+        "release_candidate_gate": "success"
+      },
+      "exact_head_quick": {
+        "identity": "66928d12560897f6eba4aa507389080d5fb50551",
+        "result": "REUSE by pr.merge.local_quick_gate (receipt .git/codex/evidence/ci.local.quick/66928d12560897f6eba4aa507389080d5fb50551.json, log .runtime/ci-triage/20261010/local_quick_66928d12.log)"
+      },
+      "push_gates_on_main": "the four push gates re-ran on bb6b6e82 via the push event; backend_test_suite is schedule/workflow_dispatch only, so a workflow_dispatch run 38014917625 was started on main for a same-scope proof on the merged head instead of waiting for the 03:37 nightly",
+      "assertions_relaxed": "none; every fix is either a data/registry correction under the existing classifier ruling, an outdated guard assertion re-aligned to the runtime contract with added negative cases, dead-code removal, or a P0 classifier correction that reverts the implementation to its own documented contract",
+      "deployment": "no database write and no product deployment; the merge triggers no rollout"
+    },
+    "nightly_ci_repair_round2_scene_unit_regression": {
+      "round": "20261010-r2",
+      "discovered_by": "workflow_dispatch run 38014917625 (backend_test_suite on main bb6b6e82, fresh isolated per-run databases)",
+      "why_it_was_masked": "the 2026-10-09 nightly aborted at the first failing module: the job step runs under the GitHub default shell bash -e, so the script's 'set -uo pipefail' never cleared errexit and the intended failed=1 accumulation was dead code. The smart_construction_core failure ended the step, so every later Odoo module and the entire Python-unit phase were never executed and never reported. Fixing B advanced the suite far enough to expose this.",
+      "clean_db_facts_from_run_38014917625": {
+        "all_odoo_modules_0_failed_0_error": true,
+        "smart_construction_core": "471 tests, 0 failed (the B fix holds on a fresh database)",
+        "failing_phase": "backend Python unit suite",
+        "failing_module": "smart_construction_scene",
+        "failure": "ImportError: cannot import name 'models' from 'odoo' (unknown location) - an import error during unittest discovery, so 61 of 71 tests in that module never ran"
+      },
+      "root_cause": "addons/smart_construction_scene/core_extension.py gained 'from odoo.addons.smart_construction_core.services import role_surface_contract / role_catalog_contract' in d106d2dd (2026-10-09, role-locked landing/catalog projection). The module's pure-Python unit test (written 2026-10-05 by PR #574) stubs only smart_core, so the new import resolved the real smart_construction_core package, ran its __init__ -> models -> optional_product_projection -> 'from odoo import models, tools', and raised inside a DB-less python3 context. The runtime Odoo path is unaffected: the defect is confined to the module's unit-test harness.",
+      "fix": "stubbed 'odoo.addons.smart_construction_core' and its 'services' package as module objects with __path__ pointing at the real directories, which is the same pattern the file already uses for smart_core/smart_core.core; the real service files still load. No assertion was relaxed and the fixture environment is untouched.",
+      "evidence": {
+        "local_discovery_before": "Ran 10 tests, FAILED (errors=1) - the import error stopped collection",
+        "local_discovery_after": "Ran 71 tests, OK",
+        "workflow_classifier_check": "the backend_test_suite classifier finds exactly one python-unit module in the repository (smart_construction_scene); it is green after the fix"
+      },
+      "owner_layer": "the module's own unit-test harness (P1 module test tooling); no P0 mechanism, contract or frontend change"
     }
   },
   "continuation": {
@@ -1203,8 +1252,8 @@
   "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced.",
   "stage_identity": {
     "kind": "iteration",
-    "head": "d1511b51aea4e9eb917df410dd8689ee1da1b753",
+    "head": "bb6b6e82da09c35f5c6683e1779b966c4b45d8a1",
     "dirty_scope": [],
-    "note": "the candidate d1511b51 is now merged into main as the squashed commit d690653d with an identical tree. The verified product revision is c31db98f, served on the daily dev runtime as 5220db8b with frontend_build_sha256 1f46b033...; the merged candidate differs from that served revision only in docs/.agent/evidence paths, so the product content served and accepted on the daily runtime is exactly the merged mainline content. Post-merge ledger bookkeeping is committed on the branch and rides along with the next product candidate (a standalone .agent/+docs-only candidate is denied)."
+    "note": "main after the squash merge of PR #635; the merge tree is identical to the frozen candidate 66928d12560897f6eba4aa507389080d5fb50551 (git diff --stat between them is empty), which carried the exact-head ci.local.quick receipt and the four passing required remote checks. The served daily runtime revision is unchanged and holds the earlier merged product content; this round changed no runtime product surface."
   }
 }
