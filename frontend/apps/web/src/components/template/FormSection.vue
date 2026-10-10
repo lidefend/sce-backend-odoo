@@ -1,7 +1,8 @@
 <template>
   <ScCard
     v-if="displayFields.length || fieldSelectionMode || fieldConfigEditable || slots.action || hint"
-    :class="['template-form-section', toneClass, { 'template-form-section--readonly': allFieldsReadonly }]"
+    :bordered="frame ? undefined : false"
+    :class="['template-form-section', toneClass, { 'template-form-section--readonly': allFieldsReadonly, 'template-form-section--frameless': !frame }]"
     data-component="FormSection"
     data-semantic-component="FormSection"
     :data-state="allFieldsReadonly ? 'readonly' : 'editable'"
@@ -447,6 +448,14 @@ import { PROFESSIONAL_COMPONENT_RENDERERS } from '../../app/presentation/profess
 const props = withDefaults(defineProps<{
   title: string;
   hint?: string;
+  /**
+   * Whether this section draws its own surface frame (card + inline-size
+   * container).  A declared layout container arranges its declared children
+   * itself, so inside one a field batch is a layout item, not a section card;
+   * `frame=false` keeps the declared child in the declared layout instead of
+   * replacing it with a renderer-invented grid card.
+   */
+  frame?: boolean;
   columns?: 1 | 2 | 3;
   tone?: 'core' | 'advanced';
   fields?: FormSectionFieldSchema[];
@@ -468,6 +477,7 @@ const props = withDefaults(defineProps<{
   fillOrphanRows?: boolean;
 }>(), {
   hint: '',
+  frame: true,
   columns: 2,
   tone: 'core',
   fields: () => [],
@@ -1135,6 +1145,19 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   grid-column: 1 / -1;
   min-width: 0;
   container-type: inline-size;
+}
+
+/* A declared layout container declares how its declared children are
+ * arranged (flex items / grid columns).  Inside one, the field batch is a
+ * declared child and must be a layout item, not a section card: without this
+ * the frame contributed a full-width grid track plus `inline-size`
+ * containment, so its intrinsic width collapsed to 0 and the declared child
+ * vanished inside the declared layout (project stage row). */
+.template-form-section--frameless {
+  grid-column: auto;
+  min-width: 0;
+  max-width: 100%;
+  container-type: normal;
 }
 
 .template-form-section-hint {

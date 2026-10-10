@@ -74,6 +74,16 @@ export function useRecordFormLayout(context: {
     });
   });
   const runtimeState = (name: string) => runtimeFieldStates.value[name] || { invisible:false, readonly:false, required:false };
+  /**
+   * The contract publishes the authoritative verdict for every declared node:
+   * fields on `statusContract.widgetStatus` (keyed by widgetId), declared action
+   * buttons on `statusContract.buttonStatus` (keyed by the occurrence-bound
+   * `backendIdentity`), and structural containers on
+   * `statusContract.containerStatus` (keyed by containerId).  The renderer must
+   * consume that verdict; it must not fail closed on a node the contract has
+   * already decided, otherwise a visible declared action disappears from the
+   * product surface just because the node carries no widgetId.
+   */
   const runtimeOccurrenceState = (node: NativeFormLayoutNode) => {
     const source = node as Record<string, unknown>;
     const widgetId = String(source.widgetId || '').trim();
@@ -81,7 +91,23 @@ export function useRecordFormLayout(context: {
     const occurrenceIndex = Number(source.occurrenceIndex || 0);
     const isOccurrence = Boolean(nativeLocator && Number.isInteger(occurrenceIndex) && occurrenceIndex > 0);
     if (!isOccurrence) return runtimeState(String(node.name || '').trim());
-    const status = context.v2ContractStore.value?.widgetStatusById.get(widgetId);
+    const store = context.v2ContractStore.value;
+    const action = source.action && typeof source.action === 'object' && !Array.isArray(source.action)
+      ? source.action as Record<string, unknown> : {};
+    const attributes = source.attributes && typeof source.attributes === 'object' && !Array.isArray(source.attributes)
+      ? source.attributes as Record<string, unknown> : {};
+    const backendIdentity = String(
+      action.backendIdentity || action.backend_identity
+      || source.backendIdentity || source.backend_identity
+      || attributes.backendIdentity || attributes.backend_identity || '',
+    ).trim();
+    const containerId = String(source.containerId || source.container_id || '').trim();
+    const widgetStatus = widgetId ? store?.widgetStatusById.get(widgetId) : undefined;
+    const buttonStatus = !widgetStatus && backendIdentity
+      ? store?.buttonStatusByBackendIdentity.get(backendIdentity) : undefined;
+    const containerStatus = !widgetStatus && !buttonStatus && containerId
+      ? store?.containerStatusById.get(containerId) : undefined;
+    const status = widgetStatus || buttonStatus || containerStatus;
     if (!status) return { invisible:true, visible:false, readonly:true, required:true, disabled:true, reasonCode:'V2_OCCURRENCE_STATUS_MISSING' };
     const name = String(node.name || '').trim();
     const runtimePatch = context.onchangeModifiersPatch.value[name] || {};
@@ -89,11 +115,17 @@ export function useRecordFormLayout(context: {
     const live = resolveNativeOccurrenceBehavior(liveSource, evaluateNativeModifierValue);
     const reasonCode = String(status.reasonCode || '').trim();
     const unresolved = /UNRESOLVED|UNSUPPORTED|INVALID|MISSING/.test(reasonCode);
-    const authorityReadonly = status.auth !== 'edit' || (status.disabled === true && unresolved);
+    // Field-level authority (auth/readonly/required) exists only on a field
+    // widget verdict.  A button or container verdict carries none, so it must
+    // not be read as one: doing so would turn a declared visible action into a
+    // disabled/required field state.
+    const declaredAuthority = Boolean(widgetStatus);
+    const authorityReadonly = (declaredAuthority && widgetStatus?.auth !== 'edit')
+      || (status.disabled === true && unresolved);
     const invisible = unresolved ? true : Boolean(live.invisible || status.visible === false);
     return { invisible, visible:!invisible,
-      readonly:Boolean(live.readonly||status.readonly||authorityReadonly||unresolved),
-      required:Boolean(live.required||status.required||unresolved),
+      readonly:Boolean(live.readonly||(declaredAuthority && widgetStatus?.readonly)||authorityReadonly||unresolved),
+      required:Boolean(live.required||(declaredAuthority && widgetStatus?.required)||unresolved),
       disabled:Boolean(authorityReadonly||unresolved), reasonCode };
   };
   const isFieldVisible = (name: string) => {

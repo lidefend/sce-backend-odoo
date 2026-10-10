@@ -107,6 +107,13 @@ export function createContractV2Store(snapshot: ContractV2Snapshot): ContractV2N
     actionsById: indexBy<ContractV2ActionRule>(snapshot.actionContract.actionRuleList, (action) => action.actionId),
     widgetStatusById: indexBy<ContractV2WidgetStatus>(snapshot.statusContract.widgetStatus, (status) => status.widgetId),
     buttonStatusById: indexBy<ContractV2ButtonStatus>(snapshot.statusContract.buttonStatus, (status) => status.btnId),
+    // Declared action buttons carry no widgetId; their occurrence-bound
+    // authority key is the contract backendIdentity
+    // (native_button:<type>:<name>:<native_locator>:<occurrence>).
+    buttonStatusByBackendIdentity: indexBy<ContractV2ButtonStatus>(
+      snapshot.statusContract.buttonStatus,
+      (status) => String(status.backendIdentity || '').trim(),
+    ),
     containerStatusById: indexBy<ContractV2ContainerStatus>(snapshot.statusContract.containerStatus, (status) => status.containerId),
     primaryDataSource: primaryDataSource(snapshot),
     unsupported: collectUnsupported(),

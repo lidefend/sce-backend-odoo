@@ -642,6 +642,7 @@ export interface ContractV2NormalizedStore {
   actionsById: ReadonlyMap<string, ContractV2ActionRule>;
   widgetStatusById: ReadonlyMap<string, ContractV2WidgetStatus>;
   buttonStatusById: ReadonlyMap<string, ContractV2ButtonStatus>;
+  buttonStatusByBackendIdentity: ReadonlyMap<string, ContractV2ButtonStatus>;
   containerStatusById: ReadonlyMap<string, ContractV2ContainerStatus>;
   primaryDataSource: ContractV2Dictionary | null;
   unsupported: ContractV2UnsupportedFeature[];

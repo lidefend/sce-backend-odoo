@@ -37,6 +37,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 HANDLERS = ROOT / "addons/smart_core/handlers"
 RENDERER_PATH = ROOT / "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
+FORM_SECTION_PATH = ROOT / "frontend/apps/web/src/components/template/FormSection.vue"
+CHILD_SEQUENCE_PATH = ROOT / "frontend/apps/web/src/components/template/nativeChildSequence.ts"
 VOCABULARY_MARKER = "Declared presentation vocabulary"
 CONTAINER_MERGE = "...declaredPresentationTokens(node),"
 # A declared layout container must reach its declared children.  The recursive
@@ -51,6 +53,22 @@ LAYOUT_CONTAINER_WRAPPER_MARKER = (
     ".native-container.d-inline-flex > .native-form-tree {\n"
     "  display: contents;\n"
     "}"
+)
+
+# A declared layout container declares how its declared children are arranged.
+# The renderer must therefore render each declared child as its own layout item
+# instead of batching contiguous fields into one section card: the card carried
+# `grid-column: 1/-1` plus inline-size containment, which collapsed a declared
+# flex child to 0 width (the project stage row rendered as nothing).
+LAYOUT_CONTAINER_SEGMENT_MARKER = "in renderSegments(node)"
+LAYOUT_CONTAINER_ITEM_MARKER = ':frame="!isDeclaredLayoutContainer(node)"'
+LAYOUT_CONTAINER_POLICY_MARKER = "declaredLayoutChildSegments(children, nodeType)"
+LAYOUT_CONTAINER_POLICY_DECL = "export function declaredLayoutChildSegments<T>(nodes: readonly T[], typeOf: (node: T) => string) {"
+LAYOUT_CONTAINER_TOKENS_DECL = "export const DECLARED_LAYOUT_CONTAINER_TOKENS = ['row', 'd-flex', 'd-inline-flex'];"
+FORM_SECTION_FRAMELESS_REQUIRED = (
+    ".template-form-section--frameless",
+    "grid-column: auto",
+    "container-type: normal",
 )
 
 
@@ -209,8 +227,50 @@ def _projection_checks(module, errors: list[str]) -> None:
         )
 
 
+def _renderer_layout_item_errors(source: str, form_section: str, child_sequence: str) -> list[str]:
+    errors: list[str] = []
+    if LAYOUT_CONTAINER_TOKENS_DECL not in child_sequence:
+        errors.append(
+            "one declared layout-container vocabulary must be shared by the renderer and "
+            f"the guard ({list(LAYOUT_CONTAINER_WRAPPER_TOKENS)}); expected "
+            f"{LAYOUT_CONTAINER_TOKENS_DECL!r} in {CHILD_SEQUENCE_PATH.name}"
+        )
+    if LAYOUT_CONTAINER_POLICY_DECL not in child_sequence:
+        errors.append(
+            "the declared layout child policy must exist as one shared pure rule "
+            f"({LAYOUT_CONTAINER_POLICY_DECL!r}) so both the renderer and its test bind it"
+        )
+    if LAYOUT_CONTAINER_SEGMENT_MARKER not in source:
+        errors.append(
+            "a declared layout container must render its declared children as declared "
+            "items (one segment per declared child); batching them into one section card "
+            "replaces the declared layout with a renderer-invented grid"
+        )
+    if LAYOUT_CONTAINER_POLICY_MARKER not in source:
+        errors.append(
+            "the renderer must consume the shared declared-layout child policy "
+            f"({LAYOUT_CONTAINER_POLICY_MARKER!r}) for a declared layout container"
+        )
+    if LAYOUT_CONTAINER_ITEM_MARKER not in source:
+        errors.append(
+            "a declared layout container item must render without a section frame "
+            f"({LAYOUT_CONTAINER_ITEM_MARKER}); a framed section card carries inline-size "
+            "containment and collapses to 0 width inside the declared flex container"
+        )
+    missing = [marker for marker in FORM_SECTION_FRAMELESS_REQUIRED if marker not in form_section]
+    if missing:
+        errors.append(
+            "FormSection must implement the declared layout item frame "
+            f"(missing {missing}): without it the declared child keeps the card grid track "
+            "and the inline-size containment that collapsed it"
+        )
+    return errors
+
+
 def _self_test(source: str, vocabulary: frozenset, errors: list[str]) -> None:
     """Prove the renderer checks fail on the exact defect they guard."""
+    form_section = FORM_SECTION_PATH.read_text(encoding="utf-8")
+    child_sequence = CHILD_SEQUENCE_PATH.read_text(encoding="utf-8")
     dropped_facet = source.replace(CONTAINER_MERGE, "", 1)
     if dropped_facet == source:
         errors.append("self-test could not mutate the container class builder")
@@ -222,6 +282,49 @@ def _self_test(source: str, vocabulary: frozenset, errors: list[str]) -> None:
         errors.append("self-test could not mutate the declared layout wrapper rule")
     elif not _renderer_layout_wrapper_errors(dropped_wrapper):
         errors.append("self-test: a declared layout wrapper that consumes the layout was not detected")
+
+    batched_children = source.replace(LAYOUT_CONTAINER_SEGMENT_MARKER, "in childSegments(node)", 1)
+    if batched_children == source:
+        errors.append("self-test could not mutate the declared layout container segment rule")
+    elif not _renderer_layout_item_errors(batched_children, form_section, child_sequence):
+        errors.append(
+            "self-test: a declared layout container that batches its declared children "
+            "was not detected"
+        )
+
+    framed_item = source.replace(LAYOUT_CONTAINER_ITEM_MARKER, ':frame="true"', 1)
+    if framed_item == source:
+        errors.append("self-test could not mutate the declared layout container item frame")
+    elif not _renderer_layout_item_errors(framed_item, form_section, child_sequence):
+        errors.append(
+            "self-test: a declared layout item that keeps the section frame was not detected"
+        )
+
+    framed_section = form_section.replace("container-type: normal;", "container-type: inline-size;", 1)
+    if framed_section == form_section:
+        errors.append("self-test could not mutate the frameless section rule")
+    elif not _renderer_layout_item_errors(source, framed_section, child_sequence):
+        errors.append(
+            "self-test: a frameless section that keeps inline-size containment was not detected"
+        )
+
+    partial_vocabulary = child_sequence.replace(
+        LAYOUT_CONTAINER_TOKENS_DECL, "export const DECLARED_LAYOUT_CONTAINER_TOKENS = ['row'];", 1,
+    )
+    if partial_vocabulary == child_sequence:
+        errors.append("self-test could not mutate the declared layout-container vocabulary")
+    elif not _renderer_layout_item_errors(source, form_section, partial_vocabulary):
+        errors.append("self-test: a narrowed declared layout-container vocabulary was not detected")
+
+    dropped_policy = child_sequence.replace(
+        LAYOUT_CONTAINER_POLICY_DECL,
+        "export function batchedLayoutChildSegments<T>(nodes: readonly T[], typeOf: (node: T) => string) {",
+        1,
+    )
+    if dropped_policy == child_sequence:
+        errors.append("self-test could not mutate the shared declared-layout child policy")
+    elif not _renderer_layout_item_errors(source, form_section, dropped_policy):
+        errors.append("self-test: a dropped shared declared-layout child policy was not detected")
 
     dropped_rule = source.replace(
         ".native-form-tree.native-form-tree .d-flex { display: flex; }", "", 1,
@@ -239,6 +342,8 @@ def main() -> int:
     errors: list[str] = []
     module = _load_projection()
     source = RENDERER_PATH.read_text(encoding="utf-8")
+    form_section = FORM_SECTION_PATH.read_text(encoding="utf-8")
+    child_sequence = CHILD_SEQUENCE_PATH.read_text(encoding="utf-8")
     vocabulary = getattr(module, "FORM_PRESENTATION_LAYOUT_TOKENS", frozenset())
 
     _projection_checks(module, errors)
@@ -246,6 +351,7 @@ def main() -> int:
     errors.extend(_renderer_consumption_errors(source))
     errors.extend(_renderer_vocabulary_errors(source, vocabulary))
     errors.extend(_renderer_layout_wrapper_errors(source))
+    errors.extend(_renderer_layout_item_errors(source, form_section, child_sequence))
 
     if errors:
         print("[form_container_presentation_consumption_guard] FAIL")

@@ -223,10 +223,11 @@
         </template>
 
         <template v-else>
-          <template v-for="(segment, segmentIndex) in childSegments(node)" :key="segmentIndex">
+          <template v-for="(segment, segmentIndex) in renderSegments(node)" :key="segmentIndex">
           <FormSection
             v-if="segment.kind === 'field' && !isNativeFeedbackContainer(node) && fieldSchemasForNodes(segment.nodes).length"
-            :title="segmentIndex === childSegments(node).findIndex((item) => item.kind === 'field') ? fieldSectionTitle(node) : ''"
+            :frame="!isDeclaredLayoutContainer(node)"
+            :title="segmentIndex === renderSegments(node).findIndex((item) => item.kind === 'field') ? fieldSectionTitle(node) : ''"
             :columns="nodeColumns(node)"
             :inherited-semantic-role="semanticFormRole(node)"
             :fields="fieldSchemasForNodes(segment.nodes)"
@@ -435,7 +436,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import FormSection from './FormSection.vue';
-import { nativeChildSegments } from './nativeChildSequence';
+import { declaredLayoutChildSegments, isDeclaredLayoutContainerToken, nativeChildSegments } from './nativeChildSequence';
 import NativeActionOverflowMenu from './NativeActionOverflowMenu.vue';
 import NativeSmartAction from './NativeSmartAction.vue';
 import ScCard from '../design-system/ScCard.vue';
@@ -763,8 +764,23 @@ function fieldChildren(node: NativeFormLayoutNode) {
   return rawChildren(node).filter((child) => nodeType(child) === 'field' && isNodeRenderable(child));
 }
 
-function childSegments(node: NativeFormLayoutNode) {
-  return nativeChildSegments(rawChildren(node).filter(isNodeRenderable), nodeType);
+function isDeclaredLayoutContainer(node: NativeFormLayoutNode) {
+  return isDeclaredLayoutContainerToken(declaredPresentationTokens(node));
+}
+
+/**
+ * Declared layout container: the container itself declares how its declared
+ * children are arranged, so every declared child renders as its own layout
+ * item, in declared order.  Batching contiguous fields into one section card
+ * would insert a renderer-invented grid between the container and its declared
+ * children: inside `d-flex` the card's inline-size containment collapsed the
+ * declared child to 0 width, so the declared region rendered as nothing.
+ */
+function renderSegments(node: NativeFormLayoutNode) {
+  const children = rawChildren(node).filter(isNodeRenderable);
+  return isDeclaredLayoutContainer(node)
+    ? declaredLayoutChildSegments(children, nodeType)
+    : nativeChildSegments(children, nodeType);
 }
 
 function titleFieldForNode(node: NativeFormLayoutNode) {
@@ -1526,6 +1542,12 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 /* A declared row child that declares no column token keeps the previous
  * full-width placement instead of collapsing into a single 1/12 track. */
 .native-container.row > .native-form-tree > .native-container:not(.col-12):not(.col-md-6):not(.col-lg-3):not(.col-lg-12) {
+  grid-column: 1 / -1;
+}
+/* A declared layout container's declared children are layout items, not
+ * section cards: inside a declared `row` grid a frameless item keeps the
+ * full-width placement instead of collapsing into a single 1/12 track. */
+.native-container.row > .native-form-tree > .template-form-section--frameless {
   grid-column: 1 / -1;
 }
 

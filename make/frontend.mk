@@ -478,6 +478,14 @@ verify.frontend.contract_v2_runtime_policy.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_v2_runtime_policy_test.ts --bundle --platform=node --format=esm --outfile=/tmp/contract-v2-runtime-policy-test.mjs >/dev/null
 	@node /tmp/contract-v2-runtime-policy-test.mjs
 
+# A declared node's authoritative verdict (field widgetStatus / declared action
+# buttonStatus / container containerStatus) must be consumed for that node; a
+# declared-visible action must not fall through a widgetId-only lookup.
+.PHONY: verify.frontend.contract_v2_occurrence_authority.unit
+verify.frontend.contract_v2_occurrence_authority.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/contract-v2-occurrence-authority-test.mjs >/dev/null
+	@node /tmp/contract-v2-occurrence-authority-test.mjs
+
 # Development feedback only: these entries never build, capture browser
 # evidence, refresh reports, or freeze a candidate fingerprint.
 verify.frontend.dev.incremental.unit: guard.prod.forbid
