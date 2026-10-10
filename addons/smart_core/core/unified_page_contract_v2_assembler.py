@@ -1033,6 +1033,17 @@ def _assemble_ui_contract(
         view_type=view_type,
         container_status=contract["statusContract"]["containerStatus"],
     )
+    # The governed section-heading channel.  The contract owns the semantic
+    # title of a form-body group; the native-section renderer may only present
+    # a heading the contract authored.  This writes semanticTitle /
+    # semanticAnchor metadata and never a user-visible title/label/string, so
+    # "declared" stays distinguishable from "missing".
+    _standardize_form_container_semantics(
+        container_tree,
+        model=model,
+        view_type=view_type,
+        source=source,
+    )
     contract["layoutContract"]["containerTree"] = container_tree
     contract["layoutContract"]["componentRegistry"] = _component_registry(component_keys or {"sc.display.text"})
     collection_view_key = "tree" if view_type in {"tree", "list"} else view_type
@@ -2062,12 +2073,17 @@ def _node_has_direct_group_child(node: dict[str, Any]) -> bool:
 
 
 def _is_generic_container_label(node: dict[str, Any]) -> bool:
+    """Report whether a container carries no authored heading of its own.
+
+    ``generic`` holds the values that are container identities rather than
+    headings: the absence of a label, the container type, and a technical
+    container id/name.  A label is a heading only when it is non-empty and
+    differs from every identity value.  The empty string must never be
+    intersected directly: as soon as one of title/label/string is absent the
+    label set contains it, so a set intersection would mark every group
+    generic and would let a structural guess replace an authored title.
+    """
     node_type = _text(node.get("containerType") or node.get("type") or node.get("kind")).lower()
-    labels = {
-        _text(node.get("title")).lower(),
-        _text(node.get("label")).lower(),
-        _text(node.get("string")).lower(),
-    }
     generic = {"", node_type}
     container_id = _text(node.get("containerId")).lower()
     node_name = _text(node.get("name")).lower()
@@ -2075,7 +2091,12 @@ def _is_generic_container_label(node: dict[str, Any]) -> bool:
         generic.add(container_id)
     if _is_technical_container_identifier(node_name):
         generic.add(node_name)
-    return bool(labels & generic) or all(not label for label in labels)
+    labels = (
+        _text(node.get("title")).lower(),
+        _text(node.get("label")).lower(),
+        _text(node.get("string")).lower(),
+    )
+    return not any(label and label not in generic for label in labels)
 
 
 def _is_technical_container_identifier(value: str) -> bool:

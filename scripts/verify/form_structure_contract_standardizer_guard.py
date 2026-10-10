@@ -8,6 +8,7 @@ not mutate Odoo XML views or business facts.
 
 from __future__ import annotations
 
+import ast
 import importlib.util
 import sys
 from pathlib import Path
@@ -117,6 +118,24 @@ def nested_nodes(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def assert_true(condition: bool, message: str) -> None:
     if not condition:
         raise AssertionError(message)
+
+
+def production_call_sites(function_name: str) -> int:
+    """Count the assembler's real call sites for a module-level projection.
+
+    A guard that only drives a function on synthetic fixtures cannot tell live
+    code from dead code: the semantic standardizer was left unwired in the
+    assembler while this guard kept passing.  Counting production call sites is
+    what keeps the declared heading channel from silently going dark again.
+    """
+    tree = ast.parse(ASSEMBLER_PATH.read_text(encoding="utf-8"))
+    return sum(
+        1
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == function_name
+    )
 
 
 def main() -> int:
@@ -300,6 +319,15 @@ def main() -> int:
     assert_true(
         all(not str(node.get("title") or node.get("label") or node.get("string") or "").strip() for node in wrapped_groups),
         "generated wrapped group semantics must not become visible titles",
+    )
+
+    assert_true(
+        production_call_sites("_standardize_business_form_default_tabs") >= 1,
+        "the default-tab standardizer must stay wired into the assembler",
+    )
+    assert_true(
+        production_call_sites("_standardize_form_container_semantics") >= 1,
+        "the declared section-heading channel must be wired into production, not only tested on fixtures",
     )
 
     print("PASS form_structure_contract_standardizer_guard")

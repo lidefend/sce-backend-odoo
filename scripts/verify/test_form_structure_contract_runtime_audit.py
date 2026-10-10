@@ -11,7 +11,11 @@ from __future__ import annotations
 import unittest
 
 from scripts.verify.form_structure_contract_runtime_audit import (
+    ASSEMBLER_SOURCE_PATH,
+    NOTEBOOK_PROJECTION_CARRIERS,
     declared_action_authority_issues,
+    is_unlabeled_group,
+    resolve_projection_carriers,
 )
 
 IDENTITY = "native_button:object:action_sc_submit:/form[1]/sheet[1]/div[1]/button[5]:1"
@@ -73,6 +77,57 @@ class DeclaredActionAuthorityAuditTest(unittest.TestCase):
         self.assertEqual(declared_action_authority_issues(_contract(non_authoritative)), [])
         self.assertEqual(declared_action_authority_issues(_contract(header_channel)), [])
         self.assertEqual(declared_action_authority_issues({}), [])
+
+
+class GroupSemanticHeadingAuditTest(unittest.TestCase):
+    """The heading metric must read authored headings, not identity values.
+
+    Every case proves the baseline verdict first and then injects the one
+    condition it claims to detect.
+    """
+
+    def test_an_authored_native_title_counts_as_labeled(self):
+        node = {"containerType": "group", "containerId": "group_basic_info", "title": "基本信息"}
+        self.assertFalse(is_unlabeled_group(node))
+        node["title"] = "group"
+        self.assertTrue(is_unlabeled_group(node), "a container type echoed as a title is not a heading")
+        node["title"] = "group_basic_info"
+        self.assertTrue(is_unlabeled_group(node), "a technical container id echoed as a title is not a heading")
+
+    def test_a_missing_sibling_label_must_not_mark_every_group_unlabeled(self):
+        node = {"containerType": "group", "containerId": "group_basic_info", "label": "基本信息"}
+        self.assertFalse(is_unlabeled_group(node))
+        node.pop("label")
+        self.assertTrue(is_unlabeled_group(node))
+
+    def test_the_contract_semantic_title_satisfies_the_heading_channel(self):
+        node = {"containerType": "group", "containerId": "main.info", "semanticTitle": "金额信息"}
+        self.assertFalse(is_unlabeled_group(node))
+        node.pop("semanticTitle")
+        self.assertTrue(is_unlabeled_group(node))
+
+    def test_a_group_with_no_label_at_all_is_unlabeled(self):
+        self.assertTrue(is_unlabeled_group({"containerType": "group", "containerId": "top.wrapper"}))
+
+
+class NotebookProjectionCarrierTest(unittest.TestCase):
+    """A metric may only filter on a carrier the producer can really stamp."""
+
+    def test_declared_carrier_is_accepted_when_the_producer_stamps_it(self):
+        source = 'x = {"sourceAuthority": {"runtime_carrier": "carrier_x"}}'
+        self.assertEqual(resolve_projection_carriers(("carrier_x",), source), ("carrier_x",))
+
+    def test_invented_carrier_is_rejected_instead_of_reporting_a_zero(self):
+        source = 'x = {"sourceAuthority": {"runtime_carrier": "carrier_x"}}'
+        with self.assertRaises(RuntimeError):
+            resolve_projection_carriers(("business_form_default_tab_standardizer",), source)
+
+    def test_declared_notebook_carriers_exist_in_the_producer_source(self):
+        source = ASSEMBLER_SOURCE_PATH.read_text(encoding="utf-8")
+        self.assertEqual(
+            resolve_projection_carriers(NOTEBOOK_PROJECTION_CARRIERS, source),
+            NOTEBOOK_PROJECTION_CARRIERS,
+        )
 
 
 if __name__ == "__main__":
