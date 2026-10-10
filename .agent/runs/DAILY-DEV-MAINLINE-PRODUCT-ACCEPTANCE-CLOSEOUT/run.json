@@ -465,7 +465,7 @@
     "Owner acknowledgement (registered, now accepted): the discover-capable system_admin surface delivers menu_sc_business_config_workbench while its role-surface admin_menu_xmlids lists only menu_ui_menu_config_policy_business_config. The round ruled this designed (three declared authorities: the action's groups_id declares smart_core.group_smart_core_admin; the P1 native-config root menu_sc_business_config_center is declared and the leaf is not excluded; role_surface.system_admin.system_configuration_visible=true) with no code change, and the owner proceeded on that ruling. The alternative ruling to take 表单配置 off the platform-admin face remains the owner's and its owning layer is the action/menu group declaration (smart_core.group_smart_core_admin), not the role-surface anchor list.",
     "Known coverage debt, now machine-tracked instead of silent: 140 declared @tagged groups (274 declarations) have no governed selection entry. The registry records each with an owner and a 2026-12-31 review deadline; the audit fails closed on any new un-gated group so the debt can only shrink. Wiring them is follow-on work, not this round."
   ],
-  "next_exact_step": "Validation-system closeout landed and locally green: (1) backend_test_suite.yml per-module step no longer lets GitHub's bash -e abort the step at the first failing module nor report a truncated scope as a pass; (2) a fail-closed coverage registry binds every declared @tagged group and every scripts/ci unit script to a governed selection entry or an owned disposition (4 gated / 11 on-demand / 140 unwired; 274 declarations of tracked debt), and both verify.guard.registry and verify.test.coverage.registry are prerequisites of the required professional_quality_gate; (3) the previously dead scripts/ci/test_backend_test_suite_dispatch_contract.py is wired through verify.ci.workflow.contract. PR #636 is merged to main as e2e32ad3 and remote run 38017278287 passed on exact head 439cbaa4 (12 modules 0 failed; scene 71 tests OK). Next: commit this closeout on the branch, sync origin/main, run make ci.delivery.freeze.prepare -> freeze clean HEAD -> one make ci.local.quick -> independent review -> make pr.push.",
+  "next_exact_step": "Validation-system closeout is DONE and integrated: PR #637 -> main daecaafc (preceded by #636 -> e2e32ad3 and #635 -> bb6b6e82), all four required checks green on the exact heads, and main run 38021052567 proved the repaired backend step executes 14 of 14 planned module runs with failed=0. The branch is content-identical to main; the only remaining tracked change is this bookkeeping update (run ledger + iteration record section 13.20-13.22), which must ride with the next product candidate because a standalone .agent/docs candidate is rejected as bookkeeping-only. Next: owner product-acceptance checkpoint on the daily dev runtime (http://1.95.85.92:18081/, wutao/123456, db sc_demo); remaining tracked coverage debt (140 unwired @tagged groups / 274 declarations, owner-assigned, review_by 2026-12-31) is follow-on work, not this round.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -507,12 +507,12 @@
       "smoke": "1-entry run: partial -> complete (ok=true), second run resumed 1 completed entry without re-walking"
     },
     "mainline_integration": {
-      "pr": 636,
+      "pr": 637,
       "state": "MERGED",
-      "merge_commit": "e2e32ad3da7ef968f09717235d755ea7abace794",
-      "origin_main": "e2e32ad3",
+      "merge_commit": "daecaafc6da6c61d92312a464b84468e7d85c486",
+      "origin_main": "daecaafc",
       "artifact": ".runtime/ci-triage/20261010/pr636_merge_readback.json",
-      "note": "owner 'CI pass then merge' rule honored: four required checks green on the exact PR head, live head matched EXPECTED_HEAD, local-quick receipt reused"
+      "note": "PR #635 -> bb6b6e82, PR #636 -> e2e32ad3, PR #637 -> daecaafc; each merged via make pr.merge (--squash --match-head-commit) with the four required checks green on the exact PR head and the local-quick gate on REUSE"
     },
     "conflict_guard": {
       "decision": "OPS-DECISION-004",
@@ -1263,6 +1263,15 @@
       "artifact": ".runtime/ci-triage/20261010/branch_backend_439cbaa4.log",
       "reading": "12 module databases each '0 failed, 0 error(s)'; smart_construction_scene Python unit suite 'Ran 71 tests ... OK'",
       "note": "the masked scene import failure from the 2026-10-09 nightly is closed end-to-end on the merged head"
+    },
+    "main_backend_suite_readback": {
+      "exact_head": "daecaafc6da6c61d92312a464b84468e7d85c486",
+      "workflow": "backend_test_suite",
+      "run": "38021052567",
+      "conclusion": "success",
+      "artifact": ".runtime/ci-triage/20261010/main_daecaafc_backend_suite.log",
+      "reading": "'backend suite executed 14 of 14 planned module run(s); failed=0' (13 module DBs + 1 python unit module); no ::error:: truncation annotation and no nonzero failure count",
+      "note": "end-to-end proof that the repaired per-module step reports the full scope instead of masking a truncated one; the literal 'execution truncated' string in the log is GitHub echoing the script source, not runtime output"
     }
   },
   "continuation": {
@@ -1272,24 +1281,11 @@
   "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced.",
   "stage_identity": {
     "kind": "iteration",
-    "head": "439cbaa42d197fb5a8b4f9e67328870f7d699591",
+    "head": "697cb589",
     "dirty_scope": [
-      ".github/workflows/backend_test_suite.yml",
-      "make/ci.mk",
-      "make/guards.mk",
-      "scripts/ci/test_backend_test_suite_dispatch_contract.py",
-      "scripts/verify/registry.yaml",
-      "scripts/verify/test_coverage_registry_audit.py",
-      "scripts/verify/test_test_coverage_registry_audit.py",
-      "scripts/verify/test_coverage_registry.yaml",
-      "docs/audit/test_coverage_registry/test_coverage_registry.json",
-      "docs/audit/guard_registry/guard_registry.json",
-      "docs/engineering_convergence/complexity_budget_report.md",
-      "docs/engineering_convergence/split_plan_queue.md",
-      "docs/engineering_convergence/test_inventory.csv",
-      "docs/engineering_convergence/test_inventory_summary.md",
-      ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json"
+      ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json",
+      "docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md"
     ],
-    "note": "round-2 nightly repair (PR #636) is MERGED to main as e2e32ad3; this round is the validation-system closeout carried on the same run per the one-run rule. Dirty scope is uncommitted iteration state, not a frozen candidate."
+    "note": "PR #637 merged to main as daecaafc; the branch is content-identical to main and this round's only remaining tracked change is the bookkeeping update (run ledger + iteration record), which rides with the next product candidate per the standalone-bookkeeping rule. Dirty scope is uncommitted iteration state, not a frozen candidate."
   }
 }

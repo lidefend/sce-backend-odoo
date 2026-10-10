@@ -1284,3 +1284,90 @@ baseline `aea2c19b`（`.runtime/delivery-freeze/worktree-fingerprint.json`）。
 **六、四态（本轮更新）**
 
 批次验收=完成 / 主线集成=**完成**（PR #634 → `d690653d`）/ 版本发布=日常运行时候选（服务身份 `5220db8b`，产品内容与主线一致）/ 产品交付=**待所有者登录核对判定**。
+
+## 13.20 主线集成收口：PR #635 / #636 / #637（squash）与 nightly 掩盖缺陷闭环（2026-10-10 第 16 轮）
+
+**一、合并车道与回读（均按所有者"CI 通过即合并"规则）**
+
+| PR | 精确 head | 必需检查 | 合并提交 | 备注 |
+| --- | --- | --- | --- | --- |
+| #635 | — | 全 pass | `bb6b6e82` | nightly 四项红灯修复 |
+| #636 | `439cbaa4` | 全 pass | `e2e32ad3` | nightly 第二轮：`smart_construction_scene` 单测导入失败 |
+| #637 | `9a000714` | 全 pass | `daecaafc` | 验证体系收口（见 §13.21） |
+
+三次合并均走 `make pr.merge`（`gh pr merge --squash --match-head-commit`），合并前回读
+PR head == `EXPECTED_HEAD` == 本地 HEAD，`pr.merge.local_quick_gate` 均走 **REUSE** 分支
+（复用对应精确头的 `ci.local.quick` 回执，未重跑套件）。
+
+**二、nightly 掩盖缺陷的端到端证明**
+
+- 修复前：`backend_test_suite.yml` 的按模块步骤在 GitHub `bash -e` 下保留 errexit，
+  第一个失败模块即中止整步，后续模块静默跳过，`failed` 累积成死代码——2026-10-09 nightly
+  正是以被截断的范围报了绿，掩盖了 `smart_construction_scene` 导入失败。
+- 修复后：main `daecaafc` 上重新派发 `38021052567` → **success**，日志出现
+  `backend suite executed 14 of 14 planned module run(s); failed=0`（13 个模块库 + 1 个 Python
+  单测模块），无 `::error::` 截断注解，无任何非零失败计数。
+  （`execution truncated` 字样只出现在 GitHub 回显的脚本源码里，不是运行输出。）
+
+**三、产品身份一致性**
+
+`squash` 后 `daecaafc` 的树与 `9a000714` 的树一致；合并内容对 `addons/`、`frontend/`、`config/`
+**零改动**（本轮全部落在 `.github/`、`make/`、`scripts/`、`docs/`、`.agent/`），
+故不触发运行态部署，日常运行态服务身份保持不变。
+
+## 13.21 验证体系收口：后端套件不再掩盖失败 + 覆盖登记表 fail-closed（本轮主题，P0/P1/P4）
+
+**一、现象与根因（"验证很多但体系化不够"）**
+
+1. **后端口径造假（P4 CI 工具）**：见 §13.20 二。
+2. **证据不成体系（P0/P1 证据机制）**：仓库声明了 155 个 `@tagged` 组（362 条声明），
+   其中只有 4 个真正接在受管选择入口上；140 个（274 条声明）从未被任何受管入口引用。
+   "手工验过一次"之后不会再跑，且无人可见——这不是"验证很多"，是验证不可复用、不可审计。
+3. **死测试**：`scripts/ci/test_backend_test_suite_dispatch_contract.py` 当时零 make/workflow 引用。
+
+**二、修复（各归责任层）**
+
+- `.github/workflows/backend_test_suite.yml`：显式 `set +e`；两个循环各计 `attempted`；
+  末尾断言 `attempted == planned_total`，截断即 `failed=1`；打印 `executed N of M`。
+- 新增 `scripts/verify/test_coverage_registry_audit.py`：盘点所有 `@tagged` 组与
+  `scripts/ci/test_*.py`，未覆盖必须显式 disposition（`gated`/`on-demand`/`unwired` + owner +
+  复核期限），**任何新增未接门禁的声明都会让审计失败**（债务只能缩小）。
+- 快照 `docs/audit/test_coverage_registry/test_coverage_registry.json`（tracked，审计校验漂移）。
+- 单测 `scripts/verify/test_test_coverage_registry_audit.py`（17 例，含多行标签基线、token 边界与负例）。
+- 新增 `verify.ci.workflow.contract`（回接死测试），并新增
+  `BackendTestSuiteStepIntegrityTest` 断言步骤不能再靠 errexit 掩盖失败。
+- 三个新门禁（`verify.guard.registry`、`verify.test.coverage.registry`、`verify.ci.workflow.contract`）
+  全部加入 `ci.professional.backend` 与 `ci.professional.backend.shard-verify` 前置，
+  由必需检查 `professional_quality_gate` 强制。
+- `scripts/verify/registry.yaml` 补 `test_test_coverage_registry_audit.py` 的 `file-consumed`
+  处置（`-m unittest` 模块形式只计为文件引用），并刷新 guard_registry 与工程收敛生成物。
+
+**三、实测读数**
+
+- 覆盖登记表：tag 组 155（gated=4 / on-demand=11 / unwired=140），ci 单测脚本 11；
+  unwired 全部带 owner 与 2026-12-31 复核期限。
+- `verify.guard.registry` PASS（1406 scripts；188/188 unwired dispositioned）；
+  `verify.test.coverage.registry` 17 tests OK；`verify.ci.workflow.contract` 6 tests OK；
+  `verify.agent.ledger.unit` 15 OK；`ci.local.iteration` PASS；`ci.generated_reports.guard` PASS；
+  `ci.delivery.freeze.prepare` PASS。
+- 负例（均按预期 FAIL）：注入 `set -euo pipefail`；删除截断断言；篡改覆盖快照。
+- 冻结候选 `9a000714` 一次性 exact-head `ci.local.quick` PASS，回执
+  `.git/codex/evidence/ci.local.quick/9a000714ee359aca90bccc04cb6bd754f0677d66.json`。
+
+**四、边界（未放宽任何东西）**
+
+未放宽 ACL/字段权限/断言/负例/必需检查；未新增环境、数据库、端口、卷或凭据授权；
+未改后端契约、模型、字段或权限语义。登记表只是把既有的"未覆盖"从沉默变为可见债务，
+不把任何未接入的组宣称为已通过。
+
+**五、记账方式（按规则，不单独开记账 PR）**
+
+本记录与 `run.json` 更新属纯 `.agent/` + `docs/` 变更，会被 `pr.merge.local_quick_gate`
+判定为 standalone bookkeeping 并拒绝，故**随下一项产品候选同行**。
+
+## 13.22 四态（本轮更新）
+
+- **批次验收**：完成（验证体系收口三层修复 + 本地全绿 + 负例检出 + exact-head Quick）。
+- **主线集成**：**完成**——PR #637 → `daecaafc`（前置 #635 → `bb6b6e82`、#636 → `e2e32ad3`）。
+- **版本发布**：未主张（无部署动作；日常运行态服务身份未变）。
+- **产品交付**：技术证据就绪，**待所有者登录核对判定**（`http://1.95.85.92:18081/`，`wutao/123456`，库 `sc_demo`）。
