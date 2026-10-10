@@ -133,6 +133,34 @@ def _projection_checks(module, errors: list[str]) -> None:
             "native structural markers and control-btn classes are not region presentation"
         )
 
+    # Native icon glyphs (``<i class="fa fa-lightbulb-o pe-2"/>``) are structural
+    # decoration: the icon font supplies the glyph, so the marker classes are
+    # classified explicitly and never published nor treated as unclassifiable,
+    # while a real layout token declared on the same node must still survive.
+    try:
+        icon_tokens = module.declared_presentation_tokens(
+            {"type": "i", "attributes": {"class": "fa fa-lightbulb-o pe-2"}}, "guard.c6",
+        )
+    except ValueError as exc:
+        errors.append(f"an icon node must classify its glyph markers, not fail closed: {exc}")
+        icon_tokens = None
+    if icon_tokens is not None and icon_tokens != ["pe-2"]:
+        errors.append(
+            "an icon node must classify its glyph markers without publishing them and keep "
+            f"the layout tokens declared beside them; got {icon_tokens!r}"
+        )
+    try:
+        icon_only = module.declared_presentation_tokens(
+            {"type": "i", "attributes": {"class": "fa fa-lightbulb-o"}}, "guard.c7",
+        )
+    except ValueError as exc:
+        errors.append(f"an icon-only node must classify its glyph markers, not fail closed: {exc}")
+        icon_only = None
+    if icon_only:
+        errors.append(
+            "icon-only nodes declare no region presentation token and must publish none"
+        )
+
     unclassifiable = sorted(
         token for token in vocabulary
         if token not in module.declared_presentation_tokens(

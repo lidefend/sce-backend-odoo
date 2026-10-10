@@ -159,6 +159,19 @@ RULES = (
         "verify.business_config.formal_list.unit",
         "verify.form_structure_authority_unification.unit",
     )),
+    # The renderer implements the declared presentation vocabulary that the
+    # projection publishes.  Editing the renderer's vocabulary block, the token
+    # set in `ui_contract_v2_projection.py`, or the parity guard itself must route
+    # to that guard: without this route the projection can publish a declared
+    # token the renderer implements no rule for (the whole-region collapse defect)
+    # and no local target reports it, so it only surfaces on the served contract.
+    Rule((
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "addons/smart_core/handlers/ui_contract_v2_projection.py",
+        "scripts/verify/form_container_presentation_consumption_guard.py",
+    ), (
+        "verify.form_container_presentation.guard",
+    )),
 )
 FALLBACK_TARGET = "verify.frontend.typecheck.strict"
 FORBIDDEN_DEVELOPMENT_TARGET_PARTS = ("quick", "build", "browser", "release", "fingerprint")

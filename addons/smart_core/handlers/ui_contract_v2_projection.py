@@ -24,17 +24,27 @@ FORM_PRESENTATION_PRODUCT_PREFIX = "sc-"
 FORM_PRESENTATION_NATIVE_MARKER_PREFIXES = ("o_", "oe_")
 FORM_PRESENTATION_LAYOUT_TOKENS = frozenset({
     # layout
-    "d-flex", "flex-wrap", "justify-content-between",
+    "d-flex", "d-inline-flex", "flex-wrap", "flex-row", "justify-content-between",
+    "justify-content-start", "justify-content-end",
     "align-items-start", "align-items-center", "gap-2",
-    "row", "g-2", "col-12", "col-md-6", "col-lg-3",
+    "row", "g-2", "col-12", "col-md-6", "col-lg-3", "col-lg-12",
     # spacing / sizing
-    "mb-1", "mb-3", "mb-4", "mt-1", "mt-2", "px-0", "h-100",
+    "mb-1", "mb-3", "mb-4", "mt-1", "mt-2", "mt8", "mt16",
+    "ps-1", "pe-0", "pe-2", "px-0", "pb-2", "pb-3",
+    "h-100", "w-100", "w-md-50", "w-lg-25",
     # typography
     "h3", "small", "fw-bold", "text-muted", "text-danger", "text-warning",
     # surfaces / feedback
-    "card", "card-body",
+    "card", "card-body", "content-group",
     "alert", "alert-info", "alert-danger", "alert-warning",
 })
+# Native icon glyph classes (``<i class="fa fa-lightbulb-o"/>``) are structural
+# decoration: the icon font supplies the glyph and the renderer consumes the node
+# itself, so no region presentation token is published for them.  They are
+# classified explicitly (never dropped, never published) exactly like the other
+# native markers.
+FORM_PRESENTATION_ICON_MARKER_TOKENS = frozenset({"fa", "fas", "far", "fab", "fad"})
+FORM_PRESENTATION_ICON_MARKER_PREFIXES = ("fa-",)
 # Control markup is native button decoration; the button's presentation is
 # declared by ``actionContract`` (the action presentation tier), not by the arch
 # class.  These classes are therefore classified explicitly instead of either
@@ -87,6 +97,10 @@ def declared_presentation_tokens(node: dict[str, Any], container_id: str) -> lis
         return tokens
     for token in _declared_node_classes(node):
         if token.startswith(FORM_PRESENTATION_NATIVE_MARKER_PREFIXES):
+            continue
+        if token in FORM_PRESENTATION_ICON_MARKER_TOKENS:
+            continue
+        if token.startswith(FORM_PRESENTATION_ICON_MARKER_PREFIXES):
             continue
         if token in FORM_PRESENTATION_ACTION_MARKERS:
             continue

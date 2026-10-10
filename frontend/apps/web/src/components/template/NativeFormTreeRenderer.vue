@@ -1424,8 +1424,12 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
  * than on stylesheet order.
  */
 .native-form-tree.native-form-tree .d-flex { display: flex; }
+.native-form-tree.native-form-tree .d-inline-flex { display: inline-flex; }
+.native-form-tree.native-form-tree .flex-row { flex-direction: row; }
 .native-form-tree.native-form-tree .flex-wrap { flex-wrap: wrap; }
 .native-form-tree.native-form-tree .justify-content-between { justify-content: space-between; }
+.native-form-tree.native-form-tree .justify-content-start { justify-content: flex-start; }
+.native-form-tree.native-form-tree .justify-content-end { justify-content: flex-end; }
 .native-form-tree.native-form-tree .align-items-start { align-items: flex-start; }
 .native-form-tree.native-form-tree .align-items-center { align-items: center; }
 .native-form-tree.native-form-tree .gap-2 { gap: var(--sc-space-sm); }
@@ -1438,9 +1442,12 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 .native-form-tree.native-form-tree .col-12 { grid-column: span 12; }
 @media (min-width: 768px) {
   .native-form-tree.native-form-tree .col-md-6 { grid-column: span 6; }
+  .native-form-tree.native-form-tree .w-md-50 { width: 50%; }
 }
 @media (min-width: 1024px) {
   .native-form-tree.native-form-tree .col-lg-3 { grid-column: span 3; }
+  .native-form-tree.native-form-tree .col-lg-12 { grid-column: span 12; }
+  .native-form-tree.native-form-tree .w-lg-25 { width: 25%; }
 }
 
 .native-form-tree.native-form-tree .mb-1 { margin-bottom: var(--sc-space-2xs); }
@@ -1448,8 +1455,16 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 .native-form-tree.native-form-tree .mb-4 { margin-bottom: var(--sc-space-md); }
 .native-form-tree.native-form-tree .mt-1 { margin-top: var(--sc-space-2xs); }
 .native-form-tree.native-form-tree .mt-2 { margin-top: var(--sc-space-xs); }
+.native-form-tree.native-form-tree .mt8 { margin-top: var(--sc-space-xs); }
+.native-form-tree.native-form-tree .mt16 { margin-top: var(--sc-space-md); }
+.native-form-tree.native-form-tree .ps-1 { padding-inline-start: var(--sc-space-2xs); }
+.native-form-tree.native-form-tree .pe-0 { padding-inline-end: 0; }
+.native-form-tree.native-form-tree .pe-2 { padding-inline-end: var(--sc-space-xs); }
 .native-form-tree.native-form-tree .px-0 { padding-inline: 0; }
+.native-form-tree.native-form-tree .pb-2 { padding-bottom: var(--sc-space-xs); }
+.native-form-tree.native-form-tree .pb-3 { padding-bottom: var(--sc-space-md); }
 .native-form-tree.native-form-tree .h-100 { height: 100%; }
+.native-form-tree.native-form-tree .w-100 { width: 100%; }
 
 .native-form-tree.native-form-tree .h3 { font: var(--sc-font-title-medium); font-weight: var(--sc-base-font-weight-bold); }
 .native-form-tree.native-form-tree .small { font: var(--sc-font-body-small); }
@@ -1465,6 +1480,13 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
   background: var(--sc-app-panel);
 }
 .native-form-tree.native-form-tree .card-body { gap: var(--sc-space-xs); }
+.native-form-tree.native-form-tree .content-group {
+  gap: var(--sc-space-sm);
+  padding: var(--sc-space-sm);
+  border: 1px solid var(--sc-app-border);
+  border-radius: var(--sc-product-panel-radius);
+  background: var(--sc-app-subtle-bg);
+}
 .native-form-tree.native-form-tree .alert {
   padding: var(--sc-space-sm) var(--sc-space-md);
   border: 1px solid var(--sc-app-info-border);
