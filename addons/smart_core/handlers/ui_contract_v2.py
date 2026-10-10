@@ -181,7 +181,7 @@ def project_form_structure_surfaces(payload: Any, *, capabilities: dict[str, Any
         return []
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
-    for row in declared:
+    for row in payload:
         surface = _normalize_form_structure_surface(row)
         if not surface or surface["surface"] in seen:
             continue

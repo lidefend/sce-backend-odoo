@@ -105,6 +105,22 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 self.assertIn("verify.frontend.contract_basis.unit", targets)
                 self.assertIn("verify.frontend.contract_basis.enforce", targets)
 
+    def test_contract_handler_chain_routes_to_its_backend_unit_suites(self) -> None:
+        # The v2 contract handler chain is asserted by backend unit suites.  It
+        # must not fall through as "unmapped": on 2026-10-10 the chain was edited
+        # while only frontend targets ran, so a runtime NameError in
+        # `project_form_structure_surfaces` broke every served form contract
+        # before this route existed.
+        for path in (
+            "addons/smart_core/handlers/ui_contract_v2.py",
+            "addons/smart_core/handlers/ui_contract_v2_projection.py",
+            "addons/smart_core/core/form_structure_authority.py",
+        ):
+            with self.subTest(path=path):
+                targets = select_targets([path])
+                self.assertIn("verify.business_config.formal_list.unit", targets)
+                self.assertIn("verify.form_structure_authority_unification.unit", targets)
+
     def test_planner_change_routes_to_the_planner_behaviour_lock(self) -> None:
         # The planner code, its lock and the makefile that defines the target
         # names are one contract. Without this route a renamed target turns

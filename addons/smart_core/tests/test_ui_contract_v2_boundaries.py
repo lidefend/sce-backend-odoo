@@ -267,25 +267,25 @@ def resolve_structure_fixture(source, configs):
 class FormStructureSurfaceBoundariesTest(unittest.TestCase):
     """Declared form surfaces: the platform mechanism never invents product policy.
 
-    Negative-first: a contract that cannot declare surfaces must fall back to the
-    model capability only, and a malformed or withheld declaration must be
-    dropped rather than promoted into a visible region.
+    Negative-first: a region only exists when the product layer declares it.  A
+    non-list/withheld declaration publishes nothing (there is no platform
+    fallback), a model capability alone is not a declaration, and a malformed or
+    duplicate declaration is dropped rather than promoted into a visible region.
     """
 
     def setUp(self):
         self.module = _load_handler()
 
-    def test_platform_fallback_declares_only_the_model_capability_region(self):
+    def test_capability_alone_declares_no_region(self):
         handler = self.module.UiContractV2Handler(env={}, su_env={})
-        declared = handler._form_structure_surfaces(
-            model="x.document",
-            capabilities={"collaboration": True, "remarks": True, "attachments": False},
-        )
-        self.assertEqual([row["surface"] for row in declared], ["activity"])
-        self.assertEqual(declared[0]["contentKind"], "collaboration-panel")
-        self.assertNotIn(
-            "audit", declared[0],
-            "the platform fallback must not declare a role-gated region it cannot own",
+        self.assertEqual(
+            handler._form_structure_surfaces(
+                model="x.document",
+                capabilities={"collaboration": True, "remarks": True, "attachments": False},
+            ),
+            [],
+            "a model capability is not a product declaration: the platform invents no "
+            "region, so the retired capability fallback must never come back",
         )
         self.assertEqual(
             handler._form_structure_surfaces(
@@ -335,14 +335,11 @@ class FormStructureSurfaceBoundariesTest(unittest.TestCase):
 
     def test_malformed_or_duplicate_declarations_are_dropped(self):
         project = self.module.project_form_structure_surfaces
-        self.assertEqual(project("not-a-list", capabilities={"collaboration": True}), [{
-            "surface": "activity",
-            "title": "协作记录",
-            "role": "activity",
-            "contentKind": "collaboration-panel",
-            "sourceIdentity": "collaboration-panel",
-            "capabilities": {"timeline": True, "remarks": False, "attachments": False},
-        }])
+        self.assertEqual(
+            project("not-a-list", capabilities={"collaboration": True}),
+            [],
+            "a non-list declaration is not a declaration; the platform invents no region",
+        )
         rows = project([
             {"surface": "activity", "title": "协作记录", "role": "activity",
              "contentKind": "collaboration-panel", "sourceIdentity": "collaboration-panel"},
@@ -353,7 +350,22 @@ class FormStructureSurfaceBoundariesTest(unittest.TestCase):
             {"surface": "weird", "title": "Weird", "role": "activity",
              "contentKind": "not-a-region", "sourceIdentity": "weird"},
         ])
-        self.assertEqual([row["title"] for row in rows], ["协作记录"])
+        self.assertEqual(
+            [row["title"] for row in rows], ["协作记录"],
+            "the declared list is consumed element-wise: dropping one bad declaration "
+            "must not silently drop its valid siblings",
+        )
+        # Two valid rows prove the whole declared list is iterated.  The
+        # 2026-10-10 regression shipped `for row in declared` over an undefined
+        # name; no local target covered this loop, so every form contract failed
+        # at runtime (`presentation`/surfaces empty) until this case existed.
+        pair = project([
+            {"surface": "activity", "title": "协作记录", "role": "activity",
+             "contentKind": "collaboration-panel", "sourceIdentity": "collaboration-panel"},
+            {"surface": "audit", "title": "历史审计", "role": "audit",
+             "contentKind": "audit-timeline", "sourceIdentity": "professional-audit-timeline"},
+        ])
+        self.assertEqual([row["surface"] for row in pair], ["activity", "audit"])
 
     def test_unknown_authorization_state_is_denied_not_allowed(self):
         normalize = self.module._normalize_surface_authorization
