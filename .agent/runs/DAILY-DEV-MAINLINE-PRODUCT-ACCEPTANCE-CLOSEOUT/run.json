@@ -567,7 +567,7 @@
     "RESOLVED and DEPLOYED (B1+B2 were one P0 validator defect; see evidence.round_20261010_layout_policy_membership_authority). The runtime form-structure validator did not recognise the structure-membership authority the producer declares, so B1 ('slots is required'=60) and B2 ('layout projects field outside structure'=2024/158 models) were the same defect. B1 was not a choice: ui_contract_v2.py declares layoutPolicy=container_tree_authority with empty slots/fieldRoles (asserted by its own P0 tests), and the declared consumer frontend/apps/web/src/app/contracts/v2/schema.ts::decodeFormStructureContract forbids slots/columns/fieldRoles for that policy - so option (b) 'publish a minimal slot set' would have produced a contract the consumer rejects, leaving option (a) 'honour the declared layoutPolicy' as the only declaration-valid repair. B2's round-21 attribution was corrected: the producer is self-consistent (a read-only 163-model probe measured refs_not_in_layout=0/163 and layout-outside-slots fields inside the governance universe=6/163; every other flagged field is a native/technical/projection residual), so the reverse assertion was a validator over-assertion, not a projection split and not P1. The validator now (1) requires slots only when the declaration does not delegate membership to the tree, (2) newly rejects a tree-authority structure that also publishes slots/columns/fieldRoles (mirroring the declared consumer), and (3) scopes the reverse assertion to governed fields of non-tree-authority policies. No declaration-backed assertion was relaxed. The served daily runtime at e885d590 audits boundary_ok 163 / boundary_violation 0 (was 5/158) with projected_semantic_group_models 163, contract_standardized 81 and zero diffs on every non-boundary column. (B3) missing_group_semantics=163 was two independent defects and is RESOLVED and DEPLOYED - see evidence.round_20261010_contract_authored_section_heading_producer: (B3a, P0 smart_core, real product debt) the contract-authored heading channel semanticTitle had consumers (nativeBusinessSection.ts:96, NativeFormTreeRenderer.vue:892, schema.ts:737) but no producer, because WIP commit 2ec2e2df deleted the only call to _standardize_form_container_semantics and its replacement writes formStructureRole only. The producer is restored and _is_generic_container_label's ''-in-generic defect is fixed; the served runtime audits at projected_semantic_group_models=163 with 996/996 group nodes authored and missing_group_semantics 0. (B3b/B3c/B3d, P4 verification tools, no product change) the audit's is_unlabeled_group predicate, its notebook metric filtering on a carrier that exists nowhere in the repository, and the standardizer guard's failure to assert production wiring are all fixed, with pre/post negative baselines recorded. The residual 82 contract_needs_attention models are exactly (B4) the no-notebook/no-page scope set plus (B5) the 3 non-chatter workspace surfaces, which remain scope questions rather than product debt. This batch's two owned facets are 0 under both readings, so none of this is a batch regression.",
     "Verification-tool path debt (registered, NOT fixed in this round, no gate relaxed): make verify.form_structure.contract cannot pass in-repo because its member verify.user_form.preference.boundary_guard hardcodes addons/smart_construction_custom/models/user_preferences.py and reads it directly; that module does not exist in this repository (git log --all -- addons/smart_construction_custom is empty, absent on origin/main too) - it is a customer-custom addon outside the repository boundary, mounted and installed at runtime (the governed runtime guard scripts/verify/daily_dev_customer_addons_runtime_guard.py checks it live). Local reproduction: FileNotFoundError. Report per-target evidence only; the owning layer is that guard's owner."
   ],
-  "next_exact_step": "The owner's ruling B ('the runtime form-structure validator must honour the declared layoutPolicy') is implemented, deployed and verified at the served product head e885d590b314d310de20a373c4f4c152996e3daf: the 163-model runtime audit reports boundary_ok 163 / boundary_violation 0, 'slots is required' 60 -> 0 and 'layout projects field outside structure' 2024 -> 0, with 81/163 contract_standardized (B4/B5 unchanged) and zero diffs on every non-boundary column. This round also repaired the reuse index itself: five checks declared incomplete input lists (a test tool or configuration dependency the target actually runs was missing, so a change to it could have been certified as reusable), and the invalidated checks were re-run and re-recorded. Remaining registered work: (B4) notebook/page on the 82 no-notebook/no-page scope models and (B5) collaboration on the 3 non-chatter workspace surfaces - both scope questions, not product debt; the coverage-debt registry (140 tagged groups) is machine-tracked follow-on work; whether governance should declare a more complete field universe for the native tree (outside-and-governed = 6/163) is its own topic. The runtime-audit check now carries its own receipt: a fresh audit against the served runtime at e885d590 reproduced the round-23 report byte-identically (boundary_ok 163, contract_standardized 81 / needs_attention 82, semantic groups 163, attachments/timeline 160/160, report sha256 unchanged at 32c01d74e8a129e2), so the index reuses it instead of re-auditing. One check is carried forward by recorded impact analysis rather than re-run: verify.nav.pro01r.route_authority.browser (the only changed declared input is make/runtime_ops.mk and its diff contains no nav-lane recipe, dependency or assertion). The product-delivery item remains the owner's own login verification (wutao/123456, sc_demo, http://1.95.85.92:18081/). Nothing has been pushed to origin or the public mirrors.",
+  "next_exact_step": "Round-24 continuation is closed. B4 and B5 are no longer 'scope questions needing a ruling': a read-only native-side probe (sc-root -> sc-backend-odoo-dev-odoo-1, worktree @ e885d590, sc_demo) returned a decisive reference. B4: the native notebook set and the native page set equal the contract sets exactly (81 == 81 each, symmetric difference empty), and the 82 contract_needs_attention models are exactly the 82 models whose native form view has no <notebook>/<page> (all still carrying native <group> containers), so missing_contract_notebook/page is a naming convention over flat native forms, not a projection defect and not owed work. B5: the 3 workspace models are non-mail models with no upload/download hook and no native chatter, so the contract's empty collaboration block matches the facts. The same probe checked the direction that would matter: 0 cases of the contract suppressing a native chatter; 20 cases of additive declaration (message-capable models whose native arch contains no chatter element), produced by the generic P0 rule ui_contract_v2._inject_collaboration_contract with no model special-case - recorded as a bounded, non-lossy divergence that requires an owner product decision rather than a silent P0 change. One naming risk is recorded, not fixed: the audit column 'native_chatter' is contract-sourced. Nothing was pushed, merged, or deployed by this round; the served product head remains e885d590 with the 163-model audit at boundary_ok 163 / contract_standardized 81; the reuse index is unchanged at reusable 46 / stale 1 (recorded-impact carriage) / not_run 0. The only open product-delivery item remains the owner's own login verification (wutao/123456, sc_demo, http://1.95.85.92:18081/). Registered follow-on work is unchanged: the coverage-debt registry (140 tagged groups), whether governance should declare a more complete native field universe, and the deferred audit-field rename.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -1717,6 +1717,91 @@
           "stale": 1,
           "not_run": 0
         }
+      }
+    },
+    "round_20261010_native_side_attribution_b4_b5": {
+      "question": "B4 (82 models reporting missing_contract_notebook/missing_contract_page) and B5 (3 models reporting missing_collaboration_runtime/attachment/timeline) were classified as scope questions in round 24 from contract-side data only; this round supplies the decisive native-side reference without re-running the audit",
+      "method": "read-only probe through sc-root -> docker exec sc-backend-odoo-dev-odoo-1 (scripts/ops/odoo_shell_exec.sh) on the registered worktree /opt/projects/repos/sce-product-odoo @ e885d590, database sc_demo, for each model comparing the contract (layoutContract.containerTree notebook/page, runtimeContract.collaboration.enabled) with the native env[model].get_view(view_type='form') arch parsed by lxml (notebook/page/oe_chatter element counts)",
+      "evidence_dir": ".runtime/agent-runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/form_structure_native_side_attribution/",
+      "artifacts": {
+        "summary": "attribution_summary.json (carries sha256 of the three probe sources, the three raw outputs and the bound contract report)",
+        "probe_sources": [
+          "fs_native_page_probe_82.py",
+          "fs_native_matrix_probe_163.py",
+          "fs_agroup_arch_probe_20.py"
+        ],
+        "raw_outputs": [
+          "native_page_probe_82_raw.txt",
+          "native_matrix_163_raw.txt",
+          "native_agroup_arch_20_raw.txt"
+        ]
+      },
+      "bound_to": {
+        "served_source_revision": "e885d590b314d310de20a373c4f4c152996e3daf",
+        "database": "sc_demo",
+        "contract_report": ".runtime/final-acceptance/daily-deployed/form_structure_contract_runtime_audit_e885d590.json"
+      },
+      "B4_notebook_page": {
+        "verdict": "scope convention, NOT a projection defect (native-side evidence now direct, not inferred)",
+        "assertions_held": [
+          "native notebook set == contract notebook set exactly (81 == 81, symmetric difference empty)",
+          "native page set == contract page set exactly (81 == 81, symmetric difference empty)",
+          "the 82 contract_needs_attention models == exactly the 82 models whose native form view has no <notebook>/<page>",
+          "the 81 contract_standardized models == exactly the 81 models whose native form view has <notebook>/<page>",
+          "all 82 flat-native models still carry native <group> containers"
+        ],
+        "meaning": "missing_contract_notebook/page fires only when the native form itself has no tab structure, so the contract truthfully declares zero tabs; no native tab surface is lost and no projection work is owed"
+      },
+      "B5_collaboration": {
+        "verdict": "scope convention, NOT a defect",
+        "models": [
+          "sc.company.project.refund.workspace",
+          "sc.current.account.workspace",
+          "sc.team.loan.deduction.workspace"
+        ],
+        "facts": "all three are non-mail models (no message_ids / message_post / activity_ids / message_follower_ids), have no attachment upload/download hook, and their native form view contains no chatter; the contract's empty collaboration block therefore matches the facts"
+      },
+      "direction_check": {
+        "suppressive": {
+          "count": 0,
+          "meaning": "the contract never suppresses a native form-view chatter"
+        },
+        "additive": {
+          "count": 20,
+          "models": [
+            "construction.contract",
+            "construction.contract.income",
+            "payment.request",
+            "project.budget",
+            "project.milestone",
+            "sc.approval.policy",
+            "sc.expense.claim",
+            "sc.financing.loan",
+            "sc.fund.account.operation",
+            "sc.general.contract",
+            "sc.invoice.registration",
+            "sc.output.invoice.adjustment",
+            "sc.payment.execution",
+            "sc.receipt.income",
+            "sc.self.funding.registration",
+            "sc.settlement.adjustment",
+            "sc.settlement.order",
+            "sc.treasury.reconciliation",
+            "sc.workflow.def",
+            "sc.workflow.instance"
+          ],
+          "root": "P0 generic rule, no model special-case: smart_core/handlers/ui_contract_v2.py::_inject_collaboration_contract sets chatter_enabled = declared OR message_capable OR activity_capable",
+          "proven": "all 20 are message-capable and all 20 native archs contain neither oe_chatter nor <chatter/>, proven element-by-element",
+          "meaning": "bounded additive-only divergence: the contract declares a collaboration panel on 20 message-capable models whose native form view shows none. No native surface is lost, the audit emits no gap in this direction, and converging either way would change the product surface of 20 models, so this round records the fact and does not mutate P0"
+        }
+      },
+      "probe_defects_fixed_in_the_probe_only": [
+        "this Odoo's Model.get_view returns a dict (arch/id/model/models), not a 2-tuple, so the first probe raised 'too many values to unpack'",
+        "lxml's Comment.tag is a cython function and cannot be a Counter key"
+      ],
+      "naming_risk_recorded": {
+        "fact": "the audit report column 'native_chatter' is sourced from the contract (scripts/verify/form_structure_contract_runtime_audit.py:474-479,520 read runtimeContract.collaboration.chatter.enabled); the audit performs no contract-vs-native chatter comparison, and docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md:2058 quotes that field name",
+        "disposition": "recorded only; renaming the committed report schema is deferred to an owner decision because it would churn docs/audit/native/* and referenced iteration text"
       }
     }
   },

@@ -2404,3 +2404,94 @@ bash scripts/verify/form_structure_contract_runtime_audit.sh`）→ `make agent.
 
 未 push、未合并、未改产品代码、未放宽任何断言；B4/B5 与覆盖债不变；车道级重建/快照 DENY 不变；
 唯一开放产品交付项仍为所有者登录核对（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`）。
+
+### 24-续（2）2026-10-10：B4/B5 原生侧归属取证（口径确证，非投影缺陷）
+
+第 24 轮把 B4（82 个 `missing_contract_notebook/page`）与 B5（3 个
+`missing_collaboration_runtime/attachment/timeline`）判为"口径问题、需裁决"。本轮不重跑审计，
+只用**只读原生侧对照探针**把口径判断升级为**确证**：判据已经从报告里解出，缺的只是"原生那一侧到底有没有"。
+
+**一、探针与受绑身份**
+
+- 通道：`sc-root` → `docker exec sc-backend-odoo-dev-odoo-1`（`scripts/ops/odoo_shell_exec.sh`），
+  注册工作树 `/opt/projects/repos/sce-product-odoo @ e885d590`，库 `sc_demo`，与审计报告同环境。
+- 探针对每个模型同时取两侧：契约 `layoutContract.containerTree` 的 notebook/page 计数、`runtimeContract.collaboration`
+  的三个 `enabled`；原生 `env[model].get_view(view_type="form")` 的 arch 里 `<notebook>`/`<page>`/`oe_chatter`
+  元素计数（lxml 解析，不做字符串近似）。
+- 取证目录：`.runtime/agent-runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/form_structure_native_side_attribution/`
+  （3 个探针源码 + 3 份原始输出 + `attribution_summary.json`，含源码与原始输出的 sha256）。
+- 两处探针自身缺陷当场修正（不改产品）：该版本 `get_view` 返回 **dict**(`arch/id/model/models`) 而非二元组；
+  以及 `lxml` 的 `Comment.tag` 是 cython 函数、不能作 `Counter` 键。
+
+**二、B4 结论：口径，非投影缺陷（82 模型）**
+
+| 断言 | 结果 |
+| --- | --- |
+| 原生 notebook 集合 == 契约 notebook 集合 | **成立**（81 == 81，对称差为空） |
+| 原生 page 集合 == 契约 page 集合 | **成立**（81 == 81，对称差为空） |
+| 82 个 `contract_needs_attention` == 原生无 `<notebook>/<page>` 的 82 个模型 | **成立** |
+| 81 个 `contract_standardized` == 原生有 `<notebook>/<page>` 的 81 个模型 | **成立** |
+| 82 个平坦原生表仍带原生 `<group>` 容器 | **成立**（`native_group>=1` 全命中） |
+
+即：`missing_contract_notebook/page` 只在**原生表单本身没有分页签**时触发，契约如实声明 0 个页签。
+**没有任何原生页签面被丢失，也没有欠下的投影工作**。第 24 轮"六、B4 定性"从契约侧推断的结论由此获得原生侧直接证据。
+
+**三、B5 结论：口径，非缺陷（3 模型）**
+
+| 模型 | 原生 chatter | `message_ids` / `message_post` / `activity_ids` / `follower` | upload/download hook |
+| --- | --- | --- | --- |
+| `sc.company.project.refund.workspace` | 无 | 全无 | 无 |
+| `sc.current.account.workspace` | 无 | 全无 | 无 |
+| `sc.team.loan.deduction.workspace` | 无 | 全无 | 无 |
+
+三者都是**非 mail 模型**（无 `message_ids`/`activity_ids`/`message_post`/`message_follower_ids`），
+且无附件上传/下载许可，**原生表单视图也没有 chatter**。契约给出空 `collaboration` 与事实一致，
+因此这三个 gap 是覆盖度标签而非缺陷。第 24 轮"七、B5 定性"同样获得原生侧确证。
+
+**四、方向性核查：协作契约是否存在"压制原生面"（0 例）**
+
+顺带对全量 163 模型做了双向核查，因为"契约与原生不一致"只在**压制**方向才是缺陷：
+
+- **压制方向（契约 false / 原生有 chatter）= 0 例**。契约从未压掉原生表单已有的协作面。
+- **增量方向（契约 true / 原生 arch 无 chatter）= 20 例**：`construction.contract`、`construction.contract.income`、
+  `payment.request`、`project.budget`、`project.milestone`、`sc.approval.policy`、`sc.expense.claim`、
+  `sc.financing.loan`、`sc.fund.account.operation`、`sc.general.contract`、`sc.invoice.registration`、
+  `sc.output.invoice.adjustment`、`sc.payment.execution`、`sc.receipt.income`、`sc.self.funding.registration`、
+  `sc.settlement.adjustment`、`sc.settlement.order`、`sc.treasury.reconciliation`、`sc.workflow.def`、
+  `sc.workflow.instance`。20 个**全部是 mail 能力模型**（有 `message_ids`），其原生 form arch **既无 `oe_chatter`
+  也无 `<chatter/>`**（逐模型元素级取证）。
+- 增量方向的产源是 **P0 通用规则**：`smart_core/handlers/ui_contract_v2.py::_inject_collaboration_contract`
+  的 `chatter_enabled = declared OR message_capable OR activity_capable`，**无任何模型特判**。
+- 定性：这是**只增不减**的声明面差异——契约在原生表单未画 chatter 的 mail 模型上声明了协作面板。
+  **不丢失任何原生面**，不构成审计 gap（审计只发 `missing_*`，不发 extra），因此 82 个
+  `contract_needs_attention` 的定性不受影响。是否要收敛为"与原生 arch 对齐"属于**产品面裁决**，
+  本轮只登记事实、**不改 P0 行为**（改任一侧都会改变 20 个模型的产品面）。
+
+**五、登记一处口径命名风险（本轮回执内，不扩范围）**
+
+审计报告列 `native_chatter` 实为**契约值**（`scripts/verify/form_structure_contract_runtime_audit.py:474-479,520`
+读的是 `runtimeContract.collaboration.chatter.enabled`），字段名容易被读成"原生 vs 契约对照"，而该审计
+并不做这种对照；`docs/ops/iterations/...20261009.md:2058` 也引用了这个字段名。本轮**只登记该命名风险**，
+不改已入仓报告 schema（改名会连带 churn `docs/audit/native/*` 与被引用的迭代文本），留待所有者裁决。
+
+**六、运行环境残留回收（本轮足迹先归档、后清理，只回收本分支可证实的文件）**
+
+清理前逐份比对 sha256，**只要远端副本在本仓 `.runtime` 已有同哈希归档即判定为冗余**，否则先归档再删：
+
+| 远端 `/tmp` 项 | 判定 | 处置 |
+| --- | --- | --- |
+| `fs_contract_runtime`、`fs_contract_runtime2`（修复前基线 `boundary_ok 5 / violation 158`） | 本仓未归档 | **先归档**到 `.../form_structure_runtime_audit_baseline_attribution/prefix_baseline_reports/`（json+md）再删 |
+| `fs_audit_remote.log`、`fs_audit_remote2.log`、`fs_audit_remote3/4.log` | 运行日志 | 归档为 `pre_fix_audit_1520/1543/1603/1631.log` 再删 |
+| `fs_contract_runtime3`、`fs_contract_runtime4`、`sc_fs_contract_audit_1066b422`（json sha `a0088960…`） | 与已归档 `..._1066b422.json` **逐字节一致** | 补档 csv/md 后删 |
+| `fs_audit_after`（json sha `da45f98a…`） | 与已归档 `..._330fb36d.json` **逐字节一致** | 补档 csv/md 后删 |
+| 容器 `sc-backend-odoo-dev-odoo-1:/tmp/fs_*probe*.py` | 探针源码已归档 | 以 `docker exec -u root` 删除（文件属 root，默认 `odoo` 用户无权删） |
+
+非本分支本轮的同期 `/tmp` 遗留（10-04～10-06 的 `probe*`、`sc_daily_probe*`、6 月的 `scbs55_*` 等）
+**不在本轮清理范围**，未触碰。本机仅注册的 `sc-local-dev-*` 容器；另见另一执行器的
+`sc-fe-r2-p1-01-*`（属其工作树，未触碰）。无 SSH 端口转发，无残留构建/验证进程。
+
+**七、边界**
+
+- 未改任何产品代码、未放宽任何断言/门禁、未 push/未合并；B4/B5 由"待裁决"升级为"已确证为口径"。
+- 覆盖债（140 个 `@tagged` 分组）与车道级重建/快照 DENY 不变；唯一开放产品交付项仍为**所有者登录核对**
+  （`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`）。
