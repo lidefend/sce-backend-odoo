@@ -459,15 +459,67 @@
         "artifact": ".runtime/ci-triage/20261010/ci_workflow_contract.log"
       },
       "note": "passed: 6 tests OK (BackendTestSuiteStepIntegrityTest; errexit/truncation negative cases). asserts the backend per-module step cannot mask a failure via errexit or report a truncated scope as green"
+    },
+    "frontend_modifiers_runtime_guard": {
+      "target": "verify.frontend.modifiers_runtime.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/modifiers_runtime_guard.py",
+        "frontend/apps/web/src/app/modifierEngine.ts",
+        "frontend/apps/web/src/app/contracts/v2/store.ts",
+        "frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordFormLayout.ts",
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "frontend/apps/web/src/pages/contractForm/useRecordFormFieldSchemas.ts"
+      ]
+    },
+    "frontend_canonical_form_presenter_unit": {
+      "target": "verify.frontend.canonical_form_presenter.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+        "frontend/apps/web/src/app/modifierEngine.ts",
+        "frontend/apps/web/src/app/contracts/v2/store.ts",
+        "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
+        "frontend/apps/web/src/app/presentation/canonicalFormRenderModel.ts",
+        "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts",
+        "frontend/apps/web/src/pages/contractForm/canonicalFormActionExecutor.ts"
+      ]
+    },
+    "frontend_contract_header_action_unit": {
+      "target": "verify.frontend.contract_header_action.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/contract_header_action_presentation_test.ts",
+        "frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts",
+        "frontend/apps/web/src/pages/contractForm/headerActionPresentation.ts",
+        "frontend/apps/web/src/pages/contractForm/contractHeaderActionPresentation.ts"
+      ]
+    },
+    "form_structure_contract_runtime_audit": {
+      "target": "verify.form_structure.contract_runtime.audit",
+      "kind": "runtime",
+      "inputs": [
+        "scripts/verify/form_structure_contract_runtime_audit.py",
+        "scripts/verify/form_structure_contract_runtime_audit.sh",
+        "scripts/verify/test_form_structure_contract_runtime_audit.py",
+        "scripts/verify/form_container_presentation_consumption_guard.py",
+        "scripts/verify/form_view_native_structure_boundary_guard.py",
+        "addons/smart_core/handlers/ui_contract_v2_projection.py",
+        "addons/smart_core/core/unified_page_contract_v2_runtime.py"
+      ],
+      "note": "make target cannot run to completion while addons/smart_construction_custom/models/user_preferences.py is absent from the repository (pre-existing; the path does not exist on origin/main either, so verify.user_form.preference.boundary_guard fails by construction). The runtime body and the five boundary guards that do not depend on that absent module were executed instead."
     }
   },
   "blockers": [
     "Owner acknowledgement (registered, now accepted): the discover-capable system_admin surface delivers menu_sc_business_config_workbench while its role-surface admin_menu_xmlids lists only menu_ui_menu_config_policy_business_config. The round ruled this designed (three declared authorities: the action's groups_id declares smart_core.group_smart_core_admin; the P1 native-config root menu_sc_business_config_center is declared and the leaf is not excluded; role_surface.system_admin.system_configuration_visible=true) with no code change, and the owner proceeded on that ruling. The alternative ruling to take 表单配置 off the platform-admin face remains the owner's and its owning layer is the action/menu group declaration (smart_core.group_smart_core_admin), not the role-surface anchor list.",
     "Known coverage debt, now machine-tracked instead of silent: 140 declared @tagged groups (274 declarations) have no governed selection entry. The registry records each with an owner and a 2026-12-31 review deadline; the audit fails closed on any new un-gated group so the debt can only shrink. Wiring them is follow-on work, not this round.",
     "Product delivery pending the owner's own login verification on the daily dev runtime. The runtime now serves mainline daecaafc, which includes PR #635's contract-projection fix for the payment-basis (payment facts) body; the served sealed contract reports compatibilityDependencies=[] and no LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW, and the readonly probe passed 39/39 check units. This is a human acceptance step, not an engineering gap. Credentials: wutao/123456, db sc_demo.",
-    "RESOLVED in code, not yet deployed: the owner-reported form-surface defect (V1 declared container presentation dropped by the renderer; V2 hardcoded 协作记录 in the P0 default surface + frontend legacy fallbacks) is fixed and locally verified (see evidence.round_20261010_form_presentation_projection_fix). It stays OPEN as a product-delivery item until the served daily runtime carries the fix and the owner's login shows the restored region; no runtime claim is bound to it yet."
+    "RESOLVED and DEPLOYED, still pending the owner's login: the owner-reported form-surface defect (V1 declared container presentation dropped by the renderer; V2 hardcoded 协作记录 in the P0 default surface + frontend legacy fallbacks) is fixed, and its successor defect - the declared modifier value domain being resolved by two different implementations - is fixed systemically in 514c4c11 (see evidence.round_20261010_declared_modifier_value_domain_single_authority). The served daily runtime now carries both (source_revision 514c4c11, frontend_build_sha256 bc5a0cac, entry index-BpKZqOGC.js) and the declaration-driven probe passes at 1440/390 in light and dark. The item stays open only for the owner's own login confirmation of the restored region.",
+    "New observed baseline, unattributed and out of this round's scope: the runtime form-structure contract audit reads 163/163 models as contract_needs_attention and 158/163 as boundary_violation, with missing_group_semantics=163, missing_contract_notebook=82, missing_contract_page=82, 'formStructureContract.slots is required'=60 and 2024 'projects field outside structure' occurrences, while the two facets this batch owns (declared container presentation, declared native action verdicts) are 0. This audit exits 0 by design and has no earlier run recorded at this generation, so these numbers are a first reading, not a regression statement. Determining their owning layer (projection vs. audit expectation vs. genuine product debt) is follow-on work; do not quote them as either a pass or a failure."
   ],
-  "next_exact_step": "Local fix set is green (guard rebound to the declared contract surface, retired heuristic removed, 15-target L2 batch + strict typecheck PASS, real-file mutation injections caught). Next: (1) commit this candidate on the branch; (2) refresh the served daily runtime at the exact new HEAD through the governed candidate lane (daily.runtime.candidate.bundle_sync -> daily.runtime.source_revision.align -> daily.runtime.frontend.build -> daily.runtime.published_face.converge); (3) re-run the read-only probe and verify.form_structure.contract_runtime.audit so presentation_unclassified/presentation_dropped are 0 and the overview/prompt blocks render with the declared presentation tokens; (4) hand over for the owner's own login verification. make verify.form_structure.contract remains blocked by the pre-existing absent addons/smart_construction_custom module; report per-target evidence instead.",
+  "next_exact_step": "Round closed on the engineering side at clean 514c4c11 (served runtime bound to it). Owner-facing verification remains the only open item: log in on the daily dev runtime (wutao/123456, database sc_demo, entry http://1.95.85.92:18081/) and check the project detail form at /f/project.project/581?menu_id=379&action_id=506 - the declared layout buttons must render as declared (6 visible, 5 hidden) and the six declared section titles with the draft hint as a declared alert block. Two carried items are NOT closed by this round: (1) the runtime audit's broad baseline (163 contract_needs_attention / 158 boundary_violation / missing_group_semantics=163 / slots-required=60 / out-of-structure fields=2024) is a first, unattributed reading - it needs its own owning-layer determination before anything is claimed about it; (2) make verify.form_structure.contract cannot pass while addons/smart_construction_custom/models/user_preferences.py is absent from the repository (absent on origin/main too) - report per-target evidence only. No further runtime write is pending; nothing has been pushed.",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -1436,6 +1488,29 @@
       ],
       "pre_existing_blocker_observed": "make verify.form_structure.contract is unusable on this branch for a reason unrelated to this change: its member verify.user_form.preference.boundary_guard requires addons/smart_construction_custom/models/user_preferences.py, and that path is absent from HEAD (git cat-file -e HEAD:<path> fails; addons/smart_construction_custom* does not exist). Recorded as an owning-layer dependency gap; no assertion was relaxed and no dependency was changed. The new guard's PASS is therefore reported per-target, not as an aggregate-gate pass.",
       "handover": "Owner login check on the refreshed preview remains the only user-facing step: wutao/123456, database sc_demo, http://1.95.85.92:18081/"
+    },
+    "round_20261010_declared_modifier_value_domain_single_authority": {
+      "question": "owner directive: the declared-modifier defect class must be solved systemically on the contract's official template, not per consumer. Is the value domain a declared fact evaluated through one authority, or does the frontend still re-derive it somewhere?",
+      "identity": "workspace branch audit/daily-dev-mainline-product-acceptance-closeout-20261009, commit 514c4c1146489ebc0b5b275c01587c57f4a075c9 (clean); served daily runtime sc-root:/opt/projects/repos/sce-product-odoo at the same sha, database sc_demo, entry http://1.95.85.92:18081/, frontend_build_sha256 bc5a0cac181d527072276903ac45f5011a9a8f8a40422f317a96fcac772f906e, entry asset index-BpKZqOGC.js.",
+      "defect_class": "the same declaration was resolved by two value-domain implementations: the contract path (mainData snapshot overlaid with live form values; an owned-but-undefined live entry fell back to the snapshot) and the native-layout path (an owned key won even when it carried no value). The two could answer differently for the same declared field, which is how a declared condition silently inverted a button's visibility.",
+      "root_cause": "duplicated mechanism, not a duplicated symptom: resolveContractV2ModifierValues (contract presenter + executable-adapter list) and resolveNativeModifierFieldValue (native form layout) each implemented the overlay rule independently, and the store's own doc comment asserted a parity the second implementation did not provide.",
+      "fix": "modifierEngine now owns the single rule as resolveDeclaredModifierFieldValue(snapshot, live, field): a live value wins only when the form owns the key and the value is defined, otherwise the contract snapshot answers. resolveContractV2ModifierValues consumes that rule for its overlay decision (its own presence guard was removed so the outcome is decided in exactly one place); nativeLayoutUtils no longer defines a resolver and re-exports the engine authority; useRecordFormLayout resolves declared modifiers through it. No business-model special case and no ACL/field-permission change.",
+      "guard_mechanism": "scripts/verify/modifiers_runtime_guard.py (already in verify.frontend.quick.gate) is now structural instead of marker-only: it requires the engine rule markers, forbids a second implementation in nativeLayoutUtils, requires the engine rule to be re-exported there, and requires the layout consumer to call it. modifiers_runtime_guard.py / make/frontend.mk are declared inputs of the guard check.",
+      "negative_control": "baseline green first, then two injections. (a) dropping '!== undefined' from the engine rule (live key always wins) fails the new presenter assertion 'an owned-but-undefined live entry cannot shadow the contract snapshot a declaration depends on'; (b) re-adding a local resolveNativeModifierFieldValue in nativeLayoutUtils fails the guard with 'engine missing marker: live[name] !== undefined' and 'nativeLayoutUtils defines its own modifier value-resolution rule'. Both injections were reverted and the baseline re-run green.",
+      "targeted_verification": "verify.frontend.modifiers_runtime.guard PASS; verify.frontend.canonical_form_presenter.unit PASS (177 + declared field-to-field action visibility cases count=7); verify.frontend.contract_header_action.unit PASS (16 unittest cases + real builder chain); verify.frontend.native_form_action_presentation.unit PASS; verify.frontend.native_form_structure_responsibility.unit PASS cases=12; verify.frontend.form_structure_contract_projection.unit PASS fields=76 unclassified=0; verify.frontend.standard_form_composition.unit PASS 121 cases; verify.frontend.typecheck.strict PASS; ci.local.iteration PASS change_state=clean coverage=L1_only.",
+      "runtime_audit": "verify.form_structure.contract_runtime.audit body executed on the served runtime (sc-root, project sc-backend-odoo-dev, container sc-backend-odoo-dev-odoo-1, DB sc_demo, tree at 1066b422) with the report written to /tmp so the served tree stayed clean. The four facets this batch owns are all 0: presentation_unclassified=0, presentation_dropped=0, declared_action_verdict_missing=0, declared_action_verdict_incomplete=0, contract_error rows=0. The same run's broader readings are recorded as an unattributed first baseline, not as a pass: 163 models all contract_needs_attention, boundary_ok 5 / boundary_violation 158, with missing_group_semantics=163, missing_contract_notebook=82, missing_contract_page=82, 'formStructureContract.slots is required'=60 and 'projects field outside structure'=2024 occurrences. Report: .runtime/final-acceptance/daily-deployed/form_structure_contract_runtime_audit_1066b422.json.",
+      "deployed_and_reverified": "after the commit, the governed lanes were re-run: daily.runtime.candidate.bundle_sync PASS (bundle_sha256 c325ca16aaf712e4507b9ea95a7933ef74da63a6f0c108ae0ee626a6b468afa6, old_sha 1066b422), daily.runtime.source_revision.align PASS (served source_revision 514c4c11), daily.runtime.frontend.build PASS (rebuilt, fingerprint bc5a0cac..., served entry index-BpKZqOGC.js). The declaration-driven form probe was re-run against the new bundle at 1440 and 390 in light and dark: verdict PASS, failures=[] in all four, tree=1, driverError=0, pageErrors=[], the six declared-visible layout buttons 1/1 each, the five declared-hidden ones 0 each, the six declared group titles 1 each, declared class census with no zero, hint present as a declared alert block. Evidence: .runtime/final-acceptance/daily-deployed/round4_form_probe_{1440,390,1440_dark,390_dark}.json (+ .png) and the probe source round4_form_probe.mjs.",
+      "published_face_decision": "daily.runtime.published_face.converge was NOT re-run, with evidence rather than assumption: the last converge (published-face-converge.json, PASS, guard_status PASS, 90/90 entries exact match, snapshot_version daily-navigation-*-5c828da2f8d0) is bound to expected_sha 5c828da2, and 'git diff --name-only 5c828da2..514c4c11' touches only frontend sources, frontend tests and one verify guard - no addons/, no menu or contract data - so the locked contract and the published product face are unchanged by 1066b422 and 514c4c11.",
+      "artifacts": [
+        ".runtime/final-acceptance/daily-deployed/candidate-bundle-sync.json",
+        ".runtime/final-acceptance/daily-deployed/source-revision-align.json",
+        ".runtime/final-acceptance/daily-deployed/frontend-build.json",
+        ".runtime/final-acceptance/daily-deployed/round4_form_probe_1440.json",
+        ".runtime/final-acceptance/daily-deployed/round4_form_probe_390.json",
+        ".runtime/final-acceptance/daily-deployed/round4_form_probe_1440_dark.json",
+        ".runtime/final-acceptance/daily-deployed/round4_form_probe_390_dark.json",
+        ".runtime/final-acceptance/daily-deployed/form_structure_contract_runtime_audit_1066b422.json"
+      ]
     }
   },
   "continuation": {
@@ -1465,26 +1540,7 @@
   "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced.",
   "stage_identity": {
     "kind": "iteration",
-    "head": "bff64595dc135f2a23eb2fbab05ef4194488fe55",
-    "dirty_scope": [
-      ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json",
-      "docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md",
-      "addons/smart_core/handlers/ui_contract_v2.py",
-      "addons/smart_core/handlers/ui_contract_v2_projection.py",
-      "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
-      "frontend/apps/web/src/components/template/nativeTextPresentation.ts",
-      "frontend/apps/web/src/pages/contractForm/nativeSectionNavigation.ts",
-      "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue",
-      "frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue",
-      "frontend/apps/web/scripts/form_structure_surface_contract_test.ts",
-      "frontend/apps/web/scripts/native_section_navigation_test.ts",
-      "scripts/verify/form_container_presentation_consumption_guard.py",
-      "scripts/verify/form_view_native_structure_boundary_guard.py",
-      "scripts/verify/form_structure_contract_runtime_audit.py",
-      "scripts/verify/contract_v2_render_authority_matrix.py",
-      "scripts/verify/frontend_form_canvas_wide_grid_guard.py",
-      "make/runtime_ops.mk"
-    ],
-    "note": "iteration identity for the form presentation projection fix (V1+V2). HEAD is still the bookkeeping commit bff64595; the fix is uncommitted, so this stage identity is a dirty iteration identity and must not be described as frozen. Served daily runtime is unchanged this step: it still serves mainline daecaafc with frontend_build_sha256 1f46b033..., so no runtime claim in this entry is bound to the fix."
+    "head": "514c4c1146489ebc0b5b275c01587c57f4a075c9",
+    "dirty_scope": []
   }
 }

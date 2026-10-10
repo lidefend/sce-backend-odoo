@@ -1806,3 +1806,91 @@ PR head == `EXPECTED_HEAD` == 本地 HEAD，`pr.merge.local_quick_gate` 均走 *
 本轮改动**未提交、未部署**；服务端仍是 `daecaafc` + 旧前端产物，所有者屏幕仍会看到塌陷的概览区与提示块。
 下一步：提交 → 受管候选车道刷新运行态 → 运行态回执 + 交付契约审计（`presentation_unclassified`/`presentation_dropped` 归零）
 → 交所有者登录核对（`wutao/123456` / `sc_demo` / `http://1.95.85.92:18081/`）。
+
+---
+
+## 第 19 轮：声明式取值域收敛为唯一权威（契约官方模板口径）
+
+提交：`514c4c11`（本分支，未 push）。上一轮为 `1066b422`。
+
+**一、问题定性**
+
+上一轮修的是「声明式修饰符必须按契约官方模板在同一取值域解析」的**一个消费者**。
+本轮按所有者要求做**系统性**检查，确认该缺陷类别在系统里还有第二处实现：
+
+- 契约投影路径 `resolveContractV2ModifierValues`：快照（`mainData`，空则 `primaryDataSource`）∪ 实时值，
+  **实时值仅在「表单确实持有该键且取值已定义」时胜出**；
+- 原生布局路径 `resolveNativeModifierFieldValue`：`hasOwnProperty(formData, name) ? formData[name] : mainData[name]`，
+  **持有键即胜出，不判空**。
+
+两条路径对「表单持有键但取值未定义」给出不同答案，同一声明在渲染侧与执行侧可能得出不同结论 ——
+这正是「声明条件被静默反转、按钮可见性出错」的类别根因。此外 `store.ts` 的注释声称二者一致，
+而第二处实现并不满足该断言，属于"文档声明了不存在的同源"。
+
+**二、修复（唯一权威，不新增特判）**
+
+- `app/modifierEngine.ts` 新增 `resolveDeclaredModifierFieldValue(snapshot, live, field)` 作为**取值域唯一规则**：
+  实时值仅在表单持有该键且取值有定义时胜出，否则由契约快照回答。
+- `app/contracts/v2/store.ts`：`resolveContractV2ModifierValues` 改为消费该规则；同时**移除自身的第二次判空**
+  （只保留「快照未声明该键时不要把 undefined 实体化」这一存在性问题），使结果由规则单点决定。
+- `pages/contractForm/nativeLayoutUtils.ts`：**删除**本地实现，改为再导出引擎权威；
+  `pages/contractForm/useRecordFormLayout.ts` 调用点改用同一函数。
+- 无业务模型特判，未触碰 ACL、字段权限或合法隐藏规则。
+
+**三、锁定与负例先行**
+
+- `scripts/verify/modifiers_runtime_guard.py`（已在 `verify.frontend.quick.gate` 内）由"标记型"升级为**结构型**：
+  要求引擎规则标记、**禁止**原生布局再次出现本地实现、要求再导出、要求消费点走权威函数。
+- `canonical_form_presenter_test.ts` 新增锁定用例（`count=7`）。
+- **负例（先证基线正常，再证注入被检出）**：
+  1. 把引擎规则退回"持有键即胜出"→ 新断言失败，报错为
+     `an owned-but-undefined live entry cannot shadow the contract snapshot a declaration depends on`（实际 undefined / 预期 2）；
+  2. 在 `nativeLayoutUtils` 重新植入本地实现 → 门禁失败，报错为
+     `engine missing marker: live[name] !== undefined` 与
+     `nativeLayoutUtils defines its own modifier value-resolution rule instead of consuming resolveDeclaredModifierFieldValue`。
+  两次注入均已还原并复跑绿。
+
+**四、验证**
+
+- 定向：`modifiers_runtime.guard` PASS；`canonical_form_presenter.unit` PASS（177 + count=7）；
+  `contract_header_action.unit` PASS（含 real builder chain）；`native_form_action_presentation.unit` PASS；
+  `native_form_structure_responsibility.unit` PASS cases=12；`form_structure_contract_projection.unit` PASS fields=76 unclassified=0；
+  `standard_form_composition.unit` PASS 121 cases；`typecheck.strict` PASS；`ci.local.iteration` PASS `change_state=clean coverage=L1_only`。
+- 运行态审计（`verify.form_structure.contract_runtime.audit` 运行时主体，在 `sc-root` 受管容器
+  `sc-backend-odoo-dev-odoo-1` / `sc_demo` 上执行，报告写 `/tmp` 以保持被服务树干净）：
+  本轮归属的四个口径**全部为 0** —— `presentation_unclassified=0`、`presentation_dropped=0`、
+  `declared_action_verdict_missing=0`、`declared_action_verdict_incomplete=0`、`contract_error=0`。
+- 受管车道（提交后按序）：`candidate.bundle_sync` PASS（`bundle_sha256=c325ca16…`，`old_sha=1066b422`）→
+  `source_revision.align` PASS（服务态 `source_revision=514c4c11`）→ `frontend.build` PASS
+  （重建，指纹 `bc5a0cac…`，入口 `index-BpKZqOGC.js`）。
+- 声明驱动表单探针在**新 bundle** 上重跑 1440/390 × 明/暗四态：`verdict=PASS failures=[]`，
+  `tree=1 driverError=0 pageErrors=[]`；声明可见布局按钮 6/6 各 1、声明隐藏 5/5 各 0、声明章节标题 6/6 各 1、
+  声明类名普查无 0、提示块作为声明 alert 呈现。
+- **published face 判定（用证据而非假设）**：`daily.runtime.published_face.converge` 本轮**不重跑**。
+  最后一次收敛凭据绑定 `expected_sha=5c828da2`（`guard_status=PASS`，90/90 精确匹配，
+  `snapshot_version=daily-navigation-*-5c828da2f8d0`），而 `git diff --name-only 5c828da2..514c4c11`
+  只涉及前端源码、前端测试与一个 verify 守卫 —— 无 `addons/`、无菜单/契约数据 ——
+  故 `1066b422` 与 `514c4c11` 对锁定契约与已发布产品面无改动。
+
+**五、未归因基线（不当作通过，也不当作失败）**
+
+同一次运行态审计的**广口径读数**首次记录：163/163 模型 `contract_needs_attention`、
+`boundary_ok 5 / boundary_violation 158`、`missing_group_semantics=163`、`missing_contract_notebook=82`、
+`missing_contract_page=82`、`formStructureContract.slots is required`=60、`projects field outside structure`=2024 处。
+该审计**设计上恒返回 0**，且此代际无更早同审计记录，因此这是**首读基线**，不是回归结论，
+也**不能**作为"环境全部通过"或"产品面已达标"的依据；其归属层（投影责任 / 审计期望 / 真实产品债）
+需单独立项判定。报告：`.runtime/final-acceptance/daily-deployed/form_structure_contract_runtime_audit_1066b422.json`。
+
+**六、既有阻断（与本轮无关，单独保留）**
+
+`make verify.form_structure.contract` / `verify.form_structure.contract_runtime.audit` 的**聚合目标**仍不可用：
+成员 `verify.user_form.preference.boundary_guard` 要求 `addons/smart_construction_custom/models/user_preferences.py`，
+该路径在**本分支与 `origin/main` 均不存在**（`git cat-file -e origin/main:<path>` 失败）。
+属注册表/守卫与其依赖层脱节，归属该守卫所有者；本轮只按目标逐条报告，未改其依赖、未放宽断言。
+
+**七、边界**
+
+工程侧已在 `514c4c11` 闭合并已服务（`source_revision=514c4c11`，`frontend_build_sha256=bc5a0cac…`）；
+本轮**未 push**、未合并、未标记整体目标完成。剩余唯一开放项为**所有者登录核对**
+（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`，
+`/f/project.project/581?menu_id=379&action_id=506`）。
