@@ -27,7 +27,10 @@ from odoo.addons.smart_core.core.scene_contract_builder import (
     register_legacy_product_title,
     register_route_only_actions,
 )
-from odoo.addons.smart_core.core.unified_page_contract_v2_assembler import register_kanban_row_action
+from odoo.addons.smart_core.core.unified_page_contract_v2_assembler import (
+    declare_container_columns,
+    register_kanban_row_action,
+)
 from odoo.addons.smart_core.handlers.form_field_configuration import register_form_field_label_override
 from odoo.addons.smart_core.utils.contract_governance import (
     register_capability_group_profile,
@@ -496,10 +499,15 @@ def _sc_node_has_field(value, field_name: str) -> bool:
 
 
 def _sc_append_project_responsibility_group(contract: dict, *, include_collaborators: bool) -> None:
-    _project_layout.sc_append_project_responsibility_group(
+    group = _project_layout.sc_append_project_responsibility_group(
         contract,
         include_collaborators=include_collaborators,
     )
+    # This layer appends the group after the post-projection boundary has run,
+    # so the platform's container layout declaration is published here through
+    # the assembler's one rule instead of the pure helper importing a runtime.
+    if group is not None:
+        declare_container_columns(group)
 
 
 def smart_core_finalize_unified_page_contract_v2(env, contract, context):

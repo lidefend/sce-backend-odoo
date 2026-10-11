@@ -53,6 +53,7 @@ def main() -> int:
             "return _project_layout.sc_project_field_node(",
             "return _project_layout.sc_node_has_field(value, field_name)",
             "_project_layout.sc_append_project_responsibility_group(",
+            "declare_container_columns(group)",
         ]:
             if token not in core_text:
                 errors.append(f"core_extension.py missing project layout split token: {token}")
@@ -75,6 +76,13 @@ def main() -> int:
         for forbidden in ("env[", ".search(", ".write(", "requests.", "fields.", "AccessError"):
             if forbidden in layout_text:
                 errors.append(f"project layout helper must remain pure projection-only; forbidden token: {forbidden}")
+        # The helper is loaded standalone by this guard, so it must not import an
+        # Odoo-namespaced module.  The platform owns the layout declaration of a
+        # grid-owning container, and this layer completes it in the runtime
+        # wrapper that already depends on the assembler.
+        for forbidden in ("from odoo", "import odoo"):
+            if forbidden in layout_text:
+                errors.append(f"project layout helper must load without an Odoo runtime; forbidden token: {forbidden}")
 
     if "python3 scripts/verify/construction_core_extension_project_layout_split_guard.py" not in ci_text:
         errors.append("ci.local.quick must run construction_core_extension_project_layout_split_guard.py")

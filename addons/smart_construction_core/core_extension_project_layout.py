@@ -122,18 +122,26 @@ def sc_node_has_field(value, field_name: str) -> bool:
     return any(sc_node_has_field(value.get(key), field_name) for key in ("children", "tabs", "pages", "nodes", "items", "widgetList"))
 
 
-def sc_append_project_responsibility_group(contract: dict, *, include_collaborators: bool) -> None:
+def sc_append_project_responsibility_group(contract: dict, *, include_collaborators: bool) -> dict | None:
+    """Append the project responsibility/collaboration group and return it.
+
+    This helper stays a pure projection with no runtime dependency, so it can be
+    loaded standalone by the split guard.  The platform owns the layout
+    declaration of every grid-owning container, so the caller that runs inside
+    the Odoo runtime publishes it through the assembler rule on the returned
+    node rather than this layer inventing a column count.
+    """
     layout = contract.get("layoutContract") if isinstance(contract.get("layoutContract"), dict) else {}
     tree = layout.get("containerTree") if isinstance(layout.get("containerTree"), list) else []
     if not tree:
-        return
+        return None
     children = []
     if not sc_node_has_field(tree, "responsibility_ids"):
         children.append(sc_project_field_node("responsibility_ids", "项目责任分工", "one2many", relation="project.responsibility"))
     if include_collaborators and not sc_node_has_field(tree, "collaborator_ids"):
         children.append(sc_project_field_node("collaborator_ids", "项目协作成员", "many2many", relation="res.users"))
     if not children:
-        return
+        return None
     group = {
         "type": "group",
         "name": "sc_project_responsibility_collaboration",
@@ -152,7 +160,7 @@ def sc_append_project_responsibility_group(contract: dict, *, include_collaborat
     }
     target = tree[0] if isinstance(tree[0], dict) else None
     if target is None:
-        return
+        return None
     if isinstance(target.get("children"), list):
         target["children"].append(group)
     else:
@@ -192,3 +200,4 @@ def sc_append_project_responsibility_group(contract: dict, *, include_collaborat
     status["widgetStatus"] = widget_status
     status["containerStatus"] = container_status
     contract["statusContract"] = status
+    return group
