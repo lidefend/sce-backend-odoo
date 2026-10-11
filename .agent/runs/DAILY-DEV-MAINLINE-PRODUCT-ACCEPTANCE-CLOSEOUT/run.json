@@ -761,7 +761,7 @@
     "Verification-tool path debt (registered, NOT fixed in this round, no gate relaxed): make verify.form_structure.contract cannot pass in-repo because its member verify.user_form.preference.boundary_guard hardcodes addons/smart_construction_custom/models/user_preferences.py and reads it directly; that module does not exist in this repository (git log --all -- addons/smart_construction_custom is empty, absent on origin/main too) - it is a customer-custom addon outside the repository boundary, mounted and installed at runtime (the governed runtime guard scripts/verify/daily_dev_customer_addons_runtime_guard.py checks it live). Local reproduction: FileNotFoundError. Report per-target evidence only; the owning layer is that guard's owner.",
     "Intentional environment retirement, recorded so it is not mis-read as an environment failure: the isolated acceptance carrier (project sc-fe-r2-p1-01 / database sc_frontend_acceptance / volumes sc_fe_r2_p1_01_*) was retired on the owner's instruction ('sc-fe-r2-p1-01 已经没有价值了直接收回') through the new governed entry make acceptance.runtime.carrier.discard, and readback confirms zero remaining containers and zero remaining volumes. As a direct consequence, acceptance.runtime.baseline_recovery.audit and acceptance.runtime.infrastructure.restore now DENY with 'missing credential authority container: sc-fe-r2-p1-01-odoo-1'. That DENY is the expected behaviour of the pre-existing entries, which require the carrier to exist; it is NOT a statement that the environment is broken, and it must not be generalised into an environment-wide verdict. The governed recovery path is the new reciprocal entry make acceptance.runtime.carrier.provision (rebuild empty base + delegate DB create/install/upgrade to scripts/test/frontend_acceptance_db_ensure.sh), which has not been executed end to end because recreating the tenant would write the database and install the module bundle. Whether to run it, or to leave the tenant retired, is the owner's call."
   ],
-  "next_exact_step": "布局规则边界收口批次已合并进 main（PR #642 -> 51d04219）。本 run 的代码/门禁/生成证据面已收口，剩余是独立的交付面步骤：(1) 把最新 main 部署到日常开发服务器（1.95.85.92:18081，库 sc_demo），并按实际变更刷新受管后端与静态产物、刷新预览（后端投影 ui_contract_v2_projection.py 与 view_orchestration_contract.py 有改动，属模块升级判定范围内）；(2) 由 owner 用 wutao/123456 + sc_demo 对项目表单编辑态在 1440/390 与明暗主题下做真实渲染与关系交互确认。这两步未完成前，本 run 不标记 completed，也不宣称版本发布完成或产品交付完成。",
+  "next_exact_step": "布局规则边界收口批次已合并进 main（PR #642 -> 51d04219）并部署到日常开发服务器：bundle_sync / source_revision.align / frontend.build（重建，指纹 c6741801）/ published_face.converge（smart_core 模块升级 + 快照 77/78 + 导航门 90/90）四项均 PASS，回读 source_revision=git_sha=51d04219、entry asset index-CxR0ozWM.js、http 200。剩余唯一未决是 owner 本人的产品验收：以 wutao/123456 登录 http://1.95.85.92:18081/（库 sc_demo），确认项目表单编辑态在 1440/390 与明暗主题下的渲染与关系交互。该步完成前不标记本 run completed，也不宣称产品交付完成。若执行新任务，先在 .agent/goals/ 与 .agent/runs/<goal-id>/run.json 注册新目标并更新 .agent/active-runs.json 指向，不要静默继承本 run。",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -2519,6 +2519,74 @@
       "post_merge_normalization": "git merge origin/main into the branch (072cd13b) produced a tree identical to f524cf6d; this is the recorded post-squash base normalization, not a new candidate",
       "status": "batch accepted and merged. Deployment and the owner's own login verification are separate statuses below.",
       "explicitly_not_claimed": "主线集成完成 only covers merge. It does NOT claim 版本发布完成 or 产品交付完成; the daily dev deployment and the owner's own render/login acceptance are still pending."
+    },
+    "round_20261011_daily_runtime_mainline_deploy_642": {
+      "intent": "owner instruction: deploy the latest mainline to the daily dev server and let the owner log in; this round deploys the layout-rule-boundary batch (PR #642).",
+      "lane": "main. The local worktree was fast-forwarded to origin/main (51d04219) because the bundle-sync entry requires running from the exact approved SHA on a governed branch; the audit branch was restored afterwards.",
+      "remote_pre_state": {
+        "branch": "main",
+        "head": "0a3836951b403a80daba7b63a25a87f3b85ef394",
+        "SC_SOURCE_REVISION": "0a3836951b403a80daba7b63a25a87f3b85ef394",
+        "worktree": "clean"
+      },
+      "steps": [
+        {
+          "entry": "make daily.runtime.main.bundle_sync",
+          "inputs": {
+            "DAILY_RUNTIME_EXPECTED_SHA": "51d042196932cf91ee14b5734e98fb42845129dd",
+            "DAILY_RUNTIME_EXPECTED_OLD_SHA": "0a3836951b403a80daba7b63a25a87f3b85ef394"
+          },
+          "unit": "verify.daily.runtime.main.bundle_sync 9/9 OK",
+          "result": "PASS, changed=true, normalized_from_candidate=false, bundle_sha256=4c11b89d8909b54b58714c3307da4d76cce4bc3170835cb96f92ac4adc1a303c (exact-SHA bundle, fast-forward only)",
+          "receipt": ".runtime/final-acceptance/daily-deployed/bundle-sync.json"
+        },
+        {
+          "entry": "make daily.runtime.source_revision.align",
+          "inputs": {
+            "DAILY_RUNTIME_SOURCE_REVISION_SHA": "51d042196932cf91ee14b5734e98fb42845129dd"
+          },
+          "unit": "verify.daily.runtime.source_revision.align 8/8 OK",
+          "result": "PASS, previous_revision=0a383695, served git_sha=source_revision=51d04219 after the governed restart",
+          "receipt": ".runtime/final-acceptance/daily-deployed/source-revision-align.json"
+        },
+        {
+          "entry": "make daily.runtime.frontend.build",
+          "inputs": {
+            "DAILY_RUNTIME_FRONTEND_BUILD_SHA": "51d042196932cf91ee14b5734e98fb42845129dd"
+          },
+          "unit": "verify.daily.runtime.frontend.build 15/15 OK",
+          "result": "PASS, rebuilt=true at the deployed head, fingerprint c6741801f5efee290f124120ecf8bf6f296dead75626db927cb44ac99d78abd9, entry asset index-CxR0ozWM.js",
+          "why_rebuilt": "this batch changes frontend/ sources (layoutSpan.ts, FormSection.vue, NativeFormTreeRenderer.vue, fieldUtils.ts, nativeLayoutUtils.ts, formSection.*), so the served bundle must be regenerated; the fingerprint legitimately changed from bc5a0cac to c6741801",
+          "receipt": ".runtime/final-acceptance/daily-deployed/frontend-build.json"
+        },
+        {
+          "entry": "make daily.runtime.published_face.converge",
+          "inputs": {
+            "DAILY_RUNTIME_PUBLISHED_FACE_EXPECTED_SHA": "51d042196932cf91ee14b5734e98fb42845129dd",
+            "DAILY_RUNTIME_PUBLISHED_FACE_LOGIN": "wutao",
+            "DAILY_RUNTIME_PUBLISHED_FACE_UPGRADE_MODULES": "smart_core"
+          },
+          "unit": "verify.daily.runtime.published_face.converge 22/22 OK",
+          "result": "PASS, module_upgrade ran (smart_core tree 3514b9d43830ce382ca59b41c6c20b2acf2d5413 differs from the previous convergence, so the upgrade was not skipped), snapshots construction.standard #77 and construction.preview #78 daily-navigation-*-51d042196932, gate_page_count 90/90, release guard PASS",
+          "why_upgraded": "this batch changes addons/smart_core projection code (ui_contract_v2_projection.py, view_orchestration_contract.py); a stale projection would freeze the published face from the old contract",
+          "receipt": ".runtime/final-acceptance/daily-deployed/published-face-converge.json"
+        }
+      ],
+      "post_readback": {
+        "runtime_version": {
+          "product_version": "1.0.0-rc.20",
+          "source_revision": "51d042196932cf91ee14b5734e98fb42845129dd",
+          "git_sha": "51d042196932cf91ee14b5734e98fb42845129dd",
+          "database": "sc_demo",
+          "environment": "dev",
+          "frontend_build_sha256": "c6741801f5efee290f124120ecf8bf6f296dead75626db927cb44ac99d78abd9"
+        },
+        "http": "/index.html 200 text/html; served entry asset assets/index-CxR0ozWM.js 200",
+        "endpoint": "http://1.95.85.92:18081/"
+      },
+      "impact_analysis": "git diff --name-only 0a383695 51d04219 changes both addons/smart_core (projection + contract) and frontend/ rendering sources, so both the module upgrade and the static rebuild were required, not optional. The 90/90 gated navigation face and both product snapshots were re-frozen from the locked contract at the new revision.",
+      "status": "PASS",
+      "explicitly_not_claimed": "This is a daily-dev deployment, not a version release. 产品交付完成 still requires the owner's own login and render/interaction acceptance; it is not claimed here."
     }
   },
   "continuation": {
