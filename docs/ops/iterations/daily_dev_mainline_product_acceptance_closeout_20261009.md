@@ -2943,3 +2943,59 @@ role_evidence.matched_groups_by_role = {
 **修复效果复测**（受管只读探针 `system.init`）：`fixture_role_finance=[finance]`、`fixture_role_pm=[pm]`、`wutao=[business_config_admin,executive,pm,cost]`，仍均不含 `project_member`。
 
 **边界**：本步骤只把运行面身份从候选切回 main，不改产品代码、不升级模块、不重建前端；`served` 现等于 `origin/main a0afb331`，消除「运行面领先/落后主线」的历史歧义。**剩余**：仅所有者本人用户级验收（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`）。
+
+## 29. 第 29 轮（2026-10-12）：只读用户级验收（landing/工作台、详情关系往返、表单档案面）+ 列表车道 FAIL 定性
+
+### 29.1 范围与身份
+
+- 受管只读验收，**未改任何产品代码**。身份：`source_revision=git_sha=a0afb331e1a56d636c316c39e22b63453626cbbd`（实测 `/api/runtime-version`，等于 `origin/main`）、`database=sc_demo`、`environment=dev`、入口 `http://1.95.85.92:18081/`、`frontend_build_sha256=dac3544e…`、入口资产 `index-Dgwvjp86.js`。
+- 口令事实：日常库隔离 fixture 账号统一为 `123456`（owner 指定固定弱口令，便于验证）。弱口令走既有 `SC_ACCEPTANCE_DAILY_CREDENTIAL_CONFIRMATION`（10 分钟有效、字段逐一比对）通道，未放宽任何检查。
+- 本轮新增受管权威身份回读 `.runtime/final-acceptance/daily-deployed/runtime-version-readback-a0afb331.json`：既有 `runtime-version-readback.json` 仍写 `5220db8b`，按「运行时证据必须绑定权威环境回读」的纪律属**陈旧**，故按同一 schema 现场回读重建（不覆盖旧件，避免无谓失效其他检查的复用）。
+
+### 29.2 landing 与工作台一手实测（`fixture_role_finance`@FE Company A）
+
+| 观测 | 实测 |
+| --- | --- |
+| 落地路由 | `/s/workspace.home`（等于契约声明 `role_surface.landing_path`），`/` 亦重定向至同一角色首页 |
+| 渲染 | 角色首页完整：当前状态（待我处理 7 / 我发起的 7）、待我处理列表（付款申请行可打开）、常用入口与最近访问；`[data-role-home][data-state=ready]`、3 个可见 `ScCard` 原语 |
+| 视口/主题 | 1440 与 390、明暗主题均正常；console error / page error = 0 |
+| 该页 intent 序列 | 仅 `login`、`system.init(with:['workspace_home'])`、`global.message.conversations`、`my.work.summary` —— **不存在 `ui.contract`/`ui.contract.v2`** |
+
+### 29.3 「列表选择框验收定位超时」同源 FAIL 定性：**探针陈旧**（不放宽断言）
+
+`make verify.daily_dev.list_surface.readonly.browser`（scope `all`）在 `frontend_list_surface_structure_browser.mjs:1038` 失败：`daily declared landing contract was not captured`。判为**验证工具陈旧**，不是产品缺口，证据链：
+
+1. `workspace.home` 的场景契约由**声明的预载轨道**交付：前端 `session.ts:1359-1361` 以 `with:['workspace_home']` 声明；后端 `system_init.py:2233` 据此置 `workspace_home_ref.loaded=bool(include_workspace_home)` 并在 `system.init` 内嵌 `workspace_home`（带声明 `source_authority.runtime_carrier=system_init_workspace_home`、`projection_only=true`）。
+2. 前端 `session.ts:1602` 消费该内嵌载荷渲染角色首页（实测 29.2 已证）。
+3. 单测 `test_system_init_payload_builder_semantics.py:147`/`test_intent_smoke.py:235` 只对**未预载**路径断言 `loaded=false`，与线上 `loaded=true` 并不矛盾。
+4. 因此「landing 必须另发一条 wire `ui.contract.v2(scene_key=workspace.home)`」与该声明载体冲突；同一受管工具的 `form-profiles`/`workbench-only` 变体（跳过该陈旧断言）在同一 served 版本上 PASS（见 29.4）。
+
+处置：**未放宽断言**，登记为 verification-tool debt（`run.json` blockers + evidence `round_20261012_current_effect_user_acceptance`）。改写该断言须绑定到声明的载体并保留真实检查（`source_authority`/投影标记），属 owner 决定；仅删断言换绿为无意义绿灯。
+
+### 29.4 详情面一手验收
+
+**（1）关系往返（真实点击，非 handler 诊断）** —— `make verify.daily_dev.relation_roundtrip.browser`，记录取受管解析 `artifacts/backend/acceptance_record_identity.json` 的 `payment_request`（无硬编码 id），主体 `fixture_role_finance`：
+
+| 项 | 结果 |
+| --- | --- |
+| 声明入口数 | 18 |
+| 可见声明关系 | 3 个全部 `opened`（`company_id`、`contract_id`、`settlement_id`） |
+| 往返恢复 | `path/title/statusbar/tabs/actions` 全 true、`error_free=true` |
+| 拒绝/错误 | `denied_requests=0`、`console_errors=0` |
+
+即原「关联跳转 403」在当前 served 版本上**未见复现**，且「点击打开 → 返回原记录 → 标签与动作恢复」已获真实一次点击证据。
+
+**（2）表单档案面（详情创建/编辑/只读）** —— 同一受管工具 `LIST_SURFACE_DAILY_OBSERVATION_SCOPE=form-profiles`，1440+390、明暗各一次：每次 **12/12** 通过（`declared_create_entry`、`create_contract`、`create_renderer`、`declared_edit_entry`、`edit_contract`、`edit_renderer`），`declared-theme` 解析为 `light`/`dark`，`driverErrorCount=0`，console/page error 0，契约前置 receipt `accepted`。
+
+### 29.5 项目台账表单编辑态取证（owner 关注点，`fixture_role_pm`@FE Company A）
+
+- `project.project` 2014（FE Project A，`/f/project.project/2014?menu_id=379&action=506`）在 `data-render-profile=edit` 下，真实表单字段**确为可编辑控件**：`.field--widget-input` 内含 `input`（4/4 可写），可见可编辑控件 12，选择/日期为官方组件实例；console error 0。
+- 「基本信息」顶部那块**只读摘要**并非前端越界，而是**契约声明**：`layoutContract.containerTree` 内有 `sc-project-overview` 容器，其字段节点 `readonly:"1"` 且 `modifiers.readonly=true`（containerTree 共 51 个 field 节点，其中 25 个声明只读）。
+- 该摘要区在编辑/新建态是否保留属**契约/产品策略**决定，与已登记的 span/layout 缺口同族：served 契约仍为 `span=24 ×78`、`span=6 ×80`、`span=12 ×24`、`columns=2 ×15`。本 run 不代为改契约。
+- 反例正确性：`fixture_role_finance` 访问该入口被 fail-closed 为 `NAVIGATION_AUTHORITY_DENIED`（权限驱动，非缺陷）。
+
+### 29.6 受管检查登记与四态
+
+- 新增受管检查：`daily_detail_relation_roundtrip_browser`（`verify.daily_dev.relation_roundtrip.browser`，18 tests，`reusable`）、`daily_list_surface_form_profiles_browser`（`verify.daily_dev.list_surface.readonly.browser`，24 tests，`reusable`）；两者均声明权威身份回读，避免被判 `stale`。复用统计 29 → 30。
+- **四态（不夸大）**：批次/迭代级验收=本轮通过，但整体分支目标**未标记完成**；主线集成=已完成（`a0afb331`，本轮无主线改动）；**版本发布未做**；**产品交付未完成**（待 owner 本人登录验收）。
+- **唯一剩余人工步骤**：owner 登录 `wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`，复核项目台账表单编辑态（1440/390、明暗）与关系交互；随后再处置创建/编辑与工作台的最小证据差额。
