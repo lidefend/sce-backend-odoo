@@ -35,7 +35,7 @@ REQUIREMENTS = {
         "fields.value.every((field) => field.readonly)",
         ':prefer-readonly-facts="readonlyFactLayout"',
         "canonical-form-node--readonly-fact",
-        "@media (max-width: 480px)",
+        "@container (max-width: 479px)",
         ".canonical-form-node--container:not(.canonical-form-node--readonly-fact)",
     ),
     "frontend/apps/web/src/pages/contractForm/canonicalFormRenderState.ts": (

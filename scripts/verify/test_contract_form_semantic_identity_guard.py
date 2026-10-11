@@ -19,7 +19,11 @@ function semanticIdentity(value: unknown) {
   const structure = asDict(value);
   return { role: semanticRole(structure), slot: text(structure.slot), group: text(structure.group) };
 }
-function fieldSemanticIdentity(widget: Widget, container: Container) {
+function fieldSemanticIdentity(widget: Widget, container: Container, structure: Structure) {
+  const declared = structure?.fieldRoles[widget.fieldCode];
+  if (declared) {
+    return { role: declared.role, slot: declared.slot, group: declared.group };
+  }
   const widgetIdentity = semanticIdentity(widget.formStructureRole);
   const containerIdentity = semanticIdentity(container.formStructureRole);
   return {
@@ -28,7 +32,7 @@ function fieldSemanticIdentity(widget: Widget, container: Container) {
     group: widgetIdentity.group || containerIdentity.group,
   };
 }
-function zoneRole() { return ''; }
+function structureSlot() { return undefined; }
 function fieldFromWidget(widget: Widget, container: Container) {
   const fieldSemantics = fieldSemanticIdentity(widget, container);
   return {
@@ -75,6 +79,16 @@ class ContractFormSemanticIdentityGuardTests(unittest.TestCase):
                     f"semanticIdentity does not preserve {member}",
                     validate_semantic_identity_projection(broken),
                 )
+
+    def test_declared_field_authority_must_be_consulted(self) -> None:
+        broken = VALID.replace(
+            "const declared = structure?.fieldRoles[widget.fieldCode];",
+            "const declared = undefined;",
+        )
+        self.assertIn(
+            "field semantics do not consult the declared fieldRoles authority",
+            validate_semantic_identity_projection(broken),
+        )
 
     def test_widget_first_container_fallback_is_required_for_every_dimension(self) -> None:
         broken = VALID.replace(

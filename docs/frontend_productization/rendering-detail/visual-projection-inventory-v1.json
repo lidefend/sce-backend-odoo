@@ -1858,7 +1858,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "fad9881930b25530122219034c4e42cc6319ee109fe7377fcda7d8157cb17f92",
+      "digest": "3eba67d9aa0181b6d237ed17d9c0750cd8671c8dd93d6a32042afe99bdf67097",
       "nativeStyleSelectors": [],
       "path": "components/template/FormSection.vue",
       "referenceNativeStyleSelectors": [
@@ -1906,7 +1906,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "b73e4df6189a6680e57b803b13849e515df836c7e8d8f29b56264adca22d7178",
+      "digest": "b09b36fb2b3218eb4661da98f609f68a3eabb9995b9f469595ea395b9ad7cbf3",
       "nativeStyleSelectors": [],
       "path": "components/template/NativeFormTreeRenderer.vue",
       "referenceNativeStyleSelectors": [],
@@ -2092,7 +2092,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "86ef68fa14636b397a0f78d1104256af86cf0059cae6d69811dd7fdcfb0a1689",
+      "digest": "ffd913b0eb80356393d709c80cbc6d6818dae498fe4ed7f14fa69425843ae35a",
       "nativeStyleSelectors": [],
       "path": "pages/ContractFormPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2183,7 +2183,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "72d4144d6ee7fe3666cf87cd05249cfc1190ae5a62ab7969aa48d9c3e81f2b65",
+      "digest": "55b318c1f8ed0c393a6be6c4c38a996f538bf0926c9432a5b150a00fe623c149",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/CanonicalFormNodeRenderer.vue",
       "referenceNativeStyleSelectors": [],
@@ -2217,7 +2217,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "072623372d577f7931d2d85cd4735492764f0ef99729e7db0a69ef8e98bdccb0",
+      "digest": "c7d61d4d45fc4edd5a81fc03522f6d2b735675139c18e78c56a3cbca929c9897",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormDriverHost.vue",
       "referenceNativeStyleSelectors": [
@@ -2360,7 +2360,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "fda541b3af061e4af8ab11f66035ae5f96b7162c69c06b72b6506e8a60ab60c6",
+      "digest": "0c4edaa2be9d5bf7f0cc105dbff77d85771b02e7bc38ffb85eaa33c47de47ffc",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ObjectTaskPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2532,7 +2532,7 @@
     },
     {
       "category": "collection",
-      "digest": "8ea8a4329daff72fa6e7583628d04fbd6715a7c7b3d701093f4e81a14b0967bd",
+      "digest": "5b41bc417b0a3944bd8ff5532983a2434cece7dd25ab08f3d781157a9c1479e5",
       "nativeStyleSelectors": [],
       "path": "views/ActionView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2606,7 +2606,7 @@
     },
     {
       "category": "public-entry",
-      "digest": "8b0e08d31377f707fd525b155617eec2c64bf3146a97888561a01ea100abac2a",
+      "digest": "fbfea7858be903bf11c52f0313b2b6e0cb9326b6474bf4eb92e86518b969eb7c",
       "nativeStyleSelectors": [],
       "path": "views/LoginView.vue",
       "referenceNativeStyleSelectors": [
@@ -3000,7 +3000,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "fa4646853f885b23309295e5f4a500ea4f9ae4d66466c3ec9f0d585d32631747",
+  "currentInputDigest": "36fa363f823d64603f9d3d692bd7a4cecc99fe08374ed30c0bb370d99a19b123",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

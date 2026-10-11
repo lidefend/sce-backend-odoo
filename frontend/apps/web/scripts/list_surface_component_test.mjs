@@ -35,6 +35,11 @@ const server = await createServer({
       selectionActions: [{ key: 'batch:read', label: 'Batch probe', enabled: false }],
       selectionEnabled: true, showPlainSearch: true, showFallbackCreate: true,
       onReload() {}, onRowClick() {}, onSearch() {}, onSort() {}, onFilter() {}, onToggleSelection() {}, onToggleSelectionAll() {},
+      // Declared pagination, mirrored from the served search contract
+      // (P0:smart_core:app_search_config.get_search_contract -> defaults.limit /
+      // page_size_options / page_size_range). The list surface refuses to invent
+      // any of these, so the fixture must carry what the contract publishes.
+      listLimit: 20, pageSizeOptions: [10, 20, 50], pageSizeRange: { min: 1, max: 200 },
       contractPageType: { pageType: 'query-list', reason: 'contract-collection-view' },
     }, {
       ...(queryMode === 'declared' ? { toolbar: () => h(Toolbar, {

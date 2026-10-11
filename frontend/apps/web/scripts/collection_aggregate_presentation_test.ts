@@ -18,6 +18,10 @@ assert.equal(resolveCollectionAggregateEntry(
 assert.deepEqual(resolveCollectionAggregateEntry({}, 'request_amount_display', 'amount'), {});
 assert.deepEqual(resolveCollectionAggregateEntry(null, 'request_amount_display', 'amount'), {});
 
+// api.data.list always declares the grouped page size; the consumer refuses
+// to invent one, so the fixture must carry the declaration the response has.
+const declaredGroupPaging = { page_size: 3 };
+
 const groupedAggregates = {
   request_amount_display: { page_sum: 480000, sum: 480000, aggregation_field: 'amount' },
 };
@@ -29,7 +33,7 @@ const [groupedRow] = mapActionViewGroupedRows({
     sample_rows: [{ id: 100, request_amount_display: '¥480,000.00' }],
     aggregates: groupedAggregates,
   }],
-  groupPagingRaw: {},
+  groupPagingRaw: declaredGroupPaging,
   groupSampleLimit: 3,
   groupPageOffsets: {},
   emptyLabel: '未分组',
@@ -46,7 +50,7 @@ const [groupedRowWithoutAuthority] = mapActionViewGroupedRows({
     sample_rows: [{ id: 101 }],
     aggregates: ['not-authoritative'],
   }],
-  groupPagingRaw: {},
+  groupPagingRaw: declaredGroupPaging,
   groupSampleLimit: 3,
   groupPageOffsets: {},
   emptyLabel: '未分组',

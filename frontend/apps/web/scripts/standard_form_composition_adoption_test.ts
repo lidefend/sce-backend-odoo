@@ -429,7 +429,23 @@ for (const required of [
   'name="readonly"', ':data-field-name=', ':data-field-key=', ':data-field-type=', ':data-component-renderer=',
   'layout="horizontal"', 'item-layout="horizontal"',
 ]) check(factsTemplate.includes(required), true, `descriptions preserves ${required}`);
-check(sectionSource.includes('fieldClass(field, index, standardDetailComposition?.adopted.value ? segment.fields : fields)'), true, 'extension layout uses its own grid span sequence');
-check(sectionSource.includes('const prev = gridFields[i]') && sectionSource.includes('index === gridFields.length - 1'), true, 'orphan calculation cannot count fields from a different descriptions run');
+const extensionSpanSource = ':data-field-span="fieldSpan(field, index, standardDetailComposition?.adopted.value ? segment.fields : fields)"';
+const extensionBandSource = ':data-field-band="fieldSpanBand(fieldSpan(field, index, standardDetailComposition?.adopted.value ? segment.fields : fields))"';
+// The extension run keeps its own grid field list, and the published band is
+// the fold of that same published declared span: the section owns no second
+// width rule, so the canonical and native grids cannot fold one declaration
+// differently.
+check(sectionSource.includes(extensionSpanSource), true, 'extension layout uses its own grid span sequence');
+check(sectionSource.includes(extensionBandSource), true, 'the published band folds the published declared span');
+check(sectionSource.includes('return declaredLayoutBand(span);') && !/span\s*>\s*12/.test(sectionSource), true, 'the section owns no fold threshold of its own');
+// The orphan row-fill must accumulate the grid list it was given (the
+// extension run's own fields), never the outer section list.
+check(
+  sectionSource.includes('units += declaredLayoutSpan(gridFields[i].span)')
+  && sectionSource.includes('const next = gridFields[index + 1]')
+  && !/units\s*\+=\s*declaredLayoutSpan\(fields\[/.test(sectionSource),
+  true,
+  'orphan calculation cannot count fields from a different descriptions run',
+);
 
 console.log(`[standard-form-composition-adoption] explicit adoption scope, shared emptiness authority, engine result reading, single error store, fail-closed registry, shipped call sites: ${cases} cases passed`);
