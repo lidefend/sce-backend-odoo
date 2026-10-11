@@ -86,7 +86,7 @@
         <div
           v-for="(field, index) in segment.fields"
           :key="field.key"
-          :class="fieldClass(field, index, standardDetailComposition?.adopted.value ? segment.fields : fields)"
+          :class="fieldClass(field)"
           :data-field-span="fieldSpan(field, index, standardDetailComposition?.adopted.value ? segment.fields : fields)"
           :data-field-band="fieldSpanBand(fieldSpan(field, index, standardDetailComposition?.adopted.value ? segment.fields : fields))"
           :data-field-name="field.name"
@@ -811,7 +811,7 @@ function fieldSpanBand(span: number) {
   return span > 12 ? 'full' : 'half';
 }
 
-function fieldClass(field: FormSectionFieldSchema, index: number, gridFields: readonly FormSectionFieldSchema[]) {
+function fieldClass(field: FormSectionFieldSchema) {
   const fieldKey = fieldIdentity(field);
   const isDropTarget = props.fieldOrderDropTargetKey === fieldKey && props.fieldOrderDraggingKey !== fieldKey;
   return [
