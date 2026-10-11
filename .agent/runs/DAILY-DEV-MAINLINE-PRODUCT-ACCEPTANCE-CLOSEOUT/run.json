@@ -702,18 +702,6 @@
         "scripts/verify/test_frontend_release_ci_identity.py",
         "scripts/verify/frontend_acceptance_environment_source_guard.py"
       ]
-    },
-    "acceptance_carrier_discard_runtime": {
-      "target": "make acceptance.runtime.carrier.discard",
-      "kind": "runtime",
-      "inputs": [
-        "make/dev.mk",
-        "scripts/dev/frontend_acceptance_carrier_common.sh",
-        "scripts/dev/frontend_acceptance_carrier_discard.sh",
-        "scripts/dev/frontend_acceptance_operation_entry.sh",
-        "scripts/common/compose.sh"
-      ],
-      "environment": "docker project sc-fe-r2-p1-01 / database sc_frontend_acceptance / volumes sc_fe_r2_p1_01_{db,redis,odoo}"
     }
   },
   "blockers": [
@@ -2369,7 +2357,8 @@
       "environment_consequence": "Because the carrier is now intentionally absent, acceptance.runtime.baseline_recovery.audit and acceptance.runtime.infrastructure.restore now DENY with 'missing credential authority container: sc-fe-r2-p1-01-odoo-1'. That is the expected, intended consequence of retiring the carrier, not a new environment failure. The governed recovery path is the new make acceptance.runtime.carrier.provision.",
       "not_executed": "acceptance.runtime.carrier.provision has NOT been run end to end. Running it would recreate the isolated tenant and write the database (create sc_frontend_acceptance, install the module bundle, two baseline upgrades), which is a heavier environment write than this retirement asked for. No copy of the retired tenant was kept; the owner's instruction was to reclaim it outright.",
       "untouched_and_reused": "sc-local-dev (daily dev server http://1.95.85.92:18081/, database sc_demo, credential wutao/123456) was not touched. Unchanged passing product evidence for the daily runtime continues to be reused as recorded elsewhere in this run.",
-      "status_boundaries": "批次验收完成（本批 P4 工具层）+ 载体已退役。产品交付完成未主张：日常开发服务器的用户视角验收仍需 owner 本人登录核对。"
+      "status_boundaries": "批次验收完成（本批 P4 工具层）+ 载体已退役。产品交付完成未主张：日常开发服务器的用户视角验收仍需 owner 本人登录核对。",
+      "runtime_execution_record": "The real discard action is not modelled as a run *check* because the ledger guard requires every check target to be a registered verify.* make target, and make acceptance.runtime.carrier.discard is an environment entry, not a verify target. Its execution and readback are recorded here instead; the reusable, re-runnable gate for this batch is checks.acceptance_carrier_lifecycle_unit (verify.acceptance.runtime.baseline_rebuild.unit), which covers the entries' source contract and negative cases."
     }
   },
   "continuation": {
