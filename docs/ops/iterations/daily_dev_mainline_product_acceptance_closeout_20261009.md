@@ -2758,3 +2758,90 @@ G7 `SceneFieldGroup.description` 无契约来源；G8 styleToken 词汇所有权
 
 该入口不在本 run 的受管检查集内，因此**不改写本轮任何通过结论**；已作为债务登记在 run 台账 `blockers`（责任车道：config-workbench 车道）。
 未做修复：正确修法需要该车道当前声明的配置面权威（入口标签/动作），超出本轮声明范围，只改标签字面量会制造无意义的绿。
+
+## 28. 第 28 轮（2026-10-11）：定时 full 车道红的根因收口 —— 能力角色不得并入业务身份面（P0 契约投影）
+
+**一、现象与可复现性**
+
+定时 full 车道（`frontend_release_gate.yml`）自 2026-10-01 起几乎每晚红（仅 `1c5368a7` / 10-06 绿）。10-10 schedule run `38089487628`（旧 main `282b079c`）与本轮手动派发 run `38143504375`（current main `8870c70c`，`event=workflow_dispatch`）失败在同一步：
+
+| 事实 | 值 |
+| --- | --- |
+| 失败目标 | `make verify.frontend.page_identity.browser`（`make/runtime_ops.mk:1898`） |
+| 级联 | `verify.frontend.release.audit` FAIL → `frontend_release_gate` FAIL（`release_candidate_gate` 的红是同 event 级联，不是独立缺陷） |
+| 输出 | `{"pass":false,"surfaces":34,"failed":0,"failures":[]}` |
+
+`pass=false` 与 `failed=0` 并不矛盾：`pass` 还要求 `navigationAudit.total.result === PASS`，而 `failed/failures` 只统计页面身份失败（`frontend/apps/web/scripts/frontend_product_maturity_audit.mjs:330-345`）。因此导航漂移不会出现在 `failures` 里。
+
+**二、精确漂移（run `38143504375` 产物 `frontend-page-identity/navigation-report.json`，`git_sha=8870c70c`）**
+
+`expected 30 / actual 34 / matched 30 → FAIL`：
+
+| 角色 | 期望→实际 | 多余叶子 |
+| --- | --- | --- |
+| finance | 15→17 | `…menu_sc_project_project`、`…menu_sc_construction_diary` |
+| pm | 7→8 | `…menu_sc_product_team_loan_deduction_v1` |
+| owner | 3→4 | `…menu_sc_p1_daily_contract` |
+| project_a_member | 5→5 | PASS |
+
+四条多余叶子**全部**是 `ROLE_SURFACE_OVERRIDES['project_member']['primary_menu_xmlids']` 的成员。
+
+**三、方向判定：交付面越界，不是声明缺登记**
+
+`config/frontend/role_surface_exposure_declarations_v1.json` 已把这 4 条逐角色登记为 `capability_reachable_not_delivered`，`delivered_without_declared_capability` 为空，且 `verify.frontend.role_surface_exposure_declaration.guard` PASS（`roles=9 universe=89 narrowed=211`）。
+
+所以**不能**按 2026-10-04 那次（后端发布面为权威、前端清单滞后 → 补 `browser_leaf_keys`）的方向修，也**不能**放宽任何断言。
+
+**四、根因：契约投影把「能力角色」投影成了「业务身份」**
+
+实测（日常运行面 `system.init`，`fixture_role_finance`）：
+
+```
+role_surface.surface_role_codes = ["finance", "project_member"]
+role_evidence.source = "explicit"
+role_evidence.matched_groups_by_role = {
+  "finance":        ["smart_construction_core.group_sc_role_finance_manager"],
+  "project_member": ["smart_construction_core.group_sc_cap_project_read"],
+}
+```
+
+机制：`identity_resolver.resolve_role_codes_with_evidence` 的 explicit 分支按 `_role_precedence` 求组交集，`_merge_effective_role_metas` 对 `primary_menu_xmlids` 等 allow 字段取**并集**；Odoo 把 implied 组物化进 `groups_id`，几乎每个施工角色都能到达 `group_sc_cap_project_read`，于是 `project_member` 被当成第二个业务身份并集进来。
+
+分叉点：`scripts/verify/baselines/formal_business_product_menu_policy_v1.json` 的 `role_catalog` 由 `d106d2dd`（2026-10-09）引入（`1c5368a7` 时尚无 `role_catalog`）；该契约同时声明 `capability_role_codes:["project_member"]` 与 `default_roles` 中的 `project_member`（`precedence=90`），而 `locked_menu_policy_contract.role_catalog_resolution` 把 `precedence` 直接投影为 `bindings.keys()`，使能力角色混进了业务身份优先级。时间线与「10-06 绿、10-07 起红」一致。
+
+**五、修复（单点，P0 契约投影；`smart_construction_core.services.locked_menu_policy_contract`）**
+
+`role_catalog_resolution` 的 `precedence` 剔除契约声明的 `capability_role_codes`；`bindings` 保留该角色，使 `identity_resolver` 的能力兜底分支仍能解析它。
+
+未放宽断言、未改 ACL/字段权限/合法隐藏规则、未加付款模型特判、未改契约基线与 `sha256` 锁。
+
+**六、回归锁**
+
+新增 `scripts/release/test_locked_menu_policy_contract.py::LockedMenuPolicyContractTests.test_capability_roles_never_join_the_business_surface`，走真实投影链「契约 → `apply_contract_role_catalog` → `IdentityResolver`」：
+
+- 能力角色不得出现在 `precedence`；
+- 能力角色仍必须绑定真实组（否则兜底分支无法解析）；
+- 每个业务角色的组 ∪ 能力组只能解析出该业务角色，`surface_roles` 只有它；
+- 仅有能力组的身份仍兜底到声明的能力角色。
+
+变异验证：把 `precedence` 改回 `bindings.keys()`，该测试立即失败；恢复后 33/33 OK。
+
+**七、本轮定向结果（风险选择、非零）**
+
+| 检查 | 结果 |
+| --- | --- |
+| `verify.role_surface.landing.contract.unit` | PASS（33/33，含新测试） |
+| `verify.frontend.role_surface_exposure_declaration.guard` | PASS |
+| `verify.frontend.release_navigation_policy.guard` | PASS（`released_leaf_identities=88`） |
+| `verify.frontend.navigation_shell.unit` | PASS |
+| `node --test scripts/verify/frontend_navigation_audit.test.mjs` | PASS |
+| `make ci.local.iteration` | PASS（L1，`scope=dirty`） |
+| `verify.agent.ledger.unit` | PASS（15/15） |
+
+**八、未决（L4）**
+
+交付面收敛需要在**冻结候选**上跑一次浏览器级证据：本地 `make verify.frontend.page_identity.browser` 或远端 full 车道（与 `38143504375` 同命令），按 `navigation-report.json` 对比 `finance 15 / project_a_member 5 / pm 7 / owner 3`。部署后需在受管日常运行面回读 `system.init` 的 `role_surface.surface_role_codes` 已不含 `project_member`。
+
+**九、既有债务（与本轮无关，已实测在 HEAD 即失败，未接入任何 make 目标）**
+
+`addons/smart_core/tests/test_identity_resolver_entry_target.py` 1 例、`addons/smart_construction_core/tests/test_role_surface_cost_label.py` 2 例；用 `git stash` 回退本轮两文件后复测结果完全相同，故非本轮引入，仅登记不修。
