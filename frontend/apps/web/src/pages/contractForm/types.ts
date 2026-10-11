@@ -89,7 +89,7 @@ export type LayoutNode = {
   required: boolean;
   widget?: string;
   widgetSemantics?: Record<string, unknown>;
-  spanClass?: string;
+  span?: number;
   descriptor?: FieldDescriptor;
 };
 

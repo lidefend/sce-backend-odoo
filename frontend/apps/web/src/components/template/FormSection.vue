@@ -87,6 +87,8 @@
           v-for="(field, index) in segment.fields"
           :key="field.key"
           :class="fieldClass(field, index, standardDetailComposition?.adopted.value ? segment.fields : fields)"
+          :data-field-span="fieldSpan(field, index, standardDetailComposition?.adopted.value ? segment.fields : fields)"
+          :data-field-band="fieldSpanBand(fieldSpan(field, index, standardDetailComposition?.adopted.value ? segment.fields : fields))"
           :data-field-name="field.name"
           :data-validation-target="fieldValidationTarget(field)"
           :data-field-key="field.key"
@@ -416,8 +418,9 @@ import { isProfessionalBaseFieldCandidate, resolveReadonlyEmptyText } from '../p
 import { isProfessionalBusinessValueField } from '../professional-fields/professionalBusinessValueModel';
 import {
   isProfessionalDetailCollectionField,
-  optionalDetailCollectionSpanClass,
+  optionalDetailCollectionSpan,
 } from '../professional-fields/professionalDetailCollectionModel';
+import { layoutGridUnits, declaredLayoutSpan } from './layoutSpan';
 import { isProfessionalRelationField } from '../professional-fields/professionalRelationFieldModel';
 import { isPaymentSettlementDetailCollectionField } from '../professional-fields/paymentSettlementDetailCollectionModel';
 import X2ManyRelationRenderer from './X2ManyRelationRenderer.vue';
@@ -456,7 +459,7 @@ const props = withDefaults(defineProps<{
    * replacing it with a renderer-invented grid card.
    */
   frame?: boolean;
-  columns?: 1 | 2 | 3;
+  columns?: number;
   tone?: 'core' | 'advanced';
   fields?: FormSectionFieldSchema[];
   relationAdapter?: RelationFieldAdapter;
@@ -754,18 +757,6 @@ function contractFormDriverValue(field: FormSectionFieldSchema) {
   return normalizeContractFormDriverValue(field.inputValue, String(field.type || ''));
 }
 
-function defaultSpanClass(type: TemplateFieldType) {
-  return isMultilineField(type) || isRelationEditorType(type) ? 'field--full' : 'field--normal';
-}
-
-function isMultilineField(type: TemplateFieldType) {
-  return ['text', 'html'].includes(String(type || '').trim().toLowerCase());
-}
-
-function isRelationEditorType(type: TemplateFieldType) {
-  return ['many2many', 'one2many'].includes(String(type || '').trim().toLowerCase());
-}
-
 function inputType(type: TemplateFieldType) {
   const t = String(type || '').trim().toLowerCase();
   if (t === 'date') return 'date';
@@ -787,46 +778,37 @@ function fieldIdentity(field: FormSectionFieldSchema) {
   return String(field.name || field.key || '').trim();
 }
 
-// TDesign 24 栅格系统字段宽度映射
-const FIELD_SPAN_UNITS: Record<string, number> = {
-  'field--compact': 8,
-  'field--normal': 12,
-  'field--half': 12,
-  'field--wide': 16,
-  'field--full': 24,
-};
-
-function fieldSpanUnits(spanClass: string): number {
-  return FIELD_SPAN_UNITS[spanClass] ?? 12;
-}
-
-function fieldSpanClass(field: FormSectionFieldSchema, index: number, gridFields: readonly FormSectionFieldSchema[]) {
-  const explicitSpan = field.spanClass || '';
-  const configuredBase = explicitSpan || (defaultSpanClass(field.type) === 'field--full' || fieldWidget(field) === 'textarea'
-    ? 'field--full'
-    : 'field--normal');
-  const base = optionalDetailCollectionSpanClass(field, configuredBase);
-  if (base === 'field--full') return base;
+// The field's width is the declared ``span`` unit the contract projection
+// resolved (native arch ``col`` / ``col-*`` and low-code ``columns`` /
+// ``field_size`` all fold into it). The renderer places the field by that
+// number and never derives a width from a class name, a column enum or a
+// field type.
+function fieldSpan(field: FormSectionFieldSchema, index: number, gridFields: readonly FormSectionFieldSchema[]) {
+  const base = optionalDetailCollectionSpan(field, declaredLayoutSpan(field.span));
+  if (base >= layoutGridUnits()) return base;
   if (!props.fillOrphanRows) return base;
 
-  // Orphan-column fill (TDesign 24 栅格系统): a normal/half-width field that
-  // starts a new row alone leaves blank cells when its row has no pairing fields —
-  // either because it is the last field of the section, or because the next field
-  // spans the full row. Widen such a field to span the full row (24 units).
+  // Orphan-column fill: a sub-row-width field that starts a new row alone
+  // leaves blank cells when its row has no pairing fields — either because it
+  // is the last field of the section, or because the next field spans the full
+  // row. Widen such a field to span the full row.
   let units = 0;
-  for (let i = 0; i < index; i++) {
-    const prev = gridFields[i];
-    const prevSpan = prev.spanClass || defaultSpanClass(prev.type);
-    units += fieldSpanUnits(prevSpan);
-  }
+  for (let i = 0; i < index; i++) units += declaredLayoutSpan(gridFields[i].span);
   const isLast = index === gridFields.length - 1;
   const next = gridFields[index + 1];
-  const nextSpan = next ? (next.spanClass || defaultSpanClass(next.type)) : '';
-  const nextIsFullRow = nextSpan === 'field--full';
-  if (units % 24 === 0 && (isLast || nextIsFullRow)) {
-    return 'field--full';
+  const nextIsFullRow = next ? declaredLayoutSpan(next.span) >= layoutGridUnits() : false;
+  if (units % layoutGridUnits() === 0 && (isLast || nextIsFullRow)) {
+    return layoutGridUnits();
   }
   return base;
+}
+
+// The declared unit is published as an exact grid attribute; the stylesheet
+// implements the 24-unit grid as its fixed rule set. The band is only the
+// responsive fold of the declared desktop span on a narrow viewport — a
+// renderer concern, not a second width vocabulary.
+function fieldSpanBand(span: number) {
+  return span > 12 ? 'full' : 'half';
 }
 
 function fieldClass(field: FormSectionFieldSchema, index: number, gridFields: readonly FormSectionFieldSchema[]) {
@@ -834,7 +816,6 @@ function fieldClass(field: FormSectionFieldSchema, index: number, gridFields: re
   const isDropTarget = props.fieldOrderDropTargetKey === fieldKey && props.fieldOrderDraggingKey !== fieldKey;
   return [
     'field',
-    fieldSpanClass(field, index, gridFields),
     fieldWidgetClass(field),
     {
       'field--order-editable': props.fieldOrderEditable,
@@ -1283,44 +1264,115 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   background: color-mix(in srgb, var(--sc-app-muted-bg) 72%, transparent);
 }
 
-/* TDesign 24 栅格系统字段宽度映射（大屏幕默认） */
-.field--compact {
+.field[data-field-span='1'] {
+  grid-column: span 1;
+}
+
+.field[data-field-span='2'] {
+  grid-column: span 2;
+}
+
+.field[data-field-span='3'] {
+  grid-column: span 3;
+}
+
+.field[data-field-span='4'] {
+  grid-column: span 4;
+}
+
+.field[data-field-span='5'] {
+  grid-column: span 5;
+}
+
+.field[data-field-span='6'] {
+  grid-column: span 6;
+}
+
+.field[data-field-span='7'] {
+  grid-column: span 7;
+}
+
+.field[data-field-span='8'] {
   grid-column: span 8;
 }
 
-.field--normal,
-.field--half {
+.field[data-field-span='9'] {
+  grid-column: span 9;
+}
+
+.field[data-field-span='10'] {
+  grid-column: span 10;
+}
+
+.field[data-field-span='11'] {
+  grid-column: span 11;
+}
+
+.field[data-field-span='12'] {
   grid-column: span 12;
 }
 
-.field--wide {
+.field[data-field-span='13'] {
+  grid-column: span 13;
+}
+
+.field[data-field-span='14'] {
+  grid-column: span 14;
+}
+
+.field[data-field-span='15'] {
+  grid-column: span 15;
+}
+
+.field[data-field-span='16'] {
   grid-column: span 16;
 }
 
-.field--full {
+.field[data-field-span='17'] {
+  grid-column: span 17;
+}
+
+.field[data-field-span='18'] {
+  grid-column: span 18;
+}
+
+.field[data-field-span='19'] {
+  grid-column: span 19;
+}
+
+.field[data-field-span='20'] {
+  grid-column: span 20;
+}
+
+.field[data-field-span='21'] {
+  grid-column: span 21;
+}
+
+.field[data-field-span='22'] {
+  grid-column: span 22;
+}
+
+.field[data-field-span='23'] {
+  grid-column: span 23;
+}
+
+.field[data-field-span='24'] {
   grid-column: span 24;
 }
 
 /* 小屏幕：1 列布局，所有字段全宽 */
 @container (max-width: 479px) {
-  .field--compact,
-  .field--normal,
-  .field--half,
-  .field--wide,
-  .field--full {
+  .template-form-section-grid > .field {
     grid-column: 1 / -1;
   }
 }
 
-/* 中等屏幕：2 列布局 */
+/* 中等屏幕：2 列布局；声明为整行的字段保持整行 */
 @container (min-width: 480px) and (max-width: 959px) {
-  .field--compact,
-  .field--normal,
-  .field--half {
+  .template-form-section-grid > .field[data-field-band='half'] {
     grid-column: span 1;
   }
-  .field--wide,
-  .field--full {
+  .template-form-section-grid > .field[data-field-band='full'] {
     grid-column: 1 / -1;
   }
 }

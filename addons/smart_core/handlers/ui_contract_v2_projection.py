@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import re
 from copy import deepcopy
 from typing import Any
 
@@ -23,11 +24,11 @@ _CONTAINER_CHILD_KEYS = ("children", "pages", "tabs", "nodes", "items")
 FORM_PRESENTATION_PRODUCT_PREFIX = "sc-"
 FORM_PRESENTATION_NATIVE_MARKER_PREFIXES = ("o_", "oe_")
 FORM_PRESENTATION_LAYOUT_TOKENS = frozenset({
-    # layout
+    # display mode (how a declared container arranges its declared children)
     "d-flex", "d-inline-flex", "flex-wrap", "flex-row", "justify-content-between",
     "justify-content-start", "justify-content-end",
     "align-items-start", "align-items-center", "gap-2",
-    "row", "g-2", "col-12", "col-md-6", "col-lg-3", "col-lg-12",
+    "row", "g-2",
     # spacing / sizing
     "mb-1", "mb-3", "mb-4", "mt-1", "mt-2", "mt8", "mt16",
     "ps-1", "pe-0", "pe-2", "px-0", "pb-2", "pb-3",
@@ -38,6 +39,17 @@ FORM_PRESENTATION_LAYOUT_TOKENS = frozenset({
     "card", "card-body", "content-group",
     "alert", "alert-info", "alert-danger", "alert-warning",
 })
+# Grid *placement* classes (``col-12``/``col-md-6``/``col-lg-3``/``col-lg-12``)
+# are the arch's width declaration.  The projection folds every declared width
+# into the single 24-unit ``span`` facet, so these tokens must never travel to
+# the renderer beside it: a renderer that re-reads a ``col-*`` name has a second
+# width dialect and the contract stops being the one layout authority.  They are
+# therefore classified explicitly (never published, never fail-closed) exactly
+# like the native icon markers.
+FORM_PRESENTATION_GRID_PLACEMENT_TOKENS = frozenset({
+    "col-12", "col-md-6", "col-lg-3", "col-lg-12",
+})
+
 # Native icon glyph classes (``<i class="fa fa-lightbulb-o"/>``) are structural
 # decoration: the icon font supplies the glyph and the renderer consumes the node
 # itself, so no region presentation token is published for them.  They are
@@ -56,6 +68,110 @@ FORM_PRESENTATION_ACTION_MARKERS = frozenset({
 # presentation is declared by another contract facet (actions, widgets) are not
 # part of the container presentation facet.
 FORM_PRESENTATION_EXEMPT_NODE_TYPES = frozenset({"field", "button", "widget"})
+
+
+# --- Declared layout span ---------------------------------------------------
+# The product renderer owns one 24-unit layout grid, and the only layout facet
+# it may consume is the declared ``span`` on a container-tree node.  A native
+# arch declares layout with its own vocabulary instead: ``col`` on a group
+# means "this many field columns", and ``col-<breakpoint>-<n>`` on a row child
+# means "n twelfths of the row".  The projection resolves those declarations
+# into the renderer-facing unit here, so the renderer never has to guess a
+# span from a CSS class name and the contract never publishes two unconnected
+# layout dialects for the same tree.
+LAYOUT_GRID_UNITS = 24
+LAYOUT_LEAF_NODE_TYPES = frozenset({"field", "widget"})
+LAYOUT_ROW_TOKENS = frozenset({"row", "d-flex", "d-inline-flex"})
+_BOOTSTRAP_COLUMN_RE = re.compile(r"^col-(?:(?P<breakpoint>xs|sm|md|lg|xl|xxl)-)?(?P<units>\d{1,2})$")
+_BOOTSTRAP_BREAKPOINT_ORDER = {None: 0, "xs": 1, "sm": 2, "md": 3, "lg": 4, "xl": 5, "xxl": 6}
+
+
+def _layout_span_value(value: Any) -> int | None:
+    """Return a declared span only when it is a real 1..24 grid unit."""
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    return value if 1 <= value <= LAYOUT_GRID_UNITS else None
+
+
+def declared_layout_columns(node: dict[str, Any]) -> int | None:
+    """Return the field-column count a container declares, if any.
+
+    ``col``/``cols``/``columns`` is the arch's field-column declaration; it is
+    accepted up to the grid width so a governance column count is not silently
+    degraded by a renderer-side enum.
+    """
+    attributes = node.get("attributes") if isinstance(node.get("attributes"), dict) else {}
+    for value in (
+        node.get("cols"),
+        node.get("columns"),
+        node.get("col"),
+        attributes.get("cols"),
+        attributes.get("columns"),
+        attributes.get("col"),
+    ):
+        try:
+            columns = int(value)
+        except (TypeError, ValueError):
+            continue
+        if 1 <= columns <= LAYOUT_GRID_UNITS:
+            return columns
+    return None
+
+
+def declared_bootstrap_span(node: dict[str, Any]) -> int | None:
+    """Resolve a declared ``col-*`` layout token into the 24-unit grid.
+
+    The widest declared breakpoint wins, because the projection publishes one
+    layout span for the desktop face instead of shipping responsive class
+    names for the renderer to interpret.
+    """
+    resolved: tuple[int, int] | None = None
+    for token in _declared_node_classes(node):
+        match = _BOOTSTRAP_COLUMN_RE.match(token)
+        if not match:
+            continue
+        units = int(match.group("units"))
+        if not 1 <= units <= 12:
+            continue
+        rank = _BOOTSTRAP_BREAKPOINT_ORDER.get(match.group("breakpoint"), 0)
+        span = max(1, min(LAYOUT_GRID_UNITS, round(units * LAYOUT_GRID_UNITS / 12)))
+        if resolved is None or rank >= resolved[0]:
+            resolved = (rank, span)
+    return resolved[1] if resolved else None
+
+
+# The low-code form contract declares a field's width as a size token
+# (``field_size`` / the ``field--*`` class it persists).  It is a declared
+# layout facet like the arch's ``col``, so the projection resolves it into the
+# same 24-unit span instead of leaving the renderer a second width table.
+LAYOUT_FIELD_SIZE_UNITS = {
+    "field--compact": 8,
+    "field--normal": 12,
+    "field--half": 12,
+    "field--wide": 16,
+    "field--full": 24,
+    "field--large": 24,
+}
+
+
+def declared_field_size_span(node: dict[str, Any]) -> int | None:
+    declared_size = str(node.get("field_size") or node.get("fieldSize") or "").strip().lower()
+    if declared_size:
+        span = LAYOUT_FIELD_SIZE_UNITS.get(f"field--{declared_size}")
+        if span:
+            return span
+    for token in _declared_node_classes(node):
+        span = LAYOUT_FIELD_SIZE_UNITS.get(token)
+        if span:
+            return span
+    return None
+
+
+def descendant_field_column_span(columns: int | None) -> int | None:
+    """Return the span a leaf takes inside a container declaring ``columns``."""
+    if not columns:
+        return None
+    return max(1, min(LAYOUT_GRID_UNITS, round(LAYOUT_GRID_UNITS / columns)))
 
 
 def _declared_node_classes(node: dict[str, Any]) -> list[str]:
@@ -97,6 +213,8 @@ def declared_presentation_tokens(node: dict[str, Any], container_id: str) -> lis
         return tokens
     for token in _declared_node_classes(node):
         if token.startswith(FORM_PRESENTATION_NATIVE_MARKER_PREFIXES):
+            continue
+        if token in FORM_PRESENTATION_GRID_PLACEMENT_TOKENS:
             continue
         if token in FORM_PRESENTATION_ICON_MARKER_TOKENS:
             continue
@@ -224,7 +342,7 @@ def normalize_post_projected_container_tree(
     container_status = reconciled_status
     seen_ids: set[str] = set()
 
-    def normalize(nodes: list[Any], parent_id: str) -> list[Any]:
+    def normalize(nodes: list[Any], parent_id: str, inherited_leaf_span: int | None = None) -> list[Any]:
         out: list[Any] = []
         for index, raw_node in enumerate(nodes, start=1):
             if not isinstance(raw_node, dict):
@@ -275,8 +393,18 @@ def normalize_post_projected_container_tree(
             )
             node["title"] = label
             node["styleToken"] = " ".join(declared_presentation_tokens(node, container_id))
-            span = node.get("span")
-            node["span"] = span if isinstance(span, int) and not isinstance(span, bool) and 1 <= span <= 24 else 24
+            # One declared layout unit reaches the renderer.  Precedence: an
+            # explicit span on the node, then a declared col-* row token, then
+            # the field-column count its container declares, then the grid
+            # width (full row).
+            leaf_span = inherited_leaf_span if node_type in LAYOUT_LEAF_NODE_TYPES else None
+            node["span"] = (
+                _layout_span_value(node.get("span"))
+                or declared_field_size_span(node)
+                or declared_bootstrap_span(node)
+                or leaf_span
+                or LAYOUT_GRID_UNITS
+            )
             if "widgetList" in node and not isinstance(node.get("widgetList"), list):
                 raise ValueError(f"layout node {container_id} widgetList must be an array")
             node.setdefault("widgetList", [])
@@ -293,7 +421,11 @@ def normalize_post_projected_container_tree(
                     f"layout node {container_id} has ambiguous parallel child carriers: {carriers}"
                 )
             canonical_children = child_carriers[0][1] if child_carriers else []
-            node["children"] = normalize(canonical_children, container_id)
+            node["children"] = normalize(
+                canonical_children,
+                container_id,
+                descendant_field_column_span(declared_layout_columns(node)),
+            )
             for key in _CONTAINER_CHILD_KEYS[1:]:
                 node.pop(key, None)
 

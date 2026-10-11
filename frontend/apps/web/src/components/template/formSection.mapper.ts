@@ -19,13 +19,14 @@ export type FormSectionMapperFieldNode = {
   widgetSemantics?: Record<string, unknown>;
   required: boolean;
   readonly: boolean;
+  span?: number;
   descriptor?: FieldDescriptor;
 };
 
 export type BuildFormSectionFieldSchemasOptions = {
   resolveFieldType: (descriptor?: FieldDescriptor) => string;
   resolveRequired: (field: FormSectionMapperFieldNode) => boolean;
-  resolveSpanClass: (field: FormSectionMapperFieldNode) => string;
+  resolveSpan: (field: FormSectionMapperFieldNode) => number | undefined;
   resolveInputValue: (fieldName: string, fieldType: string) => string | number | boolean | null;
   resolveRawValue: (fieldName: string) => unknown;
   resolveInputPlaceholder: (fieldLabel: string) => string;
@@ -248,7 +249,7 @@ export function buildFormSectionFieldSchemas(
       invalid: Boolean(errorText),
       helpText: helpText || undefined,
       errorText: errorText || undefined,
-      spanClass: options.resolveSpanClass(field),
+      span: options.resolveSpan(field),
       value: options.resolveRawValue(field.name),
       inputValue: options.resolveInputValue(field.name, type),
       dateRangeEndField: dateRangeEndField || undefined,

@@ -10,6 +10,7 @@
         :body-class-name="isDetailCard(node) ? 'native-detail-card-body' : undefined"
         :data-detail-card="isDetailCard(node) ? 'native-section' : undefined"
         :class="containerClass(node)"
+        :style="layoutItemStyle(node)"
         :data-group-title="containerPolicyTitle(node, index)"
         :data-section-navigation-role="nativeSectionNavigationRole(node)"
         :data-collapsed="isContainerCollapsed(node, index) ? 'true' : 'false'"
@@ -227,6 +228,7 @@
           <FormSection
             v-if="segment.kind === 'field' && !isNativeFeedbackContainer(node) && fieldSchemasForNodes(segment.nodes).length"
             :frame="!isDeclaredLayoutContainer(node)"
+            :style="layoutItemStyle(node)"
             :title="segmentIndex === renderSegments(node).findIndex((item) => item.kind === 'field') ? fieldSectionTitle(node) : ''"
             :columns="nodeColumns(node)"
             :inherited-semantic-role="semanticFormRole(node)"
@@ -361,6 +363,7 @@
       <FormSection
         v-else-if="nodeType(node) === 'field' && fieldSchemasForNodes([node]).length"
         :class="[...nodeClassList(node), ...declaredPresentationTokens(node)]"
+        :style="layoutItemStyle(node)"
         :title="fieldSectionTitle(node)"
         :columns="nodeColumns(node)"
         :fields="fieldSchemasForNodes([node])"
@@ -437,6 +440,7 @@
 import { computed, ref } from 'vue';
 import FormSection from './FormSection.vue';
 import { declaredLayoutChildSegments, isDeclaredLayoutContainerToken, nativeChildSegments } from './nativeChildSequence';
+import { layoutGridUnits, declaredLayoutSpan } from './layoutSpan';
 import NativeActionOverflowMenu from './NativeActionOverflowMenu.vue';
 import NativeSmartAction from './NativeSmartAction.vue';
 import ScCard from '../design-system/ScCard.vue';
@@ -532,7 +536,7 @@ const props = withDefaults(defineProps<{
   insideDetailCard?: boolean;
   inheritedSemanticRole?: string;
   authoritativeBusinessSectionMode?: boolean;
-  columns?: 1 | 2 | 3;
+  columns?: number;
 }>(), {
   columns: 2,
   isNodeVisible: () => true,
@@ -894,16 +898,34 @@ function fieldSectionTitle(node?: NativeFormLayoutNode) {
   return node ? containerTitle(node) : '';
 }
 
-function normalizeColumns(value: unknown): 1 | 2 | 3 {
+/**
+ * The declared field-column count of a container.  It is a declared number, so
+ * the renderer passes it through instead of collapsing it onto its own 1|2|3
+ * enum: clamping a declared ``col="4"`` group to ``2`` is what dropped the
+ * declaration and left the renderer to invent the layout.
+ */
+function normalizeColumns(value: unknown): number {
   const columns = Number(value);
-  if (columns === 1 || columns === 2 || columns === 3) return columns;
-  return 2;
+  return Number.isInteger(columns) && columns >= 1 && columns <= layoutGridUnits() ? columns : 2;
 }
 
-function nodeColumns(node?: NativeFormLayoutNode): 1 | 2 | 3 {
+function nodeColumns(node?: NativeFormLayoutNode): number {
   const attrs = node ? nodeAttributes(node) : {};
   const layoutNode = node as { cols?: unknown; columns?: unknown } | undefined;
   return normalizeColumns(attrs.col ?? attrs.columns ?? layoutNode?.cols ?? layoutNode?.columns ?? props.columns);
+}
+
+/**
+ * The declared placement span of a child inside a declared layout grid, and the
+ * style that publishes it to the grid via one custom property.  The renderer
+ * never re-reads a ``col-*`` class name for width.
+ */
+function nodeSpan(node?: NativeFormLayoutNode): number {
+  return declaredLayoutSpan((node as { span?: unknown } | undefined)?.span);
+}
+
+function layoutItemStyle(node?: NativeFormLayoutNode) {
+  return { '--sc-layout-span': String(nodeSpan(node)) };
 }
 
 function isEditableGroupNode(node: NativeFormLayoutNode) {
@@ -1451,18 +1473,24 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 .native-form-tree.native-form-tree .gap-2 { gap: var(--sc-space-sm); }
 .native-form-tree.native-form-tree .row {
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-columns: repeat(24, minmax(0, 1fr));
   align-content: start;
 }
 .native-form-tree.native-form-tree .g-2 { gap: var(--sc-space-sm); }
-.native-form-tree.native-form-tree .col-12 { grid-column: span 12; }
+/* A declared row child is placed by the contract span it was projected with,
+ * never by re-reading a ``col-*`` class name.  Below the declared desktop face
+ * the renderer folds the declared span responsively. */
+.native-container.row > .native-form-tree > * {
+  grid-column: 1 / -1;
+}
 @media (min-width: 768px) {
-  .native-form-tree.native-form-tree .col-md-6 { grid-column: span 6; }
+  .native-container.row > .native-form-tree > * { grid-column: span 12; }
   .native-form-tree.native-form-tree .w-md-50 { width: 50%; }
 }
 @media (min-width: 1024px) {
-  .native-form-tree.native-form-tree .col-lg-3 { grid-column: span 3; }
-  .native-form-tree.native-form-tree .col-lg-12 { grid-column: span 12; }
+  .native-container.row > .native-form-tree > * {
+    grid-column: span var(--sc-layout-span, 24);
+  }
   .native-form-tree.native-form-tree .w-lg-25 { width: 25%; }
 }
 
@@ -1538,11 +1566,6 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 .native-container.d-flex > .native-form-tree,
 .native-container.d-inline-flex > .native-form-tree {
   display: contents;
-}
-/* A declared row child that declares no column token keeps the previous
- * full-width placement instead of collapsing into a single 1/12 track. */
-.native-container.row > .native-form-tree > .native-container:not(.col-12):not(.col-md-6):not(.col-lg-3):not(.col-lg-12) {
-  grid-column: 1 / -1;
 }
 /* A declared layout container's declared children are layout items, not
  * section cards: inside a declared `row` grid a frameless item keeps the

@@ -14,7 +14,7 @@ import {
   optionalDetailCollectionConfig,
   optionalDetailCollectionPresentation,
   optionalDetailCollectionRemovalConfirmation,
-  optionalDetailCollectionSpanClass,
+  optionalDetailCollectionSpan,
 } from '../src/components/professional-fields/professionalDetailCollectionModel';
 
 const ready = resolveProfessionalComponent({
@@ -135,11 +135,11 @@ assert.equal(
   null,
   'an unsaved row is cancelled locally and must not use persistent last-row removal confirmation',
 );
-assert.equal(optionalDetailCollectionSpanClass(optionalField, 'field--normal'), 'field--full');
-assert.equal(optionalDetailCollectionSpanClass({
+assert.equal(optionalDetailCollectionSpan(optionalField, 12), 24);
+assert.equal(optionalDetailCollectionSpan({
   ...optionalField,
   componentConfig: {},
-} as never, 'field--normal'), 'field--normal');
+} as never, 12), 12);
 for (const [componentKey, fieldType] of [
   ['sc.value.money', 'monetary'], ['sc.value.percentage', 'float'],
   ['sc.display.status', 'selection'], ['sc.value.duration', 'float'],

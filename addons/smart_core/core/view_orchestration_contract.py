@@ -130,6 +130,65 @@ PARSER_FORBIDDEN_RESPONSIBILITIES = (
 )
 
 
+# --- Layout rule boundary ---------------------------------------------------
+# Layout is a legitimate contract layer (see
+# ``docs/architecture/backend_contract_boundaries.md`` and the contract
+# appearance guard), but it has exactly one authority and one unit.  Two source
+# vocabularies *declare* layout: the native view arch (``col`` on a group,
+# ``col-<breakpoint>-<n>`` on a row child) and the low-code business view
+# orchestration (``columns``/``field_size``/``sections``).  They are inputs.
+# The projection resolves both into the one renderer-facing unit ``span`` (an
+# integer on a 24-unit grid), and the renderer places a declared child by that
+# unit only.  Nothing downstream re-derives a width from a class name, a column
+# enum, or a field type: that is what produced the single 112px column defect
+# where a declared ``col="4"`` group was silently degraded to ``2`` and the
+# renderer invented the rest.
+LAYOUT_GRID_UNITS = 24
+LAYOUT_UNIT_FACET = "span"
+# Most specific declaration wins; a native arch value is the product baseline
+# and the low-code orchestration overlays it.  The projection is the only place
+# this precedence is applied.
+LAYOUT_DECLARATION_PRECEDENCE = (
+    "user_preference",
+    "business_view_orchestration",
+    "native_view_parse_snapshot",
+    "platform_default",
+)
+# Declared width vocabularies the projection must fold into ``span``; none of
+# them may reach the renderer as a layout facet.
+LAYOUT_DECLARATION_VOCABULARIES = (
+    "group_col",
+    "bootstrap_col_class",
+    "low_code_field_size",
+)
+# What the renderer may do with the published facet, and what it must never do
+# instead.  A renderer that violates one of these is the contract defect, not a
+# styling preference.
+LAYOUT_RENDERER_MAY_NOT = (
+    "derive_field_width_from_class_name",
+    "derive_field_width_from_field_type",
+    "clamp_declared_columns_to_a_renderer_enum",
+    "publish_a_second_width_vocabulary",
+)
+LAYOUT_FAIL_CLOSED_UNIT = LAYOUT_GRID_UNITS
+
+
+def layout_rule_boundary() -> dict[str, Any]:
+    """Return the declared layout authority, unit and renderer prohibition."""
+    return {
+        "kind": "layout_rule_boundary",
+        "authority": "business_view_orchestration",
+        "sources": list(SOURCE_AUTHORITIES),
+        "declaration_vocabularies": list(LAYOUT_DECLARATION_VOCABULARIES),
+        "unit_facet": LAYOUT_UNIT_FACET,
+        "grid_units": LAYOUT_GRID_UNITS,
+        "precedence": list(LAYOUT_DECLARATION_PRECEDENCE),
+        "renderer_may_not": list(LAYOUT_RENDERER_MAY_NOT),
+        "fail_closed_unit": LAYOUT_FAIL_CLOSED_UNIT,
+        "no_business_fact_authority": NO_BUSINESS_FACT_AUTHORITY,
+    }
+
+
 def source_authority_contract() -> dict[str, Any]:
     return build_source_authority_contract(
         kind=SOURCE_KIND,

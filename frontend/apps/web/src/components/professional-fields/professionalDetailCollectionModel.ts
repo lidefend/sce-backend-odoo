@@ -1,4 +1,5 @@
 import type { FormSectionFieldSchema } from '../template/formSection.types';
+import { layoutGridUnits } from '../template/layoutSpan';
 import type { RelationFieldAdapter } from '../template/relationField.types';
 import type { RelationFieldColumn } from '../template/relationField.types';
 
@@ -123,11 +124,11 @@ export function optionalDetailCollectionRemovalConfirmation(
   });
 }
 
-export function optionalDetailCollectionSpanClass(
+export function optionalDetailCollectionSpan(
   field: FormSectionFieldSchema,
-  configuredSpanClass: string,
-): string {
-  return optionalDetailCollectionConfig(field) ? 'field--full' : configuredSpanClass;
+  configuredSpan: number,
+): number {
+  return optionalDetailCollectionConfig(field) ? layoutGridUnits() : configuredSpan;
 }
 
 export function detailCollectionColumnPresentation(

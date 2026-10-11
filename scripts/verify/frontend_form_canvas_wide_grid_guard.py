@@ -21,7 +21,8 @@ patterns = read("styles/product-patterns.css")
 form_css = read("pages/contractForm/ContractFormPage.css")
 product_header = read("components/product-page-header/ProductPageHeader.vue")
 section = read("components/template/FormSection.vue")
-mapper = read("components/template/fieldSpan.mapper.ts")
+layout_span = read("components/template/layoutSpan.ts")
+native_renderer = read("components/template/NativeFormTreeRenderer.vue")
 schema_builder = read("pages/contractForm/useRecordFormFieldSchemas.ts")
 object_task = read("pages/contractForm/ObjectTaskPage.vue")
 section_navigation = read("pages/contractForm/FormSectionNavigation.vue")
@@ -44,12 +45,14 @@ for required in (
     "@container (max-width: 479px)",
     "@container (min-width: 480px) and (max-width: 959px)",
     "template-form-section-grid--columns-${columns}",
-    ".field--compact {\n  grid-column: span 8;",
-    ".field--normal,\n.field--half {\n  grid-column: span 12;",
-    ".field--wide {\n  grid-column: span 16;",
-    ".field--full {\n  grid-column: span 24;",
+    ".field[data-field-span='8'] {\n  grid-column: span 8;",
+    ".field[data-field-span='12'] {\n  grid-column: span 12;",
+    ".field[data-field-span='16'] {\n  grid-column: span 16;",
+    ".field[data-field-span='24'] {\n  grid-column: span 24;",
     ".template-form-section-grid--columns-1 > .field {\n  grid-column: 1 / -1;",
-    ".field--wide,\n  .field--full {\n    grid-column: 1 / -1;",
+    ".template-form-section-grid > .field[data-field-band='full'] {\n    grid-column: 1 / -1;",
+    ':data-field-span="fieldSpan(',
+    ':data-field-band="fieldSpanBand(',
     ".field-control-main {\n  flex: 1 1 auto;\n  display: grid;\n  width: 100%;\n  max-width: 100%;\n  min-width: 0;",
     "white-space: pre-wrap;\n  overflow-wrap: anywhere;\n  word-break: break-word;",
 ):
@@ -62,11 +65,45 @@ readonly_declarations = dict(re.findall(r"([\w-]+)\s*:\s*([^;]+);", readonly_blo
 for name, expected in {"box-sizing": "border-box", "display": "grid", "align-items": "center", "width": "100%", "max-width": "100%", "min-width": "0"}.items():
     if readonly_declarations.get(name, "").strip() != expected:
         fail(f"readonly value declaration missing or invalid: {name}")
-for forbidden in ("fieldName", "description", "remark", "address", "location"):
-    if forbidden in mapper:
-        fail(f"field span guesses from business name/label: {forbidden}")
-if "resolveFieldSpanClass({fieldType:" not in schema_builder:
-    fail("schema builder does not use type-only safe span fallback")
+# The single renderer-facing layout unit.  The projection folds the native arch
+# `col` / `col-*` and the low-code `columns` / `field_size` into one `span` on a
+# 24-unit grid, so the renderer consumes that number and must not keep a second
+# width vocabulary of its own.
+if (
+    "export function layoutGridUnits(): number {\n  return 24;\n}" not in layout_span
+    or "export function isDeclaredLayoutSpan(value: unknown): boolean" not in layout_span
+    or "typeof value === 'number'" not in layout_span
+    or "export function declaredLayoutSpan(value: unknown): number" not in layout_span
+):
+    fail("the layout span unit is not declared once, fail-closed, in one module")
+for path, source in (("FormSection.vue", section), ("NativeFormTreeRenderer.vue", native_renderer)):
+    if "from './layoutSpan'" not in source or "declaredLayoutSpan(" not in source:
+        fail(f"{path} does not consume the declared layout span unit")
+for forbidden in ("field--compact", "field--normal", "field--half", "field--wide", "field--full", "field--large"):
+    if forbidden in section:
+        fail(f"form section re-derives a field width from a low-code class name: {forbidden}")
+resolve_span = re.search(r"resolveSpan\s*:\s*\(?[\w,\s]*\)?\s*=>\s*([^,\n]+)", schema_builder)
+if resolve_span is None or not re.search(r"\.span\b", resolve_span.group(1)):
+    fail("schema builder does not carry the declared span through to the field schema")
+if re.search(r"(?:\?\?|\|\|)\s*\d", resolve_span.group(1)):
+    fail("schema builder re-invents a fallback field span instead of failing closed on the declared unit")
+
+# One declaration, one width: the facet table the renderer resolves a declared
+# ``field_size`` with must mirror the projection's, or the same declaration is
+# resolved by two authorities (an unknown facet used to fall back to the editor's
+# ``normal`` width in the renderer while the projection treated it as undeclared).
+projection = (ROOT / "addons/smart_core/handlers/ui_contract_v2_projection.py").read_text(encoding="utf-8")
+projected_facets = dict(re.findall(r'"field--([a-z]+)":\s*(\d+)', projection))
+facet_table = re.search(
+    r"function declaredFieldSizeSpans\(\): Map<string, number> \{([\s\S]*?)\n\}",
+    read("pages/contractForm/fieldUtils.ts"),
+)
+renderer_facets = dict(re.findall(r"\['([a-z]+)', (\d+)\]", facet_table.group(1))) if facet_table else {}
+if not renderer_facets or projected_facets != renderer_facets:
+    fail(
+        "declared layout facets resolve by two authorities: "
+        f"projection={projected_facets} renderer={renderer_facets}"
+    )
 for forbidden in ("model ===", "role ===", "overflow-x: hidden", "overflow-x: clip"):
     if forbidden in section or forbidden in form_css:
         fail(f"forbidden form-layout inference or overflow masking: {forbidden}")
