@@ -9,7 +9,7 @@ import type { TemplateSelectOption } from './formSection.types';
 export type CreateFormSectionFieldSchemaBuilderContext = {
   resolveFieldType: (descriptor?: FieldDescriptor) => string;
   resolveRequired: (field: FormSectionMapperFieldNode) => boolean;
-  resolveSpanClass: (field: FormSectionMapperFieldNode) => string;
+  resolveSpan: (field: FormSectionMapperFieldNode) => number | undefined;
   resolveRawValue: (fieldName: string) => unknown;
   resolveMany2oneValue: (fieldName: string) => string;
   normalizeDateInputValue: (value: unknown) => string;
@@ -38,7 +38,7 @@ export function createFormSectionFieldSchemaBuilder(context: CreateFormSectionFi
   return (fields: FormSectionMapperFieldNode[]) => buildFormSectionFieldSchemas(fields, {
     resolveFieldType: context.resolveFieldType,
     resolveRequired: context.resolveRequired,
-    resolveSpanClass: context.resolveSpanClass,
+    resolveSpan: context.resolveSpan,
     resolveRawValue: context.resolveRawValue,
     resolveInputValue: (fieldName, type) => resolveTemplateInputValue({
       fieldName,

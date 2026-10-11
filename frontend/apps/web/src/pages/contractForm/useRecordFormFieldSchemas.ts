@@ -11,7 +11,6 @@ import type { NativeFormLayoutNode } from '../../components/template/NativeFormT
 import type { FormSectionFieldSchema } from '../../components/template/formSection.types';
 import { createFormSectionFieldSchemaBuilder } from '../../components/template/formSection.adapter';
 import { resolveInputPlaceholder } from '../../components/template/placeholder.mapper';
-import { resolveFieldSpanClass } from '../../components/template/fieldSpan.mapper';
 import { mapDescriptorSelectionOptions, mapRelationOptions } from '../../components/template/option.mapper';
 import {
   applyReadonlyFieldValues, buildLegacyLayoutNodes, buildNativeFieldSchemas, nativeFieldPresentation,
@@ -68,7 +67,7 @@ export function useRecordFormFieldSchemas(context: {
     return {key:widgetId||`native_field_${name}_${index}`,kind:'field',name,label:presentation.label,
       readonly:Boolean(nativeReadonly||descriptor.readonly||state.readonly||(context.recordId.value?!context.rights.value.write:!context.rights.value.create)),
       required:Boolean(nativeRequired||state.required||descriptor.required),widget:nativeNodeWidget(source),
-      widgetSemantics:nativeNodeWidgetSemantics(source,strictWidget?.componentConfig),spanClass:presentation.spanClass,descriptor};
+      widgetSemantics:nativeNodeWidgetSemantics(source,strictWidget?.componentConfig),span:presentation.span,descriptor};
   };
   const v2FieldValue=(name:string)=>{const key=String(name||'').trim();if(!key||!context.v2ContractStore.value?.widgetsByFieldCode.has(key))return{found:false,value:undefined};
     const source=resolveContractV2ValueSource(context.v2ContractStore.value).values;if(!Object.prototype.hasOwnProperty.call(source,key))return{found:false,value:undefined};return{found:true,value:source[key]};};
@@ -104,7 +103,7 @@ export function useRecordFormFieldSchemas(context: {
   });
   buildSectionFieldSchemas=createFormSectionFieldSchemaBuilder({
     resolveFieldType:(descriptor)=>fieldType(descriptor)||'char',resolveRequired:(field)=>Boolean((field as LayoutNode).required),
-    resolveSpanClass:(field)=>(field as LayoutNode).spanClass||resolveFieldSpanClass({fieldType:fieldType(field.descriptor)}),
+    resolveSpan:(field)=>(field as LayoutNode).span,
     resolveRawValue:(name)=>context.formData[name],resolveMany2oneValue:(name)=>{
       // Resolve the many2one input value directly from the reactive formData
       // instead of the relation-hooks closure, which can capture a stale

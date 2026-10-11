@@ -630,7 +630,8 @@ verify.frontend.page_width_contract.guard: verify.frontend.workspace_content_ali
 	@echo "[verify.frontend.page_width_contract.guard] compatibility alias PASS"
 
 verify.frontend.form_canvas_layout.unit: guard.prod.forbid
-	@node --experimental-strip-types scripts/verify/frontend_form_canvas_layout_contract_test.ts
+	@frontend/apps/web/node_modules/.bin/esbuild scripts/verify/frontend_form_canvas_layout_contract_test.ts --bundle --platform=node --format=esm --outfile=/tmp/form-canvas-layout-contract-test.mjs >/dev/null
+	@node /tmp/form-canvas-layout-contract-test.mjs
 
 verify.frontend.form_canvas_layout.guard: guard.prod.forbid verify.frontend.form_canvas_layout.unit
 	@python3 -m unittest scripts.verify.test_frontend_form_canvas_wide_grid_guard

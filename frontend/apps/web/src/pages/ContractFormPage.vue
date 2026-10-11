@@ -339,7 +339,6 @@ import type { FormSectionFieldActionPayload, FormSectionFieldSchema, FormSection
 import type { RelationFieldAdapter } from '../components/template/relationField.types';
 import { createFormSectionFieldSchemaBuilder } from '../components/template/formSection.adapter';
 import { resolveInputPlaceholder, resolveSelectPlaceholder } from '../components/template/placeholder.mapper';
-import { resolveFieldSpanClass } from '../components/template/fieldSpan.mapper';
 import { mapDescriptorSelectionOptions, mapRelationOptions } from '../components/template/option.mapper';
 import { dispatchTemplateFieldChange } from '../components/template/fieldChange.dispatcher';
 import { isHudEnabled, isSceneBlocksDebugEnabled } from '../config/debug';

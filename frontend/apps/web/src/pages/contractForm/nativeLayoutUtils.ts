@@ -1,12 +1,13 @@
 import type { FieldDescriptor } from '@sc/schema';
 import type { FormSectionFieldSchema } from '../../components/template/formSection.types';
 import {
-  lowCodeFieldSizeClass,
-  normalizeLowCodeFieldSize,
+  declaredFieldSizeSpan,
+  lowCodeFieldSizeUnits,
   normalizeRelationIds,
   toDateInputValue,
   toDatetimeInputValue,
 } from './fieldUtils';
+import { isDeclaredLayoutSpan, layoutGridUnits } from '../../components/template/layoutSpan';
 import type { LayoutNode, LowCodeFieldSize } from './types';
 import {
   compareNativeModifierValue,
@@ -124,7 +125,7 @@ export type NativeFieldPresentationInput = {
 export type NativeFieldPresentation = {
   label: string;
   nodeClass: string;
-  spanClass: string;
+  span: number;
 };
 
 export type RuntimeFieldStateLike = {
@@ -653,21 +654,28 @@ export function nativeFieldLabel(
 
 export function nativeFieldPresentation(input: NativeFieldPresentationInput): NativeFieldPresentation {
   const name = String(input.node.name || '').trim();
-  const nodeClass = String((input.node as Record<string, unknown>).class || (input.node as Record<string, unknown>).className || '').trim();
-  const fieldSize = input.editable
-    ? input.effectiveFieldSize(name)
-    : normalizeLowCodeFieldSize(
-      (input.node as Record<string, unknown>).field_size
-      || (input.node as Record<string, unknown>).fieldSize
-      || (nodeClass.includes('field--compact') ? 'compact'
-        : (nodeClass.includes('field--large') ? 'large'
-          : (nodeClass.includes('field--full') ? 'full'
-            : (nodeClass.includes('field--wide') ? 'wide' : 'normal')))),
-    );
+  const node = input.node as Record<string, unknown>;
+  const nodeClass = String(node.class || node.className || '').trim();
+  // The projection already folded every declared width into ``span``; the
+  // renderer consumes that unit and never re-reads a ``field--*`` class name.
+  // A node that still carries only the declared low-code size facet (the field
+  // configuration editor preview) resolves through that same declared facet.
+  const declaredSpan = node.span;
+  const hasDeclaredSpan = isDeclaredLayoutSpan(declaredSpan);
+  const declaredSize = node.field_size || node.fieldSize;
+  // The declared facet is resolved by its own table rather than through the
+  // editor's default, so an unrecognised declaration fails closed instead of
+  // silently becoming the ``normal`` width the editor would have picked.
+  const facetSpan = declaredSize ? declaredFieldSizeSpan(declaredSize) : null;
+  const span = hasDeclaredSpan
+    ? Number(declaredSpan)
+    : input.editable
+      ? lowCodeFieldSizeUnits(input.effectiveFieldSize(name))
+      : facetSpan ?? layoutGridUnits();
   return {
     label: nativeFieldLabel(input.node, input.descriptor, input.resolveFieldLabel),
     nodeClass,
-    spanClass: lowCodeFieldSizeClass(fieldSize) || nodeClass,
+    span,
   };
 }
 

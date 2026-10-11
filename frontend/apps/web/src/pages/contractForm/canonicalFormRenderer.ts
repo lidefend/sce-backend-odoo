@@ -191,7 +191,7 @@ export function canonicalFieldToFormSection(
     auth: field.auth || undefined,
     helpText: field.reasonCode,
     inputPlaceholder: field.placeholder || undefined,
-    spanClass: field.fieldType === 'text' || field.span >= 24 ? 'field--full' : field.span >= 16 ? 'field--wide' : 'field--normal',
+    span: field.span,
     value: relation ? relation.displayName : field.value,
     inputValue: relation ? relation.id : inputValue(field.value, type),
     dateRangeEndField: dateRangeEndField || undefined,

@@ -52,9 +52,10 @@ export type FormSectionFieldSchema = {
   helpText?: string;
   errorText?: string;
 
-  // Presentational override for current template stage.
-  // Prefer replacing with semantic span in later phases.
-  spanClass?: string;
+  // Declared layout span (1..24 grid units) resolved by the contract
+  // projection.  The renderer places the field by this unit only; it never
+  // derives a width from a class name, a column enum or a field type.
+  span?: number;
 
   favoriteToggle?: {
     name: string;

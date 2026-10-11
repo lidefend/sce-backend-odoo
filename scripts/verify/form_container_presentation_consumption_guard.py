@@ -94,6 +94,115 @@ def _load_projection():
     return _load("ui_contract_v2_projection")
 
 
+def _declared_layout_span_errors(module) -> list[str]:
+    """The arch declares layout; the projection must publish one span unit.
+
+    The defect this guards: the arch's ``col`` / ``col-*`` / low-code
+    ``field_size`` declarations reached the renderer as an ``attributes.col``
+    beside a fixed ``span`` of 24, so the renderer had no declared width to
+    consume and fell back to a private class vocabulary (a one-column stack
+    that wrapped every value into a 112px column).  Baseline first, then the
+    declared cases, then a negative control proving the derivation is what
+    publishes the span.
+    """
+    errors: list[str] = []
+
+    def child_spans(tree: list) -> list:
+        normalized = module.normalize_post_projected_container_tree({}, tree)
+        return [child.get("span") for child in (normalized[0].get("children") or [])]
+
+    baseline = child_spans([{
+        "type": "group",
+        "name": "baseline",
+        "attributes": {"class": "text-muted"},
+        "children": [{"type": "field", "name": "name"}],
+    }])
+    if baseline != [24]:
+        errors.append(
+            "baseline: a container that declares no layout must publish the grid width "
+            f"to its leaf, got {baseline}"
+        )
+
+    four_columns = child_spans([{
+        "type": "group",
+        "name": "sc_project_information_basic",
+        "cols": 4,
+        "attributes": {"col": "4"},
+        "children": [{"type": "field", "name": name} for name in
+                     ("name", "project_code", "partner_id", "project_type_id")],
+    }])
+    if four_columns != [6, 6, 6, 6]:
+        errors.append(
+            'a group declaring col="4" declares four field columns, so each leaf must '
+
+            f"publish span 6 of 24; got {four_columns} (the renderer then has no declared "
+            "width and invents one)"
+        )
+
+    single_column = child_spans([{
+        "type": "group", "name": "sc_project_information_responsibility", "col": 1,
+        "children": [{"type": "field", "name": "sc_responsibility_matrix"}],
+    }])
+    if single_column != [24]:
+        errors.append(f'a col="1" group must publish a full-row leaf; got {single_column}')
+
+    explicit = child_spans([{
+        "type": "group", "name": "declared", "cols": 2,
+        "children": [
+            {"type": "field", "name": "name", "span": 16},
+            {"type": "field", "name": "project_code"},
+        ],
+    }])
+    if explicit != [16, 12]:
+        errors.append(
+            "an explicit declared span must win over the container declaration and a leaf "
+            f"without one must take the container width; got {explicit}"
+        )
+
+    low_code_size = child_spans([{
+        "type": "group", "name": "lowcode", "cols": 3,
+        "children": [
+            {"type": "field", "name": "a", "field_size": "full"},
+            {"type": "field", "name": "b", "attributes": {"class": "field--wide"}},
+            {"type": "field", "name": "c"},
+        ],
+    }])
+    if low_code_size != [24, 16, 8]:
+        errors.append(
+            "the low-code field size is a declared layout facet and must resolve to the "
+            f"same 24-unit span; got {low_code_size}"
+        )
+
+    row_children = child_spans([{
+        "type": "container", "name": "sc-project-cards", "attributes": {"class": "row g-2"},
+        "children": [
+            {"type": "container", "name": "card.a", "attributes": {"class": "col-12 col-md-6 col-lg-3"}},
+            {"type": "container", "name": "card.b", "attributes": {"class": "col-12"}},
+        ],
+    }])
+    if row_children != [6, 24]:
+        errors.append(
+            "a declared col-* row child is a layout declaration and must publish the "
+            f"24-unit equivalent (widest declared breakpoint); got {row_children}"
+        )
+
+    original = module.descendant_field_column_span
+    module.descendant_field_column_span = lambda columns: None
+    try:
+        mutated = child_spans([{
+            "type": "group", "name": "mutated", "cols": 4,
+            "children": [{"type": "field", "name": "name"}],
+        }])
+    finally:
+        module.descendant_field_column_span = original
+    if mutated == [6]:
+        errors.append(
+            "self-test: removing the declared field-column derivation did not change the "
+            "published leaf span, so this check does not bind the derivation"
+        )
+    return errors
+
+
 def _renderer_consumption_errors(source: str) -> list[str]:
     errors: list[str] = []
     if CONTAINER_MERGE not in source:
@@ -352,6 +461,7 @@ def main() -> int:
     errors.extend(_renderer_vocabulary_errors(source, vocabulary))
     errors.extend(_renderer_layout_wrapper_errors(source))
     errors.extend(_renderer_layout_item_errors(source, form_section, child_sequence))
+    errors.extend(_declared_layout_span_errors(module))
 
     if errors:
         print("[form_container_presentation_consumption_guard] FAIL")

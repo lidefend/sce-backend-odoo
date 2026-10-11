@@ -1,5 +1,6 @@
 import { extractX2ManyIds } from '../../app/x2manyCommands';
 import type { FieldDescriptor } from '@sc/schema';
+import { layoutGridUnits } from '../../components/template/layoutSpan';
 import type { LowCodeFieldSize, RelationOption } from './types';
 
 export function normalizeLowCodeColumns(value: unknown, fallback: 1 | 2 | 3 = 2): 1 | 2 | 3 {
@@ -17,6 +18,42 @@ export function normalizeLowCodeFieldSize(value: unknown): LowCodeFieldSize {
   const normalized = String(value || '').trim().toLowerCase();
   if (['compact', 'wide', 'full', 'large'].includes(normalized)) return normalized as LowCodeFieldSize;
   return 'normal';
+}
+
+/**
+ * The declared low-code size facets in the renderer's one unit.  It mirrors the
+ * projection's ``LAYOUT_FIELD_SIZE_UNITS``: one declaration, one width.  It is
+ * built by a function rather than bound at load time because this module sits
+ * inside the collaboration authority's reviewed import closure.
+ */
+function declaredFieldSizeSpans(): Map<string, number> {
+  return new Map([
+    ['compact', 8],
+    ['normal', 12],
+    ['half', 12],
+    ['wide', 16],
+    ['full', 24],
+    ['large', 24],
+  ]);
+}
+
+/**
+ * The declared low-code size facet as the one renderer layout unit.  This is a
+ * declared facet (``field_size``), not a width the renderer invented from a
+ * class name or a field type.
+ */
+export function lowCodeFieldSizeUnits(size: LowCodeFieldSize) {
+  return declaredFieldSizeSpans().get(String(size || '').trim().toLowerCase()) ?? layoutGridUnits();
+}
+
+/**
+ * The declared facet as a span, or ``null`` when the node declares no facet the
+ * projection would recognise.  An unrecognised declaration is not reinterpreted
+ * as the editor's default ``normal`` width, so the caller fails closed instead
+ * of inventing a plausible width.
+ */
+export function declaredFieldSizeSpan(value: unknown): number | null {
+  return declaredFieldSizeSpans().get(String(value || '').trim().toLowerCase()) ?? null;
 }
 
 export function lowCodeFieldSizeClass(size: LowCodeFieldSize) {

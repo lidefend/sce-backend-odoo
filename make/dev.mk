@@ -770,11 +770,23 @@ acceptance.runtime.preflight: guard.prod.forbid
 acceptance.runtime.infrastructure.restore: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh infrastructure-restore
 
-.PHONY: acceptance.runtime.baseline_recovery.audit acceptance.runtime.baseline_rebuild verify.acceptance.runtime.baseline_rebuild.unit
+.PHONY: acceptance.runtime.baseline_recovery.audit acceptance.runtime.baseline_rebuild acceptance.runtime.carrier.discard acceptance.runtime.carrier.provision verify.acceptance.runtime.baseline_rebuild.unit
 verify.acceptance.runtime.baseline_rebuild.unit: guard.prod.forbid
-	@bash -n scripts/dev/frontend_acceptance_baseline_rebuild.sh scripts/dev/frontend_acceptance_runtime.sh scripts/dev/frontend_acceptance_operation_entry.sh
-	@python3 -m unittest scripts.verify.test_frontend_acceptance_baseline_rebuild scripts.verify.test_frontend_acceptance_runtime_profile scripts.verify.test_frontend_release_ci_identity
+	@bash -n scripts/dev/frontend_acceptance_baseline_rebuild.sh scripts/dev/frontend_acceptance_runtime.sh scripts/dev/frontend_acceptance_operation_entry.sh scripts/dev/frontend_acceptance_carrier_common.sh scripts/dev/frontend_acceptance_carrier_discard.sh scripts/dev/frontend_acceptance_carrier_provision.sh
+	@python3 -m unittest scripts.verify.test_frontend_acceptance_baseline_rebuild scripts.verify.test_frontend_acceptance_runtime_profile scripts.verify.test_frontend_release_ci_identity scripts.verify.test_frontend_acceptance_carrier_discard
 	@python3 scripts/verify/frontend_acceptance_environment_source_guard.py
+
+# P4 environment entries for the managed local acceptance carrier
+# (project sc-fe-r2-p1-01). discard removes only the three declared volumes;
+# provision rebuilds the declared empty infrastructure and delegates the
+# database/install/upgrade steps to the existing governed provisioning script.
+# Both require the exact declared identity and an explicit confirmation phrase,
+# and are the governed substitute for a hand-assembled `docker compose down`.
+acceptance.runtime.carrier.discard: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" CONFIRM_ACCEPTANCE_CARRIER_DISCARD="$${CONFIRM_ACCEPTANCE_CARRIER_DISCARD:-}" bash scripts/dev/frontend_acceptance_operation_entry.sh carrier-discard
+
+acceptance.runtime.carrier.provision: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" CONFIRM_ACCEPTANCE_CARRIER_PROVISION="$${CONFIRM_ACCEPTANCE_CARRIER_PROVISION:-}" bash scripts/dev/frontend_acceptance_operation_entry.sh carrier-provision
 
 acceptance.runtime.baseline_recovery.audit: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh baseline-recovery-audit
