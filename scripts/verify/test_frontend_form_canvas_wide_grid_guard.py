@@ -112,9 +112,126 @@ class ReadonlyGridGuardTests(unittest.TestCase):
         target = '/pages/contractForm/CanonicalFormNodeRenderer.vue'
         for rewrite in (
             lambda value: value.replace('const declared = Number(props.node.columns);', 'const declared = Math.max(2, Number(props.node.columns));', 1),
-            lambda value: value.replace('grid-template-columns: repeat(var(--canonical-layout-columns, 1), minmax(0, 1fr));', 'grid-template-columns: repeat(3, minmax(0, 1fr));', 1),
+            lambda value: value.replace('const declared = Number(props.node.columns);', 'const declared = Number(props.node.cols) || 2;', 1),
         ):
             with self.assertRaisesRegex(SystemExit, 'canonical'):
+                self.run_guard(target=target, rewriter=rewrite)
+
+    def test_canonical_node_grid_must_place_by_the_declared_span(self):
+        target = '/pages/contractForm/CanonicalFormNodeRenderer.vue'
+        for rewrite in (
+            # a second span dialect of its own (the retired ``/6 -> 1..4`` one)
+            lambda value: value.replace(
+                "const declaredNodeSpan = computed(() => declaredLayoutSpan(props.node.span));",
+                "const declaredNodeSpan = computed(() => Math.ceil(Number(props.node.span || 24) / 6));",
+                1,
+            ),
+            # a placement rule of its own instead of the declared span
+            lambda value: value.replace(
+                'grid-column: span var(--canonical-node-grid-span, 24);',
+                'grid-column: span 1;',
+                1,
+            ),
+            # the declared band is not published for the fold
+            lambda value: value.replace(':data-contract-band="declaredNodeBand"', '', 1),
+            # the grid is driven by its own column count again
+            lambda value: value.replace(
+                'grid-template-columns: repeat(24, minmax(0, 1fr));',
+                'grid-template-columns: repeat(var(--canonical-layout-columns, 1), minmax(0, 1fr));',
+                1,
+            ),
+            # its own orphan fill rule
+            lambda value: value.replace(
+                '@container (max-width: 479px) {',
+                '.canonical-form-node--container > .canonical-form-node--orphan-full { grid-column: 1 / -1; }\n@container (max-width: 479px) {',
+                1,
+            ),
+        ):
+            with self.assertRaisesRegex(SystemExit, 'canonical node grid'):
+                self.run_guard(target=target, rewriter=rewrite)
+
+    def test_grid_fold_must_be_declared_once(self):
+        target = '/pages/contractForm/CanonicalFormNodeRenderer.vue'
+        for rewrite in (
+            lambda value: value.replace('@container (max-width: 479px)', '@container (max-width: 480px)', 1),
+            lambda value: value.replace(
+                '@container (min-width: 480px) and (max-width: 959px)',
+                '@media (min-width: 480px) and (max-width: 959px)',
+                1,
+            ),
+        ):
+            with self.assertRaisesRegex(SystemExit, 'declared grid fold|folds on a width of its own'):
+                self.run_guard(target=target, rewriter=rewrite)
+
+    def test_folded_face_must_redefine_the_track_count_not_the_span(self):
+        """The fold is one track / two tracks. Keeping 24 tracks on a folded face
+        leaves the narrowest container 23 column gaps and no track at all."""
+        target = '/pages/contractForm/CanonicalFormNodeRenderer.vue'
+        for rewrite, expected in (
+            # one-track face without the single declared track
+            (lambda value: value.replace('grid-template-columns: minmax(0, 1fr);', '', 1), 'one declared track'),
+            # one-track face still carrying the 24-unit column gaps
+            (lambda value: value.replace('    column-gap: 0;\n', '', 1), 'column gaps'),
+            # two-track face invented a column count of its own on the medium face
+            (lambda value: value.replace(
+                "  .canonical-form-node--group:not(.canonical-form-node--readonly-fact)"
+                " > .canonical-form-node-children {\n"
+                "    grid-template-columns: repeat(2, minmax(0, 1fr));\n",
+                "  .canonical-form-node--group:not(.canonical-form-node--readonly-fact)"
+                " > .canonical-form-node-children {\n"
+                "    grid-template-columns: repeat(3, minmax(0, 1fr));\n",
+                1,
+            ), 'two declared tracks'),
+            # the declared half band is not folded into one track
+            (lambda value: value.replace(
+                "> .canonical-form-node-children > .canonical-form-node[data-contract-band='half'],\n"
+                "  .canonical-form-node--group:not(.canonical-form-node--readonly-fact)"
+                " > .canonical-form-node-children > .canonical-form-node[data-contract-band='half'] {\n"
+                "    grid-column: span 1;\n"
+                "  }\n",
+                '',
+                1,
+            ), 'half band'),
+        ):
+            with self.assertRaisesRegex(SystemExit, expected):
+                self.run_guard(target=target, rewriter=rewrite)
+
+    def test_compact_readonly_fact_face_must_be_declared_on_both_folded_widths(self):
+        """A readonly container never takes the one-track fold: 24 declared
+        tracks carry 23 declared column gaps that no folded container can fit,
+        so both folded width ranges must declare the two-track readonly face."""
+        target = '/pages/contractForm/CanonicalFormNodeRenderer.vue'
+        readonly_rule = (
+            "  .canonical-form-node--group.canonical-form-node--readonly-fact"
+            " > .canonical-form-node-children {\n"
+            "    grid-template-columns: repeat(2, minmax(0, 1fr));\n"
+            "  }\n"
+        )
+        for rewrite, expected in (
+            # the one-track width range lost the compact readonly face
+            (lambda value: value.replace(readonly_rule, '', 1), 'readonly fact face'),
+            # both folded width ranges lost it
+            (lambda value: value.replace(readonly_rule, ''), 'readonly fact face'),
+        ):
+            with self.assertRaisesRegex(SystemExit, expected):
+                self.run_guard(target=target, rewriter=rewrite)
+
+    def test_field_grid_fold_track_counts_are_the_one_fold(self):
+        target = '/components/template/FormSection.vue'
+        for rewrite in (
+            lambda value: value.replace('grid-template-columns: repeat(2, minmax(0, 1fr));', 'grid-template-columns: repeat(3, minmax(0, 1fr));', 1),
+            lambda value: value.replace('grid-template-columns: minmax(0, 1fr);', 'grid-template-columns: minmax(0, 2fr);', 1),
+        ):
+            with self.assertRaisesRegex(SystemExit, 'declared track'):
+                self.run_guard(target=target, rewriter=rewrite)
+
+    def test_field_grid_must_consume_the_declared_band(self):
+        target = '/components/template/FormSection.vue'
+        for rewrite in (
+            lambda value: value.replace('return declaredLayoutBand(span);', "return span > 12 ? 'full' : 'half';", 1),
+            lambda value: value.replace('@container (max-width: 479px)', '@container (max-width: 420px)', 1),
+        ):
+            with self.assertRaisesRegex(SystemExit, 'declared width band|declared grid fold|folds on a width of its own'):
                 self.run_guard(target=target, rewriter=rewrite)
 
     def test_declared_facets_must_have_one_authority(self):

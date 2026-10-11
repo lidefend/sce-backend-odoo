@@ -39,3 +39,31 @@ export function isDeclaredLayoutSpan(value: unknown): boolean {
 export function declaredLayoutSpan(value: unknown): number {
   return isDeclaredLayoutSpan(value) ? (value as number) : layoutGridUnits();
 }
+
+/**
+ * The declared width band on the folded face.
+ *
+ * The component vocabulary names a folded width ``full`` (owns the row) or
+ * ``half`` (shares it).  The band is the fold of the ONE declared layout unit,
+ * not a second width vocabulary: every renderer grid publishes it for the same
+ * declared span, so one contract cannot fold two ways.  Deriving it in a
+ * renderer (`span > 12`) left the threshold owned by nobody.
+ */
+export function declaredLayoutBand(value: unknown): 'full' | 'half' {
+  return declaredLayoutSpan(value) > layoutGridUnits() / 2 ? 'full' : 'half';
+}
+
+/**
+ * The one declared fold of the 24-unit grid.
+ *
+ * Below ``single`` the container owns one column, so every declared child takes
+ * the whole row; up to ``mediumMax`` the grid folds to two tracks and a child
+ * follows its band; above that the declared span is the placement.  The
+ * frontend owns these breakpoints, the contract owns what folds: they are
+ * declared once here and the renderer stylesheets must implement exactly these
+ * numbers (`frontend_form_canvas_wide_grid_guard` locks the match), so no grid
+ * can fold on a threshold of its own.
+ */
+export function declaredLayoutFoldBreakpoints(): { single: number; mediumMax: number } {
+  return { single: 479, mediumMax: 959 };
+}

@@ -638,7 +638,7 @@ verify.frontend.form_canvas_layout.guard: guard.prod.forbid verify.frontend.form
 	@python3 scripts/verify/frontend_form_canvas_wide_grid_guard.py
 
 verify.frontend.form_grid_span.browser: guard.prod.forbid
-	@FE_PRO_04WR3_PHASE=$${FE_PRO_04WR3_PHASE:-final} GIT_SHA=$$(git rev-parse HEAD) FORM_SECTION_BLOB=$$(git hash-object frontend/apps/web/src/components/template/FormSection.vue) node scripts/verify/frontend_form_grid_span_browser.mjs
+	@FE_PRO_04WR3_PHASE=$${FE_PRO_04WR3_PHASE:-final} GIT_SHA=$$(git rev-parse HEAD) FORM_SECTION_BLOB=$$(git hash-object frontend/apps/web/src/components/template/FormSection.vue) CANONICAL_NODE_RENDERER_BLOB=$$(git hash-object frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue) node scripts/verify/frontend_form_grid_span_browser.mjs
 
 .PHONY: verify.frontend.page_identity
 verify.frontend.page_identity: guard.prod.forbid

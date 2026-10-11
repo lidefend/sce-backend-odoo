@@ -420,7 +420,7 @@ import {
   isProfessionalDetailCollectionField,
   optionalDetailCollectionSpan,
 } from '../professional-fields/professionalDetailCollectionModel';
-import { layoutGridUnits, declaredLayoutSpan } from './layoutSpan';
+import { layoutGridUnits, declaredLayoutSpan, declaredLayoutBand } from './layoutSpan';
 import { isProfessionalRelationField } from '../professional-fields/professionalRelationFieldModel';
 import { isPaymentSettlementDetailCollectionField } from '../professional-fields/paymentSettlementDetailCollectionModel';
 import X2ManyRelationRenderer from './X2ManyRelationRenderer.vue';
@@ -804,11 +804,11 @@ function fieldSpan(field: FormSectionFieldSchema, index: number, gridFields: rea
 }
 
 // The declared unit is published as an exact grid attribute; the stylesheet
-// implements the 24-unit grid as its fixed rule set. The band is only the
-// responsive fold of the declared desktop span on a narrow viewport — a
-// renderer concern, not a second width vocabulary.
+// implements the 24-unit grid as its fixed rule set, and the band is the fold of
+// that one declared unit. Resolving that threshold here owned it nowhere, so the
+// canonical grid could fold the same declaration differently.
 function fieldSpanBand(span: number) {
-  return span > 12 ? 'full' : 'half';
+  return declaredLayoutBand(span);
 }
 
 function fieldClass(field: FormSectionFieldSchema) {

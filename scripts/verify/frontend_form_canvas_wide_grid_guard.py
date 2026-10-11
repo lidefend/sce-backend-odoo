@@ -142,8 +142,134 @@ if layout_columns_fn is None or "Number(props.node.columns)" not in layout_colum
 for forbidden in ("Math.max(", "Math.min(", "?? 2", "|| 2", "?? 3", "|| 3"):
     if forbidden in layout_columns_fn.group(0):
         fail(f"the canonical renderer raises or clamps a declared container column count: {forbidden}")
-if "grid-template-columns: repeat(var(--canonical-layout-columns, 1), minmax(0, 1fr));" not in canonical_renderer:
-    fail("the canonical container grid no longer consumes the declared column count")
+# One declaration, one placement.  The container's declared field-grid column
+# count reaches the whole form body as the children's declared spans, so the
+# canonical node grid places every child by that declared span in the same
+# 24-unit grid the field grid uses.  A node grid that keeps a grid of its own
+# (one column of the declared count, a ``/6 -> 1..4`` span dialect, or its own
+# orphan fill) places the same declaration differently from the field grid.
+for required in (
+    "grid-template-columns: repeat(24, minmax(0, 1fr));",
+    "grid-column: span var(--canonical-node-grid-span, 24);",
+    ':style="{ \'--canonical-node-grid-span\': declaredNodeSpan }"',
+    ':data-contract-band="declaredNodeBand"',
+    "const declaredNodeSpan = computed(() => declaredLayoutSpan(props.node.span));",
+    "const declaredNodeBand = computed(() => declaredLayoutBand(declaredNodeSpan.value));",
+):
+    if required not in canonical_renderer:
+        fail(f"the canonical node grid does not place by the declared layout span: {required}")
+if "from '../../components/template/layoutSpan'" not in canonical_renderer:
+    fail("the canonical node grid does not consume the declared layout span unit")
+for forbidden in (
+    "--canonical-layout-columns",
+    "nodeGridSpan",
+    "Math.ceil(",
+    "orphan-full",
+    "fieldChildOrphanClass",
+):
+    if forbidden in canonical_renderer:
+        fail(f"the canonical node grid keeps a width rule of its own: {forbidden}")
+
+# One declared fold for every grid.  The breakpoints and the full|half band are
+# declared once in layoutSpan.ts; both renderer stylesheets must implement
+# exactly those numbers, or the same declaration folds on two faces.
+def container_block(source: str, header: str):
+    """Return the body of the first ``header { ... }`` block, braces balanced."""
+    index = source.find(header)
+    if index < 0:
+        return None
+    start = source.find('{', index)
+    if start < 0:
+        return None
+    depth = 0
+    for position in range(start, len(source)):
+        char = source[position]
+        if char == '{':
+            depth += 1
+        elif char == '}':
+            depth -= 1
+            if depth == 0:
+                return source[start:position + 1]
+    return None
+
+
+fold_fn = re.search(
+    r"export function declaredLayoutFoldBreakpoints\(\): \{ single: number; mediumMax: number \} \{\s*"
+    r"return \{ single: (\d+), mediumMax: (\d+) \};",
+    layout_span,
+)
+if fold_fn is None:
+    fail("the declared grid fold is not declared once, in one module")
+single, medium_max = fold_fn.group(1), fold_fn.group(2)
+band_fn = re.search(r"export function declaredLayoutBand\(value: unknown\): 'full' \| 'half' \{([\s\S]*?)\n\}", layout_span)
+if band_fn is None or "declaredLayoutSpan(value) > layoutGridUnits() / 2" not in band_fn.group(1):
+    fail("the declared width band is not resolved from the one declared layout unit")
+if "declaredLayoutBand(span)" not in section or "span > 12" in section:
+    fail("the field grid re-derives the declared width band instead of consuming the declaration")
+for name, source in (("FormSection.vue", section), ("CanonicalFormNodeRenderer.vue", canonical_renderer)):
+    for expected in (f"@container (max-width: {single}px)", f"@container (min-width: {int(single) + 1}px) and (max-width: {medium_max}px)"):
+        if expected not in source:
+            fail(f"{name} does not implement the declared grid fold: {expected}")
+for name, source in (("FormSection.vue", section), ("CanonicalFormNodeRenderer.vue", canonical_renderer)):
+    fold_faces = sorted(set(re.findall(r"@container \(max-width: (\d+)px\)", source)))
+    if fold_faces != [single]:
+        fail(f"{name} folds on a width of its own: {fold_faces}")
+
+# The folded face is the field grid's own definition of the fold, not a
+# restatement of the declared span: one track and no column gap below the
+# declared single width, two tracks between it and the declared medium bound.
+# Reusing the 24-unit grid on a folded face is what leaves a narrow container
+# 23 column gaps and no track at all, so both renders must declare the same
+# folded track counts and the canonical grid must fold the band into one track.
+FOLD_TRACK_COUNTS = (
+    "grid-template-columns: minmax(0, 1fr);",
+    "grid-template-columns: repeat(2, minmax(0, 1fr));",
+)
+for name, source in (("FormSection.vue", section), ("CanonicalFormNodeRenderer.vue", canonical_renderer)):
+    single_body = container_block(source, f"@container (max-width: {single}px)")
+    medium_body = container_block(
+        source, f"@container (min-width: {int(single) + 1}px) and (max-width: {medium_max}px)"
+    )
+    if single_body is None or FOLD_TRACK_COUNTS[0] not in single_body:
+        fail(f"{name} does not fold the grid to one declared track: {FOLD_TRACK_COUNTS[0]}")
+    if single_body is None or "column-gap: 0;" not in single_body:
+        fail(f"{name} keeps the 24-unit column gaps on the one-track folded face")
+    if medium_body is None or FOLD_TRACK_COUNTS[1] not in medium_body:
+        fail(f"{name} does not fold the grid to two declared tracks: {FOLD_TRACK_COUNTS[1]}")
+# The fold itself is the *writable* containers' fold, so it is asserted by the
+# writable selector, not merely by the declaration text: a declaration that only
+# a readonly carve-out carries would otherwise read as the fold. The compact
+# readonly fact face is asserted separately - it never takes the one-track fold,
+# or 24 declared tracks would spill out of a folded container.
+canonical_single_body = container_block(canonical_renderer, f"@container (max-width: {single}px)") or ""
+canonical_medium_body = container_block(
+    canonical_renderer, f"@container (min-width: {int(single) + 1}px) and (max-width: {medium_max}px)"
+) or ""
+WRITABLE_CHILDREN = ":not(.canonical-form-node--readonly-fact) > .canonical-form-node-children"
+READONLY_CHILDREN = ".canonical-form-node--readonly-fact > .canonical-form-node-children"
+if f"{WRITABLE_CHILDREN} {{\n    grid-template-columns: minmax(0, 1fr);\n    column-gap: 0;" not in canonical_single_body:
+    fail("the canonical node grid does not fold writable containers to one declared track with no column gaps")
+if f"{WRITABLE_CHILDREN} > .canonical-form-node[data-contract-band='half']" not in canonical_medium_body:
+    fail("the canonical node grid does not fold the declared half band into one track")
+if f"{WRITABLE_CHILDREN} > .canonical-form-node[data-contract-band='full']" not in canonical_medium_body:
+    fail("the canonical node grid does not fold the declared full band into the whole row")
+if f"{WRITABLE_CHILDREN} {{\n    grid-template-columns: repeat(2, minmax(0, 1fr));" not in canonical_medium_body:
+    fail("the canonical node grid does not fold writable containers to two declared tracks")
+for width_range, body in (("one-track", canonical_single_body), ("two-track", canonical_medium_body)):
+    if f"{READONLY_CHILDREN} {{\n    grid-template-columns: repeat(2, minmax(0, 1fr));" not in body:
+        fail(f"the canonical node grid leaves the compact readonly fact face undeclared on the {width_range} width range")
+# ``span 1`` is the two-track face's half band and nothing else: a base child
+# rule of one track is the retired column-count dialect.
+without_folds = canonical_renderer
+for header in (f"@container (max-width: {single}px)", f"@container (min-width: {int(single) + 1}px) and (max-width: {medium_max}px)"):
+    for _ in range(4):
+        body = container_block(without_folds, header)
+        if body is None:
+            break
+        without_folds = without_folds.replace(body, "{}", 1)
+    without_folds = without_folds.replace(header, "", 4)
+if "grid-column: span 1;" in without_folds:
+    fail("the canonical node grid places a child at one track outside the declared fold")
 
 for forbidden in ("model ===", "role ===", "overflow-x: hidden", "overflow-x: clip"):
     if forbidden in section or forbidden in form_css:

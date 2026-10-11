@@ -42,7 +42,7 @@ class FrontendPagePatternReferenceParityGuardTest(unittest.TestCase):
     def test_phone_editable_fields_must_stack_without_flattening_readonly_facts(self) -> None:
         values = self.source_map()
         target = "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue"
-        values[target] = values[target].replace("@media (max-width: 480px)", "@media (max-width: 1px)")
+        values[target] = values[target].replace("@container (max-width: 479px)", "@container (max-width: 1px)")
         failures = validate(lambda source: values[source])
         self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))
 
