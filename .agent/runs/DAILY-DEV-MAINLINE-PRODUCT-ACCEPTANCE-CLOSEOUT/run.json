@@ -2862,6 +2862,12 @@
       "工作区回收边界（重要，修正此前一句错述）：`make workspace.worktree.cleanup` 对 release/ 前缀 DENY——scripts/ops/safe_worktree_cleanup.py 的 ALLOWED_BRANCH=^(feature|fix|refactor|audit|codex)/.+$ 不含 release/。因此 sce-backend-odoo-mainmode（release/daily-main-mode-20261011）不能经该受管入口回收。当前活动 worktree 恰为两个，符合 AGENTS.md「最多两个」上限，保留即合规；本轮未用任何非受管方式（手工 rm/直接 git worktree remove）绕过。",
       "远端运行中的非本任务容器（只读列举，本轮未做任何启停或删除）：sc-backend-odoo-dev-*（日常开发服务器，保留）、sc-backend-odoo-prod-db-1/prod-redis-1（生产库，保留）、sc-core035-mvp-daily-20260727142732-46a327-*（UAT 项目，2 个月）、sc-release-rehearsal-* 与 sc-product-release-rehearsal（无 com.docker.compose.project 标签）、sc-user-data-rehearsal-*（源自早期 worktree frontend-pilot-prerequisites-v1 / user-data-production-boundary，2 个月）。磁盘 / 使用 76%（129G/178G，剩 42G）；docker images 可回收 8.8G、local volumes 可回收 8G。是否退役这些历史演练环境属 owner 的环境决策，不在本 run 的产品收口范围。",
       "结论：本任务范围内已无遗留端口转发或临时 worktree 待清（mainmode 需 owner 授权其它方式或按上限保留）；唯一剩余项仍是 owner 本人的登录验收。"
+    ],
+    "round_20261011_stale_check_disposition_audit": [
+      "触发：make agent.run.resume 显示 19 条 stale。为判断是否存在『体系过度失效』，逐条对比 receipt 的 check 定义与当前 run 定义，并对定义未变的条目重算 dependency_state 的输入 hash。",
+      "结论一（18/19 为真实失效，非体系缺陷）：这 18 条的 check 定义与当前完全一致，是 inputs 的实际内容变了——例如 frontend_typecheck 的 23 个前端源文件（app/contracts/v2/schema.ts、pages/contractForm/*、ContractFormPage.vue）、role_surface_landing_contract_unit 的 addons/smart_construction_core/services/locked_menu_policy_contract.py 与本轮回归测试、form_structure_contract_guard 的 addons/smart_core/core/unified_page_contract_v2_assembler.py 等。按 AGENTS.md『失效跟随变更输入，而非每一次提交』，它们应保持 stale 并在下一次集成/交付时重跑，不属于本轮可复用范围，也不是需要立即重跑的浪费。这也说明本地 receipt 的输入 hash 机制没有把 docs/.agent 记账误判为业务失效。",
+      "结论二（1/19 是设计内自指，已重跑收敛）：agent_ledger_consistency_unit 的输入恰为 .agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json 自身，任何记账写入都会使其失效——这是台账一致性自检的设计行为，但也是本轮记账直接影响的唯一一条。已按受管流程 make agent.run.begin -> make verify.agent.ledger.unit -> make agent.run.record 重跑：Ran 15 tests OK，guard 输出 PASS（goals=93 runs=71 pinned_residuals=2 open_run_allowlist=2），receipt test_count=15。",
+      "副作用：check_reuse_summary 由 reusable=28/stale=19/not_run=27 变为 reusable=29/stale=18/not_run=27，顶层 status=resolved。剩余 18 条 stale 与 27 条 not_run 属输入真实变更与尚未在本地运行的条目，其重跑归属下一次集成/交付或『验证体系收口』专题，不由本轮重复执行。"
     ]
   },
   "continuation": {
