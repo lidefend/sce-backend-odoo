@@ -2704,3 +2704,41 @@ absent-asset 226（0/0）、scripts never referenced 103（0/0）、车道漂移
 
 保留的 owner 政策议题（本轮不擅自执行）：G1 契约 24 单位 span vs 官方 `full|half`；G3 响应式折叠归属层；
 G7 `SceneFieldGroup.description` 无契约来源；G8 styleToken 词汇所有权。环境侧：日常重建车道两个挂载者的独占性 DENY 仍为车道级阻断，未放宽、未绕过。
+
+---
+
+## 27. 第 27 轮（2026-10-11）：PR #644 主线集成 + 日常开发服务器受管部署（P4，无产品代码）
+
+**一、性质与边界**
+
+- 本轮不新增产品代码：对象是第 26 轮冻结候选（`63a6cd1a`）的主线集成与运行态刷新。
+- 四态：批次验收 = 第 26 轮已完成；主线集成 = 本轮成立；版本发布 = 未声明；产品交付 = 未声明（待所有者登录）。
+
+**二、主线集成**
+
+| 项 | 值 |
+| --- | --- |
+| 源提交 | `63a6cd1a`（clean frozen；`ci.local.quick` 4/4 shard passed；tree `35537e95815f8bfe5e3961afddfd55cb6bdb419e`） |
+| PR | #644（GitHub `origin`，base `main`） |
+| 必需检查 | `public_guard` / `merge_policy_gate` / `professional_quality_gate` / `frontend_release_gate` 全 SUCCESS，绑定 `63a6cd1a` |
+| 合并 | 受保护流程 `make pr.merge`（squash，`--match-head-commit 63a6cd1a`），merge commit `8870c70c` |
+| 基线回读 | `origin/main = 8870c70c43be65a1f233449994196593917f2179` |
+
+**三、受管运行态刷新（四步，全部 PASS）**
+
+1. `daily.runtime.main.bundle_sync`：`old_sha 7eec3f0e → source_sha 8870c70c`，`bundle_sha256=99ad9411…`。
+2. `daily.runtime.source_revision.align`：`previous_revision 7eec3f0e → 8870c70c`，`env_written=true`、`restarted=true`、`rolled_back=false`。
+3. `daily.runtime.frontend.build`：`rebuilt=true`、`entry_asset=index-Dgwvjp86.js`、`frontend_build_sha256=dac3544e…`（渲染器有改动，故必须重建前端）。
+4. 回读 `http://1.95.85.92:18081/api/runtime-version`。
+
+| 字段 | 值 |
+| --- | --- |
+| `source_revision` | `8870c70c43be65a1f233449994196593917f2179` |
+| `frontend_build_sha256` | `dac3544e4855478a58370c996437909ca146acffb4cb4f6eda038484c8b4eb1f` |
+| `database` / `environment` | `sc_demo` / `dev` |
+| 服务入口资源 | `/` 引用 `index-Dgwvjp86.js`，与受管构建声明的 `entry_asset` 一致 |
+
+**四、边界**
+
+- 后端投影代码未变，故不升级模块、不运行 `daily.runtime.published_face.converge`（非本车道所需）。
+- 产品交付仍未声明：唯一剩余边界为**所有者本人登录**核对（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`）——项目台账/项目表单编辑态 1440/390 明暗主题 + 关系交互（点击打开 → 返回原记录 → 标签与动作恢复）。
