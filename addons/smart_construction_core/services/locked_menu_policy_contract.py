@@ -483,7 +483,19 @@ def role_catalog_bindings(contract: dict) -> dict:
 
 
 def role_catalog_resolution(contract: dict) -> dict:
-    """Ordered role codes plus the declared capability and synthetic roles."""
+    """Ordered role codes plus the declared capability and synthetic roles.
+
+    ``precedence`` is the *business identity* role order the explicit resolver
+    intersects the principal's real groups against.  A role the catalog
+    declares in ``capability_role_codes`` is by declaration a capability
+    fallback, not a business identity: it may only resolve through the
+    capability branch (when no business role matched).  Projecting it into
+    ``precedence`` would let every principal whose group closure reaches the
+    capability group be unioned with that role's own surface, which silently
+    widens the delivered surface beyond the declared role partition.  The
+    binding therefore stays in ``bindings`` (so the capability branch can still
+    resolve it) while ``precedence`` keeps only declared business roles.
+    """
     catalog = role_catalog(contract)
     bindings = role_catalog_bindings(contract)
     rows = catalog.get(ROLE_CATALOG_ROLES_FIELD)
@@ -500,8 +512,9 @@ def role_catalog_resolution(contract: dict) -> dict:
             "exclusive_surface": row.get("exclusive_surface") is True,
         }
     capability_roles = [_text(item) for item in catalog.get("capability_role_codes") or [] if _text(item)]
+    capability_role_set = set(capability_roles)
     return {
-        "precedence": tuple(bindings.keys()),
+        "precedence": tuple(role for role in bindings if role not in capability_role_set),
         "bindings": bindings,
         "metadata": metadata,
         "capability_role_codes": tuple(capability_roles),

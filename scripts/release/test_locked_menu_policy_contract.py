@@ -74,7 +74,9 @@ def _code_map_landing(path: Path) -> dict:
 
 POLICY_MAPS_PATH = ROOT / "addons/smart_construction_core/core_extension_policy_maps.py"
 IDENTITY_MODULE_PATH = ROOT / "addons/smart_core/identity/identity_resolver.py"
+ROLE_CATALOG_MODULE_PATH = ROOT / "addons/smart_construction_core/services/role_catalog_contract.py"
 _IDENTITY_MODULE_CACHE: dict = {}
+_ROLE_CATALOG_MODULE_CACHE: dict = {}
 
 
 def _load_policy_maps_module():
@@ -82,6 +84,29 @@ def _load_policy_maps_module():
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    return module
+
+
+def _load_role_catalog_contract_module():
+    """Load the contract role-catalog provider without a live Odoo registry."""
+    cached = _ROLE_CATALOG_MODULE_CACHE.get("module")
+    if cached is not None:
+        return cached
+    for name in (
+        "odoo",
+        "odoo.addons",
+        "odoo.addons.smart_construction_core",
+        "odoo.addons.smart_construction_core.services",
+    ):
+        sys.modules.setdefault(name, types.ModuleType(name))
+    sys.modules[
+        "odoo.addons.smart_construction_core.services.locked_menu_policy_contract"
+    ] = CONTRACT
+    spec = importlib.util.spec_from_file_location("role_catalog_contract", ROLE_CATALOG_MODULE_PATH)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    _ROLE_CATALOG_MODULE_CACHE["module"] = module
     return module
 
 
@@ -422,6 +447,125 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
             known_roles,
             declared_roles,
             "the resolver must not know a role that the contract catalog does not declare",
+        )
+
+    @staticmethod
+    def _contract_resolver(resolution):
+        """IdentityResolver wired directly from a contract role-catalog projection."""
+        resolver = _load_identity_resolver_module().IdentityResolver()
+        resolver._role_groups_explicit = {
+            role: set(groups) for role, groups in resolution["bindings"].items()
+        }
+        resolver._role_precedence = tuple(resolution["precedence"])
+        resolver._role_groups_capability_fallback = {
+            role: set(groups) for role, groups in resolution["capability_groups"].items()
+        }
+        resolver._capability_role_codes = tuple(resolution["capability_role_codes"])
+        resolver._capability_fallback_order = tuple(resolution["capability_fallback_order"])
+        resolver._synthetic_role_codes = tuple(resolution["synthetic_role_codes"])
+        resolver._role_meta = {role: dict(meta) for role, meta in resolution["metadata"].items()}
+        return resolver
+
+    @classmethod
+    def _provider_resolver(cls, resolution):
+        """IdentityResolver wired through the real provider projection hook.
+
+        This is the path the runtime actually takes: the P1 code-declared role
+        maps are overlaid with the versioned contract catalog by
+        ``role_catalog_contract.apply_contract_role_catalog`` and the result is
+        handed to the P0 resolver.  Asserting only on
+        ``role_catalog_resolution`` would miss a re-introduction of the
+        conflation inside that overlay or inside the resolver.
+        """
+        policy = _load_policy_maps_module()
+        provider = _load_role_catalog_contract_module()
+        base = {
+            "role_precedence": policy.ROLE_PRECEDENCE,
+            "role_groups_explicit": {
+                role: tuple(groups or ()) for role, groups in policy.ROLE_GROUPS_EXPLICIT.items()
+            },
+            "role_groups_capability_fallback": {
+                role: tuple(groups or ())
+                for role, groups in policy.ROLE_GROUPS_CAPABILITY_FALLBACK.items()
+            },
+            "role_meta": {},
+            "capability_role_codes": (),
+            "capability_fallback_order": (),
+            "synthetic_role_codes": (),
+        }
+        projected, _receipt = provider.apply_contract_role_catalog(base)
+        resolver = _load_identity_resolver_module().IdentityResolver()
+        resolver._role_groups_explicit = {
+            role: set(groups) for role, groups in projected["role_groups_explicit"].items()
+        }
+        resolver._role_precedence = tuple(projected["role_precedence"])
+        resolver._role_groups_capability_fallback = {
+            role: set(groups) for role, groups in projected["role_groups_capability_fallback"].items()
+        }
+        resolver._capability_role_codes = tuple(projected["capability_role_codes"])
+        resolver._capability_fallback_order = tuple(projected["capability_fallback_order"])
+        resolver._synthetic_role_codes = tuple(projected["synthetic_role_codes"])
+        resolver._role_meta = {role: dict(meta) for role, meta in resolution["metadata"].items()}
+        return resolver
+
+    def test_capability_roles_never_join_the_business_surface(self):
+        """A declared capability role resolves as a fallback, never as a surface.
+
+        The product declares two different things.  ``default_roles`` order
+        plus ``capability_role_codes``: a role named as a capability is the
+        identity a principal falls back to when its real groups match no
+        business role; it is not a second identity that a business principal
+        accumulates.  Odoo materialises implied groups into ``groups_id``, so
+        almost every construction role reaches the project-baseline capability
+        group.  If the catalog projection put that capability role into the
+        explicit business ``precedence``, the resolver would union its surface
+        into finance/owner/pm and deliver menus the declared role partition
+        never granted.  This locks the projection boundary, not a menu string.
+        """
+        contract = CONTRACT.load_locked_menu_policy_contract(self.baseline, self.checksum)
+        resolution = CONTRACT.role_catalog_resolution(contract)
+        capability_roles = tuple(resolution["capability_role_codes"])
+        self.assertTrue(capability_roles, "the catalog must declare its capability roles")
+        self.assertEqual(
+            [role for role in resolution["precedence"] if role in set(capability_roles)],
+            [],
+            "a declared capability role cannot also be an explicit business precedence role",
+        )
+        for role in capability_roles:
+            self.assertIn(
+                role,
+                resolution["bindings"],
+                f"{role} must stay bound to a real group so the capability branch can resolve it",
+            )
+        resolver = self._provider_resolver(resolution)
+        capability_groups = set()
+        for role in capability_roles:
+            capability_groups.update(resolution["bindings"][role])
+        self.assertTrue(capability_groups, "a capability role must bind at least one real group")
+
+        for role in resolution["precedence"]:
+            with self.subTest(role=role):
+                business_groups = set(resolution["bindings"][role])
+                self.assertFalse(business_groups & capability_groups)
+                resolved, evidence = resolver.resolve_role_codes_with_evidence(
+                    business_groups | capability_groups
+                )
+                self.assertEqual(
+                    resolved,
+                    [role],
+                    f"{role} must not accumulate the declared capability role",
+                )
+                self.assertEqual(evidence["surface_roles"], [role])
+                self.assertEqual(
+                    resolver.resolve_role_codes_with_evidence(business_groups)[0],
+                    [role],
+                )
+
+        only_capability = resolver.resolve_role_code(set(capability_groups))
+        self.assertIn(
+            only_capability,
+            capability_roles,
+            "a principal holding only capability groups must fall back to the declared capability role",
         )
 
     def _write_contract(self, root: Path, payload) -> tuple[Path, Path]:

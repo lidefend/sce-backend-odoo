@@ -2704,3 +2704,197 @@ absent-asset 226（0/0）、scripts never referenced 103（0/0）、车道漂移
 
 保留的 owner 政策议题（本轮不擅自执行）：G1 契约 24 单位 span vs 官方 `full|half`；G3 响应式折叠归属层；
 G7 `SceneFieldGroup.description` 无契约来源；G8 styleToken 词汇所有权。环境侧：日常重建车道两个挂载者的独占性 DENY 仍为车道级阻断，未放宽、未绕过。
+
+---
+
+## 27. 第 27 轮（2026-10-11）：PR #644 主线集成 + 日常开发服务器受管部署（P4，无产品代码）
+
+**一、性质与边界**
+
+- 本轮不新增产品代码：对象是第 26 轮冻结候选（`63a6cd1a`）的主线集成与运行态刷新。
+- 四态：批次验收 = 第 26 轮已完成；主线集成 = 本轮成立；版本发布 = 未声明；产品交付 = 未声明（待所有者登录）。
+
+**二、主线集成**
+
+| 项 | 值 |
+| --- | --- |
+| 源提交 | `63a6cd1a`（clean frozen；`ci.local.quick` 4/4 shard passed；tree `35537e95815f8bfe5e3961afddfd55cb6bdb419e`） |
+| PR | #644（GitHub `origin`，base `main`） |
+| 必需检查 | `public_guard` / `merge_policy_gate` / `professional_quality_gate` / `frontend_release_gate` 全 SUCCESS，绑定 `63a6cd1a` |
+| 合并 | 受保护流程 `make pr.merge`（squash，`--match-head-commit 63a6cd1a`），merge commit `8870c70c` |
+| 基线回读 | `origin/main = 8870c70c43be65a1f233449994196593917f2179` |
+
+**三、受管运行态刷新（四步，全部 PASS）**
+
+1. `daily.runtime.main.bundle_sync`：`old_sha 7eec3f0e → source_sha 8870c70c`，`bundle_sha256=99ad9411…`。
+2. `daily.runtime.source_revision.align`：`previous_revision 7eec3f0e → 8870c70c`，`env_written=true`、`restarted=true`、`rolled_back=false`。
+3. `daily.runtime.frontend.build`：`rebuilt=true`、`entry_asset=index-Dgwvjp86.js`、`frontend_build_sha256=dac3544e…`（渲染器有改动，故必须重建前端）。
+4. 回读 `http://1.95.85.92:18081/api/runtime-version`。
+
+| 字段 | 值 |
+| --- | --- |
+| `source_revision` | `8870c70c43be65a1f233449994196593917f2179` |
+| `frontend_build_sha256` | `dac3544e4855478a58370c996437909ca146acffb4cb4f6eda038484c8b4eb1f` |
+| `database` / `environment` | `sc_demo` / `dev` |
+| 服务入口资源 | `/` 引用 `index-Dgwvjp86.js`，与受管构建声明的 `entry_asset` 一致 |
+
+**四、边界**
+
+- 后端投影代码未变，故不升级模块、不运行 `daily.runtime.published_face.converge`（非本车道所需）。
+- 产品交付仍未声明：唯一剩余边界为**所有者本人登录**核对（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`）——项目台账/项目表单编辑态 1440/390 明暗主题 + 关系交互（点击打开 → 返回原记录 → 标签与动作恢复）。
+
+**五、越界诊断（不改变本轮结论，仅登记债务）**
+
+为避免「所有者登录」成为改动后渲染面的首次观察，对部署头跑了一次**受管但有界**的既有入口：
+`make verify.business_config.low_code_layout_runtime WORKFLOW_CONTRACT_FRONTEND_URL=http://1.95.85.92:18081 DB_NAME=sc_demo`
+→ **FAIL（EXIT=2）**，但归类为**陈旧测试工具债务**，非产品回归，也非本批次引入：
+
+| 事实 | 证据 |
+| --- | --- |
+| 失败点 | `sc.general.contract`（action 669）等 `getByRole('button', { name: '配置表单字段' })` 超时；`construction.contract`（562）`.config-card` 不可见 |
+| 标签已从产品源码移除 | `git log -S'配置表单字段' -- frontend/apps/web` → `401bcb3b`（clean product baseline）移除 |
+| 部署前主线即已如此 | `git grep 配置表单字段 7eec3f0e -- frontend/apps/web` 仅命中 4 个验收脚本，无产品源码 |
+| 本批次未触碰该脚本 | `git diff 7eec3f0e 8870c70c -- .../low_code_form_layout_runtime_acceptance.mjs` 为空 |
+
+该入口不在本 run 的受管检查集内，因此**不改写本轮任何通过结论**；已作为债务登记在 run 台账 `blockers`（责任车道：config-workbench 车道）。
+未做修复：正确修法需要该车道当前声明的配置面权威（入口标签/动作），超出本轮声明范围，只改标签字面量会制造无意义的绿。
+
+## 28. 第 28 轮（2026-10-11）：定时 full 车道红的根因收口 —— 能力角色不得并入业务身份面（P0 契约投影）
+
+**一、现象与可复现性**
+
+定时 full 车道（`frontend_release_gate.yml`）自 2026-10-01 起几乎每晚红（仅 `1c5368a7` / 10-06 绿）。10-10 schedule run `38089487628`（旧 main `282b079c`）与本轮手动派发 run `38143504375`（current main `8870c70c`，`event=workflow_dispatch`）失败在同一步：
+
+| 事实 | 值 |
+| --- | --- |
+| 失败目标 | `make verify.frontend.page_identity.browser`（`make/runtime_ops.mk:1898`） |
+| 级联 | `verify.frontend.release.audit` FAIL → `frontend_release_gate` FAIL（`release_candidate_gate` 的红是同 event 级联，不是独立缺陷） |
+| 输出 | `{"pass":false,"surfaces":34,"failed":0,"failures":[]}` |
+
+`pass=false` 与 `failed=0` 并不矛盾：`pass` 还要求 `navigationAudit.total.result === PASS`，而 `failed/failures` 只统计页面身份失败（`frontend/apps/web/scripts/frontend_product_maturity_audit.mjs:330-345`）。因此导航漂移不会出现在 `failures` 里。
+
+**二、精确漂移（run `38143504375` 产物 `frontend-page-identity/navigation-report.json`，`git_sha=8870c70c`）**
+
+`expected 30 / actual 34 / matched 30 → FAIL`：
+
+| 角色 | 期望→实际 | 多余叶子 |
+| --- | --- | --- |
+| finance | 15→17 | `…menu_sc_project_project`、`…menu_sc_construction_diary` |
+| pm | 7→8 | `…menu_sc_product_team_loan_deduction_v1` |
+| owner | 3→4 | `…menu_sc_p1_daily_contract` |
+| project_a_member | 5→5 | PASS |
+
+四条多余叶子**全部**是 `ROLE_SURFACE_OVERRIDES['project_member']['primary_menu_xmlids']` 的成员。
+
+**三、方向判定：交付面越界，不是声明缺登记**
+
+`config/frontend/role_surface_exposure_declarations_v1.json` 已把这 4 条逐角色登记为 `capability_reachable_not_delivered`，`delivered_without_declared_capability` 为空，且 `verify.frontend.role_surface_exposure_declaration.guard` PASS（`roles=9 universe=89 narrowed=211`）。
+
+所以**不能**按 2026-10-04 那次（后端发布面为权威、前端清单滞后 → 补 `browser_leaf_keys`）的方向修，也**不能**放宽任何断言。
+
+**四、根因：契约投影把「能力角色」投影成了「业务身份」**
+
+实测（日常运行面 `system.init`，`fixture_role_finance`）：
+
+```
+role_surface.surface_role_codes = ["finance", "project_member"]
+role_evidence.source = "explicit"
+role_evidence.matched_groups_by_role = {
+  "finance":        ["smart_construction_core.group_sc_role_finance_manager"],
+  "project_member": ["smart_construction_core.group_sc_cap_project_read"],
+}
+```
+
+机制：`identity_resolver.resolve_role_codes_with_evidence` 的 explicit 分支按 `_role_precedence` 求组交集，`_merge_effective_role_metas` 对 `primary_menu_xmlids` 等 allow 字段取**并集**；Odoo 把 implied 组物化进 `groups_id`，几乎每个施工角色都能到达 `group_sc_cap_project_read`，于是 `project_member` 被当成第二个业务身份并集进来。
+
+分叉点：`scripts/verify/baselines/formal_business_product_menu_policy_v1.json` 的 `role_catalog` 由 `d106d2dd`（2026-10-09）引入（`1c5368a7` 时尚无 `role_catalog`）；该契约同时声明 `capability_role_codes:["project_member"]` 与 `default_roles` 中的 `project_member`（`precedence=90`），而 `locked_menu_policy_contract.role_catalog_resolution` 把 `precedence` 直接投影为 `bindings.keys()`，使能力角色混进了业务身份优先级。时间线与「10-06 绿、10-07 起红」一致。
+
+**五、修复（单点，P0 契约投影；`smart_construction_core.services.locked_menu_policy_contract`）**
+
+`role_catalog_resolution` 的 `precedence` 剔除契约声明的 `capability_role_codes`；`bindings` 保留该角色，使 `identity_resolver` 的能力兜底分支仍能解析它。
+
+未放宽断言、未改 ACL/字段权限/合法隐藏规则、未加付款模型特判、未改契约基线与 `sha256` 锁。
+
+**六、回归锁**
+
+新增 `scripts/release/test_locked_menu_policy_contract.py::LockedMenuPolicyContractTests.test_capability_roles_never_join_the_business_surface`，走真实投影链「契约 → `apply_contract_role_catalog` → `IdentityResolver`」：
+
+- 能力角色不得出现在 `precedence`；
+- 能力角色仍必须绑定真实组（否则兜底分支无法解析）；
+- 每个业务角色的组 ∪ 能力组只能解析出该业务角色，`surface_roles` 只有它；
+- 仅有能力组的身份仍兜底到声明的能力角色。
+
+变异验证：把 `precedence` 改回 `bindings.keys()`，该测试立即失败；恢复后 33/33 OK。
+
+**七、本轮定向结果（风险选择、非零）**
+
+| 检查 | 结果 |
+| --- | --- |
+| `verify.role_surface.landing.contract.unit` | PASS（33/33，含新测试） |
+| `verify.frontend.role_surface_exposure_declaration.guard` | PASS |
+| `verify.frontend.release_navigation_policy.guard` | PASS（`released_leaf_identities=88`） |
+| `verify.frontend.navigation_shell.unit` | PASS |
+| `node --test scripts/verify/frontend_navigation_audit.test.mjs` | PASS |
+| `make ci.local.iteration` | PASS（L1，`scope=dirty`） |
+| `verify.agent.ledger.unit` | PASS（15/15） |
+
+**八、未决（L4）**
+
+交付面收敛需要在**冻结候选**上跑一次浏览器级证据：本地 `make verify.frontend.page_identity.browser` 或远端 full 车道（与 `38143504375` 同命令），按 `navigation-report.json` 对比 `finance 15 / project_a_member 5 / pm 7 / owner 3`。部署后需在受管日常运行面回读 `system.init` 的 `role_surface.surface_role_codes` 已不含 `project_member`。
+
+**九、既有债务（与本轮无关，已实测在 HEAD 即失败，未接入任何 make 目标）**
+
+`addons/smart_core/tests/test_identity_resolver_entry_target.py` 1 例、`addons/smart_construction_core/tests/test_role_surface_cost_label.py` 2 例；用 `git stash` 回退本轮两文件后复测结果完全相同，故非本轮引入，仅登记不修。
+
+**十、L4 结果（冻结候选 `b8eb0473`，git_sha `b8eb04738301495e85e76c627d965f86cae3eaea`）**
+
+按与失败命令同口径（`authoritative_command = cd frontend/apps/web && pnpm test:release`）派发远端 full 车道 `frontend_release_gate.yml`：
+
+- run `38145165960`（`event=workflow_dispatch`，`head=b8eb0473`）：`completed/success`。
+- `frontend-release-audit/gate-result.json`：`result=PASS`，`reason_codes=[]`，`git_tree=7419415c9f6fd15f702be90434583ca68626be05`。
+
+逐角色对账（`frontend-page-identity/navigation-report.json`）：
+
+| 角色 | expected | actual | matched | result | 越界/缺失叶子 |
+| --- | --- | --- | --- | --- | --- |
+| finance | 15 | 15 | 15 | PASS | 空 |
+| project_a_member | 5 | 5 | 5 | PASS | 空 |
+| pm | 7 | 7 | 7 | PASS | 空 |
+| owner | 3 | 3 | 3 | PASS | 空 |
+| **total** | **30** | **30** | **30** | **PASS** | 空 |
+
+对比修复前基准（run `38143504375`，`git_sha=8870c70c`）：`expected 30 / actual 34 / matched 30 / FAIL`（finance 15→17、pm 7→8、owner 3→4，四条多余叶子恰为 `ROLE_SURFACE_OVERRIDES['project_member']['primary_menu_xmlids']` 成员）。修复后 `actual` 从 34 收敛回 30，四条越界叶子全部消失，其余角色集合未变。`failure-summary.json` 的 `failures=[]`。
+
+**十一、部署层未决（本 L4 不宣称部署完成）**
+
+后端投影代码已变，需按受管四步把日常开发服务器刷新到 `b8eb0473`（是否升级模块按实际变更判断），再回读 `/api/runtime-version` 的 `source_revision` 与前端 build sha、以及 `system.init` 的 `role_surface.surface_role_codes` 不再含 `project_member`，然后才回到所有者本人用户级验收。
+
+**十二、受管候选部署与回读（第 28 轮收口）**
+
+受管入口 `make daily.runtime.candidate.release`（三项显式确认齐备），候选 `545da744`（= L4 绑定的 `b8eb0473` + 仅台账提交），`old=8870c70c`，`login=wutao`，`upgrade-modules=smart_core,smart_construction_core`：
+
+| 步骤 | 回执 | 结果 |
+| --- | --- | --- |
+| `daily.runtime.candidate.bundle_sync` | `candidate-bundle-sync.json` | PASS，`bundle_sha256=6632df1b…`，`origin_main_mutated=false` |
+| `daily.runtime.source_revision.align` | `source-revision-align.json` | PASS，`previous_revision=8870c70c`，`restarted=true`，`rolled_back=false` |
+| `daily.runtime.published_face.converge` | `published-face-converge.json` | PASS，`guard_status=PASS`，`module_upgrade_returncode=0` |
+
+**模块升级按实际变更判断**：`addons/smart_core` 的 git tree 在 `7eec3f0e` 与 `545da744` 都是 `400ac596`（未变，跳过）；`addons/smart_construction_core` 由 `d1dd30b0` 变为 `afe2c918`（本轮修复所在模块），故显式并入 `upgrade-modules`。
+
+**服务端身份回读**（`/api/runtime-version`）：`source_revision=git_sha=545da744`，`database=sc_demo`，`frontend_build_sha256=dac3544e…`（与部署前一致——本轮无前端改动，未重建前端，符合声明范围）。
+
+**关键修复验证**（受管只读探针，`POST /web/session/authenticate` + `POST /api/v1/intent intent=system.init`，`db=sc_demo`）：
+
+| 主体 | 修复前 `surface_role_codes` | 修复后 |
+| --- | --- | --- |
+| `fixture_role_finance` | `["finance","project_member"]` | `["finance"]` |
+| `fixture_role_pm` | （同机制） | `["pm"]` |
+| `wutao` | — | `["business_config_admin","executive","pm","cost"]` |
+
+三者均不再含 `project_member`，与 L4 的交付面收敛一致。
+
+**身份口径**：日常开发服务器现服务候选分支头 `545da744`，其产品/工具路径与 L4 绑定的 `b8eb0473` 完全一致（差量仅 `.agent/run.json` 与本文档），按「文档/台账变更不失效页面证据」规则复用 L4 结论；`origin/main` 仍是 `8870c70c`，是否合并由 owner 决定。
+
+**环境观察（非产品结论）**：部署期间 `sc-root(1.95.85.92:22)` 出现间歇性 `kex_exchange_identification: read: Connection reset by peer`（约 1/3 连接被瞬时限流），`bundle_sync` 因此 BLOCKED 一次；本地对 `sc-root` 增加 SSH 连接复用（`~/.ssh/config` 的 ControlMaster/ControlPath/ControlPersist）后重跑一次成功。未放宽任何审计，未直接操作容器绕过 DENY。
+
+**剩余**：仅所有者本人用户级验收（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`：项目台账/项目表单编辑态 1440/390 明暗主题 + 关系交互「点击打开 → 返回原记录 → 标签与动作恢复」）。
