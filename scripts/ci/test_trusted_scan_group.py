@@ -19,6 +19,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import trusted_scan_group as group  # noqa: E402
+import trusted_scan_scope as scope  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -52,6 +53,12 @@ class GroupDeclarationTests(unittest.TestCase):
             "repository.clean_history.scan",
         ])
         self.assertEqual(len(set(group.SCAN_MEMBERS)), len(group.SCAN_MEMBERS))
+
+    def test_scope_digest_governs_the_same_targets_the_group_runs(self) -> None:
+        # Two consumers of one fact: the group runs these targets, and the scope
+        # digest binds these targets' declarations. Drift would silently stop
+        # binding the command of a scan that still runs.
+        self.assertEqual(sorted(scope.GOVERNED_SCAN_TARGETS.values()), sorted(group.SCAN_MEMBERS))
 
     def test_each_scan_target_still_owns_its_own_command(self) -> None:
         # A member is covered when it still runs its own command through its own

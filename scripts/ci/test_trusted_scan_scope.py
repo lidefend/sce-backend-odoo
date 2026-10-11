@@ -39,7 +39,20 @@ class TrustedScopeTests(unittest.TestCase):
         for path in set(scope.COMMON_AUTHORITY).union(*scope.AUTHORITY.values()):
             self.write(path, 'baseline authority\n')
         self.write('scripts/ci/trusted_scan_scope.py', Path(scope.__file__).read_text())
-        self.write('make/ci.mk', 'ci.local.iteration: guard.prod.forbid\n\t@echo daily\n\nsecurity.secrets.scan: security.online_capture.unit\n\t@python3 scripts/ci/secret_scan.py --scope all --auto-trusted-base\n')
+        # The make fixture declares all three governed scans through their own
+        # unit prerequisites, plus the guard the history scan depends on, so the
+        # digest's executable surface is exercised rather than assumed.
+        self.write('make/ci.mk', (
+            'ci.local.iteration: guard.prod.forbid\n\t@echo daily\n\n'
+            'security.online_capture.unit:\n\t@python3 scripts/ci/test_trusted_scan_scope.py\n\n'
+            'security.secrets.scan: security.online_capture.unit\n'
+            '\t@python3 scripts/ci/secret_scan.py --scope all --auto-trusted-base\n\n'
+            'security.personal_data.unit:\n\t@python3 scripts/ci/test_personal_data_scan.py\n\n'
+            'security.personal_data_scan: security.personal_data.unit\n'
+            '\t@python3 scripts/ci/personal_data_scan.py --scope all --auto-trusted-base\n\n'
+            'repository.clean_history.scan: guard.prod.forbid\n'
+            '\t@python3 scripts/verify/repository_clean_history_guard.py --auto-trusted-base\n'))
+        self.write('make/guards.mk', 'IS_PROD = 0\n\nguard.prod.forbid:\n\t@test "$(IS_PROD)" != "1"\n')
         self.write('old.txt', 'baseline\n')
         self.commit('base')
         self.base = self.git('rev-parse', 'HEAD').strip()
@@ -110,15 +123,59 @@ class TrustedScopeTests(unittest.TestCase):
         self.receipt.symlink_to(fake)
         self.assertIsNone(scope.select_scope(self.root, 'secrets').base)
 
-    def test_make_execution_authority_changes_invalidate(self):
+    def test_governed_scan_declaration_change_invalidates(self):
+        # Every way the command that decides coverage can move: the flag itself,
+        # an added prerequisite, an appended recipe line, and a dropped recipe.
         path = self.root / 'make/ci.mk'; original = path.read_text()
-        for changed in (original + 'SCANNER_MODE = unsafe\n',
-                        original.replace('--scope all', '--scope worktree')):
+        for changed in (
+            original.replace('--scope all', '--scope worktree'),
+            original.replace('security.secrets.scan: security.online_capture.unit',
+                             'security.secrets.scan: security.online_capture.unit extra.gate'),
+            original + 'security.secrets.scan:\n\t@echo smuggled\n',
+            original.replace(
+                '\t@python3 scripts/ci/secret_scan.py --scope all --auto-trusted-base\n', ''),
+        ):
             path.write_text(changed)
             self.assertIsNone(scope.select_scope(self.root, 'secrets').base)
         path.write_text(original)
-        self.write('make/new-include.mk', 'injected = true\n')
+        self.assertEqual(scope.select_scope(self.root, 'secrets').base, self.base)
+
+    def test_a_fragment_that_redefines_a_governed_target_invalidates(self):
+        self.write('make/other.mk', 'security.secrets.scan: injected.gate\n')
         self.assertIsNone(scope.select_scope(self.root, 'secrets').base)
+        self.write('make/other.mk', 'unrelated = true\n')
+        self.assertEqual(scope.select_scope(self.root, 'secrets').base, self.base)
+
+    def test_unrelated_make_region_or_fragment_is_reused(self):
+        # The over-invalidation this replaces: any make byte used to force a full
+        # rescan of all three kinds, so a stable scan was repaid on every edit.
+        path = self.root / 'make/ci.mk'; original = path.read_text()
+        path.write_text(original + 'UNRELATED_FLAG = unsafe\n')
+        self.assertEqual(scope.select_scope(self.root, 'secrets').base, self.base)
+        path.write_text(original)
+        self.write('make/unrelated-fragment.mk', 'another = true\n')
+        self.assertEqual(scope.select_scope(self.root, 'secrets').base, self.base)
+
+    def test_referenced_variable_change_invalidates_only_its_own_kind(self):
+        # guard.prod.forbid's recipe reads $(IS_PROD), so the variable is part of
+        # the history surface -- and only the history surface.
+        path = self.root / 'make/guards.mk'
+        path.write_text(path.read_text().replace('IS_PROD = 0', 'IS_PROD = 1'))
+        self.assertIsNone(scope.select_scope(self.root, 'history').base)
+        self.assertEqual(scope.select_scope(self.root, 'secrets').base, self.base)
+        path.write_text(path.read_text().replace('IS_PROD = 1', 'IS_PROD = 0'))
+        self.assertEqual(scope.select_scope(self.root, 'history').base, self.base)
+
+    def test_macro_fragment_naming_a_governed_target_is_bound_whole(self):
+        # An $(eval)/define body can append to a governed recipe without being a
+        # rule the parser can see, so such a fragment is bound by content.
+        path = self.root / 'make/generated.mk'
+        path.write_text('define APPEND\nsecurity.secrets.scan: extra.gate\nendef\n$(eval $(APPEND))\n')
+        self.assertIsNone(scope.select_scope(self.root, 'secrets').base)
+        path.write_text('define APPEND\nsecurity.secrets.scan: other.gate\nendef\n$(eval $(APPEND))\n')
+        self.assertIsNone(scope.select_scope(self.root, 'secrets').base)
+        path.unlink()
+        self.assertEqual(scope.select_scope(self.root, 'secrets').base, self.base)
 
     def test_selector_and_producer_changes_invalidate(self):
         for relative in scope.COMMON_AUTHORITY:
