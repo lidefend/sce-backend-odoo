@@ -2868,3 +2868,33 @@ role_evidence.matched_groups_by_role = {
 **十一、部署层未决（本 L4 不宣称部署完成）**
 
 后端投影代码已变，需按受管四步把日常开发服务器刷新到 `b8eb0473`（是否升级模块按实际变更判断），再回读 `/api/runtime-version` 的 `source_revision` 与前端 build sha、以及 `system.init` 的 `role_surface.surface_role_codes` 不再含 `project_member`，然后才回到所有者本人用户级验收。
+
+**十二、受管候选部署与回读（第 28 轮收口）**
+
+受管入口 `make daily.runtime.candidate.release`（三项显式确认齐备），候选 `545da744`（= L4 绑定的 `b8eb0473` + 仅台账提交），`old=8870c70c`，`login=wutao`，`upgrade-modules=smart_core,smart_construction_core`：
+
+| 步骤 | 回执 | 结果 |
+| --- | --- | --- |
+| `daily.runtime.candidate.bundle_sync` | `candidate-bundle-sync.json` | PASS，`bundle_sha256=6632df1b…`，`origin_main_mutated=false` |
+| `daily.runtime.source_revision.align` | `source-revision-align.json` | PASS，`previous_revision=8870c70c`，`restarted=true`，`rolled_back=false` |
+| `daily.runtime.published_face.converge` | `published-face-converge.json` | PASS，`guard_status=PASS`，`module_upgrade_returncode=0` |
+
+**模块升级按实际变更判断**：`addons/smart_core` 的 git tree 在 `7eec3f0e` 与 `545da744` 都是 `400ac596`（未变，跳过）；`addons/smart_construction_core` 由 `d1dd30b0` 变为 `afe2c918`（本轮修复所在模块），故显式并入 `upgrade-modules`。
+
+**服务端身份回读**（`/api/runtime-version`）：`source_revision=git_sha=545da744`，`database=sc_demo`，`frontend_build_sha256=dac3544e…`（与部署前一致——本轮无前端改动，未重建前端，符合声明范围）。
+
+**关键修复验证**（受管只读探针，`POST /web/session/authenticate` + `POST /api/v1/intent intent=system.init`，`db=sc_demo`）：
+
+| 主体 | 修复前 `surface_role_codes` | 修复后 |
+| --- | --- | --- |
+| `fixture_role_finance` | `["finance","project_member"]` | `["finance"]` |
+| `fixture_role_pm` | （同机制） | `["pm"]` |
+| `wutao` | — | `["business_config_admin","executive","pm","cost"]` |
+
+三者均不再含 `project_member`，与 L4 的交付面收敛一致。
+
+**身份口径**：日常开发服务器现服务候选分支头 `545da744`，其产品/工具路径与 L4 绑定的 `b8eb0473` 完全一致（差量仅 `.agent/run.json` 与本文档），按「文档/台账变更不失效页面证据」规则复用 L4 结论；`origin/main` 仍是 `8870c70c`，是否合并由 owner 决定。
+
+**环境观察（非产品结论）**：部署期间 `sc-root(1.95.85.92:22)` 出现间歇性 `kex_exchange_identification: read: Connection reset by peer`（约 1/3 连接被瞬时限流），`bundle_sync` 因此 BLOCKED 一次；本地对 `sc-root` 增加 SSH 连接复用（`~/.ssh/config` 的 ControlMaster/ControlPath/ControlPersist）后重跑一次成功。未放宽任何审计，未直接操作容器绕过 DENY。
+
+**剩余**：仅所有者本人用户级验收（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`：项目台账/项目表单编辑态 1440/390 明暗主题 + 关系交互「点击打开 → 返回原记录 → 标签与动作恢复」）。
