@@ -7,7 +7,7 @@ type Dict = Record<string, unknown>;
 /**
  * 列表页分页声明的唯一来源：契约 `searchContract.defaults`。
  *
- * 运行时载体是 `ContractV2NormalizedStore`（契约规范化投影）。契约快照只挂在
+ * 运行时载体是 `ContractV2NormalizedStore`（契约规范化投影）。规范化投影快照只挂在
  * `store.snapshot` 之下，因此这里必须走规范访问器 `resolveContractV2SearchContract`，
  * 前端不自己拼 `searchContract` 键路径 —— 载体形状一旦漂移，必须在编译期被类型签名
  * 拦住，而不是运行期静默取到空对象后抛出 `ContractGapError`。

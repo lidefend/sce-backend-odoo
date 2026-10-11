@@ -1,5 +1,5 @@
 /**
- * 契约缺口的唯一停机原语（P0 前端渲染机制）。
+ * 契约缺陷的唯一停机原语（P0 前端渲染机制）。
  *
  * 最高职责界限（AGENTS.md / ARCHITECTURE_GUARD.md / ARCH-DECISION-002）：
  * 前端只做渲染与交互，其余一切输入必须来自契约。前端一旦需要做没有契约依据的
@@ -20,7 +20,7 @@ export type ContractDefectRef = {
 };
 
 /**
- * 契约缺口停机错误。抛出即表示「前端判断出现 → 立即停机 → 回契约要结果」。
+ * 契约缺陷停机错误。抛出即表示「前端判断出现 → 立即停机 → 回契约要结果」。
  */
 export class ContractGapError extends Error {
   readonly defect: ContractDefectRef;
@@ -100,7 +100,7 @@ export function optionalDeclaredNumber(
   return requireDeclaredNumber(value, spec);
 }
 
-/** 判定一个错误是否为契约缺口停机错误（供停机态渲染与诊断使用）。 */
+/** 判定一个错误是否为契约缺陷停机错误（供停机态渲染与诊断使用）。 */
 export function isContractGapError(error: unknown): error is ContractGapError {
   return error instanceof ContractGapError
     || (typeof error === 'object' && error !== null && (error as { name?: string }).name === 'ContractGapError');
