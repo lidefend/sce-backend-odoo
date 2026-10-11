@@ -27,6 +27,16 @@ DEFAULT_MOBILE_WIDGET_LIMIT = 12
 DEFAULT_MOBILE_ACTION_LIMIT = 4
 DEFAULT_MOBILE_CONTAINER_LIMIT = 6
 
+# The custom front end owns exactly one renderer-facing layout grid, declared
+# once in frontend/apps/web/src/components/template/layoutSpan.ts
+# (``layoutGridUnits()``).  The pc delivery face must declare that same grid;
+# declaring a second, conflicting dialect (a 12-unit form grid) while every
+# addressable width is projected onto the 24-unit ``span`` facet is the exact
+# "two unconnected layout dialects" defect the projection removed.  The binding
+# is machine-checked by scripts/verify/unified_page_contract_v2_client_guard.py.
+DESKTOP_LAYOUT_GRID_UNITS = 24
+MOBILE_LAYOUT_GRID_UNITS = 1
+
 
 def _dict(value: Any) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
@@ -100,7 +110,9 @@ def trim_unified_page_contract_v2(
     layout["adaptMode"] = "mobile" if client in MOBILE_CLIENT_TYPES else "pc"
     hints = _dict(layout.get("layoutHints"))
     hints["clientDensity"] = "comfortable" if client == "web_pc" else "compact"
-    hints["columns"] = 12 if client == "web_pc" else 1
+    hints["columns"] = (
+        DESKTOP_LAYOUT_GRID_UNITS if client == "web_pc" else MOBILE_LAYOUT_GRID_UNITS
+    )
     hints["mobileCollapse"] = client in MOBILE_CLIENT_TYPES
     hints["deliveryProfile"] = profile
     if compact:

@@ -550,6 +550,13 @@
         "styleToken": {
           "type": "string"
         },
+        "zone": {
+          "enum": [
+            "detail_zone",
+            "collaboration_zone",
+            "attachment_zone"
+          ]
+        },
         "type": {
           "type": "string"
         },
@@ -605,6 +612,7 @@
         "span": {"type": "integer", "minimum": 1, "maximum": 24},
         "styleToken": {"type": "string"},
         "widgetId": {"type": "string"},
+        "zone": {"enum": ["detail_zone", "collaboration_zone", "attachment_zone"]},
         "fieldCode": {"type": "string"},
         "nativeLocator": {"type": "string", "minLength": 1},
         "occurrenceIndex": {"type": "integer", "minimum": 1},

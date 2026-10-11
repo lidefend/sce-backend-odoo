@@ -12,7 +12,7 @@
   "expected": {
     "web_pc": {
       "adaptMode": "pc",
-      "columns": 12,
+      "columns": 24,
       "mobileCollapse": false
     },
     "wx_mini": {

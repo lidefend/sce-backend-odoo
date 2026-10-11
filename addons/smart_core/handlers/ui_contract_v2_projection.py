@@ -6,6 +6,7 @@ from copy import deepcopy
 from typing import Any
 
 from . import ui_contract_v2_adapters as _adapters
+from ..core.unified_page_contract_v2_assembler import declare_container_columns
 
 
 _CONTAINER_CHILD_KEYS = ("children", "pages", "tabs", "nodes", "items")
@@ -426,6 +427,12 @@ def normalize_post_projected_container_tree(
                 container_id,
                 descendant_field_column_span(declared_layout_columns(node)),
             )
+            # A late projection may append a grid-owning container after the
+            # assembler already declared its layout facets (for example the P1
+            # project responsibility group).  The boundary completes the same
+            # declaration here through the one rule the assembler owns, so no
+            # renderer has to fall back to a component default of its own.
+            declare_container_columns(node)
             for key in _CONTAINER_CHILD_KEYS[1:]:
                 node.pop(key, None)
 
