@@ -2898,3 +2898,26 @@ role_evidence.matched_groups_by_role = {
 **环境观察（非产品结论）**：部署期间 `sc-root(1.95.85.92:22)` 出现间歇性 `kex_exchange_identification: read: Connection reset by peer`（约 1/3 连接被瞬时限流），`bundle_sync` 因此 BLOCKED 一次；本地对 `sc-root` 增加 SSH 连接复用（`~/.ssh/config` 的 ControlMaster/ControlPath/ControlPersist）后重跑一次成功。未放宽任何审计，未直接操作容器绕过 DENY。
 
 **剩余**：仅所有者本人用户级验收（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`：项目台账/项目表单编辑态 1440/390 明暗主题 + 关系交互「点击打开 → 返回原记录 → 标签与动作恢复」）。
+
+**十三、主线集成与定时车道转绿（第 28 轮收口末段）**
+
+- **发布前生成证据**：`make ci.delivery.freeze.prepare` 发现 `docs/engineering_convergence/complexity_budget_report.md` 过期（新增回归测试文件 864 行进入 warning 清单，`114→115`）；审阅后单独提交（`8ade77f5`，纯信息型报告）。冻结精确头后运行唯一一次 `make ci.local.quick` → PASS（3 分片 90.4s/87.7s/18.2s，回执已记录）。
+- **PR**：`make pr.push`（`EXPECTED_HEAD=8ade77f5`）→ PR **#645**。
+- **必需检查**（源提交 `8ade77f5`，目标基线 `8870c70c`）：`merge_policy_gate` / `public_guard` / `professional_quality_gate` / `frontend_release_gate` 全 PASS，`mergeStateStatus=CLEAN`。PR 触发的 `frontend_release_gate` 按 `ci_risk_classifier` 走**显式非发布车道**（声明内 skip），真实 full 车道由下条覆盖。
+- **合并**：`make pr.merge PR=645 EXPECTED_HEAD=8ade77f5…`（squash，`local_quick_gate` 复用精确头回执）→ `origin/main` `8870c70c → a0afb331`。
+
+**主线转绿复核（最直接证明定时车道恢复）**：在 `main` 上派发同一条 full 车道 → run `38149337230`（`a0afb331`）`completed/success`：
+
+| 角色 | expected | actual | matched | result |
+| --- | --- | --- | --- | --- |
+| finance | 15 | 15 | 15 | PASS |
+| project_a_member | 5 | 5 | 5 | PASS |
+| pm | 7 | 7 | 7 | PASS |
+| owner | 3 | 3 | 3 | PASS |
+| **total** | **30** | **30** | **30** | **PASS** |
+
+`gate-result.json`：`result=PASS`，`reason_codes=[]`。对比 10-10 夜间同车道（`282b079c`）failure。
+
+**夜间红灯范围核实**（`branch=main, event=schedule`）：红灯只有 `frontend_release_gate` 及其同 event 级联 `release_candidate_gate`；`public_guard`/`merge_policy_gate` 一直 success，`backend_test_suite` 与 `professional_quality_gate` 在 10-10 已 success。本修复解红前者后，后者的级联条件随之满足。
+
+**内容同一声明**：`git diff a0afb331 8ade77f5` 为空（origin/main 与分支头逐字节一致）；日常开发服务器现服务 `545da744`，与 main 的差异仅 `.agent/` 与 `docs/`，产品/工具路径完全相同，故不重复部署、不重复取证。
