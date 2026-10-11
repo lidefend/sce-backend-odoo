@@ -10,6 +10,7 @@ import json
 import os
 import re
 import subprocess
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -24,6 +25,25 @@ AUTHORITY = {
 }
 COMMON_AUTHORITY = ('scripts/ops/local_quick_evidence.py', 'scripts/ci/trusted_scan_scope.py',
                     'scripts/dev/local_dev_frontend_quick.py', 'Makefile')
+# Which make target owns each scan kind's command. The digest binds that target's
+# merged declaration rather than every ``make/*.mk`` byte: a fragment that cannot
+# declare, extend or parameterise these commands cannot change what a scan covers,
+# and binding all of them charged a full rescan of all three kinds for an
+# unrelated fragment -- or an unrelated region of the same fragment.
+GOVERNED_SCAN_TARGETS = {
+    'secrets': 'security.secrets.scan',
+    'personal': 'security.personal_data_scan',
+    'history': 'repository.clean_history.scan',
+}
+MAKE_ENTRY_FILE = 'Makefile'
+MAKE_FRAGMENT_PREFIX = 'make/'
+MAKE_FRAGMENT_SUFFIX = '.mk'
+MAKE_RULE = re.compile(r'^([A-Za-z0-9_][A-Za-z0-9_.\-]*(?:[ \t]+[A-Za-z0-9_][A-Za-z0-9_.\-]*)*)[ \t]*:(?!=)[ \t]*(.*)$')
+MAKE_ASSIGN = re.compile(r'^[ \t]*(?:export[ \t]+|override[ \t]+|private[ \t]+)*([A-Za-z_][A-Za-z0-9_.\-]*)[ \t]*(?::=|\+=|\?=|=)')
+MAKE_REF = re.compile(r'\$[\(\{]([A-Za-z_][A-Za-z0-9_.\-]*)[\)\}]')
+MAKE_DEFINE = re.compile(r'^define\b')
+MAKE_INCLUDE = re.compile(r'^(?:-?include|sinclude)\b')
+MAKE_MACRO = re.compile(r'\$\((?:eval|call)\b|\bdefine\b|(?:^|\n)[ \t]*(?:-?include|sinclude)\b')
 SHA = re.compile(r'^[0-9a-f]{40}$')
 COVERAGE_PROTOCOL = 'quick-scan-occurrences-v1'
 COVERAGE_ENV = 'SC_QUICK_SCAN_COVERAGE_DIR'
@@ -77,16 +97,18 @@ def receipt_directories(root: Path, common: Path) -> list[Path]:
     return sorted(directories)
 
 
-def revision_blob_sha256(root: Path, revision: str, relative_paths: list[str]) -> dict[str, str]:
-    """Historical authority digests in two Git processes.
+def revision_blobs(root: Path, revision: str, relative_paths: list[str]) -> dict[str, bytes]:
+    """Historical authority bytes in two Git processes.
 
     Reading each authority file with its own ``git show`` spawned one process per
     file per revision, and a candidate sweep re-derived the same revisions once
     per candidate, so scope selection measured process startup instead of the
-    repository. ``ls-tree`` plus a single ``--batch`` returns the identical
-    sha256 for the identical blob bytes, and a path absent at that revision stays
-    a hard failure exactly as ``git show`` was.
+    repository. ``ls-tree`` plus a single ``--batch`` returns the identical bytes
+    for the identical blob, and a path absent at that revision stays a hard
+    failure exactly as ``git show`` was.
     """
+    if not relative_paths:
+        return {}
     listing = subprocess.run(
         ['git', '-C', str(root), 'ls-tree', '-r', '-z', revision, '--', *relative_paths],
         capture_output=True, check=True).stdout
@@ -105,7 +127,7 @@ def revision_blob_sha256(root: Path, revision: str, relative_paths: list[str]) -
     payload = subprocess.run(
         ['git', '-C', str(root), 'cat-file', '--batch'],
         input=''.join(oid + '\n' for oid in ordered).encode('ascii'), capture_output=True, check=True).stdout
-    digest_by_oid: dict[str, str] = {}
+    content_by_oid: dict[str, bytes] = {}
     cursor = 0
     for oid in ordered:
         newline = payload.find(b'\n', cursor)
@@ -117,23 +139,163 @@ def revision_blob_sha256(root: Path, revision: str, relative_paths: list[str]) -
         content = payload[start:start + size]
         if len(content) != size or payload[start + size:start + size + 1] != b'\n':
             raise ValueError('unreadable authority revision')
-        digest_by_oid[oid] = hashlib.sha256(content).hexdigest()
+        content_by_oid[oid] = content
         cursor = start + size + 1
-    if set(digest_by_oid) != set(ordered):
+    if set(content_by_oid) != set(ordered):
         raise ValueError('unreadable authority revision')
-    return {relative: digest_by_oid[oid] for relative, oid in blob_by_path.items()}
+    return {relative: content_by_oid[oid] for relative, oid in blob_by_path.items()}
+
+
+def revision_blob_sha256(root: Path, revision: str, relative_paths: list[str]) -> dict[str, str]:
+    return {relative: hashlib.sha256(content).hexdigest()
+            for relative, content in revision_blobs(root, revision, relative_paths).items()}
+
+
+def make_fragments(root: Path, revision: str | None = None) -> list[str]:
+    """Every make fragment that participates in the build, at that revision."""
+    listed = (git(root, 'ls-files', '--cached', '--others', '--exclude-standard', '-z').split('\0') if revision is None
+              else git(root, 'ls-tree', '-r', '--name-only', '-z', revision).split('\0'))
+    return sorted(name for name in listed if name and (
+        name == MAKE_ENTRY_FILE
+        or (name.startswith(MAKE_FRAGMENT_PREFIX) and name.endswith(MAKE_FRAGMENT_SUFFIX))))
+
+
+def fragment_texts(root: Path, revision: str | None, fragments: list[str]) -> dict[str, str]:
+    if revision is None:
+        return {name: (root / name).read_text(encoding='utf-8', errors='replace') for name in fragments}
+    return {name: content.decode('utf-8', errors='replace')
+            for name, content in revision_blobs(root, revision, fragments).items()}
+
+
+def logical_make_lines(text: str) -> list[tuple[bool, str]]:
+    """(is_recipe, joined line); a trailing backslash joins the next physical line."""
+    lines: list[tuple[bool, str]] = []
+    pending: str | None = None
+    for raw in text.splitlines():
+        pending = raw if pending is None else pending + '\n' + raw
+        if pending.endswith('\\'):
+            continue
+        lines.append((pending.startswith('\t'), pending))
+        pending = None
+    if pending is not None:
+        lines.append((pending.startswith('\t'), pending))
+    return lines
+
+
+def parse_fragment(text: str) -> tuple[dict[str, dict], dict[str, list[str]], bool]:
+    """Rules, variable assignments and macro use of one make fragment.
+
+    Conditionals are deliberately not evaluated: a rule that is live under only
+    one branch is still recorded, which over-includes rather than under-includes.
+    A recipe line attaches to the most recent rule, so a redefined or extended
+    target is merged exactly the way make merges it.
+    """
+    rules: dict[str, dict] = {}
+    assignments: dict[str, list[str]] = {}
+    current: str | None = None
+    defining = False
+    for is_recipe, line in logical_make_lines(text):
+        if defining:
+            defining = line.strip() != 'endef'
+            continue
+        if is_recipe:
+            if current is not None:
+                rules[current]['recipe'].append(line[1:])
+            continue
+        stripped = line.strip()
+        if not stripped or stripped.startswith('#'):
+            continue
+        if MAKE_DEFINE.match(stripped):
+            defining, current = True, None
+            continue
+        if MAKE_INCLUDE.match(stripped):
+            current = None
+            continue
+        assignment = MAKE_ASSIGN.match(line)
+        if assignment:
+            assignments.setdefault(assignment.group(1), []).append(stripped)
+            current = None
+            continue
+        rule = MAKE_RULE.match(line)
+        if rule:
+            names = rule.group(1).split()
+            prerequisites = rule.group(2).split()
+            for name in names:
+                entry = rules.setdefault(name, {'prereqs': [], 'recipe': []})
+                entry['prereqs'].extend(p for p in prerequisites if p not in entry['prereqs'])
+            current = names[-1] if names else None
+            continue
+        current = None
+    return rules, assignments, bool(MAKE_MACRO.search(text))
+
+
+def make_execution_surface(root: Path, kind: str, revision: str | None = None) -> list[list]:
+    """The make declaration that decides one scan kind's command.
+
+    The rows are the merged prerequisite/recipe text of the governed target and
+    its declared prerequisite closure, every variable assignment those recipes
+    reference (transitively), and any macro fragment that could inject a rule for
+    the governed target. Nothing else in the make surface can change the command
+    make runs, so nothing else is bound.
+    """
+    fragments = make_fragments(root, revision)
+    texts = fragment_texts(root, revision, fragments)
+    merged: dict[str, dict] = {}
+    assignments: dict[str, list[str]] = {}
+    macro_fragments: list[str] = []
+    for name in fragments:
+        rules, fragment_assignments, macros = parse_fragment(texts[name])
+        for target, rule in rules.items():
+            entry = merged.setdefault(target, {'prereqs': [], 'recipe': []})
+            entry['prereqs'].extend(p for p in rule['prereqs'] if p not in entry['prereqs'])
+            entry['recipe'].extend(rule['recipe'])
+        for variable, lines in fragment_assignments.items():
+            assignments.setdefault(variable, []).extend(lines)
+        if macros:
+            macro_fragments.append(name)
+    governed = GOVERNED_SCAN_TARGETS[kind]
+    closure: set[str] = set()
+    pending = [governed]
+    while pending:
+        target = pending.pop()
+        if target in closure:
+            continue
+        closure.add(target)
+        pending.extend(merged.get(target, {}).get('prereqs', []))
+    referenced: set[str] = set()
+    for target in closure:
+        rule = merged.get(target, {'prereqs': [], 'recipe': []})
+        referenced |= set(MAKE_REF.findall(' '.join(rule['prereqs'] + rule['recipe'])))
+    expanded: set[str] = set()
+    while referenced - expanded:
+        variable = sorted(referenced - expanded)[0]
+        expanded.add(variable)
+        for line in assignments.get(variable, []):
+            referenced |= set(MAKE_REF.findall(line))
+    rows: list[list] = []
+    for target in sorted(closure):
+        rule = merged.get(target)
+        rows.append([target, sorted(rule['prereqs']) if rule else None, rule['recipe'] if rule else None])
+    for variable in sorted(referenced):
+        rows.append(['variable:' + variable, sorted(assignments.get(variable, []))])
+    for name in sorted(macro_fragments):
+        if governed in texts[name]:
+            rows.append(['fragment:' + name, hashlib.sha256(texts[name].encode()).hexdigest()])
+    return rows
 
 
 def authority_digest(root: Path, kind: str, revision: str | None = None) -> str:
-    """Bind the entire execution chain, including added/deleted Make includes."""
-    names = (git(root, 'ls-tree', '-r', '--name-only', '-z', revision).split('\0') if revision else
-             (git(root, 'ls-files', '--cached', '--others', '--exclude-standard', '-z')).split('\0'))
-    paths = set(COMMON_AUTHORITY + AUTHORITY[kind])
-    paths.update(name for name in names if name.startswith('make/') and name.endswith('.mk'))
-    ordered = sorted(paths)
+    """Bind the scan's execution chain, not the whole make surface.
+
+    Covered: the scanner and its rules (``AUTHORITY``), the shared consumers that
+    decide scope and coverage (``COMMON_AUTHORITY``), and the make slice that
+    decides this kind's command (``make_execution_surface``).
+    """
+    ordered = sorted(set(COMMON_AUTHORITY + AUTHORITY[kind]))
     digests = ({relative: hashlib.sha256((root / relative).read_bytes()).hexdigest() for relative in ordered}
                if revision is None else revision_blob_sha256(root, revision, ordered))
-    rows = [(relative, digests[relative]) for relative in ordered]
+    rows: list[list] = [[relative, digests[relative]] for relative in ordered]
+    rows.append(['make.execution.surface', make_execution_surface(root, kind, revision)])
     return hashlib.sha256(json.dumps(rows, separators=(',', ':')).encode()).hexdigest()
 
 
@@ -239,9 +401,16 @@ def record_scan_success(root: Path, kind: str, base: str | None = None) -> None:
     if actual != expected or git(root, 'rev-parse', 'HEAD').strip() != launch['head']:
         raise ValueError('scan coverage identity changed')
     proof = {'protocol': COVERAGE_PROTOCOL, 'kind': kind, 'head': launch['head'], 'tree': launch['tree'], 'coverage': actual, 'mode': 'incremental' if base else 'full', 'base': base}
-    temporary = folder / (kind + '.tmp')
-    temporary.write_text(json.dumps(proof, sort_keys=True))
-    temporary.replace(folder / (kind + '.json'))
+    # Concurrent shards share this evidence folder, so the temporary name must be
+    # unique per writer; a fixed ``<kind>.tmp`` lets two writers delete each
+    # other's temporary and makes ``os.replace`` fail with a spurious FileNotFoundError.
+    descriptor, temporary_name = tempfile.mkstemp(prefix=f'.{kind}.', suffix='.tmp', dir=folder)
+    try:
+        with os.fdopen(descriptor, 'w', encoding='utf-8') as stream:
+            stream.write(json.dumps(proof, sort_keys=True))
+        Path(temporary_name).replace(folder / (kind + '.json'))
+    finally:
+        Path(temporary_name).unlink(missing_ok=True)
 
 
 def select_scope(root: Path, kind: str) -> Scope:

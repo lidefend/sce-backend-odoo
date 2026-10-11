@@ -370,12 +370,91 @@ class ShardCompositionTests(unittest.TestCase):
     def test_default_entry_shards_and_composes_in_the_primary_worktree(self) -> None:
         calls: list[list[str]] = []
         with mock.patch.object(evidence, "is_linked_worktree", return_value=False):
-            receipt = evidence.run_default(self.root, shards=2, runner=self._runner(calls))
+            receipt = evidence.run_default(self.root, shards=2, runner=self._runner(calls), jobs=1)
         assert receipt is not None
         self.assertEqual(evidence.verify(self.root, self.head), receipt)
         manifest = list(MANIFEST_TARGETS)
         self.assertEqual(calls, [["make", "--no-print-directory", *manifest[0::2]],
                                  ["make", "--no-print-directory", *manifest[1::2]]])
+
+    def test_serial_switch_forces_the_serial_entry_even_when_workers_are_allowed(self) -> None:
+        calls: list[list[str]] = []
+        with mock.patch.dict(os.environ, {"SC_QUICK_SERIAL": "1"}):
+            with mock.patch.object(evidence, "is_linked_worktree", return_value=False):
+                receipt = evidence.run_default(self.root, shards=2, runner=self._runner(calls))
+        assert receipt is not None
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(evidence.verify(self.root, self.head), receipt)
+
+    def test_requested_shard_jobs_prefers_the_explicit_count_and_the_environment(self) -> None:
+        with mock.patch.dict(os.environ, {"QUICK_JOBS": "3", "SC_QUICK_SERIAL": ""}):
+            self.assertEqual(evidence.requested_shard_jobs(None), 3)
+            self.assertEqual(evidence.requested_shard_jobs(2), 2)
+        with mock.patch.dict(os.environ, {"SC_QUICK_SERIAL": "1", "QUICK_JOBS": "3"}):
+            self.assertEqual(evidence.requested_shard_jobs(None), 1)
+        with mock.patch.dict(os.environ, {"QUICK_JOBS": "many"}):
+            with self.assertRaisesRegex(evidence.EvidenceError, "not an integer"):
+                evidence.requested_shard_jobs(None)
+
+    def test_concurrent_shards_compose_the_same_verifiable_receipt(self) -> None:
+        calls: list[list[str]] = []
+        with mock.patch.object(evidence, "is_linked_worktree", return_value=False):
+            receipt = evidence.run_default(self.root, shards=2, jobs=2,
+                                           popen=self._shard_job(calls))
+        assert receipt is not None
+        self.assertEqual(evidence.verify(self.root, self.head), receipt)
+        self.assertEqual(sorted(command[-1] for command in calls), ["0", "1"])
+        for index in (0, 1):
+            self.assertTrue(self._part_path(index).is_file(), index)
+
+    def test_concurrent_shard_failure_fails_the_run_without_a_receipt(self) -> None:
+        calls: list[list[str]] = []
+        with mock.patch.object(evidence, "is_linked_worktree", return_value=False):
+            with self.assertRaises(evidence.QuickRunFailed):
+                evidence.run_default(self.root, shards=2, jobs=2,
+                                     popen=self._shard_job(calls, failing=1))
+        self.assertFalse(evidence.evidence_path(self.root, self.head).exists())
+
+    def test_concurrent_shards_keep_the_machine_bounded_worker_count(self) -> None:
+        seen: list[int] = []
+        original = evidence.run_shards_concurrently
+
+        def spy(root, shards, jobs, head, **kwargs):
+            seen.append(jobs)
+            return original(root, shards, jobs, head, **kwargs)
+
+        with mock.patch.object(evidence, "is_linked_worktree", return_value=False):
+            with mock.patch.object(evidence, "run_shards_concurrently", side_effect=spy):
+                with mock.patch.object(evidence.scan_group, "available_bytes", return_value=None):
+                    receipt = evidence.run_default(self.root, shards=2, jobs=None,
+                                                   popen=self._shard_job([]))
+        assert receipt is not None
+        self.assertEqual(seen, [evidence.scan_group.resolve_jobs(None, 2)])
+        self.assertLessEqual(seen[0], 2)
+
+    def _shard_job(self, calls, failing: int | None = None):
+        """A stand-in for the governed shard process: it does the real shard work."""
+
+        class _Process:
+            def __init__(self, returncode: int) -> None:
+                self.returncode = returncode
+
+            def wait(self) -> int:
+                return self.returncode
+
+        def popen(command, handle, _root):
+            index = int(command[command.index("--shard") + 1])
+            shards = int(command[command.index("--shards") + 1])
+            calls.append(command)
+            if failing is not None and index == failing:
+                handle.write("shard refused\n")
+                return _Process(1)
+            with mock.patch.object(evidence, "is_linked_worktree", return_value=False):
+                evidence.run_shard(self.root, shards, index, runner=self._runner([]))
+            handle.write(f"shard {index} passed\n")
+            return _Process(0)
+
+        return popen
 
     def test_default_entry_keeps_the_single_governed_runner_in_a_linked_worktree(self) -> None:
         calls: list[list[str]] = []

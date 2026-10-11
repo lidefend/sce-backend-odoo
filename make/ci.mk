@@ -726,7 +726,7 @@ verify.unified_page_contract.lite: guard.prod.forbid
 # ----------------------------------------------------------------------
 # v1.1 Engineering Convergence quality entries
 # ----------------------------------------------------------------------
-.PHONY: ci ci.professional.backend ci.local.iteration ci.local.quick ci.local.quick.diagnostic ci.local.quick.gc ci.local.quick.run ci.local.quick.shard ci.local.quick.compose lane.telemetry.record lane.telemetry.report lane.telemetry.check verify.lane.telemetry.unit ci.delivery.freeze.prepare ci.generated_evidence.preflight ci.generated_reports.guard verify.contract_form_split_evidence refresh.contract_form_split_evidence refresh.generated_reports test.frontend test.unit test.odoo.integration test.contract test.e2e.preflight test.e2e.fixed_data.odoo test.e2e test.all test.inventory test.inventory.summary test.e2e.matrix architecture.module_dependency_map architecture.complexity_report architecture.complexity_baseline_lock architecture.split_plan_queue github.remote_execution_plan security.secret_scan security.secrets.scan security.personal_data_scan security.legacy_credential_guard verify.repository.clean_history verify.python_name_binding verify.menu_config_tree_editor.behavior verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix ci.tenant.pro03.demo.dispatch verify.contract.structure_lock verify.ci.scheduled_gates
+.PHONY: ci ci.professional.backend ci.local.iteration ci.local.quick ci.local.quick.diagnostic ci.local.quick.gc ci.local.quick.run ci.local.quick.shard ci.local.quick.compose lane.telemetry.record lane.telemetry.report lane.telemetry.check verify.lane.telemetry.unit ci.delivery.freeze.prepare ci.generated_evidence.preflight ci.generated_reports.guard verify.contract_form_split_evidence refresh.contract_form_split_evidence refresh.generated_reports test.frontend test.unit test.odoo.integration test.contract test.e2e.preflight test.e2e.fixed_data.odoo test.e2e test.all test.inventory test.inventory.summary test.e2e.matrix architecture.module_dependency_map architecture.complexity_report architecture.complexity_baseline_lock architecture.split_plan_queue github.remote_execution_plan security.secret_scan security.secrets.scan security.personal_data_scan security.legacy_credential_guard verify.repository.clean_history security.trusted_scan.group security.trusted_scan_group.unit repository.clean_history.scan verify.python_name_binding verify.menu_config_tree_editor.behavior verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix ci.tenant.pro03.demo.dispatch verify.contract.structure_lock verify.ci.scheduled_gates
 
 # Workflow-integrity contract tests: assert the CI entrypoints themselves cannot
 # silently degrade (e.g. an errexit-masked backend suite reporting a truncated
@@ -929,9 +929,14 @@ ci.local.iteration: guard.prod.forbid verify.baseline.iteration.execution.policy
 # which is always exactly the ci.local.quick.run prerequisite list.
 QUICK_SHARDS ?= 4
 QUICK_RECEIPT_KEEP ?= 50
+# Shard workers. Empty means "derive one worker per two CPUs and per 3 GiB of
+# available memory, never more workers than shards", so a small machine keeps
+# the serial order instead of thrashing. SC_QUICK_SERIAL=1 and QUICK_JOBS=1 are
+# the explicit serial fallbacks.
+QUICK_JOBS ?=
 
 ci.local.quick: guard.prod.forbid
-	@python3 scripts/ops/local_quick_evidence.py run --shards "$(QUICK_SHARDS)"
+	@python3 scripts/ops/local_quick_evidence.py run --shards "$(QUICK_SHARDS)" $(if $(strip $(QUICK_JOBS)),--jobs "$(QUICK_JOBS)",)
 
 # Explicit receipt-free mode for a dirty development tree. It runs the suite and
 # reports the result, but it issues no exact-head receipt and satisfies no gate.
@@ -1189,7 +1194,30 @@ verify.github_actions.security:
 	@python3 scripts/verify/test_github_actions_security_guard.py
 	@python3 scripts/verify/github_actions_security_guard.py
 
-verify.repository.clean_history: verify.repository.clean_history.unit guard.prod.forbid security.secrets.scan security.personal_data_scan verify.tenant.product_payload_boundary verify.branch.governance.consistency verify.baseline.iteration.execution.policy verify.github_actions.security verify.gitee.webhook.ci
+verify.repository.clean_history: verify.repository.clean_history.unit guard.prod.forbid security.trusted_scan.group verify.tenant.product_payload_boundary verify.branch.governance.consistency verify.baseline.iteration.execution.policy verify.github_actions.security verify.gitee.webhook.ci
+	@echo "[verify.repository.clean_history] PASS history+secrets+personal via security.trusted_scan.group"
+
+# The three trusted scans are independent read-only passes over the same
+# repository: each resolves its own trusted scope, writes only its own per-kind
+# coverage proof, and asserts its own result. Declaring them as a serial
+# prerequisite chain made every lane pay their sum, and a full rescan is exactly
+# what a change to the scan authority costs. The group runs the same governed
+# targets as separate make processes, so every member keeps its own entry point,
+# unit prerequisite and fail-closed exit, coverage is identical, and only the
+# wall clock moves. Make-level -j cannot do this here: this makefile declares
+# .NOTPARALLEL for the local lane, so an in-make -j is accepted and ignored
+# (measured 7m14s, the serial signature). SC_TRUSTED_SCAN_JOBS=1 restores the
+# serial order.
+security.trusted_scan.group: guard.prod.forbid security.trusted_scan_group.unit
+	@python3 scripts/ci/trusted_scan_group.py $(if $(strip $(SC_TRUSTED_SCAN_JOBS)),--jobs "$(SC_TRUSTED_SCAN_JOBS)",)
+
+security.trusted_scan_group.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ci/trusted_scan_group.py scripts/ci/test_trusted_scan_group.py
+	@python3 scripts/ci/test_trusted_scan_group.py
+
+# The history pass keeps its own leaf target: the parallel group needs a make
+# entry point that owns the command, and a serial lane can still call it alone.
+repository.clean_history.scan: guard.prod.forbid
 	@python3 scripts/verify/repository_clean_history_guard.py --auto-trusted-base
 
 verify.repository.clean_history.unit:

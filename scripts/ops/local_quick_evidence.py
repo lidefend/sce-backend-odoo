@@ -7,18 +7,22 @@ import argparse
 import hashlib
 import json
 import os
+import queue
 import re
 import shlex
 import shutil
 import sys
 import subprocess
 import tempfile
+import threading
 import time
+import traceback
 from pathlib import Path
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
 import trusted_scan_scope as scans
+import trusted_scan_group as scan_group
 
 SCHEMA_VERSION = 3
 COMPOSITION_SCHEMA = 1
@@ -29,6 +33,13 @@ FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 # strided slice of the declared target list, so an interrupted or partially
 # failed candidate keeps the parts that did pass instead of proving nothing.
 DEFAULT_SHARDS = 4
+# Shard workers. One shard is one make invocation over a strided slice of the
+# declared target list, and shards are independent by construction: each writes
+# only its own part receipt, its own scan proofs and its own bounded log, and
+# the declared target list carries no shared fixed write path. Running a few of
+# them at once therefore costs no evidence and no coverage, and it removes the
+# serial sum from every iteration. The worker budget itself lives with the scan
+# group, which is the other lane that has to bound concurrency by the machine.
 # Receipts are also the incremental-scan base source (see trusted_scan_scope),
 # so the retained window is the newest receipts by issue time, never a bare age
 # cutoff that could strand the only usable ancestor.
@@ -448,6 +459,122 @@ def run_shard(root: Path, shards: int, index: int, runner=subprocess.run, reuse:
     return part_path
 
 
+def shard_command(root: Path, shards: int, index: int) -> list[str]:
+    """The governed shard entry point, so a concurrent shard is a real shard.
+
+    A worker never reimplements a shard: it runs the same public ``shard`` mode
+    a developer or a resumed run would run, so part receipts, reuse and every
+    fail-closed check stay in one place.
+    """
+    return [sys.executable, str(Path(__file__).resolve()), "shard",
+            "--root", str(root), "--shards", str(shards), "--shard", str(index)]
+
+
+def _shard_popen(command: list[str], handle, root: Path):
+    return subprocess.Popen(command, cwd=root, stdout=handle, stderr=subprocess.STDOUT, text=True)
+
+
+def requested_shard_jobs(jobs: int | None) -> int | None:
+    """Explicit worker count, else the environment, else None for the machine default."""
+    if jobs is not None:
+        return jobs
+    if os.environ.get("SC_QUICK_SERIAL") == "1":
+        return 1
+    raw = os.environ.get("QUICK_JOBS")
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except ValueError as exc:
+        raise EvidenceError(f"QUICK_JOBS={raw!r} is not an integer") from exc
+
+
+def concurrent_log_dir(root: Path) -> Path:
+    """Where a concurrent shard keeps its log without ever dirtying the tree.
+
+    The preferred ``.runtime/`` follows the repository convention and is
+    git-ignored, but the lane that proves a clean tree must not be the one that
+    breaks it: on a tree where that path is not ignored, the logs move inside the
+    Git directory instead of turning the candidate dirty mid-run.
+    """
+    preferred = root / ".runtime"
+    if not preferred.exists():
+        try:
+            git(root, "check-ignore", "-q", str(preferred / "probe.log"))
+            return preferred
+        except EvidenceError:
+            pass
+    elif preferred.is_dir():
+        return preferred
+    common = Path(git(root, "rev-parse", "--path-format=absolute", "--git-common-dir"))
+    return common / "codex" / "quick-logs"
+
+
+def run_shards_concurrently(root: Path, shards: int, jobs: int, head: str,
+                            popen=_shard_popen, log_dir: Path | None = None) -> None:
+    """Run at most ``jobs`` shards at once and fail the run on the first failure.
+
+    Concurrency is an execution detail, not an evidence property: each shard
+    still proves its own slice against the identical head, tree and scan
+    authority, still refuses to record when any of that moved, and the composed
+    receipt is still signed only by :func:`compose` over the complete union.
+    """
+    folder = log_dir if log_dir is not None else concurrent_log_dir(root)
+    folder.mkdir(parents=True, exist_ok=True)
+    pending: queue.Queue[int] = queue.Queue()
+    for index in range(shards):
+        pending.put(index)
+    outcomes: dict[int, tuple[int, float, Path]] = {}
+    crashes: dict[int, BaseException] = {}
+    lock = threading.Lock()
+
+    def worker() -> None:
+        while True:
+            try:
+                index = pending.get_nowait()
+            except queue.Empty:
+                return
+            path = folder / f"quick-shard-{head[:12]}-{index}-of-{shards}.log"
+            started = time.monotonic()
+            try:
+                with path.open("w", encoding="utf-8") as handle:
+                    process = popen(shard_command(root, shards, index), handle, root)
+                    returncode = process.wait()
+            except BaseException as exc:  # noqa: BLE001 - report the real shard failure, not a missing outcome
+                with lock:
+                    crashes[index] = exc
+                return
+            with lock:
+                outcomes[index] = (returncode, time.monotonic() - started, path)
+
+    threads = [threading.Thread(target=worker, daemon=True)
+               for _ in range(max(1, min(jobs, shards)))]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    if crashes:
+        first = min(crashes)
+        for index in sorted(crashes):
+            print(f"[local_quick_evidence] FAILED shard {index}/{shards - 1} raised "
+                  f"{type(crashes[index]).__name__}: {crashes[index]}")
+            print("".join(traceback.format_exception(crashes[index])))
+        raise EvidenceError(
+            f"concurrent quick shard {first} raised {type(crashes[first]).__name__}: {crashes[first]}")
+    if len(outcomes) != shards:
+        raise EvidenceError("a concurrent quick shard produced no outcome")
+    for index in range(shards):
+        returncode, duration, path = outcomes[index]
+        print(f"[local_quick_evidence] shard {index}/{shards - 1} "
+              f"status={'passed' if returncode == 0 else 'failed'} {duration:.1f}s log={path}")
+    failed = [index for index in range(shards) if outcomes[index][0]]
+    for index in failed:
+        print(f"[local_quick_evidence] FAILED shard {index}/{shards - 1} output:")
+        print(outcomes[index][2].read_text(encoding="utf-8", errors="replace"))
+    if failed:
+        raise QuickRunFailed(outcomes[failed[0]][0])
+
+
 def _loaded_shard_part(root: Path, head: str, tree: str, manifest: list[str], shards: int, index: int) -> dict:
     path = shard_part_path(root, head, index, shards)
     try:
@@ -579,14 +706,17 @@ def _observe_quick(root: Path, status: str, duration: float, degraded: list[str]
 
 
 def run_default(root: Path, shards: int | None = None, diagnostic: bool = False,
-                runner=subprocess.run) -> Path | None:
+                runner=subprocess.run, jobs: int | None = None,
+                popen=_shard_popen) -> Path | None:
     """The default ci.local.quick entry.
 
     The primary worktree shards the declared target list so an interrupted
     candidate keeps every part that already passed and a re-run resumes only the
-    remainder. A linked worktree keeps the single governed runner, because shard
-    parts are only supported in the primary worktree. ``diagnostic`` is the
-    explicit receipt-free mode for a dirty development tree.
+    remainder. Independent shards run concurrently, bounded by the machine, so a
+    full rescan stops paying the serial sum of its own shards. A linked worktree
+    keeps the single governed runner, because shard parts are only supported in
+    the primary worktree. ``diagnostic`` is the explicit receipt-free mode for a
+    dirty development tree.
     """
     if diagnostic:
         return run_quick(root, runner=runner, diagnostic=True)
@@ -599,9 +729,16 @@ def run_default(root: Path, shards: int | None = None, diagnostic: bool = False,
         shards = DEFAULT_SHARDS if shards is None else shards
         _checked_shard_layout(shards, 0)
         _require_clean_start(root, "the sharded quick lane")
-        for index in range(shards):
-            run_shard(root, shards, index, runner=runner)
-        receipt = compose(root, shards, git(root, "rev-parse", "HEAD"))
+        head = git(root, "rev-parse", "HEAD")
+        workers = scan_group.resolve_jobs(requested_shard_jobs(jobs), shards)
+        if workers == 1:
+            print(f"[local_quick_evidence] serial shards shards={shards} jobs=1")
+            for index in range(shards):
+                run_shard(root, shards, index, runner=runner)
+        else:
+            print(f"[local_quick_evidence] concurrent shards shards={shards} jobs={workers}")
+            run_shards_concurrently(root, shards, workers, head, popen=popen)
+        receipt = compose(root, shards, head)
         degraded = quick_degraded_reasons(root)
         return receipt
     except QuickRunFailed:
@@ -627,28 +764,31 @@ def main() -> int:
     parser.add_argument("--shards", type=int)
     parser.add_argument("--shard", type=int, dest="shard_index")
     parser.add_argument("--diagnostic", action="store_true")
+    parser.add_argument("--jobs", type=int)
     parser.add_argument("--keep", type=int)
     args = parser.parse_args()
     try:
         if args.mode == "run":
             if args.expected_head is not None or args.shard_index is not None or args.keep is not None:
                 raise EvidenceError("run mode does not accept --expected-head, --shard or --keep")
-            path = run_default(args.root, args.shards, args.diagnostic)
+            path = run_default(args.root, args.shards, args.diagnostic, jobs=args.jobs)
         elif args.mode == "verify":
             if args.expected_head is None:
                 raise EvidenceError("verify mode requires --expected-head")
-            if args.shards is not None or args.shard_index is not None or args.keep is not None or args.diagnostic:
-                raise EvidenceError("verify mode does not accept --shards, --shard, --keep or --diagnostic")
+            if (args.shards is not None or args.shard_index is not None or args.keep is not None
+                    or args.diagnostic or args.jobs is not None):
+                raise EvidenceError("verify mode does not accept --shards, --shard, --keep, --jobs or --diagnostic")
             path = verify(args.root, args.expected_head)
         elif args.mode == "shard":
             if args.shards is None or args.shard_index is None:
                 raise EvidenceError("shard mode requires --shards and --shard")
-            if args.expected_head is not None or args.keep is not None or args.diagnostic:
-                raise EvidenceError("shard mode does not accept --expected-head, --keep or --diagnostic")
+            if args.expected_head is not None or args.keep is not None or args.diagnostic or args.jobs is not None:
+                raise EvidenceError("shard mode does not accept --expected-head, --keep, --jobs or --diagnostic")
             path = run_shard(args.root, args.shards, args.shard_index)
         elif args.mode == "prune":
-            if args.shards is not None or args.shard_index is not None or args.expected_head is not None or args.diagnostic:
-                raise EvidenceError("prune mode does not accept --shards, --shard, --expected-head or --diagnostic")
+            if (args.shards is not None or args.shard_index is not None or args.expected_head is not None
+                    or args.diagnostic or args.jobs is not None):
+                raise EvidenceError("prune mode does not accept --shards, --shard, --expected-head, --jobs or --diagnostic")
             keep = RECEIPT_RETENTION if args.keep is None else args.keep
             removed = prune_receipts(repository_root(args.root), keep)
             print(f"[local_quick_evidence] PRUNED {len(removed)} receipt(s); keep={keep}")
@@ -658,8 +798,8 @@ def main() -> int:
         else:
             if args.shards is None:
                 raise EvidenceError("compose mode requires --shards")
-            if args.shard_index is not None or args.keep is not None or args.diagnostic:
-                raise EvidenceError("compose mode does not accept --shard, --keep or --diagnostic")
+            if args.shard_index is not None or args.keep is not None or args.diagnostic or args.jobs is not None:
+                raise EvidenceError("compose mode does not accept --shard, --keep, --jobs or --diagnostic")
             head = args.expected_head
             if head is None:
                 head = subprocess.run(
