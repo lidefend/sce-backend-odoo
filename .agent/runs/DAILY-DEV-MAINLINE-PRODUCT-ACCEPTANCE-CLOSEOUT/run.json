@@ -595,6 +595,34 @@
         "make/frontend.mk"
       ],
       "note": "PASS in 37.9s; this is the target behind the remote standard lane (pnpm -C frontend/apps/web test) and it now executes verify.frontend.decision_authority.unit."
+    },
+    "verification_lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "kind": "offline",
+      "inputs": [
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/test_verification_lane_coverage.py",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_exemptions.json",
+        "scripts/retired/retirements.json",
+        "scripts/verify/registry.yaml",
+        "docs/ops/codex_execution_allowlist.md",
+        "docs/ops/codex_workspace_execution_rules.md",
+        "make/guards.mk",
+        "make/ci.mk",
+        "make/frontend.mk"
+      ],
+      "note": "PASS after B3: check=surface within the frozen baseline (760 zero-reference targets / 103 unreferenced scripts / 226 absent-asset recipes all registered, unregistered 0, stale 0); test=42 tests OK. The tool resolves its own make/.github/workflow/doc inputs at runtime; the list above is the identity-defining subset. verify.verification.lane_coverage is a prerequisite of verify.contract.architecture.suite, so ci.local.quick.run and ci.professional.backend.shard-verify both enforce the ratchet."
+    },
+    "lane_telemetry": {
+      "target": "verify.lane.telemetry.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ci/lane_telemetry.py",
+        "scripts/ci/test_lane_telemetry.py",
+        "make/ci.mk"
+      ]
     }
   },
   "blockers": [
@@ -605,7 +633,7 @@
     "RESOLVED and DEPLOYED (B1+B2 were one P0 validator defect; see evidence.round_20261010_layout_policy_membership_authority). The runtime form-structure validator did not recognise the structure-membership authority the producer declares, so B1 ('slots is required'=60) and B2 ('layout projects field outside structure'=2024/158 models) were the same defect. B1 was not a choice: ui_contract_v2.py declares layoutPolicy=container_tree_authority with empty slots/fieldRoles (asserted by its own P0 tests), and the declared consumer frontend/apps/web/src/app/contracts/v2/schema.ts::decodeFormStructureContract forbids slots/columns/fieldRoles for that policy - so option (b) 'publish a minimal slot set' would have produced a contract the consumer rejects, leaving option (a) 'honour the declared layoutPolicy' as the only declaration-valid repair. B2's round-21 attribution was corrected: the producer is self-consistent (a read-only 163-model probe measured refs_not_in_layout=0/163 and layout-outside-slots fields inside the governance universe=6/163; every other flagged field is a native/technical/projection residual), so the reverse assertion was a validator over-assertion, not a projection split and not P1. The validator now (1) requires slots only when the declaration does not delegate membership to the tree, (2) newly rejects a tree-authority structure that also publishes slots/columns/fieldRoles (mirroring the declared consumer), and (3) scopes the reverse assertion to governed fields of non-tree-authority policies. No declaration-backed assertion was relaxed. The served daily runtime at e885d590 audits boundary_ok 163 / boundary_violation 0 (was 5/158) with projected_semantic_group_models 163, contract_standardized 81 and zero diffs on every non-boundary column. (B3) missing_group_semantics=163 was two independent defects and is RESOLVED and DEPLOYED - see evidence.round_20261010_contract_authored_section_heading_producer: (B3a, P0 smart_core, real product debt) the contract-authored heading channel semanticTitle had consumers (nativeBusinessSection.ts:96, NativeFormTreeRenderer.vue:892, schema.ts:737) but no producer, because WIP commit 2ec2e2df deleted the only call to _standardize_form_container_semantics and its replacement writes formStructureRole only. The producer is restored and _is_generic_container_label's ''-in-generic defect is fixed; the served runtime audits at projected_semantic_group_models=163 with 996/996 group nodes authored and missing_group_semantics 0. (B3b/B3c/B3d, P4 verification tools, no product change) the audit's is_unlabeled_group predicate, its notebook metric filtering on a carrier that exists nowhere in the repository, and the standardizer guard's failure to assert production wiring are all fixed, with pre/post negative baselines recorded. The residual 82 contract_needs_attention models are exactly (B4) the no-notebook/no-page scope set plus (B5) the 3 non-chatter workspace surfaces, which remain scope questions rather than product debt. This batch's two owned facets are 0 under both readings, so none of this is a batch regression.",
     "Verification-tool path debt (registered, NOT fixed in this round, no gate relaxed): make verify.form_structure.contract cannot pass in-repo because its member verify.user_form.preference.boundary_guard hardcodes addons/smart_construction_custom/models/user_preferences.py and reads it directly; that module does not exist in this repository (git log --all -- addons/smart_construction_custom is empty, absent on origin/main too) - it is a customer-custom addon outside the repository boundary, mounted and installed at runtime (the governed runtime guard scripts/verify/daily_dev_customer_addons_runtime_guard.py checks it live). Local reproduction: FileNotFoundError. Report per-target evidence only; the owning layer is that guard's owner."
   ],
-  "next_exact_step": "A/B local round is complete and verified (see evidence.round_20261011_decision_authority_gate_wiring): the ledger re-export is a 7-line-anchor refresh, the decision-authority guard is now a prerequisite of verify.frontend.pr.unit and verify.frontend.release.unit with a recorded negative proof, and verify.guard.registry fails closed when a declared gate_required script loses its required-gate wiring. Next: (1) owner decision on committing/publishing these seven files (the repo is public and every publication entry is confirm-gated, so publication is the owner's call); (2) the registered residual, a dedicated registry re-disposition round for the 43 scripts whose make wiring is only the '-m unittest' module form; (3) the previously registered product-acceptance gaps (detail 390/dark-light, create/edit and workbench minimal evidence) are unchanged by this round.",
+  "next_exact_step": "批次 C（迭代效率）与批次 D（车道遥测）已收口；冻结态暴露的两处仪器缺陷已修复（名册入库自我复活 + 注释字面量），见 evidence.round_20261011_lane_registry_self_revival_recovery；check 回到 PASS，自测 44 项 OK。下一步顺序：(1) 重新 freeze -> amend/clean commit；(2) 在 clean 冻结 HEAD 上重跑唯一一次 make ci.local.quick；(3) 独立复核（read-only，绑定同一指纹）后按批次开 PR。保留的 owner 政策议题：226 条不可执行 absent-asset 规则的物理退役；760 条零引用 target 中 109 条 candidate 的接线或退役判断；以及本轮量化的本地 quick 时长治理（全量扫描因 main 前进不可增量；分片当前串行、.NOTPARALLEL 明确禁止并行，需 owner 裁决是否改造）。",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -1456,7 +1484,7 @@
     },
     "round_20261010_detail_relation_roundtrip": {
       "question": "does the detail face still complete a real relation 'click open -> return to the source record -> tabs/actions restored' journey on the currently served revision, and is the previously reported relation-jump 403 absent?",
-      "entry": "existing registered test asset T-ASSET-942, scripts/verify/record_relation_roundtrip_acceptance.js - declaration-driven, not a handler diagnostic: it captures the page's own ui.contract.v2, clicks only relation fields the contract declares readable/openable, verifies the return_* contract the frontend itself emits, walks back and asserts path/title/statusbar/tabs/record-actions before==after, and fails on any 401/403 or console error. No probe framework was extended.",
+      "entry": "existing registered test asset T-ASSET-944, scripts/verify/record_relation_roundtrip_acceptance.js - declaration-driven, not a handler diagnostic: it captures the page's own ui.contract.v2, clicks only relation fields the contract declares readable/openable, verifies the return_* contract the frontend itself emits, walks back and asserts path/title/statusbar/tabs/record-actions before==after, and fails on any 401/403 or console error. No probe framework was extended.",
       "identity_binding": "served_revision daecaafc / database sc_demo / base http://1.95.85.92:18081 / viewport 1440x1000; source record taken from the governed resolver artifacts/backend/acceptance_record_identity.json (model payment.request, record_id 36178, action_id 780, menu_id 550, company_id 21) - the same record the payment-basis P1 case is sealed on; principal fixture_role_finance, the managed contract-probe principal for that company. No hard-coded record id.",
       "result": "PASS: declared_entry_count=18; the 3 visible declared relation controls all opened with denied_requests=0 and console_errors=0 - company_id -> /r/res.company/21 (res.company), contract_id -> /r/construction.contract/13610 (construction.contract), settlement_id -> /r/sc.settlement.order/3630 (sc.settlement.order); roundtrip restored path/title/statusbar/tabs/actions all true and error_free true; failures=[]",
       "artifact": ".runtime/final-acceptance/relation-roundtrip-daecaafc-fixture/20261010T043832/summary.json (6723 bytes, sha256 35f7e406...bedc)",
@@ -2013,6 +2041,193 @@
         "verify_frontend_quick_gate": "still an unreferenced aggregate (its only caller verify.round.v0_6.mini is unreachable). It must not be cited as evidence that a guard is enforced."
       },
       "status_boundaries": "batch acceptance: this round's scoped changes pass (targeted tests + audit + negative proof). Mainline integration: NOT done for these local changes (not pushed, owner publication not requested). Version release and product delivery: unchanged by this round."
+    },
+    "round_20261011_verification_system_systemic_audit": {
+      "intent": "owner instruction (现在先把我们验证体系开展一轮系统性审计，目标是稳定高效率的后续迭代，把验证体系彻底治理的规范专业高效)，随后 (同意立即推进)。审计/治理专题，只读诊断 + P4 冻结基线 + 审计报告；未改动任何 P0-P2 产品文件，未放宽任何门禁、断言、ACL、字段权限或负例。",
+      "measurement_tool": "scripts/audit/verification_lane_coverage.py（只读仪器，1.7s 全量），冻结基线 scripts/audit/verification_lane_baseline.json，入口 make audit.verification.lane_coverage / .check（make/guards.mk）。仪器故意不接入任何必需门禁：它度量表面积，接入表面积会自我指涉。",
+      "measured_facts": "target 2183（PHONY 2014）；4 个门禁锚点并集可达 144（6.6%），不可达 2044；零引用 target 342；scripts/** 2175，零引用 49。车道：local.iteration 3/5、local.quick 68/167、remote.professional.backend.verify 45/88、.tests 6/9、.reports 4/9、remote.standard_backend 5/9、remote.frontend.standard 20/18、remote.frontend.full 71/68。",
+      "core_findings": "(D1/D2) 本地精确 head 车道与远端必需门禁双向漂移：73 个守卫只被 ci.local.quick 执行（contract_governance_*_split_guard 22、construction_core_extension_*_split_guard 12、contract_form_* 7、frontend_page_contract_* 2、前端边界 3、其余 26），80 个脚本只被远端执行。契约治理守卫因此不参与 PR 合并判定：远端全绿不能证明契约未被破坏。(D3) professional_quality_gate 六条模式各自手写 make 清单，shard-verify(18) 与聚合(20) 互为交叉子集——PR #639 的缺口正是同一机制。(D4) 表面积失控。(D5) 回执在 dirty 时静默失效、204 个回执/9.5M 无保留策略。(D6) 无耗时/成功率/失败归因遥测。",
+      "cost_evidence": "73 个仅本地守卫全部独立运行合计约 65s（多数 0.02-0.30s，仅 login_envelope_consumption_guard 约 6s），相对 professional gate 9-14 分钟关键路径可忽略——漂移不是成本问题，是缺少单一来源。",
+      "methodology_correction": "本审计早期用 grep -rn 判定'零引用'，而 `.` 在正则中是通配符，会把散文 'test inventory' 判为命中 test.inventory，产生假阳性，据此得出的 355 不可引用。现行实现改为 token 精确匹配（词元相等），342 为复核后口径。",
+      "ratchet": "冻结债务硬校验：max_targets_zero_reference 342、max_scripts_unreferenced_anywhere 49、max_local_only_scripts 73、max_remote_only_scripts 80。体积指标（targets_defined 2185、unreached 2046、anchor_union 144）只记录并由 review_by 2026-12-31 复核：合理手工/诊断车道即使不被门禁可达仍属有归属表面积，对 +1 失败会阻塞真实工作而不减少债务。该口径修正由棘轮自身实证触发（本工具新增 2 个手工入口即顶破体积硬校验）。",
+      "artifact": "docs/audit/verification_system_systemic_audit_v1.md（事实/分级缺陷/根因/批次 A-E/度量基线/验收回滚/未决风险）。",
+      "governance_batches": "A 车道单一来源（消除 73/80 双向漂移，A1 单一必需集合、A2 逐条定性接线或登记豁免、A3 风险车道由分类器输出映射）；B 僵尸面 wire_or_retire（342 零引用 target + 49 零引用脚本归零）；C 迭代效率（默认分片、dirty 行为收敛、回执保留策略）；D 度量遥测；E 批次 A/B 后把 --check 接入必需门禁。",
+      "revalidation": "make ci.local.iteration PASS(L1, dirty 声明)；make verify.guard.registry PASS（1408 scripts，1321 referenced，188/188 unwired dispositioned，3/3 gate_required enforced）；python3 -m unittest scripts.verify.test_guard_registry_audit 22 tests OK；make verify.test.coverage.registry PASS（17 tests，155 tag groups，gated 4）；scripts/verify/file_line_budget_uniform_guard.py PASS；make audit.verification.lane_coverage.check PASS；py_compile 新工具 OK。",
+      "status": "PASS（审计与 P4 冻结完成，本地 L1 + 受影响定向 L2）。未提交、未推送、未开 PR。",
+      "next": "批次 A 待 owner 确认优先级后实施：建立单一必需守卫集合，让 ci.local.quick.run 与 ci.professional.backend.shard-verify 消费同一份声明，消除 73/80 双向漂移。"
+    },
+    "round_20261011_batch_b1_zombie_surface_accounting": {
+      "intent": "批次 B（僵尸面处置）第一步：为 336 个零引用 make target 与 49 个零引用脚本建立可执行的开销/退役记账层，使新增死面必须显式处置。P4 运维/交付工具；未改动任何 P0-P2 产品文件，未放宽任何门禁/断言/ACL/字段权限/负例。",
+      "deliverables": [
+        "scripts/audit/verification_lane_dispositions.json：名册（targets 336 / scripts 44），每条含 disposition/owner/reason/review_by。",
+        "scripts/audit/verification_lane_coverage.py：--check 拆成 raw（只减不增）+ unregistered（必须 0）+ stale（必须 0）；新增 --list-zero-reference / --list-unreferenced-scripts。",
+        "scripts/audit/test_verification_lane_coverage.py：13 项聚焦自测，接入 verify.contract.architecture.suite（本地 Quick 与远端必需门禁同时执行）。",
+        "docs/audit/verification_system_systemic_audit_v1.md：新增 B1 已完/B2 退役队列两节。"
+      ],
+      "metric_correction": "scripts_unreferenced_anywhere 原口径只认文件路径，点号导入消费的模块被误判为死面；追加点号模块名索引后 49→44，并清除 5 条过期登记。纯口径求真，未删除文件。已知残余：basename 消费（docker-compose/Dockerfile/run_ci.sh）仍记为未引用，未加 basename 索引是刻意（会与 registry.yaml / 生成清单的 basename 列表冲突而使指标失效）。",
+      "revalidation": "python3 -m unittest scripts.audit.test_verification_lane_coverage → 13 tests OK；make verify.contract.architecture.suite → PASS(10+13 tests, node syntax 384 files)；make verify.guard.registry → PASS(1408 scripts, 1321 referenced, 188/188 unwired dispositioned)；make audit.verification.lane_coverage.check → PASS；make ci.generated_reports.guard → PASS；make ci.local.iteration → PASS(dirty)。",
+      "raw_debt": "targets_zero_reference 336（全部登记）；scripts_unreferenced_anywhere 44（全部登记，其中 37 条为三选一复核后的无消费者退役队列）。raw 归零 = 批次 B2。",
+      "status": "PASS（记账层完成，本地 L1 + 受影响 L2）。未提交、未推送、未开 PR。"
+    },
+    "round_20261011_batch_b2_zombie_surface_retirement": {
+      "intent": "批次 B（僵尸面处置）第二步：先修仪器口径求真，再对零引用脚本执行受管真实退役。P4 运维/交付工具；未改动任何 P0-P2 产品文件，未放宽任何门禁/断言/ACL/字段权限/负例。",
+      "instrument_root_cause_fixes": [
+        "模块说明符索引：require('./x')、from x import 这类无扩展名消费此前完全漏检，把活脚本判死。典型假死两条：scripts/verify/intent_smoke_utils.js（act_url_missing_scene_report.js:7 等十余处 require）、scripts/verify/lib/scene_snapshot.js（4 处 require('./lib/scene_snapshot')）。",
+        "按消费方语言解析：.js 消费方走 Node 解析(.js/.ts/index.js)，.py 消费方走 Python 解析(.py/__init__.py)；同名跨语言(intent_smoke_utils.{js,py} 并存)不再歧义，歧义即拒绝。",
+        "唯一 basename 索引复核：被清掉的 6 条登记确认为真实消费（ensure_testdeps.sh←run_ci.sh；render_nginx_conf.sh←Dockerfile.production-candidate 与 docker-compose.production-candidate.yml 入口；registry_audit/*←docker-compose.registry-audit.yml 与 test_registry_audit_environment.py）。",
+        "责任边界显式化：scripts/verify/**/*.{py,sh} 归 scripts/verify/registry.yaml + guard_registry_audit.py（必需门禁，1408 条在册）；本仪器负责其余 scripts/**（owned surface 732）。二者不重复登记：本仪器仍用其做引用解析，但不计入自身死面统计（此前靠 basename 索引巧合分割，现为声明式）。"
+      ],
+      "retirement_mechanism": "仪器新增受管退役入口 --retire SCRIPT / --retire-all --reason（默认仍只读）。退役把文件移动到 scripts/retired/<原子路径>（保留恢复价值与 git 历史），在 scripts/retired/retirements.json 写 retired_to/reason/last_commit，并删除对应名册登记（防名册退化为白名单）；仍被任何一处引用的脚本一律拒绝退役。--retire-all 对 package-marker/retain 归属明确跳过。",
+      "deliverables": [
+        "scripts/audit/verification_lane_coverage.py：模块说明符索引 + 责任边界常量 VERIFY_LIFECYCLE_PREFIX + --retire/--retire-all/--reason + _retire_one/cmd_retire/cmd_retire_all。",
+        "scripts/audit/test_verification_lane_coverage.py：22 项（原 13 + 新增解析语义 5、受管退役 3、责任边界不重复计数 1）。",
+        "scripts/retired/**（35 条真实退役，含 8 个 scripts/verify/**/*.js）+ scripts/retired/retirements.json。",
+        "scripts/audit/verification_lane_dispositions.json：scripts 44→1（清理 8 条 stale；__init__.py 改 package-marker）。",
+        "scripts/audit/verification_lane_baseline.json：max_scripts_unreferenced_anywhere 44→1。",
+        "docs/audit/verification_system_systemic_audit_v1.md：B2 完成节 + B1 口径描述纠正（basename 索引确已加入）+ 基线表更新。"
+      ],
+      "result": "零引用脚本 38 → 1（unregistered 0 / stale 0）；退役 35 条，保留 1 条 scripts/tenant_payload/__init__.py（package-marker，非债务）。零引用 target 仍 336（批次 B3 处置）。",
+      "revalidation": "make audit.verification.lane_coverage.test → 22 tests OK；make audit.verification.lane_coverage → scripts never referenced 1 (unregistered 0; stale 0)；make audit.verification.lane_coverage.check → PASS；make verify.guard.registry → AUDIT PASS(1408 scripts, 1321 referenced, 87/87 orphans acknowledged, 1 retired, 188/188 unwired dispositioned, 3/3 gate_required enforced)；make verify.test.coverage.registry → PASS；make verify.ci.workflow.contract → PASS(6 tests)；make verify.contract.architecture.suite → PASS(node syntax 384 files)；make refresh.generated_reports → OK；make ci.generated_reports.guard → OK；make ci.local.iteration → PASS change_state=dirty scope=unclassified_by_design coverage=L1_only。",
+      "layer": "P4 运维/交付工具（scripts/audit/, scripts/retired/, make/guards.mk, docs/audit/）。对产品行为零影响；未放宽任何门禁。",
+      "negative_baseline": "退役前对 36 条逐条做通配/动态消费复核（glob、$VAR 拼接、backfill 族循环）无命中；退役入口对仍被引用脚本有拒绝路径，并由自测锁定。",
+      "superseded_by": "本条的 result/revalidation 中『零引用脚本 38→1』是在有缺陷的引用模型下测得的欠计（docs/ 叙述被当成消费方）。真值为修正口径后的 106，逐族处置后 104，见 evidence.round_20261011_batch_b2_closeout_true_dead_surface。退役机制、仪器口径修复与责任边界三段结论不受影响，仍然有效。"
+    },
+    "round_20261011_batch_b2_closeout_true_dead_surface": {
+      "intent": "批次 B（僵尸面处置）收尾：B2 退役批次的原始结论（零引用脚本 38→1）建立在有缺陷的引用模型上，收尾时发现并纠正口径，把真实死面显式登记并重写棘轮。P4 运维/交付工具；未改动任何 P0-P2 产品文件，未放宽任何门禁/断言/ACL/字段权限/负例。",
+      "defect_corrected": "原引用模型把 docs/（审计报告、清单、矩阵、test_inventory.csv、guard_registry.json）里的脚本路径也当成消费方。审计文档必然逐一列出被审计脚本，于是整个长尾被叙述性文本『复活』，指标长期显示干净——这正是『反复重跑却收不了口』的度量根因。修正：叙述性文件（docs/、.agent/）对四种命名方式（完整路径、点号模块名、唯一 basename、模块说明符）一律不作为消费证据。",
+      "measured_truth": "修正后 scripts never referenced 由 1 跳回 106（不是回归，是被掩盖的真值）：全部无 make/workflow/脚本消费，通配与动态调用复核无命中。逐族定性并处置后为 104。",
+      "governed_entries_added": [
+        "--register-script SCRIPT --disposition D --reason R --owner O --review-by DATE：与 --retire 对称的受管登记入口。拒绝登记『仍有引用』的脚本（否则立刻产生 stale 条目、名册退化为白名单）；disposition 取自封闭词表 SCRIPT_DISPOSITION_VOCABULARY，新增分类必须在评审中显式加入。",
+        "--register-batch PATH：审阅过的 JSON 清单一次登记一整族（一次测量、逐条同样校验、任一条非法则整体不写）。避免 103 次手改 JSON。",
+        "自测 22→27 项（新增登记入口 4 项守卫 + 1 项『名册 disposition 必须落在封闭词表内』的仓库不变量）。"
+      ],
+      "family_dispositions": "104 条按能力定性登记（owner=platform-team，review_by=2027-06-30）：runtime_audit_probe 53（scripts/ops/validate_*.sh：受管 DB 上的运行时审计手工入口，odoo shell 管道消费 scripts/verify/<topic>_audit.py）、browser_acceptance_probe 41（scripts/verify/*_acceptance.js / *_browser_acceptance.js / *_smoke.js / direct_acceptance_* / fe_scene_*：Playwright 契约驱动探针）、ci_legacy_tooling 2（scripts/ci/ci_gate.sh、checkout_from_ci_mirror.sh：仓库内零消费，但 Gitee 侧 CI 配置不在仓库内、无法在仓库内证明外部不再引用，故登记不退役）、audit_tooling 2、ops_tooling 2、product_tooling 1、candidate 2、package-marker 1（scripts/tenant_payload/__init__.py）。",
+      "retired_this_round": [
+        "scripts/verify-fix.sh：与已退役的 fix-auth-flicker.sh / test-auth-flicker.sh / final-fix-auth-flicker.sh 同族的屏幕闪烁一次性验证清单，零消费。",
+        "scripts/demo/frontend_productization_fixture.sh：零消费的弃用转发 shim，转发目标 scripts/test/frontend_productization_fixture.sh 与受管入口 scripts/verify/frontend_productization_fixture.sh（make/runtime_ops.mk 直接消费）均存在，保留期已结束。"
+      ],
+      "baseline_rewrite": "max_scripts_unreferenced_anywhere 1→104。这不是放宽：冻结前的 1 是错误口径下的产物（见 defect_corrected），104 才是当前真实值；棘轮语义不变（只减不增），unregistered/stale 仍必须为 0。max_targets_zero_reference 保持 336（B3 处置）。",
+      "ratchet_enforcement": "--check 本体仍刻意不接入必需门禁（仪器度量表面积，接入即自我指涉），但自测 audit.verification.lane_coverage.test 已在 verify.contract.architecture.suite 内（该套件同时被 ci.local.quick.run 与 ci.professional.backend.shard-verify 消费），自测含『新死面必须已登记』与『raw 债务不得超冻结基线』两条仓库不变量——新增死面会直接让必需门禁失败。批次 E 因此已由既有接线满足，无需新接线。",
+      "traceable_open_items": "41 条 browser_acceptance_probe + 53 条 runtime_audit_probe 是当前真实的长尾，尚未接线；其中 scripts/verify/record_relation_roundtrip_acceptance.js 正是本 run 证据 round_20261010_detail_relation_roundtrip 引用的关系回环资产（T-ASSET-944；原记为 942 是台账引用错误，942 实为 receipt_income_type_mapping_guard.py），却无受管派发——这是『登记』而非『接线』的直接证明，列为 B3 首条接线目标。",
+      "layer": "P4 运维/交付工具（scripts/audit/、scripts/retired/、scripts/verify-fix.sh、scripts/demo/、make/guards.mk、docs/audit/）。对产品行为零影响。",
+      "negative_baseline": "登记入口对未知 disposition、缺失 reason/owner/review_by、非死面脚本均有拒绝路径，并由 5 项自测锁定；两处退役在处置前逐条确认替代品存在且全仓库零引用。",
+      "revalidation": "make audit.verification.lane_coverage --summary → zero-reference targets 336 (unregistered 0 / stale 0); scripts never referenced 104 (unregistered 0 / stale 0); make audit.verification.lane_coverage.check → PASS；make audit.verification.lane_coverage.test → 27 tests OK；make verify.contract.architecture.suite → rc=0（16 组测试，[OK] contract & architecture guard suite passed，node syntax 384 files）；make verify.guard.registry → AUDIT PASS(1408 scripts, 1321 referenced, 87/87 orphans acknowledged, 1 retired, 188/188 unwired dispositioned, 3/3 gate_required enforced)；make verify.test.coverage.registry → PASS；make ci.generated_reports.guard → OK(3 checks current)；make ci.local.iteration → PASS change_state=dirty coverage=L1_only receipt=none。"
+    },
+    "round_20261011_batch_b3_triage_input": {
+      "intent": "批次 B3 的输入定性（只读）：336 个零引用 make target 不是同一类东西，必须先分层再决定接线/退役，否则会误删仍然有效的运维入口。",
+      "finding_not_uniformly_dead": "零引用只说明『没有车道执行它、也没有别的 target 调用它』。336 中相当一部分是**人类直接键入的叶子入口**（如 local.clean.restart、product.install / product.upgrade / product.verify、cn.help、codex.print、agent.feishu_bridge.*、gitee.pr.bot.*、tenant.payload.recovery.backup/restore），它们为叶子是设计使然，不构成死面。另一部分是**已完结批次的一次性迁移/回放/探针**（one_shot_projection_write 55 + one_shot_replay_adapter 39 + history_probe_runbook 42 + migration_runbook 17 = 153），这些才是真正的退役候选。",
+      "namespace_distribution": "按命名空间：fresh_db 84、verify 54、history 42、release 25、migration 22、local 17、tenant 13、production 9、gitee 7、project 6、fe 5、agent 3、其余零散。",
+      "allowlist_check": "336 条**无一条**出现在规范性执行白名单 docs/ops/codex_execution_allowlist.md 中；其中仅 5 条属于 AGENTS.md 明示的本地生命周期命名空间（local.dev/local.sample/local.clean）。所以『规范性声明』目前不能替这些 target 提供合法归属，归属只能来自接线、退役或本名册登记。",
+      "b3_first_step": "先接线 scripts/verify/record_relation_roundtrip_acceptance.js（本 run 详情关系回环证据的资产，当前零受管派发，须走 fixture 稳定标识解析）；同时把 153 条一次性族按 make 文件逐族核对『最后一次使用』证据后受管退役（删规则，不是删证据），每族单独提交边界以便独立回滚。",
+      "layer": "P4 运维/交付工具（make/*.mk、scripts/audit/、docs/audit/）。未改动任何 P0-P2 产品文件。",
+      "superseded_by": "round_20261011_batch_b3_target_frame_and_first_wiring"
+    },
+    "round_20261011_batch_b3_target_frame_and_first_wiring": {
+      "question": "修掉 B2 同类缺陷的 target 侧（散文复活）后，真实零引用面有多大，能否在不放宽门禁的前提下处置并完成首条接线？",
+      "root_cause_fixed": [
+        "target 引用口径：原 read_doc_invocations 读 docs/ 全部 $()/$(MAKE)，使审计文本复活它审计的 target。改为只认两份约束性文档（docs/ops/codex_execution_allowlist.md、docs/ops/codex_workspace_execution_rules.md），docs/ 与 .agent/ 其余一律视为叙述。零引用 target 336 -> 759（真值，非回归）。",
+        "度量帧缺陷（新发现并修正）：脚本识别正则只认 .py|.sh|.js 且无路径边界，于是 frontend/apps/web/scripts/*.ts 被读成仓库根 scripts/*.ts（138 条假缺失路径）；同时 Node/TS 探针完全不在车道漂移统计内。修正为起边界 + .mjs|.cjs|.ts 后，假阳性消失，显出 9 条真正仅远端执行的探针（已登记豁免）。",
+        "登记入口缺陷：--register-batch 原先只写 scripts 桶，会把 400+ 个 target 名写进脚本名册。改为 targets/scripts 双桶 + TARGET_DISPOSITION_VOCABULARY；新增 --unregister-script（拒绝注销仍无引用的脚本）与 --record-missing-assets。"
+      ],
+      "new_register_class": {
+        "class": "targets whose recipe calls a path absent from the tree (absent_assets)",
+        "evidence": "机器可验证：同一文件路径 exists()==false -> make <target> 必然失败。实测 226 条；187 处引用指向 scripts/migration/*，该目录由 .gitignore 第 116 行政策性地排除出干净产品仓库（客户迁移物料 never enter），其余为改名/从未加入的 scripts/verify/* 与根 scripts/*.mjs。",
+        "governance": "每条登记 missing_asset（由测量写入，不靠人手抄）+ owner + reason + review_by；--check 强制 unregistered=0 / stale=0；配方一改记录即失效。",
+        "not_done_on_purpose": "未删除任何规则。226 条中过半属于历史重放/客户迁移边界，规则去留是 owner 的政策判断（保留为声明式外部入口 vs 移出产品仓库），本轮只把不可执行这一事实变成有归属、只可缩小、不可静默增长的数字。"
+      },
+      "first_wiring": {
+        "asset": "scripts/verify/record_relation_roundtrip_acceptance.js（本 run 详情关系回环证据引用的资产；台账原记 T-ASSET-942 是引用错误，实为 T-ASSET-944）",
+        "make_entry": "verify.daily_dev.relation_roundtrip.browser（make/frontend.mk；只读、guard.prod.forbid、要求 ACCEPTANCE_TARGET_SHA / ACCEPTANCE_LOGIN+PASSWORD / ACCEPTANCE_RECORD_RESOLUTION）",
+        "probe_change": "删除硬编码记录号（原默认 project.project/581/506 已移除）。改为读受管 acceptance.record_identity_resolution.v1 信封，按 RELATION_RESOLUTION_KEY 取声明身份，校验 model/record_id/action_id/menu_id 齐备，断言 served revision 与 /api/runtime-version 一致；显式身份只能由 RELATION_IDENTITY_SOURCE=explicit 打开（诊断用，默认关闭）。无 env 时 fail-closed 并有明确报错。",
+        "net_effect": "该脚本离开零引用脚本名册（104 -> 103，注销而非退役，理由入账），新 target 进入 targets 名册（browser_acceptance_probe）。这就是『接线』与『登记』两字之差的真实代价与收益。"
+      },
+      "baseline_rewrite": {
+        "max_targets_zero_reference": "336 -> 760（口径求真，非放宽；棘轮语义不变：只减不增）",
+        "new_keys": [
+          "max_targets_missing_asset_unregistered=0",
+          "max_stale_missing_asset_dispositions=0",
+          "recorded_targets_missing_asset=226"
+        ],
+        "max_remote_only_scripts": "74 -> 83（帧修正求真，已记入基线 metric_corrections）",
+        "instrument_note": "verification_lane_baseline.json 的 metric_corrections 现由仪器常量 BASELINE_METRIC_CORRECTIONS 写入：--write-baseline 会重写该 JSON，只写在文件里的说明会在下次冻结时丢失。"
+      },
+      "verification": {
+        "layer": "L2",
+        "instrument_unit_tests": "Ran 42 tests OK（B2 收尾 27 -> 42：batch 双桶路由 4、missing-asset 状态 5、record-missing-assets 1、unregister 2、target 词表 1、其余为既有多出）",
+        "check": "make audit.verification.lane_coverage.check PASS：zero-reference 760 (unregistered 0/stale 0)、absent-asset 226 (unregistered 0/stale 0)、unreferenced scripts 103 (unregistered 0/stale 0)、divergence local 0 / remote 0"
+      },
+      "limits": "226 条不可执行面尚未物理退役；760 零引用 target 中 109 条仍标注 candidate（待接线或退役）。两者都需要逐族 reviewed 证据，不是一次批量删除能证明的。"
+    },
+    "round_20261011_batch_c_iteration_efficiency": {
+      "question": "在既有受管环境、既有门禁不放宽的前提下，把 ci.local.quick 从『每次都要一次跑完、中断即零证据、非 clean 静默无回执』改成可分片续跑、可复用、可回收且仍然精确绑定冻结 HEAD 的交付证据入口。",
+      "root_cause_fixed": [
+        "分片默认化（P4 验证工具，scripts/ops/local_quick_evidence.py）：新增 run_default()，主工作区按 ci.local.quick.run 声明的清单切成 QUICK_SHARDS（默认 4）片，逐片 run_shard，最后 compose 合成唯一一份 receipt；中断只留在片目录里已通过的分片，不产生半份回执。linked worktree 仍走单次 local_dev_frontend_quick.py --full-ci-local-quick（其语义就是整树跑）。",
+        "非 clean 工作区行为收敛：run_quick(diagnostic=False) 在脏树上直接 EvidenceError 失败关闭，不再『跑完整套件但静默跳过回执、退出码仍为 0』；只有显式 --diagnostic 才跑，且只报告结果、不签发回执、不满足任何门禁。新增 _require_clean_start()。",
+        "分片复用：run_shard(reuse=True) 在 head+tree+coverage 三者一致时复用已通过的分片，不一致（含 trusted_scan_scope 权威变化）自动重跑，避免『权威变了却复用旧片』。",
+        "recipe 等价硬校验：declared_quick_recipe()/assert_quick_recipe_covered()，compose() 调用之，并实际执行 git diff --check，把 monolithic recipe 里唯一不可分片的语义行补回。声明清单若新增未被任何分片复现的行则 fail closed，防止分片机制悄悄漏跑。",
+        "回执保留与增量 base 保护：prune_receipts(keep=QUICK_RECEIPT_KEEP, 默认 50) + _newest_ancestor_receipt()，只回收本 worktree 的 receipt 与对应分片目录，且始终保留当前 head 与窗口外最近祖先 receipt，避免增量扫描因丢掉 base 退化为全量。写入回执后 best-effort prune，失败只 WARN。",
+        "同一缺陷在执行中复现并当场修掉两处自伤：_write_receipt_after_success 缩进错误、declared_quick_recipe 未剥离 @ 前缀。"
+      ],
+      "files": [
+        "scripts/ops/local_quick_evidence.py",
+        "scripts/verify/test_local_quick_evidence.py",
+        "make/ci.mk"
+      ],
+      "make_surface": {
+        "changed": "ci.local.quick -> local_quick_evidence.py run --shards $(QUICK_SHARDS)",
+        "added": [
+          "ci.local.quick.diagnostic (run --diagnostic)",
+          "ci.local.quick.gc (prune --keep $(QUICK_RECEIPT_KEEP))"
+        ],
+        "unchanged_guard_contract": "ci.local.quick.run 的前置行与 recipe 未改动；git_safe_push.sh --self-test 依赖的 ci.generated_evidence.preflight 与 verify.overview.rich.text.patch.capability 仍在，verify.pr.push.unit 18 场景 PASS。"
+      },
+      "revalidation": "python3 -m unittest scripts.verify.test_local_quick_evidence -> 40 tests OK（含 dirty 在套件运行前拒绝、diagnostic 免回执、保留窗口、窗口外祖先保留、run_default 分片与联动、分片复用、coverage 陈旧重跑、recipe 未复现 fail closed、recipe 必须非空）；make ci.local.quick.gc -> receipts 201 -> 51、体积 9.5M -> 2.5M；脏树上 make ci.local.quick -> 正确拒绝 exit 2 且未跑套件。"
+    },
+    "round_20261011_batch_d_lane_telemetry": {
+      "question": "让八条声明车道的真实耗时、成功率、降级率（绿但一直付全量）与失败归因成为可复用的观测，而不是只存在于执行者记忆里。",
+      "root_cause_fixed": [
+        "新增观测仪器 scripts/ci/lane_telemetry.py（observability only，不接入任何必需门禁、不改任何车道通过结论）：schema lane-telemetry/v1；status 取 passed/failed/not_run/cancelled；degraded 词表 full_scan_fallback/no_shard_reuse/detached_from_main/receipt_absent/partial_lane；failure_owner 取 product_defect/baseline_evidence_defect/environment_defect/validation_tool_defect。",
+        "车道名唯一来源：复用 scripts/audit/verification_lane_coverage.py 的 LANES，禁止新造车道名；记录写入前校验 lane 与 entrypoint 都必须属于该车道，非法记录计入 integrity_failure_rate（必须为 0）。",
+        "三种率：pass_rate、degraded_rate（绿但每跑都付全量，驱动效率待办）、integrity_failure_rate（记录畸形或车道/入口不存在，期望 0）；记录落 .git/codex/evidence/lane_telemetry/<lane>.jsonl 的 append-only JSONL。",
+        "local.quick 自动上报：local_quick_evidence.run_default 的 _observe_quick() + quick_degraded_reasons()，把『这次 quick 是否降级、降级原因』写进遥测，无需人工补记。",
+        "make 入口：lane.telemetry.record（LANE/ENTRYPOINT/STATUS/DURATION，可选 DEGRADED/FAILURE_OWNER）、lane.telemetry.report（--json / TELEMETRY_BY_HEAD=1 按版本）、lane.telemetry.check（完整性非 0 即 exit 2）、verify.lane.telemetry.unit。",
+        "文档接线：docs/ops/codex_workspace_execution_rules.md 新增『车道遥测只陈述事实』段（观测不是门禁），docs/ops/ci_feedback_latency_v1.md 新增 Lane telemetry 章（三率表 + 每车道行为）。",
+        "覆盖审计帧修正：LANES['local.quick'] 由 ['ci.local.quick.run'] 扩为 ['ci.local.quick.run','ci.local.quick']（两者都是该车道入口，可达集合取并集），使 ci.local.quick 成为 lane 成员而不是漂移面。"
+      ],
+      "blocker_resolved": {
+        "symptom": "make audit.verification.lane_coverage.check 由 PASS 变为 DENY：stale_target_dispositions 1 > frozen baseline 0（audit.verification.lane_coverage 不再是零引用目标）。",
+        "root_cause": "同一类缺陷（散文/字面量复活 target）在执行期复发：NORMATIVE_DOCS 内的 docs/ops/codex_workspace_execution_rules.md 与 make/ci.mk 的非 recipe 注释里写了字面量 `make audit.verification.lane_coverage`；前者被 read_doc_invocations 计为执行引用，后者被 IDENT_RE token 索引计为引用，于是登记为 history_probe_runbook 的零引用条目立刻变 stale。",
+        "fix": "改述为不带 make 前缀的描述（车道名与覆盖审计仪器 scripts/audit/verification_lane_coverage.py 的 LANES 同源），不放宽 check、不注销真实登记条目、不手改由仪器写入的名册 JSON。",
+        "verification": "make audit.verification.lane_coverage.check -> PASS surface within the frozen baseline；--summary 确认 lane local.quick = 78 targets / 174 scripts 且已含 ci.local.quick；zero-reference 760 (unregistered 0/stale 0)、absent-asset 226 (0/0)、scripts never referenced 103 (0/0)、divergence local 0/remote 0。"
+      },
+      "files": [
+        "scripts/ci/lane_telemetry.py",
+        "scripts/ci/test_lane_telemetry.py",
+        "scripts/ops/local_quick_evidence.py",
+        "scripts/audit/verification_lane_coverage.py",
+        "make/ci.mk",
+        "docs/ops/codex_workspace_execution_rules.md",
+        "docs/ops/ci_feedback_latency_v1.md"
+      ],
+      "revalidation": "python3 -m unittest scripts.ci.test_lane_telemetry -> 13 tests OK；make verify.lane.telemetry.unit -> PASS（完整性失败率 0.0000，0 条被拒）；make audit.verification.lane_coverage.test -> 42 tests OK；make refresh.generated_reports -> OK（test_inventory.csv 收 T-ASSET-071 scripts/ci/test_lane_telemetry.py，test_coverage_registry.json 收 scripts/ci/test_lane_telemetry.py 组）；make ci.generated_reports.guard -> PASS（3 checks current）；make verify.branch.governance.consistency -> PASS(22 tests)；make verify.baseline.iteration.execution.policy -> PASS(16 tests)；make verify.pr.push.unit -> PASS(18 scenarios)；make ci.local.iteration -> PASS(dirty, L1_only receipt=none)。"
+    },
+    "round_20261011_lane_registry_self_revival_recovery": {
+      "question": "冻结 clean HEAD 上的第一次 ci.local.quick 在 audit.verification.lane_coverage.check 失败（exit 2）。为什么 dirty 迭代期同一检查是 PASS，交付态却全崩？",
+      "failure": "clean HEAD efdcc202 上 check DENY：stale_target_dispositions 760 > 0、stale_script_dispositions 103 > 0 —— 登记的零引用面整批翻为 stale。",
+      "root_cause": [
+        "度量读 `git ls-files`（tracked_files），而名册/基线/豁免/退役轨迹 JSON 在 dirty 迭代期是 untracked，根本不参与扫描。首次 `git add` 后它们进入扫描集合，且它们是**枚举全部登记名**的数据文件 → 每个登记名都被当成『被引用』 → 登记条目一次性全部 stale。",
+        "同一类缺陷的第二处：仪器自身源码注释里写了真实条目名字面量（示例 target 名与一个 retained package-marker 路径）；该源文件入库后，这些示例名同样把 2 个条目复活。",
+        "体系性教训：迭代期的验证条件（untracked 名册）与交付条件（tracked 名册）不一致，所以 dirty 阶段 PASS 不能代表冻结态成立。"
+      ],
+      "fix": [
+        "仪器新增 SELF_DATA_FILES（baseline / dispositions / exemptions / retirements.json）并让 is_prose() 对它们返回 True：枚举表面的数据文件是叙述，不是消费者。",
+        "仪器源码注释改为描述性措辞，不再写字面条目名。",
+        "新增两条回归不变量：test_the_auditor_registries_narrate_and_never_consume（名册必须是 prose）、test_registries_are_tracked_so_measurement_matches_delivery（名册必须 tracked，否则度量与交付不一致必须失败）。",
+        "经验写入 .agent/decisions/codex-local-lane-mechanics.yaml 的 OPS-DECISION-005 correction_rule（4 条新增规则）。"
+      ],
+      "no_relaxation": "未放宽 --check，未注销任何真实登记条目，未手改仪器写出的名册 JSON。",
+      "revalidation": "python3 -m unittest scripts.audit.test_verification_lane_coverage -> 44 tests OK；scripts/audit/verification_lane_coverage.py --check -> PASS surface within the frozen baseline。",
+      "known_remaining_cost": "失败一次后重跑仍是全量扫描：origin/main 已前进且不是 HEAD 祖先，trusted_scan_scope.select_scope 在 merge-base 断言处落到 coverage_identity_unprovable；同时 revision_args 对 secrets/personal 用 --all、对 history 用 HEAD+--branches+--tags+--remotes，main 前进本身改变扫描权威 → 全量是安全语义，不是缺陷。分片已通过的扫描 proof 因整体无 receipt 不可作为下次 base。"
     }
   },
   "continuation": {
@@ -2042,16 +2257,21 @@
   "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced.",
   "stage_identity": {
     "kind": "iteration",
-    "head": "0a3836951b403a80daba7b63a25a87f3b85ef394",
+    "head": "2c61584e682df7b5cb6ca88fffc1e56de5f1dcb6",
     "dirty_scope": [
       "M .agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json",
-      "M docs/audit/guard_registry/guard_registry.json",
-      "M docs/frontend_productization/decision-authority-inventory-v1.json",
-      "M make/frontend.mk",
-      "M scripts/verify/guard_registry_audit.py",
-      "M scripts/verify/registry.yaml",
-      "M scripts/verify/test_guard_registry_audit.py"
-    ],
-    "note": "updated 2026-10-11 (A+B round): mainline head is 0a383695 (PR #638) and the daily dev runtime serves exactly that revision, so the served product identity equals the mainline identity. The live worktree is at 8a373beb on audit/daily-dev-mainline-product-acceptance-closeout-20261009, whose tree equals main's tree, and now carries seven uncommitted files: the decision-authority ledger re-export (A), the frontend gate wiring plus the gate-anchor hardening (B), its regenerated registry export, and this run record. Nothing is pushed. Run status stays verification_pending only for the owner's login acceptance and the registered minimal-evidence gaps."
+      "M make/ci.mk",
+      "M make/guards.mk",
+      "M scripts/ci/test_node_syntax_check.py",
+      "M docs/engineering_convergence/*",
+      "?? scripts/audit/verification_lane_coverage.py",
+      "?? scripts/audit/verification_lane_baseline.json",
+      "?? scripts/audit/verification_lane_dispositions.json",
+      "?? scripts/audit/verification_lane_exemptions.json",
+      "?? scripts/audit/test_verification_lane_coverage.py",
+      "?? docs/audit/verification_system_systemic_audit_v1.md",
+      "R 35 x scripts/** -> scripts/retired/**",
+      "?? scripts/retired/retirements.json"
+    ]
   }
 }

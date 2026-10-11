@@ -4,9 +4,9 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4650`
+- Scanned files: `4654`
 - Files requiring split plan: `63`
-- Files above warning threshold: `112`
+- Files above warning threshold: `113`
 
 ## Split Plan Required
 
@@ -87,6 +87,7 @@ Generated from repository source files. This report is informational during the 
 | 1484 | Python source | `scripts/release/release_publication.py` |
 | 1467 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1453 | Python source | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py` |
+| 1448 | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1433 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1432 | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1432 | Python source | `scripts/product/build_capability_productization_v1.py` |
@@ -263,6 +264,7 @@ Generated from repository source files. This report is informational during the 
 | 1484 | warning | Python source | `scripts/release/release_publication.py` |
 | 1467 | warning | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1453 | warning | Python source | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py` |
+| 1448 | warning | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1433 | warning | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1432 | warning | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1432 | warning | Python source | `scripts/product/build_capability_productization_v1.py` |
@@ -276,7 +278,6 @@ Generated from repository source files. This report is informational during the 
 | 1320 | warning | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1305 | warning | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 1288 | warning | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
-| 1287 | warning | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 
 ## Interpretation
 

@@ -1500,7 +1500,7 @@ PR head == `EXPECTED_HEAD` == 本地 HEAD，`pr.merge.local_quick_gate` 均走 *
 
 **二、入口复用（未扩探针框架）**
 
-复用**既有注册资产** `T-ASSET-942`（`scripts/verify/record_relation_roundtrip_acceptance.js`），
+复用**既有注册资产** `T-ASSET-944`（`scripts/verify/record_relation_roundtrip_acceptance.js`；原记为 942，942 实为 `receipt_income_type_mapping_guard.py`），
 不新增探针框架、不改断言口径。该车道是**声明驱动**的：捕获页面自身消费的 `ui.contract.v2`，
 只对契约声明可读/可开的关系字段控件做真实点击，校验前端自身发出的 `return_*` 契约，
 再回退并断言路径/标题/状态栏/标签/记录动作 `before == after`，全程任一 401/403 或 console 错误即判失败。
@@ -2558,3 +2558,86 @@ blockers[2] 仍留有**过期陈述**"the runtime now serves mainline daecaafc"�
 - 覆盖债（140 个 `@tagged` 分组）、车道级重建/快照 DENY、`native_chatter` 命名风险、仓库外客户模块
   `user_preferences.py` 路径债均**保持登记原样**；20 例增量 chatter 仍待产品裁决。
 - 唯一开放产品交付项仍为**所有者登录核对**（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`）。
+
+## 25. 第 25 轮（2026-10-11）：验证体系系统性治理 —— 迭代效率 + 车道遥测（P4，无产品代码）
+
+本轮主题来自所有者指令「先把验证体系开展一轮系统性审计，目标是稳定高效率的后续迭代」，
+并授权连续迭代到目标达成。责任层仍是 **P4（ops delivery / 验证工具面）**：不改 P0-P2 产品代码，
+不放宽任何断言、门禁、ACL、字段权限或负例。批次 B（零引用面求真 + 长尾登记 + 首条接线）已在
+§21–§24 记录，本轮完成其后的 C（迭代效率）与 D（车道遥测）。
+
+### 25.1 批次 C：迭代效率 —— quick 可分片、可复用、可回收
+
+| 缺陷（迭代期实测） | 根因 | 修法 |
+| --- | --- | --- |
+| 中断即零证据：一次 `ci.local.quick` 跑到底，中途失败/超时后什么都不能复用 | recipe 是单次整体执行，没有分片与部分回执 | `run_default()` 按 `ci.local.quick.run` 声明清单切成 `QUICK_SHARDS`（默认 4）片逐片执行，`compose()` 合成唯一一份精确 head 回执；linked worktree 仍走单次整体执行 |
+| 脏树上「跑完整套件但静默跳过回执、退出码仍为 0」 | `run_quick` 在非 clean 时静默降级 | 脏树直接失败关闭（`_require_clean_start()`）；只有显式 `--diagnostic` 才跑，且只报告、不发回执、不满足门禁 |
+| 分片重复劳动 | 无部分复用 | `run_shard(reuse=True)` 仅在 head+tree+coverage 三者一致时复用已通过分片，权威变化自动重跑 |
+| 分片可能悄悄漏跑 monolithic recipe 的语义行 | 分片与声明清单没有等价校验 | `declared_quick_recipe()` / `assert_quick_recipe_covered()`：合成时断言每一行都被复现，并实跑 `git diff --check`；未复现行 fail closed |
+| 回执目录无上限，且清理会毁掉增量扫描 base | 无保留策略 | `prune_receipts(keep=QUICK_RECEIPT_KEEP)` + `_newest_ancestor_receipt()`：只回收本 worktree 回执，且始终保留当前 head 与窗口外最近祖先 |
+
+入口：`ci.local.quick`（分片）、`ci.local.quick.diagnostic`（免回执观察）、`ci.local.quick.gc`（回收）。
+`ci.local.quick.run` 的前置行与 recipe **未改动**，`git_safe_push.sh --self-test` 依赖的
+`ci.generated_evidence.preflight` 与 `verify.overview.rich.text.patch.capability` 仍在，`verify.pr.push.unit` 18 场景通过。
+实测：回执 201 → 51、体积 9.5M → 2.5M；脏树上 `ci.local.quick` 正确拒绝（exit 2，未跑套件）。
+
+### 25.2 批次 D：车道遥测（观测，不是门禁）
+
+八条声明车道的真实耗时、成功率、**降级率**（绿但每跑都付全量）与失败归因现在落盘可复用：
+新增仪器 `scripts/ci/lane_telemetry.py`（schema `lane-telemetry/v1`），车道名与覆盖审计仪器的
+`LANES` 同源、禁止新造；记录写 `.git/codex/evidence/lane_telemetry/<lane>.jsonl`（append-only）。
+
+| 率 | 含义 | 期望 |
+| --- | --- | --- |
+| `pass_rate` | 通过次数 / 总记录 | 只报告，不设阈值 |
+| `degraded_rate` | 正确完成但丢了便宜路径（`full_scan_fallback`/`no_shard_reuse`/`detached_from_main`/`receipt_absent`/`partial_lane`） | 只报告，驱动效率待办 |
+| `integrity_failure_rate` | 记录畸形或车道/入口不存在 | **必须为 0** |
+
+入口：`lane.telemetry.record` / `lane.telemetry.report`（`TELEMETRY_BY_HEAD=1` 按版本）/
+`lane.telemetry.check`；`ci.local.quick` 自动上报 `local.quick`；单元入口 `verify.lane.telemetry.unit`。
+遥测是观测：记录或报告失败不得改变任何车道的通过结论，也不替代任何必需检查。
+覆盖审计帧同步修正：`LANES['local.quick']` 扩为 `['ci.local.quick.run','ci.local.quick']`
+（两者都是该车道入口，取并集），`ci.local.quick` 因此成为车道成员而不是漂移面。
+
+### 25.3 执行期复发阻断：字面量复活零引用 target（当场定位并修复）
+
+批次 C/D 落文档与 Makefile 注释后，`make audit.verification.lane_coverage.check` 由 PASS 变 **DENY**
+（`stale_target_dispositions: 1`）。根因与批次 B2 同类：零引用面按**字面 token** 计，不看语义。
+`audit.verification.lane_coverage` 本是登记为 `history_probe_runbook` 的零引用目标，而我在
+`docs/ops/codex_workspace_execution_rules.md`（`NORMATIVE_DOCS` 之内，被 `read_doc_invocations` 计引用）
+与 `make/ci.mk` 注释（非散文，被 token 索引计引用）里写了字面量 `make audit.verification.lane_coverage`。
+
+处理原则（写入 `.agent/decisions/codex-local-lane-mechanics.yaml` 的 `OPS-DECISION-005`）：
+**不放宽 `--check`、不注销真实登记、不手改仪器写出的名册 JSON**；只把措辞改成不带 `make` 前缀的
+描述（点名覆盖审计仪器与其 `LANES`）。修复后 `--check` 回到 PASS，且 `--summary` 确认
+`lane local.quick = 78 targets / 174 scripts` 已含 `ci.local.quick`；zero-reference 760（未登记 0 / stale 0）、
+absent-asset 226（0/0）、scripts never referenced 103（0/0）、车道漂移 local 0 / remote 0。
+
+### 25.4 本轮门禁回执
+
+| 入口 | 结果 |
+| --- | --- |
+| `audit.verification.lane_coverage.test` | 42 项 OK |
+| `verify.lane.telemetry.unit` | PASS（完整性失败率 0.0000，0 条被拒） |
+| `scripts.ci.test_lane_telemetry` | 13 项 OK |
+| `scripts.verify.test_local_quick_evidence` | 40 项 OK |
+| `verify.branch.governance.consistency` | PASS（22 项） |
+| `verify.baseline.iteration.execution.policy` | PASS（16 项） |
+| `verify.pr.push.unit` | PASS（18 场景） |
+| `refresh.generated_reports` + `ci.generated_reports.guard` | OK / PASS（3 checks current） |
+| `ci.local.iteration` | PASS（`change_state=dirty coverage=L1_only receipt=none`） |
+
+两个新测试文件已入册：`test_inventory.csv` 收 `T-ASSET-071`，`test_coverage_registry.json` 收
+`scripts/ci/test_lane_telemetry.py` 组。
+
+### 25.5 四态与本轮边界
+
+| 状态 | 结论 |
+| --- | --- |
+| 批次验收 | 批次 C/D **完成**（本轮全为 P4 验证/工具面改动，无 P0-P2 产品代码） |
+| 主线集成 | **待本轮冻结提交 + PR 合并**；PR 按批次开，不每轮迭代开 PR |
+| 版本发布 | 不变（日常运行态随主线；本轮不触发部署） |
+| 产品交付 | 不变：**待所有者登录核对** |
+
+保留的 owner 政策议题（本轮不擅自执行）：226 条不可执行 absent-asset 规则的物理退役；
+760 条零引用 target 中 109 条 `candidate` 的接线或退役判断。

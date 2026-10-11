@@ -9,8 +9,8 @@
     "odoo_tag_declarations": 362,
     "gated_declarations": 88,
     "uncovered_declarations": 274,
-    "ci_unit_scripts": 11,
-    "ci_unit_scripts_wired": 11,
+    "ci_unit_scripts": 12,
+    "ci_unit_scripts_wired": 12,
     "ci_unit_scripts_unwired": 0
   },
   "odoo_tags": [
@@ -2121,6 +2121,19 @@
       "owner": "platform-team",
       "evidence": [
         ".github/workflows/public_guard.yml"
+      ]
+    },
+    {
+      "group": "scripts/ci/test_lane_telemetry.py",
+      "status": "gated",
+      "kind": "ci_unit_script",
+      "declarations": 1,
+      "files": [
+        "scripts/ci/test_lane_telemetry.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make/ci.mk"
       ]
     },
     {

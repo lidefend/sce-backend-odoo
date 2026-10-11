@@ -1,0 +1,187 @@
+{
+  "scripts/audit/scene_delivery_gap.py": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/audit/scene_delivery_gap.py"
+  },
+  "scripts/ci/ci_repro.sh": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/ci/ci_repro.sh"
+  },
+  "scripts/ci/create_gitee_mirror_repo.sh": {
+    "last_commit": "2026-07-21",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/ci/create_gitee_mirror_repo.sh"
+  },
+  "scripts/common/log.sh": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/common/log.sh"
+  },
+  "scripts/demo/frontend_acceptance_db_ensure.sh": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/demo/frontend_acceptance_db_ensure.sh"
+  },
+  "scripts/demo/frontend_productization_fixture.sh": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：零消费的弃用转发 shim，转发目标 scripts/test/frontend_productization_fixture.sh 与受管入口 scripts/verify/frontend_productization_fixture.sh 均存在且 make/runtime_ops.mk 直接消费后者；本 shim 保留期已结束且全仓库零引用。",
+    "retired_to": "scripts/retired/demo/frontend_productization_fixture.sh"
+  },
+  "scripts/demo/test_tenant_lifecycle.py": {
+    "last_commit": "2026-08-19",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/demo/test_tenant_lifecycle.py"
+  },
+  "scripts/dev/start_fe_dev_stable.sh": {
+    "last_commit": "2026-08-31",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/dev/start_fe_dev_stable.sh"
+  },
+  "scripts/final-fix-auth-flicker.sh": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/final-fix-auth-flicker.sh"
+  },
+  "scripts/fix-auth-flicker.sh": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/fix-auth-flicker.sh"
+  },
+  "scripts/ops/backfill_construction_diary_visible_fields.sh": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/ops/backfill_construction_diary_visible_fields.sh"
+  },
+  "scripts/ops/backfill_interfund_treasury_ledger.sh": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/ops/backfill_interfund_treasury_ledger.sh"
+  },
+  "scripts/ops/backfill_invoice_tax_partner.sh": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/ops/backfill_invoice_tax_partner.sh"
+  },
+  "scripts/ops/backfill_payment_execution_request.sh": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/ops/backfill_payment_execution_request.sh"
+  },
+  "scripts/ops/backfill_receipt_income_partner.sh": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/ops/backfill_receipt_income_partner.sh"
+  },
+  "scripts/ops/check_deps.sh": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/ops/check_deps.sh"
+  },
+  "scripts/ops/confirmed_formal_menu_release_converge.py": {
+    "last_commit": "2026-07-23",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/ops/confirmed_formal_menu_release_converge.py"
+  },
+  "scripts/ops/diag_tp08.sh": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/ops/diag_tp08.sh"
+  },
+  "scripts/ops/joint_acceptance_batch3_formal_actions_apply.py": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/ops/joint_acceptance_batch3_formal_actions_apply.py"
+  },
+  "scripts/ops/joint_acceptance_redbox_formal_actions_apply.py": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/ops/joint_acceptance_redbox_formal_actions_apply.py"
+  },
+  "scripts/ops/legacy_tenant_acceptance_menu_focus_apply.py": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/ops/legacy_tenant_acceptance_menu_focus_apply.py"
+  },
+  "scripts/ops/local_wutao_oil_card_acceptance.py": {
+    "last_commit": "2026-08-08",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/ops/local_wutao_oil_card_acceptance.py"
+  },
+  "scripts/ops/store_local_wutao_acceptance_password.py": {
+    "last_commit": "2026-08-08",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/ops/store_local_wutao_acceptance_password.py"
+  },
+  "scripts/ops/test_archive_worktree_delivery_evidence.py": {
+    "last_commit": "2026-09-16",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/ops/test_archive_worktree_delivery_evidence.py"
+  },
+  "scripts/ops/test_production_attachment_preview_csp.py": {
+    "last_commit": "2026-08-11",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/ops/test_production_attachment_preview_csp.py"
+  },
+  "scripts/release/production_candidate_fingerprint.py": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/release/production_candidate_fingerprint.py"
+  },
+  "scripts/release/zstd_compress.py": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/release/zstd_compress.py"
+  },
+  "scripts/test-auth-flicker.sh": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/test-auth-flicker.sh"
+  },
+  "scripts/verify-fix.sh": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：与 scripts/fix-auth-flicker.sh、scripts/test-auth-flicker.sh、scripts/final-fix-auth-flicker.sh 同族的屏幕闪烁修复验证脚本，同族三条已在本批次退役；本文件为 devcontainer 屏幕闪烁一次性验证清单，零精确引用（路径/basename/模块说明符四种命名方式均无消费），且其校验的 devcontainer 路径已由 devcontainer 自身承载，不再需要独立脚本。",
+    "retired_to": "scripts/retired/verify-fix.sh"
+  },
+  "scripts/verify/business_config_form_layout_acceptance.js": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/verify/business_config_form_layout_acceptance.js"
+  },
+  "scripts/verify/business_data_entry_browser_acceptance.js": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/verify/business_data_entry_browser_acceptance.js"
+  },
+  "scripts/verify/formal_expense_execution_acceptance_alignment.js": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/verify/formal_expense_execution_acceptance_alignment.js"
+  },
+  "scripts/verify/invoice_output_detail_runtime_smoke.js": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/verify/invoice_output_detail_runtime_smoke.js"
+  },
+  "scripts/verify/legacy_tenant_acceptance_menu_data_alignment.js": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/verify/legacy_tenant_acceptance_menu_data_alignment.js"
+  },
+  "scripts/verify/list_group_clear_acceptance.js": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/verify/list_group_clear_acceptance.js"
+  },
+  "scripts/verify/list_native_custom_gap_audit.js": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/verify/list_native_custom_gap_audit.js"
+  },
+  "scripts/verify/user_confirmed_formal_menu_full_browser_alignment.js": {
+    "last_commit": "2026-07-20",
+    "reason": "B2 僵尸面真实退役：全仓库零精确引用（路径/点号模块/唯一 basename/模块说明符四种命名方式均无消费），经通配与动态消费复核无命中；停放到 scripts/retired/ 保留恢复价值。",
+    "retired_to": "scripts/retired/verify/user_confirmed_formal_menu_full_browser_alignment.js"
+  }
+}

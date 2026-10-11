@@ -177,6 +177,21 @@ main 的必需检查保持；人工审核按上方最新合并规则执行。新
      `local.dev.*`。该 L1 入口不执行全历史隐私/仓库扫描、
      前端全量 typecheck/build、浏览器或 acceptance，也不能生成交付收据。`make ci.local.quick` 仅在
      clean 的冻结 delivery HEAD 上运行一次，不得作为每次编辑或本地提交后的默认检查。
+     该入口按 `ci.local.quick.run` 声明清单分片执行（`QUICK_SHARDS` 默认 4），中断只留下已通过的分片
+     回执，重跑只补未完成或扫描权威已变的分片，最后由同一份声明清单合成唯一一份精确 head 回执；
+     工作区不干净时它先失败关闭，不再跑完整套件却静默跳过回执。脏树上的免回执诊断入口是
+     `make ci.local.quick.diagnostic`：它只报告结果，不签发回执、不满足任何门禁，只能用于定位。
+     回执目录由 `make ci.local.quick.gc` 按 `QUICK_RECEIPT_KEEP`（默认 50）回收，并始终保留当前 head
+     与窗口外最近的祖先回执，避免增量扫描因失去可用 base 而退化为全量。
+   - **车道遥测只陈述事实。** 声明车道的真实耗时、成功率、降级率和失败归因落在
+     `.git/codex/evidence/lane_telemetry/`，车道名与覆盖审计仪器
+     `scripts/audit/verification_lane_coverage.py` 的 `LANES` 同源，不得新造。
+     `make ci.local.quick` 自动上报 local.quick；其余车道由执行者或 CI 通过
+     `make lane.telemetry.record`（`LANE`/`ENTRYPOINT`/`STATUS`/`DURATION`，可选 `DEGRADED`/`FAILURE_OWNER`）
+     显式登记，`make lane.telemetry.report` 按车道与按版本输出成功率/降级率/完整性失败率，
+     `make lane.telemetry.check` 只校验记录完整性（非法记录必须为 0）。遥测是观测，不是门禁：
+     记录或报告失败不得改变任何车道的通过结论，也不得替代任何必需检查；仪器自身的单元入口是
+     `make verify.lane.telemetry.unit`。
    - **冻结前准备、冻结后只读。** 产品、测试、交付文档完成后，先运行
      `make ci.delivery.freeze.prepare` 刷新并校验内容绑定的生成证据，审阅其差异并随最终提交一起冻结。
      冻结后的 `make pr.push` 只能验证工作树、HEAD 和生成证据，不得再刷新 tracked 文件；若验证失败，

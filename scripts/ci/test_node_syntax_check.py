@@ -268,15 +268,41 @@ class NodeSyntaxCheckTests(unittest.TestCase):
             with redirect_stdout(StringIO()), redirect_stderr(StringIO()):
                 self.assertEqual(node_syntax_check.main(["scripts/ci/does_not_exist.mjs"]), 2)
 
-    def test_contract_and_quick_gates_invoke_the_sweep(self) -> None:
-        for target in ("test.contract", "ci.local.quick.run"):
+    # The corpus-wide sweep is declared exactly once, inside the shared contract
+    # & architecture guard suite. Both the remote required backend gate and the
+    # local exact-head lane must REACH that suite rather than each carrying a
+    # private copy of the invocation: duplicated per-lane lists are how a gate
+    # ends up enforced on only one side (2026-10-11 systemic audit).
+    SHARED_SUITE = "verify.contract.architecture.suite"
+
+    def test_shared_suite_invokes_the_sweep_verbatim(self) -> None:
+        body = _target_body(self.SHARED_SUITE)
+        self.assertEqual(
+            sweep_invocation_failures(body),
+            [],
+            f"{self.SHARED_SUITE} must invoke the corpus-wide sweep verbatim",
+        )
+        self.assertNotIn(
+            "node --check frontend/apps/web/scripts/",
+            body,
+            f"{self.SHARED_SUITE} keeps no hand-maintained file list",
+        )
+
+    def test_every_gate_reaches_the_corpus_wide_sweep(self) -> None:
+        # test.contract owns a direct invocation; the quick and remote lanes must
+        # both depend on the shared suite so neither can silently drop it.
+        body = _target_body("test.contract")
+        self.assertEqual(sweep_invocation_failures(body), [], "test.contract must invoke the corpus-wide sweep verbatim")
+        self.assertNotIn("node --check frontend/apps/web/scripts/", body)
+
+        for target in ("ci.local.quick.run", "ci.professional.backend.shard-verify"):
             body = _target_body(target)
-            self.assertEqual(
-                sweep_invocation_failures(body),
-                [],
-                f"{target} must invoke the corpus-wide sweep verbatim",
+            declaration = body.split("\n")[0]
+            self.assertIn(
+                self.SHARED_SUITE,
+                declaration.split(),
+                f"{target} must depend on {self.SHARED_SUITE}, not carry a private sweep copy",
             )
-            self.assertNotIn("node --check frontend/apps/web/scripts/", body, f"{target} keeps a hand-maintained file list")
 
     def test_wiring_validator_rejects_a_narrowed_call(self) -> None:
         self.assertEqual(sweep_invocation_failures(f"test.contract: x\n{SWEEP_RECIPE}\n"), [])

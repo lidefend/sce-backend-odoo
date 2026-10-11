@@ -220,6 +220,31 @@ guard.retire: guard.prod.forbid
 	@test -n "$(SCRIPT)" || { echo "usage: make guard.retire SCRIPT=<filename> REASON='...'"; exit 2; }
 	@python3 scripts/verify/guard_registry_audit.py --retire "$(SCRIPT)" --reason "$(REASON)"
 
+# ===== Verification-system lane coverage audit (P4, read-only instrument) =====
+# Measures which guards each execution lane really enforces, and where the local
+# exact-head lane and the remote required gates diverge. This is the instrument
+# behind the 2026-10-11 systemic audit and the freeze that follows it.
+#
+# Read-only measurement stays a spectator entry: it must never be a member of
+# the surface it reports on. `verify.verification.lane_coverage` is the
+# enforcement aggregate (debt ratchet + focused self-test) and IS wired into
+# verify.contract.architecture.suite, which both ci.local.quick.run and
+# ci.professional.backend.shard-verify consume. A newly-dead make target or
+# guard script, an unregistered or stale disposition, or any metric that grew
+# past the frozen baseline therefore fails a required gate until someone wires,
+# retires, or registers it.
+.PHONY: audit.verification.lane_coverage audit.verification.lane_coverage.check audit.verification.lane_coverage.test verify.verification.lane_coverage
+audit.verification.lane_coverage: guard.prod.forbid
+	@python3 scripts/audit/verification_lane_coverage.py --summary
+
+audit.verification.lane_coverage.check: guard.prod.forbid
+	@python3 scripts/audit/verification_lane_coverage.py --check
+
+audit.verification.lane_coverage.test: guard.prod.forbid
+	@python3 -m unittest scripts.audit.test_verification_lane_coverage
+
+verify.verification.lane_coverage: guard.prod.forbid audit.verification.lane_coverage.check audit.verification.lane_coverage.test
+
 # ===== R9: declared test coverage registry (Odoo tag / scripts/ci unit script) =====
 # Binds every declared @tagged group and every scripts/ci/test_*.py unit script
 # to a governed selection entry, or records an owned disposition. The 2026-10-09
