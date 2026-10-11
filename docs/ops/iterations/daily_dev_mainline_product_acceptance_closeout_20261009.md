@@ -2742,3 +2742,19 @@ G7 `SceneFieldGroup.description` 无契约来源；G8 styleToken 词汇所有权
 
 - 后端投影代码未变，故不升级模块、不运行 `daily.runtime.published_face.converge`（非本车道所需）。
 - 产品交付仍未声明：唯一剩余边界为**所有者本人登录**核对（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`）——项目台账/项目表单编辑态 1440/390 明暗主题 + 关系交互（点击打开 → 返回原记录 → 标签与动作恢复）。
+
+**五、越界诊断（不改变本轮结论，仅登记债务）**
+
+为避免「所有者登录」成为改动后渲染面的首次观察，对部署头跑了一次**受管但有界**的既有入口：
+`make verify.business_config.low_code_layout_runtime WORKFLOW_CONTRACT_FRONTEND_URL=http://1.95.85.92:18081 DB_NAME=sc_demo`
+→ **FAIL（EXIT=2）**，但归类为**陈旧测试工具债务**，非产品回归，也非本批次引入：
+
+| 事实 | 证据 |
+| --- | --- |
+| 失败点 | `sc.general.contract`（action 669）等 `getByRole('button', { name: '配置表单字段' })` 超时；`construction.contract`（562）`.config-card` 不可见 |
+| 标签已从产品源码移除 | `git log -S'配置表单字段' -- frontend/apps/web` → `401bcb3b`（clean product baseline）移除 |
+| 部署前主线即已如此 | `git grep 配置表单字段 7eec3f0e -- frontend/apps/web` 仅命中 4 个验收脚本，无产品源码 |
+| 本批次未触碰该脚本 | `git diff 7eec3f0e 8870c70c -- .../low_code_form_layout_runtime_acceptance.mjs` 为空 |
+
+该入口不在本 run 的受管检查集内，因此**不改写本轮任何通过结论**；已作为债务登记在 run 台账 `blockers`（责任车道：config-workbench 车道）。
+未做修复：正确修法需要该车道当前声明的配置面权威（入口标签/动作），超出本轮声明范围，只改标签字面量会制造无意义的绿。
