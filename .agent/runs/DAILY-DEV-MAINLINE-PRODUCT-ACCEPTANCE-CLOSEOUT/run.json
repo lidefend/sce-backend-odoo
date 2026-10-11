@@ -664,6 +664,25 @@
         "make/ci.mk"
       ],
       "note": "REAL full-scan run PASS: members 121.9/143.7/227.7s, wall 231.8s vs 493.3s serial sum (~2.1x). The serial sum is what every lane paid before; no assertion removed, every member still ran through its own make entry point."
+    },
+    "scan_authority_surface_narrowing": {
+      "target": "verify.trusted_scan.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ci/trusted_scan_scope.py",
+        "scripts/ci/test_trusted_scan_scope.py"
+      ],
+      "note": "34 tests OK. make_execution_surface binds only the make declaration that decides one kind's scan command: the merged prerequisite/recipe of the governed target and its declared closure, the variable assignments those recipes reference transitively, and any macro fragment that names the governed target. Rules are merged across fragments first, so a redefinition, an appended prerequisite or an appended recipe line anywhere still invalidates; a deleted fragment or a vanished target still invalidates; conditionals are not evaluated (over-include, never under-include)."
+    },
+    "scan_authority_surface_decision": {
+      "target": "verify.repository.clean_history",
+      "kind": "runtime",
+      "inputs": [
+        "scripts/ci/trusted_scan_scope.py",
+        "make/ci.mk",
+        "make/guards.mk"
+      ],
+      "note": "Both directions measured on the frozen tree. Reuse: with an unrelated region appended to make/ci.mk plus a new unrelated make/scratch-unrelated.mk present, all three kinds resolved mode=incremental base=8269bbc2 (previously reason=scan_authority_changed -> three full rescans). Fail-closed: changing the secrets recipe flag (--scope all -> --scope worktree) resolved kind=secrets mode=full while personal and history stayed incremental, so the gate now invalidates exactly the affected kind instead of all three."
     }
   },
   "blockers": [
@@ -674,7 +693,7 @@
     "RESOLVED and DEPLOYED (B1+B2 were one P0 validator defect; see evidence.round_20261010_layout_policy_membership_authority). The runtime form-structure validator did not recognise the structure-membership authority the producer declares, so B1 ('slots is required'=60) and B2 ('layout projects field outside structure'=2024/158 models) were the same defect. B1 was not a choice: ui_contract_v2.py declares layoutPolicy=container_tree_authority with empty slots/fieldRoles (asserted by its own P0 tests), and the declared consumer frontend/apps/web/src/app/contracts/v2/schema.ts::decodeFormStructureContract forbids slots/columns/fieldRoles for that policy - so option (b) 'publish a minimal slot set' would have produced a contract the consumer rejects, leaving option (a) 'honour the declared layoutPolicy' as the only declaration-valid repair. B2's round-21 attribution was corrected: the producer is self-consistent (a read-only 163-model probe measured refs_not_in_layout=0/163 and layout-outside-slots fields inside the governance universe=6/163; every other flagged field is a native/technical/projection residual), so the reverse assertion was a validator over-assertion, not a projection split and not P1. The validator now (1) requires slots only when the declaration does not delegate membership to the tree, (2) newly rejects a tree-authority structure that also publishes slots/columns/fieldRoles (mirroring the declared consumer), and (3) scopes the reverse assertion to governed fields of non-tree-authority policies. No declaration-backed assertion was relaxed. The served daily runtime at e885d590 audits boundary_ok 163 / boundary_violation 0 (was 5/158) with projected_semantic_group_models 163, contract_standardized 81 and zero diffs on every non-boundary column. (B3) missing_group_semantics=163 was two independent defects and is RESOLVED and DEPLOYED - see evidence.round_20261010_contract_authored_section_heading_producer: (B3a, P0 smart_core, real product debt) the contract-authored heading channel semanticTitle had consumers (nativeBusinessSection.ts:96, NativeFormTreeRenderer.vue:892, schema.ts:737) but no producer, because WIP commit 2ec2e2df deleted the only call to _standardize_form_container_semantics and its replacement writes formStructureRole only. The producer is restored and _is_generic_container_label's ''-in-generic defect is fixed; the served runtime audits at projected_semantic_group_models=163 with 996/996 group nodes authored and missing_group_semantics 0. (B3b/B3c/B3d, P4 verification tools, no product change) the audit's is_unlabeled_group predicate, its notebook metric filtering on a carrier that exists nowhere in the repository, and the standardizer guard's failure to assert production wiring are all fixed, with pre/post negative baselines recorded. The residual 82 contract_needs_attention models are exactly (B4) the no-notebook/no-page scope set plus (B5) the 3 non-chatter workspace surfaces, which remain scope questions rather than product debt. This batch's two owned facets are 0 under both readings, so none of this is a batch regression.",
     "Verification-tool path debt (registered, NOT fixed in this round, no gate relaxed): make verify.form_structure.contract cannot pass in-repo because its member verify.user_form.preference.boundary_guard hardcodes addons/smart_construction_custom/models/user_preferences.py and reads it directly; that module does not exist in this repository (git log --all -- addons/smart_construction_custom is empty, absent on origin/main too) - it is a customer-custom addon outside the repository boundary, mounted and installed at runtime (the governed runtime guard scripts/verify/daily_dev_customer_addons_runtime_guard.py checks it live). Local reproduction: FileNotFoundError. Report per-target evidence only; the owning layer is that guard's owner."
   ],
-  "next_exact_step": "本轮（迭代效率）已收口，工作区 clean，冻结 HEAD e8aeb2f7a0f43120f6329cdd65ecaed6b2659bf3，唯一一次 exact-head make ci.local.quick PASS（286.2s，全量态）并已落回执。下一步顺序：(1) 独立复核（read-only，绑定同一指纹 e8aeb2f7）；(2) 按批次开 PR（Gitee 优先，github 远端可正常集成时同步）；(3) PR 通过后进入产品交付主线（日常开发服务器用户视角验收：wutao/123456, sc_demo, http://1.95.85.92:18081/）。保留的 owner 政策议题：(a) 扫描组/分片并行的默认取向（现为默认并行 + SC_QUICK_SERIAL=1/QUICK_JOBS=1 串行回退）；(b) authority_digest 对全部 make/*.mk 的过失效面收敛（须 owner 裁决，属 fail-closed 边界）；(c) 226 条不可执行 absent-asset 规则的物理退役；(d) 760 条零引用 target 中 109 条 candidate 的接线或退役判断。",
+  "next_exact_step": "本轮（迭代效率：扫描组并行 + 权威面收敛）已收口，工作区 clean，冻结 HEAD 8269bbc2，唯一一次 exact-head make ci.local.quick PASS（283.1s 全量态）并已落回执。下一步：集成主线——先按受保护流程合并前一阶段仍开放且必需检查全绿的 PR #640（head 1e542d7c，base 282b079c = 当前 main），再把本批 8269bbc2 推送 GitHub origin 与 gitee-mirror 并按批次开新 PR，等远端必需检查（public_guard / merge_policy_gate / professional_quality_gate / frontend_release_gate）通过后合并。保留的 owner 政策议题：(a) 扫描组/分片并行的默认取向（现为默认并行 + SC_QUICK_SERIAL=1/QUICK_JOBS=1 串行回退）；(b) 宏分片残余边界——若某分片用 $(eval)/$(call) 以变量拼出受管 target 名而不出现字面量，则不被整体绑定（当前仓库无此形态）；(c) 226 条不可执行 absent-asset 规则的物理退役；(d) 760 条零引用 target 中 109 条 candidate 的接线或退役判断。",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -2276,6 +2295,15 @@
       "cost_bound_removed_this_round": "The full-scan penalty is now paid concurrently instead of serially: security.trusted_scan.group runs the three independent read-only scans as separate make processes. make-level -j cannot do this because make/ci.mk declares .NOTPARALLEL for the local lane (measured: -j3 accepted and then ignored, 7m14s serial signature). Measured wall 231.8s vs 493.3s serial sum.",
       "remaining_known_over_invalidation": "authority_digest binds all of make/*.mk and the whole Makefile, so an edit to an unrelated make fragment still invalidates all three kinds. Narrowing it to the resolved command surface of the governed targets is a P4 open item that needs owner sign-off: it is a fail-closed boundary and a wrong narrowing would reuse a proof across a changed scan command.",
       "not_relaxed": "No scan, assertion, coverage or gate was removed or weakened; no member target was re-implemented; a non-zero member still fails the group and the lane."
+    },
+    "round_20261011_scan_authority_surface_narrowing": {
+      "question": "这类扫描已经稳定的部分为什么每次还需要重复扫描?",
+      "cause": "authority_digest bound Makefile plus every make/*.mk byte, so any make edit -- an unrelated fragment, or an unrelated region of the same fragment -- changed the digest for all three kinds and forced three full rescans. Measured cost of one such full rescan: 493.3s serial sum, 231.8s with the scan group concurrent.",
+      "fix": "authority_digest now binds make_execution_surface: the merged declaration of the kind's governed scan target and its declared prerequisite closure, the variable assignments those recipes reference transitively, and any macro fragment naming the governed target. COMMON_AUTHORITY and per-kind AUTHORITY are unchanged.",
+      "measured_reuse": "With an unrelated region appended to make/ci.mk and a new unrelated fragment present, kind=secrets/personal/history all resolved mode=incremental base=8269bbc2 reason=verified_ancestor_coverage_unchanged_authority.",
+      "measured_fail_closed": "Changing only the secrets recipe (--scope all -> --scope worktree) resolved kind=secrets mode=full reason=scan_authority_changed while personal and history stayed incremental.",
+      "residual_boundary": "A fragment that constructs a governed target name from a variable inside $(eval)/$(call) without naming it literally would not be bound; no such fragment exists in this repository, and the condition is recorded rather than silently accepted.",
+      "not_relaxed": "No scan, assertion, coverage or gate was removed or weakened. The change is strictly narrower invalidation, with per-kind precision replacing all-kinds invalidation."
     }
   },
   "continuation": {
@@ -2305,8 +2333,8 @@
   "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced.",
   "stage_identity": {
     "kind": "frozen",
-    "head": "e8aeb2f7a0f43120f6329cdd65ecaed6b2659bf3",
+    "head": "8269bbc2ea5cda3397881dbe36dd0e97f070aae1",
     "dirty_scope": [],
-    "note": "clean frozen HEAD; single exact-head ci.local.quick receipt .git/codex/evidence/ci.local.quick/e8aeb2f7a0f43120f6329cdd65ecaed6b2659bf3.json"
+    "note": "clean frozen HEAD; exact-head ci.local.quick receipt .git/codex/evidence/ci.local.quick/8269bbc2ea5cda3397881dbe36dd0e97f070aae1.json (full-scan state, 283.1s: the resolver change invalidates prior receipts once)"
   }
 }
