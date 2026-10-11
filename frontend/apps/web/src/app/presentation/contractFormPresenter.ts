@@ -159,18 +159,31 @@ function formStructureFieldLabels(
   return Object.freeze(labels);
 }
 
-function zoneRole(container: ContractV2Container): CanonicalFormZoneRole {
-  // 协作/沟通类节点统一归为 subordinate 区，确保协作日志正确渲染
-  const containerKind = String(container.containerType || container.type || '').toLowerCase();
-  if (['chatter', 'activity', 'attachment', 'collaboration'].includes(containerKind)) {
-    return 'subordinate';
-  }
-  const authority = asDict(container.sourceAuthority
-    || container.attributes?.sourceAuthority || container.attributes?.source_authority);
-  const projectionOnly = authority.projection_only === true || authority.projectionOnly === true;
-  const noBusinessAuthority = authority.no_business_fact_authority === true
-    || authority.noBusinessFactAuthority === true;
-  return projectionOnly && noBusinessAuthority ? 'subordinate' : 'primary';
+// The page zone is contract output (``native_view_reuse_frontend_spec_v1.md``
+// section 4.3): the backend declares ``zone`` on every layout container and has
+// already resolved nesting, so this renderer only presents the zone it was
+// given.  It must never re-derive a zone from a container kind or from an
+// unrelated authority facet, and it declares no zone of its own.
+const CONTRACT_V2_ZONE_ROLES = Object.freeze<Record<string, CanonicalFormZoneRole>>({
+  detail_zone: 'primary',
+  collaboration_zone: 'subordinate',
+  attachment_zone: 'subordinate',
+});
+
+function declaredZoneRole(container: ContractV2Container): CanonicalFormZoneRole | null {
+  return CONTRACT_V2_ZONE_ROLES[String(container.zone || '').trim().toLowerCase()] || null;
+}
+
+// The container's field-grid column count is contract output exactly like the
+// zone: the projection declares it on every grid-owning container and has
+// already resolved the native ``col``/``cols``/``columns`` against the official
+// component grid default, so this renderer presents the number it was given
+// instead of keeping a second default of its own.  A container that owns no
+// field grid publishes no ``columns``; its single cell is structural, not a
+// business decision.
+function declaredContainerColumns(container: ContractV2Container): number {
+  const declared = Number(container.columns);
+  return Number.isInteger(declared) && declared >= 1 ? declared : 1;
 }
 
 function relationModel(widget: ContractV2Widget): string {
@@ -369,8 +382,8 @@ function presentNode(
   clientType: string,
   ancestorTitle = '',
 ): CanonicalFormNode {
-  const ownRole = zoneRole(container);
-  const effectiveRole = ownRole === 'subordinate' ? ownRole : inheritedRole;
+  const ownRole = declaredZoneRole(container);
+  const effectiveRole = ownRole ?? inheritedRole;
   const status: ContractV2ContainerStatus | undefined = store.containerStatusById.get(container.containerId);
   const nodeSemantics = semanticIdentity(container.formStructureRole);
   const selectorStatus = resolveContractV2SelectorStatus(store, [
@@ -443,6 +456,7 @@ function presentNode(
       displayLabel: text(container.displayLabel),
       semanticTitle: text(container.semanticTitle),
       semanticAnchor: text(container.semanticAnchor),
+      zone: text(container.zone),
       filename: text(container.filename),
       badge: Object.freeze({ ...(container.badge || {}) }),
       column_invisible: container.columnInvisible,
@@ -462,7 +476,7 @@ function presentNode(
     span: container.span,
     styleToken: text(container.styleToken),
     zoneRole: effectiveRole,
-    columns: Number(authoritativeGroup?.columns || container.cols || container.columns || structure?.columns || 1) || 1,
+    columns: declaredContainerColumns(container),
     visible,
     disabled,
     reasonCode: text(status?.reasonCode || selectorStatus?.reasonCode),
@@ -694,7 +708,7 @@ export function presentContractV2Form(
   }));
   const nodes = snapshot.layoutContract.containerTree.map((container, index) => (
     presentNode(
-      container, zoneRole(container), index, store, contractValues, runtimeValues, mode, presentationMode, pageCanEdit,
+      container, declaredZoneRole(container) ?? 'primary', index, store, contractValues, runtimeValues, mode, presentationMode, pageCanEdit,
       pageVisible, pageAuth === 'none', false, actionsByIdentity, actionsByNativeOccurrence, authoritativeFieldLabels, structure,
       snapshot.layoutContract.componentRegistry, snapshot.pageInfo.clientType,
     )

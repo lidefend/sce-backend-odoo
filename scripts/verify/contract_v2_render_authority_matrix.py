@@ -29,10 +29,10 @@ EXPECTED = {
     "activityNodeOccurrence": "tag native_locator occurrence_index source_position attributes text tail",
     "activityNode": "tag native_locator occurrence_index source_position attributes text tail children",
     "activityTemplate": "native_locator occurrence_index nodes names",
-    "container": "containerId containerType title span styleToken type name label string children widgetList",
+    "container": "containerId containerType title span styleToken zone type name label string children widgetList",
     "nativeLayoutNode": (
         "type name string label title text displayLabel semanticTitle semanticAnchor containerId containerType span "
-        "styleToken widgetId fieldCode nativeLocator occurrenceIndex sourcePosition widget componentKey componentConfig "
+        "styleToken zone widgetId fieldCode nativeLocator occurrenceIndex sourcePosition widget componentKey componentConfig "
         "fieldInfo filename nolabel attributes modifiers action badge buttonType readonly required invisible "
         "column_invisible domain context options visible cols columns col class className fieldSize size formStructure "
         "formStructureRole sourceAuthority children widgetList fields"

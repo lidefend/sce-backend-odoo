@@ -79,6 +79,44 @@ class ReadonlyGridGuardTests(unittest.TestCase):
                 rewriter=lambda value: value.replace('resolveSpan:(field)=>(field as LayoutNode).span', 'resolveSpan:(_field)=>12', 1),
             )
 
+    def test_projection_must_declare_the_container_grid_columns(self):
+        target = '/addons/smart_core/core/unified_page_contract_v2_assembler.py'
+        for rewrite in (
+            lambda value: value.replace('def declared_container_columns(node: dict[str, Any]) -> int | None:', 'def renamed_container_columns(node: dict[str, Any]) -> int | None:', 1),
+            lambda value: value.replace('CONTAINER_GRID_COLUMNS_DEFAULT = 2', 'CONTAINER_GRID_COLUMNS_DEFAULT = 3', 1),
+            lambda value: value.replace('    node["columns"] = columns\n', '', 1),
+            lambda value: value.replace('columns = declared_container_columns(node)', 'columns = node.get("columns")', 1),
+        ):
+            with self.assertRaisesRegex(SystemExit, 'container field-grid|official two-column default'):
+                self.run_guard(target=target, rewriter=rewrite)
+
+    def test_late_projection_must_complete_the_grid_declaration(self):
+        target = '/addons/smart_core/handlers/ui_contract_v2_projection.py'
+        for rewrite in (
+            lambda value: value.replace('declare_container_columns(node)', 'declared_layout_columns(node)', 1),
+            lambda value: value.replace('from ..core.unified_page_contract_v2_assembler import declare_container_columns\n', '', 1),
+        ):
+            with self.assertRaisesRegex(SystemExit, 'late-appended grid container'):
+                self.run_guard(target=target, rewriter=rewrite)
+
+    def test_presenter_must_not_re_derive_the_container_columns(self):
+        target = '/app/presentation/contractFormPresenter.ts'
+        for rewrite in (
+            lambda value: value.replace('columns: declaredContainerColumns(container),', 'columns: container.cols || 1,', 1),
+            lambda value: value.replace('const declared = Number(container.columns);', 'const declared = Number(container.cols);', 1),
+        ):
+            with self.assertRaisesRegex(SystemExit, 'present the declared container column count|re-derives a container column count'):
+                self.run_guard(target=target, rewriter=rewrite)
+
+    def test_renderer_must_not_raise_or_clamp_the_declared_columns(self):
+        target = '/pages/contractForm/CanonicalFormNodeRenderer.vue'
+        for rewrite in (
+            lambda value: value.replace('const declared = Number(props.node.columns);', 'const declared = Math.max(2, Number(props.node.columns));', 1),
+            lambda value: value.replace('grid-template-columns: repeat(var(--canonical-layout-columns, 1), minmax(0, 1fr));', 'grid-template-columns: repeat(3, minmax(0, 1fr));', 1),
+        ):
+            with self.assertRaisesRegex(SystemExit, 'canonical'):
+                self.run_guard(target=target, rewriter=rewrite)
+
     def test_declared_facets_must_have_one_authority(self):
         target = '/addons/smart_core/handlers/ui_contract_v2_projection.py'
         for rewrite in (

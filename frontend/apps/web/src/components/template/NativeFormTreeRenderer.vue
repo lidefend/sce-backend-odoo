@@ -475,6 +475,7 @@ export type NativeFormLayoutNode = {
   displayLabel?: string;
   semanticTitle?: string;
   semanticAnchor?: string;
+  zone?: string;
   text?: string;
   cols?: number;
   columns?: number;

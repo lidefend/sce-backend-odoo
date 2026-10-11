@@ -135,19 +135,19 @@ const governedSection = computed(() => (
 ));
 const groupHeadingVisible = computed(() => Boolean(governedSection.value));
 
-const columns = computed<1 | 2 | 3>(() => Math.max(1, Math.min(3, Number(props.node.columns || 1))) as 1 | 2 | 3);
-const layoutColumns = computed<1 | 2 | 3>(() => {
-  // Container/group nodes arrange their direct field children on a grid whose
-  // column count follows the canonical contract (node.columns). A container
-  // holding field children gets at least two columns so a single wide row (e.g.
-  // project / counterparty many2one at 1103px full width) is avoided and fields
-  // render at the ~half-width used elsewhere on the form. A node that only
-  // carries structural children (nested groups / pages) stays a single column
-  // so those children stack full-width.
+// Container/group nodes arrange their direct field children on a grid whose
+// column count follows the canonical contract (node.columns). The projection
+// declares that number on every grid-owning container and has already applied
+// the official default, so the renderer presents the declared value: it neither
+// raises it to a minimum of its own nor clamps it to its own enum (a declared
+// ``col="4"`` group must arrange four fields per row, not three). A node that
+// only carries structural children has no declared grid and stacks in one
+// column.
+const layoutColumns = computed(() => {
   const children = visibleCanonicalChildren(props.node);
-  if (!children.length) return 1;
-  if (children.some((child) => child.kind === 'field')) return Math.max(2, columns.value) as 1 | 2 | 3;
-  return 1;
+  const declared = Number(props.node.columns);
+  if (!children.length || !Number.isInteger(declared) || declared < 1) return 1;
+  return declared;
 });
 const nodeGridSpan = computed(() => Math.max(1, Math.min(4, Math.ceil(Number(props.node.span || 24) / 6))));
 const hasContent = computed(() => canonicalNodeHasContent(props.node));

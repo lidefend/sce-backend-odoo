@@ -29,6 +29,7 @@ export type CanonicalNativeLayoutNode = {
   displayLabel?: string;
   semanticTitle?: string;
   semanticAnchor?: string;
+  zone?: string;
   filename?: string;
   badge?: Record<string, unknown>;
   column_invisible?: unknown;

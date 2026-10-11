@@ -528,25 +528,28 @@ function snapshot(): ContractV2Snapshot {
             componentKey: 'sc.display.status', capabilities: [], componentConfig: { fieldType: 'selection' },
             ownerContainerId: 'field.state',
           }],
+        }, {
+          containerId: 'native.notebook', containerType: 'notebook', type: 'notebook', title: 'Related', span: 24,
+          zone: 'detail_zone',
+          sourceAuthority: { projection_only: true, no_business_fact_authority: true },
+          children: [{
+            containerId: 'field.line_ids', containerType: 'field', type: 'field', name: 'line_ids', title: '', span: 24,
+            nolabel: true,
+            children: [], widgetList: [{
+              widgetId: 'field.line_ids', widgetType: 'table', fieldCode: 'line_ids', label: 'Lines', span: 24,
+              componentKey: 'sc.relation.table', capabilities: [], componentConfig: { fieldType: 'one2many' },
+              ownerContainerId: 'field.line_ids',
+            }],
+          }], widgetList: [],
         }],
         widgetList: [],
       }, {
-        containerId: 'native.notebook', containerType: 'notebook', type: 'notebook', title: 'Related', span: 24,
-        sourceAuthority: { projection_only: true, no_business_fact_authority: true },
-        children: [{
-          containerId: 'field.line_ids', containerType: 'field', type: 'field', name: 'line_ids', title: '', span: 24,
-          nolabel: true,
-          children: [], widgetList: [{
-            widgetId: 'field.line_ids', widgetType: 'table', fieldCode: 'line_ids', label: 'Lines', span: 24,
-            componentKey: 'sc.relation.table', capabilities: [], componentConfig: { fieldType: 'one2many' },
-            ownerContainerId: 'field.line_ids',
-          }],
-        }], widgetList: [],
-      }, {
         containerId: 'native.attachment', containerType: 'attachment', type: 'attachment', title: 'Attachments', span: 24,
+        zone: 'attachment_zone',
         sourceAuthority: { projection_only: true, no_business_fact_authority: true }, children: [], widgetList: [],
       }, {
         containerId: 'native.chatter', containerType: 'chatter', type: 'chatter', title: 'Activity', span: 24,
+        zone: 'collaboration_zone',
         sourceAuthority: { projection_only: true, no_business_fact_authority: true }, children: [], widgetList: [],
       }],
     },
@@ -966,7 +969,7 @@ for (const legacyVersion of ['2.0.0', '2.1.0']) {
   legacyServerSnapshot.pageInfo.contractVersion = legacyVersion;
   const legacyRoot = legacyServerSnapshot.layoutContract.containerTree[0];
   const legacyChildren = legacyRoot.children as Array<Record<string, unknown>>;
-  legacyRoot.children = [legacyChildren[0]];
+  legacyRoot.children = [legacyChildren[0], legacyChildren[2]];
   legacyRoot.tabs = [legacyChildren[1]];
   for (const child of [...legacyRoot.children as Array<Record<string, unknown>>, ...legacyRoot.tabs as Array<Record<string, unknown>>]) {
     for (const widget of child.widgetList as Array<Record<string, unknown>>) delete widget.ownerContainerId;
@@ -974,7 +977,7 @@ for (const legacyVersion of ['2.0.0', '2.1.0']) {
   const normalizedLegacyStore = createContractV2Store(decodeContractV2Snapshot(legacyServerSnapshot));
   assert.deepEqual(
     collectFields(presentContractV2Form(normalizedLegacyStore, 'edit').zones.primary).map((field) => field.fieldCode),
-    ['name', 'state'],
+    ['name', 'line_ids', 'state'],
     `a new client must normalize an old ${legacyVersion} child carrier and ownership before the strict store`,
   );
 }
@@ -1179,6 +1182,11 @@ structurePresentationSnapshot.formStructureContract = {
 structurePresentationSnapshot.layoutContract.containerTree[0].formStructureRole = {
   role: 'risk', slot: 'governed', group: 'identity',
 };
+// The projection resolves the formal group column authority onto the container
+// itself (``_apply_form_structure_columns_to_tree``); the presenter must
+// present that resolved declaration instead of re-resolving the structure
+// contract, so the fixture declares it exactly as the projection emits it.
+structurePresentationSnapshot.layoutContract.containerTree[0].columns = 2;
 structurePresentationSnapshot.layoutContract.containerTree[0].span = 16;
 structurePresentationSnapshot.layoutContract.containerTree[0].styleToken = 'surface.task.identity';
 Object.assign(structurePresentationSnapshot.layoutContract.containerTree[0], {
@@ -1215,7 +1223,15 @@ assert.equal(
 assert.equal(
   structurePresentationModel.zones.primary[0].columns,
   2,
-  'the matching formal group column authority must reach the canonical node',
+  'the projection-resolved container column authority must reach the canonical node',
+);
+
+const declaredColumnsSnapshot = snapshot();
+declaredColumnsSnapshot.layoutContract.containerTree[0].columns = 4;
+assert.equal(
+  presentContractV2Form(createContractV2Store(declaredColumnsSnapshot), 'edit').zones.primary[0].columns,
+  4,
+  'a declared container column count must reach the canonical node unchanged: the presenter adds no minimum and no clamp of its own',
 );
 assert.equal(
   structurePresentationModel.zones.primary[0].semanticRole,
@@ -1649,7 +1665,11 @@ assert.equal(
 );
 assert.equal(JSON.stringify(source), before, 'presenter must not mutate normalized input');
 assert.equal(model.identity.sourceContractSha256, 'contract-sha');
-assert.deepEqual(model.zones.subordinate.map((node) => node.kind), ['notebook', 'attachment', 'chatter']);
+assert.deepEqual(
+  model.zones.subordinate.map((node) => node.kind), ['attachment', 'chatter'],
+  'only the declared collaboration/attachment zones are subordinate; the legacy projection-only marker on the notebook must not promote it',
+);
+assert.deepEqual(model.zones.primary.map((node) => node.kind), ['group']);
 const fields = collectFields([...model.zones.primary, ...model.zones.subordinate]);
 assert.deepEqual(fields.map((field) => field.fieldCode), ['name', 'state', 'line_ids']);
 assert.equal(fields.find((field) => field.fieldCode === 'name')?.required, true);
@@ -1741,10 +1761,11 @@ assert.deepEqual(
 );
 assert.deepEqual(
   nativeBridge.subordinateNodes.map((node) => node.type),
-  ['notebook', 'container'],
-  'canonical native bridge must keep notebook/attachment structure while collaboration stays in its governed panel',
+  ['container'],
+  'canonical native bridge must keep the declared attachment structure while collaboration stays in its governed panel',
 );
-const notebookPage = nativeBridge.subordinateNodes[0].children?.[0];
+const notebookPage = nativeBridge.primaryNodes[0].children
+  .find((node) => node.type === 'notebook')?.children?.[0];
 assert.equal(notebookPage?.type, 'page', 'a native notebook without explicit pages must retain its children in a stable default page');
 assert.deepEqual(
   nativeBridge.fieldSchemasForNodes(notebookPage?.children || []).map((field) => [field.key, field.name]),
@@ -2273,7 +2294,7 @@ function addContextGroup(groupId: string, fieldCodes: string[]) {
       ownerContainerId: `field.${fieldCode}`,
     }],
   }));
-  semanticContextSnapshot.layoutContract.containerTree.splice(-3, 0, {
+  semanticContextSnapshot.layoutContract.containerTree.splice(-2, 0, {
     containerId: groupId, containerType: 'group', type: 'group', title: groupId, span: 24,
     children, widgetList: [],
   });
@@ -2340,7 +2361,7 @@ assert.deepEqual(
 );
 assert.deepEqual(
   collectFields(semanticContextFloorplan.relationNodes).map((field) => field.fieldCode),
-  ['context_26', 'line_ids'],
+  ['line_ids', 'context_26'],
   'relation-capable canonical facts must form an independent relation region',
 );
 assert.equal(
@@ -2590,13 +2611,14 @@ const emptyName = collectFields(presentContractV2Form(createContractV2Store(empt
 assert.equal(emptyName?.value, null, 'non-boolean Odoo false values must normalize to one empty display fact');
 
 const duplicateTitleSnapshot = snapshot();
-duplicateTitleSnapshot.layoutContract.containerTree[1].title = 'Related';
-duplicateTitleSnapshot.layoutContract.containerTree[1].children[0].title = 'Related';
+const duplicateTitleNotebook = duplicateTitleSnapshot.layoutContract.containerTree[0].children[2];
+duplicateTitleNotebook.title = 'Related';
+duplicateTitleNotebook.children[0].title = 'Related';
 const duplicateTitleModel = presentContractV2Form(createContractV2Store(duplicateTitleSnapshot), 'readonly');
 assert.equal(
-  duplicateTitleModel.zones.subordinate[0].children[0].title,
+  duplicateTitleModel.zones.primary[0].children[2].children[0].title,
   '',
-  'a nested subordinate node must not repeat the same visual title as its parent',
+  'a nested node must not repeat the same visual title as its parent',
 );
 
 const readonlyModel = presentContractV2Form(store, 'readonly');
@@ -2716,7 +2738,7 @@ mixedNativeContent.statusContract.containerStatus.push({
 const mixedNativeModel = presentContractV2Form(createContractV2Store(mixedNativeContent), 'edit');
 assert.deepEqual(
   mixedNativeModel.zones.primary[0].children.map((node) => [node.kind, node.text]),
-  [['field', ''], ['text', '· 状态'], ['field', '']],
+  [['field', ''], ['text', '· 状态'], ['field', ''], ['notebook', '']],
   'canonical presenter must preserve mixed native field/text order',
 );
 
@@ -2725,7 +2747,7 @@ aggregatedNativeChildren.layoutContract.containerTree[0].children[0].widgetList 
 const aggregatedFields = collectFields(presentContractV2Form(createContractV2Store(aggregatedNativeChildren), 'edit').zones.primary);
 assert.deepEqual(
   aggregatedFields.map((field) => field.fieldCode),
-  ['state'],
+  ['state', 'line_ids'],
   'normalized store must not synthesize a missing widget from a native field node',
 );
 

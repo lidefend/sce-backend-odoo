@@ -15,6 +15,7 @@ import type {
   ContractV2ComponentRegistryEntry,
   ContractV2Container,
   ContractV2ContainerStatus,
+  ContractV2ContainerZone,
   ContractV2DataContract,
   ContractV2DataMeta,
   ContractV2Dictionary,
@@ -342,6 +343,21 @@ function decodePageRenderMode(value: string, path: string, issues: DecodeIssue[]
   }
   issues.push({ path, message: `unsupported render mode ${value || '<empty>'}` });
   return 'governed';
+}
+
+function decodeContainerZone(
+  value: string,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2ContainerZone | undefined {
+  if (!value) return undefined;
+  // The contract owns the page zone; a renderer may present a zone it was
+  // given but must never re-derive one from an unrelated facet.
+  if (value === 'detail_zone') return value;
+  if (value === 'collaboration_zone') return value;
+  if (value === 'attachment_zone') return value;
+  issues.push({ path, message: `unsupported container zone ${value}` });
+  return undefined;
 }
 
 function decodePatchStrategy(value: string, path: string, issues: DecodeIssue[]): ContractV2PatchStrategy {
@@ -672,7 +688,7 @@ function decodeContainer(
   }
   rejectUnknownKeys(raw, [
     'containerId', 'containerType', 'type', 'name', 'string', 'label', 'nolabel', 'text', 'title',
-    'displayLabel', 'semanticTitle', 'semanticAnchor', 'span', 'styleToken', 'cols', 'columns',
+    'displayLabel', 'semanticTitle', 'semanticAnchor', 'span', 'styleToken', 'zone', 'cols', 'columns',
     'widget', 'widgetId', 'fieldCode', 'nativeLocator', 'occurrenceIndex', 'sourcePosition',
     'componentKey', 'componentConfig', 'attributes', 'fieldInfo', 'filename', 'buttonType',
     'action', 'badge', 'modifiers', 'invisible', 'readonly', 'required', 'column_invisible',
@@ -700,6 +716,9 @@ function decodeContainer(
   const fieldInfo = optionalRecord(raw, 'fieldInfo', path, issues);
   const action = optionalNullableRecord(raw, 'action', path, issues);
   const modifiers = optionalRecord(raw, 'modifiers', path, issues);
+  const zone = raw.zone === undefined
+    ? undefined
+    : decodeContainerZone(asString(raw.zone), `${path}.zone`, issues);
   const formStructure = optionalRecord(raw, 'formStructure', path, issues);
   const formStructureRole = raw.formStructureRole === undefined
     ? null
@@ -743,6 +762,7 @@ function decodeContainer(
       ? 24
       : requiredIntegerInRange(raw, 'span', path, issues, 24),
     ...(asString(raw.styleToken) ? { styleToken: asString(raw.styleToken) } : {}),
+    ...(zone ? { zone } : {}),
     ...(typeof raw.cols === 'number' && Number.isInteger(raw.cols) && raw.cols > 0 ? { cols: raw.cols } : {}),
     ...(typeof raw.columns === 'number' && Number.isInteger(raw.columns) && raw.columns > 0 ? { columns: raw.columns } : {}),
     ...(asString(raw.widget) ? { widget: asString(raw.widget) } : {}),

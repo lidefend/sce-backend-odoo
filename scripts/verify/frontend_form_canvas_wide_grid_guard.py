@@ -104,6 +104,47 @@ if not renderer_facets or projected_facets != renderer_facets:
         "declared layout facets resolve by two authorities: "
         f"projection={projected_facets} renderer={renderer_facets}"
     )
+# One declaration, one column authority.  The projection declares the
+# container's field-grid column count exactly as it declares the zone, the
+# presenter presents that declaration, and the canonical renderer neither
+# raises it to a minimum of its own nor clamps it to its own enum.  Two
+# defaults (a presenter ``|| 1`` beside a renderer ``?? 2``) let the same
+# contract render a field-owning container as full-width on one surface and
+# half-width on another.
+assembler = (ROOT / "addons/smart_core/core/unified_page_contract_v2_assembler.py").read_text(encoding="utf-8")
+presenter = read("app/presentation/contractFormPresenter.ts")
+declarer_fn = re.search(r"def declare_container_columns\(node: dict\[str, Any\]\) -> bool:\n([\s\S]*?)\n\n\n", assembler)
+declarer_body = declarer_fn.group(1) if declarer_fn else ""
+if (
+    "def declared_container_columns(" not in assembler
+    or "columns = declared_container_columns(node)" not in declarer_body
+    or 'node["columns"] = columns' not in declarer_body
+):
+    fail("the projection does not declare the container field-grid column count")
+if "CONTAINER_GRID_COLUMNS_DEFAULT = 2" not in assembler:
+    fail("the projection does not resolve an undeclared field grid against the official two-column default")
+if (
+    "from ..core.unified_page_contract_v2_assembler import declare_container_columns" not in projection
+    or "declare_container_columns(node)" not in projection
+):
+    fail("the projection does not complete the field-grid declaration for a late-appended grid container")
+if "declaredContainerColumns(container)" not in presenter:
+    fail("the presenter does not present the declared container column count")
+presented_columns_fn = re.search(r"function declaredContainerColumns\([\s\S]*?\n\}", presenter)
+if presented_columns_fn is None:
+    fail("the presenter does not present the declared container column count")
+for forbidden in ("container.cols", "structure?.columns", "structure.columns", "|| 1", "?? 1"):
+    if forbidden in presented_columns_fn.group(0):
+        fail(f"the presenter re-derives a container column count instead of presenting the declaration: {forbidden}")
+layout_columns_fn = re.search(r"const layoutColumns = computed\(\(\) => \{[\s\S]*?\n\}\);", canonical_renderer)
+if layout_columns_fn is None or "Number(props.node.columns)" not in layout_columns_fn.group(0):
+    fail("the canonical renderer does not present the declared container column count")
+for forbidden in ("Math.max(", "Math.min(", "?? 2", "|| 2", "?? 3", "|| 3"):
+    if forbidden in layout_columns_fn.group(0):
+        fail(f"the canonical renderer raises or clamps a declared container column count: {forbidden}")
+if "grid-template-columns: repeat(var(--canonical-layout-columns, 1), minmax(0, 1fr));" not in canonical_renderer:
+    fail("the canonical container grid no longer consumes the declared column count")
+
 for forbidden in ("model ===", "role ===", "overflow-x: hidden", "overflow-x: clip"):
     if forbidden in section or forbidden in form_css:
         fail(f"forbidden form-layout inference or overflow masking: {forbidden}")
