@@ -2641,3 +2641,66 @@ absent-asset 226（0/0）、scripts never referenced 103（0/0）、车道漂移
 
 保留的 owner 政策议题（本轮不擅自执行）：226 条不可执行 absent-asset 规则的物理退役；
 760 条零引用 target 中 109 条 `candidate` 的接线或退役判断。
+
+## 26. 第 26 轮（2026-10-11）：canonical 节点网格按契约声明 span + 单一折叠权威 + 主线守卫解红
+
+承接 §25（验证体系治理）。本轮回到产品打磨主线：把「节点网格」从渲染器自有宽度方言收敛为**契约声明 span 的唯一消费**，
+并把本轮通道扫描暴露出的四项本地门禁红一次收口。基础修订 `0c619f54`（台账提交，其上为已合并主线 `7eec3f0e`）。
+
+### 26.1 产品改动（P0 前端渲染机制，不动契约）
+
+| 项 | 事实 |
+| --- | --- |
+| 声明消费 | `layoutSpan.ts` 新增 `declaredLayoutBand(span) = declaredLayoutSpan(span) > layoutGridUnits()/2 ? 'full' : 'half'` 与 `declaredLayoutFoldBreakpoints() = {single: 479, mediumMax: 959}`；`FormSection.vue` 的 `fieldSpanBand` 改为消费它，不再自持 `span > 12` |
+| 节点网格 | `CanonicalFormNodeRenderer.vue` 直接子节点按声明 span 落在**与字段网格同一个 24 轨网格**（`grid-column: span var(--canonical-node-grid-span, 24)`），并发布 `data-contract-band` |
+| 删除的越界方言 | 渲染器自有 `/6 → 1..4` span 夹取、`--canonical-layout-columns` 列方言、渲染器自有孤儿（偶数）填充 |
+| 关键机制 | 网格必须是**子元素** `.canonical-form-node-children`：`container-type` 元素无法命中自己的 `@container`，节点保持查询容器身份；sheet/notebook/page 保留 `grid-column: 1 / -1` |
+| 折叠面 | < 单列宽：单轨 + `column-gap: 0`（24 轨自带 23 个列间距，折叠容器放不下）；中等面：双轨按 `data-contract-band` 放置；其上：声明 24 单位即放置 |
+| readonly-fact 折叠面 | **两个折叠宽度区间都保持双轨**（此前缺陷：402px 容器每轨 0px、736px 容器溢出 325px） |
+
+### 26.2 守卫/工具同步（P0/P4）
+
+- `frontend_form_canvas_wide_grid_guard.py`（+`test_...`，22 项 OK）：锁死单轨面、双轨面、readonly 两个折叠面；禁止折叠面外出现 `grid-column: span 1;`；被删方言 token 留在禁止表。
+- `frontend_form_grid_span_browser.mjs`：改为测量 wrapper 网格（`#container` 作查询容器），新增 readonly 700px run；`make/frontend.mk` 传 `CANONICAL_NODE_RENDERER_BLOB`，把浏览器矩阵钉到精确渲染器 blob。
+- `frontend_page_pattern_reference_parity_guard.py`：折叠断言 `@media 480px` → `@container 479px`，守卫与渲染器不能对折叠口径各说一套。
+- 浏览器取证（仅受影响面，复用而非重取）：`verify.frontend.form_grid_span.browser` PASS `field_rows=45 canonical_rows=31 failures=0`。
+
+### 26.3 主线遗留红解红（P0 契约守卫锚点）
+
+`verify.frontend.scene_component_bridge.guard` 在 `origin/main`（`7eec3f0e`，PR #643 squash）**本来就是红的**：`db6054f6` 把 presenter 的分隔函数
+`zoneRole` 换成 `structureSlot`，守卫锚点失效。生产代码本身正确（消费 `structure.fieldRoles` 作为声明权威）。
+处置：锚点改钉 `structureSlot`，并新增「必须先咨询 `structure.fieldRoles`」的强断言与负例；PASS `checks=129 collaboration_self_check=259`。
+
+### 26.4 一次 keep-going 通道扫描：4 红分类与处理
+
+不再「一个红一次 十几分钟通道」，改为**一次** `make -k verify.frontend.quick.gate` 收集同层全部红（`/tmp/quickgate2.log`），共 4 红：
+
+| 红 | 归属 | 事实与处置 |
+| --- | --- | --- |
+| `verify.frontend.rendering_detail_state.unit` | **既有主线红**（非本批次） | 用 `git stash` 仅回退本轮三个源文件后，三份内容绑定生成证据**在 HEAD 上仍然 stale** → 主线自带的陈旧；经受管 `refresh.frontend.rendering_detail.inventory` 刷新后 PASS（`gaps=0`）；`ci.generated_evidence.preflight` PASS |
+| `verify.frontend.collection_aggregate_footer.unit` | **既有夹具红** | 夹具传 `groupPagingRaw: {}`，而消费端按设计要求后端始终发布的声明 `group_paging.page_size`（`api_data.py:2181+`），因此正确停机；按声明对齐夹具后 PASS |
+| `verify.frontend.standard_collection_composition.unit` | **既有浏览器夹具红** | 夹具未传声明分页，ListPage 停机 → `[data-list-query-action-bar]` 定位超时（临时探针证实 `契约缺少合法声明 search.defaults.limit` 且 `#app` 为空，探针已删除）；夹具按 `app_search_config.get_search_contract` 的声明补齐后 PASS `checks=76 + cases=125` |
+| `verify.frontend.standard_form_composition.unit` | **本批次**（P0） | 测试断言的是被删除的渲染器方言与旧孤儿循环字面量；改写为锁**声明消费**（发布的 band 折叠发布的声明 span、section 不自持阈值、孤儿累计消费传入的 gridFields）后 PASS 123 例；同文件全量片段扫描无其他过期断言 |
+
+### 26.5 门禁回执
+
+| 入口 | 结果 |
+| --- | --- |
+| `make -k verify.frontend.quick.gate`（红收集） | 4 红（见 §26.4），一次收集、逐个定性 |
+| `make verify.frontend.quick.gate`（收口后） | **PASS（EXIT=0，/tmp/quickgate3.log）**，无新红 |
+| `make ci.generated_evidence.preflight` | PASS（组件驱动/渲染明细/视觉投影/官方对齐 全部 current） |
+| `make verify.frontend.scene_component_bridge.guard` | PASS（129 checks） |
+| `make verify.agent.ledger.unit` | PASS（15 项 OK） |
+| `make verify.frontend.form_grid_span.browser` | PASS（field 45 / canonical 31 / 0 failures） |
+
+### 26.6 四态与本轮边界
+
+| 状态 | 结论 |
+| --- | --- |
+| 批次验收 | 本轮批次**完成**（P0 渲染机制 + 守卫 + 既有夹具/生成证据对齐，一次通道 PASS） |
+| 主线集成 | **待本轮冻结提交 + PR 合并**（本轮不推送、不合并，更不声明集成） |
+| 版本发布 | 不变（本轮不部署） |
+| 产品交付 | 不变：**待所有者登录核对**（`wutao/123456`，`sc_demo`，1440/390 明暗 + 关系交互） |
+
+保留的 owner 政策议题（本轮不擅自执行）：G1 契约 24 单位 span vs 官方 `full|half`；G3 响应式折叠归属层；
+G7 `SceneFieldGroup.description` 无契约来源；G8 styleToken 词汇所有权。环境侧：日常重建车道两个挂载者的独占性 DENY 仍为车道级阻断，未放宽、未绕过。
