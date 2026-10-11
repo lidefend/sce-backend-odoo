@@ -702,6 +702,54 @@
         "scripts/verify/test_frontend_release_ci_identity.py",
         "scripts/verify/frontend_acceptance_environment_source_guard.py"
       ]
+    },
+    "form_layout_span_unit": {
+      "target": "verify.frontend.form_canvas_layout.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/components/template/layoutSpan.ts",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "frontend/apps/web/src/components/template/formSection.types.ts",
+        "frontend/apps/web/src/components/template/formSection.mapper.ts",
+        "frontend/apps/web/src/components/template/formSection.adapter.ts",
+        "frontend/apps/web/src/pages/contractForm/fieldUtils.ts",
+        "frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts",
+        "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts",
+        "scripts/verify/frontend_form_canvas_layout_contract_test.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "form_layout_span_guard": {
+      "target": "verify.frontend.form_canvas_layout.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_form_canvas_wide_grid_guard.py",
+        "scripts/verify/test_frontend_form_canvas_wide_grid_guard.py",
+        "frontend/apps/web/src/components/template/layoutSpan.ts",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts",
+        "addons/smart_core/core/view_orchestration_contract.py"
+      ]
+    },
+    "form_grid_span_browser": {
+      "target": "verify.frontend.form_grid_span.browser",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_form_grid_span_browser.mjs",
+        "frontend/apps/web/src/components/template/layoutSpan.ts",
+        "frontend/apps/web/src/components/template/FormSection.vue"
+      ]
+    },
+    "form_container_presentation_guard": {
+      "target": "verify.form_container_presentation.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/form_container_presentation_consumption_guard.py",
+        "addons/smart_core/handlers/ui_contract_v2_projection.py",
+        "addons/smart_core/core/view_orchestration_contract.py",
+        "addons/smart_construction_core/views/core/project_overview_views.xml"
+      ]
     }
   },
   "blockers": [
@@ -713,7 +761,7 @@
     "Verification-tool path debt (registered, NOT fixed in this round, no gate relaxed): make verify.form_structure.contract cannot pass in-repo because its member verify.user_form.preference.boundary_guard hardcodes addons/smart_construction_custom/models/user_preferences.py and reads it directly; that module does not exist in this repository (git log --all -- addons/smart_construction_custom is empty, absent on origin/main too) - it is a customer-custom addon outside the repository boundary, mounted and installed at runtime (the governed runtime guard scripts/verify/daily_dev_customer_addons_runtime_guard.py checks it live). Local reproduction: FileNotFoundError. Report per-target evidence only; the owning layer is that guard's owner.",
     "Intentional environment retirement, recorded so it is not mis-read as an environment failure: the isolated acceptance carrier (project sc-fe-r2-p1-01 / database sc_frontend_acceptance / volumes sc_fe_r2_p1_01_*) was retired on the owner's instruction ('sc-fe-r2-p1-01 已经没有价值了直接收回') through the new governed entry make acceptance.runtime.carrier.discard, and readback confirms zero remaining containers and zero remaining volumes. As a direct consequence, acceptance.runtime.baseline_recovery.audit and acceptance.runtime.infrastructure.restore now DENY with 'missing credential authority container: sc-fe-r2-p1-01-odoo-1'. That DENY is the expected behaviour of the pre-existing entries, which require the carrier to exist; it is NOT a statement that the environment is broken, and it must not be generalised into an environment-wide verdict. The governed recovery path is the new reciprocal entry make acceptance.runtime.carrier.provision (rebuild empty base + delegate DB create/install/upgrade to scripts/test/frontend_acceptance_db_ensure.sh), which has not been executed end to end because recreating the tenant would write the database and install the module bundle. Whether to run it, or to leave the tenant retired, is the owner's call."
   ],
-  "next_exact_step": "载体退役轮在工具层已收口：HEAD=ab1987f0806ef3394d94f10f1d7b6d05c61030c9 干净，origin 与 gitee-mirror 同名分支均回读该 SHA；make acceptance.runtime.carrier.discard 与 .provision 两个受管入口已补齐，discard 已实跑并回读（PASS volumes_removed=3，负例 DENY，幂等 already_absent=true），verify.acceptance.runtime.baseline_rebuild.unit 78 tests OK + 源守卫 PASS，make ci.local.iteration PASS(L1)。整体目标仍未完成。下一步二选一：(1) 若继续产品交付主线，回到日常开发服务器（http://1.95.85.92:18081/，sc_demo，wutao/123456）由 owner 登录做用户视角验收；产品面原清单仍有「创建/编辑与工作台最小证据差额」待处理。(2) 若执行新任务，先在 .agent/goals/ 与 .agent/runs/<goal-id>/run.json 注册新目标并更新 .agent/active-runs.json 指向，再开始写入，不要静默继承本 run。需 owner 裁决：(a) 是否实跑 make acceptance.runtime.carrier.provision 恢复该隔离租户（会重建空库并安装模块包，耗时较长），或确认该载体按退役保留（当前已无副本）；(b) 已知的 acceptance.runtime.baseline_recovery.audit / infrastructure.restore DENY 是否接受为退役后的预期状态。待 owner 决策的清理候选（未执行，与上一轮相同）：(a) origin 上 67 条未并入 main 的历史/分叉分支；(b) 未跟踪 .runtime/（378M）；(c) .git/codex/evidence/ci.local.quick 回执（可用 make ci.local.quick.gc 回收）。保留的 owner 政策议题：(a) 扫描组/分片并行默认取向；(b) 宏分片残余边界；(c) 226 条 absent-asset 规则退役；(d) 760 条零引用 target 中 109 条 candidate 的接线或退役判断。",
+  "next_exact_step": "本轮布局规则边界收口在代码与门禁层已收口：事实源(P1 原生 arch + P3 低代码)与投影职责(P0 统一为 span 1..24)分离，前端只消费声明且缺声明即 fail-closed；附带修正了一处自 PR #621 起使 verify.business_config.unit 恒红的既有守卫违规（仅改注释措辞，未动守卫）。已通过：ci.local.iteration(L1)、typecheck.strict、form_canvas_layout.guard、form_grid_span.browser(rows=45/failures=0)、form_container_presentation.guard、business_config.unit、scene_component_bridge.guard、page_pattern_reference_parity.unit、backend_contract_boundary_guard。下一步二选一：(1) 在干净冻结 HEAD 上跑一次 make ci.local.quick，随后按普通 Gitee PR 候选推送并在远端取得必需检查后合并（按 owner 合并规则），再把本批部署到日常开发服务器，由 owner 用 wutao/123456 + sc_demo 完成项目表单编辑态在 1440/390 与明暗主题下的真实渲染确认；(2) 若执行新任务，先在 .agent/goals/ 与 .agent/runs/<goal-id>/run.json 注册新目标并更新 .agent/active-runs.json 指向，不要静默继承本 run。需 owner 注意的环境事实：本地 sc_dev_demo 对 wutao 的「项目台账」返回 403（发布对判定拒绝，导航却已声明该叶子），已确认为本地演示库发布/角色数据事实且与本批改动无关（发布/权限路径不导入本批改动模块）；本地不具备可用的产品面渲染确认条件，本批真实页面确认统一放在日常开发服务器。",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -2359,6 +2407,50 @@
       "untouched_and_reused": "sc-local-dev (daily dev server http://1.95.85.92:18081/, database sc_demo, credential wutao/123456) was not touched. Unchanged passing product evidence for the daily runtime continues to be reused as recorded elsewhere in this run.",
       "status_boundaries": "批次验收完成（本批 P4 工具层）+ 载体已退役。产品交付完成未主张：日常开发服务器的用户视角验收仍需 owner 本人登录核对。",
       "runtime_execution_record": "The real discard action is not modelled as a run *check* because the ledger guard requires every check target to be a registered verify.* make target, and make acceptance.runtime.carrier.discard is an environment entry, not a verify target. Its execution and readback are recorded here instead; the reusable, re-runnable gate for this batch is checks.acceptance_carrier_lifecycle_unit (verify.acceptance.runtime.baseline_rebuild.unit), which covers the entries' source contract and negative cases."
+    },
+    "round_20261011_form_layout_rule_boundary": {
+      "title": "表单布局规则边界收口：事实源与投影职责分离，前端只消费声明 span(1..24)",
+      "owner_decision": "owner 判定 A 方案并授权立即完善：保留双层布局事实源（P1 原生 arch + P3 低代码），把布局规则的归一与边界收敛到 P0 投影层统一定义。",
+      "fact_sources": {
+        "p1_native_arch": "addons/smart_construction_core/views/core/project_overview_views.xml（<group col=\"4\">、col=\"1\"、col-12 col-md-6 col-lg-3、d-flex 行容器）",
+        "p3_low_code": "ui.business.config.contract -> view_orchestration.views.form 的 columns/group_columns/field_size/sections/visibility",
+        "p0_projection_declaration": "addons/smart_core/core/view_orchestration_contract.py 新增 layout 规则边界块（LAYOUT_GRID_UNITS / LAYOUT_UNIT_FACET / LAYOUT_DECLARATION_PRECEDENCE / LAYOUT_DECLARATION_VOCABULARIES / LAYOUT_RENDERER_MAY_NOT / layout_rule_boundary）",
+        "p0_render_unit": "frontend/apps/web/src/components/template/layoutSpan.ts（唯一单位 24 栅格 + 声明判定 + fail-closed）"
+      },
+      "root_cause_chain": [
+        "P1 arch 声明 <group col=\"4\">；P0 投影把容器 col 原样外发为 attributes.col，叶子 span 恒为 24。",
+        "P0 前端 normalizeColumns 只承认 1|2|3，col=4 被静默丢弃后回落 2。",
+        "P0 前端另有一份私有宽度词表（spanClass + ?? 12 兜底），与契约声明脱钩；在共享列容器下把参与字段压到约 112px 单列。",
+        "结论：同一份 col=4 在 arch、投影、渲染三处各自解释，缺少单一布局单位与规则边界。"
+      ],
+      "fix_boundary": "布局规则只由 P0 投影定义并归一为 span(1..24)；前端不得自定义宽度词表，不得在缺少声明时猜测宽度（缺声明即 fail-closed 整行）。不放宽任何既有验收断言，不添加付款/项目等模型特判。",
+      "verification": {
+        "L1_ci_local_iteration": "PASS",
+        "verify.frontend.typecheck.strict": "PASS",
+        "verify.frontend.form_canvas_layout.guard": "PASS（含 fail-closed 单位、渲染器必须消费、band 属性名、双权威等负例）",
+        "verify.frontend.form_grid_span.browser": "PASS rows=45 failures=0，负例自测 4/4 检出",
+        "verify.form_container_presentation.guard": "PASS（arch col=4 -> [6,6,6,6]、col=1 -> [24]、col-* -> [6,24]、low_code field_size、显式 span 与变异自测）",
+        "verify.frontend.scene_component_bridge.guard": "PASS checks=129 collaboration_self_check=259",
+        "verify.frontend.page_pattern_reference_parity.unit": "PASS entries=67 owned_gaps=0",
+        "verify.business_config.unit": "PASS（8 项守卫 PASS、9 组后端单测 OK、0 FAIL）",
+        "backend_contract_boundary_guard": "PASS（managed_layout_channel_conflicts: []）"
+      },
+      "collateral_repair": {
+        "what": "make verify.business_config.unit 自 PR #621(514e1b51, 2026-10-08) 起一直为红：contractGap.ts 等三处注释使用了 401bcb3b(2026-07-20) 起即被 business_config_user_language_guard 禁用的词「契约缺口/契约快照」。origin/main 同源复现。",
+        "ruling": "新代码违反既有守卫，而非守卫过严；只改注释措辞，不动守卫、不放宽门禁范围。术语与文件内既有权威命名（ContractDefectRef / kind='contract_defect' -> 契约缺陷）对齐。",
+        "verified": "verify.frontend.product_language.guard PASS；make verify.business_config.unit 全绿。"
+      },
+      "runtime_observation_local_dev": {
+        "fact": "本地 sc-local-dev / sc_dev_demo 以 wutao/scdevpass 登录后，声明入口「项目台账」在导航树中存在（leaf route /a/519?menu_id=382），但打开时被 addons/smart_core/security/intent_permission.py 的发布判定拒绝：403「用户无权访问菜单 项目台账」（_published_menu_decision -> menu_publication_decision 对 (382,519) 返回非 True）。",
+        "ruling": "与本次改动无关：读操作确认该拒绝来自 delivery/runtime_route_authority 的发布对判定，而 runtime_route_authority.py / system_init.py / intent_permission.py 均不导入本批改动的 ui_contract_v2_projection 或 view_orchestration_contract；同时 wutao 在本地库中确实持有该菜单要求的组（SC 能力 - 项目中心只读）。",
+        "classification": "本地演示库的发布/角色数据事实，不是本批回归，也不作为交付阻塞；本批的验收载体是日常开发服务器(sc_demo)。",
+        "residual": "真实页面（项目表单编辑态 1440/390、明暗主题）的渲染确认仍需在合并部署后的日常开发服务器由 owner 登录完成；本批已用具名守卫覆盖投影与渲染两侧，不做无契约依据的前端兜底。"
+      },
+      "reuse": "未改动的上游结果继续复用；本次只重跑受影响的 L1/L2（ci.local.iteration、typecheck.strict、business_config.unit、scene_component_bridge、page_pattern_reference_parity）与两个布局守卫。",
+      "commits": {
+        "p0_layout": "7cd7c106",
+        "p0_product_language_alignment": "8bd09aee"
+      }
     }
   },
   "continuation": {
@@ -2390,8 +2482,8 @@
   "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced.",
   "stage_identity": {
     "kind": "stage",
-    "head": "ab1987f0806ef3394d94f10f1d7b6d05c61030c9",
+    "head": "8bd09aee32ce755cf50a3f1e4fc6a343f99857c6",
     "dirty_scope": [],
-    "note": "carrier-lifecycle P4 tooling round. The only tracked changes are the new governed acceptance-carrier lifecycle entries (scripts/dev/frontend_acceptance_carrier_{common,discard,provision}.sh, scripts/dev/frontend_acceptance_operation_entry.sh, make/dev.mk) and their unit test (scripts/verify/test_frontend_acceptance_carrier_discard.py). No product, contract, module or frontend layer is touched, so no prior product/runtime evidence is invalidated. The last full-fingerprint frozen quick receipt still belongs to 8269bbc2; this head is an iteration-stage identity, not a delivery freeze."
+    "note": "form layout rule boundary round (P0 projection + P0 frontend render unit + P0 guards/tests) plus a P0 comment-wording alignment to an existing product-language guard. Only the P0 layout/投影/渲染层与守卫被改动；docs/engineering_convergence 与 docs/frontend_productization 的生成报告为 ci.delivery.freeze.prepare 产物。以下台账/生成证据提交为 bookkeeping，真实冻结身份与 Quick 回执记录在未跟踪证据存储中。非交付冻结身份。"
   }
 }
