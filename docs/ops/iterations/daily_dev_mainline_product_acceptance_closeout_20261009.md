@@ -2921,3 +2921,25 @@ role_evidence.matched_groups_by_role = {
 **夜间红灯范围核实**（`branch=main, event=schedule`）：红灯只有 `frontend_release_gate` 及其同 event 级联 `release_candidate_gate`；`public_guard`/`merge_policy_gate` 一直 success，`backend_test_suite` 与 `professional_quality_gate` 在 10-10 已 success。本修复解红前者后，后者的级联条件随之满足。
 
 **内容同一声明**：`git diff a0afb331 8ade77f5` 为空（origin/main 与分支头逐字节一致）；日常开发服务器现服务 `545da744`，与 main 的差异仅 `.agent/` 与 `docs/`，产品/工具路径完全相同，故不重复部署、不重复取证。
+
+**十四、日常开发服务器回切 main 模式（第 28 轮收口末段）**
+
+动机：合并后日常开发服务器仍停在候选模式的 detached HEAD `545da744`。虽然其产品/工具路径与 main 逐字节一致，但「服务面是候选」本身留有歧义。按受管 runbook「已合并 main 提交可用 main 模式回切」，把运行面恢复为权威主线身份 `a0afb331`，使 `served == origin/main`。
+
+本地准入：main 模式 bundle sync 要求本地工作区处于 `origin/main` 精确 SHA 且干净；主工作区在审计分支（`eaf8de32`），故经受管入口 `make workspace.worktree.create`（`APPLY=1`，`CREATE_WORKTREE_CONFIRM=CREATE_GOVERNED_WORKTREE`）新建兄弟工作区 `sce-backend-odoo-mainmode`（分支 `release/daily-main-mode-20261011`，base `a0afb331`），三段受管步骤均在该工作区执行。
+
+远端前置核验（`ssh sc-root`）：detached HEAD=`545da744`、`refs/heads/main`=`refs/remotes/origin/main`=`8870c70c`、worktree clean、`refs/daily-candidates/` 存在候选引用——满足「候选→main」回切条件。
+
+| 步骤 | 入口 | 结果 |
+| --- | --- | --- |
+| Step 1 | `make daily.runtime.main.bundle_sync`（`EXPECTED_SHA=a0afb331`，`OLD_SHA=8870c70c`，`EXPECTED_CANDIDATE_SHA=545da744`） | PASS，`changed=true`，`normalized_from_candidate=true`，`bundle_sha256=160987bf…`，`upstream=origin/main` |
+| Step 2 | `make daily.runtime.source_revision.align` | PASS，`previous_revision=545da744`，`env_written=true`，`restarted=true`，`rolled_back=false` |
+| Step 3 | `make daily.runtime.published_face.converge`（`login=wutao`，`upgrade-modules=smart_core,smart_construction_core`） | PASS，`guard_status=PASS`，`converge_returncode=0` |
+
+**模块升级按实际变更判断**：两个 snapshot 重建为 `snapshot_version=daily-navigation-preview-a0afb331e1a5`；`module_tree_ids` 与候选部署一致（`smart_construction_core=afe2c918`、`smart_core=400ac596`），故升级按 tree 未变而跳过。
+
+**服务端身份回读**（`http://1.95.85.92:18081/api/runtime-version`）：`source_revision=git_sha=a0afb331e1a56d636c316c39e22b63453626cbbd`，`database=sc_demo`，`environment=dev`，`frontend_build_sha256=dac3544e…`（不变——本轮无前端改动，未重建前端）。
+
+**修复效果复测**（受管只读探针 `system.init`）：`fixture_role_finance=[finance]`、`fixture_role_pm=[pm]`、`wutao=[business_config_admin,executive,pm,cost]`，仍均不含 `project_member`。
+
+**边界**：本步骤只把运行面身份从候选切回 main，不改产品代码、不升级模块、不重建前端；`served` 现等于 `origin/main a0afb331`，消除「运行面领先/落后主线」的历史歧义。**剩余**：仅所有者本人用户级验收（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`）。
