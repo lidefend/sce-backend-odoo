@@ -829,14 +829,16 @@
       ]
     },
     "frontend_navigation_audit_unit": {
-      "target": "node --test scripts/verify/frontend_navigation_audit.test.mjs",
+      "target": "verify.frontend.release.unit",
       "kind": "offline",
       "inputs": [
+        "make/runtime_ops.mk",
         "scripts/verify/frontend_navigation_audit.mjs",
         "scripts/verify/frontend_navigation_audit.test.mjs",
         "frontend/apps/web/scripts/frontend_product_maturity_audit.mjs",
         "config/frontend/authoritative_navigation.json"
-      ]
+      ],
+      "note": "Bound to the registered carrier: verify.frontend.release.unit runs `node scripts/verify/frontend_navigation_audit.test.mjs` (make/runtime_ops.mk). The raw node command is not a registered make target, so it must not be used as a check target."
     },
     "role_catalog_capability_precedence_unit": {
       "target": "verify.role_surface.landing.contract.unit",
@@ -850,6 +852,20 @@
         "scripts/release/test_locked_menu_policy_contract.py",
         "make/ci.mk"
       ]
+    },
+    "capability_role_precedence_l4_page_identity_browser": {
+      "target": "verify.frontend.page_identity.browser",
+      "kind": "runtime",
+      "inputs": [
+        "config/frontend/authoritative_navigation.json",
+        "config/frontend/role_surface_exposure_declarations_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "frontend/apps/web/scripts/frontend_product_maturity_audit.mjs",
+        "scripts/verify/frontend_navigation_audit.mjs",
+        "addons/smart_construction_core/services/locked_menu_policy_contract.py",
+        "addons/smart_core/identity/identity_resolver.py"
+      ],
+      "note": "L4 evidence for the capability-role precedence fix, produced by the remote full lane (frontend_release_gate.yml run 38145165960 on HEAD b8eb0473, identical command path). navigation-report total 30=30=30 PASS (finance 15/15, project_a_member 5/5, pm 7/7, owner 3/3); gate-result PASS. Recorded in evidence.round_20261011_capability_role_precedence_l4_navigation_pass."
     }
   },
   "blockers": [
@@ -861,9 +877,9 @@
     "Verification-tool path debt (registered, NOT fixed in this round, no gate relaxed): make verify.form_structure.contract cannot pass in-repo because its member verify.user_form.preference.boundary_guard hardcodes addons/smart_construction_custom/models/user_preferences.py and reads it directly; that module does not exist in this repository (git log --all -- addons/smart_construction_custom is empty, absent on origin/main too) - it is a customer-custom addon outside the repository boundary, mounted and installed at runtime (the governed runtime guard scripts/verify/daily_dev_customer_addons_runtime_guard.py checks it live). Local reproduction: FileNotFoundError. Report per-target evidence only; the owning layer is that guard's owner.",
     "Intentional environment retirement, recorded so it is not mis-read as an environment failure: the isolated acceptance carrier (project sc-fe-r2-p1-01 / database sc_frontend_acceptance / volumes sc_fe_r2_p1_01_*) was retired on the owner's instruction ('sc-fe-r2-p1-01 已经没有价值了直接收回') through the new governed entry make acceptance.runtime.carrier.discard, and readback confirms zero remaining containers and zero remaining volumes. As a direct consequence, acceptance.runtime.baseline_recovery.audit and acceptance.runtime.infrastructure.restore now DENY with 'missing credential authority container: sc-fe-r2-p1-01-odoo-1'. That DENY is the expected behaviour of the pre-existing entries, which require the carrier to exist; it is NOT a statement that the environment is broken, and it must not be generalised into an environment-wide verdict. The governed recovery path is the new reciprocal entry make acceptance.runtime.carrier.provision (rebuild empty base + delegate DB create/install/upgrade to scripts/test/frontend_acceptance_db_ensure.sh), which has not been executed end to end because recreating the tenant would write the database and install the module bundle. Whether to run it, or to leave the tenant retired, is the owner's call.",
     "Verification-tool debt, registered (NOT fixed, no gate relaxed, and NOT a product verdict): `verify.business_config.low_code_layout_runtime` fails on the deployed daily runtime by driving a `配置表单字段` card button and a `.config-card` that the current product baseline no longer renders. The label was removed from frontend source in 401bcb3b ('feat: establish clean product baseline'); on pre-deploy main 7eec3f0e it already existed only inside acceptance scripts (low_code_form_layout_runtime_acceptance.mjs, low_code_form_group_matrix_acceptance.mjs, low_code_form_runtime_consistency_acceptance.mjs, and as an expected action name in config_workbench_operation_acceptance.mjs). This batch does not touch those scripts (git diff 7eec3f0e 8870c70c on that path is empty) and the entry is not part of this run's governed check set, so the failure is stale-tool debt on the config-workbench lane, not a canonical-grid regression. Repairing it needs that lane's current declared surface authority; a label-only edit would be a meaningless green, so it is deliberately left open.",
-    "Root-caused and fixed, L4 evidence pending (see evidence.round_20261011_capability_role_precedence_delivery_surface): the scheduled full-lane red (frontend_release_gate on main, red almost nightly since 2026-10-01) is the delivered-surface drift at make verify.frontend.page_identity.browser. It was NOT a stale tool and NOT a declaration gap: the 8870c70c dispatch run 38143504375 reproduced finance 15->17 / pm 7->8 / owner 3->4, all four extra leaves being declared capability_reachable_not_delivered. The cause is the role-catalog projection introduced in d106d2dd putting the declared capability role project_member into the business role precedence, so every principal whose materialised group closure reaches group_sc_cap_project_read was unioned with project_member's primary surface. Fix is single-point in role_catalog_resolution (precedence excludes declared capability roles; bindings keep them for the capability fallback branch) with a mutation-verified regression test. Remaining: one browser-level run of the same failed command on the frozen candidate (local verify.frontend.page_identity.browser or the dispatched full lane) comparing per-role leaf counts against the 38143504375 navigation report, plus a post-deploy system.init readback on the managed daily runtime."
+    "RESOLVED (L4 passed, deploy readback pending; see evidence.round_20261011_capability_role_precedence_l4_navigation_pass): the scheduled full-lane red (frontend_release_gate on main, red almost nightly since 2026-10-01) was the delivered-surface drift at make verify.frontend.page_identity.browser. It was NOT a stale tool and NOT a declaration gap: the 8870c70c dispatch run 38143504375 reproduced finance 15->17 / pm 7->8 / owner 3->4, all four extra leaves being declared capability_reachable_not_delivered. The cause is the role-catalog projection introduced in d106d2dd putting the declared capability role project_member into the business role precedence, so every principal whose materialised group closure reaches group_sc_cap_project_read was unioned with project_member's primary surface. Fix is single-point in role_catalog_resolution (precedence excludes declared capability roles; bindings keep them for the capability fallback branch) with a mutation-verified regression test. L4 confirmed on the frozen candidate b8eb0473: dispatch run 38145165960 completed/success, navigation-report total 30=30=30 PASS (finance 15/15, project_a_member 5/5, pm 7/7, owner 3/3; unexpected/missing empty), frontend-release-audit gate-result PASS. Remaining: refresh the managed daily-dev runtime to b8eb0473 and read back /api/runtime-version source_revision + frontend build sha and system.init role_surface.surface_role_codes (must no longer contain project_member), then the owner's own user-level acceptance."
   ],
-  "next_exact_step": "第 28 轮：能力角色优先级投影缺陷已修复并定向解红（详见 evidence.round_20261011_capability_role_precedence_delivery_surface）。下一步=在冻结候选上完成一次 L4 浏览器级验收：推送本候选并派发 frontend_release_gate full 车道（workflow_dispatch，与 38143504375 同命令），按 navigation-report.json 对比 finance 15 / project_a_member 5 / pm 7 / owner 3 全部 PASS 且 total expected 30 = actual 30，然后按受管四步刷新日常开发服务器并回读 system.init 的 role_surface.surface_role_codes 不再包含 project_member；最后才回到所有者本人的用户级验收（wutao/123456、sc_demo、http://1.95.85.92:18081/）。",
+  "next_exact_step": "第 28 轮 L4 已通过（evidence.round_20261011_capability_role_precedence_l4_navigation_pass; run 38145165960 PASS, navigation total 30=30=30）。下一步=按受管四步把日常开发服务器刷新到 b8eb0473（后端投影代码已变，需刷新受管后端，是否升级模块按实际变更判断），然后回读 /api/runtime-version 的 source_revision 与前端 build sha、及 system.init 的 role_surface.surface_role_codes 不再含 project_member；再待 owner 决定 make pr.push / 合并主线；最后回到所有者本人用户级验收（wutao/123456、sc_demo、http://1.95.85.92:18081/：项目台账/项目表单编辑态 1440/390 明暗主题 + 关系交互）。",
   "evidence": {
     "round_20261011_layout_contract_gap_audit": [
       "只读审计，未做任何代码/环境变更；HEAD 66ff3471，工作区干净。问：布局契约相对组件系统官方数据要求是否还有缺口。结论：有，且不在宽度单值（PR #642 已把 native col/col-*/lowcode columns/field_size 归一到 24 单位 span 并 fail-closed），而在 ①词汇表分层 ②容器列数声明 ③响应式布局 ④区域/分区声明 四处。",
@@ -2798,6 +2814,19 @@
       "本轮定向结果（风险选择、非零）：verify.role_surface.landing.contract.unit PASS（33/33，含新测试）；verify.frontend.role_surface_exposure_declaration.guard PASS；verify.frontend.release_navigation_policy.guard PASS（released_leaf_identities=88）；verify.frontend.navigation_shell.unit PASS；node --test scripts/verify/frontend_navigation_audit.test.mjs PASS；make ci.local.iteration PASS（L1，scope=dirty）。",
       "未决（L4）：交付面收敛需在冻结候选上跑一次浏览器级证据——本地 make verify.frontend.page_identity.browser 或远端 frontend_release_gate full 车道（同一命令即 38143504375 的失败命令），并与 38143504375 的 navigation-report.json 逐键对比 finance 15 / pm 7 / owner 3 / project_a_member 5。部署后需在受管日常开发运行面回读 system.init 的 role_surface.surface_role_codes 已不含 project_member。",
       "既有债务（与本轮无关，已实测在本轮 HEAD 即失败，且未接入任何 make 目标）：addons/smart_core/tests/test_identity_resolver_entry_target.py 1 例（断言 pm 的 primary 含 menu_sc_project_initiation，该成员已不在 ROLE_SURFACE_OVERRIDES['pm']）、addons/smart_construction_core/tests/test_role_surface_cost_label.py 2 例。用 git stash 回退本轮两文件后复测结果完全相同，故非本轮引入；不在本轮声明范围内，仅登记。"
+    ],
+    "round_20261011_capability_role_precedence_l4_navigation_pass": [
+      "L4 结论（冻结候选 = HEAD b8eb0473，git_sha b8eb04738301495e85e76c627d965f86cae3eaea）：远端 frontend_release_gate full 车道按与失败命令同口径（authoritative_command = cd frontend/apps/web && pnpm test:release）派发 run 38145165960（event=workflow_dispatch，head=b8eb0473），completed/success。frontend-release-audit/gate-result.json：result=PASS，reason_codes=[]，git_sha=b8eb0473，git_tree=7419415c9f6fd15f702be90434583ca68626be05。",
+      "逐角色对账（frontend-page-identity/navigation-report.json，generated_at 2026-10-11T14:07:44.718Z，database=sc_frontend_acceptance，base_url=http://127.0.0.1:5175）：finance 15/15 PASS、project_a_member 5/5 PASS、pm 7/7 PASS、owner 3/3 PASS；total expected 30 = actual 30 = matched 30，result PASS。全部角色的 missing/unexpected/duplicate/invalid_leaf_keys 均为空。frontend-page-identity/failure-summary.json failures=[]。",
+      "与修复前基准对比（run 38143504375，git_sha=8870c70c 的 navigation-report.json）：修复前 finance 15→17、pm 7→8、owner 3→4、project_a_member 5/5，total expected 30 / actual 34 / matched 30 / result FAIL；四条多余叶子恰为 ROLE_SURFACE_OVERRIDES['project_member']['primary_menu_xmlids'] 的成员。修复后 actual 从 34 收敛回 30，四条越界叶子全部消失，其余角色集合未变（无回归）。",
+      "判定依据复用：本结果只证明交付面收敛，不新增产品语义。契约基线与 sha256 锁未变（见 scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256），未放宽任何断言，未改 ACL/字段权限/合法隐藏规则/runtime 配置。source.kind=governed_runtime_surface_inventory，source_sha=0ac5173be801861ea621dd0e5048c9fc18548049（docs/frontend_productization/frontend_surface_inventory_v1.csv）。",
+      "产物位置（本地已下载回读）：/tmp/art451/frontend-release-evidence-38145165960-1-b8eb04738301495e85e76c627d965f86cae3eaea/{frontend-page-identity/navigation-report.json, frontend-page-identity/failure-summary.json, frontend-release-audit/gate-result.json}；修复前基准：/tmp/art435b/frontend-release-evidence-38143504375-1-8870c70c…/frontend-page-identity/navigation-report.json。",
+      "部署层未决（本 evidence 不宣称部署完成）：日常开发服务器需按受管四步刷新到 b8eb0473，并回读 /api/runtime-version 的 source_revision 与前端 build sha、以及 system.init 的 role_surface.surface_role_codes 不再含 project_member，然后才回到所有者本人用户级验收。"
+    ],
+    "round_20261011_run_check_binding_repair": [
+      "现象：b8eb0473 的 run.json 使 `make agent.run.resume` 失败：`check frontend_navigation_audit_unit must name a registered verify target`。原因：run schema 要求每个 check 的 target 必须匹配 `verify\\.[a-zA-Z0-9_.-]+` 且是已注册 make 目标，而该 check 的 target 写成了裸命令 `node --test scripts/verify/frontend_navigation_audit.test.mjs`。该缺陷由 b8eb0473 引入（HEAD~1 为 0 个非法 check），并会连带阻断 `make ci.local.iteration` 的 run 解析。",
+      "修复（仅台账，不改产品/工具）：`frontend_navigation_audit_unit` 改绑到该 node 测试的已注册载体 `verify.frontend.release.unit`（make/runtime_ops.mk 的该目标 recipe 内运行 `node scripts/verify/frontend_navigation_audit.test.mjs`），inputs 增补 make/runtime_ops.mk；本轮新增的 L4 check 也从非法 target 改为已注册的 `verify.frontend.page_identity.browser`（kind=runtime），run 细节写入 note 与 evidence。未新增 make 目标（避免改动 L4 已冻结候选的输入），未放宽任何断言。",
+      "复核：`make agent.run.resume` 现在通过（status=reconcile，checks 均 not_run=no local receipt）；`verify.agent.resume.unit` PASS（40/40）；`verify.agent.ledger.unit` PASS（15/15，guard PASS goals=93 runs=71）。"
     ]
   },
   "continuation": {
@@ -2829,13 +2858,8 @@
   "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced.",
   "stage_identity": {
     "kind": "stage",
-    "head": "19c5573b51f5ae2b2cb006a7ced8d188b4e25890",
-    "dirty_scope": [
-      "addons/smart_construction_core/services/locked_menu_policy_contract.py",
-      "scripts/release/test_locked_menu_policy_contract.py",
-      ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json",
-      "docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md"
-    ],
-    "note": "Iteration-stage identity: branch head 19c5573b (mainline 8870c70c plus ledger-only commits) plus the four declared dirty paths above. The two product paths are this round's root-cause fix and its regression test; no new frozen fingerprint is claimed yet. L4 (verify.frontend.page_identity.browser / dispatched full lane) runs on the frozen candidate after this round commits."
+    "head": "b8eb04738301495e85e76c627d965f86cae3eaea",
+    "dirty_scope": [],
+    "note": "Iteration-stage identity after this round's commits: product fix committed at fb20d8a1, ledger commit at b8eb0473 (branch head). Worktree clean and pushed to origin. This is the frozen candidate for the L4 run 38145165960 and the pending managed daily-dev deploy. Full tracked+untracked fingerprint is still produced only at final delivery."
   }
 }

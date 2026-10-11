@@ -2845,3 +2845,26 @@ role_evidence.matched_groups_by_role = {
 **九、既有债务（与本轮无关，已实测在 HEAD 即失败，未接入任何 make 目标）**
 
 `addons/smart_core/tests/test_identity_resolver_entry_target.py` 1 例、`addons/smart_construction_core/tests/test_role_surface_cost_label.py` 2 例；用 `git stash` 回退本轮两文件后复测结果完全相同，故非本轮引入，仅登记不修。
+
+**十、L4 结果（冻结候选 `b8eb0473`，git_sha `b8eb04738301495e85e76c627d965f86cae3eaea`）**
+
+按与失败命令同口径（`authoritative_command = cd frontend/apps/web && pnpm test:release`）派发远端 full 车道 `frontend_release_gate.yml`：
+
+- run `38145165960`（`event=workflow_dispatch`，`head=b8eb0473`）：`completed/success`。
+- `frontend-release-audit/gate-result.json`：`result=PASS`，`reason_codes=[]`，`git_tree=7419415c9f6fd15f702be90434583ca68626be05`。
+
+逐角色对账（`frontend-page-identity/navigation-report.json`）：
+
+| 角色 | expected | actual | matched | result | 越界/缺失叶子 |
+| --- | --- | --- | --- | --- | --- |
+| finance | 15 | 15 | 15 | PASS | 空 |
+| project_a_member | 5 | 5 | 5 | PASS | 空 |
+| pm | 7 | 7 | 7 | PASS | 空 |
+| owner | 3 | 3 | 3 | PASS | 空 |
+| **total** | **30** | **30** | **30** | **PASS** | 空 |
+
+对比修复前基准（run `38143504375`，`git_sha=8870c70c`）：`expected 30 / actual 34 / matched 30 / FAIL`（finance 15→17、pm 7→8、owner 3→4，四条多余叶子恰为 `ROLE_SURFACE_OVERRIDES['project_member']['primary_menu_xmlids']` 成员）。修复后 `actual` 从 34 收敛回 30，四条越界叶子全部消失，其余角色集合未变。`failure-summary.json` 的 `failures=[]`。
+
+**十一、部署层未决（本 L4 不宣称部署完成）**
+
+后端投影代码已变，需按受管四步把日常开发服务器刷新到 `b8eb0473`（是否升级模块按实际变更判断），再回读 `/api/runtime-version` 的 `source_revision` 与前端 build sha、以及 `system.init` 的 `role_surface.surface_role_codes` 不再含 `project_member`，然后才回到所有者本人用户级验收。
