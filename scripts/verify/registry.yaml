@@ -1224,6 +1224,15 @@ entries:
   date: '2026-10-02'
   wire_or_retire: file-consumed
   reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_frontend_acceptance_carrier_discard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-11'
+  wire_or_retire: file-consumed
+  reason: invoked by make/dev.mk in target verify.acceptance.runtime.baseline_rebuild.unit
+    as 'python3 -m unittest scripts.verify.<module>'; that target is not reachable from
+    a declared gate anchor, so this self-test is dispositioned file-consumed rather
+    than gate-wired
 - script: test_frontend_acceptance_runtime_profile.py
   status: active
   owner: platform-team
