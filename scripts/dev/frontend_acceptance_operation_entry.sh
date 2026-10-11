@@ -8,10 +8,33 @@ operation="${1:?acceptance operation required}"
 
 if [[ "${GITHUB_ACTIONS:-}" != "true" ]]; then
   export SC_FRONTEND_ACCEPTANCE_RUNTIME_ENTRY=operation_entry_v1
+  # The managed carrier lifecycle entries are P4 environment entries: they
+  # resolve the profile identity themselves so that discard does not depend on
+  # the credential container it is about to remove and provision can rebuild
+  # the carrier before that container exists again.
+  case "$operation" in
+    carrier-discard)
+      SC_ACCEPTANCE_RUNTIME_PROFILE="${SC_ACCEPTANCE_RUNTIME_PROFILE:-local}" \
+        bash "$ROOT_DIR/scripts/dev/frontend_acceptance_carrier_discard.sh"
+      exit $?
+      ;;
+    carrier-provision)
+      SC_ACCEPTANCE_RUNTIME_PROFILE="${SC_ACCEPTANCE_RUNTIME_PROFILE:-local}" \
+        bash "$ROOT_DIR/scripts/dev/frontend_acceptance_carrier_provision.sh"
+      exit $?
+      ;;
+  esac
   SC_ACCEPTANCE_RUNTIME_PROFILE="${SC_ACCEPTANCE_RUNTIME_PROFILE:-local}" \
     bash "$ROOT_DIR/scripts/dev/frontend_acceptance_runtime.sh" "$operation"
   exit $?
 fi
+
+case "$operation" in
+  carrier-discard|carrier-provision)
+    echo "DENY: managed acceptance carrier $operation is a local P4 environment entry and never runs in CI" >&2
+    exit 2
+    ;;
+esac
 
 source "$ROOT_DIR/scripts/common/frontend_release_ci_identity.sh"
 verify_frozen_frontend_release_ci_identity "$ROOT_DIR"
