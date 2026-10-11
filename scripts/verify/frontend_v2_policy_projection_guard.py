@@ -267,6 +267,11 @@ ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
     "native_pivot_view_projection",
     "web_pc",
     "wx_mini",
+    # Formal container/page zone enum values (bound to enum_registry.containerZone
+    # through STRICT_TYPE/DECODER_ENUM_REGISTRY_MAP below).
+    "detail_zone",
+    "collaboration_zone",
+    "attachment_zone",
     # Explicit dataMeta forbidden-key rejection.
     "business_operation_profile",
     "field_groups",
@@ -455,6 +460,7 @@ STRICT_TYPE_ENUM_REGISTRY_MAP = {
     "ContractV2RenderStrategy": ("renderStrategy",),
     "ContractV2PatchOperation": ("patchOperation",),
     "ContractV2PageRenderMode": ("renderMode",),
+    "ContractV2ContainerZone": ("containerZone",),
 }
 
 STRICT_DECODER_ENUM_REGISTRY_MAP = {
@@ -472,6 +478,7 @@ STRICT_DECODER_ENUM_REGISTRY_MAP = {
     "decodeCachePolicy": ("cachePolicy",),
     "decodeRenderStrategy": ("renderStrategy",),
     "decodePatchOperation": ("patchOperation",),
+    "decodeContainerZone": ("containerZone",),
 }
 
 

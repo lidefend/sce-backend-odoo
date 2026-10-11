@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import sys
@@ -19,6 +20,56 @@ ROOT = Path(__file__).resolve().parents[2]
 CORE_DIR = ROOT / "addons/smart_core/core"
 ASSEMBLER_PATH = ROOT / "addons/smart_core/core/unified_page_contract_v2_assembler.py"
 P1_PROJECT_LAYOUT_PATH = ROOT / "addons/smart_construction_core/core_extension_project_layout.py"
+
+# The assembled-contract response cache serves a whole assembled contract, so a
+# code change that is not reflected in its version literal keeps the previous
+# assembly on the delivery face (the layout declaration this round adds would
+# never reach a client that already has a cached contract).  The pin below binds
+# the version literal the handler serves to a digest of the code that produces
+# the assembled contract; on drift this guard fails closed and the author
+# re-pins both values deliberately instead of the cache hiding the change.
+ASSEMBLED_CACHE_VERSION = "ui-contract-v2-2026-10-11-layout-container-columns"
+ASSEMBLED_CACHE_HANDLER = "addons/smart_core/handlers/ui_contract_v2.py"
+ASSEMBLED_CACHE_INPUTS = (
+    ASSEMBLED_CACHE_HANDLER,
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/handlers/ui_contract_v2_projection.py",
+    "addons/smart_core/core/unified_page_contract_v2_client.py",
+)
+ASSEMBLED_CACHE_INPUTS_SHA256 = "1549e9e9bab0bf108659bb46f9de2b9e62ad146c19e2f2f32d99d772ea25f06b"
+
+
+def _assembled_cache_digest() -> str:
+    digest = hashlib.sha256()
+    digest.update(ASSEMBLED_CACHE_VERSION.encode("utf-8"))
+    for relative in ASSEMBLED_CACHE_INPUTS:
+        digest.update(relative.encode("utf-8"))
+        digest.update((ROOT / relative).read_bytes())
+    return digest.hexdigest()
+
+
+def check_assembled_contract_cache_pin(errors: list[str]) -> None:
+    handler_path = ROOT / ASSEMBLED_CACHE_HANDLER
+    if not handler_path.is_file():
+        fail(errors, f"assembled contract cache handler is missing: {ASSEMBLED_CACHE_HANDLER}")
+        return
+    handler_text = handler_path.read_text(encoding="utf-8")
+    if f'ASSEMBLED_CONTRACT_CACHE_VERSION = "{ASSEMBLED_CACHE_VERSION}"' not in handler_text:
+        fail(
+            errors,
+            "the handler does not serve the recorded assembled contract cache version "
+            f"{ASSEMBLED_CACHE_VERSION}: re-pin ASSEMBLED_CACHE_VERSION here and in "
+            f"{ASSEMBLED_CACHE_HANDLER}",
+        )
+    digests = _assembled_cache_digest()
+    if digests != ASSEMBLED_CACHE_INPUTS_SHA256:
+        fail(
+            errors,
+            "the assembled contract cache inputs changed without re-pinning: set "
+            f"ASSEMBLED_CACHE_INPUTS_SHA256 = {digests!r} and bump "
+            "ASSEMBLED_CONTRACT_CACHE_VERSION in the handler, or a stale assembled "
+            "contract stays served from cache",
+        )
 
 
 def load_json(path: Path) -> Any:
@@ -174,6 +225,29 @@ def validate_contract(
                 fail(errors, f"{node_path}.containerType must be listed in enum_registry.containerType")
             if "widgetType" in node and node["widgetType"] not in (registry_path(registry, ("widgetType",)) or []):
                 fail(errors, f"{node_path}.widgetType must be listed in enum_registry.widgetType")
+            if _owns_direct_field_child(node) and not _declared_positive_int(node.get("columns")):
+                fail(
+                    errors,
+                    f"{node_path}.columns must declare the field-grid column count of a "
+                    "container that owns direct field children",
+                )
+
+
+def _declared_positive_int(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    return value if isinstance(value, int) and value > 0 else None
+
+
+def _owns_direct_field_child(node: dict[str, Any]) -> bool:
+    children = node.get("children")
+    if not isinstance(children, list) or "widgetList" not in node:
+        return False
+    return any(
+        str(child.get("containerType") or child.get("type") or child.get("kind") or "").strip().lower() == "field"
+        for child in children
+        if isinstance(child, dict)
+    )
 
 
 def _layout_has_form_structure(rows: list[Any]) -> bool:
@@ -222,6 +296,7 @@ def main() -> int:
     target = load_assembler()
     p1_layout = load_module(P1_PROJECT_LAYOUT_PATH, "smart_construction_core_project_layout_guard_target")
     errors: list[str] = []
+    check_assembled_contract_cache_pin(errors)
     snapshot = load_json(args.snapshot)
     registry = load_json(args.enum_registry)
     schema_validator = Draft202012Validator(load_json(args.schema))
@@ -285,7 +360,12 @@ def main() -> int:
         schema_validator=schema_validator,
     )
     p1_contract = deepcopy(ui_contract)
-    p1_layout.sc_append_project_responsibility_group(p1_contract, include_collaborators=True)
+    # The pure P1 helper authors the group; the platform rule declares its grid,
+    # exactly as the runtime wrapper does for a container appended after the
+    # post-projection boundary.
+    p1_group = p1_layout.sc_append_project_responsibility_group(p1_contract, include_collaborators=True)
+    if p1_group is None or not target.declare_container_columns(p1_group):
+        fail(errors, "P1 late-appended grid container must be declared by the assembler column rule")
     validate_contract(
         p1_contract,
         expected_source_type="ui.contract",

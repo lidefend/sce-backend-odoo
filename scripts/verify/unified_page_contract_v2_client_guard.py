@@ -15,6 +15,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 CORE_DIR = ROOT / "addons/smart_core/core"
 CLIENT_PATH = ROOT / "addons/smart_core/core/unified_page_contract_v2_client.py"
+RENDERER_LAYOUT_SPAN_PATH = ROOT / "frontend/apps/web/src/components/template/layoutSpan.ts"
 
 
 def load_json(path: Path) -> Any:
@@ -37,6 +38,24 @@ def load_client_module():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+
+def renderer_layout_grid_units() -> int:
+    """The single layout grid the custom front end actually renders.
+
+    The pc delivery face must declare the same grid the renderer implements;
+    a declared second dialect (12) while every addressable width is projected
+    onto the 24-unit ``span`` facet would re-create the split layout authority
+    this guard exists to prevent.
+    """
+    import re
+
+    source = RENDERER_LAYOUT_SPAN_PATH.read_text(encoding="utf-8")
+    match = re.search(r"export function layoutGridUnits\(\): number \{\s*return (\d+);", source)
+    if not match:
+        raise RuntimeError("cannot read the renderer layout grid unit from layoutSpan.ts")
+    return int(match.group(1))
 
 
 def fail(errors: list[str], message: str) -> None:
@@ -90,6 +109,18 @@ def main() -> int:
             fail(errors, f"{client}: adaptMode must be listed in enum_registry.adaptMode")
         if hints.get("columns") != expected.get("columns"):
             fail(errors, f"{client}: layout columns mismatch")
+        if client == "web_pc":
+            grid_units = renderer_layout_grid_units()
+            if hints.get("columns") != grid_units:
+                fail(
+                    errors,
+                    f"{client}: declared layout columns {hints.get('columns')} must equal the renderer layout grid {grid_units}",
+                )
+            if getattr(target, "DESKTOP_LAYOUT_GRID_UNITS", None) != grid_units:
+                fail(
+                    errors,
+                    f"{client}: DESKTOP_LAYOUT_GRID_UNITS must equal the renderer layout grid {grid_units}",
+                )
         if hints.get("mobileCollapse") != expected.get("mobileCollapse"):
             fail(errors, f"{client}: mobileCollapse mismatch")
         registry_rows = layout.get("componentRegistry") or {}

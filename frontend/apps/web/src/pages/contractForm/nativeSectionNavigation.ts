@@ -91,10 +91,14 @@ export function sectionFollowMayMoveTrack(ownership: SectionTrackOwnership): boo
 
 type NativeSectionAuthorityNode = {
   attributes?: Record<string, unknown>;
-  sourceAuthority?: Record<string, unknown>;
-  source_authority?: Record<string, unknown>;
+  zone?: unknown;
 };
 
+// A section's zone is contract output: the backend declares ``zone`` on every
+// layout container and resolves nesting before delivery.  A released native
+// view may still carry an explicit ``data-sc-navigation-role`` marker, which is
+// a declared attribute, not an inference.  Nothing here may re-derive a zone
+// from an authority facet or from a container kind.
 export function nativeSectionNavigationRole(node: NativeSectionAuthorityNode): NativeSectionNavigationRole {
   const explicitRole = String(
     node?.attributes?.['data-sc-navigation-role']
@@ -103,11 +107,9 @@ export function nativeSectionNavigationRole(node: NativeSectionAuthorityNode): N
   ).trim().toLowerCase();
   if (explicitRole === 'subordinate') return 'subordinate';
   if (explicitRole === 'primary') return 'primary';
-  const authority = node?.sourceAuthority || node?.source_authority || {};
-  const projectionOnly = authority.projection_only === true || authority.projectionOnly === true;
-  const noBusinessAuthority = authority.no_business_fact_authority === true
-    || authority.noBusinessFactAuthority === true;
-  return projectionOnly && noBusinessAuthority ? 'subordinate' : 'primary';
+  const zone = String(node?.zone ?? '').trim().toLowerCase();
+  if (zone === 'collaboration_zone' || zone === 'attachment_zone') return 'subordinate';
+  return 'primary';
 }
 
 type BusinessActionCandidate = { label?: string; enabled?: boolean };

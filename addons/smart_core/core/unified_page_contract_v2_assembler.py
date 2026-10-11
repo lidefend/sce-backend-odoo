@@ -477,6 +477,94 @@ def _base_contract(
     }
 
 
+# The contract owns the page's semantic zones.  ``native_view_reuse_frontend_spec_v1.md``
+# sections 4.3 and 5 make ``zone`` backend semantic elevation output and the
+# renderer's only structural input, so the renderer must never re-derive a zone
+# from an unrelated facet.  These are the zones the projection can determine from
+# native structure identity; additional zones are added here when the projection
+# can authoritatively determine them, never invented beside them.
+ZONE_DETAIL = "detail_zone"
+ZONE_COLLABORATION = "collaboration_zone"
+ZONE_ATTACHMENT = "attachment_zone"
+CONTAINER_ZONE_DEFAULT = ZONE_DETAIL
+COLLABORATION_CONTAINER_KINDS = frozenset({
+    "chatter", "activity", "activities", "timeline", "followers", "mail_thread",
+})
+ATTACHMENT_CONTAINER_KINDS = frozenset({"attachment", "attachments"})
+
+
+# The contract owns the container's field-grid column count exactly as it owns
+# the zone: the renderer presents the declared number and never re-derives one
+# from its own component default.  The official component system arranges a
+# field group as ``repeat(2, minmax(0, 1fr))`` (@sc/ui SceneObjectPage
+# ``.scene-field-grid``) and the native ``<group>`` default is ``col="2"``, so
+# an undeclared grid resolves to the same two columns on every surface.
+CONTAINER_GRID_COLUMNS_DEFAULT = 2
+CONTAINER_FIELD_CHILD_KIND = "field"
+CONTAINER_LEAF_KINDS = frozenset({"field", "widget", "button", "label", "text", "i"})
+
+
+def declared_container_columns(node: dict[str, Any]) -> int | None:
+    """Declare the effective field-grid columns of a grid-owning container.
+
+    Only a container that owns at least one direct field child has a grid to
+    declare, so every other node publishes no ``columns`` and no renderer has to
+    invent one.  The container's own ``col``/``cols``/``columns`` declaration
+    always wins; the official grid default applies only when the contract has no
+    declaration of its own.
+    """
+    if not isinstance(node.get("children"), list):
+        return None
+    kind = _text(node.get("containerType") or node.get("type") or node.get("kind")).lower()
+    if kind in CONTAINER_LEAF_KINDS:
+        return None
+    owns_field_child = any(
+        _text(child.get("containerType") or child.get("type") or child.get("kind")).lower() == CONTAINER_FIELD_CHILD_KIND
+        for child in node.get("children")
+        if isinstance(child, dict)
+    )
+    if not owns_field_child:
+        return None
+    attrs = node.get("attributes") if isinstance(node.get("attributes"), dict) else {}
+    declared = (
+        _positive_int(attrs.get("col"), 0)
+        or _positive_int(node.get("cols"), 0)
+        or _positive_int(node.get("columns"), 0)
+        or _positive_int(attrs.get("columns"), 0)
+        or _positive_int(attrs.get("cols"), 0)
+    )
+    return declared or CONTAINER_GRID_COLUMNS_DEFAULT
+
+
+def declare_container_columns(node: dict[str, Any]) -> bool:
+    """Publish a container's declared field-grid column count.
+
+    The single applier of :func:`declared_container_columns`; the assembler, the
+    post-projection boundary and a late P1 projection all publish through this
+    call, so a grid-owning container carries exactly one declaration resolved by
+    one rule instead of each surface keeping a default of its own.
+    """
+    columns = declared_container_columns(node)
+    if not columns:
+        return False
+    node["columns"] = columns
+    return True
+
+
+def _declared_container_zone(node: dict[str, Any], inherited_zone: str) -> str:
+    """Declare the container's zone from its native structure identity.
+
+    A nested container keeps its ancestor's zone, so the declaration is already
+    the *effective* zone: the renderer resolves no inheritance and no default.
+    """
+    kind = _text(node.get("containerType") or node.get("type") or node.get("kind")).lower()
+    if kind in COLLABORATION_CONTAINER_KINDS:
+        return ZONE_COLLABORATION
+    if kind in ATTACHMENT_CONTAINER_KINDS:
+        return ZONE_ATTACHMENT
+    return inherited_zone
+
+
 def _finalize_layout_dsl(contract: dict[str, Any]) -> None:
     layout = _dict(contract.get("layoutContract"))
     roots = layout.get("containerTree")
@@ -485,7 +573,7 @@ def _finalize_layout_dsl(contract: dict[str, Any]) -> None:
     container_ids: set[str] = set()
     widget_owners: dict[str, str] = {}
 
-    def normalize(nodes: list[Any], path: str) -> None:
+    def normalize(nodes: list[Any], path: str, inherited_zone: str = CONTAINER_ZONE_DEFAULT) -> None:
         for index, node in enumerate(nodes):
             if not isinstance(node, dict):
                 raise ValueError(f"{path}[{index}] must be an object")
@@ -518,7 +606,9 @@ def _finalize_layout_dsl(contract: dict[str, Any]) -> None:
             if "widgetList" in node and not isinstance(node.get("widgetList"), list):
                 raise ValueError(f"{node_path}.widgetList must be an array")
             node.setdefault("widgetList", [])
-            normalize(node["children"], f"{node_path}.children")
+            node["zone"] = _declared_container_zone(node, inherited_zone)
+            declare_container_columns(node)
+            normalize(node["children"], f"{node_path}.children", node["zone"])
 
     def bind_owners(nodes: list[Any], path: str) -> None:
         for index, node in enumerate(nodes):

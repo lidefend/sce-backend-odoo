@@ -14,6 +14,7 @@ export type ContractV2CachePolicy = 'none' | 'etag' | 'snapshot';
 export type ContractV2RenderStrategy = 'sync' | 'scheduled' | 'virtualized';
 export type ContractV2PatchOperation = 'replace' | 'merge' | 'append' | 'remove' | 'reorder' | 'invalidate';
 export type ContractV2PageRenderMode = 'governed';
+export type ContractV2ContainerZone = 'detail_zone' | 'collaboration_zone' | 'attachment_zone';
 export type ContractV2WidgetType = 'input' | 'select' | 'date' | 'datetime' | 'number' | 'table'
   | 'upload' | 'button' | 'textarea' | 'checkbox' | 'radio' | 'tree' | 'gantt' | 'relation'
   | 'display' | 'binary' | 'many2many_tags';
@@ -254,6 +255,7 @@ export interface ContractV2Container {
   title: string;
   span: number;
   styleToken?: string;
+  zone?: ContractV2ContainerZone;
   cols?: number;
   columns?: number;
   widget?: string;

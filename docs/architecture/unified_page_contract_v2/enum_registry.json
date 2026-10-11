@@ -56,6 +56,11 @@
     "toolbar",
     "section"
   ],
+  "containerZone": [
+    "detail_zone",
+    "collaboration_zone",
+    "attachment_zone"
+  ],
   "widgetType": [
     "input",
     "select",

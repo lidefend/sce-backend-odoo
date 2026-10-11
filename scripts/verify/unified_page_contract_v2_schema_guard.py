@@ -93,6 +93,8 @@ SCHEMA_ENUM_REGISTRY_MAP = {
     ("layoutContract", "layoutType"): ("layoutType",),
     ("layoutContract", "adaptMode"): ("adaptMode",),
     ("container", "containerType"): ("containerType",),
+    ("container", "zone"): ("containerZone",),
+    ("nativeLayoutNode", "zone"): ("containerZone",),
     ("widget", "widgetType"): ("widgetType",),
     ("widgetStatus", "auth"): ("authLevel",),
     ("actionRule", "triggerType"): ("triggerType",),

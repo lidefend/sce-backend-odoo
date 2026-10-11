@@ -78,7 +78,13 @@ REASON_STANDARD_SUBMIT_ACTION = "STANDARD_SUBMIT_ACTION"
 REASON_SCENE_CONTRACT_READY = "SCENE_CONTRACT_READY"
 REASON_ACTION_GROUP_ACCESS_DENIED = _authority.REASON_ACTION_GROUP_ACCESS_DENIED
 REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INVALID
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-governance-2026-10-07-form-structure-surfaces"
+# Identity of the assembled contract this handler may serve from cache.  It is
+# deliberately NOT derived from the request: an assembled contract is code
+# output, so serving one produced by older assembly code silently keeps a stale
+# contract on the delivery face.  Every change to the assembly inputs must
+# re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
+# fails closed on a drift instead of letting the cache hide the change.
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-2026-10-11-layout-container-columns"
 
 
 # --- Declared form surfaces -------------------------------------------------

@@ -103,26 +103,21 @@ assert.equal(nativeSectionNavigationRole({}), 'primary');
 assert.equal(nativeSectionNavigationRole({
   attributes: { 'data-sc-navigation-role': 'subordinate' },
 }), 'subordinate', 'released native views may explicitly keep an auxiliary section out of primary navigation');
-assert.equal(nativeSectionNavigationRole({ sourceAuthority: { kind: 'released_product_section' } }), 'primary');
+assert.equal(nativeSectionNavigationRole({ zone: 'detail_zone' }), 'primary',
+  'the contract owns the zone: a detail zone is primary navigation');
+assert.equal(nativeSectionNavigationRole({ zone: 'collaboration_zone' }), 'subordinate',
+  'a declared collaboration zone is subordinate navigation');
+assert.equal(nativeSectionNavigationRole({ zone: 'attachment_zone' }), 'subordinate',
+  'a declared attachment zone is subordinate navigation');
+assert.equal(nativeSectionNavigationRole({ zone: 'detail_zone', attributes: { 'data-sc-navigation-role': 'subordinate' } }), 'subordinate',
+  'an explicit released marker stays authoritative over the declared zone');
 assert.equal(nativeSectionNavigationRole({
   sourceAuthority: {
-    kind: 'odoo_native_view_subordinate_structure',
     projection_only: true,
     no_business_fact_authority: true,
   },
-}), 'subordinate');
-assert.equal(nativeSectionNavigationRole({
-  source_authority: {
-    projectionOnly: true,
-    noBusinessFactAuthority: true,
-  },
-}), 'subordinate');
-assert.equal(nativeSectionNavigationRole({
-  sourceAuthority: {
-    projection_only: true,
-    no_business_fact_authority: false,
-  },
-}), 'primary');
+} as never), 'primary',
+  'an authority facet is not a zone: the renderer must never re-derive a zone from it');
 assert.equal(nextBusinessActionLabel({ label: '生成付款登记', enabled: true }, []), '生成付款登记');
 assert.equal(nextBusinessActionLabel({ label: '不可办理', enabled: false }, [{ label: '补充资料', enabled: true }]), '补充资料');
 assert.equal(nextBusinessActionLabel(null, [{ label: '不可办理', enabled: false }]), '');

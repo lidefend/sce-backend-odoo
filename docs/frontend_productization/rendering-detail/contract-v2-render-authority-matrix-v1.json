@@ -40,8 +40,8 @@
     "deliveryLimitRecord"
   ],
   "summary": {
-    "schemaFieldCount": 327,
-    "renderedOrInteractionAuthorityCount": 209,
+    "schemaFieldCount": 329,
+    "renderedOrInteractionAuthorityCount": 211,
     "validatedNonVisualAuthorityCount": 118,
     "decodedRuntimeAuthorityGapCount": 0,
     "unclassifiedCount": 0
@@ -640,6 +640,11 @@
     },
     {
       "path": "container.widgetList",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "contractFormPresenter.presentNode"
+    },
+    {
+      "path": "container.zone",
       "classification": "rendered_or_interaction_authority",
       "consumer": "contractFormPresenter.presentNode"
     },
@@ -1298,6 +1303,11 @@
     },
     {
       "path": "nativeLayoutNode.widgetList",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "contractFormPresenter / canonicalNativeFormBridge / NativeFormTreeRenderer"
+    },
+    {
+      "path": "nativeLayoutNode.zone",
       "classification": "rendered_or_interaction_authority",
       "consumer": "contractFormPresenter / canonicalNativeFormBridge / NativeFormTreeRenderer"
     },
