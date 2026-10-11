@@ -124,6 +124,10 @@ decision:
           comments included; describe the case instead of quoting the name
         - measure only the tracked state; while a registry is untracked, --check passes against
           a surface the scanner cannot see and the first commit fails the frozen head
+        - an enumeration registry (for example the guard registry that lists every guarded
+          script) is a consumer of the scripts it names but narrates the make targets it merely
+          discusses; never spell a dead make target inside such a registry's free-text reason,
+          describe the target by role instead
       why: >-
         the same defect class was already fixed once for prose docs (batch B2); it reappeared
         in a normative doc and a Makefile comment during batch C/D
@@ -188,3 +192,14 @@ decision:
         and the Makefile comment named make audit.verification.lane_coverage literally; both
         were rephrased (name/describe the auditor instead), no gate was relaxed and no
         registered disposition was unregistered, and the check returned to PASS.
+    - candidate: a48016110b6d1904710d96b3a94c69350a542e76
+      branch: audit/daily-dev-mainline-product-acceptance-closeout-20261009
+      observations: >-
+        third instance of the same class. A guard-registry disposition entry added in
+        b4e3f1e4 spelled the dead acceptance-runtime baseline-rebuild unit target inside its
+        free-text reason; scripts/verify/registry.yaml is non-prose, so the literal counted as
+        a live reference, the target flipped out of the zero-reference set and check went DENY
+        with stale_target_dispositions 1 > 0. No gate was relaxed and no disposition was
+        unregistered: only the registry prose was rephrased to name the target by role. The
+        enumeration-registry bullet above was added so a fourth instance is written down
+        before it is committed rather than diagnosed after.

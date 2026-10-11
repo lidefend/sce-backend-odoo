@@ -613,7 +613,7 @@
         "make/ci.mk",
         "make/frontend.mk"
       ],
-      "note": "PASS after B3: check=surface within the frozen baseline (760 zero-reference targets / 103 unreferenced scripts / 226 absent-asset recipes all registered, unregistered 0, stale 0); test=42 tests OK. The tool resolves its own make/.github/workflow/doc inputs at runtime; the list above is the identity-defining subset. verify.verification.lane_coverage is a prerequisite of verify.contract.architecture.suite, so ci.local.quick.run and ci.professional.backend.shard-verify both enforce the ratchet."
+      "note": "PASS after B3 and again after the round-3 recovery: check=surface within the frozen baseline (zero-reference targets / unreferenced scripts / absent-asset recipes all registered; unregistered 0, stale 0); test=42 tests OK. The round-2 DENY (stale target disposition revived by a registry's free-text target name) was repaired in 1ba4a5bc without relaxing the check. verify.verification.lane_coverage is a prerequisite of verify.contract.architecture.suite, so ci.local.quick.run and ci.professional.backend.shard-verify both enforce the ratchet."
     },
     "lane_telemetry": {
       "target": "verify.lane.telemetry.unit",
@@ -761,7 +761,7 @@
     "Verification-tool path debt (registered, NOT fixed in this round, no gate relaxed): make verify.form_structure.contract cannot pass in-repo because its member verify.user_form.preference.boundary_guard hardcodes addons/smart_construction_custom/models/user_preferences.py and reads it directly; that module does not exist in this repository (git log --all -- addons/smart_construction_custom is empty, absent on origin/main too) - it is a customer-custom addon outside the repository boundary, mounted and installed at runtime (the governed runtime guard scripts/verify/daily_dev_customer_addons_runtime_guard.py checks it live). Local reproduction: FileNotFoundError. Report per-target evidence only; the owning layer is that guard's owner.",
     "Intentional environment retirement, recorded so it is not mis-read as an environment failure: the isolated acceptance carrier (project sc-fe-r2-p1-01 / database sc_frontend_acceptance / volumes sc_fe_r2_p1_01_*) was retired on the owner's instruction ('sc-fe-r2-p1-01 已经没有价值了直接收回') through the new governed entry make acceptance.runtime.carrier.discard, and readback confirms zero remaining containers and zero remaining volumes. As a direct consequence, acceptance.runtime.baseline_recovery.audit and acceptance.runtime.infrastructure.restore now DENY with 'missing credential authority container: sc-fe-r2-p1-01-odoo-1'. That DENY is the expected behaviour of the pre-existing entries, which require the carrier to exist; it is NOT a statement that the environment is broken, and it must not be generalised into an environment-wide verdict. The governed recovery path is the new reciprocal entry make acceptance.runtime.carrier.provision (rebuild empty base + delegate DB create/install/upgrade to scripts/test/frontend_acceptance_db_ensure.sh), which has not been executed end to end because recreating the tenant would write the database and install the module bundle. Whether to run it, or to leave the tenant retired, is the owner's call."
   ],
-  "next_exact_step": "布局规则边界收口（owner 裁定的 A 方案）已完成代码与门禁层收口：事实源(P1 原生 arch + P3 低代码)与投影职责(P0 统一为 span 1..24)分离，前端只消费声明、缺声明即 fail-closed、不保留任何私有宽度词表。沿用原 run 的证据复用：ci.local.iteration(L1)、typecheck.strict、form_canvas_layout.guard(12 tests)、form_grid_span.browser(rows=45/failures=0)、form_container_presentation.guard、business_config.unit、scene_component_bridge.guard、page_pattern_reference_parity.unit、backend_contract_boundary_guard 全绿；冻结候选轮 1 失败的两项已按各自 owning layer 修复并复验（详见 evidence.frozen_candidate_round_1）。下一步二选一：(1) 在修复后的干净 HEAD 重跑一次 make ci.local.quick，通过后按普通 Gitee PR 候选推送、由远端必需检查判定合并，再部署到日常开发服务器，由 owner 用 wutao/123456 + sc_demo 完成项目表单编辑态在 1440/390 与明暗主题下的真实渲染确认；(2) 若执行新任务，先在 .agent/goals/ 与 .agent/runs/<goal-id>/run.json 注册新目标并更新 .agent/active-runs.json 指向，不要静默继承本 run。需 owner 注意的环境事实：本地 sc_dev_demo 对 wutao 的「项目台账」返回 403（发布对判定拒绝，而导航已声明该叶子），已确认与本批改动无关（发布/权限路径不导入本批模块，wutao 也确实持有该菜单要求的组），属本地演示库发布/角色数据事实；因此本批的真实页面渲染确认统一放在日常开发服务器。",
+  "next_exact_step": "布局规则边界收口（owner 裁定的 A 方案）已在 P0/P4 层完成代码、门禁与决策记录收口，并通过精确头 ci.local.quick（冻结候选轮 3 @ a4801611，receipt 已签发；轮 2 的 audit.verification.lane_coverage.check stale disposition 已定位为 registry 自由文本字面量复活死 target，修复于 1ba4a5bc，未放宽审计、未注销 disposition）。下一步：(1) 以普通 Gitee PR 候选推送当前冻结头并创建 PR，由远端必需检查判定合并（本地 Quick 不是普通推送前置，不得因缺少本地 receipt 拒绝候选；成功必须属于当前 PR 最新源提交与当前目标基线）；(2) 合并后部署到日常开发服务器，由 owner 用 wutao/123456 + sc_demo 完成项目表单编辑态在 1440/390 与明暗主题下的真实渲染确认；(3) 若执行新任务，先在 .agent/goals/ 与 .agent/runs/<goal-id>/run.json 注册新目标并更新 .agent/active-runs.json 指向，不要静默继承本 run。环境事实：本地 sc_dev_demo 对 wutao 的「项目台账」返回 403 属本地演示库发布/角色数据事实，与本批改动无关（发布/权限路径不导入本批模块，wutao 也确实持有该菜单要求的组），因此本批的真实页面渲染确认统一放在日常开发服务器。",
   "evidence": {
     "reuse_basis": [
       "git diff --stat bfb38367 aea2c19b -- addons/ frontend/ is empty: latest main carries zero product-code change relative to the accepted served state",
@@ -2473,6 +2473,37 @@
           }
         ],
         "rule_applied": "不因同一失败重跑：两处失败各自有 owning-layer 修复后，才在修复后的干净 HEAD 重跑一次 quick。"
+      },
+      "frozen_candidate_round_2": {
+        "attempt": "make ci.local.quick @ abbb686f (frozen HEAD, unique run)",
+        "result": "FAIL exit=2, receipt not issued",
+        "failures": [
+          {
+            "step": "audit.verification.lane_coverage.check",
+            "detail": "DENY 'verification surface grew: stale_target_dispositions: 1 > frozen baseline 0'. The stale entry was verify.acceptance.runtime.baseline_rebuild.unit.",
+            "root_cause": "b4e3f1e4 wrote that dead make target's literal name into the free-text reason of the new guard-registry disposition in scripts/verify/registry.yaml. registry.yaml is non-prose, so the auditor's literal-token index counted the mention as a live reference (named_elsewhere); the target left the zero-reference set and its pre-existing history_probe_runbook disposition flipped to stale.",
+            "class": "same defect family as OPS-DECISION-005 (literal text revives a registered dead surface); third recorded instance. The target is still unreachable from a declared gate anchor, so the disposition is correct and stays.",
+            "owner": "this round's P4 verification-tool change (the registry entry), not a product regression",
+            "recovery": "1ba4a5bc: rephrase the registry reason so it names the target by role without the dotted token. No gate relaxed, no disposition unregistered, no analyzer-written JSON hand-edited. The enumeration-registry rule was written into .agent/decisions/codex-local-lane-mechanics.yaml (OPS-DECISION-005) so the class is recorded before a fourth instance.",
+            "recovery_verified": "audit.verification.lane_coverage.check PASS (stale 0 / unregistered 0); verify.guard.registry AUDIT PASS 1409 scripts (189/189 unwired dispositioned)"
+          }
+        ],
+        "rule_applied": "no rerun of an unchanged failure: the owning input changed first, then quick ran once on the clean frozen head."
+      },
+      "frozen_candidate_round_3": {
+        "attempt": "make ci.local.quick @ a4801611 (clean frozen HEAD, unique run)",
+        "result": "PASS, receipt issued",
+        "receipt": ".git/codex/evidence/ci.local.quick/a48016110b6d1904710d96b3a94c69350a542e76.json",
+        "tree": "d1de71a4235e2159bc282d1dd84e8b76e7cd6386",
+        "shards": "0/3 320.7s passed; 1/3 88.4s passed; 2/3 84.2s passed; 3/3 21.8s passed (4 shards, 3 jobs)",
+        "telemetry": "lane=local.quick status=passed degraded=none",
+        "note": "consumes the stored incremental scan base, so the frozen-head run is a sharded incremental pass, not a full rescan. This is the round's frozen delivery candidate before the final bookkeeping commit."
+      },
+      "publication_state": {
+        "branch": "audit/daily-dev-mainline-product-acceptance-closeout-20261009",
+        "vs_origin_main": "0 behind / 15 ahead at a4801611 (origin/main ba93a237)",
+        "lane": "ordinary Gitee PR candidate (owner rule 2026-09-23: local Quick is not a push prerequisite; remote required checks decide merge)",
+        "pending": "push candidate and create the Gitee PR; remote required checks (public_guard, merge_policy_gate, professional_quality_gate, frontend_release_gate) on the current source commit and target baseline; then deploy to the daily dev server for the owner's own login render check."
       }
     }
   },
@@ -2505,8 +2536,8 @@
   "goal_scope_note": "One worktree, one run (owner preference: no parallel ledger). This run carries two separately owned layers with separate commit boundaries: P4 daily-dev runtime alignment acceptance, and one P0 frontend-gate fix for the confirmed login-return authority defect (frontend/apps/web/src/app/routeAuthority.ts, frontend/apps/web/src/views/LoginView.vue, frontend/apps/web/scripts/route_authority_guard_test.ts). Round scope extension (owner-approved plan A): the same run now also carries the role-landing contract layer, with separate commit boundaries from the P4 runtime alignment. P0 platform: addons/smart_core/identity/identity_resolver.py publishes the platform-safe landing scene and never lands a principal on a scene the published route authority does not grant. P1 construction: addons/smart_construction_core/{core_extension.py,core_extension_policy_maps.py,services/locked_menu_policy_contract.py,services/role_surface_contract.py} and addons/smart_construction_scene/core_extension.py project the declared role landing surface from the versioned contract scripts/verify/baselines/formal_business_product_menu_policy_v1.json (role_surface) instead of hard-coding it in runtime code. addons/ is added to the run scope for this layer only; no new environment, credential, database or port authority is introduced.",
   "stage_identity": {
     "kind": "stage",
-    "head": "b4e3f1e453659c4f395207b5e0efe13e9f473196",
+    "head": "a48016110b6d1904710d96b3a94c69350a542e76",
     "dirty_scope": [],
-    "note": "form layout rule boundary round: P0 projection + P0 frontend render unit + P0 guards/tests, one P0 comment-wording alignment, one P0 lint recovery, one P4 guard-registry disposition. 仅 P0 布局/投影/渲染/注释与 P4 登记被改动；docs/engineering_convergence 与 docs/frontend_productization 为 ci.delivery.freeze.prepare 生成产物。其后的台账/生成证据提交为 bookkeeping；真实冻结身份与 ci.local.quick 回执记录在未跟踪证据存储。非交付冻结身份。"
+    "note": "form layout rule boundary round, continued. Tracked scope is unchanged from the recorded round (P0 projection + P0 frontend render unit + P0 guards/tests + one P0 lint recovery + P4 guard-registry disposition), plus this round's two P4/verification tool artifacts: scripts/verify/registry.yaml rephrasing (1ba4a5bc) and the lane mechanics decision record. a4801611 is the measured head of frozen candidate round 3 (its ci.local.quick receipt passed); the final freeze commit of this round carries the P0/P4 product candidate plus this bookkeeping record and issues its own receipt in untracked evidence at .git/codex/evidence/ci.local.quick/<head>.json. Not a delivery freeze by itself."
   }
 }
