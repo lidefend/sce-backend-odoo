@@ -95,7 +95,13 @@ def validate_semantic_identity_projection(source: str) -> list[str]:
         if not re.search(rf"\b{property_name}\s*:\s*{expression}", identity):
             errors.append(f"semanticIdentity does not preserve {property_name}")
 
-    field_identity = _section(code, "fieldSemanticIdentity", "zoneRole")
+    # The declared per-field authority is the contract channel: a field's
+    # role/slot/group must first come from ``formStructure.fieldRoles`` before any
+    # widget/container fallback, so the fallback can never silently become the
+    # source of a field's semantics.
+    field_identity = _section(code, "fieldSemanticIdentity", "structureSlot")
+    if not re.search(r"structure\s*(?:\?\.|\.)\s*fieldRoles\b", field_identity):
+        errors.append("field semantics do not consult the declared fieldRoles authority")
     widget_match = re.search(
         r"\bconst\s+(\w+)\s*=\s*semanticIdentity\s*\(\s*widget\s*\.\s*formStructureRole\s*\)",
         field_identity,
