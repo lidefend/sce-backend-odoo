@@ -72,6 +72,17 @@ class LaneTelemetryTests(unittest.TestCase):
         with self.assertRaisesRegex(telemetry.TelemetryError, "only a failed run may carry"):
             self._record(failure_owner="environment_defect")
 
+    def test_unfinished_run_may_carry_a_declared_owner_and_stays_in_the_store(self) -> None:
+        self._record(status="not_run", failure_owner="validation_tool_defect")
+        records, failures = telemetry.load(self.root)
+        self.assertEqual(failures, [])
+        self.assertEqual([record["status"] for record in records], ["not_run"])
+        self.assertEqual(records[0]["failure_owner"], "validation_tool_defect")
+
+    def test_unfinished_run_refuses_an_undeclared_owner(self) -> None:
+        with self.assertRaisesRegex(telemetry.TelemetryError, "unknown failure owner"):
+            self._record(status="not_run", failure_owner="vibes")
+
     def test_unknown_degraded_reason_is_refused(self) -> None:
         with self.assertRaisesRegex(telemetry.TelemetryError, "declared reasons"):
             self._record(degraded=("it_felt_slow",))

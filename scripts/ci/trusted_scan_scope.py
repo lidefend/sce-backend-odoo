@@ -10,6 +10,7 @@ import json
 import os
 import re
 import subprocess
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -239,9 +240,16 @@ def record_scan_success(root: Path, kind: str, base: str | None = None) -> None:
     if actual != expected or git(root, 'rev-parse', 'HEAD').strip() != launch['head']:
         raise ValueError('scan coverage identity changed')
     proof = {'protocol': COVERAGE_PROTOCOL, 'kind': kind, 'head': launch['head'], 'tree': launch['tree'], 'coverage': actual, 'mode': 'incremental' if base else 'full', 'base': base}
-    temporary = folder / (kind + '.tmp')
-    temporary.write_text(json.dumps(proof, sort_keys=True))
-    temporary.replace(folder / (kind + '.json'))
+    # Concurrent shards share this evidence folder, so the temporary name must be
+    # unique per writer; a fixed ``<kind>.tmp`` lets two writers delete each
+    # other's temporary and makes ``os.replace`` fail with a spurious FileNotFoundError.
+    descriptor, temporary_name = tempfile.mkstemp(prefix=f'.{kind}.', suffix='.tmp', dir=folder)
+    try:
+        with os.fdopen(descriptor, 'w', encoding='utf-8') as stream:
+            stream.write(json.dumps(proof, sort_keys=True))
+        Path(temporary_name).replace(folder / (kind + '.json'))
+    finally:
+        Path(temporary_name).unlink(missing_ok=True)
 
 
 def select_scope(root: Path, kind: str) -> Scope:

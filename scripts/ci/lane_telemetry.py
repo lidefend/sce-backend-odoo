@@ -129,8 +129,15 @@ def validated(record: object) -> tuple[dict | None, str | None]:
     if record["status"] == "failed":
         if owner not in FAILURE_OWNERS:
             return None, "a failed run needs one declared failure owner"
-    elif owner is not None:
-        return None, "only a failed run may carry a failure owner"
+    elif record["status"] == "passed":
+        if owner is not None:
+            return None, "only a failed run may carry a failure owner"
+    elif owner is not None and owner not in FAILURE_OWNERS:
+        # A run that never produced a result -- an evidence or tooling defect --
+        # still needs an attribution, and the vocabulary is the closed one. The
+        # quick lane already reports not_run/validation_tool_defect, and the old
+        # rule silently dropped exactly those observations from the store.
+        return None, f"unknown failure owner {owner!r} for status {record['status']!r}"
     if isinstance(record["recorded_at"], bool) or not isinstance(record["recorded_at"], (int, float)):
         return None, "recorded_at is not a number"
     return record, None
