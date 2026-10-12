@@ -252,7 +252,12 @@ try {
   await login(submitter, financeUserLogin);
   await submitter.goto(executionUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await waitForm(submitter, 'sc.payment.execution', executionId);
-  await clickAction(submitter, '[data-product-primary-action][data-action-method="action_confirm"][data-action-enabled="true"]:visible', 'execute_button', 'submit payment execution');
+  // The canonical header keeps the single save action in the emphasized primary
+  // slot on an editable record (same official rule the floorplan instrument
+  // asserts for action.payment_submit), so the business submit arrives as one
+  // enabled direct action carrying its contract identity instead of the
+  // primary evidence slot.
+  await clickAction(submitter, '[data-action-method="action_confirm"][data-action-enabled="true"]:visible', 'execute_button', 'submit payment execution');
   await waitForm(submitter, 'sc.payment.execution', executionId);
   const waiting = await readOne(submitter, 'sc.payment.execution', ['id', 'state', 'validation_status', 'review_ids'], executionId);
   if (executionPolicy.approval_required) {

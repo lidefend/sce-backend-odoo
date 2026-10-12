@@ -400,6 +400,12 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
 
   function extractListProfile(contract: unknown) {
     const store = contract as ContractV2NormalizedStore | null;
+    // The contract not having arrived yet is a readiness fact, not a
+    // declaration gap.  Failing closed here used to throw on the first
+    // pre-contract evaluation, which left the consuming computed cached as
+    // `undefined` and made the later, contract-ready read crash on `.map`.
+    // A loaded contract that fails to declare what it owes still stops below.
+    if (!store) return null;
     const rawProfile = resolveContractV2ListProfile(store);
     const surfacePolicies = resolveContractV2SurfacePolicies(store);
     const columns = Array.isArray(rawProfile.columns)
@@ -432,7 +438,12 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
       : [];
     const rawBatchPolicy = (rawProfile.batch_policy || {}) as Dict;
     const hasRawBatchPolicy = Object.keys(rawBatchPolicy).length > 0;
-    const batchPolicy = {
+    // Batch capability is a behaviour declaration published by
+    // `surface_policies`; the list profile only carries its presentation
+    // shape.  A profile that declares no batch policy is therefore not a gap,
+    // so the policy object is built only when one is declared -- and a
+    // declared-but-incomplete one still fails closed through the assertions.
+    const batchPolicy = hasRawBatchPolicy ? {
       enabled: requireDeclaredBoolean(rawBatchPolicy.enabled, {
         missing: 'list_profile.batch_policy.enabled',
         requiredDeclarationLayer: LIST_PROFILE_DECLARATION_LAYER,
@@ -452,7 +463,7 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
         .map(([action, intent]) => [action, String(intent || '').trim()]).filter(([, intent]) => Boolean(intent))),
       execution_operations: Object.fromEntries(Object.entries((rawBatchPolicy.execution_operations || {}) as Dict)
         .map(([action, operation]) => [action, String(operation || '').trim()]).filter(([, operation]) => Boolean(operation))),
-    };
+    } : null;
     const rawSelectionPolicy = (rawProfile.selection_policy || surfacePolicies.selection_policy || {}) as Dict;
     const selectionPolicy = Object.keys(rawSelectionPolicy).length
       ? readDeclaredSelectionPolicy(rawSelectionPolicy)
@@ -506,7 +517,7 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
       status_field: statusField,
       metric_fields: metricFields,
       ...(selectionPolicy ? { selection_policy: selectionPolicy } : {}),
-      ...(hasRawBatchPolicy ? { batch_policy: batchPolicy } : {}),
+      ...(batchPolicy ? { batch_policy: batchPolicy } : {}),
       grouping,
     };
   }

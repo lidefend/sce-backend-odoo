@@ -1,0 +1,59 @@
+schema_version: 1
+goal:
+  id: PAYMENT-REQUEST-CHAIN-ALIGNMENT
+  title: payment_request_chain_alignment_f1_f4
+  status: active
+  formal_product_layer: P0
+  supporting_layer: P4
+  layer_target: contract_runtime_projection_and_governed_payment_instrument
+  module:
+    - frontend/apps/web/src/app/action_runtime
+    - addons/smart_core/app_config_engine/services/assemblers
+    - contracts/domain
+    - scripts/verify
+  baseline:
+    branch: fix/payment-request-chain-alignment-20261013
+    full_sha: aeee27b0a6e30d5d3f6b9cd66953e4a999b48804
+    source: main_after_PR647_and_PR648
+  objective: >-
+    Close the four findings F1-F4 raised by the confirmation run
+    PAYMENT-REQUEST-CHAIN-CONFIRMATION, in order, without widening scope:
+    F1 update the governed payment instrument to the post-PR-#525 official
+    template placement so make verify.local.dev.payment_request.full_chain can
+    cover the create -> submit -> approve -> execution -> ledger -> done write
+    chain; F2 stop the list-profile projection from evaluating a fail-closed
+    declaration assertion before the contract is available; F3 align the
+    payment.request domain-contract transitions with the runtime authority;
+    F4 stop advertising relation create authority for a field the effective view
+    renders readonly.
+  product_boundary:
+    standard_vs_user_specific: platform_mechanism_and_industry_standard
+    why_here: >-
+      The projection defect is P0 platform mechanism (smart_core contract
+      runtime + the frontend contract consumer); the instrument is P4 governed
+      verification tooling; the domain transitions are the P1 construction
+      standard declaration for payment.request.
+    why_not_elsewhere:
+      - no_new_contract_carrier_no_low_code_configuration_no_customer_module
+      - no_new_environment_fixture_or_release_lane
+      - do_not_relax_assertions_to_make_a_failing_journey_pass
+    blast_radius:
+      - frontend action-view list profile projection
+      - projected relation_entry for readonly many2one fields
+      - contracts/domain/payment-request.yaml transitions
+      - scripts/verify/local_dev_payment_request_floorplan_submit.mjs
+  acceptance:
+    - list profile projection returns no projection before the contract arrives
+    - relation create authority is not advertised for readonly fields
+    - domain transitions match the runtime state machine authority
+    - governed payment full chain reconciles request execution and ledger facts
+  exclusions:
+    - no_new_probe_framework
+    - no_unrelated_pre_existing_failure_repair
+    - no_registry_driven_semantic_rewrite_in_this_batch
+  rollback: >-
+    Revert the named files; the journeys reset their own fixture through the
+    governed make local.dev.reset_payment_request_fixture entry.
+  next_exact_step: >-
+    Registered; apply F2 (frontend projection readiness) then F3, F4 and F1,
+    rebuild the governed frontend profile and run the full-chain instrument.

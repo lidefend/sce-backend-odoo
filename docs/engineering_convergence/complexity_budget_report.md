@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4686`
+- Scanned files: `4687`
 - Files requiring split plan: `63`
 - Files above warning threshold: `115`
 
@@ -19,7 +19,7 @@ Generated from repository source files. This report is informational during the 
 | 4979 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4954 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 4492 | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
-| 4434 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
+| 4440 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4342 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3787 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3652 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
@@ -52,9 +52,9 @@ Generated from repository source files. This report is informational during the 
 | 1932 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1901 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1876 | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
+| 1864 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1841 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1801 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
-| 1761 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1727 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1725 | YAML workflow | `scripts/verify/registry.yaml` |
 | 1719 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
@@ -207,7 +207,7 @@ Generated from repository source files. This report is informational during the 
 | 4979 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4954 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 4492 | split_plan_required | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
-| 4434 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
+| 4440 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4342 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3787 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3652 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
@@ -240,9 +240,9 @@ Generated from repository source files. This report is informational during the 
 | 1932 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1901 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1876 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
+| 1864 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1841 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1801 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
-| 1761 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1727 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1725 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 1719 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |

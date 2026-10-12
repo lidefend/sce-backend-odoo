@@ -1,0 +1,5 @@
+evidence:
+  result_index: run.json
+  local_receipts: .runtime/agent-runs/PAYMENT-REQUEST-CHAIN-ALIGNMENT/
+  policy: reference_original_logs_do_not_duplicate_results
+  prior_confirmation: docs/ops/iterations/payment_request_chain_confirmation.md

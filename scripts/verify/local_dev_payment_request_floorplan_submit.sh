@@ -58,17 +58,28 @@ PY
 
 reset_status=0
 ENV_FILE="$LOCAL_DEV_CANONICAL_ENV_FILE" \
-  make -C "$ROOT_DIR" --no-print-directory local.dev.sync_demo || reset_status=$?
+  make -C "$ROOT_DIR" --no-print-directory local.dev.reset_payment_request_fixture || reset_status=$?
 reset="$(resolve_target)"
 BEFORE_JSON="$before" RESET_JSON="$reset" python3 - <<'PY' || reset_status=$?
 import json
 import os
+import re
 
 before = json.loads(os.environ["BEFORE_JSON"])["actionable_record"]
 reset = json.loads(os.environ["RESET_JSON"])["actionable_record"]
-if reset["state"] != "draft" or reset["name"] != before["name"] or reset["amount"] != before["amount"]:
-    raise SystemExit("governed fixture reset did not restore the submit-ready payment request")
-print("[local.dev.payment.floorplan.submit] fixture reset restored draft")
+# Fixture identity is the governed xmlid already resolved above. The governed
+# reset step preserves ledger-linked history instead of reusing an issued label,
+# so the display label advances along the DEMO-PR-FLOORPLAN-### series; the
+# reset therefore restores the governed facts (a submit-ready draft with the
+# unchanged amount) inside the governed series rather than repeating the prior
+# label.
+if reset["state"] != "draft":
+    raise SystemExit("governed fixture reset did not restore a submit-ready draft payment request")
+if reset["amount"] != before["amount"]:
+    raise SystemExit("governed fixture reset changed the governed fixture amount")
+if not re.fullmatch(r"DEMO-PR-FLOORPLAN-\d+", str(reset["name"] or "")):
+    raise SystemExit("governed fixture reset did not provision the governed fixture series")
+print("[local.dev.payment.floorplan.submit] fixture reset restored a submit-ready draft inside the governed fixture series")
 PY
 
 (( browser_status == 0 && transition_status == 0 && reset_status == 0 ))

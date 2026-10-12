@@ -3651,6 +3651,12 @@ class PageAssembler:
                 relation_order = str(options_override.get("order") or "").strip()
             if isinstance(options_override.get("ui_labels"), dict):
                 ui_labels_extra.update(options_override.get("ui_labels") or {})
+        # 只读字段不可编辑，不得对外声明"可新建关联记录"的能力，否则与同一
+        # payload 中的 readonly 事实自相矛盾（例：payment.request.funding_baseline_id
+        # 视图 readonly="1" 且模型 readonly=True，却曾发布 can_create=true）。
+        # 查看/搜索入口（has_page/can_open）保留，只收敛新建能力。
+        if descriptor.get("readonly") is True:
+            can_create = False
         projection_cache = relation_projection_cache if isinstance(relation_projection_cache, dict) else {}
         inline_cache_key = (
             "inline_create",

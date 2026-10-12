@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "id": "PAYMENT-REQUEST-CHAIN-ALIGNMENT",
+  "branch": "fix/payment-request-chain-alignment-20261013",
+  "status": "active",
+  "baseline_sha": "aeee27b0a6e30d5d3f6b9cd66953e4a999b48804",
+  "goal": ".agent/goals/PAYMENT-REQUEST-CHAIN-ALIGNMENT.yaml",
+  "record": "docs/ops/iterations/payment_request_chain_alignment.md",
+  "scope": [
+    "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
+    "frontend/apps/web/scripts/",
+    "make/frontend.mk",
+    "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+    "contracts/domain/payment-request.yaml",
+    "scripts/verify/local_dev_payment_request_floorplan_submit.mjs",
+    ".agent/active-runs.json",
+    ".agent/goals/PAYMENT-REQUEST-CHAIN-ALIGNMENT.yaml",
+    ".agent/runs/PAYMENT-REQUEST-CHAIN-ALIGNMENT/",
+    "docs/ops/iterations/payment_request_chain_alignment.md",
+    ".agent/goals/PAYMENT-REQUEST-CHAIN-CONFIRMATION.yaml",
+    ".agent/runs/PAYMENT-REQUEST-CHAIN-CONFIRMATION/",
+    "docs/ops/iterations/payment_request_chain_confirmation.md",
+    "contracts/generated/contract_structure_fingerprint.json",
+    "addons/smart_core/tests/test_relation_entry_contract.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_payment_request_floorplan_demo.py",
+    "make/dev.mk",
+    "scripts/ops/odoo_shell_exec.sh",
+    "scripts/ops/repair_demo_settlement_invoice_snapshot.py",
+    "scripts/verify/local_dev_payment_request_floorplan_submit.sh",
+    "scripts/verify/local_dev_payment_request_full_chain.mjs"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Existing owner-authorized governed local.dev runtime via Make (project sc-local-dev, database sc_dev_demo, governed credential); offline targeted tests reuse workspace dependencies",
+    "runtime_profile": "local.dev",
+    "project": "sc-local-dev",
+    "database": "sc_dev_demo",
+    "database_role": "persistent demo-backed feature database for local feature iteration and user-level acceptance, not production",
+    "dbfilter": "^sc_dev_demo$",
+    "ports": {
+      "backend": 8070,
+      "frontend": 18081
+    },
+    "inventory": "reuse the registered local.dev inventory and original evidence; no new environment or credential authority"
+  },
+  "checks": {
+    "frontend_contract_shape_projection": {
+      "target": "verify.frontend.contract_shape_projection.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
+        "frontend/apps/web/scripts/contract_shape_projection_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline",
+      "receipt": {
+        "status": "passed",
+        "layer": "L1-offline",
+        "tests": 5,
+        "command": "make verify.frontend.contract_shape_projection.unit",
+        "log": ".runtime/evidence-logs/payment-chain-alignment-20261013/contract_shape_projection.log"
+      }
+    },
+    "relation_entry_contract_guard": {
+      "target": "verify.frontend.relation_entry.contract_guard",
+      "inputs": [
+        "scripts/verify/relation_entry_contract_guard.py",
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "frontend/apps/web/src/app/contracts/v2/store.ts",
+        "addons/smart_core/tests/test_relation_entry_contract.py"
+      ],
+      "kind": "offline",
+      "receipt": {
+        "status": "passed",
+        "layer": "L1-offline",
+        "tests": 14,
+        "command": "make verify.frontend.relation_entry.contract_guard",
+        "log": ".runtime/evidence-logs/payment-chain-alignment-20261013/relation_entry_contract_guard.log"
+      }
+    },
+    "semantic_registry_lint": {
+      "target": "verify.semantic.registry.lint",
+      "inputs": [
+        "contracts/registry/semantic.yaml",
+        "contracts/registry/component.yaml",
+        "contracts/domain/payment-request.yaml",
+        "scripts/contract/generate_semantic_registry.py",
+        "addons/smart_core/core/contract_runtime/domain_field_semantics_generated.py",
+        "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
+        "addons/smart_core/core/contract_runtime/semantic_resolver.py",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+        "make/contract.mk"
+      ],
+      "kind": "offline",
+      "receipt": {
+        "status": "passed",
+        "layer": "L1-offline",
+        "tests": 10,
+        "command": "make verify.semantic.registry.lint",
+        "log": ".runtime/evidence-logs/payment-chain-alignment-20261013/semantic_registry_lint.log"
+      }
+    },
+    "payment_full_chain": {
+      "target": "verify.local.dev.payment_request.full_chain",
+      "inputs": [
+        "scripts/verify/local_dev_payment_request_full_chain.sh",
+        "scripts/verify/local_dev_payment_request_full_chain.mjs",
+        "scripts/verify/local_dev_payment_request_full_chain_facts.py",
+        "scripts/verify/local_dev_payment_request_approval_chain.py",
+        "scripts/verify/local_dev_payment_request_native_parity_ids.py",
+        "scripts/verify/local_dev_payment_request_floorplan_submit.mjs",
+        "demo_addons/smart_construction_demo/seed/steps/step_payment_request_floorplan_demo.py",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/pages/contractForm/",
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "make/dev.mk"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": "artifacts/playwright/local-dev-payment-request-full-chain/summary.json"
+      },
+      "receipt": {
+        "status": "passed",
+        "layer": "L4-runtime",
+        "command": "make verify.local.dev.payment_request.full_chain SOURCE_SHA=aeee27b0... CANDIDATE_FINGERPRINT=360e4cf8...",
+        "result": "EXIT=0; authoritative request/execution/ledger facts reconciled; floorplan submit record=2880 draft->submit; approval chain approved; execution paid; ledger 1x10000; duplicate submit 403 duplicate_payment_contract_state_guard (expected)",
+        "log": ".runtime/evidence-logs/payment-chain-alignment-20261013/full_chain_run3.log",
+        "readback": "artifacts/playwright/local-dev-payment-request-full-chain/summary.json"
+      }
+    },
+    "contract_structure_lock": {
+      "target": "verify.contract.structure_lock",
+      "inputs": [
+        "contracts/domain/payment-request.yaml",
+        "contracts/generated/contract_structure_fingerprint.json",
+        "addons/smart_construction_core/models/support/state_machine.py",
+        "scripts/ci/generate_contract_structure_fingerprint.py",
+        "scripts/ci/enforce_contract_structure_lock.py"
+      ],
+      "kind": "offline",
+      "receipt": {
+        "status": "passed",
+        "layer": "L1-offline",
+        "command": "make verify.contract.structure_lock",
+        "log": ".runtime/evidence-logs/payment-chain-alignment-20261013/contract_structure_lock.log"
+      }
+    }
+  },
+  "blockers": [
+    "demo seed vs #525 document state guard conflict (step_60_attachments_demo.py:126-130 writes state; document_center.py:114/119 rejects) -- independent finding, not fixed in this batch"
+  ],
+  "next_exact_step": "Batch acceptance complete: full_chain run3 EXIT=0 reconciled. Record backfilled. Next owner step: decide mainline integration (commit/push/PR for the F1-F4 candidate) and whether to open a separate topic for the demo seed #525 state-guard conflict. Do not widen scope; pre-existing failures stay out of this batch.",
+  "candidate": {
+    "source_sha": "aeee27b0a6e30d5d3f6b9cd66953e4a999b48804",
+    "candidate_fingerprint": "360e4cf82c52ea4f6c153a9f384d347c477d7f6891d289b81a03a321f2b50e3e",
+    "fingerprint_file": ".runtime/evidence/payment_chain_candidate_fingerprint.json",
+    "dirty": true,
+    "note": "all F1-F4 changes uncommitted; fingerprint covers the dirty worktree"
+  }
+}

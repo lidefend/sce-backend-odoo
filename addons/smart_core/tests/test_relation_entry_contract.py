@@ -1,13 +1,86 @@
 # -*- coding: utf-8 -*-
-import unittest
+"""Host-runnable lock on the relation-entry contract boundary.
 
-from odoo.addons.smart_core.app_config_engine.services.assemblers.page_assembler import PageAssembler
+``PageAssembler._build_relation_entry_for_field`` publishes the create capability
+of a declared relation field.  A field the contract already declares readonly
+must not advertise a create entry, otherwise the same payload is self
+contradictory (viewer sees a "new" entry on a field it cannot edit).  The Odoo
+module ``page_assembler`` is loaded with stubbed ``odoo`` modules, matching
+``test_page_assembler_view_orchestration_versions.py``, so this lock runs without
+a live Odoo runtime.
+"""
+from __future__ import annotations
+
+import importlib.util
+import sys
+import types
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]
+MODULE_PATH = ROOT / "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py"
+
+
+def _install_module(name, **attrs):
+    module = types.ModuleType(name)
+    for key, value in attrs.items():
+        setattr(module, key, value)
+    sys.modules[name] = module
+    return module
+
+
+def _load_page_assembler():
+    for name in list(sys.modules):
+        if name == "odoo" or name.startswith("odoo."):
+            sys.modules.pop(name, None)
+    odoo = _install_module("odoo", _=lambda value: value)
+    _install_module("odoo.exceptions", AccessError=type("AccessError", (Exception,), {}))
+    _install_module("odoo.http", request=types.SimpleNamespace(env=None))
+    odoo.http = sys.modules["odoo.http"]
+    _install_module("odoo.addons")
+    smart_core = _install_module("odoo.addons.smart_core")
+    app_config = _install_module("odoo.addons.smart_core.app_config_engine")
+    services = _install_module("odoo.addons.smart_core.app_config_engine.services")
+    assemblers = _install_module("odoo.addons.smart_core.app_config_engine.services.assemblers")
+    utils = _install_module("odoo.addons.smart_core.utils")
+    smart_core.__path__ = [str(ROOT / "addons/smart_core")]
+    app_config.__path__ = [str(ROOT / "addons/smart_core/app_config_engine")]
+    services.__path__ = [str(ROOT / "addons/smart_core/app_config_engine/services")]
+    assemblers.__path__ = [str(ROOT / "addons/smart_core/app_config_engine/services/assemblers")]
+    utils.__path__ = [str(ROOT / "addons/smart_core/utils")]
+    _install_module(
+        "odoo.addons.smart_core.utils.delete_policy",
+        resolve_unlink_policy=lambda *_args, **_kwargs: {},
+    )
+    _install_module(
+        "odoo.addons.smart_core.utils.extension_hooks",
+        call_extension_hook_first=lambda *_args, **_kwargs: None,
+    )
+    _install_module(
+        "odoo.addons.smart_core.app_config_engine.utils.misc",
+        safe_eval=lambda value: value,
+    )
+    _install_module(
+        "odoo.addons.smart_core.app_config_engine.utils.view_utils",
+        extract_tree_columns_strict=lambda *_args, **_kwargs: ([], None),
+        normalize_cols_safely=lambda value, *_args, **_kwargs: value,
+    )
+    module_name = "odoo.addons.smart_core.app_config_engine.services.assemblers.page_assembler"
+    sys.modules.pop(module_name, None)
+    spec = importlib.util.spec_from_file_location(module_name, MODULE_PATH)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    assert spec and spec.loader
+    spec.loader.exec_module(module)
+    return module.PageAssembler
 
 
 class TestRelationEntryContract(unittest.TestCase):
     def setUp(self):
-        self.assembler = PageAssembler.__new__(PageAssembler)
+        assembler_cls = _load_page_assembler()
+        self.assembler = assembler_cls.__new__(assembler_cls)
         self.assembler.env = {}
+
 
     def test_extract_dictionary_type_from_domain_list(self):
         result = self.assembler._extract_dictionary_type_from_domain([("type", "=", "project_type")])
@@ -43,6 +116,29 @@ class TestRelationEntryContract(unittest.TestCase):
         self.assertEqual(entry.get("default_vals", {}).get("type"), "project_type")
         self.assertTrue(entry.get("can_read"))
         self.assertEqual(entry.get("reason_code"), "PAGE_ENTRY_READONLY")
+
+    def test_build_relation_entry_readonly_field_does_not_publish_create(self):
+        # A readonly field is not editable, so it must not advertise a create
+        # capability even when the relation target has a page entry authority.
+        descriptor = {
+            "relation": "project.funding.baseline",
+            "domain": [],
+            "readonly": True,
+        }
+        base_entry = {
+            "model": "project.funding.baseline",
+            "action_id": 645,
+            "menu_id": 559,
+            "can_read": True,
+            "can_create": True,
+        }
+        entry = self.assembler._build_relation_entry_for_field(
+            "funding_baseline_id", descriptor, base_entry
+        )
+        self.assertFalse(entry.get("can_create"))
+        self.assertEqual(entry.get("create_mode"), "page")
+        self.assertEqual(entry.get("reason_code"), "PAGE_ENTRY_READONLY")
+        self.assertFalse((entry.get("inline_create") or {}).get("enabled"))
 
     def test_build_relation_entry_quick_mode_for_dictionary(self):
         descriptor = {"relation": "sc.dictionary", "domain": "[('type','=','project_type')]"}
