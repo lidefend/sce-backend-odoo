@@ -32,8 +32,11 @@ docker compose ps
 
 若出现从 `:18080` 跳到 `http://localhost/web/...`（端口丢失）：
 
-* 检查 `config/nginx/conf.d/default.conf` 中 `proxy_set_header Host` 是否使用 `$http_host`
+* 检查 `config/nginx/templates/default.conf.template` 中 `proxy_set_header Host` 是否使用 `$http_host`
 * 该仓库默认配置已修复此问题（保留端口，避免错误重定向）
+* 该模板在容器启动时按 profile 渲染：`/api/` 无 `?db=` / `X-Odoo-DB` 时的兜底库取自 `DB_NAME`
+  （`SC_PROXY_DEFAULT_DB`），因此不要把库名写回模板 literal；跨 profile 写死会让裸请求落到别的库并返回
+  `AUTH_REQUIRED 用户名或密码错误`。
 
 快速验收命令：
 

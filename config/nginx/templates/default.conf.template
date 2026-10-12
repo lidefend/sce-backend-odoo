@@ -3,9 +3,14 @@ map $http_upgrade $connection_upgrade {
   ''      close;
 }
 
+# The proxy must not own the database default: it is a profile fact
+# (DB_NAME/ODOO_DB) and inlining a literal here silently routes every request
+# that carries no db hint to whichever database that literal names, which is
+# wrong for any other profile.  The template is rendered at container start
+# with the profile value (see docker-compose.yml nginx service).
 map $http_x_odoo_db $sc_proxy_db_from_header {
   default $http_x_odoo_db;
-  ''      sc_demo;
+  ''      ${SC_PROXY_DEFAULT_DB};
 }
 
 map $arg_db $sc_proxy_db {
