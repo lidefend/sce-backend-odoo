@@ -7,19 +7,28 @@ runs on the ``full`` lane. That lane installs **no** frontend dependencies, so a
 guard reachable from it that shells out to the workspace toolchain can only fail
 with "No such file or directory" instead of producing a real gate result.
 
-Two instances of that boundary defect have already occurred:
+
+Four instances of that boundary defect have already occurred:
 
 * 2026-10-12 ``verify.menu_config_tree_editor.behavior`` (esbuild) wired into the
   shared suite -> ``ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL esbuild not found``.
 * 2026-10-12 ``contract_form_runtime_state_behavior_guard.sh`` invoked inline in
   the shared suite -> ``node_modules/.bin/tsc: No such file or directory`` and
   ``make: *** [make/ci.mk:1039: verify.contract.architecture.suite] Error 127``.
+* 2026-10-12 three inline ``node scripts/verify/*_smoke.js`` recipes in the shared
+  suite; each harness compiles ``frontend/apps/web`` sources through
+  ``require('../../frontend/apps/web/node_modules/typescript')`` ->
+  ``Cannot find module .../frontend/apps/web/node_modules/typescript`` and
+  ``make: *** [make/ci.mk:1095: verify.contract.architecture.suite] Error 1``.
+  That instance was invisible to the two frames above: the recipe carries no
+  toolchain *token* (a bare ``node <script>``), and the script is a ``.js`` file,
+  which the ``.sh|.py`` script frame never opened. Both frames are widened here.
 
-Both are lane-coverage defects, not code defects. This guard makes the boundary
-machine-checkable so the suite cannot silently regain such a wire, and it also
-refuses a "fix" that merely deletes enforcement: each known frontend-toolchain
-guard must stay reachable from the local exact-head lane and from a frontend
-lane.
+All of them are lane-coverage defects, not code defects. This guard makes the
+boundary machine-checkable so the suite cannot silently regain such a wire, and
+it also refuses a "fix" that merely deletes enforcement: each known
+frontend-toolchain guard must stay reachable from the local exact-head lane and
+from a frontend lane.
 """
 
 from __future__ import annotations
@@ -61,13 +70,36 @@ FRONTEND_TOOLCHAIN_INVOCATIONS = (
     re.compile(r"""["']?\$\(ROOT\)[^"'\s]*?/(?:node_modules/\.bin/|scripts/dev/pnpm_exec\.sh)"""),
 )
 
-#: Guards that compile/bundle frontend sources with the workspace toolchain.
+#: Node harnesses load the workspace frontend toolchain through a module loader
+#: instead of spawning a binary. ``node_modules`` alone is declared data (a
+#: path on a module search list, an alias target, a quoted expectation); only a
+#: loader keyword directly in front of the path is an execution. The ``.js``
+#: frame matters because the third wire carried no toolchain token in its recipe
+#: and was therefore invisible to both frames above.
+FRONTEND_TOOLCHAIN_NODE_LOADS = (
+    re.compile(r"""\b(?:require|import)\s*\(\s*[^);\n]*?frontend/apps/web/node_modules"""),
+    re.compile(r"""\bfrom\s+["'][^"'\n]*?frontend/apps/web/node_modules"""),
+)
+
+#: Guards/harnesses that compile or bundle frontend sources with the workspace
+#: toolchain. A make target reachable from REMOTE_BACKEND_ANCHOR must never run
+#: one of these, and each must stay reachable from the lanes that do install the
+#: toolchain.
 FRONTEND_TOOLCHAIN_GUARDS = (
     "scripts/verify/menu_config_tree_editor_behavior_guard.sh",
     "scripts/verify/contract_form_runtime_state_behavior_guard.sh",
+    "scripts/verify/action_view_route_runtime_smoke.js",
+    "scripts/verify/action_view_contract_action_runtime_smoke.js",
+    "scripts/verify/navigation_context_smoke.js",
 )
 
-SCRIPT_REFERENCE_RE = re.compile(r"\b(scripts/[A-Za-z0-9_./-]+\.(?:sh|py))\b")
+#: Every script suffix a make recipe names literally. The earlier ``.sh|.py``
+#: frame was the reason the third wire stayed invisible: its recipe named a
+#: ``.js`` harness, so the script was never opened and its toolchain load was
+#: never seen.
+SCRIPT_REFERENCE_RE = re.compile(
+    r"\b(scripts/[A-Za-z0-9_./-]+\.(?:sh|py|js|mjs|cjs))\b"
+)
 
 #: This guard's own files carry toolchain paths as fixtures/patterns, not as
 #: executions. Self-reference is the one exclusion: every other reachable script
@@ -95,6 +127,16 @@ def frontend_toolchain_invocations(text: str) -> list[str]:
     return found
 
 
+def frontend_toolchain_node_loads(text: str) -> list[str]:
+    """Frontend-toolchain module loads (``require``/``import``/``from``) in ``text``."""
+    found: list[str] = []
+    for pattern in FRONTEND_TOOLCHAIN_NODE_LOADS:
+        match = pattern.search(text)
+        if match:
+            found.append(match.group(0).strip())
+    return found
+
+
 def collect_frontend_toolchain_hits(
     graph: dict[str, set[str]],
     targets: dict[str, str],
@@ -111,8 +153,11 @@ def collect_frontend_toolchain_hits(
         for script in sorted(set(SCRIPT_REFERENCE_RE.findall(body))):
             if Path(script).name in SELF_FILES:
                 continue
-            for invocation in frontend_toolchain_invocations(script_text(script)):
+            text = script_text(script)
+            for invocation in frontend_toolchain_invocations(text):
                 hits.append(f"{anchor} -> {target} -> {script}: {invocation!r}")
+            for load in frontend_toolchain_node_loads(text):
+                hits.append(f"{anchor} -> {target} -> {script}: {load!r}")
     return hits
 
 
