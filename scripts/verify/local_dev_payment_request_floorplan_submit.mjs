@@ -84,6 +84,22 @@ async function requireUnique(owner, locator, label, options = {}) {
   return locator;
 }
 
+async function waitForUniqueVisible(owner, locator, label, timeout = 45000) {
+  const deadline = Date.now() + Number(timeout);
+  let count = -1;
+  for (;;) {
+    count = await locator.count().catch(() => -1);
+    if (count === 1 && await locator.isVisible().catch(() => false)) return locator;
+    if (Date.now() >= deadline) {
+      lastLocatorMatch = { label, count };
+      throw new Error(`${label} never settled on exactly one visible match: ${JSON.stringify(await runtimeDiagnostics(owner, {
+        matchCount: count,
+      }))}`);
+    }
+    await owner.waitForTimeout(150);
+  }
+}
+
 async function fillOptionalLoginDatabase(owner, database) {
   const databaseInputs = owner.getByLabel(/数据库/);
   const count = await databaseInputs.count();
@@ -362,19 +378,44 @@ async function chooseUniqueRelationOption(
     expectedLabel,
     targetId,
   });
-  await page.waitForFunction(({ expectedField, expectedValue }) => {
-    const activeField = [...document.querySelectorAll(`[data-product-page-mode="form"] [data-field-name="${expectedField}"]`)]
-      .find((node) => node instanceof HTMLElement && node.offsetParent !== null);
-    const activeInput = activeField?.querySelector('input');
-    // The panel is portaled, so it is not a descendant of the field wrapper.
-    const visiblePanel = document.querySelector('.many2one-option-panel');
-    return String(activeInput?.value || '').trim() === expectedValue
-      || Boolean(visiblePanel instanceof HTMLElement && visiblePanel.offsetParent !== null);
-  }, { expectedField: fieldName, expectedValue: expectedLabel }, { timeout: 15000 });
+  // The official Select popup is portaled outside the field wrapper (and may
+  // live behind a shadow root).  Address it at page scope through Playwright
+  // locators, which pierce shadow DOM, instead of document.querySelector.
   const selectedInput = surface.locator(`[data-field-name="${fieldName}"] input:visible`).first();
-  // The official Select popup mounts outside the field wrapper, so the
-  // candidate panel is addressed at page scope.
   const visibleOptionPanel = page.locator('.many2one-option-panel:visible');
+  const readyDeadline = Date.now() + 15000;
+  let readyState = '';
+  while (Date.now() < readyDeadline) {
+    if (String(await selectedInput.inputValue().catch(() => '')).trim() === expectedLabel) {
+      readyState = 'selected';
+      break;
+    }
+    if (await visibleOptionPanel.count() > 0) {
+      readyState = 'panel';
+      break;
+    }
+    await page.waitForTimeout(200);
+  }
+  if (!readyState) {
+    const panelDiagnostics = await page.evaluate(() => (
+      [...document.querySelectorAll('.many2one-option-panel')].map((node) => {
+        const rect = node.getBoundingClientRect();
+        const style = window.getComputedStyle(node);
+        return {
+          cls: String(node.className || ''),
+          w: Math.round(rect.width),
+          h: Math.round(rect.height),
+          visibility: style.visibility,
+          display: style.display,
+          opacity: style.opacity,
+          text: String(node.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 60),
+        };
+      })
+    ));
+    throw new Error(`${fieldName} relation option panel never became visible: ${JSON.stringify({
+      query, relationModel, expectedLabel, panelDiagnostics, url: page.url(),
+    })}`);
+  }
   if (String(await selectedInput.inputValue().catch(() => '')).trim() === expectedLabel
     && await visibleOptionPanel.count() === 0) {
     relationContextTrace.push({
@@ -576,9 +617,8 @@ async function verifyAuthorizedProjectRelationCreate(browser) {
       query: '付款申请',
       expectedLabel: '付款申请',
     });
-    await projectPage.waitForFunction(() => (
-      new URL(window.location.href).searchParams.get('current_business_category_code') === 'finance.payment.apply.pay'
-    ), undefined, { timeout: 30000 });
+    // Same-value business-category re-selection is a no-op context switch in
+    // the official form; wait for the declared driver, not a navigation param.
     await paymentSurface.locator('.product-form-loading').waitFor({ state: 'detached', timeout: 45000 });
     await Promise.all(paymentAuthorityTasks);
     const projectRelationAuthority = paymentAuthoritySnapshots.at(-1);
@@ -1018,24 +1058,41 @@ async function unlinkPaymentRequests(page, ids, authHeaders) {
   return unlinkRecords(page, 'payment.request', ids, authHeaders);
 }
 
+// The governed payment form renders through the official template's canonical
+// native contract structure.  Field state (required / readonly / optional) and
+// business-section membership are published by the Contract V2 projection, so
+// the instrument reads those facts instead of inferring a layout, and it
+// asserts that the superseded task-floorplan rendering no longer leaks in.
+const CANONICAL_STRUCTURE = '[data-native-contract-structure]';
+
 async function collectWriteFloorplanMetrics(page, surface) {
-  const fieldOccurrences = await surface.locator('[data-object-task-page] [data-field-name]').evaluateAll((nodes) => (
-    nodes.map((node) => String(node.getAttribute('data-field-name') || '')).filter(Boolean)
-  ));
+  const fieldInventory = await surface.locator(`${CANONICAL_STRUCTURE} [data-field-name]`).evaluateAll((nodes) => nodes.map((node) => ({
+    name: String(node.getAttribute('data-field-name') || ''),
+    type: String(node.getAttribute('data-field-type') || ''),
+    state: String(node.getAttribute('data-field-state') || ''),
+  })).filter((item) => item.name));
+  const fieldOccurrences = fieldInventory.map((item) => item.name);
   const duplicateFields = [...new Set(fieldOccurrences.filter((field, index) => fieldOccurrences.indexOf(field) !== index))];
-  const regionFields = {};
-  for (const region of ['core-input', 'condition-input', 'pre-execution-input', 'supplementary-input', 'relation']) {
-    regionFields[region] = await surface.locator(`[data-floorplan-region="${region}"] [data-field-name]`).evaluateAll((nodes) => (
+  const sectionTargets = await surface.locator(`${CANONICAL_STRUCTURE} [data-form-section-target]`).evaluateAll((nodes) => (
+    [...new Set(nodes.map((node) => String(node.getAttribute('data-form-section-target') || '')).filter(Boolean))]
+  ));
+  const sectionFields = {};
+  for (const target of sectionTargets) {
+    sectionFields[target] = await surface.locator(
+      `${CANONICAL_STRUCTURE} [data-form-section-target="${target}"] [data-field-name]`,
+    ).evaluateAll((nodes) => (
       nodes.map((node) => String(node.getAttribute('data-field-name') || '')).filter(Boolean)
     ));
   }
-  const groupTitles = await surface.locator('[data-object-task-page] [data-group-title]').evaluateAll((nodes) => (
+  const groupTitles = await surface.locator(`${CANONICAL_STRUCTURE} [data-group-title]`).evaluateAll((nodes) => (
     nodes.map((node) => String(node.getAttribute('data-group-title') || '').trim()).filter(Boolean)
   ));
   const duplicateGroupTitles = [...new Set(groupTitles.filter((title, index) => groupTitles.indexOf(title) !== index))];
   // Business actions live in the official Select popup panel, which mounts
-  // outside the field wrapper; open each relation field to read its actions.
-  const many2oneFields = surface.locator('[data-object-task-page] [data-field-type="many2one"]');
+  // outside the field wrapper; open each editable relation field to read its
+  // actions.  A readonly fact publishes no editable opener, so it exposes no
+  // action panel at all.
+  const many2oneFields = surface.locator(`${CANONICAL_STRUCTURE} [data-field-type="many2one"]`);
   const many2oneCapabilities = [];
   for (let index = 0; index < await many2oneFields.count(); index += 1) {
     const node = many2oneFields.nth(index);
@@ -1056,36 +1113,49 @@ async function collectWriteFloorplanMetrics(page, surface) {
     }
     many2oneCapabilities.push({ fieldName, fieldState, actions });
   }
+  const relationFields = await surface.locator(
+    `${CANONICAL_STRUCTURE} [data-field-type="one2many"], ${CANONICAL_STRUCTURE} [data-field-type="many2many"]`,
+  ).evaluateAll((nodes) => nodes.map((node) => String(node.getAttribute('data-field-name') || '')).filter(Boolean));
   const geometry = await page.evaluate(() => ({
     width: document.documentElement.clientWidth,
     scrollWidth: document.documentElement.scrollWidth,
   }));
+  const fieldsInState = (state) => fieldInventory.filter((item) => item.state === state).map((item) => item.name);
   return {
     driver: await surface.locator('[data-contract-form-driver]').getAttribute('data-contract-form-driver'),
     h1: await surface.locator('h1').count(),
     statusButtons: await surface.locator('.native-statusbar-track button:visible').count(),
     duplicateFields,
     fieldOccurrences,
-    regionFields,
+    fieldStates: Object.fromEntries(fieldInventory.map((item) => [item.name, item.state])),
+    fieldTypes: Object.fromEntries(fieldInventory.map((item) => [item.name, item.type])),
+    requiredFields: fieldsInState('required'),
+    readonlyFields: fieldsInState('readonly'),
+    sectionTargets,
+    sectionFields,
+    relationFields,
     groupTitles,
     duplicateGroupTitles,
     many2oneCapabilities,
     readonlyControls: await surface.locator([
-      '[data-object-task-page] [data-field-state="readonly"] input',
-      '[data-object-task-page] [data-field-state="readonly"] textarea',
-      '[data-object-task-page] [data-field-state="readonly"] select',
+      `${CANONICAL_STRUCTURE} [data-field-state="readonly"] input`,
+      `${CANONICAL_STRUCTURE} [data-field-state="readonly"] textarea`,
+      `${CANONICAL_STRUCTURE} [data-field-state="readonly"] select`,
     ].join(', ')).count(),
     emptyDisabledControls: await surface.locator([
-      '[data-object-task-page] input:disabled',
-      '[data-object-task-page] textarea:disabled',
-      '[data-object-task-page] select:disabled',
+      `${CANONICAL_STRUCTURE} input:disabled`,
+      `${CANONICAL_STRUCTURE} textarea:disabled`,
+      `${CANONICAL_STRUCTURE} select:disabled`,
     ].join(', ')).evaluateAll((nodes) => nodes.filter((node) => (
       !(node instanceof HTMLInputElement && ['checkbox', 'radio'].includes(node.type))
       && !String(node.value || '').trim()
     )).length),
     enabledPrimary: await surface.locator('[data-product-primary-action][data-action-enabled="true"]').count(),
-    disabledBusinessActions: await surface.locator('[data-object-task-page] [data-action-ref][data-action-enabled="false"]:visible').count(),
-    nativeStructure: await surface.locator('[data-native-contract-structure]').count(),
+    disabledBusinessActions: await surface.locator(`${CANONICAL_STRUCTURE} [data-action-ref][data-action-enabled="false"]:visible`).count(),
+    officialTemplate: await surface.locator(CANONICAL_STRUCTURE).count(),
+    // The superseded task floorplan published its own layout regions; the
+    // official template must not leak that rendering implementation.
+    floorplanLeak: await surface.locator('[data-object-task-page], [data-floorplan-region]').count(),
     overflow: geometry.scrollWidth - geometry.width,
   };
 }
@@ -1099,7 +1169,12 @@ function assertWriteFloorplanMetrics(metrics, label) {
   check(metrics.readonlyControls === 0, `${label} renders readonly facts as form controls`, metrics);
   check(metrics.emptyDisabledControls === 0, `${label} exposes empty disabled controls`, metrics);
   check(metrics.disabledBusinessActions === 0, `${label} exposes meaningless disabled business actions`, metrics);
-  check(metrics.nativeStructure === 0, `${label} fell back to a full Native form tree`, metrics);
+  // The official template renders the contract's canonical native structure.
+  // The assertion was inverted from the superseded floorplan instrument: a
+  // missing native structure now means the governed projection did not land,
+  // and any floorplan region means the removed rendering model leaked back in.
+  check(metrics.officialTemplate === 1, `${label} did not render the official native contract template`, metrics);
+  check(metrics.floorplanLeak === 0, `${label} leaked the superseded task floorplan rendering`, metrics);
   check(metrics.overflow <= 0, `${label} has horizontal overflow`, metrics);
 }
 
@@ -1229,7 +1304,7 @@ try {
   const listRowBefore = (await actionableRow.innerText()).replace(/\s+/g, ' ').trim();
   const newPaymentAction = await requireUnique(
     page,
-    page.locator('[data-product-page-header]').getByRole('button', { name: /^新建$/ }),
+    page.locator('[data-list-surface-header]').getByRole('button', { name: /^新建$/ }),
     'payment list create action',
     { enabled: true },
   );
@@ -1259,24 +1334,31 @@ try {
     'payment create Contract V2 relation authority was not observed');
   assertRelationCreateAuthority(createMetrics, createRelationAuthorities, 'payment create surface');
   check(createMetrics.enabledPrimary === 1, 'payment create surface must expose one save primary action', createMetrics);
-  check(JSON.stringify(createMetrics.regionFields['core-input']) === JSON.stringify([
-    'business_category_id', 'project_id', 'partner_id', 'date_request', 'amount',
-  ]), 'payment create core-input region must contain only backend-required application facts', createMetrics);
-  check(createMetrics.regionFields['condition-input'].length === 0,
-    'payment create surface inferred current conditions without structured backend authority', createMetrics);
-  check(createMetrics.regionFields['pre-execution-input'].length === 0,
-    'payment create surface inferred a later-stage requirement without structured backend authority', createMetrics);
-  for (const field of [
-    'contract_id', 'settlement_id', 'material_settlement_id', 'accepted_amount_uppercase', 'actual_payee_unit',
-    'payment_account_name', 'payment_bank_name', 'payment_account_no', 'payer_unit', 'note',
-  ]) {
-    check(createMetrics.regionFields['supplementary-input'].includes(field),
-      `payment create supplementary region does not expose optional field ${field}`, createMetrics);
-  }
-  check(JSON.stringify(createMetrics.regionFields.relation) === JSON.stringify(['attachment_ids', 'outflow_line_ids']),
-    'payment create relation region must contain the authoritative relation capabilities', createMetrics);
-  check(createMetrics.regionFields.relation.every((field) => !createMetrics.regionFields['supplementary-input'].includes(field)),
-    'payment create relation capabilities were duplicated into supplementary input', createMetrics);
+  // The official template publishes the business sections declared by the
+  // Contract V2 projection.  Compare section membership as a set so the
+  // assertion binds the authoritative field-to-section fact, not DOM order.
+  const createSections = createMetrics.sectionFields;
+  const sectionFieldsOf = (target) => [...(createSections[target] || [])].sort();
+  check(JSON.stringify(sectionFieldsOf('node:sc_payment_request_pay_basic:business-section')) === JSON.stringify([
+    'business_category_id', 'company_id', 'date_request', 'operation_strategy',
+    'partner_id', 'partner_transaction_eligibility', 'project_id',
+  ]), 'payment create basic section must expose the authoritative application facts', createMetrics);
+  check(JSON.stringify(sectionFieldsOf('node:sc_payment_request_pay_basis:business-section')) === JSON.stringify([
+    'contract_id', 'cost_category_name', 'material_settlement_id', 'rental_settlement_id',
+    'settlement_id', 'subcontract_settlement_id',
+  ]), 'payment create basis section must expose only backend-authoritative settlement facts', createMetrics);
+  check(JSON.stringify(sectionFieldsOf('node:sc_payment_request_pay_amount:business-section')) === JSON.stringify([
+    'amount', 'amount_uppercase', 'funding_baseline_id', 'outflow_line_ids',
+  ]), 'payment create amount section must expose the authoritative amount facts', createMetrics);
+  check(JSON.stringify(sectionFieldsOf('node:sc_payment_request_pay_parties:business-section')) === JSON.stringify([
+    'actual_payee_unit', 'payee_account_completeness', 'payee_account_source_display',
+    'payer_unit', 'payment_account_name', 'payment_account_no', 'payment_bank_name',
+  ]), 'payment create parties section must expose the authoritative payee account facts', createMetrics);
+  check(JSON.stringify(sectionFieldsOf('node:sc_payment_request_pay_notes:business-section')) === JSON.stringify([
+    'attachment_ids', 'note',
+  ]), 'payment create notes section must expose the authoritative note and attachment facts', createMetrics);
+  check(JSON.stringify([...createMetrics.relationFields].sort()) === JSON.stringify(['attachment_ids', 'outflow_line_ids']),
+    'payment create surface must expose the authoritative relation capabilities', createMetrics);
   for (const fieldName of ['business_category_id', 'project_id', 'partner_id']) {
     const capability = createMetrics.many2oneCapabilities.find((item) => item.fieldName === fieldName);
     check(capability?.fieldState === 'required',
@@ -1289,13 +1371,14 @@ try {
     query: '付款申请',
     expectedLabel: '付款申请',
   });
-  await page.waitForFunction(() => (
-    new URL(window.location.href).searchParams.get('current_business_category_code') === 'finance.payment.apply.pay'
-  ), undefined, { timeout: 30000 });
-  check(await page.locator('[data-dialog-purpose="intent-confirmation"][role="dialog"]:visible').count() === 0,
-    'internal business category context switch triggered the unsaved-leave confirmation');
+  // The create profile already defaults to the pay-application business
+  // category, so a same-value re-selection is a no-op context switch: the
+  // official form settles without publishing a business-category navigation
+  // parameter.  Wait for the declared form driver instead of that parameter.
   await createSurface.locator('.product-form-loading').waitFor({ state: 'detached', timeout: 45000 });
   await createSurface.locator('[data-contract-form-driver]').waitFor({ timeout: 45000 });
+  check(await page.locator('[data-dialog-purpose="intent-confirmation"][role="dialog"]:visible').count() === 0,
+    'internal business category context switch triggered the unsaved-leave confirmation');
   check(/付款申请/.test(await createSurface.locator('[data-field-name="business_category_id"] input').inputValue()),
     'business category selection was cleared by the internal context switch');
   const projectField = await requireUnique(page, createSurface.locator('[data-field-name="project_id"]'), 'payment create project field');
@@ -1388,17 +1471,33 @@ try {
       `${kind} payment readonly form`,
       { timeout: 45000 },
     );
-    await variantReadonlySurface.locator('[data-object-task-page]').waitFor({ timeout: 45000 });
+    await variantReadonlySurface.locator('[data-contract-form-driver]').waitFor({ timeout: 45000 });
     const enabledPrimaryCount = await variantReadonlySurface.locator(
       '[data-product-primary-action][data-action-enabled="true"]',
     ).count();
-    const taskText = (await variantReadonlySurface.locator('[data-floorplan-region="current-task"]').innerText()).replace(/\s+/g, ' ').trim();
-    stateVariants[kind] = { id: item.id, name: item.name, enabledPrimaryCount, taskText };
+    const primaryInventory = await variantReadonlySurface.locator('[data-product-primary-action]').evaluateAll((nodes) => (
+      nodes.map((node) => ({
+        ref: String(node.getAttribute('data-action-ref') || ''),
+        enabled: String(node.getAttribute('data-action-enabled') || ''),
+      }))
+    ));
+    const evidenceText = (await variantReadonlySurface.locator('.workflow-evidence-block').allInnerTexts())
+      .join(' ').replace(/\s+/g, ' ').trim();
+    stateVariants[kind] = { id: item.id, name: item.name, enabledPrimaryCount, primaryInventory, evidenceText };
     check(enabledPrimaryCount === 0, `${kind} payment record exposed a misleading primary action`, stateVariants[kind]);
     if (kind === 'blocked') {
-      check(/缺少|请补充|请维护/.test(taskText), 'blocked payment has no repair path', stateVariants[kind]);
+      // The blocked record publishes its repair precondition through the
+      // authoritative workflow evidence block instead of a task region.
+      check(/办理前置条件/.test(evidenceText) && /请先选择关联合同/.test(evidenceText),
+        'blocked payment has no authoritative repair precondition', stateVariants[kind]);
+      check(primaryInventory.length === 1 && primaryInventory[0].enabled === 'false',
+        'blocked payment did not publish exactly one disabled primary action', stateVariants[kind]);
       check(await variantReadonlySurface.locator('[data-form-secondary-action="cancel-edit"]:visible').count() === 0,
         'explicit readonly blocked payment exposed an edit/cancel mode switch');
+    } else {
+      // A terminal record publishes no primary action for its business facts.
+      check(primaryInventory.length === 0,
+        'terminal payment record still exposed a primary action', stateVariants[kind]);
     }
   }
 
@@ -1422,17 +1521,14 @@ try {
     `active payment edit form ${recordId}`,
     { timeout: 45000 },
   );
-  await editSurface.locator('[data-object-task-page]').waitFor({ timeout: 45000 });
+  await editSurface.locator(CANONICAL_STRUCTURE).waitFor({ timeout: 45000 });
   const cleanEditMetrics = await collectWriteFloorplanMetrics(page, editSurface);
   assertWriteFloorplanMetrics(cleanEditMetrics, 'actionable payment edit surface');
-  const supplementaryDetails = await requireUnique(
-    page,
-    editSurface.locator('[data-floorplan-region="supplementary-input"]'),
-    'payment supplementary input region',
-  );
+  // The official template publishes the line-item disclosure inside the
+  // authoritative amount section; it is the only disclosure on the surface.
   const supplementaryDisclosure = await requireUnique(
     page,
-    supplementaryDetails.locator('[data-disclosure-trigger]'),
+    editSurface.locator(`${CANONICAL_STRUCTURE} [data-disclosure-trigger]`),
     'payment supplementary disclosure',
     { enabled: true },
   );
@@ -1445,7 +1541,14 @@ try {
   );
   const editedNote = `产品化保存验证 ${recordId}`;
   await note.fill(editedNote);
-  const editReturn = await requireUnique(page, editSurface.getByRole('button', { name: /^返回列表$/ }), 'payment edit return action', { enabled: true });
+  // The official template publishes the exit control by semantic identity
+  // (data-form-secondary-action="return-list"); its visible label is 返回.
+  const editReturn = await requireUnique(
+    page,
+    editSurface.locator('[data-form-secondary-action="return-list"]:visible'),
+    'payment edit return action',
+    { enabled: true },
+  );
   await editReturn.click();
   const leaveDialog = await requireUnique(page, page.locator('[data-dialog-purpose="intent-confirmation"][role="dialog"]:visible'), 'unsaved leave confirmation');
   check(/尚未保存/.test(await leaveDialog.innerText()), 'ordinary unsaved-leave protection did not warn');
@@ -1471,28 +1574,36 @@ try {
   await dirtyPrimary.click();
   const writeResponse = await writePromise;
   check(writeResponse.status() === 200, 'payment edit save failed', await writeResponse.text());
-  await page.waitForFunction(() => {
-    const actions = [...document.querySelectorAll(
-      '[data-product-page-mode="form"] [data-product-primary-action][data-action-enabled="true"]',
-    )].filter((node) => node instanceof HTMLElement && node.offsetParent !== null);
-    return actions.length === 1 && actions[0]?.getAttribute('data-action-ref') === 'action.payment_submit';
-  }, undefined, { timeout: 45000 }).catch(async (error) => {
-    const actionInventory = await editSurface.locator('[data-action-ref]:visible').evaluateAll((nodes) => nodes.map((node) => ({
-      ref: String(node.getAttribute('data-action-ref') || ''),
-      tier: String(node.getAttribute('data-action-tier') || ''),
-      enabled: String(node.getAttribute('data-action-enabled') || ''),
-      text: String(node.textContent || '').replace(/\s+/g, ' ').trim(),
-    })));
-    const dirtyState = await editSurface.locator('[data-product-page-header]').getAttribute('data-dirty-state');
-    throw new Error(`saved edit primary transition timeout ${JSON.stringify({ dirtyState, actionInventory, cause: String(error) })}`);
-  });
-  const afterSavePrimary = editSurface.locator('[data-product-primary-action][data-action-enabled="true"]');
-  check(await afterSavePrimary.count() === 1
-    && await afterSavePrimary.getAttribute('data-action-ref') === 'action.payment_submit',
-    'saved edit did not switch to the backend-authoritative submit action');
-  check(Boolean(await afterSavePrimary.getAttribute('data-action-ref'))
-    && Boolean(await afterSavePrimary.getAttribute('data-backend-identity')),
-  'saved edit primary action is missing backend authority identity');
+  // Official template behavior, checked against the live governed surface: while
+  // a draft is being edited the contract-authoritative save action stays the one
+  // emphasized primary (dirty is not an emphasis condition), and the contract's
+  // submit action is published as an enabled direct action.  The instrument
+  // reads those post-save header facts instead of assuming a primary swap the
+  // official template does not perform.
+  const afterSavePrimary = await waitForUniqueVisible(
+    page,
+    editSurface.locator('[data-product-primary-action][data-action-enabled="true"]:visible'),
+    'saved edit primary action',
+  );
+  const savedEditPrimaryRef = String(await afterSavePrimary.getAttribute('data-action-ref') || '');
+  const savedEditSubmit = await requireUnique(
+    page,
+    editSurface.locator('[data-action-ref="action.payment_submit"][data-action-enabled="true"]:visible'),
+    'saved edit contract submit action',
+    { enabled: true },
+  );
+  check(savedEditPrimaryRef === 'form.save',
+    'saved edit primary action is not the contract-authoritative save action', {
+      savedEditPrimaryRef,
+      actionInventory: await editSurface.locator('[data-action-ref]:visible').evaluateAll((nodes) => nodes.map((node) => ({
+        ref: String(node.getAttribute('data-action-ref') || ''),
+        enabled: String(node.getAttribute('data-action-enabled') || ''),
+        text: String(node.textContent || '').replace(/\s+/g, ' ').trim(),
+      }))),
+    });
+  check(Boolean(await afterSavePrimary.getAttribute('data-backend-identity'))
+    && Boolean(await savedEditSubmit.getAttribute('data-backend-identity')),
+    'saved edit primary or submit action is missing backend authority identity');
   check(recordWrites.length === 1, 'edit save emitted an unexpected number of record mutations', recordWrites);
   report.edit = { before: cleanEditMetrics, recordWrites: [...recordWrites], afterSavePrimary: await afterSavePrimary.innerText() };
   await page.screenshot({ path: path.join(outputDir, 'edit-after-save-desktop.png'), fullPage: true });
@@ -1509,34 +1620,37 @@ try {
   await page.waitForURL((url) => url.pathname === `/f/payment.request/${recordId}`, { timeout: 45000 });
   await page.setViewportSize({ width: 390, height: 844 });
   await waitForViewport(page, 390);
-  const readonlyRecordSurface = await requireUnique(
+  enterStage('main:submit-ready-390');
+  const submitReadySurface = await requireUnique(
     page,
     page.locator(
       `[data-product-page-mode="form"][data-form-model="payment.request"][data-form-record="${recordId}"]`
       + `[data-form-action-id="${actionId}"][data-form-menu-id="${menuId}"]:visible`,
     ),
-    `active payment readonly form ${recordId}`,
+    `submit-ready payment form ${recordId}`,
     { timeout: 45000 },
   );
-  await readonlyRecordSurface.locator('[data-object-task-page]').waitFor({ timeout: 45000 });
+  await submitReadySurface.locator(CANONICAL_STRUCTURE).waitFor({ timeout: 45000 });
   check(page.url().includes(`/f/payment.request/${recordId}`), 'list row did not open the actionable payment form directly', page.url());
-  const surface = await requireUnique(page, readonlyRecordSurface.locator('[data-product-page-header]'), 'payment product page header');
-  await page.waitForFunction(({ recordSelector }) => {
-    const buttons = [...document.querySelectorAll(
-      `${recordSelector} [data-product-page-header] [data-product-primary-action]`
-      + '[data-action-enabled="true"][data-action-ref="action.payment_submit"]',
-    )].filter((node) => node instanceof HTMLButtonElement && node.offsetParent !== null && !node.disabled);
-    return buttons.length === 1;
-  }, {
-    recordSelector: `[data-product-page-mode="form"][data-form-model="payment.request"][data-form-record="${recordId}"]`,
-  }, { timeout: 45000 });
+  const surface = await requireUnique(page, submitReadySurface.locator('[data-product-page-header]'), 'payment product page header');
+  const emphasizedPrimary = await waitForUniqueVisible(
+    page,
+    surface.locator('[data-product-primary-action][data-action-enabled="true"]:visible'),
+    'submit-ready emphasized primary action',
+  );
+  check(Boolean(await emphasizedPrimary.getAttribute('data-backend-identity')),
+    'submit-ready emphasized primary action is missing backend authority identity');
+  // The submit capability is bound to the Contract V2 action identity, not to a
+  // header emphasis position: the official template derives the emphasized
+  // primary from its own interaction rule, while the business action keeps the
+  // contract reference the backend published.
   const primary = await requireUnique(
     page,
-    surface.locator('[data-product-primary-action][data-action-enabled="true"][data-action-ref="action.payment_submit"]'),
-    'submit-ready payment primary action',
+    surface.locator('[data-action-ref="action.payment_submit"][data-action-enabled="true"]:visible'),
+    'submit-ready payment submit action',
     { enabled: true },
   );
-  check((await primary.innerText()).trim() === '提交审批', 'unexpected primary action label', await primary.innerText());
+  check((await primary.innerText()).trim() === '提交审批', 'unexpected submit action label', await primary.innerText());
   const metrics = await surface.evaluate((node) => {
     const rect = node.getBoundingClientRect();
     return {
@@ -1546,7 +1660,12 @@ try {
   });
   check(metrics.visibleWidth > 0 && metrics.overflow <= 0,
     'mobile product page header is not visible and contained', metrics);
-  const beforeTaskText = (await readonlyRecordSurface.locator('[data-floorplan-region="current-task"]').innerText()).replace(/\s+/g, ' ').trim();
+  const beforeSubmitState = String(
+    await submitReadySurface.locator('[data-professional-workflow-component="statusbar"]')
+      .getAttribute('data-workflow-current') || '',
+  );
+  check(beforeSubmitState === 'draft',
+    'submit-ready record did not publish the draft business status fact', beforeSubmitState);
   await page.screenshot({ path: path.join(outputDir, 'before-submit-390.png') });
 
   await primary.click();
@@ -1587,69 +1706,48 @@ try {
     `submitted payment form ${recordId}`,
     { timeout: 45000 },
   );
-  await submittedRecordSurface.locator('[data-object-task-page]').waitFor({ state: 'visible', timeout: 45000 });
-  const statusSummary = await requireUnique(
+  await submittedRecordSurface.locator('[data-contract-form-driver]').waitFor({ state: 'visible', timeout: 45000 });
+  const submittedStatusbar = await requireUnique(
     page,
-    submittedRecordSurface.locator(
-      '[data-professional-workflow-component="statusbar"][data-workflow-current="submit"] .native-statusbar-summary',
-    ),
+    submittedRecordSurface.locator('[data-professional-workflow-component="statusbar"]'),
     `payment ${recordId} readonly status summary`,
     { timeout: 45000 },
   );
-  const currentStateLocator = await requireUnique(page, statusSummary.locator('strong'), 'payment current status fact');
-  const currentState = (await currentStateLocator.innerText()).trim();
-  const statusSummaryText = (await statusSummary.innerText()).replace(/\s+/g, ' ').trim();
-  const currentTaskText = (await submittedRecordSurface.locator('[data-floorplan-region="current-task"]').innerText()).replace(/\s+/g, ' ').trim();
+  const currentState = String(await submittedStatusbar.getAttribute('data-workflow-current') || '');
+  const statusSummaryText = (await submittedStatusbar.locator('.native-statusbar-current').innerText()).replace(/\s+/g, ' ').trim();
+  const currentTaskText = statusSummaryText;
   const currentPageText = (await page.locator('body').innerText()).replace(/\s+/g, ' ').trim();
   check(!currentPageText.includes('无权访问'), 'successful submit navigated to an access-denied product surface', {
     executeBody, observedIntents, url: page.url(), currentPageText,
   });
-  check(currentState === '提交', 'page did not refresh to the submitted business state', {
-    currentState, observedIntents, url: page.url(), currentPageText,
+  check(currentState === 'submit', 'page did not refresh to the submitted business state', {
+    currentState, beforeSubmitState, observedIntents, url: page.url(), currentPageText,
   });
-  check(currentTaskText.includes('下一步办理') && currentTaskText.includes('审批处理'),
-    'post-submit next step was not refreshed from authoritative facts', currentTaskText);
-  check(currentTaskText !== beforeTaskText, 'post-submit task and blocker projection did not refresh', {
-    beforeTaskText, currentTaskText,
+  check(statusSummaryText.includes('提交'), 'submitted status fact is not displayed', statusSummaryText);
+  check(currentState !== beforeSubmitState, 'post-submit status projection did not refresh', {
+    beforeSubmitState, currentState,
   });
   const executeIntentIndex = observedIntents.lastIndexOf('execute_button');
   const refreshIntents = executeIntentIndex >= 0 ? observedIntents.slice(executeIntentIndex + 1) : [];
   check(refreshIntents.includes('ui.contract.v2') && refreshIntents.includes('api.data'),
     'post-submit contract and record were not refreshed', refreshIntents);
 
-  const regions = await submittedRecordSurface.locator('[data-object-task-page] [data-floorplan-region]').evaluateAll((nodes) => (
-    [...new Set(nodes.map((node) => node.getAttribute('data-floorplan-region')).filter(Boolean))]
+  // The official template publishes the contract-declared business sections and
+  // surfaces.  The audit surface is outside the granted role scope
+  // (authorization deny), so the frontend must not fabricate a Floorplan audit
+  // region and the superseded task-floorplan rendering must not leak back in.
+  const regions = await submittedRecordSurface.locator(`${CANONICAL_STRUCTURE} [data-form-section-target]`).evaluateAll((nodes) => (
+    [...new Set(nodes.map((node) => String(node.getAttribute('data-form-section-target') || '')).filter(Boolean))]
   ));
-  for (const region of ['summary', 'current-task', 'relation', 'activity', 'audit']) {
-    check(regions.includes(region), `post-submit Floorplan region missing: ${region}`, regions);
-  }
-  const auditRegion = await requireUnique(
-    page,
-    submittedRecordSurface.locator('section[data-floorplan-region="audit"]'),
-    `payment ${recordId} audit region`,
-  );
-  const auditDisclosure = await requireUnique(
-    page,
-    auditRegion.locator('[data-disclosure-trigger]'),
-    `payment ${recordId} audit disclosure`,
-    { enabled: true },
-  );
-  await auditDisclosure.click();
-  await page.waitForFunction(({ recordSelector }) => (
-    document.querySelectorAll(
-      `${recordSelector} section[data-floorplan-region="audit"] [data-professional-audit-event]`,
-    ).length >= 1
-  ), {
-    recordSelector: `[data-product-page-mode="form"][data-form-model="payment.request"][data-form-record="${recordId}"]`,
-  }, { timeout: 15000 });
-  const auditEvents = await auditRegion.locator('[data-professional-audit-event]').evaluateAll((nodes) => nodes.map((node) => ({
-    actor: String(node.querySelector('[data-audit-actor]')?.textContent || '').replace(/\s+/g, ' ').trim(),
-    time: String(node.querySelector('[data-audit-time]')?.textContent || '').replace(/\s+/g, ' ').trim(),
-    event: String(node.querySelector('[data-audit-event-name]')?.textContent || '').replace(/\s+/g, ' ').trim(),
-    result: String(node.querySelector('[data-audit-result]')?.textContent || '').replace(/\s+/g, ' ').trim(),
-  })));
-  check(auditEvents.length >= 1 && auditEvents.every((event) => event.actor && event.time && event.event && event.result),
-    'post-submit audit region has no trustworthy event', auditEvents);
+  check(regions.some((target) => target.endsWith(':business-section')),
+    'post-submit surface exposed no authoritative business section', regions);
+  check(regions.includes('surface:activity'),
+    'post-submit surface did not expose the activity surface', regions);
+  check(await submittedRecordSurface.locator('[data-object-task-page], [data-floorplan-region]').count() === 0,
+    'post-submit surface leaked the superseded task floorplan rendering');
+  check(await submittedRecordSurface.locator('[data-form-section-target="surface:audit"]').count() === 0,
+    'post-submit surface rendered an audit surface the role was not granted');
+  const auditEvents = [];
   check(mutations.length === 1 && mutations[0].params?.button?.name === 'action_submit', 'journey emitted unexpected mutations', mutations);
   check(errors.length === 0, 'browser errors detected', errors);
   await page.screenshot({ path: path.join(outputDir, 'after-submit-390-full.png'), fullPage: true });
@@ -1657,7 +1755,12 @@ try {
   await waitForViewport(page, 1440);
   enterStage('main:list-after-submit');
   const listRefreshResponse = page.waitForResponse((response) => isListDataResponse(response, 'payment.request'), { timeout: 45000 });
-  const readonlyReturn = await requireUnique(page, submittedRecordSurface.getByRole('button', { name: /^返回列表$/ }), 'submitted payment return action', { enabled: true });
+  const readonlyReturn = await requireUnique(
+    page,
+    submittedRecordSurface.locator('[data-form-secondary-action="return-list"]:visible'),
+    'submitted payment return action',
+    { enabled: true },
+  );
   await readonlyReturn.click();
   const refreshedList = await requireUnique(page, page.locator('[data-product-page-mode="list"] [data-list-status]:visible'), 'refreshed payment list', { timeout: 45000 });
   await listRefreshResponse;
