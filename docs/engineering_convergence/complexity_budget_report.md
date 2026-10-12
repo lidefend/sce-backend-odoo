@@ -162,6 +162,7 @@ Generated from repository source files. This report is informational during the 
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 877 | Python source | `addons/smart_core/app_config_engine/models/app_search_config.py` |
 | 868 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
+| 866 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 864 | Python source | `scripts/release/test_locked_menu_policy_contract.py` |
 | 862 | Python source | `scripts/release/release_candidate.py` |
 | 861 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
@@ -176,7 +177,6 @@ Generated from repository source files. This report is informational during the 
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 823 | Python source | `addons/smart_core/handlers/ui_contract.py` |
 | 822 | TypeScript source | `frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` |
-| 822 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 819 | Python source | `scripts/verify/workflow_action_semantics_completeness_guard.py` |
 | 810 | Python source | `addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py` |
 | 807 | Python source | `addons/smart_construction_core/models/core/material_rental.py` |
