@@ -372,9 +372,13 @@ class ApiDataImportHandler(BaseIntentHandler):
                     }
 
         try:
+            # base_import.import.file is declared "raw binary (not base64)":
+            # the kernel reads the cached bytes directly as CSV/XLS content, so
+            # the transport-level base64 payload has already been decoded into
+            # ``content`` above and must be handed over as-is.
             importer = Kernel.create({
                 "res_model": model,
-                "file": base64.b64encode(content).decode("ascii"),
+                "file": content,
                 "file_name": file_name,
                 "file_type": file_type,
             })

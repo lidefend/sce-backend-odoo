@@ -644,6 +644,103 @@
       "inferred_example": null
     },
     {
+      "intent": "api.data.import",
+      "owner": {
+        "module": "addons/smart_core/handlers/api_data_import.py",
+        "class": "ApiDataImportHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": true,
+      "test_refs": 0,
+      "request_schema_hint": [
+        "columns",
+        "columns[]",
+        "content",
+        "dry_run",
+        "fields",
+        "fields[]",
+        "file",
+        "fileName",
+        "fileType",
+        "file_name",
+        "file_type",
+        "hasHeaders",
+        "has_headers",
+        "idempotency_key",
+        "limit",
+        "model",
+        "options",
+        "request_id",
+        "res_model"
+      ],
+      "response_data_schema_hint": [
+        "advanced_mode",
+        "dry_run",
+        "error_count",
+        "file_digest",
+        "file_length",
+        "file_name",
+        "headers",
+        "headers[]",
+        "ids",
+        "ids[]",
+        "imported_count",
+        "mapping",
+        "mapping[]",
+        "messages",
+        "messages[]",
+        "model",
+        "preview",
+        "preview[]",
+        "preview[][]",
+        "valid"
+      ],
+      "error_schema_hint": [],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "api_data_import_intent_pm",
+          "snapshot_file": "docs/contract/snapshots/api_data_import_intent_pm.json",
+          "request_keys": [
+            "columns",
+            "columns[]",
+            "dry_run",
+            "fields",
+            "fields[]",
+            "file",
+            "file_name",
+            "model",
+            "request_id"
+          ],
+          "response_data_keys": [
+            "advanced_mode",
+            "dry_run",
+            "error_count",
+            "file_digest",
+            "file_length",
+            "file_name",
+            "headers",
+            "headers[]",
+            "ids",
+            "ids[]",
+            "imported_count",
+            "mapping",
+            "mapping[]",
+            "messages",
+            "messages[]",
+            "model",
+            "preview",
+            "preview[]",
+            "preview[][]",
+            "valid"
+          ],
+          "response_error_keys": []
+        }
+      ],
+      "inferred_example": null
+    },
+    {
       "intent": "api.data.unlink",
       "owner": {
         "module": "addons/smart_core/handlers/api_data_unlink.py",
