@@ -3368,3 +3368,110 @@ make: *** [make/guards.mk:268: verify.g1.acceptance.baseline] Error 1
 - **主线集成未完成**：PR #646 在 `bdc1c879` 上四项必需检查已全绿，但该 PR 车道被风险分级降级为非 full 模式，**不能替代定时 full 车道的证明**；第三层修复推送后需重取 full 车道红转绿证据再合并。此前的 `professional_quality_gate` PR 检查 6m14s pass 即为降级模式的结果，不能当作本轮的判据。
 - **版本发布未做**。
 - **产品交付未完成**：仍待 owner 本人登录验收（`wutao` / `123456` / `sc_demo` / `http://1.95.85.92:18081/`），属人工步骤。
+
+## 35. 第 35 轮（2026-10-12）：同一车道覆盖缺陷的第三个实例——需要 `tsc` 的守卫又被接进后端静态套件（P4 交付工具，无产品代码）
+
+### 35.1 触发与事实链
+
+`workflow_dispatch` full 车道 `professional_quality_gate`（run `38198631345`，head `bdc1c879`，2026-10-12T03:09Z 起）在 shard-verify 阶段继续判红：
+
+```
+scripts/verify/contract_form_runtime_state_behavior_guard.sh: line 9:
+/home/runner/work/sce-backend-odoo/sce-backend-odoo/frontend/apps/web/node_modules/.bin/tsc: No such file or directory
+make: *** [make/ci.mk:1039: verify.contract.architecture.suite] Error 127
+```
+
+同一个 head 的 `pull_request` 事件 `professional_quality_gate`（run `38198626970`）是 **success**：PR 车道被风险分级降级为非 full 模式，不执行全量 shard-verify，所以这条缺陷只在**定时/派发 full 车道**可见。也就是说，第 34 轮记录里那句"PR 检查不能替代 full 车道证明"在本轮再次生效。
+
+事实链（已核对，非推测）：
+
+1. `verify.contract.architecture.suite` 的 recipe 内联调用了 `scripts/verify/contract_form_runtime_state_behavior_guard.sh`；
+2. 该脚本第 8-14 行用 `${ROOT}/frontend/apps/web/node_modules/.bin/tsc` 编译 `frontend/apps/web/src/pages/contractForm/runtimeState{Applier,Reducer,Protocol}.ts`，**必须有已安装的前端依赖**；
+3. `verify.contract.architecture.suite` 是 `ci.professional.backend.shard-verify` 的前置（`make/ci.mk:765`）；`professional_quality_gate.yml` 的 full 车道只跑 `make ci.professional.backend.shard-verify / shard-reports / shard-tests`（第 279-284 行），**从不执行 pnpm install**；
+4. `make/ci.mk:1012-1021` 早已明文规定该套件只放确定性静态守卫，凡需要 pnpm 工具链者不得进入；
+5. 远端日志顺序同样印证：套件中该行之前的守卫全部 PASS，到此行以 Error 127 终止，其后的 shard-reports / shard-tests 全部未执行。
+
+### 35.2 本类缺陷的第三个实例
+
+| # | 实例 | 表象 | 归位提交 |
+| --- | --- | --- | --- |
+| 1 | 第 34 轮根因 1 | pnpm 解析未固定，真错被 `MODULE_NOT_FOUND` 掩盖 | `5a89e638` |
+| 2 | 第 34 轮根因 2 | `verify.menu_config_tree_editor.behavior`（esbuild）被接进共享套件 | `6b7f2173` |
+| 3 | 第 35 轮（本轮） | `verify.contract_form_runtime_state.behavior`（tsc）被接进同一共享套件 | `91a1c406` |
+
+前两次的处置都是"把这一个修好"，**没有把边界变成机检约束**，于是同类缺陷第三次以相同方式复发。本轮除修复外补上机检——这才是本轮的真正增量。
+
+### 35.3 修复：车道归位，不缩小覆盖、不放宽断言
+
+按 `6b7f2173` 既有模式：
+
+| 动作 | 位置 |
+| --- | --- |
+| 从共享静态套件移除内联调用 | `make/ci.mk`（`verify.contract.architecture.suite` recipe） |
+| 新建独立 target `verify.contract_form_runtime_state.behavior`（紧邻同类边界定义、并登记 `.PHONY`） | `make/ci.mk:812` |
+| 接入本地精确 HEAD 车道 | `ci.local.quick.run` |
+| 接入两个前端车道（均具备固定 pnpm 与已安装前端依赖） | `verify.frontend.pr.unit`、`verify.frontend.release.unit` |
+
+### 35.4 体系化预防：把边界变成可机检约束
+
+新增 `scripts/verify/static_suite_frontend_toolchain_guard.py`（与 `test_static_suite_frontend_toolchain_guard.py`，10 用例），接入 `verify.contract.architecture.suite`，复用 `guard_registry_audit.py` 的 `parse_make_graph` / `reachable_targets` 解析 make 依赖图：
+
+1. **闭包禁止**：`ci.professional.backend.shard-verify` 的前置闭包内不得出现前端工具链。recipe 行查 `node_modules/.bin/`、`pnpm_exec.sh`、`pnpm exec`、`corepack`；脚本体**只认工作区锚定的执行形态**（`"${ROOT}…/node_modules/.bin/…"` 或 `"${ROOT}…/scripts/dev/pnpm_exec.sh"`）。这条收窄是刻意的：`baseline_iteration_execution_policy_guard.py` 里合法地带着字符串常量 `"pnpm_exec.sh -C frontend/apps/web lint:src"`，那是**声明**不是**执行**，必须不误报。
+2. **禁止"删除冒充修复"**：两个已知前端工具链守卫必须始终可从 `ci.local.quick.run` 与两个前端车道到达——把守卫从共享套件里删掉也算违规。
+3. **直接携带禁止**：`verify.contract.architecture.suite` 不得直接携带这两个守卫。
+
+### 35.5 真实负例（不是只有合成用例）
+
+临时把内联行放回 `verify.contract.architecture.suite` → 守卫 **FAIL** 并精确报出违反的闭包路径与守卫文件：
+
+```
+- ci.professional.backend.shard-verify -> verify.contract.architecture.suite -> scripts/verify/contract_form_runtime_state_behavior_guard.sh: '${ROOT}/frontend/apps/web/node_modules/.bin/'
+- verify.contract.architecture.suite carries scripts/verify/contract_form_runtime_state_behavior_guard.sh; it needs installed frontend dependencies and belongs to the frontend and local lanes
+```
+
+随后按 sha256 逐字节校验还原（`RESTORED_OK=True`）。证明"注入被检出 + 基线正常"两端都成立。
+
+### 35.6 本地证据
+
+| 检查 | 结果 |
+| --- | --- |
+| `make verify.contract.architecture.suite` | PASS（`[OK] contract & architecture guard suite passed`，含新守卫与单测） |
+| `make verify.contract_form_runtime_state.behavior` | PASS |
+| `python3 scripts/verify/test_static_suite_frontend_toolchain_guard.py` | Ran 10 tests, OK |
+| `make verify.guard.registry` | AUDIT PASS（1411 scripts / 1324 referenced / 189-189 unwired dispositioned） |
+| `make verify.test.coverage.registry` | PASS（17 tests） |
+| `make ci.generated_evidence.preflight` | PASS（`make/ci.mk` 行数变化后已同提交刷新三份 tracked 生成证据；`test_inventory.csv` 的 802 行变动是新增 2 项资产后的**确定性重编号** 1479→1481，非虚假漂移） |
+
+责任层：`make/ci.mk`、`make/frontend.mk` 的接线与新增守卫属 **P4 交付工具**；未改产品代码、契约、必需检查集合或 CI 门槛，未删除任何守卫执行，未放宽任何断言。
+
+### 35.6.1 回执登记（`head=91a1c406`，均为 executor-recorded、非 CI 回执）
+
+本轮改动命中声明输入的检查共 8 项，全部按 `make agent.run.begin` → 执行 → `make agent.run.record` 登记，日志落在 `.runtime/final-acceptance/r35/`：
+
+| 检查 | target | 结果 | 用例数 |
+| --- | --- | --- | --- |
+| `static_suite_frontend_toolchain_guard` | `verify.contract.architecture.suite` | passed | 184 |
+| `contract_form_runtime_state_behavior` | `verify.contract_form_runtime_state.behavior` | passed | 6 |
+| `ci_local_iteration` | `verify.baseline.iteration.execution.policy` | passed | 16 |
+| `test_coverage_registry` | `verify.test.coverage.registry` | passed | 17 |
+| `verification_lane_coverage` | `verify.verification.lane_coverage` | passed | 44 |
+| `ci_scheduled_gates` | `verify.ci.scheduled_gates` | passed | 66 |
+| `agent_ledger_consistency_unit` | `verify.agent.ledger.unit` | passed | 15 |
+| `frontend_pr_unit` | `verify.frontend.pr.unit` | passed | 209 |
+
+计数口径：单一 unittest 目标记其用例数；复合目标（架构套件 / 前端车道 / 定时门禁）记**该目标实际执行的 unittest 用例总数**（各 `Ran N tests` 块求和），因此不会出现"66 个用例被记成 15"这类失真。`contract_form_runtime_state_behavior` 记其守卫声明的 6 个 case（守卫自身在 6 个 `assert*` 用例函数上校验运行时状态归约与应用行为）。
+
+声明了 `make/ci.mk` / `make/frontend.mk` 但**未被本轮改动实质影响**的其余检查（如 `role_surface_landing_contract_unit`、`trusted_scan_scope_unit`、`ci_workflow_contract`、`lane_telemetry`、`form_layout_span_unit`、`frontend_navigation_shell_unit` 等）属"按文件级声明过度失效"的既有登记债：本轮只改了共享套件的 recipe 接线与两个前端车道的前置清单，这些检查的 target 行为与该改动无关，故不重跑（`evidence-reuse-identity` 的输入依赖判据），留给改变其归属面的轮次处理。
+
+### 35.7 远端连带项（一并说清，不夸大）
+
+- `main` 上**定时** `professional_quality_gate`（run `38179577055`）红的仍是**第 34 轮第二层**：`make/ci.mk:804: verify.menu_config_tree_editor.behavior Error 1`——`main` 尚未合入 `6b7f2173`。
+- `main` 上**定时** `release_candidate_gate`（run `38180095789`）只是它的下游连带：`release_candidate_gate.yml` 第 96-97 行对 `wait_for_candidate_checks` 的结果做 `success/skipped` 断言，而该 job 第 67 行要求同事件候选工作流 `success`。
+- 合并 PR #646 即同时清掉这两处（分支已含 `6b7f2173` 与本轮修复）。
+
+### 35.8 四态（第 35 轮收口时点）
+
+- **批次级本轮完成**：车道归位 + 机检守卫 + 真实负例 + 受影响集本地证据齐备。
+- **主线集成未完成**：待推送并取 full 车道转绿证据后按所有者 CI 规则合并。
+- **版本发布未做**。
+- **产品交付未完成**：仍待 owner 本人登录验收（`wutao` / `123456` / `sc_demo` / `http://1.95.85.92:18081/`），属人工步骤。
