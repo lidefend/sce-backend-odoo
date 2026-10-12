@@ -28,6 +28,15 @@ CONTRACT_RESOLUTION_SCHEMA = "acceptance.record_identity_resolution.v1"
 CONTRACT_RECEIPT_SCHEMA = "acceptance.backend_contract_receipt.v1"
 CONTRACT_PASSWORD_ENV = "ACCEPTANCE_CONTRACT_PASSWORD"
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+# The declared request must state the negotiation parameters the released record
+# page actually issues. Pinning the allowed values here keeps the approval bound
+# to a real client shape instead of a probe-only request the SPA never sends.
+CONTRACT_NEGOTIATION_ENUMS = {
+    "op": {"action_open", "model"},
+    "render_profile": {"create", "edit", "readonly"},
+    "contract_surface": {"user", "native", "hud"},
+    "source_mode": {"governance_pipeline", "native_parser"},
+}
 
 
 def _contract_credential(contract_password: str, login_password: str) -> str:
@@ -485,6 +494,14 @@ def validate_acceptance_declaration(declaration: Any) -> list[str]:
         for key in ("intent", "view_type", "delivery_profile", "client_type")
     ):
         errors.append("contract_declaration_request_incomplete")
+    elif not all(
+        isinstance(request_decl.get(key), str) and request_decl.get(key) in allowed
+        for key, allowed in CONTRACT_NEGOTIATION_ENUMS.items()
+    ):
+        # The approved request must be a shape the released client actually
+        # issues; an unstated or unknown negotiation parameter would make the
+        # approval disagree with the observed request instead of binding to it.
+        errors.append("contract_declaration_request_negotiation_invalid")
     elif not isinstance(request_decl.get("accepted_contract_versions"), list) or not isinstance(
         request_decl.get("client_contract_capabilities"), list
     ):
@@ -839,12 +856,18 @@ def probe_contract_acceptance(
     }
 
     params: dict[str, Any] = {
-        "op": "model",
+        # The negotiated request shape comes from the declaration, not from a
+        # hard-coded guess: the approved instance must be the request the released
+        # record page actually issues, or the receipt cannot bind to it.
+        "op": request_decl.get("op"),
         "model": target.get("model"),
         "view_type": request_decl.get("view_type"),
         "record_id": target.get("record_id"),
         "action_id": target.get("action_id"),
         "menu_id": target.get("menu_id"),
+        "render_profile": request_decl.get("render_profile"),
+        "contract_surface": request_decl.get("contract_surface"),
+        "source_mode": request_decl.get("source_mode"),
         "delivery_profile": request_decl.get("delivery_profile"),
         "client_type": request_decl.get("client_type"),
         "accepted_contract_versions": list(request_decl.get("accepted_contract_versions") or []),

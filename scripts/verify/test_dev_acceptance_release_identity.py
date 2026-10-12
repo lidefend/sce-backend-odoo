@@ -63,6 +63,10 @@ def declaration(required=None):
         },
         "request": {
             "intent": "ui.contract.v2",
+            "op": "action_open",
+            "render_profile": "edit",
+            "contract_surface": "user",
+            "source_mode": "governance_pipeline",
             "view_type": "form",
             "delivery_profile": "full",
             "client_type": "web_pc",
@@ -385,6 +389,25 @@ class ContractAcceptanceTest(unittest.TestCase):
         path = folder / "declaration.json"
         path.write_text(json.dumps(decl), encoding="utf-8")
         return path
+
+
+    def test_declaration_without_negotiated_request_shape_is_refused(self):
+        # The approved request has to be a request shape the released record page
+        # actually issues; an unstated or unknown negotiation parameter is a
+        # declaration defect, not a value the probe may invent.
+        for dropped in ("op", "render_profile", "contract_surface", "source_mode"):
+            decl = declaration()
+            decl["request"].pop(dropped, None)
+            self.assertIn(
+                "contract_declaration_request_negotiation_invalid",
+                MODULE.validate_acceptance_declaration(decl),
+            )
+        unknown = declaration()
+        unknown["request"]["op"] = "read"
+        self.assertIn(
+            "contract_declaration_request_negotiation_invalid",
+            MODULE.validate_acceptance_declaration(unknown),
+        )
 
 
 class ContractDeclarationConsumptionTest(unittest.TestCase):
