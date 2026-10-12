@@ -278,6 +278,26 @@ addons/smart_core/core/contract_runtime/domain_field_semantics_generated.py
 - 15 份域契约中只有 `payment-request.yaml` 绑定了 `source_of_truth.model`，
   其余 14 份未绑定即不会被投影（保持可见的未投影，而不是猜 key）。补绑定是后续收口项。
 
+## 01-E 交付（状态归属边界冻结）
+
+产出 `docs/contract-runtime-state-ownership.md`：明确四类"状态/可用性"的事实源、
+运行时载体与消费方，**不建状态机 DSL、不新增运行时能力**。判定依据取自代码事实，
+不是新声明：
+
+- `statusContract` / `actionContract` / `dataContract` / `runtimeContract` 的生产模块
+  都自带 `NO_BUSINESS_FACT_AUTHORITY = True`：它们是投影，不持有业务事实。
+- `workflowContract` 由 P1 模块按记录现算
+  （`smart_construction_core/core_extension.py` -> `sc.workflow.contract.service.describe_record(record)`），
+  所以业务状态永远以 ORM 记录为准；行业档案只提供"状态 -> 动作"。
+- 权限判定在后端（group / access rule / record rule + Scene-action 绑定校验），
+  前端只消费 `statusContract.globalStatus` 的结论与 `REASON_*` 码。
+
+该文档把"前端不得用 state 字符串自判、不得用用户组复现授权"固化为可复核结论，
+并把状态机 DSL 明确推到 FE-CONTRACT-RUNTIME-02。
+
+验证：`verify.docs.all`（含 inventory/links/temp_guard/contract_sync/product_boundary）
+7 例 PASS；`verify.agent.ledger.unit` 15 例 PASS。
+
 ## 范围边界（本轮明确不做）
 
 - 不声明 `capabilities`：当前没有运行时消费方，声明即为悬空能力声明，与 00 清单
@@ -304,5 +324,4 @@ addons/smart_core/core/contract_runtime/domain_field_semantics_generated.py
   `verify.semantic_runtime_resolution`~~（完成，见上；命名渲染器按声明层真实事实断言）。
 - ~~**01-D** 字段语义化~~（完成，见上：改为由模型+视图解析产物生成，删除手写 semantic）。
   剩余 01-D3：浏览器验收（新建→保存→刷新，确认 money/date/relation 由语义渲染）。
-- **01-E** 产出 `docs/contract-runtime-state-ownership.md`
-  （业务状态=domain；UI 状态=runtime；按钮显示=behavior；权限=policy）。
+- ~~**01-E** 状态归属边界~~（完成，见上：`docs/contract-runtime-state-ownership.md`）。
