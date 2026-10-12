@@ -264,5 +264,38 @@ class PaymentEntitySemanticsTest(unittest.TestCase):
         self.assertEqual(set(), declared, "the model/view facts already carry the semantic")
 
 
+class ComponentRegistryTest(unittest.TestCase):
+    """The single identity/version builder every runtime producer publishes through."""
+
+    def test_declared_keys_publish_the_one_contract_version(self) -> None:
+        self.assertEqual(
+            {
+                "sc.value.money": {"version": resolver.COMPONENT_CONTRACT_VERSION},
+                "sc.relation.many2one": {"version": resolver.COMPONENT_CONTRACT_VERSION},
+            },
+            resolver.component_registry(["sc.relation.many2one", "sc.value.money"]),
+        )
+        self.assertEqual("1.0", resolver.COMPONENT_CONTRACT_VERSION)
+
+    def test_undeclared_key_is_reported_and_not_published(self) -> None:
+        with self.assertLogs("core.contract_runtime.semantic_resolver", level="ERROR") as logs:
+            published = resolver.component_registry(["sc.input.absent", "sc.value.money"])
+        self.assertEqual({"sc.value.money": {"version": resolver.COMPONENT_CONTRACT_VERSION}}, published)
+        self.assertTrue(any("contract_component_undeclared" in line for line in logs.output))
+
+    def test_a_non_sequence_declares_nothing(self) -> None:
+        self.assertEqual({}, resolver.component_registry(None))
+        self.assertEqual({}, resolver.component_registry("sc.value.money"))
+        self.assertEqual({}, resolver.component_registry(["", "   "]))
+
+    def test_every_resolvable_key_is_publishable(self) -> None:
+        # A key the resolver can produce must never be dropped by the builder,
+        # otherwise a page would render through an identity it cannot publish.
+        for semantic, key in sorted(resolver.SEMANTIC_COMPONENTS.items()):
+            with self.subTest(semantic=semantic):
+                self.assertEqual({key: {"version": resolver.COMPONENT_CONTRACT_VERSION}},
+                                 resolver.component_registry([key]))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -26,6 +26,7 @@ from .contract_runtime.semantic_resolver import (
     semantic_widget_type as _semantic_widget_type,
 )
 from .contract_runtime.semantic_resolver import FALLBACK_SEMANTIC as _DISPLAY_SEMANTIC
+from .contract_runtime.semantic_resolver import component_registry as _component_registry_of
 from .source_authority import build_source_authority_contract
 from .unified_page_contract_v2_permissions import permission_auth_level, resolve_permission_rights
 from .unified_page_contract_v2_runtime_actions import normalize_runtime_business_actions
@@ -352,9 +353,11 @@ def _component_registry(component_keys: set[str]) -> dict[str, dict[str, Any]]:
     How a component renders -- the framework component name, the per-client
     variant, its density or geometry -- is a frontend concern.  The contract
     declares the identity and version fact only, so a rendering adapter can
-    never become a second, driftable component vocabulary.
+    never become a second, driftable component vocabulary.  The identity/version
+    builder lives in the contract runtime so a product-layer extension declares
+    the same fact instead of keeping a second copy.
     """
-    return {key: {"version": "1.0"} for key in sorted(component_keys)}
+    return _component_registry_of(component_keys)
 
 
 def _base_contract(

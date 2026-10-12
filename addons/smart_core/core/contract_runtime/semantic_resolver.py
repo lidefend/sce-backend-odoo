@@ -232,3 +232,39 @@ def legacy_component_key(widget_type: str = "", field: Any = None) -> str:
             DEPRECATION_EVENT,
         )
     return component_key(widget_type, field)
+
+
+# The page contract declares each component it uses by identity plus version.
+# The version is one fact for the whole runtime: a page handler, a form
+# finalizer or a construction-product extension must not each carry their own
+# copy, because the frontend rejects a registry entry without a version and a
+# second copy is exactly the driftable vocabulary this module removed.
+COMPONENT_CONTRACT_VERSION = "1.0"
+
+
+def component_registry(component_keys: Any) -> dict[str, dict[str, str]]:
+    """Declare a page's component identities from the keys it renders.
+
+    The single builder for every runtime producer, so a page assembled by the
+    generic assembler, a page extended by a product-layer normalizer and a page
+    handler that adds a control all publish the identical identity fact.
+
+    Fail-closed: a key no carrier declares is reported and left out, so a page
+    cannot publish an identity the frontend has no registration for.  The
+    frontend rejects such a key anyway (``PROFESSIONAL_COMPONENT_UNREGISTERED``),
+    and dropping it here makes the contract say the same thing the renderer
+    enforces instead of shipping a registration that cannot resolve.
+    """
+    declared = set(SEMANTIC_COMPONENTS.values())
+    keys = component_keys if isinstance(component_keys, (list, tuple, set, frozenset)) else []
+    registry: dict[str, dict[str, str]] = {}
+    for key in sorted({_text(k) for k in keys if _text(k)}):
+        if key not in declared:
+            _logger.error(
+                "contract_component_undeclared componentKey=%s; contracts/registry/component.yaml does not "
+                "declare it, so the key is not published. Declare the field's semantic instead.",
+                key,
+            )
+            continue
+        registry[key] = {"version": COMPONENT_CONTRACT_VERSION}
+    return registry
