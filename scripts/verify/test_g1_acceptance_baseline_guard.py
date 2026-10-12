@@ -133,5 +133,48 @@ class ProfileConfigValidationTests(unittest.TestCase):
         self.assertNotEqual(recorded, guard.EXPECTED_PROFILES)
 
 
+
+
+class MainlineBaseResolutionTests(unittest.TestCase):
+    """The traceability assertion must fail closed, never raise.
+
+    The professional gate's hand-rolled checkout provides BASE_SHA and HEAD_SHA
+    but no ``origin/main``, so the guard has to resolve the mainline base
+    defensively and report an explicit failure instead of an uncaught
+    CalledProcessError raised by ``git rev-parse`` on a missing ref.
+    """
+
+    def test_missing_mainline_ref_resolves_to_empty(self) -> None:
+        original = guard._try_git
+        guard._try_git = lambda args: ""  # type: ignore[assignment]
+        try:
+            self.assertEqual(guard._mainline_base(), "")
+        finally:
+            guard._try_git = original
+
+    def test_origin_main_is_preferred_over_a_local_main(self) -> None:
+        seen: list[list[str]] = []
+
+        def fake(args: list[str]) -> str:
+            seen.append(args)
+            return "origin-main-sha" if args[-1] == "origin/main" else "local-main-sha"
+
+        original = guard._try_git
+        guard._try_git = fake  # type: ignore[assignment]
+        try:
+            self.assertEqual(guard._mainline_base(), "origin-main-sha")
+        finally:
+            guard._try_git = original
+        self.assertEqual(seen[0][-1], "origin/main")
+
+    def test_local_main_is_used_when_origin_main_is_absent(self) -> None:
+        original = guard._try_git
+        guard._try_git = lambda args: "" if args[-1] == "origin/main" else "local-main-sha"  # type: ignore[assignment]
+        try:
+            self.assertEqual(guard._mainline_base(), "local-main-sha")
+        finally:
+            guard._try_git = original
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -74,12 +74,33 @@ def _git(args: list[str]) -> str:
     return subprocess.check_output(["git", *args], cwd=ROOT, text=True).strip()
 
 
-def _is_ancestor(sha: str) -> bool:
-    base = _git(["rev-parse", "--verify", "--quiet", "origin/main"]) or _git(
+def _try_git(args: list[str]) -> str:
+    """Resolve an optional revision without raising when it is absent.
+
+    ``git rev-parse --verify --quiet`` exits non-zero for a missing ref, so the
+    ``check_output`` helper above cannot express an optional lookup. A checkout
+    that never materialized ``origin/main`` (the professional gate fetches only
+    BASE_SHA and HEAD_SHA) must reach the explicit failure below instead of an
+    uncaught CalledProcessError, which hides the real reason behind a traceback.
+    """
+    probe = subprocess.run(
+        ["git", *args],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
+    return probe.stdout.strip() if probe.returncode == 0 else ""
+
+
+def _mainline_base() -> str:
+    """The mainline revision the traceability assertion is made against."""
+    return _try_git(["rev-parse", "--verify", "--quiet", "origin/main"]) or _try_git(
         ["rev-parse", "--verify", "--quiet", "main"]
     )
-    if not base:
-        return False
+
+
+def _is_ancestor(sha: str, base: str) -> bool:
     probe = subprocess.run(
         ["git", "merge-base", "--is-ancestor", sha, base],
         cwd=ROOT,
@@ -276,7 +297,13 @@ def main() -> int:
 
     baseline_sha = (evidence.get("baseline") or {}).get("baseline_sha")
     if isinstance(baseline_sha, str) and SHA1_RE.match(baseline_sha):
-        if not _is_ancestor(baseline_sha):
+        base = _mainline_base()
+        if not base:
+            errors.append(
+                "no mainline base ref (origin/main or main) is present in this checkout, "
+                f"so traceability of baseline_sha {baseline_sha} cannot be proven"
+            )
+        elif not _is_ancestor(baseline_sha, base):
             errors.append(
                 f"baseline_sha {baseline_sha} is not traceable to origin/main history"
             )
