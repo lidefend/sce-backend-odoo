@@ -693,6 +693,25 @@ class TransientSpawnTests(unittest.TestCase):
             self.assertIs(evidence._shard_popen(["make", "verify.a"], handle, Path("/tmp")), sentinel)
         self.assertEqual(len(attempts), 2)
 
+    def test_ancestor_probe_uses_the_same_bounded_retry(self) -> None:
+        """The incremental-base ancestor probe is a real spawn too: an EFAULT there
+        must not discard a candidate whose other shards already passed."""
+        attempts: list[int] = []
+
+        def run(*_args, **_kwargs):
+            attempts.append(1)
+            if len(attempts) == 1:
+                raise OSError(errno.EFAULT, "Bad address")
+            return subprocess.CompletedProcess([], 0, stdout="")
+
+        candidates = [(1.0, "aaa", Path("/tmp/aaa.json"))]
+        with mock.patch.object(evidence.subprocess, "run", side_effect=run):
+            self.assertEqual(
+                evidence._newest_ancestor_receipt(Path("/tmp"), "bbb", candidates), "aaa"
+            )
+        self.assertEqual(len(attempts), 2)
+        self.assertEqual(self.sleeps, [evidence.SPAWN_RETRY_BACKOFF_SECONDS])
+
 
 
 if __name__ == "__main__":

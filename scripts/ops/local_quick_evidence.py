@@ -198,11 +198,14 @@ def _newest_ancestor_receipt(root: Path, head: str, candidates: list[tuple[float
     for _, stem, _ in candidates:
         if stem == head:
             continue
-        probe = subprocess.run(
-            ["git", "-C", str(root), "merge-base", "--is-ancestor", stem, head],
-            check=False,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+        probe = spawn(
+            lambda: subprocess.run(
+                ["git", "-C", str(root), "merge-base", "--is-ancestor", stem, head],
+                check=False,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            ),
+            f"git merge-base --is-ancestor {stem} {head}",
         )
         if probe.returncode == 0:
             return stem
@@ -863,10 +866,7 @@ def main() -> int:
                 raise EvidenceError("compose mode does not accept --shard, --keep, --jobs or --diagnostic")
             head = args.expected_head
             if head is None:
-                head = subprocess.run(
-                    ["git", "-C", str(args.root), "rev-parse", "HEAD"],
-                    check=True, text=True, stdout=subprocess.PIPE,
-                ).stdout.strip()
+                head = git(args.root, "rev-parse", "HEAD")
             path = compose(args.root, args.shards, head)
     except QuickRunFailed as exc:
         print(f"[local_quick_evidence] FAIL {exc}")
