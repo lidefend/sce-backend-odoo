@@ -71,7 +71,11 @@ from .ui_contract_v2_constants import (
 from . import ui_contract_v2_projection as _projection
 from ..app_config_engine.services.dispatchers.action_dispatcher import ActionDispatcher
 from .ui_contract import UiContractHandler
-from .ui_contract_preview import PreviewAccessDenied, build_projection_environments
+from .ui_contract_preview import (
+    PreviewAccessDenied,
+    authenticated_projection_locale,
+    build_projection_environments,
+)
 _logger = logging.getLogger(__name__)
 
 REASON_STANDARD_SUBMIT_ACTION = "STANDARD_SUBMIT_ACTION"
@@ -84,7 +88,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-2026-10-11-layout-container-columns"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-2026-10-12-authenticated-projection-locale"
 
 
 # --- Declared form surfaces -------------------------------------------------
@@ -570,6 +574,7 @@ class UiContractV2Handler(BaseIntentHandler):
         runtime_source_type = "native_form_projection" if native_form_source else "ui.contract"
         projection_context = dict(getattr(self.env, "context", {}) or {})
         projection_context["contract_projection_readonly"] = True
+        projection_context.update(authenticated_projection_locale(self.env, params))
         try:
             projection_env, projection_su_env = build_projection_environments(self.env, self.su_env, params, projection_context)
         except PreviewAccessDenied:
@@ -4269,6 +4274,7 @@ class UiContractV2Handler(BaseIntentHandler):
 
         projection_context = dict(getattr(self.env, "context", {}) or {})
         projection_context["contract_projection_readonly"] = True
+        projection_context.update(authenticated_projection_locale(self.env, next_params))
         try:
             from odoo import api
             projection_env = api.Environment(self.env.cr, self.env.uid, projection_context, su=bool(getattr(self.env, "su", False)))

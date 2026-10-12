@@ -726,7 +726,7 @@ verify.unified_page_contract.lite: guard.prod.forbid
 # ----------------------------------------------------------------------
 # v1.1 Engineering Convergence quality entries
 # ----------------------------------------------------------------------
-.PHONY: ci ci.professional.backend ci.local.iteration ci.local.quick ci.local.quick.diagnostic ci.local.quick.gc ci.local.quick.run ci.local.quick.shard ci.local.quick.compose lane.telemetry.record lane.telemetry.report lane.telemetry.check verify.lane.telemetry.unit ci.delivery.freeze.prepare ci.generated_evidence.preflight ci.generated_reports.guard verify.contract_form_split_evidence refresh.contract_form_split_evidence refresh.generated_reports test.frontend test.unit test.odoo.integration test.contract test.e2e.preflight test.e2e.fixed_data.odoo test.e2e test.all test.inventory test.inventory.summary test.e2e.matrix architecture.module_dependency_map architecture.complexity_report architecture.complexity_baseline_lock architecture.split_plan_queue github.remote_execution_plan security.secret_scan security.secrets.scan security.personal_data_scan security.legacy_credential_guard verify.repository.clean_history security.trusted_scan.group security.trusted_scan_group.unit repository.clean_history.scan verify.python_name_binding verify.menu_config_tree_editor.behavior verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix ci.tenant.pro03.demo.dispatch verify.contract.structure_lock verify.ci.scheduled_gates
+.PHONY: ci ci.professional.backend ci.local.iteration ci.local.quick ci.local.quick.diagnostic ci.local.quick.gc ci.local.quick.run ci.local.quick.shard ci.local.quick.compose lane.telemetry.record lane.telemetry.report lane.telemetry.check verify.lane.telemetry.unit ci.delivery.freeze.prepare ci.generated_evidence.preflight ci.generated_reports.guard verify.contract_form_split_evidence refresh.contract_form_split_evidence refresh.generated_reports test.frontend test.unit test.odoo.integration test.contract test.e2e.preflight test.e2e.fixed_data.odoo test.e2e test.all test.inventory test.inventory.summary test.e2e.matrix architecture.module_dependency_map architecture.complexity_report architecture.complexity_baseline_lock architecture.split_plan_queue github.remote_execution_plan security.secret_scan security.secrets.scan security.personal_data_scan security.legacy_credential_guard verify.repository.clean_history security.trusted_scan.group security.trusted_scan_group.unit repository.clean_history.scan verify.python_name_binding verify.menu_config_tree_editor.behavior verify.contract_form_runtime_state.behavior verify.action_view_runtime_smoke.behavior verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix ci.tenant.pro03.demo.dispatch verify.contract.structure_lock verify.ci.scheduled_gates
 
 # Workflow-integrity contract tests: assert the CI entrypoints themselves cannot
 # silently degrade (e.g. an errexit-masked backend suite reporting a truncated
@@ -802,6 +802,28 @@ ci.delivery.freeze.prepare: guard.prod.forbid verify.frontend.contract_basis.enf
 
 verify.menu_config_tree_editor.behavior: guard.prod.forbid
 	@scripts/verify/menu_config_tree_editor_behavior_guard.sh
+
+# 同类边界：运行时状态行为守卫用工作区 tsc 编译 frontend/apps/web 源码，
+# 需要已安装的前端依赖。与 verify.menu_config_tree_editor.behavior 同样归位到
+# 前端车道（verify.frontend.pr.unit / verify.frontend.release.unit）与本地精确
+# HEAD 车道，绝不放进 verify.contract.architecture.suite：远端后端 full 车道不
+# 安装前端依赖，放进去只会得到 "node_modules/.bin/tsc: No such file or directory"
+# 而不是真实门禁结论。
+verify.contract_form_runtime_state.behavior: guard.prod.forbid
+	@scripts/verify/contract_form_runtime_state_behavior_guard.sh
+
+# 同类边界第四实例（2026-10-12）：这三个 node smoke 脚本用
+# require('../../frontend/apps/web/node_modules/typescript') 在 vm 里编译
+# frontend/apps/web 源码，需要已安装的前端依赖。远端后端 full 车道（
+# ci.professional.backend.shard-verify）不装前端依赖，放进去只会得到
+# 'Cannot find module .../frontend/apps/web/node_modules/typescript' 而不是真实
+# 门禁结论。与 verify.menu_config_tree_editor.behavior /
+# verify.contract_form_runtime_state.behavior 同样归位到前端车道与本地精确 HEAD
+# 车道，绝不放进 verify.contract.architecture.suite。
+verify.action_view_runtime_smoke.behavior: guard.prod.forbid
+	@node scripts/verify/action_view_route_runtime_smoke.js
+	@node scripts/verify/action_view_contract_action_runtime_smoke.js
+	@node scripts/verify/navigation_context_smoke.js
 
 refresh.generated_reports: guard.prod.forbid
 	@python3 scripts/ci/generate_test_inventory.py --write
@@ -1012,6 +1034,13 @@ ci.local.quick.compose: guard.prod.forbid
 # Only deterministic static guards belong here. Anything needing a live database,
 # a browser, the pnpm toolchain or developer-local state belongs to a runtime or
 # frontend lane and must not be added here.
+# Concrete case: verify.menu_config_tree_editor.behavior bundles
+# frontend/apps/web sources through esbuild, so it needs both the pinned pnpm
+# toolchain and installed frontend dependencies. It is enforced by the frontend
+# lanes (verify.frontend.pr.unit / verify.frontend.release.unit) and by the local
+# exact-head lane, and deliberately NOT by this static suite: the remote backend
+# gate installs no frontend dependencies, so a wire here can only fail with
+# "esbuild not found" instead of a real gate result.
 # ---------------------------------------------------------------------------
 .PHONY: verify.contract.architecture.suite
 verify.contract.architecture.suite: \
@@ -1019,7 +1048,6 @@ verify.contract.architecture.suite: \
 	verify.formal_product_field_purity \
 	verify.tenant_extension_storage \
 	verify.backend.contract_lifecycle.authority \
-	verify.menu_config_tree_editor.behavior \
 	verify.g1.acceptance.baseline \
 	verify.login_envelope.consumption.guard \
 	verify.contract_form_split_evidence \
@@ -1029,8 +1057,9 @@ verify.contract.architecture.suite: \
 	verify.frontend.playwright_vendor_coupling.guard \
 	verify.ci.workflow.contract \
 	verify.verification.lane_coverage
+	@python3 scripts/verify/static_suite_frontend_toolchain_guard.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_static_suite_frontend_toolchain_guard.py
 	@python3 scripts/verify/contract_form_runtime_state_protocol_guard.py
-	@scripts/verify/contract_form_runtime_state_behavior_guard.sh
 	@python3 scripts/verify/contract_form_side_effect_regression_guard.py
 	@python3 scripts/verify/contract_form_behavior_regression_runbook_guard.py
 	@python3 scripts/verify/contract_form_onchange_normalization_guard.py
@@ -1076,9 +1105,6 @@ verify.contract.architecture.suite: \
 	@python3 scripts/verify/ui_contract_v2_responsibility_map_guard.py
 	@python3 scripts/verify/v1_1_convergence_status_guard.py
 	@python3 scripts/verify/action_view_responsibility_map_guard.py
-	@node scripts/verify/action_view_route_runtime_smoke.js
-	@node scripts/verify/action_view_contract_action_runtime_smoke.js
-	@node scripts/verify/navigation_context_smoke.js
 	@python3 scripts/verify/frontend_page_contract_boundary_guard.py
 	@python3 scripts/verify/frontend_page_contract_orchestration_consumption_guard.py
 	@python3 scripts/verify/frontend_contract_consumer_intrusion_guard.py
@@ -1088,7 +1114,7 @@ verify.contract.architecture.suite: \
 	@python3 scripts/ci/node_syntax_check.py
 	@echo "[OK] contract & architecture guard suite passed"
 
-ci.local.quick.run: guard.prod.forbid ci.generated_evidence.preflight verify.contract.page_v1_zero_residue.guard security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2 verify.visualization.chart.capability verify.boq.export.capability verify.write.idempotency.capability verify.boq.dangerous.import.capability verify.boq.line.patch.capability verify.overview.rich.text.patch.capability verify.pr.push.unit verify.frontend.dev.incremental.unit verify.frontend.chart_engine.guard verify.frontend.chart_dataset.unit verify.frontend.boq_line_patch.unit verify.frontend.overview_rich_text.unit verify.frontend.lint.src verify.ui_contract.delivery_surface.unit verify.contract.architecture.suite
+ci.local.quick.run: guard.prod.forbid ci.generated_evidence.preflight verify.contract.page_v1_zero_residue.guard security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2 verify.visualization.chart.capability verify.boq.export.capability verify.write.idempotency.capability verify.boq.dangerous.import.capability verify.boq.line.patch.capability verify.overview.rich.text.patch.capability verify.pr.push.unit verify.frontend.dev.incremental.unit verify.frontend.chart_engine.guard verify.frontend.chart_dataset.unit verify.frontend.boq_line_patch.unit verify.frontend.overview_rich_text.unit verify.menu_config_tree_editor.behavior verify.contract_form_runtime_state.behavior verify.action_view_runtime_smoke.behavior verify.frontend.lint.src verify.ui_contract.delivery_surface.unit verify.contract.architecture.suite
 	@git diff --check
 	@echo "[OK] local quick gate passed"
 

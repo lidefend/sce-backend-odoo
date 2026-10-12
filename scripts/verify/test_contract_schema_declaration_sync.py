@@ -55,6 +55,45 @@ class ContractSchemaDeclarationSyncTest(unittest.TestCase):
             self.module.derived_declaration(),
         )
 
+    def test_canonical_examples_bind_the_schema_authority(self) -> None:
+        authority = self.module.derived_declaration()
+        files = self.module.example_files()
+        self.assertTrue(files)
+        for path in files:
+            with self.subTest(example=path.name):
+                content = path.read_text(encoding="utf-8")
+                self.assertEqual(self.module.example_definition_drift(content, authority), {})
+
+    def test_example_drift_is_detected_inside_the_definition_only(self) -> None:
+        authority = self.module.derived_declaration()
+        path = self.module.example_files()[0]
+        content = path.read_text(encoding="utf-8")
+        tampered = content.replace(
+            f'"schemaSha256": "{authority["UNIFIED_PAGE_SCHEMA_SHA256"]}"',
+            '"schemaSha256": "' + "0" * 64 + '"',
+        )
+        self.assertNotEqual(tampered, content)
+        drift = self.module.example_definition_drift(tampered, authority)
+        self.assertEqual(sorted(drift), ["schemaSha256"])
+        self.assertEqual(drift["schemaSha256"]["derived"], authority["UNIFIED_PAGE_SCHEMA_SHA256"])
+
+    def test_example_render_rebinds_only_the_derived_binding(self) -> None:
+        authority = self.module.derived_declaration()
+        path = self.module.example_files()[0]
+        content = path.read_text(encoding="utf-8")
+        broken = content.replace(
+            f'"schemaSha256": "{authority["UNIFIED_PAGE_SCHEMA_SHA256"]}"',
+            '"schemaSha256": "' + "0" * 64 + '"',
+        )
+        # Repairing with the authority reproduces the committed bytes exactly, so
+        # the render touched only the derived value and no surrounding formatting.
+        self.assertEqual(self.module.render_example_declaration(broken, authority), content)
+
+    def test_example_render_preserves_a_document_without_a_definition(self) -> None:
+        authority = self.module.derived_declaration()
+        self.assertEqual(self.module.render_example_declaration("{}", authority), "{}")
+        self.assertEqual(self.module.example_definition_drift("{}", authority), {})
+
     def test_derived_sha256_binds_the_normative_schema_bytes(self) -> None:
         import hashlib
 

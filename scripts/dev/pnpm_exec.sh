@@ -61,23 +61,47 @@ candidate_paths+=(
   "${REAL_HOME}/.local/share/node/corepack/v1/pnpm/${PNPM_VERSION}/bin/pnpm.cjs"
 )
 
-for candidate in "${candidate_paths[@]}"; do
-  if [[ -f "${candidate}" ]]; then
-    exec node "${candidate}" "$@"
-  fi
-done
+pinned_pnpm_path() {
+  local candidate
+  for candidate in "${candidate_paths[@]}"; do
+    if [[ -f "${candidate}" ]]; then
+      printf '%s\n' "${candidate}"
+      return 0
+    fi
+  done
+  return 1
+}
 
-if command -v pnpm >/dev/null 2>&1; then
-  current_version="$(pnpm --version 2>/dev/null || true)"
-  if [[ "${current_version}" == "${PNPM_VERSION}" ]]; then
-    exec pnpm "$@"
-  fi
+# Resolution order, every step bound to the single pin read above:
+#   1. a corepack cache entry already materialized for the pin
+#   2. an explicit PINNED corepack activation
+#   3. a pnpm on PATH only when it reports exactly the pinned version
+# A bare `corepack pnpm` fallback is deliberately gone. With no packageManager
+# in the invocation directory corepack resolves its own default (an unpinned
+# "latest"), so a lane that never activated the pin silently ran a foreign pnpm
+# and died with MODULE_NOT_FOUND instead of a real gate result.
+if resolved_pnpm="$(pinned_pnpm_path)"; then
+  exec node "${resolved_pnpm}" "$@"
 fi
 
 if command -v corepack >/dev/null 2>&1; then
   export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-  exec corepack pnpm "$@"
+  if corepack prepare "pnpm@${PNPM_VERSION}" --activate >/dev/null 2>&1 ||
+    corepack install -g "pnpm@${PNPM_VERSION}" >/dev/null 2>&1; then
+    if resolved_pnpm="$(pinned_pnpm_path)"; then
+      exec node "${resolved_pnpm}" "$@"
+    fi
+  fi
 fi
 
-echo "pnpm ${PNPM_VERSION} is required but was not found" >&2
+if command -v pnpm >/dev/null 2>&1; then
+  if [[ "$(pnpm --version 2>/dev/null || true)" == "${PNPM_VERSION}" ]]; then
+    exec pnpm "$@"
+  fi
+fi
+
+echo "pnpm ${PNPM_VERSION} (pinned by frontend/package.json) could not be resolved." >&2
+echo "Corepack activation failed and no exactly-matching pnpm is on PATH;" >&2
+echo "refusing to run an unpinned pnpm. Install it with:" >&2
+echo "  corepack install -g pnpm@${PNPM_VERSION}" >&2
 exit 2

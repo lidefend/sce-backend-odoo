@@ -12,6 +12,32 @@ class PreviewAccessDenied(Exception):
     """Raised before projection when a caller cannot consume draft context."""
 
 
+def authenticated_projection_locale(env, params: dict) -> dict[str, str]:
+    """Return the lang/tz the read-only projection must be rendered in.
+
+    A client may state the locale explicitly, either as top-level request params
+    or inside ``params.context``. When the request does not state it, the
+    authenticated principal's own language and timezone are authoritative.
+
+    The projection runs on a superuser environment, so an unset locale does not
+    fall back to the acting user: it silently localizes the contract to that
+    environment's default (``en_US``) while the user reads it in their own
+    language. That is a projection defect, not a client choice.
+    """
+    request_context = params.get("context") if isinstance(params.get("context"), dict) else {}
+    lang = str(params.get("lang") or request_context.get("lang") or "").strip()
+    tz = str(params.get("tz") or request_context.get("tz") or "").strip()
+    user = getattr(env, "user", None)
+    locale: dict[str, str] = {}
+    resolved_lang = lang or str(getattr(user, "lang", "") or "").strip()
+    resolved_tz = tz or str(getattr(user, "tz", "") or "").strip()
+    if resolved_lang:
+        locale["lang"] = resolved_lang
+    if resolved_tz:
+        locale["tz"] = resolved_tz
+    return locale
+
+
 def build_projection_environments(env, su_env, params: dict, projection_context: dict):
     """Return read-only projection environments with an optional verified preview."""
     preview_token = str(params.get("preview_token") or params.get("previewToken") or "").strip()

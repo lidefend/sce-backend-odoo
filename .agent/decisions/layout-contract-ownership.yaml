@@ -1,0 +1,52 @@
+decision:
+
+  id:
+    ARCH-DECISION-003
+
+  topic:
+    layout_contract_ownership
+
+  owner_approval:
+    status: confirmed
+    date: "2026-10-12"
+
+  decision:
+
+    # Owner direction 2026-10-12: layout contract executes at the responsibility
+    # boundary.  The contract keeps its declared capability set; no selected
+    # component system is required to consume all of it.
+    contract_declares_layout_capability: true
+    contract_layout_dialect_is_single_and_24_units: true
+    consumer_presentation_mapping_is_adopter_owned: true
+    partial_consumption_by_a_component_system_is_legitimate: true
+    contract_capability_is_never_reduced_to_fit_a_consumer: true
+
+  rules:
+
+    - declared_layout_facets_are_span_24_units_container_columns_zone_and_declared_regions
+
+    - the_contract_publishes_exactly_one_layout_dialect_and_never_a_competing_second_one
+
+    - an_adopter_internal_visual_dto_is_not_a_contract_dialect_and_need_not_mirror_it
+
+    - responsive_breakpoint_folding_spacing_and_orphan_row_fill_stay_adopter_owned
+
+    - a_consumer_default_applies_only_where_the_contract_declares_nothing
+
+    - declaring_more_capability_than_a_consumer_uses_is_not_a_defect
+
+    - an_unconsumed_declared_facet_is_application_layer_consumption_debt_not_a_reason_to_delete_the_declaration
+
+    - layout_facets_must_never_be_used_to_infer_or_invent_product_semantics
+
+    - this_boundary_is_machine_checked_by_the_assembler_capability_floor_and_the_client_single_grid_guard
+
+  related:
+
+    - .agent/decisions/contract-driven-runtime-authority.yaml
+    - docs/architecture/native_view_reuse_frontend_spec_v1.md
+    - scripts/verify/unified_page_contract_v2_assembler_guard.py
+    - scripts/verify/unified_page_contract_v2_client_guard.py
+
+  status:
+    active

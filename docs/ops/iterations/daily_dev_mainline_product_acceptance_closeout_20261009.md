@@ -2898,3 +2898,678 @@ role_evidence.matched_groups_by_role = {
 **环境观察（非产品结论）**：部署期间 `sc-root(1.95.85.92:22)` 出现间歇性 `kex_exchange_identification: read: Connection reset by peer`（约 1/3 连接被瞬时限流），`bundle_sync` 因此 BLOCKED 一次；本地对 `sc-root` 增加 SSH 连接复用（`~/.ssh/config` 的 ControlMaster/ControlPath/ControlPersist）后重跑一次成功。未放宽任何审计，未直接操作容器绕过 DENY。
 
 **剩余**：仅所有者本人用户级验收（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`：项目台账/项目表单编辑态 1440/390 明暗主题 + 关系交互「点击打开 → 返回原记录 → 标签与动作恢复」）。
+
+**十三、主线集成与定时车道转绿（第 28 轮收口末段）**
+
+- **发布前生成证据**：`make ci.delivery.freeze.prepare` 发现 `docs/engineering_convergence/complexity_budget_report.md` 过期（新增回归测试文件 864 行进入 warning 清单，`114→115`）；审阅后单独提交（`8ade77f5`，纯信息型报告）。冻结精确头后运行唯一一次 `make ci.local.quick` → PASS（3 分片 90.4s/87.7s/18.2s，回执已记录）。
+- **PR**：`make pr.push`（`EXPECTED_HEAD=8ade77f5`）→ PR **#645**。
+- **必需检查**（源提交 `8ade77f5`，目标基线 `8870c70c`）：`merge_policy_gate` / `public_guard` / `professional_quality_gate` / `frontend_release_gate` 全 PASS，`mergeStateStatus=CLEAN`。PR 触发的 `frontend_release_gate` 按 `ci_risk_classifier` 走**显式非发布车道**（声明内 skip），真实 full 车道由下条覆盖。
+- **合并**：`make pr.merge PR=645 EXPECTED_HEAD=8ade77f5…`（squash，`local_quick_gate` 复用精确头回执）→ `origin/main` `8870c70c → a0afb331`。
+
+**主线转绿复核（最直接证明定时车道恢复）**：在 `main` 上派发同一条 full 车道 → run `38149337230`（`a0afb331`）`completed/success`：
+
+| 角色 | expected | actual | matched | result |
+| --- | --- | --- | --- | --- |
+| finance | 15 | 15 | 15 | PASS |
+| project_a_member | 5 | 5 | 5 | PASS |
+| pm | 7 | 7 | 7 | PASS |
+| owner | 3 | 3 | 3 | PASS |
+| **total** | **30** | **30** | **30** | **PASS** |
+
+`gate-result.json`：`result=PASS`，`reason_codes=[]`。对比 10-10 夜间同车道（`282b079c`）failure。
+
+**夜间红灯范围核实**（`branch=main, event=schedule`）：红灯只有 `frontend_release_gate` 及其同 event 级联 `release_candidate_gate`；`public_guard`/`merge_policy_gate` 一直 success，`backend_test_suite` 与 `professional_quality_gate` 在 10-10 已 success。本修复解红前者后，后者的级联条件随之满足。
+
+**内容同一声明**：`git diff a0afb331 8ade77f5` 为空（origin/main 与分支头逐字节一致）；日常开发服务器现服务 `545da744`，与 main 的差异仅 `.agent/` 与 `docs/`，产品/工具路径完全相同，故不重复部署、不重复取证。
+
+**十四、日常开发服务器回切 main 模式（第 28 轮收口末段）**
+
+动机：合并后日常开发服务器仍停在候选模式的 detached HEAD `545da744`。虽然其产品/工具路径与 main 逐字节一致，但「服务面是候选」本身留有歧义。按受管 runbook「已合并 main 提交可用 main 模式回切」，把运行面恢复为权威主线身份 `a0afb331`，使 `served == origin/main`。
+
+本地准入：main 模式 bundle sync 要求本地工作区处于 `origin/main` 精确 SHA 且干净；主工作区在审计分支（`eaf8de32`），故经受管入口 `make workspace.worktree.create`（`APPLY=1`，`CREATE_WORKTREE_CONFIRM=CREATE_GOVERNED_WORKTREE`）新建兄弟工作区 `sce-backend-odoo-mainmode`（分支 `release/daily-main-mode-20261011`，base `a0afb331`），三段受管步骤均在该工作区执行。
+
+远端前置核验（`ssh sc-root`）：detached HEAD=`545da744`、`refs/heads/main`=`refs/remotes/origin/main`=`8870c70c`、worktree clean、`refs/daily-candidates/` 存在候选引用——满足「候选→main」回切条件。
+
+| 步骤 | 入口 | 结果 |
+| --- | --- | --- |
+| Step 1 | `make daily.runtime.main.bundle_sync`（`EXPECTED_SHA=a0afb331`，`OLD_SHA=8870c70c`，`EXPECTED_CANDIDATE_SHA=545da744`） | PASS，`changed=true`，`normalized_from_candidate=true`，`bundle_sha256=160987bf…`，`upstream=origin/main` |
+| Step 2 | `make daily.runtime.source_revision.align` | PASS，`previous_revision=545da744`，`env_written=true`，`restarted=true`，`rolled_back=false` |
+| Step 3 | `make daily.runtime.published_face.converge`（`login=wutao`，`upgrade-modules=smart_core,smart_construction_core`） | PASS，`guard_status=PASS`，`converge_returncode=0` |
+
+**模块升级按实际变更判断**：两个 snapshot 重建为 `snapshot_version=daily-navigation-preview-a0afb331e1a5`；`module_tree_ids` 与候选部署一致（`smart_construction_core=afe2c918`、`smart_core=400ac596`），故升级按 tree 未变而跳过。
+
+**服务端身份回读**（`http://1.95.85.92:18081/api/runtime-version`）：`source_revision=git_sha=a0afb331e1a56d636c316c39e22b63453626cbbd`，`database=sc_demo`，`environment=dev`，`frontend_build_sha256=dac3544e…`（不变——本轮无前端改动，未重建前端）。
+
+**修复效果复测**（受管只读探针 `system.init`）：`fixture_role_finance=[finance]`、`fixture_role_pm=[pm]`、`wutao=[business_config_admin,executive,pm,cost]`，仍均不含 `project_member`。
+
+**边界**：本步骤只把运行面身份从候选切回 main，不改产品代码、不升级模块、不重建前端；`served` 现等于 `origin/main a0afb331`，消除「运行面领先/落后主线」的历史歧义。**剩余**：仅所有者本人用户级验收（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`）。
+
+## 29. 第 29 轮（2026-10-12）：只读用户级验收（landing/工作台、详情关系往返、表单档案面）+ 列表车道 FAIL 定性
+
+### 29.1 范围与身份
+
+- 受管只读验收，**未改任何产品代码**。身份：`source_revision=git_sha=a0afb331e1a56d636c316c39e22b63453626cbbd`（实测 `/api/runtime-version`，等于 `origin/main`）、`database=sc_demo`、`environment=dev`、入口 `http://1.95.85.92:18081/`、`frontend_build_sha256=dac3544e…`、入口资产 `index-Dgwvjp86.js`。
+- 口令事实：日常库隔离 fixture 账号统一为 `123456`（owner 指定固定弱口令，便于验证）。弱口令走既有 `SC_ACCEPTANCE_DAILY_CREDENTIAL_CONFIRMATION`（10 分钟有效、字段逐一比对）通道，未放宽任何检查。
+- 本轮新增受管权威身份回读 `.runtime/final-acceptance/daily-deployed/runtime-version-readback-a0afb331.json`：既有 `runtime-version-readback.json` 仍写 `5220db8b`，按「运行时证据必须绑定权威环境回读」的纪律属**陈旧**，故按同一 schema 现场回读重建（不覆盖旧件，避免无谓失效其他检查的复用）。
+
+### 29.2 landing 与工作台一手实测（`fixture_role_finance`@FE Company A）
+
+| 观测 | 实测 |
+| --- | --- |
+| 落地路由 | `/s/workspace.home`（等于契约声明 `role_surface.landing_path`），`/` 亦重定向至同一角色首页 |
+| 渲染 | 角色首页完整：当前状态（待我处理 7 / 我发起的 7）、待我处理列表（付款申请行可打开）、常用入口与最近访问；`[data-role-home][data-state=ready]`、3 个可见 `ScCard` 原语 |
+| 视口/主题 | 1440 与 390、明暗主题均正常；console error / page error = 0 |
+| 该页 intent 序列 | 仅 `login`、`system.init(with:['workspace_home'])`、`global.message.conversations`、`my.work.summary` —— **不存在 `ui.contract`/`ui.contract.v2`** |
+
+### 29.3 「列表选择框验收定位超时」同源 FAIL 定性：**探针陈旧**（不放宽断言）
+
+`make verify.daily_dev.list_surface.readonly.browser`（scope `all`）在 `frontend_list_surface_structure_browser.mjs:1038` 失败：`daily declared landing contract was not captured`。判为**验证工具陈旧**，不是产品缺口，证据链：
+
+1. `workspace.home` 的场景契约由**声明的预载轨道**交付：前端 `session.ts:1359-1361` 以 `with:['workspace_home']` 声明；后端 `system_init.py:2233` 据此置 `workspace_home_ref.loaded=bool(include_workspace_home)` 并在 `system.init` 内嵌 `workspace_home`（带声明 `source_authority.runtime_carrier=system_init_workspace_home`、`projection_only=true`）。
+2. 前端 `session.ts:1602` 消费该内嵌载荷渲染角色首页（实测 29.2 已证）。
+3. 单测 `test_system_init_payload_builder_semantics.py:147`/`test_intent_smoke.py:235` 只对**未预载**路径断言 `loaded=false`，与线上 `loaded=true` 并不矛盾。
+4. 因此「landing 必须另发一条 wire `ui.contract.v2(scene_key=workspace.home)`」与该声明载体冲突；同一受管工具的 `form-profiles`/`workbench-only` 变体（跳过该陈旧断言）在同一 served 版本上 PASS（见 29.4）。
+
+处置：**未放宽断言**，登记为 verification-tool debt（`run.json` blockers + evidence `round_20261012_current_effect_user_acceptance`）。改写该断言须绑定到声明的载体并保留真实检查（`source_authority`/投影标记），属 owner 决定；仅删断言换绿为无意义绿灯。
+
+### 29.4 详情面一手验收
+
+**（1）关系往返（真实点击，非 handler 诊断）** —— `make verify.daily_dev.relation_roundtrip.browser`，记录取受管解析 `artifacts/backend/acceptance_record_identity.json` 的 `payment_request`（无硬编码 id），主体 `fixture_role_finance`：
+
+| 项 | 结果 |
+| --- | --- |
+| 声明入口数 | 18 |
+| 可见声明关系 | 3 个全部 `opened`（`company_id`、`contract_id`、`settlement_id`） |
+| 往返恢复 | `path/title/statusbar/tabs/actions` 全 true、`error_free=true` |
+| 拒绝/错误 | `denied_requests=0`、`console_errors=0` |
+
+即原「关联跳转 403」在当前 served 版本上**未见复现**，且「点击打开 → 返回原记录 → 标签与动作恢复」已获真实一次点击证据。
+
+**（2）表单档案面（详情创建/编辑/只读）** —— 同一受管工具 `LIST_SURFACE_DAILY_OBSERVATION_SCOPE=form-profiles`，1440+390、明暗各一次：每次 **12/12** 通过（`declared_create_entry`、`create_contract`、`create_renderer`、`declared_edit_entry`、`edit_contract`、`edit_renderer`），`declared-theme` 解析为 `light`/`dark`，`driverErrorCount=0`，console/page error 0，契约前置 receipt `accepted`。
+
+### 29.5 项目台账表单编辑态取证（owner 关注点，`fixture_role_pm`@FE Company A）
+
+- `project.project` 2014（FE Project A，`/f/project.project/2014?menu_id=379&action=506`）在 `data-render-profile=edit` 下，真实表单字段**确为可编辑控件**：`.field--widget-input` 内含 `input`（4/4 可写），可见可编辑控件 12，选择/日期为官方组件实例；console error 0。
+- 「基本信息」顶部那块**只读摘要**并非前端越界，而是**契约声明**：`layoutContract.containerTree` 内有 `sc-project-overview` 容器，其字段节点 `readonly:"1"` 且 `modifiers.readonly=true`（containerTree 共 51 个 field 节点，其中 25 个声明只读）。
+- 该摘要区在编辑/新建态是否保留属**契约/产品策略**决定，与已登记的 span/layout 缺口同族：served 契约仍为 `span=24 ×78`、`span=6 ×80`、`span=12 ×24`、`columns=2 ×15`。本 run 不代为改契约。
+- 反例正确性：`fixture_role_finance` 访问该入口被 fail-closed 为 `NAVIGATION_AUTHORITY_DENIED`（权限驱动，非缺陷）。
+
+### 29.6 受管检查登记与四态
+
+- 新增受管检查：`daily_detail_relation_roundtrip_browser`（`verify.daily_dev.relation_roundtrip.browser`，18 tests，`reusable`）、`daily_list_surface_form_profiles_browser`（`verify.daily_dev.list_surface.readonly.browser`，24 tests，`reusable`）；两者均声明权威身份回读，避免被判 `stale`。复用统计 29 → 30。
+- **四态（不夸大）**：批次/迭代级验收=本轮通过，但整体分支目标**未标记完成**；主线集成=已完成（`a0afb331`，本轮无主线改动）；**版本发布未做**；**产品交付未完成**（待 owner 本人登录验收）。
+- **唯一剩余人工步骤**：owner 登录 `wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`，复核项目台账表单编辑态（1440/390、明暗）与关系交互；随后再处置创建/编辑与工作台的最小证据差额。
+
+---
+
+## 30. 第 30 轮（2026-10-12）：列表「选择框定位超时」修复 + 详情契约绑定根因定性（P4 工具修复 + P0 结论，无产品代码）
+
+### 30.1 范围与身份
+
+- 服务身份不变：`source_revision=a0afb331e1a56d636c316c39e22b63453626cbbd`（实测等于 `origin/main`）、`database=sc_demo`、入口 `http://1.95.85.92:18081/`。
+- 本轮只做两件事：**（1）修**列表落地断言的声明载体绑定（P4 验证工具）；**（2）定性**同车道随后出现的详情绑定失败（结论指向 P0）。**未改任何产品代码，未放宽任何验收断言。**
+
+### 30.2 落地断言（原「列表选择框定位超时」）：已修复并实测通过
+
+原失败：`daily declared landing contract was not captured`。修法（`scripts/verify/frontend_list_surface_structure_browser.mjs`）：
+
+1. 新增 `dailyLandingCarrier(row, defaultRoute)`：接受**两种已声明载体**——wire `ui.contract.v2`（`scene_key` 匹配且带 `pageInfo`），或**声明预载轨道** `system.init`（请求 `with` 数组确含该场景 + `workspace_home_ref.loaded===true` + `ref.scene_key===sceneKey` + `home.scene.key===sceneKey` + `source_authority.runtime_carrier` 非空 + `projection_only===true`），并返回实际载体标识。
+2. wire 捕获清单加入 `system.init`（否则该载体根本不在证据里）。
+3. 落地断言改为对「任一已声明载体」计数，并把 `carriers` 写入观测记录；缺声明、错场景、`loaded=false`、无投影标记仍判失败。
+
+证据：`make verify.frontend.list_surface_search_contract.unit` → **22 tests OK**（本轮新增 2 正例 + 17 负例，负例先证基线正常再证注入被检出）；受管 scope=all 实跑报告中 `daily_observations[surface=declared-default-landing].carriers=[{intent:system.init,params.with:[workspace_home]}]`，1440/390 各记录一次；`router-workspace-home` 两视口 `officialCards=3`；`console/page/failed/denied = 0/0/0/0`。
+
+### 30.3 详情走查失败：决定性只读重放实验
+
+同车道继续推进到详情走查时失败：
+
+```
+observed detail contract is not the approved contract: observed_request_conflict {"conflicting_params":["op"]}
+    at scripts/verify/frontend_list_surface_structure_browser.mjs:1270
+```
+
+现场捕获的契约序列（报告 `runtime.contracts`）显示：列表行点击打开记录后，前端**先**发 `op=action_open`（`action_id=780, menu_id=550, record_id=36178, render_profile=edit, contract_surface=user, source_mode=governance_pipeline, context={company_id:21}`，seal `635f6770…`），探针首个匹配到的就是它；而批准回执请求是 `op=model`（seal `5a415e98…`）。
+
+为区分「探针绑定错」与「产品真缺陷」，对**受管日常后端**做只读重放（`ui.contract.v2`，`fixture_role_finance`@`sc_demo`，无写操作；原始结果 `.runtime/final-acceptance/list-surface-detail-binding-root-cause-a0afb331.json`）。同一记录 36178：
+
+| 用例 | 请求形态 | 投影 context 的 lang | 契约 seal |
+| --- | --- | --- | --- |
+| A 批准形态 | `op=model` + context`{lang:zh_CN,tz}` | `zh_CN` | `5a415e98197dce6c…`（=批准回执） |
+| B 前端现场 | `op=action_open` + context`{company_id:21}` | **`en_US`** | `635f6770ebb9791d…`（=现场捕获） |
+| C 只改 context | `op=model` + context`{company_id:21}` | **`en_US`** | `031b1cd713f12196` |
+| D 只补 lang | `op=action_open` + context`{lang:zh_CN,tz}` | `zh_CN` | `8c4310dda3c9fbff` |
+| E 完全不带 context | `op=model` | **`en_US`** | `e08aa7d8163dee0c` |
+| F 空 envelope context | `op=model` + context`{}` | **`en_US`** | `e08aa7d8163dee0c` |
+
+重放忠实度自证：A 精确复现批准 seal、B 精确复现现场捕获 seal。
+
+### 30.4 结论：两段**独立**缺口（探针该失败，不是探针陈旧）
+
+- **G1（P0 契约投影本地化默认值）**：交付契约的本地化投影取决于请求方是否自带 `lang`；不带就落到 `en_US`，而认证用户的 `lang` 是 `zh_CN`。**`op` 不是原因**——C 证明 `op=model` 缺 `lang` 同样 `en_US`。可见影响面限于内嵌 `ir.attachment` 子视图与关系选择弹窗列标签（`en_US` vs `zh_CN`），外加 2 处 `fieldInfo.ttype` 缺失；顶层表单标签两侧一致。
+  - 加重因素：运行时**自己声明的**请求上下文 `record_context.request_context={company_id:21}` 不含 `lang/tz`，前端是「忠实转发声明内容」，因此结构上无法复现批准契约。
+  - 责任层：`smart_core` 意图/投影上下文——由认证主体默认 `lang/tz`，或把 `lang/tz` 写进交付的 `record_context.request_context`。
+- **G2（批准实例的请求形态与前端声明不一致）**：批准实例声明 `op=model` 且无 `contract_surface`/`source_mode`/`render_profile`，而前端的**动作态记录页**按 `useRecordPageLifecycle.loadContract()` 的声明行为先发 `op=action_open` 并带这些协商参数，`observedContractBinding` 对冲突 `op` 的拒绝**正确**。
+  - 责任层：批准实例需对齐「前端声明的契约协商参数」；不得以放宽断言代替。
+
+**未做的事与原因**：本轮不改产品代码。G1 影响每一次契约读取（宽爆炸半径），必须走 P0 改动 + 模块升级 + 受管刷新 + 复验；G2 需新增/调整批准实例。两者都不是收口级修补。`form-profiles`/`workbench` 变体仍 PASS，因为它们不跑该绑定检查。
+
+### 30.5 四态（不夸大）
+
+批次/迭代级验收：本轮**部分**（落地断言修复通过；详情绑定按 G1/G2 保留为 FAIL，未放宽）；主线集成=已完成（`a0afb331`，本轮无主线改动）；**版本发布未做**；**产品交付未完成**（待 owner 本人登录验收）。唯一剩余人工步骤仍为 owner 登录 `wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/` 复核。
+## 31. 第 31 轮（2026-10-12）：报告路径按 scope 分离 + 列表车道回归实跑（P4 工具 + 台账边界，无产品代码）
+
+### 31.1 本轮触发：一个仍然为真的结论失去了落盘证据
+
+第 30 轮的列表车道在多个**互斥**的观测 scope 下运行，但所有 scope 都写同一个固定默认报告路径 `.runtime/final-acceptance/list-surface-structure.json`。因此随后运行 `form-profiles` scope 时，覆盖掉了第 30 轮「落地载体」结论所引用的 scope=all 报告。这与第 30 轮登记的「探针陈旧」属**同一缺陷族**：一条 artifact 路径被互斥 scope 共用，会让一个仍然为真的结论看起来失去依据。工具层面反而制造了新的证据疑点。
+
+### 31.2 修复（复用既有输入，未加框架）
+
+使用探针**已有**的 `LIST_SURFACE_REPORT` 输入把报告按 scope 分离。未新增框架、未新增选择器、未改动任何断言。
+
+### 31.3 落地载体车道：新增有界 check，事实与失败不共用一个 id
+
+- 新增 `daily_list_surface_landing_carrier_browser`（`verify.daily_dev.list_surface.readonly.browser`，`LIST_SURFACE_DAILY_OBSERVATION_SCOPE=workbench-only`，1440+390）→ **passed，4 项观测**：
+  - `declared-default-landing` 在两个视口均由**声明的预载轨道**交付：`{intent: system.init, params.with:[workspace_home]}`
+  - `router-workspace-home` 在两个视口渲染 3 个 official Card
+  - 报告 `.runtime/final-acceptance/list-surface-landing-carrier-a0afb331.json`
+- 该 scope 按设计**不进**记录走查，因此 G1/G2 详情绑定从它不可达，且**未被掩盖**：仍原样记为 `daily_list_surface_landing_browser`（scope=all）**failed**。两条事实各有独立 id，未合并 scope 标签。
+
+### 31.4 表单档案车道：因声明输入变更而重跑（不是"安心重跑"）
+
+`scripts/verify/frontend_list_surface_structure_browser.mjs` 是本轮真正被修改的**共享**探针文件，且是 `daily_list_surface_form_profiles_browser` 的**声明输入**——该回执因此被正确地判为 stale，而非被静默复用。在同一 served 版本上以明/暗两套主题重跑：各 **12/12** 检查通过（`declared_create_entry`、`create_contract`、`create_renderer`、`declared_edit_entry`、`edit_contract`、`edit_renderer`），`declared-theme` 分别解析为 light/dark，`driverErrorCount=0`、console/page error=0、`denied_requests=0`。报告 `.runtime/final-acceptance/list-surface-form-profiles-a0afb331/{light,dark}.json`，覆盖面与旧回执一致（24 项）。
+
+这次重跑同时证明：本轮对共享探针文件的改动是 **scope 局部**的——落地断言仅在 `all`/`workbench-only` 分支执行，`system.init` 捕获项只被落地载体判定消费，兄弟车道的匹配谓词均按 `intent` 过滤，因此未伤及它们。
+
+### 31.5 台账
+
+| 指标 | 本轮前 | 本轮后 |
+| --- | --- | --- |
+| reusable | 30 | **32** |
+| stale | 20 | **19** |
+| not_run | 27 | 27 |
+| failed | 1 | 1 |
+
+唯一 `failed` 未变，仍是 G1/G2 详情走查绑定。未改产品代码、未做模块升级、未改批准实例、未放宽任何断言。
+
+### 31.6 四态（不夸大）
+
+批次/迭代级：本轮 P4 工具 + 台账边界收口完成；主线集成=已完成（`a0afb331`，本轮无主线改动）；**版本发布未做**；**产品交付未完成**（待 owner 本人登录统一验证）。
+
+
+---
+
+## 32. 第 32 轮（2026-10-12）：分支基线同步（base sync）—— 解除 PR 冲突阻断
+
+**一、触发点**
+
+`make pr.push` 在 `conflict_guard`（`scripts/ops/git_safe_push.sh:303-318`）被拦下：`branch does not merge cleanly with origin/main (base=a0afb331)`。该守卫的判据是 `git merge-tree --write-tree <origin/main> <HEAD>` 失败——此时 GitHub 无法构建 PR 的 `pull_request` merge ref，四项必需检查会**派发零检查**，PR 体面地读成 "no checks reported"。
+
+**二、为什么本轮不能用受管 `sync-main`**
+
+`make workspace.branch.sync-main`（`scripts/ops/safe_branch_sync_main.py`）的语义是**未发布**分支重放：它显式拒绝远端已存在同名分支或已有开放 PR 的情况，且自动解决白名单只含正式交付日志（纯追加）与登记为可再生成的证据文件。本分支远端已存在（`56083d36`），两个冲突路径又都是**本 run 自己的台账**，不在白名单 → 入口会 fail-closed abort。因此按 `conflict_guard` 自身输出的 `recovery_command: git merge origin/main` 执行基线合并。
+
+**三、冲突面（仅台账/文档，无产品代码）**
+
+| 路径 | 状态 |
+| --- | --- |
+| `.agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json` | 冲突 |
+| `docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md` | 冲突 |
+| `docs/engineering_convergence/complexity_budget_report.md` | 自动合并 |
+
+**四、无损证明（先证明超集，再取本分支侧）**
+
+- `run.json`：main 侧 74 个 `checks` 与 70 条 `evidence` 在本分支**逐字节相同**；本分支另有 5 个 check、7 条 evidence，以及更长的 `blockers` / `next_exact_step` / `stage_identity`。即本分支是 main 的**严格超集**，不存在"main 独有内容"。
+- md 台账：main 相对共同祖先追加的第 27/28 轮全文，在本分支版本中作为**连续子串**存在（逐字符校验）。
+- 生成报告：合并结果同时保留 main 新增行（`scripts/release/test_locked_menu_policy_contract.py` 864）与本分支刷新行（列表车道探针 1376→1421）。
+
+故冲突解决取本分支侧即无损。合并后索引树与合并前 HEAD 树**同为** `4ed360bd75ccb42efda11d5fcb704ad51d4cb593`——本轮只引入 main 的历史，未改任何字节的内容。
+
+**五、结果与守卫**
+
+| 项 | 值 |
+| --- | --- |
+| 合并前 HEAD | `f62945f08df46a4a61358f197adc711fd96ad18a` |
+| 基线 | `a0afb331e1a56d636c316c39e22b63453626cbbd` |
+| 合并提交 | `f9ca6a03400e6ebf2fcdf6eabde461298e776010` |
+| 合并树 | `4ed360bd75ccb42efda11d5fcb704ad51d4cb593`（与合并前一致） |
+| 推送 | `56083d36..f9ca6a03`（fast-forward，无 force） |
+| `git merge-tree HEAD origin/main` | CLEAN |
+| `make verify.agent.ledger.unit` | 15 OK + `agent_ledger_consistency_guard` PASS |
+| `ci.generated_evidence.preflight` | PASS（复杂度预算、分片队列、契约结构指纹等全部 current） |
+
+未使用 `GIT_SAFE_PUSH_ALLOW_CONFLICT`（该 override 会让 PR 收到零检查），未放宽任何门禁，未改产品代码、未做模块升级、未改批准实例、未放宽断言。
+
+**六、四态（不夸大）**
+
+不变：批次/迭代级本轮完成；主线集成=已完成（`a0afb331`）；**版本发布未做**；**产品交付未完成**（待 owner 本人登录统一验证）。
+
+
+---
+
+## 33. 第 33 轮（2026-10-12）：详情契约绑定 seal 收敛 + canonical 示例 provenance 归一（P0 契约 + P4 工具/声明，无产品代码）
+
+### 33.1 本轮口径（owner 裁决落地）
+
+owner 原话：**「G1，G2直接执行，布局契约按照职责界限执行，契约能力不回退，也不要求选定组件系统必须完整消费契约能力。」**
+据此本轮只做三件事，各守其责任层：A=P0 契约 provenance（本分支自引入回归）、B=P4 探针/声明（详情绑定 seal 收敛）、C=在**同一 served 身份**上把受影响的列表范围复核一次。全程未改产品代码、未做模块升级、未放宽任何断言。
+
+### 33.2 A（P0）canonical 示例 provenance 归一 —— 一处静默漂移
+
+**漂移事实。** `1a290550` 重写了 `unified_page_contract_v2.schema.json` 并把 `contract_lifecycle.UNIFIED_PAGE_SCHEMA_SHA256` 重钉为 `c88b96a2`，但 4 个 canonical 示例的 `meta.lifecycle.definition.schemaSha256` 仍是旧摘要 `28be508e`。
+
+**为什么守卫漏了。** `meta.lifecycle` 不在 `contractSha256` 覆盖内，schema/client 守卫也**不校验该字段**，因此漂移可以静默存活，只在 `scripts.verify.test_dev_acceptance_release_identity` 的 8 条用例（含 `test_exact_instance_receipt_passes_and_binds_custody`）上全线转红——即只在 Quick/交付前才暴露。这是典型的"守卫覆盖缺口 + 派生物未同步"组合。
+
+**修复（不放宽断言、不改产品行为、不手改常量）。** 让 `contract_schema_declaration_sync` 的**同一条派生路径同时拥有示例绑定**：write 模式就地重钉（brace/string 感知的 span 限定，只改派生值、保留全部格式），`--check` 模式把示例漂移与 lifecycle 漂移一起 fail-closed。用该入口重钉 4 个示例，diff 恰为 4 行 digest；新增 4 条单元用例锁定（示例已对齐权威、definition 内漂移可检出、render 可原地复原到已提交字节、无 definition 的文档原样返回）。
+
+| 验证 | 结果 |
+| --- | --- |
+| `verify.contract.schema.declaration.sync` | PASS（8 OK，`sha256=c88b96a2964a version=2.2.0 examples=4`） |
+| `verify.unified_page_contract.v2.schema` | PASS（4 示例） |
+| `verify.unified_page_contract.v2.client` | PASS（3 clients） |
+| `backend_contract_lifecycle_authority_guard` | 全维度 passed，`errors=[]` |
+| `test_dev_acceptance_release_identity` | **49 OK**（原 8 failures 归零） |
+
+提交 `bc8d1b0b`。
+
+### 33.3 B（P4）详情绑定 seal 收敛 —— 批准实例必须按声明回放业务上下文
+
+**分歧证据。** 同一主体 `fixture_role_finance`、同一记录 36178 的五形态只读重放证明：差异**不是 op、不是 model、也不是 lang/tz**（G1 已生效），而是前端 by-contract 行为把 `system.init` 声明的 `record_context.request_context`（实测 `{"company_id":21}`）回放到 `params.context`。契约封存剥离 `trace_id` 但**保留业务上下文**，批准实例未声明它，于是两个 seal 合理分歧：observed `8c4310dd` / approved `bc2cc863`。
+
+**为什么这是缺陷而不是"断言太严"。** 前端 `intents.ts:65 withCurrentRecordContext` 忠实转发运行时声明，属契约驱动**正确行为**；契约封存保留业务上下文⇒批准实例**必须同样携带**，否则它声明的是"页面从不发送的请求形态"。因此钉住通用投影/声明责任，而不是放宽断言，也不是加付款模型特判。
+
+**修复（声明驱动）。** 探针新增 `resolve_contract_path` / `resolve_declared_record_context`（intent 名可含点，按 `contract_documents` 键做**最长前缀匹配**）/ `build_contract_request_params`；解析失败 fail-closed（`contract_request_context_source_unavailable`，**不发请求**）；`validate_acceptance_declaration` 新增 `contract_declaration_request_context_source_invalid`；daily 声明新增 `request.params_context_from = system.init.record_context.request_context`（只动 daily 实例，不动通用实例）。新增 6 条纯行为/声明消费用例（`ParamsContextBindingTest`），**不锁定选择器字符串、不锁定 `44px`/`60px` 文本出现**。
+
+| 验证 | 结果 |
+| --- | --- |
+| `verify.daily_dev.acceptance.readonly.probe` | PASS，契约 11/11，`errors=[]` |
+| 批准请求 `params.context` | `{"company_id":21}`（公司来自运行时声明，未硬编码） |
+| `approved_semantic_sha256` | `8c4310dd…`，与浏览器观测**逐字节一致** |
+
+提交 `7add8be3`。
+
+### 33.4 C 列表范围一次复核（全部绑定 served `7add8be3`）
+
+| scope | 视口/主题 | 结果 | 报告 |
+| --- | --- | --- | --- |
+| `all` | 1440+390 明 | PASS：records 10/10（含 `approved_contract_binding`、`return_to_source`）、gated 108/108、负例 5/5、运行时错误 0 | `.runtime/final-acceptance/list-surface-all-7add8be3.json` |
+| `all` | 1440+390 暗 | 同上（逐项一致） | `…-7add8be3-dark.json` |
+| `workbench-only` | 1440+390 | PASS：4 项观测（声明预载轨道 `{intent:system.init, params.with:[workspace_home]}`；`router-workspace-home` 各渲染 official Card） | `list-surface-landing-carrier-7add8be3.json` |
+| `form-profiles` | 1440+390 明/暗 | PASS：各 12/12，`declared-theme` 分别解析 light/dark | `list-surface-form-profiles-7add8be3/{light,dark}.json` |
+| 关系往返 | 1440 | PASS：18 个声明入口、3 个可见关系全部 opened、往返恢复 path/title/statusbar/tabs/actions 全 true、`denied_requests=0`、`console_errors=0` | `relation-roundtrip/20261012T015718` |
+
+说明：`workbench-only`、`form-profiles`、关系往返三条车道本轮是**因声明输入变更而重跑**（daily 声明实例被修改 + 探针回执被重生成），不是为了安心重跑；本轮前它们的回执绑在 `56083d36`/`a0afb331`。关系往返证据是**真实点击**（点击打开 → 返回原记录 → 标签/动作恢复），不是 handler 诊断。
+
+### 33.5 受管部署与读回（不是"只重建前端"）
+
+`daily.runtime.candidate.release` 三段全 PASS：`bundle_sync`（`source_sha=7add8be3`、`bundle_sha256=d60a203c…`、`old_sha=7a58470d`）→ `source_revision.align`（`head=7add8be3`、`restarted=true`）→ `published_face.converge`（`construction.standard`/`construction.preview` 各 90 页）。升级按机制复用（`upgrade_mode=reused`，原因是 deployed module tree **byte-identical**，`smart_core` tree `8673ff19…`）：本轮只有探针/声明/示例/测试变化，**后端模块树未变**，因此不是"只重建前端就验收后端"。
+
+`/api/runtime-version` 读回：`git_sha=source_revision=7add8be3ec37e89eb9cb1039d1fac592efef1884`、`database=sc_demo`、`frontend_build_sha256=dac3544e…`。
+
+### 33.6 台账账目
+
+| 指标 | 本轮前 | 本轮后 |
+| --- | --- | --- |
+| reusable | 27 | **37** |
+| stale | 25 | **17** |
+| not_run | 27 | 27 |
+| failed | 1 | **0** |
+
+新增两个有界 check：`contract_schema_declaration_sync`（`verify.contract.schema.declaration.sync`，8）与 `frontend_acceptance_environment_guard`（`verify.frontend.acceptance.environment.guard`，64），让本轮的定向入口可被后续轮次复用而不是重复手跑。仍为 stale 的 17 项均为更早轮次遗留、声明输入未被本轮触及，不做安心重跑。
+
+### 33.7 四态（不夸大）
+
+批次/迭代级：本轮完成（两块根因收口 + 列表范围一次复核）。主线集成：**待 PR 合并**（本轮两个 commit 目前只在分支上）。**版本发布未做**。**产品交付未完成** —— 唯一剩余的人工步骤仍是 owner 本人登录验收（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`）。
+
+
+---
+
+## 34. 第 34 轮（2026-10-12）：定时 CI 判红归因与固定 pnpm 工具链解析修复（P4 交付工具，无产品代码）
+
+### 34.1 三个红灯，一个根因
+
+| 运行 | 事件 | 结论 |
+| --- | --- | --- |
+| `38179577055` | schedule `professional_quality_gate` | **根因** |
+| `38180095789` | schedule `release_candidate_gate` | 下游等待者，日志 `candidate workflow failed: professional_quality_gate.yml`，同源非独立缺陷 |
+| `38143504375` | workflow_dispatch `frontend_release_gate` | 属上一轮已修范围（其后的 schedule `38179866390` 已 success），本轮不重复处理 |
+
+### 34.2 根因：共享套件里有需要 pnpm 工具链的守卫，而消费它的车道从不激活固定版本
+
+2026-10-11 的共享套件治理 `9c2af878` 把 73 个原先只在本地跑的守卫接进 `verify.contract.architecture.suite`。该列表上方的注释本身写明：**需要 pnpm 工具链的守卫不得加入此处**。而 `verify.menu_config_tree_editor.behavior` 恰好需要 pnpm/esbuild（它 `exec esbuild` 打包 `useMenuTreeEditor.ts`），于是：
+
+1. `professional_quality_gate` 的 full 车道消费该套件，却从不激活 `frontend/package.json` 固定的 `pnpm@9.12.3`（只有 `frontend_release_gate` 做了这件事）；
+2. `scripts/dev/pnpm_exec.sh` 的最后兜底 `exec corepack pnpm`，在调用目录（仓库根，无 `packageManager` 字段）会解析 corepack 自身**未固定的默认版本**——日志实测 `pnpm/12.11.2`；
+3. 该版本下载/激活失败 → `MODULE_NOT_FOUND` 退出 → **真实验收结果被掩盖**，且该步空转约 5 分钟（22:22:44 → 22:27:58）。
+
+这是「工具解析未固定 + 车道缺依赖」的组合，不是产品缺口，也不是守卫逻辑错。
+
+### 34.3 修复：解析顺序固定，删除未固定兜底，fail-closed
+
+`scripts/dev/pnpm_exec.sh` 解析顺序收敛为三步，全部绑定同一个 pin（仍单源于 `frontend/package.json`，不新增第二处版本声明）：
+
+1. pin 的 corepack 缓存条目；
+2. 显式**固定**激活：`corepack prepare pnpm@<pin> --activate`，回退 `corepack install -g pnpm@<pin>`；
+3. PATH 上版本与 pin **完全相等**的 pnpm。
+
+删除未固定的 `corepack pnpm` 兜底；三步都不可得时给出可执行提示并 `exit 2`，不再静默运行外来 pnpm。
+
+未把守卫移出共享套件：移出会让车道覆盖债务增长（`verify.verification.lane_coverage` 棘轮），而这属于工具层缺陷，应在工具层修。
+
+### 34.4 本地实证
+
+| 场景 | 结果 |
+| --- | --- |
+| ① cache-hit（正常开发机） | `0.39s` 输出 `9.12.3` |
+| ② 隔离 root + 空 `COREPACK_HOME`（**CI 失败场景对照**） | 走固定激活，`7.1s` 落地 `<COREPACK_HOME>/v1/pnpm/9.12.3` 并运行 `9.12.3` |
+| ③ 伪造 corepack 失败 + PATH 上 pnpm 报 `12.11.2` | 按设计 fail-closed，`exit 2`，不再跑外来 pnpm |
+| `make verify.menu_config_tree_editor.behavior` | PASS `cases=11`（本轮 CI 判红的那一条） |
+| `make verify.frontend.typecheck.strict` | PASS（其声明输入含 `scripts/dev/pnpm_exec.sh`，故属本轮受影响的依赖失效，非安心重跑） |
+
+### 34.5 边界与四态
+
+- 责任层：`scripts/dev/pnpm_exec.sh` 属 **P4 交付工具**；未改产品代码、未改必需检查集合、未放宽断言、未改 CI 门槛。
+- 已修复但**远端证明待取**：用 `workflow_dispatch` 在分支上跑 `professional_quality_gate` 证明曾被判红的车道转绿，结论写入 PR #646 文本（不另建台账）。
+- 四态不变：批次级本轮完成 → 主线集成=PR #646 待合并 → **版本发布未做** → **产品交付未完成**（待 owner 本人登录 `wutao` / `sc_demo` / `http://1.95.85.92:18081/`）。
+
+### 34.6 第二层根因：守卫被接进了「不安装前端依赖」的车道（车道覆盖缺陷，不是 pnpm 解析）
+
+`5a89e638`（34.3）推送后重跑 `workflow_dispatch professional_quality_gate`（run `38195237454`，job `114636350267`）**仍然红**，但报错已从「被掩盖」变成真实错误：
+
+```
+ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command "esbuild" not found
+make: *** [make/ci.mk:804: verify.menu_config_tree_editor.behavior] Error 254
+```
+
+该守卫用 `esbuild` 打包 `frontend/apps/web/src/views/menuConfig/useMenuTreeEditor.ts`，因此它同时需要 **① 固定 pnpm 工具链** 与 **② 已安装的前端依赖**。而 `professional_quality_gate` 的 full 车道只安装 Node（供语法扫描），**从不安装前端依赖**。
+
+也就是说：34.2 描述的「共享套件里有需要 pnpm 工具链的守卫」并不只是解析版本问题，**守卫本身被接错了车道**。`9c2af878` 把它从 `ci.local.quick.run` 搬进新建的 `verify.contract.architecture.suite`，而该套件是 `ci.professional.backend.shard-verify` 的成员（`scripts/verify/registry.yaml` 中 `lane: remote-professional-backend` 的 anchor），于是守卫泄漏到一个永远不具备其依赖的车道。这既不是产品缺陷，也不是断言问题：即便 34.3 的解析修复完全正确，该车道也无法执行它。
+
+反事实对照是单解的：
+
+- **不移出** → 后端车道必然持续红（缺依赖与制品，不是缺断言）；
+- **移出并接前端车道** → 正确生命周期 + 零车道分歧 + 可由远端证明。
+
+归位决定（**不改车道分配，只把守卫放回它自己的车道**，`scripts/verify/registry.yaml` 的四个 anchor 即既有分配）：
+
+| 车道 | anchor | 本轮接线 |
+| --- | --- | --- |
+| local-quick | `ci.local.quick.run` | **恢复**（`9c2af878` 之前它本来就在这里；该车道本就调用 `scripts/dev/pnpm_exec.sh`，不是无工具链车道） |
+| remote-frontend-standard | `verify.frontend.pr.unit` | **新增**（`pnpm -C frontend/apps/web test`） |
+| remote-frontend-full | `verify.frontend.release.audit` → `verify.frontend.release.unit` | **新增**（`pnpm test:release`） |
+| remote-professional-backend | `ci.professional.backend.shard-verify` | **移除**（从 `verify.contract.architecture.suite` 前置删除） |
+
+两个前端车道都由 `frontend_release_gate.yml` 的 `Install locked frontend toolchain` step 覆盖（`frontend_mode != skip`，即 standard 与 full 都装固定 pnpm 与前端依赖），所以接线处确有依赖。守卫脚本本身用绝对 `ROOT` 路径，不依赖调用方 cwd。
+
+### 34.7 本轮验证：只跑受影响集，不重跑全量
+
+| 检查（check id） | 命令 | 结果 |
+| --- | --- | --- |
+| `menu_config_tree_editor_behavior` | `make verify.menu_config_tree_editor.behavior` | PASS `cases=11` |
+| `verification_lane_coverage` | `make verify.verification.lane_coverage` | PASS（44 tests；无净额变化，无需改基线） |
+| `frontend_pr_unit` | `make verify.frontend.pr.unit` | PASS（37 个 PASS 步骤；**首次**取得回执，见 34.8） |
+| `frontend_typecheck` | `make verify.frontend.typecheck.strict` | PASS |
+| `ci_local_iteration` | `make verify.baseline.iteration.execution.policy` | PASS（16 tests） |
+| （静态套件本体） | `make verify.contract.architecture.suite` | PASS，且**不再调用 esbuild**——这正是本轮修复的判据 |
+
+受影响集的判定不是"看心情"，而是把每个检查回执里记录的 `make/ci.mk`、`make/frontend.mk`、`scripts/dev/pnpm_exec.sh` 哈希与 HEAD 版本逐项比对：
+
+- 只有 `ci_local_iteration`、`frontend_typecheck`、`menu_config_tree_editor_behavior` 三项绑定的是**本轮改动前**的当前版本 → 本轮**真实新增**失效面就是这三项，三项均已重跑并重录；
+- `verification_lane_coverage` 与 `frontend_pr_unit` 自身声明输入含被改的 make 文件（且后者的接线正是本轮改动）→ 纳入本轮重跑；
+- 台账中其余 17 项 `stale` 与 25 项 `not_run` 绑定的 make 文件哈希**早于本轮**（例如 `ci_workflow_contract` 绑定 `439cbaa4` 轮），属历史累积登记债，本轮既不新增其失效、也不因此重跑，留给改变其归属面的轮次处理。
+
+`make verify.agent.ledger.unit` PASS（15 tests），`make agent.run.resume` 在 HEAD `5a89e638` 上把上述五项判为 `reusable`。
+
+### 34.8 台账声明修复：一个不可解析的输入声明
+
+排查中发现 `frontend_pr_unit` 的回执在 resume 里长期是 `not_run: no local receipt`，原因不是没跑，而是**声明本身无法解析**：它的输入写成 `frontend/apps/web/scripts/**` 与 `scripts/verify/**`，而 `**` 后缀不是证据范围引擎认可的 bounded-directory 声明，`make agent.run.begin` 直接以 `declared dependency is missing` 拒绝，回执永远写不进去。
+
+本轮改为 bounded 目录 `frontend/apps/web/scripts` 与 `scripts/verify`：这是 `.agent/README.md` 明确允许的声明形式（保留新增/删除子项的检测），**保持原作者声明的覆盖意图，不缩小任何被执行依赖**（在"输入漏项是缺陷"的规则下，宁可目录级覆盖，也不做可能漏项的枚举）。
+
+### 34.9 边界与四态（含对 34.5 的更正）
+
+- **更正 34.5**：那里写的"未把守卫移出共享套件"是**错误判断**，已被 34.6 的事实推翻。为了保住车道棘轮的计数而把需要 pnpm/前端依赖的守卫留在不具备依赖的车道，是把工具层缺陷转成永久红灯；正确做法是按既有车道分配**归位**，再让棘轮复核（结果为无净额变化）。
+- 责任层：`make/ci.mk`、`make/frontend.mk` 的接线与 `.agent` 台账声明属 **P4 交付工具**；未改产品代码、契约、必需检查集合或 CI 门槛，未放宽任何断言。
+- 远端证明待取：以 `workflow_dispatch` 取得 `professional_quality_gate` full 车道与 `frontend_release_gate` 两车道的转绿证据，写入 PR #646 文本。
+- 四态不变：批次级本轮完成 → 主线集成=PR #646 待合并 → **版本发布未做** → **产品交付未完成**（待 owner 本人登录 `wutao` / `123456` / `sc_demo` / `http://1.95.85.92:18081/`）。
+
+### 34.10 第三层：full 车道没有 `origin/main`（环境前置缺陷，不是产品缺陷）
+
+`6b7f2173` 之后重跑 dispatch `professional_quality_gate`（run `38197113086`）——**esbuild 守卫已不再出现**，共享套件整体执行完毕，于是暴露出下一个被它挡住的阻断：
+
+```
+Traceback ... scripts/verify/g1_acceptance_baseline_guard.py line 78 in _is_ancestor
+  base = _git(["rev-parse","--verify","--quiet","origin/main"]) or _git([... "main"])
+subprocess.CalledProcessError: Command '['git','rev-parse','--verify','--quiet','origin/main']' returned non-zero exit status 1
+make: *** [make/guards.mk:268: verify.g1.acceptance.baseline] Error 1
+```
+
+事实链（已核对，非推测）：
+
+1. `professional_quality_gate` 的 job 用的是**手写 checkout**（`git init` + `git remote add` + `git fetch --no-tags origin BASE_SHA/HEAD_SHA` + `git checkout --detach FETCH_HEAD`），只取两个提交对象，**不建任何 remote-tracking ref**，因此 workspace 里不存在 `origin/main`；
+2. 而 `verify.g1.acceptance.baseline` 断言的正是「记录的 G1 基线提交必须可追溯至主线」，它按 `origin/main`（回退 `main`）解析主线；
+3. `git rev-parse --verify --quiet` 在 ref 缺失时**非零退出**，`check_output` 直接抛异常——于是原代码里 `or _git(["...","main"])` 的兜底**永远不会执行**，守卫以 traceback 而不是明确结论失败。
+
+这是**环境/前置缺陷**，不是产品缺陷。守卫的断言本身正确（G1 基线必须落在主线历史里），**不能放宽**。两个责任层各修一处：
+
+| 责任层 | 位置 | 修复 |
+| --- | --- | --- |
+| 车道（P4 CI） | `.github/workflows/professional_quality_gate.yml` | 新增步骤显式取 `main:refs/remotes/origin/main`（3 次重试 + `rev-parse` 校验，失败即 fail-closed），把断言点名的 ref 提供出来；既有身份断言与 `github_actions_security_guard` GA012 要求的 fetch 行**原样保留** |
+| 守卫（P4 工具） | `scripts/verify/g1_acceptance_baseline_guard.py` | 把「可选修订解析」改成非抛出实现（缺 ref 返回空），并在完全没有主线 ref 时给出显式失败行（**仍是失败**，不减断言）；消除 traceback 这一掩盖真实原因的路径。`test_g1_acceptance_baseline_guard.py` 新增 3 个 hermetic 用例锁定该行为（12 → 15 tests） |
+
+修复前提已实证：本仓库 `git merge-base --is-ancestor 3f424993c9f378aaeedd2f26080545ad37ea3f8e origin/main` 为真——补齐 ref 后该守卫会真绿，而不是换一种错法。
+
+本地证据：`verify.g1.acceptance.baseline` PASS（baseline_sha `3f424993` 可追溯、证据可复现）、`verify.ci.workflow.contract` PASS、`verify.github_actions.security` PASS（`permissions=read fork_professional=denied actions=pinned`）、`verify.ci.scheduled_gates` PASS（66 tests）、`verify.contract.architecture.suite` PASS。
+
+同时登记两项此前**没有回执覆盖**的检查（本轮改动的文件必须有证据项）：`ci_scheduled_gates`（唯一覆盖 `.github/workflows/*.yml` 的回执，按文件声明而非目录）与 `g1_acceptance_baseline`。
+
+### 34.11 四态（第 34 轮收口时点）
+
+- **批次级本轮完成**：三层根因（未固定 pnpm 解析 / 守卫接错车道 / 车道缺主线 ref）均已定位并修复，本地定向证据齐备。
+- **主线集成未完成**：PR #646 在 `bdc1c879` 上四项必需检查已全绿，但该 PR 车道被风险分级降级为非 full 模式，**不能替代定时 full 车道的证明**；第三层修复推送后需重取 full 车道红转绿证据再合并。此前的 `professional_quality_gate` PR 检查 6m14s pass 即为降级模式的结果，不能当作本轮的判据。
+- **版本发布未做**。
+- **产品交付未完成**：仍待 owner 本人登录验收（`wutao` / `123456` / `sc_demo` / `http://1.95.85.92:18081/`），属人工步骤。
+
+## 35. 第 35 轮（2026-10-12）：同一车道覆盖缺陷的第三个实例——需要 `tsc` 的守卫又被接进后端静态套件（P4 交付工具，无产品代码）
+
+### 35.1 触发与事实链
+
+`workflow_dispatch` full 车道 `professional_quality_gate`（run `38198631345`，head `bdc1c879`，2026-10-12T03:09Z 起）在 shard-verify 阶段继续判红：
+
+```
+scripts/verify/contract_form_runtime_state_behavior_guard.sh: line 9:
+/home/runner/work/sce-backend-odoo/sce-backend-odoo/frontend/apps/web/node_modules/.bin/tsc: No such file or directory
+make: *** [make/ci.mk:1039: verify.contract.architecture.suite] Error 127
+```
+
+同一个 head 的 `pull_request` 事件 `professional_quality_gate`（run `38198626970`）是 **success**：PR 车道被风险分级降级为非 full 模式，不执行全量 shard-verify，所以这条缺陷只在**定时/派发 full 车道**可见。也就是说，第 34 轮记录里那句"PR 检查不能替代 full 车道证明"在本轮再次生效。
+
+事实链（已核对，非推测）：
+
+1. `verify.contract.architecture.suite` 的 recipe 内联调用了 `scripts/verify/contract_form_runtime_state_behavior_guard.sh`；
+2. 该脚本第 8-14 行用 `${ROOT}/frontend/apps/web/node_modules/.bin/tsc` 编译 `frontend/apps/web/src/pages/contractForm/runtimeState{Applier,Reducer,Protocol}.ts`，**必须有已安装的前端依赖**；
+3. `verify.contract.architecture.suite` 是 `ci.professional.backend.shard-verify` 的前置（`make/ci.mk:765`）；`professional_quality_gate.yml` 的 full 车道只跑 `make ci.professional.backend.shard-verify / shard-reports / shard-tests`（第 279-284 行），**从不执行 pnpm install**；
+4. `make/ci.mk:1012-1021` 早已明文规定该套件只放确定性静态守卫，凡需要 pnpm 工具链者不得进入；
+5. 远端日志顺序同样印证：套件中该行之前的守卫全部 PASS，到此行以 Error 127 终止，其后的 shard-reports / shard-tests 全部未执行。
+
+### 35.2 本类缺陷的第三个实例
+
+| # | 实例 | 表象 | 归位提交 |
+| --- | --- | --- | --- |
+| 1 | 第 34 轮根因 1 | pnpm 解析未固定，真错被 `MODULE_NOT_FOUND` 掩盖 | `5a89e638` |
+| 2 | 第 34 轮根因 2 | `verify.menu_config_tree_editor.behavior`（esbuild）被接进共享套件 | `6b7f2173` |
+| 3 | 第 35 轮（本轮） | `verify.contract_form_runtime_state.behavior`（tsc）被接进同一共享套件 | `91a1c406` |
+
+前两次的处置都是"把这一个修好"，**没有把边界变成机检约束**，于是同类缺陷第三次以相同方式复发。本轮除修复外补上机检——这才是本轮的真正增量。
+
+### 35.3 修复：车道归位，不缩小覆盖、不放宽断言
+
+按 `6b7f2173` 既有模式：
+
+| 动作 | 位置 |
+| --- | --- |
+| 从共享静态套件移除内联调用 | `make/ci.mk`（`verify.contract.architecture.suite` recipe） |
+| 新建独立 target `verify.contract_form_runtime_state.behavior`（紧邻同类边界定义、并登记 `.PHONY`） | `make/ci.mk:812` |
+| 接入本地精确 HEAD 车道 | `ci.local.quick.run` |
+| 接入两个前端车道（均具备固定 pnpm 与已安装前端依赖） | `verify.frontend.pr.unit`、`verify.frontend.release.unit` |
+
+### 35.4 体系化预防：把边界变成可机检约束
+
+新增 `scripts/verify/static_suite_frontend_toolchain_guard.py`（与 `test_static_suite_frontend_toolchain_guard.py`，10 用例），接入 `verify.contract.architecture.suite`，复用 `guard_registry_audit.py` 的 `parse_make_graph` / `reachable_targets` 解析 make 依赖图：
+
+1. **闭包禁止**：`ci.professional.backend.shard-verify` 的前置闭包内不得出现前端工具链。recipe 行查 `node_modules/.bin/`、`pnpm_exec.sh`、`pnpm exec`、`corepack`；脚本体**只认工作区锚定的执行形态**（`"${ROOT}…/node_modules/.bin/…"` 或 `"${ROOT}…/scripts/dev/pnpm_exec.sh"`）。这条收窄是刻意的：`baseline_iteration_execution_policy_guard.py` 里合法地带着字符串常量 `"pnpm_exec.sh -C frontend/apps/web lint:src"`，那是**声明**不是**执行**，必须不误报。
+2. **禁止"删除冒充修复"**：两个已知前端工具链守卫必须始终可从 `ci.local.quick.run` 与两个前端车道到达——把守卫从共享套件里删掉也算违规。
+3. **直接携带禁止**：`verify.contract.architecture.suite` 不得直接携带这两个守卫。
+
+### 35.5 真实负例（不是只有合成用例）
+
+临时把内联行放回 `verify.contract.architecture.suite` → 守卫 **FAIL** 并精确报出违反的闭包路径与守卫文件：
+
+```
+- ci.professional.backend.shard-verify -> verify.contract.architecture.suite -> scripts/verify/contract_form_runtime_state_behavior_guard.sh: '${ROOT}/frontend/apps/web/node_modules/.bin/'
+- verify.contract.architecture.suite carries scripts/verify/contract_form_runtime_state_behavior_guard.sh; it needs installed frontend dependencies and belongs to the frontend and local lanes
+```
+
+随后按 sha256 逐字节校验还原（`RESTORED_OK=True`）。证明"注入被检出 + 基线正常"两端都成立。
+
+### 35.6 本地证据
+
+| 检查 | 结果 |
+| --- | --- |
+| `make verify.contract.architecture.suite` | PASS（`[OK] contract & architecture guard suite passed`，含新守卫与单测） |
+| `make verify.contract_form_runtime_state.behavior` | PASS |
+| `python3 scripts/verify/test_static_suite_frontend_toolchain_guard.py` | Ran 10 tests, OK |
+| `make verify.guard.registry` | AUDIT PASS（1411 scripts / 1324 referenced / 189-189 unwired dispositioned） |
+| `make verify.test.coverage.registry` | PASS（17 tests） |
+| `make ci.generated_evidence.preflight` | PASS（`make/ci.mk` 行数变化后已同提交刷新三份 tracked 生成证据；`test_inventory.csv` 的 802 行变动是新增 2 项资产后的**确定性重编号** 1479→1481，非虚假漂移） |
+
+责任层：`make/ci.mk`、`make/frontend.mk` 的接线与新增守卫属 **P4 交付工具**；未改产品代码、契约、必需检查集合或 CI 门槛，未删除任何守卫执行，未放宽任何断言。
+
+### 35.6.1 回执登记（`head=91a1c406`，均为 executor-recorded、非 CI 回执）
+
+本轮改动命中声明输入的检查共 8 项，全部按 `make agent.run.begin` → 执行 → `make agent.run.record` 登记，日志落在 `.runtime/final-acceptance/r35/`：
+
+| 检查 | target | 结果 | 用例数 |
+| --- | --- | --- | --- |
+| `static_suite_frontend_toolchain_guard` | `verify.contract.architecture.suite` | passed | 184 |
+| `contract_form_runtime_state_behavior` | `verify.contract_form_runtime_state.behavior` | passed | 6 |
+| `ci_local_iteration` | `verify.baseline.iteration.execution.policy` | passed | 16 |
+| `test_coverage_registry` | `verify.test.coverage.registry` | passed | 17 |
+| `verification_lane_coverage` | `verify.verification.lane_coverage` | passed | 44 |
+| `ci_scheduled_gates` | `verify.ci.scheduled_gates` | passed | 66 |
+| `agent_ledger_consistency_unit` | `verify.agent.ledger.unit` | passed | 15 |
+| `frontend_pr_unit` | `verify.frontend.pr.unit` | passed | 209 |
+
+计数口径：单一 unittest 目标记其用例数；复合目标（架构套件 / 前端车道 / 定时门禁）记**该目标实际执行的 unittest 用例总数**（各 `Ran N tests` 块求和），因此不会出现"66 个用例被记成 15"这类失真。`contract_form_runtime_state_behavior` 记其守卫声明的 6 个 case（守卫自身在 6 个 `assert*` 用例函数上校验运行时状态归约与应用行为）。
+
+声明了 `make/ci.mk` / `make/frontend.mk` 但**未被本轮改动实质影响**的其余检查（如 `role_surface_landing_contract_unit`、`trusted_scan_scope_unit`、`ci_workflow_contract`、`lane_telemetry`、`form_layout_span_unit`、`frontend_navigation_shell_unit` 等）属"按文件级声明过度失效"的既有登记债：本轮只改了共享套件的 recipe 接线与两个前端车道的前置清单，这些检查的 target 行为与该改动无关，故不重跑（`evidence-reuse-identity` 的输入依赖判据），留给改变其归属面的轮次处理。
+
+### 35.7 远端连带项（一并说清，不夸大）
+
+- `main` 上**定时** `professional_quality_gate`（run `38179577055`）红的仍是**第 34 轮第二层**：`make/ci.mk:804: verify.menu_config_tree_editor.behavior Error 1`——`main` 尚未合入 `6b7f2173`。
+- `main` 上**定时** `release_candidate_gate`（run `38180095789`）只是它的下游连带：`release_candidate_gate.yml` 第 96-97 行对 `wait_for_candidate_checks` 的结果做 `success/skipped` 断言，而该 job 第 67 行要求同事件候选工作流 `success`。
+- 合并 PR #646 即同时清掉这两处（分支已含 `6b7f2173` 与本轮修复）。
+
+### 35.8 四态（第 35 轮收口时点）
+
+- **批次级本轮完成**：车道归位 + 机检守卫 + 真实负例 + 受影响集本地证据齐备。
+- **主线集成未完成**：待推送并取 full 车道转绿证据后按所有者 CI 规则合并。
+- **版本发布未做**。
+- **产品交付未完成**：仍待 owner 本人登录验收（`wutao` / `123456` / `sc_demo` / `http://1.95.85.92:18081/`），属人工步骤。
+
+## 36. 第 36 轮（2026-10-12）：同一车道覆盖缺陷的第四个实例——需要前端 `node_modules` 的 node harness 又被接进后端静态套件（P4 交付工具，无产品代码）
+
+### 36.1 触发与事实链
+
+第 35 轮修复推送后按 35.8 的顺序派发 full 车道（`gh workflow run professional_quality_gate.yml`，run `38201811102`，head `46856021`）。结果：`professional_authorization` 与 `python310_runtime_compatibility` success，`professional_quality_gate` failure（job `114656684687`）。失败点：
+
+```
+node:internal/modules/cjs/loader:1404
+Error: Cannot find module '../../frontend/apps/web/node_modules/typescript'
+Require stack:
+- /home/runner/work/sce-backend-odoo/sce-backend-odoo/scripts/verify/action_view_route_runtime_smoke.js
+    at Object.<anonymous> (.../scripts/verify/action_view_route_runtime_smoke.js:7:12)
+make: *** [make/ci.mk:1095: verify.contract.architecture.suite] Error 1
+```
+
+第 35 轮新增的 `static_suite_frontend_toolchain_guard` 在同一次运行里报 **PASS**——也就是说，这个新守卫没有抓到本次缺陷本身。这是本轮必须解释清楚的部分。
+
+### 36.2 本类缺陷的第四个实例，以及为什么前三层守卫漏掉了它
+
+`verify.contract.architecture.suite` 的 recipe 里内联了三行 `@node scripts/verify/*_smoke.js`：
+
+| 脚本 | 第 7 行 | 依赖 |
+| --- | --- | --- |
+| `scripts/verify/action_view_route_runtime_smoke.js` | `require('../../frontend/apps/web/node_modules/typescript')` | 已安装的前端依赖 |
+| `scripts/verify/action_view_contract_action_runtime_smoke.js` | 同上 | 已安装的前端依赖 |
+| `scripts/verify/navigation_context_smoke.js` | 同上 | 已安装的前端依赖 |
+
+三者都在 `vm` 里用 `ts.transpileModule` 编译 `frontend/apps/web` 源码，因此必须能看到前端 `node_modules`。而 `verify.contract.architecture.suite` 是 `ci.professional.backend.shard-verify`（`make/ci.mk:765`）的前置，`professional_quality_gate.yml` 的 full 车道只跑该 shard，**从不执行 `pnpm install`**。所以失败形态必然是 `MODULE_NOT_FOUND`，而不是真实门禁结论——与 34.6（esbuild）、35.2（tsc）完全同类，只是第四种表现形式。
+
+守卫漏掉它的原因有两个**独立的帧盲区**，这也是本轮真正要修的体系缺陷：
+
+1. **recipe 帧只认工具链 token**：`FRONTEND_TOOLCHAIN_TOKENS = ('node_modules/.bin/', 'pnpm_exec.sh', 'pnpm exec', 'corepack')`。而这次 recipe 是裸 `node <script>`——不含任何 token，因此 recipe 层判据不成立。
+2. **脚本帧只开 `.sh|.py`**：`SCRIPT_REFERENCE_RE = r"\b(scripts/[A-Za-z0-9_./-]+\.(?:sh|py))\b"`。三个 harness 是 `.js`，于是从未被打开、其 `require(...)` 也就从未被看见。
+
+结论：第 35 轮建立的边界是真边界，但**覆盖帧比它声称测量的面窄**。这属于验证工具的测量缺陷，不是产品缺陷、不是断言缺陷，也不是环境缺陷。
+
+### 36.3 修复：车道归位 + 帧扩宽（不放宽断言、不缩小覆盖）
+
+| 项 | 归属层 | 文件 |
+| --- | --- | --- |
+| 三个 harness 移出共享静态套件 | 车道接线 | `make/ci.mk`（`verify.contract.architecture.suite` recipe） |
+| 新建 `verify.action_view_runtime_smoke.behavior` 并接入本地与前端车道 | 车道接线 | `make/ci.mk`（新 target + `.PHONY` + `ci.local.quick.run` 前置）、`make/frontend.mk`（`verify.frontend.pr.unit` / `verify.frontend.release.unit`） |
+| 脚本帧扩到 `.js|.mjs|.cjs` | 机检守卫 | `scripts/verify/static_suite_frontend_toolchain_guard.py` |
+| 新增 Node loader 帧（`require(` / `import(` / `from `）+ 三个 harness 纳入强制归位集合 | 机检守卫 | 同上 |
+| 单测覆盖新帧与真实负例 | 机检守卫 | `scripts/verify/test_static_suite_frontend_toolchain_guard.py`（10 → 14 用例） |
+
+Node loader 帧刻意只认**执行形态**：`node_modules` 单独出现是声明数据（模块搜索路径 `path.resolve('frontend/apps/web/node_modules')`、别名 `${root}/frontend/apps/web/node_modules/vue/...`），只有紧贴路径的 loader 关键字才算执行。这与 `.sh/.py` 帧「workspace-anchored 路径才算执行、裸 token 算声明数据」的既有判据同构，避免把合法的浏览器 runner 误报成泄漏。
+
+### 36.4 真实负例（先证明基线正常，再证明注入被检出）
+
+不是只有合成用例：
+
+- **基线**：当前仓库状态 `static_suite_frontend_toolchain_guard` PASS；`verify.contract.architecture.suite` 通过且**不再执行任何 node smoke**（`make -n verify.contract.architecture.suite | grep -c "node scripts/verify/action_view"` = 0）。
+- **注入**：用修复前的套件 recipe 体（含三行 `@node`）喂给守卫的 `collect_frontend_toolchain_hits()`，报出 **3 条**命中，路径形如 `ci.professional.backend.shard-verify -> verify.contract.architecture.suite -> scripts/verify/action_view_route_runtime_smoke.js: "require('../../frontend/apps/web/node_modules"`。
+- **归位可达性**：`make -n ci.local.quick.run`、`verify.frontend.pr.unit`、`verify.frontend.release.unit` 三者都能到达该 target；直接运行 `make verify.action_view_runtime_smoke.behavior` 得到三行 PASS。
+
+### 36.5 本地证据
+
+| 命令 | 结果 |
+| --- | --- |
+| `python3 -m unittest scripts.verify.test_static_suite_frontend_toolchain_guard` | OK，14 用例 |
+| `python3 scripts/verify/static_suite_frontend_toolchain_guard.py` | PASS |
+| `make verify.contract.architecture.suite` | PASS（`[OK] contract & architecture guard suite passed`），**不再执行 node smoke**，187 用例 |
+| `make verify.action_view_runtime_smoke.behavior` | 3 行 PASS（`action_view_route_runtime_smoke` / `action_view_contract_action_runtime_smoke` / `navigation_context_smoke`） |
+| `python3 scripts/verify/action_view_responsibility_map_guard.py` | PASS（该守卫要求 `ci.local.quick` 仍执行这三个 smoke 的 token，归位后仍成立） |
+| `python3 scripts/ci/node_syntax_check.py` | PASS（384 files） |
+| `python3 -m unittest scripts.ci.test_node_syntax_check` | OK，25 用例（共享套件仍持有 corpus 级 sweep 的唯一声明） |
+| `python3 scripts/verify/guard_registry_audit.py` | AUDIT PASS（1411 scripts / 189 unwired dispositioned / 3 gate_required enforced） |
+| `make ci.generated_evidence.preflight` | PASS（test inventory 1481 条当前；未产生生成证据漂移） |
+
+受影响检查按 `make agent.run.begin` → 执行 → `make agent.run.record` 登记（executor-recorded，非 CI 回执），日志在 `.runtime/final-acceptance/r36/`：
+
+| 检查 | target | 结果 | 用例数 |
+| --- | --- | --- | --- |
+| `static_suite_frontend_toolchain_guard` | `verify.contract.architecture.suite` | passed | 187 |
+| `action_view_runtime_smoke_behavior`（本轮新增） | `verify.action_view_runtime_smoke.behavior` | passed | 3 |
+| `frontend_pr_unit` | `verify.frontend.pr.unit` | passed | 209 |
+| `verification_lane_coverage` | `verify.verification.lane_coverage` | passed | 44 |
+| `ci_local_iteration` | `verify.baseline.iteration.execution.policy` | passed | 16 |
+| `test_coverage_registry` | `verify.test.coverage.registry` | passed | 17 |
+| `ci_workflow_contract` | `verify.ci.workflow.contract` | passed | 6 |
+
+`verification_lane_coverage` 复核的是**本次改动的度量面**：新增 1 个可达 target、三个脚本从「后端套件 + 本地」改为「本地 + 前端车道」，两向都不是 local-only / remote-only，`--check` 仍在冻结基线内（债务棘轮只许收缩）。
+
+其余声明了 `make/ci.mk` / `make/frontend.mk` 但 target 行为与本轮接线无关的检查（`role_surface_landing_contract_unit`、`trusted_scan_scope_unit`、`lane_telemetry`、`form_layout_span_unit`、`frontend_navigation_shell_unit`、`ci_scheduled_gates` 等）属既有的「按文件级声明过度失效」登记债，判据同 35.6：本轮只改共享套件 recipe 接线与两条前端车道的前置清单，不重跑、不为安心重跑。
+
+### 36.6 远端连带项
+
+- `main` 上定时 `professional_quality_gate`（run `38179577055`）与 `release_candidate_gate`（run `38180095789`）仍停在第 34 轮第二层（`main` 尚未合入 `6b7f2173`）；合并 PR #646 一并消除。
+- 本轮修复提交合入后，full 车道才具备「不以 MODULE_NOT_FOUND 结束」的可能——即 34→35→36 三层都必须绿，full 车道才有结论价值。
+
+### 36.7 四态（第 36 轮收口时点）
+
+- **批次级本轮完成**：车道归位 + 帧扩宽 + 真实负例 + 受影响集本地证据齐备。
+- **主线集成未完成**：待推送并取 full 车道转绿证据后按所有者 CI 规则合并。
+- **版本发布未做**。
+- **产品交付未完成**：仍待 owner 本人登录验收（`wutao` / `123456` / `sc_demo` / `http://1.95.85.92:18081/`），属人工步骤。

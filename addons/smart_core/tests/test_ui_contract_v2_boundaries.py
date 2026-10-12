@@ -121,6 +121,17 @@ def _load_handler():
         captured["final_layout_modifier_status_hydrated"] = True
         return contract
 
+    # The projection module imports the container column declarer from the real
+    # assembler, so the stub borrows that function object from the real source
+    # instead of re-implementing (and drifting from) the declaration rule.
+    real_assembler_name = "odoo.addons.smart_core.core._real_unified_page_contract_v2_assembler"
+    real_assembler_spec = importlib.util.spec_from_file_location(
+        real_assembler_name, root / "core/unified_page_contract_v2_assembler.py"
+    )
+    real_assembler = importlib.util.module_from_spec(real_assembler_spec)
+    sys.modules[real_assembler_name] = real_assembler
+    real_assembler_spec.loader.exec_module(real_assembler)
+
     _install_module(
         "odoo.addons.smart_core.core.unified_page_contract_v2_assembler",
         CONTRACT_VERSION="2.0",
@@ -129,6 +140,8 @@ def _load_handler():
         hydrate_final_layout_modifier_status=_hydrate_final_layout_modifier_status,
         project_runtime_business_actions=_project_runtime_business_actions,
         project_workflow_action_semantics=lambda contract: contract,
+        declare_container_columns=real_assembler.declare_container_columns,
+        declared_container_columns=real_assembler.declared_container_columns,
     )
 
     def _trim_unified_page_contract_v2(contract, **kwargs):
@@ -212,10 +225,24 @@ def _load_handler():
     class _PreviewAccessDenied(Exception):
         pass
 
+    # Same reason: the handler resolves the projection locale through the real
+    # helper, so the stub borrows the real function object.
+    preview_odoo = sys.modules.setdefault("odoo", types.ModuleType("odoo"))
+    if not hasattr(preview_odoo, "api"):
+        preview_odoo.api = types.SimpleNamespace()
+    real_preview_name = "odoo.addons.smart_core.handlers._real_ui_contract_preview"
+    real_preview_spec = importlib.util.spec_from_file_location(
+        real_preview_name, root / "handlers/ui_contract_preview.py"
+    )
+    real_preview = importlib.util.module_from_spec(real_preview_spec)
+    sys.modules[real_preview_name] = real_preview
+    real_preview_spec.loader.exec_module(real_preview)
+
     _install_module(
         "odoo.addons.smart_core.handlers.ui_contract_preview",
         PreviewAccessDenied=_PreviewAccessDenied,
         build_projection_environments=lambda env, su_env, params, projection_context: (env, su_env),
+        authenticated_projection_locale=real_preview.authenticated_projection_locale,
     )
 
     module_name = "odoo.addons.smart_core.handlers.ui_contract_v2"
@@ -5357,6 +5384,8 @@ class ProjectionEnvironmentAuthorityTest(unittest.TestCase):
         self.handler_module = _load_handler()
         self.business = MagicMock(uid=32, su=False, context={"company_id": 8})
         self.business.user.id = 32
+        self.business.user.lang = "zh_CN"
+        self.business.user.tz = "Asia/Shanghai"
         self.business.user.has_group.return_value = False
         self.metadata = MagicMock(uid=32, su=True)
         self.constructed = []
@@ -5399,6 +5428,98 @@ class ProjectionEnvironmentAuthorityTest(unittest.TestCase):
                 self.assertEqual((metadata.uid, metadata.su), (32, elevated))
                 self.assertTrue(actor.context["contract_projection_readonly"])
                 self.assertTrue(metadata.context["contract_projection_readonly"])
+        finally:
+            self.handler_module.UiContractHandler = original
+
+    def test_projection_locale_falls_back_to_authenticated_user_language(self):
+        self.assertEqual(
+            self.preview.authenticated_projection_locale(self.business, {}),
+            {"lang": "zh_CN", "tz": "Asia/Shanghai"},
+        )
+
+    def test_projection_locale_prefers_the_request_locale_when_stated(self):
+        for params in (
+            {"lang": "en_US", "tz": "UTC"},
+            {"context": {"lang": "en_US", "tz": "UTC"}},
+        ):
+            with self.subTest(params=params):
+                self.assertEqual(
+                    self.preview.authenticated_projection_locale(self.business, params),
+                    {"lang": "en_US", "tz": "UTC"},
+                )
+
+    def test_projection_locale_resolves_lang_and_tz_independently(self):
+        self.assertEqual(
+            self.preview.authenticated_projection_locale(self.business, {"lang": "en_US"}),
+            {"lang": "en_US", "tz": "Asia/Shanghai"},
+        )
+        self.assertEqual(
+            self.preview.authenticated_projection_locale(self.business, {"tz": "UTC"}),
+            {"lang": "zh_CN", "tz": "UTC"},
+        )
+
+    def test_projection_locale_never_fabricates_a_missing_locale(self):
+        self.business.user.lang = ""
+        self.business.user.tz = None
+        for params in (
+            {},
+            {"lang": "   ", "tz": ""},
+            {"context": "zh_CN"},
+            {"context": {"lang": "", "tz": None}},
+        ):
+            with self.subTest(params=params):
+                self.assertEqual(
+                    self.preview.authenticated_projection_locale(self.business, params),
+                    {},
+                )
+        self.assertEqual(
+            self.preview.authenticated_projection_locale(object(), {"context": {"lang": "zh_CN"}}),
+            {"lang": "zh_CN"},
+        )
+
+    def test_projection_locale_ignores_a_non_mapping_context(self):
+        self.business.user.lang = ""
+        self.business.user.tz = ""
+        self.assertEqual(
+            self.preview.authenticated_projection_locale(self.business, {"context": ["zh_CN"]}),
+            {},
+        )
+
+    def test_main_projection_path_publishes_the_authenticated_locale(self):
+        from unittest.mock import patch
+
+        captured = {}
+
+        class _Stop(Exception):
+            pass
+
+        def capture(env, su_env, params, context):
+            captured["context"] = dict(context)
+            raise _Stop
+
+        handler = self.handler_module.UiContractV2Handler(env=self.business, su_env=self.metadata)
+        with patch.object(handler, "_uses_native_form_source", return_value=False), patch.object(
+            self.handler_module, "build_projection_environments", side_effect=capture
+        ):
+            with self.assertRaises(_Stop):
+                handler.handle({"params": {"op": "model", "model": "res.partner", "view_type": "form"}})
+        self.assertTrue(captured["context"]["contract_projection_readonly"])
+        self.assertEqual(captured["context"]["lang"], "zh_CN")
+        self.assertEqual(captured["context"]["tz"], "Asia/Shanghai")
+
+    def test_entry_resolution_publishes_the_authenticated_locale(self):
+        from unittest.mock import MagicMock
+        handler = self.handler_module.UiContractV2Handler(env=self.business, su_env=self.metadata)
+        downstream = MagicMock()
+        downstream.return_value.handle.return_value = {"ok": True, "data": {"model": "example.record"}}
+        original = self.handler_module.UiContractHandler
+        self.handler_module.UiContractHandler = downstream
+        try:
+            handler._resolve_entry_contract({"entry": {"model": "example.record"}}, {}, {}, {})
+            actor = downstream.call_args.args[0]
+            self.assertTrue(actor.context["contract_projection_readonly"])
+            self.assertEqual(actor.context["lang"], "zh_CN")
+            self.assertEqual(actor.context["tz"], "Asia/Shanghai")
         finally:
             self.handler_module.UiContractHandler = original
 

@@ -193,6 +193,26 @@ jobs:
           echo "authoritative GitHub checkout failed for authorized commit" >&2
           exit 1
 
+      - name: Provide the mainline base ref for history-based guards
+        run: |
+          set -euo pipefail
+          # The hand-rolled checkout above fetches only BASE_SHA and HEAD_SHA, so
+          # the workspace has no `origin/main` remote-tracking ref. Guards that
+          # assert a recorded baseline is reachable from the mainline (for
+          # example verify.g1.acceptance.baseline) need that ref; without it the
+          # lane fails for an environment reason instead of a product reason.
+          # Provide the ref the assertion names rather than weakening it.
+          for attempt in 1 2 3; do
+            if timeout 60 git fetch --no-tags origin "main:refs/remotes/origin/main" &&
+              git rev-parse --verify --quiet origin/main >/dev/null; then
+              git rev-parse origin/main
+              exit 0
+            fi
+            sleep "$((attempt * 5))"
+          done
+          echo "mainline base ref (origin/main) could not be fetched for history-based guards" >&2
+          exit 1
+
       - name: Re-prove checkout identity after base fetch
         run: |
           set -euo pipefail
