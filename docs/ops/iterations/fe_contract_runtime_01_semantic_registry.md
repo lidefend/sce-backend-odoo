@@ -993,3 +993,61 @@ demo 模块口令同步范围内。这 10 个正好是 57 中按 `scdevpass` 登
 
 合并 `loadActionContractV2` / `loadModelContractV2`；删除 model 入口；改 scene route；重做 navigation；
 `extractListProfile` 全面拆分；Action Runtime 全量治理；01-E（`span → deliverySpan`）。
+
+## 冻结前 Quick 暴露的同层缺陷：assembled contract 缓存指纹未重固定
+
+`make ci.local.quick`（干净头 `aea17141`）在 shard 2 的 `verify.unified_page_contract.v2`
+处以 `verify.unified_page_contract.v2.assembler` 失败收尾：
+
+```
+the assembled contract cache inputs changed without re-pinning: set
+ASSEMBLED_CACHE_INPUTS_SHA256 = '84f62b18...' and bump ASSEMBLED_CONTRACT_CACHE_VERSION
+```
+
+### 根因
+
+`0beb7bba`（结构词汇双维收口）修改了 `handlers/ui_contract_v2.py`、`core/unified_page_contract_v2_assembler.py`、
+`handlers/ui_contract_v2_projection.py` —— 三者都在 `ASSEMBLED_CACHE_INPUTS` 内 —— 但没有重新固定
+`ASSEMBLED_CACHE_INPUTS_SHA256`，也没有 bump handler 的 `ASSEMBLED_CONTRACT_CACHE_VERSION`。
+`verify.contract.architecture.suite` 不含该目标，所以 19:48 的 suite 全绿并不能说明它通过；
+本批次此前把该 check 的 receipt 判为 stale 却没有追下去，是这一轮真正的漏检点。
+守卫在 Quick 里如实 fail-closed，说明机制本身有效。
+
+### 修复（所属层，不扩范围）
+
+1. `ASSEMBLED_CONTRACT_CACHE_VERSION` → `ui-contract-v2-2026-10-12-collection-capability-declaration`
+   （handler 与守卫同步改；版本字面量必须变，否则旧装配会继续被当作新契约服务）。
+2. 补齐指纹遗漏的运行时生产链——它们直接产出 assembled contract 的权限与集合能力：
+   `core/unified_page_contract_v2_permissions.py`（assembler 直接 import）、
+   `utils/collection_action_capability.py`、`utils/contract_governance.py`、
+   `utils/contract_governance_list_surface.py`、`utils/contract_governance_user_surface.py`。
+   本批次正好改了后三者，缺一个都会让"能力声明改动"被缓存吞掉。
+3. 由唯一算法重算 `ASSEMBLED_CACHE_INPUTS_SHA256`
+   = `a6fc054688afccc79995b68a3b863dfccb4fbd9829ed44c0b4ccb3635c5e4bc8`（不手算、不猜）。
+4. `make verify.unified_page_contract.v2.assembler` PASS（sources=4）。
+
+### 同轮补跑（避免用下一次 Quick 去逐个发现兄弟失败）
+
+shard 2 在失败点之后未执行的目标，本地 `make -k` 一次补齐并全部通过：
+`verify.boq.dangerous.import.capability`、`verify.frontend.dev.incremental.unit`、
+`verify.frontend.overview_rich_text.unit`、`verify.frontend.lint.src`。
+
+### 顺便回答"Quick 为什么这么久"
+
+本次 Quick 的实测分布（`.runtime/quick-shard-aea17141c86a-*.log`）：
+
+| shard | 状态 | 耗时 |
+|-|-|-|
+| 0 | passed | 353.6s |
+| 1 | passed | 15.4s |
+| 2 | failed | 10.0s |
+| 3 | passed | 7.1s |
+
+墙钟 ≈ 354s，其中 shard 0 独占 99.7%。shard 0 里包含 `verify.contract.architecture.suite`
+以及 `trusted_scan_group` 的三次全量安全扫描（`security.secrets.scan` 140.3s、
+`security.personal_data_scan` 172.0s、`repository.clean_history.scan` 280.7s，
+三者在组内并行，组墙钟 ≈ 281s），并都判为 `mode=full reason=scan_authority_changed`。
+
+结论：慢不在断言数量，而在 (1) 分片是 `manifest[index::4]` 的跨步切片，重活恰好落在同一片；
+(2) 三个全量扫描每次都从头扫。这两点都属于本仓库迭代效率范围，登记为独立改进项，
+不在本批次改动（本批次只做契约收口）。
