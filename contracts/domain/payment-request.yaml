@@ -83,11 +83,13 @@ states:
     mutable: false
     actions:
       - edit
+      - submit
       - cancel
   done:
     label: 已完成
     mutable: false
-    actions: []
+    actions:
+      - reverse_payment
   cancel:
     label: 已取消
     mutable: false
@@ -95,17 +97,19 @@ states:
 
 transitions:
   submit:
-    from: [draft]
+    from: [draft, rejected]
     to: submit
     capability: payment_request.submit
+    note: 草稿提交；驳回后可直接重新提交（或先 resubmit 退回草稿修改）。
   approve:
     from: [submit]
     to: approve
     capability: payment_request.approve
   approve_pass:
-    from: [approve]
+    from: [submit, approve]
     to: approved
     capability: payment_request.approve
+    note: 审批通过；submit→approved 为未配置审批链时的自动通过路径。
   reject:
     from: [submit, approve]
     to: rejected
@@ -114,10 +118,16 @@ transitions:
     from: [rejected]
     to: draft
     capability: payment_request.resubmit
+    note: 退回草稿重新编辑。
   done:
     from: [approved]
     to: done
     capability: payment_request.complete
+  reverse_payment:
+    from: [done]
+    to: approved
+    capability: payment_request.mark_reversed
+    note: 撤销已付款登记（payment.execution.action_reverse_payment）后退回已批准态。
   cancel:
     from: [draft, submit, approve, approved, rejected]
     to: cancel
@@ -126,14 +136,25 @@ transitions:
     from: [approved]
     to: approved
     capability: payment_request.create_execution
+    note: 续接付款登记表单，不改变本单状态。
 
 notes:
   - >-
-    状态机逐字对齐 ScStateMachine.PAYMENT_REQUEST_STATES /
-    PAYMENT_REQUEST_TRANSITIONS（models/support/state_machine.py）。
+    本文件是 payment.request 的领域声明（对账与生成用），不是运行时权威。运行时的
+    "状态 -> 可用动作"由 P1 行业档案
+    ScWorkflowContractService.PROFILE_BY_MODEL['payment.request']
+    （state_field / state_phase / state_actions / method_by_action）投影；转移的
+    合法性由 ORM 守卫 ScStateMachine.PAYMENT_REQUEST_TRANSITIONS 与模型方法
+    （_check_approval_state_transition / action_* / action_reverse_payment）执行。
+    归属细则见 docs/contract-runtime-state-ownership.md。
   - >-
-    create_execution 是 approved 态的续接动作（action_create_payment_execution
-    打开付款登记表单），不改变本单状态。
+    本文件 transitions 与 ScStateMachine.PAYMENT_REQUEST_TRANSITIONS 按能力名
+    一一对应：draft->{submit,cancel}；submit->{approve,approved,rejected,cancel}；
+    approve->{approved,rejected,cancel}；approved->{done,cancel}；
+    rejected->{draft,submit,cancel}；done->{approved}；cancel->{}。其中
+    approve_pass 覆盖 submit/approve->approved，reverse_payment 覆盖
+    done->approved（已付款撤销），create_execution 为 approved 自环（不改变状态）。
   - >-
     v1 的 submitted/approved 直连与 paid/reversed 终态为产品语义命名，与模型
-    状态机不一致，已在 v2 废弃。
+    状态机不一致，已在 v2 废弃；v2 状态集合与 ScStateMachine.PAYMENT_REQUEST_STATES
+    一致。

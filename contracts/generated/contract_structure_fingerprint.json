@@ -519,6 +519,7 @@
         "done",
         "reject",
         "resubmit",
+        "reverse_payment",
         "submit"
       ],
       "entity": "payment.request",
