@@ -4,13 +4,13 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1483`
+- Total assets: `1484`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `182`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `1076`
+- PR dedupe candidates: `1077`
 
 ## By Layer
 
@@ -18,7 +18,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | governance | 580 |
 | contract | 389 |
-| unit | 279 |
+| unit | 280 |
 | odoo_integration | 108 |
 | e2e | 46 |
 | security | 40 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1295 |
+| pr_candidate | 1296 |
 | integration_candidate | 135 |
 | release_candidate | 44 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 1076 |
+| deduplicate_before_required | 1077 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 134 |
 | keep_release_only | 44 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1297 |
+| <5m | 1298 |
 | 10-30m | 136 |
 | 30-60m | 46 |
 | unknown | 3 |
@@ -154,7 +154,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | architecture owner | 580 |
 | platform owner | 389 |
-| test owner | 280 |
+| test owner | 281 |
 | backend owner | 108 |
 | qa owner | 46 |
 | security owner | 40 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1312 |
+| scripts/verify | 1313 |
 | scripts/ops | 75 |
 | frontend/apps/web/scripts | 43 |
 | scripts/ci | 27 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-173 | governance | `scripts/verify/action_view_responsibility_map_guard.py` | architecture owner |
 | T-ASSET-175 | governance | `scripts/verify/agent_context_verify.py` | architecture owner |
 | T-ASSET-176 | governance | `scripts/verify/agent_ledger_consistency_guard.py` | architecture owner |
-| ... | ... | 996 more | ... |
+| ... | ... | 997 more | ... |
 
 ## Dedupe Hotspots
 

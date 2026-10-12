@@ -724,3 +724,26 @@ native locator 采用 `/form[1]/sheet[1]/group[g]/field[f]` 原生路径。
 | L3 | `make local.dev.restart` + `make local.dev.frontend` | EXIT=0 |
 | L4 | 01-C 运行时探针（3 身份 × 2 模型 × 2 profile） | 新双维、无旧字段 |
 | L4 | 01-D 浏览器 4 场景 | PASS，0 pageerror |
+
+## 列表批处理能力事实核对（收口期，仅记录）
+
+触发：收口期发现 `payment.request#2847` 需要清理，但界面未见可用的批量入口。
+
+事实（契约消费链，非猜测）：
+
+- **批量删除已接入且契约驱动**：
+  - 契约 `actionContract.surfacePolicies.batch_policy.available_actions` 含 `delete`；
+  - `execution_intents.delete = api.data.unlink`；
+  - 前端客户端能力表 `DECLARED_BATCH_EXECUTORS['api.data.unlink'] = 'unlink'`；
+  - 后端 `handlers/api_data_unlink.py` 以 `delete_policy.allowed && delete_mode == "unlink"` 把关；
+  - 列表 `available_actions` 由 `utils/contract_governance_list_surface.py` 依据契约 `batch_policy` + ACL(read/write/unlink) 推导。
+  - 结论：删除不是未接线，而是本轮未对 `#2847` 走列表工具栏，故保留该记录，清理走受管入口
+    `make local.dev.reset_payment_request_fixture`。
+- **批量导入尚未接入（真实能力缺口）**：
+  - 契约无 import 动作声明，`execution_intents` 无条目，`DECLARED_BATCH_EXECUTORS` 无执行器；
+  - 后端无导入 handler（`handlers/` 下只有 `file_upload.py`）。
+  - 按既有机制，前端对「契约声明但本构建无法执行」的意图是**如实上报未解析**，不会臆造，
+    因此这是契约+执行器的能力缺口，不是渲染缺陷。
+
+当前契约驱动的列表批能力集合：`export / archive / activate / delete`。
+记录为后续迭代新增能力，不在本轮冻结内实现。
