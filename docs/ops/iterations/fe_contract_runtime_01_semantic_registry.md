@@ -1315,3 +1315,32 @@ only_old: []    only_new: []
   再消除扫描内部可消除的串行成本**（逐对象 spawn、单线程 CPU、重复读取）。
 - 同一更正已同步到 `scripts/ops/local_quick_evidence.py` 的 `DEFAULT_SHARDS` 注释与
   `docs/ops/codex_workspace_execution_rules.md` 的 `## 并行执行与本地资源利用`（含"不可再分"证伪段）。
+
+## 主线集成与终局退役（2026-10-13）
+
+- 候选 `172300fc`（分支 `feature/fe-contract-runtime-01-semantic-registry`，基于 `main` `5dd4a846`）
+  经平台受保护 PR 合并：**PR #647**，合并方式 `merge`（非 squash），合并提交 **`766a793c`**
+  （父 `[5dd4a846, 172300fc]`）；`origin/main` 由 `5dd4a846` 前进到 `766a793c`。
+- 合并前绑定复核：`headRefOid=172300fc`、`baseRefOid=5dd4a846`、`mergeStateStatus=CLEAN`；
+  四项必需远端检查在精确头 `172300fc` 全绿：`merge_policy_gate` 7s、`public_guard` 2m9s、
+  `frontend_release_gate` 1m38s、`professional_quality_gate` 6m35s。精确头 `ci.local.quick`
+  回执 **VERIFIED**（8/8 分片 passed），`make pr.merge PR=647 EXPECTED_HEAD=172300fc`
+  走 REUSE 分支复用该回执。
+- 合并产物核对：`scripts/ci/parallel_scan.py`、`contracts/registry/semantic.yaml`、
+  `docs/frontend_productization/decision-authority-inventory-v1.json` 均在 main 上 present。
+- 合并后回读：本地 `main` 经 `git merge --ff-only origin/main` 前进到 `766a793c`，与
+  `origin/main` 一致且工作区干净。
+- **终局退役**：本 goal/run 翻 `completed`（goal `active -> completed`，run `active -> completed`
+  并重写 `next_exact_step`），`.agent/active-runs.json` 不再绑定
+  `feature/fe-contract-runtime-01-semantic-registry`，main 上再无索引项指向已合并的本专题分支。
+  按 `pr.merge.local_quick_gate` 的设计，`.agent`/`docs` 记账候选默认必须随相邻产品候选同行；
+  本专题的 run 已实质完成且**不存在**相邻候选，故按该门的显式指引
+  （`PR_MERGE_BOOKKEEPING_TERMINAL_RETIRE`）走一次真实的终局退役。
+- 台账守卫：`verify.agent.ledger.unit`（15 tests）与 `verify.branch.governance.consistency`
+  （51 + 22 tests）在本退役改动后全绿；`agent_ledger_consistency_guard` PASS。
+- 本批遗留（记录，不在本退役范围）：`verify.contract.lint` 49 项与
+  `scripts/verify/test_frontend_quality_safety_domain_rollout.py:123` 陈旧 `res.users` 断言
+  均为 origin/main 既存项；`ENV-IDENTITY-CLEANUP`（P2）登记未决；保留的
+  `payment.request#2847` fixture 由 `make local.dev.reset_payment_request_fixture` 清理。
+- 边界：合并不触发产品部署。批次验收=完成；主线集成=完成（本批次 `766a793c`）；
+  版本发布=未主张；产品交付=未主张。
