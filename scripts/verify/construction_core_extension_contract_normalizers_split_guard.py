@@ -31,12 +31,35 @@ def _load(path: Path, name: str):
     return module
 
 
+def _register_odoo_package_paths() -> None:
+    """Give the standalone guard the real addon package chain it imports through.
+
+    The normalizer imports ``odoo.addons.smart_core.core.contract_runtime``, so
+    registering bare ``odoo``/``odoo.addons`` stubs is not enough: without a real
+    ``__path__`` the import machinery answers "'odoo.addons' is not a package"
+    and the guard fails for a packaging reason instead of the split it audits.
+    """
+    smart_core_dir = ROOT / "addons/smart_core"
+    core_dir = smart_core_dir / "core"
+    addons_pkg = sys.modules.setdefault("odoo.addons", types.ModuleType("odoo.addons"))
+    addons_pkg.__path__ = [str(ROOT / "addons")]
+    smart_core_pkg = sys.modules.setdefault(
+        "odoo.addons.smart_core", types.ModuleType("odoo.addons.smart_core")
+    )
+    smart_core_pkg.__path__ = [str(smart_core_dir)]
+    core_pkg = sys.modules.setdefault(
+        "odoo.addons.smart_core.core", types.ModuleType("odoo.addons.smart_core.core")
+    )
+    core_pkg.__path__ = [str(core_dir)]
+
+
 def _load_normalizers():
     helper_module = _load(HELPERS, "construction_core_extension_contract_helpers_for_normalizer_guard")
     sys.modules.setdefault("odoo", types.ModuleType("odoo"))
     sys.modules.setdefault("odoo.addons", types.ModuleType("odoo.addons"))
     sys.modules.setdefault("odoo.addons.smart_construction_core", types.ModuleType("odoo.addons.smart_construction_core"))
     sys.modules["odoo.addons.smart_construction_core.core_extension_contract_helpers"] = helper_module
+    _register_odoo_package_paths()
     return _load(NORMALIZERS, "construction_core_extension_contract_normalizers_under_guard")
 
 

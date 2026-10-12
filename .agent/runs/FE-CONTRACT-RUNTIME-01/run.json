@@ -52,7 +52,20 @@
     "scripts/verify/",
     "contracts/generated/contract_structure_fingerprint.json",
     "docs/engineering_convergence/",
-    "frontend/apps/web/src/pages/ContractFormPage.vue"
+    "frontend/apps/web/src/pages/ContractFormPage.vue",
+    "addons/smart_core/utils/",
+    "addons/smart_core/core/intent_operation_policy.py",
+    "addons/smart_core/tests/",
+    "config/nginx/",
+    "docker-compose.yml",
+    "docs/ops/",
+    "frontend/apps/web/src/",
+    "make/guards.mk",
+    "scripts/verify/collection_capability_rights_projection_test.py",
+    "frontend/apps/web/scripts/collection_action_capability_test.ts",
+    "docs/ops/iterations/fe_contract_runtime_01_semantic_registry.md",
+    "make/ci.mk",
+    "make/dev_test.mk"
   ],
   "environment": {
     "kind": "offline",
@@ -459,6 +472,78 @@
         "frontend/apps/web/src/app/contracts/v2/schema.ts",
         "frontend/apps/web/src/app/contracts/v2/types.ts"
       ]
+    },
+    "collection_action_capability": {
+      "target": "verify.frontend.collection_action_capability.unit",
+      "inputs": [
+        "addons/smart_core/utils/collection_action_capability.py",
+        "addons/smart_core/utils/contract_governance_list_surface.py",
+        "addons/smart_core/utils/contract_governance_user_surface.py",
+        "addons/smart_core/handlers/api_data_import.py",
+        "addons/smart_core/core/intent_operation_policy.py",
+        "frontend/apps/web/src/app/runtime/actionViewCollectionCapabilityRuntime.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewSelectionActionRuntime.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewCollectionActionRuntime.ts",
+        "frontend/apps/web/src/app/contract/contractGap.ts",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/scripts/collection_action_capability_test.ts",
+        "frontend/apps/web/scripts/standard_collection_composition_test.ts",
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "scripts/verify/list_batch_action_closure_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "environment_topology": {
+      "target": "verify.environment.topology.guard",
+      "kind": "offline",
+      "inputs": [
+        "config/nginx/",
+        "docker-compose.yml",
+        "docs/ops/dev_bootstrap.md",
+        "scripts/verify/nginx_proxy_db_authority_guard.py",
+        "scripts/verify/test_nginx_proxy_db_authority_guard.py",
+        "make/guards.mk"
+      ]
+    },
+    "collection_capability_projection": {
+      "target": "verify.contract.collection_capability_projection.unit",
+      "inputs": [
+        "addons/smart_core/utils/collection_action_capability.py",
+        "scripts/verify/collection_capability_rights_projection_test.py",
+        "make/dev_test.mk",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "verification_lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "inputs": [
+        "make/ci.mk",
+        "make/frontend.mk",
+        "make/dev_test.mk",
+        "make/contract.mk",
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/verify/registry.yaml"
+      ],
+      "kind": "offline"
+    },
+    "contract_v2_entry_equivalence": {
+      "target": "verify.contract.entry_equivalence.guard",
+      "inputs": [
+        "scripts/verify/contract_v2_entry_equivalence_guard.py",
+        "scripts/verify/test_contract_v2_entry_equivalence_guard.py",
+        "frontend/apps/web/src/app/contracts/v2/client.ts",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/core/unified_page_contract_v2_permissions.py",
+        "addons/smart_core/utils/collection_action_capability.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [
@@ -467,7 +552,12 @@
     "pre-existing (not introduced by this batch): scripts/verify/test_frontend_quality_safety_domain_rollout.py:123 holds a stale res.users literal; classify with the other pre-existing findings, do not silently rewrite it here.",
     "out-of-scope product finding (recorded, not fixed): wutao 侧栏可见“付款申请”但菜单 559/action 809 返回 403 PERMISSION_DENIED；demo_finance 正常。本轮 diff 无菜单/权限改动。",
     "acceptance write retained: payment.request#2847 (PRQ2601066, draft) created during 01-D save closed-loop. Fact check: the list surface's batch delete IS contract-declared and wired (batch_policy.available_actions includes 'delete'; execution_intents['delete']=api.data.unlink; client executor DECLARED_BATCH_EXECUTORS['api.data.unlink']=unlink; gated by delete_policy.delete_mode + ACL). The record was retained because no list toolbar was exercised against it, not because delete is unwired; cleanup uses the governed entry make local.dev.reset_payment_request_fixture.",
-    "capability gap (recorded, not fixed): the list surface declares no batch import — no batch_policy action, no execution_intents entry, no DECLARED_BATCH_EXECUTORS entry, and no backend handler (only addons/smart_core/handlers/file_upload.py exists). Today's contract-driven list batch capability set = export/archive/activate/delete. The frontend reports a declared-but-unexecutable intent instead of inventing one, so batch import is a genuine contract+executor gap, not a rendering defect."
+    "closed this batch (collection batch import delivered and runtime-confirmed): one declared action list is published at surface_policies.collection_capabilities.actions[] (action/scope/intent/available) and batch_policy is its selection projection, so a collection-scope action is reachable with an empty selection. Backend: utils/collection_action_capability.py (single declaration + projection; availability is 'declared true', never inferred from absence), handlers/api_data_import.py (governed api.data.import over the kernel base_import, group_smart_core_data_operator, dry-run preview, idempotent apply), intent_operation_policy maps import->create. Frontend: one intent->executor table (DECLARED_CAPABILITY_EXECUTORS) and one resolver (resolveDeclaredCapabilities); the client-side reconstruction of the declaration from batch_policy was removed, so a collection policy without the declaration stops the surface with ContractGapError instead of silently degrading every action to selection scope. Registered as ledger declarationBinding #5; guards migrated (list_batch_action_closure_guard binds the declared intent table and its consumption). Runtime readback on local.dev payment.request list/action 809: wutao -> export/archive/activate/delete/import; demo_finance -> export/archive/activate/import (no unlink right, so delete absent); demo_pm -> export; demo_readonly -> 403 (no page permission).",
+    "closed this batch (was: local-dev login repeatedly reported 'wrong username or password'): the root cause was never the password. config/nginx/conf.d/default.conf hard-coded the 'no db hint' fallback to sc_demo, a database that does not exist under the local.dev dbfilter ^sc_dev_demo$, so every /api/ request without ?db=/X-Odoo-DB was routed to the wrong database and returned AUTH_REQUIRED 用户名或密码错误. The proxy owned a database default it should not own. Fixed by moving the file to config/nginx/templates/default.conf.template with a ${SC_PROXY_DEFAULT_DB} placeholder and injecting SC_PROXY_DEFAULT_DB=${DB_NAME} plus NGINX_ENVSUBST_FILTER='^SC_PROXY_DEFAULT_DB$' in the compose nginx service (image envsubst renders it at container start; nginx's own $variables survive). New scripts/verify/nginx_proxy_db_authority_guard.py (locks the mechanism, not a database name) with 6 negative self-test cases, wired into verify.environment.topology.guard; docs/ops/dev_bootstrap.md records the boundary. Verified live: rendered conf shows sc_dev_demo, nginx -t OK, db-hint-free login 200 for wutao/demo_pm/demo_finance/admin, Playwright browser login wutao/scdevpass reaches / with system.init 200 and zero pageerror.",
+    "recorded, not fixed (out of this batch's authority): sc_dev_demo also holds active accounts that the demo module never registered in ir_model_data (demo_full, sc_fx_* x7, svc_project_ro, codex_p4_person_batch2a_auth_20260913), so the governed local.dev demo-credential sync (apply_demo_user_passwords over smart_construction_demo xmlids) does not cover them and they are not on the fixed scdevpass. They are leftovers from earlier P4/prod-like runs on this database. Of 57 active logins, 47 succeed with scdevpass; the 10 failures are exactly this set. Aligning them would widen credential coverage and needs owner authorization; nothing here changed any password.",
+    "corrected this batch (was reported as 'native channel returns permissions: null'): that reading was a probe artifact. The probe used action_id=506, which does not exist in ir_act_window (count(*)=0), so it returned the 'configuration problem' degraded page (head.model=null, permissions=null). Re-probed through the real entry points: for one role the model entry (params.model) and every native list-action entry (params.action_id) return identical head.permissions and identical surface_policies.collection_capabilities for project.project, payment.request and res.partner; a full census over sc_dev_demo (292 tree actions probed as wutao, 53 skipped as 403) shows rights.create is True <=> import declared, 0 violations. Conclusion: the collection-capability rule is a genuine通用 mechanism with no per-model configuration and no native-surface gap; no code fix and no model special case was added. The only code delta is a fail-closed tightening inside the same pure function (a non-boolean `create` no longer promotes a capability, matching how `available` was already read), plus the new offline guard verify.contract.collection_capability_projection.unit (cases=35) which locks the biconditional, the absence-of-right semantics, the declared availability semantics, and the fact that the rule has no model/surface input at all.",
+    "closed this batch (verification surface grew): the new guard targets left 6 zero-reference make targets (targets_zero_reference 766 > frozen 760, 6 unregistered), i.e. the new guards were not executed by any lane. Wired per the repo's existing boundary convention without rewriting the frozen baseline: the three frontend units (record_delete_action, collection_action_capability, semantic_runtime_resolution) into verify.frontend.pr.unit and verify.frontend.release.unit; the two pure-python guards (layout.vocabulary.lint, contract.collection_capability_projection.unit) into verify.contract.architecture.suite; the human generator entry contract.semantic.registry.generate into ci.delivery.freeze.prepare (derived carriers must be fresh before freezing). audit.verification.lane_coverage.check now reports PASS surface within the frozen baseline; verify.guard.registry AUDIT PASS (1419 scripts).",
+    "registered this batch, deliberately NOT actioned (P2, separate authority): ENV-IDENTITY-CLEANUP. sc_dev_demo holds 60 accounts, 57 active; 48 are module-registered and covered by the fixed local.dev credential sync, while 9 are registered by no module at all (demo_full id=52 with 51 groups incl. 业务配置管理员; sc_fx_pm/executive/finance/contract_admin/project_member/material_user/cost_user ids 3400-3406 from 2026-10-08; svc_project_ro id=3407 which despite the name holds a write-capable 项目/用户 group) and one more (codex_p4_person_batch2a_auth_20260913 id=445, module codex_p4_personnel_authorization) sits outside the demo module's password sync and carries 技术/Smart Core Data Operator, the very group api.data.import requires. These 10 are exactly the logins that a non-fixed credential set explains. No password was changed and no account was written; the inventory, the inferred purpose and the proposed handling (keep-as-fixture vs retire, plus the svc_project_ro least-privilege tightening) are recorded in the iteration record for an owner ruling, because aligning credentials would widen credential coverage and needs its own authorization."
   ],
-  "next_exact_step": "记录删除能力已接入：契约已声明记录级 unlink 处置（actionContract.deletePolicy + statusContract.globalStatus.effectiveRecordCapabilities.unlink，含状态门与拒绝原因），本轮补齐前端渲染与执行：新增 app/presentation/recordDeleteAction.ts（契约裁决→控件，拒绝保留契约原因），ContractFormProductHeader 增 record-actions 通道，ContractFormPage 以 dry-run→确认→api.data.unlink→返回列表执行；L1/L2 已验证（verify.frontend.record_delete_action.unit 10 cases、typecheck.strict、canonical_form_presenter、4 项表单守卫 PASS）。下一步：批量导入（契约 batch_policy 增 import + execution_intents.import=api.data.import；新增 handlers/api_data_import.py 以内核 base_import 为受管导入内核；前端 DECLARED_BATCH_EXECUTORS 增执行器），仅在新能力可用后再声明，避免出现声明了却无法执行的交付面。"
+  "next_exact_step": "Owner's dual-entry ruling is closed. Kept both entry adapters (loadActionContractV2 / loadModelContractV2) sharing one Contract Runtime; added verify.contract.entry_equivalence.guard (scripts/verify/contract_v2_entry_equivalence_guard.py + 10 negative self-tests) which locks single fetch / single decode / single dispatcher / fixed subject mapping / entry-neutral permission resolver / entry-neutral capability rule / carrier independence / fail-closed non-boolean rights; wired into verify.contract.architecture.suite. Recorded 10 fresh local receipts (entry_equivalence 10, schema_declaration_sync 11, agent_ledger 15, layout_vocabulary 11, collection_capability_projection 35, verification_lane_coverage 44, environment_topology 7, collection_action_capability 15, frontend_typecheck 1, frontend_lint_src 1) - all reusable; make verify.contract.architecture.suite exit=0. Remaining sequence: commit the batch in owned layers (capability+frontend / guards+wiring / nginx env / schema+seal+entry guard / evidence), run make ci.delivery.freeze.prepare, review generated carriers, then ONE exact-head make ci.local.quick on the clean frozen tree, then make pr.push (Gitee first; GitHub only if reachable). Non-blocking item awaiting an owner ruling: ENV-IDENTITY-CLEANUP (P2, 10 accounts outside the fixed-credential sync in sc_dev_demo)."
 }

@@ -739,11 +739,257 @@ native locator 采用 `/form[1]/sheet[1]/group[g]/field[f]` 原生路径。
   - 列表 `available_actions` 由 `utils/contract_governance_list_surface.py` 依据契约 `batch_policy` + ACL(read/write/unlink) 推导。
   - 结论：删除不是未接线，而是本轮未对 `#2847` 走列表工具栏，故保留该记录，清理走受管入口
     `make local.dev.reset_payment_request_fixture`。
-- **批量导入尚未接入（真实能力缺口）**：
-  - 契约无 import 动作声明，`execution_intents` 无条目，`DECLARED_BATCH_EXECUTORS` 无执行器；
-  - 后端无导入 handler（`handlers/` 下只有 `file_upload.py`）。
-  - 按既有机制，前端对「契约声明但本构建无法执行」的意图是**如实上报未解析**，不会臆造，
-    因此这是契约+执行器的能力缺口，不是渲染缺陷。
+- **批量导入已接入（本轮完成，取代此前「能力缺口」结论）**：
+  - 后端单一能力声明源 `addons/smart_core/utils/collection_action_capability.py`
+    （`SELECTION_SCOPE_INTENTS`、`IMPORT_ACTION`/`IMPORT_INTENT`）。`build_collection_capabilities()`
+    产出 `surface_policies.collection_capabilities.actions[]`（`action/scope/intent/available`），
+    `batch_policy` 改为同一份 actions 的 selection 投影，消灭双来源；
+    `project_scope_actions()` 的可用性判定改为 `row.get("available") is True`（未声明即不可用）。
+  - 受管意图 `api.data.import`：`addons/smart_core/handlers/api_data_import.py` 委托内核 `base_import`，
+    要求 `smart_core.group_smart_core_data_operator`，支持 dry-run 预览与非 dry-run 幂等；
+    `core/intent_operation_policy.py` 将 `import` 归入 `create` 权限面。
+  - 前端单一意图→执行器表 `DECLARED_CAPABILITY_EXECUTORS`（含 `api.data.import -> import_records`）
+    与单入参解析器 `resolveDeclaredCapabilities(surfacePolicies)`；已删除「从 `batch_policy` 反推声明」的
+    客户端归一化——集合策略缺声明时以 `ContractGapError` 停机，不再把动作静默降级到 selection 域。
+  - 登记为 ledger `declarationBinding #5`（`onMissing: stop`）。
 
-当前契约驱动的列表批能力集合：`export / archive / activate / delete`。
-记录为后续迭代新增能力，不在本轮冻结内实现。
+运行时实测（local.dev，`payment.request` list，action 809）：
+
+| 身份 | `collection_capabilities.actions` | `batch_policy.available_actions` |
+|-|-|-|
+| `wutao` | export / archive / activate / delete / **import** | export / archive / activate / delete |
+| `demo_finance` | export / archive / activate / **import** | export / archive / activate |
+| `demo_pm` | export | export |
+| `demo_readonly` | （403，无页面权限） | — |
+
+即 `import` 以 collection 域出现，可见性完全由契约声明 + ACL/组权限推导
+（`demo_finance` 无 unlink 权限，`delete` 不出现）。本轮契约驱动的列表批能力集合：
+`export / archive / activate / delete / import`。
+
+## 环境根因：本地登录反复「认证失败」（本轮修复 + 实测）
+
+现象：本地 `sc-local-dev` 经反代登录报 `AUTH_REQUIRED 用户名或密码错误`，被误判为密码问题。
+
+根因（非密码）：`config/nginx/conf.d/default.conf` 的
+`map $http_x_odoo_db $sc_proxy_db_from_header { '' sc_demo; }` 把「无 db 提示」的请求硬编码兜底到
+`sc_demo`；该库在 local.dev 的 dbfilter `^sc_dev_demo$` 下不存在，于是任何不带 `?db=`/`X-Odoo-DB`
+的 `/api/` 请求都落到错误的库并返回认证失败。代理拥有了它不该拥有的「库默认」。
+
+修复（库默认归 profile）：
+- `config/nginx/conf.d/default.conf` → `config/nginx/templates/default.conf.template`，兜底写为 `${SC_PROXY_DEFAULT_DB}`；
+- `docker-compose.yml` nginx 服务注入 `SC_PROXY_DEFAULT_DB=${DB_NAME}` 与
+  `NGINX_ENVSUBST_FILTER: '^SC_PROXY_DEFAULT_DB$'`（只替换该变量，nginx 自身 `$变量` 原样保留），
+  volume 改挂 `./config/nginx/templates`（镜像自带 envsubst 入口在容器启动时渲染）；
+- 新增 `scripts/verify/nginx_proxy_db_authority_guard.py`（锁机制不锁库名）+ 6 个负例自测，
+  并入 `verify.environment.topology.guard`；
+- `docs/ops/dev_bootstrap.md` 记录该边界，禁止把库名写回模板 literal。
+
+实测：容器内已渲染 `'' sc_dev_demo;`，`nginx -t` OK；无 db 提示 `POST /api/v1/intent{login}`
+对 `wutao/demo_pm/demo_finance/admin` 均 200；Playwright 真实浏览器 `wutao/scdevpass` 登录落到 `/`，
+`system.init` 200、0 pageerror。
+
+固定口令：`scdevpass`，仅在 `scripts/dev/local_dev_demo_credentials_prepare.sh` 声明一处并写入
+0600 `.env.dev`，见 `docs/ops/local_development_environment_v1.md`；`.env.dev`、`make/dev.mk`、
+生命周期测试口径一致。
+
+范围外观察（不修，仅记录）：本库另有未被 demo 模块登记的历史账号
+（`demo_full`、`sc_fx_*` ×7、`svc_project_ro`、`codex_p4_person_batch2a_auth_20260913`），
+不在 `local.dev.demo_users.sync` 覆盖范围内，故不是固定口令；属早期 P4/prod-like 运行遗留。
+在 57 个 active 账号中 47 个按 `scdevpass` 登录成功，10 个失败即上述名单。
+是否清理或纳入固定口令需所有者裁定（涉及凭据覆盖面，属独立授权）。
+
+## 收口期补充：集合能力权限投影事实核对（owner 裁定 1，并入本轮）
+
+### 结论先行
+
+**native 通道没有缺 `permissions.effective.rights`，不需要修代码、更不允许加模型配置。**
+先前"native 通道返回 `permissions: null`"的读数是用错入口造成的探测假象：那次探测用的
+`action_id=506` 在 `ir_act_window` 中根本不存在（`count(*)=0`），返回的是"配置问题"降级页
+（`head.model=null`、`permissions=null`），并不是某个 surface 的投影缺陷。
+
+### 事实一：同一模型、同一角色，两条入口的权限事实逐位相同
+
+受管 `sc-local-dev`（`sc_dev_demo`），`ui.contract` 实测：
+
+| 角色 | 模型 | `head.permissions`（ACL 事实） | `surface_policies.collection_capabilities.actions` |
+|-|-|-|-|
+| `wutao` | project.project（model 入口 + 12 个 native list action 入口） | read/write/create/unlink 全 true | export/archive/activate/delete/**import** |
+| `wutao` | payment.request（model 入口 + action 809） | 同上 | 同上 |
+| `demo_finance` | project.project（model + 12 action） | 仅 read | 仅 export（无 create → 无 import、无 delete） |
+| `demo_pm` | project.project / payment.request | 仅 read | 仅 export |
+| `demo_readonly` | project.project（model + 12 action） | 仅 read | 仅 export |
+| `demo_readonly` | payment.request | 无页面权限（降级页 `head.model=null`） | 空 |
+
+即：**能力差异只来自角色/权限事实，不来自入口**。这既是 owner 提出的"同一模型不同 surface
+不得产生能力差异"的实测证明，也说明 `build_collection_capabilities()` 不需要按模型分支。
+
+### 事实二：全库普查零违例（本轮最强证据）
+
+对 `sc_dev_demo` 中所有带 tree 的 `ir_act_window`，以 `wutao` 逐动作探测 `ui.contract`：
+
+- `probed=292`、`skipped=53`、`violations=0`；
+- 规则：`rights.create is True` ⟺ 声明 `import`（双向），292 个全部满足；
+- 53 个 skip 全部确认为 `403 PERMISSION_DENIED`（`hr.employee`、`ir.model.access`、
+  `sc.workflow.def` 等返回"用户无权以 read 访问模型"），不是投影缺口。
+
+### 事实三：入口两轴不是冗余，第三轴与它们正交
+
+`params{model}` 与 `params{action_id}` 是同一条契约生成链的两个**入口事实**，不是两套实现：
+
+| 观察项 | `action_id=345` | 仅 `model` |
+|-|-|-|
+| `head.action_id` | 345 | null |
+| 视图溯源 | `action:345:project.project:tree:view:2076` | `view:2076:project.project:tree` |
+| `head.view_type` | kanban（action 自带 view_mode 为准） | list（调用方请求） |
+| `head.permissions` / `collection_capabilities` | 完全一致 | 完全一致 |
+
+`loadModelContractV2()` 是真实产品路径（`useRecordRelationships`、`useRecordRelationshipNavigation`、
+`useRecordPageLifecycle` 用于关系下钻与记录页），不是测试专用入口；`loadActionContractV2()` 用于
+菜单/动作进入并携带 action 的 domain/context/target。第三条轴 `contract_surface ∈ {user,native,hud}`
+与入口轴正交：`contract_surface=native` 被交付策略 `410 UI_CONTRACT_NATIVE_BLOCKED` 阻断（应走
+scene 路由），实测确认。因此三者都不多余，且**权限/能力轴在任一路径上必须一致**——已实测一致。
+
+### 本轮的代码增量：只做 fail-closed 收紧，不加配置
+
+同一模块对 `available` 用严格 `is True`，对 `create` 却用宽松 `bool()`——真值字符串/数字
+（如 `"yes"`）会放行一条 ACL 从未授予的能力。按"未声明即不授权"收紧为 `resolved_rights.get("create") is True`，
+影响面仅限"非布尔 rights"（现有生产方 `permissions.effective.rights` 只发布尔），无模型特判、无配置项。
+
+新增离线守卫 `verify.contract.collection_capability_projection.unit`
+（`scripts/verify/collection_capability_rights_projection_test.py`，cases=35）：锁定
+`import` 声明 ⟺ `create` 为真 的双向规则、缺失/非布尔 rights 的不授权语义、`available` 的声明语义、
+`batch_policy` 是同一份声明的 selection 投影（空声明得空投影，不退化为第二套推导），
+以及"该规则不存在 model/surface/action 入参，故按模型特判在结构上不可表达"。
+
+### 验证体系接线（消除新增零引用目标）
+
+本批新增的守卫目标一度让 `verify.verification.lane_coverage` 报"surface grew"
+（`targets_zero_reference 766 > 760`、`6` 个未登记），即新增守卫没有被任何车道真正执行。
+按仓库既有边界约定接线，**未改写冻结基线**：
+
+- 前端 unit（需 node_modules）→ `verify.frontend.pr.unit` / `verify.frontend.release.unit`：
+  `verify.frontend.record_delete_action.unit`、`verify.frontend.collection_action_capability.unit`、
+  `verify.semantic_runtime_resolution`；
+- 纯 python 守卫 → `verify.contract.architecture.suite`：`verify.layout.vocabulary.lint`、
+  `verify.contract.collection_capability_projection.unit`；
+- 人工生成入口 `contract.semantic.registry.generate` → `ci.delivery.freeze.prepare`
+  （冻结前重建派生载体，与"冻结前生成物必须新鲜"同一语义）。
+
+结果：`targets_zero_reference` 回到 760、未登记 0；`make audit.verification.lane_coverage.check`
+`PASS surface within the frozen baseline`，`make verify.guard.registry` AUDIT PASS（1419 scripts）。
+
+## 环境身份卫生：非受管账号清单（登记 `ENV-IDENTITY-CLEANUP`，P2，本轮不处理）
+
+`sc_dev_demo` 中 60 个账号：active 57，其中 48 个由模块通过 `ir_model_data` 登记（受
+`local.dev.demo_users.sync` 的固定口令覆盖），**9 个未被任何模块登记**；另一 1 个
+`codex_p4_person_batch2a_auth_20260913` 由 `codex_p4_personnel_authorization` 模块登记但不在
+demo 模块口令同步范围内。这 10 个正好是 57 中按 `scdevpass` 登录失败的 10 个。
+
+| 账号 | id | 建立时间 | 观察到的权限 | 判断 | 处理建议 |
+|-|-|-|-|-|-|
+| `demo_full` | 52 | 2026-09-07 | 51 组，含「SC 能力 - 业务配置管理员」「会计/账单开具管理员」 | demo 全集账号，权限偏高 | 保留或收紧至高权限组之外 |
+| `sc_fx_pm`/`executive`/`finance`/`contract_admin`/`project_member`/`material_user`/`cost_user` | 3400-3406 | 2026-10-08 | 13–34 组，按角色发放（含「合同管理员」「物资员」「成本员」等） | 某次 P4 验收的角色化夹具账号 | 保留为夹具或整体退役，二选一 |
+| `svc_project_ro` | 3407 | 2026-10-08 | 6 组，含「项目 / 用户」 | 名为只读、实为可写项目组 | **权限收紧候选**（名实不符） |
+| `codex_p4_person_batch2a_auth_20260913` | 445 | 2026-09-13 | 含「技术 / Smart Core Data Operator」 | P4 授权测试遗留，且持有导入/导出算子组（正是 `api.data.import` 所需组） | 退役候选 |
+
+处理边界：**不直接批量改密码**（会扩大凭据覆盖面，需独立授权）；账号是否仍需要由用途决定，
+上表"用途"依据名称/建组/建立时间推断，需 owner 确认后再处置。本批不含任何账号写入。
+
+## Owner 裁定：保持双入口，补不变量守卫（本批次最后一个增量）
+
+### 裁定
+
+`loadActionContractV2()` 与 `loadModelContractV2()` 是**两个入口适配器，共享同一个 Contract Runtime**，
+不合并、不删除 model 入口、不改 scene route。新增 `contract_v2_entry_equivalence_guard`，
+只比较 `head.permissions` 与 `surface_policies.collection_capabilities`，
+**不比较** layout / action binding / navigation / domain（这些本来就允许不同）。
+
+### 本轮新守卫锁定的不变量（结构 + 行为）
+
+结构不变量（静态，任何一处漂移即失败）：
+
+| 不变量 | 断言内容 |
+|-|-|
+| 单一取数 | 前端 `intentRequestRaw<` 全仓恰 1 处 |
+| 单一解码 | `decodeContractV2Snapshot(` 全仓恰 1 处；两个 loader 都必须经 `loadContractV2(` |
+| 单一分发 | `_dispatch_native_form_source` 仅 1 处定义、模块内仅 1 个 `ActionDispatcher`、函数体内仅 1 次 `.dispatch(` |
+| 入口映射固定 | subject 取值恰为 `["action","model"]`；调用点仅 1 处 |
+| 权限解析与入口无关 | `_ui_contract_permission_rights(source, ui)` / `resolve_permission_rights(permission_contract)` 签名不含入口身份；`_forbidden_hits` 扫描 `op/subject/action_id/menu_id/entry/surface/view_id/client_type` |
+| 能力规则与入口无关 | `build_collection_capabilities` 形参恰为 `["selection_actions","rights","fields_map","has_list_view"]` |
+
+行为不变量（`_check_carrier_independence`）：同一份 rights 从 4 种载体
+（`effective.rights` / `effective` / `rights` / 裸 map）解析结果一致；非布尔 `create` 不提升能力；纯函数可复现。
+
+负例自检 `scripts/verify/test_contract_v2_entry_equivalence_guard.py`：10 个负例，先基线绿再注入，
+覆盖第二 decode、loader 私有 fetch、丢失 model 映射、第二 dispatcher、权限解析器加 entry 参数、
+解析器读 `op`/`entry_kind`、能力规则加 `model` 参数、载体依赖解析、非布尔提升。
+
+接线：`make/dev_test.mk` 定义 `verify.contract.entry_equivalence.guard`
+（`py_compile` + 负例自检 + 守卫），并挂入 `verify.contract.architecture.suite` 前置链，
+因此 `ci.local.quick` 会强制执行。
+
+### 为什么保留双入口
+
+| 入口 | 携带的入口事实 |
+|-|-|
+| action | `action_id` / domain / context / target / menu / view_mode |
+| model | 模型身份、关系下钻、无 action 场景 |
+
+合成一个 `loadContract(model|action)` 会丢失入口语义，并迫使前端用 `if(actionEntry)` 补业务分支——
+正是本轮要禁止的"前端成为业务解释补偿层"。正确形态是**入口不同、业务事实同一、表达不同**。
+
+### 产品导航纪律（冻结，不新增实现）
+
+- 产品页面：`scene → action/menu → contract`（必须带 action/menu/context/policy）。
+- 资源下钻：`record → relation → model → contract`（允许）。
+- 禁止：`用户菜单 → model → 页面`（绕过 action/menu/context/policy）。
+
+### 同层修复（本轮一并收口，非新能力）
+
+1. **schema 声明漂移**：`addons/smart_core/core/contract_lifecycle.py` 的 `UNIFIED_PAGE_SCHEMA_SHA256`
+   仍是 `0beb7bba` 改 schema 之前的旧值。由唯一派生入口
+   `python3 scripts/verify/contract_schema_declaration_sync.py` 重算为
+   `cdec8497fe9bbda2c035783026c77b84b77a5499f75b19543137535d5b7d8ece`。
+2. **4 个 canonical example 的 body seal 从 `5a227641` 起就陈旧（既有潜伏缺陷）**：
+   把 seal 派生并入同一条派生路径——`contract_schema_declaration_sync.py` 新增
+   `load_lifecycle_authority()` / `example_integrity_span()` / `derived_example_integrity()` /
+   `example_integrity_drift()` / `render_example_integrity()`；`--check` 同时检测 `exampleIntegrity`，
+   默认模式重绑定 seal（复用 `contract_lifecycle.payload_sha256` + `contract_semantic_payload`，不重实现）。
+   `form_project.json` / `list_project.json` / `nested_form_relation.json` / `tree_project.json`
+   各 2 行变更。`test_contract_schema_declaration_sync.py` 增 3 例（seal 自洽、陈旧 seal 检出并重绑、
+   seal 基于语义载荷而非文件字节），现 11 例。
+   修复后 `make verify.backend.contract_lifecycle.authority` exit=0、`errors: []`。
+3. **`verify.contract_form_split_evidence` 陈旧**：`ContractFormPage.vue` 现 2011 行，
+   经 `make refresh.contract_form_split_evidence` 由生成器刷新
+   `docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md`。
+4. **`construction_core_extension_contract_normalizers_split_guard` ModuleNotFoundError**：
+   `0beb7bba` 引入的 `odoo.addons.smart_core.core.contract_runtime` 包在纯 python 守卫里不可见。
+   已加 `_register_odoo_package_paths()`（设置 `odoo.addons` / `odoo.addons.smart_core` /
+   `odoo.addons.smart_core.core` 的 `__path__`），守卫转 PASS。
+
+### 本轮实际执行与回执（10 个新 receipt，全部 reusable）
+
+| check_id | target | tests | 结果 |
+|-|-|-|-|
+| contract_v2_entry_equivalence | verify.contract.entry_equivalence.guard | 10 | passed |
+| schema_declaration_sync | verify.contract.schema.declaration.sync | 11 | passed |
+| agent_ledger | verify.agent.ledger.unit | 15 | passed |
+| layout_vocabulary | verify.layout.vocabulary.lint | 11 | passed |
+| collection_capability_projection | verify.contract.collection_capability_projection.unit | 35 | passed |
+| verification_lane_coverage | verify.verification.lane_coverage | 44 | passed |
+| environment_topology | verify.environment.topology.guard | 7 | passed |
+| collection_action_capability | verify.frontend.collection_action_capability.unit | 15 | passed |
+| frontend_typecheck | verify.frontend.typecheck.strict | 1 | passed |
+| frontend_lint_src | verify.frontend.lint.src | 1 | passed（0 error / 64 warning） |
+
+同时 `make verify.contract.architecture.suite` 全绿（`exit=0`，
+`[OK] contract & architecture guard suite passed`，其中含 `[OK] Node syntax check passed (384 files)`）。
+
+**索引说明**：run 中其余 23 个 receipt 因本批次改动落在其声明输入目录内而转为 `stale`，
+按仓库规则应"由最早失效层重跑"；本批次的权威本地门禁是提交后**干净冻结头上的一次**
+`make ci.local.quick`，它覆盖这些层。本地 receipt 是开发观察，不是交付门禁，故不再逐个重跑。
+
+### 本批次明确不做
+
+合并 `loadActionContractV2` / `loadModelContractV2`；删除 model 入口；改 scene route；重做 navigation；
+`extractListProfile` 全面拆分；Action Runtime 全量治理；01-E（`span → deliverySpan`）。
