@@ -3270,3 +3270,64 @@ owner 原话：**「G1，G2直接执行，布局契约按照职责界限执行�
 - 责任层：`scripts/dev/pnpm_exec.sh` 属 **P4 交付工具**；未改产品代码、未改必需检查集合、未放宽断言、未改 CI 门槛。
 - 已修复但**远端证明待取**：用 `workflow_dispatch` 在分支上跑 `professional_quality_gate` 证明曾被判红的车道转绿，结论写入 PR #646 文本（不另建台账）。
 - 四态不变：批次级本轮完成 → 主线集成=PR #646 待合并 → **版本发布未做** → **产品交付未完成**（待 owner 本人登录 `wutao` / `sc_demo` / `http://1.95.85.92:18081/`）。
+
+### 34.6 第二层根因：守卫被接进了「不安装前端依赖」的车道（车道覆盖缺陷，不是 pnpm 解析）
+
+`5a89e638`（34.3）推送后重跑 `workflow_dispatch professional_quality_gate`（run `38195237454`，job `114636350267`）**仍然红**，但报错已从「被掩盖」变成真实错误：
+
+```
+ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command "esbuild" not found
+make: *** [make/ci.mk:804: verify.menu_config_tree_editor.behavior] Error 254
+```
+
+该守卫用 `esbuild` 打包 `frontend/apps/web/src/views/menuConfig/useMenuTreeEditor.ts`，因此它同时需要 **① 固定 pnpm 工具链** 与 **② 已安装的前端依赖**。而 `professional_quality_gate` 的 full 车道只安装 Node（供语法扫描），**从不安装前端依赖**。
+
+也就是说：34.2 描述的「共享套件里有需要 pnpm 工具链的守卫」并不只是解析版本问题，**守卫本身被接错了车道**。`9c2af878` 把它从 `ci.local.quick.run` 搬进新建的 `verify.contract.architecture.suite`，而该套件是 `ci.professional.backend.shard-verify` 的成员（`scripts/verify/registry.yaml` 中 `lane: remote-professional-backend` 的 anchor），于是守卫泄漏到一个永远不具备其依赖的车道。这既不是产品缺陷，也不是断言问题：即便 34.3 的解析修复完全正确，该车道也无法执行它。
+
+反事实对照是单解的：
+
+- **不移出** → 后端车道必然持续红（缺依赖与制品，不是缺断言）；
+- **移出并接前端车道** → 正确生命周期 + 零车道分歧 + 可由远端证明。
+
+归位决定（**不改车道分配，只把守卫放回它自己的车道**，`scripts/verify/registry.yaml` 的四个 anchor 即既有分配）：
+
+| 车道 | anchor | 本轮接线 |
+| --- | --- | --- |
+| local-quick | `ci.local.quick.run` | **恢复**（`9c2af878` 之前它本来就在这里；该车道本就调用 `scripts/dev/pnpm_exec.sh`，不是无工具链车道） |
+| remote-frontend-standard | `verify.frontend.pr.unit` | **新增**（`pnpm -C frontend/apps/web test`） |
+| remote-frontend-full | `verify.frontend.release.audit` → `verify.frontend.release.unit` | **新增**（`pnpm test:release`） |
+| remote-professional-backend | `ci.professional.backend.shard-verify` | **移除**（从 `verify.contract.architecture.suite` 前置删除） |
+
+两个前端车道都由 `frontend_release_gate.yml` 的 `Install locked frontend toolchain` step 覆盖（`frontend_mode != skip`，即 standard 与 full 都装固定 pnpm 与前端依赖），所以接线处确有依赖。守卫脚本本身用绝对 `ROOT` 路径，不依赖调用方 cwd。
+
+### 34.7 本轮验证：只跑受影响集，不重跑全量
+
+| 检查（check id） | 命令 | 结果 |
+| --- | --- | --- |
+| `menu_config_tree_editor_behavior` | `make verify.menu_config_tree_editor.behavior` | PASS `cases=11` |
+| `verification_lane_coverage` | `make verify.verification.lane_coverage` | PASS（44 tests；无净额变化，无需改基线） |
+| `frontend_pr_unit` | `make verify.frontend.pr.unit` | PASS（37 个 PASS 步骤；**首次**取得回执，见 34.8） |
+| `frontend_typecheck` | `make verify.frontend.typecheck.strict` | PASS |
+| `ci_local_iteration` | `make verify.baseline.iteration.execution.policy` | PASS（16 tests） |
+| （静态套件本体） | `make verify.contract.architecture.suite` | PASS，且**不再调用 esbuild**——这正是本轮修复的判据 |
+
+受影响集的判定不是"看心情"，而是把每个检查回执里记录的 `make/ci.mk`、`make/frontend.mk`、`scripts/dev/pnpm_exec.sh` 哈希与 HEAD 版本逐项比对：
+
+- 只有 `ci_local_iteration`、`frontend_typecheck`、`menu_config_tree_editor_behavior` 三项绑定的是**本轮改动前**的当前版本 → 本轮**真实新增**失效面就是这三项，三项均已重跑并重录；
+- `verification_lane_coverage` 与 `frontend_pr_unit` 自身声明输入含被改的 make 文件（且后者的接线正是本轮改动）→ 纳入本轮重跑；
+- 台账中其余 17 项 `stale` 与 25 项 `not_run` 绑定的 make 文件哈希**早于本轮**（例如 `ci_workflow_contract` 绑定 `439cbaa4` 轮），属历史累积登记债，本轮既不新增其失效、也不因此重跑，留给改变其归属面的轮次处理。
+
+`make verify.agent.ledger.unit` PASS（15 tests），`make agent.run.resume` 在 HEAD `5a89e638` 上把上述五项判为 `reusable`。
+
+### 34.8 台账声明修复：一个不可解析的输入声明
+
+排查中发现 `frontend_pr_unit` 的回执在 resume 里长期是 `not_run: no local receipt`，原因不是没跑，而是**声明本身无法解析**：它的输入写成 `frontend/apps/web/scripts/**` 与 `scripts/verify/**`，而 `**` 后缀不是证据范围引擎认可的 bounded-directory 声明，`make agent.run.begin` 直接以 `declared dependency is missing` 拒绝，回执永远写不进去。
+
+本轮改为 bounded 目录 `frontend/apps/web/scripts` 与 `scripts/verify`：这是 `.agent/README.md` 明确允许的声明形式（保留新增/删除子项的检测），**保持原作者声明的覆盖意图，不缩小任何被执行依赖**（在"输入漏项是缺陷"的规则下，宁可目录级覆盖，也不做可能漏项的枚举）。
+
+### 34.9 边界与四态（含对 34.5 的更正）
+
+- **更正 34.5**：那里写的"未把守卫移出共享套件"是**错误判断**，已被 34.6 的事实推翻。为了保住车道棘轮的计数而把需要 pnpm/前端依赖的守卫留在不具备依赖的车道，是把工具层缺陷转成永久红灯；正确做法是按既有车道分配**归位**，再让棘轮复核（结果为无净额变化）。
+- 责任层：`make/ci.mk`、`make/frontend.mk` 的接线与 `.agent` 台账声明属 **P4 交付工具**；未改产品代码、契约、必需检查集合或 CI 门槛，未放宽任何断言。
+- 远端证明待取：以 `workflow_dispatch` 取得 `professional_quality_gate` full 车道与 `frontend_release_gate` 两车道的转绿证据，写入 PR #646 文本。
+- 四态不变：批次级本轮完成 → 主线集成=PR #646 待合并 → **版本发布未做** → **产品交付未完成**（待 owner 本人登录 `wutao` / `123456` / `sc_demo` / `http://1.95.85.92:18081/`）。
