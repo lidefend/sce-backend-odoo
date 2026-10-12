@@ -104,3 +104,9 @@ contracts:
   - path: extensions/workflow.yaml
     kind: extension
     version: 1
+  - path: registry/semantic.yaml
+    kind: schema
+    version: 1
+  - path: registry/component.yaml
+    kind: schema
+    version: 1

@@ -1,7 +1,7 @@
 # ======================================================
 # ================== Contract ==========================
 # ======================================================
-.PHONY: contract.export contract.export_all contract.catalog.export contract.evidence.export contract.registry.export verify.contract.catalog verify.scene.contract.shape verify.contract.evidence gate.contract gate.contract.bootstrap gate.contract.bootstrap-pass verify.contract.lint contract.structure.fingerprint verify.contract.structure_lock contract.view_structure.fingerprint contract.view_structure.export contract.view_structure.baseline verify.contract.view_structure verify.contract.view_structure_candidate gate.contract.view_structure contract.view_carrier.export verify.contract.view_carrier gate.contract.view_carrier
+.PHONY: contract.export contract.export_all contract.catalog.export contract.evidence.export contract.registry.export verify.contract.catalog verify.scene.contract.shape verify.contract.evidence gate.contract gate.contract.bootstrap gate.contract.bootstrap-pass verify.contract.lint verify.semantic.registry.lint contract.structure.fingerprint verify.contract.structure_lock contract.view_structure.fingerprint contract.view_structure.export contract.view_structure.baseline verify.contract.view_structure verify.contract.view_structure_candidate gate.contract.view_structure contract.view_carrier.export verify.contract.view_carrier gate.contract.view_carrier
 
 VIEW_STRUCTURE_POLICY ?= scripts/verify/baselines/formal_business_product_menu_policy_v1.json
 VIEW_STRUCTURE_DATABASE_POLICY ?= docs/governance/database_architecture_policy.md
@@ -21,6 +21,12 @@ VIEW_CARRIER_SCHEMA ?= contracts/schemas/product-view-contract-carriers-v1.yaml
 verify.contract.lint:
 	@python3 scripts/verify/contracts_lint.py
 	@$(MAKE) --no-print-directory contract.registry.export
+
+# 契约运行时语义/组件词表：声明权威唯一性 + 前后端键集合双向相等。
+verify.semantic.registry.lint:
+	@python3 -m py_compile scripts/verify/semantic_registry_lint.py scripts/verify/test_semantic_registry_lint.py
+	@python3 scripts/verify/semantic_registry_lint.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_semantic_registry_lint.py
 
 contract.registry.export:
 	@python3 scripts/contract/export_contract_registry.py

@@ -25,6 +25,11 @@
 3. **`generated/contract-registry.json`** 由 `make contract.registry.export` 从登记表
    再生成，作为下游（导航/前端/守卫）可消费的机读版本清单，禁止手改。
 4. **schemas/ 为纯结构映射**：顶层键即 schema 名，不插入版本键，版本只登记在 registry。
+5. **registry/ 为平台词表映射**（`semantic.yaml` 语义词典、`component.yaml` 组件词表）：
+   与 `schemas/` 同为纯映射（不给文档插版本键，版本只登记在 registry），
+   但它是"字段意味着什么 / 由哪个组件渲染"的**唯一声明权威**。结构由
+   `registry/registry.schema.json` 约束，由 `verify.semantic.registry.lint` 校验；
+   组件键不允许再在前后端各持一份私有映射。
 
 ## 域契约覆盖（R6 后为 8 个核心域）
 

@@ -1,0 +1,104 @@
+# 语义词典 —— 契约层唯一的"字段意味着什么"声明权威（FE-CONTRACT-RUNTIME-01）
+#
+# 解决的问题（00 清单 G1）：组件键词表此前由后端私有映射函数
+# `unified_page_contract_v2_assembler._component_key()` 与前端
+# `professionalComponentRegistry.ts` 各持一半，契约层既不枚举也不校验，
+# 后端可以产出前端未登记的键，且未识别 widget 会静默回落。
+#
+# 本文件把这条链路收敛为单一声明：
+#
+#   semantic（本文件） --derivation--> semantic --component--> componentKey
+#
+# `derivation` 是数据而不是代码：Odoo 字段事实（ttype / widget）命中即得
+# semantic，再经 component.yaml 得到组件键。新增业务字段时，只要命中已有
+# 规则、或由上层契约直接声明 `semantic`，就不需要新增任何前后端映射代码。
+#
+# 范围边界（本轮明确不做，避免引入新的"已声明未消费"缺口）：
+# - 不声明 capabilities：当前没有运行时消费方，声明即为悬空能力声明，
+#   与 00 清单 G8 登记的 extensions 占位同类；能力语义随行为运行时（02）落地。
+# - 不声明状态机：状态与转移的归属见 docs/contract-runtime-state-ownership.md。
+registry: semantic
+
+# 推导规则：有序，首个匹配生效；全部未命中时使用 default。
+derivation:
+  default: readable_value
+  rules:
+    - semantic: reference
+      when: {field_types: [many2one_reference, reference]}
+      reason: >-
+        reference 值是 (model, id) 对，客户端解析后展示只读文本；声明类型优先于
+        任何 widget 拼写，契约绑定可读显示而不是控件。
+    - semantic: money
+      when: {field_types: [monetary]}
+    - semantic: money
+      when: {widgets: [monetary]}
+    - semantic: percentage
+      when: {widgets: [percentage, percentpie]}
+    - semantic: duration
+      when: {widgets: [float_time]}
+    - semantic: status
+      when: {widgets: [statusbar, badge]}
+    - semantic: relation
+      when: {field_types: [many2one]}
+    - semantic: relation
+      when: {widget_suffix: many2one}
+    - semantic: relation_collection
+      when: {field_types: [many2many], widgets_exclude: [many2many_tags]}
+    - semantic: detail_collection
+      when: {field_types: [one2many]}
+    - semantic: text
+      when: {widgets: [input]}
+    - semantic: binary
+      when: {widgets: [binary]}
+    - semantic: long_text
+      when: {widgets: [textarea]}
+    - semantic: number
+      when: {widgets: [number]}
+    - semantic: choice
+      when: {widgets: [select]}
+    - semantic: boolean
+      when: {widgets: [checkbox]}
+    - semantic: date
+      when: {widgets: [date]}
+    - semantic: datetime
+      when: {widgets: [datetime]}
+    - semantic: detail_table
+      when: {widgets: [table]}
+    - semantic: hierarchical_collection
+      when: {widgets: [tree]}
+    - semantic: tag_collection
+      when: {widgets: [many2many_tags]}
+    - semantic: action
+      when: {widgets: [button]}
+    - semantic: readable_value
+      when: {widgets: [display]}
+
+# 语义词表。`component` 指向 component.yaml 中登记的组件键。
+semantics:
+  text: {category: basic, component: sc.input.text}
+  long_text: {category: basic, component: sc.input.textarea}
+  number: {category: basic, component: sc.input.number}
+  boolean: {category: basic, component: sc.input.boolean}
+  choice: {category: basic, component: sc.select.remote}
+  binary: {category: basic, component: sc.input.binary}
+  reference: {category: basic, component: sc.display.text}
+  readable_value: {category: basic, component: sc.display.text}
+  date: {category: temporal, component: sc.input.date}
+  datetime: {category: temporal, component: sc.input.datetime}
+  duration: {category: temporal, component: sc.value.duration}
+  money: {category: business, component: sc.value.money}
+  percentage: {category: business, component: sc.value.percentage}
+  status: {category: business, component: sc.display.status}
+  relation: {category: relation, component: sc.relation.many2one}
+  relation_collection: {category: relation, component: sc.relation.many2many}
+  tag_collection: {category: relation, component: sc.select.tags}
+  detail_collection: {category: collection, component: sc.relation.table}
+  detail_table: {category: collection, component: sc.table.data}
+  hierarchical_collection: {category: collection, component: sc.tree.data}
+  action: {category: behavioral, component: sc.button.action}
+  credential_entry: {category: auth, component: sc.auth.credential_entry}
+  secret_confirmation: {category: auth, component: sc.auth.secret_confirmation}
+  challenge_status: {category: auth, component: sc.auth.challenge_status}
+  one_time_secret: {category: auth, component: sc.auth.one_time_secret}
+  support_action: {category: auth, component: sc.auth.support_action}
+  payment_settlement_detail_collection: {category: industry, component: sc.payment.settlement_detail_collection}
