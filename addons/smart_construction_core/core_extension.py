@@ -555,7 +555,7 @@ def smart_core_finalize_unified_page_contract_v2(env, contract, context):
     inject_financial_workspace_runtime(
         env, out, source, head, context, model, view_type, smart_core_form_business_actions,
     )
-    _contract_normalizers.normalize_payment_settlement_detail_component(
+    _contract_normalizers.normalize_declared_field_presentation(
         out,
         model=model,
         view_type=view_type,

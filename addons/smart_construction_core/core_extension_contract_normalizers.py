@@ -1,9 +1,30 @@
 # -*- coding: utf-8 -*-
+"""Product-layer contract normalizers for the construction industry module.
+
+This layer owns two facts and nothing else:
+
+* *what a field means* for the fields it declares (``FIELD_SEMANTIC_DECLARATIONS``);
+* *the delivery vocabulary* its control hands to the frontend
+  (``SEMANTIC_PRESENTATION_VOCABULARY``).
+
+It never names a component.  ``contracts/registry/semantic.yaml`` plus
+``contracts/registry/component.yaml`` are the only place a semantic turns into a
+component key, and the contract runtime resolves it, so a new business field
+needs one declaration line here and no new mapping code on either side.  A
+declared semantic the registry does not carry is refused and logged instead of
+being rendered as something else (FE-CONTRACT-RUNTIME-01).
+
+Both tables are keyed by *meaning*: this module cannot name a renderer even by
+accident, which is what its previous model+field branch did with a literal
+component key.
+"""
 from __future__ import annotations
 
+import logging
 from copy import deepcopy
 from typing import Any
 
+from odoo.addons.smart_core.core.contract_runtime import semantic_resolver as _semantic_resolver
 from odoo.addons.smart_construction_core import core_extension_contract_helpers as _contract_helpers
 
 _sc_text = _contract_helpers.sc_text
@@ -15,23 +36,167 @@ _sc_replace_contract_content = _contract_helpers.sc_replace_contract_content
 _sc_form_layout_governance = _contract_helpers.sc_form_layout_governance
 _sc_apply_form_layout_governance_to_group = _contract_helpers.sc_apply_form_layout_governance_to_group
 
-PAYMENT_SETTLEMENT_DETAIL_COMPONENT_KEY = "sc.payment.settlement_detail_collection"
+_logger = logging.getLogger(__name__)
+
+# ``model -> field code -> declared semantic``.  The product layer declares the
+# meaning of a field the registry's derivation rules cannot read from its type
+# alone; the registry names the component that renders that meaning.
+FIELD_SEMANTIC_DECLARATIONS: dict[str, dict[str, str]] = {
+    "payment.request": {
+        # "从结算单引入明细" and an amount bound to the detail sum are product
+        # decisions about this collection, not something ``one2many`` implies.
+        "outflow_line_ids": "payment_settlement_detail_collection",
+    },
+}
+
+# ``semantic -> delivery vocabulary`` handed to that semantic's control.  Every
+# word, payload key and server action identity the control uses is declared
+# here; the frontend fails closed when one is missing instead of guessing.
+SEMANTIC_PRESENTATION_VOCABULARY: dict[str, dict[str, Any]] = {
+    "payment_settlement_detail_collection":     {
+                    "fieldType": "one2many",
+                    "introduceLabel": "从结算单引入",
+                    "optionalDetails": {
+                        "entryLabel": "按明细填写",
+                        "populatedLabel": "付款申请明细",
+                        "directAmountMessage": "可直接填写申请金额；添加有效明细后，申请金额按明细合计生成。",
+                        "linkedAmountMessage": "申请金额由有效明细的“本次申请”合计生成。",
+                        "lastRowRemovalActionLabel": "取消按明细填写",
+                        "lastRowRemovalMessage": (
+                            "删除最后一条明细后将切回直接填写申请金额；"
+                            "最后一次明细合计会保留在申请金额中，请确认后继续。"
+                        ),
+                    },
+                    "amountBinding": {
+                        "mode": "sum_when_nonempty",
+                        "sourceField": "current_pay_amount",
+                        "targetField": "amount",
+                        "activeField": "active",
+                        "stateField": "amount_uses_details",
+                        "rounding": "currency",
+                        "emptyBehavior": "preserve_last_total",
+                    },
+                    "actionRefs": {
+                        "search": "payment.request.settlement.search",
+                        "preview": "payment.request.settlement.preview",
+                        "introduce": "payment.request.add.settlement.lines",
+                    },
+                    "introduceDialog": {
+                        "purpose": "payment-settlement-introduce",
+                        "title": "从结算单引入明细",
+                        "description": "选择结算单，勾选结算行并设置申请金额，确认后引入为付款申请明细",
+                        "searchPlaceholder": "搜索结算单号 / 名称",
+                        "searchActionLabel": "搜索",
+                        "searchLoadingLabel": "正在搜索结算单",
+                        "searchEmptyLabel": "未找到结算单，请输入关键词搜索",
+                        "resultContractLabel": "合同",
+                        "resultAmountLabel": "金额",
+                        "resultLineCountLabel": "明细",
+                        "resultLineCountSuffix": "行",
+                        "switchSourceLabel": "换一个结算单",
+                        "selectAllLabel": "全选未完全申请的行",
+                        "summarySelectedPrefix": "选中",
+                        "summaryLineCountSuffix": "行",
+                        "summarySettlementAmountLabel": "结算金额",
+                        "summaryApplicableAmountLabel": "可申请",
+                        "columnLabels": {
+                            "name": "名称",
+                            "contract": "合同",
+                            "settlementAmount": "结算金额",
+                            "applied": "已申请",
+                            "remaining": "可申请",
+                            "state": "状态",
+                        },
+                        "stateAppliedLabel": "已申请完",
+                        "stateApplicableLabel": "可申请",
+                        "allAppliedLabel": "该结算单所有明细均已申请完毕",
+                        "historyTitle": "历史申请记录",
+                        "historyCountSuffix": "笔",
+                        "historyExpandLabel": "展开",
+                        "historyCollapseLabel": "收起",
+                        "ratioModeLabel": "按比例",
+                        "amountModeLabel": "按总金额",
+                        "ratioPlaceholder": "申请比例 %",
+                        "totalPlaceholder": "总申请金额",
+                        "ratioHint": "每行申请 = 可申请 * 比例",
+                        "amountHint": "按各结算行可申请占比分配",
+                        "applyTotalLabel": "本次申请合计",
+                        "cancelLabel": "取消",
+                        "confirmLabel": "确认引入",
+                        "recordRequiredMessage": "请先保存付款申请后再引入明细",
+                        "payloadFields": {
+                            "record": "payment_request_id",
+                            "source": "settlement_id",
+                            "sourceLines": "settlement_line_ids",
+                            "applyMode": "apply_mode",
+                            "ratio": "ratio",
+                            "totalAmount": "total_amount",
+                            "searchKeyword": "keyword",
+                        },
+                    },
+                },
+}
 
 
-def normalize_payment_settlement_detail_component(
+def _declared_semantic(declarations: dict[str, str], field_code: str, widget_id: str) -> str:
+    semantic = _sc_text(declarations.get(field_code))
+    if semantic:
+        return semantic
+    if widget_id:
+        for code, declared in declarations.items():
+            if widget_id.startswith(f"field.{code}"):
+                return _sc_text(declared)
+    return ""
+
+
+def _apply_declared_semantic(node: dict[str, Any], semantic: str) -> str:
+    """Declare the meaning on the field fact and let the registry name its component.
+
+    Returns the component key the node now renders through (``""`` when the
+    declaration was refused), so the caller publishes the identity the page
+    actually uses.
+    """
+    component_key = _semantic_resolver.component_key_for_semantic(semantic)
+    if not component_key:
+        _logger.error(
+            "contract_semantic_undeclared semantic=%s declared_by=%s; the field keeps the component "
+            "its facts resolve to. Fix the declaration in contracts/registry/semantic.yaml.",
+            semantic,
+            _sc_text(node.get("fieldCode") or node.get("name") or node.get("field")) or "<unnamed field>",
+        )
+        return ""
+    descriptor = node.get("fieldDescriptor") if isinstance(node.get("fieldDescriptor"), dict) else {}
+    descriptor["semantic"] = semantic
+    node["fieldDescriptor"] = descriptor
+    node["componentKey"] = component_key
+    vocabulary = SEMANTIC_PRESENTATION_VOCABULARY.get(semantic)
+    if vocabulary:
+        config = node.get("componentConfig") if isinstance(node.get("componentConfig"), dict) else {}
+        config.update(deepcopy(vocabulary))
+        node["componentConfig"] = config
+    return component_key
+
+
+def normalize_declared_field_presentation(
     contract: dict[str, Any],
     *,
     model: str,
     view_type: str,
 ) -> None:
-    if model != "payment.request" or view_type != "form":
+    """Apply the product layer's declared field semantics to one contract.
+
+    Generic by construction: the model only selects a declaration table and the
+    component identity is resolved through the registry, so this function holds
+    no model branch and no component key.
+    """
+    declarations = FIELD_SEMANTIC_DECLARATIONS.get(_sc_text(model))
+    if not declarations or _sc_text(view_type) != "form":
         return
     layout = contract.get("layoutContract") if isinstance(contract.get("layoutContract"), dict) else {}
     tree = layout.get("containerTree") if isinstance(layout.get("containerTree"), list) else []
-    changed = False
+    resolved: set[str] = set()
 
     def visit(value: Any) -> None:
-        nonlocal changed
         if isinstance(value, list):
             for item in value:
                 visit(item)
@@ -39,102 +204,19 @@ def normalize_payment_settlement_detail_component(
         if not isinstance(value, dict):
             return
         field_code = _sc_text(value.get("fieldCode") or value.get("name") or value.get("field"))
-        widget_id = _sc_text(value.get("widgetId"))
-        if field_code == "outflow_line_ids" or widget_id.startswith("field.outflow_line_ids"):
-            value["componentKey"] = PAYMENT_SETTLEMENT_DETAIL_COMPONENT_KEY
-            config = value.get("componentConfig") if isinstance(value.get("componentConfig"), dict) else {}
-            config.update({
-                "fieldType": "one2many",
-                "introduceLabel": "从结算单引入",
-                "optionalDetails": {
-                    "entryLabel": "按明细填写",
-                    "populatedLabel": "付款申请明细",
-                    "directAmountMessage": "可直接填写申请金额；添加有效明细后，申请金额按明细合计生成。",
-                    "linkedAmountMessage": "申请金额由有效明细的“本次申请”合计生成。",
-                    "lastRowRemovalActionLabel": "取消按明细填写",
-                    "lastRowRemovalMessage": (
-                        "删除最后一条明细后将切回直接填写申请金额；"
-                        "最后一次明细合计会保留在申请金额中，请确认后继续。"
-                    ),
-                },
-                "amountBinding": {
-                    "mode": "sum_when_nonempty",
-                    "sourceField": "current_pay_amount",
-                    "targetField": "amount",
-                    "activeField": "active",
-                    "stateField": "amount_uses_details",
-                    "rounding": "currency",
-                    "emptyBehavior": "preserve_last_total",
-                },
-                "actionRefs": {
-                    "search": "payment.request.settlement.search",
-                    "preview": "payment.request.settlement.preview",
-                    "introduce": "payment.request.add.settlement.lines",
-                },
-                "introduceDialog": {
-                    "purpose": "payment-settlement-introduce",
-                    "title": "从结算单引入明细",
-                    "description": "选择结算单，勾选结算行并设置申请金额，确认后引入为付款申请明细",
-                    "searchPlaceholder": "搜索结算单号 / 名称",
-                    "searchActionLabel": "搜索",
-                    "searchLoadingLabel": "正在搜索结算单",
-                    "searchEmptyLabel": "未找到结算单，请输入关键词搜索",
-                    "resultContractLabel": "合同",
-                    "resultAmountLabel": "金额",
-                    "resultLineCountLabel": "明细",
-                    "resultLineCountSuffix": "行",
-                    "switchSourceLabel": "换一个结算单",
-                    "selectAllLabel": "全选未完全申请的行",
-                    "summarySelectedPrefix": "选中",
-                    "summaryLineCountSuffix": "行",
-                    "summarySettlementAmountLabel": "结算金额",
-                    "summaryApplicableAmountLabel": "可申请",
-                    "columnLabels": {
-                        "name": "名称",
-                        "contract": "合同",
-                        "settlementAmount": "结算金额",
-                        "applied": "已申请",
-                        "remaining": "可申请",
-                        "state": "状态",
-                    },
-                    "stateAppliedLabel": "已申请完",
-                    "stateApplicableLabel": "可申请",
-                    "allAppliedLabel": "该结算单所有明细均已申请完毕",
-                    "historyTitle": "历史申请记录",
-                    "historyCountSuffix": "笔",
-                    "historyExpandLabel": "展开",
-                    "historyCollapseLabel": "收起",
-                    "ratioModeLabel": "按比例",
-                    "amountModeLabel": "按总金额",
-                    "ratioPlaceholder": "申请比例 %",
-                    "totalPlaceholder": "总申请金额",
-                    "ratioHint": "每行申请 = 可申请 * 比例",
-                    "amountHint": "按各结算行可申请占比分配",
-                    "applyTotalLabel": "本次申请合计",
-                    "cancelLabel": "取消",
-                    "confirmLabel": "确认引入",
-                    "recordRequiredMessage": "请先保存付款申请后再引入明细",
-                    "payloadFields": {
-                        "record": "payment_request_id",
-                        "source": "settlement_id",
-                        "sourceLines": "settlement_line_ids",
-                        "applyMode": "apply_mode",
-                        "ratio": "ratio",
-                        "totalAmount": "total_amount",
-                        "searchKeyword": "keyword",
-                    },
-                },
-            })
-            value["componentConfig"] = config
-            changed = True
+        semantic = _declared_semantic(declarations, field_code, _sc_text(value.get("widgetId")))
+        if semantic:
+            component_key = _apply_declared_semantic(value, semantic)
+            if component_key:
+                resolved.add(component_key)
         for key in ("children", "tabs", "pages", "nodes", "items", "widgetList"):
             visit(value.get(key))
 
     visit(tree)
-    if not changed:
+    if not resolved:
         return
     registry = layout.get("componentRegistry") if isinstance(layout.get("componentRegistry"), dict) else {}
-    registry[PAYMENT_SETTLEMENT_DETAIL_COMPONENT_KEY] = {"version": "1.0"}
+    registry.update(_semantic_resolver.component_registry(resolved))
     layout["componentRegistry"] = registry
     contract["layoutContract"] = layout
 
@@ -185,7 +267,10 @@ def general_contract_tax_contract(contract: dict[str, Any], source_contract: dic
             "label": "税率",
             "fieldInfo": descriptor,
             "widget": "many2one",
-            "componentKey": "sc.input.many2one",
+            # The registry names the component for this field's facts.  The
+            # previous literal was a key no carrier declared, so the frontend
+            # fell back silently.
+            "componentKey": _semantic_resolver.component_key("many2one", {"ttype": "many2one"}),
             "componentConfig": {"readonly": False, "required": False, "fieldType": "many2one"},
             "widgetId": "field.tax_id",
             "field_info": descriptor,

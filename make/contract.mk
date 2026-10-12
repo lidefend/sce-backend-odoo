@@ -24,9 +24,10 @@ verify.contract.lint:
 
 # 契约运行时语义/组件词表：声明权威唯一性 + 前后端键集合双向相等。
 verify.semantic.registry.lint:
-	@python3 -m py_compile scripts/verify/semantic_registry_lint.py scripts/verify/test_semantic_registry_lint.py scripts/contract/generate_semantic_registry.py addons/smart_core/core/contract_runtime/semantic_resolver.py addons/smart_core/tests/test_contract_runtime_semantic_resolver.py
+	@python3 -m py_compile scripts/verify/semantic_registry_lint.py scripts/verify/test_semantic_registry_lint.py scripts/verify/test_construction_semantic_declarations.py scripts/contract/generate_semantic_registry.py addons/smart_core/core/contract_runtime/semantic_resolver.py addons/smart_core/tests/test_contract_runtime_semantic_resolver.py
 	@python3 scripts/verify/semantic_registry_lint.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_semantic_registry_lint.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_construction_semantic_declarations.py
 	@python3 scripts/contract/generate_semantic_registry.py --check
 	@python3 addons/smart_core/tests/test_contract_runtime_semantic_resolver.py
 	@python3 addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py

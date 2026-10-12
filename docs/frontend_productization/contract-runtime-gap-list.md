@@ -128,8 +128,11 @@ PAYMENT_REQUEST_TRANSITIONS = {
   `sc.auth.one_time_secret`、`sc.auth.support_action`：
   全仓检索只命中前端注册表、其单测与 `scripts/verify/frontend_auth_surface_guard.py`，
   **无后端生产者**（`sc.auth.*` 在后端出现的是模型名 `sc.auth.credential.policy` 等，不是组件键）。
-- `sc.payment.settlement_detail_collection`：由 P1 行业模块生产，
-  `addons/smart_construction_core/core_extension_contract_normalizers.py::PAYMENT_SETTLEMENT_DETAIL_COMPONENT_KEY`。
+- `sc.payment.settlement_detail_collection`：**已闭合（FE-CONTRACT-RUNTIME-01-B）**。P1 行业模块
+  （`core_extension_contract_normalizers.py::FIELD_SEMANTIC_DECLARATIONS`）只声明该字段"意味着什么"，
+  组件键由 `contracts/registry/semantic.yaml` → `addons/smart_core/core/contract_runtime/semantic_resolver.py`
+  解析；原 `PAYMENT_SETTLEMENT_DETAIL_COMPONENT_KEY` 字面量已删除，后端方向的字面量检查并入
+  `verify.semantic.registry.lint`（`backend_component_key_literals`）。
 
 ### G7 契约文档未登记与 lint 现状（P1）
 

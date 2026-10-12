@@ -60,6 +60,16 @@ FRONTEND_REGISTRY_REL = Path(
 
 ENUM_REGISTRY_REL = Path("docs/architecture/unified_page_contract_v2/enum_registry.json")
 
+# Where a backend module could still name a renderer instead of declaring what a
+# field means.  ``addons/*/tests/`` is excluded: a test may deliberately inject a
+# drifted key to prove the guard detects it.
+PRODUCTION_ADDONS_REL = Path("addons")
+COMPONENT_KEY_LITERAL_RES = (
+    re.compile(r'"componentKey"\s*:\s*"(sc\.[a-z0-9_]+(?:\.[a-z0-9_]+)+)"'),
+    re.compile(r'\bcomponentKey\s*=\s*"(sc\.[a-z0-9_]+(?:\.[a-z0-9_]+)+)"'),
+    re.compile(r'\b[A-Z][A-Z0-9_]*COMPONENT_KEY[A-Z0-9_]*\s*=\s*"(sc\.[a-z0-9_]+(?:\.[a-z0-9_]+)+)"'),
+)
+
 SEMANTIC_KEY_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 GENERATED_ROW_KEY_RE = re.compile(r"componentKey:\s*'([^']+)'")
 COMPONENT_KEY_RE = re.compile(r"^sc\.[a-z0-9_]+(\.[a-z0-9_]+)+$")
@@ -151,6 +161,34 @@ def declared_widget_spellings(root: Path) -> list[str]:
     if not isinstance(values, list):
         return []
     return [str(value) for value in values]
+
+
+def backend_component_key_literals(root: Path) -> list[tuple[str, int, str]]:
+    """Component keys a production backend module names literally.
+
+    The frontend table and the contract carriers are already compared against the
+    declaration above.  This check closes the other direction: a backend module
+    (assembler, page handler or product-layer normalizer) that writes a component
+    key of its own is holding a second, driftable vocabulary -- the defect that
+    produced an undeclared key the frontend rendered through its fallback.
+    Declaring the field's *semantic* is the supported path; the registry names
+    the renderer.
+    """
+    found: list[tuple[str, int, str]] = []
+    base = root / PRODUCTION_ADDONS_REL
+    if not base.is_dir():
+        return found
+    for path in sorted(base.rglob("*.py")):
+        rel = path.relative_to(root)
+        if "tests" in rel.parts or "__pycache__" in rel.parts:
+            continue
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            if line.lstrip().startswith("#"):
+                continue
+            for pattern in COMPONENT_KEY_LITERAL_RES:
+                for match in pattern.finditer(line):
+                    found.append((rel.as_posix(), number, match.group(1)))
+    return found
 
 
 def validate_schema(schema_path: Path, documents: dict[str, dict], errors: list[str]) -> None:
@@ -263,6 +301,18 @@ def run(root: Path = ROOT) -> tuple[list[str], dict]:
         for key in sorted(set(backend_keys) - set(generated_keys)):
             errors.append(f"component.yaml: component '{key}' has no frontend registration")
 
+    # The backend direction of the same defect: a module that names a component
+    # key literally is holding half the vocabulary in code, so a key the
+    # declaration dropped keeps being produced (and the frontend renders it
+    # through the fallback instead of failing).
+    backend_literals = backend_component_key_literals(root)
+    for source, line, key in backend_literals:
+        if key not in components:
+            errors.append(
+                f"{source}:{line}: names component '{key}' which component.yaml does not declare; "
+                "declare the field's semantic and let the registry resolve the component"
+            )
+
     # A hand-written registration list in the registry module would re-create the
     # second frontend vocabulary the generated table exists to remove.
     for key in sorted(set(FRONTEND_REGISTRATION_RE.findall(frontend_registry_code(root)))):
@@ -325,6 +375,7 @@ def run(root: Path = ROOT) -> tuple[list[str], dict]:
         "semantics_declared_only": sorted(set(semantics) - declared_rule_semantics),
         "frontend_component_keys": len(generated_keys),
         "runtime_carrier": carrier.CARRIER_REL.as_posix(),
+        "backend_component_key_literals": len(backend_literals),
     }
     return errors, summary
 

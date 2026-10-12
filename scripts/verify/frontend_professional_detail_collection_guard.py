@@ -27,24 +27,47 @@ def _flatten_leaf_paths(value, prefix: str = "") -> set[str]:
     return paths
 
 
+# The product layer declares the vocabulary as a module-level table keyed by the
+# semantic it belongs to (FE-CONTRACT-RUNTIME-01); the entries that own the
+# introduce dialog are the ones carrying both the entry label and the dialog
+# terms, so this reads the declaration wherever the table sits.
+DIALOG_VOCABULARY_TABLE = "SEMANTIC_PRESENTATION_VOCABULARY"
+
+
+def _assignment_targets(node) -> set[str]:
+    if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+        return {node.target.id}
+    if isinstance(node, ast.Assign):
+        return {target.id for target in node.targets if isinstance(target, ast.Name)}
+    return set()
+
+
 def _declared_dialog_paths(normalizer_text: str) -> set[str]:
     """Flatten the contract declaration that owns the introduce vocabulary."""
     tree = ast.parse(normalizer_text)
     declared: set[str] = set()
     for node in ast.walk(tree):
-        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+        if DIALOG_VOCABULARY_TABLE not in _assignment_targets(node):
             continue
-        if node.func.attr != "update" or not node.args or not isinstance(node.args[0], ast.Dict):
+        if not isinstance(node.value, ast.Dict):
             continue
-        payload = node.args[0]
-        for key_node, value in zip(payload.keys, payload.values):
-            if not isinstance(key_node, ast.Constant) or not isinstance(key_node.value, str):
+        for entry in node.value.values:
+            if not isinstance(entry, ast.Dict):
                 continue
-            key = key_node.value
-            if key in ("introduceLabel", "actionRefs"):
-                declared |= _flatten_leaf_paths(value, f"{key}.")
-            elif key == DIALOG_CONFIG_KEY:
-                declared |= _flatten_leaf_paths(value, f"{DIALOG_CONFIG_KEY}.")
+            keys = {
+                key.value for key in entry.keys
+                if isinstance(key, ast.Constant) and isinstance(key.value, str)
+            }
+            if not {"introduceLabel", DIALOG_CONFIG_KEY} <= keys:
+                continue
+            for key_node, value in zip(entry.keys, entry.values):
+                if not isinstance(key_node, ast.Constant) or not isinstance(key_node.value, str):
+                    continue
+                key = key_node.value
+                if key in ("introduceLabel", "actionRefs"):
+                    declared |= _flatten_leaf_paths(value, f"{key}.")
+                elif key == DIALOG_CONFIG_KEY:
+                    declared |= _flatten_leaf_paths(value, f"{DIALOG_CONFIG_KEY}.")
     return declared
 
 

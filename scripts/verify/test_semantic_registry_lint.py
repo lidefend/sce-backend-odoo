@@ -60,6 +60,16 @@ class TempRegistryTree:
         self.generated_domain = self.root / lint.carrier.DOMAIN_SEMANTICS_REL
         self.domain_contract = self.root / "contracts" / "domain" / "payment-request.yaml"
         self.enum_registry = self.root / lint.ENUM_REGISTRY_REL
+        # The backend direction of the vocabulary check: a production module (not
+        # a test module) that names a component key literally.  The baseline
+        # names a declared key, so the fixture is clean before a mutation.
+        self.backend = self.root / lint.PRODUCTION_ADDONS_REL / "fixture_module" / "fixture_normalizer.py"
+        self.backend.parent.mkdir(parents=True, exist_ok=True)
+        self.backend.write_text(
+            "def build():\n"
+            '    return {"componentKey": "sc.table.data"}\n',
+            encoding="utf-8",
+        )
 
     def run(self) -> tuple[list[str], dict]:
         return lint.run(self.root)
@@ -124,6 +134,22 @@ class NegativeCaseTest(unittest.TestCase):
             "  date: {category: temporal, component: sc.input.absent}",
         )
         self.assert_detected("unregistered component 'sc.input.absent'")
+
+    def test_backend_component_key_literal_check_is_live(self) -> None:
+        _, summary = self.tree.run()
+        self.assertGreater(
+            summary["backend_component_key_literals"],
+            0,
+            "the fixture must exercise the backend literal scan, otherwise the negative case proves nothing",
+        )
+
+    def test_undeclared_backend_component_key_literal_is_detected(self) -> None:
+        self.tree.edit(
+            self.tree.backend,
+            '"componentKey": "sc.table.data"',
+            '"componentKey": "sc.input.absent"',
+        )
+        self.assert_detected("names component 'sc.input.absent'")
 
     def test_unregistered_renderer_is_detected(self) -> None:
         self.tree.edit(

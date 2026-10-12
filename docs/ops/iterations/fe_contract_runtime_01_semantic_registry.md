@@ -470,3 +470,72 @@ dbfilter 精确、nginx 18091 / odoo 8080），`ENV=dev` 源码挂载优先
 
 登记后 `agent_ledger` 因 run 账本字节变化被判失效并已重跑刷新。最终 run 索引 27/27 可复用，
 未变更层的原回执继续复用、不重跑。
+
+## 01-B（payment 语义化）交付：产品特判退场 + 后端字面量守卫
+
+owner 裁定：**用 `payment.request` 证明 Semantic Registry + Delivery Projection + Runtime Renderer 的第一条完整链路**，
+不再做架构设计。本批次按 01-B「Payment Contract Migration」执行：payment 字段语义化、presentation contract 对齐、
+移除 payment 特殊 component 映射。01-E（`span → deliverySpan`）按裁定延后为独立迁移批次。
+
+### 根因（三处，都是"渲染与交互之外的判断"离开了契约）
+
+1. **产品层持有组件键。** `core_extension_contract_normalizers.py::normalize_payment_settlement_detail_component`
+   以 `model == "payment.request"` + `field_code == "outflow_line_ids"` 分支写入字面量
+   `sc.payment.settlement_detail_collection`。字段语义（"这是一个可从结算单引入、金额与明细合计绑定的集合"）
+   因此没有进入声明层，新增同类字段只能再写一段映射代码——违背"新增字段只声明 semantic"的验收标准。
+2. **非法键静默回落。** 同文件 `general_contract_tax_contract` 给 `tax_rate` 生成的字段节点写
+   `"componentKey": "sc.input.many2one"`。该键从未被 `contracts/registry/component.yaml` 声明，
+   前端只能回落到默认渲染，缺陷不可见。
+3. **后端私有版本字面量。** `unified_page_contract_v2_assembler.py::_component_registry` 与
+   `handlers/ui_contract_v2.py` 各自持有 `{"version": "1.0"}`，即组件身份事实的第二份副本。
+
+### 交付
+
+| 文件 | 作用 |
+| --- | --- |
+| `addons/smart_construction_core/core_extension_contract_normalizers.py` | 新增 `FIELD_SEMANTIC_DECLARATIONS`（模型→字段→语义）与 `SEMANTIC_PRESENTATION_VOCABULARY`（语义→交付词表，原 `componentConfig` 逐字节搬迁）；新增通用函数 `normalize_declared_field_presentation`（无模型分支、无组件键）；删除 `normalize_payment_settlement_detail_component` 与 `PAYMENT_SETTLEMENT_DETAIL_COMPONENT_KEY`；tax 节点改用 `semantic_resolver.component_key("many2one", {"ttype": "many2one"})`。模块头部不再 import 任何组件键。 |
+| `addons/smart_core/core/contract_runtime/semantic_resolver.py` | 新增公共入口 `component_registry()` + `COMPONENT_CONTRACT_VERSION`：全运行时唯一的组件身份/版本构造器，**fail-closed**——未登记键报 `contract_component_undeclared` 且不发布。 |
+| `addons/smart_core/core/unified_page_contract_v2_assembler.py`、`addons/smart_core/handlers/ui_contract_v2.py` | 私有 `"1.0"` 字面量退场，统一委托 `component_registry()`。 |
+| `scripts/verify/semantic_registry_lint.py` | 新增后端方向检查 `backend_component_key_literals`：扫描 `addons/**/*.py` 中的组件键字面量，未声明即报错（测试模块除外）。 |
+| `scripts/verify/test_construction_semantic_declarations.py` | 新增 11 项：声明语义均在 registry、组件来自 registry、registry 身份发布、词汇合并、未声明字段/其他模型/非表单不动、未声明语义的负例（**先确认未注入基线正常**）、前端 required-paths 全部被词汇满足。 |
+| `scripts/verify/frontend_professional_detail_collection_guard.py` | 改为读 `SEMANTIC_PRESENTATION_VOCABULARY` 表抽取 dialog 词条。 |
+
+### 行为与兼容
+
+- 解析结果不变：`payment.request.outflow_line_ids` 仍渲染 `sc.payment.settlement_detail_collection`，
+  只是来源从"产品层字面量"改为"声明语义 → registry 解析"。
+- `sc.input.many2one` 从产物中消失，替换为 registry 对 `many2one` 事实的真实解析结果。
+- **装配缓存指纹重钉**：装配输入（handler/assembler/projection/client/resolver + 两个生成载体）变化，
+  `ASSEMBLED_CONTRACT_CACHE_VERSION` 升为 `ui-contract-v2-2026-10-12-product-semantic-declarations`，
+  `ASSEMBLED_CACHE_INPUTS_SHA256` 重算（守卫按失败信息给出的方向重钉，未放宽断言）。
+- 文档同步：`docs/frontend_productization/contract-runtime-gap-list.md` G6 中失效符号引用改为闭合结论。
+
+### 验证（本批次实际执行；run 索引 28/28 可复用）
+
+`make ci.local.iteration` 判定 8 个前端 L2 目标 stale，全部经 `make agent.run.begin/record` 重跑并登记；
+另新增 1 项登记、2 项检查输入依赖修正（此前 `scripts/verify/test_construction_semantic_declarations.py`、
+P1 归一化器、dialog 模型未在任何检查输入内，属证据缺口）：
+
+| 检查 | 目标 | 用例 |
+| -|-|-|
+| semantic_registry_lint | verify.semantic.registry.lint | 63 |
+| native_view_workflow_action_coverage（新增登记） | verify.native_view.workflow_action_coverage | 62 |
+| form_structure_authority_unification | verify.form_structure_authority_unification.unit | 215 |
+| assembler_contract_surface | verify.business_config.formal_list.unit | 201 |
+| assembler_cache_pin | verify.unified_page_contract.v2.assembler | 1 |
+| frontend_component_registry | verify.frontend.professional_component_registry.unit | 147+137 |
+| frontend_detail_collection_alignment | verify.frontend.professional_detail_collection.unit | 127 |
+| frontend_business_value_alignment | verify.frontend.professional_business_value.unit | 42 |
+| frontend_relation_field_alignment | verify.frontend.professional_relation_field.unit | 77 |
+| contract_catalog | verify.contract.catalog | 16 |
+| agent_ledger | verify.agent.ledger.unit | 15 |
+
+语义 resolver 单测由 17 项扩到 21 项（新增 `ComponentRegistryTest`：单一版本事实、未登记键 fail-closed、
+非序列声明不发布、解析器可产出的键必可发布）。
+
+### 范围边界（本批次明确不做）
+
+- 不动 `span → deliverySpan`（owner 裁定：01-E 独立迁移，限定 `contracts/`、runtime 投影、前端契约类型，
+  不动 ORM `scene_orchestration.span`）。
+- 不动前端组件实现与渲染分发（仍是 6 个已登记渲染器）。
+- 不处理历史失败项：`verify.contract.lint` 49 项、陈旧 `res.users` 断言、容器内 L3/L4 用例。
