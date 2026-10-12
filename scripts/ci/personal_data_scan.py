@@ -16,6 +16,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+import parallel_scan
 import trusted_scan_scope
 
 
@@ -191,28 +192,85 @@ def history_objects(base: str | None = None) -> list[tuple[str, str, int]]:
     return sorted(set(objects))
 
 
-def read_blob(blob_id: str) -> bytes:
-    return subprocess.run(
-        ["git", "cat-file", "blob", blob_id],
-        cwd=ROOT,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        check=True,
-    ).stdout
+_BLOB_READER: parallel_scan.BatchBlobReader | None = None
+_BLOB_READER_ROOT: str | None = None
+
+
+def _blob_reader() -> parallel_scan.BatchBlobReader:
+    """One ``git cat-file --batch`` stream per process, opened on first use.
+
+    Kept lazy instead of injected through ``map_ordered``'s initializer so the
+    serial path (which ``map_ordered`` runs in-process) and the parallel path
+    share one reader lifecycle: exactly one batch process per worker process.
+    ``ROOT`` is read at call time so a scan can be pointed at a fixture repo.
+    """
+    global _BLOB_READER, _BLOB_READER_ROOT
+    root_key = str(ROOT)
+    if _BLOB_READER is None or _BLOB_READER_ROOT != root_key:
+        if _BLOB_READER is not None:
+            _BLOB_READER.close()
+        _BLOB_READER = parallel_scan.BatchBlobReader(ROOT)
+        _BLOB_READER.__enter__()
+        _BLOB_READER_ROOT = root_key
+    return _BLOB_READER
+
+
+def _close_blob_reader() -> None:
+    global _BLOB_READER, _BLOB_READER_ROOT
+    reader, _BLOB_READER = _BLOB_READER, None
+    _BLOB_READER_ROOT = None
+    if reader is not None:
+        reader.close()
+
+
+def scan_blob_group(items: list[tuple[str, list[str]]]) -> list[list[Finding]]:
+    """Module-level worker: scan one ordered group of blobs through one reader.
+
+    It must stay module-level and pickleable because ``map_ordered`` ships it to
+    worker processes. A missing object raises out of ``read`` for the whole scan
+    instead of reading as empty, preserving the historical fail-closed contract.
+    """
+    reader = _blob_reader()
+    results: list[list[Finding]] = []
+    for blob_id, paths in items:
+        text = decode_text(reader.read(blob_id))
+        blob_findings: list[Finding] = []
+        if text is not None:
+            for path in paths:
+                blob_findings.extend(scan_text(text, path, blob_id))
+        results.append(blob_findings)
+    return results
+
+
+def _blob_scan_items(entries: list[tuple[str, str, int]]) -> list[tuple[str, list[str]]]:
+    """Group scannable occurrences by blob, preserving first-seen blob order.
+
+    The size/path filter and the ``sorted(set(paths))`` expansion keep the
+    historical semantics. ``order`` records a blob's first appearance explicitly
+    so the final findings never depend on dictionary iteration.
+    """
+    by_blob: dict[str, list[str]] = {}
+    order: list[str] = []
+    for blob_id, path, size in entries:
+        if size <= MAX_TEXT_BLOB_BYTES and is_text_path(path):
+            if blob_id not in by_blob:
+                order.append(blob_id)
+            by_blob.setdefault(blob_id, []).append(path)
+    return [(blob_id, sorted(set(by_blob[blob_id]))) for blob_id in order]
 
 
 def history_findings(base: str | None = None) -> list[Finding]:
-    by_blob: dict[str, list[str]] = {}
-    for blob_id, path, size in (history_objects(base) if base else history_objects()):
-        if size <= MAX_TEXT_BLOB_BYTES and is_text_path(path):
-            by_blob.setdefault(blob_id, []).append(path)
+    entries = history_objects(base) if base else history_objects()
+    items = _blob_scan_items(entries)
+    try:
+        groups = parallel_scan.map_ordered(
+            items, scan_blob_group, parallel_scan.resolve_workers(len(items))
+        )
+    finally:
+        _close_blob_reader()
     findings: list[Finding] = []
-    for blob_id, paths in by_blob.items():
-        text = decode_text(read_blob(blob_id))
-        if text is None:
-            continue
-        for path in sorted(set(paths)):
-            findings.extend(scan_text(text, path, blob_id))
+    for group in groups:
+        findings.extend(group)
     return findings
 
 

@@ -1185,9 +1185,16 @@ architecture.split_plan_queue:
 github.remote_execution_plan:
 	@python3 scripts/ci/generate_github_remote_execution_plan.py
 
-.PHONY: security.online_capture.unit security.personal_data.unit verify.repository.clean_history.unit
+.PHONY: security.parallel_scan.unit security.online_capture.unit security.personal_data.unit verify.repository.clean_history.unit
 
-security.online_capture.unit:
+# The three governed scans now share one batch-read and parallel-map mechanism.
+# Its unit entry is a prerequisite of every scan unit entry so a change to the
+# shared mechanism cannot pass by being exercised through only one scan kind.
+security.parallel_scan.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ci/parallel_scan.py scripts/ci/test_parallel_scan.py
+	@python3 scripts/ci/test_parallel_scan.py
+
+security.online_capture.unit: security.parallel_scan.unit
 	@python3 scripts/ci/test_trusted_scan_scope.py
 	@python3 scripts/ci/test_secret_scan.py
 
@@ -1196,7 +1203,7 @@ security.secrets.scan: security.online_capture.unit
 
 security.secret_scan: security.secrets.scan
 
-security.personal_data.unit:
+security.personal_data.unit: security.parallel_scan.unit
 	@python3 -m py_compile scripts/ci/personal_data_scan.py scripts/ci/test_personal_data_scan.py
 	@python3 scripts/ci/test_personal_data_scan.py
 
@@ -1240,7 +1247,7 @@ verify.repository.clean_history: verify.repository.clean_history.unit guard.prod
 security.trusted_scan.group: guard.prod.forbid security.trusted_scan_group.unit
 	@python3 scripts/ci/trusted_scan_group.py $(if $(strip $(SC_TRUSTED_SCAN_JOBS)),--jobs "$(SC_TRUSTED_SCAN_JOBS)",)
 
-security.trusted_scan_group.unit: guard.prod.forbid
+security.trusted_scan_group.unit: guard.prod.forbid security.parallel_scan.unit
 	@python3 -m py_compile scripts/ci/trusted_scan_group.py scripts/ci/test_trusted_scan_group.py
 	@python3 scripts/ci/test_trusted_scan_group.py
 
@@ -1249,7 +1256,7 @@ security.trusted_scan_group.unit: guard.prod.forbid
 repository.clean_history.scan: guard.prod.forbid
 	@python3 scripts/verify/repository_clean_history_guard.py --auto-trusted-base
 
-verify.repository.clean_history.unit:
+verify.repository.clean_history.unit: security.parallel_scan.unit
 	@python3 -m py_compile scripts/verify/repository_clean_history_guard.py scripts/verify/test_repository_clean_history_guard.py
 	@python3 scripts/verify/test_repository_clean_history_guard.py
 
