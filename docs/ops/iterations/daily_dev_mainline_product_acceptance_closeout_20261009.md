@@ -2999,3 +2999,98 @@ role_evidence.matched_groups_by_role = {
 - 新增受管检查：`daily_detail_relation_roundtrip_browser`（`verify.daily_dev.relation_roundtrip.browser`，18 tests，`reusable`）、`daily_list_surface_form_profiles_browser`（`verify.daily_dev.list_surface.readonly.browser`，24 tests，`reusable`）；两者均声明权威身份回读，避免被判 `stale`。复用统计 29 → 30。
 - **四态（不夸大）**：批次/迭代级验收=本轮通过，但整体分支目标**未标记完成**；主线集成=已完成（`a0afb331`，本轮无主线改动）；**版本发布未做**；**产品交付未完成**（待 owner 本人登录验收）。
 - **唯一剩余人工步骤**：owner 登录 `wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`，复核项目台账表单编辑态（1440/390、明暗）与关系交互；随后再处置创建/编辑与工作台的最小证据差额。
+
+---
+
+## 30. 第 30 轮（2026-10-12）：列表「选择框定位超时」修复 + 详情契约绑定根因定性（P4 工具修复 + P0 结论，无产品代码）
+
+### 30.1 范围与身份
+
+- 服务身份不变：`source_revision=a0afb331e1a56d636c316c39e22b63453626cbbd`（实测等于 `origin/main`）、`database=sc_demo`、入口 `http://1.95.85.92:18081/`。
+- 本轮只做两件事：**（1）修**列表落地断言的声明载体绑定（P4 验证工具）；**（2）定性**同车道随后出现的详情绑定失败（结论指向 P0）。**未改任何产品代码，未放宽任何验收断言。**
+
+### 30.2 落地断言（原「列表选择框定位超时」）：已修复并实测通过
+
+原失败：`daily declared landing contract was not captured`。修法（`scripts/verify/frontend_list_surface_structure_browser.mjs`）：
+
+1. 新增 `dailyLandingCarrier(row, defaultRoute)`：接受**两种已声明载体**——wire `ui.contract.v2`（`scene_key` 匹配且带 `pageInfo`），或**声明预载轨道** `system.init`（请求 `with` 数组确含该场景 + `workspace_home_ref.loaded===true` + `ref.scene_key===sceneKey` + `home.scene.key===sceneKey` + `source_authority.runtime_carrier` 非空 + `projection_only===true`），并返回实际载体标识。
+2. wire 捕获清单加入 `system.init`（否则该载体根本不在证据里）。
+3. 落地断言改为对「任一已声明载体」计数，并把 `carriers` 写入观测记录；缺声明、错场景、`loaded=false`、无投影标记仍判失败。
+
+证据：`make verify.frontend.list_surface_search_contract.unit` → **22 tests OK**（本轮新增 2 正例 + 17 负例，负例先证基线正常再证注入被检出）；受管 scope=all 实跑报告中 `daily_observations[surface=declared-default-landing].carriers=[{intent:system.init,params.with:[workspace_home]}]`，1440/390 各记录一次；`router-workspace-home` 两视口 `officialCards=3`；`console/page/failed/denied = 0/0/0/0`。
+
+### 30.3 详情走查失败：决定性只读重放实验
+
+同车道继续推进到详情走查时失败：
+
+```
+observed detail contract is not the approved contract: observed_request_conflict {"conflicting_params":["op"]}
+    at scripts/verify/frontend_list_surface_structure_browser.mjs:1270
+```
+
+现场捕获的契约序列（报告 `runtime.contracts`）显示：列表行点击打开记录后，前端**先**发 `op=action_open`（`action_id=780, menu_id=550, record_id=36178, render_profile=edit, contract_surface=user, source_mode=governance_pipeline, context={company_id:21}`，seal `635f6770…`），探针首个匹配到的就是它；而批准回执请求是 `op=model`（seal `5a415e98…`）。
+
+为区分「探针绑定错」与「产品真缺陷」，对**受管日常后端**做只读重放（`ui.contract.v2`，`fixture_role_finance`@`sc_demo`，无写操作；原始结果 `.runtime/final-acceptance/list-surface-detail-binding-root-cause-a0afb331.json`）。同一记录 36178：
+
+| 用例 | 请求形态 | 投影 context 的 lang | 契约 seal |
+| --- | --- | --- | --- |
+| A 批准形态 | `op=model` + context`{lang:zh_CN,tz}` | `zh_CN` | `5a415e98197dce6c…`（=批准回执） |
+| B 前端现场 | `op=action_open` + context`{company_id:21}` | **`en_US`** | `635f6770ebb9791d…`（=现场捕获） |
+| C 只改 context | `op=model` + context`{company_id:21}` | **`en_US`** | `031b1cd713f12196` |
+| D 只补 lang | `op=action_open` + context`{lang:zh_CN,tz}` | `zh_CN` | `8c4310dda3c9fbff` |
+| E 完全不带 context | `op=model` | **`en_US`** | `e08aa7d8163dee0c` |
+| F 空 envelope context | `op=model` + context`{}` | **`en_US`** | `e08aa7d8163dee0c` |
+
+重放忠实度自证：A 精确复现批准 seal、B 精确复现现场捕获 seal。
+
+### 30.4 结论：两段**独立**缺口（探针该失败，不是探针陈旧）
+
+- **G1（P0 契约投影本地化默认值）**：交付契约的本地化投影取决于请求方是否自带 `lang`；不带就落到 `en_US`，而认证用户的 `lang` 是 `zh_CN`。**`op` 不是原因**——C 证明 `op=model` 缺 `lang` 同样 `en_US`。可见影响面限于内嵌 `ir.attachment` 子视图与关系选择弹窗列标签（`en_US` vs `zh_CN`），外加 2 处 `fieldInfo.ttype` 缺失；顶层表单标签两侧一致。
+  - 加重因素：运行时**自己声明的**请求上下文 `record_context.request_context={company_id:21}` 不含 `lang/tz`，前端是「忠实转发声明内容」，因此结构上无法复现批准契约。
+  - 责任层：`smart_core` 意图/投影上下文——由认证主体默认 `lang/tz`，或把 `lang/tz` 写进交付的 `record_context.request_context`。
+- **G2（批准实例的请求形态与前端声明不一致）**：批准实例声明 `op=model` 且无 `contract_surface`/`source_mode`/`render_profile`，而前端的**动作态记录页**按 `useRecordPageLifecycle.loadContract()` 的声明行为先发 `op=action_open` 并带这些协商参数，`observedContractBinding` 对冲突 `op` 的拒绝**正确**。
+  - 责任层：批准实例需对齐「前端声明的契约协商参数」；不得以放宽断言代替。
+
+**未做的事与原因**：本轮不改产品代码。G1 影响每一次契约读取（宽爆炸半径），必须走 P0 改动 + 模块升级 + 受管刷新 + 复验；G2 需新增/调整批准实例。两者都不是收口级修补。`form-profiles`/`workbench` 变体仍 PASS，因为它们不跑该绑定检查。
+
+### 30.5 四态（不夸大）
+
+批次/迭代级验收：本轮**部分**（落地断言修复通过；详情绑定按 G1/G2 保留为 FAIL，未放宽）；主线集成=已完成（`a0afb331`，本轮无主线改动）；**版本发布未做**；**产品交付未完成**（待 owner 本人登录验收）。唯一剩余人工步骤仍为 owner 登录 `wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/` 复核。
+## 31. 第 31 轮（2026-10-12）：报告路径按 scope 分离 + 列表车道回归实跑（P4 工具 + 台账边界，无产品代码）
+
+### 31.1 本轮触发：一个仍然为真的结论失去了落盘证据
+
+第 30 轮的列表车道在多个**互斥**的观测 scope 下运行，但所有 scope 都写同一个固定默认报告路径 `.runtime/final-acceptance/list-surface-structure.json`。因此随后运行 `form-profiles` scope 时，覆盖掉了第 30 轮「落地载体」结论所引用的 scope=all 报告。这与第 30 轮登记的「探针陈旧」属**同一缺陷族**：一条 artifact 路径被互斥 scope 共用，会让一个仍然为真的结论看起来失去依据。工具层面反而制造了新的证据疑点。
+
+### 31.2 修复（复用既有输入，未加框架）
+
+使用探针**已有**的 `LIST_SURFACE_REPORT` 输入把报告按 scope 分离。未新增框架、未新增选择器、未改动任何断言。
+
+### 31.3 落地载体车道：新增有界 check，事实与失败不共用一个 id
+
+- 新增 `daily_list_surface_landing_carrier_browser`（`verify.daily_dev.list_surface.readonly.browser`，`LIST_SURFACE_DAILY_OBSERVATION_SCOPE=workbench-only`，1440+390）→ **passed，4 项观测**：
+  - `declared-default-landing` 在两个视口均由**声明的预载轨道**交付：`{intent: system.init, params.with:[workspace_home]}`
+  - `router-workspace-home` 在两个视口渲染 3 个 official Card
+  - 报告 `.runtime/final-acceptance/list-surface-landing-carrier-a0afb331.json`
+- 该 scope 按设计**不进**记录走查，因此 G1/G2 详情绑定从它不可达，且**未被掩盖**：仍原样记为 `daily_list_surface_landing_browser`（scope=all）**failed**。两条事实各有独立 id，未合并 scope 标签。
+
+### 31.4 表单档案车道：因声明输入变更而重跑（不是"安心重跑"）
+
+`scripts/verify/frontend_list_surface_structure_browser.mjs` 是本轮真正被修改的**共享**探针文件，且是 `daily_list_surface_form_profiles_browser` 的**声明输入**——该回执因此被正确地判为 stale，而非被静默复用。在同一 served 版本上以明/暗两套主题重跑：各 **12/12** 检查通过（`declared_create_entry`、`create_contract`、`create_renderer`、`declared_edit_entry`、`edit_contract`、`edit_renderer`），`declared-theme` 分别解析为 light/dark，`driverErrorCount=0`、console/page error=0、`denied_requests=0`。报告 `.runtime/final-acceptance/list-surface-form-profiles-a0afb331/{light,dark}.json`，覆盖面与旧回执一致（24 项）。
+
+这次重跑同时证明：本轮对共享探针文件的改动是 **scope 局部**的——落地断言仅在 `all`/`workbench-only` 分支执行，`system.init` 捕获项只被落地载体判定消费，兄弟车道的匹配谓词均按 `intent` 过滤，因此未伤及它们。
+
+### 31.5 台账
+
+| 指标 | 本轮前 | 本轮后 |
+| --- | --- | --- |
+| reusable | 30 | **32** |
+| stale | 20 | **19** |
+| not_run | 27 | 27 |
+| failed | 1 | 1 |
+
+唯一 `failed` 未变，仍是 G1/G2 详情走查绑定。未改产品代码、未做模块升级、未改批准实例、未放宽任何断言。
+
+### 31.6 四态（不夸大）
+
+批次/迭代级：本轮 P4 工具 + 台账边界收口完成；主线集成=已完成（`a0afb331`，本轮无主线改动）；**版本发布未做**；**产品交付未完成**（待 owner 本人登录统一验证）。

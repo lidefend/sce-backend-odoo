@@ -156,6 +156,36 @@ assert(!dailyLandingMatches('https://other.test/s/projects.list',{route:'/s/proj
 assert.equal(dailyDeclaredLanding({role_surface:{landing_path:'/s/unpublished'},default_route:{route:'/'}}).route,'/');
 assert.equal(dailyDeclaredLanding({default_route:{route:'/a/99'}}).route,'/');
 assert.equal(dailyDeclaredLanding({role_surface:{landing_path:'/workbench'}}).route,'/');
+// Declared landing carrier: a preloaded landing scene (the SPA sends
+// with:['workspace_home']) arrives inside system.init, so the landing check must
+// bind to whichever declared carrier delivered it -- still proving the payload
+// was actually built and marked, not merely that an envelope was ok.
+const landingRoute = {scene_key:'workspace.home'};
+const preloaded = {intent:'system.init',params:{with:['workspace_home']},response:{ok:true,data:{
+  workspace_home_ref:{intent:'ui.contract',scene_key:'workspace.home',loaded:true},
+  workspace_home:{scene:{key:'workspace.home'},source_authority:{runtime_carrier:'system_init_workspace_home',projection_only:true}}}}};
+assert.equal(dailyLandingCarrier(preloaded,landingRoute),'system_init_workspace_home');
+const wireLanding = {intent:'ui.contract.v2',params:{scene_key:'workspace.home'},response:{ok:true,data:{pageInfo:{model:'res.partner',viewType:'list'}}}};
+assert.equal(dailyLandingCarrier(wireLanding,landingRoute),'wire_ui_contract_v2');
+const preloadData = data => ({...preloaded,response:{ok:true,data}});
+const preloadHome = home => preloadData({...preloaded.response.data,workspace_home:home});
+// Negative first: every degraded variant must be detected, not waved through.
+assert.equal(dailyLandingCarrier({...preloaded,params:{with:[]}},landingRoute),'');
+assert.equal(dailyLandingCarrier({...preloaded,params:{with:['other.scene']}},landingRoute),'');
+assert.equal(dailyLandingCarrier({...preloaded,response:{ok:false,data:preloaded.response.data}},landingRoute),'');
+assert.equal(dailyLandingCarrier(preloadData({...preloaded.response.data,workspace_home_ref:{...preloaded.response.data.workspace_home_ref,loaded:false}}),landingRoute),'');
+assert.equal(dailyLandingCarrier(preloadData({...preloaded.response.data,workspace_home_ref:{...preloaded.response.data.workspace_home_ref,scene_key:'other.home'}}),landingRoute),'');
+assert.equal(dailyLandingCarrier(preloadData({...preloaded.response.data,workspace_home:undefined}),landingRoute),'');
+assert.equal(dailyLandingCarrier(preloadHome({scene:{key:'other.home'},source_authority:{runtime_carrier:'x',projection_only:true}}),landingRoute),'');
+assert.equal(dailyLandingCarrier(preloadHome({scene:{key:'workspace.home'},source_authority:{runtime_carrier:'   ',projection_only:true}}),landingRoute),'');
+assert.equal(dailyLandingCarrier(preloadHome({scene:{key:'workspace.home'},source_authority:{runtime_carrier:'x'}}),landingRoute),'');
+assert.equal(dailyLandingCarrier(preloadHome({scene:{key:'workspace.home'}}),landingRoute),'');
+assert.equal(dailyLandingCarrier(preloadHome({scene:{key:'workspace.home'},source_authority:{runtime_carrier:'x',projection_only:false}}),landingRoute),'');
+assert.equal(dailyLandingCarrier(preloaded,{}),'');
+assert.equal(dailyLandingCarrier({intent:'ui.contract',params:{scene_key:'workspace.home'},response:{ok:true,data:{pageInfo:{}}}},landingRoute),'');
+assert.equal(dailyLandingCarrier({...wireLanding,params:{scene_key:'other.home'}},landingRoute),'');
+assert.equal(dailyLandingCarrier({...wireLanding,response:{ok:true,data:{}}},landingRoute),'');
+assert.equal([preloaded,wireLanding].filter(row => dailyLandingCarrier(row,landingRoute)).length,2);
 const list = {pageInfo:{model:'payment.request'},actionContract:{actionRuleList:[{sourceWidgetId:'page.row',target:{view_type:'form'}}]},statusContract:{globalStatus:{modelRights:{write:true}}}};
 const sourceEntry = {actionId:8,menuId:9};
 assert.equal(dailyRecordEntry(list,{id:4},sourceEntry).path,'/f/payment.request/4');

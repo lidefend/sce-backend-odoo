@@ -758,6 +758,49 @@ function dailyLandingMatches(currentUrl, defaultRoute, baseUrl) {
     && [...expected.searchParams].every(([key, value]) => current.searchParams.get(key) === value);
 }
 
+// The landing scene contract reaches the browser through one of two declared
+// carriers, and the check must bind to whichever one actually delivered it:
+//   1. a wire `ui.contract.v2` for the scene key, or
+//   2. the declared preload rail, where the SPA asks for the scene in the
+//      system.init request (`with:['workspace_home']`) and system.init answers
+//      with `workspace_home_ref.loaded=true` plus the embedded `workspace_home`
+//      payload carrying the declared `source_authority` projection marker.
+// The preloaded scene has no separate wire contract by design, so demanding one
+// contradicts the declaration. The real check is kept: the request must declare
+// the preload, the ref must be loaded for the declared scene key, and the built
+// payload must carry the declared carrier/projection marker. A missing,
+// mismatched or unmarked payload is still a failure.
+function dailyLandingPreloadDeclared(tokens, sceneKey) {
+  const normalize = value => String(value || '').trim().replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '').toLowerCase();
+  const expected = normalize(sceneKey);
+  return Array.isArray(tokens) && tokens.some(token => {
+    const text = String(token || '').trim();
+    if (!text || !expected) return false;
+    return text === sceneKey || normalize(text) === expected;
+  });
+}
+
+function dailyLandingCarrier(row, defaultRoute) {
+  const sceneKey = defaultRoute?.scene_key;
+  if (!sceneKey) return '';
+  const envelope = row?.response?.result?.ok !== undefined ? row.response.result : row.response;
+  if (envelope?.ok !== true) return '';
+  if (row.intent === 'ui.contract.v2') {
+    return row.params?.scene_key === sceneKey && envelope.data?.pageInfo ? 'wire_ui_contract_v2' : '';
+  }
+  if (row.intent !== 'system.init') return '';
+  if (!dailyLandingPreloadDeclared(row.params?.with, sceneKey)) return '';
+  const ref = envelope.data?.workspace_home_ref;
+  if (ref?.loaded !== true || ref?.scene_key !== sceneKey) return '';
+  const home = envelope.data?.workspace_home;
+  if (!home || typeof home !== 'object' || home.scene?.key !== sceneKey) return '';
+  const authority = home.source_authority;
+  if (!authority || typeof authority !== 'object') return '';
+  if (typeof authority.runtime_carrier !== 'string' || !authority.runtime_carrier.trim()) return '';
+  if (authority.projection_only !== true) return '';
+  return authority.runtime_carrier.trim();
+}
+
 // The workspace home consumes the my.work.summary contract; it must not carry its
 // own product fetch scale. PR #621 removed the frontend-held 12/4/12 envelope
 // defaults (ledger CD-20261008-API-ENVELOPE-DEFAULT-LIMIT), and the
@@ -969,7 +1012,10 @@ try {
         try { envelope = await response.json(); } catch {}
       }
       if (response.status() >= 400) runtime.failed_responses.push(safeFailedResponse(response.status(), response.url(), request, envelope, [PASSWORD, BOOTSTRAP_SECRET]));
-      if (DAILY && isIntent && ['ui.contract', 'ui.contract.v2', 'load_contract', 'action.view', 'my.work.summary'].includes(request?.intent)) runtime.contracts.push({ intent: request.intent, params: request.params, response: envelope });
+      // system.init is captured because the declared preload rail delivers the landing scene
+      // inside it (workspace_home_ref + embedded workspace_home), not as a separate
+      // wire ui.contract.v2; the landing check consumes that declared carrier.
+      if (DAILY && isIntent && ['ui.contract', 'ui.contract.v2', 'load_contract', 'action.view', 'my.work.summary', 'system.init'].includes(request?.intent)) runtime.contracts.push({ intent: request.intent, params: request.params, response: envelope });
     })();
     responseTasks.add(task);
     task.finally(() => responseTasks.delete(task)).catch(() => {});
@@ -1028,20 +1074,19 @@ try {
     // name, so a surface that legitimately claims ownership of its card root
     // still proves the card rendered.
     await page.locator(`${CARD_PRIMITIVE_SELECTOR}:visible`).first().waitFor({ state: 'visible', timeout: 30_000 });
-    let landingContracts = [];
+    let landingCarriers = [];
     for (let attempt = 0; attempt < 60; attempt += 1) {
-      landingContracts = runtime.contracts.filter(row => row.intent === 'ui.contract.v2' && row.response?.ok === true
-        && row.params?.scene_key === defaultRoute.scene_key && row.response?.data?.pageInfo);
-      if (landingContracts.length) break;
+      landingCarriers = runtime.contracts.filter(row => dailyLandingCarrier(row, defaultRoute));
+      if (landingCarriers.length) break;
       await page.waitForTimeout(50);
     }
-    if (!landingContracts.length) throw new Error('daily declared landing contract was not captured');
+    if (!landingCarriers.length) throw new Error('daily declared landing contract was not captured');
     for (const viewport of VIEWPORTS) {
       await page.setViewportSize(viewport);
       const screenshot = path.join(OUTPUT, `daily-landing-${viewport.key}.png`);
       await page.screenshot({ path: screenshot, fullPage: true });
       dailyObservations.push({ surface: 'declared-default-landing', url: landing, defaultRoute,
-        contractResponses: landingContracts.length, viewport: viewport.key, screenshot });
+        contractResponses: landingCarriers.length, carriers: [...new Set(landingCarriers)], viewport: viewport.key, screenshot });
     }
     // Router declares '/' as HomeView(workspace.home); it is independent of
     // the account's authenticated default_route and the menu's data overview.
