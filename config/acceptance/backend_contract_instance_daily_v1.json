@@ -1,6 +1,6 @@
 {
   "schema": "acceptance.backend_contract_instance.v1",
-  "purpose": "Declared exact readonly instance scope for the daily development runtime backend contract receipt. It mirrors backend_contract_instance_v1.json but binds database sc_demo, because the daily readonly probe must measure the runtime it reports on. The account, target contract and required checks are declared here; the record identity is resolved by the governed fixture resolver against the same daily database and never hard-coded. The request context is declared too, because the sealed contract echoes the localized projection (lang/tz): replaying the recorded request without it would legitimately produce a different semantic digest. The negotiation parameters (op/render_profile/contract_surface/source_mode) are declared to the shape the released record page actually issues: the action-scoped contract load (op=action_open) with the edit render profile, the user surface and the governance pipeline source mode. Declaring the model-shaped request instead made the approved instance conflict with the request the browser executes on `op`.",
+  "purpose": "Declared exact readonly instance scope for the daily development runtime backend contract receipt. It mirrors backend_contract_instance_v1.json but binds database sc_demo, because the daily readonly probe must measure the runtime it reports on. The account, target contract and required checks are declared here; the record identity is resolved by the governed fixture resolver against the same daily database and never hard-coded. The request context is declared too, because the sealed contract echoes the localized projection (lang/tz): replaying the recorded request without it would legitimately produce a different semantic digest. The negotiation parameters (op/render_profile/contract_surface/source_mode) are declared to the shape the released record page actually issues: the action-scoped contract load (op=action_open) with the edit render profile, the user surface and the governance pipeline source mode. Declaring the model-shaped request instead made the approved instance conflict with the request the browser executes on `op`. The released record page also replays the runtime-declared record request context (system.init.record_context.request_context) into params.context, and the sealed contract echoes that business context, so the request declares params_context_from and the probe consumes it verbatim: the approved instance is the request the page issues, and the acting company is never hard-coded here.",
   "database": "sc_demo",
   "account": {
     "login": "fixture_role_finance",
@@ -28,6 +28,7 @@
       "lang": "zh_CN",
       "tz": "Asia/Shanghai"
     },
+    "params_context_from": "system.init.record_context.request_context",
     "accepted_contract_versions": ["2.0.x", "2.1.x", "2.2.x"],
     "client_contract_capabilities": [
       "container_tree.v2",

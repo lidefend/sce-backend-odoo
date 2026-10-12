@@ -514,6 +514,14 @@ def validate_acceptance_declaration(declaration: Any) -> list[str]:
         # request must state the context that produced the approved digest;
         # otherwise the recorded request could not be replayed verbatim.
         errors.append("contract_declaration_request_context_invalid")
+    elif "params_context_from" in request_decl and not (
+        isinstance(request_decl.get("params_context_from"), str) and request_decl.get("params_context_from").strip()
+    ):
+        # The approved instance must be the request the released record page
+        # actually issues. The page replays the runtime-declared record request
+        # context into ``params.context``; a declaration that names that source
+        # must name it as a non-empty contract path or stay silent, never half-set.
+        errors.append("contract_declaration_request_context_source_invalid")
     required = declaration.get("required_checks")
     if not isinstance(required, list) or not required or not all(isinstance(item, str) and item for item in required):
         errors.append("contract_declaration_required_checks_invalid")
@@ -535,6 +543,80 @@ def load_acceptance_declaration(path: Path | None) -> tuple[dict[str, Any] | Non
         return None, ["contract_declaration_invalid_json"]
     errors = validate_acceptance_declaration(declaration)
     return (declaration if not errors else None), errors
+
+
+def resolve_contract_path(source: Any, path: str) -> Any:
+    """Read a declared dotted contract path; return None when it is not present."""
+    current = source
+    for segment in str(path or "").split("."):
+        if not segment:
+            return None
+        if not isinstance(current, dict) or segment not in current:
+            return None
+        current = current[segment]
+    return current
+
+
+def resolve_declared_record_context(declared_path: Any, contract_documents: dict[str, Any]) -> Any:
+    """Resolve a ``<intent>.<path>`` declared context source inside that intent.
+
+    Intent names may themselves contain dots (``system.init``), so the producing
+    intent is matched as the longest declared document key that prefixes the
+    binding; the binding stays readable and cannot silently read a same-named
+    field of a different intent.
+    """
+    text = str(declared_path or "").strip()
+    if not text:
+        return None
+    intent, path = "", ""
+    for key in contract_documents:
+        prefix = key + "."
+        if text.startswith(prefix) and len(key) > len(intent):
+            intent, path = key, text[len(prefix):]
+    if not intent or not path:
+        return None
+    return resolve_contract_path(contract_documents[intent], path)
+
+
+def build_contract_request_params(
+    request_decl: dict[str, Any],
+    target: dict[str, Any],
+    record_request_context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build the approved ui.contract.v2 request from the declaration, verbatim.
+
+    The released record page replays the runtime-declared record request context
+    (``system.init.record_context.request_context``) into ``params.context``; the
+    approved instance has to mirror that, or it approves a request shape the page
+    never sends and the two seals then disagree for a reason that is not a
+    product defect. The context value comes from the declaration's
+    ``params_context_from`` binding, never from a hard-coded company id.
+    """
+    params: dict[str, Any] = {
+        # The negotiated request shape comes from the declaration, not from a
+        # hard-coded guess: the approved instance must be the request the released
+        # record page actually issues, or the receipt cannot bind to it.
+        "op": request_decl.get("op"),
+        "model": target.get("model"),
+        "view_type": request_decl.get("view_type"),
+        "record_id": target.get("record_id"),
+        "action_id": target.get("action_id"),
+        "menu_id": target.get("menu_id"),
+        "render_profile": request_decl.get("render_profile"),
+        "contract_surface": request_decl.get("contract_surface"),
+        "source_mode": request_decl.get("source_mode"),
+        "delivery_profile": request_decl.get("delivery_profile"),
+        "client_type": request_decl.get("client_type"),
+        "accepted_contract_versions": list(request_decl.get("accepted_contract_versions") or []),
+        "client_contract_capabilities": list(request_decl.get("client_contract_capabilities") or []),
+    }
+    params_context = {str(key): value for key, value in (record_request_context or {}).items()}
+    declared_params_context = request_decl.get("params_context")
+    if isinstance(declared_params_context, dict):
+        params_context.update(declared_params_context)
+    if params_context:
+        params["context"] = params_context
+    return params
 
 
 def load_record_resolution(path: Path | None, declaration: dict[str, Any]) -> tuple[dict[str, Any] | None, list[str]]:
@@ -855,24 +937,31 @@ def probe_contract_acceptance(
         "init_status": init_status,
     }
 
-    params: dict[str, Any] = {
-        # The negotiated request shape comes from the declaration, not from a
-        # hard-coded guess: the approved instance must be the request the released
-        # record page actually issues, or the receipt cannot bind to it.
-        "op": request_decl.get("op"),
-        "model": target.get("model"),
-        "view_type": request_decl.get("view_type"),
-        "record_id": target.get("record_id"),
-        "action_id": target.get("action_id"),
-        "menu_id": target.get("menu_id"),
-        "render_profile": request_decl.get("render_profile"),
-        "contract_surface": request_decl.get("contract_surface"),
-        "source_mode": request_decl.get("source_mode"),
-        "delivery_profile": request_decl.get("delivery_profile"),
-        "client_type": request_decl.get("client_type"),
-        "accepted_contract_versions": list(request_decl.get("accepted_contract_versions") or []),
-        "client_contract_capabilities": list(request_decl.get("client_contract_capabilities") or []),
-    }
+    params_context_source = str(request_decl.get("params_context_from") or "").strip()
+    record_request_context: dict[str, Any] = {}
+    if params_context_source:
+        resolved_request_context = resolve_declared_record_context(
+            params_context_source, {"system.init": init_data}
+        )
+        if not isinstance(resolved_request_context, dict) or not resolved_request_context:
+            # The approved instance must be the request the released record page
+            # actually issues; approving a context the runtime never declared
+            # would bind the receipt to a request shape the page never sends.
+            errors.append("contract_request_context_source_unavailable")
+            receipt.update(
+                {
+                    "required_checks": required_checks,
+                    "executed_checks": [name for name in required_checks if name in checks],
+                    "not_run_checks": [name for name in required_checks if name not in checks],
+                    "checks": checks,
+                    "check_detail": detail,
+                    "errors": errors,
+                    "identity": {"served_sha": served_sha, "expected_sha": expected_sha},
+                }
+            )
+            return receipt
+        record_request_context = {str(key): value for key, value in resolved_request_context.items()}
+    params = build_contract_request_params(request_decl, target, record_request_context)
     request_context = {
         str(key): value
         for key, value in (request_decl.get("context") or {}).items()

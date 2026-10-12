@@ -410,6 +410,130 @@ class ContractAcceptanceTest(unittest.TestCase):
         )
 
 
+class ParamsContextBindingTest(unittest.TestCase):
+    """The approved instance must be the request the released record page issues.
+
+    The page (frontend/apps/web/src/api/intents.ts, withCurrentRecordContext)
+    replays the runtime-declared ``system.init.record_context.request_context``
+    into ``params.context``, and the sealed contract echoes that business
+    context, so the approved request has to carry it too. These cases lock the
+    declaration's ``params_context_from`` binding to the probe's actual request
+    shape: a declared source is consumed verbatim, an unresolvable source fails
+    closed before any browser is launched, and a half-set binding is refused.
+    """
+
+    def _session(self, record_context):
+        session = FakeSession(example_contract())
+        base_post = session.post
+
+        def post(path, payload):
+            session.requests.append((path, payload))
+            if (payload or {}).get("intent") == "system.init":
+                data = {"user": session.user, "role_surface": {"role_code": session.role_code}}
+                if record_context is not None:
+                    data["record_context"] = record_context
+                return 200, json.dumps({"ok": True, "data": data})
+            if path.startswith("/web/session/authenticate"):
+                return base_post(path, payload)
+            if (payload or {}).get("intent") == "ui.contract.v2":
+                return 200, json.dumps({"ok": True, "data": session.contract})
+            return base_post(path, payload)
+
+        session.post = post
+        return session
+
+    def _declaration_with_bound_context(self):
+        decl = declaration()
+        decl["request"]["params_context_from"] = "system.init.record_context.request_context"
+        return decl
+
+    def test_declared_runtime_record_context_is_sent_verbatim(self):
+        runtime_context = {"company_id": 8}
+        session = self._session({"request_context": runtime_context})
+        result = MODULE.probe_contract_acceptance(
+            "https://daily.example.test",
+            "sc_frontend_acceptance",
+            self._declaration_with_bound_context(),
+            resolution(),
+            served_sha=SHA,
+            expected_sha=SHA,
+            session=session,
+            contract_output=contract_output(),
+        )
+        sent = [payload for path, payload in session.requests if (payload or {}).get("intent") == "ui.contract.v2"]
+        self.assertTrue(sent)
+        self.assertEqual(sent[-1]["params"]["context"], runtime_context)
+        self.assertEqual(result["request"]["params"]["context"], runtime_context)
+        self.assertEqual(result["status"], "PASS")
+
+    def test_unavailable_declared_source_fails_closed_without_sending_the_request(self):
+        session = self._session(None)
+        result = MODULE.probe_contract_acceptance(
+            "https://daily.example.test",
+            "sc_frontend_acceptance",
+            self._declaration_with_bound_context(),
+            resolution(),
+            served_sha=SHA,
+            expected_sha=SHA,
+            session=session,
+            contract_output=contract_output(),
+        )
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIn("contract_request_context_source_unavailable", result["errors"])
+        self.assertFalse([payload for path, payload in session.requests if (payload or {}).get("intent") == "ui.contract.v2"])
+
+    def test_non_mapping_declared_source_fails_closed(self):
+        session = self._session({"request_context": "8"})
+        result = MODULE.probe_contract_acceptance(
+            "https://daily.example.test",
+            "sc_frontend_acceptance",
+            self._declaration_with_bound_context(),
+            resolution(),
+            served_sha=SHA,
+            expected_sha=SHA,
+            session=session,
+            contract_output=contract_output(),
+        )
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIn("contract_request_context_source_unavailable", result["errors"])
+
+    def test_empty_declared_source_is_refused_by_the_shape_check(self):
+        decl = declaration()
+        decl["request"]["params_context_from"] = "   "
+        self.assertIn("contract_declaration_request_context_source_invalid", MODULE.validate_acceptance_declaration(decl))
+
+    def test_shipped_daily_declaration_binds_the_runtime_record_context_path(self):
+        shipped = json.loads((ROOT / "config/acceptance/backend_contract_instance_daily_v1.json").read_text(encoding="utf-8"))
+        declared = shipped["request"].get("params_context_from")
+        self.assertEqual(declared, "system.init.record_context.request_context")
+        self.assertEqual(MODULE.validate_acceptance_declaration(shipped), [])
+        runtime_context = {"company_id": 21}
+        # The declaration names the producing intent (system.init) plus the path
+        # inside its payload, exactly as the probe consumes it.
+        resolved = MODULE.resolve_declared_record_context(
+            declared, {"system.init": {"record_context": {"request_context": runtime_context}}}
+        )
+        self.assertEqual(resolved, runtime_context)
+        params = MODULE.build_contract_request_params(shipped["request"], {"model": "payment.request", "record_id": 1}, resolved)
+        self.assertEqual(params["context"], runtime_context)
+
+    def test_declaration_without_the_binding_keeps_the_declared_shape(self):
+        # No binding declared: the runtime-declared record context is not injected,
+        # so the approved request stays exactly the declared shape.
+        session = self._session({"request_context": {"company_id": 8}})
+        result = MODULE.probe_contract_acceptance(
+            "https://daily.example.test",
+            "sc_frontend_acceptance",
+            declaration(),
+            resolution(),
+            served_sha=SHA,
+            expected_sha=SHA,
+            session=session,
+            contract_output=contract_output(),
+        )
+        self.assertNotIn("context", result["request"]["params"])
+
+
 class ContractDeclarationConsumptionTest(unittest.TestCase):
     def test_shipped_declaration_is_consumed_verbatim_and_fully_executed(self):
         loaded, errors = MODULE.load_acceptance_declaration(DECLARATION_PATH)
