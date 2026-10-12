@@ -346,7 +346,6 @@ import { isHudEnabled, isSceneBlocksDebugEnabled } from '../config/debug';
 import { config } from '../config';
 import { intentRequest } from '../api/intents';
 import { ApiError } from '../api/client';
-import { unlinkRecord } from '../api/data';
 import type { ChatterTimelineEntry } from '../api/chatter';
 import { executeButton } from '../api/executeButton';
 import { triggerOnchange } from '../api/onchange';
@@ -375,6 +374,7 @@ import {
   defaultContractFormRecord,
   listContractFormRecords,
   readContractFormRecord,
+  unlinkContractFormRecord,
   writeContractFormRecord,
 } from '../app/runtime/contractFormDataRuntime';
 import {
@@ -386,6 +386,7 @@ import {
   resolveContractV2Collaboration,
   resolveContractV2EffectiveFormCapabilities,
   resolveContractV2RecordActionStates,
+  resolveContractV2PageAccessVerdict,
   resolveContractV2GlobalStatus,
   resolveContractV2MainData,
   resolveContractV2ActionRules,
@@ -1073,8 +1074,8 @@ async function runRecordDeleteAction() {
   try {
     const context = buildFormRequestContext(route.query as Record<string, unknown>);
     const idempotencyKey = `record.delete:${targetModel}:${targetId}:${Date.now()}`;
-    await unlinkRecord({ model: targetModel, ids: [targetId], context, idempotencyKey, dryRun: true });
-    await unlinkRecord({ model: targetModel, ids: [targetId], context, idempotencyKey });
+    await unlinkContractFormRecord({ model: targetModel, ids: [targetId], context, idempotencyKey, dryRun: true });
+    await unlinkContractFormRecord({ model: targetModel, ids: [targetId], context, idempotencyKey });
     returnToPreviousPage();
   } catch (error) {
     const message = error instanceof Error && error.message
@@ -1273,10 +1274,11 @@ const standardDetailComposition = createStandardDetailCompositionRuntime(() => c
 const recordActionStates = computed(() => resolveContractV2RecordActionStates(v2ContractStore.value));
 const recordActionDenialMessages = computed(() => describeRecordActionDenials(recordActionStates.value));
 const rights = computed(() => {
-  const globalStatus = resolveContractV2GlobalStatus(v2ContractStore.value);
-  const pageAuth = String(globalStatus?.pageAuth || '').trim().toLowerCase();
   const denied = { read: false, write: false, create: false, unlink: false, duplicate: false };
-  if (globalStatus?.pageVisible === false || pageAuth === 'none') {
+  // The page does not judge its own access: the store owns the single verdict
+  // derived from the contract's declared status, so the action surfaces and this
+  // form can never disagree about a declared refusal.
+  if (resolveContractV2PageAccessVerdict(v2ContractStore.value).blocked) {
     return denied;
   }
   const authoritative = resolveContractV2EffectiveFormCapabilities(v2ContractStore.value);

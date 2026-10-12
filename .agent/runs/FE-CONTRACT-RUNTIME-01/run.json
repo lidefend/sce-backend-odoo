@@ -544,6 +544,37 @@
         "make/dev_test.mk"
       ],
       "kind": "offline"
+    },
+    "unified_page_contract_web_consumer": {
+      "target": "verify.unified_page_contract.v2.web_consumer",
+      "inputs": [
+        "scripts/verify/unified_page_contract_v2_web_consumer_guard.py",
+        "scripts/verify/js_contract_consumer_markers.py",
+        "frontend/apps/web/src",
+        "docs/architecture/unified_page_contract_v2",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "unified_page_contract_web_architecture": {
+      "target": "verify.unified_page_contract.v2.web_architecture",
+      "inputs": [
+        "scripts/verify/web_contract_v2_frontend_architecture_guard.py",
+        "frontend/apps/web/src",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "unified_page_contract_stable_projection": {
+      "target": "verify.unified_page_contract.v2.stable_projection",
+      "inputs": [
+        "scripts/verify/frontend_v2_policy_projection_guard.py",
+        "scripts/verify/test_frontend_v2_policy_projection_guard.py",
+        "frontend/apps/web/src",
+        "docs/architecture/unified_page_contract_v2",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [

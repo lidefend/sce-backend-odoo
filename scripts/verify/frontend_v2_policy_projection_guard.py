@@ -43,6 +43,41 @@ REQUIRED_HELPERS = (
     "resolveUnifiedPageContractV2VisibleFields",
 )
 
+# A declaration key may be consumed through either declared resolver: the raw
+# contract helper, or the frozen normalized-store accessor that reads the same
+# decoded carrier.  Two shapes, one declaration -- neither is a local fallback,
+# so naming the declaration anywhere in a consumer still obliges that consumer to
+# call one of them.  Direct field reads stay forbidden below.
+DECLARATION_RESOLVERS: dict[str, tuple[str, ...]] = {
+    "surface_policies": (
+        "resolveUnifiedPageContractV2SurfacePolicies",
+        "resolveContractV2SurfacePolicies",
+    ),
+    "list_profile": (
+        "resolveUnifiedPageContractV2ListProfile",
+        "resolveContractV2ListProfile",
+    ),
+    "delete_policy": (
+        "resolveUnifiedPageContractV2DeletePolicy",
+        "resolveContractV2DeletePolicy",
+    ),
+    "business_operation_profile": (
+        "resolveUnifiedPageContractV2BusinessOperationProfile",
+    ),
+    "field_groups": (
+        "resolveUnifiedPageContractV2FieldGroups",
+        "resolveContractV2FieldGroups",
+    ),
+    "form_structure_contract": (
+        "resolveUnifiedPageContractV2FormStructureContract",
+        "resolveContractV2FormStructureContract",
+    ),
+    "visible_fields": (
+        "resolveUnifiedPageContractV2VisibleFields",
+        "resolveContractV2VisibleFieldCodes",
+    ),
+}
+
 FORBIDDEN_DIRECT_READS = (
     ".delete_policy",
     ".surface_policies",
@@ -910,20 +945,12 @@ def main() -> int:
         if "legacyContractProjection" in source or "legacy_contract_projection" in source:
             violations.append(f"{rel}: stable V2 consumers must not read legacyContractProjection")
         if rel != _relative(CONTRACT_HELPERS):
-            if "surface_policies" in source and not _has_helper_call(source, "resolveUnifiedPageContractV2SurfacePolicies"):
-                violations.append(f"{rel}: surface_policies consumers must use resolveUnifiedPageContractV2SurfacePolicies")
-            if "list_profile" in source and not _has_helper_call(source, "resolveUnifiedPageContractV2ListProfile"):
-                violations.append(f"{rel}: list_profile consumers must use resolveUnifiedPageContractV2ListProfile")
-            if "delete_policy" in source and not _has_helper_call(source, "resolveUnifiedPageContractV2DeletePolicy"):
-                violations.append(f"{rel}: delete_policy consumers must use resolveUnifiedPageContractV2DeletePolicy")
-            if "business_operation_profile" in source and not _has_helper_call(source, "resolveUnifiedPageContractV2BusinessOperationProfile"):
-                violations.append(f"{rel}: business_operation_profile consumers must use resolveUnifiedPageContractV2BusinessOperationProfile")
-            if "field_groups" in source and not _has_helper_call(source, "resolveUnifiedPageContractV2FieldGroups"):
-                violations.append(f"{rel}: field_groups consumers must use resolveUnifiedPageContractV2FieldGroups")
-            if "form_structure_contract" in source and not _has_helper_call(source, "resolveUnifiedPageContractV2FormStructureContract"):
-                violations.append(f"{rel}: form_structure_contract consumers must use resolveUnifiedPageContractV2FormStructureContract")
-            if "visible_fields" in source and not _has_helper_call(source, "resolveUnifiedPageContractV2VisibleFields"):
-                violations.append(f"{rel}: visible_fields consumers must use resolveUnifiedPageContractV2VisibleFields")
+            for key, resolvers in DECLARATION_RESOLVERS.items():
+                if key not in source:
+                    continue
+                if any(_has_helper_call(source, helper) for helper in resolvers):
+                    continue
+                violations.append(f"{rel}: {key} consumers must use one of {', '.join(resolvers)}")
 
         allowed = ALLOWED_DIRECT_READS.get(rel, {})
         for index, line in enumerate(source.splitlines(), start=1):

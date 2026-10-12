@@ -37,6 +37,7 @@ def main() -> int:
     errors: list[str] = []
 
     contract_source = read("app/contracts/unifiedPageContractV2.ts")
+    v2_store_source = read("app/contracts/v2/store.ts")
     action_view_source = read("views/ActionView.vue")
     action_status_runtime_source = read("app/runtime/actionViewContractActionRuntime.ts")
     action_runtime_source = read("app/contractActionRuntime.ts")
@@ -70,12 +71,27 @@ def main() -> int:
         "surfacePolicies?: Record<string, unknown>",
         "listProfile?: Record<string, unknown>",
     ))
-    require_tokens(errors, action_runtime_source, "web v2 access runtime", (
+    require_tokens(errors, action_runtime_source, "web v2 action contract runtime", (
         "store?.snapshot.pageInfo.viewType",
+    ))
+    # The page-level access verdict was consolidated into the v2 store, which is
+    # now the single authority for statusContract.globalStatus; both the action
+    # surfaces and the record form consume resolveContractV2PageAccessVerdict
+    # from there instead of re-deriving the rule.  The guard follows the fact so
+    # a single-consumer regression still fails, but at its real owning file.
+    require_tokens(errors, v2_store_source, "web v2 access runtime", (
         "resolveContractV2GlobalStatus(store)",
+        "export function resolveContractV2PageAccessVerdict(",
         "pageAuth === 'none'",
         "UNIFIED_PAGE_CONTRACT_V2_PAGE_FORBIDDEN",
     ))
+    # The record form must read that same verdict rather than re-deriving the
+    # predicate, so a second judgment site cannot reappear on the form path.
+    require_tokens(errors, contract_form_source, "web v2 contract form page access", (
+        "resolveContractV2PageAccessVerdict(v2ContractStore.value)",
+    ))
+    if "pageAuth === 'none'" in contract_form_source:
+        fail(errors, "web v2 contract form page must not re-derive the page access predicate")
     require_tokens(errors, action_presentation_source, "web v2 action presentation", (
         "normalizeV2ActionRows",
         "resolveContractV2ActionRules(store)",

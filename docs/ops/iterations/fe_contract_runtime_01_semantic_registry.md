@@ -1051,3 +1051,85 @@ shard 2 在失败点之后未执行的目标，本地 `make -k` 一次补齐并�
 结论：慢不在断言数量，而在 (1) 分片是 `manifest[index::4]` 的跨步切片，重活恰好落在同一片；
 (2) 三个全量扫描每次都从头扫。这两点都属于本仓库迭代效率范围，登记为独立改进项，
 不在本批次改动（本批次只做契约收口）。
+
+## 第二次冻结头 Quick 暴露的三个同层缺陷（web 消费面）
+
+`make ci.local.quick`（干净头 `7f7a2125`）在 shard 2 再次失败。实测分布：
+shard 0 = 353.5s、shard 1 = 16.5s、shard 2 = 38.6s（fail）、shard 3 = 7.2s。
+
+`make -k verify.unified_page_contract.v2` 一次枚举出 3 个**互相独立**的失败，按"同层集中修复、
+不逐个用下一次 Quick 去发现"的原则一并处理：
+
+| 目标 | 直接现象 | 真正根因 |
+|-|-|-|
+| `...v2.web_consumer` | `contractActionRuntime.ts` 缺 `resolveContractV2GlobalStatus` / `pageAuth === 'none'` / `UNIFIED_PAGE_CONTRACT_V2_PAGE_FORBIDDEN` | `0beb7bba` 把访问裁决收敛到 `contracts/v2/store.ts`，但**表单页仍在自行重导裁决谓词**，守卫也仍断言旧 token |
+| `...v2.web_architecture` | `product_page_direct_data_imports`：`ContractFormPage.vue` 直接 import `../api/data`（count=1 > 0） | `f0dd95e3` 引入的记录删除 `unlinkRecord` 绕过了受管 runtime 模块 |
+| `...v2.stable_projection` | `frontend_v2_policy_projection_guard.py:915`：`useActionViewContractShapeRuntime.ts` 含 `list_profile` 却未调用 `resolveUnifiedPageContractV2ListProfile` | 守卫用整文件子串判断"是否直读契约"，把 `ContractGapError` 里的**声明路径文案**误判为契约直读 |
+
+### 1. 页面级访问裁决的唯一化只做了一半
+
+`0beb7bba` 的提交信息声称"`resolveContractV2PageAccessVerdict` 由 store 单一裁决，action runtime
+与表单消费同一 selector"。事实核查：action runtime 确实只消费 selector，但 `ContractFormPage.vue`
+的 `rights` computed 自己重写了同一个谓词
+（`globalStatus?.pageVisible === false || pageAuth === 'none'`）——这正是入口双通道架构要防的
+"同一业务事实两个判断点"，也是本次失败被守卫如实暴露的原因。
+
+修复（收口事实，不放宽断言）：
+
+- `ContractFormPage.vue` 的 `rights` 改为消费 `resolveContractV2PageAccessVerdict(v2ContractStore.value).blocked`，
+  页面不再自行裁决；`resolveContractV2GlobalStatus` 仍保留给 `renderProfile`（职责不同，不是重复裁决）。
+- `unified_page_contract_v2_web_consumer_guard.py`：访问裁决 token 断言迁到真正拥有者 `app/contracts/v2/store.ts`，
+  并新增"表单页必须消费 selector""表单页不得再出现 `pageAuth === 'none'`"两条断言。
+- `web_unified_page_contract_v2_guard.py`：`contract_runtime_source` 断言 `resolveContractV2PageAccessVerdict`；
+  store 断言拥有规则（`resolveContractV2GlobalStatus` / `UNIFIED_PAGE_CONTRACT_V2_PAGE_FORBIDDEN` /
+  `pageAuth === 'none'`）；表单页断言同上。**断言数量只增不减**，杜绝"换个文件就算通过"。
+
+### 2. 契约表单页仍在直连底层数据 API
+
+`unlinkRecord` 直接从 `../api/data` 引入，绕开了本批次建立的受管 runtime 边界。
+修复：`app/runtime/contractFormDataRuntime.ts` 增加 `unlinkContractFormRecord` 重导出（与
+`createContractFormRecord` / `writeContractFormRecord` 同构），页面改经该模块调用；`../api/data`
+直连计数归零，`web_architecture` 的 `product_page_direct_data_imports` 断言（max_count=0）保持原值。
+
+### 3. 守卫把"声明路径文案"当成了"契约直读"
+
+`useActionViewContractShapeRuntime.ts` 的两处 `list_profile` 都在 `ContractGapError` 的 `missing`
+载荷里（用于告诉运维是哪个声明缺失），文件本身通过冻结的归一化 store accessor
+`resolveContractV2ListProfile(store)` 消费同一个解码载体，**并不存在直读**。
+
+这里必须区分两件事，且不做前者：
+
+- ❌ 不把守卫断言放宽成"出现词就算过"。
+- ✅ 把检测口径改精确：新增 `DECLARATION_RESOLVERS`，按声明键列出可用解析器
+  （原始契约 helper 或冻结的归一化 store accessor，两者都是声明消费、都不是本地兜底），
+  命中任一即通过；直读仍由 `FORBIDDEN_DIRECT_READS` 单独 fail-closed。
+
+结论是"没提到声明就必须走声明解析器"这条约束强度不变，只是不再把错误文案当作契约读取。
+否则下一个同类失败还会再花一次 Quick（约 7 分钟）。
+
+### 本轮验证（受管、离线层）
+
+| check | 结果 |
+|-|-|
+| `verify.unified_page_contract.v2.web_consumer` | PASS（11 tests） |
+| `verify.unified_page_contract.v2.web_architecture` | PASS（debt_lock findings=0） |
+| `verify.unified_page_contract.v2.stable_projection` | PASS（6 tests） |
+| `verify.contract.architecture.suite` | PASS（exit=0，含 384 文件 Node 语法检查） |
+| `verify.frontend.typecheck.strict` | PASS（0 error） |
+| `verify.frontend.lint.src` | PASS（0 error，64 warning） |
+| `verify.frontend.style_system.guard` | PASS |
+| `verify.form_structure_authority_unification.unit` | PASS（215 tests） |
+| `verify.frontend.page_pattern_reference_parity.unit` | PASS（28 tests） |
+| `test_frontend_v2_policy_projection_guard` | PASS（6 tests） |
+
+生成的 `contract_form_split_evidence` 因 `ContractFormPage.vue` 行数变化而过期，
+由受管生成器 `make refresh.contract_form_split_evidence` 重写（lines=2013），未手改生成物。
+
+### 台账覆盖缺口（本轮一并补上）
+
+`scripts/verify/frontend_v2_policy_projection_guard.py`、
+`unified_page_contract_v2_web_consumer_guard.py`、`web_unified_page_contract_v2_guard.py`
+三个守卫原本**不在任何已登记 check 的 `inputs` 内**——即改动它们不会让任何回执失效，
+这是"证据体系无法快速定位职责"的具体形态。现按守卫实际归属登记 3 个 check
+（`unified_page_contract_web_consumer` / `..._web_architecture` / `..._stable_projection`），
+并按变更影响重录失效回执，不用下一次 Quick 去逐个发现兄弟失败。
