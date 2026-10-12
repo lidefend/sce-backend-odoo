@@ -49,7 +49,9 @@
     "frontend/apps/web/src/app/contracts/",
     "frontend/apps/web/src/components/template/",
     "frontend/apps/web/src/pages/contractForm/",
-    "scripts/verify/"
+    "scripts/verify/",
+    "contracts/generated/contract_structure_fingerprint.json",
+    "docs/engineering_convergence/"
   ],
   "environment": {
     "kind": "offline",
@@ -431,5 +433,5 @@
     "pre-existing (not introduced by this batch): scripts/verify/test_frontend_quality_safety_domain_rollout.py:123 holds a stale res.users literal; classify with the other pre-existing findings, do not silently rewrite it here.",
     "observed transient (resolved): the first `agent.run.begin/record` cycle for contract_catalog failed record with 'test inputs or identity changed since begin'; a deterministic begin->run->compare of the declared inputs showed no difference and the re-run recorded cleanly. Cause not reproduced; treated as first-run generated-artifact refresh inside a declared input directory."
   ],
-  "next_exact_step": "B 轮边界冻结已完成（27/27 回执可复用）：受管隔离档再采集 ui_contract_v2_intent_admin 及 wx_mini/harmony_h5 三端快照，交付面只含 deliveryDensity/deliveryProfile/mobileCollapse，无 columns/fullWidth/renderStrategy/virtualization；守卫改为对称比较并新增运行时内部策略逐键守恒断言（含负例）；新增登记 8 项 L2 检查（form_container_presentation_guard、form_structure_authority_unification、canonical_form_presenter、frontend_dev_incremental、page_pattern_reference_parity、frontend_primitive_adapter、product_page_pattern、frontend_style_system）并全部通过。下一步：提交一次边界冻结 commit；提交后在干净边界上开 FE-CONTRACT-RUNTIME-01-B Semantic Registry；span→deliverySpan 作为独立迁移批次（不动 ORM scene_orchestration.span）。"
+  "next_exact_step": "边界冻结轮已完成并提交（commit 5a227641）：终端投递面只保留 deliveryDensity/deliveryProfile/mobileCollapse，三端（web_pc/wx_mini/harmony_h5）实采快照入库，终端守卫新增运行时内部策略逐键守恒断言；ci.delivery.freeze.prepare 在干净 HEAD 通过并刷新受管生成证据（contract_structure_fingerprint 补 registry 结构、complexity/split-plan/test-inventory/component-driver-takeover 计数），本提交把这两类生成证据目录纳入 run scope。run 索引 27/27 可复用。下一步：在干净边界上开 FE-CONTRACT-RUNTIME-01-B Semantic Registry（语义/组件注册表 + lint + resolver + payment 闭环）；span→deliverySpan 作为独立迁移批次（限定 contracts/、runtime 投影、前端契约类型，不动 ORM scene_orchestration.span）。"
 }
