@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import errno
 import hashlib
 import json
 import os
@@ -32,7 +33,16 @@ FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 # The default sharded lane: one bounded shard is one make invocation over a
 # strided slice of the declared target list, so an interrupted or partially
 # failed candidate keeps the parts that did pass instead of proving nothing.
-DEFAULT_SHARDS = 4
+# The part count is the only lever on the lane's wall clock, because the worker
+# count is memory-bound and the heaviest single target (the three trusted
+# security scans over a changed authority) cannot be split any further. With a
+# small part count that one target shares its shard with unrelated guards, and
+# the shard, not the scan, becomes the critical path: measured on a frozen head,
+# 4 parts gave 328s/16s/105s/8s, i.e. a 328s wall against a 457s serial sum. A
+# larger part count shrinks each shard's extra load while covering the identical
+# set. `QUICK_SHARDS` in make/ci.mk is the entry that is actually passed in; this
+# value only backs a direct programmatic call and must not drift from it.
+DEFAULT_SHARDS = 8
 # Shard workers. One shard is one make invocation over a strided slice of the
 # declared target list, and shards are independent by construction: each writes
 # only its own part receipt, its own scan proofs and its own bounded log, and
@@ -59,13 +69,43 @@ class QuickRunFailed(EvidenceError):
         self.returncode = returncode
 
 
+# A spawn can fail before the child exists with a host-level errno: EAGAIN under
+# a thread/process ceiling, ENOMEM under memory pressure, or EFAULT from a
+# fork/vfork window while another thread of this multi-threaded parent is
+# allocating. None of them is a product or contract signal, and none of them can
+# have run the child, so retrying replays nothing. Every other spawn failure, and
+# a bounded number of transient ones, still fails closed on the first or last
+# attempt. Without this bound, one host hiccup discards a multi-minute candidate
+# run that had already passed its other shards.
+TRANSIENT_SPAWN_ERRNOS = frozenset({errno.EAGAIN, errno.ENOMEM, errno.EFAULT})
+SPAWN_ATTEMPTS = 3
+SPAWN_RETRY_BACKOFF_SECONDS = 0.25
+
+
+def spawn(intent, action: str):
+    """Create a process, retrying only failures that cannot have started one."""
+    for attempt in range(1, SPAWN_ATTEMPTS + 1):
+        try:
+            return intent()
+        except OSError as exc:
+            if exc.errno not in TRANSIENT_SPAWN_ERRNOS or attempt == SPAWN_ATTEMPTS:
+                raise
+            print(f"[local_quick_evidence] RETRY {action}: transient spawn failure "
+                  f"errno={exc.errno} attempt={attempt}/{SPAWN_ATTEMPTS}", flush=True)
+            time.sleep(SPAWN_RETRY_BACKOFF_SECONDS)
+    raise AssertionError("unreachable: the retry loop always returns or raises")
+
+
 def git(root: Path, *args: str) -> str:
-    process = subprocess.run(
-        ["git", "-C", str(root), *args],
-        check=False,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+    process = spawn(
+        lambda: subprocess.run(
+            ["git", "-C", str(root), *args],
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        ),
+        f"git {' '.join(args)}",
     )
     if process.returncode:
         raise EvidenceError(f"git {' '.join(args)} failed: {process.stdout.strip()}")
@@ -471,7 +511,11 @@ def shard_command(root: Path, shards: int, index: int) -> list[str]:
 
 
 def _shard_popen(command: list[str], handle, root: Path):
-    return subprocess.Popen(command, cwd=root, stdout=handle, stderr=subprocess.STDOUT, text=True)
+    return spawn(
+        lambda: subprocess.Popen(command, cwd=root, stdout=handle,
+                                 stderr=subprocess.STDOUT, text=True),
+        f"shard {' '.join(command)}",
+    )
 
 
 def requested_shard_jobs(jobs: int | None) -> int | None:

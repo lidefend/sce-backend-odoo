@@ -949,7 +949,7 @@ ci.local.iteration: guard.prod.forbid verify.baseline.iteration.execution.policy
 # whole suite with a silent "evidence disabled" and a zero exit status proved
 # nothing. QUICK_SHARDS tunes the part count; it never changes the covered set,
 # which is always exactly the ci.local.quick.run prerequisite list.
-QUICK_SHARDS ?= 4
+QUICK_SHARDS ?= 8
 QUICK_RECEIPT_KEEP ?= 50
 # Shard workers. Empty means "derive one worker per two CPUs and per 3 GiB of
 # available memory, never more workers than shards", so a small machine keeps
