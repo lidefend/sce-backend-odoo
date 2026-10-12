@@ -28,7 +28,7 @@ P1_PROJECT_LAYOUT_PATH = ROOT / "addons/smart_construction_core/core_extension_p
 # the version literal the handler serves to a digest of the code that produces
 # the assembled contract; on drift this guard fails closed and the author
 # re-pins both values deliberately instead of the cache hiding the change.
-ASSEMBLED_CACHE_VERSION = "ui-contract-v2-2026-10-11-layout-container-columns"
+ASSEMBLED_CACHE_VERSION = "ui-contract-v2-2026-10-12-authenticated-projection-locale"
 ASSEMBLED_CACHE_HANDLER = "addons/smart_core/handlers/ui_contract_v2.py"
 ASSEMBLED_CACHE_INPUTS = (
     ASSEMBLED_CACHE_HANDLER,
@@ -36,7 +36,7 @@ ASSEMBLED_CACHE_INPUTS = (
     "addons/smart_core/handlers/ui_contract_v2_projection.py",
     "addons/smart_core/core/unified_page_contract_v2_client.py",
 )
-ASSEMBLED_CACHE_INPUTS_SHA256 = "1549e9e9bab0bf108659bb46f9de2b9e62ad146c19e2f2f32d99d772ea25f06b"
+ASSEMBLED_CACHE_INPUTS_SHA256 = "9ff095566f2a2022019f6979bce773a353adad8c0aeacc10d59baa0ee399a8e4"
 
 
 def _assembled_cache_digest() -> str:
@@ -286,6 +286,100 @@ def validate_patch(payload: dict[str, Any], snapshot: dict[str, Any], errors: li
         fail(errors, "patch widgetStatus snapshot below baseline")
 
 
+# --- Declared layout capability floor ---------------------------------------
+# Owner direction 2026-10-12: the layout contract keeps its declared capability
+# set (one 24-unit span dialect, declared container field-grid columns, declared
+# container zone) and no consumer is required to consume all of it.  This guard
+# is the non-regression side of that ruling: a consumer may map or ignore a
+# declared facet, but the assembler must not stop declaring it.
+LAYOUT_GRID_UNITS = 24
+LAYOUT_LEAF_KINDS = frozenset({"field", "widget", "button", "action"})
+
+
+def declared_layout_capability_errors(contract: Any, label: str) -> list[str]:
+    errors: list[str] = []
+    layout = contract.get("layoutContract") if isinstance(contract, dict) else None
+    tree = layout.get("containerTree") if isinstance(layout, dict) else None
+    if not isinstance(tree, list) or not tree:
+        return [f"{label}: layoutContract.containerTree must be a non-empty array"]
+
+    def walk_declared(nodes: Any, path: str) -> None:
+        if not isinstance(nodes, list):
+            errors.append(f"{label}: {path} must be an array")
+            return
+        for index, node in enumerate(nodes):
+            here = f"{path}[{index}]"
+            if not isinstance(node, dict):
+                errors.append(f"{label}: {here} must be an object")
+                continue
+            if not str(node.get("zone") or "").strip():
+                errors.append(f"{label}: {here} must declare its layout zone")
+            span = node.get("span")
+            if span is not None and (
+                isinstance(span, bool) or not isinstance(span, int) or not 1 <= span <= LAYOUT_GRID_UNITS
+            ):
+                errors.append(
+                    f"{label}: {here} declares span {span!r} outside the 1..{LAYOUT_GRID_UNITS} layout grid"
+                )
+            kind = str(node.get("containerType") or node.get("type") or "").lower()
+            owns_field_child = any(
+                str(child.get("containerType") or child.get("type") or "").lower() == "field"
+                for child in (node.get("children") or [])
+                if isinstance(child, dict)
+            )
+            if kind not in LAYOUT_LEAF_KINDS and owns_field_child:
+                columns = node.get("columns")
+                if isinstance(columns, bool) or not isinstance(columns, int) or not 1 <= columns <= LAYOUT_GRID_UNITS:
+                    errors.append(
+                        f"{label}: {here} owns field children but declares no "
+                        f"1..{LAYOUT_GRID_UNITS} field-grid columns"
+                    )
+            walk_declared(node.get("children") or [], here)
+
+    walk_declared(tree, "layoutContract.containerTree")
+    return errors
+
+
+def check_declared_layout_capability(
+    contracts: list[tuple[str, Any]],
+    errors: list[str],
+) -> None:
+    for label, contract in contracts:
+        for message in declared_layout_capability_errors(contract, label):
+            fail(errors, message)
+
+
+def self_check_declared_layout_capability() -> list[str]:
+    """The capability checker must fail closed, so prove it on stripped copies."""
+    verdicts: list[str] = []
+    baseline = {
+        "layoutContract": {
+            "containerTree": [
+                {
+                    "containerType": "group",
+                    "zone": "detail_zone",
+                    "columns": 2,
+                    "span": 24,
+                    "children": [{"containerType": "field", "zone": "detail_zone"}],
+                }
+            ]
+        }
+    }
+    if declared_layout_capability_errors(baseline, "self-check baseline"):
+        verdicts.append("the capability checker must accept a fully declared layout tree")
+    for mutation, expected in (
+        (lambda node: node.pop("zone", None), "zone"),
+        (lambda node: node.pop("columns", None), "columns"),
+        (lambda node: node.update({"span": 40}), "span"),
+    ):
+        stripped = deepcopy(baseline)
+        mutation(stripped["layoutContract"]["containerTree"][0])
+        messages = declared_layout_capability_errors(stripped, "self-check mutation")
+        if not messages or not any(expected in message for message in messages):
+            verdicts.append(f"the capability checker must reject a tree missing its {expected} declaration")
+    return verdicts
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--fixtures", required=True, type=Path)
@@ -358,6 +452,12 @@ def main() -> int:
         registry=registry,
         errors=errors,
         schema_validator=schema_validator,
+    )
+    for self_check_message in self_check_declared_layout_capability():
+        fail(errors, self_check_message)
+    check_declared_layout_capability(
+        (("scene_contract", scene_contract), ("page_orchestration", page_contract), ("ui.contract", ui_contract)),
+        errors,
     )
     p1_contract = deepcopy(ui_contract)
     # The pure P1 helper authors the group; the platform rule declares its grid,
