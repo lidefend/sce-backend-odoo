@@ -87,6 +87,9 @@
       <ScDropdown v-if="headerOverflowItems.length && !isNarrowViewport" class="form-header-more-actions" :items="headerOverflowItems" @select="selectHeaderOverflow">
         <template #trigger><ScButton variant="ghost" size="small">更多操作</ScButton></template>
       </ScDropdown>
+      <span v-if="recordActions.length" class="form-header-record-actions" data-record-actions>
+        <ScButton v-for="action in recordActions" :key="`hdr-record-${action.key}`" class="form-header-record-action" :data-record-action="action.key" variant="danger" appearance="context-action" size="small" :disabled="busy || !action.enabled" :title="action.reason || undefined" type="button" @click="$emit('record-action', action.key)">{{ action.label }}</ScButton>
+      </span>
       <span v-if="configActions.length" class="form-header-action-separator" aria-hidden="true" />
       <ScButton v-for="action in configActions" :key="`hdr-config-${action.key}`" v-bind="actionEvidenceAttributes(action)" class="form-header-config-action" appearance="context-action" variant="ghost" size="small" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</ScButton>
       <ScButton v-if="showDiscard" :data-command-id="formClientCommands.discard.actionId" class="form-header-desktop-secondary-action" variant="ghost" size="small" :disabled="busy" type="button" @click="$emit(formClientCommands.discard.event)">{{ discardLabel }}</ScButton>
@@ -115,6 +118,12 @@ import type { BusyKind, ContractAction, NativeStatusbarVm } from './types';
 import { resolveWorkflowActionBarAuthority, resolveWorkflowStatusAuthority, workflowDisabledReason } from './professionalWorkflowModel';
 import { resolveMobileFormActionAuthority } from './mobileFormActionSettlement';
 
+/**
+ * A record-scoped operation the contract declares for this record.  The surface
+ * renders it as-is; it never derives the operation from a label or a route.
+ */
+export type RecordHeaderAction = { key: string; label: string; enabled: boolean; reason?: string };
+
 const props = defineProps<{
   title: string; subtitle: string; hideTitle: boolean; showHud: boolean; model: string; recordIdDisplay: string;
   actionId: number | null; contractMetaLine: string; intakeMode: boolean; intakeRequiredSummary: string;
@@ -131,6 +140,7 @@ const props = defineProps<{
   canonicalDirectActions: CanonicalFormAction[]; canonicalOverflowActions: CanonicalFormAction[];
   configActions: ContractAction[]; showDiscard: boolean; showDebug: boolean; contractPresent: boolean;
   discardLabel: string; reloadLabel: string;
+  recordActions?: RecordHeaderAction[];
 }>();
 const workflowStatusAuthority = computed(() => resolveWorkflowStatusAuthority(props.statusbar));
 
@@ -214,6 +224,7 @@ const mobileActionItems = computed<ScDropdownItem[]>(() => [
   ...mobileCanonicalDirectActions.value.map((action) => ({ value: `canonical:${action.key}`, label: action.label, disabled: props.busy || !action.enabled })),
   ...canonicalPresentedOverflowActions.value.map((action) => ({ value: `canonical:${action.key}`, label: action.label, disabled: props.busy || !action.enabled })),
   ...props.configActions.map((action) => ({ value: `business:${action.key}`, label: action.label, disabled: props.busy || !action.enabled })),
+  ...(props.recordActions || []).map((action) => ({ value: `record:${action.key}`, label: action.label, disabled: props.busy || !action.enabled })),
   ...(props.showDiscard ? [{ value: 'builtin:discard', label: props.discardLabel, disabled: props.busy }] : []),
 ]);
 const headerExitAction = computed<ProductPageHeaderAction>(() => ({ key: props.backSemanticIdentity, label: props.backLabel, semantic: 'exit', enabled: !props.busy }));
@@ -224,6 +235,7 @@ const emit = defineEmits<{
   back: []; 'set-status': [value: string]; 'return-workbench': []; 'save-draft': []; 'run-primary': [];
   'run-action': [action: ContractAction]; discard: []; copy: []; export: []; reload: [];
   'canonical-action': [action: CanonicalFormAction]; 'canonical-save': [];
+  'record-action': [key: string];
 }>();
 
 function actionEvidenceAttributes(action: ContractAction | null) {
@@ -264,6 +276,11 @@ function selectMobileAction(item: ScDropdownItem) {
 
 function dispatchDropdownAction(value: string) {
   const [kind, key] = value.split(':', 2);
+  if (kind === 'record') {
+    const recordAction = (props.recordActions || []).find((candidate) => candidate.key === key);
+    if (recordAction?.enabled) emit('record-action', recordAction.key);
+    return;
+  }
   if (kind === 'canonical') {
     const action = [...mobileCanonicalDirectActions.value, ...canonicalPresentedOverflowActions.value].find((candidate) => candidate.key === key);
     if (action?.enabled) emit('canonical-action', action);

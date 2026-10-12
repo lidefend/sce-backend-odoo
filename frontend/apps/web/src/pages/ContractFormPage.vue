@@ -44,6 +44,7 @@
       :direct-actions="isConfigurationPreview || canonicalProductRendererActive ? [] : headerBusinessDirectActions" :overflow-actions="isConfigurationPreview || canonicalProductRendererActive ? [] : headerBusinessOverflowActions" :config-actions="isConfigurationPreview || canonicalProductRendererActive ? [] : headerConfigActionsVisible" :canonical-direct-actions="!isConfigurationPreview && canonicalProductRendererActive ? canonicalHeaderActions.direct : []" :canonical-overflow-actions="!isConfigurationPreview && canonicalProductRendererActive ? canonicalHeaderActions.overflow : []"
       :show-discard="showDiscardAction" :show-debug="showDebugActionsVisible" :contract-present="Boolean(contract)" :discard-label="formUiLabel('discard')" :reload-label="formUiLabel('reload')"
       @back="returnToPreviousPage" @set-status="setStatusbarValue" @return-workbench="returnToBusinessConfigDesigner" @save-draft="saveRecord()"
+      :record-actions="recordHeaderActions" @record-action="runRecordDeleteAction"
       @run-primary="runPrimaryFormAction" @run-action="runAction" @canonical-action="runCanonicalFormAction($event.actionRef)" @canonical-save="saveRecord()" @discard="discardChanges" @copy="copyContractJson" @export="exportContractJson" @reload="reload"
     >
       <template #notice>
@@ -345,6 +346,7 @@ import { isHudEnabled, isSceneBlocksDebugEnabled } from '../config/debug';
 import { config } from '../config';
 import { intentRequest } from '../api/intents';
 import { ApiError } from '../api/client';
+import { unlinkRecord } from '../api/data';
 import type { ChatterTimelineEntry } from '../api/chatter';
 import { executeButton } from '../api/executeButton';
 import { triggerOnchange } from '../api/onchange';
@@ -642,6 +644,7 @@ import {
 import { useIntakeAutosaveRuntime } from './contractForm/useIntakeAutosaveRuntime';
 import { createStandardFormCompositionRuntime } from './contractForm/standardFormCompositionRuntime';
 import { describeRecordActionDenials } from '../app/presentation/recordActionDenialPresentation';
+import { resolveRecordDeleteDecision } from '../app/presentation/recordDeleteAction';
 import { createStandardDetailCompositionRuntime } from './contractForm/standardDetailCompositionRuntime';
 import { resolveStandardPageTypeFromStore, type StandardPageTypeDecision } from '../app/presentation/standardPageType';
 import {
@@ -1037,6 +1040,50 @@ async function confirmAndUpdateNativeActivity(entry: ChatterTimelineEntry, actio
   });
   if (confirmed !== true) return;
   await updateNativeActivity(entry, action);
+}
+const recordDeleteBusy = ref(false);
+const recordDeleteDecision = computed(() => resolveRecordDeleteDecision({
+  store: v2ContractStore.value,
+  hasRecord: Boolean(recordId.value),
+  renderProfile: renderProfile.value,
+  label: formUiLabel('record_delete'),
+  busy: busy.value || recordDeleteBusy.value,
+  isConfigurationPreview: isConfigurationPreview.value,
+}));
+const recordHeaderActions = computed(() => (
+  recordDeleteDecision.value.action ? [recordDeleteDecision.value.action] : []
+));
+// The record delete runs through the intent the contract declares for the
+// operation (`api.data.unlink`); the surface never writes the ORM directly.  A
+// dry run lets the backend answer with the declared policy verdict before the
+// real unlink, exactly as the collection batch delete does.
+async function runRecordDeleteAction() {
+  const action = recordDeleteDecision.value.action;
+  if (!action || !action.enabled) return;
+  const targetModel = String(model.value || '').trim();
+  const targetId = Number(recordId.value) || 0;
+  if (!targetModel || !targetId) return;
+  const recordLabel = String(pageDisplayTitle.value || targetModel).trim() || targetModel;
+  const confirmed = await intentConfirmationRef.value?.confirm({
+    actionLabel: action.label,
+    message: `“${recordLabel}”删除后无法恢复，是否继续？`,
+  });
+  if (confirmed !== true) return;
+  recordDeleteBusy.value = true;
+  try {
+    const context = buildFormRequestContext(route.query as Record<string, unknown>);
+    const idempotencyKey = `record.delete:${targetModel}:${targetId}:${Date.now()}`;
+    await unlinkRecord({ model: targetModel, ids: [targetId], context, idempotencyKey, dryRun: true });
+    await unlinkRecord({ model: targetModel, ids: [targetId], context, idempotencyKey });
+    returnToPreviousPage();
+  } catch (error) {
+    const message = error instanceof Error && error.message
+      ? error.message
+      : '删除失败，请稍后重试。';
+    submissionFeedback.value = { kind: 'error', message };
+  } finally {
+    recordDeleteBusy.value = false;
+  }
 }
 const model = computed(() => String(route.params.model || v2ContractStore.value?.snapshot.pageInfo.model || ''));
 const isManagedRelationCreateDialog = computed(() => Boolean(

@@ -51,7 +51,8 @@
     "frontend/apps/web/src/pages/contractForm/",
     "scripts/verify/",
     "contracts/generated/contract_structure_fingerprint.json",
-    "docs/engineering_convergence/"
+    "docs/engineering_convergence/",
+    "frontend/apps/web/src/pages/ContractFormPage.vue"
   ],
   "environment": {
     "kind": "offline",
@@ -468,5 +469,5 @@
     "acceptance write retained: payment.request#2847 (PRQ2601066, draft) created during 01-D save closed-loop. Fact check: the list surface's batch delete IS contract-declared and wired (batch_policy.available_actions includes 'delete'; execution_intents['delete']=api.data.unlink; client executor DECLARED_BATCH_EXECUTORS['api.data.unlink']=unlink; gated by delete_policy.delete_mode + ACL). The record was retained because no list toolbar was exercised against it, not because delete is unwired; cleanup uses the governed entry make local.dev.reset_payment_request_fixture.",
     "capability gap (recorded, not fixed): the list surface declares no batch import — no batch_policy action, no execution_intents entry, no DECLARED_BATCH_EXECUTORS entry, and no backend handler (only addons/smart_core/handlers/file_upload.py exists). Today's contract-driven list batch capability set = export/archive/activate/delete. The frontend reports a declared-but-unexecutable intent instead of inventing one, so batch import is a genuine contract+executor gap, not a rendering defect."
   ],
-  "next_exact_step": "Layout Vocabulary 收口（owner 裁定 A+：词汇升级、行为不变）已实现并验证：formStructureContract 由单一 layoutPolicy 拆为 structureSource/structureAuthority，新 structureAuthority 在 4 个产出点与旧 layoutPolicy 双射等价（静态证明 + project/payment 实证基线对照），旧字段在载荷清零、代码无残留读取；新增 verify.layout.vocabulary.lint 守卫 + 11 项负例。01-C 运行时探针（3 身份×2 模型×2 profile）与 01-D 浏览器 4 场景（字段表达/终端投影/保存闭环/结构来源一致性）通过，0 pageerror。范围外观察：wutao 点击菜单 559 付款申请返回 403（demo_finance 正常），diff 无菜单/权限改动，属权限数据事实，不在本轮修复。下一步：提交本轮（发现 A/B + 词汇收口 + 01-D），跑 make ci.delivery.freeze.prepare 与干净树 make ci.local.quick 各一次；01-E span→deliverySpan 独立迁移最后执行。"
+  "next_exact_step": "记录删除能力已接入：契约已声明记录级 unlink 处置（actionContract.deletePolicy + statusContract.globalStatus.effectiveRecordCapabilities.unlink，含状态门与拒绝原因），本轮补齐前端渲染与执行：新增 app/presentation/recordDeleteAction.ts（契约裁决→控件，拒绝保留契约原因），ContractFormProductHeader 增 record-actions 通道，ContractFormPage 以 dry-run→确认→api.data.unlink→返回列表执行；L1/L2 已验证（verify.frontend.record_delete_action.unit 10 cases、typecheck.strict、canonical_form_presenter、4 项表单守卫 PASS）。下一步：批量导入（契约 batch_policy 增 import + execution_intents.import=api.data.import；新增 handlers/api_data_import.py 以内核 base_import 为受管导入内核；前端 DECLARED_BATCH_EXECUTORS 增执行器），仅在新能力可用后再声明，避免出现声明了却无法执行的交付面。"
 }

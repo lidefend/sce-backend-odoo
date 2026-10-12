@@ -485,6 +485,14 @@ verify.frontend.contract_v2_runtime_policy.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_v2_runtime_policy_test.ts --bundle --platform=node --format=esm --outfile=/tmp/contract-v2-runtime-policy-test.mjs >/dev/null
 	@node /tmp/contract-v2-runtime-policy-test.mjs
 
+# The record delete control is projected from the contract's declared record
+# operation disposition: it appears only for a granted `unlink` capability and
+# never relaxes a declared policy/state denial into an enabled control.
+.PHONY: verify.frontend.record_delete_action.unit
+verify.frontend.record_delete_action.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/record_delete_action_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/record-delete-action-test.mjs >/dev/null
+	@node /tmp/record-delete-action-test.mjs
+
 # A declared node's authoritative verdict (field widgetStatus / declared action
 # buttonStatus / container containerStatus) must be consumed for that node; a
 # declared-visible action must not fall through a widgetId-only lookup.

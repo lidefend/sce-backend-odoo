@@ -21,6 +21,7 @@ export function formUiLabelFromLabels(labels: Record<string, string>, key: strin
     discard: '放弃',
     reload: '刷新表单数据',
     save_success: '保存成功，已同步最新表单内容。',
+    record_delete: '删除',
   };
   return labels[key] || fallbackLabels[key] || key;
 }
