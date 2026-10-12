@@ -3219,3 +3219,54 @@ owner 原话：**「G1，G2直接执行，布局契约按照职责界限执行�
 ### 33.7 四态（不夸大）
 
 批次/迭代级：本轮完成（两块根因收口 + 列表范围一次复核）。主线集成：**待 PR 合并**（本轮两个 commit 目前只在分支上）。**版本发布未做**。**产品交付未完成** —— 唯一剩余的人工步骤仍是 owner 本人登录验收（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`）。
+
+
+---
+
+## 34. 第 34 轮（2026-10-12）：定时 CI 判红归因与固定 pnpm 工具链解析修复（P4 交付工具，无产品代码）
+
+### 34.1 三个红灯，一个根因
+
+| 运行 | 事件 | 结论 |
+| --- | --- | --- |
+| `38179577055` | schedule `professional_quality_gate` | **根因** |
+| `38180095789` | schedule `release_candidate_gate` | 下游等待者，日志 `candidate workflow failed: professional_quality_gate.yml`，同源非独立缺陷 |
+| `38143504375` | workflow_dispatch `frontend_release_gate` | 属上一轮已修范围（其后的 schedule `38179866390` 已 success），本轮不重复处理 |
+
+### 34.2 根因：共享套件里有需要 pnpm 工具链的守卫，而消费它的车道从不激活固定版本
+
+2026-10-11 的共享套件治理 `9c2af878` 把 73 个原先只在本地跑的守卫接进 `verify.contract.architecture.suite`。该列表上方的注释本身写明：**需要 pnpm 工具链的守卫不得加入此处**。而 `verify.menu_config_tree_editor.behavior` 恰好需要 pnpm/esbuild（它 `exec esbuild` 打包 `useMenuTreeEditor.ts`），于是：
+
+1. `professional_quality_gate` 的 full 车道消费该套件，却从不激活 `frontend/package.json` 固定的 `pnpm@9.12.3`（只有 `frontend_release_gate` 做了这件事）；
+2. `scripts/dev/pnpm_exec.sh` 的最后兜底 `exec corepack pnpm`，在调用目录（仓库根，无 `packageManager` 字段）会解析 corepack 自身**未固定的默认版本**——日志实测 `pnpm/12.11.2`；
+3. 该版本下载/激活失败 → `MODULE_NOT_FOUND` 退出 → **真实验收结果被掩盖**，且该步空转约 5 分钟（22:22:44 → 22:27:58）。
+
+这是「工具解析未固定 + 车道缺依赖」的组合，不是产品缺口，也不是守卫逻辑错。
+
+### 34.3 修复：解析顺序固定，删除未固定兜底，fail-closed
+
+`scripts/dev/pnpm_exec.sh` 解析顺序收敛为三步，全部绑定同一个 pin（仍单源于 `frontend/package.json`，不新增第二处版本声明）：
+
+1. pin 的 corepack 缓存条目；
+2. 显式**固定**激活：`corepack prepare pnpm@<pin> --activate`，回退 `corepack install -g pnpm@<pin>`；
+3. PATH 上版本与 pin **完全相等**的 pnpm。
+
+删除未固定的 `corepack pnpm` 兜底；三步都不可得时给出可执行提示并 `exit 2`，不再静默运行外来 pnpm。
+
+未把守卫移出共享套件：移出会让车道覆盖债务增长（`verify.verification.lane_coverage` 棘轮），而这属于工具层缺陷，应在工具层修。
+
+### 34.4 本地实证
+
+| 场景 | 结果 |
+| --- | --- |
+| ① cache-hit（正常开发机） | `0.39s` 输出 `9.12.3` |
+| ② 隔离 root + 空 `COREPACK_HOME`（**CI 失败场景对照**） | 走固定激活，`7.1s` 落地 `<COREPACK_HOME>/v1/pnpm/9.12.3` 并运行 `9.12.3` |
+| ③ 伪造 corepack 失败 + PATH 上 pnpm 报 `12.11.2` | 按设计 fail-closed，`exit 2`，不再跑外来 pnpm |
+| `make verify.menu_config_tree_editor.behavior` | PASS `cases=11`（本轮 CI 判红的那一条） |
+| `make verify.frontend.typecheck.strict` | PASS（其声明输入含 `scripts/dev/pnpm_exec.sh`，故属本轮受影响的依赖失效，非安心重跑） |
+
+### 34.5 边界与四态
+
+- 责任层：`scripts/dev/pnpm_exec.sh` 属 **P4 交付工具**；未改产品代码、未改必需检查集合、未放宽断言、未改 CI 门槛。
+- 已修复但**远端证明待取**：用 `workflow_dispatch` 在分支上跑 `professional_quality_gate` 证明曾被判红的车道转绿，结论写入 PR #646 文本（不另建台账）。
+- 四态不变：批次级本轮完成 → 主线集成=PR #646 待合并 → **版本发布未做** → **产品交付未完成**（待 owner 本人登录 `wutao` / `sc_demo` / `http://1.95.85.92:18081/`）。
