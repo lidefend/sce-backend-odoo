@@ -37,6 +37,8 @@ class TempRegistryTree:
             lint.COMPONENT_REL,
             lint.SCHEMA_REL,
             lint.FRONTEND_REGISTRY_REL,
+            lint.carrier.REGISTRY_REL,
+            lint.carrier.CARRIER_REL,
         ):
             target = self.root / rel
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -159,6 +161,28 @@ class NegativeCaseTest(unittest.TestCase):
         domain.write_text("version: 1\nfields:\n  amount:\n    semantic: money\n", encoding="utf-8")
         errors, _ = self.tree.run()
         self.assertEqual([], errors)
+
+    def test_runtime_carrier_drift_is_detected(self) -> None:
+        # A declaration edit without regeneration must not silently keep the
+        # previous vocabulary in the addon.
+        self.tree.edit(
+            self.tree.semantic,
+            "  duration: {category: temporal, component: sc.value.duration}",
+            "  duration: {category: temporal, component: sc.display.text}",
+        )
+        errors, _ = self.tree.run()
+        self.assertTrue(
+            any("out of sync with the declaration" in error for error in errors),
+            f"carrier drift was not detected: {errors}",
+        )
+
+    def test_missing_runtime_carrier_is_detected(self) -> None:
+        (self.tree.root / lint.carrier.CARRIER_REL).unlink()
+        errors, _ = self.tree.run()
+        self.assertTrue(
+            any("runtime carrier is missing" in error for error in errors),
+            f"missing carrier was not detected: {errors}",
+        )
 
 
 if __name__ == "__main__":

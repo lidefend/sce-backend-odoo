@@ -94,12 +94,25 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     dialog_model = read_text(dialog_model_path)
     normalizer = read_text("addons/smart_construction_core/core_extension_contract_normalizers.py")
     assembler = read_text("addons/smart_core/core/unified_page_contract_v2_assembler.py")
+    # The one2many -> detail-collection mapping is declared once, in the contract
+    # registry, and projected into the runtime carrier.  Asserting a literal in
+    # the assembler would re-create the private second vocabulary the registry
+    # replaced, so the authority check follows the declaration.
+    semantic_declaration = read_text("contracts/registry/semantic.yaml")
+    component_declaration = read_text("contracts/registry/component.yaml")
+    carrier = read_text("addons/smart_core/core/contract_runtime/semantic_registry_generated.py")
     project_layout = read_text("addons/smart_construction_core/core_extension_project_layout.py")
     example = read_text("docs/architecture/unified_page_contract_v2/examples/nested_form_relation.json")
     if "sc.relation.table" not in model or "ProfessionalDetailCollectionControl" not in registry:
         failures.append("detail collection registry authority is incomplete")
-    if 'field_type == "one2many"' not in assembler or 'return "sc.relation.table"' not in assembler:
-        failures.append("one2many is not projected to the detail collection authority")
+    if "field_types: [one2many]" not in semantic_declaration:
+        failures.append("one2many is not declared as a detail collection field type")
+    if "sc.relation.table" not in component_declaration:
+        failures.append("detail collection component authority is not declared")
+    if "'detail_collection': 'sc.relation.table'" not in carrier:
+        failures.append("runtime carrier does not project one2many to the detail collection authority")
+    if "contract_runtime.semantic_resolver" not in assembler:
+        failures.append("assembler does not resolve component keys through the contract registry")
     if '"componentKey": "sc.table.data"' in project_layout:
         failures.append("project layout extension still emits legacy sc.table.data component keys")
     if '"sc.relation.table"' not in project_layout or '"sc.relation.many2many"' not in project_layout:

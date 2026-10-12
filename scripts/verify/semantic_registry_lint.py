@@ -18,9 +18,13 @@ check. This entry therefore asserts, in one place:
 5. every derivation rule and the derivation default name a declared semantic;
 6. every ``semantic:`` reference used by another contract document is legal;
 7. the frontend registry source declares exactly the same component keys.
+8. the committed runtime carrier equals the projection of the declaration.
 
 Check 7 is what makes a second private vocabulary impossible: a component key
 may not exist on one side only, in either direction.
+Check 8 closes the other half: the runtime cannot keep rendering the previous
+vocabulary after the declaration changed, because the carrier is re-projected
+here and compared byte for byte.
 """
 
 from __future__ import annotations
@@ -34,6 +38,10 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "scripts" / "contract"))
+
+import generate_semantic_registry as carrier  # noqa: E402
+
 # Repo-relative locations. Every helper takes ``root`` so the checks can be
 # exercised against a synthetic tree in focused tests.
 CONTRACTS_REL = Path("contracts")
@@ -220,6 +228,24 @@ def run(root: Path = ROOT) -> tuple[list[str], dict]:
         for key in sorted(set(backend_keys) - set(frontend_keys)):
             errors.append(f"component.yaml: component '{key}' has no frontend registration")
 
+    carrier_path = root / carrier.CARRIER_REL
+    if not carrier_path.is_file():
+        errors.append(
+            f"{carrier.CARRIER_REL.as_posix()}: runtime carrier is missing; run "
+            "python3 scripts/contract/generate_semantic_registry.py"
+        )
+    else:
+        try:
+            expected = carrier.render_repository_carrier(root)
+        except SystemExit as exc:  # the generator refuses malformed declarations
+            errors.append(f"{carrier.CARRIER_REL.as_posix()}: cannot be projected ({exc})")
+        else:
+            if carrier_path.read_text(encoding="utf-8") != expected:
+                errors.append(
+                    f"{carrier.CARRIER_REL.as_posix()}: out of sync with the declaration; run "
+                    "python3 scripts/contract/generate_semantic_registry.py"
+                )
+
     summary = {
         "semantics": len(semantics),
         "components": len(components),
@@ -229,6 +255,7 @@ def run(root: Path = ROOT) -> tuple[list[str], dict]:
         "semantics_with_derivation_rule": len(declared_rule_semantics),
         "semantics_declared_only": sorted(set(semantics) - declared_rule_semantics),
         "frontend_component_keys": len(frontend_keys),
+        "runtime_carrier": carrier.CARRIER_REL.as_posix(),
     }
     return errors, summary
 

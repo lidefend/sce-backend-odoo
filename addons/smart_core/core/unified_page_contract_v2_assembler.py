@@ -18,6 +18,12 @@ from .action_semantics_vocabulary import (
     is_declared as action_semantics_purpose_is_declared,
 )
 from .contract_lifecycle import payload_sha256, seal_unified_page_contract
+from .contract_runtime.semantic_resolver import (
+    component_key as _resolve_component_key,
+    component_key_for_semantic as _component_key_for_semantic,
+    legacy_component_key as _legacy_component_key,
+)
+from .contract_runtime.semantic_resolver import FALLBACK_SEMANTIC as _DISPLAY_SEMANTIC
 from .source_authority import build_source_authority_contract
 from .unified_page_contract_v2_permissions import permission_auth_level, resolve_permission_rights
 from .unified_page_contract_v2_runtime_actions import normalize_runtime_business_actions
@@ -246,52 +252,16 @@ REFERENCE_FIELD_TYPES = frozenset({"many2one_reference", "reference"})
 
 
 def _component_key(widget_type: str, field: dict[str, Any] | None = None) -> str:
-    normalized = _text(widget_type).lower()
-    descriptor = _dict(field)
-    field_type = _text(descriptor.get("ttype") or descriptor.get("type")).lower()
-    relation = _text(descriptor.get("relation")).lower()
-    # A reference value is a (model, id) pair the client resolves to its own
-    # record.  No client registers a reference editor, and a text input cannot
-    # carry one, so the declared type outranks every widget spelling here and
-    # the contract binds the readable display instead of a control the type
-    # cannot use.
-    if field_type in REFERENCE_FIELD_TYPES:
-        return "sc.display.text"
-    if field_type == "monetary" or normalized == "monetary":
-        return "sc.value.money"
-    if normalized in {"percentage", "percentpie"}:
-        return "sc.value.percentage"
-    if normalized == "float_time":
-        return "sc.value.duration"
-    # Odoo's public widget declaration is the presentation authority here.
-    # Both workflow statusbars and ordinary badges keep status semantics; do
-    # not infer status from a model or field name.
-    if normalized in {"statusbar", "badge"}:
-        return "sc.display.status"
-    # many2one字段统一使用专业关系组件，与前端usesProfessionalBusinessValue的设计意图一致
-    # 前端明确排除many2one类型使用业务值组件，避免控件不渲染
-    if field_type == "many2one" or normalized.endswith("many2one"):
-        return "sc.relation.many2one"
-    if field_type == "many2many" and normalized != "many2many_tags":
-        return "sc.relation.many2many"
-    if field_type == "one2many":
-        return "sc.relation.table"
-    mapping = {
-        "input": "sc.input.text",
-        "binary": "sc.input.binary",
-        "textarea": "sc.input.textarea",
-        "number": "sc.input.number",
-        "select": "sc.select.remote",
-        "checkbox": "sc.input.boolean",
-        "date": "sc.input.date",
-        "datetime": "sc.input.datetime",
-        "table": "sc.table.data",
-        "tree": "sc.tree.data",
-        "many2many_tags": "sc.select.tags",
-        "button": "sc.button.action",
-        "display": "sc.display.text",
-    }
-    return mapping.get(widget_type, "sc.display.text")
+    """Deprecated compatibility shim.
+
+    Component selection belongs to ``contracts/registry/semantic.yaml`` +
+    ``component.yaml`` and is resolved by
+    ``core.contract_runtime.semantic_resolver``.  The private mapping that used
+    to live here is gone (FE-CONTRACT-RUNTIME-00 gap G1); this shim only keeps
+    an unmigrated caller working and reports ``deprecated_component_key_usage``.
+    New code resolves through the registry directly.
+    """
+    return _legacy_component_key(widget_type, field)
 
 
 def _widget_type_from_field(field: dict[str, Any]) -> str:
@@ -814,7 +784,7 @@ def _assemble_scene_contract(source: dict[str, Any], *, client_type: str, reques
             "widgetList": widgets,
         }
     ]
-    contract["layoutContract"]["componentRegistry"] = _component_registry(component_keys or {"sc.display.text"})
+    contract["layoutContract"]["componentRegistry"] = _component_registry(component_keys or {_component_key_for_semantic(_DISPLAY_SEMANTIC)})
     contract["statusContract"]["containerStatus"].append({"containerId": container_id, "visible": True, "disabled": False})
     contract["statusContract"]["globalStatus"]["reasonCode"] = _text(state.get("reason_code"), "SCENE_READY")
     _append_actions(contract, actions.get("primary_actions"), source_widget_id=widgets[0]["widgetId"] if widgets else "page.root")
@@ -830,7 +800,7 @@ def _block_widget(block: dict[str, Any]) -> dict[str, Any]:
         "fieldCode": block_key,
         "label": _text(block.get("title"), block_key),
         "span": 12,
-        "componentKey": "sc.display.text",
+        "componentKey": _component_key_for_semantic(_DISPLAY_SEMANTIC),
         "capabilities": [],
         "componentConfig": {"blockType": _text(block.get("block_type"), "runtime_block")},
     }
@@ -887,7 +857,7 @@ def _assemble_page_orchestration(source: dict[str, Any], *, client_type: str, re
         )
         contract["statusContract"]["containerStatus"].append({"containerId": container_id, "visible": True, "disabled": False})
     contract["layoutContract"]["containerTree"] = containers
-    contract["layoutContract"]["componentRegistry"] = _component_registry(component_keys or {"sc.display.text"})
+    contract["layoutContract"]["componentRegistry"] = _component_registry(component_keys or {_component_key_for_semantic(_DISPLAY_SEMANTIC)})
     contract["dataContract"]["dataSource"] = deepcopy(_dict(source.get("data_sources")))
     action_schema = _dict(source.get("action_schema")).get("actions")
     _append_action_schema(contract, _dict(action_schema), source_widget_id="page.root")
@@ -1135,7 +1105,7 @@ def _assemble_ui_contract(
         source=source,
     )
     contract["layoutContract"]["containerTree"] = container_tree
-    contract["layoutContract"]["componentRegistry"] = _component_registry(component_keys or {"sc.display.text"})
+    contract["layoutContract"]["componentRegistry"] = _component_registry(component_keys or {_component_key_for_semantic(_DISPLAY_SEMANTIC)})
     collection_view_key = "tree" if view_type in {"tree", "list"} else view_type
     collection_view = _dict(_dict(ui.get("views")).get(collection_view_key))
     collection_presentation = _dict(collection_view.get("collection_presentation"))
@@ -1725,7 +1695,7 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
     component_widget_type = explicit_widget if explicit_widget in {
         "monetary", "percentage", "percentpie", "float_time", "statusbar", "badge",
     } else widget_type
-    component_key = _component_key(component_widget_type, field)
+    component_key = _resolve_component_key(component_widget_type, field)
     capabilities = ["sortable", "filterable"] if layout_type == "table" else []
     if widget_type == "select":
         capabilities.append("searchable")

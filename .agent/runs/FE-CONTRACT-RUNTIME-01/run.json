@@ -7,16 +7,23 @@
  "goal": ".agent/goals/FE-CONTRACT-RUNTIME-01.yaml",
  "record": "docs/ops/iterations/fe_contract_runtime_01_semantic_registry.md",
  "scope": [
+  ".agent/active-runs.json",
   ".agent/goals/FE-CONTRACT-RUNTIME-01.yaml",
   ".agent/runs/FE-CONTRACT-RUNTIME-01/",
-  ".agent/active-runs.json",
-  "contracts/registry/",
-  "contracts/registry.yaml",
+  "addons/smart_core/core/contract_runtime/",
+  "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+  "addons/smart_core/tests/test_contract_runtime_semantic_resolver.py",
   "contracts/README.md",
-  "scripts/verify/semantic_registry_lint.py",
-  "scripts/verify/test_semantic_registry_lint.py",
+  "contracts/registry.yaml",
+  "contracts/registry/",
+  "docs/ops/iterations/",
   "make/contract.mk",
-  "docs/ops/iterations/"
+  "scripts/contract/generate_semantic_registry.py",
+  "scripts/verify/frontend_professional_business_value_guard.py",
+  "scripts/verify/frontend_professional_detail_collection_guard.py",
+  "scripts/verify/semantic_registry_lint.py",
+  "scripts/verify/test_frontend_professional_business_value_guard.py",
+  "scripts/verify/test_semantic_registry_lint.py"
  ],
  "environment": {
   "kind": "offline",
@@ -28,10 +35,13 @@
    "inputs": [
     "contracts/registry",
     "contracts/registry.yaml",
+    "scripts/contract/generate_semantic_registry.py",
     "scripts/verify/semantic_registry_lint.py",
     "scripts/verify/test_semantic_registry_lint.py",
     "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
-    "make/contract.mk"
+    "make/contract.mk",
+    "addons/smart_core/core/contract_runtime",
+    "addons/smart_core/tests/test_contract_runtime_semantic_resolver.py"
    ],
    "kind": "offline"
   },
@@ -66,10 +76,52 @@
     ".agent/active-runs.json"
    ],
    "kind": "offline"
+  },
+  "assembler_contract_surface": {
+   "target": "verify.business_config.formal_list.unit",
+   "inputs": [
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/core/contract_runtime",
+    "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+    "addons/smart_core/tests/test_load_contract_response_cache.py",
+    "addons/smart_core/tests/test_view_orchestrator.py"
+   ],
+   "kind": "offline"
+  },
+  "frontend_business_value_alignment": {
+   "target": "verify.frontend.professional_business_value.unit",
+   "inputs": [
+    "addons/smart_core/core/contract_runtime",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py",
+    "frontend/apps/web/scripts/professional_business_value_model_test.ts",
+    "frontend/apps/web/src/components/professional-fields",
+    "scripts/verify/frontend_professional_business_value_guard.py",
+    "scripts/verify/test_frontend_professional_business_value_guard.py"
+   ],
+   "kind": "offline"
+  },
+  "frontend_detail_collection_alignment": {
+   "target": "verify.frontend.professional_detail_collection.unit",
+   "inputs": [
+    "addons/smart_core/core/contract_runtime",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py",
+    "contracts/registry/component.yaml",
+    "contracts/registry/semantic.yaml",
+    "frontend/apps/web/scripts/payment_settlement_introduce_dialog_contract_test.ts",
+    "frontend/apps/web/scripts/professional_detail_collection_model_test.ts",
+    "frontend/apps/web/src/components/template",
+    "scripts/verify/frontend_professional_detail_collection_guard.py",
+    "scripts/verify/test_frontend_professional_detail_collection_guard.py"
+   ],
+   "kind": "offline"
   }
  },
  "blockers": [
-  "pre-existing (not introduced by this batch): `make verify.contract.lint` fails with 49 issues on both this branch and origin/main; classify and fix them in their own batch."
+  "pre-existing (not introduced by this batch): `make verify.contract.lint` fails with 49 issues on both this branch and origin/main; classify and fix them in their own batch.",
+  "classified, not a blocker: addons/smart_construction_core/tests/test_core_extension_v2_finalize.py asserts widget component keys but imports lxml, so it belongs to the in-container Odoo module suite (L3/L4), not the offline L2 lane. Its relation mappings (sc.relation.table / sc.relation.many2many) are covered offline by the resolver behaviour baseline in addons/smart_core/tests/test_contract_runtime_semantic_resolver.py.",
+  "pre-existing (not introduced by this batch): scripts/verify/test_frontend_quality_safety_domain_rollout.py:123 asserts `field_type == \"many2one\" and relation == \"res.users\"` in addons/smart_core/core/unified_page_contract_v2_assembler.py. That literal is absent at the run baseline too (git show 991a9d9b:... shows the res.users special case was removed by merge d3bdb3aa, PR #399), so the assertion is stale, not a 01-B regression. It lives in the L3/L4 target verify.frontend.professionalization.quality_safety_domain.runtime; classify it with the other pre-existing findings, do not silently rewrite it here."
  ],
- "next_exact_step": "FE-CONTRACT-RUNTIME-01-A is written and its non-zero targeted check passes. Commit 01-A, then start 01-B: replace the private _component_key mapping in addons/smart_core/core/unified_page_contract_v2_assembler.py with a resolver that reads contracts/registry/semantic.yaml, keeping componentKey as a deprecated fallback and proving payment.request rendering is unchanged."
+ "next_exact_step": "01-B is committed. Start 01-C: let the frontend consume the same declaration instead of keeping a second table -- extend scripts/contract/generate_semantic_registry.py to project frontend/apps/web/src/app/presentation/semantic_registry.generated.ts from contracts/registry/component.yaml, rebuild professionalComponentRegistry.ts on top of it (keeping the rendererByFieldType/readiness behaviour), add the semanticResolver + verify.semantic_runtime_resolution unit test, and re-point semantic_registry_lint check 7 at the generated file. Record the affected offline checks and commit 01-C."
 }

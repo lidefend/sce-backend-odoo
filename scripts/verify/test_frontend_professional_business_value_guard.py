@@ -21,6 +21,31 @@ class ProfessionalBusinessValueGuardTests(unittest.TestCase):
 
         self.assertTrue(any("forbidden product special case" in item for item in validate(read_text)))
 
+    def test_missing_runtime_carrier_key_fails(self):
+        """The vocabulary must survive the projection from the declaration."""
+
+        def read_text(path):
+            value = (self._root() / path).read_text(encoding="utf-8")
+            if path.endswith("contract_runtime/semantic_registry_generated.py"):
+                return value.replace("'sc.value.money'", "'sc.value.removed'")
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("runtime carrier is missing business value key" in item for item in failures), failures)
+
+    def test_assembler_bypassing_the_registry_fails(self):
+        def read_text(path):
+            value = (self._root() / path).read_text(encoding="utf-8")
+            if path.endswith("unified_page_contract_v2_assembler.py"):
+                return value.replace("contract_runtime.semantic_resolver", "removed_semantic_resolver")
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(
+            any("does not resolve component keys through the contract registry" in item for item in failures),
+            failures,
+        )
+
     def test_visible_money_label_fails(self):
         """A shared style that no longer clips turns the accessible name into a visible duplicate."""
 

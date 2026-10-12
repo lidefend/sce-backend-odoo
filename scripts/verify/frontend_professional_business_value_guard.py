@@ -12,6 +12,12 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     section = read_text("frontend/apps/web/src/components/template/FormSection.vue")
     registry = read_text("frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts")
     assembler = read_text("addons/smart_core/core/unified_page_contract_v2_assembler.py")
+    # The component vocabulary is declared once, in the contract registry, and
+    # projected into the runtime carrier.  The assembler used to hold a private
+    # copy of these keys; requiring a literal here would re-create that second
+    # vocabulary, so the authority moved with the declaration.
+    declaration = read_text("contracts/registry/component.yaml")
+    carrier = read_text("addons/smart_core/core/contract_runtime/semantic_registry_generated.py")
     money = read_text("frontend/apps/web/src/components/design-system/ScMoney.vue")
     patterns = read_text("frontend/apps/web/src/styles/product-patterns.css")
     keys = (
@@ -19,8 +25,14 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         "sc.value.duration",
     )
     for key in keys:
-        if key not in model or key not in registry or key not in assembler:
-            failures.append(f"business value authority is incomplete for {key}")
+        if key not in declaration:
+            failures.append(f"business value declaration is incomplete for {key}")
+        if key not in carrier:
+            failures.append(f"runtime carrier is missing business value key {key}")
+        if key not in model or key not in registry:
+            failures.append(f"frontend business value authority is incomplete for {key}")
+    if "contract_runtime.semantic_resolver" not in assembler:
+        failures.append("assembler does not resolve component keys through the contract registry")
     for marker in (
         'data-professional-field-family="business-value"', ':data-business-value-kind',
         ':data-presentation-mode', ':data-render-profile', ':data-control-state',

@@ -25,9 +25,7 @@ derivation:
   rules:
     - semantic: reference
       when: {field_types: [many2one_reference, reference]}
-      reason: >-
-        reference 值是 (model, id) 对，客户端解析后展示只读文本；声明类型优先于
-        任何 widget 拼写，契约绑定可读显示而不是控件。
+      reason: reference 值是 (model, id) 对，客户端解析后展示只读文本；声明类型优先于任何 widget 拼写。
     - semantic: money
       when: {field_types: [monetary]}
     - semantic: money
