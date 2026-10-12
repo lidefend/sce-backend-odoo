@@ -3142,3 +3142,80 @@ observed detail contract is not the approved contract: observed_request_conflict
 **六、四态（不夸大）**
 
 不变：批次/迭代级本轮完成；主线集成=已完成（`a0afb331`）；**版本发布未做**；**产品交付未完成**（待 owner 本人登录统一验证）。
+
+
+---
+
+## 33. 第 33 轮（2026-10-12）：详情契约绑定 seal 收敛 + canonical 示例 provenance 归一（P0 契约 + P4 工具/声明，无产品代码）
+
+### 33.1 本轮口径（owner 裁决落地）
+
+owner 原话：**「G1，G2直接执行，布局契约按照职责界限执行，契约能力不回退，也不要求选定组件系统必须完整消费契约能力。」**
+据此本轮只做三件事，各守其责任层：A=P0 契约 provenance（本分支自引入回归）、B=P4 探针/声明（详情绑定 seal 收敛）、C=在**同一 served 身份**上把受影响的列表范围复核一次。全程未改产品代码、未做模块升级、未放宽任何断言。
+
+### 33.2 A（P0）canonical 示例 provenance 归一 —— 一处静默漂移
+
+**漂移事实。** `1a290550` 重写了 `unified_page_contract_v2.schema.json` 并把 `contract_lifecycle.UNIFIED_PAGE_SCHEMA_SHA256` 重钉为 `c88b96a2`，但 4 个 canonical 示例的 `meta.lifecycle.definition.schemaSha256` 仍是旧摘要 `28be508e`。
+
+**为什么守卫漏了。** `meta.lifecycle` 不在 `contractSha256` 覆盖内，schema/client 守卫也**不校验该字段**，因此漂移可以静默存活，只在 `scripts.verify.test_dev_acceptance_release_identity` 的 8 条用例（含 `test_exact_instance_receipt_passes_and_binds_custody`）上全线转红——即只在 Quick/交付前才暴露。这是典型的"守卫覆盖缺口 + 派生物未同步"组合。
+
+**修复（不放宽断言、不改产品行为、不手改常量）。** 让 `contract_schema_declaration_sync` 的**同一条派生路径同时拥有示例绑定**：write 模式就地重钉（brace/string 感知的 span 限定，只改派生值、保留全部格式），`--check` 模式把示例漂移与 lifecycle 漂移一起 fail-closed。用该入口重钉 4 个示例，diff 恰为 4 行 digest；新增 4 条单元用例锁定（示例已对齐权威、definition 内漂移可检出、render 可原地复原到已提交字节、无 definition 的文档原样返回）。
+
+| 验证 | 结果 |
+| --- | --- |
+| `verify.contract.schema.declaration.sync` | PASS（8 OK，`sha256=c88b96a2964a version=2.2.0 examples=4`） |
+| `verify.unified_page_contract.v2.schema` | PASS（4 示例） |
+| `verify.unified_page_contract.v2.client` | PASS（3 clients） |
+| `backend_contract_lifecycle_authority_guard` | 全维度 passed，`errors=[]` |
+| `test_dev_acceptance_release_identity` | **49 OK**（原 8 failures 归零） |
+
+提交 `bc8d1b0b`。
+
+### 33.3 B（P4）详情绑定 seal 收敛 —— 批准实例必须按声明回放业务上下文
+
+**分歧证据。** 同一主体 `fixture_role_finance`、同一记录 36178 的五形态只读重放证明：差异**不是 op、不是 model、也不是 lang/tz**（G1 已生效），而是前端 by-contract 行为把 `system.init` 声明的 `record_context.request_context`（实测 `{"company_id":21}`）回放到 `params.context`。契约封存剥离 `trace_id` 但**保留业务上下文**，批准实例未声明它，于是两个 seal 合理分歧：observed `8c4310dd` / approved `bc2cc863`。
+
+**为什么这是缺陷而不是"断言太严"。** 前端 `intents.ts:65 withCurrentRecordContext` 忠实转发运行时声明，属契约驱动**正确行为**；契约封存保留业务上下文⇒批准实例**必须同样携带**，否则它声明的是"页面从不发送的请求形态"。因此钉住通用投影/声明责任，而不是放宽断言，也不是加付款模型特判。
+
+**修复（声明驱动）。** 探针新增 `resolve_contract_path` / `resolve_declared_record_context`（intent 名可含点，按 `contract_documents` 键做**最长前缀匹配**）/ `build_contract_request_params`；解析失败 fail-closed（`contract_request_context_source_unavailable`，**不发请求**）；`validate_acceptance_declaration` 新增 `contract_declaration_request_context_source_invalid`；daily 声明新增 `request.params_context_from = system.init.record_context.request_context`（只动 daily 实例，不动通用实例）。新增 6 条纯行为/声明消费用例（`ParamsContextBindingTest`），**不锁定选择器字符串、不锁定 `44px`/`60px` 文本出现**。
+
+| 验证 | 结果 |
+| --- | --- |
+| `verify.daily_dev.acceptance.readonly.probe` | PASS，契约 11/11，`errors=[]` |
+| 批准请求 `params.context` | `{"company_id":21}`（公司来自运行时声明，未硬编码） |
+| `approved_semantic_sha256` | `8c4310dd…`，与浏览器观测**逐字节一致** |
+
+提交 `7add8be3`。
+
+### 33.4 C 列表范围一次复核（全部绑定 served `7add8be3`）
+
+| scope | 视口/主题 | 结果 | 报告 |
+| --- | --- | --- | --- |
+| `all` | 1440+390 明 | PASS：records 10/10（含 `approved_contract_binding`、`return_to_source`）、gated 108/108、负例 5/5、运行时错误 0 | `.runtime/final-acceptance/list-surface-all-7add8be3.json` |
+| `all` | 1440+390 暗 | 同上（逐项一致） | `…-7add8be3-dark.json` |
+| `workbench-only` | 1440+390 | PASS：4 项观测（声明预载轨道 `{intent:system.init, params.with:[workspace_home]}`；`router-workspace-home` 各渲染 official Card） | `list-surface-landing-carrier-7add8be3.json` |
+| `form-profiles` | 1440+390 明/暗 | PASS：各 12/12，`declared-theme` 分别解析 light/dark | `list-surface-form-profiles-7add8be3/{light,dark}.json` |
+| 关系往返 | 1440 | PASS：18 个声明入口、3 个可见关系全部 opened、往返恢复 path/title/statusbar/tabs/actions 全 true、`denied_requests=0`、`console_errors=0` | `relation-roundtrip/20261012T015718` |
+
+说明：`workbench-only`、`form-profiles`、关系往返三条车道本轮是**因声明输入变更而重跑**（daily 声明实例被修改 + 探针回执被重生成），不是为了安心重跑；本轮前它们的回执绑在 `56083d36`/`a0afb331`。关系往返证据是**真实点击**（点击打开 → 返回原记录 → 标签/动作恢复），不是 handler 诊断。
+
+### 33.5 受管部署与读回（不是"只重建前端"）
+
+`daily.runtime.candidate.release` 三段全 PASS：`bundle_sync`（`source_sha=7add8be3`、`bundle_sha256=d60a203c…`、`old_sha=7a58470d`）→ `source_revision.align`（`head=7add8be3`、`restarted=true`）→ `published_face.converge`（`construction.standard`/`construction.preview` 各 90 页）。升级按机制复用（`upgrade_mode=reused`，原因是 deployed module tree **byte-identical**，`smart_core` tree `8673ff19…`）：本轮只有探针/声明/示例/测试变化，**后端模块树未变**，因此不是"只重建前端就验收后端"。
+
+`/api/runtime-version` 读回：`git_sha=source_revision=7add8be3ec37e89eb9cb1039d1fac592efef1884`、`database=sc_demo`、`frontend_build_sha256=dac3544e…`。
+
+### 33.6 台账账目
+
+| 指标 | 本轮前 | 本轮后 |
+| --- | --- | --- |
+| reusable | 27 | **37** |
+| stale | 25 | **17** |
+| not_run | 27 | 27 |
+| failed | 1 | **0** |
+
+新增两个有界 check：`contract_schema_declaration_sync`（`verify.contract.schema.declaration.sync`，8）与 `frontend_acceptance_environment_guard`（`verify.frontend.acceptance.environment.guard`，64），让本轮的定向入口可被后续轮次复用而不是重复手跑。仍为 stale 的 17 项均为更早轮次遗留、声明输入未被本轮触及，不做安心重跑。
+
+### 33.7 四态（不夸大）
+
+批次/迭代级：本轮完成（两块根因收口 + 列表范围一次复核）。主线集成：**待 PR 合并**（本轮两个 commit 目前只在分支上）。**版本发布未做**。**产品交付未完成** —— 唯一剩余的人工步骤仍是 owner 本人登录验收（`wutao/123456`、`sc_demo`、`http://1.95.85.92:18081/`）。
