@@ -483,9 +483,13 @@ owner 裁定：**用 `payment.request` 证明 Semantic Registry + Delivery Proje
    以 `model == "payment.request"` + `field_code == "outflow_line_ids"` 分支写入字面量
    `sc.payment.settlement_detail_collection`。字段语义（"这是一个可从结算单引入、金额与明细合计绑定的集合"）
    因此没有进入声明层，新增同类字段只能再写一段映射代码——违背"新增字段只声明 semantic"的验收标准。
-2. **非法键静默回落。** 同文件 `general_contract_tax_contract` 给 `tax_rate` 生成的字段节点写
-   `"componentKey": "sc.input.many2one"`。该键从未被 `contracts/registry/component.yaml` 声明，
-   前端只能回落到默认渲染，缺陷不可见。
+2. **历史 component identity 假象。** 同文件 `general_contract_tax_contract` 给 `tax_id` 生成的字段节点写
+   `"componentKey": "sc.input.many2one"`。该键从未被 `contracts/registry/component.yaml` 声明（该文件声明的是
+   `sc.input.text/number/date/...`，many2one 的事实身份是 `sc.relation.many2one`）。改动前装配器
+   `_component_registry` 不过滤，会把任意键原样发布，于是"契约宣称了一个前端无法解析的身份"：
+   前端对未登记键是**抛错**而非静默回落（`professionalComponentRegistry.ts:193`
+   `PROFESSIONAL_COMPONENT_UNREGISTERED`）。
+   该行由基线提交 `401bcb3b` 引入，非本批次新增。
 3. **后端私有版本字面量。** `unified_page_contract_v2_assembler.py::_component_registry` 与
    `handlers/ui_contract_v2.py` 各自持有 `{"version": "1.0"}`，即组件身份事实的第二份副本。
 
@@ -497,14 +501,14 @@ owner 裁定：**用 `payment.request` 证明 Semantic Registry + Delivery Proje
 | `addons/smart_core/core/contract_runtime/semantic_resolver.py` | 新增公共入口 `component_registry()` + `COMPONENT_CONTRACT_VERSION`：全运行时唯一的组件身份/版本构造器，**fail-closed**——未登记键报 `contract_component_undeclared` 且不发布。 |
 | `addons/smart_core/core/unified_page_contract_v2_assembler.py`、`addons/smart_core/handlers/ui_contract_v2.py` | 私有 `"1.0"` 字面量退场，统一委托 `component_registry()`。 |
 | `scripts/verify/semantic_registry_lint.py` | 新增后端方向检查 `backend_component_key_literals`：扫描 `addons/**/*.py` 中的组件键字面量，未声明即报错（测试模块除外）。 |
-| `scripts/verify/test_construction_semantic_declarations.py` | 新增 11 项：声明语义均在 registry、组件来自 registry、registry 身份发布、词汇合并、未声明字段/其他模型/非表单不动、未声明语义的负例（**先确认未注入基线正常**）、前端 required-paths 全部被词汇满足。 |
+| `scripts/verify/test_construction_semantic_declarations.py` | 新增 12 项：声明语义均在 registry、组件来自 registry、registry 身份发布、词汇合并、未声明字段/其他模型/非表单不动、未声明语义的负例（**先确认未注入基线正常**）、前端 required-paths 全部被词汇满足。 |
 | `scripts/verify/frontend_professional_detail_collection_guard.py` | 改为读 `SEMANTIC_PRESENTATION_VOCABULARY` 表抽取 dialog 词条。 |
 
 ### 行为与兼容
 
 - 解析结果不变：`payment.request.outflow_line_ids` 仍渲染 `sc.payment.settlement_detail_collection`，
   只是来源从"产品层字面量"改为"声明语义 → registry 解析"。
-- `sc.input.many2one` 从产物中消失，替换为 registry 对 `many2one` 事实的真实解析结果。
+- **历史 component identity 假象消除**：`sc.input.many2one` 从产物中消失，字段恢复真实语义身份——`many2one` 不是组件，是关系语义，正确身份由 `relation` 语义解析为 `sc.relation.many2one`。
 - **装配缓存指纹重钉**：装配输入（handler/assembler/projection/client/resolver + 两个生成载体）变化，
   `ASSEMBLED_CONTRACT_CACHE_VERSION` 升为 `ui-contract-v2-2026-10-12-product-semantic-declarations`，
   `ASSEMBLED_CACHE_INPUTS_SHA256` 重算（守卫按失败信息给出的方向重钉，未放宽断言）。
@@ -518,7 +522,7 @@ P1 归一化器、dialog 模型未在任何检查输入内，属证据缺口）�
 
 | 检查 | 目标 | 用例 |
 | -|-|-|
-| semantic_registry_lint | verify.semantic.registry.lint | 63 |
+| semantic_registry_lint | verify.semantic.registry.lint | 64 |
 | native_view_workflow_action_coverage（新增登记） | verify.native_view.workflow_action_coverage | 62 |
 | form_structure_authority_unification | verify.form_structure_authority_unification.unit | 215 |
 | assembler_contract_surface | verify.business_config.formal_list.unit | 201 |
@@ -533,9 +537,56 @@ P1 归一化器、dialog 模型未在任何检查输入内，属证据缺口）�
 语义 resolver 单测由 17 项扩到 21 项（新增 `ComponentRegistryTest`：单一版本事实、未登记键 fail-closed、
 非序列声明不发布、解析器可产出的键必可发布）。
 
+### 边界修复记录 RUNTIME-BOUNDARY-FIX-01
+
+> 定位：**Contract Runtime 边界治理发现的基线缺陷修复**，不是 FE-CONTRACT-RUNTIME-01 的业务能力扩展。
+
+```text
+发现：历史 synthetic field 使用未注册 component key（sc.input.many2one）
+修复：component identity -> semantic registry identity（many2one -> relation -> sc.relation.many2one）
+范围：sc.general.contract tax 字段（general_contract_tax_contract）
+影响：不在 payment runtime 路径上
+验证：verify.semantic.registry.lint PASS（含 backend_component_key_literals）
+```
+
+不纳入产品文档，不扩大扫描范围。
+
 ### 范围边界（本批次明确不做）
 
 - 不动 `span → deliverySpan`（owner 裁定：01-E 独立迁移，限定 `contracts/`、runtime 投影、前端契约类型，
   不动 ORM `scene_orchestration.span`）。
 - 不动前端组件实现与渲染分发（仍是 6 个已登记渲染器）。
 - 不处理历史失败项：`verify.contract.lint` 49 项、陈旧 `res.users` 断言、容器内 L3/L4 用例。
+
+## 01-C（Runtime Verification）交付：声明驱动解析的自动化 + 运行时回执
+
+目标不是"页面好看"，而是证明"新增字段只声明 semantic，不新增任何前后端映射代码"这条标准是可执行事实。
+
+### 自动化（本批次新增用例）
+
+`scripts/verify/test_construction_semantic_declarations.py::NormalizerConsumptionTest
+.test_a_new_field_needs_only_a_semantic_declaration`：把一个原本按事实渲染为文本的字段
+（`settled_amount`）只加一行 `semantic: money` 声明，断言
+
+1. 基线（注入前）该字段由自身事实选择 `sc.input.text`——先证明对照正常，再证明注入被检出；
+2. 注入后节点 `componentKey == sc.value.money`，`fieldDescriptor.semantic == "money"`；
+3. 该身份被发布进 `layoutContract.componentRegistry`。
+
+若任何一侧仍需为新字段写映射代码，此用例无法通过。绑定检查 `verify.semantic.registry.lint`
+用例数 63 → 64。
+
+### 运行时回执（受管 `sc-local-dev`，非诊断环境）
+
+受管入口 `make local.dev.restart` 后，以受管 demo 身份（`.env.dev` 的 `SC_DEMO_USER_PASSWORD`）经
+`POST /api/v1/intent` 取 Bearer，再调 `ui.contract.v2` intent（注意：`/api/contract/get` 是旧 v1 端点，
+不产 `layoutContract`，不可用于本证据）：
+
+- `payment.request` form：`outflow_line_ids` 节点 `componentKey=sc.payment.settlement_detail_collection`、
+  `fieldDescriptor.semantic=payment_settlement_detail_collection`、交付词表 `introduceLabel=从结算单引入`、
+  三条 `actionRefs` 齐全 —— 声明语义 → registry → 契约 → 前端全链贯通。
+- 全量 payload 中 `sc.input.many2one` 已消失。
+- 终端投影：`web_pc` → `adaptMode=pc`/`deliveryProfile=full`；`wx_mini`、`harmony_h5` → `mobile`/`mobile_compact`
+  （`meta.deliveryTrim` 记录容器 129→6、widget 94→5）；`runtimeContract` 三端逐键一致且不含渲染实现键。
+- `sc.general.contract` tax 节点 → `componentKey=sc.relation.many2one`（真实解析，非字面量）。
+
+浏览器侧 PC/mobile + 明暗主题的实机核对按 01-D 执行，回执单独记录。

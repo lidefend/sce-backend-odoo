@@ -251,6 +251,46 @@ class NormalizerConsumptionTest(unittest.TestCase):
         self.assertNotIn("semantic", node["fieldDescriptor"])
         self.assertNotIn("componentRegistry", mutated["layoutContract"])
 
+    def test_a_new_field_needs_only_a_semantic_declaration(self) -> None:
+        """The owner's acceptance standard, executed rather than asserted in prose.
+
+        A field the facts would render as text is given the meaning ``money`` by
+        one line in the declaration table.  Nothing else changes: no resolver
+        branch, no component key, no renderer name.  If either side still needed
+        mapping code for the new field, this test could not pass.
+        """
+        contract = self.payment_contract()
+        contract["layoutContract"]["containerTree"][0]["widgetList"].append(
+            {
+                "widgetId": "field.settled_amount",
+                "fieldCode": "settled_amount",
+                "componentKey": semantic_resolver.component_key("input", {"ttype": "char"}),
+                "fieldDescriptor": {"name": "settled_amount", "type": "char"},
+            }
+        )
+        self.assertEqual(
+            "sc.input.text",
+            contract["layoutContract"]["containerTree"][0]["widgetList"][1]["componentKey"],
+            "baseline: without a declaration the field's own facts select the text input",
+        )
+
+        declarations = self.namespace["FIELD_SEMANTIC_DECLARATIONS"]
+        declarations[PAYMENT_MODEL]["settled_amount"] = "money"
+        try:
+            self.normalize(contract, model=PAYMENT_MODEL, view_type="form")
+        finally:
+            del declarations[PAYMENT_MODEL]["settled_amount"]
+
+        node = contract["layoutContract"]["containerTree"][0]["widgetList"][1]
+        self.assertEqual(semantic_resolver.component_key_for_semantic("money"), node["componentKey"])
+        self.assertEqual("sc.value.money", node["componentKey"])
+        self.assertEqual("money", node["fieldDescriptor"]["semantic"])
+        self.assertIn(
+            "sc.value.money",
+            contract["layoutContract"]["componentRegistry"],
+            "the declared field's identity must be published to the frontend registry",
+        )
+
 
 class FrontendVocabularyTest(unittest.TestCase):
     def setUp(self) -> None:
