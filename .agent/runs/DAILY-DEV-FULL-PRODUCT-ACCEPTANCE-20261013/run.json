@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-DEV-FULL-PRODUCT-ACCEPTANCE-20261013",
+  "branch": "audit/daily-dev-full-product-acceptance-20261013",
+  "status": "active",
+  "baseline_sha": "2e2951ea81cd3f9899f12e7d0bfb533882ee81ad",
+  "goal": ".agent/goals/DAILY-DEV-FULL-PRODUCT-ACCEPTANCE-20261013.yaml",
+  "record": "docs/ops/iterations/daily_dev_full_product_acceptance_20261013.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DAILY-DEV-FULL-PRODUCT-ACCEPTANCE-20261013.yaml",
+    ".agent/runs/DAILY-DEV-FULL-PRODUCT-ACCEPTANCE-20261013/",
+    "docs/ops/iterations/daily_dev_full_product_acceptance_20261013.md",
+    "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+    "addons/smart_core/handlers/ui_contract_v2_projection.py",
+    "addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py",
+    "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+    "docs/product/frontend_business_entry_acceptance_v1.csv"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "existing owner-authorized daily development runtime reached only through the governed daily.runtime.* Make entries; no new environment or credential authority",
+    "runtime_profile": "daily.dev",
+    "ssh_host": "sc-root",
+    "repository": "/opt/projects/repos/sce-product-odoo",
+    "database": "sc_demo",
+    "database_role": "persistent demo-backed daily development acceptance database, not production",
+    "base_url": "http://1.95.85.92:18081",
+    "inventory": "reuse the registered daily runtime inventory and original evidence; no new environment or credential authority"
+  },
+  "checks": {
+    "daily_candidate_bundle_sync": {
+      "target": "verify.daily.runtime.candidate.bundle_sync",
+      "inputs": [
+        "scripts/ops/daily_candidate_bundle_sync.py",
+        "scripts/ops/test_daily_candidate_bundle_sync.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "daily_source_revision_align": {
+      "target": "verify.daily.runtime.source_revision.align",
+      "inputs": [
+        "scripts/ops/daily_runtime_source_revision_align.py",
+        "scripts/ops/test_daily_runtime_source_revision_align.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "daily_frontend_build": {
+      "target": "verify.daily.runtime.frontend.build",
+      "inputs": [
+        "scripts/ops/daily_runtime_frontend_build_align.py",
+        "scripts/ops/test_daily_runtime_frontend_build_align.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "daily_published_face_converge": {
+      "target": "verify.daily.runtime.published_face.converge",
+      "inputs": [
+        "scripts/ops/daily_runtime_published_face_converge.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "daily_record_identity_resolve": {
+      "target": "verify.daily.runtime.record_identity.resolve",
+      "inputs": [
+        "scripts/ops/daily_runtime_record_identity_resolve.py",
+        "scripts/ops/test_daily_runtime_record_identity_resolve.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "daily_readonly_probe": {
+      "target": "verify.daily_dev.acceptance.readonly.probe",
+      "inputs": [
+        "make/dev.mk",
+        "scripts/ops/dev_acceptance_release_probe.py",
+        "config/frontend/acceptance_environments_v1.json"
+      ],
+      "kind": "runtime"
+    },
+    "daily_product_menu_release_gate": {
+      "target": "verify.daily_dev.product_menu_release_gate.guard",
+      "inputs": [
+        "make/dev.mk",
+        "config/frontend/acceptance_environments_v1.json"
+      ],
+      "kind": "runtime"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Deploy 8ad256ce to the daily runtime through the governed candidate bundle sync, then align the served source revision (restarts the backend so the assembler fix is live), rebuild the served frontend (the renderer vocabulary changed), converge the published face and resolve the acceptance record identity; then re-walk the full formal 89-entry matrix at the new served identity and confirm the 4 previously failing entries (menu_sc_p1_daily_contract, menu_action_move_journal_line_form, menu_action_account_form, menu_sc_account_journal_foundation)."
+}
