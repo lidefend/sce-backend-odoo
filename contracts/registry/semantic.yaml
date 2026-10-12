@@ -44,16 +44,25 @@ derivation:
       when: {field_types: [many2many], widgets_exclude: [many2many_tags]}
     - semantic: detail_collection
       when: {field_types: [one2many]}
+    - semantic: relation
+      when: {widgets: [relation]}
+      reason: 残余 relation 控件等价于关系语义；many2many/one2many 已由更早的字段类型规则接管。
     - semantic: text
       when: {widgets: [input]}
     - semantic: binary
       when: {widgets: [binary]}
+    - semantic: binary
+      when: {widgets: [upload]}
+      reason: upload 是 binary 字段的上传控件，与 binary 同一渲染族；声明类型优先于控件拼写。
     - semantic: long_text
       when: {widgets: [textarea]}
     - semantic: number
       when: {widgets: [number]}
     - semantic: choice
       when: {widgets: [select]}
+    - semantic: choice
+      when: {widgets: [radio]}
+      reason: radio 是 selection 的单选呈现，与 select 同义。
     - semantic: boolean
       when: {widgets: [checkbox]}
     - semantic: date
@@ -62,6 +71,9 @@ derivation:
       when: {widgets: [datetime]}
     - semantic: detail_table
       when: {widgets: [table]}
+    - semantic: detail_table
+      when: {widgets: [gantt]}
+      reason: gantt 是集合的时间轴呈现，暂由通用集合渲染器接管；没有独立甘特组件。
     - semantic: hierarchical_collection
       when: {widgets: [tree]}
     - semantic: tag_collection

@@ -23,7 +23,20 @@
   "scripts/verify/frontend_professional_detail_collection_guard.py",
   "scripts/verify/semantic_registry_lint.py",
   "scripts/verify/test_frontend_professional_business_value_guard.py",
-  "scripts/verify/test_semantic_registry_lint.py"
+  "scripts/verify/test_semantic_registry_lint.py",
+  "frontend/apps/web/src/app/presentation/",
+  "frontend/apps/web/scripts/",
+  "make/frontend.mk",
+  "addons/smart_core/handlers/",
+  "addons/smart_core/core/unified_page_contract_v2_client.py",
+  "scripts/verify/frontend_auth_surface_guard.py",
+  "scripts/verify/frontend_professional_base_field_guard.py",
+  "scripts/verify/frontend_professional_relation_field_guard.py",
+  "scripts/verify/frontend_professional_component_registry_guard.py",
+  "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+  "scripts/verify/test_frontend_professional_component_registry_guard.py",
+  "scripts/verify/test_frontend_professional_relation_field_guard.py",
+  "scripts/verify/test_frontend_professional_base_field_guard.py"
  ],
  "environment": {
   "kind": "offline",
@@ -39,6 +52,8 @@
     "scripts/verify/semantic_registry_lint.py",
     "scripts/verify/test_semantic_registry_lint.py",
     "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+    "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+    "docs/architecture/unified_page_contract_v2/enum_registry.json",
     "make/contract.mk",
     "addons/smart_core/core/contract_runtime",
     "addons/smart_core/tests/test_contract_runtime_semantic_resolver.py"
@@ -49,6 +64,7 @@
    "target": "verify.frontend.professional_component_registry.unit",
    "inputs": [
     "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+    "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
     "frontend/apps/web/scripts/professional_component_registry_test.ts",
     "scripts/verify/frontend_professional_component_registry_guard.py",
     "scripts/verify/test_frontend_professional_component_registry_guard.py",
@@ -84,7 +100,8 @@
     "addons/smart_core/core/contract_runtime",
     "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
     "addons/smart_core/tests/test_load_contract_response_cache.py",
-    "addons/smart_core/tests/test_view_orchestrator.py"
+    "addons/smart_core/tests/test_view_orchestrator.py",
+    "scripts/verify/test_formal_list_configuration_baseline.py"
    ],
    "kind": "offline"
   },
@@ -96,6 +113,7 @@
     "addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py",
     "frontend/apps/web/scripts/professional_business_value_model_test.ts",
     "frontend/apps/web/src/components/professional-fields",
+    "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
     "scripts/verify/frontend_professional_business_value_guard.py",
     "scripts/verify/test_frontend_professional_business_value_guard.py"
    ],
@@ -109,6 +127,7 @@
     "addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py",
     "contracts/registry/component.yaml",
     "contracts/registry/semantic.yaml",
+    "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
     "frontend/apps/web/scripts/payment_settlement_introduce_dialog_contract_test.ts",
     "frontend/apps/web/scripts/professional_detail_collection_model_test.ts",
     "frontend/apps/web/src/components/template",
@@ -116,12 +135,98 @@
     "scripts/verify/test_frontend_professional_detail_collection_guard.py"
    ],
    "kind": "offline"
+  },
+  "semantic_runtime_resolution": {
+   "target": "verify.semantic_runtime_resolution",
+   "inputs": [
+    "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+    "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+    "frontend/apps/web/scripts/semantic_runtime_resolution_test.ts",
+    "make/frontend.mk"
+   ],
+   "kind": "offline"
+  },
+  "assembler_cache_pin": {
+   "target": "verify.unified_page_contract.v2.assembler",
+   "inputs": [
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/handlers/ui_contract_v2_projection.py",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/core/unified_page_contract_v2_client.py",
+    "addons/smart_core/core/contract_runtime",
+    "docs/architecture/unified_page_contract_v2"
+   ],
+   "kind": "offline"
+  },
+  "frontend_relation_field_alignment": {
+   "target": "verify.frontend.professional_relation_field.unit",
+   "inputs": [
+    "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+    "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+    "frontend/apps/web/src/components/professional-fields",
+    "frontend/apps/web/scripts/professional_relation_field_model_test.ts",
+    "frontend/apps/web/scripts/relation_column_descriptor_authority_test.ts",
+    "frontend/apps/web/scripts/relation_entry_option_limits_test.ts",
+    "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py",
+    "scripts/verify/frontend_professional_relation_field_guard.py",
+    "scripts/verify/test_frontend_professional_relation_field_guard.py"
+   ],
+   "kind": "offline"
+  },
+  "frontend_base_field_alignment": {
+   "target": "verify.frontend.professional_base_field.unit",
+   "inputs": [
+    "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+    "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+    "frontend/apps/web/src/components/professional-fields",
+    "frontend/apps/web/scripts/professional_base_field_model_test.ts",
+    "scripts/verify/frontend_professional_base_field_guard.py",
+    "scripts/verify/test_frontend_professional_base_field_guard.py"
+   ],
+   "kind": "offline"
+  },
+  "frontend_auth_surface": {
+   "target": "verify.frontend.auth_surface.guard",
+   "inputs": [
+    "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+    "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+    "frontend/apps/web/src/views",
+    "scripts/verify/frontend_auth_surface_guard.py",
+    "scripts/verify/frontend_page_contract_boundary_guard.py",
+    "addons/smart_core/core/page_contracts_builder.py",
+    "addons/smart_core/core/action_target_schema.py"
+   ],
+   "kind": "offline"
+  },
+  "frontend_typecheck": {
+   "target": "verify.frontend.typecheck.strict",
+   "inputs": [
+    "frontend/apps/web/src",
+    "frontend/apps/web/scripts",
+    "frontend/apps/web/tsconfig.json",
+    "frontend/apps/web/tsconfig.strict.json"
+   ],
+   "kind": "offline"
+  },
+  "frontend_lint_src": {
+   "target": "verify.frontend.lint.src",
+   "inputs": [
+    "frontend/apps/web/src",
+    "frontend/apps/web/scripts",
+    "frontend/apps/web/.eslintrc.cjs",
+    "frontend/apps/web/.eslintignore"
+   ],
+   "kind": "offline"
   }
  },
  "blockers": [
   "pre-existing (not introduced by this batch): `make verify.contract.lint` fails with 49 issues on both this branch and origin/main; classify and fix them in their own batch.",
   "classified, not a blocker: addons/smart_construction_core/tests/test_core_extension_v2_finalize.py asserts widget component keys but imports lxml, so it belongs to the in-container Odoo module suite (L3/L4), not the offline L2 lane. Its relation mappings (sc.relation.table / sc.relation.many2many) are covered offline by the resolver behaviour baseline in addons/smart_core/tests/test_contract_runtime_semantic_resolver.py.",
-  "pre-existing (not introduced by this batch): scripts/verify/test_frontend_quality_safety_domain_rollout.py:123 asserts `field_type == \"many2one\" and relation == \"res.users\"` in addons/smart_core/core/unified_page_contract_v2_assembler.py. That literal is absent at the run baseline too (git show 991a9d9b:... shows the res.users special case was removed by merge d3bdb3aa, PR #399), so the assertion is stale, not a 01-B regression. It lives in the L3/L4 target verify.frontend.professionalization.quality_safety_domain.runtime; classify it with the other pre-existing findings, do not silently rewrite it here."
+  "pre-existing (not introduced by this batch): scripts/verify/test_frontend_quality_safety_domain_rollout.py:123 asserts `field_type == \"many2one\" and relation == \"res.users\"` in addons/smart_core/core/unified_page_contract_v2_assembler.py. That literal is absent at the run baseline too (git show 991a9d9b:... shows the res.users special case was removed by merge d3bdb3aa, PR #399), so the assertion is stale, not a 01-B regression. It lives in the L3/L4 target verify.frontend.professionalization.quality_safety_domain.runtime; classify it with the other pre-existing findings, do not silently rewrite it here.",
+  "classified finding from 01-C (not a new blocker): 01-B's recorded check set did not include verify.unified_page_contract.v2.assembler or verify.frontend.professional_relation_field.unit, so the assembler cache-input pin and the relation guard's assembler-literal assertion were only surfaced when 01-C migrated the frontend vocabulary. Both are fixed here by binding the cache pin to the resolver + generated carrier and by moving the guards' key authority to the generated table."
  ],
- "next_exact_step": "01-B is committed. Start 01-C: let the frontend consume the same declaration instead of keeping a second table -- extend scripts/contract/generate_semantic_registry.py to project frontend/apps/web/src/app/presentation/semantic_registry.generated.ts from contracts/registry/component.yaml, rebuild professionalComponentRegistry.ts on top of it (keeping the rendererByFieldType/readiness behaviour), add the semanticResolver + verify.semantic_runtime_resolution unit test, and re-point semantic_registry_lint check 7 at the generated file. Record the affected offline checks and commit 01-C."
+ "next_exact_step": "01-C is implemented in the worktree: the frontend consumes the projected vocabulary (professionalComponentRegistry.ts builds registrations from semantic_registry.generated.ts), the semantic index + verify.semantic_runtime_resolution land the semantic->componentKey runtime resolution, and the guards whose key authority was the hand-written table (component registry, business value, relation field, auth surface) now read the generated carrier. The assembler cache pin also had to absorb the resolver + generated carrier as assembly inputs (re-pinned, version bumped). Record the affected offline checks, commit 01-C, then start 01-D: payment.request field semantics + presentation contract + browser acceptance."
 }

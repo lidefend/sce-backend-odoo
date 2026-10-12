@@ -16,6 +16,9 @@ ACTIVATION_SECURITY_GUARD = ROOT / "scripts/verify/user_activation_security_cont
 PAGE_CONTRACTS_BUILDER = ROOT / "addons/smart_core/core/page_contracts_builder.py"
 ACTION_TARGET_SCHEMA = ROOT / "addons/smart_core/core/action_target_schema.py"
 PROFESSIONAL_COMPONENT_REGISTRY = ROOT / "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts"
+# The auth component keys are projected into the generated frontend table; the
+# registry module consumes it and carries no key literals of its own.
+GENERATED_COMPONENT_REGISTRY = ROOT / "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts"
 
 
 def _read(path: Path) -> str:
@@ -60,6 +63,7 @@ def main() -> int:
     page_contracts_builder_text = _read(PAGE_CONTRACTS_BUILDER)
     action_target_schema_text = _read(ACTION_TARGET_SCHEMA)
     professional_component_registry_text = _read(PROFESSIONAL_COMPONENT_REGISTRY)
+    generated_component_registry_text = _read(GENERATED_COMPONENT_REGISTRY)
 
     for path, text in (
         (LOGIN, login_text),
@@ -73,6 +77,7 @@ def main() -> int:
         (PAGE_CONTRACTS_BUILDER, page_contracts_builder_text),
         (ACTION_TARGET_SCHEMA, action_target_schema_text),
         (PROFESSIONAL_COMPONENT_REGISTRY, professional_component_registry_text),
+        (GENERATED_COMPONENT_REGISTRY, generated_component_registry_text),
     ):
         if not text:
             errors.append(f"missing file: {path.relative_to(ROOT).as_posix()}")
@@ -129,16 +134,21 @@ def main() -> int:
     _require(orchestration_text, "AccountActivationView.vue", "frontend_page_contract_orchestration_consumption_guard.py", errors)
     _require(orchestration_text, "PasswordRecoveryView.vue", "frontend_page_contract_orchestration_consumption_guard.py", errors)
     for token in (
-        "registration('sc.auth.credential_entry', 'credential_entry', ['char'])",
-        "registration('sc.auth.secret_confirmation', 'secret_confirmation', ['char'])",
-        "registration('sc.auth.challenge_status', 'challenge_status', ['char', 'selection', 'text'])",
-        "registration('sc.auth.one_time_secret', 'one_time_secret', ['char', 'text'], 'fail_closed')",
-        "registration('sc.auth.support_action', 'support_action', ['action'])",
+        "{componentKey: 'sc.auth.credential_entry', semanticType: 'credential_entry', "
+        "supportedFieldTypes: ['char'], readiness: 'ready'",
+        "{componentKey: 'sc.auth.secret_confirmation', semanticType: 'secret_confirmation', "
+        "supportedFieldTypes: ['char'], readiness: 'ready'",
+        "{componentKey: 'sc.auth.challenge_status', semanticType: 'challenge_status', "
+        "supportedFieldTypes: ['char', 'selection', 'text'], readiness: 'ready'",
+        "{componentKey: 'sc.auth.one_time_secret', semanticType: 'one_time_secret', "
+        "supportedFieldTypes: ['char', 'text'], readiness: 'fail_closed'",
+        "{componentKey: 'sc.auth.support_action', semanticType: 'support_action', "
+        "supportedFieldTypes: ['action'], readiness: 'ready'",
     ):
         _require(
-            professional_component_registry_text,
+            generated_component_registry_text,
             token,
-            "professionalComponentRegistry.ts",
+            "semantic_registry.generated.ts",
             errors,
         )
 

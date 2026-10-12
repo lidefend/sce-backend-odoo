@@ -36,9 +36,11 @@ class TempRegistryTree:
             lint.SEMANTIC_REL,
             lint.COMPONENT_REL,
             lint.SCHEMA_REL,
+            lint.ENUM_REGISTRY_REL,
             lint.FRONTEND_REGISTRY_REL,
             lint.carrier.REGISTRY_REL,
             lint.carrier.CARRIER_REL,
+            lint.carrier.FRONTEND_REL,
         ):
             target = self.root / rel
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -46,6 +48,8 @@ class TempRegistryTree:
         self.semantic = self.root / lint.SEMANTIC_REL
         self.component = self.root / lint.COMPONENT_REL
         self.frontend = self.root / lint.FRONTEND_REGISTRY_REL
+        self.generated_frontend = self.root / lint.carrier.FRONTEND_REL
+        self.enum_registry = self.root / lint.ENUM_REGISTRY_REL
 
     def run(self) -> tuple[list[str], dict]:
         return lint.run(self.root)
@@ -127,20 +131,60 @@ class NegativeCaseTest(unittest.TestCase):
         )
         self.assert_detected("undeclared semantic 'nope'")
 
-    def test_frontend_extra_component_is_detected(self) -> None:
+    def test_frontend_second_vocabulary_is_detected(self) -> None:
+        # The registry module must consume the generated table; a hand-written
+        # registration list would re-create the second vocabulary.
         text = self.tree.frontend.read_text(encoding="utf-8")
         self.tree.frontend.write_text(
-            text + "  registration('sc.extra.thing', 'text', ['char']),\n", encoding="utf-8"
+            text + "registration('sc.extra.thing', 'text', ['char']);\n", encoding="utf-8"
+        )
+        self.assert_detected("holds a second component vocabulary ('sc.extra.thing')")
+
+    def test_generated_frontend_extra_component_is_detected(self) -> None:
+        text = self.tree.generated_frontend.read_text(encoding="utf-8")
+        self.tree.generated_frontend.write_text(
+            text.replace("];", "  {componentKey: 'sc.extra.thing', semanticType: 'text', "
+                               "supportedFieldTypes: ['char'], readiness: 'ready', "
+                               "renderer: 'FormSectionField'},\n];", 1),
+            encoding="utf-8",
         )
         self.assert_detected("component 'sc.extra.thing' is not declared")
 
     def test_frontend_missing_component_is_detected(self) -> None:
         self.tree.edit(
-            self.tree.frontend,
-            "  registration('sc.value.money', 'money', ['monetary'], 'ready', 'ProfessionalBusinessValueControl'),\n",
+            self.tree.generated_frontend,
+            "  {componentKey: 'sc.value.money', semanticType: 'money', "
+            "supportedFieldTypes: ['monetary'], readiness: 'ready', "
+            "renderer: 'ProfessionalBusinessValueControl'},\n",
             "",
         )
         self.assert_detected("component 'sc.value.money' has no frontend registration")
+
+    def test_unclaimed_widget_spelling_is_detected(self) -> None:
+        # enum_registry.json is the widget universe the schema permits: a
+        # spelling no rule claims would silently render as text.
+        text = self.tree.enum_registry.read_text(encoding="utf-8")
+        self.tree.enum_registry.write_text(
+            text.replace('"many2many_tags"', '"many2many_tags",\n    "ghost_widget"', 1),
+            encoding="utf-8",
+        )
+        self.assert_detected("widget spelling 'ghost_widget' is declared by the contract schema")
+
+    def test_generated_frontend_carrier_drift_is_detected(self) -> None:
+        # The frontend carrier is a projection of component.yaml, so a
+        # semantic.yaml edit never reaches it.  Drift the generated frontend
+        # table itself (a non-key field, so the cross-side vocabulary check is
+        # satisfied) and require the carrier guard to notice.
+        self.tree.edit(
+            self.tree.generated_frontend,
+            "{componentKey: 'sc.input.text', semanticType: 'text', "
+            "supportedFieldTypes: ['char'], readiness: 'ready', "
+            "renderer: 'FormSectionField'}",
+            "{componentKey: 'sc.input.text', semanticType: 'text', "
+            "supportedFieldTypes: ['char'], readiness: 'fail_closed', "
+            "renderer: 'FormSectionField'}",
+        )
+        self.assert_detected("semantic_registry.generated.ts: out of sync with the declaration")
 
     def test_duplicate_semantic_key_is_detected(self) -> None:
         text = self.tree.semantic.read_text(encoding="utf-8")
@@ -178,11 +222,7 @@ class NegativeCaseTest(unittest.TestCase):
 
     def test_missing_runtime_carrier_is_detected(self) -> None:
         (self.tree.root / lint.carrier.CARRIER_REL).unlink()
-        errors, _ = self.tree.run()
-        self.assertTrue(
-            any("runtime carrier is missing" in error for error in errors),
-            f"missing carrier was not detected: {errors}",
-        )
+        self.assert_detected("carrier is missing")
 
 
 if __name__ == "__main__":

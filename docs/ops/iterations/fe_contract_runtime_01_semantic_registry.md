@@ -118,6 +118,91 @@ lint 逐字节查漂移。
 渲染复验（L3/L4）留在 01-D 的浏览器验收一并做。
 
 
+## 01-C 交付（前端接管同一份声明）
+
+目标：前端不再维护第二份词表。前端注册模块从生成表构建注册项，语义解析入口由同
+一份声明驱动。
+
+### 投影与消费
+
+| 文件 | 作用 |
+| --- | --- |
+| `scripts/contract/generate_semantic_registry.py` | 投影器扩展为**两个载体**：加 `render_frontend_registry()` / `render_frontend_repository()`，`main()` 同时写 addon 载体与前端载体（TS 头含 `{}`，用 `__SOURCES__`/`__VERSION__` 占位替换而非 `.format()`）。 |
+| `frontend/apps/web/src/app/presentation/semantic_registry.generated.ts` | 新增前端载体（26 行）：`SEMANTIC_REGISTRY_ROWS`（componentKey / semanticType / supportedFieldTypes / readiness / renderer）+ `SEMANTIC_REGISTRY_VERSION`。**这是前端唯一的组件词表**。 |
+| `frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts` | 26 条手写 `registration('sc.…')` 字面量全部删除，改为 `SEMANTIC_REGISTRY_ROWS.map(row => registration(...))`；新增 `RENDERER_NAMES` + `declaredRenderer()` 守卫（漂移的渲染器名在编译期就不可通过）；`ProfessionalComponentReadiness = SemanticRegistryReadiness`（单一来源）。 |
+| 同上（新增导出） | `professionalSemanticIndex`（semantic → 注册项，重复语义直接抛错而非静默覆盖）+ `resolveSemanticRegistration()` + `componentKeyForSemantic()`；未声明语义返回 `null`（fail-closed，不静默回落），由调用方决定如何呈现。 |
+| `make/frontend.mk` | 新增 `verify.semantic_runtime_resolution`。 |
+| `frontend/apps/web/scripts/semantic_runtime_resolution_test.ts` | 覆盖命名语义解析、大小写/空白归一、未声明语义、以及"解析表 = 生成词表逐行一致"。 |
+
+### 关于命名渲染器
+
+owner 清单里写的 `money→CurrencyInput` / `date→DatePicker` / `relation→RelationPicker` /
+`status→StatusTag` 是**示意名**，不是本仓库的渲染器名。按声明层的真实事实：
+
+| semantic | componentKey | renderer |
+| --- | --- | --- |
+| `money` | `sc.value.money` | `ProfessionalBusinessValueControl` |
+| `date` | `sc.input.date` | `FormSectionField`（类型导向） |
+| `relation` | `sc.relation.many2one` | `ProfessionalRelationFieldControl` |
+| `status` | `sc.display.status` | `ProfessionalBusinessValueControl` |
+
+因此测试断言的是**契约声明里的 semantic → componentKey**，并且逐行断言"解析表等于生成
+词表"，而不是硬编码一个并不存在的组件名。这样声明改动会改变测试权威，但不会需要新增前端代码。
+
+### widget 覆盖率普查（lint 检查 9）
+
+枚举域来自 `docs/architecture/unified_page_contract_v2/enum_registry.json` 的 `widgetType`
+（17 个拼写）。普查命中 4 个此前**无语义声明**的拼写，已在 `semantic.yaml` 补 4 条带
+`reason` 的推导规则：`upload→binary`、`radio→choice`、`relation→relation`、`gantt→detail_table`。
+推导规则 23 → 27 条；语义 27 条、组件 26 条、前端键 26 条。未声明的 widget 拼写现在是
+lint 失败，而不是运行时静默回落。
+
+### 连带修正（01-C 暴露的既有耦合）
+
+前端词表迁移让四个 guard 的"键权威"失效，逐个改为读生成载体：
+
+| guard | 原权威 | 现权威 |
+| --- | --- | --- |
+| `frontend_professional_component_registry_guard.py` | 手写注册表 | 生成表；新增"不得有第二张表"（`registration('…')` 字面量）失败 |
+| `frontend_professional_business_value_guard.py` | 手写注册表 | 生成表（`ProfessionalBusinessValueControl` 渲染器联合仍留在注册模块） |
+| `frontend_professional_relation_field_guard.py` | 手写注册表 + 汇编器字面量 | 生成表 + 「汇编器经 `contract_runtime.semantic_resolver` 解析」 |
+| `frontend_auth_surface_guard.py` | 5 条 `registration('sc.auth.…')` 字面量 | 生成表里的同名行（key + semantic + 字段类型 + readiness） |
+
+另有一处**缓存指纹**耦合：汇编器现在经解析器选组件键，`semantic_resolver.py` 与
+`semantic_registry_generated.py` 因此是装配的真实输入。
+`verify.unified_page_contract.v2.assembler` 的 `ASSEMBLED_CACHE_INPUTS` 已把这两个文件
+纳入，`ASSEMBLED_CONTRACT_CACHE_VERSION` 升级为
+`ui-contract-v2-2026-10-12-semantic-registry-component-key`，`ASSEMBLED_CACHE_INPUTS_SHA256`
+重钉；并做了反向验证（改动生成载体后门禁如期失败），确认 fail-closed 仍然成立。
+
+发现过程记录：`verify.unified_page_contract.v2.assembler` 与
+`verify.frontend.professional_relation_field.unit` 不在 01-B 的已记录检查集里，这两个
+断裂直到 01-C 迁移前端词表才暴露；已在 01-C 一并修复并纳入 run 检查集。
+
+### 验证（均为本批次实际执行）
+
+| 检查 | 目标 | 用例 | 结果 |
+| --- | --- | --- | --- |
+| `semantic_registry_lint` | `verify.semantic.registry.lint` | 37 | PASS |
+| `semantic_runtime_resolution` | `verify.semantic_runtime_resolution` | 123 | PASS |
+| `assembler_cache_pin` | `verify.unified_page_contract.v2.assembler` | 1 | PASS |
+| `assembler_contract_surface` | `verify.business_config.formal_list.unit` | 201 | PASS |
+| `frontend_component_registry` | `verify.frontend.professional_component_registry.unit` | 284 | PASS |
+| `frontend_business_value_alignment` | `verify.frontend.professional_business_value.unit` | 42 | PASS |
+| `frontend_detail_collection_alignment` | `verify.frontend.professional_detail_collection.unit` | 127 | PASS |
+| `frontend_relation_field_alignment` | `verify.frontend.professional_relation_field.unit` | 77 | PASS |
+| `frontend_base_field_alignment` | `verify.frontend.professional_base_field.unit` | 70 | PASS |
+| `frontend_auth_surface` | `verify.frontend.auth_surface.guard` | 1 | PASS |
+| `frontend_typecheck` | `verify.frontend.typecheck.strict` | 1 | PASS |
+| `frontend_lint_src` | `verify.frontend.lint.src` | 1（0 error / 64 既有 warning） | PASS |
+| `schema_declaration_sync` | `verify.contract.schema.declaration.sync` | 8 | PASS |
+| `agent_ledger` | `verify.agent.ledger.unit` | 15 | PASS |
+
+### 范围边界
+
+本批次同样**不改运行时渲染行为**：解析入口已就位，但前端渲染分发尚未改为"先看
+`semantic`"；真实浏览器渲染复验（L3/L4）留在 01-D。
+
 ## 范围边界（本轮明确不做）
 
 - 不声明 `capabilities`：当前没有运行时消费方，声明即为悬空能力声明，与 00 清单
@@ -139,9 +224,9 @@ lint 逐字节查漂移。
 
 ## 后续批次（owner 指定顺序，不并行）
 
-- ~~**01-B** 后端统一消费 registry~~（本批次完成，见上）。
-- **01-C** 前端 registry 接管：`semanticResolver` + 单测
-  `verify.semantic_runtime_resolution`（money→CurrencyInput 等）。
+- ~~**01-B** 后端统一消费 registry~~（完成，见上）。
+- ~~**01-C** 前端 registry 接管：`semanticResolver` + 单测
+  `verify.semantic_runtime_resolution`~~（完成，见上；命名渲染器按声明层真实事实断言）。
 - **01-D** `payment.request` 字段语义化 + presentation 契约收口（identity /
   presentation / behavior 必备）+ 浏览器验收。
 - **01-E** 产出 `docs/contract-runtime-state-ownership.md`

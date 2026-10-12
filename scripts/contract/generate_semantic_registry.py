@@ -13,7 +13,12 @@ Only tables the resolver actually consumes are emitted.  Projecting a table
 nobody reads would be a declared-but-unconsumed capability, which is exactly the
 defect class this programme is removing.
 
-``--check`` re-renders in memory and compares with the committed carrier, so a
+Two carriers are projected from one declaration: the Python runtime carrier the
+Odoo addon imports, and the TypeScript table the frontend builds its component
+registrations from.  Projecting the frontend table is what removes the second
+hand-written frontend vocabulary instead of merely checking it for drift.
+
+``--check`` re-renders in memory and compares with the committed carriers, so a
 declaration edit without regeneration is a lint failure instead of silent drift.
 """
 
@@ -30,6 +35,9 @@ SEMANTIC_REL = Path("contracts/registry/semantic.yaml")
 COMPONENT_REL = Path("contracts/registry/component.yaml")
 REGISTRY_REL = Path("contracts/registry.yaml")
 CARRIER_REL = Path("addons/smart_core/core/contract_runtime/semantic_registry_generated.py")
+FRONTEND_REL = Path(
+    "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts"
+)
 
 WHEN_KEYS = ("field_types", "widgets", "widgets_exclude", "widget_suffix")
 
@@ -159,29 +167,111 @@ def render_repository_carrier(root: Path = ROOT) -> str:
     )
 
 
+FRONTEND_HEADER = """// GENERATED CONTRACT-RUNTIME CARRIER - do not edit by hand.
+//
+// Declaration authority: __SOURCES__
+// Regenerate with: python3 scripts/contract/generate_semantic_registry.py
+//
+// Drift between this carrier and the declaration is a lint failure
+// (`make verify.semantic.registry.lint`).  This is the *only* frontend
+// component vocabulary: `professionalComponentRegistry.ts` builds its
+// registrations from these rows and must not carry a second hand-written list.
+
+export type SemanticRegistryReadiness = 'ready' | 'readable_fallback' | 'fail_closed';
+
+export type SemanticRegistryRow = {
+  readonly componentKey: string;
+  readonly semanticType: string;
+  readonly supportedFieldTypes: readonly string[];
+  readonly readiness: SemanticRegistryReadiness;
+  readonly renderer: string;
+};
+
+export const SEMANTIC_REGISTRY_VERSION = __VERSION__;
+
+export const SEMANTIC_REGISTRY_ROWS: readonly SemanticRegistryRow[] = [
+"""
+
+
+def render_frontend_registry(component: dict, *, version: int) -> str:
+    """Project the component vocabulary into the frontend's generated table.
+
+    Only the *data* is projected.  Presentation-mode profiles, the
+    type-directed ``rendererByFieldType`` derivation and the readiness fallback
+    are behaviour and stay in ``professionalComponentRegistry.ts``.
+    """
+    components = component.get("components") or {}
+    defaults = component.get("defaults") if isinstance(component.get("defaults"), dict) else {}
+    default_readiness = str(defaults.get("readiness") or "ready")
+    rows: list[str] = []
+    for key, entry in components.items():
+        entry = entry if isinstance(entry, dict) else {}
+        semantic = entry.get("semantic")
+        renderer = entry.get("renderer")
+        if not semantic or not renderer:
+            raise SystemExit(
+                f"[generate-semantic-registry] FAIL: component {key!r} lacks semantic/renderer"
+            )
+        field_types = entry.get("field_types") or []
+        if not isinstance(field_types, (list, tuple)) or not field_types:
+            raise SystemExit(
+                f"[generate-semantic-registry] FAIL: component {key!r} declares no field_types"
+            )
+        readiness = str(entry.get("readiness") or default_readiness)
+        types = ", ".join(repr(str(item)) for item in field_types)
+        rows.append(
+            "  {"
+            f"componentKey: {key!r}, semanticType: {semantic!r}, "
+            f"supportedFieldTypes: [{types}], readiness: {readiness!r}, renderer: {renderer!r}"
+            "},"
+        )
+    sources = (SEMANTIC_REL.as_posix(), COMPONENT_REL.as_posix())
+    return (
+        FRONTEND_HEADER.replace("__SOURCES__", " -> ".join(sources)).replace(
+            "__VERSION__", str(version)
+        )
+        + "\n".join(rows)
+        + "\n];\n"
+    )
+
+
+def render_frontend_repository(root: Path = ROOT) -> str:
+    """Render the frontend carrier a given worktree's declaration should produce."""
+    return render_frontend_registry(
+        load(root / COMPONENT_REL),
+        version=registry_versions(root),
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="verify the carrier is in sync")
     args = parser.parse_args()
 
-    rendered = render_repository_carrier()
-    carrier = ROOT / CARRIER_REL
+    artifacts = (
+        (CARRIER_REL, render_repository_carrier()),
+        (FRONTEND_REL, render_frontend_repository()),
+    )
     if args.check:
-        if not carrier.is_file():
-            print(f"[generate-semantic-registry] FAIL: missing carrier {CARRIER_REL}")
-            return 2
-        if carrier.read_text(encoding="utf-8") != rendered:
-            print(
-                f"[generate-semantic-registry] FAIL: {CARRIER_REL} is out of sync with the "
-                "declaration; run python3 scripts/contract/generate_semantic_registry.py"
-            )
-            return 2
-        print(f"[generate-semantic-registry] PASS {CARRIER_REL} matches the declaration")
+        for rel, rendered in artifacts:
+            path = ROOT / rel
+            if not path.is_file():
+                print(f"[generate-semantic-registry] FAIL: missing carrier {rel}")
+                return 2
+            if path.read_text(encoding="utf-8") != rendered:
+                print(
+                    f"[generate-semantic-registry] FAIL: {rel} is out of sync with the "
+                    "declaration; run python3 scripts/contract/generate_semantic_registry.py"
+                )
+                return 2
+            print(f"[generate-semantic-registry] PASS {rel} matches the declaration")
         return 0
 
-    carrier.parent.mkdir(parents=True, exist_ok=True)
-    carrier.write_text(rendered, encoding="utf-8")
-    print(f"[generate-semantic-registry] wrote {CARRIER_REL}")
+    for rel, rendered in artifacts:
+        path = ROOT / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(rendered, encoding="utf-8")
+        print(f"[generate-semantic-registry] wrote {rel}")
     return 0
 
 

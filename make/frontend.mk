@@ -240,7 +240,7 @@ verify.frontend.collection_selection_control.unit: guard.prod.forbid
 verify.frontend.product_page_header.browser: guard.prod.forbid
 	@node scripts/verify/frontend_product_page_header_browser.mjs
 
-.PHONY: verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit verify.frontend.component_driver_takeover.unit refresh.frontend.component_driver_takeover.inventory
+.PHONY: verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.semantic_runtime_resolution verify.frontend.professional_base_field.unit verify.frontend.component_driver_takeover.unit refresh.frontend.component_driver_takeover.inventory
 verify.frontend.component_driver_takeover.unit: guard.prod.forbid
 	@python3 -m unittest scripts.audit.test_generate_frontend_component_driver_takeover_inventory
 	@python3 scripts/audit/generate_frontend_component_driver_takeover_inventory.py --check
@@ -268,6 +268,13 @@ verify.frontend.professional_component_registry.unit: guard.prod.forbid
 	@node /tmp/professional-component-registry-test.mjs
 	@python3 -m unittest scripts/verify/test_frontend_professional_component_registry_guard.py
 	@python3 scripts/verify/frontend_professional_component_registry_guard.py
+
+# 语义 -> 组件键的运行时解析（前端不再持有第二份词表）。用例断言命名语义
+# money/date/relation/status 的解析结果、未声明语义 fail-closed、以及
+# 解析表与生成词表逐行一致。
+verify.semantic_runtime_resolution: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/semantic_runtime_resolution_test.ts --bundle --platform=node --format=esm --outfile=/tmp/semantic-runtime-resolution-test.mjs >/dev/null
+	@node /tmp/semantic-runtime-resolution-test.mjs
 
 verify.frontend.professional_base_field.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/professional_base_field_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/professional-base-field-model-test.mjs >/dev/null

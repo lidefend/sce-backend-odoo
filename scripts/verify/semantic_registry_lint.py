@@ -17,14 +17,19 @@ check. This entry therefore asserts, in one place:
 4. every declared renderer is registered, and the sentinel is one of them;
 5. every derivation rule and the derivation default name a declared semantic;
 6. every ``semantic:`` reference used by another contract document is legal;
-7. the frontend registry source declares exactly the same component keys.
-8. the committed runtime carrier equals the projection of the declaration.
+7. the generated frontend table declares exactly the same component keys, and
+   the frontend registry module holds no second hand-written vocabulary;
+8. both committed carriers equal the projection of the declaration;
+9. every widget spelling the contract schema permits is claimed by a rule.
 
-Check 7 is what makes a second private vocabulary impossible: a component key
-may not exist on one side only, in either direction.
-Check 8 closes the other half: the runtime cannot keep rendering the previous
-vocabulary after the declaration changed, because the carrier is re-projected
-here and compared byte for byte.
+Checks 7 and 8 are what make a second private vocabulary impossible: a
+component key may not exist on one side only, and the runtime cannot keep
+rendering the previous vocabulary after the declaration changed, because every
+carrier is re-projected here and compared byte for byte.
+Check 9 is the coverage census: ``enum_registry.json`` is the closed widget
+universe the contract schema permits, so a spelling no rule claims is the
+"unrecognised widget silently renders as text" defect.  It is reported as a
+declaration gap instead of being left to a fallback.
 """
 
 from __future__ import annotations
@@ -53,7 +58,10 @@ FRONTEND_REGISTRY_REL = Path(
     "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts"
 )
 
+ENUM_REGISTRY_REL = Path("docs/architecture/unified_page_contract_v2/enum_registry.json")
+
 SEMANTIC_KEY_RE = re.compile(r"^[a-z][a-z0-9_]*$")
+GENERATED_ROW_KEY_RE = re.compile(r"componentKey:\s*'([^']+)'")
 COMPONENT_KEY_RE = re.compile(r"^sc\.[a-z0-9_]+(\.[a-z0-9_]+)+$")
 FRONTEND_REGISTRATION_RE = re.compile(r"registration\(\s*'([^']+)'")
 WHEN_KEYS = {"field_types", "widgets", "widgets_exclude", "widget_suffix"}
@@ -113,11 +121,36 @@ def contract_semantic_references(root: Path) -> list[tuple[str, str]]:
     return references
 
 
-def frontend_component_keys(root: Path) -> list[str]:
-    registry = root / FRONTEND_REGISTRY_REL
-    if not registry.is_file():
+def generated_registry_keys(root: Path) -> list[str]:
+    """Component keys declared by the generated frontend table."""
+    path = root / carrier.FRONTEND_REL
+    if not path.is_file():
         return []
-    return FRONTEND_REGISTRATION_RE.findall(registry.read_text(encoding="utf-8"))
+    return GENERATED_ROW_KEY_RE.findall(path.read_text(encoding="utf-8"))
+
+
+def frontend_registry_code(root: Path) -> str:
+    path = root / FRONTEND_REGISTRY_REL
+    return path.read_text(encoding="utf-8") if path.is_file() else ""
+
+
+def declared_widget_spellings(root: Path) -> list[str]:
+    """The widget vocabulary the runtime contract schema permits.
+
+    ``enum_registry.json`` is the closed enum domain of the contract schema, not
+    a semantic or component table: it answers "which widget spellings can a
+    contract express".  Reading it here turns "an unrecognised widget falls back
+    to the default" into a check over the declared universe instead of a
+    documented hope.
+    """
+    path = root / ENUM_REGISTRY_REL
+    if not path.is_file():
+        return []
+    data = json.loads(path.read_text(encoding="utf-8"))
+    values = data.get("widgetType") if isinstance(data, dict) else None
+    if not isinstance(values, list):
+        return []
+    return [str(value) for value in values]
 
 
 def validate_schema(schema_path: Path, documents: dict[str, dict], errors: list[str]) -> None:
@@ -215,34 +248,69 @@ def run(root: Path = ROOT) -> tuple[list[str], dict]:
         if semantic not in semantics:
             errors.append(f"{source}: references undeclared semantic '{semantic}'")
 
-    frontend_keys = sorted(set(frontend_component_keys(root)))
+    generated_keys = sorted(set(generated_registry_keys(root)))
     backend_keys = sorted(components)
-    if not frontend_keys:
+    if not generated_keys:
         errors.append(
-            "professionalComponentRegistry.ts: no registration(...) component key found; "
-            "the cross-side vocabulary check cannot be satisfied"
+            f"{carrier.FRONTEND_REL.as_posix()}: no component row found; the cross-side "
+            "vocabulary check cannot be satisfied"
         )
     else:
-        for key in sorted(set(frontend_keys) - set(backend_keys)):
-            errors.append(f"professionalComponentRegistry.ts: component '{key}' is not declared in component.yaml")
-        for key in sorted(set(backend_keys) - set(frontend_keys)):
+        for key in sorted(set(generated_keys) - set(backend_keys)):
+            errors.append(
+                f"{carrier.FRONTEND_REL.as_posix()}: component '{key}' is not declared in component.yaml"
+            )
+        for key in sorted(set(backend_keys) - set(generated_keys)):
             errors.append(f"component.yaml: component '{key}' has no frontend registration")
 
-    carrier_path = root / carrier.CARRIER_REL
-    if not carrier_path.is_file():
+    # A hand-written registration list in the registry module would re-create the
+    # second frontend vocabulary the generated table exists to remove.
+    for key in sorted(set(FRONTEND_REGISTRATION_RE.findall(frontend_registry_code(root)))):
         errors.append(
-            f"{carrier.CARRIER_REL.as_posix()}: runtime carrier is missing; run "
-            "python3 scripts/contract/generate_semantic_registry.py"
+            f"{FRONTEND_REGISTRY_REL.as_posix()}: holds a second component vocabulary "
+            f"('{key}'); it must consume {carrier.FRONTEND_REL.as_posix()}"
         )
-    else:
+
+    # Coverage census: every widget spelling the contract schema permits must be
+    # claimed by a derivation rule.  An unclaimed spelling is not a warning -- it
+    # is the "unrecognised widget silently renders as text" defect, and the fix
+    # belongs in the declaration, not in a fallback.
+    claimed_widgets: set[str] = set()
+    suffixes: list[str] = []
+    for rule in rules:
+        when = rule.get("when") if isinstance(rule.get("when"), dict) else {}
+        claimed_widgets.update(str(value) for value in (when.get("widgets") or []))
+        claimed_widgets.update(str(value) for value in (when.get("widgets_exclude") or []))
+        if when.get("widget_suffix"):
+            suffixes.append(str(when["widget_suffix"]))
+    for spelling in sorted(set(declared_widget_spellings(root)) - claimed_widgets):
+        if any(spelling.endswith(suffix) for suffix in suffixes):
+            continue
+        errors.append(
+            f"semantic.yaml: widget spelling '{spelling}' is declared by the contract schema "
+            "(enum_registry.json) but no derivation rule claims it; declare what it means "
+            "instead of falling back to the default"
+        )
+
+    for rel, render_expected in (
+        (carrier.CARRIER_REL, carrier.render_repository_carrier),
+        (carrier.FRONTEND_REL, carrier.render_frontend_repository),
+    ):
+        carrier_path = root / rel
+        if not carrier_path.is_file():
+            errors.append(
+                f"{rel.as_posix()}: generated carrier is missing; run "
+                "python3 scripts/contract/generate_semantic_registry.py"
+            )
+            continue
         try:
-            expected = carrier.render_repository_carrier(root)
+            expected = render_expected(root)
         except SystemExit as exc:  # the generator refuses malformed declarations
-            errors.append(f"{carrier.CARRIER_REL.as_posix()}: cannot be projected ({exc})")
+            errors.append(f"{rel.as_posix()}: cannot be projected ({exc})")
         else:
             if carrier_path.read_text(encoding="utf-8") != expected:
                 errors.append(
-                    f"{carrier.CARRIER_REL.as_posix()}: out of sync with the declaration; run "
+                    f"{rel.as_posix()}: out of sync with the declaration; run "
                     "python3 scripts/contract/generate_semantic_registry.py"
                 )
 
@@ -254,7 +322,7 @@ def run(root: Path = ROOT) -> tuple[list[str], dict]:
         "derivation_default": derivation_default,
         "semantics_with_derivation_rule": len(declared_rule_semantics),
         "semantics_declared_only": sorted(set(semantics) - declared_rule_semantics),
-        "frontend_component_keys": len(frontend_keys),
+        "frontend_component_keys": len(generated_keys),
         "runtime_carrier": carrier.CARRIER_REL.as_posix(),
     }
     return errors, summary

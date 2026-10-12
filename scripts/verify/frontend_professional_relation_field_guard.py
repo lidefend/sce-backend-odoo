@@ -14,6 +14,10 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     relation_field = read_text("frontend/apps/web/src/components/design-system/ScRelationField.vue")
     section = read_text("frontend/apps/web/src/components/template/FormSection.vue")
     registry = read_text("frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts")
+    # The frontend vocabulary is projected into the generated table; the registry
+    # module consumes it and no longer carries the relation keys as literals, so
+    # the key authority is the generated carrier.
+    generated = read_text("frontend/apps/web/src/app/presentation/semantic_registry.generated.ts")
     assembler = read_text("addons/smart_core/core/unified_page_contract_v2_assembler.py")
     x2many = read_text("frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue")
     relationship_fields = read_text("frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts")
@@ -24,8 +28,10 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     relationships = read_text("frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts")
     page = read_text("frontend/apps/web/src/pages/ContractFormPage.vue")
     for key in ("sc.relation.many2one", "sc.relation.many2many", "sc.select.tags"):
-        if key not in model or key not in registry or key not in assembler:
+        if key not in model or key not in generated:
             failures.append(f"relation authority is incomplete for {key}")
+    if "contract_runtime.semantic_resolver" not in assembler:
+        failures.append("assembler does not resolve relation component keys through the contract registry")
     for marker in (
         'data-professional-field-family="relation"', ':data-relation-kind', ':data-relation-model',
         ':data-relation-create-mode', ':data-presentation-mode', ':data-render-profile', ':data-control-state',
