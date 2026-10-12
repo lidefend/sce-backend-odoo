@@ -91,10 +91,10 @@ Generated from repository source files. This report is informational during the 
 | 1433 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1432 | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1432 | Python source | `scripts/product/build_capability_productization_v1.py` |
+| 1421 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1408 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1395 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1381 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
-| 1376 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1332 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1331 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
@@ -270,10 +270,10 @@ Generated from repository source files. This report is informational during the 
 | 1433 | warning | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1432 | warning | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1432 | warning | Python source | `scripts/product/build_capability_productization_v1.py` |
+| 1421 | warning | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1408 | warning | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1395 | warning | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1381 | warning | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
-| 1376 | warning | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1339 | warning | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1332 | warning | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1331 | warning | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
