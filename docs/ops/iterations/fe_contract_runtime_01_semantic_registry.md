@@ -1133,3 +1133,88 @@ shard 0 = 353.5s、shard 1 = 16.5s、shard 2 = 38.6s（fail）、shard 3 = 7.2s�
 这是"证据体系无法快速定位职责"的具体形态。现按守卫实际归属登记 3 个 check
 （`unified_page_contract_web_consumer` / `..._web_architecture` / `..._stable_projection`），
 并按变更影响重录失效回执，不用下一次 Quick 去逐个发现兄弟失败。
+
+## 第三次冻结头 Quick 的收口：契约目录派生链（`contract_catalog`）
+
+`make ci.local.quick`（干净头 `69f707373f12`）在 `verify.branch.governance.consistency`
+一次瞬时失败（宿主层 spawn EFAULT，见下节），修掉后唯一残留失败是：
+
+```
+[FAILED] contract_catalog  target=verify.contract.catalog  rc=2  tests=16
+❌ inferred intent examples detected: api.data.import
+```
+
+根因不是守卫缺陷，而是本批次新增的 intent `api.data.import`
+（`addons/smart_core/handlers/api_data_import.py`）在 `docs/contract/cases.yml` 里没有
+`intent.invoke` 用例：`export_catalogs.py` 对无用例的 intent 会写入
+`example="__inferred__" / inferred=true / source="handler_params_scan"`，
+`intent_catalog_inferred_guard.py` 据此 fail-closed。**不放宽该守卫**，按既有模式补事实：
+
+| 动作 | 产物 |
+|-|-|
+| `docs/contract/cases.yml` 增 `api_data_import_intent_pm`（`demo_role_pm` / `dry_run: true` / `compare_mode: shape`） | 用例覆盖 |
+| `make local.contract-snapshot.contract_export CONTRACT_CASE_ONLY=api_data_import_intent_pm` | `docs/contract/snapshots/api_data_import_intent_pm.json` |
+| `make verify.contract.catalog` | 五项守卫全 PASS（tests=16） |
+
+### 补齐用例时暴露的真实后端缺陷（同层修复，未放宽断言）
+
+首轮快照生成本身就失败了，报 `BUSINESS_RULE_FAILED: list index out of range`，
+不是用例写法问题，而是 handler 与 Odoo 导入内核的边界不一致：
+
+- `base_import.import.file` 的官方声明是
+  `fields.Binary('File', help="File to check and/or import, raw binary (not base64)", attachment=False)`，
+  且 `_read_csv()` 直接 `csv_data = self.file or b''`，把缓存字节当文件内容解析；
+  实测 `create({"file": <base64 str>})` 后 `rec.file == b'bmFtZQo...'`，
+  CSV 被当成"一行一列"，`preview.pop(0)` 之后 `preview[0]` 即 `IndexError: list index out of range`。
+- 而 `api_data_import.py` 先把传输层 base64 解码成 `content`，又
+  `base64.b64encode(content).decode("ascii")` 塞回内核，等于**多编了一层**。
+
+修复（一行语义 + 说明注释）：内核 `create` 直接传 `content`（原始字节）。
+传输层用 base64、内核用 raw binary，这不是双通道，而是"JSON 载体"与"内核契约"的分工；
+`_read_file_payload` 的 base64 解码保持原样。
+
+修复后同一快照：`{"valid": true, "file_length": 2, "headers": ["name"], "mapping": ["name"], "imported_count": 1, "error_count": 0}`。
+
+### 台账 inputs 补齐与连带失效（不放宽、不重扫全量）
+
+`contract_catalog` 的目录由 handler 扫描派生，但登记的 `inputs` 只有
+`docs/contract/*` 与守卫脚本，**漏了派生源**——即改了 handler 也不会让该回执失效，
+属于"证据体系无法快速定位职责"的同类缺口。按派生关系补登
+`addons/smart_core/handlers`、`addons/smart_construction_core/handlers`。
+
+补登后按"改动输入必须重取回执"重跑，只跑被本次改动真正失效的兄弟项：
+
+| check | 失效原因 | 复跑结果 |
+|-|-|-|
+| `contract_catalog` | inputs 变更 | PASS（tests=16） |
+| `page_contract_v1_zero_residue` | inputs 含 `docs/contract/snapshots`（新增快照） | PASS |
+| `collection_action_capability` | inputs 含 `api_data_import.py` | PASS（cases=15） |
+| `agent_ledger` | inputs 含 `.agent/runs`（run.json 更新） | PASS（tests=15） |
+
+38 个 check 全部 `reusable`，run `resolved`，`outside_scope=[]`。
+
+## 本地资源利用收口（owner："本地电脑资源还没有充分利用"）
+
+先量化再改，避免凭感觉调参。实测（`.runtime/quick-*.log`）：
+
+| 事实 | 数值 |
+|-|-|
+| 本机 | 18 核 / 15 GiB / 无 seccomp / CapEff=0 |
+| quick 分片 worker 上限 | `min(cpu//2, mem//3GiB, members)` = **3**（内存是硬约束，不是核数） |
+| 4 分片实测 | 353.6 / 15.4 / 10.0 / 7.1s，串行和 ≈ 457s，墙钟 ≈ 354s |
+| 关键路径 | `verify.contract.architecture.suite` + 三次全量安全扫描（281s，`scan_authority_changed`） |
+
+结论：worker 数不能靠加并发提升（3 已达内存安全上限），**唯一能削关键路径的杠杆是分片数**——
+4 分片时 shard 0 占 99.7%，而三个重扫描在组内并行，多切分片可把其余断言挪出关键路径。
+
+处置：
+
+- `scripts/ops/local_quick_evidence.py::DEFAULT_SHARDS` 4 → 8，`make/ci.mk::QUICK_SHARDS ?= 8`；
+  分片只影响墙钟、不影响覆盖集合，且新增单测锁定两处默认值不得漂移。
+- `spawn()` 只对**未启动子进程**的瞬态 errno（`EAGAIN`/`ENOMEM`/`EFAULT`）重试 3 次并打印
+  `RETRY` 行；其它 errno 与非瞬态错误立即 fail-closed，覆盖 `git()` 与 `_shard_popen()`。
+  这是 `69f70737` 那次 `OSError: [Errno 14] Bad address: 'git'` 的宿主层瞬态失败，
+  单跑与 6 路并发 + 3GiB 压力均未复现，因此按"瞬态、且禁止掩盖真实失败"的边界处理。
+- `docs/ops/codex_workspace_execution_rules.md` 增 `## 并行执行与本地资源利用`：
+  唯一写入者、三类允许并行、禁止并行、回执与并行、判定顺序、瞬态 spawn 边界，
+  并写入上表实测数字，避免下次再凭感觉判断"是不是没吃满机器"。

@@ -65,7 +65,8 @@
     "frontend/apps/web/scripts/collection_action_capability_test.ts",
     "docs/ops/iterations/fe_contract_runtime_01_semantic_registry.md",
     "make/ci.mk",
-    "make/dev_test.mk"
+    "make/dev_test.mk",
+    "scripts/ops/local_quick_evidence.py"
   ],
   "environment": {
     "kind": "offline",
@@ -263,7 +264,8 @@
         "scripts/verify/docs_inventory.py",
         "scripts/verify/docs_links.py",
         "scripts/verify/docs_temp_guard.py",
-        "scripts/verify/docs_contract_sync.py"
+        "scripts/verify/docs_contract_sync.py",
+        "docs/ops/codex_workspace_execution_rules.md"
       ],
       "kind": "offline"
     },
@@ -294,6 +296,8 @@
       "target": "verify.contract.catalog",
       "kind": "offline",
       "inputs": [
+        "addons/smart_core/handlers",
+        "addons/smart_construction_core/handlers",
         "docs/contract/cases.yml",
         "docs/contract/snapshots",
         "docs/contract/exports",
@@ -575,6 +579,17 @@
         "make/ci.mk"
       ],
       "kind": "offline"
+    },
+    "branch_governance_consistency": {
+      "target": "verify.branch.governance.consistency",
+      "inputs": [
+        "make/ci.mk",
+        "scripts/verify/branch_governance_consistency_guard.py",
+        "scripts/verify/test_branch_governance_consistency_guard.py",
+        "scripts/ops/local_quick_evidence.py",
+        "scripts/verify/test_local_quick_evidence.py"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [
@@ -590,5 +605,5 @@
     "closed this batch (verification surface grew): the new guard targets left 6 zero-reference make targets (targets_zero_reference 766 > frozen 760, 6 unregistered), i.e. the new guards were not executed by any lane. Wired per the repo's existing boundary convention without rewriting the frozen baseline: the three frontend units (record_delete_action, collection_action_capability, semantic_runtime_resolution) into verify.frontend.pr.unit and verify.frontend.release.unit; the two pure-python guards (layout.vocabulary.lint, contract.collection_capability_projection.unit) into verify.contract.architecture.suite; the human generator entry contract.semantic.registry.generate into ci.delivery.freeze.prepare (derived carriers must be fresh before freezing). audit.verification.lane_coverage.check now reports PASS surface within the frozen baseline; verify.guard.registry AUDIT PASS (1419 scripts).",
     "registered this batch, deliberately NOT actioned (P2, separate authority): ENV-IDENTITY-CLEANUP. sc_dev_demo holds 60 accounts, 57 active; 48 are module-registered and covered by the fixed local.dev credential sync, while 9 are registered by no module at all (demo_full id=52 with 51 groups incl. 业务配置管理员; sc_fx_pm/executive/finance/contract_admin/project_member/material_user/cost_user ids 3400-3406 from 2026-10-08; svc_project_ro id=3407 which despite the name holds a write-capable 项目/用户 group) and one more (codex_p4_person_batch2a_auth_20260913 id=445, module codex_p4_personnel_authorization) sits outside the demo module's password sync and carries 技术/Smart Core Data Operator, the very group api.data.import requires. These 10 are exactly the logins that a non-fixed credential set explains. No password was changed and no account was written; the inventory, the inferred purpose and the proposed handling (keep-as-fixture vs retire, plus the svc_project_ro least-privilege tightening) are recorded in the iteration record for an owner ruling, because aligning credentials would widen credential coverage and needs its own authorization."
   ],
-  "next_exact_step": "Frozen-head Quick (aea17141) failed closed on verify.unified_page_contract.v2.assembler: 0beb7bba changed the assembled-contract cache inputs without re-pinning. Same-layer fix applied: bumped ASSEMBLED_CONTRACT_CACHE_VERSION to ui-contract-v2-2026-10-12-collection-capability-declaration in both the handler and the guard, added the missing runtime producers to ASSEMBLED_CACHE_INPUTS (unified_page_contract_v2_permissions.py, utils/collection_action_capability.py, utils/contract_governance.py, utils/contract_governance_list_surface.py, utils/contract_governance_user_surface.py), re-pinned ASSEMBLED_CACHE_INPUTS_SHA256=a6fc054688afccc79995b68a3b863dfccb4fbd9829ed44c0b4ccb3635c5e4bc8; the guard passes (sources=4) and shard 2's unrun targets all pass locally (boq.dangerous.import.capability, frontend.dev.incremental.unit, frontend.overview_rich_text.unit, frontend.lint.src). Remaining: commit this fix, re-run ONE exact-head make ci.local.quick on the new clean frozen head, then make pr.push. Separately registered (not this batch): quick shard imbalance - shard 0 carries the whole contract/architecture suite plus three full security scans (secrets 140s, personal-data 172s, clean-history 281s, all mode=full reason=scan_authority_changed), so wall time is ~354s with shard 0 at 99.7%. Non-blocking and awaiting an owner ruling: ENV-IDENTITY-CLEANUP (P2)."
+  "next_exact_step": "Batch closure reached a clean frozen-candidate state. This round closed the last Quick blocker (verify.contract.catalog: the batch's new intent api.data.import had no intent.invoke case in docs/contract/cases.yml, so export_catalogs.py emitted an __inferred__ example and intent_catalog_inferred_guard failed closed; the guard was NOT relaxed - case api_data_import_intent_pm was added and the governed snapshot lane regenerated docs/contract/snapshots/api_data_import_intent_pm.json). Regenerating that snapshot exposed a real handler defect on the same layer: base_import.import.file is declared \\\"raw binary (not base64)\\\" and _read_csv parses the cached bytes directly, but api_data_import.py re-encoded the already-decoded payload to base64, so parse_preview raised IndexError and returned BUSINESS_RULE_FAILED 'list index out of range'; the kernel now receives the raw bytes and the dry-run snapshot reports valid=true / file_length=2 / imported_count=1. contract_catalog inputs were corrected to declare its real derivation sources (addons/smart_core/handlers, addons/smart_construction_core/handlers), and only the checks genuinely invalidated by this round were re-run (contract_catalog 16, page_contract_v1_zero_residue, collection_action_capability 15, agent_ledger 15). All 38 checks are reusable and outside_scope is empty. Local-resource utilisation was quantified and codified: quick workers are capped at 3 by memory (18 cores / 15 GiB), so shard count is the only lever on the critical path - DEFAULT_SHARDS and QUICK_SHARDS moved 4 -> 8, transient spawn errnos (EAGAIN/ENOMEM/EFAULT) retry 3x fail-closed for git() and _shard_popen(), and docs/ops/codex_workspace_execution_rules.md gained the measured parallel-execution section. Remaining: commit the layer-prefixed changes, run make ci.delivery.freeze.prepare, freeze a clean HEAD, run ONE make ci.local.quick on that frozen head, then make pr.push (Gitee first)."
 }
