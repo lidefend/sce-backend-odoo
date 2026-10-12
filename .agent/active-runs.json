@@ -1,7 +1,8 @@
 {
   "branches": {
     "audit/daily-dev-mainline-product-acceptance-closeout-20261009": ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json",
-    "audit/fe-contract-runtime-00-20261012": ".agent/runs/FE-CONTRACT-RUNTIME-00/run.json"
+    "audit/fe-contract-runtime-00-20261012": ".agent/runs/FE-CONTRACT-RUNTIME-00/run.json",
+    "feature/fe-contract-runtime-01-semantic-registry": ".agent/runs/FE-CONTRACT-RUNTIME-01/run.json"
   },
   "schema_version": 1
 }

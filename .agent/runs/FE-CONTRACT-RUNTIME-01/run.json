@@ -1,0 +1,75 @@
+{
+ "schema_version": 1,
+ "id": "FE-CONTRACT-RUNTIME-01",
+ "branch": "feature/fe-contract-runtime-01-semantic-registry",
+ "status": "active",
+ "baseline_sha": "991a9d9b57525850f99a8643ce3f4f0d322d00dd",
+ "goal": ".agent/goals/FE-CONTRACT-RUNTIME-01.yaml",
+ "record": "docs/ops/iterations/fe_contract_runtime_01_semantic_registry.md",
+ "scope": [
+  ".agent/goals/FE-CONTRACT-RUNTIME-01.yaml",
+  ".agent/runs/FE-CONTRACT-RUNTIME-01/",
+  ".agent/active-runs.json",
+  "contracts/registry/",
+  "contracts/registry.yaml",
+  "contracts/README.md",
+  "scripts/verify/semantic_registry_lint.py",
+  "scripts/verify/test_semantic_registry_lint.py",
+  "make/contract.mk",
+  "docs/ops/iterations/"
+ ],
+ "environment": {
+  "kind": "offline",
+  "authority": "existing local Make entrypoints and installed workspace dependencies; no database, service or browser access is required by batch 01-A"
+ },
+ "checks": {
+  "semantic_registry_lint": {
+   "target": "verify.semantic.registry.lint",
+   "inputs": [
+    "contracts/registry",
+    "contracts/registry.yaml",
+    "scripts/verify/semantic_registry_lint.py",
+    "scripts/verify/test_semantic_registry_lint.py",
+    "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+    "make/contract.mk"
+   ],
+   "kind": "offline"
+  },
+  "frontend_component_registry": {
+   "target": "verify.frontend.professional_component_registry.unit",
+   "inputs": [
+    "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+    "frontend/apps/web/scripts/professional_component_registry_test.ts",
+    "scripts/verify/frontend_professional_component_registry_guard.py",
+    "scripts/verify/test_frontend_professional_component_registry_guard.py",
+    "frontend/apps/web/src/components/template"
+   ],
+   "kind": "offline"
+  },
+  "schema_declaration_sync": {
+   "target": "verify.contract.schema.declaration.sync",
+   "inputs": [
+    "contracts/domain",
+    "contracts/product",
+    "contracts/schemas",
+    "contracts/registry",
+    "contracts/registry.yaml",
+    "scripts/verify/contract_schema_declaration_sync.py"
+   ],
+   "kind": "offline"
+  },
+  "agent_ledger": {
+   "target": "verify.agent.ledger.unit",
+   "inputs": [
+    ".agent/goals",
+    ".agent/runs",
+    ".agent/active-runs.json"
+   ],
+   "kind": "offline"
+  }
+ },
+ "blockers": [
+  "pre-existing (not introduced by this batch): `make verify.contract.lint` fails with 49 issues on both this branch and origin/main; classify and fix them in their own batch."
+ ],
+ "next_exact_step": "FE-CONTRACT-RUNTIME-01-A is written and its non-zero targeted check passes. Commit 01-A, then start 01-B: replace the private _component_key mapping in addons/smart_core/core/unified_page_contract_v2_assembler.py with a resolver that reads contracts/registry/semantic.yaml, keeping componentKey as a deprecated fallback and proving payment.request rendering is unchanged."
+}
