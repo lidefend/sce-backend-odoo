@@ -1012,6 +1012,13 @@ ci.local.quick.compose: guard.prod.forbid
 # Only deterministic static guards belong here. Anything needing a live database,
 # a browser, the pnpm toolchain or developer-local state belongs to a runtime or
 # frontend lane and must not be added here.
+# Concrete case: verify.menu_config_tree_editor.behavior bundles
+# frontend/apps/web sources through esbuild, so it needs both the pinned pnpm
+# toolchain and installed frontend dependencies. It is enforced by the frontend
+# lanes (verify.frontend.pr.unit / verify.frontend.release.unit) and by the local
+# exact-head lane, and deliberately NOT by this static suite: the remote backend
+# gate installs no frontend dependencies, so a wire here can only fail with
+# "esbuild not found" instead of a real gate result.
 # ---------------------------------------------------------------------------
 .PHONY: verify.contract.architecture.suite
 verify.contract.architecture.suite: \
@@ -1019,7 +1026,6 @@ verify.contract.architecture.suite: \
 	verify.formal_product_field_purity \
 	verify.tenant_extension_storage \
 	verify.backend.contract_lifecycle.authority \
-	verify.menu_config_tree_editor.behavior \
 	verify.g1.acceptance.baseline \
 	verify.login_envelope.consumption.guard \
 	verify.contract_form_split_evidence \
@@ -1088,7 +1094,7 @@ verify.contract.architecture.suite: \
 	@python3 scripts/ci/node_syntax_check.py
 	@echo "[OK] contract & architecture guard suite passed"
 
-ci.local.quick.run: guard.prod.forbid ci.generated_evidence.preflight verify.contract.page_v1_zero_residue.guard security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2 verify.visualization.chart.capability verify.boq.export.capability verify.write.idempotency.capability verify.boq.dangerous.import.capability verify.boq.line.patch.capability verify.overview.rich.text.patch.capability verify.pr.push.unit verify.frontend.dev.incremental.unit verify.frontend.chart_engine.guard verify.frontend.chart_dataset.unit verify.frontend.boq_line_patch.unit verify.frontend.overview_rich_text.unit verify.frontend.lint.src verify.ui_contract.delivery_surface.unit verify.contract.architecture.suite
+ci.local.quick.run: guard.prod.forbid ci.generated_evidence.preflight verify.contract.page_v1_zero_residue.guard security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2 verify.visualization.chart.capability verify.boq.export.capability verify.write.idempotency.capability verify.boq.dangerous.import.capability verify.boq.line.patch.capability verify.overview.rich.text.patch.capability verify.pr.push.unit verify.frontend.dev.incremental.unit verify.frontend.chart_engine.guard verify.frontend.chart_dataset.unit verify.frontend.boq_line_patch.unit verify.frontend.overview_rich_text.unit verify.menu_config_tree_editor.behavior verify.frontend.lint.src verify.ui_contract.delivery_surface.unit verify.contract.architecture.suite
 	@git diff --check
 	@echo "[OK] local quick gate passed"
 
