@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4684`
+- Scanned files: `4686`
 - Files requiring split plan: `63`
 - Files above warning threshold: `115`
 
@@ -159,9 +159,9 @@ Generated from repository source files. This report is informational during the 
 | 886 | Python source | `addons/smart_construction_core/models/core/equipment_management.py` |
 | 886 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 886 | Python source | `scripts/verify/release_capability_audit.py` |
+| 883 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 877 | Python source | `addons/smart_core/app_config_engine/models/app_search_config.py` |
-| 875 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 868 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 864 | Python source | `scripts/release/test_locked_menu_policy_contract.py` |
 | 862 | Python source | `scripts/release/release_candidate.py` |

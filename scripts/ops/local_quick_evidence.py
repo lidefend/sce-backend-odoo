@@ -34,23 +34,31 @@ FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 # strided slice of the declared target list, so an interrupted or partially
 # failed candidate keeps the parts that did pass instead of proving nothing.
 # The part count is not a lever on the lane's wall clock, and that was measured
-# rather than assumed. What dominates is whether the three trusted scans can
-# reuse a verified ancestor receipt (see trusted_scan_scope): when the candidate
-# itself changes a scan-authority input they re-run full, and on one frozen head
-# security.trusted_scan_group reported members=3 jobs=3 with secrets 169.5s,
-# personal 200.4s and history 315.5s, so the group's wall clock is its slowest
-# member and that single ~315s target cannot be split any further. On top of it
-# 4 parts measured 328s/16s/105s/8s (328s wall) and 8 parts measured
-# 72.0s/7.7s/9.1s/6.0s/338.5s/8.0s/111.6s/1.3s (347.5s worker chain), i.e. re-
-# slicing the identical covered set moved the wall clock by noise: the scan, not
-# the shard, was already the critical path. More parts therefore buy finer resume
-# granularity, not speed. The real lever is candidate composition - keep
-# `Makefile`, this file, `scripts/ci/trusted_scan_scope.py`,
+# rather than assumed: 4 parts measured 328s/16s/105s/8s (328s wall) and 8 parts
+# measured 72.0s/7.7s/9.1s/6.0s/338.5s/8.0s/111.6s/1.3s (347.5s worker chain),
+# i.e. re-slicing the identical covered set moved the wall clock by noise. More
+# parts therefore buy finer resume granularity, not speed.
+#
+# The dominant cost is whether the three trusted scans can reuse a verified
+# ancestor receipt (see trusted_scan_scope): when the candidate itself changes a
+# scan-authority input they re-run full. That full cost used to be pinned at
+# ~315s by repository.clean_history.scan, and an earlier version of this comment
+# called it "that single ~315s target cannot be split any further". Measurement
+# refuted that: the floor was per-blob `git cat-file blob` spawning (2.74 ms x
+# ~24k blobs, ~66s of process creation) plus a single-threaded regex pass over
+# 1.17 GB at 9 MB/s (~130s with 17 cores idle) -- avoidable serial cost, not an
+# indivisible task. The three scans now share scripts/ci/parallel_scan.py (one
+# long-lived `git cat-file --batch` per worker plus a bounded worker pool that
+# restores declared order), and the same group entry measured 315.5s -> 85.01s
+# with byte-identical findings. So the lever order is: (1) candidate composition
+# - keep `Makefile`, this file, `scripts/ci/trusted_scan_scope.py`,
 # `scripts/dev/local_dev_frontend_quick.py`, a scan's own AUTHORITY files and any
 # make fragment that can re-declare a governed scan target in their own
-# candidate, so the next run resolves mode=incremental. `QUICK_SHARDS` in
-# make/ci.mk is the entry that is actually passed in; this value only backs a
-# direct programmatic call and must not drift from it.
+# candidate, so the next run resolves mode=incremental; (2) remove avoidable
+# serial cost inside a scan before calling it unsplittable. Shard count is still
+# only resume granularity. `QUICK_SHARDS` in make/ci.mk is the entry that is
+# actually passed in; this value only backs a direct programmatic call and must
+# not drift from it.
 DEFAULT_SHARDS = 8
 # Shard workers. One shard is one make invocation over a strided slice of the
 # declared target list, and shards are independent by construction: each writes

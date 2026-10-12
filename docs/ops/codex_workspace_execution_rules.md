@@ -401,16 +401,22 @@ main 的必需检查保持；人工审核按上方最新合并规则执行。新
 
 本机实测（18 核 / 15 GiB，`sc-local-dev` 容器常驻）：
 
-- 分片 worker 上限由 `scripts/ci/trusted_scan_group.py:resolve_jobs` 决定，取
-  `min(cpu//2, available_bytes//3GiB, members)`；实测 `available_bytes`≈10 GiB，因此上限是 **3**。
-  18 核在 quick 里只能起 3 个分片进程，CPU 大量空闲（实测 load average 0.3—3.1）。
-- quick 的墙钟由**单条不可再分的关键路径**决定，而且它既不是核数也不是分片数。同一条车道上 4 分片实测
+- 并发有两层，别混为一谈。**组级**并发由 `scripts/ci/trusted_scan_group.py:resolve_jobs` 决定，取
+  `min(cpu//2, available_bytes//3GiB, members)`；实测 `available_bytes`≈10 GiB、`members=3`，故上限是 **3**。
+  **成员内部**再由 `scripts/ci/parallel_scan.py:resolve_workers` 按整机预算 `min(cpu-2, MemAvailable//512MiB)`
+  除以组并发分配（`SC_TRUSTED_SCAN_GROUP_JOBS` 由组入口写入），实测每个成员约 5 个 worker。并行化前是
+  单进程逐 blob spawn、单线程正则，CPU 大量空闲（实测 load average 0.3—3.1）。
+- **分片不是杠杆（已实测）。** 重切同一份覆盖集合只产生噪声级差异：同一条车道上 4 分片实测
   `328s / 16s / 105s / 8s`（墙钟 328s），8 分片实测
-  `72.0 / 7.7 / 9.1 / 6.0 / 338.5 / 8.0 / 111.6 / 1.3s`（worker 链 347.5s）：重切同一份覆盖集合
-  只产生噪声级差异，**分片数不是杠杆**（更细的分片只买恢复粒度）。
-- 地板是 `security.trusted_scan_group` 里最慢的那一条。该组已是 3 路并行（`members=3 jobs=3`），实测
-  `security.secrets.scan` 169.5s、`security.personal_data_scan` 200.4s、`repository.clean_history.scan`
-  315.5s，因此组墙钟 = 315.5s，而单条扫描无法再切。
+  `72.0 / 7.7 / 9.1 / 6.0 / 338.5 / 8.0 / 111.6 / 1.3s`（worker 链 347.5s）；更细的分片只买恢复粒度。
+- **但"最慢的那条扫描不可再切"是错的，已复核证伪，不得再作为放弃并行的理由。** 曾把 quick 的 315.5s
+  地板归因为 `security.trusted_scan_group` 里最慢的 `repository.clean_history.scan` 无法再切。复核发现该地板是
+  **实现低效**：三个扫描对**每个 blob 单独** spawn `git cat-file blob`（实测 2.74 ms/次 × 约 23.9k blob ≈ 66s
+  纯进程创建），且正则匹配是单线程（1.17 GB @ 9 MB/s，约 130s，17 核空闲）。共享机制
+  `scripts/ci/parallel_scan.py`（常驻 `git cat-file --batch` + 有界 worker 池、结果按输入序回填、缺对象
+  fail-closed）接入三个扫描后，同一受管入口 `make security.trusted_scan.group` 实测 **315.5s → 85.01s**，
+  且输出逐字节等价（findings 完全一致）。判定"不可再分"前，必须先排除逐对象 spawn、单线程 CPU 这类
+  **可在扫描内部消除**的串行成本。
 - 真正的杠杆是**该候选能否复用已验证的祖先扫描回执**。本机在 HEAD `02b6fe28` 上运行
   `python3 scripts/ci/trusted_scan_scope.py`，三个 kind 全部落在增量复用：
   `mode=incremental base=02b6fe28e40972e3f6dbf70bb24e143517307bbe`、
@@ -418,8 +424,8 @@ main 的必需检查保持；人工审核按上方最新合并规则执行。新
   而那一次 Quick 之所以付全量，根因是该候选自身改了
   `scripts/ops/local_quick_evidence.py`——它属于 `scripts/ci/trusted_scan_scope.py:COMMON_AUTHORITY`，
   于是没有任何祖先回执携带新权威摘要，`select_scope` 落到 `scan_authority_changed`，三个扫描全部重跑，
-  地板从数十秒抬到约 315s。结论：缩短 quick 靠"权威改动分候选 + 复用未变输入的回执"，
-  不靠多开进程或加分片。
+  地板从数十秒抬到约 315s。结论：**减少重复工作（权威改动分候选 + 复用未变输入的回执）仍是第一杠杆**；
+  其次是把扫描内部的串行成本并行化（本次 315.5s→85.01s）。加分片不是杠杆。
 - 扫描权威集合（改动即强制全量）：`Makefile`、`scripts/ops/local_quick_evidence.py`、
   `scripts/ci/trusted_scan_scope.py`、`scripts/dev/local_dev_frontend_quick.py`、各 kind 自己的
   `AUTHORITY` 文件，以及**能够改写受管扫描目标声明的 `make/` 片段**。
@@ -441,7 +447,7 @@ main 的必需检查保持；人工审核按上方最新合并规则执行。新
    允许对"尚未启动任何子进程"的 spawn 做有次数上限的重试，并保留可见诊断；
    不得把重试扩大到已经产生副作用的动作，也不得用重试掩盖同因失败。
 7. **扫描权威改动单独开候选。** 触及上述权威集合的改动会让该候选的三次受管扫描全量重跑
-   （实测约 315s 地板）。应把这类改动与无关业务/文档改动分到不同候选，或接受一次全量代价后
+   （全量实测：并行化前约 315s，并行化后约 85s，见上）。应把这类改动与无关业务/文档改动分到不同候选，或接受一次全量代价后
    在其后代候选上恢复增量复用；不得为了"快"而放宽扫描权威绑定或缩短扫描范围。
 
 ## 禁止行为

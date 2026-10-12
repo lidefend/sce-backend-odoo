@@ -1204,9 +1204,9 @@ shard 0 = 353.5s、shard 1 = 16.5s、shard 2 = 38.6s（fail）、shard 3 = 7.2s�
 | 4 分片实测（两处冻结头） | 353.6/15.4/10.0/7.1s（`aea17141` 段）与 328/16/105/8s，墙钟 328—354s |
 | 8 分片实测 | 72.0 / 7.7 / 9.1 / 6.0 / 338.5 / 8.0 / 111.6 / 1.3s，worker 链 347.5s |
 | 扫描组自报 | `members=3 jobs=3`：secrets 169.5s、personal 200.4s、history 315.5s → 组墙钟 = 315.5s |
-| 关键路径 | 单条不可再分的 `repository.clean_history.scan`（315.5s），不是分片、也不是核数 |
+| 关键路径（**已被下节证伪**） | 当时判定为单条不可再分的 `repository.clean_history.scan`（315.5s）；实为逐 blob spawn + 单线程正则的实现低效 |
 
-**结论（更正 `3bc39ee6` 的结论）**：分片数不是有效杠杆。4 分片与 8 分片重切的是同一份覆盖集合，
+**结论（更正 `3bc39ee6` 的结论；其"不可再分"部分又被下一节再次更正）**：分片数不是有效杠杆。4 分片与 8 分片重切的是同一份覆盖集合，
 墙钟 328s vs 347.5s 属噪声级差异，两者都被同一条不可再分的地板压住——`repository.clean_history.scan`
 单条 315.5s（`HEAD --branches --tags --remotes` 全历史，组内已 3 路并行，无法再切）。
 
@@ -1231,9 +1231,9 @@ shard 0 = 353.5s、shard 1 = 16.5s、shard 2 = 38.6s（fail）、shard 3 = 7.2s�
   并新增第 7 条"扫描权威改动单独开候选"（权威集合：`Makefile`、`scripts/ops/local_quick_evidence.py`、
   `scripts/ci/trusted_scan_scope.py`、`scripts/dev/local_dev_frontend_quick.py`、各 kind 的 `AUTHORITY`、
   能改写受管扫描目标声明的 `make/` 片段），避免下次再凭感觉判断"是不是没吃满机器"。
-- 登记独立改进项（不在本批次动）：全量扫描自身的增量化或内部并行化——
-  `repository.clean_history.scan` 单条 315.5s 是对全历史的扫描，缩减它要改扫描器覆盖语义，
-  属独立专题；本次只更正结论与固化纪律，不动扫描范围。
+- 登记独立改进项（**已在本轮完成，见下节**）：全量扫描自身的关键路径压缩。当时理由是
+  "`repository.clean_history.scan` 单条 315.5s 是对全历史的扫描，缩减它要改扫描器覆盖语义"——
+  该理由被本轮实测证伪：缩减它**不需要**改覆盖语义，只需消除扫描内部的逐对象 spawn 与单线程正则。
 
 ## 证据过度失效修复（`__pycache__` 不是输入）
 
@@ -1263,3 +1263,55 @@ only_old: []    only_new: []
   `make verify.agent.resume.unit` 43 tests PASS。
 - 效果（实测）：本 run 中被误判的 6 个 check 在**不重跑任何检查**的前提下恢复 `reusable`，
   38/38 `reusable`、`outside_scope=[]`。
+
+## 扫描内部并行化收口（证伪上一节的"不可再分"结论）
+
+上一节把 quick 的 315.5s 地板判定为"`repository.clean_history.scan` 不可再分"，并把"缩减它"登记为
+独立专题（理由写成"要改扫描器覆盖语义"）。本轮实测把这两条都证伪：地板是**扫描内部的实现低效**，
+压掉它**不需要**改覆盖语义。
+
+量化证据（真实仓库全量，逐字节对照）：
+
+| 事实 | 数值 |
+|-|-|
+| 逐 blob spawn | 三个扫描对**每个 blob** 单独起 `git cat-file blob`，实测 2.74 ms/次；约 23.9k blob ≈ 66s 纯进程创建 |
+| 单线程正则 | 1.17 GB 文本单线程 9 MB/s ≈ 130s（17 核空闲） |
+| 逐字节等价（内容 pass 隔离） | 232.6s → 42.5s（5.5x），`FINDINGS EQUAL: True`、`USED-EXCEPTIONS EQUAL: True`（3/3） |
+| 端到端（clean-history 全量） | 302.67s → 43.32s（7.0x），stdout 除新增 `scanned_blobs`/`scan_workers` 两 token 外完全一致 |
+| `personal_data_scan.py` | 161.5s → 15.4s；findings 21/21 一致、`IDENTICAL: True` |
+| `secret_scan.py` | 真实仓库 141.6s → 6.9s（0 命中，弱证据）；另用植入提交的 shared clone 做判别性等价（6 findings 逐条一致） |
+| 受管组入口 `make security.trusted_scan.group` | **315.5s → 85.01s**，`status=passed`（secrets 38.4s / personal 40.2s / history 75.9s） |
+| 同上，`parallel_scan.py` 清理死代码后的复测 | `status=passed`、`members=3 jobs=3 worker_budget_per_member=4`（secrets 36.7s / personal 38.3s / history 73.3s），日志 `.runtime/evidence-logs/group_after_cleanup.log` |
+
+机制（`scripts/ci/parallel_scan.py`，一处机制三处复用）：
+
+- `BatchBlobReader`：常驻 `git cat-file --batch`，消除逐 blob spawn；缺对象抛 `ObjectReadError`
+  （fail-closed，绝不把缺失当空内容——与原 `check=True` spawn 同一契约）。
+- `map_ordered()`：有界 worker 池**按输入序回填**结果；worker 收非空 list、返回等长 list；
+  `workers<=1` 时进程内调用且**仍执行 initializer**，使串行与并行共用同一代码路径。
+- `resolve_workers()`：整机预算 `min(cpu-2, MemAvailable//512MiB)` 除以组并发（组入口写
+  `SC_TRUSTED_SCAN_GROUP_JOBS`）；`SC_SCAN_WORKERS` 固定、`SC_SCAN_SERIAL=1` 串行诊断。
+  worker 进程常驻一个 batch 管道，结果在 map 内回填，因此输出与 worker 数无关。
+
+接线与防回归：
+
+- 三个扫描器（`scripts/ci/secret_scan.py`、`scripts/ci/personal_data_scan.py`、
+  `scripts/verify/repository_clean_history_guard.py`）改为**模块级** worker + 懒加载 batch reader；
+  其中 `secret_scan.py` **保持自然迭代序**、不加 `sorted()`（自然序 ≠ 升序，排序会改变输出），
+  以维持逐字节一致。
+- `repository_clean_history_guard.read_blob()` 保持**可观测契约**不变
+  （`scripts/ci/test_trusted_scan_scope.py` 依赖 `mock.patch.object(history, 'read_blob')`）；
+  新增 `close_blob_reader()` 让 fork 出的 worker 先丢弃继承的管道再自建。
+- `make security.parallel_scan.unit`（18 tests）成为 `security.online_capture.unit`、
+  `security.personal_data.unit`、`security.trusted_scan_group.unit`、`verify.repository.clean_history.unit`
+  的前置：共享机制改坏时不能"只经一种扫描"蒙混通过。
+- 该前置也让 `security.trusted_scan.group`（quick 的必经入口）每次都会跑这 18 条，成本可忽略。
+
+结论更正：
+
+- 上一节"关键路径是不可再分的 `repository.clean_history.scan`"**不成立**；"缩减它要改覆盖语义"
+  **不成立**——本轮覆盖集合与断言一字未改，findings 逐字节等价。
+- 分片数与"多开进程"仍不是杠杆；杠杆顺序更正为：**先减少重复工作（权威改动分候选 + 复用祖先扫描回执），
+  再消除扫描内部可消除的串行成本**（逐对象 spawn、单线程 CPU、重复读取）。
+- 同一更正已同步到 `scripts/ops/local_quick_evidence.py` 的 `DEFAULT_SHARDS` 注释与
+  `docs/ops/codex_workspace_execution_rules.md` 的 `## 并行执行与本地资源利用`（含"不可再分"证伪段）。
