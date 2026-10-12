@@ -25,6 +25,7 @@ declaration edit without regeneration is a lint failure instead of silent drift.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -38,6 +39,17 @@ CARRIER_REL = Path("addons/smart_core/core/contract_runtime/semantic_registry_ge
 FRONTEND_REL = Path(
     "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts"
 )
+DOMAIN_CONTRACTS_REL = Path("contracts/domain")
+VIEW_STRUCTURE_REL = Path("contracts/generated/product_view_structure_contract.json")
+DOMAIN_SEMANTICS_REL = Path(
+    "addons/smart_core/core/contract_runtime/domain_field_semantics_generated.py"
+)
+
+# A field's meaning belongs to the entity, not to one surface.  The form view is
+# where the editor widgets (statusbar, monetary, percentage, ...) declare that
+# meaning, so it is read first and a surface that only re-lists the field cannot
+# overwrite it.
+SURFACE_ORDER = ("form", "kanban", "tree", "search", "graph", "pivot", "activity")
 
 WHEN_KEYS = ("field_types", "widgets", "widgets_exclude", "widget_suffix")
 
@@ -243,6 +255,164 @@ def render_frontend_repository(root: Path = ROOT) -> str:
     )
 
 
+DOMAIN_HEADER = '''# -*- coding: utf-8 -*-
+"""GENERATED CONTRACT-RUNTIME CARRIER - do not edit by hand.
+
+Derived from: contracts/generated/product_view_structure_contract.json, the
+governed parse of the Odoo model metadata and the resolved view arch, restricted
+to the entities ``contracts/domain/*.yaml`` declares.
+Regenerate with:
+
+    python3 scripts/contract/generate_semantic_registry.py
+
+The runtime image does not ship ``contracts/``, so each governed entity's field
+semantics are projected here as ``model -> field -> semantic``.  Every semantic
+is *read from the field facts* by the same registry rules the page assembler
+uses; no meaning is authored by hand, which keeps the backend input to the model,
+the view and the permission data.
+
+Drift between this carrier and the field facts is a lint failure
+(``make verify.semantic.registry.lint``).
+"""
+
+from __future__ import annotations
+
+GENERATED_FROM = ('contracts/generated/product_view_structure_contract.json',)
+
+# model -> field -> semantic
+DOMAIN_FIELD_SEMANTICS = {
+'''
+
+
+def runtime_semantic_engine():
+    """The runtime's own field-fact -> semantic resolution, imported not copied.
+
+    The carrier and the page assembler have to read a field identically, so this
+    imports the shipped runtime functions instead of re-implementing widget
+    canonicalisation and the derivation-rule walk in a build script.
+    """
+    addon_root = str((root_of_addons()).resolve())
+    if addon_root not in sys.path:
+        sys.path.insert(0, addon_root)
+    from core.contract_runtime import semantic_resolver  # noqa: PLC0415
+    from core.unified_page_contract_v2_assembler import _canonical_widget_type  # noqa: PLC0415
+
+    return semantic_resolver, _canonical_widget_type
+
+
+def root_of_addons() -> Path:
+    """The addon root that holds ``core.contract_runtime`` (import root for the runtime)."""
+    return Path(__file__).resolve().parents[2] / "addons" / "smart_core"
+
+
+def governed_models(root: Path = ROOT) -> set[str]:
+    """The Odoo models ``contracts/domain/*.yaml`` binds, keyed by model name.
+
+    ``source_of_truth.model`` is the binding.  A document that only carries
+    ``entity`` is bound when that name is already an Odoo model name (dotted);
+    a bare class name is not a model and is skipped rather than guessed, so an
+    unbound contract stays visibly unprojected instead of silently mis-keyed.
+    """
+    models: set[str] = set()
+    for path in sorted((root / DOMAIN_CONTRACTS_REL).glob("*.yaml")):
+        document = load(path)
+        source = document.get("source_of_truth")
+        model = str((source or {}).get("model") or "").strip().lower() if isinstance(source, dict) else ""
+        if not model:
+            entity = str(document.get("entity") or "").strip().lower()
+            model = entity if "." in entity else ""
+        if model:
+            models.add(model)
+    return models
+
+
+def _surface_field_facts(surface: dict) -> dict[str, dict]:
+    """``field name -> attrs`` for one parsed surface, first occurrence wins."""
+    facts: dict[str, dict] = {}
+
+    def walk(node: object) -> None:
+        if isinstance(node, dict):
+            if node.get("tag") == "field":
+                attrs = node.get("attrs")
+                name = str((attrs or {}).get("name") or "").strip()
+                if name and isinstance(attrs, dict):
+                    facts.setdefault(name, attrs)
+            for child in node.get("children") or []:
+                walk(child)
+
+    walk(surface.get("semantic_structure") or {})
+    return facts
+
+
+def domain_field_semantics(root: Path = ROOT) -> dict[str, dict[str, str]]:
+    """The ``model -> field -> semantic`` map, read from the parsed field facts.
+
+    The input is the model metadata and the resolved view arch: for every field
+    the governed surfaces expose, the field's Odoo type, widget and comodel are
+    fed through the runtime's own resolution, so the carrier can never disagree
+    with what the page renders.
+    """
+    baseline_path = root / VIEW_STRUCTURE_REL
+    if not baseline_path.is_file():
+        raise SystemExit(
+            f"[generate-semantic-registry] FAIL: missing {VIEW_STRUCTURE_REL.as_posix()}; "
+            "run the contract view-structure export before regenerating the carriers"
+        )
+    resolver, canonical_widget_type = runtime_semantic_engine()
+    governed = governed_models(root)
+    baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
+    order = {name: index for index, name in enumerate(SURFACE_ORDER)}
+    by_model: dict[str, dict[str, str]] = {}
+    for entry in baseline.get("entries") or []:
+        model = str(entry.get("res_model") or "").strip().lower()
+        if model not in governed:
+            continue
+        surfaces = [s for s in entry.get("surfaces") or [] if isinstance(s, dict)]
+        surfaces.sort(key=lambda s: order.get(str(s.get("view_type") or ""), len(SURFACE_ORDER)))
+        facts: dict[str, dict] = {}
+        for surface in surfaces:
+            for name, attrs in _surface_field_facts(surface).items():
+                known = facts.get(name)
+                if known is None or ("widget" not in known and "widget" in attrs):
+                    facts[name] = attrs
+        for name, attrs in facts.items():
+            field = {"name": name, "ttype": attrs.get("type"), "type": attrs.get("type")}
+            if attrs.get("relation"):
+                field["relation"] = attrs["relation"]
+            native_widget = str(attrs.get("widget") or "")
+            widget = resolver.semantic_widget_type(
+                native_widget, canonical_widget_type(native_widget, field)
+            )
+            by_model.setdefault(model, {})[name] = resolver.resolve(field, widget)["semantic"]
+    return by_model
+
+
+def render_domain_field_semantics(root: Path = ROOT) -> str:
+    """Project the parsed field facts into the runtime carrier.
+
+    Every projected semantic must be one ``contracts/registry/semantic.yaml``
+    declares; a name the resolver does not know would resolve to nothing at
+    runtime, so the projector refuses instead of emitting it.
+    """
+    semantics = load(root / SEMANTIC_REL).get("semantics") or {}
+    projected = domain_field_semantics(root)
+    for model, fields in projected.items():
+        for name, semantic in fields.items():
+            if semantic not in semantics:
+                raise SystemExit(
+                    f"[generate-semantic-registry] FAIL: model {model!r} field {name!r} resolves to "
+                    f"undeclared semantic {semantic!r}"
+                )
+    lines: list[str] = []
+    for model, fields in sorted(projected.items()):
+        lines.append(f"    {model!r}: {{")
+        for name in sorted(fields):
+            lines.append(f"        {name!r}: {fields[name]!r},")
+        lines.append("    },")
+    body = DOMAIN_HEADER + "\n".join(lines) + ("\n}\n" if lines else "}\n")
+    return body
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="verify the carrier is in sync")
@@ -251,6 +421,7 @@ def main() -> int:
     artifacts = (
         (CARRIER_REL, render_repository_carrier()),
         (FRONTEND_REL, render_frontend_repository()),
+        (DOMAIN_SEMANTICS_REL, render_domain_field_semantics()),
     )
     if args.check:
         for rel, rendered in artifacts:

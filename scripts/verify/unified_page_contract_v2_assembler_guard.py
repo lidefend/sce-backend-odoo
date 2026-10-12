@@ -28,7 +28,7 @@ P1_PROJECT_LAYOUT_PATH = ROOT / "addons/smart_construction_core/core_extension_p
 # the version literal the handler serves to a digest of the code that produces
 # the assembled contract; on drift this guard fails closed and the author
 # re-pins both values deliberately instead of the cache hiding the change.
-ASSEMBLED_CACHE_VERSION = "ui-contract-v2-2026-10-12-semantic-registry-component-key"
+ASSEMBLED_CACHE_VERSION = "ui-contract-v2-2026-10-12-entity-semantics-from-parsed-facts"
 ASSEMBLED_CACHE_HANDLER = "addons/smart_core/handlers/ui_contract_v2.py"
 ASSEMBLED_CACHE_INPUTS = (
     ASSEMBLED_CACHE_HANDLER,
@@ -40,8 +40,12 @@ ASSEMBLED_CACHE_INPUTS = (
     # 输入，必须一并纳入指纹；否则声明改动会留下被缓存的旧装配。
     "addons/smart_core/core/contract_runtime/semantic_resolver.py",
     "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
+    # The resolver also annotates a field with the entity semantics projected out
+    # of the parsed model/view facts, so that carrier changes the assembled
+    # component keys too and has to be part of the same fingerprint.
+    "addons/smart_core/core/contract_runtime/domain_field_semantics_generated.py",
 )
-ASSEMBLED_CACHE_INPUTS_SHA256 = "afe2900a6d67f2f5931a7820af097eb433f0ac3ed5e15e2a94b87f7dfa4ac55b"
+ASSEMBLED_CACHE_INPUTS_SHA256 = "aa1958bef77ee9c99f3f6f8f4cb8a6779391e87c2784455495cc36b749270e34"
 
 
 def _assembled_cache_digest() -> str:

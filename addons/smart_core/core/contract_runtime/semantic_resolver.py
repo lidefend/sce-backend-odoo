@@ -30,6 +30,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from .domain_field_semantics_generated import DOMAIN_FIELD_SEMANTICS
 from .semantic_registry_generated import (
     DERIVATION_DEFAULT,
     DERIVATION_RULES,
@@ -39,7 +40,25 @@ from .semantic_registry_generated import (
 _logger = logging.getLogger(__name__)
 
 SOURCE_DECLARED = "declared"
+SOURCE_PROJECTED = "projected"
 SOURCE_DERIVED = "derived"
+
+# The descriptor key the assembler writes when it annotates a field from the
+# contract carrier projected out of the parsed model/view facts, so
+# :func:`resolve` can report that projection distinctly from a declaration a
+# runtime extension made itself.  Naming it here keeps the string out of call
+# sites.
+ORIGIN_KEY = "semanticOrigin"
+ORIGIN_PROJECTED = "projected"
+
+# Native Odoo widget names that are themselves the semantic signal: the rules in
+# ``contracts/registry/semantic.yaml`` match these spellings directly, so they
+# must survive widget canonicalisation.  ``statusbar`` folded into the generic
+# ``display`` token would erase the fact that a selection field is a status, and
+# the status rule would become unreachable.
+SEMANTIC_WIDGET_HINTS = frozenset({
+    "monetary", "percentage", "percentpie", "float_time", "statusbar", "badge",
+})
 
 # Canonical name of the one-time compatibility signal.  Naming it here keeps the
 # event string out of call sites and lets a test assert it fires exactly once.
@@ -87,6 +106,19 @@ def derive_semantic(field: Any = None, widget_type: str = "") -> str:
     return FALLBACK_SEMANTIC
 
 
+def semantic_widget_type(native_widget: str = "", canonical_widget_type: str = "") -> str:
+    """The widget token the derivation rules are evaluated against.
+
+    One implementation for the page assembler and for the projection generator,
+    so the component a page renders and the component the contract carrier
+    records can never come from two different readings of the same field facts.
+    """
+    native = _text(native_widget).lower()
+    if native in SEMANTIC_WIDGET_HINTS:
+        return native
+    return _text(canonical_widget_type).lower()
+
+
 def resolve(field: Any = None, widget_type: str = "") -> dict[str, str]:
     """Resolve to ``{semantic, componentKey, semanticSource}``.
 
@@ -100,10 +132,11 @@ def resolve(field: Any = None, widget_type: str = "") -> dict[str, str]:
     if declared:
         component_key = SEMANTIC_COMPONENTS.get(declared)
         if component_key:
+            origin = _text(descriptor.get(ORIGIN_KEY)).lower()
             return {
                 "semantic": declared,
                 "componentKey": component_key,
-                "semanticSource": SOURCE_DECLARED,
+                "semanticSource": SOURCE_PROJECTED if origin == ORIGIN_PROJECTED else SOURCE_DECLARED,
             }
         _logger.error(
             "contract_semantic_undeclared semantic=%s declared_by=%s; falling back to the "
@@ -131,6 +164,50 @@ def component_key_for_semantic(semantic: str) -> str:
     name the renderer, e.g. a display-only layout block.
     """
     return SEMANTIC_COMPONENTS.get(_text(semantic).lower(), "")
+
+
+def projected_field_semantics(model: str, field_name: str) -> str:
+    """The contract semantic of a model field, derived from model/view facts.
+
+    The public backend input is the model metadata plus the parsed view arch, so
+    the meaning of a field is read from those facts by
+    ``contracts/registry/semantic.yaml`` and projected into the runtime carrier
+    ``domain_field_semantics_generated`` (the runtime image does not ship
+    ``contracts/``).  Nothing is authored by hand, so there is no second input
+    for the meaning that could drift out of step with the model.  Callers
+    annotate the field descriptor with the result; the descriptor stays the
+    single input of :func:`resolve`.
+    """
+    entity = _text(model).lower()
+    name = _text(field_name)
+    if not entity or not name:
+        return ""
+    declared = DOMAIN_FIELD_SEMANTICS.get(entity) or {}
+    return _text(declared.get(name)).lower()
+
+
+def annotate_projected_semantics(model: str, fields: Any) -> int:
+    """Annotate field descriptors with the projected contract semantic.
+
+    Returns how many descriptors were annotated.  A descriptor that already
+    carries an explicit ``semantic`` keeps it: a runtime extension is a more
+    specific declaration than the entity default, and silently overwriting it
+    would make the runtime observation unrepresentable.  A semantic that
+    ``semantic.yaml`` does not declare is never written, so this can only add
+    values the resolver can honour.
+    """
+    annotated = 0
+    rows = fields if isinstance(fields, (list, tuple)) else []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        semantic = projected_field_semantics(model, _text(row.get("name") or row.get("field") or row.get("fieldCode")))
+        if not semantic or _text(row.get("semantic")) or semantic not in SEMANTIC_COMPONENTS:
+            continue
+        row["semantic"] = semantic
+        row[ORIGIN_KEY] = ORIGIN_PROJECTED
+        annotated += 1
+    return annotated
 
 
 def semantic_of(widget_type: str = "", field: Any = None) -> str:

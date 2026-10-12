@@ -295,6 +295,7 @@ def run(root: Path = ROOT) -> tuple[list[str], dict]:
     for rel, render_expected in (
         (carrier.CARRIER_REL, carrier.render_repository_carrier),
         (carrier.FRONTEND_REL, carrier.render_frontend_repository),
+        (carrier.DOMAIN_SEMANTICS_REL, carrier.render_domain_field_semantics),
     ):
         carrier_path = root / rel
         if not carrier_path.is_file():

@@ -203,6 +203,81 @@ lint 失败，而不是运行时静默回落。
 本批次同样**不改运行时渲染行为**：解析入口已就位，但前端渲染分发尚未改为"先看
 `semantic`"；真实浏览器渲染复验（L3/L4）留在 01-D。
 
+## 01-D 交付（字段语义不手写：输入收敛到模型 + 视图）
+
+### 决策修正
+
+01-D 原计划是在 `contracts/domain/payment-request.yaml` 逐字段手写
+`semantic: money/relation/status`。实测证明这是**第二维护点**：字段的
+ttype / widget / relation 已经由保真解析体系产出，语义可由同一套推导规则解出。
+手工枚举一份可推导的数据就是分叉，因此改由解析产物生成。
+
+### 输入与链路
+
+```
+模型元数据 + 视图 arch（contracts/generated/product_view_structure_contract.json，
+  contracts/domain/*.yaml 按 source_of_truth.model 绑定管辖模型）
+        │  assembler 的 widget 规范化（_canonical_widget_type）
+        ▼
+semantic_resolver.semantic_widget_type()  ← 唯一实现，页面与契约产物共用
+        ▼
+contracts/registry/semantic.yaml 推导规则（27 条）
+        ▼
+addons/smart_core/core/contract_runtime/domain_field_semantics_generated.py
+        ▼  运行时 assembler 注解字段描述符 → resolve() → componentKey
+```
+
+`payment.request` 由解析事实单独解出的结果（无任何手写映射）：
+`name→text`、`project_id/contract_id/settlement_id→relation`、`amount→money`、
+`state→status`（来自表单视图的 `widget="statusbar"`）、`payment_basis_type→choice`。
+
+### 关键实现点
+
+- `semantic_widget_type()`：`statusbar/badge/monetary/percentage/percentpie/float_time`
+  这些**本身就是语义信号**的原生控件名必须在规范化中存活；此前内联在汇编器里的
+  这条判断被折叠成 `statusbar→display`，会让 `status` 规则永远不可达。
+- `SOURCE_DOMAIN/ORIGIN_DOMAIN` 改名 `SOURCE_PROJECTED/ORIGIN_PROJECTED`：
+  该语义来自解析事实的投影，而不是人工声明，命名必须如实。
+- 汇编器缓存指纹新增 `domain_field_semantics_generated.py` 为输入，重钉
+  `ASSEMBLED_CACHE_INPUTS_SHA256` 并把
+  `ASSEMBLED_CONTRACT_CACHE_VERSION` 提升为
+  `ui-contract-v2-2026-10-12-entity-semantics-from-parsed-facts`。
+
+### 验证（均为本批次实际执行）
+
+回执见 `.runtime/agent-runs/FE-CONTRACT-RUNTIME-01/<check>.json`（`make agent.run.resume`
+显示 14 个 check 全部 `reusable`，无 `stale`）。
+
+| 层 | 命令 | 用例 | 结果 |
+| --- | --- | --- | --- |
+| L1 | `make verify.semantic.registry.lint` | 46 | PASS（三载体 `--check` 一致） |
+| L1 | `make verify.unified_page_contract.v2.assembler` | 4 源 | PASS（缓存指纹已重钉） |
+| L1 | `make verify.semantic_runtime_resolution` | 123 | PASS |
+| L1 | `make verify.business_config.formal_list.unit` | 201 | PASS |
+| L1 | `make verify.frontend.professional_component_registry.unit` | 284 | PASS |
+| L1 | `make verify.frontend.professional_detail_collection.unit` | 127 | PASS |
+| L1 | `make verify.frontend.professional_relation_field.unit` | 77 | PASS |
+| L1 | `make verify.frontend.professional_business_value.unit` | 42 | PASS |
+| L1 | `make verify.frontend.professional_base_field.unit` | 70 | PASS |
+| L1 | `make verify.contract.schema.declaration.sync` | 8 | PASS |
+| L1 | `make verify.agent.ledger.unit` | 15 | PASS |
+| L1 | `make verify.frontend.auth_surface.guard` | 1 | PASS |
+| L1 | `make verify.frontend.typecheck.strict` | 1 | PASS |
+| L1 | `make verify.frontend.lint.src` | 1 | PASS |
+| L2 | `make verify.form_structure_authority_unification.unit` | 215 | PASS（`ci.local.iteration` 推荐） |
+| L2 | `make verify.frontend.dev.incremental.unit` | 29 | PASS（`ci.local.iteration` 推荐） |
+
+负例（先确认基线干净，再证明注入被检出）：载体被手改 → 漂移检出；
+把解析产物里 `amount` 的 `monetary` 改成 `char` → 载体漂移检出（证明输入确实是解析产物）；
+`semantic.yaml` 撤掉已投影语义 → 投影 fail-closed。
+
+### 范围边界
+
+- 不做 presentation/behavior 段：`contracts/` 下目前没有任何 `presentation:`/`behavior:`
+  顶层段，也没有消费方；凭空新增即"已声明未消费"，留给 01-E/02 按真实消费方落地。
+- 15 份域契约中只有 `payment-request.yaml` 绑定了 `source_of_truth.model`，
+  其余 14 份未绑定即不会被投影（保持可见的未投影，而不是猜 key）。补绑定是后续收口项。
+
 ## 范围边界（本轮明确不做）
 
 - 不声明 `capabilities`：当前没有运行时消费方，声明即为悬空能力声明，与 00 清单
@@ -227,7 +302,7 @@ lint 失败，而不是运行时静默回落。
 - ~~**01-B** 后端统一消费 registry~~（完成，见上）。
 - ~~**01-C** 前端 registry 接管：`semanticResolver` + 单测
   `verify.semantic_runtime_resolution`~~（完成，见上；命名渲染器按声明层真实事实断言）。
-- **01-D** `payment.request` 字段语义化 + presentation 契约收口（identity /
-  presentation / behavior 必备）+ 浏览器验收。
+- ~~**01-D** 字段语义化~~（完成，见上：改为由模型+视图解析产物生成，删除手写 semantic）。
+  剩余 01-D3：浏览器验收（新建→保存→刷新，确认 money/date/relation 由语义渲染）。
 - **01-E** 产出 `docs/contract-runtime-state-ownership.md`
   （业务状态=domain；UI 状态=runtime；按钮显示=behavior；权限=policy）。

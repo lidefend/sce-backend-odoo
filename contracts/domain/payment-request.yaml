@@ -14,6 +14,12 @@ identity:
   field: id
   type: integer
 
+# 字段的 `semantic`（"这个字段意味着什么"）不在这里手写：后端输入唯一收敛到
+# 模型元数据 + 视图 arch（+ 权限），语义由 contracts/registry/semantic.yaml 的
+# 推导规则从字段事实解出，再投影到运行时可消费载体
+# addons/smart_core/core/contract_runtime/domain_field_semantics_generated.py
+# （运行时镜像不挂载 contracts/）。本文件只保留代码里没有的东西：领域类型、
+# 状态机与转移、能力名。漂移由 `make verify.semantic.registry.lint` 拦截。
 fields:
   name:
     type: string

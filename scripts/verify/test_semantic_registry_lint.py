@@ -12,6 +12,7 @@ attributed to the fixture itself.
 
 from __future__ import annotations
 
+import json
 import shutil
 import sys
 import tempfile
@@ -32,6 +33,12 @@ class TempRegistryTree:
     def __init__(self) -> None:
         self._tmp = tempfile.TemporaryDirectory(prefix="semantic-registry-")
         self.root = Path(self._tmp.name)
+        shutil.copytree(REPO_ROOT / lint.carrier.DOMAIN_CONTRACTS_REL, self.root / lint.carrier.DOMAIN_CONTRACTS_REL)
+        # The runtime carrier is projected from the governed parse of the model
+        # metadata and view arch, so the fixture needs that input too.
+        baseline = self.root / lint.carrier.VIEW_STRUCTURE_REL
+        baseline.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(REPO_ROOT / lint.carrier.VIEW_STRUCTURE_REL, baseline)
         for rel in (
             lint.SEMANTIC_REL,
             lint.COMPONENT_REL,
@@ -41,6 +48,7 @@ class TempRegistryTree:
             lint.carrier.REGISTRY_REL,
             lint.carrier.CARRIER_REL,
             lint.carrier.FRONTEND_REL,
+            lint.carrier.DOMAIN_SEMANTICS_REL,
         ):
             target = self.root / rel
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -49,6 +57,8 @@ class TempRegistryTree:
         self.component = self.root / lint.COMPONENT_REL
         self.frontend = self.root / lint.FRONTEND_REGISTRY_REL
         self.generated_frontend = self.root / lint.carrier.FRONTEND_REL
+        self.generated_domain = self.root / lint.carrier.DOMAIN_SEMANTICS_REL
+        self.domain_contract = self.root / "contracts" / "domain" / "payment-request.yaml"
         self.enum_registry = self.root / lint.ENUM_REGISTRY_REL
 
     def run(self) -> tuple[list[str], dict]:
@@ -169,6 +179,52 @@ class NegativeCaseTest(unittest.TestCase):
             encoding="utf-8",
         )
         self.assert_detected("widget spelling 'ghost_widget' is declared by the contract schema")
+
+    def test_projected_field_semantics_carrier_drift_is_detected(self) -> None:
+        # The entity semantics are a third projection; a hand-edited carrier
+        # must not keep serving semantics the field facts no longer support.
+        self.tree.edit(
+            self.tree.generated_domain,
+            "'amount': 'money',",
+            "'amount': 'text',",
+        )
+        self.assert_detected("domain_field_semantics_generated.py: out of sync with the declaration")
+
+    def test_projected_field_semantics_follow_the_parsed_facts(self) -> None:
+        # The carrier's input is the parsed model/view facts, not a hand list:
+        # changing the parsed field type must show up as carrier drift.
+        path = self.tree.root / lint.carrier.VIEW_STRUCTURE_REL
+        baseline = json.loads(path.read_text(encoding="utf-8"))
+        form = next(
+            surface
+            for entry in baseline["entries"]
+            if entry.get("res_model") == "payment.request"
+            for surface in entry.get("surfaces") or []
+            if surface.get("view_type") == "form"
+        )
+
+        def retype(node: object) -> bool:
+            if not isinstance(node, dict):
+                return False
+            attrs = node.get("attrs") or {}
+            if node.get("tag") == "field" and attrs.get("name") == "amount" and attrs.get("type") == "monetary":
+                attrs["type"] = "char"
+                return True
+            return any(retype(child) for child in node.get("children") or [])
+
+        self.assertTrue(retype(form.get("semantic_structure")), "fixture has no parsed monetary amount")
+        path.write_text(json.dumps(baseline, ensure_ascii=False), encoding="utf-8")
+        self.assert_detected("domain_field_semantics_generated.py: out of sync with the declaration")
+
+    def test_projection_refuses_an_undeclared_semantic(self) -> None:
+        # A projection that would emit a name semantic.yaml does not declare
+        # must fail closed instead of shipping a key the resolver cannot honour.
+        self.tree.edit(self.tree.semantic, "  money: {category:", "  money_unused: {category:")
+        errors, _ = self.tree.run()
+        self.assertTrue(
+            any("undeclared semantic 'money'" in error for error in errors),
+            f"projection did not fail closed on an undeclared semantic: {errors}",
+        )
 
     def test_generated_frontend_carrier_drift_is_detected(self) -> None:
         # The frontend carrier is a projection of component.yaml, so a

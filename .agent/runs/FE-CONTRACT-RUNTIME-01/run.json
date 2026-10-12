@@ -36,7 +36,9 @@
   "scripts/verify/unified_page_contract_v2_assembler_guard.py",
   "scripts/verify/test_frontend_professional_component_registry_guard.py",
   "scripts/verify/test_frontend_professional_relation_field_guard.py",
-  "scripts/verify/test_frontend_professional_base_field_guard.py"
+  "scripts/verify/test_frontend_professional_base_field_guard.py",
+  "contracts/domain/",
+  "contracts/generated/product_view_structure_contract.json"
  ],
  "environment": {
   "kind": "offline",
@@ -56,7 +58,9 @@
     "docs/architecture/unified_page_contract_v2/enum_registry.json",
     "make/contract.mk",
     "addons/smart_core/core/contract_runtime",
-    "addons/smart_core/tests/test_contract_runtime_semantic_resolver.py"
+    "addons/smart_core/tests/test_contract_runtime_semantic_resolver.py",
+    "contracts/domain",
+    "contracts/generated/product_view_structure_contract.json"
    ],
    "kind": "offline"
   },
@@ -228,5 +232,5 @@
   "pre-existing (not introduced by this batch): scripts/verify/test_frontend_quality_safety_domain_rollout.py:123 asserts `field_type == \"many2one\" and relation == \"res.users\"` in addons/smart_core/core/unified_page_contract_v2_assembler.py. That literal is absent at the run baseline too (git show 991a9d9b:... shows the res.users special case was removed by merge d3bdb3aa, PR #399), so the assertion is stale, not a 01-B regression. It lives in the L3/L4 target verify.frontend.professionalization.quality_safety_domain.runtime; classify it with the other pre-existing findings, do not silently rewrite it here.",
   "classified finding from 01-C (not a new blocker): 01-B's recorded check set did not include verify.unified_page_contract.v2.assembler or verify.frontend.professional_relation_field.unit, so the assembler cache-input pin and the relation guard's assembler-literal assertion were only surfaced when 01-C migrated the frontend vocabulary. Both are fixed here by binding the cache pin to the resolver + generated carrier and by moving the guards' key authority to the generated table."
  ],
- "next_exact_step": "01-C is implemented in the worktree: the frontend consumes the projected vocabulary (professionalComponentRegistry.ts builds registrations from semantic_registry.generated.ts), the semantic index + verify.semantic_runtime_resolution land the semantic->componentKey runtime resolution, and the guards whose key authority was the hand-written table (component registry, business value, relation field, auth surface) now read the generated carrier. The assembler cache pin also had to absorb the resolver + generated carrier as assembly inputs (re-pinned, version bumped). Record the affected offline checks, commit 01-C, then start 01-D: payment.request field semantics + presentation contract + browser acceptance."
+ "next_exact_step": "01-D 已实现：字段语义不再手写。后端唯一输入=模型+视图（+权限）；contracts/domain/payment-request.yaml 删除全部手写 semantic，scripts/contract/generate_semantic_registry.py 改为按 contracts/domain 绑定的模型，从 contracts/generated/product_view_structure_contract.json（治理解析产物：字段 ttype/widget/relation）经运行时同一条入口（assembler 的 widget 规范化 + semantic_resolver 推导规则）解出语义，投影到 domain_field_semantics_generated.py；运行时由 assembler 注解后解析组件键。域源常量改名 SOURCE_PROJECTED/ORIGIN_PROJECTED，widget 提示词收敛到 semantic_widget_type()。剩余：01-D3 浏览器验收（L3/L4，需受管本地环境：新建→保存→刷新确认 money/date/relation 由语义渲染），以及 01-E 的 docs/contract-runtime-state-ownership.md。"
 }

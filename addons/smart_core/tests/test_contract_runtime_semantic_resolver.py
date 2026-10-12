@@ -11,12 +11,24 @@ from __future__ import annotations
 
 import sys
 import unittest
+import json
 from pathlib import Path
+
+import yaml
 
 ADDON_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ADDON_ROOT))
 
 from core.contract_runtime import semantic_resolver as resolver  # noqa: E402
+# The page assembler's widget canonicalisation is the runtime's own entry into
+# the derivation rules; a test that re-implemented it could pass while the page
+# and the carrier disagreed.
+from core.unified_page_contract_v2_assembler import _canonical_widget_type  # noqa: E402
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+VIEW_STRUCTURE_REL = Path("contracts/generated/product_view_structure_contract.json")
+DOMAIN_CONTRACT_REL = Path("contracts/domain/payment-request.yaml")
+PAYMENT_MODEL = "payment.request"
 
 
 class ComponentKeyBaselineTest(unittest.TestCase):
@@ -146,6 +158,110 @@ class DeprecationSignalTest(unittest.TestCase):
         self.assertTrue(any(resolver.DEPRECATION_EVENT in line for line in first.output))
         with self.assertNoLogs("core.contract_runtime.semantic_resolver", level="WARNING"):
             resolver.legacy_component_key("input", {"type": "char"})
+
+
+class PaymentEntitySemanticsTest(unittest.TestCase):
+    """The entity's semantics come from the parsed model/view facts, not a hand list.
+
+    ``payment.request`` is the first entity the domain layer binds to a model, so
+    it is where "declare nothing, read the facts" has to be provable: the meaning
+    of each field is resolved from the governed parse of the Odoo model metadata
+    and the resolved view arch, and the carrier the runtime ships must equal that
+    resolution field by field.  A hand-maintained copy would be a second input,
+    which is the drift this pins out.
+    """
+
+    EXPECTED = {
+        "name": "text",
+        "project_id": "relation",
+        "contract_id": "relation",
+        "settlement_id": "relation",
+        "amount": "money",
+        "state": "status",
+    }
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.baseline = json.loads((REPO_ROOT / VIEW_STRUCTURE_REL).read_text(encoding="utf-8"))
+
+    def parsed_field_facts(self) -> dict[str, dict]:
+        """``field -> attrs`` read from the governed parse, richest surface first."""
+        entry = next(
+            item for item in self.baseline["entries"] if item.get("res_model") == PAYMENT_MODEL
+        )
+        surfaces = sorted(
+            (s for s in entry.get("surfaces") or [] if s.get("view_type") == "form"),
+            key=lambda s: str(s.get("view_ref") or ""),
+        )
+        facts: dict[str, dict] = {}
+
+        def walk(node: object) -> None:
+            if isinstance(node, dict):
+                attrs = node.get("attrs") or {}
+                if node.get("tag") == "field" and attrs.get("name"):
+                    facts.setdefault(str(attrs["name"]), attrs)
+                for child in node.get("children") or []:
+                    walk(child)
+
+        for surface in surfaces:
+            walk(surface.get("semantic_structure") or {})
+        return facts
+
+    def test_meaning_bearing_fields_resolve_from_the_parsed_facts_alone(self) -> None:
+        facts = self.parsed_field_facts()
+        for name, semantic in self.EXPECTED.items():
+            with self.subTest(field=name):
+                attrs = facts.get(name)
+                self.assertIsNotNone(attrs, f"{name} is missing from the governed parse")
+                field = {"name": name, "ttype": attrs.get("type")}
+                native_widget = str(attrs.get("widget") or "")
+                resolution = resolver.resolve(
+                    field,
+                    resolver.semantic_widget_type(
+                        native_widget, _canonical_widget_type(native_widget, field)
+                    ),
+                )
+                self.assertEqual(resolver.SOURCE_DERIVED, resolution["semanticSource"])
+                self.assertEqual(semantic, resolution["semantic"])
+
+    def test_shipped_carrier_equals_the_projection_of_the_parsed_facts(self) -> None:
+        """The runtime carrier must be a faithful projection, never a private list."""
+        from core.contract_runtime.domain_field_semantics_generated import DOMAIN_FIELD_SEMANTICS
+
+        projected = DOMAIN_FIELD_SEMANTICS[PAYMENT_MODEL]
+        for name, semantic in self.EXPECTED.items():
+            with self.subTest(field=name):
+                self.assertEqual(semantic, projected.get(name))
+        annotated = [{"name": name} for name in self.EXPECTED]
+        self.assertEqual(len(self.EXPECTED), resolver.annotate_projected_semantics(PAYMENT_MODEL, annotated))
+        for row in annotated:
+            with self.subTest(field=row["name"]):
+                self.assertEqual(resolver.SOURCE_PROJECTED, resolver.resolve(row, "")["semanticSource"])
+
+    def test_projection_never_overwrites_an_explicit_semantic(self) -> None:
+        rows = [{"name": "amount", "semantic": "number"}]
+        self.assertEqual(0, resolver.annotate_projected_semantics(PAYMENT_MODEL, rows))
+        self.assertEqual("number", rows[0]["semantic"])
+
+    def test_unknown_model_or_field_projects_nothing(self) -> None:
+        self.assertEqual("", resolver.projected_field_semantics("sc.unknown.model", "amount"))
+        self.assertEqual("", resolver.projected_field_semantics(PAYMENT_MODEL, "not_a_field"))
+
+    def test_semantic_widgets_survive_canonicalisation(self) -> None:
+        # The status rule matches the native spelling; folding it into the
+        # generic display token would make the rule unreachable.
+        self.assertEqual("statusbar", resolver.semantic_widget_type("statusbar", "display"))
+        self.assertEqual("monetary", resolver.semantic_widget_type("monetary", "number"))
+        self.assertEqual("select", resolver.semantic_widget_type("", "select"))
+
+    def test_domain_contract_carries_no_hand_written_semantic(self) -> None:
+        document = yaml.safe_load((REPO_ROOT / DOMAIN_CONTRACT_REL).read_text(encoding="utf-8"))
+        declared = {
+            name
+            for name, entry in (document.get("fields") or {}).items()
+            if isinstance(entry, dict) and entry.get("semantic")
+        }
+        self.assertEqual(set(), declared, "the model/view facts already carry the semantic")
 
 
 if __name__ == "__main__":

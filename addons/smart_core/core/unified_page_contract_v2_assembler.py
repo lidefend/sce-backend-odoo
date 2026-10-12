@@ -19,9 +19,11 @@ from .action_semantics_vocabulary import (
 )
 from .contract_lifecycle import payload_sha256, seal_unified_page_contract
 from .contract_runtime.semantic_resolver import (
+    annotate_projected_semantics as _annotate_projected_semantics,
     component_key as _resolve_component_key,
     component_key_for_semantic as _component_key_for_semantic,
     legacy_component_key as _legacy_component_key,
+    semantic_widget_type as _semantic_widget_type,
 )
 from .contract_runtime.semantic_resolver import FALLBACK_SEMANTIC as _DISPLAY_SEMANTIC
 from .source_authority import build_source_authority_contract
@@ -899,6 +901,11 @@ def _assemble_ui_contract(
         request_id=request_id,
     )
     fields = _field_rows(source, ui, view_type=view_type)
+    # The entity's declared field semantics (contracts/domain/*.yaml, projected
+    # into the addon carrier) become a descriptor-level declaration here.  This
+    # is the runtime end of "declare a semantic, get a component" -- the field
+    # facts only have to agree with the declaration, not restate it.
+    _annotate_projected_semantics(model, fields)
     source_context = _ui_source_context(_dict(source), _dict(ui))
     render_profile = _text(source_context.get("renderProfile")).lower()
     source_context_context = _dict(source_context.get("context"))
@@ -927,6 +934,7 @@ def _assemble_ui_contract(
             **deepcopy(row),
         }
         fields_by_name[name].setdefault("name", name)
+    _annotate_projected_semantics(model, list(fields_by_name.values()))
     widgets = []
     component_keys = set()
     form_layout = _dict(_dict(ui.get("views")).get("form"))
@@ -1692,10 +1700,7 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
         widget_id = f"field.{field_name}.occ.{_fingerprint({'locator': native_locator, 'occurrence': occurrence_index})}"
     explicit_widget = _text(field.get("widget"))
     widget_type = "table" if layout_type == "table" else _canonical_widget_type(explicit_widget, field)
-    component_widget_type = explicit_widget if explicit_widget in {
-        "monetary", "percentage", "percentpie", "float_time", "statusbar", "badge",
-    } else widget_type
-    component_key = _resolve_component_key(component_widget_type, field)
+    component_key = _resolve_component_key(_semantic_widget_type(explicit_widget, widget_type), field)
     capabilities = ["sortable", "filterable"] if layout_type == "table" else []
     if widget_type == "select":
         capabilities.append("searchable")
