@@ -33,15 +33,24 @@ FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 # The default sharded lane: one bounded shard is one make invocation over a
 # strided slice of the declared target list, so an interrupted or partially
 # failed candidate keeps the parts that did pass instead of proving nothing.
-# The part count is the only lever on the lane's wall clock, because the worker
-# count is memory-bound and the heaviest single target (the three trusted
-# security scans over a changed authority) cannot be split any further. With a
-# small part count that one target shares its shard with unrelated guards, and
-# the shard, not the scan, becomes the critical path: measured on a frozen head,
-# 4 parts gave 328s/16s/105s/8s, i.e. a 328s wall against a 457s serial sum. A
-# larger part count shrinks each shard's extra load while covering the identical
-# set. `QUICK_SHARDS` in make/ci.mk is the entry that is actually passed in; this
-# value only backs a direct programmatic call and must not drift from it.
+# The part count is not a lever on the lane's wall clock, and that was measured
+# rather than assumed. What dominates is whether the three trusted scans can
+# reuse a verified ancestor receipt (see trusted_scan_scope): when the candidate
+# itself changes a scan-authority input they re-run full, and on one frozen head
+# security.trusted_scan_group reported members=3 jobs=3 with secrets 169.5s,
+# personal 200.4s and history 315.5s, so the group's wall clock is its slowest
+# member and that single ~315s target cannot be split any further. On top of it
+# 4 parts measured 328s/16s/105s/8s (328s wall) and 8 parts measured
+# 72.0s/7.7s/9.1s/6.0s/338.5s/8.0s/111.6s/1.3s (347.5s worker chain), i.e. re-
+# slicing the identical covered set moved the wall clock by noise: the scan, not
+# the shard, was already the critical path. More parts therefore buy finer resume
+# granularity, not speed. The real lever is candidate composition - keep
+# `Makefile`, this file, `scripts/ci/trusted_scan_scope.py`,
+# `scripts/dev/local_dev_frontend_quick.py`, a scan's own AUTHORITY files and any
+# make fragment that can re-declare a governed scan target in their own
+# candidate, so the next run resolves mode=incremental. `QUICK_SHARDS` in
+# make/ci.mk is the entry that is actually passed in; this value only backs a
+# direct programmatic call and must not drift from it.
 DEFAULT_SHARDS = 8
 # Shard workers. One shard is one make invocation over a strided slice of the
 # declared target list, and shards are independent by construction: each writes

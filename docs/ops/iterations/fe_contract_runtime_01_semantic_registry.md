@@ -1201,20 +1201,65 @@ shard 0 = 353.5s、shard 1 = 16.5s、shard 2 = 38.6s（fail）、shard 3 = 7.2s�
 |-|-|
 | 本机 | 18 核 / 15 GiB / 无 seccomp / CapEff=0 |
 | quick 分片 worker 上限 | `min(cpu//2, mem//3GiB, members)` = **3**（内存是硬约束，不是核数） |
-| 4 分片实测 | 353.6 / 15.4 / 10.0 / 7.1s，串行和 ≈ 457s，墙钟 ≈ 354s |
-| 关键路径 | `verify.contract.architecture.suite` + 三次全量安全扫描（281s，`scan_authority_changed`） |
+| 4 分片实测（两处冻结头） | 353.6/15.4/10.0/7.1s（`aea17141` 段）与 328/16/105/8s，墙钟 328—354s |
+| 8 分片实测 | 72.0 / 7.7 / 9.1 / 6.0 / 338.5 / 8.0 / 111.6 / 1.3s，worker 链 347.5s |
+| 扫描组自报 | `members=3 jobs=3`：secrets 169.5s、personal 200.4s、history 315.5s → 组墙钟 = 315.5s |
+| 关键路径 | 单条不可再分的 `repository.clean_history.scan`（315.5s），不是分片、也不是核数 |
 
-结论：worker 数不能靠加并发提升（3 已达内存安全上限），**唯一能削关键路径的杠杆是分片数**——
-4 分片时 shard 0 占 99.7%，而三个重扫描在组内并行，多切分片可把其余断言挪出关键路径。
+**结论（更正 `3bc39ee6` 的结论）**：分片数不是有效杠杆。4 分片与 8 分片重切的是同一份覆盖集合，
+墙钟 328s vs 347.5s 属噪声级差异，两者都被同一条不可再分的地板压住——`repository.clean_history.scan`
+单条 315.5s（`HEAD --branches --tags --remotes` 全历史，组内已 3 路并行，无法再切）。
+
+**真正的杠杆是"该候选能否复用已验证的祖先扫描回执"**，实测：在 HEAD `02b6fe28` 上运行
+`python3 scripts/ci/trusted_scan_scope.py`，三个 kind 全部
+`mode=incremental base=02b6fe28e40972e3f6dbf70bb24e143517307bbe`、
+`reason=verified_ancestor_coverage_unchanged_authority`、`changed_worktree_paths=0`。
+上一次 Quick 之所以付全量，根因是**该候选自身改了 `scripts/ops/local_quick_evidence.py`**——
+它属于 `scripts/ci/trusted_scan_scope.py:COMMON_AUTHORITY`，于是没有任何祖先回执携带新的权威摘要，
+`select_scope` 落到 `scan_authority_changed`，三个扫描全部重跑，地板从数十秒抬到约 315s（墙钟 ≈347s）。
 
 处置：
 
-- `scripts/ops/local_quick_evidence.py::DEFAULT_SHARDS` 4 → 8，`make/ci.mk::QUICK_SHARDS ?= 8`；
-  分片只影响墙钟、不影响覆盖集合，且新增单测锁定两处默认值不得漂移。
+- `DEFAULT_SHARDS` / `QUICK_SHARDS` 保留 8，但理由更正为**恢复粒度**（中断后只补未完成分片），
+  不再声称它能削关键路径；覆盖集合与断言一字未改，单测继续锁定两处默认值不得漂移。
 - `spawn()` 只对**未启动子进程**的瞬态 errno（`EAGAIN`/`ENOMEM`/`EFAULT`）重试 3 次并打印
   `RETRY` 行；其它 errno 与非瞬态错误立即 fail-closed，覆盖 `git()` 与 `_shard_popen()`。
   这是 `69f70737` 那次 `OSError: [Errno 14] Bad address: 'git'` 的宿主层瞬态失败，
   单跑与 6 路并发 + 3GiB 压力均未复现，因此按"瞬态、且禁止掩盖真实失败"的边界处理。
-- `docs/ops/codex_workspace_execution_rules.md` 增 `## 并行执行与本地资源利用`：
+- `docs/ops/codex_workspace_execution_rules.md` 的 `## 并行执行与本地资源利用` 按上述实测重写：
   唯一写入者、三类允许并行、禁止并行、回执与并行、判定顺序、瞬态 spawn 边界，
-  并写入上表实测数字，避免下次再凭感觉判断"是不是没吃满机器"。
+  并新增第 7 条"扫描权威改动单独开候选"（权威集合：`Makefile`、`scripts/ops/local_quick_evidence.py`、
+  `scripts/ci/trusted_scan_scope.py`、`scripts/dev/local_dev_frontend_quick.py`、各 kind 的 `AUTHORITY`、
+  能改写受管扫描目标声明的 `make/` 片段），避免下次再凭感觉判断"是不是没吃满机器"。
+- 登记独立改进项（不在本批次动）：全量扫描自身的增量化或内部并行化——
+  `repository.clean_history.scan` 单条 315.5s 是对全历史的扫描，缩减它要改扫描器覆盖语义，
+  属独立专题；本次只更正结论与固化纪律，不动扫描范围。
+
+## 证据过度失效修复（`__pycache__` 不是输入）
+
+本轮跑定向检查时发现：5 个已 `reusable` 的 check 变成 `stale`，而它们的输入源码一字未改。
+定位（对比 receipt 记录的状态与当前重算状态）：
+
+```
+changed: addons/smart_core/core/contract_runtime/__pycache__/semantic_registry_generated.cpython-312.pyc
+changed: addons/smart_core/core/contract_runtime/__pycache__/domain_field_semantics_generated.cpython-312.pyc
+only_old: []    only_new: []
+```
+
+根因：`agent_run_context.dependency_state()` 对声明为**目录**的输入递归 `rglob('*')`，于是
+`__pycache__/*.pyc` 进入依赖状态；而 `.pyc` 头部内嵌源文件 mtime，受管生成器每次以**字节完全相同**
+的内容重写到 `contract_runtime/*.py`（`freeze.prepare` 的生成步骤）都会让 `.pyc` 变字节，
+把一个未变的结论判成 `stale`。这与 owner 反复提出的"已经跑通的结论不能复用"是同一类缺陷。
+
+修复（不放宽任何断言）：
+
+- `agent_run_context` 新增 `is_derived_bytecode()` / `comparable_inputs()`：派生字节码
+  （`__pycache__` 与 `.pyc`/`.pyo`）不计入依赖状态，且**比较时两侧都归一化**，
+  使修复前写入的旧 receipt 也能与当前状态可比。声明的 `.py` 源码仍按文件整体哈希，
+  所以源码改动照样判 `stale`（新增单测锁定这一点）。
+- 新增 3 条单测：`test_derived_bytecode_is_not_a_declared_input`、
+  `test_legacy_receipt_carrying_bytecode_keys_stays_comparable`、
+  `test_derived_bytecode_exemption_still_reports_a_source_change`；
+  `make verify.agent.resume.unit` 43 tests PASS。
+- 效果（实测）：本 run 中被误判的 6 个 check 在**不重跑任何检查**的前提下恢复 `reusable`，
+  38/38 `reusable`、`outside_scope=[]`。

@@ -179,8 +179,8 @@ main 的必需检查保持；人工审核按上方最新合并规则执行。新
      clean 的冻结 delivery HEAD 上运行一次，不得作为每次编辑或本地提交后的默认检查。
      该入口按 `ci.local.quick.run` 声明清单分片执行（`QUICK_SHARDS` 默认 8），中断只留下已通过的分片
      回执，重跑只补未完成或扫描权威已变的分片，最后由同一份声明清单合成唯一一份精确 head 回执；
-     分片数只影响墙钟不影响覆盖集合：worker 数受内存约束（见"并行执行与本地资源利用"），
-     所以分片数越少，最重的那条不可再分的任务就越容易和无关门禁挤在同一片里，把该片变成关键路径；
+     分片只改变恢复粒度，不改变覆盖集合，也不改变墙钟地板——地板是该候选的三次受管扫描能否复用
+     已验证的祖先回执（见"并行执行与本地资源利用"）；
      工作区不干净时它先失败关闭，不再跑完整套件却静默跳过回执。脏树上的免回执诊断入口是
      `make ci.local.quick.diagnostic`：它只报告结果，不签发回执、不满足任何门禁，只能用于定位。
      回执目录由 `make ci.local.quick.gc` 按 `QUICK_RECEIPT_KEEP`（默认 50）回收，并始终保留当前 head
@@ -404,11 +404,25 @@ main 的必需检查保持；人工审核按上方最新合并规则执行。新
 - 分片 worker 上限由 `scripts/ci/trusted_scan_group.py:resolve_jobs` 决定，取
   `min(cpu//2, available_bytes//3GiB, members)`；实测 `available_bytes`≈10 GiB，因此上限是 **3**。
   18 核在 quick 里只能起 3 个分片进程，CPU 大量空闲（实测 load average 0.3—3.1）。
-- quick 的墙钟由**单条关键路径**决定：冻结头 4 分片实测 `328s / 16s / 105s / 8s`，串行和为 457s，
-  有效并行只有 1.4×，全部时间由最重的那一片决定。其中约 200s 是
-  `verify.repository.clean_history` 的 3 次全量安全扫描（扫描权威变化时的合法代价，内部已 3 路并行）。
-  结论：这条路径上增加并发不会缩短它；能缩短它的是"分片数"（让最重的那片少背无关负载）
-  和减少扫描权威变更，而不是多开进程。
+- quick 的墙钟由**单条不可再分的关键路径**决定，而且它既不是核数也不是分片数。同一条车道上 4 分片实测
+  `328s / 16s / 105s / 8s`（墙钟 328s），8 分片实测
+  `72.0 / 7.7 / 9.1 / 6.0 / 338.5 / 8.0 / 111.6 / 1.3s`（worker 链 347.5s）：重切同一份覆盖集合
+  只产生噪声级差异，**分片数不是杠杆**（更细的分片只买恢复粒度）。
+- 地板是 `security.trusted_scan_group` 里最慢的那一条。该组已是 3 路并行（`members=3 jobs=3`），实测
+  `security.secrets.scan` 169.5s、`security.personal_data_scan` 200.4s、`repository.clean_history.scan`
+  315.5s，因此组墙钟 = 315.5s，而单条扫描无法再切。
+- 真正的杠杆是**该候选能否复用已验证的祖先扫描回执**。本机在 HEAD `02b6fe28` 上运行
+  `python3 scripts/ci/trusted_scan_scope.py`，三个 kind 全部落在增量复用：
+  `mode=incremental base=02b6fe28e40972e3f6dbf70bb24e143517307bbe`、
+  `reason=verified_ancestor_coverage_unchanged_authority`、`changed_worktree_paths=0`。
+  而那一次 Quick 之所以付全量，根因是该候选自身改了
+  `scripts/ops/local_quick_evidence.py`——它属于 `scripts/ci/trusted_scan_scope.py:COMMON_AUTHORITY`，
+  于是没有任何祖先回执携带新权威摘要，`select_scope` 落到 `scan_authority_changed`，三个扫描全部重跑，
+  地板从数十秒抬到约 315s。结论：缩短 quick 靠"权威改动分候选 + 复用未变输入的回执"，
+  不靠多开进程或加分片。
+- 扫描权威集合（改动即强制全量）：`Makefile`、`scripts/ops/local_quick_evidence.py`、
+  `scripts/ci/trusted_scan_scope.py`、`scripts/dev/local_dev_frontend_quick.py`、各 kind 自己的
+  `AUTHORITY` 文件，以及**能够改写受管扫描目标声明的 `make/` 片段**。
 
 固化为规则：
 
@@ -426,6 +440,9 @@ main 的必需检查保持；人工审核按上方最新合并规则执行。新
 6. **瞬态 spawn 失败的处理边界。** 宿主层的进程创建可能瞬态失败（`EAGAIN`/`ENOMEM`/`EFAULT`）。
    允许对"尚未启动任何子进程"的 spawn 做有次数上限的重试，并保留可见诊断；
    不得把重试扩大到已经产生副作用的动作，也不得用重试掩盖同因失败。
+7. **扫描权威改动单独开候选。** 触及上述权威集合的改动会让该候选的三次受管扫描全量重跑
+   （实测约 315s 地板）。应把这类改动与无关业务/文档改动分到不同候选，或接受一次全量代价后
+   在其后代候选上恢复增量复用；不得为了"快"而放宽扫描权威绑定或缩短扫描范围。
 
 ## 禁止行为
 - 未完成上述校验即直接改文件。
