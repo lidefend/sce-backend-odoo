@@ -170,6 +170,13 @@ def run(env):
             "payment_bank_name": "演示建设银行",
             "payment_account_no": "DEMO-PAYEE-0001",
             "payer_unit": "演示付款单位基本户",
+            # The request owns the immutable payer/payee account snapshot that a
+            # payment execution inherits verbatim (``_payment_request_values``).
+            # The payer side lives on the legacy_* carriers, so an incomplete
+            # snapshot would force the finance operator to retype the payer
+            # account on every 实付登记 create form.
+            "legacy_payment_account_name": "演示付款单位基本户",
+            "legacy_payment_account_no": "DEMO-PAYER-0001",
             "note": "受管付款申请黄金页面提交闭环 fixture",
         }
     )
