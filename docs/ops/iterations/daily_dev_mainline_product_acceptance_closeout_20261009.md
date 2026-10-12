@@ -3331,3 +3331,40 @@ make: *** [make/ci.mk:804: verify.menu_config_tree_editor.behavior] Error 254
 - 责任层：`make/ci.mk`、`make/frontend.mk` 的接线与 `.agent` 台账声明属 **P4 交付工具**；未改产品代码、契约、必需检查集合或 CI 门槛，未放宽任何断言。
 - 远端证明待取：以 `workflow_dispatch` 取得 `professional_quality_gate` full 车道与 `frontend_release_gate` 两车道的转绿证据，写入 PR #646 文本。
 - 四态不变：批次级本轮完成 → 主线集成=PR #646 待合并 → **版本发布未做** → **产品交付未完成**（待 owner 本人登录 `wutao` / `123456` / `sc_demo` / `http://1.95.85.92:18081/`）。
+
+### 34.10 第三层：full 车道没有 `origin/main`（环境前置缺陷，不是产品缺陷）
+
+`6b7f2173` 之后重跑 dispatch `professional_quality_gate`（run `38197113086`）——**esbuild 守卫已不再出现**，共享套件整体执行完毕，于是暴露出下一个被它挡住的阻断：
+
+```
+Traceback ... scripts/verify/g1_acceptance_baseline_guard.py line 78 in _is_ancestor
+  base = _git(["rev-parse","--verify","--quiet","origin/main"]) or _git([... "main"])
+subprocess.CalledProcessError: Command '['git','rev-parse','--verify','--quiet','origin/main']' returned non-zero exit status 1
+make: *** [make/guards.mk:268: verify.g1.acceptance.baseline] Error 1
+```
+
+事实链（已核对，非推测）：
+
+1. `professional_quality_gate` 的 job 用的是**手写 checkout**（`git init` + `git remote add` + `git fetch --no-tags origin BASE_SHA/HEAD_SHA` + `git checkout --detach FETCH_HEAD`），只取两个提交对象，**不建任何 remote-tracking ref**，因此 workspace 里不存在 `origin/main`；
+2. 而 `verify.g1.acceptance.baseline` 断言的正是「记录的 G1 基线提交必须可追溯至主线」，它按 `origin/main`（回退 `main`）解析主线；
+3. `git rev-parse --verify --quiet` 在 ref 缺失时**非零退出**，`check_output` 直接抛异常——于是原代码里 `or _git(["...","main"])` 的兜底**永远不会执行**，守卫以 traceback 而不是明确结论失败。
+
+这是**环境/前置缺陷**，不是产品缺陷。守卫的断言本身正确（G1 基线必须落在主线历史里），**不能放宽**。两个责任层各修一处：
+
+| 责任层 | 位置 | 修复 |
+| --- | --- | --- |
+| 车道（P4 CI） | `.github/workflows/professional_quality_gate.yml` | 新增步骤显式取 `main:refs/remotes/origin/main`（3 次重试 + `rev-parse` 校验，失败即 fail-closed），把断言点名的 ref 提供出来；既有身份断言与 `github_actions_security_guard` GA012 要求的 fetch 行**原样保留** |
+| 守卫（P4 工具） | `scripts/verify/g1_acceptance_baseline_guard.py` | 把「可选修订解析」改成非抛出实现（缺 ref 返回空），并在完全没有主线 ref 时给出显式失败行（**仍是失败**，不减断言）；消除 traceback 这一掩盖真实原因的路径。`test_g1_acceptance_baseline_guard.py` 新增 3 个 hermetic 用例锁定该行为（12 → 15 tests） |
+
+修复前提已实证：本仓库 `git merge-base --is-ancestor 3f424993c9f378aaeedd2f26080545ad37ea3f8e origin/main` 为真——补齐 ref 后该守卫会真绿，而不是换一种错法。
+
+本地证据：`verify.g1.acceptance.baseline` PASS（baseline_sha `3f424993` 可追溯、证据可复现）、`verify.ci.workflow.contract` PASS、`verify.github_actions.security` PASS（`permissions=read fork_professional=denied actions=pinned`）、`verify.ci.scheduled_gates` PASS（66 tests）、`verify.contract.architecture.suite` PASS。
+
+同时登记两项此前**没有回执覆盖**的检查（本轮改动的文件必须有证据项）：`ci_scheduled_gates`（唯一覆盖 `.github/workflows/*.yml` 的回执，按文件声明而非目录）与 `g1_acceptance_baseline`。
+
+### 34.11 四态（第 34 轮收口时点）
+
+- **批次级本轮完成**：三层根因（未固定 pnpm 解析 / 守卫接错车道 / 车道缺主线 ref）均已定位并修复，本地定向证据齐备。
+- **主线集成未完成**：PR #646 在 `bdc1c879` 上四项必需检查已全绿，但该 PR 车道被风险分级降级为非 full 模式，**不能替代定时 full 车道的证明**；第三层修复推送后需重取 full 车道红转绿证据再合并。此前的 `professional_quality_gate` PR 检查 6m14s pass 即为降级模式的结果，不能当作本轮的判据。
+- **版本发布未做**。
+- **产品交付未完成**：仍待 owner 本人登录验收（`wutao` / `123456` / `sc_demo` / `http://1.95.85.92:18081/`），属人工步骤。
