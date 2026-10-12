@@ -1,0 +1,96 @@
+{
+ "schema_version": 1,
+ "id": "FE-CONTRACT-RUNTIME-00",
+ "branch": "audit/fe-contract-runtime-00-20261012",
+ "status": "active",
+ "baseline_sha": "9cff283b59f72c4359294f9488c1f0240ad18370",
+ "goal": ".agent/goals/FE-CONTRACT-RUNTIME-00.yaml",
+ "record": "docs/frontend_productization/contract-runtime-capability-matrix.md",
+ "scope": [
+  ".agent/goals/FE-CONTRACT-RUNTIME-00.yaml",
+  ".agent/runs/FE-CONTRACT-RUNTIME-00/",
+  ".agent/active-runs.json",
+  "docs/frontend_productization/"
+ ],
+ "environment": {
+  "kind": "offline",
+  "authority": "existing local Make entrypoints and workspace dependencies; no database, service or browser access in this scan"
+ },
+ "checks": {
+  "schema_declaration_sync": {
+   "target": "verify.contract.schema.declaration.sync",
+   "inputs": [
+    "contracts/domain",
+    "contracts/product",
+    "contracts/schemas",
+    "scripts/verify/contract_schema_declaration_sync.py"
+   ],
+   "kind": "offline"
+  },
+  "upc_v2_schema": {
+   "target": "verify.unified_page_contract.v2.schema",
+   "inputs": [
+    "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+    "docs/architecture/unified_page_contract_v2/enum_registry.json",
+    "docs/architecture/unified_page_contract_v2/examples"
+   ],
+   "kind": "offline"
+  },
+  "semantic_component_registry": {
+   "target": "verify.frontend.professional_component_registry.unit",
+   "inputs": [
+    "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+    "frontend/apps/web/scripts/professional_component_registry_test.ts",
+    "scripts/verify/frontend_professional_component_registry_guard.py",
+    "frontend/apps/web/src/components/template"
+   ],
+   "kind": "offline"
+  },
+  "frontend_contract_basis": {
+   "target": "verify.frontend.contract_basis.unit",
+   "inputs": [
+    "docs/architecture/frontend_contract_basis_ledger.json",
+    "scripts/verify/frontend_contract_basis_guard.py",
+    "frontend/apps/web/src"
+   ],
+   "kind": "offline"
+  },
+  "agent_ledger": {
+   "target": "verify.agent.ledger.unit",
+   "inputs": [
+    ".agent/goals",
+    ".agent/runs",
+    ".agent/active-runs.json"
+   ],
+   "kind": "offline"
+  },
+  "ci_local_iteration": {
+   "target": "verify.baseline.iteration.execution.policy",
+   "inputs": [
+    "make/ci.mk",
+    "scripts/ops/agent_run_context.py",
+    "scripts/verify/baseline_iteration_execution_policy_guard.py"
+   ],
+   "kind": "offline"
+  },
+  "docs_guards": {
+   "target": "verify.docs.all",
+   "inputs": [
+    "docs/frontend_productization",
+    "docs/contract/exports",
+    "scripts/verify/docs_inventory.py",
+    "scripts/verify/docs_links.py",
+    "scripts/verify/docs_temp_guard.py",
+    "scripts/verify/docs_contract_sync.py",
+    "scripts/verify/test_product_boundary_catalog_guard.py",
+    "scripts/verify/product_boundary_catalog_guard.py"
+   ],
+   "kind": "offline"
+  }
+ },
+ "blockers": [
+  "pre-existing (not introduced by this batch): `make verify.contract.lint` fails on both this branch and origin/main (contracts/ is byte-identical to main). 49 issues, classified in docs/frontend_productization/contract-runtime-gap-list.md#G7: 11 unregistered contract docs, 4 product/native-view-* without version, 20 missing product-contract keys, 14 non-lifecycle domain contracts missing states/transitions. Reached only via verify.contract.preflight -> verify.round.v0_6.mini, not a required CI lane. Not fixed here (out of this batch's scope).",
+  "pre-existing generated-evidence drift: `make verify.contract.catalog` regenerates the committed docs/contract/exports/intent_catalog.json and changes test_refs counts (15->18, 536->537, 132->136). It therefore has an out-of-scope write side effect and is not used as a check in this doc-only batch; the file was restored to its committed state."
+ ],
+ "next_exact_step": "FE-CONTRACT-RUNTIME-00 deliverables are written at docs/frontend_productization/{contract-runtime-capability-matrix,contract-runtime-gap-list,payment-runtime-blueprint}.md and all 7 declared checks are recorded passed/reusable (207 tests). Blocking owner decision before FE-CONTRACT-RUNTIME-01: which source is the single authority for payment state/fields - (A) runtime ui.contract v2 projection, with contracts/domain/*.yaml either feeding the assembler or being demoted to documentation; or (B) static domain contract as the assembler input that generates the runtime projection. Secondary, non-blocking: decide whether authLevel keeps none/read/admin as distinct behaviour or narrows to the two levels actually consumed (edit / non-edit). Do not start 01 until the A/B authority question is answered."
+}
