@@ -19,10 +19,10 @@ FORM_STRUCTURE_LEGACY_VERSION = "1.0"
 FORM_STRUCTURE_PRESENTATION_VERSION = "1.1"
 # The container tree is the single effective body tree (native_first_form_structure_authority_v1,
 # 2026-09-16 revision).  A formStructureContract must not become a second membership authority, so
-# the policies in this set carry field membership in the tree and publish no independent structural
+# the authorities in this set carry field membership in the tree and publish no independent structural
 # slots.  The declared consumer forbids slots, columns and field membership for exactly that reason
 # (frontend/apps/web/src/app/contracts/v2/schema.ts, decodeFormStructureContract).
-FORM_STRUCTURE_TREE_MEMBERSHIP_POLICIES = frozenset({"container_tree_authority"})
+FORM_STRUCTURE_TREE_AUTHORITIES = frozenset({"container_tree"})
 
 
 def source_authority_contract() -> dict[str, Any]:
@@ -183,7 +183,7 @@ def find_runtime_guard_issues(contract: dict[str, Any]) -> list[str]:
                 issues.append(f"dependencyGraph.{source} contains executable object edge")
     registry = _dict(layout.get("componentRegistry"))
     if not registry:
-        issues.append("layoutContract.componentRegistry is required for runtime adapter resolution")
+        issues.append("layoutContract.componentRegistry is required to declare the component identities a page uses")
     for row in _list(status.get("selectorStatus")):
         if isinstance(row, dict) and not _text(row.get("selector")):
             issues.append("selectorStatus row missing selector")
@@ -447,8 +447,8 @@ def find_form_structure_contract_issues(contract: dict[str, Any]) -> list[str]:
     known_fields = set(_dict(fields).keys())
     if not known_fields:
         known_fields = _collect_layout_field_names(_list(_dict(contract.get("layoutContract")).get("containerTree")))
-    layout_policy = _text(structure.get("layoutPolicy"))
-    tree_membership_authority = layout_policy in FORM_STRUCTURE_TREE_MEMBERSHIP_POLICIES
+    structure_authority = _text(structure.get("structureAuthority"))
+    tree_membership_authority = structure_authority in FORM_STRUCTURE_TREE_AUTHORITIES
     slots = [_dict(row) for row in _list(structure.get("slots")) if isinstance(row, dict)]
     if not slots and not tree_membership_authority:
         issues.append("formStructureContract.slots is required")
@@ -458,7 +458,7 @@ def find_form_structure_contract_issues(contract: dict[str, Any]) -> list[str]:
         # Mirrors the declared consumption contract: a tree-authority structure that also publishes
         # its own slots, columns and field membership splits body ownership in two.
         issues.append(
-            "formStructureContract.container_tree_authority forbids independent structural slots, "
+            "formStructureContract.structureAuthority=container_tree forbids independent structural slots, "
             "columns and fieldRoles"
         )
     slot_names: set[str] = set()

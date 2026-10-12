@@ -41,6 +41,27 @@ except ImportError:
     _USER_SURFACE_FILTER_MAX = registry._USER_SURFACE_FILTER_MAX
     _USER_SURFACE_NOISE_MARKERS = registry._USER_SURFACE_NOISE_MARKERS
 
+try:
+    from .collection_action_capability import (
+        build_collection_capabilities,
+        project_selection_policy,
+    )
+except ImportError:  # pragma: no cover - lightweight boundary tests load this file directly
+    import importlib.util
+    import sys as _sys
+
+    _capability_spec = importlib.util.spec_from_file_location(
+        "collection_action_capability",
+        Path(__file__).with_name("collection_action_capability.py"),
+    )
+    if _capability_spec is None or _capability_spec.loader is None:
+        raise
+    _capability_module = importlib.util.module_from_spec(_capability_spec)
+    _sys.modules["collection_action_capability"] = _capability_module
+    _capability_spec.loader.exec_module(_capability_module)
+    build_collection_capabilities = _capability_module.build_collection_capabilities
+    project_selection_policy = _capability_module.project_selection_policy
+
 
 def safe_text(value: Any, fallback: str = "") -> str:
     text = str(value or "").strip()
@@ -339,6 +360,12 @@ def apply_user_surface_policies(
         "requires_batch_action": False,
         "action_source": "batch_policy.available_actions",
     }
+    # The single declared action list for this surface, filled below when the
+    # payload actually carries a list view; the default stays empty otherwise.
+    collection_capabilities = {
+        "enabled": False,
+        "actions": [],
+    }
     if "form" in view_types and not (view_types & {"tree", "list"} or has_list_view):
         filters_primary_max = 0
         actions_primary_max = 3
@@ -366,27 +393,31 @@ def apply_user_surface_policies(
             record_open_policy = {
                 "carry_query_mode": "clear_scene_context",
             }
+        if not write_allowed and not unlink_right_allowed:
+            available_actions = ["export"] if read_allowed else []
+        # The single declared action list for this surface: selection-scope
+        # actions are tagged with their scope and collection-scope facts are
+        # derived from the same payload.  ``batch_policy`` is published as its
+        # selection projection instead of a second derivation.
+        collection_capabilities = build_collection_capabilities(
+            selection_actions=available_actions,
+            rights=rights,
+            fields_map=fields_map,
+            has_list_view=True,
+        )
+        selection_projection = project_selection_policy(collection_capabilities)
         batch_policy = {
-            "enabled": bool(available_actions),
+            "enabled": bool(selection_projection["available_actions"]),
             "active_field": active_field,
             "archive_value": False if active_field else None,
             "activate_value": True if active_field else None,
             "delete_allowed": delete_allowed,
             "delete_only_mode": delete_only_mode,
-            "delete_mode": "unlink" if delete_allowed and "delete" in available_actions else "none",
-            "available_actions": available_actions,
-            "execution_intents": {
-                action: "api.data" if action == "export" else ("api.data.unlink" if action == "delete" else "api.data.batch")
-                for action in available_actions
-            },
-            "execution_operations": {action: "export_csv" for action in available_actions if action == "export"},
+            "delete_mode": "unlink" if delete_allowed and "delete" in selection_projection["available_actions"] else "none",
+            "available_actions": selection_projection["available_actions"],
+            "execution_intents": selection_projection["execution_intents"],
+            "execution_operations": selection_projection["execution_operations"],
         }
-        if not write_allowed and not unlink_right_allowed:
-            batch_policy["available_actions"] = ["export"] if read_allowed else []
-            batch_policy["enabled"] = read_allowed
-            batch_policy["delete_mode"] = "none"
-            batch_policy["execution_intents"] = {"export": "api.data"} if read_allowed else {}
-            batch_policy["execution_operations"] = {"export": "export_csv"} if read_allowed else {}
     if model and primary_model and model == primary_model:
         filters_primary_max = min(filters_primary_max, 4)
         actions_primary_max = min(actions_primary_max, 3)
@@ -398,5 +429,6 @@ def apply_user_surface_policies(
         "delete_mode": batch_policy.get("delete_mode") or "none",
         "batch_policy": batch_policy,
         "selection_policy": selection_policy,
+        "collection_capabilities": collection_capabilities,
         "record_open_policy": record_open_policy,
     }

@@ -43,6 +43,41 @@ REQUIRED_HELPERS = (
     "resolveUnifiedPageContractV2VisibleFields",
 )
 
+# A declaration key may be consumed through either declared resolver: the raw
+# contract helper, or the frozen normalized-store accessor that reads the same
+# decoded carrier.  Two shapes, one declaration -- neither is a local fallback,
+# so naming the declaration anywhere in a consumer still obliges that consumer to
+# call one of them.  Direct field reads stay forbidden below.
+DECLARATION_RESOLVERS: dict[str, tuple[str, ...]] = {
+    "surface_policies": (
+        "resolveUnifiedPageContractV2SurfacePolicies",
+        "resolveContractV2SurfacePolicies",
+    ),
+    "list_profile": (
+        "resolveUnifiedPageContractV2ListProfile",
+        "resolveContractV2ListProfile",
+    ),
+    "delete_policy": (
+        "resolveUnifiedPageContractV2DeletePolicy",
+        "resolveContractV2DeletePolicy",
+    ),
+    "business_operation_profile": (
+        "resolveUnifiedPageContractV2BusinessOperationProfile",
+    ),
+    "field_groups": (
+        "resolveUnifiedPageContractV2FieldGroups",
+        "resolveContractV2FieldGroups",
+    ),
+    "form_structure_contract": (
+        "resolveUnifiedPageContractV2FormStructureContract",
+        "resolveContractV2FormStructureContract",
+    ),
+    "visible_fields": (
+        "resolveUnifiedPageContractV2VisibleFields",
+        "resolveContractV2VisibleFieldCodes",
+    ),
+}
+
 FORBIDDEN_DIRECT_READS = (
     ".delete_policy",
     ".surface_policies",
@@ -73,6 +108,10 @@ FORBIDDEN_STRICT_SCHEMA_COMPAT_ALIASES = (
     "['page_info']",
     "['layout_contract']",
     "['status_contract']",
+    # The strict decoder must consume the decoded structure contract, never re-read
+    # the raw layout position under its own name (or the retired layout policy).
+    "raw.containerTree",
+    "raw.container_tree",
     "['action_contract']",
     "['data_contract']",
     "['runtime_contract']",
@@ -234,6 +273,9 @@ MODIFIER_DECLARATION_PRODUCERS = (
 ALLOWED_STRICT_STORE_SNAKE_CASE_TOKENS = {
     # ContractV2ValueSource.kind; not a payload field read.
     "main_data",
+    # The single page-access verdict the store derives from the contract's status
+    # declaration; the page reads that verdict instead of judging for itself.
+    "UNIFIED_PAGE_CONTRACT_V2_PAGE_FORBIDDEN",
     # Formal relation and widget-option carrier keys.
     "relation_entry",
     "relation_field",
@@ -248,6 +290,26 @@ ALLOWED_STRICT_STORE_SNAKE_CASE_TOKENS = {
     *ALLOWED_STRICT_STORE_MODIFIER_DECLARATION_TOKENS,
 }
 
+# Delivered form-structure fact vocabulary.  ``structureSource`` says where the
+# body structure comes from; ``structureAuthority`` says which carrier is the
+# final structural authority.  Both replaced the retired single ``layoutPolicy``
+# string that described implementation history instead of the fact.  Each value
+# stays bound below to the backend schema enum, so the decoder cannot keep
+# accepting a spelling the schema stopped publishing.
+FORM_STRUCTURE_STRUCTURE_SOURCE_VALUES = (
+    "native_view",
+    "business_orchestration",
+    "business_category_policy",
+    "entry_semantic_surface",
+)
+FORM_STRUCTURE_STRUCTURE_AUTHORITY_VALUES = ("container_tree", "native_form_slots", "task_sections")
+
+
+def _form_structure_schema_values(schema_payload: dict, field: str) -> list[str]:
+    contract = ((schema_payload.get("$defs") or {}).get("formStructureContract") or {})
+    return list(((contract.get("properties") or {}).get(field) or {}).get("enum") or [])
+
+
 ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
     # Formal configuration provenance: schema separates draft id=0 from published ids.
     "source_kind",
@@ -258,7 +320,11 @@ ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
     # Formal enum values.
     "act_window",
     "business_form",
-    "container_tree_authority",
+    # Structure fact vocabulary (declared sets above), bound to the backend schema.
+    *FORM_STRUCTURE_STRUCTURE_SOURCE_VALUES,
+    *FORM_STRUCTURE_STRUCTURE_AUTHORITY_VALUES,
+    "FORM_STRUCTURE_SOURCES",
+    "FORM_STRUCTURE_AUTHORITIES",
     # Published capability authorization state, bound to its producer below.
     *ALLOWED_STRICT_SURFACE_AUTHORIZATION_TOKENS,
     "harmony_h5",
@@ -744,6 +810,22 @@ def main() -> int:
             f"missing={sorted(ALLOWED_STRICT_STORE_SNAKE_CASE_TOKENS - strict_store_snake_tokens)}"
         )
     schema_payload = json.loads(BACKEND_SCHEMA.read_text(encoding="utf-8"))
+    for field, expected in (
+        ("structureSource", FORM_STRUCTURE_STRUCTURE_SOURCE_VALUES),
+        ("structureAuthority", FORM_STRUCTURE_STRUCTURE_AUTHORITY_VALUES),
+    ):
+        declared = _form_structure_schema_values(schema_payload, field)
+        if declared != list(expected):
+            violations.append(
+                f"{_relative(BACKEND_SCHEMA)}: formStructureContract.{field} enum must be "
+                f"{list(expected)}; declared={declared}"
+            )
+        for token in expected:
+            if token not in strict_schema_source and token not in strict_type_source:
+                violations.append(
+                    f"{_relative(STRICT_SCHEMA)}: structure fact value {token} is declared by the "
+                    "backend schema but accepted by no strict decoder or strict type literal"
+                )
     schema_top_level = set((schema_payload.get("properties") or {}).keys())
     schema_required = set(schema_payload.get("required") or [])
     strict_snapshot_fields = _strict_snapshot_fields(strict_type_source)
@@ -863,20 +945,12 @@ def main() -> int:
         if "legacyContractProjection" in source or "legacy_contract_projection" in source:
             violations.append(f"{rel}: stable V2 consumers must not read legacyContractProjection")
         if rel != _relative(CONTRACT_HELPERS):
-            if "surface_policies" in source and not _has_helper_call(source, "resolveUnifiedPageContractV2SurfacePolicies"):
-                violations.append(f"{rel}: surface_policies consumers must use resolveUnifiedPageContractV2SurfacePolicies")
-            if "list_profile" in source and not _has_helper_call(source, "resolveUnifiedPageContractV2ListProfile"):
-                violations.append(f"{rel}: list_profile consumers must use resolveUnifiedPageContractV2ListProfile")
-            if "delete_policy" in source and not _has_helper_call(source, "resolveUnifiedPageContractV2DeletePolicy"):
-                violations.append(f"{rel}: delete_policy consumers must use resolveUnifiedPageContractV2DeletePolicy")
-            if "business_operation_profile" in source and not _has_helper_call(source, "resolveUnifiedPageContractV2BusinessOperationProfile"):
-                violations.append(f"{rel}: business_operation_profile consumers must use resolveUnifiedPageContractV2BusinessOperationProfile")
-            if "field_groups" in source and not _has_helper_call(source, "resolveUnifiedPageContractV2FieldGroups"):
-                violations.append(f"{rel}: field_groups consumers must use resolveUnifiedPageContractV2FieldGroups")
-            if "form_structure_contract" in source and not _has_helper_call(source, "resolveUnifiedPageContractV2FormStructureContract"):
-                violations.append(f"{rel}: form_structure_contract consumers must use resolveUnifiedPageContractV2FormStructureContract")
-            if "visible_fields" in source and not _has_helper_call(source, "resolveUnifiedPageContractV2VisibleFields"):
-                violations.append(f"{rel}: visible_fields consumers must use resolveUnifiedPageContractV2VisibleFields")
+            for key, resolvers in DECLARATION_RESOLVERS.items():
+                if key not in source:
+                    continue
+                if any(_has_helper_call(source, helper) for helper in resolvers):
+                    continue
+                violations.append(f"{rel}: {key} consumers must use one of {', '.join(resolvers)}")
 
         allowed = ALLOWED_DIRECT_READS.get(rel, {})
         for index, line in enumerate(source.splitlines(), start=1):

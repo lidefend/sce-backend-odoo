@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -88,6 +89,40 @@ class ContractSchemaDeclarationSyncTest(unittest.TestCase):
         # Repairing with the authority reproduces the committed bytes exactly, so
         # the render touched only the derived value and no surrounding formatting.
         self.assertEqual(self.module.render_example_declaration(broken, authority), content)
+
+    def test_canonical_examples_seal_their_own_body(self) -> None:
+        authority = self.module.load_lifecycle_authority()
+        files = self.module.example_files()
+        self.assertTrue(files)
+        for path in files:
+            with self.subTest(example=path.name):
+                content = path.read_text(encoding="utf-8")
+                derived = self.module.derived_example_integrity(content, authority)
+                self.assertEqual(self.module.example_integrity_drift(content, derived), {})
+
+    def test_a_stale_body_seal_is_detected_and_rebound(self) -> None:
+        authority = self.module.load_lifecycle_authority()
+        path = self.module.example_files()[0]
+        content = path.read_text(encoding="utf-8")
+        derived = self.module.derived_example_integrity(content, authority)
+        stale = content.replace(f'"contractSha256": "{derived}"', '"contractSha256": "' + "0" * 64 + '"')
+        self.assertNotEqual(stale, content)
+        drift = self.module.example_integrity_drift(stale, derived)
+        self.assertEqual(sorted(drift), ["contractSha256"])
+        self.assertEqual(drift["contractSha256"]["declared"], "0" * 64)
+        self.assertEqual(self.module.render_example_integrity(stale, derived), content)
+
+    def test_the_body_seal_is_recomputed_from_the_payload_not_the_file_bytes(self) -> None:
+        authority = self.module.load_lifecycle_authority()
+        path = self.module.example_files()[0]
+        content = path.read_text(encoding="utf-8")
+        derived = self.module.derived_example_integrity(content, authority)
+        # Reformatting the file must not change the seal: it covers the semantic
+        # payload (meta excluded), not the stored bytes.
+        self.assertEqual(
+            self.module.derived_example_integrity(json.dumps(json.loads(content)), authority),
+            derived,
+        )
 
     def test_example_render_preserves_a_document_without_a_definition(self) -> None:
         authority = self.module.derived_declaration()

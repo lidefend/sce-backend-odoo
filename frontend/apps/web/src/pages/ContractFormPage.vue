@@ -44,6 +44,7 @@
       :direct-actions="isConfigurationPreview || canonicalProductRendererActive ? [] : headerBusinessDirectActions" :overflow-actions="isConfigurationPreview || canonicalProductRendererActive ? [] : headerBusinessOverflowActions" :config-actions="isConfigurationPreview || canonicalProductRendererActive ? [] : headerConfigActionsVisible" :canonical-direct-actions="!isConfigurationPreview && canonicalProductRendererActive ? canonicalHeaderActions.direct : []" :canonical-overflow-actions="!isConfigurationPreview && canonicalProductRendererActive ? canonicalHeaderActions.overflow : []"
       :show-discard="showDiscardAction" :show-debug="showDebugActionsVisible" :contract-present="Boolean(contract)" :discard-label="formUiLabel('discard')" :reload-label="formUiLabel('reload')"
       @back="returnToPreviousPage" @set-status="setStatusbarValue" @return-workbench="returnToBusinessConfigDesigner" @save-draft="saveRecord()"
+      :record-actions="recordHeaderActions" @record-action="runRecordDeleteAction"
       @run-primary="runPrimaryFormAction" @run-action="runAction" @canonical-action="runCanonicalFormAction($event.actionRef)" @canonical-save="saveRecord()" @discard="discardChanges" @copy="copyContractJson" @export="exportContractJson" @reload="reload"
     >
       <template #notice>
@@ -373,6 +374,7 @@ import {
   defaultContractFormRecord,
   listContractFormRecords,
   readContractFormRecord,
+  unlinkContractFormRecord,
   writeContractFormRecord,
 } from '../app/runtime/contractFormDataRuntime';
 import {
@@ -384,6 +386,7 @@ import {
   resolveContractV2Collaboration,
   resolveContractV2EffectiveFormCapabilities,
   resolveContractV2RecordActionStates,
+  resolveContractV2PageAccessVerdict,
   resolveContractV2GlobalStatus,
   resolveContractV2MainData,
   resolveContractV2ActionRules,
@@ -421,7 +424,7 @@ import {
   resolvePrimaryCreateFooterAction,
   resolveV2ButtonStatus,
 } from './contractForm/actionContract';
-import { normalizeContractAccessPolicy } from './contractForm/accessPolicy';
+import { resolveContractPageAccessPolicy } from './contractForm/accessPolicy';
 import {
   fieldInputType,
   fieldType,
@@ -642,6 +645,7 @@ import {
 import { useIntakeAutosaveRuntime } from './contractForm/useIntakeAutosaveRuntime';
 import { createStandardFormCompositionRuntime } from './contractForm/standardFormCompositionRuntime';
 import { describeRecordActionDenials } from '../app/presentation/recordActionDenialPresentation';
+import { resolveRecordDeleteDecision } from '../app/presentation/recordDeleteAction';
 import { createStandardDetailCompositionRuntime } from './contractForm/standardDetailCompositionRuntime';
 import { resolveStandardPageTypeFromStore, type StandardPageTypeDecision } from '../app/presentation/standardPageType';
 import {
@@ -1038,6 +1042,50 @@ async function confirmAndUpdateNativeActivity(entry: ChatterTimelineEntry, actio
   if (confirmed !== true) return;
   await updateNativeActivity(entry, action);
 }
+const recordDeleteBusy = ref(false);
+const recordDeleteDecision = computed(() => resolveRecordDeleteDecision({
+  store: v2ContractStore.value,
+  hasRecord: Boolean(recordId.value),
+  renderProfile: renderProfile.value,
+  label: formUiLabel('record_delete'),
+  busy: busy.value || recordDeleteBusy.value,
+  isConfigurationPreview: isConfigurationPreview.value,
+}));
+const recordHeaderActions = computed(() => (
+  recordDeleteDecision.value.action ? [recordDeleteDecision.value.action] : []
+));
+// The record delete runs through the intent the contract declares for the
+// operation (`api.data.unlink`); the surface never writes the ORM directly.  A
+// dry run lets the backend answer with the declared policy verdict before the
+// real unlink, exactly as the collection batch delete does.
+async function runRecordDeleteAction() {
+  const action = recordDeleteDecision.value.action;
+  if (!action || !action.enabled) return;
+  const targetModel = String(model.value || '').trim();
+  const targetId = Number(recordId.value) || 0;
+  if (!targetModel || !targetId) return;
+  const recordLabel = String(pageDisplayTitle.value || targetModel).trim() || targetModel;
+  const confirmed = await intentConfirmationRef.value?.confirm({
+    actionLabel: action.label,
+    message: `“${recordLabel}”删除后无法恢复，是否继续？`,
+  });
+  if (confirmed !== true) return;
+  recordDeleteBusy.value = true;
+  try {
+    const context = buildFormRequestContext(route.query as Record<string, unknown>);
+    const idempotencyKey = `record.delete:${targetModel}:${targetId}:${Date.now()}`;
+    await unlinkContractFormRecord({ model: targetModel, ids: [targetId], context, idempotencyKey, dryRun: true });
+    await unlinkContractFormRecord({ model: targetModel, ids: [targetId], context, idempotencyKey });
+    returnToPreviousPage();
+  } catch (error) {
+    const message = error instanceof Error && error.message
+      ? error.message
+      : '删除失败，请稍后重试。';
+    submissionFeedback.value = { kind: 'error', message };
+  } finally {
+    recordDeleteBusy.value = false;
+  }
+}
 const model = computed(() => String(route.params.model || v2ContractStore.value?.snapshot.pageInfo.model || ''));
 const isManagedRelationCreateDialog = computed(() => Boolean(
   resolveRelationCreateDialogCancelMessage({
@@ -1226,10 +1274,11 @@ const standardDetailComposition = createStandardDetailCompositionRuntime(() => c
 const recordActionStates = computed(() => resolveContractV2RecordActionStates(v2ContractStore.value));
 const recordActionDenialMessages = computed(() => describeRecordActionDenials(recordActionStates.value));
 const rights = computed(() => {
-  const globalStatus = resolveContractV2GlobalStatus(v2ContractStore.value);
-  const pageAuth = String(globalStatus?.pageAuth || '').trim().toLowerCase();
   const denied = { read: false, write: false, create: false, unlink: false, duplicate: false };
-  if (globalStatus?.pageVisible === false || pageAuth === 'none') {
+  // The page does not judge its own access: the store owns the single verdict
+  // derived from the contract's declared status, so the action surfaces and this
+  // form can never disagree about a declared refusal.
+  if (resolveContractV2PageAccessVerdict(v2ContractStore.value).blocked) {
     return denied;
   }
   const authoritative = resolveContractV2EffectiveFormCapabilities(v2ContractStore.value);
@@ -1569,7 +1618,9 @@ const policyContext = computed(() => buildContractFormPolicyContext({
 }));
 const warnings = computed(() => normalizeContractWarnings(undefined));
 const contractAccessPolicy = computed<ContractAccessPolicy>(() => {
-  return normalizeContractAccessPolicy(undefined);
+  // Page-level access is declared by the contract's statusContract.globalStatus;
+  // the page only projects that fact and never invents its own verdict.
+  return resolveContractPageAccessPolicy(v2ContractStore.value);
 });
 const workflowTransitions = computed(() => buildWorkflowTransitions({
   rows: resolveContractV2WorkflowContract(v2ContractStore.value).transitions,
@@ -1954,7 +2005,7 @@ useFormAuxiliaryWatchersRuntime({
 watch(() => route.query.config_mode, (mode) => applyRouteConfigMode(mode), { immediate: true });
 const boundFormDesignerSnapshot = computed(() => {
   const snapshot = v2ContractStore.value?.snapshot;
-  return snapshot?.formStructureContract?.layoutPolicy === 'container_tree_authority' ? snapshot : null;
+  return snapshot?.formStructureContract?.structureAuthority === 'container_tree' ? snapshot : null;
 });
 </script><style scoped src="./contractForm/ContractFormPage.css"></style>
 <style scoped>

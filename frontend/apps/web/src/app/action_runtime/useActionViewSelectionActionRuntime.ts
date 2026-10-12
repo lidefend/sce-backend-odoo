@@ -1,9 +1,11 @@
 import { computed, type Ref } from 'vue';
 import type { SceneListProfile } from '../resolvers/sceneRegistry';
+import { executeActionViewSelectionExport } from '../runtime/actionViewSelectionExportRuntime';
 import {
-  executeActionViewSelectionExport,
-  resolveSelectionActions,
-} from '../runtime/actionViewSelectionExportRuntime';
+  SELECTION_SCOPE,
+  resolveSurfaceCapabilities,
+  type CollectionCapabilities,
+} from '../runtime/actionViewCollectionCapabilityRuntime';
 import {
   batchUpdateActionViewRecords,
   unlinkActionViewRecord,
@@ -34,6 +36,8 @@ type BatchConfirmation = {
 };
 
 type UseActionViewSelectionActionRuntimeOptions<Action extends DeclaredAction> = {
+  /** The contract's single declared action list; this surface reads its scope. */
+  capabilities: Readonly<Ref<CollectionCapabilities>>;
   allowedBatchActions: Readonly<Ref<string[]>>;
   batchPolicy: Readonly<Ref<ActionBatchPolicy>>;
   activeField: Readonly<Ref<string>>;
@@ -69,17 +73,10 @@ export function useActionViewSelectionActionRuntime<Action extends DeclaredActio
   options: UseActionViewSelectionActionRuntimeOptions<Action>,
 ) {
   const selectionActions = computed(() => {
-    // The contract declares which batch actions exist and how each one executes;
-    // this surface only maps the declared intent onto a client executor.
-    return resolveSelectionActions(
-      options.allowedBatchActions.value,
-      {
-        intents: (options.batchPolicy.value.execution_intents || {}) as Record<string, string>,
-        deleteMode: String(options.batchPolicy.value.delete_mode || 'none'),
-        activeField: options.activeField.value,
-      },
-      options.text,
-    );
+    // The contract declares which actions exist, in which scope, and how each one
+    // executes; this surface only offers the declared selection scope and maps the
+    // declared intent onto a client executor.
+    return resolveSurfaceCapabilities(options.capabilities.value, SELECTION_SCOPE, options.text);
   });
 
   function handleSelectionAction(key: string) {

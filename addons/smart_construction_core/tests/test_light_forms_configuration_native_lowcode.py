@@ -51,8 +51,8 @@ class TestLightFormsConfigurationNativeLowcode(TransactionCase):
 
     In both cases the entry declaration becomes the LAST structure writer for
     its own action, so `form_structure_authority` resolves to
-    `native_authority` and `layoutPolicy` resolves to
-    `container_tree_authority`: the compatibility regrouping path stops
+    `native_authority` and the structure authority resolves to
+    `container_tree`: the compatibility regrouping path stops
     applying.
 
     The regression rule this batch must not break (same rule as G10): a
@@ -585,7 +585,7 @@ class TestLightFormsConfigurationNativeLowcode(TransactionCase):
             rendered = self._rendered_readonly(data, set(pinned))
             contract = data.get("formStructureContract") or {}
             with self.subTest(contract=contract_xmlid):
-                self.assertEqual(contract.get("layoutPolicy"), "container_tree_authority")
+                self.assertEqual(contract.get("structureAuthority"), "container_tree")
                 self.assertEqual(contract.get("presentationMode"), "task")
                 for name in pinned:
                     self.assertTrue(rendered.get(name), "%s must stay on the surface" % name)

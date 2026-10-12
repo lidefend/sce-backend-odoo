@@ -22,6 +22,7 @@ WEB_ACTION_PREFLIGHT = ROOT / "frontend/apps/web/src/app/action_runtime/useActio
 WEB_ACTION_LOAD_REQUEST = ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewLoadRequestRuntime.ts"
 WEB_ACTION_META = ROOT / "frontend/apps/web/src/app/runtime/actionViewMetaRuntime.ts"
 WEB_ACTION_CONTRACT_RUNTIME = ROOT / "frontend/apps/web/src/app/contractActionRuntime.ts"
+WEB_V2_CONTRACT_STORE = ROOT / "frontend/apps/web/src/app/contracts/v2/store.ts"
 WEB_SURFACE_CONTRACT = ROOT / "frontend/apps/web/src/app/contracts/actionViewSurfaceContract.ts"
 WEB_ACTION_VIEW = ROOT / "frontend/apps/web/src/views/ActionView.vue"
 WEB_NATIVE_LAYOUT = ROOT / "frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts"
@@ -131,6 +132,7 @@ def main() -> int:
     load_request_source = WEB_ACTION_LOAD_REQUEST.read_text(encoding="utf-8") if WEB_ACTION_LOAD_REQUEST.exists() else ""
     meta_source = WEB_ACTION_META.read_text(encoding="utf-8") if WEB_ACTION_META.exists() else ""
     contract_runtime_source = WEB_ACTION_CONTRACT_RUNTIME.read_text(encoding="utf-8") if WEB_ACTION_CONTRACT_RUNTIME.exists() else ""
+    v2_store_source = WEB_V2_CONTRACT_STORE.read_text(encoding="utf-8") if WEB_V2_CONTRACT_STORE.exists() else ""
     surface_source = WEB_SURFACE_CONTRACT.read_text(encoding="utf-8") if WEB_SURFACE_CONTRACT.exists() else ""
     action_view_source = WEB_ACTION_VIEW.read_text(encoding="utf-8") if WEB_ACTION_VIEW.exists() else ""
     native_layout_source = WEB_NATIVE_LAYOUT.read_text(encoding="utf-8") if WEB_NATIVE_LAYOUT.exists() else ""
@@ -178,8 +180,14 @@ def main() -> int:
         errors.append("web load request runtime must merge v2 primary dataSource domain/context into api.data payload")
     if "snapshot.pageInfo.viewType" not in contract_runtime_source:
         errors.append("web view mode runtime must resolve view type from canonical pageInfo")
-    if "resolveContractV2GlobalStatus" not in contract_runtime_source or "UNIFIED_PAGE_CONTRACT_V2_PAGE_FORBIDDEN" not in contract_runtime_source:
-        errors.append("web contract action runtime must honor v2 globalStatus for page access/read guards")
+    if "resolveContractV2PageAccessVerdict" not in contract_runtime_source:
+        errors.append("web contract action runtime must consume the single v2 page access verdict for page access/read guards")
+    if (
+        "resolveContractV2GlobalStatus" not in v2_store_source
+        or "UNIFIED_PAGE_CONTRACT_V2_PAGE_FORBIDDEN" not in v2_store_source
+        or "pageAuth === 'none'" not in v2_store_source
+    ):
+        errors.append("web v2 store must own the canonical globalStatus page access/read guard")
     if "collectContractV2FieldStatusByCode" not in shape_source:
         errors.append("web list shape runtime must honor v2 widget status for default column visibility")
     if "resolveContractV2SelectorStatus" not in filter_source or "isSelectorEnabled" not in filter_source:
@@ -190,8 +198,10 @@ def main() -> int:
         errors.append("web action surface contract must consume canonical pageInfo/listProfile")
     if "collectContractV2FieldStatusByCode" not in form_layout_source:
         errors.append("web contract form layout must consume canonical widget status")
-    if "resolveContractV2GlobalStatus" not in form_page_source or "pageAuth === 'none'" not in form_page_source:
-        errors.append("web contract form page must consume canonical globalStatus for form rights")
+    if "resolveContractV2PageAccessVerdict" not in form_page_source:
+        errors.append("web contract form page must consume the single v2 page access verdict for form rights")
+    if "pageAuth === 'none'" in form_page_source:
+        errors.append("web contract form page must not re-derive the page access predicate")
     if (
         "runtimeOccurrenceState:(node:NativeFormLayoutNode)" not in field_schema_source
         or "const state=context.runtimeOccurrenceState(node)" not in field_schema_source

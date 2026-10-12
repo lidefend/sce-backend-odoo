@@ -10,8 +10,34 @@ import {
   resolveContractV2SurfacePolicies,
 } from '../contracts/v2/store';
 import type { ContractV2NormalizedStore } from '../contracts/v2/types';
+import { requireDeclaredBoolean, requireDeclaredText } from '../contract/contractGap';
 
 type Dict = Record<string, unknown>;
+
+/** The layer that owes any list-profile declaration this consumer finds missing. */
+const LIST_PROFILE_DECLARATION_LAYER = 'P0:smart_core:contract_governance_list_surface|contract_governance_user_surface';
+
+/**
+ * The declared selection policy, consumed verbatim.  This is a business
+ * capability, not a rendering preference: `mode || 'multiple'` and
+ * `enabled !== false` used to make a missing declaration look like a valid
+ * policy, which is exactly the compensation layer this runtime must not be.
+ * Shape parsing stays here; the values come from the declaration or the surface
+ * stops.
+ */
+function readDeclaredSelectionPolicy(raw: Dict) {
+  const at = (key: string) => ({
+    missing: `list_profile.selection_policy.${key}`,
+    requiredDeclarationLayer: LIST_PROFILE_DECLARATION_LAYER,
+  });
+  return {
+    enabled: requireDeclaredBoolean(raw.enabled, at('enabled')),
+    mode: requireDeclaredText(raw.mode, at('mode')),
+    scope: requireDeclaredText(raw.scope, at('scope')),
+    requires_batch_action: requireDeclaredBoolean(raw.requires_batch_action, at('requires_batch_action')),
+    action_source: requireDeclaredText(raw.action_source, at('action_source')),
+  };
+}
 
 type UseActionViewContractShapeRuntimeOptions = {
   pageText: (key: string, fallback: string) => string;
@@ -407,7 +433,10 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
     const rawBatchPolicy = (rawProfile.batch_policy || {}) as Dict;
     const hasRawBatchPolicy = Object.keys(rawBatchPolicy).length > 0;
     const batchPolicy = {
-      enabled: rawBatchPolicy.enabled === true,
+      enabled: requireDeclaredBoolean(rawBatchPolicy.enabled, {
+        missing: 'list_profile.batch_policy.enabled',
+        requiredDeclarationLayer: LIST_PROFILE_DECLARATION_LAYER,
+      }),
       active_field: String(rawBatchPolicy.active_field || '').trim() || undefined,
       assignee_field: String(rawBatchPolicy.assignee_field || '').trim() || undefined,
       archive_value: typeof rawBatchPolicy.archive_value === 'boolean' ? rawBatchPolicy.archive_value : null,
@@ -425,13 +454,9 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
         .map(([action, operation]) => [action, String(operation || '').trim()]).filter(([, operation]) => Boolean(operation))),
     };
     const rawSelectionPolicy = (rawProfile.selection_policy || surfacePolicies.selection_policy || {}) as Dict;
-    const selectionPolicy = {
-      enabled: rawSelectionPolicy.enabled !== false,
-      mode: String(rawSelectionPolicy.mode || 'multiple').trim(),
-      scope: String(rawSelectionPolicy.scope || 'current_page').trim(),
-      requires_batch_action: rawSelectionPolicy.requires_batch_action === true,
-      action_source: String(rawSelectionPolicy.action_source || 'batch_policy.available_actions').trim(),
-    };
+    const selectionPolicy = Object.keys(rawSelectionPolicy).length
+      ? readDeclaredSelectionPolicy(rawSelectionPolicy)
+      : null;
     const rawGrouping = (rawProfile.grouping || {}) as Dict;
     const rawGroupingSort = (rawGrouping.sort || {}) as Dict;
     const grouping = {
@@ -480,7 +505,7 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
       show_row_number: showRowNumber,
       status_field: statusField,
       metric_fields: metricFields,
-      selection_policy: selectionPolicy,
+      ...(selectionPolicy ? { selection_policy: selectionPolicy } : {}),
       ...(hasRawBatchPolicy ? { batch_policy: batchPolicy } : {}),
       grouping,
     };

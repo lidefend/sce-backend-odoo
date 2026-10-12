@@ -76,7 +76,7 @@ class TestPaymentSettlementComponentProfile(TransactionCase):
         # structure mechanism. The native container tree stays authoritative for
         # the section and detail semantics asserted below.
         self.assertEqual(structure["mode"], "native_structured_form")
-        self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
+        self.assertEqual(structure["structureAuthority"], "container_tree")
         self.assertEqual(governance["formStructureAuthority"], "native_authority")
         self.assertEqual(governance["formPresentationMode"], "task")
         self.assertEqual(governance["configuredSections"], [])

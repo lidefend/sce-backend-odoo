@@ -37,6 +37,9 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import parallel_scan
+
 # The declaration consumed by the parallel entry point: the group covers exactly
 # these governed targets, each of which still owns its own command and unit
 # prerequisite. Keeping the list here rather than in a recipe makes the covered
@@ -124,6 +127,7 @@ def run_members(root: Path, targets: tuple[str, ...], jobs: int,
 def report(results: list[MemberResult], jobs: int) -> int:
     failed = [result for result in results if result.returncode]
     print(f"[trusted_scan_group] members={len(results)} jobs={jobs} "
+          f"worker_budget_per_member={parallel_scan.resolve_workers(jobs + 1)} "
           f"status={'failed' if failed else 'passed'}")
     for result in results:
         print(f"[trusted_scan_group] --- {result.target} "
@@ -168,6 +172,10 @@ def main(argv: list[str] | None = None) -> int:
     except ValueError as exc:
         print(f"[trusted_scan_group] DENY {exc}", file=sys.stderr)
         return 2
+    # Every member divides one machine-wide worker budget by the concurrency
+    # this group already holds, so the three scans share the machine instead of
+    # each claiming it. The declared value is the one fact a member reads.
+    os.environ[parallel_scan.GROUP_JOBS_ENV] = str(jobs)
     return report(run_members(args.root, targets, jobs), jobs)
 
 

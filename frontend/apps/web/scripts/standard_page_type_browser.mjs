@@ -1483,7 +1483,7 @@ try {
     await form(finance.page, `/f/payment.request/${taskOriginId}?menu_id=545&action_id=775`, 'task-authority');
     const authority = report.taskAuthorities?.['payment.request'];
     check('task: actual payment authority received', authority?.model === 'payment.request');
-    check('task: native tree is sole layout authority', authority.structure?.layoutPolicy === 'container_tree_authority');
+    check('task: native tree is sole layout authority', authority.structure?.structureAuthority === 'container_tree');
     check('task: retired slots remain empty', Array.isArray(authority.structure?.slots) && authority.structure.slots.length === 0);
     check('task: effective native tree is present', Boolean(authority.layout?.containerTree));
     const matrix = JSON.parse(await fs.readFile(path.join(root, 'config/p1_payment_request_field_completeness_v1.json')));

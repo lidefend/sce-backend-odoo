@@ -280,7 +280,7 @@ class TestExpenseClaimNativeLowcode(TransactionCase):
             self.assertEqual(governance["formStructureAuthority"], "native_authority", action_key)
             self.assertEqual(governance["formPresentationMode"], "task", action_key)
             self.assertEqual(governance["configuredSections"], [], action_key)
-            self.assertEqual(contract["layoutPolicy"], "container_tree_authority", action_key)
+            self.assertEqual(contract["structureAuthority"], "container_tree", action_key)
             self.assertEqual(contract["navigation"]["title"], title, action_key)
             # the released configuration keeps its title without projecting a body
             self.assertFalse(contract["slots"], action_key)
@@ -306,7 +306,7 @@ class TestExpenseClaimNativeLowcode(TransactionCase):
         self.assertEqual(governance["formPresentationMode"], "task")
         self.assertEqual(governance["configuredSections"], [])
         self.assertEqual([row["name"] for row in governance["businessConfigContracts"]], [entry_record.name])
-        self.assertEqual(contract["layoutPolicy"], "container_tree_authority")
+        self.assertEqual(contract["structureAuthority"], "container_tree")
         self.assertEqual(contract["navigation"]["title"], title)
         self.assertFalse(contract["slots"])
         self.assertFalse(contract["fieldRoles"])
@@ -366,7 +366,7 @@ class TestExpenseClaimNativeLowcode(TransactionCase):
                 "a sibling entry must not consume a retired entry configuration",
             )
             data = self.contract(action_key, view_id)
-            self.assertEqual(data["formStructureContract"]["layoutPolicy"], "business_config_sections", action_key)
+            self.assertEqual(data["formStructureContract"]["structureAuthority"], "task_sections", action_key)
             self.assertEqual(data["formStructureContract"]["navigation"]["title"], title, action_key)
 
     def test_every_declared_fact_still_renders_exactly_once(self):

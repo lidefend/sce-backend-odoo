@@ -287,7 +287,7 @@ class TestProjectInitiationNativeLowcode(TransactionCase):
     def test_the_rendered_surface_is_the_native_container_tree(self):
         data = self._native_contract(self.ACTION, self.VIEW, self.MODEL)
         structure = data.get("formStructureContract") or {}
-        self.assertEqual(structure.get("layoutPolicy"), "container_tree_authority")
+        self.assertEqual(structure.get("structureAuthority"), "container_tree")
         self.assertEqual(structure.get("mode"), "native_structured_form")
         self.assertFalse(structure.get("slots"))
         self.assertFalse(structure.get("sourceSectionTitles"))

@@ -24,6 +24,8 @@ import type {
   ContractV2FieldGroups,
   ContractV2FormStructureConfiguredSection,
   ContractV2FormStructureContract,
+  ContractV2FormStructureAuthority,
+  ContractV2FormStructureSource,
   ContractV2FormStructureGovernanceContract,
   ContractV2FormStructureGovernanceSource,
   ContractV2FormStructureGroup,
@@ -1094,16 +1096,13 @@ function decodeComponentRegistry(
       issues.push({ path, message: 'must be an object keyed by a non-empty component identity' });
       return;
     }
-    rejectUnknownKeys(value, ['version', 'adapter', 'fallback', 'selectedAdapter'], path, issues);
-    const adapter = decodeStringMap(value.adapter, `${path}.adapter`, issues);
-    Object.entries(adapter).forEach(([clientType, adapterName]) => {
-      if (!adapterName.trim()) issues.push({ path: `${path}.adapter.${clientType}`, message: 'must be non-empty' });
-    });
+    // Rendering is a frontend responsibility: a component entry may declare its
+    // identity and version, and nothing about how or by which framework
+    // component it renders.  A `adapter` / `selectedAdapter` / `fallback` key is
+    // a contract defect, so it is rejected rather than silently ignored.
+    rejectUnknownKeys(value, ['version'], path, issues);
     out[componentKey] = {
       version: requiredString(value, 'version', path, issues),
-      adapter,
-      ...(optionalString(value, 'fallback') ? { fallback: optionalString(value, 'fallback') } : {}),
-      ...(optionalString(value, 'selectedAdapter') ? { selectedAdapter: optionalString(value, 'selectedAdapter') } : {}),
     };
   });
   return out;
@@ -1594,6 +1593,40 @@ function decodeFormStructureSurfaces(
   return out;
 }
 
+const FORM_STRUCTURE_SOURCES = [
+  'native_view', 'business_orchestration', 'business_category_policy', 'entry_semantic_surface',
+] as const;
+const FORM_STRUCTURE_AUTHORITIES = ['container_tree', 'native_form_slots', 'task_sections'] as const;
+
+function decodeFormStructureSource(raw: unknown, path: string, issues: DecodeIssue[]): ContractV2FormStructureSource {
+  const value = asString(raw);
+  if (!(FORM_STRUCTURE_SOURCES as readonly string[]).includes(value)) {
+    issues.push({
+      path: `${path}.structureSource`,
+      message: `must equal one of ${FORM_STRUCTURE_SOURCES.join(' / ')}`,
+    });
+    return 'native_view';
+  }
+  return value as ContractV2FormStructureSource;
+}
+
+function decodeFormStructureAuthority(
+  raw: unknown,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2FormStructureAuthority {
+  const value = asString(raw);
+  if (!(FORM_STRUCTURE_AUTHORITIES as readonly string[]).includes(value)) {
+    issues.push({
+      path: `${path}.structureAuthority`,
+      message: `must equal one of ${FORM_STRUCTURE_AUTHORITIES.join(' / ')}`,
+    });
+    // Never fabricate a container-tree claim from an undecodable authority.
+    return 'task_sections';
+  }
+  return value as ContractV2FormStructureAuthority;
+}
+
 function decodeFormStructureContract(
   raw: unknown,
   pageInfo: ContractV2PageInfo,
@@ -1607,7 +1640,8 @@ function decodeFormStructureContract(
     return undefined;
   }
   rejectUnknownKeys(raw, [
-    'source', 'structureVersion', 'model', 'viewType', 'mode', 'presentationMode', 'layoutPolicy', 'columns',
+    'source', 'structureVersion', 'model', 'viewType', 'mode', 'presentationMode',
+    'structureSource', 'structureAuthority', 'columns',
     'objectProfile', 'navigation', 'sourceSectionTitles', 'fieldLabels', 'slots', 'fieldRoles',
     'surfaces', 'sourceAuthority',
   ], path, issues);
@@ -1646,12 +1680,14 @@ function decodeFormStructureContract(
   const slots = requiredArray(raw, 'slots', path, issues)
     .map((item, index) => decodeFormStructureSlot(item, `${path}.slots[${index}]`, issues))
     .filter((item): item is ContractV2FormStructureSlot => Boolean(item));
-  if (!slots.length && raw.layoutPolicy !== 'container_tree_authority') {
+  const structureSource = decodeFormStructureSource(raw.structureSource, path, issues);
+  const structureAuthority = decodeFormStructureAuthority(raw.structureAuthority, path, issues);
+  if (!slots.length && structureAuthority !== 'container_tree') {
     issues.push({ path: `${path}.slots`, message: 'must contain at least one slot' });
   }
-  if (raw.layoutPolicy === 'container_tree_authority'
+  if (structureAuthority === 'container_tree'
     && (slots.length || raw.columns !== undefined || Object.keys(isRecord(raw.fieldRoles) ? raw.fieldRoles : {}).length)) {
-    issues.push({ path, message: 'container tree authority forbids independent structural slots, columns and field membership' });
+    issues.push({ path, message: 'structureAuthority=container_tree forbids independent structural slots, columns and field membership' });
   }
   const slotNames = new Set<string>();
   const groupNamesBySlot = new Map<string, Set<string>>();
@@ -1715,7 +1751,8 @@ function decodeFormStructureContract(
     // normalized to the conservative workspace path; new 1.1 structures must
     // declare their authority above.
     presentationMode: structureVersion === '1.1' && presentationMode === 'task' ? 'task' : 'workspace',
-    layoutPolicy: requiredString(raw, 'layoutPolicy', path, issues),
+    structureSource,
+    structureAuthority,
     ...(typeof columns === 'number' && Number.isInteger(columns) && columns > 0 ? { columns } : {}),
     objectProfile: {
       model: objectProfileModel,

@@ -1,6 +1,7 @@
 import {
   batchUpdateRecords,
   exportRecordsCsv,
+  importRecords,
   listRecordsRaw,
   saveSearchFavorite,
   unlinkRecord,
@@ -9,6 +10,7 @@ import {
 
 export const batchUpdateActionViewRecords = batchUpdateRecords;
 export const exportActionViewRecords = exportRecordsCsv;
+export const importActionViewRecords = importRecords;
 export const listActionViewRecordsRaw = listRecordsRaw;
 export const saveActionViewSearchFavorite = saveSearchFavorite;
 export const unlinkActionViewRecord = unlinkRecord;

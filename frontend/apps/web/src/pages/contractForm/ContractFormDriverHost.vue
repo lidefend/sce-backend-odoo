@@ -131,6 +131,7 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue';
 import { ScTaskActionResolverKey } from '../../components/template/taskActionResolver';
+import { layoutGridUnits } from '../../components/template/layoutSpan';
 import { SceneButton, SceneUiProvider, type SceneUiKitId } from '@sc/ui/form';
 import type { ContractV2ActionRule, ContractV2FormStructureSurface } from '../../app/contracts/v2/types';
 import type { CanonicalAuditEvent, CanonicalFormNode, CanonicalFormRenderModel } from '../../app/presentation/canonicalFormRenderModel';
@@ -207,14 +208,16 @@ function countFields(nodes: CanonicalFormNode[]): number {
 const fieldCount = computed(() => props.renderModel
   ? countFields([...props.renderModel.zones.primary, ...props.renderModel.zones.subordinate])
   : 0);
+// The delivery face states the information density a terminal receives
+// (``standard`` / ``compact``); mapping that to the UI kit's visual density is
+// the front end's own decision.
 const sceneDensity = computed<'compact' | 'cozy'>(() => {
-  const density = String(props.renderModel?.responsive.layoutHints.clientDensity || '').trim().toLowerCase();
-  return density === 'comfortable' || density === 'cozy' ? 'cozy' : 'compact';
+  const density = String(props.renderModel?.responsive.layoutHints.deliveryDensity || '').trim().toLowerCase();
+  return density === 'compact' ? 'compact' : 'cozy';
 });
-const contractLayoutColumns = computed(() => Math.max(
-  1,
-  Number(props.renderModel?.responsive.layoutHints.columns || 1) || 1,
-));
+// How many columns the renderer lays out with is the front end's own grid
+// authority (see layoutSpan.ts); the delivery contract must not declare it.
+const contractLayoutColumns = computed(() => Math.max(1, layoutGridUnits()));
 const activeKit = computed<SceneUiKitId>(() => props.driverConfig?.activeKit || 'tdesign-modern');
 const emptyFloorplan: CanonicalFormFloorplan = {
     summaryNodes: [], decisionInputNodes: [], taskNodes: [], coreInputNodes: [], conditionInputNodes: [], preExecutionInputNodes: [], preExecutionInputTitle: '', supplementaryInputNodes: [],
@@ -225,7 +228,7 @@ const emptyFloorplan: CanonicalFormFloorplan = {
 };
 const preserveAuthoritativeBusinessSections = computed(() => Boolean(
   props.renderModel
-  && (props.renderModel.identity.structureAuthority === 'containerTree' || shouldPreserveAuthoritativeBusinessSections(
+  && (props.renderModel.identity.bodyStructureAuthority === 'containerTree' || shouldPreserveAuthoritativeBusinessSections(
     props.renderModel.identity.presentationMode,
     [...props.renderModel.zones.primary, ...props.renderModel.zones.subordinate],
   )),

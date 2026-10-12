@@ -13,6 +13,13 @@ This entry is the single derivation path:
 * ``normativeStatus``   <- ``normativeStatus`` of the normative enum registry
 * ``schemaId``          <- the stable producer protocol identifier (not derivable)
 
+``meta.lifecycle.integrity.contractSha256`` carried by those examples is not a
+hand-maintained binding either: it is the body seal itself, so it is recomputed
+here with the sealing authority (``contract_lifecycle.payload_sha256`` over
+``contract_semantic_payload``) instead of being re-implemented.  A commit that
+edits an example body without resealing it leaves a seal that does not verify,
+which is exactly what ``verify.backend.contract_lifecycle.authority`` catches.
+
 The same authority owns the sealed-contract provenance carried by the canonical
 examples under ``docs/architecture/unified_page_contract_v2/examples``: each
 example publishes the derived bindings inside ``meta.lifecycle.definition``, and
@@ -28,6 +35,7 @@ refreshes the example bindings in place (formatting-preserving).
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import re
 import sys
@@ -125,6 +133,65 @@ def example_files() -> list[Path]:
     return sorted(EXAMPLES_DIR.glob("*.json"))
 
 
+def load_lifecycle_authority():
+    """The sealing authority itself, so the seal is never re-implemented here."""
+    spec = importlib.util.spec_from_file_location(
+        "contract_schema_declaration_lifecycle", LIFECYCLE
+    )
+    if spec is None or spec.loader is None:  # pragma: no cover - defensive
+        raise SystemExit(f"cannot load the sealing authority: {LIFECYCLE}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def example_integrity_span(text: str) -> tuple[int, int] | None:
+    """Span of ``meta.lifecycle.integrity``; ``None`` when the example has none."""
+    lifecycle = _object_span(text, "lifecycle")
+    if lifecycle is None:
+        return None
+    return _object_span(text, "integrity", lifecycle[0])
+
+
+def derived_example_integrity(text: str, authority) -> str:
+    """The body seal of one example, from the sealing authority's own functions."""
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"example is not valid json: {exc}") from exc
+    return authority.payload_sha256(authority.contract_semantic_payload(payload))
+
+
+def example_integrity_drift(text: str, derived: str) -> dict[str, Any]:
+    """Body-seal drift inside one example's ``meta.lifecycle.integrity``."""
+    span = example_integrity_span(text)
+    if span is None:
+        return {"contractSha256": {"declared": None, "derived": derived}}
+    body = text[span[0]: span[1]]
+    declared = re.findall(r'"contractSha256"\s*:\s*"([^"]*)"', body)
+    if len(declared) != 1:
+        return {"contractSha256": {"declared": declared or None, "derived": derived}}
+    if declared[0] != derived:
+        return {"contractSha256": {"declared": declared[0], "derived": derived}}
+    return {}
+
+
+def render_example_integrity(text: str, derived: str) -> str:
+    """Rebind the body seal in place; every other byte (incl. formatting) is kept."""
+    span = example_integrity_span(text)
+    if span is None:
+        return text
+    body = text[span[0]: span[1]]
+    rendered = re.sub(
+        r'("contractSha256"\s*:\s*)"[^"]*"',
+        lambda match: f'{match.group(1)}"{derived}"',
+        body,
+        count=1,
+    )
+    return text[: span[0]] + rendered + text[span[1]:]
+
+
 def example_definition_drift(text: str, declaration: dict[str, str]) -> dict[str, Any]:
     """Derived binding drift inside one example's ``meta.lifecycle.definition``."""
     span = _definition_span(text)
@@ -164,6 +231,11 @@ def main() -> int:
     authority = derived_declaration()
     declared = declared_declaration(text)
     examples = {path: path.read_text(encoding="utf-8") for path in example_files()}
+    sealing_authority = load_lifecycle_authority()
+    derived_integrity = {
+        path: derived_example_integrity(content, sealing_authority)
+        for path, content in examples.items()
+    }
     if "--check" in sys.argv:
         mismatch: dict[str, Any] = {
             name: {"declared": declared.get(name), "derived": value}
@@ -175,14 +247,18 @@ def main() -> int:
             for path, content in examples.items()
             if (drift := example_definition_drift(content, authority))
         }
-        if mismatch or example_mismatch:
-            raise SystemExit(
-                "schema declaration drift: "
-                + json.dumps(
-                    {**mismatch, "examples": example_mismatch} if example_mismatch else mismatch,
-                    sort_keys=True,
-                )
-            )
+        integrity_mismatch = {
+            str(path.relative_to(ROOT)): drift
+            for path, content in examples.items()
+            if (drift := example_integrity_drift(content, derived_integrity[path]))
+        }
+        if mismatch or example_mismatch or integrity_mismatch:
+            payload: dict[str, Any] = dict(mismatch)
+            if example_mismatch:
+                payload["examples"] = example_mismatch
+            if integrity_mismatch:
+                payload["exampleIntegrity"] = integrity_mismatch
+            raise SystemExit("schema declaration drift: " + json.dumps(payload, sort_keys=True))
         print(
             "[contract_schema_declaration_sync] PASS "
             f"sha256={authority['UNIFIED_PAGE_SCHEMA_SHA256'][:12]} "
@@ -195,6 +271,7 @@ def main() -> int:
     print(f"[contract_schema_declaration_sync] WROTE {LIFECYCLE.relative_to(ROOT)}")
     for path, content in examples.items():
         rendered = render_example_declaration(content, authority)
+        rendered = render_example_integrity(rendered, derived_integrity[path])
         if rendered != content:
             path.write_text(rendered, encoding="utf-8")
             print(f"[contract_schema_declaration_sync] WROTE {path.relative_to(ROOT)}")

@@ -587,7 +587,7 @@ class ProfessionalComponentRegistryGuardTest(unittest.TestCase):
         """A semantic marker only counts on the element that iterates the fields."""
 
         inner = '    <template v-if="showHead && $slots.action" #actions><slot name="action" /></template>'
-        tail = '\n          :data-contract-adapter="field.contractAdapter || undefined"'
+        tail = '\n          :data-contract-component-version="field.contractVersion || undefined"'
 
         def source(path):
             value = (ROOT / path).read_text(encoding="utf-8")
@@ -596,7 +596,7 @@ class ProfessionalComponentRegistryGuardTest(unittest.TestCase):
                 assert moved != value
                 return moved.replace(
                     inner,
-                    inner + '\n    <p :data-contract-adapter="field.contractAdapter || undefined">probe</p>',
+                    inner + '\n    <p :data-contract-component-version="field.contractVersion || undefined">probe</p>',
                     1,
                 )
             return value
@@ -702,32 +702,48 @@ class ProfessionalComponentRegistryGuardTest(unittest.TestCase):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("professionalComponentRegistry.ts"):
                 return value.replace(
-                    "registration('sc.input.text', 'text', ['char'])",
-                    "registration('sc.input.text', 'text', ['char'], 'ready', "
-                    "'GhostControl' as unknown as ProfessionalComponentRenderer)",
+                    "declaredRenderer(row.renderer),",
+                    "row.renderer as unknown as ProfessionalComponentRenderer,",
                     1,
                 )
             return value
 
         failures = validate(source)
-        self.assertTrue(any("bare union member" in failure for failure in failures))
         self.assertTrue(any("unknown-typed cast" in failure for failure in failures))
+
+        def cast_row(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("semantic_registry.generated.ts"):
+                return value.replace(
+                    "renderer: 'FormSectionField'},",
+                    "renderer: 'GhostControl' as unknown as string},",
+                    1,
+                )
+            return value
+
+        row_failures = validate(cast_row)
+        self.assertTrue(any("only" in failure and "readable" in failure for failure in row_failures))
 
     def test_registration_naming_an_unlisted_renderer_fails(self):
         """A registration is a renderer call site, not just an entry in the union."""
 
         def source(path):
             value = (ROOT / path).read_text(encoding="utf-8")
-            if path.endswith("professionalComponentRegistry.ts"):
+            if path.endswith("semantic_registry.generated.ts"):
                 return value.replace(
-                    "registration('sc.input.text', 'text', ['char'])",
-                    "registration('sc.input.text', 'text', ['char'], 'ready', 'GhostUnlisted')",
+                    "componentKey: 'sc.input.text', semanticType: 'text', "
+                    "supportedFieldTypes: ['char'], readiness: 'ready', renderer: 'FormSectionField'",
+                    "componentKey: 'sc.input.text', semanticType: 'text', "
+                    "supportedFieldTypes: ['char'], readiness: 'ready', renderer: 'GhostUnlisted'",
                     1,
                 )
             return value
 
         self.assertTrue(
-            any("does not name the registered renderer" in failure for failure in validate(source))
+            any(
+                "does not name the registered renderer GhostUnlisted" in failure
+                for failure in validate(source)
+            )
         )
 
     def test_registration_outside_the_closed_list_fails(self):
@@ -737,15 +753,15 @@ class ProfessionalComponentRegistryGuardTest(unittest.TestCase):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("professionalComponentRegistry.ts"):
                 return value.replace(
-                    "] as const;",
-                    "] as const;\nregistration('sc.extra.ghost', 'ghost', ['char']);",
+                    "const RENDERER_NAMES",
+                    "registration('sc.extra.ghost', 'ghost', ['char']);\nconst RENDERER_NAMES",
                     1,
                 )
             return value
 
-        self.assertTrue(
-            any("outside its closed registration list" in failure for failure in validate(source))
-        )
+        failures = validate(source)
+        self.assertTrue(any("second component vocabulary" in failure for failure in failures))
+        self.assertTrue(any("sc.extra.ghost" in failure for failure in failures))
 
     def test_field_type_mapping_renderer_fails(self):
         """The mapping the factory builds is a renderer call site as well."""
@@ -845,13 +861,16 @@ class ProfessionalComponentRegistryGuardTest(unittest.TestCase):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("professionalComponentRegistry.ts"):
                 return value.replace(
-                    "registration('sc.input.text', 'text', ['char'])",
-                    "registration /*pad*/ ('sc.input.text', 'text', ['char'], 'ready', 'GhostPadded')",
+                    "const RENDERER_NAMES",
+                    "registration /*pad*/ ('sc.input.text', 'text', ['char'], 'ready', 'GhostPadded');\n"
+                    "const RENDERER_NAMES",
                     1,
                 )
             return value
 
-        self.assertTrue(any("GhostPadded" in failure for failure in validate(source)))
+        failures = validate(source)
+        self.assertTrue(any("second component vocabulary" in failure for failure in failures))
+        self.assertTrue(any("sc.input.text" in failure for failure in failures))
 
     def test_prototype_reached_through_reflection_fails(self):
         """The predicate cannot be disarmed by reaching a prototype indirectly."""
@@ -909,6 +928,7 @@ class ProfessionalComponentRegistryGuardTest(unittest.TestCase):
             if path.endswith(
                 (
                     "professionalComponentRegistry.ts",
+                    "semantic_registry.generated.ts",
                     "FormSection.vue",
                     "paymentSettlementDetailCollectionModel.ts",
                 )

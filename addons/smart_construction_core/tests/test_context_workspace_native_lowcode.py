@@ -366,7 +366,7 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
             self.assertEqual(governance["resolvedViewId"], self.view_ref_id(view_key), action_key)
             self.assertEqual(governance["formStructureAuthority"], "native_authority", action_key)
             self.assertEqual(governance["configuredSections"], [], action_key)
-            self.assertEqual(contract["layoutPolicy"], "container_tree_authority", action_key)
+            self.assertEqual(contract["structureAuthority"], "container_tree", action_key)
             self.assertEqual(contract["navigation"]["title"], title, action_key)
             self.assertFalse(contract["slots"], action_key)
             own = self.ref(self.ENTRY_CONTRACTS[action_key]).name

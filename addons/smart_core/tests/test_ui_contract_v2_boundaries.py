@@ -3308,7 +3308,8 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(slot_titles, ["办理总览", "主业务事实", "金额与进度", "办理协作", "明细与来源"])
         self.assertNotIn("合同事实", slot_titles)
         self.assertNotIn("工程与合同约定", slot_titles)
-        self.assertEqual(structure["layoutPolicy"], "native_authority")
+        self.assertEqual(structure["structureSource"], "native_view")
+        self.assertEqual(structure["structureAuthority"], "native_form_slots")
         self.assertEqual(structure["presentationMode"], "workspace")
         self.assertEqual(structure["source"], "ui.contract.v2.form_structure_contract")
         self.assertNotIn("businessSectionAliases", structure)
@@ -3343,7 +3344,8 @@ class TestUiContractV2Boundaries(unittest.TestCase):
 
         self.assertEqual(structure["mode"], "native_structured_form")
         self.assertEqual(structure["presentationMode"], "workspace")
-        self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
+        self.assertEqual(structure["structureSource"], "native_view")
+        self.assertEqual(structure["structureAuthority"], "container_tree")
         self.assertEqual(structure["navigation"]["title"], "项目台账")
 
         default_structure = handler._build_form_structure_contract(
@@ -3364,7 +3366,8 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         )
         self.assertEqual(default_structure["mode"], "native_structured_form")
         self.assertEqual(default_structure["presentationMode"], "workspace")
-        self.assertEqual(default_structure["layoutPolicy"], "native_authority")
+        self.assertEqual(default_structure["structureSource"], "native_view")
+        self.assertEqual(default_structure["structureAuthority"], "native_form_slots")
 
     def test_native_authority_can_publish_task_presentation_without_configured_sections(self):
         handler = self.module.UiContractV2Handler(env=object())
@@ -3390,7 +3393,8 @@ class TestUiContractV2Boundaries(unittest.TestCase):
 
         self.assertEqual(structure["presentationMode"], "task")
         self.assertEqual(structure["mode"], "native_structured_form")
-        self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
+        self.assertEqual(structure["structureSource"], "native_view")
+        self.assertEqual(structure["structureAuthority"], "container_tree")
         self.assertEqual(
             structure["sourceAuthority"]["governance_source"]["formStructureAuthority"],
             "native_authority",
@@ -3521,8 +3525,12 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             role_mismatch_source["form_structure_contract"]["sourceAuthority"]["governance_source"]["formPresentationMode"],
             "workspace",
         )
-        self.assertEqual(task_source["form_structure_contract"]["layoutPolicy"], "overview_then_task_slots")
-        self.assertEqual(native_source["form_structure_contract"]["layoutPolicy"], "container_tree_authority")
+        self.assertEqual(
+            task_source["form_structure_contract"]["structureSource"], "entry_semantic_surface"
+        )
+        self.assertEqual(task_source["form_structure_contract"]["structureAuthority"], "task_sections")
+        self.assertEqual(native_source["form_structure_contract"]["structureSource"], "native_view")
+        self.assertEqual(native_source["form_structure_contract"]["structureAuthority"], "container_tree")
         self.assertEqual(env["ui.business.config.contract"].request["role_key"], "workspace_manager")
         self.assertNotEqual(env["ui.business.config.contract"].request["role_key"], "untrusted_source_role")
         self.assertEqual(
@@ -3576,7 +3584,8 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(structure["structureVersion"], "1.1")
         self.assertEqual(structure["presentationMode"], "workspace")
         self.assertEqual(structure["mode"], "native_structured_form")
-        self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
+        self.assertEqual(structure["structureSource"], "native_view")
+        self.assertEqual(structure["structureAuthority"], "container_tree")
         self.assertEqual(
             structure["sourceAuthority"]["governance_source"]["source"],
             "native_form_layout",
@@ -4303,7 +4312,8 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(structure["structureVersion"], "1.1")
         self.assertEqual(structure["presentationMode"], "workspace")
         self.assertEqual(structure["mode"], "native_structured_form")
-        self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
+        self.assertEqual(structure["structureSource"], "native_view")
+        self.assertEqual(structure["structureAuthority"], "container_tree")
         self.assertNotIn("list_profile", source_contract)
         self.assertEqual(source_contract["visible_fields"], ["name"])
 
@@ -5102,7 +5112,8 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                 raise KeyError(model)
 
         native_structure = {
-            "layoutPolicy": "native_authority",
+            "structureSource": "native_view",
+            "structureAuthority": "native_form_slots",
             "slots": [{"slot": "native", "fieldRefs": ["name"], "groups": []}],
         }
         source = {
@@ -5143,8 +5154,12 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         handler._inject_business_category_form_structure(source, model="legacy.payment")
 
         self.assertEqual(
-            source["form_structure_contract"]["layoutPolicy"],
-            "category_sections_as_task_tabs",
+            source["form_structure_contract"]["structureSource"],
+            "business_category_policy",
+        )
+        self.assertEqual(
+            source["form_structure_contract"]["structureAuthority"],
+            "task_sections",
         )
 
     def test_real_payment_contract_only_annotates_existing_native_fields(self):

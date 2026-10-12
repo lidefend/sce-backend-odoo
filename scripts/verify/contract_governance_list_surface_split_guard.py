@@ -284,7 +284,8 @@ def main() -> int:
             errors.append("standard list must apply field presentation widgets")
         if schema_by_name.get("stage_id", {}).get("cell_role") != "status":
             errors.append("standard list must mark status column schema")
-        batch_policy = ((list_data.get("surface_policies") or {}).get("batch_policy")) or {}
+        surface_policies = list_data.get("surface_policies") or {}
+        batch_policy = surface_policies.get("batch_policy") or {}
         if batch_policy.get("available_actions") != ["export", "archive", "activate", "delete"]:
             errors.append("standard list batch policy must derive export/archive/activate/delete actions")
         if batch_policy.get("execution_intents") != {
@@ -296,12 +297,98 @@ def main() -> int:
             errors.append("standard list batch actions must bind to executable backend intents")
         if batch_policy.get("execution_operations") != {"export": "export_csv"}:
             errors.append("standard list export must bind to api.data export_csv")
-        selection_policy = ((list_data.get("surface_policies") or {}).get("selection_policy")) or {}
+        selection_policy = surface_policies.get("selection_policy") or {}
         if not selection_policy.get("enabled") or selection_policy.get("requires_batch_action") is not False:
             errors.append("standard list selection must not disappear when no batch action is available")
+        # One declared action list carries the scope and the intent of every
+        # action; the selection policy published above is its selection-scope
+        # projection, so the two can never drift into separate mechanisms.
+        capabilities = surface_policies.get("collection_capabilities") or {}
+        declared = capabilities.get("actions") if isinstance(capabilities.get("actions"), list) else []
+        if not declared:
+            errors.append("standard list must declare its action list with a scope and an intent per action")
+        for row in declared:
+            if not isinstance(row, dict) or row.get("scope") not in {"selection", "collection"} or not row.get("intent"):
+                errors.append("every declared list action must carry a declared scope and intent")
+        selection_declared = [row.get("action") for row in declared if isinstance(row, dict) and row.get("scope") == "selection"]
+        if selection_declared != batch_policy.get("available_actions"):
+            errors.append("batch_policy must be the selection-scope projection of the declared action list")
+        if "import" in selection_declared:
+            errors.append("import operates on the collection and must never be declared as a selection action")
+        if any(row.get("action") == "import" for row in declared if isinstance(row, dict)):
+            errors.append("a caller without create authority must not be offered an import")
         list_profile = list_data.get("list_profile") or {}
         if list_profile.get("primary_field") != "name" or list_profile.get("status_field") != "stage_id":
             errors.append("standard list profile must expose primary/status fields")
+        # --- the collection-scope action follows the declared create authority ---
+        create_data = {
+            "head": {"model": "project.project", "view_type": "tree"},
+            "model": "project.project",
+            "views": {"tree": {"model": "project.project", "columns": [{"name": "name"}]}},
+            "fields": {
+                "name": {"type": "char", "string": "Name"},
+                "amount_total": {"type": "float", "string": "Amount"},
+                "active": {"type": "boolean", "string": "Active"},
+                "partner_id": {"type": "many2one", "string": "Partner", "readonly": True},
+                "create_date": {"type": "datetime", "string": "Created"},
+            },
+            "permissions": {"effective": {"rights": {"read": True, "write": True, "create": True, "unlink": True}}},
+            "delete_policy": {"delete_mode": "unlink"},
+            "search": {},
+        }
+        list_surface.govern_standard_list_for_user(
+            create_data,
+            model_name="project.project",
+            columns_order=["name", "amount_total"],
+            column_labels={},
+            row_primary="name",
+            row_secondary="",
+            status_field="",
+            is_model_tree_contract=lambda data, model: model == "project.project",
+            legacy_field_presentation=lambda model, name: {},
+            deep_clone_json_like=lambda value: dict(value) if isinstance(value, dict) else value,
+            apply_standard_search_toolbar_labels=list_surface.apply_standard_search_toolbar_labels,
+        )
+        create_policies = create_data.get("surface_policies") or {}
+        create_declared = (create_policies.get("collection_capabilities") or {}).get("actions") or []
+        collection_scope = [
+            (row.get("action"), row.get("intent"))
+            for row in create_declared
+            if isinstance(row, dict) and row.get("scope") == "collection"
+        ]
+        if collection_scope != [("import", "api.data.import")]:
+            errors.append("create authority with importable fields must declare exactly the collection-scope import")
+        if [row.get("action") for row in create_declared if isinstance(row, dict) and row.get("scope") == "selection"] != [
+            row for row in (create_policies.get("batch_policy") or {}).get("available_actions") or []
+        ]:
+            errors.append("the selection-scope projection must stay the published selection policy")
+        # A readonly field is not an import target, so a model whose only fields
+        # are readonly declares no import even with create authority.
+        readonly_data = {
+            "head": {"model": "project.project", "view_type": "tree"},
+            "model": "project.project",
+            "views": {"tree": {"model": "project.project", "columns": [{"name": "name"}]}},
+            "fields": {"name": {"type": "char", "string": "Name", "readonly": True}},
+            "permissions": {"effective": {"rights": {"read": True, "create": True}}},
+            "search": {},
+        }
+        list_surface.govern_standard_list_for_user(
+            readonly_data,
+            model_name="project.project",
+            columns_order=["name"],
+            column_labels={},
+            row_primary="name",
+            row_secondary="",
+            status_field="",
+            is_model_tree_contract=lambda data, model: model == "project.project",
+            legacy_field_presentation=lambda model, name: {},
+            deep_clone_json_like=lambda value: dict(value) if isinstance(value, dict) else value,
+            apply_standard_search_toolbar_labels=list_surface.apply_standard_search_toolbar_labels,
+        )
+        readonly_actions = ((readonly_data.get("surface_policies") or {}).get("collection_capabilities") or {}).get("actions") or []
+        if any(isinstance(row, dict) and row.get("action") == "import" for row in readonly_actions):
+            errors.append("a model without an importable field must not declare an import")
+
         semantics = ((list_data.get("semantic_page") or {}).get("list_semantics")) or {}
         if semantics.get("owner_layer") != "scene_orchestration":
             errors.append("standard list semantics must stay scene_orchestration owned")

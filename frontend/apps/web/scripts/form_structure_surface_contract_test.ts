@@ -40,7 +40,8 @@ function snapshot(formStructureSurfaces?: unknown) {
     model: MODEL,
     viewType: 'form',
     mode: 'edit',
-    layoutPolicy: 'container_tree_authority',
+    structureSource: 'native_view',
+    structureAuthority: 'container_tree',
     objectProfile: { model: MODEL, kind: 'business_form', factAuthority: 'business_object_model_and_view' },
     navigation: { title: '业务办理' },
     slots: [],
@@ -65,7 +66,7 @@ function snapshot(formStructureSurfaces?: unknown) {
       pageId: 'page.x.document.form', layoutType: 'form', adaptMode: 'pc',
       layoutHints: { mobileColumns: 1 },
       componentRegistry: {
-        'sc.input.text': { version: '1.0', adapter: { web_pc: 'ElInput' }, selectedAdapter: 'TDesignInput' },
+        'sc.input.text': { version: '1.0' },
       },
       containerTree: [{
         containerId: 'section.identity', containerType: 'group', type: 'group', title: 'Identity', span: 24,

@@ -167,22 +167,8 @@ def sc_append_project_responsibility_group(contract: dict, *, include_collaborat
         tree.append(group)
     layout["containerTree"] = tree
     registry = layout.get("componentRegistry") if isinstance(layout.get("componentRegistry"), dict) else {}
-    registry["sc.relation.table"] = {
-        "version": "1.0",
-        "adapter": {
-            "web_pc": "ElTable",
-            "wx_mini": "WxTable",
-            "harmony_h5": "H5Table",
-        },
-    }
-    registry["sc.relation.many2many"] = {
-        "version": "1.0",
-        "adapter": {
-            "web_pc": "ElTable",
-            "wx_mini": "WxTable",
-            "harmony_h5": "H5Table",
-        },
-    }
+    registry["sc.relation.table"] = {"version": "1.0"}
+    registry["sc.relation.many2many"] = {"version": "1.0"}
     layout["componentRegistry"] = registry
     contract["layoutContract"] = layout
     status = contract.get("statusContract") if isinstance(contract.get("statusContract"), dict) else {}

@@ -432,7 +432,8 @@ class TestUnifiedPageContractV2Runtime(unittest.TestCase):
 
     def test_form_structure_contract_rejects_governed_layout_fields_outside_structure(self):
         contract = self._contract()
-        contract["formStructureContract"]["layoutPolicy"] = "overview_then_task_slots"
+        contract["formStructureContract"]["structureSource"] = "entry_semantic_surface"
+        contract["formStructureContract"]["structureAuthority"] = "task_sections"
         contract["formStructureContract"]["sourceAuthority"]["governance_source"]["fieldNames"].append(
             "company_id"
         )
@@ -450,7 +451,8 @@ class TestUnifiedPageContractV2Runtime(unittest.TestCase):
 
     def test_slot_structure_tolerates_ungoverned_native_tree_fields(self):
         contract = self._contract()
-        contract["formStructureContract"]["layoutPolicy"] = "overview_then_task_slots"
+        contract["formStructureContract"]["structureSource"] = "entry_semantic_surface"
+        contract["formStructureContract"]["structureAuthority"] = "task_sections"
         contract["layoutContract"]["containerTree"][0]["children"].append({
             "type": "field", "name": "source_created_by",
         })
@@ -465,7 +467,8 @@ class TestUnifiedPageContractV2Runtime(unittest.TestCase):
     def test_container_tree_authority_structure_publishes_no_slots(self):
         contract = self._contract()
         structure = contract["formStructureContract"]
-        structure["layoutPolicy"] = "container_tree_authority"
+        structure["structureSource"] = "native_view"
+        structure["structureAuthority"] = "container_tree"
         structure["slots"] = []
         structure["fieldRoles"] = {}
 
@@ -476,12 +479,13 @@ class TestUnifiedPageContractV2Runtime(unittest.TestCase):
 
     def test_container_tree_authority_structure_forbids_published_slots(self):
         contract = self._contract()
-        contract["formStructureContract"]["layoutPolicy"] = "container_tree_authority"
+        contract["formStructureContract"]["structureSource"] = "native_view"
+        contract["formStructureContract"]["structureAuthority"] = "container_tree"
 
         issues = runtime.find_form_structure_contract_issues(contract)
 
         self.assertIn(
-            "formStructureContract.container_tree_authority forbids independent structural slots, "
+            "formStructureContract.structureAuthority=container_tree forbids independent structural slots, "
             "columns and fieldRoles",
             issues,
         )

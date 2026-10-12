@@ -394,7 +394,7 @@ class TestTaxFilingNativeLowcode(TransactionCase):
             with self.subTest(contract=contract_xmlid):
                 structure = self._native_contract(model, action_xmlid, view_xmlid)\
                     .get("formStructureContract") or {}
-                self.assertEqual(structure.get("layoutPolicy"), "container_tree_authority")
+                self.assertEqual(structure.get("structureAuthority"), "container_tree")
                 self.assertEqual(structure.get("mode"), "native_structured_form")
                 self.assertEqual(structure.get("presentationMode"), "task")
                 self.assertFalse(structure.get("slots"))
@@ -429,7 +429,7 @@ class TestTaxFilingNativeLowcode(TransactionCase):
                 self.assertEqual(create_fields, edit_fields)
                 for data in (edit, create):
                     structure = data.get("formStructureContract") or {}
-                    self.assertEqual(structure.get("layoutPolicy"), "container_tree_authority")
+                    self.assertEqual(structure.get("structureAuthority"), "container_tree")
                     governance = ((data.get("dataContract") or {}).get("dataMeta") or {}) \
                         .get("businessOperationProfile", {}).get("form_structure_governance", {})
                     self.assertFalse(governance.get("structure_diagnostics"))

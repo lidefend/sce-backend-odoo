@@ -43,8 +43,8 @@ class TestEngineeringProcessNativeLowcode(TransactionCase):
 
     In both cases the entry declaration becomes the LAST structure writer for
     its own action, so `form_structure_authority` resolves to
-    `native_authority` and `layoutPolicy` resolves to
-    `container_tree_authority`: the compatibility regrouping path stops
+    `native_authority` and the structure authority resolves to
+    `container_tree`: the compatibility regrouping path stops
     applying.
 
     The regression rule this batch must not break: a model-wide carrier may only

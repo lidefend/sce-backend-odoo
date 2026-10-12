@@ -183,6 +183,34 @@ def readback_path(root: Path, readback) -> str:
     return value
 
 
+# Derived bytecode is not an input. A declared input directory is walked
+# recursively, so ``__pycache__`` used to enter a check's dependency state --
+# and a ``.pyc`` embeds its source's mtime, so a governed generator that
+# rewrites a generated ``.py`` with byte-identical content still changed the
+# ``.pyc`` and invalidated an unchanged result. The ``.py`` source itself is
+# hashed in full, so dropping the cache removes a false invalidation instead
+# of weakening any check: no assertion, scope or covered target changes.
+DERIVED_BYTECODE_SUFFIXES = frozenset({'.pyc', '.pyo'})
+
+
+def is_derived_bytecode(path: Path) -> bool:
+    return path.suffix in DERIVED_BYTECODE_SUFFIXES or '__pycache__' in path.parts
+
+
+def comparable_inputs(state) -> dict:
+    """Normalise a recorded or freshly walked state by dropping derived bytecode.
+
+    The current walker never emits those keys, but a receipt written before
+    that fix still carries them. Dropping them on both sides compares the same
+    fact -- every declared ``.py`` source is still hashed in full -- instead of
+    invalidating an unchanged result, and it can never hide a source change,
+    because a source edit still moves the hash of the file that owns it.
+    """
+    if not isinstance(state, dict):
+        return {}
+    return {name: value for name, value in state.items() if not is_derived_bytecode(Path(name))}
+
+
 def dependency_state(root: Path, check: dict) -> dict:
     state = {}
     if 'readback' in check:
@@ -199,7 +227,8 @@ def dependency_state(root: Path, check: dict) -> dict:
         if not path.exists():
             state[value] = None
             continue
-        files = sorted(path.rglob('*')) if path.is_dir() else [path]
+        files = (sorted(file for file in path.rglob('*') if not is_derived_bytecode(file))
+                 if path.is_dir() else [path])
         state[value + '/'] = 'directory' if path.is_dir() else 'file'
         for file in files:
             if file.is_symlink():
@@ -228,7 +257,7 @@ def evaluate(root: Path, run: dict, check_id: str) -> dict:
         if receipt.get('branch') != run['branch'] or receipt.get('run_id') != run['id']:
             raise RunError('receipt identity mismatch')
         git(root, 'merge-base', '--is-ancestor', receipt['head'], 'HEAD')
-        if receipt.get('check') != check or receipt.get('inputs') != dependency_state(root, check):
+        if receipt.get('check') != check or comparable_inputs(receipt.get('inputs')) != comparable_inputs(dependency_state(root, check)):
             raise RunError('code, tool or dependency inputs changed')
         if receipt.get('environment') != run['environment']:
             raise RunError('declared environment changed')

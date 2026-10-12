@@ -103,7 +103,7 @@ export type CanonicalFormRenderModel = {
     viewType: string;
     mode: CanonicalFormRenderMode;
     presentationMode: CanonicalFormPresentationMode;
-    structureAuthority?: 'containerTree' | 'compatibility';
+    bodyStructureAuthority?: 'containerTree' | 'compatibility';
     sourceContractSha256: string;
   };
   shell: {

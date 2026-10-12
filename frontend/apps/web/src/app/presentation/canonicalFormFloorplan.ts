@@ -280,7 +280,6 @@ function fieldHasAttachmentCapability(field: CanonicalFormNode['fields'][number]
   const tokens = [
     field.componentResolution.componentKey,
     field.componentResolution.renderer,
-    field.componentResolution.contractAdapter,
     config.widget, config.widgetType, config.widget_type,
     descriptor.widget, descriptor.widgetType, descriptor.widget_type,
   ].map((value) => String(value || '').trim().toLowerCase());
@@ -472,7 +471,7 @@ export function composeCanonicalFormFloorplan(
   const directActions = [...(effectivePrimary ? [effectivePrimary] : []), ...directSecondary];
   const blockedActions = visibleActions.filter((action) => !action.enabled && action.tier === 'primary');
 
-  if (renderModel.identity.structureAuthority === 'containerTree') {
+  if (renderModel.identity.bodyStructureAuthority === 'containerTree') {
     return {
       summaryNodes: [], decisionInputNodes: [], taskNodes: renderModel.zones.primary,
       coreInputNodes: [], conditionInputNodes: [], preExecutionInputNodes: [], preExecutionInputTitle: '',

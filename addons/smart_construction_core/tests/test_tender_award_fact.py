@@ -388,7 +388,7 @@ class TestTenderAwardFact(TransactionCase):
         self.assertIn("award_confirmed_at", contract["dataContract"]["mainData"])
         self.assertFalse(contract["dataContract"]["mainData"]["award_confirmed_at"])
         structure = contract["formStructureContract"]
-        self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
+        self.assertEqual(structure["structureAuthority"], "container_tree")
         self.assertEqual(structure["fieldRoles"], {})
         self.assertEqual(structure["slots"], [])
         self.assertEqual(structure["sourceAuthority"]["governance_source"]["compatibilityDependencies"], [])

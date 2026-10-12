@@ -1,0 +1,62 @@
+schema_version: 1
+goal:
+  id: FE-CONTRACT-RUNTIME-00
+  title: contract_runtime_boundary_scan_and_first_business_closed_loop_preparation
+  status: active
+  formal_product_layer: P4
+  supporting_layer: P0
+  layer_target: contract_runtime_capability_map_and_payment_first_blueprint
+  module:
+    - docs/frontend_productization
+    - .agent
+  baseline:
+    branch: audit/fe-contract-runtime-00-20261012
+    full_sha: 9cff283b59f72c4359294f9488c1f0240ad18370
+    source: owner_handoff_20261012_fe_contract_runtime_00_optimized_scope
+  objective: >-
+    Establish the first Contract Runtime capability map and decide the smallest
+    closed loop for FE-CONTRACT-RUNTIME-01. The scan answers three questions from
+    real chains rather than a full audit: where the existing runtime prototype
+    already is, which capabilities must be sedimented into the runtime instead of
+    being re-written inside business pages, and whether payment.request can serve
+    as the first standard closed-loop sample.
+  product_boundary:
+    standard_vs_user_specific: platform_mechanism
+    why_here: >-
+      The scan describes P0 contract-runtime mechanisms and their declarations; it
+      produces engineering baseline documents, so the work itself is P4 audit
+      scope while every finding it files owns a P0/P1 responsibility layer.
+    why_not_elsewhere:
+      - no_product_behaviour_change_in_this_goal
+      - no_new_contract_field_declaration_in_this_goal
+      - no_business_page_rewrite_and_no_model_special_case
+      - no_new_environment_fixture_authority_or_release
+    blast_radius:
+      - docs_frontend_productization_only
+      - agent_ledger_metadata_only
+  constraints:
+    - scan_real_chains_not_every_page
+    - find_existing_capability_reuse_before_proposing_abstraction
+    - contract_is_the_only_authority_for_business_semantics
+    - frontend_owns_presentation_and_safe_interaction_only
+    - no_full_system_audit_no_per_component_scoring_no_architecture_rewrite
+    - missing_contract_declaration_is_a_contract_defect_not_a_frontend_fallback
+  next_exact_step: >-
+    Finish the three deliverables (capability matrix, gap list, payment runtime
+    blueprint) and record their non-zero targeted checks, then hand the frontier
+    case for FE-CONTRACT-RUNTIME-01 to the owner.
+  completion:
+    scope: runtime_boundary_scan_only
+    overall_goal: incomplete
+    correction: >-
+      Owner re-scoped the original full inventory into a runtime boundary scan;
+      only the payment-first chain and the existing runtime surfaces are in scope.
+    result_index: .agent/runs/FE-CONTRACT-RUNTIME-00/run.json
+    local_batch_acceptance: not_run
+    mainline_integration: not_run
+    deployment: not_run
+    target_user_delivery: not_run
+    limits: >-
+      This goal produces engineering baseline documents plus one prepared closed
+      loop. It is not a product implementation, not a contract declaration change
+      and not a delivery or acceptance result.

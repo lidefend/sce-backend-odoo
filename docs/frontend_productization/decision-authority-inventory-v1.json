@@ -210,7 +210,7 @@
       "literal": "system.init",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        1402
+        1433
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -303,7 +303,7 @@
       "literal": "/",
       "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
       "lines": [
-        67
+        68
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -387,7 +387,7 @@
       "literal": "scene",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        1392
+        1423
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -612,7 +612,7 @@
       "literal": "allow",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1486
+        1485
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -625,7 +625,7 @@
       "literal": "coming_soon",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1486
+        1485
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -638,7 +638,7 @@
       "literal": "deny",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1486
+        1485
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -651,7 +651,7 @@
       "literal": "pending",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1486
+        1485
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -857,8 +857,8 @@
       "literal": "error",
       "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
       "lines": [
-        60,
-        66
+        61,
+        67
       ],
       "occurrences": 2,
       "classification": "excluded-render-interaction",
@@ -873,8 +873,8 @@
       "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
       "lines": [
         42,
-        68,
-        70
+        69,
+        71
       ],
       "occurrences": 3,
       "classification": "excluded-render-interaction",
@@ -1084,7 +1084,7 @@
       "literal": "saved",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        3037
+        3068
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",

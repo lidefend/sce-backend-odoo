@@ -1,7 +1,7 @@
 # ======================================================
 # ================== Contract ==========================
 # ======================================================
-.PHONY: contract.export contract.export_all contract.catalog.export contract.evidence.export contract.registry.export verify.contract.catalog verify.scene.contract.shape verify.contract.evidence gate.contract gate.contract.bootstrap gate.contract.bootstrap-pass verify.contract.lint contract.structure.fingerprint verify.contract.structure_lock contract.view_structure.fingerprint contract.view_structure.export contract.view_structure.baseline verify.contract.view_structure verify.contract.view_structure_candidate gate.contract.view_structure contract.view_carrier.export verify.contract.view_carrier gate.contract.view_carrier
+.PHONY: contract.export contract.export_all contract.catalog.export contract.evidence.export contract.registry.export verify.contract.catalog verify.scene.contract.shape verify.contract.evidence gate.contract gate.contract.bootstrap gate.contract.bootstrap-pass verify.contract.lint verify.semantic.registry.lint verify.layout.vocabulary.lint contract.semantic.registry.generate contract.structure.fingerprint verify.contract.structure_lock contract.view_structure.fingerprint contract.view_structure.export contract.view_structure.baseline verify.contract.view_structure verify.contract.view_structure_candidate gate.contract.view_structure contract.view_carrier.export verify.contract.view_carrier gate.contract.view_carrier
 
 VIEW_STRUCTURE_POLICY ?= scripts/verify/baselines/formal_business_product_menu_policy_v1.json
 VIEW_STRUCTURE_DATABASE_POLICY ?= docs/governance/database_architecture_policy.md
@@ -21,6 +21,27 @@ VIEW_CARRIER_SCHEMA ?= contracts/schemas/product-view-contract-carriers-v1.yaml
 verify.contract.lint:
 	@python3 scripts/verify/contracts_lint.py
 	@$(MAKE) --no-print-directory contract.registry.export
+
+# 契约运行时语义/组件词表：声明权威唯一性 + 前后端键集合双向相等。
+verify.semantic.registry.lint:
+	@python3 -m py_compile scripts/verify/semantic_registry_lint.py scripts/verify/test_semantic_registry_lint.py scripts/verify/test_construction_semantic_declarations.py scripts/contract/generate_semantic_registry.py addons/smart_core/core/contract_runtime/semantic_resolver.py addons/smart_core/tests/test_contract_runtime_semantic_resolver.py
+	@python3 scripts/verify/semantic_registry_lint.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_semantic_registry_lint.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_construction_semantic_declarations.py
+	@python3 scripts/contract/generate_semantic_registry.py --check
+	@python3 addons/smart_core/tests/test_contract_runtime_semantic_resolver.py
+	@python3 addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py
+
+# 交付结构词表：结构事实字段唯一（structureSource/structureAuthority 四载体一致），
+# 退役实现词（layoutPolicy 及其取值）不得再进入任何契约载荷。
+verify.layout.vocabulary.lint:
+	@python3 -m py_compile scripts/verify/layout_vocabulary_lint.py scripts/verify/test_layout_vocabulary_lint.py
+	@python3 scripts/verify/layout_vocabulary_lint.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_layout_vocabulary_lint.py
+
+# 人工入口：声明改动后重建运行时可消费载体（assistant 只读，不自动触发）。
+contract.semantic.registry.generate:
+	@python3 scripts/contract/generate_semantic_registry.py
 
 contract.registry.export:
 	@python3 scripts/contract/export_contract_registry.py

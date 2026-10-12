@@ -225,6 +225,62 @@ export async function unlinkRecord(params: {
   });
 }
 
+export type ApiDataImportMessage = {
+  type: string;
+  message: string;
+  record?: Record<string, unknown> | null;
+};
+
+export type ApiDataImportContract = {
+  model: string;
+  file_name: string;
+  file_digest: string;
+  headers: string[];
+  mapping: Array<string | false>;
+  preview: string[][];
+  file_length: number;
+  advanced_mode: boolean;
+  dry_run: boolean;
+  ids: number[];
+  imported_count: number;
+  messages: ApiDataImportMessage[];
+  error_count: number;
+  valid: boolean;
+};
+
+export async function importRecords(params: {
+  model: string;
+  fileName: string;
+  fileBase64: string;
+  fileType?: string;
+  fields?: Array<string | false>;
+  columns?: string[];
+  dryRun?: boolean;
+  hasHeaders?: boolean;
+  options?: Record<string, unknown>;
+  context?: Record<string, unknown>;
+  requestId?: string;
+  idempotencyKey?: string;
+}) {
+  return intentRequest<ApiDataImportContract>({
+    intent: 'api.data.import',
+    params: {
+      model: params.model,
+      file_name: params.fileName,
+      file: params.fileBase64,
+      file_type: params.fileType ?? '',
+      fields: params.fields,
+      columns: params.columns,
+      dry_run: Boolean(params.dryRun),
+      has_headers: params.hasHeaders,
+      options: params.options ?? {},
+      context: params.context ?? {},
+      request_id: params.requestId,
+      idempotency_key: params.idempotencyKey,
+    },
+  });
+}
+
 export async function saveSearchFavorite(params: {
   model: string;
   name: string;

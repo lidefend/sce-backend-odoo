@@ -504,6 +504,58 @@ def normalize_post_projected_container_tree(
     return normalized
 
 
+# How a component renders is a frontend concern.  The contract declares the
+# component identity and its version; a framework component name, a per-client
+# adapter or a rendering fallback would give the product a second, driftable
+# component vocabulary, so they are removed at the projection boundary.
+CONTRACT_FORBIDDEN_COMPONENT_RENDER_KEYS = (
+    "adapter",
+    "selectedAdapter",
+    "selected_adapter",
+    "fallback",
+)
+
+
+def normalize_component_registry_entries(contract: dict[str, Any]) -> None:
+    """Strip rendering traits from every declared component registry entry."""
+    if not isinstance(contract, dict):
+        return
+    layout = contract.get("layoutContract") if isinstance(contract.get("layoutContract"), dict) else {}
+    registry = layout.get("componentRegistry") if isinstance(layout.get("componentRegistry"), dict) else {}
+    for row in registry.values():
+        if not isinstance(row, dict):
+            continue
+        for forbidden in CONTRACT_FORBIDDEN_COMPONENT_RENDER_KEYS:
+            row.pop(forbidden, None)
+    layout["componentRegistry"] = registry
+    contract["layoutContract"] = layout
+
+
+# Layout hints state what a terminal is delivered (density, collapse, visible
+# budget).  They must not carry the renderer's layout/render implementation
+# (a column count, a CSS width, a render schedule), which belongs to the front
+# end and the runtime layer rather than the delivery contract.
+CONTRACT_FORBIDDEN_LAYOUT_HINT_RENDER_KEYS = (
+    "columns",
+    "gridColumns",
+    "cssWidth",
+    "renderStrategy",
+    "virtualization",
+)
+
+
+def normalize_layout_hints_entries(contract: dict[str, Any]) -> None:
+    """Strip renderer-layout implementation from the delivered layout hints."""
+    if not isinstance(contract, dict):
+        return
+    layout = contract.get("layoutContract") if isinstance(contract.get("layoutContract"), dict) else {}
+    hints = layout.get("layoutHints") if isinstance(layout.get("layoutHints"), dict) else {}
+    for forbidden in CONTRACT_FORBIDDEN_LAYOUT_HINT_RENDER_KEYS:
+        hints.pop(forbidden, None)
+    layout["layoutHints"] = hints
+    contract["layoutContract"] = layout
+
+
 def normalize_final_layout_contract(contract: dict[str, Any]) -> None:
     """Normalize and persist the final layout through the projection boundary."""
     if not isinstance(contract, dict):
@@ -511,6 +563,8 @@ def normalize_final_layout_contract(contract: dict[str, Any]) -> None:
     layout = contract.get("layoutContract") if isinstance(contract.get("layoutContract"), dict) else {}
     container_tree = layout.get("containerTree") if isinstance(layout.get("containerTree"), list) else []
     set_v2_container_tree(contract, normalize_post_projected_container_tree(contract, container_tree))
+    normalize_component_registry_entries(contract)
+    normalize_layout_hints_entries(contract)
 
 
 def set_v2_container_tree(contract: dict[str, Any], container_tree: list[Any]) -> None:
@@ -1080,7 +1134,7 @@ def apply_business_config_form_groups(
                 if isinstance(contract_field_roles.get(name), dict)
                 else {}
             )
-            if role and structure.get("layoutPolicy") == "container_tree_authority":
+            if role and structure.get("structureAuthority") == "container_tree":
                 # Membership is derived from the existing tree occurrence.
                 node["formStructureRole"] = {"role": role, "slot": parent_id, "group": parent_id}
             elif role and authority_role:

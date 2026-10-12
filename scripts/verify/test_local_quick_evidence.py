@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import errno
 import importlib.util
+import io
 import json
 import os
 import subprocess
@@ -604,6 +606,12 @@ class DeclaredManifestTests(unittest.TestCase):
         self.assertTrue(all(not token.startswith("$") and "%" not in token and ":" not in token for token in targets))
         self.assertIn("verify.ui_contract.delivery_surface.unit", targets)
 
+    def test_default_part_count_cannot_drift_from_the_make_entry(self) -> None:
+        source = (ROOT / "make/ci.mk").read_text(encoding="utf-8")
+        rows = [line for line in source.splitlines() if line.startswith("QUICK_SHARDS ?=")]
+        self.assertEqual(len(rows), 1, "QUICK_SHARDS must be declared exactly once")
+        self.assertEqual(int(rows[0].split("?=", 1)[1].strip()), evidence.DEFAULT_SHARDS)
+
     def test_declared_manifest_drift_is_rejected(self) -> None:
         cases = {
             "duplicate": "ci.local.quick.run: guard.prod.forbid verify.a verify.a\n",
@@ -619,6 +627,90 @@ class DeclaredManifestTests(unittest.TestCase):
             with self.subTest(name=name):
                 with self.assertRaises(evidence.EvidenceError):
                     evidence.required_targets(self._manifest_root(text))
+
+
+class TransientSpawnTests(unittest.TestCase):
+    """A spawn that started no child must not discard a whole candidate run."""
+
+    def setUp(self) -> None:
+        self.sleeps: list[float] = []
+        self.sleeper = mock.patch.object(evidence.time, "sleep", side_effect=self.sleeps.append)
+        self.sleeper.start()
+        self.addCleanup(self.sleeper.stop)
+
+    def test_git_retries_a_transient_spawn_failure_and_succeeds(self) -> None:
+        attempts: list[int] = []
+
+        def run(*_args, **_kwargs):
+            attempts.append(1)
+            if len(attempts) == 1:
+                raise OSError(errno.EFAULT, "Bad address")
+            return subprocess.CompletedProcess([], 0, stdout="abc123\n")
+
+        with mock.patch.object(evidence.subprocess, "run", side_effect=run):
+            self.assertEqual(evidence.git(Path("/tmp"), "rev-parse", "HEAD"), "abc123")
+        self.assertEqual(len(attempts), 2)
+        self.assertEqual(self.sleeps, [evidence.SPAWN_RETRY_BACKOFF_SECONDS])
+
+    def test_persistent_transient_spawn_failure_still_fails_closed(self) -> None:
+        attempts: list[int] = []
+
+        def run(*_args, **_kwargs):
+            attempts.append(1)
+            raise OSError(errno.EAGAIN, "Resource temporarily unavailable")
+
+        with mock.patch.object(evidence.subprocess, "run", side_effect=run):
+            with self.assertRaises(OSError):
+                evidence.git(Path("/tmp"), "rev-parse", "HEAD")
+        self.assertEqual(len(attempts), evidence.SPAWN_ATTEMPTS)
+        self.assertEqual(len(self.sleeps), evidence.SPAWN_ATTEMPTS - 1)
+
+    def test_non_transient_spawn_failure_is_never_retried(self) -> None:
+        attempts: list[int] = []
+
+        def run(*_args, **_kwargs):
+            attempts.append(1)
+            raise OSError(errno.ENOENT, "No such file or directory")
+
+        with mock.patch.object(evidence.subprocess, "run", side_effect=run):
+            with self.assertRaises(OSError):
+                evidence.git(Path("/tmp"), "rev-parse", "HEAD")
+        self.assertEqual(len(attempts), 1)
+        self.assertEqual(self.sleeps, [])
+
+    def test_shard_popen_uses_the_same_bounded_retry(self) -> None:
+        attempts: list[int] = []
+        sentinel = object()
+
+        def popen(*_args, **_kwargs):
+            attempts.append(1)
+            if len(attempts) == 1:
+                raise OSError(errno.ENOMEM, "Cannot allocate memory")
+            return sentinel
+
+        with mock.patch.object(evidence.subprocess, "Popen", side_effect=popen):
+            handle = io.StringIO()
+            self.assertIs(evidence._shard_popen(["make", "verify.a"], handle, Path("/tmp")), sentinel)
+        self.assertEqual(len(attempts), 2)
+
+    def test_ancestor_probe_uses_the_same_bounded_retry(self) -> None:
+        """The incremental-base ancestor probe is a real spawn too: an EFAULT there
+        must not discard a candidate whose other shards already passed."""
+        attempts: list[int] = []
+
+        def run(*_args, **_kwargs):
+            attempts.append(1)
+            if len(attempts) == 1:
+                raise OSError(errno.EFAULT, "Bad address")
+            return subprocess.CompletedProcess([], 0, stdout="")
+
+        candidates = [(1.0, "aaa", Path("/tmp/aaa.json"))]
+        with mock.patch.object(evidence.subprocess, "run", side_effect=run):
+            self.assertEqual(
+                evidence._newest_ancestor_receipt(Path("/tmp"), "bbb", candidates), "aaa"
+            )
+        self.assertEqual(len(attempts), 2)
+        self.assertEqual(self.sleeps, [evidence.SPAWN_RETRY_BACKOFF_SECONDS])
 
 
 

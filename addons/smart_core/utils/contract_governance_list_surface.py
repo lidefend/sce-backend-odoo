@@ -3,6 +3,28 @@ from __future__ import annotations
 
 from typing import Any
 
+try:
+    from .collection_action_capability import (
+        build_collection_capabilities,
+        project_selection_policy,
+    )
+except ImportError:  # pragma: no cover - lightweight boundary tests load this file directly
+    import importlib.util
+    import sys as _sys
+    from pathlib import Path as _Path
+
+    _capability_spec = importlib.util.spec_from_file_location(
+        "collection_action_capability",
+        _Path(__file__).with_name("collection_action_capability.py"),
+    )
+    if _capability_spec is None or _capability_spec.loader is None:
+        raise
+    _capability_module = importlib.util.module_from_spec(_capability_spec)
+    _sys.modules["collection_action_capability"] = _capability_module
+    _capability_spec.loader.exec_module(_capability_module)
+    build_collection_capabilities = _capability_module.build_collection_capabilities
+    project_selection_policy = _capability_module.project_selection_policy
+
 
 def _safe_text(value: Any, fallback: str = "") -> str:
     text = str(value or "").strip()
@@ -355,8 +377,19 @@ def govern_standard_list_for_user(
         if action == "delete":
             if unlink_right_allowed and delete_mode == "unlink" and action not in available_actions:
                 available_actions.append(action)
+    # The single declared action list for this surface: selection-scope actions
+    # are tagged with their scope and the collection-scope facts are derived from
+    # the same payload.  ``batch_policy`` is published as its selection
+    # projection, not as a second derivation.
+    collection_capabilities = build_collection_capabilities(
+        selection_actions=available_actions,
+        rights=rights,
+        fields_map=fields_map,
+        has_list_view=True,
+    )
+    selection_projection = project_selection_policy(collection_capabilities)
     batch_policy = {
-        "enabled": bool(available_actions),
+        "enabled": bool(selection_projection["available_actions"]),
         "active_field": active_field,
         "assignee_field": assignee_field,
         "archive_value": False if active_field else None,
@@ -370,13 +403,10 @@ def govern_standard_list_for_user(
         }
         if assignee_field
         else None,
-        "delete_mode": delete_mode if "delete" in available_actions else "none",
-        "available_actions": available_actions,
-        "execution_intents": {
-            action: "api.data" if action == "export" else ("api.data.unlink" if action == "delete" else "api.data.batch")
-            for action in available_actions
-        },
-        "execution_operations": {action: "export_csv" for action in available_actions if action == "export"},
+        "delete_mode": delete_mode if "delete" in selection_projection["available_actions"] else "none",
+        "available_actions": selection_projection["available_actions"],
+        "execution_intents": selection_projection["execution_intents"],
+        "execution_operations": selection_projection["execution_operations"],
     }
     selection_policy = {
         "enabled": True,
@@ -385,7 +415,6 @@ def govern_standard_list_for_user(
         "requires_batch_action": False,
         "action_source": "batch_policy.available_actions",
     }
-
     list_profile = _as_dict(data.get("list_profile"))
     list_profile.update(
         {
@@ -441,6 +470,7 @@ def govern_standard_list_for_user(
         data["views"] = views
     surface_policies["batch_policy"] = batch_policy
     surface_policies["selection_policy"] = selection_policy
+    surface_policies["collection_capabilities"] = collection_capabilities
     surface_policies["delete_mode"] = batch_policy.get("delete_mode") or surface_policies.get("delete_mode") or "none"
     data["surface_policies"] = surface_policies
 

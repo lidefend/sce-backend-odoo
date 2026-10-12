@@ -146,14 +146,17 @@ class UserDeleteDataClosureGuardSelfTest(unittest.TestCase):
             _frontend_probe({RUNTIME_PATH: mutated}),
         )
 
-    def test_dropping_the_contract_surface_policy_fallback_is_rejected(self):
+    def test_reading_the_batch_policy_from_the_list_profile_is_rejected(self):
+        # A second carrier for the same capability is how the client starts
+        # arbitrating action capability for itself; the declaration is the only
+        # source, so reading it back out of the list profile must fail the probe.
         action_view = _shipped(ACTION_VIEW_PATH)
         mutated = action_view.replace(
             "resolveContractV2SurfacePolicies(actionContract.value)", "listProfile.value?.batch_policy"
         )
         self.assertNotEqual(mutated, action_view)
         self.assertIn(
-            "ActionView batch policy must prefer the list_profile declaration and fall back to the contract surface policy",
+            "ActionView batch policy must come from the declared surface policy alone: action capability is behaviour contract and must not be arbitrated between two carriers",
             _frontend_probe({RUNTIME_PATH: RUNTIME_TEMPLATE, ACTION_VIEW_PATH: mutated}),
         )
 

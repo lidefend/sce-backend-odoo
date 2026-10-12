@@ -1,0 +1,630 @@
+{
+  "schema_version": 1,
+  "id": "FE-CONTRACT-RUNTIME-01",
+  "branch": "feature/fe-contract-runtime-01-semantic-registry",
+  "status": "active",
+  "baseline_sha": "991a9d9b57525850f99a8643ce3f4f0d322d00dd",
+  "goal": ".agent/goals/FE-CONTRACT-RUNTIME-01.yaml",
+  "record": "docs/ops/iterations/fe_contract_runtime_01_semantic_registry.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-CONTRACT-RUNTIME-01.yaml",
+    ".agent/runs/FE-CONTRACT-RUNTIME-01/",
+    "addons/smart_core/core/contract_runtime/",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/tests/test_contract_runtime_semantic_resolver.py",
+    "contracts/README.md",
+    "contracts/registry.yaml",
+    "contracts/registry/",
+    "docs/ops/iterations/",
+    "make/contract.mk",
+    "scripts/contract/generate_semantic_registry.py",
+    "scripts/verify/frontend_professional_business_value_guard.py",
+    "scripts/verify/frontend_professional_detail_collection_guard.py",
+    "scripts/verify/semantic_registry_lint.py",
+    "scripts/verify/test_frontend_professional_business_value_guard.py",
+    "scripts/verify/test_semantic_registry_lint.py",
+    "frontend/apps/web/src/app/presentation/",
+    "frontend/apps/web/scripts/",
+    "make/frontend.mk",
+    "addons/smart_core/handlers/",
+    "addons/smart_core/core/unified_page_contract_v2_client.py",
+    "scripts/verify/frontend_auth_surface_guard.py",
+    "scripts/verify/frontend_professional_base_field_guard.py",
+    "scripts/verify/frontend_professional_relation_field_guard.py",
+    "scripts/verify/frontend_professional_component_registry_guard.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "scripts/verify/test_frontend_professional_component_registry_guard.py",
+    "scripts/verify/test_frontend_professional_relation_field_guard.py",
+    "scripts/verify/test_frontend_professional_base_field_guard.py",
+    "contracts/domain/",
+    "contracts/generated/product_view_structure_contract.json",
+    "docs/contract-runtime-state-ownership.md",
+    "addons/smart_construction_core/",
+    "addons/smart_core/core/contract_lifecycle.py",
+    "addons/smart_core/core/unified_page_contract_v2_runtime.py",
+    "docs/architecture/",
+    "docs/audit/test_coverage_registry/",
+    "docs/contract/",
+    "docs/frontend_productization/",
+    "frontend/apps/web/src/app/contracts/",
+    "frontend/apps/web/src/components/template/",
+    "frontend/apps/web/src/pages/contractForm/",
+    "scripts/verify/",
+    "contracts/generated/contract_structure_fingerprint.json",
+    "docs/engineering_convergence/",
+    "frontend/apps/web/src/pages/ContractFormPage.vue",
+    "addons/smart_core/utils/",
+    "addons/smart_core/core/intent_operation_policy.py",
+    "addons/smart_core/tests/",
+    "config/nginx/",
+    "docker-compose.yml",
+    "docs/ops/",
+    "frontend/apps/web/src/",
+    "make/guards.mk",
+    "scripts/verify/collection_capability_rights_projection_test.py",
+    "frontend/apps/web/scripts/collection_action_capability_test.ts",
+    "docs/ops/iterations/fe_contract_runtime_01_semantic_registry.md",
+    "make/ci.mk",
+    "make/dev_test.mk",
+    "scripts/ops/local_quick_evidence.py",
+    "scripts/ops/agent_run_context.py",
+    "scripts/ci/parallel_scan.py",
+    "scripts/ci/test_parallel_scan.py",
+    "scripts/ci/secret_scan.py",
+    "scripts/ci/test_secret_scan.py",
+    "scripts/ci/personal_data_scan.py",
+    "scripts/ci/test_personal_data_scan.py",
+    "scripts/ci/trusted_scan_group.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make entrypoints and installed workspace dependencies; no database, service or browser access is required by batch 01-A"
+  },
+  "checks": {
+    "semantic_registry_lint": {
+      "target": "verify.semantic.registry.lint",
+      "inputs": [
+        "contracts/registry",
+        "contracts/registry.yaml",
+        "scripts/contract/generate_semantic_registry.py",
+        "scripts/verify/semantic_registry_lint.py",
+        "scripts/verify/test_semantic_registry_lint.py",
+        "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+        "docs/architecture/unified_page_contract_v2/enum_registry.json",
+        "make/contract.mk",
+        "addons/smart_core/core/contract_runtime",
+        "addons/smart_core/tests/test_contract_runtime_semantic_resolver.py",
+        "contracts/domain",
+        "contracts/generated/product_view_structure_contract.json",
+        "scripts/verify/test_construction_semantic_declarations.py",
+        "addons/smart_construction_core/core_extension_contract_normalizers.py",
+        "frontend/apps/web/src/components/professional-fields/paymentSettlementIntroduceDialogModel.ts"
+      ],
+      "kind": "offline"
+    },
+    "frontend_component_registry": {
+      "target": "verify.frontend.professional_component_registry.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+        "frontend/apps/web/scripts/professional_component_registry_test.ts",
+        "scripts/verify/frontend_professional_component_registry_guard.py",
+        "scripts/verify/test_frontend_professional_component_registry_guard.py",
+        "frontend/apps/web/src/components/template"
+      ],
+      "kind": "offline"
+    },
+    "schema_declaration_sync": {
+      "target": "verify.contract.schema.declaration.sync",
+      "inputs": [
+        "contracts/domain",
+        "contracts/product",
+        "contracts/schemas",
+        "contracts/registry",
+        "contracts/registry.yaml",
+        "scripts/verify/contract_schema_declaration_sync.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/goals",
+        ".agent/runs",
+        ".agent/active-runs.json"
+      ],
+      "kind": "offline"
+    },
+    "assembler_contract_surface": {
+      "target": "verify.business_config.formal_list.unit",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/core/contract_runtime",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "addons/smart_core/tests/test_load_contract_response_cache.py",
+        "addons/smart_core/tests/test_view_orchestrator.py",
+        "scripts/verify/test_formal_list_configuration_baseline.py"
+      ],
+      "kind": "offline"
+    },
+    "frontend_business_value_alignment": {
+      "target": "verify.frontend.professional_business_value.unit",
+      "inputs": [
+        "addons/smart_core/core/contract_runtime",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py",
+        "frontend/apps/web/scripts/professional_business_value_model_test.ts",
+        "frontend/apps/web/src/components/professional-fields",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+        "scripts/verify/frontend_professional_business_value_guard.py",
+        "scripts/verify/test_frontend_professional_business_value_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "frontend_detail_collection_alignment": {
+      "target": "verify.frontend.professional_detail_collection.unit",
+      "inputs": [
+        "addons/smart_core/core/contract_runtime",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py",
+        "contracts/registry/component.yaml",
+        "contracts/registry/semantic.yaml",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+        "frontend/apps/web/scripts/payment_settlement_introduce_dialog_contract_test.ts",
+        "frontend/apps/web/scripts/professional_detail_collection_model_test.ts",
+        "frontend/apps/web/src/components/template",
+        "scripts/verify/frontend_professional_detail_collection_guard.py",
+        "scripts/verify/test_frontend_professional_detail_collection_guard.py",
+        "addons/smart_construction_core/core_extension_contract_normalizers.py"
+      ],
+      "kind": "offline"
+    },
+    "semantic_runtime_resolution": {
+      "target": "verify.semantic_runtime_resolution",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+        "frontend/apps/web/scripts/semantic_runtime_resolution_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "assembler_cache_pin": {
+      "target": "verify.unified_page_contract.v2.assembler",
+      "inputs": [
+        "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/handlers/ui_contract_v2_projection.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/core/unified_page_contract_v2_client.py",
+        "addons/smart_core/core/contract_runtime",
+        "docs/architecture/unified_page_contract_v2"
+      ],
+      "kind": "offline"
+    },
+    "frontend_relation_field_alignment": {
+      "target": "verify.frontend.professional_relation_field.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+        "frontend/apps/web/src/components/professional-fields",
+        "frontend/apps/web/scripts/professional_relation_field_model_test.ts",
+        "frontend/apps/web/scripts/relation_column_descriptor_authority_test.ts",
+        "frontend/apps/web/scripts/relation_entry_option_limits_test.ts",
+        "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py",
+        "scripts/verify/frontend_professional_relation_field_guard.py",
+        "scripts/verify/test_frontend_professional_relation_field_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "frontend_base_field_alignment": {
+      "target": "verify.frontend.professional_base_field.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+        "frontend/apps/web/src/components/professional-fields",
+        "frontend/apps/web/scripts/professional_base_field_model_test.ts",
+        "scripts/verify/frontend_professional_base_field_guard.py",
+        "scripts/verify/test_frontend_professional_base_field_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "frontend_auth_surface": {
+      "target": "verify.frontend.auth_surface.guard",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+        "frontend/apps/web/src/views",
+        "scripts/verify/frontend_auth_surface_guard.py",
+        "scripts/verify/frontend_page_contract_boundary_guard.py",
+        "addons/smart_core/core/page_contracts_builder.py",
+        "addons/smart_core/core/action_target_schema.py"
+      ],
+      "kind": "offline"
+    },
+    "frontend_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/scripts",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json"
+      ],
+      "kind": "offline"
+    },
+    "frontend_lint_src": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/scripts",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/.eslintignore"
+      ],
+      "kind": "offline"
+    },
+    "docs_governance": {
+      "target": "verify.docs.all",
+      "inputs": [
+        "docs/contract-runtime-state-ownership.md",
+        "scripts/verify/docs_inventory.py",
+        "scripts/verify/docs_links.py",
+        "scripts/verify/docs_temp_guard.py",
+        "scripts/verify/docs_contract_sync.py",
+        "docs/ops/codex_workspace_execution_rules.md"
+      ],
+      "kind": "offline"
+    },
+    "unified_page_contract_client": {
+      "target": "verify.unified_page_contract.v2.client",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_client.py",
+        "scripts/verify/unified_page_contract_v2_client_guard.py",
+        "docs/architecture/unified_page_contract_v2/examples",
+        "docs/architecture/unified_page_contract_v2/snapshots/client_trimming_snapshot_v2.json",
+        "docs/architecture/unified_page_contract_v2/enum_registry.json",
+        "make/ci.mk"
+      ]
+    },
+    "unified_page_contract_schema": {
+      "target": "verify.unified_page_contract.v2.schema",
+      "kind": "offline",
+      "inputs": [
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "docs/architecture/unified_page_contract_v2/enum_registry.json",
+        "docs/architecture/unified_page_contract_v2/examples",
+        "scripts/verify/unified_page_contract_v2_schema_guard.py",
+        "scripts/verify/test_unified_page_contract_v2_schema_guard.py"
+      ]
+    },
+    "contract_catalog": {
+      "target": "verify.contract.catalog",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/handlers",
+        "addons/smart_construction_core/handlers",
+        "docs/contract/cases.yml",
+        "docs/contract/snapshots",
+        "docs/contract/exports",
+        "scripts/contract/export_catalogs.py",
+        "scripts/verify/intent_cases_integrity_guard.py",
+        "scripts/verify/intent_cases_catalog_guard.py",
+        "scripts/verify/intent_catalog_case_coverage_guard.py",
+        "scripts/verify/intent_catalog_inferred_guard.py",
+        "scripts/verify/intent_catalog_example_shape_guard.py",
+        "scripts/verify/intent_catalog_snapshot_reference_guard.py",
+        "scripts/verify/test_contract_catalog_paths.py",
+        "make/contract.mk"
+      ]
+    },
+    "page_contract_v1_zero_residue": {
+      "target": "verify.contract.page_v1_zero_residue.guard",
+      "kind": "offline",
+      "inputs": [
+        "docs/contract/snapshots",
+        "config/contract/page_contract_v1_retirement_manifest.json",
+        "scripts/verify/page_contract_v1_zero_residue_guard.py"
+      ]
+    },
+    "form_container_presentation_guard": {
+      "target": "verify.form_container_presentation.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/form_container_presentation_consumption_guard.py",
+        "addons/smart_core/handlers/ui_contract_v2_adapters.py",
+        "addons/smart_core/handlers/ui_contract_v2_projection.py",
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/template/nativeChildSequence.ts"
+      ]
+    },
+    "form_structure_authority_unification": {
+      "target": "verify.form_structure_authority_unification.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/test_form_structure_authority_unification.py",
+        "scripts/verify/frontend_scene_component_bridge_guard.py",
+        "scripts/verify/frontend_v2_policy_projection_guard.py",
+        "scripts/verify/local_dev_candidate_visual_smoke.mjs",
+        "scripts/verify/test_local_dev_candidate_frontend.py",
+        "scripts/dev/local_dev_candidate_frontend.py",
+        "addons/smart_construction_core/views/support/account_extend_views.xml",
+        "addons/smart_construction_core/views/support/tender_views.xml",
+        "addons/smart_construction_core/views/core/contract_views.xml",
+        "addons/smart_construction_core/data",
+        "addons/smart_construction_core/models/support/business_form_policy_templates.py",
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/utils/delete_policy.py",
+        "addons/smart_core/utils/contract_governance_capabilities.py",
+        "addons/smart_core/utils/native_modifier.py",
+        "addons/smart_core/tests/test_view_orchestrator.py",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "docs/architecture/native_first_form_structure_authority_v1.md",
+        "docs/architecture/unified_page_contract_v2",
+        "frontend/apps/web/src/app/action_runtime",
+        "frontend/apps/web/src/app/contracts",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "frontend/apps/web/src/pages/contractForm",
+        "frontend/apps/web/scripts/low_code_global_stability_acceptance.mjs",
+        "make/dev.mk"
+      ]
+    },
+    "canonical_form_presenter": {
+      "target": "verify.frontend.canonical_form_presenter.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+        "frontend/apps/web/src/app/contracts/v2",
+        "frontend/apps/web/src/app/presentation",
+        "frontend/apps/web/src/app/modifierEngine.ts",
+        "frontend/apps/web/src/app/businessValidationError.ts",
+        "frontend/apps/web/src/pages/contractForm",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json"
+      ]
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ]
+    },
+    "page_pattern_reference_parity": {
+      "target": "verify.frontend.page_pattern_reference_parity.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/test_frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/page_pattern_reference_ledger_guard.py",
+        "scripts/verify/test_page_pattern_reference_ledger_guard.py",
+        "docs/frontend_productization/rendering-detail/page-pattern-reference-detail-ledger-v1.json",
+        "frontend/apps/web/src/App.vue",
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/src/views/LoginView.vue",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "frontend/apps/web/src/pages/contractForm",
+        "frontend/apps/web/src/components/design-system/ScCard.vue",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+        "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue"
+      ]
+    },
+    "frontend_primitive_adapter": {
+      "target": "verify.frontend.primitive_adapter.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/primitive_adapter_contract_test.ts",
+        "frontend/apps/web/src/components/design-system",
+        "frontend/apps/web/src/composables/modalKeyboard.ts",
+        "frontend/packages/ui/src/primitives.ts",
+        "frontend/packages/ui/src/kits/tdesign/theme.css",
+        "docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json",
+        "scripts/verify/frontend_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_primitive_adapter_guard.py"
+      ]
+    },
+    "product_page_pattern": {
+      "target": "verify.frontend.product_page_pattern.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/product_page_pattern_model_test.ts",
+        "frontend/apps/web/src/app/presentation/productPagePattern.ts",
+        "frontend/apps/web/src/components/product-page-patterns",
+        "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue",
+        "frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "scripts/verify/frontend_product_page_pattern_guard.py",
+        "scripts/verify/test_frontend_product_page_pattern_guard.py"
+      ]
+    },
+    "frontend_style_system": {
+      "target": "verify.frontend.style_system.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_style_system_guard.py",
+        "frontend/apps/web/src",
+        "frontend/packages/design-tokens/token-authority.json"
+      ]
+    },
+    "frontend_decision_authority": {
+      "target": "verify.frontend.decision_authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "docs/frontend_productization/decision-authority-inventory-v1.json",
+        "scripts/verify/frontend_decision_authority.py",
+        "scripts/verify/frontend_decision_authority_guard.py",
+        "scripts/verify/test_frontend_decision_authority_guard.py",
+        "frontend/apps/web/src",
+        "make/frontend.mk"
+      ]
+    },
+    "native_view_workflow_action_coverage": {
+      "target": "verify.native_view.workflow_action_coverage",
+      "inputs": [
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_core/core_extension_contract_normalizers.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "scripts/verify/native_view_workflow_action_coverage_guard.py",
+        "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
+        "scripts/verify/workflow_contract_profile_loader.py"
+      ],
+      "kind": "offline"
+    },
+    "layout_vocabulary": {
+      "target": "verify.layout.vocabulary.lint",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/layout_vocabulary_lint.py",
+        "scripts/verify/test_layout_vocabulary_lint.py",
+        "make/contract.mk",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/handlers/ui_contract_v2_projection.py",
+        "addons/smart_core/core/unified_page_contract_v2_runtime.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "docs/architecture/unified_page_contract_v2/fixtures",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "frontend/apps/web/src/app/contracts/v2/types.ts"
+      ]
+    },
+    "collection_action_capability": {
+      "target": "verify.frontend.collection_action_capability.unit",
+      "inputs": [
+        "addons/smart_core/utils/collection_action_capability.py",
+        "addons/smart_core/utils/contract_governance_list_surface.py",
+        "addons/smart_core/utils/contract_governance_user_surface.py",
+        "addons/smart_core/handlers/api_data_import.py",
+        "addons/smart_core/core/intent_operation_policy.py",
+        "frontend/apps/web/src/app/runtime/actionViewCollectionCapabilityRuntime.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewSelectionActionRuntime.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewCollectionActionRuntime.ts",
+        "frontend/apps/web/src/app/contract/contractGap.ts",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/scripts/collection_action_capability_test.ts",
+        "frontend/apps/web/scripts/standard_collection_composition_test.ts",
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "scripts/verify/list_batch_action_closure_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "environment_topology": {
+      "target": "verify.environment.topology.guard",
+      "kind": "offline",
+      "inputs": [
+        "config/nginx/",
+        "docker-compose.yml",
+        "docs/ops/dev_bootstrap.md",
+        "scripts/verify/nginx_proxy_db_authority_guard.py",
+        "scripts/verify/test_nginx_proxy_db_authority_guard.py",
+        "make/guards.mk"
+      ]
+    },
+    "collection_capability_projection": {
+      "target": "verify.contract.collection_capability_projection.unit",
+      "inputs": [
+        "addons/smart_core/utils/collection_action_capability.py",
+        "scripts/verify/collection_capability_rights_projection_test.py",
+        "make/dev_test.mk",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "verification_lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "inputs": [
+        "make/ci.mk",
+        "make/frontend.mk",
+        "make/dev_test.mk",
+        "make/contract.mk",
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/verify/registry.yaml"
+      ],
+      "kind": "offline"
+    },
+    "contract_v2_entry_equivalence": {
+      "target": "verify.contract.entry_equivalence.guard",
+      "inputs": [
+        "scripts/verify/contract_v2_entry_equivalence_guard.py",
+        "scripts/verify/test_contract_v2_entry_equivalence_guard.py",
+        "frontend/apps/web/src/app/contracts/v2/client.ts",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/core/unified_page_contract_v2_permissions.py",
+        "addons/smart_core/utils/collection_action_capability.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "unified_page_contract_web_consumer": {
+      "target": "verify.unified_page_contract.v2.web_consumer",
+      "inputs": [
+        "scripts/verify/unified_page_contract_v2_web_consumer_guard.py",
+        "scripts/verify/js_contract_consumer_markers.py",
+        "frontend/apps/web/src",
+        "docs/architecture/unified_page_contract_v2",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "unified_page_contract_web_architecture": {
+      "target": "verify.unified_page_contract.v2.web_architecture",
+      "inputs": [
+        "scripts/verify/web_contract_v2_frontend_architecture_guard.py",
+        "frontend/apps/web/src",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "unified_page_contract_stable_projection": {
+      "target": "verify.unified_page_contract.v2.stable_projection",
+      "inputs": [
+        "scripts/verify/frontend_v2_policy_projection_guard.py",
+        "scripts/verify/test_frontend_v2_policy_projection_guard.py",
+        "frontend/apps/web/src",
+        "docs/architecture/unified_page_contract_v2",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "branch_governance_consistency": {
+      "target": "verify.branch.governance.consistency",
+      "inputs": [
+        "make/ci.mk",
+        "scripts/verify/branch_governance_consistency_guard.py",
+        "scripts/verify/test_branch_governance_consistency_guard.py",
+        "scripts/ops/local_quick_evidence.py",
+        "scripts/verify/test_local_quick_evidence.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "pre-existing (not introduced by this batch): `make verify.contract.lint` fails with 49 issues on both this branch and origin/main; classify and fix them in their own batch.",
+    "classified, not a blocker: addons/smart_construction_core/tests/test_core_extension_v2_finalize.py asserts widget component keys but imports lxml, so it belongs to the in-container Odoo module suite (L3/L4), not the offline L2 lane.",
+    "pre-existing (not introduced by this batch): scripts/verify/test_frontend_quality_safety_domain_rollout.py:123 holds a stale res.users literal; classify with the other pre-existing findings, do not silently rewrite it here.",
+    "out-of-scope product finding (recorded, not fixed): wutao 侧栏可见“付款申请”但菜单 559/action 809 返回 403 PERMISSION_DENIED；demo_finance 正常。本轮 diff 无菜单/权限改动。",
+    "acceptance write retained: payment.request#2847 (PRQ2601066, draft) created during 01-D save closed-loop. Fact check: the list surface's batch delete IS contract-declared and wired (batch_policy.available_actions includes 'delete'; execution_intents['delete']=api.data.unlink; client executor DECLARED_BATCH_EXECUTORS['api.data.unlink']=unlink; gated by delete_policy.delete_mode + ACL). The record was retained because no list toolbar was exercised against it, not because delete is unwired; cleanup uses the governed entry make local.dev.reset_payment_request_fixture.",
+    "closed this batch (collection batch import delivered and runtime-confirmed): one declared action list is published at surface_policies.collection_capabilities.actions[] (action/scope/intent/available) and batch_policy is its selection projection, so a collection-scope action is reachable with an empty selection. Backend: utils/collection_action_capability.py (single declaration + projection; availability is 'declared true', never inferred from absence), handlers/api_data_import.py (governed api.data.import over the kernel base_import, group_smart_core_data_operator, dry-run preview, idempotent apply), intent_operation_policy maps import->create. Frontend: one intent->executor table (DECLARED_CAPABILITY_EXECUTORS) and one resolver (resolveDeclaredCapabilities); the client-side reconstruction of the declaration from batch_policy was removed, so a collection policy without the declaration stops the surface with ContractGapError instead of silently degrading every action to selection scope. Registered as ledger declarationBinding #5; guards migrated (list_batch_action_closure_guard binds the declared intent table and its consumption). Runtime readback on local.dev payment.request list/action 809: wutao -> export/archive/activate/delete/import; demo_finance -> export/archive/activate/import (no unlink right, so delete absent); demo_pm -> export; demo_readonly -> 403 (no page permission).",
+    "closed this batch (was: local-dev login repeatedly reported 'wrong username or password'): the root cause was never the password. config/nginx/conf.d/default.conf hard-coded the 'no db hint' fallback to sc_demo, a database that does not exist under the local.dev dbfilter ^sc_dev_demo$, so every /api/ request without ?db=/X-Odoo-DB was routed to the wrong database and returned AUTH_REQUIRED 用户名或密码错误. The proxy owned a database default it should not own. Fixed by moving the file to config/nginx/templates/default.conf.template with a ${SC_PROXY_DEFAULT_DB} placeholder and injecting SC_PROXY_DEFAULT_DB=${DB_NAME} plus NGINX_ENVSUBST_FILTER='^SC_PROXY_DEFAULT_DB$' in the compose nginx service (image envsubst renders it at container start; nginx's own $variables survive). New scripts/verify/nginx_proxy_db_authority_guard.py (locks the mechanism, not a database name) with 6 negative self-test cases, wired into verify.environment.topology.guard; docs/ops/dev_bootstrap.md records the boundary. Verified live: rendered conf shows sc_dev_demo, nginx -t OK, db-hint-free login 200 for wutao/demo_pm/demo_finance/admin, Playwright browser login wutao/scdevpass reaches / with system.init 200 and zero pageerror.",
+    "recorded, not fixed (out of this batch's authority): sc_dev_demo also holds active accounts that the demo module never registered in ir_model_data (demo_full, sc_fx_* x7, svc_project_ro, codex_p4_person_batch2a_auth_20260913), so the governed local.dev demo-credential sync (apply_demo_user_passwords over smart_construction_demo xmlids) does not cover them and they are not on the fixed scdevpass. They are leftovers from earlier P4/prod-like runs on this database. Of 57 active logins, 47 succeed with scdevpass; the 10 failures are exactly this set. Aligning them would widen credential coverage and needs owner authorization; nothing here changed any password.",
+    "corrected this batch (was reported as 'native channel returns permissions: null'): that reading was a probe artifact. The probe used action_id=506, which does not exist in ir_act_window (count(*)=0), so it returned the 'configuration problem' degraded page (head.model=null, permissions=null). Re-probed through the real entry points: for one role the model entry (params.model) and every native list-action entry (params.action_id) return identical head.permissions and identical surface_policies.collection_capabilities for project.project, payment.request and res.partner; a full census over sc_dev_demo (292 tree actions probed as wutao, 53 skipped as 403) shows rights.create is True <=> import declared, 0 violations. Conclusion: the collection-capability rule is a genuine通用 mechanism with no per-model configuration and no native-surface gap; no code fix and no model special case was added. The only code delta is a fail-closed tightening inside the same pure function (a non-boolean `create` no longer promotes a capability, matching how `available` was already read), plus the new offline guard verify.contract.collection_capability_projection.unit (cases=35) which locks the biconditional, the absence-of-right semantics, the declared availability semantics, and the fact that the rule has no model/surface input at all.",
+    "closed this batch (verification surface grew): the new guard targets left 6 zero-reference make targets (targets_zero_reference 766 > frozen 760, 6 unregistered), i.e. the new guards were not executed by any lane. Wired per the repo's existing boundary convention without rewriting the frozen baseline: the three frontend units (record_delete_action, collection_action_capability, semantic_runtime_resolution) into verify.frontend.pr.unit and verify.frontend.release.unit; the two pure-python guards (layout.vocabulary.lint, contract.collection_capability_projection.unit) into verify.contract.architecture.suite; the human generator entry contract.semantic.registry.generate into ci.delivery.freeze.prepare (derived carriers must be fresh before freezing). audit.verification.lane_coverage.check now reports PASS surface within the frozen baseline; verify.guard.registry AUDIT PASS (1419 scripts).",
+    "registered this batch, deliberately NOT actioned (P2, separate authority): ENV-IDENTITY-CLEANUP. sc_dev_demo holds 60 accounts, 57 active; 48 are module-registered and covered by the fixed local.dev credential sync, while 9 are registered by no module at all (demo_full id=52 with 51 groups incl. 业务配置管理员; sc_fx_pm/executive/finance/contract_admin/project_member/material_user/cost_user ids 3400-3406 from 2026-10-08; svc_project_ro id=3407 which despite the name holds a write-capable 项目/用户 group) and one more (codex_p4_person_batch2a_auth_20260913 id=445, module codex_p4_personnel_authorization) sits outside the demo module's password sync and carries 技术/Smart Core Data Operator, the very group api.data.import requires. These 10 are exactly the logins that a non-fixed credential set explains. No password was changed and no account was written; the inventory, the inferred purpose and the proposed handling (keep-as-fixture vs retire, plus the svc_project_ro least-privilege tightening) are recorded in the iteration record for an owner ruling, because aligning credentials would widen credential coverage and needs its own authorization."
+  ],
+  "next_exact_step": "PR #647 (base main, head a5854993, mergeStateStatus=CLEAN) is open with all four required checks green on that exact head (merge_policy_gate 9s, public_guard 1m13s, frontend_release_gate 1m40s, professional_quality_gate 6m54s) and no failing check. Two CI-fix commits closed the only remote failure: 70875449 re-exported docs/frontend_productization/decision-authority-inventory-v1.json after proving the drift was line-number-only (9 rows removed / 9 added, identical literals, rules, classifications and summary 139 findings / 99 distinct / 51 contract-derived / 0 projectable-gap / 0 frontend-logic-defect), and registered it as run check frontend_decision_authority; a5854993 routed the last two un-retried real git spawns in scripts/ops/local_quick_evidence.py (the merge-base ancestor probe and the compose --expected-head fallback) through the bounded transient-spawn retry after a host-level EFAULT (errno 14) discarded a quick run whose other 7 shards had passed, with one new regression test (51 tests in test_local_quick_evidence.py). Frozen-head evidence on a5854993: make ci.local.quick 8/8 shards passed (81.1/7.2/8.5/5.7/109.8/8.0/105.1/1.2s) with receipt VERIFIED; run ledger 39/39 reusable with outside_scope empty; verify.frontend.pr.unit and verify.branch.governance.consistency PASS. The GitHub merge is performed by the owner (the Gitee auto-merge-on-green rule does not cover the GitHub entry); after merge, sync main and reuse this evidence instead of re-running the matrix. Deferred by owner ruling: extractListProfile split, Action Runtime governance, span->deliverySpan (01-E), the pre-existing verify.contract.lint 49-item failure, the stale res.users literal in test_frontend_quality_safety_domain_rollout.py:123, ENV-IDENTITY-CLEANUP (P2), and the retained payment.request#2847 fixture."
+}

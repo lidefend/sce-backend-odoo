@@ -76,9 +76,21 @@ class FormStructureAuthorityUnificationTest(unittest.TestCase):
         from scripts.verify import frontend_v2_policy_projection_guard as guard
 
         source = guard.STRICT_SCHEMA.read_text(encoding="utf-8")
-        self.assertIn('"const": "container_tree_authority"', guard.BACKEND_SCHEMA.read_text(encoding="utf-8"))
+        backend_schema = guard.BACKEND_SCHEMA.read_text(encoding="utf-8")
+        self.assertIn('"const": "container_tree"', backend_schema)
+        # The retired implementation-era spelling must not survive as a formal enum.
+        self.assertNotIn("container_tree_authority", backend_schema)
+        self.assertNotIn("container_tree_authority", source)
+        for value in guard.FORM_STRUCTURE_STRUCTURE_SOURCE_VALUES:
+            self.assertIn(value, source)
+        for value in guard.FORM_STRUCTURE_STRUCTURE_AUTHORITY_VALUES:
+            self.assertIn(value, source)
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(guard.main(), 0)
+            # The structure-fact enum is bound to the backend schema: a drifted
+            # authority value must fail the guard instead of passing silently.
+            with mock.patch.object(guard, "FORM_STRUCTURE_STRUCTURE_AUTHORITY_VALUES", ("container_tree",)):
+                self.assertEqual(guard.main(), 1)
             for forbidden in ("raw.container_tree", "root.form_structure_contract"):
                 with self.subTest(forbidden=forbidden), mock.patch.object(guard, "STRICT_SCHEMA", wraps=guard.STRICT_SCHEMA) as schema:
                     schema.read_text.return_value = source + "\nconst invalid = " + forbidden + ";\n"

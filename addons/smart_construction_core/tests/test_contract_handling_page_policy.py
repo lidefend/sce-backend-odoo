@@ -156,7 +156,7 @@ class TestContractHandlingPagePolicy(TransactionCase):
                     self.assertTrue(envelope.get("ok", True), envelope)
                     contract = envelope["data"]
                     structure = contract["formStructureContract"]
-                    self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
+                    self.assertEqual(structure["structureAuthority"], "container_tree")
                     self.assertEqual(structure["presentationMode"], "task")
                     self.assertEqual(structure["slots"], [])
                     if profile == "readonly":
@@ -237,7 +237,7 @@ class TestSettlementNativeStructure(TransactionCase):
                 result = handler.handle(params)
                 contract = (result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result)["data"]
                 structure = contract["formStructureContract"]
-                self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
+                self.assertEqual(structure["structureAuthority"], "container_tree")
                 provenance = structure["sourceAuthority"]["governance_source"]
                 self.assertIn("compatibilityDependencies", provenance)
                 self.assertEqual(provenance["compatibilityDependencies"], [])

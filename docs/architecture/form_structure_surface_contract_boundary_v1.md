@@ -35,7 +35,7 @@ serves scene summary blocks, not business record pages.
 
 A surface (for example the collaboration region) is a declared page region that
 is **not** an Odoo view element.  It therefore cannot live in `layoutContract`:
-that contract is the native view projection, and `container_tree_authority`
+that contract is the native view projection, and `container_tree`
 explicitly forbids independent structural membership there.  It is declared in
 `formStructureContract.surfaces`, next to `slots`, because both describe
 declared structure rather than placement or business facts.

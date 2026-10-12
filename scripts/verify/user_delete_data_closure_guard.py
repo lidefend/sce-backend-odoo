@@ -218,17 +218,22 @@ def _probe_frontend_delete_flow(errors: list[str], read=_read) -> None:
         errors,
     )
     _assert("props.selectionEnabled !== false" in list_page, "ListPage must keep selection as a backend-governed list capability", errors)
-    _assert(':selection-enabled="listProfile?.selection_policy?.enabled !== false"' in action_view, "ActionView must consume backend selection policy", errors)
-    list_profile_at = action_view.find("const profilePolicy = listProfile.value?.batch_policy")
-    surface_policy_at = action_view.find("SurfacePolicies(actionContract.value)")
     _assert(
-        list_profile_at != -1 and surface_policy_at != -1 and list_profile_at < surface_policy_at,
-        "ActionView batch policy must prefer the list_profile declaration and fall back to the contract surface policy",
+        ':selection-enabled="selectionEnabled"' in action_view
+        and "resolveDeclaredSelectionCapability(" in action_view,
+        "ActionView must consume the declared selection policy",
         errors,
     )
     _assert(
-        "Array.isArray(profilePolicy.available_actions) && profilePolicy.available_actions.length > 0" in action_view,
-        "ActionView must treat an empty list_profile action set as \'no executable actions declared\'",
+        "profilePolicy = listProfile.value?.batch_policy" not in action_view
+        and "resolveContractV2SurfacePolicies(actionContract.value)" in action_view,
+        "ActionView batch policy must come from the declared surface policy alone: action capability is behaviour contract and must not be arbitrated between two carriers",
+        errors,
+    )
+    _assert(
+        "Array.isArray(profilePolicy.available_actions)" not in action_view
+        and "(surfacePolicies.batch_policy as ActionBatchPolicy | undefined) || {}" in action_view,
+        "an absent declared batch policy yields no executable actions instead of being read from the list profile",
         errors,
     )
     _assert(

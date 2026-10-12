@@ -114,10 +114,12 @@ env.matrix.check:
 	echo "✅ [env.matrix.check] PASS"
 
 verify.environment.topology.guard:
-	@python3 -m py_compile scripts/verify/environment_topology_guard.py scripts/verify/daily_dev_customer_addons_runtime_guard.py scripts/ops/daily_candidate_bundle_sync.py scripts/ops/test_daily_candidate_bundle_sync.py
+	@python3 -m py_compile scripts/verify/environment_topology_guard.py scripts/verify/daily_dev_customer_addons_runtime_guard.py scripts/ops/daily_candidate_bundle_sync.py scripts/ops/test_daily_candidate_bundle_sync.py scripts/verify/nginx_proxy_db_authority_guard.py scripts/verify/test_nginx_proxy_db_authority_guard.py
 	@python3 -m unittest scripts.verify.test_daily_dev_customer_addons_runtime_guard
 	@python3 scripts/ops/test_daily_candidate_bundle_sync.py
 	@python3 scripts/verify/environment_topology_guard.py
+	@python3 scripts/verify/test_nginx_proxy_db_authority_guard.py
+	@python3 scripts/verify/nginx_proxy_db_authority_guard.py
 
 verify.frontend.acceptance.environment.guard:
 	@node scripts/verify/frontend_acceptance_environment_test.mjs

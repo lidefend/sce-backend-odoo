@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "smart_core.contract_runtime_registry",
+  "title": "Contract Runtime semantic/component registry",
+  "description": "机器可读约束，防止两本词典自由扩展。根可以是 semantic.yaml 或 component.yaml，由 registry 字段判别。",
+  "oneOf": [
+    { "$ref": "#/$defs/semanticRegistry" },
+    { "$ref": "#/$defs/componentRegistry" }
+  ],
+  "$defs": {
+    "semanticCategory": {
+      "type": "string",
+      "enum": ["basic", "temporal", "business", "relation", "collection", "behavioral", "auth", "industry"]
+    },
+    "semanticKey": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "componentKey": {
+      "type": "string",
+      "pattern": "^sc\\.[a-z0-9_]+(\\.[a-z0-9_]+)+$"
+    },
+    "whenClause": {
+      "type": "object",
+      "description": "有序推导规则的匹配条件。所有给出的条件必须同时成立。",
+      "properties": {
+        "field_types": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "widgets": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "widgets_exclude": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "widget_suffix": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false,
+      "minProperties": 1
+    },
+    "derivationRule": {
+      "type": "object",
+      "required": ["semantic", "when"],
+      "properties": {
+        "semantic": { "$ref": "#/$defs/semanticKey" },
+        "when": { "$ref": "#/$defs/whenClause" },
+        "reason": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "semanticEntry": {
+      "type": "object",
+      "required": ["category", "component"],
+      "properties": {
+        "category": { "$ref": "#/$defs/semanticCategory" },
+        "component": { "$ref": "#/$defs/componentKey" }
+      },
+      "additionalProperties": false
+    },
+    "semanticRegistry": {
+      "type": "object",
+      "required": ["registry", "derivation", "semantics"],
+      "properties": {
+        "registry": { "const": "semantic" },
+        "derivation": {
+          "type": "object",
+          "required": ["default", "rules"],
+          "properties": {
+            "default": { "$ref": "#/$defs/semanticKey" },
+            "rules": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/derivationRule" },
+              "minItems": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "semantics": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "pattern": "^[a-z][a-z0-9_]*$" },
+          "additionalProperties": { "$ref": "#/$defs/semanticEntry" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "componentEntry": {
+      "type": "object",
+      "required": ["semantic", "field_types", "renderer"],
+      "properties": {
+        "semantic": { "$ref": "#/$defs/semanticKey" },
+        "field_types": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "renderer": { "type": "string", "minLength": 1 },
+        "presentation_modes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "render_profiles": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "readiness": { "type": "string", "enum": ["ready", "readable_fallback", "fail_closed"] }
+      },
+      "additionalProperties": false
+    },
+    "componentRegistry": {
+      "type": "object",
+      "required": ["registry", "defaults", "type_directed_renderer", "renderers", "components"],
+      "properties": {
+        "registry": { "const": "component" },
+        "defaults": {
+          "type": "object",
+          "required": ["presentation_modes", "render_profiles", "readiness"],
+          "properties": {
+            "presentation_modes": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "render_profiles": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "readiness": { "type": "string", "enum": ["ready", "readable_fallback", "fail_closed"] }
+          },
+          "additionalProperties": false
+        },
+        "type_directed_renderer": { "type": "string", "minLength": 1 },
+        "renderers": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "components": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "pattern": "^sc\\.[a-z0-9_]+(\\.[a-z0-9_]+)+$" },
+          "additionalProperties": { "$ref": "#/$defs/componentEntry" }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

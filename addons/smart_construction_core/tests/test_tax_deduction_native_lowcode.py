@@ -293,7 +293,7 @@ class TestTaxDeductionNativeLowcode(TransactionCase):
             self.assertEqual(governance["formStructureAuthority"], "native_authority", action_key)
             self.assertEqual(governance["formPresentationMode"], "task", action_key)
             self.assertEqual(governance["configuredSections"], [], action_key)
-            self.assertEqual(contract["layoutPolicy"], "container_tree_authority", action_key)
+            self.assertEqual(contract["structureAuthority"], "container_tree", action_key)
             self.assertEqual(contract["navigation"]["title"], title, action_key)
             # the released configuration keeps its title without projecting a body
             self.assertFalse(contract["slots"], action_key)
@@ -333,7 +333,7 @@ class TestTaxDeductionNativeLowcode(TransactionCase):
             )
             self.assertEqual(governance["configuredSections"], [], action_key)
             # and the native tree really is the only structure that renders
-            self.assertEqual(contract["layoutPolicy"], "container_tree_authority", action_key)
+            self.assertEqual(contract["structureAuthority"], "container_tree", action_key)
             self.assertFalse(contract["slots"], action_key)
 
     def test_every_declared_fact_still_renders_exactly_once(self):

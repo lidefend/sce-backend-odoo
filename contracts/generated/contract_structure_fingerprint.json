@@ -833,6 +833,16 @@
   ],
   "schemas": [
     {
+      "content_hash": "f9597d326ff8446a",
+      "path": "registry/component.yaml",
+      "version": 1
+    },
+    {
+      "content_hash": "b53c965761a4e889",
+      "path": "registry/semantic.yaml",
+      "version": 1
+    },
+    {
       "content_hash": "3d1338fe01caa111",
       "path": "schemas/common.yaml",
       "version": 1

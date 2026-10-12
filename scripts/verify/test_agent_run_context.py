@@ -141,6 +141,26 @@ class RunContextTest(unittest.TestCase):
         self.receipt(); (self.root / 'source/a.py').unlink()
         self.assertEqual(self.check()['status'], 'stale')
 
+    def test_derived_bytecode_is_not_a_declared_input(self):
+        self.write('source/__pycache__/a.cpython-312.pyc', 'first')
+        self.receipt()
+        self.write('source/__pycache__/a.cpython-312.pyc', 'recompiled')
+        self.assertEqual(self.check()['status'], 'reusable')
+
+    def test_legacy_receipt_carrying_bytecode_keys_stays_comparable(self):
+        self.receipt()
+        path = self.root / '.runtime/agent-runs/TEST/unit.json'
+        receipt = json.loads(path.read_text())
+        receipt['inputs']['source/__pycache__/a.cpython-312.pyc'] = ['deadbeef', 0o644]
+        path.write_text(json.dumps(receipt))
+        self.assertEqual(self.check()['status'], 'reusable')
+
+    def test_derived_bytecode_exemption_still_reports_a_source_change(self):
+        self.write('source/__pycache__/a.cpython-312.pyc', 'first')
+        self.receipt()
+        self.write('source/a.py', 'two')
+        self.assertEqual(self.check()['status'], 'stale')
+
     def test_missing_log_invalidates(self):
         self.receipt(); (self.root / '.runtime/check.log').unlink()
         self.assertEqual(self.check()['status'], 'stale')

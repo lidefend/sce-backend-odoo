@@ -155,6 +155,80 @@ def main() -> int:
             errors.append("apply_user_surface_policies must preserve legacy record-open context policy")
         if policy_marks != ["project.project.record_open_context"]:
             errors.append("apply_user_surface_policies must emit legacy model policy markers through callback")
+        # The same declared action list as the standard list surface: one entry
+        # per action carrying its scope and intent, and the published selection
+        # policy is that list's selection-scope projection.
+        capabilities = policies.get("collection_capabilities") or {}
+        declared = capabilities.get("actions") if isinstance(capabilities.get("actions"), list) else []
+        if not declared:
+            errors.append("apply_user_surface_policies must declare its action list with scope and intent per action")
+        for row in declared:
+            if not isinstance(row, dict) or row.get("scope") not in {"selection", "collection"} or not row.get("intent"):
+                errors.append("every declared user-surface action must carry a declared scope and intent")
+        selection_declared = [row.get("action") for row in declared if isinstance(row, dict) and row.get("scope") == "selection"]
+        if selection_declared != batch_policy.get("available_actions"):
+            errors.append("batch_policy must be the selection-scope projection of the declared action list")
+        if any(isinstance(row, dict) and row.get("action") == "import" for row in declared):
+            errors.append("a caller without create authority must not be offered an import")
+
+        create_data = {
+            "head": {"model": "project.project", "view_type": "tree"},
+            "model": "project.project",
+            "fields": {
+                "name": {"type": "char"},
+                "active": {"type": "boolean"},
+                "create_date": {"type": "datetime", "readonly": True},
+            },
+            "views": {"tree": {"model": "project.project"}},
+            "permissions": {"effective": {"rights": {"read": True, "write": True, "create": True, "unlink": True}}},
+            "delete_policy": {"allowed": True, "delete_mode": "unlink"},
+        }
+        user_surface.apply_user_surface_policies(
+            create_data,
+            primary_model="project.project",
+            record_context_clear_models=set(),
+            delete_only_models=set(),
+            mark_model_policy=lambda _data, _key: None,
+            filter_max=10,
+            action_max=8,
+            primary_filter_max=6,
+            primary_action_max=5,
+        )
+        create_policies = create_data.get("surface_policies") or {}
+        create_declared = (create_policies.get("collection_capabilities") or {}).get("actions") or []
+        collection_scope = [
+            (row.get("action"), row.get("intent"))
+            for row in create_declared
+            if isinstance(row, dict) and row.get("scope") == "collection"
+        ]
+        if collection_scope != [("import", "api.data.import")]:
+            errors.append("create authority with importable fields must declare exactly the collection-scope import")
+        if [row.get("action") for row in create_declared if isinstance(row, dict) and row.get("scope") == "selection"] != [
+            row for row in (create_policies.get("batch_policy") or {}).get("available_actions") or []
+        ]:
+            errors.append("the user-surface selection projection must stay the published selection policy")
+
+        form_only = {
+            "head": {"model": "project.project", "view_type": "form"},
+            "model": "project.project",
+            "fields": {"name": {"type": "char"}},
+            "views": {"form": {"model": "project.project"}},
+            "permissions": {"effective": {"rights": {"read": True, "create": True}}},
+        }
+        user_surface.apply_user_surface_policies(
+            form_only,
+            primary_model="project.project",
+            record_context_clear_models=set(),
+            delete_only_models=set(),
+            mark_model_policy=lambda _data, _key: None,
+            filter_max=10,
+            action_max=8,
+            primary_filter_max=6,
+            primary_action_max=5,
+        )
+        form_actions = ((form_only.get("surface_policies") or {}).get("collection_capabilities") or {}).get("actions") or []
+        if form_actions:
+            errors.append("a surface without a list view must declare no collection action")
 
     if errors:
         print("[contract_governance_user_surface_split_guard] FAIL")

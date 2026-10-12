@@ -1,7 +1,14 @@
 import type { CanonicalFormPresentationMode, CanonicalFormRenderMode } from './canonicalFormRenderModel';
 import { PROFESSIONAL_BASE_FIELD_TYPES } from '../../components/professional-fields/professionalBaseFieldModel';
+import { SEMANTIC_REGISTRY_ROWS } from './semantic_registry.generated';
+import type { SemanticRegistryReadiness } from './semantic_registry.generated';
 
-export type ProfessionalComponentReadiness = 'ready' | 'readable_fallback' | 'fail_closed';
+/**
+ * The readiness vocabulary is projected from the contract declaration; this
+ * alias keeps the name the rest of the codebase already imports while leaving
+ * exactly one definition.
+ */
+export type ProfessionalComponentReadiness = SemanticRegistryReadiness;
 
 /**
  * Every renderer name a registration may hand to the field renderer.
@@ -43,9 +50,7 @@ export type ProfessionalComponentRegistration = {
 
 export type ProfessionalComponentResolution = ProfessionalComponentRegistration & {
   fieldType: string;
-  contractAdapter: string;
   contractVersion: string;
-  contractFallback: string | null;
 };
 
 const FORM_MODES = ['task', 'workspace'] as const;
@@ -75,39 +80,74 @@ function registration(
   });
 }
 
-const REGISTRATIONS = [
-  registration('sc.input.text', 'text', ['char']),
-  registration('sc.input.binary', 'binary', ['binary']),
-  registration('sc.input.textarea', 'long_text', ['text', 'html']),
-  registration('sc.input.number', 'number', ['integer', 'float', 'monetary']),
-  registration('sc.select.remote', 'choice', ['selection']),
-  registration('sc.input.boolean', 'boolean', ['boolean']),
-  registration('sc.input.date', 'date', ['date']),
-  registration('sc.input.datetime', 'datetime', ['datetime']),
-  registration('sc.table.data', 'detail_collection', ['one2many', 'many2many']),
-  registration('sc.tree.data', 'hierarchical_collection', ['one2many', 'many2many']),
-  registration('sc.relation.many2one', 'relation', ['many2one'], 'ready', 'ProfessionalRelationFieldControl'),
-  registration('sc.relation.many2many', 'relation_collection', ['many2many'], 'ready', 'ProfessionalRelationFieldControl'),
-  registration('sc.relation.table', 'detail_collection', ['one2many'], 'ready', 'ProfessionalDetailCollectionControl'),
-  registration('sc.payment.settlement_detail_collection', 'payment_settlement_detail_collection', ['one2many'], 'ready', 'PaymentSettlementDetailCollectionControl'),
-  registration('sc.select.tags', 'tag_collection', ['many2many'], 'ready', 'ProfessionalRelationFieldControl'),
-  registration('sc.button.action', 'action', ['action']),
-  registration('sc.auth.credential_entry', 'credential_entry', ['char']),
-  registration('sc.auth.secret_confirmation', 'secret_confirmation', ['char']),
-  registration('sc.auth.challenge_status', 'challenge_status', ['char', 'selection', 'text']),
-  registration('sc.auth.one_time_secret', 'one_time_secret', ['char', 'text'], 'fail_closed'),
-  registration('sc.auth.support_action', 'support_action', ['action']),
-  registration('sc.value.money', 'money', ['monetary'], 'ready', 'ProfessionalBusinessValueControl'),
-  registration('sc.value.percentage', 'percentage', ['float', 'integer'], 'ready', 'ProfessionalBusinessValueControl'),
-  registration('sc.display.status', 'status', ['selection', 'char'], 'ready', 'ProfessionalBusinessValueControl'),
-  registration('sc.value.duration', 'duration', ['float', 'integer'], 'ready', 'ProfessionalBusinessValueControl'),
-  registration('sc.display.text', 'readable_value', ['*']),
-] as const;
+/**
+ * The component vocabulary lives in the contract declaration and is projected
+ * into ``semantic_registry.generated.ts``.  This module owns the *behaviour*
+ * around those rows -- presentation-mode profiles, the type-directed renderer
+ * derivation, the readiness fallback -- and must not carry a second
+ * hand-written list of component keys.
+ */
+const RENDERER_NAMES: ReadonlySet<string> = new Set(PROFESSIONAL_COMPONENT_RENDERERS);
+
+function declaredRenderer(value: string): ProfessionalComponentRenderer {
+  if (!RENDERER_NAMES.has(value)) {
+    throw new Error(`SEMANTIC_REGISTRY_UNKNOWN_RENDERER:${value}`);
+  }
+  return value as ProfessionalComponentRenderer;
+}
+
+const REGISTRATIONS: readonly ProfessionalComponentRegistration[] = SEMANTIC_REGISTRY_ROWS.map((row) => registration(
+  row.componentKey,
+  row.semanticType,
+  row.supportedFieldTypes,
+  row.readiness,
+  declaredRenderer(row.renderer),
+));
 
 export const professionalComponentRegistrations: readonly ProfessionalComponentRegistration[] = Object.freeze([...REGISTRATIONS]);
 const professionalComponentRegistry: ReadonlyMap<string, ProfessionalComponentRegistration> = new Map(
   professionalComponentRegistrations.map((entry) => [entry.componentKey, entry]),
 );
+
+/**
+ * The runtime semantic index: what a field *means* -> the registration that
+ * renders it.  Derived from the generated rows, so it is the same single
+ * vocabulary as the component map above and never a second table.
+ *
+ * A duplicate semantic would silently shadow a registration, so the index
+ * refuses to build rather than drop a row: the declaration lint already
+ * rejects duplicates, and this keeps a hand-edited carrier from degrading into
+ * a silent last-one-wins lookup.
+ */
+const professionalSemanticIndex: ReadonlyMap<string, ProfessionalComponentRegistration> = (() => {
+  const index = new Map<string, ProfessionalComponentRegistration>();
+  for (const entry of professionalComponentRegistrations) {
+    if (index.has(entry.semanticType)) {
+      throw new Error(`SEMANTIC_REGISTRY_DUPLICATE_SEMANTIC:${entry.semanticType}`);
+    }
+    index.set(entry.semanticType, entry);
+  }
+  return index;
+})();
+
+/**
+ * Resolve a declared field semantic to its registration.
+ *
+ * Returns ``null`` for an undeclared semantic instead of silently falling back
+ * to a default control: an unknown meaning is a contract defect, and the caller
+ * (not this lookup) decides how the fail-closed surface is presented.
+ */
+export function resolveSemanticRegistration(
+  semantic: string,
+): ProfessionalComponentRegistration | null {
+  const key = String(semantic || '').trim().toLowerCase();
+  return key ? professionalSemanticIndex.get(key) || null : null;
+}
+
+/** The component key a declared semantic renders through (``null`` when undeclared). */
+export function componentKeyForSemantic(semantic: string): string | null {
+  return resolveSemanticRegistration(semantic)?.componentKey ?? null;
+}
 
 export type ProfessionalComponentResolutionInput = {
   componentKey: string;
@@ -126,18 +166,23 @@ function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
 
+// How a component renders is a frontend decision.  The contract declares the
+// component identity and its version; it must never name a framework component,
+// pre-select a per-client adapter or offer a rendering fallback, because that
+// would give the product a second, driftable component vocabulary.
+const CONTRACT_FORBIDDEN_RENDER_KEYS = ['adapter', 'selectedAdapter', 'selected_adapter', 'fallback'] as const;
+
 function contractComponentBinding(input: ContractProfessionalComponentResolutionInput) {
   const entry = asRecord(input.contractRegistryEntry);
   if (!Object.keys(entry).length) throw new Error(`PROFESSIONAL_COMPONENT_CONTRACT_REGISTRY_MISSING:${input.componentKey}`);
   const version = String(entry.version || '').trim();
   if (!version) throw new Error(`PROFESSIONAL_COMPONENT_CONTRACT_VERSION_MISSING:${input.componentKey}`);
-  const adapters = asRecord(entry.adapter);
-  const fallback = String(entry.fallback || '').trim();
-  const selected = String(
-    entry.selectedAdapter || entry.selected_adapter || adapters[input.clientType] || fallback || adapters.web_pc || '',
-  ).trim();
-  if (!selected) throw new Error(`PROFESSIONAL_COMPONENT_CONTRACT_ADAPTER_MISSING:${input.componentKey}:${input.clientType}`);
-  return Object.freeze({ contractAdapter: selected, contractVersion: version, contractFallback: fallback || null });
+  CONTRACT_FORBIDDEN_RENDER_KEYS.forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(entry, key)) {
+      throw new Error(`PROFESSIONAL_COMPONENT_CONTRACT_RENDER_TRAIT_FORBIDDEN:${input.componentKey}:${key}`);
+    }
+  });
+  return Object.freeze({ contractVersion: version });
 }
 
 export function resolveProfessionalComponentRegistration(
@@ -164,9 +209,7 @@ export function resolveProfessionalComponentRegistration(
     ...entry,
     renderer: entry.rendererByFieldType[fieldType] || entry.renderer,
     fieldType,
-    contractAdapter: '',
     contractVersion: '',
-    contractFallback: null,
   });
 }
 

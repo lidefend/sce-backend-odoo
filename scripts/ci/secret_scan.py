@@ -16,6 +16,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+import parallel_scan
 import trusted_scan_scope
 
 
@@ -207,23 +208,71 @@ def history_blob_paths(base: str | None = None) -> dict[str, list[str]]:
     return {oid: sorted(set(names)) for oid, names in paths.items()}
 
 
+_HISTORY_READER: parallel_scan.BatchBlobReader | None = None
+
+
+def _open_history_reader(root: Path) -> None:
+    """One long-lived ``git cat-file --batch`` stream per scan worker.
+
+    A worker process closes its pipes on exit, so the shared reader needs no
+    explicit shutdown outside the serial (in-process) path.
+    """
+    global _HISTORY_READER
+    reader = parallel_scan.BatchBlobReader(root)
+    reader.__enter__()
+    _HISTORY_READER = reader
+
+
+def _close_history_reader() -> None:
+    global _HISTORY_READER
+    reader, _HISTORY_READER = _HISTORY_READER, None
+    if reader is not None:
+        reader.close()
+
+
+def _history_scan_blobs(blobs: list[tuple[str, list[str]]]) -> list[list[str]]:
+    """Scan one ordered chunk of history blobs; one result list per blob.
+
+    Findings keep the historical expansion exactly: the declared blob order,
+    then ``sorted(set(paths))``, then ``text.splitlines()`` order. A NUL byte
+    still skips the blob, and a missing object raises instead of reading empty.
+    """
+    global _HISTORY_READER
+    if _HISTORY_READER is None:
+        _open_history_reader(ROOT)
+    reader = _HISTORY_READER
+    if reader is None:  # pragma: no cover - an opened reader is always assigned
+        raise RuntimeError("history scan has no blob reader")
+    results: list[list[str]] = []
+    for blob_id, paths in blobs:
+        findings: list[str] = []
+        data = reader.read(blob_id)
+        if b"\0" not in data:
+            text = data.decode("utf-8", errors="ignore")
+            for relative in sorted(set(paths)):
+                for line_no, line in enumerate(text.splitlines(), start=1):
+                    for finding in scan_line(line):
+                        findings.append(f"{relative}@{blob_id[:12]}:{line_no}: {finding.rule}")
+        results.append(findings)
+    return results
+
+
 def history_findings(base: str | None = None) -> list[str]:
+    """Scan every history blob, preserving the declared order of the old loop."""
+    items = list((history_blob_paths(base) if base else history_blob_paths()).items())
+    try:
+        parts = parallel_scan.map_ordered(
+            items,
+            _history_scan_blobs,
+            parallel_scan.resolve_workers(len(items)),
+            initializer=_open_history_reader,
+            initargs=(ROOT,),
+        )
+    finally:
+        _close_history_reader()
     findings: list[str] = []
-    for blob_id, paths in (history_blob_paths(base) if base else history_blob_paths()).items():
-        data = subprocess.run(
-            ["git", "cat-file", "blob", blob_id],
-            cwd=ROOT,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=True,
-        ).stdout
-        if b"\0" in data:
-            continue
-        text = data.decode("utf-8", errors="ignore")
-        for relative in sorted(set(paths)):
-            for line_no, line in enumerate(text.splitlines(), start=1):
-                for finding in scan_line(line):
-                    findings.append(f"{relative}@{blob_id[:12]}:{line_no}: {finding.rule}")
+    for part in parts:
+        findings.extend(part)
     return findings
 
 

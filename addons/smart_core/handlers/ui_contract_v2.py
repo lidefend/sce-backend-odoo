@@ -25,6 +25,7 @@ from ..core.unified_page_contract_v2_client import (
     resolve_delivery_profile,
     trim_unified_page_contract_v2,
 )
+from ..core.contract_runtime.semantic_resolver import component_registry as _component_registry
 from ..core.unified_page_contract_v2_modifier_dependencies import (
     FORM_RECORD_SNAPSHOT_FIELD_BUDGET,
     hydrate_final_modifier_dependencies,
@@ -88,7 +89,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-2026-10-12-authenticated-projection-locale"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-2026-10-12-collection-capability-declaration"
 
 
 # --- Declared form surfaces -------------------------------------------------
@@ -1331,14 +1332,7 @@ class UiContractV2Handler(BaseIntentHandler):
         if changed:
             layout["componentRegistry"] = {
                 **(layout.get("componentRegistry") if isinstance(layout.get("componentRegistry"), dict) else {}),
-                "sc.table.data": {
-                    "version": "1.0",
-                    "adapter": {
-                        "web_pc": "ElTable",
-                        "wx_mini": "WxTable",
-                        "harmony_h5": "H5Table",
-                    },
-                },
+                **_component_registry(["sc.table.data"]),
             }
             self._set_v2_data_meta(contract_v2, {"fieldCount": len(columns)})
 
@@ -1957,7 +1951,8 @@ class UiContractV2Handler(BaseIntentHandler):
             "viewType": "form",
             "mode": "business_category_task_form",
             "presentationMode": "task",
-            "layoutPolicy": "category_sections_as_task_tabs",
+            "structureSource": "business_category_policy",
+            "structureAuthority": "task_sections",
             "objectProfile": {
                 "model": model,
                 "kind": "business_form",
@@ -2702,7 +2697,8 @@ class UiContractV2Handler(BaseIntentHandler):
                 "mode": "native_structured_form",
                 "presentationMode": _projection.form_structure_presentation_mode(
                     "native_authority", (governance or {}).get("form_presentation_mode")),
-                "layoutPolicy": "container_tree_authority",
+                "structureSource": "native_view",
+                "structureAuthority": "container_tree",
                 "objectProfile": {"model": model, "kind": "business_form",
                                   "factAuthority": "business_object_model_and_view"},
                 "navigation": {"title": navigation_title or "业务办理"},
@@ -2776,8 +2772,9 @@ class UiContractV2Handler(BaseIntentHandler):
                     **({"columns": form_columns} if form_columns > 0 else {}),
                     "mode": "business_task_form" if presentation_mode == "task" else "native_structured_form",
                     "presentationMode": presentation_mode,
-                    "layoutPolicy": (
-                        "business_config_sections" if presentation_mode == "task" else "native_authority"
+                    "structureSource": "business_orchestration",
+                    "structureAuthority": (
+                        "task_sections" if presentation_mode == "task" else "native_form_slots"
                     ),
                     "objectProfile": {
                         "model": model,
@@ -3002,7 +2999,12 @@ class UiContractV2Handler(BaseIntentHandler):
             "viewType": "form",
             "mode": "business_task_form" if semantic_surface else "native_structured_form",
             "presentationMode": presentation_mode,
-            "layoutPolicy": "overview_then_task_slots" if structure_authority == "entry_semantic_surface" else "native_authority",
+            "structureSource": (
+                "entry_semantic_surface" if structure_authority == "entry_semantic_surface" else "native_view"
+            ),
+            "structureAuthority": (
+                "task_sections" if structure_authority == "entry_semantic_surface" else "native_form_slots"
+            ),
             "objectProfile": {
                 "model": model,
                 "kind": "business_form",

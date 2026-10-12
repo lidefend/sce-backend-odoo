@@ -916,8 +916,8 @@ try {
           if (target.expectCompatibilityFree === true && (normalized.formStructureContract?.sourceAuthority?.governance_source?.compatibilityDependencies || []).length) {
             throw new Error(`${target.name}: compatibility structure dependency remains`);
           }
-          if (target.expectedStructurePolicy && normalized.formStructureContract?.layoutPolicy !== target.expectedStructurePolicy) {
-            throw new Error(`${target.name}: unexpected structure policy ${normalized.formStructureContract?.layoutPolicy}`);
+          if (target.expectedStructureAuthority && normalized.formStructureContract?.structureAuthority !== target.expectedStructureAuthority) {
+            throw new Error(`${target.name}: unexpected structure authority ${normalized.formStructureContract?.structureAuthority}`);
           }
         }
         if (target.captureCompatibilityInventory === true && viewport.name === 'desktop') {
@@ -949,8 +949,8 @@ try {
               const contract = findNormalizedContract(payload);
               if (!result.ok() || !contract) { row.path = 'unresolved_contract_error'; row.httpStatus = result.status(); continue; }
               const structure = contract.formStructureContract || {};
-              row.path = structure.layoutPolicy === 'container_tree_authority' ? 'container_tree_authority' : 'compatibility';
-              row.layoutPolicy = structure.layoutPolicy || null;
+              row.path = structure.structureAuthority === 'container_tree' ? 'container_tree' : 'compatibility';
+              row.structureAuthority = structure.structureAuthority || null;
               row.actualView = { model: contract.pageInfo?.model,
                 viewId: structure.sourceAuthority?.governance_source?.resolvedViewId || null };
               if (!row.actualView.viewId) row.path = 'unresolved_view_identity';

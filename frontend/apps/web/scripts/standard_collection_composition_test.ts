@@ -15,10 +15,14 @@ import {
   resolveStandardFormComposition,
 } from '../src/app/presentation/standardFormComposition';
 import { resolveStandardPageType } from '../src/app/presentation/standardPageType';
+import { ContractGapError } from '../src/app/contract/contractGap';
 import {
-  DECLARED_BATCH_EXECUTORS,
-  resolveSelectionActions,
-} from '../src/app/runtime/actionViewSelectionExportRuntime';
+  COLLECTION_SCOPE,
+  DECLARED_CAPABILITY_EXECUTORS,
+  SELECTION_SCOPE,
+  resolveDeclaredCapabilities,
+  resolveSurfaceCapabilities,
+} from '../src/app/runtime/actionViewCollectionCapabilityRuntime';
 
 let cases = 0;
 const check = (actual: unknown, expected: unknown, label: string) => {
@@ -267,52 +271,75 @@ check(contractPageSource.includes(':data-detail-composition-reason="standardDeta
 // never decides the set of batch actions and never hides a declared one.
 // ---------------------------------------------------------------------------
 const batchText = (_key: string, fallback: string) => fallback;
-const batchDeclaration = (over: Record<string, unknown> = {}) => ({
-  intents: {} as Record<string, string>,
-  deleteMode: 'none',
-  activeField: '',
-  ...over,
+const declared = (actions: Array<[string, string, string, boolean]>) => ({
+  enabled: actions.length > 0,
+  actions: actions.map(([action, scope, intent, available]) => ({ action, scope, intent, available })),
 });
+const selectionSurface = (actions: Array<[string, string, string, boolean]>) =>
+  resolveSurfaceCapabilities(declared(actions), SELECTION_SCOPE, batchText);
+const collectionSurface = (actions: Array<[string, string, string, boolean]>) =>
+  resolveSurfaceCapabilities(declared(actions), COLLECTION_SCOPE, batchText);
+
 checkDeep(
-  resolveSelectionActions(
-    ['export', 'archive', 'activate', 'delete'],
-    batchDeclaration({
-      intents: { export: 'api.data', archive: 'api.data.batch', activate: 'api.data.batch', delete: 'api.data.unlink' },
-      deleteMode: 'unlink',
-      activeField: 'active',
-    }),
-    batchText,
-  ).map((row) => [row.key, row.enabled]),
+  selectionSurface([
+    ['export', 'selection', 'api.data', true],
+    ['archive', 'selection', 'api.data.batch', true],
+    ['activate', 'selection', 'api.data.batch', true],
+    ['delete', 'selection', 'api.data.unlink', true],
+  ]).map((row) => [row.key, row.enabled]),
   [['batch:export', true], ['batch:archive', true], ['batch:activate', true], ['batch:delete', true]],
   'every action the contract declares is offered and executes through its declared intent',
 );
 checkDeep(
-  resolveSelectionActions(
-    ['export', 'delete'],
-    batchDeclaration({ intents: { export: 'api.data', delete: 'api.data.unlink' }, deleteMode: 'none' }),
-    batchText,
-  ).map((row) => [row.key, row.enabled, row.hint !== '']),
+  selectionSurface([['export', 'selection', 'api.data', true], ['delete', 'selection', 'api.data.unlink', false]])
+    .map((row) => [row.key, row.enabled, row.hint !== '']),
   [['batch:export', true, false], ['batch:delete', false, true]],
-  'a declared action the declared policy forbids stays visible but disabled',
+  'a declared action the contract marks unavailable stays visible but disabled',
 );
 checkDeep(
-  resolveSelectionActions(
-    ['export', 'purge'],
-    batchDeclaration({ intents: { export: 'api.data' } }),
-    batchText,
-  ).map((row) => [row.key, row.enabled, row.hint !== '']),
+  selectionSurface([['export', 'selection', 'api.data', true], ['purge', 'selection', '', true]])
+    .map((row) => [row.key, row.enabled, row.hint !== '']),
   [['batch:export', true, false], ['batch:purge', false, true]],
   'a declared action the contract gives no execution intent is reported unresolved, not silently dropped',
 );
 check(
-  resolveSelectionActions(['export'], batchDeclaration(), batchText)[0].enabled,
+  selectionSurface([['export', 'selection', '', true]])[0].enabled,
   false,
   'an undeclared execution never becomes enabled by a familiar action name',
 );
 check(
-  Object.entries(DECLARED_BATCH_EXECUTORS).every(([intent, executor]) => intent.startsWith('api.') && Boolean(executor)),
+  Object.entries(DECLARED_CAPABILITY_EXECUTORS).every(([intent, executor]) => intent.startsWith('api.') && Boolean(executor)),
   true,
   'the client capability table is keyed by declared intent, so a new business action reaches the client without a client change',
+);
+checkDeep(
+  collectionSurface([
+    ['export', 'selection', 'api.data', true],
+    ['import', 'collection', 'api.data.import', true],
+  ]).map((row) => [row.key, row.scope, row.executor, row.enabled]),
+  [['collection:import', 'collection', 'import_records', true]],
+  'collection-scope actions are reachable without a selection and route to their declared executor',
+);
+check(
+  (() => {
+    try {
+      resolveDeclaredCapabilities({
+        batch_policy: { available_actions: ['export'], execution_intents: { export: 'api.data' } },
+      });
+      return 'no-stop';
+    } catch (err) {
+      return err instanceof ContractGapError ? 'contract-gap' : 'unexpected-error';
+    }
+  })(),
+  'contract-gap',
+  'a collection policy without the declaration stops as a contract defect instead of being rebuilt on the client',
+);
+check(
+  resolveDeclaredCapabilities({
+    collection_capabilities: { enabled: true, actions: [{ action: 'import', scope: 'collection', intent: 'api.data.import', available: true }] },
+  }).actions.length,
+  1,
+  'the declared capability list is the single source when the contract publishes it',
 );
 
 // Part 6 — the shipped readonly section really renders the adopted composition

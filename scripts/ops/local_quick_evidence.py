@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import errno
 import hashlib
 import json
 import os
@@ -32,7 +33,33 @@ FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 # The default sharded lane: one bounded shard is one make invocation over a
 # strided slice of the declared target list, so an interrupted or partially
 # failed candidate keeps the parts that did pass instead of proving nothing.
-DEFAULT_SHARDS = 4
+# The part count is not a lever on the lane's wall clock, and that was measured
+# rather than assumed: 4 parts measured 328s/16s/105s/8s (328s wall) and 8 parts
+# measured 72.0s/7.7s/9.1s/6.0s/338.5s/8.0s/111.6s/1.3s (347.5s worker chain),
+# i.e. re-slicing the identical covered set moved the wall clock by noise. More
+# parts therefore buy finer resume granularity, not speed.
+#
+# The dominant cost is whether the three trusted scans can reuse a verified
+# ancestor receipt (see trusted_scan_scope): when the candidate itself changes a
+# scan-authority input they re-run full. That full cost used to be pinned at
+# ~315s by repository.clean_history.scan, and an earlier version of this comment
+# called it "that single ~315s target cannot be split any further". Measurement
+# refuted that: the floor was per-blob `git cat-file blob` spawning (2.74 ms x
+# ~24k blobs, ~66s of process creation) plus a single-threaded regex pass over
+# 1.17 GB at 9 MB/s (~130s with 17 cores idle) -- avoidable serial cost, not an
+# indivisible task. The three scans now share scripts/ci/parallel_scan.py (one
+# long-lived `git cat-file --batch` per worker plus a bounded worker pool that
+# restores declared order), and the same group entry measured 315.5s -> 85.01s
+# with byte-identical findings. So the lever order is: (1) candidate composition
+# - keep `Makefile`, this file, `scripts/ci/trusted_scan_scope.py`,
+# `scripts/dev/local_dev_frontend_quick.py`, a scan's own AUTHORITY files and any
+# make fragment that can re-declare a governed scan target in their own
+# candidate, so the next run resolves mode=incremental; (2) remove avoidable
+# serial cost inside a scan before calling it unsplittable. Shard count is still
+# only resume granularity. `QUICK_SHARDS` in make/ci.mk is the entry that is
+# actually passed in; this value only backs a direct programmatic call and must
+# not drift from it.
+DEFAULT_SHARDS = 8
 # Shard workers. One shard is one make invocation over a strided slice of the
 # declared target list, and shards are independent by construction: each writes
 # only its own part receipt, its own scan proofs and its own bounded log, and
@@ -59,13 +86,43 @@ class QuickRunFailed(EvidenceError):
         self.returncode = returncode
 
 
+# A spawn can fail before the child exists with a host-level errno: EAGAIN under
+# a thread/process ceiling, ENOMEM under memory pressure, or EFAULT from a
+# fork/vfork window while another thread of this multi-threaded parent is
+# allocating. None of them is a product or contract signal, and none of them can
+# have run the child, so retrying replays nothing. Every other spawn failure, and
+# a bounded number of transient ones, still fails closed on the first or last
+# attempt. Without this bound, one host hiccup discards a multi-minute candidate
+# run that had already passed its other shards.
+TRANSIENT_SPAWN_ERRNOS = frozenset({errno.EAGAIN, errno.ENOMEM, errno.EFAULT})
+SPAWN_ATTEMPTS = 3
+SPAWN_RETRY_BACKOFF_SECONDS = 0.25
+
+
+def spawn(intent, action: str):
+    """Create a process, retrying only failures that cannot have started one."""
+    for attempt in range(1, SPAWN_ATTEMPTS + 1):
+        try:
+            return intent()
+        except OSError as exc:
+            if exc.errno not in TRANSIENT_SPAWN_ERRNOS or attempt == SPAWN_ATTEMPTS:
+                raise
+            print(f"[local_quick_evidence] RETRY {action}: transient spawn failure "
+                  f"errno={exc.errno} attempt={attempt}/{SPAWN_ATTEMPTS}", flush=True)
+            time.sleep(SPAWN_RETRY_BACKOFF_SECONDS)
+    raise AssertionError("unreachable: the retry loop always returns or raises")
+
+
 def git(root: Path, *args: str) -> str:
-    process = subprocess.run(
-        ["git", "-C", str(root), *args],
-        check=False,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+    process = spawn(
+        lambda: subprocess.run(
+            ["git", "-C", str(root), *args],
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        ),
+        f"git {' '.join(args)}",
     )
     if process.returncode:
         raise EvidenceError(f"git {' '.join(args)} failed: {process.stdout.strip()}")
@@ -141,11 +198,14 @@ def _newest_ancestor_receipt(root: Path, head: str, candidates: list[tuple[float
     for _, stem, _ in candidates:
         if stem == head:
             continue
-        probe = subprocess.run(
-            ["git", "-C", str(root), "merge-base", "--is-ancestor", stem, head],
-            check=False,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+        probe = spawn(
+            lambda: subprocess.run(
+                ["git", "-C", str(root), "merge-base", "--is-ancestor", stem, head],
+                check=False,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            ),
+            f"git merge-base --is-ancestor {stem} {head}",
         )
         if probe.returncode == 0:
             return stem
@@ -471,7 +531,11 @@ def shard_command(root: Path, shards: int, index: int) -> list[str]:
 
 
 def _shard_popen(command: list[str], handle, root: Path):
-    return subprocess.Popen(command, cwd=root, stdout=handle, stderr=subprocess.STDOUT, text=True)
+    return spawn(
+        lambda: subprocess.Popen(command, cwd=root, stdout=handle,
+                                 stderr=subprocess.STDOUT, text=True),
+        f"shard {' '.join(command)}",
+    )
 
 
 def requested_shard_jobs(jobs: int | None) -> int | None:
@@ -802,10 +866,7 @@ def main() -> int:
                 raise EvidenceError("compose mode does not accept --shard, --keep, --jobs or --diagnostic")
             head = args.expected_head
             if head is None:
-                head = subprocess.run(
-                    ["git", "-C", str(args.root), "rev-parse", "HEAD"],
-                    check=True, text=True, stdout=subprocess.PIPE,
-                ).stdout.strip()
+                head = git(args.root, "rev-parse", "HEAD")
             path = compose(args.root, args.shards, head)
     except QuickRunFailed as exc:
         print(f"[local_quick_evidence] FAIL {exc}")

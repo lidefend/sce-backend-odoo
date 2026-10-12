@@ -390,13 +390,13 @@ workspace_governance = (
 overview_view = env.ref("smart_construction_core.view_project_overview_form")
 if (
     workspace_governance.get("formStructureAuthority") != "native_authority"
-    or workspace_structure_contract.get("layoutPolicy") != "container_tree_authority"
+    or workspace_structure_contract.get("structureAuthority") != "container_tree"
     or workspace_structure_contract.get("mode") != "native_structured_form"
     or int(workspace_governance.get("resolvedViewId") or 0) != int(overview_view.id)
 ):
     raise AssertionError("project workspace is not projected from the unified overview declaration: %s" % {
         "form_structure_authority": workspace_governance.get("formStructureAuthority"),
-        "layout_policy": workspace_structure_contract.get("layoutPolicy"),
+        "structure_authority": workspace_structure_contract.get("structureAuthority"),
         "mode": workspace_structure_contract.get("mode"),
         "resolved_view_id": workspace_governance.get("resolvedViewId"),
         "overview_view_id": overview_view.id,
@@ -427,7 +427,7 @@ for section in workspace_sections:
     ]
 workspace_structure_projection = {
     "form_structure_authority": workspace_governance.get("formStructureAuthority"),
-    "layout_policy": workspace_structure_contract.get("layoutPolicy"),
+    "structure_authority": workspace_structure_contract.get("structureAuthority"),
     "mode": workspace_structure_contract.get("mode"),
     "resolved_view_id": int(workspace_governance.get("resolvedViewId") or 0),
     "notebook_tabs": _declared_notebook_tabs(workspace_data),
@@ -612,7 +612,7 @@ anchor_sections = {}
 # U-C4 G12 retired the entry-level structure declaration for 项目立项 (724 /
 # view 1503): the resolved native view owns field placement, so the contract
 # projects formStructureAuthority=native_authority with
-# layoutPolicy=container_tree_authority / mode=native_structured_form and the
+# structureAuthority=container_tree / mode=native_structured_form and the
 # compatibility re-layout that produced fieldRoles is closed. The declared
 # business-group identity (current_task / intake_risk) is carried by the native
 # arch data-sc-anchor groups and must be projected through the container tree.
@@ -620,12 +620,12 @@ anchor_sections = {}
 # do not re-open the closed re-layout and do not drop the coverage.
 if governance_source.get("formStructureAuthority") == "native_authority":
     if (
-        form_structure_contract.get("layoutPolicy") != "container_tree_authority"
+        form_structure_contract.get("structureAuthority") != "container_tree"
         or form_structure_contract.get("mode") != "native_structured_form"
     ):
         raise AssertionError("project intake native authority is not projected: %s" % {
             "form_structure_authority": governance_source.get("formStructureAuthority"),
-            "layout_policy": form_structure_contract.get("layoutPolicy"),
+            "structure_authority": form_structure_contract.get("structureAuthority"),
             "mode": form_structure_contract.get("mode"),
         })
     if field_roles or governance_source.get("fieldSemanticRoles"):
@@ -987,7 +987,7 @@ print("LOCAL_DEV_PROJECT_CREATE_ACTION_SCOPE_JSON=" + json.dumps({
     "workspace_structure_contract": workspace_structure_projection,
     "intake_semantic_contract": {
         "form_structure_authority": governance_source.get("formStructureAuthority"),
-        "layout_policy": form_structure_contract.get("layoutPolicy"),
+        "structure_authority": form_structure_contract.get("structureAuthority"),
         "mode": form_structure_contract.get("mode"),
         "field_roles": field_roles,
         "anchor_groups": anchor_groups,

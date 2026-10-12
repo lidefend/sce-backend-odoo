@@ -418,7 +418,7 @@
       :enable-grouped-rows="listGroupedRowsEnabled"
       :summary-items="vm.content.list?.summaryItems || []"
       :selected-ids="selectedIds"
-      :selection-enabled="listProfile?.selection_policy?.enabled !== false"
+      :selection-enabled="selectionEnabled"
       :selection-actions="selectionActions"
       :batch-message="batchMessage"
       :list-profile="listProfile"
@@ -469,6 +469,17 @@
     >
       <template #leading>
         <ScButton v-if="canCreateRecord" variant="primary" size="small" type="button" @click="openCreateRecord"><ScIcon name="plus" :size="16" />{{ toolbarUiLabel('create', '新建') }}</ScButton>
+        <ScButton
+          v-for="action in collectionActions"
+          :key="`collection-${action.action}`"
+          :data-page-action="`collection-${action.action}`"
+          variant="secondary"
+          size="small"
+          type="button"
+          :disabled="isUiBusy || !action.enabled"
+          :title="action.hint || undefined"
+          @click="handleCollectionAction(action.key)"
+        >{{ action.label }}</ScButton>
         <ScButton data-page-action="reload" variant="secondary" size="small" type="button" :disabled="isUiBusy" @click="reload"><ScIcon name="refresh" :size="16" />{{ toolbarUiLabel('refresh', '刷新') }}</ScButton>
         <ScButton v-for="action in vm.header.actions" :key="`header-${action.key}`" variant="ghost" size="small" type="button" @click="executeHeaderAction(action.key)">{{ action.label || action.key }}</ScButton>
       </template>
@@ -824,6 +835,12 @@ import { executeSceneMutation } from '../app/sceneMutationRuntime';
 import { useActionViewActionRuntime } from '../app/action_runtime/useActionViewActionRuntime';
 import { useActionViewSelectionRuntime } from '../app/action_runtime/useActionViewSelectionRuntime';
 import { useActionViewSelectionActionRuntime, type ActionBatchPolicy } from '../app/action_runtime/useActionViewSelectionActionRuntime';
+import { useActionViewCollectionActionRuntime } from '../app/action_runtime/useActionViewCollectionActionRuntime';
+import {
+  resolveDeclaredCapabilities,
+  resolveDeclaredSelectionCapability,
+  type CollectionCapabilities,
+} from '../app/runtime/actionViewCollectionCapabilityRuntime';
 import { useActionViewTriggerRuntime } from '../app/action_runtime/useActionViewTriggerRuntime';
 import { useActionViewGroupedRowsRuntime } from '../app/action_runtime/useActionViewGroupedRowsRuntime';
 import { useActionViewRoutePresetRuntime } from '../app/action_runtime/useActionViewRoutePresetRuntime';
@@ -1318,13 +1335,27 @@ const listProfile = computed<SceneListProfile | null>(() => {
   return extractListProfile(actionContract.value);
 });
 const batchPolicy = computed<ActionBatchPolicy>(() => {
-  const profilePolicy = listProfile.value?.batch_policy;
-  if (profilePolicy && Array.isArray(profilePolicy.available_actions) && profilePolicy.available_actions.length > 0) {
-    return profilePolicy;
-  }
+  // Action capability is behaviour contract: the declared surface publishes it,
+  // and the list profile describes presentation.  Reading it from the profile
+  // first made the two carriers an arbitration the page had to perform.
   const surfacePolicies = resolveContractV2SurfacePolicies(actionContract.value);
-  return (surfacePolicies.batch_policy as ActionBatchPolicy | undefined) || profilePolicy || {};
+  return (surfacePolicies.batch_policy as ActionBatchPolicy | undefined) || {};
 });
+/**
+ * The declared selection capability, consumed from the same surface policy set
+ * so the page never decides it and never defaults it to enabled.
+ */
+const selectionEnabled = computed<boolean>(() => resolveDeclaredSelectionCapability(
+  resolveContractV2SurfacePolicies(actionContract.value),
+));
+/**
+ * The contract's single declared action list for this surface.  Every consumer
+ * routes a declared action from its declared scope and looks up the executor for
+ * its declared intent; no surface decides for itself which actions exist.
+ */
+const collectionCapabilities = computed<CollectionCapabilities>(() => resolveDeclaredCapabilities(
+  resolveContractV2SurfacePolicies(actionContract.value),
+));
 const activeField = computed(() => String(batchPolicy.value.active_field || '').trim());
 const allowedBatchActions = computed(() =>
   Array.isArray(batchPolicy.value.available_actions)
@@ -3238,6 +3269,7 @@ const {
   selectionActions,
   handleSelectionAction,
 } = useActionViewSelectionActionRuntime({
+  capabilities: collectionCapabilities,
   allowedBatchActions,
   batchPolicy,
   activeField,
@@ -3258,6 +3290,21 @@ const {
   clearSelection,
   reload: () => requestLoadPage(),
   runDeclaredAction: (action) => { void runContractAction(action); },
+});
+
+const {
+  collectionActions,
+  handleCollectionAction,
+} = useActionViewCollectionActionRuntime({
+  capabilities: collectionCapabilities,
+  busy: batchBusy,
+  message: batchMessage,
+  confirmationRef: batchConfirmationRef,
+  text: toolbarUiLabel,
+  resolveTargetModel: () => resolvedModelRef.value || model.value || '',
+  resolveEffectiveRequestContext,
+  buildIdempotencyKey,
+  reload: () => requestLoadPage(),
 });
 
 function findMenuNodeByLabel(nodes: Array<Record<string, unknown>>, label: string): Record<string, unknown> | null {

@@ -27,24 +27,47 @@ def _flatten_leaf_paths(value, prefix: str = "") -> set[str]:
     return paths
 
 
+# The product layer declares the vocabulary as a module-level table keyed by the
+# semantic it belongs to (FE-CONTRACT-RUNTIME-01); the entries that own the
+# introduce dialog are the ones carrying both the entry label and the dialog
+# terms, so this reads the declaration wherever the table sits.
+DIALOG_VOCABULARY_TABLE = "SEMANTIC_PRESENTATION_VOCABULARY"
+
+
+def _assignment_targets(node) -> set[str]:
+    if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+        return {node.target.id}
+    if isinstance(node, ast.Assign):
+        return {target.id for target in node.targets if isinstance(target, ast.Name)}
+    return set()
+
+
 def _declared_dialog_paths(normalizer_text: str) -> set[str]:
     """Flatten the contract declaration that owns the introduce vocabulary."""
     tree = ast.parse(normalizer_text)
     declared: set[str] = set()
     for node in ast.walk(tree):
-        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+        if DIALOG_VOCABULARY_TABLE not in _assignment_targets(node):
             continue
-        if node.func.attr != "update" or not node.args or not isinstance(node.args[0], ast.Dict):
+        if not isinstance(node.value, ast.Dict):
             continue
-        payload = node.args[0]
-        for key_node, value in zip(payload.keys, payload.values):
-            if not isinstance(key_node, ast.Constant) or not isinstance(key_node.value, str):
+        for entry in node.value.values:
+            if not isinstance(entry, ast.Dict):
                 continue
-            key = key_node.value
-            if key in ("introduceLabel", "actionRefs"):
-                declared |= _flatten_leaf_paths(value, f"{key}.")
-            elif key == DIALOG_CONFIG_KEY:
-                declared |= _flatten_leaf_paths(value, f"{DIALOG_CONFIG_KEY}.")
+            keys = {
+                key.value for key in entry.keys
+                if isinstance(key, ast.Constant) and isinstance(key.value, str)
+            }
+            if not {"introduceLabel", DIALOG_CONFIG_KEY} <= keys:
+                continue
+            for key_node, value in zip(entry.keys, entry.values):
+                if not isinstance(key_node, ast.Constant) or not isinstance(key_node.value, str):
+                    continue
+                key = key_node.value
+                if key in ("introduceLabel", "actionRefs"):
+                    declared |= _flatten_leaf_paths(value, f"{key}.")
+                elif key == DIALOG_CONFIG_KEY:
+                    declared |= _flatten_leaf_paths(value, f"{DIALOG_CONFIG_KEY}.")
     return declared
 
 
@@ -94,12 +117,25 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     dialog_model = read_text(dialog_model_path)
     normalizer = read_text("addons/smart_construction_core/core_extension_contract_normalizers.py")
     assembler = read_text("addons/smart_core/core/unified_page_contract_v2_assembler.py")
+    # The one2many -> detail-collection mapping is declared once, in the contract
+    # registry, and projected into the runtime carrier.  Asserting a literal in
+    # the assembler would re-create the private second vocabulary the registry
+    # replaced, so the authority check follows the declaration.
+    semantic_declaration = read_text("contracts/registry/semantic.yaml")
+    component_declaration = read_text("contracts/registry/component.yaml")
+    carrier = read_text("addons/smart_core/core/contract_runtime/semantic_registry_generated.py")
     project_layout = read_text("addons/smart_construction_core/core_extension_project_layout.py")
     example = read_text("docs/architecture/unified_page_contract_v2/examples/nested_form_relation.json")
     if "sc.relation.table" not in model or "ProfessionalDetailCollectionControl" not in registry:
         failures.append("detail collection registry authority is incomplete")
-    if 'field_type == "one2many"' not in assembler or 'return "sc.relation.table"' not in assembler:
-        failures.append("one2many is not projected to the detail collection authority")
+    if "field_types: [one2many]" not in semantic_declaration:
+        failures.append("one2many is not declared as a detail collection field type")
+    if "sc.relation.table" not in component_declaration:
+        failures.append("detail collection component authority is not declared")
+    if "'detail_collection': 'sc.relation.table'" not in carrier:
+        failures.append("runtime carrier does not project one2many to the detail collection authority")
+    if "contract_runtime.semantic_resolver" not in assembler:
+        failures.append("assembler does not resolve component keys through the contract registry")
     if '"componentKey": "sc.table.data"' in project_layout:
         failures.append("project layout extension still emits legacy sc.table.data component keys")
     if '"sc.relation.table"' not in project_layout or '"sc.relation.many2many"' not in project_layout:

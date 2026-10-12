@@ -32,6 +32,22 @@ export type ContractV2CanonicalFormSemanticRole =
 export type ContractV2FormStructureRoleName = ContractV2CanonicalFormSemanticRole;
 export type ContractV2FormPresentationMode = 'task' | 'workspace';
 
+/** Where the delivered body structure comes from (fact, not rendering implementation). */
+export type ContractV2FormStructureSource =
+  | 'native_view'
+  | 'business_orchestration'
+  | 'business_category_policy'
+  | 'entry_semantic_surface';
+
+/**
+ * Which carrier is the final structural authority of the body.
+ *
+ * `container_tree` is the single carrier: it forbids independent structural
+ * slots, columns and field membership.  The other authorities publish their
+ * structure in `slots` and leave the container tree as a projection.
+ */
+export type ContractV2FormStructureAuthority = 'container_tree' | 'native_form_slots' | 'task_sections';
+
 export interface ContractV2FormStructureRole {
   role: ContractV2FormStructureRoleName;
   slot: string;
@@ -146,8 +162,8 @@ export interface ContractV2FormStructureContract {
   viewType: 'form';
   mode: string;
   presentationMode: ContractV2FormPresentationMode;
-  /** container_tree_authority: semantic metadata only; slots/fieldRoles are empty. */
-  layoutPolicy: string;
+  structureSource: ContractV2FormStructureSource;
+  structureAuthority: ContractV2FormStructureAuthority;
   columns?: number;
   objectProfile: {
     model: string;
@@ -294,11 +310,10 @@ export interface ContractV2Container {
   widgetList: ContractV2Widget[];
 }
 
+/** A declared component identity and its version. Rendering adapters belong to
+ * the frontend, so a contract entry carries no framework component name. */
 export interface ContractV2ComponentRegistryEntry {
   version: string;
-  adapter: Record<string, string>;
-  fallback?: string;
-  selectedAdapter?: string;
 }
 
 export interface ContractV2ActivityNode {

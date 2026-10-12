@@ -544,7 +544,7 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         namespace = {'deepcopy': copy.deepcopy, '_sc_text': lambda value: str(value or ''),
             '_sc_inject_workflow_contract': workflow, 'inject_financial_workspace_runtime': lambda *args: None,
             'smart_core_form_business_actions': None,
-            '_contract_normalizers': SimpleNamespace(normalize_payment_settlement_detail_component=lambda *args, **kw: None)}
+            '_contract_normalizers': SimpleNamespace(normalize_declared_field_presentation=lambda *args, **kw: None)}
         exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), namespace)
         names = ['name', 'title', 'description', 'attachment_ids', 'reject_reason', 'configured_extension']
         contract = {'pageInfo': {'model': 'sc.construction.diary', 'viewType': 'form'},

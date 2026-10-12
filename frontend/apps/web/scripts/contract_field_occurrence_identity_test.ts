@@ -42,8 +42,8 @@ function contractSnapshot(amountReadonly: boolean, amountDetailReadonly: boolean
       pageId: 'page.x.document.form', layoutType: 'form', adaptMode: 'pc',
       layoutHints: { mobileColumns: 1 },
       componentRegistry: {
-        'sc.input.text': { version: '1.0', adapter: { web_pc: 'ElInput' }, selectedAdapter: 'TDesignInput' },
-        'sc.relation.many2one': { version: '1.0', adapter: { web_pc: 'ElSelect' } },
+        'sc.input.text': { version: '1.0' },
+        'sc.relation.many2one': { version: '1.0' },
       },
       containerTree: [{
         containerId: 'section.identity', containerType: 'group', type: 'group', title: 'Identity', span: 24,

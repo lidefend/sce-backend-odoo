@@ -505,11 +505,11 @@ function snapshot(): ContractV2Snapshot {
     layoutContract: {
       pageId: 'page.x.document.form', layoutType: 'form', adaptMode: 'pc',
       layoutHints: { mobileColumns: 1 }, componentRegistry: {
-        'sc.input.text': { version: '1.0', adapter: { web_pc: 'ElInput' }, selectedAdapter: 'TDesignInput' },
-        'sc.display.status': { version: '1.0', adapter: { web_pc: 'ElInput' } },
-        'sc.display.text': { version: '1.0', adapter: { web_pc: 'ElInput' } },
-        'sc.relation.many2one': { version: '1.0', adapter: { web_pc: 'ElSelect' } },
-        'sc.relation.table': { version: '1.0', adapter: { web_pc: 'ElTable' } },
+        'sc.input.text': { version: '1.0' },
+        'sc.display.status': { version: '1.0' },
+        'sc.display.text': { version: '1.0' },
+        'sc.relation.many2one': { version: '1.0' },
+        'sc.relation.table': { version: '1.0' },
       },
       containerTree: [{
         containerId: 'section.identity', containerType: 'group', type: 'group', title: 'Identity', span: 24,
@@ -773,7 +773,7 @@ assert.equal(canonicalDuplicateWorkflowAction.reasonCode, 'WORKFLOW_ACTION_IDENT
 
 const nativeMonetarySnapshot = snapshot();
 nativeMonetarySnapshot.layoutContract.componentRegistry['sc.value.money'] = {
-  version: '1.0', adapter: { web_pc: 'ScMoney' }, selectedAdapter: 'ScMoney',
+  version: '1.0',
 };
 nativeMonetarySnapshot.layoutContract.containerTree[0].children.push({
   containerId: 'field.amount', containerType: 'field', type: 'field', name: 'amount', title: '', span: 12,
@@ -1013,7 +1013,8 @@ function governedFormStructure(role: ContractV2FormStructureRoleName) {
     viewType: 'form' as const,
     mode: 'business_task_form',
     presentationMode: 'task' as const,
-    layoutPolicy: 'governed_slots',
+    structureSource: 'business_orchestration' as const,
+    structureAuthority: 'task_sections' as const,
     objectProfile: {
       model: 'x.document', kind: 'business_form' as const, factAuthority: 'business_object_model_and_view',
     },
@@ -1056,10 +1057,10 @@ for (const mode of ['readonly', 'edit', 'create'] as const) {
   const nativeSnapshot = snapshot();
   nativeSnapshot.formStructureContract = {
     ...governedFormStructure('context'),
-    layoutPolicy: 'container_tree_authority', slots: [], fieldRoles: {},
+    structureSource: 'native_view', structureAuthority: 'container_tree', slots: [], fieldRoles: {},
   };
   const model = presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(nativeSnapshot)), mode);
-  assert.equal(model.identity.structureAuthority, 'containerTree');
+  assert.equal(model.identity.bodyStructureAuthority, 'containerTree');
   const original = structuredClone(model.zones);
   const nativePlan = composeCanonicalFormFloorplan(model);
   assert.strictEqual(nativePlan.taskNodes, model.zones.primary);
@@ -1068,9 +1069,9 @@ for (const mode of ['readonly', 'edit', 'create'] as const) {
   assert.deepEqual(nativePlan.relationNodes, []);
   const competing = structuredClone(nativeSnapshot);
   competing.formStructureContract!.slots = governedFormStructure('context').slots;
-  assert.throws(() => decodeContractV2Snapshot(competing), /container tree authority/);
+  assert.throws(() => decodeContractV2Snapshot(competing), /structureAuthority=container_tree forbids/);
   const emptyLegacy = structuredClone(nativeSnapshot);
-  emptyLegacy.formStructureContract!.layoutPolicy = 'native_authority';
+  emptyLegacy.formStructureContract!.structureAuthority = 'native_form_slots';
   assert.throws(() => decodeContractV2Snapshot(emptyLegacy), /at least one slot/);
 }
 
@@ -1264,11 +1265,10 @@ assert.equal(
 );
 assert.deepEqual(
   {
-    adapter: structurePresentationFields.find((field) => field.fieldCode === 'name')?.componentResolution.contractAdapter,
     version: structurePresentationFields.find((field) => field.fieldCode === 'name')?.componentResolution.contractVersion,
   },
-  { adapter: 'TDesignInput', version: '1.0' },
-  'the delivered client adapter binding must reach the professional component resolution',
+  { version: '1.0' },
+  'the delivered component identity version must reach the professional component resolution',
 );
 
 const missingComponentRegistrySnapshot = snapshot();
@@ -1849,7 +1849,7 @@ secondaryStatusNode.fields[0].widgetId = 'field.secondary_state';
 multiStatusModel.zones.primary[0].children.push(secondaryStatusNode);
 
 const nativeVisibilityModel = structuredClone(multiStatusModel);
-nativeVisibilityModel.identity.structureAuthority = 'containerTree';
+nativeVisibilityModel.identity.bodyStructureAuthority = 'containerTree';
 const nativeVisibilityBridge = buildCanonicalNativeFormBridge(nativeVisibilityModel);
 const semanticHiddenNode = {
   type: 'field', name: 'field_fixture', visible: true,
@@ -1860,7 +1860,7 @@ assert.equal(nativeVisibilityBridge.nodeVisible(semanticHiddenNode), true,
 assert.equal(nativeVisibilityBridge.nodeVisible({ ...semanticHiddenNode, visible: false }), false,
   'native hidden status must remain authoritative');
 const compatibilityVisibilityModel = structuredClone(nativeVisibilityModel);
-compatibilityVisibilityModel.identity.structureAuthority = 'compatibility';
+compatibilityVisibilityModel.identity.bodyStructureAuthority = 'compatibility';
 assert.equal(buildCanonicalNativeFormBridge(compatibilityVisibilityModel).nodeVisible(semanticHiddenNode), false,
   'unmigrated compatibility consumers retain their semantic hiding behavior');
 const nativeClaimedVisibilityBridge = buildCanonicalNativeFormBridge(nativeVisibilityModel, undefined, '', 'field_fixture');
@@ -2121,7 +2121,7 @@ const nativeAuthoritySnapshot = snapshot();
 nativeAuthoritySnapshot.formStructureContract = governedFormStructure('context');
 nativeAuthoritySnapshot.formStructureContract!.mode = 'native_structured_form';
 nativeAuthoritySnapshot.formStructureContract!.presentationMode = 'workspace';
-nativeAuthoritySnapshot.formStructureContract!.layoutPolicy = 'native_authority';
+nativeAuthoritySnapshot.formStructureContract!.structureAuthority = 'native_form_slots';
 nativeAuthoritySnapshot.layoutContract.containerTree[0].children[0].formStructureRole = {
   role: 'context', slot: 'governed', group: 'governed',
 };

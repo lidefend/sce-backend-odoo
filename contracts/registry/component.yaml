@@ -1,0 +1,58 @@
+# 组件词表 —— 契约层唯一的组件键声明权威（FE-CONTRACT-RUNTIME-01）
+#
+# 本文件登记前端可渲染的组件键及其约束。此前这张表只存在于
+# `frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts`，
+# 后端 `_component_key()` 另持一份私有映射（00 清单 G1）。收敛后：
+#
+#   semantic.yaml 声明"字段是什么" -> 本文件声明"由哪个组件渲染"
+#
+# `renderer` 是渲染器能力名，必须同时登记在 renderers 中，且必须能在
+# frontend/apps/web 的渲染分发里找到对应分支（由既有
+# `verify.frontend.professional_component_registry.unit` 继续守住）。
+registry: component
+
+# 未逐项覆盖时生效的默认值。
+defaults:
+  presentation_modes: [task, workspace]
+  render_profiles: [create, edit, readonly]
+  readiness: ready
+
+# 类型导向哨兵：没有专业控件接管该字段时，由区块自身的类型导向控件渲染。
+# 它是唯一不需要独立分发分支的渲染器名。
+type_directed_renderer: FormSectionField
+
+renderers:
+  - FormSectionField
+  - ProfessionalBaseFieldControl
+  - ProfessionalBusinessValueControl
+  - ProfessionalRelationFieldControl
+  - ProfessionalDetailCollectionControl
+  - PaymentSettlementDetailCollectionControl
+
+components:
+  sc.input.text: {semantic: text, field_types: [char], renderer: FormSectionField}
+  sc.input.binary: {semantic: binary, field_types: [binary], renderer: FormSectionField}
+  sc.input.textarea: {semantic: long_text, field_types: [text, html], renderer: FormSectionField}
+  sc.input.number: {semantic: number, field_types: [integer, float, monetary], renderer: FormSectionField}
+  sc.select.remote: {semantic: choice, field_types: [selection], renderer: FormSectionField}
+  sc.input.boolean: {semantic: boolean, field_types: [boolean], renderer: FormSectionField}
+  sc.input.date: {semantic: date, field_types: [date], renderer: FormSectionField}
+  sc.input.datetime: {semantic: datetime, field_types: [datetime], renderer: FormSectionField}
+  sc.table.data: {semantic: detail_table, field_types: [one2many, many2many], renderer: FormSectionField}
+  sc.tree.data: {semantic: hierarchical_collection, field_types: [one2many, many2many], renderer: FormSectionField}
+  sc.relation.many2one: {semantic: relation, field_types: [many2one], renderer: ProfessionalRelationFieldControl}
+  sc.relation.many2many: {semantic: relation_collection, field_types: [many2many], renderer: ProfessionalRelationFieldControl}
+  sc.relation.table: {semantic: detail_collection, field_types: [one2many], renderer: ProfessionalDetailCollectionControl}
+  sc.payment.settlement_detail_collection: {semantic: payment_settlement_detail_collection, field_types: [one2many], renderer: PaymentSettlementDetailCollectionControl}
+  sc.select.tags: {semantic: tag_collection, field_types: [many2many], renderer: ProfessionalRelationFieldControl}
+  sc.button.action: {semantic: action, field_types: [action], renderer: FormSectionField}
+  sc.auth.credential_entry: {semantic: credential_entry, field_types: [char], renderer: FormSectionField}
+  sc.auth.secret_confirmation: {semantic: secret_confirmation, field_types: [char], renderer: FormSectionField}
+  sc.auth.challenge_status: {semantic: challenge_status, field_types: [char, selection, text], renderer: FormSectionField}
+  sc.auth.one_time_secret: {semantic: one_time_secret, field_types: [char, text], renderer: FormSectionField, readiness: fail_closed}
+  sc.auth.support_action: {semantic: support_action, field_types: [action], renderer: FormSectionField}
+  sc.value.money: {semantic: money, field_types: [monetary], renderer: ProfessionalBusinessValueControl}
+  sc.value.percentage: {semantic: percentage, field_types: [float, integer], renderer: ProfessionalBusinessValueControl}
+  sc.display.status: {semantic: status, field_types: [selection, char], renderer: ProfessionalBusinessValueControl}
+  sc.value.duration: {semantic: duration, field_types: [float, integer], renderer: ProfessionalBusinessValueControl}
+  sc.display.text: {semantic: readable_value, field_types: ["*"], renderer: FormSectionField}

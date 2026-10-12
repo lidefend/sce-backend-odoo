@@ -28,15 +28,33 @@ P1_PROJECT_LAYOUT_PATH = ROOT / "addons/smart_construction_core/core_extension_p
 # the version literal the handler serves to a digest of the code that produces
 # the assembled contract; on drift this guard fails closed and the author
 # re-pins both values deliberately instead of the cache hiding the change.
-ASSEMBLED_CACHE_VERSION = "ui-contract-v2-2026-10-12-authenticated-projection-locale"
+ASSEMBLED_CACHE_VERSION = "ui-contract-v2-2026-10-12-collection-capability-declaration"
 ASSEMBLED_CACHE_HANDLER = "addons/smart_core/handlers/ui_contract_v2.py"
 ASSEMBLED_CACHE_INPUTS = (
     ASSEMBLED_CACHE_HANDLER,
     "addons/smart_core/core/unified_page_contract_v2_assembler.py",
     "addons/smart_core/handlers/ui_contract_v2_projection.py",
     "addons/smart_core/core/unified_page_contract_v2_client.py",
+    # The assembler resolves component keys through the contract registry, so the
+    # resolver and its generated carrier决定 assembled contract 的组件键。它们是运行时
+    # 输入，必须一并纳入指纹；否则声明改动会留下被缓存的旧装配。
+    "addons/smart_core/core/contract_runtime/semantic_resolver.py",
+    "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
+    # The resolver also annotates a field with the entity semantics projected out
+    # of the parsed model/view facts, so that carrier changes the assembled
+    # component keys too and has to be part of the same fingerprint.
+    "addons/smart_core/core/contract_runtime/domain_field_semantics_generated.py",
+    # The assembler imports the permission resolver directly, and the collection
+    # capabilities it publishes are produced by the governance surfaces through the
+    # single capability rule.  All of them are runtime inputs of the assembled
+    # contract, so a change to any of them must invalidate the served cache.
+    "addons/smart_core/core/unified_page_contract_v2_permissions.py",
+    "addons/smart_core/utils/collection_action_capability.py",
+    "addons/smart_core/utils/contract_governance.py",
+    "addons/smart_core/utils/contract_governance_list_surface.py",
+    "addons/smart_core/utils/contract_governance_user_surface.py",
 )
-ASSEMBLED_CACHE_INPUTS_SHA256 = "9ff095566f2a2022019f6979bce773a353adad8c0aeacc10d59baa0ee399a8e4"
+ASSEMBLED_CACHE_INPUTS_SHA256 = "a6fc054688afccc79995b68a3b863dfccb4fbd9829ed44c0b4ccb3635c5e4bc8"
 
 
 def _assembled_cache_digest() -> str:

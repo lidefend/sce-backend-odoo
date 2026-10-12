@@ -15,14 +15,14 @@
   ],
   "nativeStructureAuthority": {
     "carrier": "layoutContract.containerTree",
-    "selection": "formStructureContract.layoutPolicy=container_tree_authority",
+    "selection": "formStructureContract.structureAuthority=container_tree",
     "bodyAndNavigation": "same canonical native nodes; no field-type or editability regrouping",
     "legacyRetirement": "remove compatibility structure consumers after formal menu ledger reaches zero"
   },
   "summary": {
-    "schemaFieldCount": 76,
+    "schemaFieldCount": 77,
     "renderedAuthorityCount": 23,
-    "validatedNonVisualAuthorityCount": 53,
+    "validatedNonVisualAuthorityCount": 54,
     "unclassifiedCount": 0
   },
   "rows": [
@@ -54,7 +54,7 @@
       "path": "formStructureContract.columns",
       "classification": "rendered_authority",
       "semantic": "compatibility-only geometry",
-      "consumer": "presentNode.columns; forbidden for container_tree_authority"
+      "consumer": "presentNode.columns; forbidden for container_tree structure authority"
     },
     {
       "path": "formStructureContract.fieldLabels",
@@ -67,12 +67,6 @@
       "classification": "rendered_authority",
       "semantic": "compatibility-only membership",
       "consumer": "fieldSemanticIdentity; native roles derive from tree nodes"
-    },
-    {
-      "path": "formStructureContract.layoutPolicy",
-      "classification": "validated_non_visual_authority",
-      "reason": "producer policy trace; concrete slots/groups/columns carry render facts",
-      "consumer": "decodeFormStructureContract"
     },
     {
       "path": "formStructureContract.mode",
@@ -108,7 +102,7 @@
       "path": "formStructureContract.slots",
       "classification": "rendered_authority",
       "semantic": "compatibility-only structure",
-      "consumer": "structureSlot; empty for container_tree_authority"
+      "consumer": "structureSlot; empty for container_tree structure authority"
     },
     {
       "path": "formStructureContract.source",
@@ -126,6 +120,18 @@
       "path": "formStructureContract.sourceSectionTitles",
       "classification": "validated_non_visual_authority",
       "reason": "source trace; slots/groups carry the selected titles",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureContract.structureAuthority",
+      "classification": "validated_non_visual_authority",
+      "reason": "structure authority fact; concrete slots/groups/columns carry render facts",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureContract.structureSource",
+      "classification": "validated_non_visual_authority",
+      "reason": "structure provenance fact; names where the delivered body structure comes from",
       "consumer": "decodeFormStructureContract"
     },
     {

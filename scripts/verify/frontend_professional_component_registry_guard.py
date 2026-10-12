@@ -17,6 +17,32 @@ ROOT = Path(__file__).resolve().parents[2]
 # tag, and the comparison counts for that element's own name alone, so a
 # comparison parked in a helper no render element owns is not a dispatch.
 TYPE_DIRECTED_RENDERER = "FormSectionField"
+
+# The frontend component vocabulary is projected from contracts/registry/component.yaml
+# into one generated table.  The registry module owns the behaviour around those
+# rows and must not carry a second hand-written list, so the renderer authority is
+# read from the generated table and the registry is required to consume it.
+GENERATED_REGISTRY_REL = "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts"
+GENERATED_REGISTRY_SOURCE = "SEMANTIC_REGISTRY_ROWS"
+# Anchored on the row's closing brace: a row whose renderer is not a bare
+# literal (for example laundered through a cast) must fail to parse rather than
+# pass with its renderer silently unchecked.
+GENERATED_ROW_RE = re.compile(
+    r"componentKey:\s*'([^']+)',\s*semanticType:\s*'[^']*',\s*"
+    r"supportedFieldTypes:\s*\[[^\]]*\],\s*readiness:\s*'[^']+',\s*renderer:\s*'([^']+)'\}"
+)
+SECOND_REGISTRY_TABLE_RE = re.compile(r"\bregistration\s*\(\s*'([^']+)'")
+
+
+def generated_registry_rows(text: str) -> list[tuple[str, str]]:
+    """(componentKey, renderer) pairs declared by the generated frontend table."""
+    return GENERATED_ROW_RE.findall(text)
+
+
+def second_registry_table_keys(text: str) -> list[str]:
+    """Component keys a hand-written ``registration('...'`` list would re-declare."""
+    return sorted(set(SECOND_REGISTRY_TABLE_RE.findall(text)))
+
 RENDERER_BRANCH_GLOBS = (
     "frontend/apps/web/src/components/template/*.vue",
     "frontend/apps/web/src/components/professional-fields/*.ts",
@@ -33,7 +59,7 @@ FAIL_CLOSED_PREDICATE = "function declaresUnknownComponentRenderer("
 IDENTIFIER = re.compile(r"[A-Za-z_$][\w$]*")
 SEMANTIC_MARKERS = (
     "data-component-key", "data-component-readiness", "data-component-renderer",
-    "data-component-fallback", "data-contract-adapter", "data-contract-component-version",
+    "data-component-fallback", "data-contract-component-version",
 )
 SEMANTIC_BINDINGS = tuple(rf":{marker}\s*=" for marker in SEMANTIC_MARKERS)
 ALERT_ROLE = re.compile(r"""\brole\s*=\s*(?:"alert"|'alert')""")
@@ -1599,6 +1625,7 @@ def reachable_body_spans(text: str, names: set[str]) -> list[tuple[int, int]]:
 def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -> list[str]:
     failures: list[str] = []
     registry = read_text("frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts")
+    generated_registry = read_text(GENERATED_REGISTRY_REL)
     presenter = read_text("frontend/apps/web/src/app/presentation/contractFormPresenter.ts")
     renderer = read_text("frontend/apps/web/src/components/template/FormSection.vue")
     canonical_renderer = read_text("frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts")
@@ -1657,7 +1684,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         "PROFESSIONAL_COMPONENT_PRESENTATION_MODE_MISMATCH", "PROFESSIONAL_COMPONENT_RENDER_PROFILE_MISMATCH",
         "PROFESSIONAL_COMPONENT_CAPABILITY_MISSING",
         "PROFESSIONAL_COMPONENT_CONTRACT_REGISTRY_MISSING", "PROFESSIONAL_COMPONENT_CONTRACT_VERSION_MISSING",
-        "PROFESSIONAL_COMPONENT_CONTRACT_ADAPTER_MISSING",
+        "PROFESSIONAL_COMPONENT_CONTRACT_RENDER_TRAIT_FORBIDDEN",
     ):
         if marker not in registry:
             failures.append(f"registry missing fail-closed invariant {marker}")
@@ -1751,35 +1778,41 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
                 continue
             if name not in dispatched:
                 failures.append(f"no renderer branch dispatches {name}")
-        registration_list = re.search(r"(?ms)^const REGISTRATIONS = \[(.*?)^\] as const;", registry_code)
-        if registration_list is None:
-            failures.append("registry does not declare one closed registration list")
+        rows = generated_registry_rows(generated_registry)
+        declared_rows = len(re.findall(r"componentKey: '", generated_registry))
+        if not rows:
+            failures.append(
+                f"{GENERATED_REGISTRY_REL} declares no component row; the renderer "
+                "authority cannot be read"
+            )
+        elif len(rows) != declared_rows:
+            failures.append(
+                f"{GENERATED_REGISTRY_REL} declares {declared_rows} component rows but only "
+                f"{len(rows)} are readable; a row that cannot be read would silently lose its "
+                "renderer check"
+            )
+        for _component_key, renderer in rows:
+            if renderer not in renderer_names:
+                failures.append(f"the closed renderer union does not name the registered renderer {renderer}")
+            elif renderer != TYPE_DIRECTED_RENDERER and renderer not in dispatched:
+                failures.append(f"no renderer branch dispatches the registered renderer {renderer}")
+        if GENERATED_REGISTRY_SOURCE not in registry_code:
+            failures.append(
+                "registry does not build its registrations from the generated semantic registry"
+            )
+        second_table = second_registry_table_keys(registry_code)
+        if second_table:
+            failures.append(
+                "registry holds a second component vocabulary instead of consuming the "
+                "generated table: " + ", ".join(second_table)
+            )
+        factory = function_body(registry_code, "function registration(")
+        if factory is None:
+            failures.append("registry does not declare one registration factory")
         else:
-            calls = call_arguments(registration_list.group(1), "registration")
-            registry_blank = blank_literals(*scan_spans(registry_code))
-            if len(re.findall(r"\bregistration\s*\(", registry_blank)) != len(calls) + 1:
-                failures.append("registry registers a component outside its closed registration list")
-            registered: set[str] = set()
-            for arguments in calls:
-                if len(arguments) < 5:
-                    continue
-                literal = re.fullmatch(r"'([^']*)'", arguments[4])
-                if literal is None:
-                    failures.append("registry registration names a renderer that is not a bare union member")
-                    continue
-                registered.add(literal.group(1))
-            for name in sorted(registered):
+            for name in re.findall(r"\[\s*fieldType\s*,\s*'([^']+)'", factory):
                 if name not in renderer_names:
-                    failures.append(f"the closed renderer union does not name the registered renderer {name}")
-                elif name != TYPE_DIRECTED_RENDERER and name not in dispatched:
-                    failures.append(f"no renderer branch dispatches the registered renderer {name}")
-            factory = function_body(registry_code, "function registration(")
-            if factory is None:
-                failures.append("registry does not declare one registration factory")
-            else:
-                for name in re.findall(r"\[\s*fieldType\s*,\s*'([^']+)'", factory):
-                    if name not in renderer_names:
-                        failures.append(f"the closed renderer union does not name the mapped renderer {name}")
+                    failures.append(f"the closed renderer union does not name the mapped renderer {name}")
         if "as unknown as" in registry_code:
             failures.append("registry launders a renderer through an unknown-typed cast")
     if search_in_tag(
@@ -1893,11 +1926,11 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         SEMANTIC_BINDINGS + (r"\bv-for\s*=",),
     ):
         failures.append(
-            "FormSection does not carry the six semantic markers together on the field iterator element"
+            "FormSection does not carry the semantic markers together on the field iterator element"
         )
     elif not field_iterators:
         failures.append(
-            "FormSection carries the six semantic markers on an element that renders no field list"
+            "FormSection carries the semantic markers on an element that renders no field list"
         )
     if "componentResolution" not in canonical_renderer:
         failures.append("canonical renderer does not forward registry resolution")
