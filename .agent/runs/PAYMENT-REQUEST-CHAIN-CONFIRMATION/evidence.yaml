@@ -1,0 +1,5 @@
+evidence:
+  result_index: run.json
+  local_receipts: .runtime/agent-runs/PAYMENT-REQUEST-CHAIN-CONFIRMATION/
+  policy: reference_original_logs_do_not_duplicate_results
+  final_delivery: existing_governed_gate_receipts_required

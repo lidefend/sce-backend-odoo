@@ -1,0 +1,58 @@
+schema_version: 1
+goal:
+  id: PAYMENT-REQUEST-CHAIN-CONFIRMATION
+  title: payment_request_complete_chain_confirmation
+  status: completed
+  formal_product_layer: P1
+  supporting_layer: P0
+  layer_target: payment_request_contract_runtime_chain
+  module:
+    - contracts
+    - addons/smart_core/core/contract_runtime
+    - addons/smart_construction_core
+    - frontend/apps/web/src/app
+  baseline:
+    branch: audit/payment-request-chain-confirmation-20261013
+    full_sha: aeee27b0a6e30d5d3f6b9cd66953e4a999b48804
+    source: main_after_PR647_and_PR648
+  objective: >-
+    Confirm the complete chain for payment.request end to end on the frozen main
+    candidate: the contract declaration (contracts/domain + registry) resolves
+    through the single semantic/component vocabulary into the live runtime
+    projection and the renderer, and the real business journey
+    (create -> submit -> approve -> payment execution -> ledger -> done)
+    reconciles on the governed local.dev runtime. Report facts and the
+    domain-contract transitions drift; do not fix in this task.
+  product_boundary:
+    standard_vs_user_specific: platform_mechanism_and_industry_standard
+    why_here: >-
+      payment.request is the first business object expected to run on the
+      Contract Runtime; confirming its chain is a platform-mechanism plus
+      construction-standard read, owned by smart_core (mechanism) and
+      smart_construction_core (industry standard).
+    why_not_elsewhere:
+      - confirmation_only_no_source_change_no_contract_rewrite
+      - do_not_fix_the_reported_transitions_drift_here
+      - reuse_existing_governed_entries_and_evidence
+      - no_new_environment_fixture_authority_or_release
+    blast_radius:
+      - read_only_contract_and_carrier_inspection
+      - governed_local_dev_payment_full_chain_journey
+  acceptance:
+    - payment_request_contract_declaration_maps_to_projected_semantics
+    - live_runtime_projection_carries_the_declared_semantics
+    - governed_full_chain_journey_reconciles_request_execution_ledger
+    - transitions_drift_between_domain_contract_and_ScStateMachine_reported
+  exclusions:
+    - no_source_edit_no_commit_to_product_behavior
+    - no_new_tests_or_probe_framework
+    - no_full_browser_matrix
+  rollback: >-
+    No product source is changed; the run records evidence only. Any demo
+    record left by the journey is cleaned through the governed
+    make local.dev.reset_payment_request_fixture entry.
+  next_exact_step: >-
+    Confirmation delivered: contract declaration, semantic resolution and product
+    rendering are correct; the governed full-chain entry aborts on instrument
+    drift (F1) so the write chain is unverified. Await the owner ruling on
+    F1-F4; do not fix product behaviour in this run.
