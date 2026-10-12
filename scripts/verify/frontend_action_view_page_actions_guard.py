@@ -8,9 +8,11 @@ ACTION_VIEW = ROOT / "frontend/apps/web/src/views/ActionView.vue"
 # adopted official list template renders the same toolbar projections in a
 # second, mutually exclusive placement — the list card's leading slot, selected
 # by `standardListOperationsInCard` — so the source carries 11 base projections
-# plus the 3 relocated ones. The total stays exact: a 15th tag is a parallel
-# page action that no placement declares.
-EXPECTED_SC_BUTTON_PROJECTIONS = 14
+# plus the 3 relocated ones. The declared collection-scope action projection
+# (contract `surfacePolicies.collection_capabilities`, rendered in the same
+# leading slot) is the 15th: it is declared and placed, not a parallel page
+# action. The total stays exact; a 16th tag is one no placement declares.
+EXPECTED_SC_BUTTON_PROJECTIONS = 15
 
 
 def validate(source: str | None = None) -> list[str]:
@@ -30,6 +32,7 @@ def validate(source: str | None = None) -> list[str]:
         '<ScDialog\n      :open="businessCategoryCreatePickerVisible"',
         '@close="closeBusinessCategoryCreatePicker"',
         '<template #leading>',
+        'v-for="action in collectionActions"',
         "import ScButton from '../components/design-system/ScButton.vue';",
     )
     for marker in required_actions:

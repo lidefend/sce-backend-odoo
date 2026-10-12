@@ -1,8 +1,4 @@
 version: 1
-# Targets that are actually executed by a required CI check or by the governed
-# local quick lane. Reachability from these anchors is what makes "wired to a
-# make target" mean "enforced by a gate"; ``gate_required`` scripts below must
-# keep at least one referencing target reachable from this anchor set.
 gate_anchors:
 - target: ci.local.quick.run
   lane: local-quick
@@ -21,9 +17,6 @@ gate_anchors:
   lane: remote-frontend-full
   invoked_by:
   - frontend/apps/web/package.json
-# Scripts that claim required-gate enforcement. A script listed here must have a
-# referencing make target reachable from a declared gate anchor; wiring that
-# only terminates in an un-run aggregate is a recorded defect, not enforcement.
 gate_required:
 - frontend_decision_authority.py
 - frontend_decision_authority_guard.py
@@ -1229,12 +1222,12 @@ entries:
   owner: platform-team
   date: '2026-10-11'
   wire_or_retire: file-consumed
-  reason: invoked by a make/dev.mk acceptance-runtime baseline-rebuild unit target as
-    'python3 -m unittest scripts.verify.<module>'; that target is not reachable from
-    a declared gate anchor, so this self-test is dispositioned file-consumed rather
-    than gate-wired. The target name is deliberately not spelled out here, because
-    naming it inside a non-prose registry file is counted as a live reference by the
-    verification-lane-coverage audit and would spuriously revive a dead target.
+  reason: invoked by a make/dev.mk acceptance-runtime baseline-rebuild unit target
+    as 'python3 -m unittest scripts.verify.<module>'; that target is not reachable
+    from a declared gate anchor, so this self-test is dispositioned file-consumed
+    rather than gate-wired. The target name is deliberately not spelled out here,
+    because naming it inside a non-prose registry file is counted as a live reference
+    by the verification-lane-coverage audit and would spuriously revive a dead target.
 - script: test_frontend_acceptance_runtime_profile.py
   status: active
   owner: platform-team
@@ -1532,10 +1525,9 @@ entries:
   owner: platform-team
   date: '2026-10-09'
   wire_or_retire: file-consumed
-  reason: invoked as 'PYTHONPATH="$(ROOT_DIR)" python3 -m unittest
-    scripts.verify.test_product_view_structure_contract' inside make/guards.mk (target
-    verify.product_view_structure.contract.unit); module-form invocation is recorded
-    as a file reference, not a make-target reference
+  reason: invoked as 'PYTHONPATH="$(ROOT_DIR)" python3 -m unittest scripts.verify.test_product_view_structure_contract'
+    inside make/guards.mk (target verify.product_view_structure.contract.unit); module-form
+    invocation is recorded as a file reference, not a make-target reference
 - script: test_retired_p1_alias_view_cleanup_migration.py
   status: orphan
   owner: platform-team

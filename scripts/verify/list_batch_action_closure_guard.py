@@ -342,34 +342,36 @@ def _probe_frontend_sources(errors: list[str]) -> None:
         errors,
     )
     _assert(
-        ':selection-enabled="listProfile?.selection_policy?.enabled !== false"' in action_view,
+        ':selection-enabled="selectionEnabled"' in action_view
+        and "resolveDeclaredSelectionCapability(" in action_view,
         "ActionView must consume the backend selection policy without model branches",
         errors,
     )
     selection_runtime = _read("frontend/apps/web/src/app/runtime/actionViewSelectionExportRuntime.ts")
+    capability_runtime = _read("frontend/apps/web/src/app/runtime/actionViewCollectionCapabilityRuntime.ts")
     _assert(
         "useActionViewSelectionActionRuntime(" in action_view and "contractActions: contractActionButtons" in action_view,
         "ActionView must compose the selection-action runtime that executes the declared batch policy",
         errors,
     )
     _assert(
-        "resolveSelectionActions(" in selection_action_runtime
-        and "execution_intents" in selection_action_runtime,
-        "the batch selection surface must read the declared batch policy instead of naming batch actions",
+        "resolveSurfaceCapabilities(" in selection_action_runtime
+        and "SELECTION_SCOPE" in selection_action_runtime,
+        "the batch selection surface must read the declared selection-scope capability list instead of naming batch actions",
         errors,
     )
     _assert(
         # The client maps a *declared* intent onto a client executor; it never
         # decides which batch actions exist.  A declared action whose intent this
         # build cannot execute must be offered unresolved, not hidden.
-        "DECLARED_BATCH_EXECUTORS" in selection_runtime
-        and "intents[action]" in selection_runtime
-        and "'api.data': 'export_csv'" in selection_runtime
-        and "'api.data.unlink': 'unlink'" in selection_runtime
-        and "'api.data.batch': 'batch_write'" in selection_runtime
-        and "executor === 'export_csv'" in selection_runtime
-        and "String(declaration.deleteMode" in selection_runtime
-        and "String(declaration.activeField" in selection_runtime
+        "DECLARED_CAPABILITY_EXECUTORS" in capability_runtime
+        and "'api.data': 'export_csv'" in capability_runtime
+        and "'api.data.unlink': 'unlink'" in capability_runtime
+        and "'api.data.batch': 'batch_write'" in capability_runtime
+        and "'api.data.import': 'import_records'" in capability_runtime
+        and "resolveSurfaceCapabilities(" in selection_action_runtime
+        and "SELECTION_SCOPE" in selection_action_runtime
+        and "String(options.batchPolicy.value.delete_mode || 'none')" in selection_action_runtime
         and ".filter((action) =>" not in selection_runtime,
         "batch selection must execute the declared intent, guard delete/archive from the declared policy, and never whitelist actions by name",
         errors,
@@ -406,12 +408,23 @@ def _probe_backend_handlers(errors: list[str]) -> None:
     _assert("dry_run = parse_bool" in unlink, "api.data.unlink must keep dry_run support", errors)
     user_surface = _read("addons/smart_core/utils/contract_governance_user_surface.py")
     list_surface = _read("addons/smart_core/utils/contract_governance_list_surface.py")
+    capability_module = _read("addons/smart_core/utils/collection_action_capability.py")
+    _assert(
+        "SELECTION_SCOPE_INTENTS" in capability_module
+        and '"export": "api.data"' in capability_module
+        and '"archive": "api.data.batch"' in capability_module
+        and '"activate": "api.data.batch"' in capability_module
+        and '"delete": "api.data.unlink"' in capability_module
+        and '"export_csv"' in capability_module,
+        "the single capability module must bind every selection-scope action to an executable backend intent",
+        errors,
+    )
     for source, label in ((user_surface, "user surface"), (list_surface, "standard list")):
         _assert(
-            'action: "api.data" if action == "export"' in source
-            and '"api.data.unlink" if action == "delete" else "api.data.batch"' in source
-            and '"export_csv"' in source,
-            f"{label} must bind every published batch action to an executable backend intent",
+            "build_collection_capabilities(" in source
+            and "project_selection_policy(" in source
+            and "collection_capabilities" in source,
+            f"{label} must publish the declared capability list and project the selection policy from it",
             errors,
         )
     api_data = _read("addons/smart_core/handlers/api_data.py")

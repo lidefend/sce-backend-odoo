@@ -43,9 +43,37 @@ verify.e2e.ops_batch_smoke: guard.prod.forbid check-compose-project check-compos
 verify.list_batch_action.closure_guard: guard.prod.forbid
 	@python3 scripts/verify/list_batch_action_closure_guard.py
 
+# The collection-capability rule is a pure function of the caller's effective
+# rights and the model's field map, so it is provable without a runtime.  This
+# entry locks the biconditional (import declared exactly when the create right is
+# granted), the fail-closed reading of an absent right, and the absence of any
+# model/surface input that would let a per-model special case exist.  It runs
+# beside the guards that consume the rule.
+.PHONY: verify.contract.collection_capability_projection.unit
+verify.contract.collection_capability_projection.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/collection_capability_rights_projection_test.py
+	@python3 scripts/verify/collection_capability_rights_projection_test.py
+
 .PHONY: verify.user_delete_data.closure_guard
 verify.user_delete_data.closure_guard: guard.prod.forbid
 	@python3 scripts/verify/user_delete_data_closure_guard.py
+
+# `ui.contract.v2` is addressed by action (menus/windows, which carry the
+# domain/context/target/view_mode binding) and by model (relationship drill-down
+# and action-less record pages, which have no action to bind to).  Both are
+# adapters onto one projection core and may differ only in entry fact, never in
+# business fact: the same model, role and client type must project identical
+# head.permissions and identical collection capabilities.  A second permission
+# resolver behind either entry would read "the action page edits, the model page
+# is read-only" with no contract declaring it, and the frontend would then have
+# to compensate per entry.  The guard locks the mechanism that keeps the
+# equality structural, and its falsification test proves the guard still
+# detects a broken carrier before the baseline is trusted.
+.PHONY: verify.contract.entry_equivalence.guard
+verify.contract.entry_equivalence.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/contract_v2_entry_equivalence_guard.py scripts/verify/test_contract_v2_entry_equivalence_guard.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_contract_v2_entry_equivalence_guard.py
+	@python3 scripts/verify/contract_v2_entry_equivalence_guard.py
 
 # The delete-data guard is a text probe over the frontend write path, so the
 # only way to know it still proves anything is to falsify it on purpose.  This
