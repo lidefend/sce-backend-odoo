@@ -3475,3 +3475,101 @@ make: *** [make/ci.mk:1039: verify.contract.architecture.suite] Error 127
 - **主线集成未完成**：待推送并取 full 车道转绿证据后按所有者 CI 规则合并。
 - **版本发布未做**。
 - **产品交付未完成**：仍待 owner 本人登录验收（`wutao` / `123456` / `sc_demo` / `http://1.95.85.92:18081/`），属人工步骤。
+
+## 36. 第 36 轮（2026-10-12）：同一车道覆盖缺陷的第四个实例——需要前端 `node_modules` 的 node harness 又被接进后端静态套件（P4 交付工具，无产品代码）
+
+### 36.1 触发与事实链
+
+第 35 轮修复推送后按 35.8 的顺序派发 full 车道（`gh workflow run professional_quality_gate.yml`，run `38201811102`，head `46856021`）。结果：`professional_authorization` 与 `python310_runtime_compatibility` success，`professional_quality_gate` failure（job `114656684687`）。失败点：
+
+```
+node:internal/modules/cjs/loader:1404
+Error: Cannot find module '../../frontend/apps/web/node_modules/typescript'
+Require stack:
+- /home/runner/work/sce-backend-odoo/sce-backend-odoo/scripts/verify/action_view_route_runtime_smoke.js
+    at Object.<anonymous> (.../scripts/verify/action_view_route_runtime_smoke.js:7:12)
+make: *** [make/ci.mk:1095: verify.contract.architecture.suite] Error 1
+```
+
+第 35 轮新增的 `static_suite_frontend_toolchain_guard` 在同一次运行里报 **PASS**——也就是说，这个新守卫没有抓到本次缺陷本身。这是本轮必须解释清楚的部分。
+
+### 36.2 本类缺陷的第四个实例，以及为什么前三层守卫漏掉了它
+
+`verify.contract.architecture.suite` 的 recipe 里内联了三行 `@node scripts/verify/*_smoke.js`：
+
+| 脚本 | 第 7 行 | 依赖 |
+| --- | --- | --- |
+| `scripts/verify/action_view_route_runtime_smoke.js` | `require('../../frontend/apps/web/node_modules/typescript')` | 已安装的前端依赖 |
+| `scripts/verify/action_view_contract_action_runtime_smoke.js` | 同上 | 已安装的前端依赖 |
+| `scripts/verify/navigation_context_smoke.js` | 同上 | 已安装的前端依赖 |
+
+三者都在 `vm` 里用 `ts.transpileModule` 编译 `frontend/apps/web` 源码，因此必须能看到前端 `node_modules`。而 `verify.contract.architecture.suite` 是 `ci.professional.backend.shard-verify`（`make/ci.mk:765`）的前置，`professional_quality_gate.yml` 的 full 车道只跑该 shard，**从不执行 `pnpm install`**。所以失败形态必然是 `MODULE_NOT_FOUND`，而不是真实门禁结论——与 34.6（esbuild）、35.2（tsc）完全同类，只是第四种表现形式。
+
+守卫漏掉它的原因有两个**独立的帧盲区**，这也是本轮真正要修的体系缺陷：
+
+1. **recipe 帧只认工具链 token**：`FRONTEND_TOOLCHAIN_TOKENS = ('node_modules/.bin/', 'pnpm_exec.sh', 'pnpm exec', 'corepack')`。而这次 recipe 是裸 `node <script>`——不含任何 token，因此 recipe 层判据不成立。
+2. **脚本帧只开 `.sh|.py`**：`SCRIPT_REFERENCE_RE = r"\b(scripts/[A-Za-z0-9_./-]+\.(?:sh|py))\b"`。三个 harness 是 `.js`，于是从未被打开、其 `require(...)` 也就从未被看见。
+
+结论：第 35 轮建立的边界是真边界，但**覆盖帧比它声称测量的面窄**。这属于验证工具的测量缺陷，不是产品缺陷、不是断言缺陷，也不是环境缺陷。
+
+### 36.3 修复：车道归位 + 帧扩宽（不放宽断言、不缩小覆盖）
+
+| 项 | 归属层 | 文件 |
+| --- | --- | --- |
+| 三个 harness 移出共享静态套件 | 车道接线 | `make/ci.mk`（`verify.contract.architecture.suite` recipe） |
+| 新建 `verify.action_view_runtime_smoke.behavior` 并接入本地与前端车道 | 车道接线 | `make/ci.mk`（新 target + `.PHONY` + `ci.local.quick.run` 前置）、`make/frontend.mk`（`verify.frontend.pr.unit` / `verify.frontend.release.unit`） |
+| 脚本帧扩到 `.js|.mjs|.cjs` | 机检守卫 | `scripts/verify/static_suite_frontend_toolchain_guard.py` |
+| 新增 Node loader 帧（`require(` / `import(` / `from `）+ 三个 harness 纳入强制归位集合 | 机检守卫 | 同上 |
+| 单测覆盖新帧与真实负例 | 机检守卫 | `scripts/verify/test_static_suite_frontend_toolchain_guard.py`（10 → 14 用例） |
+
+Node loader 帧刻意只认**执行形态**：`node_modules` 单独出现是声明数据（模块搜索路径 `path.resolve('frontend/apps/web/node_modules')`、别名 `${root}/frontend/apps/web/node_modules/vue/...`），只有紧贴路径的 loader 关键字才算执行。这与 `.sh/.py` 帧「workspace-anchored 路径才算执行、裸 token 算声明数据」的既有判据同构，避免把合法的浏览器 runner 误报成泄漏。
+
+### 36.4 真实负例（先证明基线正常，再证明注入被检出）
+
+不是只有合成用例：
+
+- **基线**：当前仓库状态 `static_suite_frontend_toolchain_guard` PASS；`verify.contract.architecture.suite` 通过且**不再执行任何 node smoke**（`make -n verify.contract.architecture.suite | grep -c "node scripts/verify/action_view"` = 0）。
+- **注入**：用修复前的套件 recipe 体（含三行 `@node`）喂给守卫的 `collect_frontend_toolchain_hits()`，报出 **3 条**命中，路径形如 `ci.professional.backend.shard-verify -> verify.contract.architecture.suite -> scripts/verify/action_view_route_runtime_smoke.js: "require('../../frontend/apps/web/node_modules"`。
+- **归位可达性**：`make -n ci.local.quick.run`、`verify.frontend.pr.unit`、`verify.frontend.release.unit` 三者都能到达该 target；直接运行 `make verify.action_view_runtime_smoke.behavior` 得到三行 PASS。
+
+### 36.5 本地证据
+
+| 命令 | 结果 |
+| --- | --- |
+| `python3 -m unittest scripts.verify.test_static_suite_frontend_toolchain_guard` | OK，14 用例 |
+| `python3 scripts/verify/static_suite_frontend_toolchain_guard.py` | PASS |
+| `make verify.contract.architecture.suite` | PASS（`[OK] contract & architecture guard suite passed`），**不再执行 node smoke**，187 用例 |
+| `make verify.action_view_runtime_smoke.behavior` | 3 行 PASS（`action_view_route_runtime_smoke` / `action_view_contract_action_runtime_smoke` / `navigation_context_smoke`） |
+| `python3 scripts/verify/action_view_responsibility_map_guard.py` | PASS（该守卫要求 `ci.local.quick` 仍执行这三个 smoke 的 token，归位后仍成立） |
+| `python3 scripts/ci/node_syntax_check.py` | PASS（384 files） |
+| `python3 -m unittest scripts.ci.test_node_syntax_check` | OK，25 用例（共享套件仍持有 corpus 级 sweep 的唯一声明） |
+| `python3 scripts/verify/guard_registry_audit.py` | AUDIT PASS（1411 scripts / 189 unwired dispositioned / 3 gate_required enforced） |
+| `make ci.generated_evidence.preflight` | PASS（test inventory 1481 条当前；未产生生成证据漂移） |
+
+受影响检查按 `make agent.run.begin` → 执行 → `make agent.run.record` 登记（executor-recorded，非 CI 回执），日志在 `.runtime/final-acceptance/r36/`：
+
+| 检查 | target | 结果 | 用例数 |
+| --- | --- | --- | --- |
+| `static_suite_frontend_toolchain_guard` | `verify.contract.architecture.suite` | passed | 187 |
+| `action_view_runtime_smoke_behavior`（本轮新增） | `verify.action_view_runtime_smoke.behavior` | passed | 3 |
+| `frontend_pr_unit` | `verify.frontend.pr.unit` | passed | 209 |
+| `verification_lane_coverage` | `verify.verification.lane_coverage` | passed | 44 |
+| `ci_local_iteration` | `verify.baseline.iteration.execution.policy` | passed | 16 |
+| `test_coverage_registry` | `verify.test.coverage.registry` | passed | 17 |
+| `ci_workflow_contract` | `verify.ci.workflow.contract` | passed | 6 |
+
+`verification_lane_coverage` 复核的是**本次改动的度量面**：新增 1 个可达 target、三个脚本从「后端套件 + 本地」改为「本地 + 前端车道」，两向都不是 local-only / remote-only，`--check` 仍在冻结基线内（债务棘轮只许收缩）。
+
+其余声明了 `make/ci.mk` / `make/frontend.mk` 但 target 行为与本轮接线无关的检查（`role_surface_landing_contract_unit`、`trusted_scan_scope_unit`、`lane_telemetry`、`form_layout_span_unit`、`frontend_navigation_shell_unit`、`ci_scheduled_gates` 等）属既有的「按文件级声明过度失效」登记债，判据同 35.6：本轮只改共享套件 recipe 接线与两条前端车道的前置清单，不重跑、不为安心重跑。
+
+### 36.6 远端连带项
+
+- `main` 上定时 `professional_quality_gate`（run `38179577055`）与 `release_candidate_gate`（run `38180095789`）仍停在第 34 轮第二层（`main` 尚未合入 `6b7f2173`）；合并 PR #646 一并消除。
+- 本轮修复提交合入后，full 车道才具备「不以 MODULE_NOT_FOUND 结束」的可能——即 34→35→36 三层都必须绿，full 车道才有结论价值。
+
+### 36.7 四态（第 36 轮收口时点）
+
+- **批次级本轮完成**：车道归位 + 帧扩宽 + 真实负例 + 受影响集本地证据齐备。
+- **主线集成未完成**：待推送并取 full 车道转绿证据后按所有者 CI 规则合并。
+- **版本发布未做**。
+- **产品交付未完成**：仍待 owner 本人登录验收（`wutao` / `123456` / `sc_demo` / `http://1.95.85.92:18081/`），属人工步骤。
