@@ -744,7 +744,8 @@
         "model",
         "viewType",
         "mode",
-        "layoutPolicy",
+        "structureSource",
+        "structureAuthority",
         "objectProfile",
         "navigation",
         "slots",
@@ -772,9 +773,16 @@
         "presentationMode": {
           "enum": ["task", "workspace"]
         },
-        "layoutPolicy": {
-          "type": "string",
-          "minLength": 1
+        "structureSource": {
+          "enum": [
+            "native_view",
+            "business_orchestration",
+            "business_category_policy",
+            "entry_semantic_surface"
+          ]
+        },
+        "structureAuthority": {
+          "enum": ["container_tree", "native_form_slots", "task_sections"]
         },
         "columns": {"type": "integer", "minimum": 1},
         "objectProfile": {
@@ -816,7 +824,7 @@
       },
       "allOf": [
         {
-          "if": {"properties": {"layoutPolicy": {"const": "container_tree_authority"}}},
+          "if": {"properties": {"structureAuthority": {"const": "container_tree"}}},
           "then": {
             "properties": {"slots": {"maxItems": 0}, "fieldRoles": {"maxProperties": 0}},
             "not": {"required": ["columns"]}

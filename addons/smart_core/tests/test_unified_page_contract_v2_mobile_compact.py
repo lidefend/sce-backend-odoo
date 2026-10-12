@@ -512,7 +512,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                 "model": "x.document",
                 "viewType": "form",
                 "mode": "readonly",
-                "layoutPolicy": "native_authority",
+                "structureSource": "native_view", "structureAuthority": "native_form_slots",
                 "objectProfile": {"titleField": "name", "stateField": "", "factAuthority": "orm"},
                 "navigation": {"title": "Document"},
                 "slots": [{
@@ -557,7 +557,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                 "model": "x.document",
                 "viewType": "form",
                 "mode": "native_structured_form",
-                "layoutPolicy": "native_authority",
+                "structureSource": "native_view", "structureAuthority": "native_form_slots",
                 "objectProfile": {"titleField": "name", "stateField": "", "factAuthority": "orm"},
                 "navigation": {"title": "Document"},
                 "slots": [{
@@ -597,7 +597,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
 
     def test_configured_structure_keeps_explicit_field_label(self):
         structure = {
-            "layoutPolicy": "business_config_sections",
+            "structureSource": "business_orchestration", "structureAuthority": "task_sections",
             "slots": [{
                 "slot": "body",
                 "fieldRefs": ["name"],

@@ -311,6 +311,28 @@ export function resolveContractV2GlobalStatus(store: ContractV2NormalizedStore |
   };
 }
 
+/**
+ * The page-level access verdict the contract published, in one place.
+ *
+ * `statusContract.globalStatus` is the only authority for whether this role may
+ * open this page at all.  Both the action surfaces and the record form consume
+ * this selector instead of re-deriving the rule, so a contract-declared denial
+ * cannot be dropped by one consumer while another honors it.
+ */
+export function resolveContractV2PageAccessVerdict(
+  store: ContractV2NormalizedStore | null,
+): { blocked: boolean; reasonCode: string } {
+  const globalStatus = resolveContractV2GlobalStatus(store);
+  const pageAuth = asText(globalStatus?.pageAuth).toLowerCase();
+  if (globalStatus?.pageVisible === false || pageAuth === 'none') {
+    return {
+      blocked: true,
+      reasonCode: asText(globalStatus?.reasonCode) || 'UNIFIED_PAGE_CONTRACT_V2_PAGE_FORBIDDEN',
+    };
+  }
+  return { blocked: false, reasonCode: '' };
+}
+
 export function resolveContractV2MainData(store: ContractV2NormalizedStore | null): ContractV2Dictionary {
   if (!store) return {};
   return asDict(store.snapshot.dataContract.mainData);

@@ -1,3 +1,5 @@
+import { resolveContractV2PageAccessVerdict } from '../../app/contracts/v2/store';
+import type { ContractV2NormalizedStore } from '../../app/contracts/v2/types';
 import type { ContractAccessPolicy } from './types';
 
 function normalizePolicyRows(value: unknown) {
@@ -28,4 +30,20 @@ export function normalizeContractAccessPolicy(raw: unknown): ContractAccessPolic
     blockedFields: normalizePolicyRows(row.blocked_fields),
     degradedFields: normalizePolicyRows(row.degraded_fields),
   };
+}
+
+/**
+ * The page-level access decision has exactly one source of truth: the v2
+ * contract's `statusContract.globalStatus`.  The frontend only projects that
+ * fact here.  When the contract declares `pageVisible:false` / `pageAuth:none`
+ * the page becomes `block` and keeps the contract's own reason code, so the
+ * record page lifecycle raises `ContractAccessPolicyError` instead of silently
+ * rendering a form the role was never granted.
+ */
+export function resolveContractPageAccessPolicy(
+  store: ContractV2NormalizedStore | null,
+): ContractAccessPolicy {
+  const verdict = resolveContractV2PageAccessVerdict(store);
+  if (!verdict.blocked) return normalizeContractAccessPolicy(undefined);
+  return normalizeContractAccessPolicy({ mode: 'block', reason_code: verdict.reasonCode });
 }

@@ -91,7 +91,8 @@ const previewSnapshot = {
     } },
   formStructureContract: {
     source: 'ui.contract.v2.form_structure_contract', structureVersion: '1.1', model: 'x.preview', viewType: 'form',
-    mode: 'native_structured_form', presentationMode: 'task', layoutPolicy: 'container_tree_authority',
+    mode: 'native_structured_form', presentationMode: 'task',
+    structureSource: 'native_view', structureAuthority: 'container_tree',
     objectProfile: { model: 'x.preview', kind: 'business_form', factAuthority: 'business_object_model_and_view' },
     navigation: { title: 'Preview' }, slots: [], fieldRoles: {},
     sourceAuthority: { kind: 'unified_page_contract_v2', runtime_carrier: 'ui.contract.v2.form_structure_contract',
@@ -151,3 +152,34 @@ assert.throws(
   'an undeclared lifecycle definition field must still fail closed',
 );
 console.log('[contract_v2_runtime_policy_test] published version ref cases=3 passed');
+
+// The page-level access verdict must be a projection of the contract's own
+// statusContract.globalStatus.  A form page is never allowed to discard the
+// declared denial and fall back to an unauthorized empty form.
+const { resolveContractPageAccessPolicy } = await import('../src/pages/contractForm/accessPolicy');
+const forbiddenCreateStore = {
+  snapshot: {
+    statusContract: {
+      globalStatus: { pageVisible: false, pageAuth: 'none', reasonCode: 'FORM_CREATE_NOT_ALLOWED' },
+    },
+  },
+} as never;
+const forbiddenPolicy = resolveContractPageAccessPolicy(forbiddenCreateStore);
+assert.equal(forbiddenPolicy.mode, 'block', 'a contract-declared page denial must block the form page');
+assert.equal(forbiddenPolicy.reasonCode, 'FORM_CREATE_NOT_ALLOWED', 'the contract reason code must survive projection');
+assert.equal(forbiddenPolicy.message, '', 'the page must not invent its own denial message');
+assert.equal(resolveContractPageAccessPolicy(null).mode, 'allow', 'an absent contract keeps the page unblocked');
+assert.equal(
+  resolveContractPageAccessPolicy({
+    snapshot: { statusContract: { globalStatus: { pageVisible: true, pageAuth: 'none' } } },
+  } as never).mode,
+  'block',
+  'pageAuth:none blocks the page even when pageVisible is not declared false',
+);
+const authorizedStore = {
+  snapshot: { statusContract: { globalStatus: { pageVisible: true, pageAuth: 'edit' } } },
+} as never;
+const authorizedPolicy = resolveContractPageAccessPolicy(authorizedStore);
+assert.equal(authorizedPolicy.mode, 'allow', 'an authorized page keeps rendering');
+assert.equal(authorizedPolicy.reasonCode, '', 'an authorized page carries no denial reason');
+console.log('[contract_v2_runtime_policy_test] page access policy cases=6 passed');

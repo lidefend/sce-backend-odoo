@@ -511,7 +511,8 @@ Widget：
 | `viewType` | `form` | 只适用于表单 |
 | `mode` | string | 当前结构模式 |
 | `presentationMode` | `task\|workspace` | 任务式办理或对象工作台 |
-| `layoutPolicy` | string | 正式布局策略 |
+| `structureSource` | 枚举 | 交付结构的来源事实（`native_view`/`business_orchestration`/`business_category_policy`/`entry_semantic_surface`） |
+| `structureAuthority` | 枚举 | 结构权威载体（`container_tree`/`native_form_slots`/`task_sections`） |
 | `columns` | integer | 总列数（可选） |
 | `objectProfile` | object | `model/kind/factAuthority`，指出业务事实权威 |
 | `navigation.title` | string | 页面导航标题 |

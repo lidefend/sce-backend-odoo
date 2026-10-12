@@ -33,9 +33,9 @@ class CandidateFrontendContractTest(unittest.TestCase):
           const response = (data) => ({json:async()=>({data}),status:()=>200,headers:()=>({'x-trace-id':'trace'}),
             request:()=>({postData:()=>JSON.stringify({intent:'ui.contract.v2',params:{op:'action_open',action_id:609}})})});
           const target = {captureFormalEntryIdentity:true,name:'contract'};
-          await captureFormalEntryIdentity(response({formStructureContract:{layoutPolicy:'category_sections_as_task_tabs'},
+          await captureFormalEntryIdentity(response({formStructureContract:{structureSource:'business_category_policy',structureAuthority:'task_sections'},
             actions:{settings:{view_id:123}}}), target, 'desktop', 'record');
-          await captureFormalEntryIdentity(response({formStructureContract:{layoutPolicy:'category_sections_as_task_tabs'}}), target, 'desktop', 'record');
+          await captureFormalEntryIdentity(response({formStructureContract:{structureSource:'business_category_policy',structureAuthority:'task_sections'}}), target, 'desktop', 'record');
           if (saved[0].sources[0].value !== 123 || saved[0].request.params.action_id !== 609) throw Error('runtime source lost');
           if (saved[1].sources.length !== 0 || saved[1].formStructureContract.sourceAuthority) throw Error('missing source invented');
           if (saved[0].traceId !== 'trace' || saved[0].companyId !== 1) throw Error('identity lost');

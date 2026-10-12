@@ -1951,7 +1951,8 @@ class UiContractV2Handler(BaseIntentHandler):
             "viewType": "form",
             "mode": "business_category_task_form",
             "presentationMode": "task",
-            "layoutPolicy": "category_sections_as_task_tabs",
+            "structureSource": "business_category_policy",
+            "structureAuthority": "task_sections",
             "objectProfile": {
                 "model": model,
                 "kind": "business_form",
@@ -2696,7 +2697,8 @@ class UiContractV2Handler(BaseIntentHandler):
                 "mode": "native_structured_form",
                 "presentationMode": _projection.form_structure_presentation_mode(
                     "native_authority", (governance or {}).get("form_presentation_mode")),
-                "layoutPolicy": "container_tree_authority",
+                "structureSource": "native_view",
+                "structureAuthority": "container_tree",
                 "objectProfile": {"model": model, "kind": "business_form",
                                   "factAuthority": "business_object_model_and_view"},
                 "navigation": {"title": navigation_title or "业务办理"},
@@ -2770,8 +2772,9 @@ class UiContractV2Handler(BaseIntentHandler):
                     **({"columns": form_columns} if form_columns > 0 else {}),
                     "mode": "business_task_form" if presentation_mode == "task" else "native_structured_form",
                     "presentationMode": presentation_mode,
-                    "layoutPolicy": (
-                        "business_config_sections" if presentation_mode == "task" else "native_authority"
+                    "structureSource": "business_orchestration",
+                    "structureAuthority": (
+                        "task_sections" if presentation_mode == "task" else "native_form_slots"
                     ),
                     "objectProfile": {
                         "model": model,
@@ -2996,7 +2999,12 @@ class UiContractV2Handler(BaseIntentHandler):
             "viewType": "form",
             "mode": "business_task_form" if semantic_surface else "native_structured_form",
             "presentationMode": presentation_mode,
-            "layoutPolicy": "overview_then_task_slots" if structure_authority == "entry_semantic_surface" else "native_authority",
+            "structureSource": (
+                "entry_semantic_surface" if structure_authority == "entry_semantic_surface" else "native_view"
+            ),
+            "structureAuthority": (
+                "task_sections" if structure_authority == "entry_semantic_surface" else "native_form_slots"
+            ),
             "objectProfile": {
                 "model": model,
                 "kind": "business_form",

@@ -73,7 +73,8 @@
     "viewType": "form",
     "mode": "business_task_form",
     "presentationMode": "task",
-    "layoutPolicy": "overview_then_task_slots",
+    "structureSource": "entry_semantic_surface",
+    "structureAuthority": "task_sections",
     "objectProfile": {
       "model": "project.project",
       "kind": "business_form",

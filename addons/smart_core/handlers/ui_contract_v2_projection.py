@@ -1134,7 +1134,7 @@ def apply_business_config_form_groups(
                 if isinstance(contract_field_roles.get(name), dict)
                 else {}
             )
-            if role and structure.get("layoutPolicy") == "container_tree_authority":
+            if role and structure.get("structureAuthority") == "container_tree":
                 # Membership is derived from the existing tree occurrence.
                 node["formStructureRole"] = {"role": role, "slot": parent_id, "group": parent_id}
             elif role and authority_role:

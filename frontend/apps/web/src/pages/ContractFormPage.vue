@@ -421,7 +421,7 @@ import {
   resolvePrimaryCreateFooterAction,
   resolveV2ButtonStatus,
 } from './contractForm/actionContract';
-import { normalizeContractAccessPolicy } from './contractForm/accessPolicy';
+import { resolveContractPageAccessPolicy } from './contractForm/accessPolicy';
 import {
   fieldInputType,
   fieldType,
@@ -1569,7 +1569,9 @@ const policyContext = computed(() => buildContractFormPolicyContext({
 }));
 const warnings = computed(() => normalizeContractWarnings(undefined));
 const contractAccessPolicy = computed<ContractAccessPolicy>(() => {
-  return normalizeContractAccessPolicy(undefined);
+  // Page-level access is declared by the contract's statusContract.globalStatus;
+  // the page only projects that fact and never invents its own verdict.
+  return resolveContractPageAccessPolicy(v2ContractStore.value);
 });
 const workflowTransitions = computed(() => buildWorkflowTransitions({
   rows: resolveContractV2WorkflowContract(v2ContractStore.value).transitions,
@@ -1954,7 +1956,7 @@ useFormAuxiliaryWatchersRuntime({
 watch(() => route.query.config_mode, (mode) => applyRouteConfigMode(mode), { immediate: true });
 const boundFormDesignerSnapshot = computed(() => {
   const snapshot = v2ContractStore.value?.snapshot;
-  return snapshot?.formStructureContract?.layoutPolicy === 'container_tree_authority' ? snapshot : null;
+  return snapshot?.formStructureContract?.structureAuthority === 'container_tree' ? snapshot : null;
 });
 </script><style scoped src="./contractForm/ContractFormPage.css"></style>
 <style scoped>

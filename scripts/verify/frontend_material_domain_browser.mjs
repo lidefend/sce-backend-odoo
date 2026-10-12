@@ -361,7 +361,7 @@ function inboundNativeContract(contract) {
     viewType: findKey(contract, 'viewType'),
     effectiveRenderProfile: findKey(contract, 'effectiveRenderProfile'),
     effectiveRecordCapabilities: findKey(contract, 'effectiveRecordCapabilities'),
-    layoutPolicy: structure.layoutPolicy || '',
+    structureAuthority: structure.structureAuthority || '',
     authority: {
       resolvedActionId: Number(governance.resolvedActionId || 0),
       resolvedViewId: Number(governance.resolvedViewId || 0),
@@ -378,7 +378,7 @@ function requireInboundNativeContract(contract, actionId, profile) {
   const identity = inboundNativeContract(contract);
   check(identity.model === 'sc.material.inbound' && identity.viewType === 'form',
     'material inbound main form contract is missing', identity);
-  check(identity.layoutPolicy === 'container_tree_authority'
+  check(identity.structureAuthority === 'container_tree'
     && identity.authority.formStructureAuthority === 'native_authority'
     && identity.authority.compatibilityDependencies.length === 0,
   'material inbound still depends on compatibility structure', identity);
@@ -558,7 +558,7 @@ function requireHandlingNativeContract(contract, entryKey, spec, actionId, profi
   const expectedModel = entryKey === 'inbound' ? 'sc.material.inbound' : 'sc.material.outbound';
   check(identity.model === expectedModel && identity.viewType === 'form',
     `material handling form contract is missing: ${entryKey}`, identity);
-  check(identity.layoutPolicy === 'container_tree_authority'
+  check(identity.structureAuthority === 'container_tree'
     && identity.authority.formStructureAuthority === 'native_authority'
     && identity.authority.compatibilityDependencies.length === 0,
   `material handling entry still depends on compatibility structure: ${entryKey}`, identity);

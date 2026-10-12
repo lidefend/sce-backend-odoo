@@ -163,7 +163,7 @@ existing evidence. No backend or account writes were performed in this batch.
 
 ## Segment 53.7: live task authority replaces stale slot assumptions
 
-The existing payment action775/view2145 now returns `container_tree_authority`, an effective native field tree and intentionally empty retired `slots`. Its published configuration and native semantic anchors already provide the business structure. The 1440/390 browser probe verifies actual project/partner field positions: two columns on desktop, one column on narrow screens. No contract/layout rewrite is needed for `task.field-grid`.
+The existing payment action775/view2145 now returns `structureAuthority=container_tree`, an effective native field tree and intentionally empty retired `slots`. Its published configuration and native semantic anchors already provide the business structure. The 1440/390 browser probe verifies actual project/partner field positions: two columns on desktop, one column on narrow screens. No contract/layout rewrite is needed for `task.field-grid`.
 
 `task.slot-coverage` remains open as a responsibility-level coverage check, not a request to revive slots. Compare required facts and their native/display aliases, conditional visibility, notebook and relation responsibilities before claiming closure. The scoped report `tpl07-1790768273395/report.json` proves the current authority and geometry, not all business coverage.
 

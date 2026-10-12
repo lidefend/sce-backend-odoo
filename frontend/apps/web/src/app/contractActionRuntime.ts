@@ -1,7 +1,7 @@
 import { parseMaybeJsonRecord } from './contractRuntime';
 import {
   resolveContractV2EffectiveFormCapabilities,
-  resolveContractV2GlobalStatus,
+  resolveContractV2PageAccessVerdict,
   type ContractV2NormalizedStore,
 } from './contracts/v2';
 
@@ -18,23 +18,14 @@ export function resolveContractViewMode(store: ContractV2NormalizedStore | null)
 }
 
 export function resolveContractAccessPolicy(store: ContractV2NormalizedStore | null): ContractAccessPolicySnapshot {
-  const globalStatus = resolveContractV2GlobalStatus(store);
-  const pageAuth = String(globalStatus?.pageAuth || '').trim().toLowerCase();
-  if (globalStatus?.pageVisible === false || pageAuth === 'none') {
-    return {
-      mode: 'block',
-      reasonCode: globalStatus?.reasonCode || 'UNIFIED_PAGE_CONTRACT_V2_PAGE_FORBIDDEN',
-    };
-  }
-  return { mode: 'allow', reasonCode: '' };
+  const verdict = resolveContractV2PageAccessVerdict(store);
+  return verdict.blocked
+    ? { mode: 'block', reasonCode: verdict.reasonCode }
+    : { mode: 'allow', reasonCode: '' };
 }
 
 export function resolveContractReadRight(store: ContractV2NormalizedStore | null) {
-  const policy = resolveContractAccessPolicy(store);
-  if (policy.mode === 'block') return false;
-  const globalStatus = resolveContractV2GlobalStatus(store);
-  const pageAuth = String(globalStatus?.pageAuth || '').trim().toLowerCase();
-  if (globalStatus?.pageVisible === false || pageAuth === 'none') return false;
+  if (resolveContractAccessPolicy(store).mode === 'block') return false;
   const capabilities = resolveContractV2EffectiveFormCapabilities(store);
   if (capabilities) return capabilities.read;
   return true;

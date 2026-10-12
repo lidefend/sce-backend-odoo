@@ -2566,7 +2566,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
             {"提交审批时生成"},
         )
         form_structure = contract["formStructureContract"]
-        self.assertEqual(form_structure.get("layoutPolicy"), "container_tree_authority")
+        self.assertEqual(form_structure.get("structureAuthority"), "container_tree")
         self.assertEqual(form_structure.get("slots"), [])
         self.assertEqual(form_structure["sourceAuthority"]["governance_source"]["compatibilityDependencies"], [])
         field_labels = {}

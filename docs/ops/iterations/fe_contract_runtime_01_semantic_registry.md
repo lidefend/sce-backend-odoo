@@ -590,3 +590,137 @@ P1 归一化器、dialog 模型未在任何检查输入内，属证据缺口）�
 - `sc.general.contract` tax 节点 → `componentKey=sc.relation.many2one`（真实解析，非字面量）。
 
 浏览器侧 PC/mobile + 明暗主题的实机核对按 01-D 执行，回执单独记录。
+
+## Layout Vocabulary 收口（owner 裁定 A+：词汇升级，行为不变）
+
+### 问题
+
+`formStructureContract.layoutPolicy` 一个字段名同时承载三件不同事实（结构来源、结构权威、兼容模式），
+并且取值混入实现史词：`container_tree_authority`、`native_authority`、`business_config_sections`、
+`overview_then_task_slots`、`category_sections_as_task_tabs`。契约应当表达事实，而不是表达实现过程。
+
+### 裁定边界（不扩范围）
+
+- 保留 native_view / business_orchestration 两条结构分支，**不合并**。
+- 不改已发布编排契约（payment 145 / 4），不迁移 payment slots。
+- `span → deliverySpan` 仍留 01-E，本轮不动。
+
+### 双维词表
+
+- `structureSource` ∈ {`native_view`, `business_orchestration`, `business_category_policy`, `entry_semantic_surface`}
+- `structureAuthority` ∈ {`container_tree`, `native_form_slots`, `task_sections`}
+
+旧值→新值（仅 `layoutPolicy` 语境）：`container_tree_authority`→`container_tree`；
+`native_authority`→`native_form_slots`；`business_config_sections`/`overview_then_task_slots`/
+`category_sections_as_task_tabs`→`task_sections`。
+
+**关键区分（勿混）**：`form_structure_authority="native_authority"` 是 view_orchestrator 的治理 token，
+仍然有效，本轮不改；`native_authority_safe` 是另一套词，不改。
+
+### 逐位等价证明
+
+`_build_form_structure_contract`（`addons/smart_core/handlers/ui_contract_v2.py`）三处 return 加
+`_inject_business_operation_contract` 一处，共 4 个产出点。新 `structureAuthority` 在每一点都等于旧
+`layoutPolicy` 经上述双射替换后的结果，谓词（`presentation_mode == "task"`、
+`structure_authority == "entry_semantic_surface"`）保持不变，故为**同一函数的重命名**；
+`structureSource` 为新增维度，旧消费者不读它。
+
+实证（旧代码采集于 `/tmp/fe01d_*`）：
+
+| 对象 | 旧 `layoutPolicy` | 新 `structureSource` / `structureAuthority` |
+|-|-|-|
+| project.project | `container_tree_authority` | `native_view` / `container_tree` |
+| payment.request | `native_authority` | `native_view` / `native_form_slots` |
+
+### 交付
+
+- 后端生产者：`ui_contract_v2.py`（4 产出点）、`unified_page_contract_v2_runtime.py`
+  （`FORM_STRUCTURE_TREE_AUTHORITIES={container_tree}`）、`unified_page_contract_v2_assembler.py:2747`、
+  `ui_contract_v2_projection.py`。
+- schema：`unified_page_contract_v2.schema.json`（required 双字段 + enum + allOf 绑
+  `structureAuthority.const=container_tree`）；fixtures 同步。
+- 前端：`contracts/v2/types.ts`、`schema.ts`（fail-closed 解码，**不默认** container_tree）、
+  presenter / render model / floorplan / driver host / native bridge / `ContractFormPage.vue` 同步；
+  presenter 内部 identity 字段改名 `structureAuthority`→`bodyStructureAuthority`（避免与契约键同名混淆）。
+- 消费端测试/守卫：P1 容器内 15 个测试断言迁移；`canonical_form_presenter_test.ts`、
+  `contract_v2_runtime_policy_test.ts`、`form_structure_surface_contract_test.ts`、
+  `standard_page_type_browser.mjs`、`form_structure_contract_projection_matrix.py`（重生成产物 `--check` PASS）、
+  `frontend_material_domain_browser.mjs`、`local_dev_candidate_visual_smoke.mjs`、
+  `test_local_dev_candidate_frontend.py`、`local_dev_project_create_contract_action_scope.py`、
+  `frontend_v2_policy_projection_guard.py`（schema enum == 常量 + strict decoder 接受性检查 + 兼容别名拒绝）。
+- 新守卫：`scripts/verify/layout_vocabulary_lint.py`（9 个载荷面禁旧字段名与 5 个旧取值，四载体一致性，
+  生产者必须真的发布两个字段）+ `scripts/verify/test_layout_vocabulary_lint.py`（11 项负例）；
+  `make/contract.mk` 新增 `verify.layout.vocabulary.lint`。
+- 残留扫描：代码中已无读取 `layoutPolicy` 的逻辑；剩余命中仅为历史叙事注释与 lint 自身定义。
+  两处"结果态"注释（light_forms / engineering_process）已改为新词；历史叙事段保留。
+- 文档：`docs/contract/form_structure_contract_v2.md`、
+  `docs/contract/frontend_mainline_contract_integration_v2.md`、
+  `docs/architecture/form_structure_surface_contract_boundary_v1.md`、
+  `page-pattern-reference-detail-ledger-v1.json`、`page-pattern-reference-contract-gaps-v1.md`。
+
+## 01-D（产品验收）交付：语义/终端/闭环/结构来源一致
+
+受管环境 `sc-local-dev`（odoo 8070 / nginx 18081），demo 固定口令（`.env.dev`）。证据目录
+`.runtime/agent-runs/FE-CONTRACT-RUNTIME-01/01d/`。
+
+### 场景 1：字段表达
+
+`/f/payment.request/new`（wutao）渲染 `ProfessionalRelationFieldControl` /
+`ProfessionalBusinessValueControl` / `ProfessionalBaseFieldControl`；金额、关系、日期标签齐全；
+native locator 采用 `/form[1]/sheet[1]/group[g]/field[f]` 原生路径。
+
+### 场景 2：终端投影
+
+1440×950 light 与 390×844 dark 均渲染成功，renderer 集合一致（23 locators），0 pageerror。
+
+### 场景 3：保存闭环
+
+`/f/payment.request/new` 填 project/partner（内联关系补全）+ amount=100 → `保存草稿`。
+校验未通过时正确阻断（"不能为空/必填"）；补齐后落库为记录 `payment.request#2847`（PRQ2601066，草稿）。
+刷新 `/f/payment.request/2847`：金额持久化 `100.00`，renderer 集合与保存后一致（32 locators）。
+
+**注意**：删除/批量能力尚未接入 UI（`更多操作` 无删除项），故该记录未被清理；如后续需要，走
+`make local.dev.reset_payment_request_fixture` 受管入口，不使用容器直连绕过。
+
+### 场景 4：结构来源一致性（owner 新增验收点）
+
+同一 renderer 家族（`NativeFormTreeRenderer` + `FormSection` + `ScFormItem`）承载两条结构来源：
+
+| 对象 | structureSource / structureAuthority | 渲染 |
+|-|-|-|
+| project.project | `native_view` / `container_tree` | 18 locators，含 `ProfessionalDetailCollectionControl` |
+| payment.request | `native_view` / `native_form_slots` | 23 locators，4 slots |
+
+即"不是两个页面系统，而是两个 Contract Runtime 输入源"。
+
+### 附：tax 字段完整性（发现 A 回归）
+
+`sc.general.contract` create 契约中 `tax_id` 节点 `componentKey=sc.relation.many2one`（合法登记身份），
+全 payload `sc.input.many2one` 计数 0。
+
+### 范围外观察（不修，仅记录）
+
+`wutao` 点击侧栏"付款申请"（菜单 559 / action 809）返回
+`403 PERMISSION_DENIED · 用户无权访问菜单 付款申请`；同菜单 `demo_finance` 正常（共 0 条）。
+本批次 `git diff` 无任何菜单/权限/security 改动，属角色权限数据事实，非本轮引入。
+
+## 本轮验证回执
+
+| 层 | 命令 | 结果 |
+|-|-|-|
+| L1 | `make verify.layout.vocabulary.lint` | PASS（11 tests OK，surfaces=9） |
+| L1 | `python3 scripts/verify/frontend_v2_policy_projection_guard.py` | PASS |
+| L1 | `python3 scripts/verify/form_structure_contract_projection_matrix.py --check` | PASS fields=77 |
+| L1 | `make verify.frontend.typecheck.strict` | PASS |
+| L2 | `make verify.frontend.canonical_form_presenter.unit` | PASS（177 cases） |
+| L2 | `make verify.frontend.form_structure_surface_contract.unit` | PASS |
+| L2 | `make verify.frontend.contract_v2_runtime_policy.unit` | PASS（page access cases=6） |
+| L2 | `make verify.frontend.contract_v2_render_authority.unit` | PASS fields=326 |
+| L2 | `make verify.frontend.native_form_structure_responsibility.unit` | PASS cases=12 |
+| L2 | `scripts/verify/test_form_structure_authority_unification.py` | 215 tests OK |
+| L2 | `addons/smart_core/tests/test_unified_page_contract_v2_runtime.py` | 23 tests OK |
+| L2 | `..._mobile_compact.py` | 119 tests OK |
+| L2 | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` | 135 tests OK |
+| L3 | `make local.dev.restart` + `make local.dev.frontend` | EXIT=0 |
+| L4 | 01-C 运行时探针（3 身份 × 2 模型 × 2 profile） | 新双维、无旧字段 |
+| L4 | 01-D 浏览器 4 场景 | PASS，0 pageerror |

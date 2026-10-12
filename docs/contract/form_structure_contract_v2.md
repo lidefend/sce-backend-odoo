@@ -45,9 +45,15 @@ determines whether fields and actions are editable; it never changes the form
 shape. Native renderer selection remains an implementation detail of the
 `workspace` path, not a contract semantic.
 
-`mode` and `layoutPolicy` remain structural metadata for the normalized form
-projection. Consumers must not infer page shape from either field; they consume
-only `presentationMode`.
+`mode`, `structureSource` and `structureAuthority` remain structural metadata for
+the normalized form projection.  `structureSource` names where the delivered body
+structure comes from (`native_view`, `business_orchestration`,
+`business_category_policy`, `entry_semantic_surface`) and `structureAuthority`
+names the carrier that is the final structural authority (`container_tree`,
+`native_form_slots`, `task_sections`); the retired single `layoutPolicy` string
+described implementation history instead of the fact and is refused by
+`make verify.layout.vocabulary.lint`.  Consumers must not infer page shape from
+any of these fields; they consume only `presentationMode`.
 
 ## Structure Version Compatibility
 
@@ -80,7 +86,8 @@ model names, field names, or Chinese titles.
   "viewType": "form",
   "mode": "business_task_form",
   "presentationMode": "task",
-  "layoutPolicy": "overview_then_task_slots",
+  "structureSource": "entry_semantic_surface",
+  "structureAuthority": "task_sections",
   "objectProfile": {
     "model": "example.model",
     "kind": "business_form",

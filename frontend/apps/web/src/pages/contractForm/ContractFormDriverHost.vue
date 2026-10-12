@@ -228,7 +228,7 @@ const emptyFloorplan: CanonicalFormFloorplan = {
 };
 const preserveAuthoritativeBusinessSections = computed(() => Boolean(
   props.renderModel
-  && (props.renderModel.identity.structureAuthority === 'containerTree' || shouldPreserveAuthoritativeBusinessSections(
+  && (props.renderModel.identity.bodyStructureAuthority === 'containerTree' || shouldPreserveAuthoritativeBusinessSections(
     props.renderModel.identity.presentationMode,
     [...props.renderModel.zones.primary, ...props.renderModel.zones.subordinate],
   )),

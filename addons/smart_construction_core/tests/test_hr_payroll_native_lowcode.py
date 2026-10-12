@@ -269,7 +269,7 @@ class TestHrPayrollNativeLowcode(TransactionCase):
             self.assertEqual(governance["formStructureAuthority"], "native_authority", action_key)
             self.assertEqual(governance["formPresentationMode"], "task", action_key)
             self.assertEqual(governance["configuredSections"], [], action_key)
-            self.assertEqual(contract["layoutPolicy"], "container_tree_authority", action_key)
+            self.assertEqual(contract["structureAuthority"], "container_tree", action_key)
             self.assertEqual(contract["navigation"]["title"], title, action_key)
             # the released configuration keeps its title without projecting a body
             self.assertFalse(contract["slots"], action_key)

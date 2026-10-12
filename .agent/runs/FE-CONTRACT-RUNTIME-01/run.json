@@ -441,13 +441,31 @@
         "scripts/verify/workflow_contract_profile_loader.py"
       ],
       "kind": "offline"
+    },
+    "layout_vocabulary": {
+      "target": "verify.layout.vocabulary.lint",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/layout_vocabulary_lint.py",
+        "scripts/verify/test_layout_vocabulary_lint.py",
+        "make/contract.mk",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/handlers/ui_contract_v2_projection.py",
+        "addons/smart_core/core/unified_page_contract_v2_runtime.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "docs/architecture/unified_page_contract_v2/fixtures",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "frontend/apps/web/src/app/contracts/v2/types.ts"
+      ]
     }
   },
   "blockers": [
     "pre-existing (not introduced by this batch): `make verify.contract.lint` fails with 49 issues on both this branch and origin/main; classify and fix them in their own batch.",
     "classified, not a blocker: addons/smart_construction_core/tests/test_core_extension_v2_finalize.py asserts widget component keys but imports lxml, so it belongs to the in-container Odoo module suite (L3/L4), not the offline L2 lane.",
     "pre-existing (not introduced by this batch): scripts/verify/test_frontend_quality_safety_domain_rollout.py:123 holds a stale res.users literal; classify with the other pre-existing findings, do not silently rewrite it here.",
-    "observed transient (resolved): the first `agent.run.begin/record` cycle for contract_catalog failed record with 'test inputs or identity changed since begin'; a deterministic begin->run->compare of the declared inputs showed no difference and the re-run recorded cleanly. Cause not reproduced; treated as first-run generated-artifact refresh inside a declared input directory."
+    "out-of-scope product finding (recorded, not fixed): wutao 侧栏可见“付款申请”但菜单 559/action 809 返回 403 PERMISSION_DENIED；demo_finance 正常。本轮 diff 无菜单/权限改动。",
+    "acceptance write retained: payment.request#2847 (PRQ2601066, draft) created during 01-D save closed-loop; UI delete capability not wired, cleanup requires the governed entry make local.dev.reset_payment_request_fixture."
   ],
-  "next_exact_step": "边界冻结轮已完成并提交（commit 5a227641）：终端投递面只保留 deliveryDensity/deliveryProfile/mobileCollapse，三端（web_pc/wx_mini/harmony_h5）实采快照入库，终端守卫新增运行时内部策略逐键守恒断言；ci.delivery.freeze.prepare 在干净 HEAD 通过并刷新受管生成证据（contract_structure_fingerprint 补 registry 结构、complexity/split-plan/test-inventory/component-driver-takeover 计数），本提交把这两类生成证据目录纳入 run scope。run 索引 27/27 可复用。下一步：在干净边界上开 FE-CONTRACT-RUNTIME-01-B Semantic Registry（语义/组件注册表 + lint + resolver + payment 闭环）；span→deliverySpan 作为独立迁移批次（限定 contracts/、runtime 投影、前端契约类型，不动 ORM scene_orchestration.span）。"
+  "next_exact_step": "Layout Vocabulary 收口（owner 裁定 A+：词汇升级、行为不变）已实现并验证：formStructureContract 由单一 layoutPolicy 拆为 structureSource/structureAuthority，新 structureAuthority 在 4 个产出点与旧 layoutPolicy 双射等价（静态证明 + project/payment 实证基线对照），旧字段在载荷清零、代码无残留读取；新增 verify.layout.vocabulary.lint 守卫 + 11 项负例。01-C 运行时探针（3 身份×2 模型×2 profile）与 01-D 浏览器 4 场景（字段表达/终端投影/保存闭环/结构来源一致性）通过，0 pageerror。范围外观察：wutao 点击菜单 559 付款申请返回 403（demo_finance 正常），diff 无菜单/权限改动，属权限数据事实，不在本轮修复。下一步：提交本轮（发现 A/B + 词汇收口 + 01-D），跑 make ci.delivery.freeze.prepare 与干净树 make ci.local.quick 各一次；01-E span→deliverySpan 独立迁移最后执行。"
 }

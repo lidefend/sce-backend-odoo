@@ -50,6 +50,7 @@ from core.contract_runtime import semantic_resolver  # noqa: E402
 _WANTED_ASSIGNMENTS = {"FIELD_SEMANTIC_DECLARATIONS", "SEMANTIC_PRESENTATION_VOCABULARY"}
 _WANTED_FUNCTIONS = {
     "_declared_semantic",
+    "_is_widget_node",
     "_apply_declared_semantic",
     "normalize_declared_field_presentation",
 }
@@ -160,6 +161,7 @@ class NormalizerConsumptionTest(unittest.TestCase):
                         "widgetList": [
                             {
                                 "widgetId": "field.amount",
+                                "widgetType": "input",
                                 "fieldCode": "amount",
                                 "componentKey": "sc.value.money",
                                 "componentConfig": {"fieldType": "monetary"},
@@ -172,6 +174,7 @@ class NormalizerConsumptionTest(unittest.TestCase):
                         "widgetList": [
                             {
                                 "widgetId": f"field.{PAYMENT_DETAIL_FIELD}",
+                                "widgetType": "table",
                                 "fieldCode": PAYMENT_DETAIL_FIELD,
                                 "componentKey": "sc.relation.table",
                                 "componentConfig": {"fieldType": "one2many"},
@@ -251,6 +254,80 @@ class NormalizerConsumptionTest(unittest.TestCase):
         self.assertNotIn("semantic", node["fieldDescriptor"])
         self.assertNotIn("componentRegistry", mutated["layoutContract"])
 
+    def test_native_layout_node_keeps_identity_without_a_descriptor(self) -> None:
+        """The node kind decides which properties the contract may carry.
+
+        Live failure this locks: the payment detail occurrence node
+        (``type: field`` + ``fieldInfo`` + ``widgetList``, no ``widgetType``)
+        received ``fieldDescriptor`` from the declaration, and the browser
+        refused the whole snapshot with
+        ``layoutContract.containerTree[1].children[9].children[2].children[0].fieldDescriptor is not allowed``.
+        The meaning belongs on the widget node; the native layout node keeps only
+        the identity, which the schema does allow there.
+        """
+        contract = self.payment_contract()
+        native = {
+            "type": "field",
+            "name": PAYMENT_DETAIL_FIELD,
+            "widgetId": f"field.{PAYMENT_DETAIL_FIELD}.occ.0123456789abcdef",
+            "componentKey": "sc.relation.table",
+            "fieldInfo": {"name": PAYMENT_DETAIL_FIELD, "type": "one2many"},
+            "attributes": {"name": PAYMENT_DETAIL_FIELD},
+            "children": [],
+            "widgetList": [],
+        }
+        contract["layoutContract"]["containerTree"][1]["widgetList"].insert(0, native)
+        self.normalize(contract, model=PAYMENT_MODEL, view_type="form")
+        self.assertEqual(
+            semantic_resolver.component_key_for_semantic(PAYMENT_DETAIL_SEMANTIC),
+            native["componentKey"],
+            "the native layout node must still name the component it renders through",
+        )
+        self.assertNotIn(
+            "fieldDescriptor",
+            native,
+            "a native layout node cannot carry a field descriptor; the meaning lives on the widget node",
+        )
+        self.assertEqual(
+            PAYMENT_DETAIL_SEMANTIC,
+            contract["layoutContract"]["containerTree"][1]["widgetList"][1]["fieldDescriptor"]["semantic"],
+            "the widget node is where the declared meaning belongs",
+        )
+
+    def test_only_widget_nodes_carry_a_field_descriptor(self) -> None:
+        """Invariant the browser enforces: descriptor only on widget-shaped nodes."""
+        contract = self.payment_contract()
+        contract["layoutContract"]["containerTree"][1]["widgetList"].insert(
+            0,
+            {
+                "type": "field",
+                "name": PAYMENT_DETAIL_FIELD,
+                "widgetId": f"field.{PAYMENT_DETAIL_FIELD}.occ.feedfacefeedface",
+                "componentKey": "sc.relation.table",
+                "fieldInfo": {"name": PAYMENT_DETAIL_FIELD, "type": "one2many"},
+                "children": [],
+                "widgetList": [],
+            },
+        )
+        self.normalize(contract, model=PAYMENT_MODEL, view_type="form")
+        offenders: list[str] = []
+
+        def visit(value: Any, path: str) -> None:
+            if isinstance(value, list):
+                for index, item in enumerate(value):
+                    visit(item, f"{path}[{index}]")
+                return
+            if not isinstance(value, dict):
+                return
+            if "fieldDescriptor" in value and not value.get("widgetType"):
+                offenders.append(path)
+            for key, child in value.items():
+                if isinstance(child, (list, dict)):
+                    visit(child, f"{path}.{key}")
+
+        visit(contract["layoutContract"]["containerTree"], "containerTree")
+        self.assertEqual([], offenders)
+
     def test_a_new_field_needs_only_a_semantic_declaration(self) -> None:
         """The owner's acceptance standard, executed rather than asserted in prose.
 
@@ -263,6 +340,7 @@ class NormalizerConsumptionTest(unittest.TestCase):
         contract["layoutContract"]["containerTree"][0]["widgetList"].append(
             {
                 "widgetId": "field.settled_amount",
+                "widgetType": "input",
                 "fieldCode": "settled_amount",
                 "componentKey": semantic_resolver.component_key("input", {"ttype": "char"}),
                 "fieldDescriptor": {"name": "settled_amount", "type": "char"},

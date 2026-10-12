@@ -2744,7 +2744,7 @@ def _project_form_structure_to_layout(
         for field_name, role in field_roles.items()
         if field_name in projected_fields
     }
-    if _text(out.get("layoutPolicy")) == "native_authority":
+    if _text(out.get("structureAuthority")) == "native_form_slots":
         def bind_native_labels(raw_labels: Any, field_refs: Any) -> dict[str, str]:
             labels = {
                 _text(name): _text(label)

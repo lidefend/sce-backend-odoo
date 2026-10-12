@@ -149,6 +149,15 @@ def _declared_semantic(declarations: dict[str, str], field_code: str, widget_id:
     return ""
 
 
+def _is_widget_node(node: dict[str, Any]) -> bool:
+    """Whether the node is the shape ``$defs/widget`` describes.
+
+    ``widgetType`` is required by that definition and absent from
+    ``nativeLayoutNode``, so it is the discriminator the schema itself uses.
+    """
+    return bool(_sc_text(node.get("widgetType")))
+
+
 def _apply_declared_semantic(node: dict[str, Any], semantic: str) -> str:
     """Declare the meaning on the field fact and let the registry name its component.
 
@@ -165,9 +174,14 @@ def _apply_declared_semantic(node: dict[str, Any], semantic: str) -> str:
             _sc_text(node.get("fieldCode") or node.get("name") or node.get("field")) or "<unnamed field>",
         )
         return ""
-    descriptor = node.get("fieldDescriptor") if isinstance(node.get("fieldDescriptor"), dict) else {}
-    descriptor["semantic"] = semantic
-    node["fieldDescriptor"] = descriptor
+    # The v2 schema lets a *widget* node carry a field descriptor and forbids it
+    # on a native layout node, while the component identity is legal on both.  The
+    # meaning is therefore written only on the node kind that can hold it: a
+    # native layout node keeps the identity and nothing the schema rejects.
+    if _is_widget_node(node):
+        descriptor = node.get("fieldDescriptor") if isinstance(node.get("fieldDescriptor"), dict) else {}
+        descriptor["semantic"] = semantic
+        node["fieldDescriptor"] = descriptor
     node["componentKey"] = component_key
     vocabulary = SEMANTIC_PRESENTATION_VOCABULARY.get(semantic)
     if vocabulary:

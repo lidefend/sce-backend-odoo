@@ -202,7 +202,7 @@ class TestDailyContractNativeLowcode(TransactionCase):
 
     def test_the_rendered_surface_is_the_native_container_tree(self):
         structure = self._native_contract().get("formStructureContract") or {}
-        self.assertEqual(structure.get("layoutPolicy"), "container_tree_authority")
+        self.assertEqual(structure.get("structureAuthority"), "container_tree")
         self.assertEqual(structure.get("mode"), "native_structured_form")
         self.assertFalse(structure.get("slots"))
         self.assertFalse(structure.get("fieldRoles"))
@@ -484,7 +484,7 @@ class TestDailyContractSettlementNativeLowcode(TransactionCase):
 
     def test_the_rendered_surface_is_the_native_container_tree(self):
         structure = self._native_contract().get("formStructureContract") or {}
-        self.assertEqual(structure.get("layoutPolicy"), "container_tree_authority")
+        self.assertEqual(structure.get("structureAuthority"), "container_tree")
         self.assertEqual(structure.get("mode"), "native_structured_form")
         self.assertFalse(structure.get("slots"))
         self.assertFalse(structure.get("sourceSectionTitles"))
@@ -527,7 +527,7 @@ class TestDailyContractSettlementNativeLowcode(TransactionCase):
         """The override restores policy without reopening the compatibility path."""
         data = self._native_contract()
         structure = data.get("formStructureContract") or {}
-        self.assertEqual(structure.get("layoutPolicy"), "container_tree_authority")
+        self.assertEqual(structure.get("structureAuthority"), "container_tree")
         provenance = structure.get("sourceAuthority", {}).get("governance_source", {})
         self.assertEqual(provenance.get("configuredSections"), [])
         self.assertFalse(provenance.get("legacyFieldPolicyOverlay"))

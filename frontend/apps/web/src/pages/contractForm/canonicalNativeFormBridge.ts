@@ -324,7 +324,7 @@ export function buildCanonicalNativeFormBridge(
       ) return false;
       // Native visibility is already resolved by the normalized status contract.
       // Semantic metadata cannot become another authority for hiding its fields.
-      if (renderModel.identity.structureAuthority === 'containerTree') return true;
+      if (renderModel.identity.bodyStructureAuthority === 'containerTree') return true;
       const surfaceRole = text(attrs.surfaceRole);
       if (surfaceRole === 'hidden') return false;
       if (attrs.technical === true) return false;

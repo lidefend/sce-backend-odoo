@@ -32,7 +32,7 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.assertTrue(envelope.get("ok", True), envelope.get("error"))
         contract = envelope["data"]
         structure = contract["formStructureContract"]
-        self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
+        self.assertEqual(structure["structureAuthority"], "container_tree")
         self.assertEqual(structure["slots"], [])
         self.assertEqual(structure["sourceAuthority"]["governance_source"]["resolvedViewId"], view.id)
         tree = contract["layoutContract"]["containerTree"]
@@ -74,7 +74,7 @@ class TestUserFeedbackBusinessViews(TransactionCase):
                 "menu_id": menu.id, "record_id": partner.id, "view_type": "form", "render_profile": profile,
             })
             data = (result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result)["data"]
-            self.assertEqual(data["formStructureContract"]["layoutPolicy"], "container_tree_authority")
+            self.assertEqual(data["formStructureContract"]["structureAuthority"], "container_tree")
             sheet = next(node for node in data["layoutContract"]["containerTree"] if node["type"] == "sheet")
             self.assertEqual([node["label"] for node in sheet["children"]],
                              ["基本资料", "工商信息", "联系方式", "账户与财务", "联系人", "账户明细", "附件与备注"])
@@ -217,7 +217,7 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.assertTrue(envelope.get("ok", True), envelope.get("error"))
         contract = envelope["data"]
         structure = contract["formStructureContract"]
-        self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
+        self.assertEqual(structure["structureAuthority"], "container_tree")
         provenance = structure["sourceAuthority"]["governance_source"]
         self.assertEqual(provenance["resolvedActionId"], action.id)
         self.assertEqual(provenance["resolvedViewId"], view.id)
@@ -364,7 +364,7 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
             self.assertTrue(envelope.get("ok", True), envelope.get("error"))
             structure = envelope["data"]["formStructureContract"]
-            self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
+            self.assertEqual(structure["structureAuthority"], "container_tree")
             provenance = structure["sourceAuthority"]["governance_source"]
             self.assertEqual(provenance["resolvedActionId"], action.id)
             self.assertEqual(provenance["resolvedViewId"], view.id)

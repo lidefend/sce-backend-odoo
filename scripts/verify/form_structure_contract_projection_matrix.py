@@ -26,10 +26,10 @@ DEFINITIONS = (
 
 RENDERED = {
     "formStructureContract.presentationMode": ("presentation", "presentContractV2Form.identity.presentationMode"),
-    "formStructureContract.columns": ("compatibility-only geometry", "presentNode.columns; forbidden for container_tree_authority"),
+    "formStructureContract.columns": ("compatibility-only geometry", "presentNode.columns; forbidden for container_tree structure authority"),
     "formStructureContract.navigation": ("shell", "presentContractV2Form.shell"),
     "formStructureContract.fieldLabels": ("field-label", "formStructureFieldLabels"),
-    "formStructureContract.slots": ("compatibility-only structure", "structureSlot; empty for container_tree_authority"),
+    "formStructureContract.slots": ("compatibility-only structure", "structureSlot; empty for container_tree structure authority"),
     "formStructureContract.surfaces": ("declared-region", "contractSurfaceNavigationItems; declaredCollaborationSurface; region gated by surface.authorization.state"),
     "formStructureContract.fieldRoles": ("compatibility-only membership", "fieldSemanticIdentity; native roles derive from tree nodes"),
     "formStructureNavigation.title": ("shell-title", "presentContractV2Form.shell.title"),
@@ -60,7 +60,8 @@ NON_VISUAL = {
     "formStructureContract.model": "model identity invariant",
     "formStructureContract.viewType": "view identity invariant",
     "formStructureContract.mode": "legacy producer classification retained for trace compatibility",
-    "formStructureContract.layoutPolicy": "producer policy trace; concrete slots/groups/columns carry render facts",
+    "formStructureContract.structureSource": "structure provenance fact; names where the delivered body structure comes from",
+    "formStructureContract.structureAuthority": "structure authority fact; concrete slots/groups/columns carry render facts",
     "formStructureContract.objectProfile": "business fact authority invariant",
     "formStructureContract.sourceSectionTitles": "source trace; slots/groups carry the selected titles",
     "formStructureContract.sourceAuthority": "server authority and provenance proof",
@@ -147,7 +148,7 @@ def build() -> dict:
         "scope": list(DEFINITIONS),
         "nativeStructureAuthority": {
             "carrier": "layoutContract.containerTree",
-            "selection": "formStructureContract.layoutPolicy=container_tree_authority",
+            "selection": "formStructureContract.structureAuthority=container_tree",
             "bodyAndNavigation": "same canonical native nodes; no field-type or editability regrouping",
             "legacyRetirement": "remove compatibility structure consumers after formal menu ledger reaches zero",
         },

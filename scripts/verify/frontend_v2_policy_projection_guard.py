@@ -73,6 +73,10 @@ FORBIDDEN_STRICT_SCHEMA_COMPAT_ALIASES = (
     "['page_info']",
     "['layout_contract']",
     "['status_contract']",
+    # The strict decoder must consume the decoded structure contract, never re-read
+    # the raw layout position under its own name (or the retired layout policy).
+    "raw.containerTree",
+    "raw.container_tree",
     "['action_contract']",
     "['data_contract']",
     "['runtime_contract']",
@@ -234,6 +238,9 @@ MODIFIER_DECLARATION_PRODUCERS = (
 ALLOWED_STRICT_STORE_SNAKE_CASE_TOKENS = {
     # ContractV2ValueSource.kind; not a payload field read.
     "main_data",
+    # The single page-access verdict the store derives from the contract's status
+    # declaration; the page reads that verdict instead of judging for itself.
+    "UNIFIED_PAGE_CONTRACT_V2_PAGE_FORBIDDEN",
     # Formal relation and widget-option carrier keys.
     "relation_entry",
     "relation_field",
@@ -248,6 +255,26 @@ ALLOWED_STRICT_STORE_SNAKE_CASE_TOKENS = {
     *ALLOWED_STRICT_STORE_MODIFIER_DECLARATION_TOKENS,
 }
 
+# Delivered form-structure fact vocabulary.  ``structureSource`` says where the
+# body structure comes from; ``structureAuthority`` says which carrier is the
+# final structural authority.  Both replaced the retired single ``layoutPolicy``
+# string that described implementation history instead of the fact.  Each value
+# stays bound below to the backend schema enum, so the decoder cannot keep
+# accepting a spelling the schema stopped publishing.
+FORM_STRUCTURE_STRUCTURE_SOURCE_VALUES = (
+    "native_view",
+    "business_orchestration",
+    "business_category_policy",
+    "entry_semantic_surface",
+)
+FORM_STRUCTURE_STRUCTURE_AUTHORITY_VALUES = ("container_tree", "native_form_slots", "task_sections")
+
+
+def _form_structure_schema_values(schema_payload: dict, field: str) -> list[str]:
+    contract = ((schema_payload.get("$defs") or {}).get("formStructureContract") or {})
+    return list(((contract.get("properties") or {}).get(field) or {}).get("enum") or [])
+
+
 ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
     # Formal configuration provenance: schema separates draft id=0 from published ids.
     "source_kind",
@@ -258,7 +285,11 @@ ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
     # Formal enum values.
     "act_window",
     "business_form",
-    "container_tree_authority",
+    # Structure fact vocabulary (declared sets above), bound to the backend schema.
+    *FORM_STRUCTURE_STRUCTURE_SOURCE_VALUES,
+    *FORM_STRUCTURE_STRUCTURE_AUTHORITY_VALUES,
+    "FORM_STRUCTURE_SOURCES",
+    "FORM_STRUCTURE_AUTHORITIES",
     # Published capability authorization state, bound to its producer below.
     *ALLOWED_STRICT_SURFACE_AUTHORIZATION_TOKENS,
     "harmony_h5",
@@ -744,6 +775,22 @@ def main() -> int:
             f"missing={sorted(ALLOWED_STRICT_STORE_SNAKE_CASE_TOKENS - strict_store_snake_tokens)}"
         )
     schema_payload = json.loads(BACKEND_SCHEMA.read_text(encoding="utf-8"))
+    for field, expected in (
+        ("structureSource", FORM_STRUCTURE_STRUCTURE_SOURCE_VALUES),
+        ("structureAuthority", FORM_STRUCTURE_STRUCTURE_AUTHORITY_VALUES),
+    ):
+        declared = _form_structure_schema_values(schema_payload, field)
+        if declared != list(expected):
+            violations.append(
+                f"{_relative(BACKEND_SCHEMA)}: formStructureContract.{field} enum must be "
+                f"{list(expected)}; declared={declared}"
+            )
+        for token in expected:
+            if token not in strict_schema_source and token not in strict_type_source:
+                violations.append(
+                    f"{_relative(STRICT_SCHEMA)}: structure fact value {token} is declared by the "
+                    "backend schema but accepted by no strict decoder or strict type literal"
+                )
     schema_top_level = set((schema_payload.get("properties") or {}).keys())
     schema_required = set(schema_payload.get("required") or [])
     strict_snapshot_fields = _strict_snapshot_fields(strict_type_source)
