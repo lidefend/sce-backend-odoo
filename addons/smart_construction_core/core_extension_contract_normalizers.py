@@ -134,15 +134,7 @@ def normalize_payment_settlement_detail_component(
     if not changed:
         return
     registry = layout.get("componentRegistry") if isinstance(layout.get("componentRegistry"), dict) else {}
-    registry[PAYMENT_SETTLEMENT_DETAIL_COMPONENT_KEY] = {
-        "version": "1.0",
-        "adapter": {
-            "web_pc": "PaymentSettlementDetailCollectionControl",
-            "wx_mini": "WxTable",
-            "harmony_h5": "H5Table",
-        },
-        "fallback": "PaymentSettlementDetailCollectionControl",
-    }
+    registry[PAYMENT_SETTLEMENT_DETAIL_COMPONENT_KEY] = {"version": "1.0"}
     layout["componentRegistry"] = registry
     contract["layoutContract"] = layout
 

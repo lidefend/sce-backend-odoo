@@ -1090,28 +1090,15 @@
       }
     },
     "componentRegistryEntry": {
+      "description": "A declared component identity and its version. How a component renders is a frontend concern, so no framework component name, per-client adapter or rendering fallback may appear here.",
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "version",
-        "adapter"
+        "version"
       ],
       "properties": {
         "version": {
           "type": "string"
-        },
-        "adapter": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          }
-        },
-        "fallback": {
-          "type": "string"
-        },
-        "selectedAdapter": {
-          "type": "string",
-          "minLength": 1
         }
       }
     },

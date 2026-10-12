@@ -448,7 +448,7 @@ login -> 保存 token/session.db -> system.init -> initStatus=ready -> 其他 in
 | `adaptMode` | `pc\|mobile` | 是 | 终端适配模式 |
 | `containerTree` | container[] | 是 | 权威结构树 |
 | `layoutHints` | object | 是 | 通用布局提示；不能承载业务规则 |
-| `componentRegistry` | object | 是 | `componentKey -> adapter/fallback` 注册表 |
+| `componentRegistry` | object | 是 | `componentKey -> version` 组件身份与版本声明；不承载渲染实现 |
 | `listProfile` | object | 否 | 列表/集合表现语义 |
 | `activityProfile` | object | 否 | activity 原生视图保真投影 |
 
@@ -478,7 +478,7 @@ Widget：
 | `fieldCode` | string | 是 | Odoo 字段名 |
 | `label` | string | 是 | 后端字段/视图标签 |
 | `span` | integer | 是 | 当前布局跨度 |
-| `componentKey` | string | 是 | 组件注册键，例如通用 input/select/relation adapter |
+| `componentKey` | string | 是 | 契约层组件身份键（`sc.*`），例如 input/select/relation |
 | `capabilities` | string[] | 是 | 显式能力列表；未知能力必须走 fallback/unsupported |
 | `componentConfig` | object | 是 | 组件参数，不允许作为无限业务规则袋 |
 | `ownerContainerId` | string | 是 | 直接父容器 |
@@ -489,14 +489,14 @@ Widget：
 
 ```json
 {
-  "version": "1.0",
-  "adapter": { "web_pc": "ScInput" },
-  "selectedAdapter": "ScInput",
-  "fallback": "ScUnsupportedField"
+  "version": "1.0"
 }
 ```
 
-前端按 `componentKey + clientType` 解析适配器。未知 key 或声明不完整时显示明确 unsupported，
+契约只声明组件身份与版本这一事实。**如何渲染是前端职责**：具体框架组件、各端变体、
+密度与几何都不进契约，因此 `adapter` / `selectedAdapter` / `fallback` 属于契约缺陷，
+投影边界会直接移除。前端按 `componentKey` 在自己的组件词表
+（`contracts/registry/component.yaml`）里解析渲染器；未知 key 时显式 unsupported，
 禁止按字段名/model 写页面特判。
 
 ### 7.3 `formStructureContract`

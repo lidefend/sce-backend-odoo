@@ -12,18 +12,18 @@
   "expected": {
     "web_pc": {
       "adaptMode": "pc",
-      "columns": 24,
-      "mobileCollapse": false
+      "mobileCollapse": false,
+      "deliveryDensity": "standard"
     },
     "wx_mini": {
       "adaptMode": "mobile",
-      "columns": 1,
-      "mobileCollapse": true
+      "mobileCollapse": true,
+      "deliveryDensity": "compact"
     },
     "harmony_h5": {
       "adaptMode": "mobile",
-      "columns": 1,
-      "mobileCollapse": true
+      "mobileCollapse": true,
+      "deliveryDensity": "compact"
     }
   }
 }

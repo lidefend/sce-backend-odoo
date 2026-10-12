@@ -587,7 +587,7 @@ class ProfessionalComponentRegistryGuardTest(unittest.TestCase):
         """A semantic marker only counts on the element that iterates the fields."""
 
         inner = '    <template v-if="showHead && $slots.action" #actions><slot name="action" /></template>'
-        tail = '\n          :data-contract-adapter="field.contractAdapter || undefined"'
+        tail = '\n          :data-contract-component-version="field.contractVersion || undefined"'
 
         def source(path):
             value = (ROOT / path).read_text(encoding="utf-8")
@@ -596,7 +596,7 @@ class ProfessionalComponentRegistryGuardTest(unittest.TestCase):
                 assert moved != value
                 return moved.replace(
                     inner,
-                    inner + '\n    <p :data-contract-adapter="field.contractAdapter || undefined">probe</p>',
+                    inner + '\n    <p :data-contract-component-version="field.contractVersion || undefined">probe</p>',
                     1,
                 )
             return value

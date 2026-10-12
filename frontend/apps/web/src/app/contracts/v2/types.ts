@@ -294,11 +294,10 @@ export interface ContractV2Container {
   widgetList: ContractV2Widget[];
 }
 
+/** A declared component identity and its version. Rendering adapters belong to
+ * the frontend, so a contract entry carries no framework component name. */
 export interface ContractV2ComponentRegistryEntry {
   version: string;
-  adapter: Record<string, string>;
-  fallback?: string;
-  selectedAdapter?: string;
 }
 
 export interface ContractV2ActivityNode {

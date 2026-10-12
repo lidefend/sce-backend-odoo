@@ -25,18 +25,22 @@ assert.equal(ready.renderer, 'ProfessionalBaseFieldControl');
 const contractBound = resolveContractProfessionalComponent({
   componentKey: 'sc.input.text', fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
   clientType: 'web_pc',
-  contractRegistryEntry: { version: '1.0', adapter: { web_pc: 'ElInput' }, selectedAdapter: 'TDesignInput' },
+  contractRegistryEntry: { version: '1.0' },
 });
-assert.equal(contractBound.contractAdapter, 'TDesignInput');
 assert.equal(contractBound.contractVersion, '1.0');
+assert.equal(contractBound.renderer, 'ProfessionalBaseFieldControl');
 assert.throws(() => resolveContractProfessionalComponent({
   componentKey: 'sc.input.text', fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
   clientType: 'web_pc', contractRegistryEntry: {},
 }), /PROFESSIONAL_COMPONENT_CONTRACT_REGISTRY_MISSING/);
 assert.throws(() => resolveContractProfessionalComponent({
   componentKey: 'sc.input.text', fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
-  clientType: 'web_pc', contractRegistryEntry: { version: '1.0', adapter: {} },
-}), /PROFESSIONAL_COMPONENT_CONTRACT_ADAPTER_MISSING/);
+  clientType: 'web_pc', contractRegistryEntry: { version: '1.0', adapter: { web_pc: 'ElInput' } },
+}), /PROFESSIONAL_COMPONENT_CONTRACT_RENDER_TRAIT_FORBIDDEN:sc\.input\.text:adapter/);
+assert.throws(() => resolveContractProfessionalComponent({
+  componentKey: 'sc.input.text', fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
+  clientType: 'web_pc', contractRegistryEntry: { version: '1.0', selectedAdapter: 'TDesignInput' },
+}), /PROFESSIONAL_COMPONENT_CONTRACT_RENDER_TRAIT_FORBIDDEN:sc\.input\.text:selectedAdapter/);
 assert.equal(resolveProfessionalComponent({
   componentKey: 'sc.relation.many2one', fieldType: 'many2one', presentationMode: 'task', renderProfile: 'edit',
 }).renderer, 'ProfessionalRelationFieldControl');

@@ -1234,6 +1234,30 @@
     }
   },
   {
+    "case": "ui_contract_v2_intent_admin_wx_mini",
+    "user": "admin",
+    "op": "intent.invoke",
+    "intent": "ui.contract.v2",
+    "intent_params": {
+      "op": "model",
+      "model": "project.project",
+      "view_type": "list",
+      "client_type": "wx_mini"
+    }
+  },
+  {
+    "case": "ui_contract_v2_intent_admin_harmony_h5",
+    "user": "admin",
+    "op": "intent.invoke",
+    "intent": "ui.contract.v2",
+    "intent_params": {
+      "op": "model",
+      "model": "project.project",
+      "view_type": "list",
+      "client_type": "harmony_h5"
+    }
+  },
+  {
     "case": "user_view_preference_get_intent_admin",
     "user": "admin",
     "op": "intent.invoke",

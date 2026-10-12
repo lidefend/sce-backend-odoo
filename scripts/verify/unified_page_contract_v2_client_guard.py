@@ -15,7 +15,30 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 CORE_DIR = ROOT / "addons/smart_core/core"
 CLIENT_PATH = ROOT / "addons/smart_core/core/unified_page_contract_v2_client.py"
-RENDERER_LAYOUT_SPAN_PATH = ROOT / "frontend/apps/web/src/components/template/layoutSpan.ts"
+
+# Rendering traits that must never travel in the terminal-projected delivery
+# face.  How a field is drawn (framework component, per-client adapter, layout
+# grid, CSS width, render scheduling) is a front-end/runtime decision; the
+# delivery contract only states what is delivered to a terminal.
+FORBIDDEN_DELIVERY_RENDER_KEYS = (
+    "componentName", "componentProps", "gridColumns", "cssWidth", "columns",
+    "renderStrategy", "virtualization",
+)
+
+# Runtime-internal delivery policy.  The runtime layer decides patch strategy,
+# caching, laziness and whether rendering is synchronised, scheduled or
+# virtualised for the whole delivery.  A terminal projection only records which
+# delivery profile the terminal receives; it may neither window/virtualise on
+# the terminal's behalf nor re-schedule rendering.
+RUNTIME_INTERNAL_POLICY_KEYS = (
+    "renderStrategy",
+    "virtualization",
+    "patchStrategy",
+    "cachePolicy",
+    "optimistic",
+    "lazyContainer",
+    "retryPolicy",
+)
 
 
 def load_json(path: Path) -> Any:
@@ -41,23 +64,6 @@ def load_client_module():
 
 
 
-def renderer_layout_grid_units() -> int:
-    """The single layout grid the custom front end actually renders.
-
-    The pc delivery face must declare the same grid the renderer implements;
-    a declared second dialect (12) while every addressable width is projected
-    onto the 24-unit ``span`` facet would re-create the split layout authority
-    this guard exists to prevent.
-    """
-    import re
-
-    source = RENDERER_LAYOUT_SPAN_PATH.read_text(encoding="utf-8")
-    match = re.search(r"export function layoutGridUnits\(\): number \{\s*return (\d+);", source)
-    if not match:
-        raise RuntimeError("cannot read the renderer layout grid unit from layoutSpan.ts")
-    return int(match.group(1))
-
-
 def fail(errors: list[str], message: str) -> None:
     errors.append(message)
 
@@ -74,6 +80,14 @@ def main() -> int:
     snapshot = load_json(args.snapshot)
     registry = load_json(args.enum_registry)
     errors: list[str] = []
+
+    # The source contract itself must not carry renderer-layout implementation:
+    # a render trait can only be removed downstream silently, so reject it
+    # where a producer would introduce it.
+    source_hints = (source.get("layoutContract") or {}).get("layoutHints") or {}
+    for forbidden in FORBIDDEN_DELIVERY_RENDER_KEYS:
+        if forbidden in source_hints:
+            fail(errors, f"source contract layoutHints must not declare rendering implementation {forbidden}")
 
     stable = registry.get("clientType", {}).get("stable") or []
     reserved = registry.get("clientType", {}).get("reserved") or []
@@ -107,26 +121,49 @@ def main() -> int:
             fail(errors, f"{client}: adaptMode mismatch")
         if layout.get("adaptMode") not in adapt_modes:
             fail(errors, f"{client}: adaptMode must be listed in enum_registry.adaptMode")
-        if hints.get("columns") != expected.get("columns"):
-            fail(errors, f"{client}: layout columns mismatch")
-        if client == "web_pc":
-            grid_units = renderer_layout_grid_units()
-            if hints.get("columns") != grid_units:
-                fail(
-                    errors,
-                    f"{client}: declared layout columns {hints.get('columns')} must equal the renderer layout grid {grid_units}",
-                )
-            if getattr(target, "DESKTOP_LAYOUT_GRID_UNITS", None) != grid_units:
-                fail(
-                    errors,
-                    f"{client}: DESKTOP_LAYOUT_GRID_UNITS must equal the renderer layout grid {grid_units}",
-                )
+        if hints.get("deliveryDensity") != expected.get("deliveryDensity"):
+            fail(errors, f"{client}: deliveryDensity mismatch")
         if hints.get("mobileCollapse") != expected.get("mobileCollapse"):
             fail(errors, f"{client}: mobileCollapse mismatch")
+        # A terminal projection may shape delivery, never layout/render.
+        for forbidden in FORBIDDEN_DELIVERY_RENDER_KEYS:
+            if forbidden in hints:
+                fail(
+                    errors,
+                    f"{client}: layoutHints must not carry rendering implementation {forbidden}",
+                )
+        terminal_runtime = matrix[client].get("runtimeContract") or {}
+        source_runtime = source.get("runtimeContract") or {}
+        offered_runtime = {
+            key: value for key, value in terminal_runtime.items() if key != "deliveryProfile"
+        }
+        declared_runtime = {
+            key: value for key, value in source_runtime.items() if key != "deliveryProfile"
+        }
+        if offered_runtime != declared_runtime:
+            fail(
+                errors,
+                f"{client}: terminal projection must not re-decide runtimeContract beyond deliveryProfile",
+            )
+        # Runtime decision != delivery contract: the terminal face must preserve
+        # runtime-internal policy byte-for-byte, so a terminal can never turn
+        # runtime policy into a per-client rendering instruction.
+        for policy_key in RUNTIME_INTERNAL_POLICY_KEYS:
+            if terminal_runtime.get(policy_key) != source_runtime.get(policy_key):
+                fail(
+                    errors,
+                    f"{client}: terminal projection must not rewrite runtime-internal policy {policy_key}",
+                )
         registry_rows = layout.get("componentRegistry") or {}
         for key, row in registry_rows.items():
-            if not row.get("selectedAdapter"):
-                fail(errors, f"{client}: component {key} missing selectedAdapter")
+            # Rendering belongs to the frontend: the contract declares the
+            # component identity and version, never a framework component name,
+            # a per-client adapter or a rendering fallback.
+            if not row.get("version"):
+                fail(errors, f"{client}: component {key} missing version")
+            for forbidden in ("adapter", "selectedAdapter", "selected_adapter", "fallback"):
+                if forbidden in row:
+                    fail(errors, f"{client}: component {key} must not declare rendering trait {forbidden}")
 
     drift = target.find_client_semantic_drift(matrix)
     for issue in drift:

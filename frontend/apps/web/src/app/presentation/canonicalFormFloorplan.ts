@@ -280,7 +280,6 @@ function fieldHasAttachmentCapability(field: CanonicalFormNode['fields'][number]
   const tokens = [
     field.componentResolution.componentKey,
     field.componentResolution.renderer,
-    field.componentResolution.contractAdapter,
     config.widget, config.widgetType, config.widget_type,
     descriptor.widget, descriptor.widgetType, descriptor.widget_type,
   ].map((value) => String(value || '').trim().toLowerCase());

@@ -1,0 +1,5200 @@
+{
+  "action": null,
+  "case": "ui_contract_v2_intent_admin_harmony_h5",
+  "error": null,
+  "execute_error": null,
+  "execute_result": null,
+  "fallback": false,
+  "meta_fields": null,
+  "model": null,
+  "op": "intent.invoke",
+  "record": null,
+  "record_error": null,
+  "snapshot_schema_version": "1.0.0",
+  "ui_contract": null,
+  "ui_contract_raw": {
+    "actionContract": {
+      "actionRuleList": [
+        {
+          "actionId": "action.project.action_send_mail_project_project",
+          "actionKey": "project.action_send_mail_project_project",
+          "allowed": true,
+          "authorizationAllowed": true,
+          "backendIdentity": "window_action:343",
+          "button": {
+            "name": "343",
+            "type": "action"
+          },
+          "disabled": false,
+          "dispatchMode": "server",
+          "enabled": true,
+          "entitlementEvaluated": true,
+          "intent": "execute_button",
+          "label": "发送电邮",
+          "nativeIdentity": {},
+          "permissionConstraints": {
+            "clauses": [
+              {
+                "requiredGroups": [
+                  "112",
+                  "4",
+                  "base.group_system",
+                  "smart_construction_core.group_sc_super_admin"
+                ]
+              },
+              {
+                "requiredGroups": [
+                  "112",
+                  "4",
+                  "base.group_system",
+                  "smart_construction_core.group_sc_super_admin"
+                ]
+              },
+              {
+                "requiredGroups": [
+                  "112",
+                  "4",
+                  "base.group_system",
+                  "smart_construction_core.group_sc_super_admin"
+                ]
+              },
+              {
+                "requiredGroups": [
+                  "112",
+                  "4",
+                  "base.group_system",
+                  "smart_construction_core.group_sc_super_admin"
+                ]
+              }
+            ],
+            "policy": "all_sources_must_allow"
+          },
+          "presentationAuthority": "product_contract",
+          "presentationPriority": 250,
+          "refreshMode": "partial",
+          "sourceActionKey": "project.action_send_mail_project_project",
+          "sourceChannel": "bound_model_action",
+          "sourceTrace": [
+            {
+              "actionId": "action.project.action_send_mail_project_project",
+              "actionKey": "project.action_send_mail_project_project",
+              "authorizationAllowed": true,
+              "businessAvailable": null,
+              "button": {
+                "name": "343",
+                "type": "action"
+              },
+              "constraints": {
+                "allowed": true,
+                "disabled": false,
+                "enabled": true,
+                "visible": {
+                  "domain": [],
+                  "states": []
+                },
+                "visibleProfiles": [
+                  "readonly"
+                ]
+              },
+              "entitlementEvaluated": true,
+              "label": "发送电邮",
+              "permissionConstraints": {
+                "groups": [
+                  112,
+                  4
+                ],
+                "groups_xmlids": [
+                  "base.group_system",
+                  "smart_construction_core.group_sc_super_admin"
+                ]
+              },
+              "presentationAuthority": "native_contract",
+              "reasonCode": "",
+              "sequence": 0,
+              "sourceActionKey": "project.action_send_mail_project_project",
+              "sourceChannel": "bound_model_action",
+              "sourceWidgetId": "page.root",
+              "target": {
+                "action_id": 343,
+                "action_ref": null,
+                "context_raw": "{'default_composition_mode': 'mass_mail'}",
+                "domain_raw": false,
+                "menu_id": null,
+                "model": "mail.compose.message",
+                "route": null,
+                "target": null,
+                "url": null,
+                "view_type": "form",
+                "xml_id": "project.action_send_mail_project_project"
+              }
+            },
+            {
+              "actionId": "action.project.action_send_mail_project_project.2",
+              "actionKey": "project.action_send_mail_project_project.2",
+              "authorizationAllowed": true,
+              "businessAvailable": null,
+              "button": {},
+              "constraints": {
+                "allowed": true,
+                "disabled": false,
+                "enabled": true,
+                "visible": {
+                  "domain": [],
+                  "states": []
+                },
+                "visibleProfiles": [
+                  "readonly"
+                ]
+              },
+              "entitlementEvaluated": true,
+              "label": "发送电邮",
+              "permissionConstraints": {
+                "groups": [
+                  112,
+                  4
+                ],
+                "groups_xmlids": [
+                  "base.group_system",
+                  "smart_construction_core.group_sc_super_admin"
+                ]
+              },
+              "presentationAuthority": "native_contract",
+              "reasonCode": "",
+              "sequence": 3,
+              "sourceActionKey": "project.action_send_mail_project_project",
+              "sourceChannel": "contract_toolbar.header",
+              "sourceWidgetId": "page.root",
+              "target": {
+                "action_id": 343,
+                "action_ref": null,
+                "context_raw": "{'default_composition_mode': 'mass_mail'}",
+                "domain_raw": false,
+                "menu_id": null,
+                "model": "mail.compose.message",
+                "route": null,
+                "target": null,
+                "url": null,
+                "view_type": "form",
+                "xml_id": "project.action_send_mail_project_project"
+              }
+            },
+            {
+              "actionId": "action.project.action_send_mail_project_project.3",
+              "actionKey": "project.action_send_mail_project_project.3",
+              "authorizationAllowed": true,
+              "businessAvailable": null,
+              "button": {},
+              "constraints": {
+                "allowed": true,
+                "disabled": false,
+                "enabled": true,
+                "visible": {
+                  "domain": [],
+                  "states": []
+                },
+                "visibleProfiles": [
+                  "readonly"
+                ]
+              },
+              "entitlementEvaluated": true,
+              "label": "发送电邮",
+              "permissionConstraints": {
+                "groups": [
+                  112,
+                  4
+                ],
+                "groups_xmlids": [
+                  "base.group_system",
+                  "smart_construction_core.group_sc_super_admin"
+                ]
+              },
+              "presentationAuthority": "product_contract",
+              "reasonCode": "",
+              "sequence": 4,
+              "sourceActionKey": "project.action_send_mail_project_project",
+              "sourceChannel": "product_action_group",
+              "sourceWidgetId": "page.root",
+              "target": {
+                "action_id": 343,
+                "action_ref": null,
+                "context_raw": "{'default_composition_mode': 'mass_mail'}",
+                "domain_raw": false,
+                "menu_id": null,
+                "model": "mail.compose.message",
+                "route": null,
+                "target": null,
+                "url": null,
+                "view_type": "form",
+                "xml_id": "project.action_send_mail_project_project"
+              }
+            },
+            {
+              "actionId": "action.project.action_send_mail_project_project.4",
+              "actionKey": "project.action_send_mail_project_project.4",
+              "authorizationAllowed": true,
+              "businessAvailable": null,
+              "button": {},
+              "constraints": {
+                "allowed": true,
+                "disabled": false,
+                "enabled": true,
+                "visible": {
+                  "domain": [],
+                  "states": []
+                },
+                "visibleProfiles": [
+                  "readonly"
+                ]
+              },
+              "entitlementEvaluated": true,
+              "label": "发送电邮",
+              "permissionConstraints": {
+                "groups": [
+                  112,
+                  4
+                ],
+                "groups_xmlids": [
+                  "base.group_system",
+                  "smart_construction_core.group_sc_super_admin"
+                ]
+              },
+              "presentationAuthority": "product_contract",
+              "reasonCode": "",
+              "sequence": 7,
+              "sourceActionKey": "project.action_send_mail_project_project",
+              "sourceChannel": "product_action_group",
+              "sourceWidgetId": "page.root",
+              "target": {
+                "action_id": 343,
+                "action_ref": null,
+                "context_raw": "{'default_composition_mode': 'mass_mail'}",
+                "domain_raw": false,
+                "menu_id": null,
+                "model": "mail.compose.message",
+                "route": null,
+                "target": null,
+                "url": null,
+                "view_type": "form",
+                "xml_id": "project.action_send_mail_project_project"
+              }
+            }
+          ],
+          "sourceWidgetId": "page.root",
+          "target": {
+            "action_id": 343,
+            "action_ref": null,
+            "context_raw": "{'default_composition_mode': 'mass_mail'}",
+            "domain_raw": false,
+            "menu_id": null,
+            "model": "mail.compose.message",
+            "route": null,
+            "target": null,
+            "url": null,
+            "view_type": "form",
+            "xml_id": "project.action_send_mail_project_project"
+          },
+          "targetIds": [],
+          "targetScope": "page",
+          "triggerType": "click",
+          "visible": {
+            "domain": [],
+            "states": []
+          },
+          "visibleProfiles": [
+            "readonly"
+          ]
+        },
+        {
+          "actionId": "action.project.project_share_wizard_action",
+          "actionKey": "project.project_share_wizard_action",
+          "allowed": true,
+          "authorizationAllowed": true,
+          "backendIdentity": "window_action:338",
+          "button": {},
+          "disabled": false,
+          "dispatchMode": "server",
+          "enabled": true,
+          "entitlementEvaluated": true,
+          "intent": "ui.contract",
+          "label": "分享项目",
+          "nativeIdentity": {},
+          "permissionConstraints": {
+            "clauses": [
+              {
+                "requiredGroups": [
+                  "112",
+                  "4",
+                  "base.group_system",
+                  "smart_construction_core.group_sc_super_admin"
+                ]
+              },
+              {
+                "requiredGroups": [
+                  "112",
+                  "4",
+                  "base.group_system",
+                  "smart_construction_core.group_sc_super_admin"
+                ]
+              }
+            ],
+            "policy": "all_sources_must_allow"
+          },
+          "presentationAuthority": "product_contract",
+          "presentationPriority": 250,
+          "refreshMode": "partial",
+          "sourceActionKey": "project.project_share_wizard_action",
+          "sourceChannel": "contract_toolbar.header",
+          "sourceTrace": [
+            {
+              "actionId": "action.project.project_share_wizard_action",
+              "actionKey": "project.project_share_wizard_action",
+              "authorizationAllowed": true,
+              "businessAvailable": null,
+              "button": {},
+              "constraints": {
+                "allowed": true,
+                "disabled": false,
+                "enabled": true,
+                "visible": {
+                  "domain": [],
+                  "states": []
+                },
+                "visibleProfiles": [
+                  "edit",
+                  "readonly",
+                  "list"
+                ]
+              },
+              "entitlementEvaluated": true,
+              "label": "分享项目",
+              "permissionConstraints": {
+                "groups": [
+                  112,
+                  4
+                ],
+                "groups_xmlids": [
+                  "base.group_system",
+                  "smart_construction_core.group_sc_super_admin"
+                ]
+              },
+              "presentationAuthority": "native_contract",
+              "reasonCode": "",
+              "sequence": 1,
+              "sourceActionKey": "project.project_share_wizard_action",
+              "sourceChannel": "contract_toolbar.header",
+              "sourceWidgetId": "page.root",
+              "target": {
+                "action_id": 338,
+                "action_ref": null,
+                "context_raw": "{'dialog_size': 'medium'}",
+                "domain_raw": false,
+                "menu_id": null,
+                "model": "project.share.wizard",
+                "route": null,
+                "target": null,
+                "url": null,
+                "view_type": "form",
+                "xml_id": "project.project_share_wizard_action"
+              }
+            },
+            {
+              "actionId": "action.project.project_share_wizard_action.2",
+              "actionKey": "project.project_share_wizard_action.2",
+              "authorizationAllowed": true,
+              "businessAvailable": null,
+              "button": {},
+              "constraints": {
+                "allowed": true,
+                "disabled": false,
+                "enabled": true,
+                "visible": {
+                  "domain": [],
+                  "states": []
+                },
+                "visibleProfiles": [
+                  "edit",
+                  "readonly",
+                  "list"
+                ]
+              },
+              "entitlementEvaluated": true,
+              "label": "分享项目",
+              "permissionConstraints": {
+                "groups": [
+                  112,
+                  4
+                ],
+                "groups_xmlids": [
+                  "base.group_system",
+                  "smart_construction_core.group_sc_super_admin"
+                ]
+              },
+              "presentationAuthority": "product_contract",
+              "reasonCode": "",
+              "sequence": 5,
+              "sourceActionKey": "project.project_share_wizard_action",
+              "sourceChannel": "product_action_group",
+              "sourceWidgetId": "page.root",
+              "target": {
+                "action_id": 338,
+                "action_ref": null,
+                "context_raw": "{'dialog_size': 'medium'}",
+                "domain_raw": false,
+                "menu_id": null,
+                "model": "project.share.wizard",
+                "route": null,
+                "target": null,
+                "url": null,
+                "view_type": "form",
+                "xml_id": "project.project_share_wizard_action"
+              }
+            }
+          ],
+          "sourceWidgetId": "page.root",
+          "target": {
+            "action_id": 338,
+            "action_ref": null,
+            "context_raw": "{'dialog_size': 'medium'}",
+            "domain_raw": false,
+            "menu_id": null,
+            "model": "project.share.wizard",
+            "route": null,
+            "target": null,
+            "url": null,
+            "view_type": "form",
+            "xml_id": "project.project_share_wizard_action"
+          },
+          "targetIds": [],
+          "targetScope": "page",
+          "triggerType": "click",
+          "visible": {
+            "domain": [],
+            "states": []
+          },
+          "visibleProfiles": [
+            "edit",
+            "list",
+            "readonly"
+          ]
+        },
+        {
+          "actionId": "action.project_sms.project_project_act_window_sms_composer",
+          "actionKey": "project_sms.project_project_act_window_sms_composer",
+          "allowed": true,
+          "authorizationAllowed": true,
+          "backendIdentity": "window_action:462",
+          "button": {},
+          "disabled": false,
+          "dispatchMode": "server",
+          "enabled": true,
+          "entitlementEvaluated": true,
+          "intent": "ui.contract",
+          "label": "发送文本短信息",
+          "nativeIdentity": {},
+          "permissionConstraints": {},
+          "presentationAuthority": "product_contract",
+          "presentationPriority": 250,
+          "refreshMode": "partial",
+          "sourceActionKey": "project_sms.project_project_act_window_sms_composer",
+          "sourceChannel": "contract_toolbar.header",
+          "sourceTrace": [
+            {
+              "actionId": "action.project_sms.project_project_act_window_sms_composer",
+              "actionKey": "project_sms.project_project_act_window_sms_composer",
+              "authorizationAllowed": true,
+              "businessAvailable": null,
+              "button": {},
+              "constraints": {
+                "allowed": true,
+                "disabled": false,
+                "enabled": true,
+                "visible": {
+                  "domain": [],
+                  "states": []
+                },
+                "visibleProfiles": [
+                  "readonly",
+                  "list"
+                ]
+              },
+              "entitlementEvaluated": true,
+              "label": "发送文本短信息",
+              "permissionConstraints": {},
+              "presentationAuthority": "native_contract",
+              "reasonCode": "",
+              "sequence": 2,
+              "sourceActionKey": "project_sms.project_project_act_window_sms_composer",
+              "sourceChannel": "contract_toolbar.header",
+              "sourceWidgetId": "page.root",
+              "target": {
+                "action_id": 462,
+                "action_ref": null,
+                "context_raw": "{\n            'default_composition_mode': 'mass',\n            'default_mass_keep_log': True,\n            'default_res_ids': active_ids,\n        }",
+                "domain_raw": false,
+                "menu_id": null,
+                "model": "sms.composer",
+                "route": null,
+                "target": null,
+                "url": null,
+                "view_type": "form",
+                "xml_id": "project_sms.project_project_act_window_sms_composer"
+              }
+            },
+            {
+              "actionId": "action.project_sms.project_project_act_window_sms_composer.2",
+              "actionKey": "project_sms.project_project_act_window_sms_composer.2",
+              "authorizationAllowed": true,
+              "businessAvailable": null,
+              "button": {},
+              "constraints": {
+                "allowed": true,
+                "disabled": false,
+                "enabled": true,
+                "visible": {
+                  "domain": [],
+                  "states": []
+                },
+                "visibleProfiles": [
+                  "readonly",
+                  "list"
+                ]
+              },
+              "entitlementEvaluated": true,
+              "label": "发送文本短信息",
+              "permissionConstraints": {},
+              "presentationAuthority": "product_contract",
+              "reasonCode": "",
+              "sequence": 6,
+              "sourceActionKey": "project_sms.project_project_act_window_sms_composer",
+              "sourceChannel": "product_action_group",
+              "sourceWidgetId": "page.root",
+              "target": {
+                "action_id": 462,
+                "action_ref": null,
+                "context_raw": "{\n            'default_composition_mode': 'mass',\n            'default_mass_keep_log': True,\n            'default_res_ids': active_ids,\n        }",
+                "domain_raw": false,
+                "menu_id": null,
+                "model": "sms.composer",
+                "route": null,
+                "target": null,
+                "url": null,
+                "view_type": "form",
+                "xml_id": "project_sms.project_project_act_window_sms_composer"
+              }
+            }
+          ],
+          "sourceWidgetId": "page.root",
+          "target": {
+            "action_id": 462,
+            "action_ref": null,
+            "context_raw": "{\n            'default_composition_mode': 'mass',\n            'default_mass_keep_log': True,\n            'default_res_ids': active_ids,\n        }",
+            "domain_raw": false,
+            "menu_id": null,
+            "model": "sms.composer",
+            "route": null,
+            "target": null,
+            "url": null,
+            "view_type": "form",
+            "xml_id": "project_sms.project_project_act_window_sms_composer"
+          },
+          "targetIds": [],
+          "targetScope": "page",
+          "triggerType": "click",
+          "visible": {
+            "domain": [],
+            "states": []
+          },
+          "visibleProfiles": [
+            "list",
+            "readonly"
+          ]
+        },
+        {
+          "actionId": "action.open_form",
+          "actionKey": "open_form",
+          "backendIdentity": "contract_action:action.open_form",
+          "button": {},
+          "dispatchMode": "server",
+          "entitlementEvaluated": false,
+          "intent": "open",
+          "label": "打开",
+          "nativeIdentity": {},
+          "permissionConstraints": {},
+          "presentation": {
+            "tier": "overflow"
+          },
+          "presentationAuthority": "native_contract",
+          "presentationPriority": 100,
+          "refreshMode": "partial",
+          "sourceActionKey": "open_form",
+          "sourceChannel": "native_tree_row_action",
+          "sourceTrace": [
+            {
+              "actionId": "action.open_form",
+              "actionKey": "open_form",
+              "authorizationAllowed": null,
+              "businessAvailable": null,
+              "button": {},
+              "constraints": {},
+              "entitlementEvaluated": false,
+              "label": "打开",
+              "permissionConstraints": {},
+              "presentationAuthority": "native_contract",
+              "reasonCode": "",
+              "sequence": 8,
+              "sourceActionKey": "open_form",
+              "sourceChannel": "native_tree_row_action",
+              "sourceWidgetId": "page.row",
+              "target": {
+                "action_id": null,
+                "action_ref": null,
+                "context_raw": null,
+                "domain_raw": null,
+                "model": null,
+                "route": null,
+                "target": null,
+                "url": null,
+                "view_type": "form",
+                "xml_id": null
+              }
+            }
+          ],
+          "sourceWidgetId": "page.row",
+          "target": {
+            "action_id": null,
+            "action_ref": null,
+            "context_raw": null,
+            "domain_raw": null,
+            "model": null,
+            "route": null,
+            "target": null,
+            "url": null,
+            "view_type": "form",
+            "xml_id": null
+          },
+          "targetIds": [],
+          "targetScope": "page",
+          "triggerType": "click"
+        }
+      ],
+      "deletePolicy": {
+        "allowed": true,
+        "delete_mode": "unlink",
+        "dependency_guard": "project.project._raise_project_unlink_blockers",
+        "dry_run_supported": true,
+        "message": "允许删除无业务依赖的项目主数据；继续受模型 ACL、记录规则与项目依赖阻断约束。",
+        "model": "project.project",
+        "reason_code": "PROJECT_MASTER_DELETE_ALLOWED",
+        "requires_acl": true,
+        "requires_record_rule": true,
+        "source": "smart_construction_core",
+        "sourceAuthority": {
+          "fact_authority": "source_contract_projection",
+          "formal_projection": true,
+          "kind": "unified_page_contract_v2",
+          "no_business_fact_authority": true,
+          "projection_only": true,
+          "runtime_carrier": "ui.contract.v2.actionContract.deletePolicy",
+          "source_key": "delete_policy"
+        },
+        "source_authority": {
+          "authorities": [
+            "extension_unlink_policy",
+            "handler_default_allowlist",
+            "odoo_access_control"
+          ],
+          "default_behavior": "deny_unless_extension_or_handler_default_allows",
+          "kind": "unlink_policy_projection",
+          "no_business_fact_authority": true,
+          "projection_only": true
+        }
+      },
+      "dependencyGraph": {
+        "page.root": [
+          "action.project.action_send_mail_project_project",
+          "action.project.project_share_wizard_action",
+          "action.project_sms.project_project_act_window_sms_composer"
+        ],
+        "page.row": [
+          "action.open_form"
+        ]
+      },
+      "identityPolicy": {
+        "constraintMerge": "fail_closed",
+        "object": "button_type_and_backend_method",
+        "presentationPrecedence": "highest_declared_authority",
+        "target": "stable_target_identity",
+        "url": "absolute_url_or_route",
+        "version": "2.0.0",
+        "window": "action_id"
+      },
+      "surfacePolicies": {
+        "actions_max": 8,
+        "actions_primary_max": 3,
+        "batch_policy": {
+          "activate_value": true,
+          "active_field": "active",
+          "archive_value": false,
+          "assignee_field": "user_id",
+          "assignee_options": {
+            "domain": [
+              [
+                "active",
+                "=",
+                true
+              ]
+            ],
+            "fields": [
+              "id",
+              "name"
+            ],
+            "limit": 80,
+            "model": "res.users",
+            "order": "name asc"
+          },
+          "available_actions": [
+            "export",
+            "archive",
+            "activate",
+            "delete"
+          ],
+          "delete_mode": "unlink",
+          "enabled": true,
+          "execution_intents": {
+            "activate": "api.data.batch",
+            "archive": "api.data.batch",
+            "delete": "api.data.unlink",
+            "export": "api.data"
+          },
+          "execution_operations": {
+            "export": "export_csv"
+          }
+        },
+        "delete_mode": "unlink",
+        "filters_max": 8,
+        "filters_primary_max": 4,
+        "record_open_policy": {
+          "carry_query_mode": "clear_scene_context"
+        },
+        "selection_policy": {
+          "action_source": "batch_policy.available_actions",
+          "enabled": true,
+          "mode": "multiple",
+          "requires_batch_action": false,
+          "scope": "current_page"
+        },
+        "sourceAuthority": {
+          "fact_authority": "source_contract_projection",
+          "formal_projection": true,
+          "kind": "unified_page_contract_v2",
+          "no_business_fact_authority": true,
+          "projection_only": true,
+          "runtime_carrier": "ui.contract.v2.actionContract.surfacePolicies",
+          "source_key": "surface_policies"
+        }
+      }
+    },
+    "dataContract": {
+      "dataMeta": {
+        "businessOperationProfile": {
+          "amount_fields": [],
+          "attachment_field": "",
+          "capabilities": {
+            "attachments": false,
+            "collaboration": true,
+            "details": true,
+            "remarks": true
+          },
+          "common_fields": [
+            "name",
+            "operation_strategy",
+            "partner_id",
+            "description"
+          ],
+          "date_fields": [],
+          "detail_fields": [
+            "review_ids",
+            "tasks",
+            "task_ids",
+            "collaborator_ids",
+            "update_ids",
+            "milestone_ids",
+            "contract_ids",
+            "responsibility_ids",
+            "payment_request_ids",
+            "funding_baseline_ids",
+            "settlement_ids",
+            "budget_ids",
+            "cost_ledger_ids",
+            "tender_bid_ids",
+            "progress_entry_ids",
+            "work_ids",
+            "boq_line_ids",
+            "document_ids",
+            "wbs_ids"
+          ],
+          "field_labels": {
+            "boq_line_ids": "工程量清单",
+            "budget_ids": "预算版本",
+            "collaborator_ids": "项目协作成员",
+            "contract_ids": "项目合同",
+            "cost_ledger_ids": "成本台账",
+            "description": "项目说明",
+            "document_ids": "工程资料",
+            "funding_baseline_ids": "资金基准",
+            "milestone_ids": "里程碑",
+            "name": "项目名称",
+            "operation_strategy": "经营方式",
+            "partner_id": "业主单位",
+            "payment_request_ids": "付款申请",
+            "progress_entry_ids": "进度计量",
+            "responsibility_ids": "项目责任分工",
+            "review_ids": "Validations",
+            "settlement_ids": "结算单",
+            "task_ids": "任务",
+            "tasks": "任务活动",
+            "tender_bid_ids": "投标记录",
+            "update_ids": "更新",
+            "wbs_ids": "WBS结构",
+            "work_ids": "施工结构"
+          },
+          "form_structure_common_fields": [],
+          "form_structure_detail_fields": [],
+          "model": "project.project",
+          "note_field": "description",
+          "source": "ui.contract.v2.business_operation_projection",
+          "sourceAuthority": {
+            "fact_authority": "source_contract_projection",
+            "formal_projection": true,
+            "kind": "unified_page_contract_v2_assembler_projection",
+            "no_business_fact_authority": true,
+            "projection_only": true,
+            "runtime_carrier": "ui.contract.v2.dataMeta.businessOperationProfile",
+            "source_key": "business_operation_profile"
+          },
+          "status_field": "lifecycle_state",
+          "view_type": "list"
+        },
+        "fieldCount": 14,
+        "fieldGroups": {
+          "groups": [
+            {
+              "collapsible": false,
+              "fields": [
+                "alias_contact",
+                "alias_id",
+                "last_update_status",
+                "name",
+                "operation_strategy",
+                "privacy_visibility",
+                "rating_status",
+                "boq_line_ids"
+              ],
+              "label": "核心信息",
+              "name": "core",
+              "priority": 1
+            },
+            {
+              "collapsed_by_default": true,
+              "collapsible": true,
+              "fields": [
+                "access_instruction_message",
+                "access_token",
+                "access_url",
+                "access_warning",
+                "active",
+                "activity_date_deadline",
+                "activity_exception_decoration",
+                "activity_exception_icon",
+                "activity_ids",
+                "activity_state",
+                "activity_summary",
+                "activity_type_icon",
+                "activity_type_id",
+                "activity_user_id",
+                "actual_percent",
+                "alias_bounced_content",
+                "alias_defaults",
+                "alias_domain",
+                "alias_domain_id",
+                "alias_email",
+                "alias_force_thread_id",
+                "alias_full_name",
+                "alias_incoming_local",
+                "alias_model_id",
+                "alias_name",
+                "alias_parent_model_id",
+                "alias_parent_thread_id",
+                "alias_status",
+                "allow_milestones",
+                "allow_rating",
+                "allow_task_dependencies",
+                "analytic_account_balance",
+                "analytic_account_id",
+                "boq_amount_building",
+                "boq_amount_installation",
+                "boq_amount_leaf_total",
+                "boq_amount_total",
+                "boq_imported",
+                "boq_line_count",
+                "boq_status",
+                "boq_version_latest",
+                "budget_active_cost_target",
+                "budget_active_id",
+                "budget_active_revenue_target",
+                "budget_count",
+                "budget_ids",
+                "budget_total",
+                "business_nature",
+                "can_review",
+                "closed_task_count",
+                "code",
+                "collaborator_count",
+                "collaborator_ids",
+                "color",
+                "company_currency_id",
+                "company_id",
+                "contract_amount",
+                "contract_count",
+                "contract_expense_total",
+                "contract_ids",
+                "contract_income_total",
+                "contract_no",
+                "cost_actual",
+                "cost_actual_pct",
+                "cost_budget_gap",
+                "cost_commit_pct",
+                "cost_committed",
+                "cost_ledger_amount_actual",
+                "cost_ledger_entry_count",
+                "cost_ledger_ids",
+                "cost_manager_id",
+                "cost_variance",
+                "create_date",
+                "create_uid",
+                "currency_id",
+                "dashboard_alert_1",
+                "dashboard_alert_2",
+                "dashboard_alert_3",
+                "dashboard_cost_actual",
+                "dashboard_document_completion",
+                "dashboard_invoice_amount",
+                "dashboard_payment_in",
+                "dashboard_payment_out",
+                "dashboard_profit_actual",
+                "dashboard_progress_rate",
+                "dashboard_revenue_actual",
+                "date",
+                "date_start",
+                "description",
+                "detail_address",
+                "display_name",
+                "doc_count",
+                "doc_manager_id",
+                "document_completion_rate",
+                "document_count",
+                "document_ids",
+                "document_missing_count",
+                "document_required_count",
+                "end_date",
+                "favorite_user_ids",
+                "funding_baseline_ids",
+                "funding_cap_amount",
+                "funding_enabled",
+                "funding_remaining_amount",
+                "funding_reservation_revision",
+                "funding_reserved_amount",
+                "has_comment",
+                "has_message",
+                "health_state",
+                "hide_reviews",
+                "id",
+                "initiation_date",
+                "intake_blocking_reason_display",
+                "intake_next_action_display",
+                "is_favorite",
+                "is_milestone_exceeded",
+                "label_tasks",
+                "last_update_color",
+                "last_update_id",
+                "lifecycle_advisory",
+                "lifecycle_state",
+                "location",
+                "manager_id",
+                "message_attachment_count",
+                "message_follower_ids",
+                "message_has_error",
+                "message_has_error_counter",
+                "message_has_sms_error",
+                "message_ids",
+                "message_is_follower",
+                "message_needaction",
+                "message_needaction_counter",
+                "message_partner_ids",
+                "milestone_count",
+                "milestone_count_reached",
+                "milestone_ids",
+                "my_activity_date_deadline",
+                "need_validation",
+                "next_review",
+                "open_task_count",
+                "overview_html",
+                "owner_contact",
+                "owner_id",
+                "partner_id",
+                "pay_contract_total",
+                "pay_paid_total",
+                "pay_settlement_total",
+                "pay_unpaid_total",
+                "payment_request_ids",
+                "phase_key",
+                "plan_percent",
+                "privacy_visibility_warning",
+                "progress_entry_count",
+                "progress_entry_ids",
+                "progress_rate_latest",
+                "project_area",
+                "project_category_id",
+                "project_code",
+                "project_environment",
+                "project_overview",
+                "project_profile",
+                "project_type_id",
+                "purchase_orders_count",
+                "rating_active",
+                "rating_avg",
+                "rating_avg_percentage",
+                "rating_count",
+                "rating_ids",
+                "rating_percentage_satisfaction",
+                "rating_request_deadline",
+                "rating_status_period",
+                "reject_reason",
+                "rejected",
+                "rejected_message",
+                "resource_calendar_id",
+                "responsibility_ids",
+                "review_ids",
+                "reviewer_ids",
+                "sc_approval_state",
+                "sc_demo_showcase",
+                "sc_demo_showcase_ready",
+                "sc_draft_autosave_uid",
+                "sc_draft_autosaved_at",
+                "sc_execution_state",
+                "sc_overview_contract_count",
+                "sc_overview_cost_count",
+                "sc_overview_payment_count",
+                "sc_overview_payment_pending_count",
+                "sc_overview_task_count",
+                "sc_overview_task_in_progress_count",
+                "sc_partner_display_name",
+                "sc_project_showcase",
+                "sc_project_showcase_ready",
+                "sc_stage_required_done",
+                "sc_stage_required_total",
+                "schedule_delta",
+                "sequence",
+                "settlement_ids",
+                "short_name",
+                "source_created_at",
+                "source_created_by",
+                "specialty_type_name",
+                "stage_id",
+                "start_date",
+                "subcontract_amount",
+                "tag_ids",
+                "task_count",
+                "task_ids",
+                "task_properties_definition",
+                "tasks",
+                "tender_bid_ids",
+                "tender_count",
+                "to_validate_message",
+                "type_ids",
+                "update_ids",
+                "user_id",
+                "validated",
+                "validated_message",
+                "validation_status",
+                "wbs_count",
+                "wbs_ids",
+                "wbs_node_count",
+                "wbs_ready",
+                "website_message_ids",
+                "work_ids",
+                "write_date",
+                "write_uid"
+              ],
+              "label": "高级信息",
+              "name": "advanced",
+              "priority": 2
+            }
+          ],
+          "sourceAuthority": {
+            "fact_authority": "source_contract_projection",
+            "formal_projection": true,
+            "kind": "unified_page_contract_v2_assembler_projection",
+            "no_business_fact_authority": true,
+            "projection_only": true,
+            "runtime_carrier": "ui.contract.v2.dataMeta.fieldGroups",
+            "source_key": "field_groups"
+          }
+        },
+        "sourceContext": {
+          "context": {
+            "lang": "zh_CN",
+            "tz": "Asia/Shanghai"
+          },
+          "limit": 20,
+          "order": "sequence, name, id",
+          "renderProfile": "readonly"
+        }
+      },
+      "dataSource": {
+        "primary": {
+          "cachePolicy": "none",
+          "consistency": "strong",
+          "intent": "api.data",
+          "pagination": {
+            "limit": 20,
+            "mode": "offset",
+            "nextOffsetField": "next_offset",
+            "offsetParam": "offset",
+            "totalField": "total"
+          },
+          "params": {
+            "context": {
+              "lang": "zh_CN",
+              "tz": "Asia/Shanghai"
+            },
+            "fields": [
+              "id",
+              "name",
+              "project_code",
+              "owner_id",
+              "sc_partner_display_name",
+              "operation_strategy",
+              "lifecycle_state",
+              "user_id",
+              "contract_amount",
+              "dashboard_progress_rate",
+              "manager_id",
+              "start_date",
+              "end_date"
+            ],
+            "limit": 20,
+            "model": "project.project",
+            "need_total": true,
+            "offset": 0,
+            "op": "list",
+            "order": "sequence, name, id"
+          },
+          "query": "api.data",
+          "sourceAuthority": {
+            "fact_authority": "odoo.model",
+            "kind": "unified_page_contract_v2_assembler_projection",
+            "model": "project.project",
+            "no_business_fact_authority": true,
+            "projection_only": true,
+            "runtime_carrier": "ui.contract.v2.dataContract.dataSource",
+            "view_type": "tree"
+          }
+        }
+      },
+      "dictData": {},
+      "mainData": {},
+      "pagination": {},
+      "relationRows": {},
+      "tableRows": {}
+    },
+    "layoutContract": {
+      "adaptMode": "mobile",
+      "componentRegistry": {
+        "sc.display.status": {
+          "version": "1.0"
+        },
+        "sc.relation.many2one": {
+          "version": "1.0"
+        },
+        "sc.table.data": {
+          "version": "1.0"
+        },
+        "sc.value.money": {
+          "version": "1.0"
+        }
+      },
+      "containerTree": [
+        {
+          "children": [],
+          "containerId": "main.table",
+          "containerType": "section",
+          "label": "项目",
+          "name": "main.table",
+          "span": 12,
+          "string": "项目",
+          "styleToken": "tableSection",
+          "title": "项目",
+          "type": "section",
+          "widgetList": [
+            {
+              "capabilities": [
+                "sortable",
+                "filterable"
+              ],
+              "componentConfig": {
+                "fieldType": "char",
+                "nativeWidget": "char",
+                "optional": "show",
+                "readonly": false,
+                "required": true
+              },
+              "componentKey": "sc.table.data",
+              "fieldCode": "name",
+              "fieldDescriptor": {
+                "cell_role": "description",
+                "label": "项目名称",
+                "name": "name",
+                "optional": "show",
+                "readonly": false,
+                "required": true,
+                "semantic_type": "business",
+                "string": "项目名称",
+                "surface_role": "core",
+                "technical": false,
+                "type": "char",
+                "widget": "char"
+              },
+              "label": "项目名称",
+              "ownerContainerId": "main.table",
+              "span": 12,
+              "widgetId": "field.name",
+              "widgetType": "table"
+            },
+            {
+              "capabilities": [
+                "sortable",
+                "filterable"
+              ],
+              "componentConfig": {
+                "fieldType": "char",
+                "nativeWidget": "char",
+                "optional": "show",
+                "readonly": true,
+                "required": false
+              },
+              "componentKey": "sc.table.data",
+              "fieldCode": "project_code",
+              "fieldDescriptor": {
+                "cell_role": "identity",
+                "label": "项目编号",
+                "name": "project_code",
+                "optional": "show",
+                "readonly": true,
+                "required": false,
+                "semantic_type": "business",
+                "string": "项目编号",
+                "surface_role": "advanced",
+                "technical": false,
+                "type": "char",
+                "widget": "char"
+              },
+              "label": "项目编号",
+              "ownerContainerId": "main.table",
+              "span": 12,
+              "widgetId": "field.project_code",
+              "widgetType": "table"
+            },
+            {
+              "capabilities": [
+                "sortable",
+                "filterable"
+              ],
+              "componentConfig": {
+                "fieldType": "many2one",
+                "nativeWidget": "many2one",
+                "optional": "show",
+                "readonly": false,
+                "relation": "res.partner",
+                "relationEntry": {
+                  "action_id": null,
+                  "can_create": true,
+                  "can_open": false,
+                  "can_read": true,
+                  "create_mode": "disabled",
+                  "default_from_fields": {},
+                  "default_vals": {},
+                  "delete_policy": {
+                    "allowed": true,
+                    "delete_mode": "unlink",
+                    "dry_run_supported": true,
+                    "message": "允许业务配置管理员整理客户/供应商资料；仍受模型 ACL 与记录规则约束。",
+                    "model": "res.partner",
+                    "reason_code": "DELETE_POLICY_ALLOWED",
+                    "requires_acl": true,
+                    "requires_record_rule": true,
+                    "source": "smart_construction_core",
+                    "source_authority": {
+                      "authorities": [
+                        "extension_unlink_policy",
+                        "handler_default_allowlist",
+                        "odoo_access_control"
+                      ],
+                      "default_behavior": "deny_unless_extension_or_handler_default_allows",
+                      "kind": "unlink_policy_projection",
+                      "no_business_fact_authority": true,
+                      "projection_only": true
+                    }
+                  },
+                  "display_field": "",
+                  "domain": [],
+                  "entry_intent": "open",
+                  "field": "owner_id",
+                  "inline_create": {
+                    "create_on_no_match": true,
+                    "enabled": true,
+                    "match": "single_contains_or_exact",
+                    "name_field": "name",
+                    "reason_code": "INLINE_CREATE_READY",
+                    "value_source": "typed_keyword"
+                  },
+                  "menu_id": null,
+                  "model": "res.partner",
+                  "model_write_authority": true,
+                  "options_limit": 80,
+                  "options_search_limit": 40,
+                  "order": "",
+                  "reason_code": "RELATION_ENTRY_NOT_PUBLISHED",
+                  "search_dialog": {
+                    "columns": [
+                      {
+                        "label": "名称",
+                        "name": "display_name",
+                        "optional": "",
+                        "type": "char",
+                        "widget": "char"
+                      },
+                      {
+                        "label": "名称",
+                        "name": "complete_name",
+                        "optional": "",
+                        "type": "char",
+                        "widget": "char"
+                      },
+                      {
+                        "label": "工作职位",
+                        "name": "function",
+                        "optional": "",
+                        "type": "char",
+                        "widget": "char"
+                      },
+                      {
+                        "label": "电话",
+                        "name": "phone",
+                        "optional": "show",
+                        "type": "char",
+                        "widget": "char"
+                      },
+                      {
+                        "label": "手机",
+                        "name": "mobile",
+                        "optional": "hide",
+                        "type": "char",
+                        "widget": "char"
+                      },
+                      {
+                        "label": "电子邮件",
+                        "name": "email",
+                        "optional": "show",
+                        "type": "char",
+                        "widget": "char"
+                      },
+                      {
+                        "label": "销售员",
+                        "name": "user_id",
+                        "optional": "show",
+                        "type": "many2one",
+                        "widget": "many2one_avatar_user"
+                      },
+                      {
+                        "label": "活动",
+                        "name": "activity_ids",
+                        "optional": "show",
+                        "type": "one2many",
+                        "widget": "list_activity"
+                      }
+                    ],
+                    "governance": {
+                      "view_orchestration": {
+                        "applied": false,
+                        "business_config_contracts": [],
+                        "business_config_form_fields": [],
+                        "form_layout_overlay": false,
+                        "form_presentation_mode": "",
+                        "form_structure_authority": "",
+                        "legacy_field_policy_overlay": false,
+                        "native_semantic_surface": false,
+                        "owner_layer": "business_view_orchestration",
+                        "source_authority": {
+                          "authorities": [
+                            "odoo_native_view_parse_snapshot",
+                            "ir.model.fields",
+                            "ir.actions.act_window",
+                            "ir.ui.view",
+                            "ui.business.config.contract",
+                            "ui.business.config.contract.version",
+                            "ui.form.field.policy"
+                          ],
+                          "kind": "business_view_orchestration_boundary",
+                          "no_business_fact_authority": true,
+                          "projection_only": true,
+                          "rebuildable": true,
+                          "runtime_carrier": "view_orchestration_contract"
+                        },
+                        "tenant_extension_field_count": 0,
+                        "tenant_extension_source": ""
+                      }
+                    },
+                    "limit": 120,
+                    "order": "complete_name ASC, id DESC",
+                    "read_fields": [
+                      "id",
+                      "display_name",
+                      "name",
+                      "complete_name",
+                      "function",
+                      "phone",
+                      "mobile",
+                      "email",
+                      "user_id",
+                      "activity_ids"
+                    ],
+                    "search": {
+                      "facets": {
+                        "enabled": true
+                      },
+                      "filters": [],
+                      "group_by": []
+                    },
+                    "source": "relation_target_native_view",
+                    "source_trace": {
+                      "view_orchestration": {
+                        "action_id": 0,
+                        "business_config_contracts": [],
+                        "business_config_form_fields": [],
+                        "form_layout_overlay": false,
+                        "form_presentation_mode": "",
+                        "form_structure_authority": "",
+                        "legacy_field_policy_overlay": false,
+                        "model": "res.partner",
+                        "native_semantic_surface": false,
+                        "owner_layer": "business_view_orchestration",
+                        "tenant_extension_field_count": 0,
+                        "view_id": 122,
+                        "view_type": "tree"
+                      }
+                    }
+                  },
+                  "source": "backend_contract",
+                  "switch_context": {},
+                  "ui_labels": {
+                    "cancel": "取消",
+                    "close": "关闭",
+                    "create": "新建",
+                    "create_and_edit": "新建并维护...",
+                    "create_page_failed": "跳转新建页面失败",
+                    "dialog_title": "业主单位：搜索更多",
+                    "empty": "未找到匹配记录",
+                    "inline_create": "保存时创建“%s”",
+                    "inline_create_failed": "保存时创建失败",
+                    "inline_searching": "正在搜索...",
+                    "missing_create_entry": "未找到新建入口，请联系管理员配置菜单动作",
+                    "missing_name": "请输入要新建的名称。",
+                    "missing_page_entry": "未找到维护页面入口，请联系管理员配置 action/menu",
+                    "page_unavailable_prompt": "维护页面暂不可用，请输入新选项名称（快速新建）",
+                    "quick_create": "快速新建...",
+                    "quick_create_failed": "快速新建失败",
+                    "quick_create_prompt": "当前未配置维护页面，请输入新选项名称（快速新建）",
+                    "record_count": "%s 条记录",
+                    "search": "搜索",
+                    "search_failed": "搜索失败，请稍后重试",
+                    "search_more": "搜索更多...",
+                    "search_placeholder": "输入名称搜索",
+                    "select": "选择"
+                  },
+                  "view_mode": "form",
+                  "view_type": "form"
+                },
+                "required": false
+              },
+              "componentKey": "sc.relation.many2one",
+              "fieldCode": "owner_id",
+              "fieldDescriptor": {
+                "cell_role": "relation",
+                "domain": [],
+                "label": "业主单位",
+                "name": "owner_id",
+                "optional": "show",
+                "readonly": false,
+                "relation": "res.partner",
+                "relation_entry": {
+                  "action_id": null,
+                  "can_create": true,
+                  "can_open": false,
+                  "can_read": true,
+                  "create_mode": "disabled",
+                  "default_from_fields": {},
+                  "default_vals": {},
+                  "delete_policy": {
+                    "allowed": true,
+                    "delete_mode": "unlink",
+                    "dry_run_supported": true,
+                    "message": "允许业务配置管理员整理客户/供应商资料；仍受模型 ACL 与记录规则约束。",
+                    "model": "res.partner",
+                    "reason_code": "DELETE_POLICY_ALLOWED",
+                    "requires_acl": true,
+                    "requires_record_rule": true,
+                    "source": "smart_construction_core",
+                    "source_authority": {
+                      "authorities": [
+                        "extension_unlink_policy",
+                        "handler_default_allowlist",
+                        "odoo_access_control"
+                      ],
+                      "default_behavior": "deny_unless_extension_or_handler_default_allows",
+                      "kind": "unlink_policy_projection",
+                      "no_business_fact_authority": true,
+                      "projection_only": true
+                    }
+                  },
+                  "display_field": "",
+                  "domain": [],
+                  "entry_intent": "open",
+                  "field": "owner_id",
+                  "inline_create": {
+                    "create_on_no_match": true,
+                    "enabled": true,
+                    "match": "single_contains_or_exact",
+                    "name_field": "name",
+                    "reason_code": "INLINE_CREATE_READY",
+                    "value_source": "typed_keyword"
+                  },
+                  "menu_id": null,
+                  "model": "res.partner",
+                  "model_write_authority": true,
+                  "options_limit": 80,
+                  "options_search_limit": 40,
+                  "order": "",
+                  "reason_code": "RELATION_ENTRY_NOT_PUBLISHED",
+                  "search_dialog": {
+                    "columns": [
+                      {
+                        "label": "名称",
+                        "name": "display_name",
+                        "optional": "",
+                        "type": "char",
+                        "widget": "char"
+                      },
+                      {
+                        "label": "名称",
+                        "name": "complete_name",
+                        "optional": "",
+                        "type": "char",
+                        "widget": "char"
+                      },
+                      {
+                        "label": "工作职位",
+                        "name": "function",
+                        "optional": "",
+                        "type": "char",
+                        "widget": "char"
+                      },
+                      {
+                        "label": "电话",
+                        "name": "phone",
+                        "optional": "show",
+                        "type": "char",
+                        "widget": "char"
+                      },
+                      {
+                        "label": "手机",
+                        "name": "mobile",
+                        "optional": "hide",
+                        "type": "char",
+                        "widget": "char"
+                      },
+                      {
+                        "label": "电子邮件",
+                        "name": "email",
+                        "optional": "show",
+                        "type": "char",
+                        "widget": "char"
+                      },
+                      {
+                        "label": "销售员",
+                        "name": "user_id",
+                        "optional": "show",
+                        "type": "many2one",
+                        "widget": "many2one_avatar_user"
+                      },
+                      {
+                        "label": "活动",
+                        "name": "activity_ids",
+                        "optional": "show",
+                        "type": "one2many",
+                        "widget": "list_activity"
+                      }
+                    ],
+                    "governance": {
+                      "view_orchestration": {
+                        "applied": false,
+                        "business_config_contracts": [],
+                        "business_config_form_fields": [],
+                        "form_layout_overlay": false,
+                        "form_presentation_mode": "",
+                        "form_structure_authority": "",
+                        "legacy_field_policy_overlay": false,
+                        "native_semantic_surface": false,
+                        "owner_layer": "business_view_orchestration",
+                        "source_authority": {
+                          "authorities": [
+                            "odoo_native_view_parse_snapshot",
+                            "ir.model.fields",
+                            "ir.actions.act_window",
+                            "ir.ui.view",
+                            "ui.business.config.contract",
+                            "ui.business.config.contract.version",
+                            "ui.form.field.policy"
+                          ],
+                          "kind": "business_view_orchestration_boundary",
+                          "no_business_fact_authority": true,
+                          "projection_only": true,
+                          "rebuildable": true,
+                          "runtime_carrier": "view_orchestration_contract"
+                        },
+                        "tenant_extension_field_count": 0,
+                        "tenant_extension_source": ""
+                      }
+                    },
+                    "limit": 120,
+                    "order": "complete_name ASC, id DESC",
+                    "read_fields": [
+                      "id",
+                      "display_name",
+                      "name",
+                      "complete_name",
+                      "function",
+                      "phone",
+                      "mobile",
+                      "email",
+                      "user_id",
+                      "activity_ids"
+                    ],
+                    "search": {
+                      "facets": {
+                        "enabled": true
+                      },
+                      "filters": [],
+                      "group_by": []
+                    },
+                    "source": "relation_target_native_view",
+                    "source_trace": {
+                      "view_orchestration": {
+                        "action_id": 0,
+                        "business_config_contracts": [],
+                        "business_config_form_fields": [],
+                        "form_layout_overlay": false,
+                        "form_presentation_mode": "",
+                        "form_structure_authority": "",
+                        "legacy_field_policy_overlay": false,
+                        "model": "res.partner",
+                        "native_semantic_surface": false,
+                        "owner_layer": "business_view_orchestration",
+                        "tenant_extension_field_count": 0,
+                        "view_id": 122,
+                        "view_type": "tree"
+                      }
+                    }
+                  },
+                  "source": "backend_contract",
+                  "switch_context": {},
+                  "ui_labels": {
+                    "cancel": "取消",
+                    "close": "关闭",
+                    "create": "新建",
+                    "create_and_edit": "新建并维护...",
+                    "create_page_failed": "跳转新建页面失败",
+                    "dialog_title": "业主单位：搜索更多",
+                    "empty": "未找到匹配记录",
+                    "inline_create": "保存时创建“%s”",
+                    "inline_create_failed": "保存时创建失败",
+                    "inline_searching": "正在搜索...",
+                    "missing_create_entry": "未找到新建入口，请联系管理员配置菜单动作",
+                    "missing_name": "请输入要新建的名称。",
+                    "missing_page_entry": "未找到维护页面入口，请联系管理员配置 action/menu",
+                    "page_unavailable_prompt": "维护页面暂不可用，请输入新选项名称（快速新建）",
+                    "quick_create": "快速新建...",
+                    "quick_create_failed": "快速新建失败",
+                    "quick_create_prompt": "当前未配置维护页面，请输入新选项名称（快速新建）",
+                    "record_count": "%s 条记录",
+                    "search": "搜索",
+                    "search_failed": "搜索失败，请稍后重试",
+                    "search_more": "搜索更多...",
+                    "search_placeholder": "输入名称搜索",
+                    "select": "选择"
+                  },
+                  "view_mode": "form",
+                  "view_type": "form"
+                },
+                "required": false,
+                "semantic_type": "relation",
+                "string": "业主单位",
+                "surface_role": "advanced",
+                "technical": false,
+                "type": "many2one",
+                "widget": "many2one"
+              },
+              "label": "业主单位",
+              "ownerContainerId": "main.table",
+              "span": 12,
+              "widgetId": "field.owner_id",
+              "widgetType": "table"
+            },
+            {
+              "capabilities": [
+                "sortable",
+                "filterable"
+              ],
+              "componentConfig": {
+                "fieldType": "char",
+                "nativeWidget": "char",
+                "optional": "show",
+                "readonly": true,
+                "required": false
+              },
+              "componentKey": "sc.table.data",
+              "fieldCode": "sc_partner_display_name",
+              "fieldDescriptor": {
+                "cell_role": "relation",
+                "label": "关联单位",
+                "name": "sc_partner_display_name",
+                "optional": "show",
+                "readonly": true,
+                "required": false,
+                "semantic_type": "business",
+                "string": "关联单位",
+                "surface_role": "advanced",
+                "technical": false,
+                "type": "char",
+                "widget": "char"
+              },
+              "label": "关联单位",
+              "ownerContainerId": "main.table",
+              "span": 12,
+              "widgetId": "field.sc_partner_display_name",
+              "widgetType": "table"
+            },
+            {
+              "capabilities": [
+                "sortable",
+                "filterable"
+              ],
+              "componentConfig": {
+                "fieldType": "selection",
+                "nativeWidget": "selection",
+                "optional": "show",
+                "readonly": false,
+                "required": true,
+                "selection": [
+                  {
+                    "label": "公司直营",
+                    "value": "direct"
+                  },
+                  {
+                    "label": "联营项目",
+                    "value": "joint"
+                  }
+                ]
+              },
+              "componentKey": "sc.table.data",
+              "fieldCode": "operation_strategy",
+              "fieldDescriptor": {
+                "cell_role": "status",
+                "help": "公司隔离之后的项目级全局经营策略维度，用于直营/联营业务事实切换、筛选和统计。",
+                "label": "经营方式",
+                "name": "operation_strategy",
+                "optional": "show",
+                "readonly": false,
+                "required": true,
+                "selection": [
+                  {
+                    "label": "公司直营",
+                    "value": "direct"
+                  },
+                  {
+                    "label": "联营项目",
+                    "value": "joint"
+                  }
+                ],
+                "semantic_type": "business",
+                "string": "经营方式",
+                "surface_role": "core",
+                "technical": false,
+                "type": "selection",
+                "widget": "selection"
+              },
+              "label": "经营方式",
+              "ownerContainerId": "main.table",
+              "span": 12,
+              "widgetId": "field.operation_strategy",
+              "widgetType": "table"
+            },
+            {
+              "capabilities": [
+                "sortable",
+                "filterable"
+              ],
+              "componentConfig": {
+                "fieldType": "selection",
+                "nativeWidget": "badge",
+                "optional": "show",
+                "readonly": false,
+                "required": false,
+                "selection": [
+                  {
+                    "label": "草稿",
+                    "value": "draft"
+                  },
+                  {
+                    "label": "在建",
+                    "value": "in_progress"
+                  },
+                  {
+                    "label": "停工",
+                    "value": "paused"
+                  },
+                  {
+                    "label": "竣工",
+                    "value": "done"
+                  },
+                  {
+                    "label": "结算中",
+                    "value": "closing"
+                  },
+                  {
+                    "label": "保修期",
+                    "value": "warranty"
+                  },
+                  {
+                    "label": "关闭",
+                    "value": "closed"
+                  }
+                ]
+              },
+              "componentKey": "sc.display.status",
+              "fieldCode": "lifecycle_state",
+              "fieldDescriptor": {
+                "cell_role": "status",
+                "help": "驱动项目级联动控制：暂停/关闭禁止新增进度、成本等业务数据；结算中限制部分操作。",
+                "label": "项目状态",
+                "name": "lifecycle_state",
+                "optional": "show",
+                "readonly": false,
+                "required": false,
+                "selection": [
+                  {
+                    "label": "草稿",
+                    "value": "draft"
+                  },
+                  {
+                    "label": "在建",
+                    "value": "in_progress"
+                  },
+                  {
+                    "label": "停工",
+                    "value": "paused"
+                  },
+                  {
+                    "label": "竣工",
+                    "value": "done"
+                  },
+                  {
+                    "label": "结算中",
+                    "value": "closing"
+                  },
+                  {
+                    "label": "保修期",
+                    "value": "warranty"
+                  },
+                  {
+                    "label": "关闭",
+                    "value": "closed"
+                  }
+                ],
+                "semantic_type": "business",
+                "string": "项目状态",
+                "surface_role": "advanced",
+                "technical": false,
+                "type": "selection",
+                "widget": "badge"
+              },
+              "label": "项目状态",
+              "ownerContainerId": "main.table",
+              "span": 12,
+              "widgetId": "field.lifecycle_state",
+              "widgetType": "table"
+            },
+            {
+              "capabilities": [
+                "sortable",
+                "filterable"
+              ],
+              "componentConfig": {
+                "fieldType": "many2one",
+                "nativeWidget": "many2one",
+                "optional": "show",
+                "readonly": false,
+                "relation": "res.users",
+                "relationEntry": {
+                  "action_id": 736,
+                  "can_create": true,
+                  "can_open": true,
+                  "can_read": true,
+                  "create_mode": "page",
+                  "default_from_fields": {},
+                  "default_vals": {},
+                  "delete_policy": {
+                    "allowed": false,
+                    "delete_mode": "none",
+                    "dry_run_supported": true,
+                    "message": "当前模型未开放删除",
+                    "model": "res.users",
+                    "reason_code": "DELETE_POLICY_DENIED",
+                    "requires_acl": true,
+                    "requires_record_rule": true,
+                    "source": "delete_policy_default_denied",
+                    "source_authority": {
+                      "authorities": [
+                        "extension_unlink_policy",
+                        "handler_default_allowlist",
+                        "odoo_access_control"
+                      ],
+                      "default_behavior": "deny_unless_extension_or_handler_default_allows",
+                      "kind": "unlink_policy_projection",
+                      "no_business_fact_authority": true,
+                      "projection_only": true
+                    }
+                  },
+                  "display_field": "",
+                  "domain": [],
+                  "entry_intent": "open",
+                  "field": "user_id",
+                  "inline_create": {
+                    "create_on_no_match": false,
+                    "enabled": false,
+                    "match": "single_contains_or_exact",
+                    "name_field": "name",
+                    "reason_code": "RELATION_REQUIRED_FIELDS_UNRESOLVED",
+                    "required_fields": [
+                      "partner_id",
+                      "login"
+                    ]
+                  },
+                  "menu_id": 430,
+                  "model": "res.users",
+                  "model_write_authority": true,
+                  "options_limit": 80,
+                  "options_search_limit": 40,
+                  "order": "",
+                  "reason_code": "PAGE_ENTRY_READY",
+                  "search_dialog": {
+                    "columns": [
+                      {
+                        "label": "姓名",
+                        "name": "name",
+                        "optional": "",
+                        "type": "char",
+                        "widget": "char"
+                      },
+                      {
+                        "label": "登录账号",
+                        "name": "login",
+                        "optional": "",
+                        "type": "char",
+                        "widget": "char"
+                      },
+                      {
+                        "label": "主公司",
+                        "name": "company_id",
+                        "optional": "",
+                        "type": "many2one",
+                        "widget": "many2one"
+                      },
+                      {
+                        "label": "允许公司",
+                        "name": "company_ids",
+                        "optional": "",
+                        "type": "many2many",
+                        "widget": "many2many_tags"
+                      },
+                      {
+                        "label": "业务权限角色",
+                        "name": "sc_user_permission_group_ids",
+                        "optional": "",
+                        "type": "many2many",
+                        "widget": "many2many_tags"
+                      },
+                      {
+                        "label": "账号启用",
+                        "name": "active",
+                        "optional": "",
+                        "type": "boolean",
+                        "widget": "boolean"
+                      }
+                    ],
+                    "governance": {
+                      "view_orchestration": {
+                        "applied": false,
+                        "business_config_contracts": [],
+                        "business_config_form_fields": [],
+                        "form_layout_overlay": false,
+                        "form_presentation_mode": "",
+                        "form_structure_authority": "",
+                        "legacy_field_policy_overlay": false,
+                        "native_semantic_surface": false,
+                        "owner_layer": "business_view_orchestration",
+                        "source_authority": {
+                          "authorities": [
+                            "odoo_native_view_parse_snapshot",
+                            "ir.model.fields",
+                            "ir.actions.act_window",
+                            "ir.ui.view",
+                            "ui.business.config.contract",
+                            "ui.business.config.contract.version",
+                            "ui.form.field.policy"
+                          ],
+                          "kind": "business_view_orchestration_boundary",
+                          "no_business_fact_authority": true,
+                          "projection_only": true,
+                          "rebuildable": true,
+                          "runtime_carrier": "view_orchestration_contract"
+                        },
+                        "tenant_extension_field_count": 0,
+                        "tenant_extension_source": ""
+                      }
+                    },
+                    "limit": 120,
+                    "order": "name, login",
+                    "read_fields": [
+                      "id",
+                      "display_name",
+                      "name",
+                      "login",
+                      "company_id",
+                      "company_ids",
+                      "sc_user_permission_group_ids",
+                      "active"
+                    ],
+                    "search": {
+                      "facets": {
+                        "enabled": true
+                      },
+                      "filters": [],
+                      "group_by": []
+                    },
+                    "source": "relation_target_native_view",
+                    "source_trace": {
+                      "view_orchestration": {
+                        "action_id": 0,
+                        "business_config_contracts": [],
+                        "business_config_form_fields": [],
+                        "form_layout_overlay": false,
+                        "form_presentation_mode": "",
+                        "form_structure_authority": "",
+                        "legacy_field_policy_overlay": false,
+                        "model": "res.users",
+                        "native_semantic_surface": false,
+                        "owner_layer": "business_view_orchestration",
+                        "tenant_extension_field_count": 0,
+                        "view_id": 1903,
+                        "view_type": "tree"
+                      }
+                    }
+                  },
+                  "source": "backend_contract",
+                  "switch_context": {},
+                  "ui_labels": {
+                    "cancel": "取消",
+                    "close": "关闭",
+                    "create": "新建",
+                    "create_and_edit": "新建并维护...",
+                    "create_page_failed": "跳转新建页面失败",
+                    "dialog_title": "项目管理员：搜索更多",
+                    "empty": "未找到匹配记录",
+                    "inline_create": "保存时创建“%s”",
+                    "inline_create_failed": "保存时创建失败",
+                    "inline_searching": "正在搜索...",
+                    "missing_create_entry": "未找到新建入口，请联系管理员配置菜单动作",
+                    "missing_name": "请输入要新建的名称。",
+                    "missing_page_entry": "未找到维护页面入口，请联系管理员配置 action/menu",
+                    "page_unavailable_prompt": "维护页面暂不可用，请输入新选项名称（快速新建）",
+                    "quick_create": "快速新建...",
+                    "quick_create_failed": "快速新建失败",
+                    "quick_create_prompt": "当前未配置维护页面，请输入新选项名称（快速新建）",
+                    "record_count": "%s 条记录",
+                    "search": "搜索",
+                    "search_failed": "搜索失败，请稍后重试",
+                    "search_more": "搜索更多...",
+                    "search_placeholder": "输入名称搜索",
+                    "select": "选择"
+                  },
+                  "view_mode": "tree,form",
+                  "view_type": "form"
+                },
+                "required": false
+              },
+              "componentKey": "sc.relation.many2one",
+              "fieldCode": "user_id",
+              "fieldDescriptor": {
+                "cell_role": "relation",
+                "domain": [],
+                "label": "项目负责人",
+                "name": "user_id",
+                "optional": "show",
+                "readonly": false,
+                "relation": "res.users",
+                "relation_entry": {
+                  "action_id": 736,
+                  "can_create": true,
+                  "can_open": true,
+                  "can_read": true,
+                  "create_mode": "page",
+                  "default_from_fields": {},
+                  "default_vals": {},
+                  "delete_policy": {
+                    "allowed": false,
+                    "delete_mode": "none",
+                    "dry_run_supported": true,
+                    "message": "当前模型未开放删除",
+                    "model": "res.users",
+                    "reason_code": "DELETE_POLICY_DENIED",
+                    "requires_acl": true,
+                    "requires_record_rule": true,
+                    "source": "delete_policy_default_denied",
+                    "source_authority": {
+                      "authorities": [
+                        "extension_unlink_policy",
+                        "handler_default_allowlist",
+                        "odoo_access_control"
+                      ],
+                      "default_behavior": "deny_unless_extension_or_handler_default_allows",
+                      "kind": "unlink_policy_projection",
+                      "no_business_fact_authority": true,
+                      "projection_only": true
+                    }
+                  },
+                  "display_field": "",
+                  "domain": [],
+                  "entry_intent": "open",
+                  "field": "user_id",
+                  "inline_create": {
+                    "create_on_no_match": false,
+                    "enabled": false,
+                    "match": "single_contains_or_exact",
+                    "name_field": "name",
+                    "reason_code": "RELATION_REQUIRED_FIELDS_UNRESOLVED",
+                    "required_fields": [
+                      "partner_id",
+                      "login"
+                    ]
+                  },
+                  "menu_id": 430,
+                  "model": "res.users",
+                  "model_write_authority": true,
+                  "options_limit": 80,
+                  "options_search_limit": 40,
+                  "order": "",
+                  "reason_code": "PAGE_ENTRY_READY",
+                  "search_dialog": {
+                    "columns": [
+                      {
+                        "label": "姓名",
+                        "name": "name",
+                        "optional": "",
+                        "type": "char",
+                        "widget": "char"
+                      },
+                      {
+                        "label": "登录账号",
+                        "name": "login",
+                        "optional": "",
+                        "type": "char",
+                        "widget": "char"
+                      },
+                      {
+                        "label": "主公司",
+                        "name": "company_id",
+                        "optional": "",
+                        "type": "many2one",
+                        "widget": "many2one"
+                      },
+                      {
+                        "label": "允许公司",
+                        "name": "company_ids",
+                        "optional": "",
+                        "type": "many2many",
+                        "widget": "many2many_tags"
+                      },
+                      {
+                        "label": "业务权限角色",
+                        "name": "sc_user_permission_group_ids",
+                        "optional": "",
+                        "type": "many2many",
+                        "widget": "many2many_tags"
+                      },
+                      {
+                        "label": "账号启用",
+                        "name": "active",
+                        "optional": "",
+                        "type": "boolean",
+                        "widget": "boolean"
+                      }
+                    ],
+                    "governance": {
+                      "view_orchestration": {
+                        "applied": false,
+                        "business_config_contracts": [],
+                        "business_config_form_fields": [],
+                        "form_layout_overlay": false,
+                        "form_presentation_mode": "",
+                        "form_structure_authority": "",
+                        "legacy_field_policy_overlay": false,
+                        "native_semantic_surface": false,
+                        "owner_layer": "business_view_orchestration",
+                        "source_authority": {
+                          "authorities": [
+                            "odoo_native_view_parse_snapshot",
+                            "ir.model.fields",
+                            "ir.actions.act_window",
+                            "ir.ui.view",
+                            "ui.business.config.contract",
+                            "ui.business.config.contract.version",
+                            "ui.form.field.policy"
+                          ],
+                          "kind": "business_view_orchestration_boundary",
+                          "no_business_fact_authority": true,
+                          "projection_only": true,
+                          "rebuildable": true,
+                          "runtime_carrier": "view_orchestration_contract"
+                        },
+                        "tenant_extension_field_count": 0,
+                        "tenant_extension_source": ""
+                      }
+                    },
+                    "limit": 120,
+                    "order": "name, login",
+                    "read_fields": [
+                      "id",
+                      "display_name",
+                      "name",
+                      "login",
+                      "company_id",
+                      "company_ids",
+                      "sc_user_permission_group_ids",
+                      "active"
+                    ],
+                    "search": {
+                      "facets": {
+                        "enabled": true
+                      },
+                      "filters": [],
+                      "group_by": []
+                    },
+                    "source": "relation_target_native_view",
+                    "source_trace": {
+                      "view_orchestration": {
+                        "action_id": 0,
+                        "business_config_contracts": [],
+                        "business_config_form_fields": [],
+                        "form_layout_overlay": false,
+                        "form_presentation_mode": "",
+                        "form_structure_authority": "",
+                        "legacy_field_policy_overlay": false,
+                        "model": "res.users",
+                        "native_semantic_surface": false,
+                        "owner_layer": "business_view_orchestration",
+                        "tenant_extension_field_count": 0,
+                        "view_id": 1903,
+                        "view_type": "tree"
+                      }
+                    }
+                  },
+                  "source": "backend_contract",
+                  "switch_context": {},
+                  "ui_labels": {
+                    "cancel": "取消",
+                    "close": "关闭",
+                    "create": "新建",
+                    "create_and_edit": "新建并维护...",
+                    "create_page_failed": "跳转新建页面失败",
+                    "dialog_title": "项目管理员：搜索更多",
+                    "empty": "未找到匹配记录",
+                    "inline_create": "保存时创建“%s”",
+                    "inline_create_failed": "保存时创建失败",
+                    "inline_searching": "正在搜索...",
+                    "missing_create_entry": "未找到新建入口，请联系管理员配置菜单动作",
+                    "missing_name": "请输入要新建的名称。",
+                    "missing_page_entry": "未找到维护页面入口，请联系管理员配置 action/menu",
+                    "page_unavailable_prompt": "维护页面暂不可用，请输入新选项名称（快速新建）",
+                    "quick_create": "快速新建...",
+                    "quick_create_failed": "快速新建失败",
+                    "quick_create_prompt": "当前未配置维护页面，请输入新选项名称（快速新建）",
+                    "record_count": "%s 条记录",
+                    "search": "搜索",
+                    "search_failed": "搜索失败，请稍后重试",
+                    "search_more": "搜索更多...",
+                    "search_placeholder": "输入名称搜索",
+                    "select": "选择"
+                  },
+                  "view_mode": "tree,form",
+                  "view_type": "form"
+                },
+                "required": false,
+                "semantic_type": "relation",
+                "string": "项目负责人",
+                "surface_role": "advanced",
+                "technical": false,
+                "type": "many2one",
+                "widget": "many2one"
+              },
+              "label": "项目负责人",
+              "ownerContainerId": "main.table",
+              "span": 12,
+              "widgetId": "field.user_id",
+              "widgetType": "table"
+            },
+            {
+              "capabilities": [
+                "sortable",
+                "filterable"
+              ],
+              "componentConfig": {
+                "currency_field": "company_currency_id",
+                "fieldType": "monetary",
+                "nativeWidget": "monetary",
+                "optional": "show",
+                "readonly": true,
+                "required": false
+              },
+              "componentKey": "sc.value.money",
+              "fieldCode": "contract_amount",
+              "fieldDescriptor": {
+                "cell_role": "money",
+                "currency_field": "company_currency_id",
+                "label": "合同总额",
+                "name": "contract_amount",
+                "optional": "show",
+                "readonly": true,
+                "required": false,
+                "semantic_type": "business",
+                "string": "合同总额",
+                "surface_role": "advanced",
+                "technical": false,
+                "type": "monetary",
+                "widget": "monetary"
+              },
+              "label": "合同总额",
+              "ownerContainerId": "main.table",
+              "span": 12,
+              "widgetId": "field.contract_amount",
+              "widgetType": "table"
+            },
+            {
+              "capabilities": [
+                "sortable",
+                "filterable"
+              ],
+              "componentConfig": {
+                "fieldType": "float",
+                "nativeWidget": "float",
+                "optional": "show",
+                "readonly": true,
+                "required": false
+              },
+              "componentKey": "sc.table.data",
+              "fieldCode": "dashboard_progress_rate",
+              "fieldDescriptor": {
+                "cell_role": "text",
+                "label": "进度(%)",
+                "name": "dashboard_progress_rate",
+                "optional": "show",
+                "readonly": true,
+                "required": false,
+                "semantic_type": "business",
+                "string": "进度(%)",
+                "surface_role": "advanced",
+                "technical": false,
+                "type": "float",
+                "widget": "float"
+              },
+              "label": "进度(%)",
+              "ownerContainerId": "main.table",
+              "span": 12,
+              "widgetId": "field.dashboard_progress_rate",
+              "widgetType": "table"
+            },
+            {
+              "capabilities": [
+                "sortable",
+                "filterable"
+              ],
+              "componentConfig": {
+                "fieldType": "datetime",
+                "nativeWidget": "datetime",
+                "optional": "show",
+                "readonly": true,
+                "required": false
+              },
+              "componentKey": "sc.table.data",
+              "fieldCode": "write_date",
+              "fieldDescriptor": {
+                "cell_role": "date",
+                "label": "最后更新时间",
+                "name": "write_date",
+                "optional": "show",
+                "readonly": true,
+                "required": false,
+                "semantic_type": "technical",
+                "string": "最后更新时间",
+                "surface_role": "advanced",
+                "technical": true,
+                "type": "datetime",
+                "widget": "datetime"
+              },
+              "label": "最后更新时间",
+              "ownerContainerId": "main.table",
+              "span": 12,
+              "widgetId": "field.write_date",
+              "widgetType": "table"
+            },
+            {
+              "capabilities": [
+                "sortable",
+                "filterable"
+              ],
+              "componentConfig": {
+                "fieldType": "many2one",
+                "nativeWidget": "many2one",
+                "optional": "show",
+                "readonly": false,
+                "relation": "res.users",
+                "relationEntry": {
+                  "action_id": 736,
+                  "can_create": true,
+                  "can_open": true,
+                  "can_read": true,
+                  "create_mode": "page",
+                  "default_from_fields": {},
+                  "default_vals": {},
+                  "delete_policy": {
+                    "allowed": false,
+                    "delete_mode": "none",
+                    "dry_run_supported": true,
+                    "message": "当前模型未开放删除",
+                    "model": "res.users",
+                    "reason_code": "DELETE_POLICY_DENIED",
+                    "requires_acl": true,
+                    "requires_record_rule": true,
+                    "source": "delete_policy_default_denied",
+                    "source_authority": {
+                      "authorities": [
+                        "extension_unlink_policy",
+                        "handler_default_allowlist",
+                        "odoo_access_control"
+                      ],
+                      "default_behavior": "deny_unless_extension_or_handler_default_allows",
+                      "kind": "unlink_policy_projection",
+                      "no_business_fact_authority": true,
+                      "projection_only": true
+                    }
+                  },
+                  "display_field": "",
+                  "domain": [],
+                  "entry_intent": "open",
+                  "field": "manager_id",
+                  "inline_create": {
+                    "create_on_no_match": false,
+                    "enabled": false,
+                    "match": "single_contains_or_exact",
+                    "name_field": "name",
+                    "reason_code": "RELATION_REQUIRED_FIELDS_UNRESOLVED",
+                    "required_fields": [
+                      "partner_id",
+                      "login"
+                    ]
+                  },
+                  "menu_id": 430,
+                  "model": "res.users",
+                  "model_write_authority": true,
+                  "options_limit": 80,
+                  "options_search_limit": 40,
+                  "order": "",
+                  "reason_code": "PAGE_ENTRY_READY",
+                  "search_dialog": {
+                    "columns": [
+                      {
+                        "label": "姓名",
+                        "name": "name",
+                        "optional": "",
+                        "type": "char",
+                        "widget": "char"
+                      },
+                      {
+                        "label": "登录账号",
+                        "name": "login",
+                        "optional": "",
+                        "type": "char",
+                        "widget": "char"
+                      },
+                      {
+                        "label": "主公司",
+                        "name": "company_id",
+                        "optional": "",
+                        "type": "many2one",
+                        "widget": "many2one"
+                      },
+                      {
+                        "label": "允许公司",
+                        "name": "company_ids",
+                        "optional": "",
+                        "type": "many2many",
+                        "widget": "many2many_tags"
+                      },
+                      {
+                        "label": "业务权限角色",
+                        "name": "sc_user_permission_group_ids",
+                        "optional": "",
+                        "type": "many2many",
+                        "widget": "many2many_tags"
+                      },
+                      {
+                        "label": "账号启用",
+                        "name": "active",
+                        "optional": "",
+                        "type": "boolean",
+                        "widget": "boolean"
+                      }
+                    ],
+                    "governance": {
+                      "view_orchestration": {
+                        "applied": false,
+                        "business_config_contracts": [],
+                        "business_config_form_fields": [],
+                        "form_layout_overlay": false,
+                        "form_presentation_mode": "",
+                        "form_structure_authority": "",
+                        "legacy_field_policy_overlay": false,
+                        "native_semantic_surface": false,
+                        "owner_layer": "business_view_orchestration",
+                        "source_authority": {
+                          "authorities": [
+                            "odoo_native_view_parse_snapshot",
+                            "ir.model.fields",
+                            "ir.actions.act_window",
+                            "ir.ui.view",
+                            "ui.business.config.contract",
+                            "ui.business.config.contract.version",
+                            "ui.form.field.policy"
+                          ],
+                          "kind": "business_view_orchestration_boundary",
+                          "no_business_fact_authority": true,
+                          "projection_only": true,
+                          "rebuildable": true,
+                          "runtime_carrier": "view_orchestration_contract"
+                        },
+                        "tenant_extension_field_count": 0,
+                        "tenant_extension_source": ""
+                      }
+                    },
+                    "limit": 120,
+                    "order": "name, login",
+                    "read_fields": [
+                      "id",
+                      "display_name",
+                      "name",
+                      "login",
+                      "company_id",
+                      "company_ids",
+                      "sc_user_permission_group_ids",
+                      "active"
+                    ],
+                    "search": {
+                      "facets": {
+                        "enabled": true
+                      },
+                      "filters": [],
+                      "group_by": []
+                    },
+                    "source": "relation_target_native_view",
+                    "source_trace": {
+                      "view_orchestration": {
+                        "action_id": 0,
+                        "business_config_contracts": [],
+                        "business_config_form_fields": [],
+                        "form_layout_overlay": false,
+                        "form_presentation_mode": "",
+                        "form_structure_authority": "",
+                        "legacy_field_policy_overlay": false,
+                        "model": "res.users",
+                        "native_semantic_surface": false,
+                        "owner_layer": "business_view_orchestration",
+                        "tenant_extension_field_count": 0,
+                        "view_id": 1903,
+                        "view_type": "tree"
+                      }
+                    }
+                  },
+                  "source": "backend_contract",
+                  "switch_context": {},
+                  "ui_labels": {
+                    "cancel": "取消",
+                    "close": "关闭",
+                    "create": "新建",
+                    "create_and_edit": "新建并维护...",
+                    "create_page_failed": "跳转新建页面失败",
+                    "dialog_title": "项目经理：搜索更多",
+                    "empty": "未找到匹配记录",
+                    "inline_create": "保存时创建“%s”",
+                    "inline_create_failed": "保存时创建失败",
+                    "inline_searching": "正在搜索...",
+                    "missing_create_entry": "未找到新建入口，请联系管理员配置菜单动作",
+                    "missing_name": "请输入要新建的名称。",
+                    "missing_page_entry": "未找到维护页面入口，请联系管理员配置 action/menu",
+                    "page_unavailable_prompt": "维护页面暂不可用，请输入新选项名称（快速新建）",
+                    "quick_create": "快速新建...",
+                    "quick_create_failed": "快速新建失败",
+                    "quick_create_prompt": "当前未配置维护页面，请输入新选项名称（快速新建）",
+                    "record_count": "%s 条记录",
+                    "search": "搜索",
+                    "search_failed": "搜索失败，请稍后重试",
+                    "search_more": "搜索更多...",
+                    "search_placeholder": "输入名称搜索",
+                    "select": "选择"
+                  },
+                  "view_mode": "tree,form",
+                  "view_type": "form"
+                },
+                "required": false
+              },
+              "componentKey": "sc.relation.many2one",
+              "fieldCode": "manager_id",
+              "fieldDescriptor": {
+                "domain": [],
+                "label": "项目经理",
+                "name": "manager_id",
+                "optional": "show",
+                "readonly": false,
+                "relation": "res.users",
+                "relation_entry": {
+                  "action_id": 736,
+                  "can_create": true,
+                  "can_open": true,
+                  "can_read": true,
+                  "create_mode": "page",
+                  "default_from_fields": {},
+                  "default_vals": {},
+                  "delete_policy": {
+                    "allowed": false,
+                    "delete_mode": "none",
+                    "dry_run_supported": true,
+                    "message": "当前模型未开放删除",
+                    "model": "res.users",
+                    "reason_code": "DELETE_POLICY_DENIED",
+                    "requires_acl": true,
+                    "requires_record_rule": true,
+                    "source": "delete_policy_default_denied",
+                    "source_authority": {
+                      "authorities": [
+                        "extension_unlink_policy",
+                        "handler_default_allowlist",
+                        "odoo_access_control"
+                      ],
+                      "default_behavior": "deny_unless_extension_or_handler_default_allows",
+                      "kind": "unlink_policy_projection",
+                      "no_business_fact_authority": true,
+                      "projection_only": true
+                    }
+                  },
+                  "display_field": "",
+                  "domain": [],
+                  "entry_intent": "open",
+                  "field": "manager_id",
+                  "inline_create": {
+                    "create_on_no_match": false,
+                    "enabled": false,
+                    "match": "single_contains_or_exact",
+                    "name_field": "name",
+                    "reason_code": "RELATION_REQUIRED_FIELDS_UNRESOLVED",
+                    "required_fields": [
+                      "partner_id",
+                      "login"
+                    ]
+                  },
+                  "menu_id": 430,
+                  "model": "res.users",
+                  "model_write_authority": true,
+                  "options_limit": 80,
+                  "options_search_limit": 40,
+                  "order": "",
+                  "reason_code": "PAGE_ENTRY_READY",
+                  "search_dialog": {
+                    "columns": [
+                      {
+                        "label": "姓名",
+                        "name": "name",
+                        "optional": "",
+                        "type": "char",
+                        "widget": "char"
+                      },
+                      {
+                        "label": "登录账号",
+                        "name": "login",
+                        "optional": "",
+                        "type": "char",
+                        "widget": "char"
+                      },
+                      {
+                        "label": "主公司",
+                        "name": "company_id",
+                        "optional": "",
+                        "type": "many2one",
+                        "widget": "many2one"
+                      },
+                      {
+                        "label": "允许公司",
+                        "name": "company_ids",
+                        "optional": "",
+                        "type": "many2many",
+                        "widget": "many2many_tags"
+                      },
+                      {
+                        "label": "业务权限角色",
+                        "name": "sc_user_permission_group_ids",
+                        "optional": "",
+                        "type": "many2many",
+                        "widget": "many2many_tags"
+                      },
+                      {
+                        "label": "账号启用",
+                        "name": "active",
+                        "optional": "",
+                        "type": "boolean",
+                        "widget": "boolean"
+                      }
+                    ],
+                    "governance": {
+                      "view_orchestration": {
+                        "applied": false,
+                        "business_config_contracts": [],
+                        "business_config_form_fields": [],
+                        "form_layout_overlay": false,
+                        "form_presentation_mode": "",
+                        "form_structure_authority": "",
+                        "legacy_field_policy_overlay": false,
+                        "native_semantic_surface": false,
+                        "owner_layer": "business_view_orchestration",
+                        "source_authority": {
+                          "authorities": [
+                            "odoo_native_view_parse_snapshot",
+                            "ir.model.fields",
+                            "ir.actions.act_window",
+                            "ir.ui.view",
+                            "ui.business.config.contract",
+                            "ui.business.config.contract.version",
+                            "ui.form.field.policy"
+                          ],
+                          "kind": "business_view_orchestration_boundary",
+                          "no_business_fact_authority": true,
+                          "projection_only": true,
+                          "rebuildable": true,
+                          "runtime_carrier": "view_orchestration_contract"
+                        },
+                        "tenant_extension_field_count": 0,
+                        "tenant_extension_source": ""
+                      }
+                    },
+                    "limit": 120,
+                    "order": "name, login",
+                    "read_fields": [
+                      "id",
+                      "display_name",
+                      "name",
+                      "login",
+                      "company_id",
+                      "company_ids",
+                      "sc_user_permission_group_ids",
+                      "active"
+                    ],
+                    "search": {
+                      "facets": {
+                        "enabled": true
+                      },
+                      "filters": [],
+                      "group_by": []
+                    },
+                    "source": "relation_target_native_view",
+                    "source_trace": {
+                      "view_orchestration": {
+                        "action_id": 0,
+                        "business_config_contracts": [],
+                        "business_config_form_fields": [],
+                        "form_layout_overlay": false,
+                        "form_presentation_mode": "",
+                        "form_structure_authority": "",
+                        "legacy_field_policy_overlay": false,
+                        "model": "res.users",
+                        "native_semantic_surface": false,
+                        "owner_layer": "business_view_orchestration",
+                        "tenant_extension_field_count": 0,
+                        "view_id": 1903,
+                        "view_type": "tree"
+                      }
+                    }
+                  },
+                  "source": "backend_contract",
+                  "switch_context": {},
+                  "ui_labels": {
+                    "cancel": "取消",
+                    "close": "关闭",
+                    "create": "新建",
+                    "create_and_edit": "新建并维护...",
+                    "create_page_failed": "跳转新建页面失败",
+                    "dialog_title": "项目经理：搜索更多",
+                    "empty": "未找到匹配记录",
+                    "inline_create": "保存时创建“%s”",
+                    "inline_create_failed": "保存时创建失败",
+                    "inline_searching": "正在搜索...",
+                    "missing_create_entry": "未找到新建入口，请联系管理员配置菜单动作",
+                    "missing_name": "请输入要新建的名称。",
+                    "missing_page_entry": "未找到维护页面入口，请联系管理员配置 action/menu",
+                    "page_unavailable_prompt": "维护页面暂不可用，请输入新选项名称（快速新建）",
+                    "quick_create": "快速新建...",
+                    "quick_create_failed": "快速新建失败",
+                    "quick_create_prompt": "当前未配置维护页面，请输入新选项名称（快速新建）",
+                    "record_count": "%s 条记录",
+                    "search": "搜索",
+                    "search_failed": "搜索失败，请稍后重试",
+                    "search_more": "搜索更多...",
+                    "search_placeholder": "输入名称搜索",
+                    "select": "选择"
+                  },
+                  "view_mode": "tree,form",
+                  "view_type": "form"
+                },
+                "required": false,
+                "semantic_type": "relation",
+                "string": "项目经理",
+                "surface_role": "advanced",
+                "technical": false,
+                "type": "many2one",
+                "widget": "many2one"
+              },
+              "label": "项目经理",
+              "ownerContainerId": "main.table",
+              "span": 12,
+              "widgetId": "field.manager_id",
+              "widgetType": "table"
+            },
+            {
+              "capabilities": [
+                "sortable",
+                "filterable"
+              ],
+              "componentConfig": {
+                "fieldType": "date",
+                "nativeWidget": "date",
+                "optional": "show",
+                "readonly": false,
+                "required": false
+              },
+              "componentKey": "sc.table.data",
+              "fieldCode": "start_date",
+              "fieldDescriptor": {
+                "label": "计划开工日期",
+                "name": "start_date",
+                "optional": "show",
+                "readonly": false,
+                "required": false,
+                "semantic_type": "business",
+                "string": "计划开工日期",
+                "surface_role": "advanced",
+                "technical": false,
+                "type": "date",
+                "widget": "date"
+              },
+              "label": "计划开工日期",
+              "ownerContainerId": "main.table",
+              "span": 12,
+              "widgetId": "field.start_date",
+              "widgetType": "table"
+            }
+          ],
+          "zone": "detail_zone"
+        }
+      ],
+      "layoutHints": {
+        "deliveryDensity": "compact",
+        "deliveryProfile": "mobile_compact",
+        "maxVisibleContainers": 6,
+        "maxVisibleWidgets": 12,
+        "mobileCollapse": true
+      },
+      "layoutType": "table",
+      "listProfile": {
+        "batch_policy": {
+          "activate_value": true,
+          "active_field": "active",
+          "archive_value": false,
+          "assignee_field": "user_id",
+          "assignee_options": {
+            "domain": [
+              [
+                "active",
+                "=",
+                true
+              ]
+            ],
+            "fields": [
+              "id",
+              "name"
+            ],
+            "limit": 80,
+            "model": "res.users",
+            "order": "name asc"
+          },
+          "available_actions": [
+            "export",
+            "archive",
+            "activate",
+            "delete"
+          ],
+          "delete_mode": "unlink",
+          "enabled": true,
+          "execution_intents": {
+            "activate": "api.data.batch",
+            "archive": "api.data.batch",
+            "delete": "api.data.unlink",
+            "export": "api.data"
+          },
+          "execution_operations": {
+            "export": "export_csv"
+          }
+        },
+        "column_labels": {
+          "active": "已启用",
+          "contract_amount": "合同总额",
+          "dashboard_progress_rate": "进度(%)",
+          "end_date": "计划竣工日期",
+          "lifecycle_state": "项目状态",
+          "manager_id": "项目经理",
+          "name": "项目名称",
+          "operation_strategy": "经营方式",
+          "owner_id": "业主单位",
+          "project_code": "项目编号",
+          "sc_partner_display_name": "关联单位",
+          "start_date": "计划开工日期",
+          "user_id": "项目负责人"
+        },
+        "columns": [
+          "name",
+          "project_code",
+          "owner_id",
+          "sc_partner_display_name",
+          "operation_strategy",
+          "lifecycle_state",
+          "user_id",
+          "contract_amount",
+          "dashboard_progress_rate",
+          "write_date",
+          "manager_id",
+          "start_date",
+          "end_date",
+          "active"
+        ],
+        "cross_device_critical_columns": [
+          "name",
+          "project_code",
+          "lifecycle_state",
+          "user_id"
+        ],
+        "fact_columns": [
+          "name",
+          "project_code",
+          "owner_id",
+          "sc_partner_display_name",
+          "operation_strategy",
+          "lifecycle_state",
+          "user_id",
+          "contract_amount",
+          "dashboard_progress_rate",
+          "write_date",
+          "manager_id",
+          "start_date",
+          "end_date",
+          "active"
+        ],
+        "grouping": {
+          "default_sample_limit": 3,
+          "sample_limits": [
+            3,
+            5,
+            8
+          ],
+          "sort": {
+            "default_direction": "desc",
+            "directions": [
+              "desc",
+              "asc"
+            ],
+            "key": "count"
+          }
+        },
+        "hidden_columns": [],
+        "metric_fields": [
+          "contract_income_total",
+          "contract_amount",
+          "dashboard_invoice_amount",
+          "budget_total"
+        ],
+        "preference_policy": {
+          "allow_order": true,
+          "allow_visibility": true,
+          "allow_width": true,
+          "locked_columns": [],
+          "must_request_columns": [
+            "name",
+            "project_code",
+            "owner_id",
+            "sc_partner_display_name",
+            "operation_strategy",
+            "lifecycle_state",
+            "user_id",
+            "contract_amount",
+            "dashboard_progress_rate",
+            "write_date",
+            "manager_id",
+            "start_date",
+            "end_date",
+            "active"
+          ],
+          "scope": "ui_only"
+        },
+        "primary_field": "name",
+        "row_primary": "name",
+        "row_secondary": "",
+        "selection_policy": {
+          "action_source": "batch_policy.available_actions",
+          "enabled": true,
+          "mode": "multiple",
+          "requires_batch_action": false,
+          "scope": "current_page"
+        },
+        "show_row_number": true,
+        "source": "ui.contract.v2.business_operation_projection",
+        "sourceAuthority": {
+          "fact_authority": "source_contract_projection",
+          "formal_projection": true,
+          "kind": "unified_page_contract_v2",
+          "no_business_fact_authority": true,
+          "projection_only": true,
+          "runtime_carrier": "ui.contract.v2.layoutContract.listProfile",
+          "source_key": "list_profile"
+        },
+        "status_field": "lifecycle_state"
+      },
+      "pageId": "project.project.tree"
+    },
+    "meta": {
+      "deliveryTrim": {
+        "clientType": "harmony_h5",
+        "compact": true,
+        "delivered": {
+          "actions": 4,
+          "containers": 1,
+          "widgets": 12
+        },
+        "deliveryProfile": "mobile_compact",
+        "limits": {
+          "actions": 4,
+          "containers": 6,
+          "widgets": 12
+        },
+        "omitted": {
+          "actions": 0,
+          "containers": 0,
+          "widgets": 2
+        },
+        "original": {
+          "actions": 4,
+          "containers": 1,
+          "widgets": 14
+        }
+      },
+      "etag": "upc-v2-sha256-45e1ec39f77e69f15d01803ec3dad7ccd2295bb017dff2d14be334d096579404",
+      "lifecycle": {
+        "authority": {
+          "authorities": [
+            "ui.contract",
+            "ir.ui.view",
+            "ir.actions.act_window",
+            "ir.ui.menu",
+            "ir.model.fields",
+            "ir.model.access",
+            "ir.rule"
+          ],
+          "kind": "unified_page_contract_v2",
+          "no_business_fact_authority": true,
+          "projection_only": true,
+          "rebuildable": true,
+          "runtime_carrier": "ui.contract.v2"
+        },
+        "definition": {
+          "contractVersion": "2.2.0",
+          "normativeStatus": "stable",
+          "schemaId": "smart_core.unified_page_contract_v2",
+          "schemaSha256": "657caf11bad132c53c2e355fe8f8f37b24100fe205f3a697777a75180e51b56b",
+          "schemaVersion": "2.2.0"
+        },
+        "generation": {
+          "generator": "unified_page_contract_v2",
+          "generatorVersion": "2.2.0",
+          "sourceSha256": "8d2c263770e3c32fae0818405ccf1a32107ddae5647288c382b942bd899605c7",
+          "sourceType": "ui.contract"
+        },
+        "integrity": {
+          "algorithm": "sha256",
+          "contractSha256": "45e1ec39f77e69f15d01803ec3dad7ccd2295bb017dff2d14be334d096579404"
+        },
+        "lifecycleVersion": "1.0.0",
+        "runtime": {
+          "clientType": "harmony_h5",
+          "requestId": "ui.contract.v2.project.project.list",
+          "traceId": "ui.contract.v2.project.project.list",
+          "traceSource": "request_id_fallback"
+        },
+        "stage": "runtime_delivery"
+      },
+      "requestId": "ui.contract.v2.project.project.list",
+      "snapshotId": "snapshot.upc.v2.45e1ec39f77e69f15d01803ec3dad7cc",
+      "sourceType": "ui.contract",
+      "traceId": "ui.contract.v2.project.project.list"
+    },
+    "pageInfo": {
+      "clientType": "harmony_h5",
+      "contractVersion": "2.2.0",
+      "deliveryProfile": "mobile_compact",
+      "layoutType": "table",
+      "model": "project.project",
+      "pageId": "project.project.tree",
+      "pageName": "项目",
+      "renderMode": "governed",
+      "sceneKey": "project.project.tree",
+      "viewType": "list"
+    },
+    "runtimeContract": {
+      "actionTarget": "current",
+      "cachePolicy": "etag",
+      "deliveryProfile": "mobile_compact",
+      "interactionMode": "page",
+      "lazyContainer": [],
+      "optimistic": false,
+      "patchStrategy": "incremental",
+      "retryPolicy": {
+        "maxRetries": 1
+      },
+      "virtualization": {}
+    },
+    "searchContract": {
+      "custom": {
+        "enabled": true,
+        "favorites": {
+          "disabled_reason": "",
+          "intent": "search.favorite.set",
+          "label": "加入收藏",
+          "owner_scope": "current_user",
+          "save_enabled": true,
+          "shared_enabled": false
+        },
+        "filters": {
+          "enabled": true,
+          "fields": [
+            {
+              "field": "manager_id",
+              "label": "项目经理",
+              "operators": [
+                {
+                  "label": "包含",
+                  "needs_value": true,
+                  "value": "ilike"
+                },
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                }
+              ],
+              "type": "many2one"
+            },
+            {
+              "field": "user_id",
+              "label": "项目管理员",
+              "operators": [
+                {
+                  "label": "包含",
+                  "needs_value": true,
+                  "value": "ilike"
+                },
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                }
+              ],
+              "type": "many2one"
+            },
+            {
+              "field": "owner_id",
+              "label": "业主单位",
+              "operators": [
+                {
+                  "label": "包含",
+                  "needs_value": true,
+                  "value": "ilike"
+                },
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                }
+              ],
+              "type": "many2one"
+            },
+            {
+              "field": "partner_id",
+              "label": "客户",
+              "operators": [
+                {
+                  "label": "包含",
+                  "needs_value": true,
+                  "value": "ilike"
+                },
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                }
+              ],
+              "type": "many2one"
+            },
+            {
+              "choices": [
+                {
+                  "label": "公司直营",
+                  "value": "direct"
+                },
+                {
+                  "label": "联营项目",
+                  "value": "joint"
+                }
+              ],
+              "field": "operation_strategy",
+              "label": "经营方式",
+              "operators": [
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                }
+              ],
+              "type": "selection"
+            },
+            {
+              "field": "business_nature",
+              "label": "经营性质",
+              "operators": [
+                {
+                  "label": "包含",
+                  "needs_value": true,
+                  "value": "ilike"
+                },
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                }
+              ],
+              "type": "char"
+            },
+            {
+              "choices": [
+                {
+                  "label": "草稿",
+                  "value": "draft"
+                },
+                {
+                  "label": "在建",
+                  "value": "in_progress"
+                },
+                {
+                  "label": "停工",
+                  "value": "paused"
+                },
+                {
+                  "label": "竣工",
+                  "value": "done"
+                },
+                {
+                  "label": "结算中",
+                  "value": "closing"
+                },
+                {
+                  "label": "保修期",
+                  "value": "warranty"
+                },
+                {
+                  "label": "关闭",
+                  "value": "closed"
+                }
+              ],
+              "field": "lifecycle_state",
+              "label": "项目状态",
+              "operators": [
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                }
+              ],
+              "type": "selection"
+            },
+            {
+              "field": "stage_id",
+              "label": "阶段",
+              "operators": [
+                {
+                  "label": "包含",
+                  "needs_value": true,
+                  "value": "ilike"
+                },
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                }
+              ],
+              "type": "many2one"
+            },
+            {
+              "field": "company_id",
+              "label": "公司",
+              "operators": [
+                {
+                  "label": "包含",
+                  "needs_value": true,
+                  "value": "ilike"
+                },
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                }
+              ],
+              "type": "many2one"
+            },
+            {
+              "field": "date_start",
+              "label": "开始日期",
+              "operators": [
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不早于",
+                  "needs_value": true,
+                  "value": ">="
+                },
+                {
+                  "label": "不晚于",
+                  "needs_value": true,
+                  "value": "<="
+                }
+              ],
+              "type": "date"
+            },
+            {
+              "field": "date",
+              "label": "有效期",
+              "operators": [
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不早于",
+                  "needs_value": true,
+                  "value": ">="
+                },
+                {
+                  "label": "不晚于",
+                  "needs_value": true,
+                  "value": "<="
+                }
+              ],
+              "type": "date"
+            },
+            {
+              "field": "validated",
+              "label": "Validated",
+              "operators": [
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                }
+              ],
+              "type": "boolean"
+            },
+            {
+              "field": "to_validate_message",
+              "label": "To Validate Message",
+              "operators": [
+                {
+                  "label": "包含",
+                  "needs_value": true,
+                  "value": "ilike"
+                },
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                }
+              ],
+              "type": "html"
+            },
+            {
+              "field": "validated_message",
+              "label": "Validated Message",
+              "operators": [
+                {
+                  "label": "包含",
+                  "needs_value": true,
+                  "value": "ilike"
+                },
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                }
+              ],
+              "type": "html"
+            },
+            {
+              "field": "need_validation",
+              "label": "Need Validation",
+              "operators": [
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                }
+              ],
+              "type": "boolean"
+            },
+            {
+              "field": "rejected",
+              "label": "Rejected",
+              "operators": [
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                }
+              ],
+              "type": "boolean"
+            },
+            {
+              "field": "rejected_message",
+              "label": "Rejected Message",
+              "operators": [
+                {
+                  "label": "包含",
+                  "needs_value": true,
+                  "value": "ilike"
+                },
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                }
+              ],
+              "type": "html"
+            },
+            {
+              "field": "has_comment",
+              "label": "Has Comment",
+              "operators": [
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                }
+              ],
+              "type": "boolean"
+            },
+            {
+              "field": "next_review",
+              "label": "Next Review",
+              "operators": [
+                {
+                  "label": "包含",
+                  "needs_value": true,
+                  "value": "ilike"
+                },
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                }
+              ],
+              "type": "char"
+            },
+            {
+              "field": "has_message",
+              "label": "有消息",
+              "operators": [
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                }
+              ],
+              "type": "boolean"
+            },
+            {
+              "field": "name",
+              "label": "名称",
+              "operators": [
+                {
+                  "label": "包含",
+                  "needs_value": true,
+                  "value": "ilike"
+                },
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                }
+              ],
+              "type": "char"
+            },
+            {
+              "field": "description",
+              "label": "描述",
+              "operators": [
+                {
+                  "label": "包含",
+                  "needs_value": true,
+                  "value": "ilike"
+                },
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                }
+              ],
+              "type": "html"
+            },
+            {
+              "field": "active",
+              "label": "已启用",
+              "operators": [
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                }
+              ],
+              "type": "boolean"
+            },
+            {
+              "field": "sequence",
+              "label": "序列",
+              "operators": [
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                },
+                {
+                  "label": "大于",
+                  "needs_value": true,
+                  "value": ">"
+                },
+                {
+                  "label": "大于等于",
+                  "needs_value": true,
+                  "value": ">="
+                },
+                {
+                  "label": "小于",
+                  "needs_value": true,
+                  "value": "<"
+                },
+                {
+                  "label": "小于等于",
+                  "needs_value": true,
+                  "value": "<="
+                }
+              ],
+              "type": "integer"
+            },
+            {
+              "field": "currency_id",
+              "label": "币种",
+              "operators": [
+                {
+                  "label": "包含",
+                  "needs_value": true,
+                  "value": "ilike"
+                },
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                }
+              ],
+              "type": "many2one"
+            },
+            {
+              "field": "analytic_account_id",
+              "label": "分析账户",
+              "operators": [
+                {
+                  "label": "包含",
+                  "needs_value": true,
+                  "value": "ilike"
+                },
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                }
+              ],
+              "type": "many2one"
+            },
+            {
+              "field": "analytic_account_balance",
+              "label": "余额",
+              "operators": [
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                },
+                {
+                  "label": "大于",
+                  "needs_value": true,
+                  "value": ">"
+                },
+                {
+                  "label": "大于等于",
+                  "needs_value": true,
+                  "value": ">="
+                },
+                {
+                  "label": "小于",
+                  "needs_value": true,
+                  "value": "<"
+                },
+                {
+                  "label": "小于等于",
+                  "needs_value": true,
+                  "value": "<="
+                }
+              ],
+              "type": "monetary"
+            },
+            {
+              "field": "is_favorite",
+              "label": "在仪表板上显示项目",
+              "operators": [
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                }
+              ],
+              "type": "boolean"
+            },
+            {
+              "field": "label_tasks",
+              "label": "用任务来",
+              "operators": [
+                {
+                  "label": "包含",
+                  "needs_value": true,
+                  "value": "ilike"
+                },
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                }
+              ],
+              "type": "char"
+            },
+            {
+              "field": "resource_calendar_id",
+              "label": "工时",
+              "operators": [
+                {
+                  "label": "包含",
+                  "needs_value": true,
+                  "value": "ilike"
+                },
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                }
+              ],
+              "type": "many2one"
+            },
+            {
+              "field": "task_count",
+              "label": "任务统计",
+              "operators": [
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                },
+                {
+                  "label": "大于",
+                  "needs_value": true,
+                  "value": ">"
+                },
+                {
+                  "label": "大于等于",
+                  "needs_value": true,
+                  "value": ">="
+                },
+                {
+                  "label": "小于",
+                  "needs_value": true,
+                  "value": "<"
+                },
+                {
+                  "label": "小于等于",
+                  "needs_value": true,
+                  "value": "<="
+                }
+              ],
+              "type": "integer"
+            },
+            {
+              "field": "open_task_count",
+              "label": "开放任务计数",
+              "operators": [
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                },
+                {
+                  "label": "大于",
+                  "needs_value": true,
+                  "value": ">"
+                },
+                {
+                  "label": "大于等于",
+                  "needs_value": true,
+                  "value": ">="
+                },
+                {
+                  "label": "小于",
+                  "needs_value": true,
+                  "value": "<"
+                },
+                {
+                  "label": "小于等于",
+                  "needs_value": true,
+                  "value": "<="
+                }
+              ],
+              "type": "integer"
+            },
+            {
+              "field": "closed_task_count",
+              "label": "已关闭任务数",
+              "operators": [
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                },
+                {
+                  "label": "大于",
+                  "needs_value": true,
+                  "value": ">"
+                },
+                {
+                  "label": "大于等于",
+                  "needs_value": true,
+                  "value": ">="
+                },
+                {
+                  "label": "小于",
+                  "needs_value": true,
+                  "value": "<"
+                },
+                {
+                  "label": "小于等于",
+                  "needs_value": true,
+                  "value": "<="
+                }
+              ],
+              "type": "integer"
+            },
+            {
+              "field": "color",
+              "label": "颜色指标",
+              "operators": [
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                },
+                {
+                  "label": "大于",
+                  "needs_value": true,
+                  "value": ">"
+                },
+                {
+                  "label": "大于等于",
+                  "needs_value": true,
+                  "value": ">="
+                },
+                {
+                  "label": "小于",
+                  "needs_value": true,
+                  "value": "<"
+                },
+                {
+                  "label": "小于等于",
+                  "needs_value": true,
+                  "value": "<="
+                }
+              ],
+              "type": "integer"
+            },
+            {
+              "choices": [
+                {
+                  "label": "受邀内部用户（非公开）",
+                  "value": "followers"
+                },
+                {
+                  "label": "所有内部用户",
+                  "value": "employees"
+                },
+                {
+                  "label": "受邀网站用户和所有内部用户（公开）",
+                  "value": "portal"
+                }
+              ],
+              "field": "privacy_visibility",
+              "label": "可见性",
+              "operators": [
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                }
+              ],
+              "type": "selection"
+            },
+            {
+              "field": "privacy_visibility_warning",
+              "label": "隐私可见性警告",
+              "operators": [
+                {
+                  "label": "包含",
+                  "needs_value": true,
+                  "value": "ilike"
+                },
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                }
+              ],
+              "type": "char"
+            },
+            {
+              "field": "doc_count",
+              "label": "附件数量",
+              "operators": [
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                },
+                {
+                  "label": "大于",
+                  "needs_value": true,
+                  "value": ">"
+                },
+                {
+                  "label": "大于等于",
+                  "needs_value": true,
+                  "value": ">="
+                },
+                {
+                  "label": "小于",
+                  "needs_value": true,
+                  "value": "<"
+                },
+                {
+                  "label": "小于等于",
+                  "needs_value": true,
+                  "value": "<="
+                }
+              ],
+              "type": "integer"
+            },
+            {
+              "field": "allow_task_dependencies",
+              "label": "任务依赖",
+              "operators": [
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                }
+              ],
+              "type": "boolean"
+            },
+            {
+              "field": "allow_milestones",
+              "label": "里程碑",
+              "operators": [
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                }
+              ],
+              "type": "boolean"
+            },
+            {
+              "field": "collaborator_count",
+              "label": "# 合作者",
+              "operators": [
+                {
+                  "label": "等于",
+                  "needs_value": true,
+                  "value": "="
+                },
+                {
+                  "label": "不等于",
+                  "needs_value": true,
+                  "value": "!="
+                },
+                {
+                  "label": "大于",
+                  "needs_value": true,
+                  "value": ">"
+                },
+                {
+                  "label": "大于等于",
+                  "needs_value": true,
+                  "value": ">="
+                },
+                {
+                  "label": "小于",
+                  "needs_value": true,
+                  "value": "<"
+                },
+                {
+                  "label": "小于等于",
+                  "needs_value": true,
+                  "value": "<="
+                }
+              ],
+              "type": "integer"
+            }
+          ],
+          "label": "添加自定义筛选"
+        },
+        "group_by": {
+          "enabled": true,
+          "fields": [
+            {
+              "field": "manager_id",
+              "label": "项目经理",
+              "type": "many2one"
+            },
+            {
+              "field": "user_id",
+              "label": "项目管理员",
+              "type": "many2one"
+            },
+            {
+              "field": "owner_id",
+              "label": "业主单位",
+              "type": "many2one"
+            },
+            {
+              "field": "partner_id",
+              "label": "客户",
+              "type": "many2one"
+            },
+            {
+              "field": "operation_strategy",
+              "label": "经营方式",
+              "type": "selection"
+            },
+            {
+              "field": "business_nature",
+              "label": "经营性质",
+              "type": "char"
+            },
+            {
+              "field": "lifecycle_state",
+              "label": "项目状态",
+              "type": "selection"
+            },
+            {
+              "field": "stage_id",
+              "label": "阶段",
+              "type": "many2one"
+            },
+            {
+              "field": "company_id",
+              "label": "公司",
+              "type": "many2one"
+            },
+            {
+              "field": "date_start",
+              "label": "开始日期",
+              "type": "date"
+            },
+            {
+              "field": "date",
+              "label": "有效期",
+              "type": "date"
+            },
+            {
+              "field": "active",
+              "label": "已启用",
+              "type": "boolean"
+            },
+            {
+              "field": "analytic_account_id",
+              "label": "分析账户",
+              "type": "many2one"
+            },
+            {
+              "field": "favorite_user_ids",
+              "label": "成员",
+              "type": "many2many"
+            },
+            {
+              "field": "type_ids",
+              "label": "任务阶段",
+              "type": "many2many"
+            },
+            {
+              "field": "privacy_visibility",
+              "label": "可见性",
+              "type": "selection"
+            },
+            {
+              "field": "allow_task_dependencies",
+              "label": "任务依赖",
+              "type": "boolean"
+            },
+            {
+              "field": "allow_milestones",
+              "label": "里程碑",
+              "type": "boolean"
+            },
+            {
+              "field": "tag_ids",
+              "label": "标签",
+              "type": "many2many"
+            },
+            {
+              "field": "last_update_id",
+              "label": "最后更新",
+              "type": "many2one"
+            },
+            {
+              "field": "last_update_status",
+              "label": "最后更新状态",
+              "type": "selection"
+            },
+            {
+              "field": "project_type_id",
+              "label": "项目类型",
+              "type": "many2one"
+            },
+            {
+              "field": "project_category_id",
+              "label": "项目类别",
+              "type": "many2one"
+            },
+            {
+              "field": "cost_manager_id",
+              "label": "成本负责人",
+              "type": "many2one"
+            },
+            {
+              "field": "doc_manager_id",
+              "label": "资料负责人",
+              "type": "many2one"
+            },
+            {
+              "field": "initiation_date",
+              "label": "单据日期",
+              "type": "date"
+            },
+            {
+              "field": "sc_project_showcase",
+              "label": "项目样板池",
+              "type": "boolean"
+            },
+            {
+              "field": "sc_project_showcase_ready",
+              "label": "项目样板可展示",
+              "type": "boolean"
+            },
+            {
+              "field": "start_date",
+              "label": "计划开工日期",
+              "type": "date"
+            },
+            {
+              "field": "end_date",
+              "label": "计划竣工日期",
+              "type": "date"
+            }
+          ],
+          "label": "添加自定义分组"
+        }
+      },
+      "defaults": {
+        "limit": 20,
+        "order": "sequence, name, id",
+        "page_size_options": [
+          10,
+          20,
+          50
+        ],
+        "page_size_range": {
+          "max": 200,
+          "min": 1
+        }
+      },
+      "fields": [
+        {
+          "attributes": {
+            "name": "name"
+          },
+          "context_raw": null,
+          "domain_raw": null,
+          "filter_domain": null,
+          "groups_xmlids": [],
+          "help": "",
+          "key": "name",
+          "label": "name",
+          "name": "name",
+          "native_locator": "/search[1]/field[1]",
+          "occurrence_index": 1,
+          "operator": null,
+          "optional": null,
+          "source_position": 0,
+          "sum": null
+        },
+        {
+          "attributes": {
+            "name": "project_code"
+          },
+          "context_raw": null,
+          "domain_raw": null,
+          "filter_domain": null,
+          "groups_xmlids": [],
+          "help": "",
+          "key": "project_code",
+          "label": "project_code",
+          "name": "project_code",
+          "native_locator": "/search[1]/field[2]",
+          "occurrence_index": 1,
+          "operator": null,
+          "optional": null,
+          "source_position": 1,
+          "sum": null
+        },
+        {
+          "attributes": {
+            "name": "short_name"
+          },
+          "context_raw": null,
+          "domain_raw": null,
+          "filter_domain": null,
+          "groups_xmlids": [],
+          "help": "",
+          "key": "short_name",
+          "label": "short_name",
+          "name": "short_name",
+          "native_locator": "/search[1]/field[3]",
+          "occurrence_index": 1,
+          "operator": null,
+          "optional": null,
+          "source_position": 2,
+          "sum": null
+        },
+        {
+          "attributes": {
+            "name": "partner_id"
+          },
+          "context_raw": null,
+          "domain_raw": null,
+          "filter_domain": null,
+          "groups_xmlids": [],
+          "help": "",
+          "key": "partner_id",
+          "label": "partner_id",
+          "name": "partner_id",
+          "native_locator": "/search[1]/field[4]",
+          "occurrence_index": 1,
+          "operator": null,
+          "optional": null,
+          "source_position": 3,
+          "sum": null
+        },
+        {
+          "attributes": {
+            "name": "owner_id"
+          },
+          "context_raw": null,
+          "domain_raw": null,
+          "filter_domain": null,
+          "groups_xmlids": [],
+          "help": "",
+          "key": "owner_id",
+          "label": "owner_id",
+          "name": "owner_id",
+          "native_locator": "/search[1]/field[5]",
+          "occurrence_index": 1,
+          "operator": null,
+          "optional": null,
+          "source_position": 4,
+          "sum": null
+        },
+        {
+          "attributes": {
+            "name": "manager_id"
+          },
+          "context_raw": null,
+          "domain_raw": null,
+          "filter_domain": null,
+          "groups_xmlids": [],
+          "help": "",
+          "key": "manager_id",
+          "label": "manager_id",
+          "name": "manager_id",
+          "native_locator": "/search[1]/field[6]",
+          "occurrence_index": 1,
+          "operator": null,
+          "optional": null,
+          "source_position": 5,
+          "sum": null
+        },
+        {
+          "attributes": {
+            "name": "user_id"
+          },
+          "context_raw": null,
+          "domain_raw": null,
+          "filter_domain": null,
+          "groups_xmlids": [],
+          "help": "",
+          "key": "user_id",
+          "label": "user_id",
+          "name": "user_id",
+          "native_locator": "/search[1]/field[7]",
+          "occurrence_index": 1,
+          "operator": null,
+          "optional": null,
+          "source_position": 6,
+          "sum": null
+        },
+        {
+          "attributes": {
+            "name": "operation_strategy"
+          },
+          "context_raw": null,
+          "domain_raw": null,
+          "filter_domain": null,
+          "groups_xmlids": [],
+          "help": "",
+          "key": "operation_strategy",
+          "label": "operation_strategy",
+          "name": "operation_strategy",
+          "native_locator": "/search[1]/field[8]",
+          "occurrence_index": 1,
+          "operator": null,
+          "optional": null,
+          "source_position": 7,
+          "sum": null
+        },
+        {
+          "attributes": {
+            "name": "business_nature"
+          },
+          "context_raw": null,
+          "domain_raw": null,
+          "filter_domain": null,
+          "groups_xmlids": [],
+          "help": "",
+          "key": "business_nature",
+          "label": "business_nature",
+          "name": "business_nature",
+          "native_locator": "/search[1]/field[9]",
+          "occurrence_index": 1,
+          "operator": null,
+          "optional": null,
+          "source_position": 8,
+          "sum": null
+        },
+        {
+          "attributes": {
+            "name": "specialty_type_name"
+          },
+          "context_raw": null,
+          "domain_raw": null,
+          "filter_domain": null,
+          "groups_xmlids": [],
+          "help": "",
+          "key": "specialty_type_name",
+          "label": "specialty_type_name",
+          "name": "specialty_type_name",
+          "native_locator": "/search[1]/field[10]",
+          "occurrence_index": 1,
+          "operator": null,
+          "optional": null,
+          "source_position": 9,
+          "sum": null
+        }
+      ],
+      "filters": [
+        {
+          "attributes": {
+            "domain": "['|', ('manager_id', '=', uid), '|', ('owner_id', '=', uid), ('user_id', '=', uid)]",
+            "name": "filter_my_projects",
+            "string": "我的项目"
+          },
+          "context_raw": null,
+          "date": null,
+          "domain": [],
+          "domain_raw": "['|', ('manager_id', '=', uid), '|', ('owner_id', '=', uid), ('user_id', '=', uid)]",
+          "groups_xmlids": [],
+          "help": "",
+          "key": "filter_my_projects",
+          "label": "我的项目",
+          "native_locator": "/search[1]/filter[1]",
+          "occurrence_index": 1,
+          "sequence": 0,
+          "source_position": 10,
+          "tags": [],
+          "type": null
+        },
+        {
+          "attributes": {
+            "domain": "[('operation_strategy', '=', 'direct')]",
+            "name": "filter_operation_direct",
+            "string": "公司直营"
+          },
+          "context_raw": null,
+          "date": null,
+          "domain": [
+            [
+              "operation_strategy",
+              "=",
+              "direct"
+            ]
+          ],
+          "domain_raw": "[('operation_strategy', '=', 'direct')]",
+          "groups_xmlids": [],
+          "help": "",
+          "key": "filter_operation_direct",
+          "label": "公司直营",
+          "native_locator": "/search[1]/filter[2]",
+          "occurrence_index": 1,
+          "sequence": 1,
+          "source_position": 11,
+          "tags": [],
+          "type": null
+        },
+        {
+          "attributes": {
+            "domain": "[('operation_strategy', '=', 'joint')]",
+            "name": "filter_operation_joint",
+            "string": "联营项目"
+          },
+          "context_raw": null,
+          "date": null,
+          "domain": [
+            [
+              "operation_strategy",
+              "=",
+              "joint"
+            ]
+          ],
+          "domain_raw": "[('operation_strategy', '=', 'joint')]",
+          "groups_xmlids": [],
+          "help": "",
+          "key": "filter_operation_joint",
+          "label": "联营项目",
+          "native_locator": "/search[1]/filter[3]",
+          "occurrence_index": 1,
+          "sequence": 2,
+          "source_position": 12,
+          "tags": [],
+          "type": null
+        },
+        {
+          "attributes": {
+            "domain": "[('lifecycle_state', '=', 'draft')]",
+            "name": "filter_draft",
+            "string": "草稿"
+          },
+          "context_raw": null,
+          "date": null,
+          "domain": [
+            [
+              "lifecycle_state",
+              "=",
+              "draft"
+            ]
+          ],
+          "domain_raw": "[('lifecycle_state', '=', 'draft')]",
+          "groups_xmlids": [],
+          "help": "",
+          "key": "filter_draft",
+          "label": "草稿",
+          "native_locator": "/search[1]/filter[4]",
+          "occurrence_index": 1,
+          "sequence": 3,
+          "source_position": 13,
+          "tags": [],
+          "type": null
+        },
+        {
+          "attributes": {
+            "domain": "[('lifecycle_state', '=', 'in_progress')]",
+            "name": "filter_in_progress",
+            "string": "在建"
+          },
+          "context_raw": null,
+          "date": null,
+          "domain": [
+            [
+              "lifecycle_state",
+              "=",
+              "in_progress"
+            ]
+          ],
+          "domain_raw": "[('lifecycle_state', '=', 'in_progress')]",
+          "groups_xmlids": [],
+          "help": "",
+          "key": "filter_in_progress",
+          "label": "在建",
+          "native_locator": "/search[1]/filter[5]",
+          "occurrence_index": 1,
+          "sequence": 4,
+          "source_position": 14,
+          "tags": [],
+          "type": null
+        },
+        {
+          "attributes": {
+            "domain": "[('lifecycle_state', '=', 'paused')]",
+            "name": "filter_paused",
+            "string": "停工"
+          },
+          "context_raw": null,
+          "date": null,
+          "domain": [
+            [
+              "lifecycle_state",
+              "=",
+              "paused"
+            ]
+          ],
+          "domain_raw": "[('lifecycle_state', '=', 'paused')]",
+          "groups_xmlids": [],
+          "help": "",
+          "key": "filter_paused",
+          "label": "停工",
+          "native_locator": "/search[1]/filter[6]",
+          "occurrence_index": 1,
+          "sequence": 5,
+          "source_position": 15,
+          "tags": [],
+          "type": null
+        },
+        {
+          "attributes": {
+            "domain": "[('lifecycle_state', '=', 'closing')]",
+            "name": "filter_closing",
+            "string": "结算中"
+          },
+          "context_raw": null,
+          "date": null,
+          "domain": [
+            [
+              "lifecycle_state",
+              "=",
+              "closing"
+            ]
+          ],
+          "domain_raw": "[('lifecycle_state', '=', 'closing')]",
+          "groups_xmlids": [],
+          "help": "",
+          "key": "filter_closing",
+          "label": "结算中",
+          "native_locator": "/search[1]/filter[7]",
+          "occurrence_index": 1,
+          "sequence": 6,
+          "source_position": 16,
+          "tags": [],
+          "type": null
+        },
+        {
+          "attributes": {
+            "domain": "[('lifecycle_state', '=', 'done')]",
+            "name": "filter_done",
+            "string": "竣工"
+          },
+          "context_raw": null,
+          "date": null,
+          "domain": [
+            [
+              "lifecycle_state",
+              "=",
+              "done"
+            ]
+          ],
+          "domain_raw": "[('lifecycle_state', '=', 'done')]",
+          "groups_xmlids": [],
+          "help": "",
+          "key": "filter_done",
+          "label": "竣工",
+          "native_locator": "/search[1]/filter[8]",
+          "occurrence_index": 1,
+          "sequence": 7,
+          "source_position": 17,
+          "tags": [],
+          "type": null
+        }
+      ],
+      "group_by": [
+        {
+          "attributes": {
+            "context": "{'group_by': 'manager_id'}",
+            "name": "group_manager",
+            "string": "按项目经理"
+          },
+          "context_raw": "{'group_by': 'manager_id'}",
+          "default": false,
+          "field": "manager_id",
+          "key": "group_manager",
+          "label": "按项目经理",
+          "native_locator": "/search[1]/group[1]/filter[1]",
+          "occurrence_index": 1,
+          "sequence": 0,
+          "source": "search_view",
+          "source_position": 20,
+          "type": "many2one"
+        },
+        {
+          "attributes": {
+            "context": "{'group_by': 'user_id'}",
+            "name": "group_user",
+            "string": "按项目管理员"
+          },
+          "context_raw": "{'group_by': 'user_id'}",
+          "default": false,
+          "field": "user_id",
+          "key": "group_user",
+          "label": "按项目管理员",
+          "native_locator": "/search[1]/group[1]/filter[2]",
+          "occurrence_index": 1,
+          "sequence": 1,
+          "source": "search_view",
+          "source_position": 21,
+          "type": "many2one"
+        },
+        {
+          "attributes": {
+            "context": "{'group_by': 'owner_id'}",
+            "name": "group_owner",
+            "string": "按业主单位"
+          },
+          "context_raw": "{'group_by': 'owner_id'}",
+          "default": false,
+          "field": "owner_id",
+          "key": "group_owner",
+          "label": "按业主单位",
+          "native_locator": "/search[1]/group[1]/filter[3]",
+          "occurrence_index": 1,
+          "sequence": 2,
+          "source": "search_view",
+          "source_position": 22,
+          "type": "many2one"
+        },
+        {
+          "attributes": {
+            "context": "{'group_by': 'partner_id'}",
+            "name": "group_partner",
+            "string": "按客户"
+          },
+          "context_raw": "{'group_by': 'partner_id'}",
+          "default": false,
+          "field": "partner_id",
+          "key": "group_partner",
+          "label": "按客户",
+          "native_locator": "/search[1]/group[1]/filter[4]",
+          "occurrence_index": 1,
+          "sequence": 3,
+          "source": "search_view",
+          "source_position": 23,
+          "type": "many2one"
+        },
+        {
+          "attributes": {
+            "context": "{'group_by': 'operation_strategy'}",
+            "name": "group_operation_strategy",
+            "string": "按经营策略"
+          },
+          "context_raw": "{'group_by': 'operation_strategy'}",
+          "default": false,
+          "field": "operation_strategy",
+          "key": "group_operation_strategy",
+          "label": "按经营策略",
+          "native_locator": "/search[1]/group[1]/filter[5]",
+          "occurrence_index": 1,
+          "sequence": 4,
+          "source": "search_view",
+          "source_position": 24,
+          "type": "selection"
+        },
+        {
+          "attributes": {
+            "context": "{'group_by': 'business_nature'}",
+            "name": "group_business_nature",
+            "string": "按经营性质"
+          },
+          "context_raw": "{'group_by': 'business_nature'}",
+          "default": false,
+          "field": "business_nature",
+          "key": "group_business_nature",
+          "label": "按经营性质",
+          "native_locator": "/search[1]/group[1]/filter[6]",
+          "occurrence_index": 1,
+          "sequence": 5,
+          "source": "search_view",
+          "source_position": 25,
+          "type": "char"
+        },
+        {
+          "attributes": {
+            "context": "{'group_by': 'lifecycle_state'}",
+            "name": "group_state",
+            "string": "按项目状态"
+          },
+          "context_raw": "{'group_by': 'lifecycle_state'}",
+          "default": false,
+          "field": "lifecycle_state",
+          "key": "group_state",
+          "label": "按项目状态",
+          "native_locator": "/search[1]/group[1]/filter[7]",
+          "occurrence_index": 1,
+          "sequence": 6,
+          "source": "search_view",
+          "source_position": 26,
+          "type": "selection"
+        },
+        {
+          "attributes": {
+            "context": "{'group_by': 'stage_id'}",
+            "name": "group_stage",
+            "string": "按阶段"
+          },
+          "context_raw": "{'group_by': 'stage_id'}",
+          "default": false,
+          "field": "stage_id",
+          "key": "group_stage",
+          "label": "按阶段",
+          "native_locator": "/search[1]/group[1]/filter[8]",
+          "occurrence_index": 1,
+          "sequence": 7,
+          "source": "search_view",
+          "source_position": 27,
+          "type": "many2one"
+        },
+        {
+          "attributes": {
+            "context": "{'group_by': 'company_id'}",
+            "name": "group_company",
+            "string": "按公司"
+          },
+          "context_raw": "{'group_by': 'company_id'}",
+          "default": false,
+          "field": "company_id",
+          "key": "group_company",
+          "label": "按公司",
+          "native_locator": "/search[1]/group[1]/filter[9]",
+          "occurrence_index": 1,
+          "sequence": 8,
+          "source": "search_view",
+          "source_position": 28,
+          "type": "many2one"
+        },
+        {
+          "attributes": {
+            "context": "{'group_by': 'date_start:month'}",
+            "name": "group_start_date",
+            "string": "按开始日期"
+          },
+          "context_raw": "{'group_by': 'date_start:month'}",
+          "default": false,
+          "field": "date_start:month",
+          "key": "group_start_date",
+          "label": "按开始日期",
+          "native_locator": "/search[1]/group[1]/filter[10]",
+          "occurrence_index": 1,
+          "sequence": 9,
+          "source": "search_view",
+          "source_position": 29,
+          "type": "date"
+        },
+        {
+          "attributes": {
+            "context": "{'group_by': 'date:month'}",
+            "name": "group_end_date",
+            "string": "按结束日期"
+          },
+          "context_raw": "{'group_by': 'date:month'}",
+          "default": false,
+          "field": "date:month",
+          "key": "group_end_date",
+          "label": "按结束日期",
+          "native_locator": "/search[1]/group[1]/filter[11]",
+          "occurrence_index": 1,
+          "sequence": 10,
+          "source": "search_view",
+          "source_position": 30,
+          "type": "date"
+        }
+      ],
+      "saved_filters": [],
+      "ui_labels": {
+        "add": "添加",
+        "batch_label_activate": "批量激活",
+        "batch_label_archive": "批量归档",
+        "batch_label_export": "导出所选",
+        "batch_msg_action_not_allowed": "当前场景不支持该批量操作",
+        "batch_msg_activate_done_prefix": "批量激活完成：成功 ",
+        "batch_msg_activate_failed": "批量激活失败",
+        "batch_msg_archive_done_prefix": "批量归档完成：成功 ",
+        "batch_msg_archive_failed": "批量归档失败",
+        "batch_msg_done_middle": "，失败 ",
+        "batch_msg_export_done": "所选记录导出完成",
+        "batch_msg_export_failed": "导出失败，请稍后重试",
+        "batch_msg_idempotent_replay": "批量操作已幂等处理（重复请求被忽略）",
+        "batch_msg_model_no_active_field": "当前模型不支持归档/激活语义",
+        "boolean_false": "否",
+        "boolean_true": "是",
+        "cancel": "取消",
+        "clear": "清空",
+        "collapse_all": "全部收起",
+        "column_picker": "列",
+        "column_reset": "恢复默认",
+        "column_resize": "调整列宽",
+        "column_save_error": "保存失败，请重试",
+        "column_saved": "已保存",
+        "column_saving": "保存中",
+        "create": "新建",
+        "custom_filter": "添加自定义筛选",
+        "custom_group": "添加自定义分组",
+        "default": "默认",
+        "empty_create_message": "可以先新建一条业务记录，开始录入和办理。",
+        "empty_create_title": "当前还没有数据",
+        "empty_filters": "暂无筛选",
+        "empty_group_by": "暂无分组",
+        "empty_readonly_message": "当前账号没有新建权限，可调整筛选条件或联系管理员确认数据与权限。",
+        "empty_readonly_title": "当前还没有可查看的数据",
+        "empty_retry": "刷新",
+        "empty_saved_filters": "暂无收藏",
+        "expand_all": "全部展开",
+        "favorite_name": "收藏名称",
+        "favorite_save": "加入收藏",
+        "favorite_shared": "共享给所有用户",
+        "favorite_use_by_default": "设为默认筛选",
+        "filters": "筛选",
+        "group_by": "分组方式",
+        "group_count": "{count} 条",
+        "group_page_info": "第 {current} / {total} 页 · {range}",
+        "group_sample_limit": "每组 {count} 条",
+        "group_sort_asc": "按数量升序",
+        "group_sort_desc": "按数量降序",
+        "group_toggle_collapse": "收起",
+        "group_toggle_expand": "展开",
+        "group_view_all": "查看全部",
+        "grouped_result": "分组结果",
+        "input_value": "输入值",
+        "list_load_failed": "列表加载失败",
+        "loading_list": "正在加载列表...",
+        "page_footer_count": "当前页 {count} 条",
+        "page_footer_current_count": "{count} 条",
+        "page_footer_current_total": "当前页合计",
+        "page_footer_grand_total": "总计",
+        "page_footer_no_numeric": "当前页没有可汇总的数值列",
+        "page_footer_summary": "{column} 汇总",
+        "page_footer_summary_count": "{count} 项",
+        "page_footer_title": "页面统计",
+        "page_footer_total_count": "{count} 条",
+        "pagination_apply_size": "应用",
+        "pagination_jump": "跳转",
+        "pagination_next": "下一页",
+        "pagination_page": "第 {current} / {total} 页",
+        "pagination_page_size": "每页",
+        "pagination_prev": "上一页",
+        "pagination_summary": "共 {total} 条，当前 {start}-{end} 条",
+        "pagination_total_empty": "共 0 条",
+        "plain_search_placeholder": "输入关键字搜索",
+        "record_count": "{count} 条记录",
+        "row_number": "序号",
+        "row_open": "打开",
+        "save": "保存",
+        "saved_filters": "收藏夹",
+        "search_menu_toggle": "展开搜索菜单",
+        "search_placeholder": "搜索关键字",
+        "search_submit": "搜索",
+        "select_field": "选择字段",
+        "select_value": "选择值",
+        "selected_count": "已选 {count} 条",
+        "shared": "共享",
+        "sort": "排序",
+        "sort_column_asc": "按 {column} 升序",
+        "sort_column_desc": "按 {column} 降序",
+        "view_switch": "视图"
+      }
+    },
+    "statusContract": {
+      "buttonStatus": [
+        {
+          "backendIdentity": "window_action:343",
+          "btnId": "btn.project.action_send_mail_project_project",
+          "disabled": false,
+          "visible": true
+        },
+        {
+          "backendIdentity": "window_action:338",
+          "btnId": "btn.project.project_share_wizard_action",
+          "disabled": false,
+          "visible": true
+        },
+        {
+          "backendIdentity": "window_action:462",
+          "btnId": "btn.project_sms.project_project_act_window_sms_composer",
+          "disabled": false,
+          "visible": true
+        },
+        {
+          "backendIdentity": "contract_action:action.open_form",
+          "btnId": "btn.open_form",
+          "disabled": false,
+          "visible": true
+        }
+      ],
+      "containerStatus": [
+        {
+          "containerId": "main.table",
+          "disabled": false,
+          "visible": true
+        }
+      ],
+      "globalStatus": {
+        "effectiveRecordCapabilities": {
+          "create": true,
+          "read": true,
+          "unlink": true,
+          "write": true
+        },
+        "effectiveRenderProfile": "readonly",
+        "pageAuth": "read",
+        "pageVisible": true
+      },
+      "selectorStatus": [],
+      "widgetStatus": [
+        {
+          "auth": "edit",
+          "disabled": false,
+          "readonly": false,
+          "required": true,
+          "visible": true,
+          "widgetId": "field.name"
+        },
+        {
+          "auth": "read",
+          "disabled": false,
+          "readonly": true,
+          "required": false,
+          "visible": true,
+          "widgetId": "field.project_code"
+        },
+        {
+          "auth": "edit",
+          "disabled": false,
+          "readonly": false,
+          "required": false,
+          "visible": true,
+          "widgetId": "field.owner_id"
+        },
+        {
+          "auth": "read",
+          "disabled": false,
+          "readonly": true,
+          "required": false,
+          "visible": true,
+          "widgetId": "field.sc_partner_display_name"
+        },
+        {
+          "auth": "edit",
+          "disabled": false,
+          "readonly": false,
+          "required": true,
+          "visible": true,
+          "widgetId": "field.operation_strategy"
+        },
+        {
+          "auth": "edit",
+          "disabled": false,
+          "readonly": false,
+          "required": false,
+          "visible": true,
+          "widgetId": "field.lifecycle_state"
+        },
+        {
+          "auth": "edit",
+          "disabled": false,
+          "readonly": false,
+          "required": false,
+          "visible": true,
+          "widgetId": "field.user_id"
+        },
+        {
+          "auth": "read",
+          "disabled": false,
+          "readonly": true,
+          "required": false,
+          "visible": true,
+          "widgetId": "field.contract_amount"
+        },
+        {
+          "auth": "read",
+          "disabled": false,
+          "readonly": true,
+          "required": false,
+          "visible": true,
+          "widgetId": "field.dashboard_progress_rate"
+        },
+        {
+          "auth": "read",
+          "disabled": false,
+          "readonly": true,
+          "required": false,
+          "visible": true,
+          "widgetId": "field.write_date"
+        },
+        {
+          "auth": "edit",
+          "disabled": false,
+          "readonly": false,
+          "required": false,
+          "visible": true,
+          "widgetId": "field.manager_id"
+        },
+        {
+          "auth": "edit",
+          "disabled": false,
+          "readonly": false,
+          "required": false,
+          "visible": true,
+          "widgetId": "field.start_date"
+        }
+      ]
+    }
+  },
+  "user": "admin",
+  "user_fallback": null,
+  "view_type": null
+}

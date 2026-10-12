@@ -347,30 +347,14 @@ def _canonical_widget_type(native_widget: str, field: dict[str, Any]) -> str:
 
 
 def _component_registry(component_keys: set[str]) -> dict[str, dict[str, Any]]:
-    out: dict[str, dict[str, Any]] = {}
-    for key in sorted(component_keys):
-        out[key] = {
-            "version": "1.0",
-            "adapter": {
-                "web_pc": _adapter_for(key, "web_pc"),
-                "wx_mini": _adapter_for(key, "wx_mini"),
-                "harmony_h5": _adapter_for(key, "harmony_h5"),
-            },
-        }
-    return out
+    """Declare the component identities a page uses, plus their version.
 
-
-def _adapter_for(component_key: str, client_type: str) -> str:
-    prefix = {"web_pc": "El", "wx_mini": "Wx", "harmony_h5": "H5"}.get(client_type, "H5")
-    if "table" in component_key:
-        return f"{prefix}Table"
-    if "tree" in component_key:
-        return f"{prefix}Tree"
-    if "select" in component_key:
-        return f"{prefix}Select"
-    if "button" in component_key:
-        return f"{prefix}Button"
-    return f"{prefix}Input"
+    How a component renders -- the framework component name, the per-client
+    variant, its density or geometry -- is a frontend concern.  The contract
+    declares the identity and version fact only, so a rendering adapter can
+    never become a second, driftable component vocabulary.
+    """
+    return {key: {"version": "1.0"} for key in sorted(component_keys)}
 
 
 def _base_contract(

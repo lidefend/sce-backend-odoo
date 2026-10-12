@@ -1094,16 +1094,13 @@ function decodeComponentRegistry(
       issues.push({ path, message: 'must be an object keyed by a non-empty component identity' });
       return;
     }
-    rejectUnknownKeys(value, ['version', 'adapter', 'fallback', 'selectedAdapter'], path, issues);
-    const adapter = decodeStringMap(value.adapter, `${path}.adapter`, issues);
-    Object.entries(adapter).forEach(([clientType, adapterName]) => {
-      if (!adapterName.trim()) issues.push({ path: `${path}.adapter.${clientType}`, message: 'must be non-empty' });
-    });
+    // Rendering is a frontend responsibility: a component entry may declare its
+    // identity and version, and nothing about how or by which framework
+    // component it renders.  A `adapter` / `selectedAdapter` / `fallback` key is
+    // a contract defect, so it is rejected rather than silently ignored.
+    rejectUnknownKeys(value, ['version'], path, issues);
     out[componentKey] = {
       version: requiredString(value, 'version', path, issues),
-      adapter,
-      ...(optionalString(value, 'fallback') ? { fallback: optionalString(value, 'fallback') } : {}),
-      ...(optionalString(value, 'selectedAdapter') ? { selectedAdapter: optionalString(value, 'selectedAdapter') } : {}),
     };
   });
   return out;

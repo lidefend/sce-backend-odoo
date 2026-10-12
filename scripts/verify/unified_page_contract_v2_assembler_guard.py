@@ -28,7 +28,7 @@ P1_PROJECT_LAYOUT_PATH = ROOT / "addons/smart_construction_core/core_extension_p
 # the version literal the handler serves to a digest of the code that produces
 # the assembled contract; on drift this guard fails closed and the author
 # re-pins both values deliberately instead of the cache hiding the change.
-ASSEMBLED_CACHE_VERSION = "ui-contract-v2-2026-10-12-entity-semantics-from-parsed-facts"
+ASSEMBLED_CACHE_VERSION = "ui-contract-v2-2026-10-12-delivery-face-render-traits-removed"
 ASSEMBLED_CACHE_HANDLER = "addons/smart_core/handlers/ui_contract_v2.py"
 ASSEMBLED_CACHE_INPUTS = (
     ASSEMBLED_CACHE_HANDLER,
@@ -45,7 +45,7 @@ ASSEMBLED_CACHE_INPUTS = (
     # component keys too and has to be part of the same fingerprint.
     "addons/smart_core/core/contract_runtime/domain_field_semantics_generated.py",
 )
-ASSEMBLED_CACHE_INPUTS_SHA256 = "aa1958bef77ee9c99f3f6f8f4cb8a6779391e87c2784455495cc36b749270e34"
+ASSEMBLED_CACHE_INPUTS_SHA256 = "769945a5b26f852abeceb7abcded79f449072ef3d5e2a2e459443385e9817938"
 
 
 def _assembled_cache_digest() -> str:

@@ -27,17 +27,6 @@ DEFAULT_MOBILE_WIDGET_LIMIT = 12
 DEFAULT_MOBILE_ACTION_LIMIT = 4
 DEFAULT_MOBILE_CONTAINER_LIMIT = 6
 
-# The custom front end owns exactly one renderer-facing layout grid, declared
-# once in frontend/apps/web/src/components/template/layoutSpan.ts
-# (``layoutGridUnits()``).  The pc delivery face must declare that same grid;
-# declaring a second, conflicting dialect (a 12-unit form grid) while every
-# addressable width is projected onto the 24-unit ``span`` facet is the exact
-# "two unconnected layout dialects" defect the projection removed.  The binding
-# is machine-checked by scripts/verify/unified_page_contract_v2_client_guard.py.
-DESKTOP_LAYOUT_GRID_UNITS = 24
-MOBILE_LAYOUT_GRID_UNITS = 1
-
-
 def _dict(value: Any) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 
@@ -109,10 +98,11 @@ def trim_unified_page_contract_v2(
     layout = _dict(out.get("layoutContract"))
     layout["adaptMode"] = "mobile" if client in MOBILE_CLIENT_TYPES else "pc"
     hints = _dict(layout.get("layoutHints"))
-    hints["clientDensity"] = "comfortable" if client == "web_pc" else "compact"
-    hints["columns"] = (
-        DESKTOP_LAYOUT_GRID_UNITS if client == "web_pc" else MOBILE_LAYOUT_GRID_UNITS
-    )
+    # The delivery face states the information density a terminal receives
+    # (``standard`` / ``compact``); the front end maps that to its own visual
+    # density.  It must not name a layout grid: how many columns a renderer
+    # uses is a front-end implementation detail.
+    hints["deliveryDensity"] = "standard" if client == "web_pc" else "compact"
     hints["mobileCollapse"] = client in MOBILE_CLIENT_TYPES
     hints["deliveryProfile"] = profile
     if compact:
@@ -143,14 +133,11 @@ def trim_unified_page_contract_v2(
         trim_meta["delivered"]["actions"] = len(action_rows)
         trim_meta["omitted"]["actions"] = 0
 
+    # Render strategy and virtualization are runtime-policy decisions made by
+    # the runtime layer for the whole delivery, not per-terminal rendering
+    # instructions.  The terminal projection only records which delivery
+    # profile the terminal receives and leaves runtime policy untouched.
     runtime = _dict(out.get("runtimeContract"))
-    virtualization = _dict(runtime.get("virtualization"))
-    if client in MOBILE_CLIENT_TYPES:
-        virtualization.setdefault("mobile", {"enabled": True, "strategy": "windowed"})
-        runtime["renderStrategy"] = runtime.get("renderStrategy") or "scheduled"
-    else:
-        runtime["renderStrategy"] = runtime.get("renderStrategy") or "sync"
-    runtime["virtualization"] = virtualization
     runtime["deliveryProfile"] = profile
     out["runtimeContract"] = runtime
 
@@ -184,8 +171,6 @@ def _trim_container(row: dict[str, Any], client_type: str, *, budget: dict[str, 
             return {}
         budget["containers"] = int(budget.get("containers") or 0) - 1
     out = deepcopy(row)
-    if client_type in MOBILE_CLIENT_TYPES:
-        out["span"] = 1
     out["children"] = [_trim_container(child, client_type, budget=budget) for child in _list(out.get("children")) if isinstance(child, dict)]
     out["children"] = [child for child in out["children"] if child]
     widgets = []
@@ -196,32 +181,31 @@ def _trim_container(row: dict[str, Any], client_type: str, *, budget: dict[str, 
             if int(budget.get("widgets") or 0) <= 0:
                 continue
             budget["widgets"] = int(budget.get("widgets") or 0) - 1
-        widgets.append(_trim_widget(widget, client_type))
+        widgets.append(_trim_widget(widget))
     out["widgetList"] = widgets
     return out
 
 
-def _trim_widget(row: dict[str, Any], client_type: str) -> dict[str, Any]:
-    out = deepcopy(row)
-    if client_type in MOBILE_CLIENT_TYPES:
-        out["span"] = 1
-        config = _dict(out.get("componentConfig"))
-        config.setdefault("mobile", {"fullWidth": True})
-        out["componentConfig"] = config
-    return out
+def _trim_widget(row: dict[str, Any]) -> dict[str, Any]:
+    # Responsive width and "fill the row" behaviour belong to the front end;
+    # the delivery face must not rewrite a widget's declared width or inject a
+    # CSS-level full-width instruction per terminal.
+    return deepcopy(row)
 
 
 def _trim_component_registry(registry: dict[str, Any], client_type: str) -> dict[str, Any]:
+    """Keep every declared component identity; never select a renderer.
+
+    The client-trimmed contract used to name the framework component per client
+    (``ElInput`` / ``WxInput`` / ``H5Input``) and pre-select one.  How a field
+    renders is a frontend decision, not a delivery fact, so no client may
+    receive a rendering adapter here.
+    """
     out: dict[str, Any] = {}
     for key, row in registry.items():
         if not isinstance(row, dict):
             continue
-        copied = deepcopy(row)
-        adapter = _dict(copied.get("adapter"))
-        selected = _text(adapter.get(client_type) or copied.get("fallback") or adapter.get("web_pc"))
-        copied["selectedAdapter"] = selected
-        copied["adapter"] = adapter
-        out[key] = copied
+        out[key] = {"version": _text(row.get("version")) or "1.0"}
     return out
 
 

@@ -126,7 +126,7 @@ function field(overrides: Record<string, unknown>) {
   return {
     widgetId: 'field.default', fieldCode: 'field_default', widgetType: '', label: '普通字段',
     visible: true, fieldType: 'char', semanticRole: '', componentKey: '', componentConfig: {}, fieldDescriptor: {},
-    componentResolution: { componentKey: '', renderer: '', contractAdapter: '' },
+    componentResolution: { componentKey: '', renderer: '', contractVersion: '' },
     ...overrides,
   } as unknown as CanonicalFormNode['fields'][number];
 }
@@ -315,7 +315,7 @@ const relationSections = workspaceSectionNavigationItems([node({
     field({ widgetId: 'lines.income', fieldCode: 'income_line_ids', fieldType: 'one2many', semanticRole: 'relation', label: '合同明细' }),
     field({ widgetId: 'lines.settlement', fieldCode: 'settlement_line_ids', fieldType: 'many2many', semanticRole: 'relation', label: '结算明细' }),
     field({ widgetId: 'attachments', fieldCode: 'attachment_ids', fieldType: 'many2many', semanticRole: 'relation', label: '附件', componentConfig: { widget: 'many2many_binary' } }),
-    field({ widgetId: 'resolved.attachments', fieldCode: 'other_attachment_ids', fieldType: 'many2many', semanticRole: 'relation', label: '其他附件', componentResolution: { componentKey: 'ProfessionalAttachmentCollection', renderer: '', contractAdapter: '' } }),
+    field({ widgetId: 'resolved.attachments', fieldCode: 'other_attachment_ids', fieldType: 'many2many', semanticRole: 'relation', label: '其他附件', componentResolution: { componentKey: 'ProfessionalAttachmentCollection', renderer: '', contractVersion: '' } }),
     field({ widgetId: 'descriptor.attachments', fieldCode: 'native_attachment_ids', fieldType: 'many2many', semanticRole: 'relation', label: '原生附件', fieldDescriptor: { relation: 'ir.attachment' } }),
   ],
 })]);

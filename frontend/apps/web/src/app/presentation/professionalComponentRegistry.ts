@@ -50,9 +50,7 @@ export type ProfessionalComponentRegistration = {
 
 export type ProfessionalComponentResolution = ProfessionalComponentRegistration & {
   fieldType: string;
-  contractAdapter: string;
   contractVersion: string;
-  contractFallback: string | null;
 };
 
 const FORM_MODES = ['task', 'workspace'] as const;
@@ -168,18 +166,23 @@ function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
 
+// How a component renders is a frontend decision.  The contract declares the
+// component identity and its version; it must never name a framework component,
+// pre-select a per-client adapter or offer a rendering fallback, because that
+// would give the product a second, driftable component vocabulary.
+const CONTRACT_FORBIDDEN_RENDER_KEYS = ['adapter', 'selectedAdapter', 'selected_adapter', 'fallback'] as const;
+
 function contractComponentBinding(input: ContractProfessionalComponentResolutionInput) {
   const entry = asRecord(input.contractRegistryEntry);
   if (!Object.keys(entry).length) throw new Error(`PROFESSIONAL_COMPONENT_CONTRACT_REGISTRY_MISSING:${input.componentKey}`);
   const version = String(entry.version || '').trim();
   if (!version) throw new Error(`PROFESSIONAL_COMPONENT_CONTRACT_VERSION_MISSING:${input.componentKey}`);
-  const adapters = asRecord(entry.adapter);
-  const fallback = String(entry.fallback || '').trim();
-  const selected = String(
-    entry.selectedAdapter || entry.selected_adapter || adapters[input.clientType] || fallback || adapters.web_pc || '',
-  ).trim();
-  if (!selected) throw new Error(`PROFESSIONAL_COMPONENT_CONTRACT_ADAPTER_MISSING:${input.componentKey}:${input.clientType}`);
-  return Object.freeze({ contractAdapter: selected, contractVersion: version, contractFallback: fallback || null });
+  CONTRACT_FORBIDDEN_RENDER_KEYS.forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(entry, key)) {
+      throw new Error(`PROFESSIONAL_COMPONENT_CONTRACT_RENDER_TRAIT_FORBIDDEN:${input.componentKey}:${key}`);
+    }
+  });
+  return Object.freeze({ contractVersion: version });
 }
 
 export function resolveProfessionalComponentRegistration(
@@ -206,9 +209,7 @@ export function resolveProfessionalComponentRegistration(
     ...entry,
     renderer: entry.rendererByFieldType[fieldType] || entry.renderer,
     fieldType,
-    contractAdapter: '',
     contractVersion: '',
-    contractFallback: null,
   });
 }
 

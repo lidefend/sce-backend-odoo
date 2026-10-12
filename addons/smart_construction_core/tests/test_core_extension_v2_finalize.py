@@ -967,10 +967,14 @@ class TestCoreExtensionV2Finalize(TransactionCase):
                 "confirmLabel", "recordRequiredMessage", "payloadFields",
             )),
         )
-        self.assertEqual(
-            projected["layoutContract"]["componentRegistry"]["sc.payment.settlement_detail_collection"]["adapter"]["web_pc"],
-            "PaymentSettlementDetailCollectionControl",
-        )
+        settlement_entry = projected["layoutContract"]["componentRegistry"][
+            "sc.payment.settlement_detail_collection"
+        ]
+        self.assertEqual(settlement_entry.get("version"), "1.0")
+        # Rendering is a frontend concern: the contract must never name a
+        # framework component, a per-client adapter or a rendering fallback.
+        for forbidden in ("adapter", "selectedAdapter", "selected_adapter", "fallback"):
+            self.assertNotIn(forbidden, settlement_entry)
 
     def test_payment_and_project_forms_share_existing_v2_minimum_authority_chain(self):
         contracts = {
@@ -1080,6 +1084,10 @@ class TestCoreExtensionV2Finalize(TransactionCase):
                 self.assertTrue(component_key, model_name)
                 self.assertIn(widget_id, status_by_id, model_name)
                 self.assertIn(component_key, registry, model_name)
+            for key, entry in registry.items():
+                self.assertTrue(entry.get("version"), f"{model_name}:{key}")
+                for forbidden in ("adapter", "selectedAdapter", "selected_adapter", "fallback"):
+                    self.assertNotIn(forbidden, entry, f"{model_name}:{key}")
 
             action = projected["actionContract"]["actionRuleList"][0]
             self.assertEqual(action["actionId"], "form.save")

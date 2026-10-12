@@ -40,8 +40,8 @@
     "deliveryLimitRecord"
   ],
   "summary": {
-    "schemaFieldCount": 329,
-    "renderedOrInteractionAuthorityCount": 211,
+    "schemaFieldCount": 326,
+    "renderedOrInteractionAuthorityCount": 208,
     "validatedNonVisualAuthorityCount": 118,
     "decodedRuntimeAuthorityGapCount": 0,
     "unclassifiedCount": 0
@@ -567,21 +567,6 @@
       "path": "buttonStatus.visible",
       "classification": "rendered_or_interaction_authority",
       "consumer": "contractFormPresenter.presentAction"
-    },
-    {
-      "path": "componentRegistryEntry.adapter",
-      "classification": "rendered_or_interaction_authority",
-      "consumer": "professionalComponentRegistry"
-    },
-    {
-      "path": "componentRegistryEntry.fallback",
-      "classification": "rendered_or_interaction_authority",
-      "consumer": "professionalComponentRegistry"
-    },
-    {
-      "path": "componentRegistryEntry.selectedAdapter",
-      "classification": "rendered_or_interaction_authority",
-      "consumer": "professionalComponentRegistry"
     },
     {
       "path": "componentRegistryEntry.version",

@@ -505,11 +505,11 @@ function snapshot(): ContractV2Snapshot {
     layoutContract: {
       pageId: 'page.x.document.form', layoutType: 'form', adaptMode: 'pc',
       layoutHints: { mobileColumns: 1 }, componentRegistry: {
-        'sc.input.text': { version: '1.0', adapter: { web_pc: 'ElInput' }, selectedAdapter: 'TDesignInput' },
-        'sc.display.status': { version: '1.0', adapter: { web_pc: 'ElInput' } },
-        'sc.display.text': { version: '1.0', adapter: { web_pc: 'ElInput' } },
-        'sc.relation.many2one': { version: '1.0', adapter: { web_pc: 'ElSelect' } },
-        'sc.relation.table': { version: '1.0', adapter: { web_pc: 'ElTable' } },
+        'sc.input.text': { version: '1.0' },
+        'sc.display.status': { version: '1.0' },
+        'sc.display.text': { version: '1.0' },
+        'sc.relation.many2one': { version: '1.0' },
+        'sc.relation.table': { version: '1.0' },
       },
       containerTree: [{
         containerId: 'section.identity', containerType: 'group', type: 'group', title: 'Identity', span: 24,
@@ -773,7 +773,7 @@ assert.equal(canonicalDuplicateWorkflowAction.reasonCode, 'WORKFLOW_ACTION_IDENT
 
 const nativeMonetarySnapshot = snapshot();
 nativeMonetarySnapshot.layoutContract.componentRegistry['sc.value.money'] = {
-  version: '1.0', adapter: { web_pc: 'ScMoney' }, selectedAdapter: 'ScMoney',
+  version: '1.0',
 };
 nativeMonetarySnapshot.layoutContract.containerTree[0].children.push({
   containerId: 'field.amount', containerType: 'field', type: 'field', name: 'amount', title: '', span: 12,
@@ -1264,11 +1264,10 @@ assert.equal(
 );
 assert.deepEqual(
   {
-    adapter: structurePresentationFields.find((field) => field.fieldCode === 'name')?.componentResolution.contractAdapter,
     version: structurePresentationFields.find((field) => field.fieldCode === 'name')?.componentResolution.contractVersion,
   },
-  { adapter: 'TDesignInput', version: '1.0' },
-  'the delivered client adapter binding must reach the professional component resolution',
+  { version: '1.0' },
+  'the delivered component identity version must reach the professional component resolution',
 );
 
 const missingComponentRegistrySnapshot = snapshot();

@@ -88,7 +88,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-2026-10-12-entity-semantics-from-parsed-facts"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-2026-10-12-delivery-face-render-traits-removed"
 
 
 # --- Declared form surfaces -------------------------------------------------
@@ -1331,14 +1331,7 @@ class UiContractV2Handler(BaseIntentHandler):
         if changed:
             layout["componentRegistry"] = {
                 **(layout.get("componentRegistry") if isinstance(layout.get("componentRegistry"), dict) else {}),
-                "sc.table.data": {
-                    "version": "1.0",
-                    "adapter": {
-                        "web_pc": "ElTable",
-                        "wx_mini": "WxTable",
-                        "harmony_h5": "H5Table",
-                    },
-                },
+                "sc.table.data": {"version": "1.0"},
             }
             self._set_v2_data_meta(contract_v2, {"fieldCount": len(columns)})
 

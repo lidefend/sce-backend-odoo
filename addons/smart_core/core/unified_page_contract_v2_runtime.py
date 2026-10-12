@@ -183,7 +183,7 @@ def find_runtime_guard_issues(contract: dict[str, Any]) -> list[str]:
                 issues.append(f"dependencyGraph.{source} contains executable object edge")
     registry = _dict(layout.get("componentRegistry"))
     if not registry:
-        issues.append("layoutContract.componentRegistry is required for runtime adapter resolution")
+        issues.append("layoutContract.componentRegistry is required to declare the component identities a page uses")
     for row in _list(status.get("selectorStatus")):
         if isinstance(row, dict) and not _text(row.get("selector")):
             issues.append("selectorStatus row missing selector")

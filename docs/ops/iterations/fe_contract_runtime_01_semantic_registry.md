@@ -325,3 +325,148 @@ addons/smart_core/core/contract_runtime/domain_field_semantics_generated.py
 - ~~**01-D** 字段语义化~~（完成，见上：改为由模型+视图解析产物生成，删除手写 semantic）。
   剩余 01-D3：浏览器验收（新建→保存→刷新，确认 money/date/relation 由语义渲染）。
 - ~~**01-E** 状态归属边界~~（完成，见上：`docs/contract-runtime-state-ownership.md`）。
+
+## 边界收口轮（交付语义 vs 渲染实现裁定落地）
+
+owner 裁定：契约可以表达"为了某终端如何交付"，不能表达"前端组件如何布局和渲染"。
+本轮按该裁定清理三层中的混合，不新增探针框架，不放宽任何断言。
+
+### 删除（渲染实现出契约）
+
+- `layoutHints.columns`：契约不再声明栅格列数；列数由前端 `layoutSpan.layoutGridUnits()` 唯一权威。
+  同步删除守卫里 `columns == renderer_layout_grid_units()` 与 `DESKTOP_LAYOUT_GRID_UNITS` 绑定。
+- 终端投影不再改写 `runtimeContract` 的渲染策略（原来移动端会把 `renderStrategy` 改成
+  `scheduled` 并注入 `virtualization.mobile`）；`renderStrategy`/`virtualization` 作为 Runtime 内部
+  策略保留在运行时层，不作为终端交付内容。
+- 移动端 `span=1` 重写：删除。终端投影不再按终端改写字段宽度。
+- `componentConfig.mobile.fullWidth`：删除（CSS 级行为属前端）。
+
+### 改名保留（交付语义）
+
+- `clientDensity`（UI Kit 词汇 `comfortable/compact`）→ `deliveryDensity`（交付语义 `standard/compact`）。
+  映射到 UI Kit 视觉密度是前端职责（`ContractFormDriverHost.vue`）。
+- `span` 保留为"交付表达"分面；本轮不改名（见下"未决"）。
+
+### 机制与守卫
+
+- 投影边界清洗 `ui_contract_v2_projection.normalize_layout_hints_entries`：剥离
+  `columns/gridColumns/cssWidth/renderStrategy/virtualization`。
+- 守卫 `unified_page_contract_v2_client_guard.py`：源契约与每个终端的投递面都 fail-closed 禁止渲染实现键；
+  终端投影必须保留 `runtimeContract`（除 `deliveryProfile` 外不得改写）。
+- 组件注册表守卫测试同步到新不变量（`version` 必填 + 渲染键禁止），147 例通过。
+- 示例契约与 `client_trimming_snapshot_v2.json` 对齐新投递面；`ASSEMBLED_CONTRACT_CACHE_VERSION`
+  与缓存输入指纹重钉（`ui-contract-v2-2026-10-12-delivery-face-render-traits-removed`）。
+- 新增边界文档 `docs/architecture/rendering-trait-contract-boundary-v1.md`。
+
+### 验证（17 项回执全部 passed）
+
+`unified_page_contract_client`1、`unified_page_contract_schema`3、`semantic_registry_lint`46、
+`frontend_component_registry`284、`schema_declaration_sync`8、`assembler_cache_pin`1、
+`semantic_runtime_resolution`123、`frontend_business_value_alignment`42、
+`frontend_detail_collection_alignment`127、`frontend_relation_field_alignment`77、
+`frontend_base_field_alignment`70、`frontend_auth_surface`1、`assembler_contract_surface`201、
+`frontend_typecheck`1、`frontend_lint_src`1、`docs_governance`7、`agent_ledger`15。
+
+### 未决（未擅自执行，交由 owner 判断）
+
+1. `span → deliverySpan` 契约面改名：仓库内 `span` 同名但不同义——`scene_orchestration.span`
+   是无关的 Odoo ORM 字段（`fields.Integer(default=1)` + `<field name="span"/>` 视图）。改名须逐处
+   分类契约分面与无关字段，并会失效已采集的运行时证据（`docs/contract/snapshots/ui_contract_v2_intent_admin.json`、
+   `artifacts/backend/daily_dev_acceptance_probe.*`）。建议作为同分支的独立小批次。
+2. `docs/contract/exports/intent_catalog.json` 与 `docs/contract/snapshots/ui_contract_v2_intent_admin.json`
+   仍列出旧键（`layoutHints.clientDensity`/`layoutHints.columns`）。后者是**实采 intent 快照**，
+   且在本轮改动前就已陈旧（`columns: 12`，而当时投影已发 24），刷新需受管运行时重新采集（L3/L4），
+   不手改证据。
+
+  → **已在本节"边界冻结轮"解决**（受管运行时再采集 + 派生 catalog 重生成）。
+
+## 边界冻结轮（B：运行时事实再采集 → 终端交付面 → 运行时策略守恒）
+
+owner 裁定顺序：**B1 运行时事实再采集 → B2 证据快照更新 → B3 `span → deliverySpan` 独立迁移**；
+本轮只做 B1/B2，`span` 改名留作后续独立批次（与无关 ORM 字段同名，不是字符串替换）。
+
+### B-01 受管运行时再采集（不手改证据）
+
+入口：受管隔离档 `local.contract-snapshot.*`（项目 `sc-contract-snapshot-v1`、库 `sc_contract_snapshot`、
+dbfilter 精确、nginx 18091 / odoo 8080），`ENV=dev` 源码挂载优先
+（`addons_path` 中 `/mnt/source-addons` 先于 `/mnt/product-addons`，且
+`/mnt/source-addons/smart_core/handlers/ui_contract_v2_projection.py` 的 md5 与本工作区一致）。
+
+- 重建播种：seed = `sc-local-dev/sc_dev_demo`（只读），dump sha256
+  `c66afb379546b5b9e683bcfe86fe231a05b65394187698d2ebcb0f32d2926157`（196240685 bytes），
+  恢复后校验 `project_project=72 / payment_request=139 / res_users=61`，`smart_core=17.0.1.1.14`。
+- 再采集 `ui_contract_v2_intent_admin`：blob `8ccbbd4fe1b88f35c0d8ee3d037bb9e1c371c691`
+  → sha256 `e09bf36869a27a07486823d42c490aea96d9700fffe991d55b697a5ffd5ec3d6`。
+
+快照陈旧性已证伪为"未刷新"而非"代码回归"：HEAD 的 assembler 本就发 `layoutHints: {}`，
+旧快照里的 `layoutHints.clientDensity/columns` 早于 HEAD 的边界收口提交。再采集后：
+
+- 源契约 `layoutHints`：`{clientDensity, columns:12, deliveryProfile, mobileCollapse}`
+  → `{deliveryDensity:"standard", deliveryProfile:"full", mobileCollapse:false}`。
+- 源契约 `runtimeContract` 不再含 `renderStrategy`（仅 runtime 内部策略：patchStrategy/cachePolicy/
+  optimistic/lazyContainer/virtualization/retryPolicy/interactionMode/actionTarget/deliveryProfile）。
+- 派生 `docs/contract/exports/intent_catalog.json` 同步重生成
+  （`make contract.catalog.export`，确定性可复现），sha256 `8e04403f62ddea6cf23a5b41db22e51398aa45668be910a2b1e2f089f7a5fda2`。
+
+### B-02 三端交付面（真实运行时，非重投影）
+
+在 `docs/contract/cases.yml` 增加两个终端用例并受管导出（同一 intent、仅 `client_type` 不同），
+使三端各自有实采快照，而不是把 web_pc 的投递面再投影一次：
+`ui_contract_v2_intent_admin_wx_mini.json`（sha256 `dd717740a85b3f92d1dab55f561cf3792c4f1508c7e04a0f8bf576eec89ba3`）、
+`ui_contract_v2_intent_admin_harmony_h5.json`（sha256 `93dec47a89445c69c5c594f659bd5e4baf8849112c367c125ac3ed90e763e4be`）。
+
+| client | adaptMode | deliveryProfile | deliveryDensity | mobileCollapse | 交付裁剪 | 渲染实现键 |
+|-|-|-|-|-|-|-|
+| web_pc | pc | full | standard | false | 14→14 widgets | 无 |
+| wx_mini | mobile | mobile_compact | compact | true | 14→12 widgets（上限 12） | 无 |
+| harmony_h5 | mobile | mobile_compact | compact | true | 14→12 widgets（上限 12） | 无 |
+
+三端 `runtimeContract` 除 `deliveryProfile` 外逐键一致；`renderStrategy`/`virtualization` 未出现在
+终端投递面。受管 gate（限定这 3 个用例、`REF_DIR=docs/contract/snapshots`）：
+`PASS ui_contract_v2_intent_admin / _wx_mini / _harmony_h5`，即跟踪快照与实时导出确定性一致。
+
+### B-03 断言补强：Runtime 内部策略 ≠ Delivery Contract
+
+原有断言 `offered_runtime != source_runtime` 是**非对称**比较（只对终端侧剔除 `deliveryProfile`），
+在真实契约（源含 `runtimeContract.deliveryProfile`）下会误报，而 fixture 恰好没这个键才"看起来通过"。
+
+- 守卫改为**对称**比较（两侧都剔除 `deliveryProfile`），并新增
+  `RUNTIME_INTERNAL_POLICY_KEYS`（renderStrategy/virtualization/patchStrategy/cachePolicy/optimistic/
+  lazyContainer/retryPolicy）**逐键守恒**断言：终端投影不得改写运行时内部策略。
+- `examples/form_project.json` 补 `runtimeContract.renderStrategy/deliveryProfile`，使断言对真实形态非空转。
+- 负例（内存注入，未新增探针框架）：未注入基线下守卫 exit 0；注入 `runtimeContract.virtualization`
+  后 exit 1 并精确报 `terminal projection must not rewrite runtime-internal policy virtualization`；
+  注入 `layoutHints.renderStrategy/columns` 后 exit 1 并报 `layoutHints must not carry rendering implementation ...`。
+
+### 受影响与新增回执（19 项）
+
+本轮被真实失效并重跑：`unified_page_contract_client`1、`unified_page_contract_schema`3、
+`assembler_cache_pin`1（三者的声明输入含 `examples/` 或守卫本身，被本次 fixture/守卫改动失效）。
+新增登记：`contract_catalog`16（`verify.contract.catalog`）、`page_contract_v1_zero_residue`1。
+`agent_ledger`15 因 run 账本变更刷新。其余 12 项声明输入未变，按复用规则保留原回执，不重跑。
+
+### 仍未决（留待后续）
+
+1. `span → deliverySpan` 契约面改名（B3）：限定在 `contracts/`、runtime 投影、前端契约类型；
+   不动无关 ORM 字段 `scene_orchestration.span`；改名后需再次刷新受其影响的运行时证据。
+2. `FE-CONTRACT-RUNTIME-01-B` Semantic Registry 收口在干净边界上进行（owner 指定：B → 提交 → Semantic Registry）。
+
+### 边界冻结轮补记：L2 证据缺口闭合（27 项回执）
+
+`make ci.local.iteration` 对本次改动建议的 8 个前端 L2 目标此前只在会话内执行过、未进入 run 索引，
+属于真实证据缺口。本轮把这 8 项登记为受管检查并以受管入口重跑（`make agent.run.begin/record`），
+全部 exit 0、非零用例：
+
+| 检查 | 目标 | 用例数 |
+|-|-|-|
+| form_container_presentation_guard | verify.form_container_presentation.guard | 1 |
+| form_structure_authority_unification | verify.form_structure_authority_unification.unit | 215 |
+| canonical_form_presenter | verify.frontend.canonical_form_presenter.unit | 180 |
+| frontend_dev_incremental | verify.frontend.dev.incremental.unit | 29 |
+| page_pattern_reference_parity | verify.frontend.page_pattern_reference_parity.unit | 28 |
+| frontend_primitive_adapter | verify.frontend.primitive_adapter.unit | 41 |
+| product_page_pattern | verify.frontend.product_page_pattern.unit | 17 |
+| frontend_style_system | verify.frontend.style_system.guard | 1 |
+
+登记后 `agent_ledger` 因 run 账本字节变化被判失效并已重跑刷新。最终 run 索引 27/27 可复用，
+未变更层的原回执继续复用、不重跑。

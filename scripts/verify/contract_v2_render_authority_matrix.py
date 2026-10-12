@@ -41,7 +41,7 @@ EXPECTED = {
         "widgetId widgetType fieldCode label span componentKey capabilities componentConfig ownerContainerId "
         "nativeLocator occurrenceIndex sourcePosition fieldDescriptor formStructureRole"
     ),
-    "componentRegistryEntry": "version adapter fallback selectedAdapter",
+    "componentRegistryEntry": "version",
     "statusContract": "globalStatus containerStatus widgetStatus buttonStatus selectorStatus",
     "containerStatus": "containerId visible disabled reasonCode",
     "widgetStatus": "widgetId visible readonly required disabled placeholder auth reasonCode",

@@ -59,7 +59,7 @@ FAIL_CLOSED_PREDICATE = "function declaresUnknownComponentRenderer("
 IDENTIFIER = re.compile(r"[A-Za-z_$][\w$]*")
 SEMANTIC_MARKERS = (
     "data-component-key", "data-component-readiness", "data-component-renderer",
-    "data-component-fallback", "data-contract-adapter", "data-contract-component-version",
+    "data-component-fallback", "data-contract-component-version",
 )
 SEMANTIC_BINDINGS = tuple(rf":{marker}\s*=" for marker in SEMANTIC_MARKERS)
 ALERT_ROLE = re.compile(r"""\brole\s*=\s*(?:"alert"|'alert')""")
@@ -1684,7 +1684,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         "PROFESSIONAL_COMPONENT_PRESENTATION_MODE_MISMATCH", "PROFESSIONAL_COMPONENT_RENDER_PROFILE_MISMATCH",
         "PROFESSIONAL_COMPONENT_CAPABILITY_MISSING",
         "PROFESSIONAL_COMPONENT_CONTRACT_REGISTRY_MISSING", "PROFESSIONAL_COMPONENT_CONTRACT_VERSION_MISSING",
-        "PROFESSIONAL_COMPONENT_CONTRACT_ADAPTER_MISSING",
+        "PROFESSIONAL_COMPONENT_CONTRACT_RENDER_TRAIT_FORBIDDEN",
     ):
         if marker not in registry:
             failures.append(f"registry missing fail-closed invariant {marker}")
@@ -1926,11 +1926,11 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         SEMANTIC_BINDINGS + (r"\bv-for\s*=",),
     ):
         failures.append(
-            "FormSection does not carry the six semantic markers together on the field iterator element"
+            "FormSection does not carry the semantic markers together on the field iterator element"
         )
     elif not field_iterators:
         failures.append(
-            "FormSection carries the six semantic markers on an element that renders no field list"
+            "FormSection carries the semantic markers on an element that renders no field list"
         )
     if "componentResolution" not in canonical_renderer:
         failures.append("canonical renderer does not forward registry resolution")
