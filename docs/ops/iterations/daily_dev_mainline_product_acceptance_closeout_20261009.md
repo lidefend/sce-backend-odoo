@@ -3094,3 +3094,51 @@ observed detail contract is not the approved contract: observed_request_conflict
 ### 31.6 四态（不夸大）
 
 批次/迭代级：本轮 P4 工具 + 台账边界收口完成；主线集成=已完成（`a0afb331`，本轮无主线改动）；**版本发布未做**；**产品交付未完成**（待 owner 本人登录统一验证）。
+
+
+---
+
+## 32. 第 32 轮（2026-10-12）：分支基线同步（base sync）—— 解除 PR 冲突阻断
+
+**一、触发点**
+
+`make pr.push` 在 `conflict_guard`（`scripts/ops/git_safe_push.sh:303-318`）被拦下：`branch does not merge cleanly with origin/main (base=a0afb331)`。该守卫的判据是 `git merge-tree --write-tree <origin/main> <HEAD>` 失败——此时 GitHub 无法构建 PR 的 `pull_request` merge ref，四项必需检查会**派发零检查**，PR 体面地读成 "no checks reported"。
+
+**二、为什么本轮不能用受管 `sync-main`**
+
+`make workspace.branch.sync-main`（`scripts/ops/safe_branch_sync_main.py`）的语义是**未发布**分支重放：它显式拒绝远端已存在同名分支或已有开放 PR 的情况，且自动解决白名单只含正式交付日志（纯追加）与登记为可再生成的证据文件。本分支远端已存在（`56083d36`），两个冲突路径又都是**本 run 自己的台账**，不在白名单 → 入口会 fail-closed abort。因此按 `conflict_guard` 自身输出的 `recovery_command: git merge origin/main` 执行基线合并。
+
+**三、冲突面（仅台账/文档，无产品代码）**
+
+| 路径 | 状态 |
+| --- | --- |
+| `.agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json` | 冲突 |
+| `docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md` | 冲突 |
+| `docs/engineering_convergence/complexity_budget_report.md` | 自动合并 |
+
+**四、无损证明（先证明超集，再取本分支侧）**
+
+- `run.json`：main 侧 74 个 `checks` 与 70 条 `evidence` 在本分支**逐字节相同**；本分支另有 5 个 check、7 条 evidence，以及更长的 `blockers` / `next_exact_step` / `stage_identity`。即本分支是 main 的**严格超集**，不存在"main 独有内容"。
+- md 台账：main 相对共同祖先追加的第 27/28 轮全文，在本分支版本中作为**连续子串**存在（逐字符校验）。
+- 生成报告：合并结果同时保留 main 新增行（`scripts/release/test_locked_menu_policy_contract.py` 864）与本分支刷新行（列表车道探针 1376→1421）。
+
+故冲突解决取本分支侧即无损。合并后索引树与合并前 HEAD 树**同为** `4ed360bd75ccb42efda11d5fcb704ad51d4cb593`——本轮只引入 main 的历史，未改任何字节的内容。
+
+**五、结果与守卫**
+
+| 项 | 值 |
+| --- | --- |
+| 合并前 HEAD | `f62945f08df46a4a61358f197adc711fd96ad18a` |
+| 基线 | `a0afb331e1a56d636c316c39e22b63453626cbbd` |
+| 合并提交 | `f9ca6a03400e6ebf2fcdf6eabde461298e776010` |
+| 合并树 | `4ed360bd75ccb42efda11d5fcb704ad51d4cb593`（与合并前一致） |
+| 推送 | `56083d36..f9ca6a03`（fast-forward，无 force） |
+| `git merge-tree HEAD origin/main` | CLEAN |
+| `make verify.agent.ledger.unit` | 15 OK + `agent_ledger_consistency_guard` PASS |
+| `ci.generated_evidence.preflight` | PASS（复杂度预算、分片队列、契约结构指纹等全部 current） |
+
+未使用 `GIT_SAFE_PUSH_ALLOW_CONFLICT`（该 override 会让 PR 收到零检查），未放宽任何门禁，未改产品代码、未做模块升级、未改批准实例、未放宽断言。
+
+**六、四态（不夸大）**
+
+不变：批次/迭代级本轮完成；主线集成=已完成（`a0afb331`）；**版本发布未做**；**产品交付未完成**（待 owner 本人登录统一验证）。
