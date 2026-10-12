@@ -79,7 +79,7 @@ def normalize_intent_operation(intent_name: str, params: Dict[str, Any] | None =
 
 def access_mode_for_operation(operation: str) -> str:
     op = str(operation or "").strip().lower()
-    if op in {"create", "new"}:
+    if op in {"create", "new", "import"}:
         return "create"
     if op in {
         "write",

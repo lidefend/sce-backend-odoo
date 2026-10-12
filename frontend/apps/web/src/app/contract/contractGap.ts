@@ -100,6 +100,49 @@ export function optionalDeclaredNumber(
   return requireDeclaredNumber(value, spec);
 }
 
+/**
+ * 消费一个必须由契约声明的布尔参数。声明缺失或非布尔即停机：布尔声明正是
+ * 「能力开/关」的事实，前端不得以 `!== false` / `=== true` 之类夹取补默认。
+ */
+export function requireDeclaredBoolean(
+  value: unknown,
+  spec: { missing: string; requiredDeclarationLayer: string },
+): boolean {
+  if (typeof value !== 'boolean') {
+    throw new ContractGapError(
+      {
+        kind: 'contract_defect',
+        missing: spec.missing,
+        requiredDeclarationLayer: spec.requiredDeclarationLayer,
+      },
+      `契约缺少合法声明 ${spec.missing}：前端不停机兜底，等待声明层补齐`,
+    );
+  }
+  return value;
+}
+
+/**
+ * 消费一个必须由契约声明的非空文本参数（例如策略取值、动作来源）。声明缺失、
+ * 非文本或空串即停机；前端不提供默认取值。
+ */
+export function requireDeclaredText(
+  value: unknown,
+  spec: { missing: string; requiredDeclarationLayer: string },
+): string {
+  const declared = typeof value === 'string' ? value.trim() : '';
+  if (!declared) {
+    throw new ContractGapError(
+      {
+        kind: 'contract_defect',
+        missing: spec.missing,
+        requiredDeclarationLayer: spec.requiredDeclarationLayer,
+      },
+      `契约缺少合法声明 ${spec.missing}：前端不停机兜底，等待声明层补齐`,
+    );
+  }
+  return declared;
+}
+
 /** 判定一个错误是否为契约缺陷停机错误（供停机态渲染与诊断使用）。 */
 export function isContractGapError(error: unknown): error is ContractGapError {
   return error instanceof ContractGapError

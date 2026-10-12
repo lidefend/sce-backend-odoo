@@ -493,6 +493,15 @@ verify.frontend.record_delete_action.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/record_delete_action_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/record-delete-action-test.mjs >/dev/null
 	@node /tmp/record-delete-action-test.mjs
 
+# The list surface publishes one declared action list with a declared scope and
+# intent per entry; the client routes by the declared scope and resolves the
+# declared intent onto an executor it actually has, reporting the ones it cannot
+# execute instead of dropping or guessing them.
+.PHONY: verify.frontend.collection_action_capability.unit
+verify.frontend.collection_action_capability.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/collection_action_capability_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/collection-action-capability-test.mjs >/dev/null
+	@node /tmp/collection-action-capability-test.mjs
+
 # A declared node's authoritative verdict (field widgetStatus / declared action
 # buttonStatus / container containerStatus) must be consumed for that node; a
 # declared-visible action must not fall through a widgetId-only lookup.
@@ -560,8 +569,8 @@ verify.frontend.pr.unit: verify.frontend.official_icon.unit verify.frontend.glob
 
 verify.frontend.release.unit: verify.frontend.official_icon.unit verify.frontend.global_component_capability.unit verify.frontend.component_driver_takeover.unit verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit verify.frontend.professional_business_value.unit verify.frontend.professional_relation_field.unit verify.frontend.professional_detail_collection.unit verify.frontend.professional_workflow.unit verify.frontend.professional_audit.unit verify.frontend.professional_collaboration.unit verify.frontend.professional_relation_lifecycle.unit verify.frontend.contract_prompt_action_presentation.unit verify.frontend.low_code_field_create_dialog.unit verify.frontend.form_header_action_primitives.unit verify.frontend.action_view_page_actions.unit verify.frontend.relational_action_primitives.unit verify.frontend.state_dashboard.unit verify.frontend.professional.extensions.unit verify.frontend.boq_import_preview.unit verify.frontend.chart_dataset.unit verify.frontend.mobile_viewport.unit verify.frontend.intent_request_identity.unit verify.frontend.intent_request_coalescing.unit verify.frontend.collection_row_action_identity.unit verify.frontend.action_view_page_size_runtime.unit verify.frontend.action_view_surface_gate_runtime.unit verify.menu_config_tree_editor.behavior verify.contract_form_runtime_state.behavior verify.action_view_runtime_smoke.behavior
 
-verify.frontend.pr.unit: verify.frontend.decision_authority.unit
-verify.frontend.release.unit: verify.frontend.decision_authority.unit
+verify.frontend.pr.unit: verify.frontend.decision_authority.unit verify.frontend.record_delete_action.unit verify.frontend.collection_action_capability.unit verify.semantic_runtime_resolution
+verify.frontend.release.unit: verify.frontend.decision_authority.unit verify.frontend.record_delete_action.unit verify.frontend.collection_action_capability.unit verify.semantic_runtime_resolution
 
 verify.frontend.lint.src: guard.prod.forbid
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web lint:src

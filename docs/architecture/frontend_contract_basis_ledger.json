@@ -55,7 +55,21 @@
       "stopDetail": "relationDescriptor 消费声明值即 requireDeclaredNumber(entry?.options_limit / entry?.options_search_limit)，缺失或非法抛 ContractGapError 停机；relationEntry() 投影必须原样透出声明键，不得夹取或补前端默认。",
       "regressionGuard": "verify.frontend.professional_relation_field.unit",
       "behaviourTest": "frontend/apps/web/scripts/relation_entry_option_limits_test.ts"
-    }
+    },
+{
+    "surface": "ActionView 集合/选择动作面（collection_capabilities.actions）",
+    "declared": "actionContract.surfacePolicies.collection_capabilities.actions[]（action/scope/intent）",
+    "declaredBy": "addons/smart_core/utils/collection_action_capability.py",
+    "declaredMethod": "build_collection_capabilities",
+    "declaredSymbol": "SELECTION_SCOPE_INTENTS",
+    "consumedBy": "frontend/apps/web/src/app/runtime/actionViewCollectionCapabilityRuntime.ts",
+    "consumedSymbol": "resolveDeclaredCapabilities",
+    "onMissing": "stop",
+    "stopSymbol": "ContractGapError",
+    "stopDetail": "集合面动作由契约单一声明面发布，batch_policy 是同一份声明的 selection 投影。前端只按声明的 scope 路由、按声明的 intent 查本构建执行器；声明缺失时不停机兜底、也不由 selection_policy 反推（反推会把 collection 作用域动作静默降级），而是抛 ContractGapError 回声明层补齐。",
+    "regressionGuard": "verify.frontend.collection_action_capability.unit",
+    "behaviourTest": "frontend/apps/web/scripts/collection_action_capability_test.ts"
+}
   ],
   "registeredMechanismExemptions": [
     {
