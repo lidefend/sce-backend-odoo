@@ -38,7 +38,7 @@ FORM_PRESENTATION_LAYOUT_TOKENS = frozenset({
     "h3", "small", "fw-bold", "text-muted", "text-danger", "text-warning",
     # surfaces / feedback
     "card", "card-body", "content-group",
-    "alert", "alert-info", "alert-danger", "alert-warning",
+    "alert", "alert-info", "alert-danger", "alert-warning", "alert-link",
 })
 # Grid *placement* classes (``col-12``/``col-md-6``/``col-lg-3``/``col-lg-12``)
 # are the arch's width declaration.  The projection folds every declared width
