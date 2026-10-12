@@ -457,6 +457,18 @@
         "frontend/packages/design-tokens/token-authority.json"
       ]
     },
+    "frontend_decision_authority": {
+      "target": "verify.frontend.decision_authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "docs/frontend_productization/decision-authority-inventory-v1.json",
+        "scripts/verify/frontend_decision_authority.py",
+        "scripts/verify/frontend_decision_authority_guard.py",
+        "scripts/verify/test_frontend_decision_authority_guard.py",
+        "frontend/apps/web/src",
+        "make/frontend.mk"
+      ]
+    },
     "native_view_workflow_action_coverage": {
       "target": "verify.native_view.workflow_action_coverage",
       "inputs": [
