@@ -48,7 +48,7 @@ def assert_amount_close(errors, key, expected, actual, tolerance=0.01):
 
 GROUP_SQL = """
     FROM sc_finance_project_counterparty_position
-   GROUP BY counterparty_type, counterparty_project_id, partner_id, counterparty_name
+   GROUP BY company_id, currency_id, counterparty_type, counterparty_project_id, partner_id, counterparty_name
 """
 
 

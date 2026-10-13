@@ -50,6 +50,8 @@ PERSPECTIVE_SQL = """
     WITH perspective AS (
         SELECT
             f.project_id,
+            f.company_id,
+            f.currency_id,
             CASE
                 WHEN f.partner_id IS NOT NULL OR NULLIF(f.partner_name, '') IS NOT NULL THEN 'partner'
                 ELSE 'unknown'
@@ -70,6 +72,8 @@ PERSPECTIVE_SQL = """
         UNION ALL
         SELECT
             f.target_project_id AS project_id,
+            f.company_id,
+            f.currency_id,
             CASE
                 WHEN f.source_project_id IS NOT NULL THEN 'project'
                 WHEN f.partner_id IS NOT NULL OR NULLIF(f.partner_name, '') IS NOT NULL THEN 'partner'
@@ -109,6 +113,8 @@ PERSPECTIVE_SQL = """
         UNION ALL
         SELECT
             f.source_project_id AS project_id,
+            f.company_id,
+            f.currency_id,
             CASE
                 WHEN f.target_project_id IS NOT NULL THEN 'project'
                 WHEN f.partner_id IS NOT NULL OR NULLIF(f.partner_name, '') IS NOT NULL THEN 'partner'
@@ -148,6 +154,8 @@ PERSPECTIVE_SQL = """
         UNION ALL
         SELECT
             COALESCE(f.source_project_id, f.target_project_id, f.project_id) AS project_id,
+            f.company_id,
+            f.currency_id,
             'internal' AS counterparty_type,
             NULL::integer AS counterparty_project_id,
             NULL::integer AS partner_id,
@@ -176,9 +184,9 @@ expected_row_count = sql_one(
     + """
     SELECT COUNT(*)::integer
       FROM (
-            SELECT project_id, counterparty_type, counterparty_project_id, partner_id, counterparty_name
+            SELECT project_id, company_id, currency_id, counterparty_type, counterparty_project_id, partner_id, counterparty_name
               FROM perspective
-             GROUP BY project_id, counterparty_type, counterparty_project_id, partner_id, counterparty_name
+             GROUP BY project_id, company_id, currency_id, counterparty_type, counterparty_project_id, partner_id, counterparty_name
            ) g
     """
 )
