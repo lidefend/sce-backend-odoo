@@ -1300,3 +1300,46 @@ L2 定向 ORM 反例 1 test 0 failed（日志 `relationship_review_queue_project
   Node syntax 384 files）。
 - 状态边界：仍为**批次验收完成（源码 + 守卫 + 定向测试层）**。L3 激活回读的集合由 150 条变为 **143** 条，
   旧 150/125 回读全部过期；未主线集成、未部署、未产品交付。
+
+### L 段：布局列数回退缺陷结项与交付冻结解除（2026-10-14）
+
+- 触发：`make ci.delivery.freeze.prepare` 在 `verify.frontend.contract_basis.enforce` 处
+  fail-closed，理由为 `open_defects=1`——台账仍挂着 `CD-20261013-LAYOUT-COLUMNS-FALLBACK`。
+  同一台账还使 `verify.frontend.contract_basis.unit` 的
+  `test_repository_ledger_has_no_open_defect` 持续失败，交付车道因此整体不可冻结。
+- 复核（先证事实再改登记，不靠推断）：该条目描述的两个符号在当前源码**已不存在**——
+  `frontend/` 下已无 `normalizeColumns` / `descriptionColumns` 实现（`git log -S` 显示
+  `normalizeColumns` 的移除发生在 `265963f6`，早于登记该条目的 `9dfe9568`；
+  仅验收脚本 `frontend/apps/web/scripts/low_code_form_layout_runtime_acceptance.mjs`
+  内有同名局部函数，属验证工具而非渲染路径）。逐条核对收口条件：
+  - **声明层发布显式列数**：`unified_page_contract_v2_assembler.py` 的
+    `declared_container_columns` / `declare_container_columns` 只为“自带网格声明”的容器
+    写入 `columns`，其余节点不发布。
+  - **解码器不再造跨度**：`app/contracts/v2/schema.ts` 改为
+    `requiredIntegerInRange(raw, 'span', path, issues, 24)`，缺失或非法进入 decode issue；
+    `columns` 必须为 1..24 且整除 24，否则同样进入 issue。
+  - **渲染器缺失即停机**：`components/template/layoutSpan.ts` 的 `isDeclaredLayoutSpan` /
+    `requireDeclaredLayoutSpan` / `requireDeclaredLayoutColumns` 取代原默认与夹取，
+    布尔或字符串跨度不再被当成合法宽度（注释明确记录 “`true` used to become a one-unit field”）。
+  - **24 轨机制保留**：`layoutGridUnits()=24`，由 `frontend_form_canvas_wide_grid_guard`
+    与 `frontend_form_canvas_layout_contract_test` 锁定。
+  - 窄屏单列由前端视口断点表达，但断点分支前仍先调用
+    `requireDeclaredLayoutColumns(props.columns)`，契约列数缺失照样停机。
+- 取证（`.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/`）：
+  `verify_frontend_form_canvas_layout_guard.log`（`PASS cases=80 declared=7 undeclared=12`、
+  wide-grid 22 tests OK）、`verify_frontend_native_form_structure_responsibility_unit.log`
+  （`PASS cases=18`）、`verify_frontend_contract_basis_unit.log`（**15 tests OK**）、
+  `verify_frontend_contract_basis_enforce.log`（`PASS bindings=9 exemptions=5 logic_sites=3
+  open_defects=0`）。
+- 收口：条目从 `openContractDefects` 结项到 `closedContractDefects`（保留原始 missing /
+  owner / closureCondition，补 resolution / reVerified / closureEvidence）。
+  结项既有事实依据、也有守卫依据，不是为了让门变绿而撤登记。
+- 结果：`verify.frontend.contract_basis.enforce` 与台账单测恢复通过；
+  `make ci.delivery.freeze.prepare` **rc=0**
+  （`[ci.delivery.freeze.prepare] PASS candidate=unfrozen`，
+  `[ci.generated_evidence.preflight] PASS all content-bound generated evidence is current`）。
+- 冻结前生成物刷新（`dedd7e38`）：契约结构指纹补上 `sc.general.contract` 的已声明状态机
+  （`GENERAL_CONTRACT` 表）、组件接管清单按当前生产消费者计数更新、测试台账 1494→1508
+  （本分支新增业务编号 15 例 + 数据范围核算 4 例）。
+- 状态边界：到本段为止可报**批次验收完成（源码 + 守卫 + 定向测试）**与**冻结准备通过**；
+  尚未跑一次精确 HEAD 的 `ci.local.quick`、未推送、未开 PR、未主线集成、未部署、未产品交付。

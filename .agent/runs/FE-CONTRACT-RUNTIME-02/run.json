@@ -980,7 +980,7 @@
     "verify.backend_business_fact.model_standard currently FAILs on documentation drift: docs/architecture/backend_business_model_audit_findings_v1.md records 372 model classes and 0 unclassified models while the measured values are 378 and 1. The target is a zero-reference lane entry (not reachable from any gate anchor), so it is not a blocker for this batch.",
     "Audit follow-up: the committed company-ceiling set is now 143 rules after the generated-vs-manual review retired 7 redundant ceilings (enforced 124 -> 117, source_bounded 25 -> 32), while the last governed activation readback proved 125/125 installed, so the runtime readback is stale for the current set; the remaining newly declared ceilings are source-only until the next authorized `local.dev` activation."
   ],
-  "next_exact_step": "Backend single-fact closure is now complete at source, guards and declaration level: the timed-CI blocker (17b48549), the duplicate field declaration / res.company currency write points / record_is_global misclassification (e059394b, 6e0dd571) and this round's generated-vs-manual ceiling convergence (7 models enforced->source_bounded, ceiling 150->143) plus the BUSINESS-NUMBER-AUTHORITY-01 registration are all closed and verified in-lane. NEXT, in order: (1) commit this round in two logical commits (ceiling convergence + guard accounting fix; business-number authority declaration + guard + tests); (2) freeze the clean candidate (make ci.delivery.freeze.prepare before the final commit, then one exact-head make ci.local.quick) and integrate through the protected GitHub PR, gitee mirror as backup only; (3) the governed L3 activation readback set is now 143 rules (the earlier 150/125 readbacks are stale) and needs the authorized path make local.dev.snapshot -> make local.dev.upgrade MODULE=smart_construction_core -> make local.dev.data_scope.inventory. Delivery freeze is still fail-closed on the registered contract defect CD-20261013-LAYOUT-COLUMNS-FALLBACK (frontend T2, out of this batch). This batch is 批次验收完成 at source + guards level and is NOT mainline-integrated, deployed or user-accepted.",
+  "next_exact_step": "Backend single-fact closure is complete (timed-CI blocker 17b48549; duplicate field declaration / currency write points / record_is_global e059394b and 6e0dd571; generated-vs-manual ceiling convergence 0b76ddf9 with 7 models enforced->source_bounded and ceiling 150->143; BUSINESS-NUMBER-AUTHORITY-01 83f371c3) and the delivery freeze is now unblocked because CD-20261013-LAYOUT-COLUMNS-FALLBACK was re-verified against source and retired to closedContractDefects (d963dee6). make ci.delivery.freeze.prepare returns rc=0 on this candidate. NEXT, in order: (1) commit this bookkeeping (run.json + L段) and re-run ci.delivery.freeze.prepare once to confirm no residual generated delta, so the clean HEAD stays frozen; (2) run ONE exact-head make ci.local.quick on that frozen HEAD; (3) rewrite artifacts/pr_body.md and integrate through the protected GitHub PR (make pr.push -> make pr.create -> make pr.merge.prep -> make pr.merge EXPECTED_HEAD=<sha>), gitee mirror as backup only; (4) the governed L3 activation readback set is now 143 rules (the earlier 150/125 readbacks are stale) and needs the authorized path make local.dev.snapshot -> make local.dev.upgrade MODULE=smart_construction_core -> make local.dev.data_scope.inventory. This batch is 批次验收完成 at source + guards level plus freeze-preparation pass, and is NOT yet pushed, mainline-integrated, deployed or user-accepted.",
   "acceptance_authority_layout": {
     "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
     "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",
@@ -3241,6 +3241,29 @@
     "evidence": [
       "make verify.fact_source.coverage -> 52 tests OK（上一轮 37，新增 15 条），status=passed，reader_files=32，codes=53，published_codes=53，unpublished_codes 3 条，unread_published_codes 3 条，dynamic_reads 1 条，second_value_sites 7 条，failures=[]",
       "make verify.contract.architecture.suite -> rc=0（套件标记与上一轮一致，Node syntax 384 files）"
+    ]
+  },
+  "layout_columns_fallback_retirement": {
+    "status": "closed_and_ledger_retired",
+    "defect": "CD-20261013-LAYOUT-COLUMNS-FALLBACK",
+    "blocker": "verify.frontend.contract_basis.enforce fail-closed on open_defects=1, and verify.frontend.contract_basis.unit test_repository_ledger_has_no_open_defect failing, so ci.delivery.freeze.prepare could not run.",
+    "reverification": [
+      "The two symbols the entry names no longer exist in frontend/: normalizeColumns was removed in 265963f6, before the ledger entry was added in 9dfe9568; descriptionColumns has no history in frontend/. The only normalizeColumns left is a local helper in the browser acceptance script frontend/apps/web/scripts/low_code_form_layout_runtime_acceptance.mjs, which is a verification tool, not the render path.",
+      "Declaration layer publishes explicit column counts: unified_page_contract_v2_assembler.declared_container_columns / declare_container_columns write columns only for containers that own a grid declaration.",
+      "Decoder no longer fabricates a span: app/contracts/v2/schema.ts uses requiredIntegerInRange(raw, 'span', path, issues, 24); columns must be 1..24 and divide 24, otherwise a decode issue is raised.",
+      "Renderer stops on a missing declaration: layoutSpan.ts isDeclaredLayoutSpan / requireDeclaredLayoutSpan / requireDeclaredLayoutColumns replaced the old default and clamp; the 24-track mechanism is preserved (layoutGridUnits()=24) and locked by frontend_form_canvas_wide_grid_guard.",
+      "The narrow-viewport single column is a frontend viewport breakpoint, but the branch still calls requireDeclaredLayoutColumns(props.columns) first, so a missing contract column count still stops."
+    ],
+    "changes": [
+      "docs/architecture/frontend_contract_basis_ledger.json: entry moved from openContractDefects to closedContractDefects with resolution / reVerified / closureEvidence; openContractDefects is now empty.",
+      "Generated evidence refreshed by make ci.delivery.freeze.prepare (dedd7e38)."
+    ],
+    "evidence": [
+      "make verify.frontend.contract_basis.unit -> 15 tests OK",
+      "make verify.frontend.contract_basis.enforce -> PASS bindings=9 exemptions=5 logic_sites=3 open_defects=0",
+      "make verify.frontend.form_canvas_layout.guard -> PASS cases=80 declared=7 undeclared=12, wide-grid 22 tests OK",
+      "make verify.frontend.native_form_structure_responsibility.unit -> PASS cases=18",
+      "make ci.delivery.freeze.prepare -> rc=0, PASS candidate=unfrozen"
     ]
   }
 }
