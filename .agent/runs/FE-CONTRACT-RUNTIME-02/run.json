@@ -978,9 +978,9 @@
     "This run declares environment.kind=runtime, so the run evaluator marks every offline receipt stale ('runtime evidence requires authoritative environment readback'). Receipts are truthful but not reusable in-tool until that pre-existing declaration is reconciled.",
     "Corrected while closing data-scope batch 1: the earlier premise that the sc.business.fact.mixin family and the cockpit/workbench fact models have no company path was wrong - they carry project_id, so sc.dashboard.cockpit.fact, sc.workbench.item, sc.document.admin.document and sc.office.admin.document are now covered by a global company-scope ir.rule anchored on project_id.company_id (scripts/verify/data_scope_declarations.json). No schema change is required for isolation. What remains is governed activation readback (L3), not a schema change.",
     "verify.backend_business_fact.model_standard currently FAILs on documentation drift: docs/architecture/backend_business_model_audit_findings_v1.md records 372 model classes and 0 unclassified models while the measured values are 378 and 1. The target is a zero-reference lane entry (not reachable from any gate anchor), so it is not a blocker for this batch.",
-    "Audit follow-up: the committed company-ceiling set grew to 150 rules while the last governed activation readback proved 125/125 installed, so the runtime readback is stale for the current set; the 25 newly declared ceilings (24 previously unreported product models + ui.menu.config.policy surfaced by the constant-_name blind-spot closure) are source-only until the next authorized `local.dev` activation."
+    "Audit follow-up: the committed company-ceiling set is now 143 rules after the generated-vs-manual review retired 7 redundant ceilings (enforced 124 -> 117, source_bounded 25 -> 32), while the last governed activation readback proved 125/125 installed, so the runtime readback is stale for the current set; the remaining newly declared ceilings are source-only until the next authorized `local.dev` activation."
   ],
-  "next_exact_step": "Timed-CI blocker is closed at source (17b48549) and locally verified in-lane. NEXT, in order: (1) finish this bookkeeping commit (run.json + J段 batch record); (2) close the remaining backend single-fact omissions found by the two read-only review rounds before integrating: the duplicate account.move.line.project_id field definition (models/support/account_extend.py vs account_move_line_ext.py), res.company.currency_id write points in XML/hooks.py that the CURRENCY_WRITE declaration pattern does not match, and sc_data_scope_rule_coverage_guard.record_is_global misclassifying groups=[(5,0,0)] as group-scoped (global_rules_seen=191 vs actual 194); (3) freeze the clean candidate (make ci.delivery.freeze.prepare before the final commit, then one exact-head make ci.local.quick) and integrate through the protected GitHub PR (gitee mirror as backup only); (4) the governed L3 activation readback for the 150-rule ceiling set is STALE (last readback proved 125/125 for the previous set) and needs the authorized path make local.dev.snapshot -> make local.dev.upgrade MODULE=smart_construction_core -> make local.dev.data_scope.inventory. Delivery freeze is still fail-closed on the registered contract defect CD-20261013-LAYOUT-COLUMNS-FALLBACK (frontend T2, out of this batch). This batch is 批次验收完成 at source + guards level and is NOT mainline-integrated, deployed or user-accepted.",
+  "next_exact_step": "Backend single-fact closure is now complete at source, guards and declaration level: the timed-CI blocker (17b48549), the duplicate field declaration / res.company currency write points / record_is_global misclassification (e059394b, 6e0dd571) and this round's generated-vs-manual ceiling convergence (7 models enforced->source_bounded, ceiling 150->143) plus the BUSINESS-NUMBER-AUTHORITY-01 registration are all closed and verified in-lane. NEXT, in order: (1) commit this round in two logical commits (ceiling convergence + guard accounting fix; business-number authority declaration + guard + tests); (2) freeze the clean candidate (make ci.delivery.freeze.prepare before the final commit, then one exact-head make ci.local.quick) and integrate through the protected GitHub PR, gitee mirror as backup only; (3) the governed L3 activation readback set is now 143 rules (the earlier 150/125 readbacks are stale) and needs the authorized path make local.dev.snapshot -> make local.dev.upgrade MODULE=smart_construction_core -> make local.dev.data_scope.inventory. Delivery freeze is still fail-closed on the registered contract defect CD-20261013-LAYOUT-COLUMNS-FALLBACK (frontend T2, out of this batch). This batch is 批次验收完成 at source + guards level and is NOT mainline-integrated, deployed or user-accepted.",
   "acceptance_authority_layout": {
     "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
     "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",
@@ -3201,5 +3201,46 @@
     ],
     "observation": "CI runner 4 vCPU 下 resolve_jobs=2、machine_budget=2，每成员仅 1 worker，PR #650 引入的并行机制在 GitHub runner 上收益为 0，只体现为组间并发。这是 CPU_HEADROOM=2 在 4 vCPU 机器上的保守取舍，属性能议题而非正确性缺陷，本轮不改动以避免过订。",
     "limits": "远端车道只有候选合并后才会重新评估，不得报 main 已转绿。"
+  },
+  "generated_vs_manual_ceiling_review": {
+    "status": "closed_at_source_guards_and_generated_artefact",
+    "question": "生成的数据范围上限规则与手写全局规则同时存在时，是否有一层没表达任何新事实却仍然生效，构成同一事实的两个载体。",
+    "method": "对 config/tenant/module_sets.v1.json 声明的 10 个产品模块做全量只读复算：逐模型比对手写全局 ir.rule 的域与生成上限规则的域，再按 ORM 多规则 AND 语义判断生成记录是否新增事实。",
+    "findings": [
+      "7 个模型同时有 1 条生成全局上限 + 1 条手写全局规则，且生成记录的域没有表达手写规则之外的事实：project.boq.analysis.norm.line、project.boq.analysis.resource.line 的域完全相同；sc.ar.ap.company.summary、sc.ar.ap.project.summary 的生成域更宽（多 =False）；sc.hr.payroll.document、sc.hr.salary.payment、sc.salary.summary 的手写域更窄（带 user._sc_data_company_ids()）。",
+      "sc_data_scope_rule_coverage_guard 沿用 enforced 的“模型必须在 universe 内”硬失败来核算 source_bounded，但 source_bounded 表达的是“范围事实来自关系锚点、模型没有自有 company_id 列”，4 个关系锚定模型因此被误报。"
+    ],
+    "changes": [
+      "scripts/verify/data_scope_declarations.json：7 个模型从 enforced 迁到 source_bounded，每条带 model/anchor/rule/file/reason；事实变为 enforced=117、source_bounded=32（exempt=33、deferred=26 不变）。",
+      "make verify.sc_data_scope.ceiling.sync：生成上限 150 -> 143 条（被移除的 63 行只来自上述 7 条）；手写规则保持原样，仍是这 7 个模型上唯一生效的范围事实。",
+      "scripts/verify/sc_data_scope_rule_coverage_guard.py：删除 source_bounded 的“必须在 universe 内”硬失败，核算改用新增的 source_bounded_in_universe，返回值补 source_bounded_in_universe=28 与 source_bounded_out_of_universe（4 个关系锚定模型）；“必须解析到真实产品模块 + 真实全局规则”的校验保留。",
+      "scripts/verify/test_sc_data_scope_rule_coverage_guard.py：仓库断言改用 source_bounded_in_universe，新增关系锚定模型用例与幽灵模型仍 fail-closed 用例。"
+    ],
+    "evidence": [
+      "make verify.sc_data_scope.rule_coverage -> 37 tests OK, status=passed, uncovered=[], universe=138, enforced=117, enforced_in_universe=72, source_bounded_count=32, source_bounded_in_universe=28, global_rules_seen=187",
+      "make verify.sc_data_scope.ceiling.sync -> SC_DATA_SCOPE_CEILING=written rules=143"
+    ]
+  },
+  "business_number_authority": {
+    "status": "closed_at_source_guards_and_declaration",
+    "issue": "BUSINESS-NUMBER-AUTHORITY-01",
+    "question": "业务编号这条事实是否只有一个生成者：产品模块读的 ir.sequence 码、产品数据发布的码、以及序列缺失时把编号落成的第二个值，是否来自同一张表。",
+    "findings": [
+      "读：产品模块内 53 个字面 next_by_code 码 + 1 个动态码（smart_construction_core/models/support/contract_center.py::create 的 seq_code），分布 32 个 reader 文件，全部在 smart_construction_core。",
+      "发布：产品数据 ir.sequence 码 53 条（smart_construction_core/data/sequence.xml）。",
+      "读而未发布：sc.contract.change、sc.labor.deduction、sc.site.variation（读永远落到声明标签）。",
+      "发布而未读：sc.project.document；construction.contract.expense / construction.contract.income 经动态码实际被读。",
+      "第二权威落点 7 个 (file, function)：business_menu_facts.py::_next_document_no（or \"NEW\" 派生 token）、general_contract.py::create（contract_no 落到 name）、hr_payroll_document.py::create（SALPAY- 落到 record.id）、material_plan.py::action_submit（落到本字段声明标签，良性）、project_core.py::create（project_code 落到时间戳+uuid，带 unique 约束）、settlement_order.py::create（落到本字段声明标签，良性）、contract_center.py::create（子类型序列 -> construction.contract -> 字面量）。"
+    ],
+    "changes": [
+      "scripts/verify/fact_source_coverage_guard.py：新增 NEXT_BY_CODE_CALL / NEXT_BY_CODE_OR / SEQUENCE_LOCAL / ASSIGN_TAIL / NAME_TARGET 与 sequence_codes_published、sequence_read_sites、business_number_authority，接入 check()。",
+      "scripts/verify/fact_source_declarations.json：新增 business_number_authority 段（32 个 reader 文件逐文件列码、6 条例外码、1 条动态读取、7 个兜底落点带 class，非良性类附 BUSINESS-NUMBER-AUTHORITY-01 与 reason）。",
+      "codes 语义收敛为例外登记：reader 文件已逐文件声明读码，若再把 50 条“发布且被读”的码复制进 codes，声明层就多出一个要同步的第二事实源；因此 codes 只登记 (已发布-已读) ∪ (已读-已发布)，并新增“登记为例外但源里已无分叉”的失败分支，使例外被修复后立刻失效。",
+      "scripts/verify/test_fact_source_coverage_guard.py：新增 BusinessNumberAuthorityGuardTest（15 条用例），覆盖未登记 reader、读码漂移、未发布/未读例外缺登记、例外缺理由、把正常码登记为例外、第二权威点未登记、良性类免 issue、已登记类缺 issue、动态读取未登记、已登记兜底点消失。"
+    ],
+    "evidence": [
+      "make verify.fact_source.coverage -> 52 tests OK（上一轮 37，新增 15 条），status=passed，reader_files=32，codes=53，published_codes=53，unpublished_codes 3 条，unread_published_codes 3 条，dynamic_reads 1 条，second_value_sites 7 条，failures=[]",
+      "make verify.contract.architecture.suite -> rc=0（套件标记与上一轮一致，Node syntax 384 files）"
+    ]
   }
 }

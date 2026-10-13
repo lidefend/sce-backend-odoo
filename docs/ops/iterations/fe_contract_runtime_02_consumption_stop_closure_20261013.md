@@ -1210,3 +1210,93 @@ L2 定向 ORM 反例 1 test 0 failed（日志 `relationship_review_queue_project
   （`scanned_blobs=24441`，`confirmed_matches=0`，`sensitive_values_recorded=false`）。
 - 状态边界：该 CI 失败已**在源码层收口并本地验证**；远端车道只有在候选经受保护 PR 合并后
   才会重新评估，因此当前仍**未主线集成**，不得报 `main` 已转绿。
+
+### K 段：后端唯一事实全量复核与收口（2026-10-14，所有者“必须让后端彻底统一唯一事实输入的目标彻底落实……彻底收口后再集成主线”）
+
+- 触发：所有者要求把“后端唯一事实输入”在集成主线前彻底收口，并安排一次**全量后端审核**查漏。
+  本轮不是新增扫描器，而是用既有声明式守卫对既有事实做一次全量只读复算，把复算出的分叉就地收口。
+- 复算口径：`data_scope_declarations.json` / `fact_source_declarations.json` 两个已登记声明，
+  分别由 `verify.sc_data_scope.rule_coverage`、`verify.fact_source.coverage` 消费；只读源为
+  `config/tenant/module_sets.v1.json` 声明的 10 个产品模块。
+
+#### K1：生成上限与手写规则“AND 取严”的 7 处纯冗余（生成上限 150 → 143）
+
+- 复核发现：有 7 个模型同时存在“生成的数据范围上限规则”和“手写全局规则”，ORM 对同一模型的多条
+  `ir.rule` 是 AND 语义。逐条比对手写域与生成域后确认：生成记录**没有表达手写规则之外的任何事实**，
+  只是叠加了一层不减权限的同一约束，因此属于“同一事实的两个载体”。
+  - 域完全相同（纯冗余）：`project.boq.analysis.norm.line`
+    （`rule_sc_data_scope_project_boq_analysis_norm_line` vs `rule_sc_boq_analysis_norm_allowed_company`）、
+    `project.boq.analysis.resource.line`
+    （`rule_sc_data_scope_project_boq_analysis_resource_line` vs `rule_sc_boq_analysis_resource_allowed_company`）。
+  - 生成域更宽（多一条 `=False`）、手写域更严：`sc.ar.ap.company.summary`
+    （`rule_sc_data_scope_sc_ar_ap_company_summary` vs `rule_sc_ar_ap_company_summary_company`）、
+    `sc.ar.ap.project.summary`
+    （`rule_sc_data_scope_sc_ar_ap_project_summary` vs `rule_sc_ar_ap_project_summary_company`）。
+  - 手写域更窄（带 `user._sc_data_company_ids()`）：`sc.hr.payroll.document`
+    （`rule_sc_data_scope_sc_hr_payroll_document` vs `rule_sc_hr_payroll_document_company`）、
+    `sc.hr.salary.payment`（`rule_sc_hr_salary_payment_company`）、
+    `sc.salary.summary`（`rule_sc_salary_summary_company`）。
+- 收口：7 个模型从 `enforced` 迁到 `source_bounded`，每条声明带
+  `model/anchor/rule/file/reason`，reason 写明“生成记录未表达额外事实，AND 后冗余”。
+  声明事实变为 `enforced=117`、`source_bounded=32`（其余 `exempt=33`、`deferred=26` 不变）。
+- 生成物：`make verify.sc_data_scope.ceiling.sync` 后 `SC_DATA_SCOPE_CEILING=written rules=143`
+  （原 150），即上限规则只保留真正新增事实的那些；被移除的 63 行只来自上述 7 条。
+- 边界：手写规则保持原样，仍是这 7 个模型上唯一生效的范围事实，不存在“先删后补”的窗口。
+
+#### K2：守卫核算不对称修正（`source_bounded` 不再被“必须在 universe 内”误判）
+
+- 复核发现：`sc_data_scope_rule_coverage_guard.py` 对 `source_bounded` 沿用 `enforced` 的
+  “模型必须落在 universe 内”硬失败，但 `source_bounded` 是“该模型的范围事实来自关系锚点而非自有
+  `company_id` 列”，其模型本就可以没有自有公司列、因而不在 universe 内。关系锚定的 4 个模型
+  （`project.boq.analysis.norm.line`、`project.boq.analysis.resource.line`、
+  `sc.ar.ap.company.summary`、`sc.ar.ap.project.summary`）因此会被误报。
+- 收口：删除该硬失败；核算改用新增的 `source_bounded_in_universe`，返回值补
+  `source_bounded_in_universe=28`、`source_bounded_out_of_universe=[4 个关系锚定模型]`。
+  “必须解析到真实产品模块 + 真实全局规则”的校验保留，幽灵模型仍然 fail-closed。
+- 单测：`test_sc_data_scope_rule_coverage_guard.py` 的仓库断言改用
+  `source_bounded_in_universe`，并新增 `test_source_bounded_relation_anchored_model_stays_explicit`
+  （关系锚定模型 + `WIZARD_EXEMPT`：`universe=2`、`source_bounded_in_universe=0`、
+  `source_bounded_count=1`）与 `test_source_bounded_unknown_model_still_fails_closed`（幽灵模型仍 FAIL）。
+
+#### K3：业务编号“第二权威”登记（`BUSINESS-NUMBER-AUTHORITY-01`）
+
+- 复核发现：业务编号这条事实此前只在“读”的一侧被看，发布侧与兜底侧从未进入同一张表，三条扫描
+  互相漂移：
+  - **读**：产品模块内 53 个**字面** `next_by_code` 码 + 1 个动态码
+    （`support/contract_center.py::create` 的 `seq_code`），分布 32 个 reader 文件（全在 `smart_construction_core`）。
+  - **发布**：产品数据 `ir.sequence` 码 53 条（`smart_construction_core/data/sequence.xml`）。
+  - **不一致**：`sc.contract.change`、`sc.labor.deduction`、`sc.site.variation` 被读取却**无任何产品数据发布**
+    （读永远落到声明标签）；`construction.contract.expense`、`construction.contract.income` 经动态码实际被读，
+    `sc.project.document` 已发布但无任何产品代码读取（疑似孤立发布记录）。
+  - **第二权威**：7 个 (file, function) 在序列缺失时会把编号落成第二个值——
+    `business_menu_facts.py::_next_document_no`（`or "NEW"` 派生 token）、
+    `general_contract.py::create`（`contract_no` 落到 `name`）、
+    `hr_payroll_document.py::create`（`SALPAY-` 落到 `record.id`）、
+    `material_plan.py::action_submit`（落到本字段声明标签，良性）、
+    `project_core.py::create`（`project_code` 落到时间戳+uuid，且有 `unique` 约束）、
+    `settlement_order.py::create`（落到本字段声明标签，良性）、
+    `contract_center.py::create`（子类型序列 → `construction.contract` → 字面量，链式兜底）。
+    其余约 50 处是“`name` 字段 + 本字段声明标签兜底”，属良性类别 `name_label_fallback` /
+    `chained_sequence_then_label`。
+- 收口：`scripts/verify/fact_source_coverage_guard.py` 新增 `sequence_codes_published`、
+  `sequence_read_sites`、`business_number_authority`，接入 `check()`；声明写入
+  `fact_source_declarations.json.business_number_authority`：32 个 reader 文件（逐文件列码）、
+  6 条例外码（3 读未发布 + 3 发布未读）、1 条动态读取、7 个兜底落点（各自带 class，
+  非良性类附 `BUSINESS-NUMBER-AUTHORITY-01` 与 reason）。
+- **`codes` 语义收敛为例外登记**：reader 文件已经逐文件声明了“读哪些码”，若再把“发布且被读”的 50
+  条码复制进 `codes`，声明层就多出一个必须同步的第二处事实源。因此 `codes` 只登记
+  `(已发布 - 已读) ∪ (已读 - 已发布)` 两类例外，各带 reason；同时新增“登记为例外但源里已无
+  publication/read 分叉”的失败分支，使例外一旦被修复就立刻失效，不再静默残留。
+
+#### K4：证据与状态边界
+
+- 证据（`.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/`，本段新增）：
+  `make verify.fact_source.coverage` → **52** 用例 OK（上一轮 37，新增 15 条业务编号用例），
+  `status=passed`、`business_number_authority.reader_files=32`、`codes=53`、`published_codes=53`、
+  `unpublished_codes` 3 条、`unread_published_codes` 3 条、`dynamic_reads` 1 条、`second_value_sites` 7 条；
+  `make verify.sc_data_scope.rule_coverage` → **37** 用例 OK、`uncovered=[]`、`universe=138`、
+  `enforced=117`、`source_bounded=32`（`in_universe=28`）；`make verify.sc_data_scope.ceiling.sync`
+  → `written rules=143`；`make verify.contract.architecture.suite` → rc=0（套件标记与上一轮一致，
+  Node syntax 384 files）。
+- 状态边界：仍为**批次验收完成（源码 + 守卫 + 定向测试层）**。L3 激活回读的集合由 150 条变为 **143** 条，
+  旧 150/125 回读全部过期；未主线集成、未部署、未产品交付。
