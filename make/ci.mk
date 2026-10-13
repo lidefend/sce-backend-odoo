@@ -1059,6 +1059,7 @@ verify.contract.architecture.suite: \
 	verify.layout.vocabulary.lint \
 	verify.contract.collection_capability_projection.unit \
 	verify.contract.entry_equivalence.guard \
+	verify.contract.unbound_structural_form_contract.repair.unit \
 	verify.verification.lane_coverage
 	@python3 scripts/verify/static_suite_frontend_toolchain_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_static_suite_frontend_toolchain_guard.py

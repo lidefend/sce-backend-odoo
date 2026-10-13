@@ -311,6 +311,32 @@ class PageAssembler:
         visit(domain)
         return codes
 
+    @staticmethod
+    def _resolve_active_view_id(requested_view_type, canonical_view_types, resolved_view_ids_by_type):
+        """Publish the projection's active view identity.
+
+        A published view-scoped orchestration contract binds a ``view_id``, so a
+        projection that drops the active view identity silently detaches that
+        contract from the page.  The active view is the surface the caller
+        opened: a record-detail load declares ``view_type=form`` while the same
+        action still assembles its tree/search family, and keying on "exactly
+        one assembled view type" then dropped it.  An explicitly requested view
+        type therefore wins; only when none was requested does a single
+        assembled view type stand in.
+        """
+        if requested_view_type and requested_view_type in resolved_view_ids_by_type:
+            active_view_type = requested_view_type
+        elif len(canonical_view_types) == 1:
+            active_view_type = canonical_view_types[0]
+        else:
+            active_view_type = ""
+        if not active_view_type:
+            return 0
+        try:
+            return int(resolved_view_ids_by_type.get(active_view_type) or 0)
+        except (TypeError, ValueError):
+            return 0
+
     def assemble_page_contract(self, p, action=None):
         """
         页面契约主装配：
@@ -560,10 +586,11 @@ class PageAssembler:
             data["views"][vt] = v_contract
         if resolved_view_ids_by_type:
             data["view_ids_by_type"] = resolved_view_ids_by_type
-            if len(canonical_view_types) == 1:
-                active_view_id = resolved_view_ids_by_type.get(canonical_view_types[0])
-                if active_view_id:
-                    data["view_id"] = active_view_id
+            active_view_id = self._resolve_active_view_id(
+                requested_view_type, canonical_view_types, resolved_view_ids_by_type,
+            )
+            if active_view_id:
+                data["view_id"] = active_view_id
         versions["view"] = ",".join(v_versions) if v_versions else "1"
 
         # 3) 搜索条件（运行时需要当前用户上下文，因此用 env）

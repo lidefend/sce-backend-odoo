@@ -1,0 +1,70 @@
+schema_version: 1
+goal:
+  id: DAILY-DEV-FULL-PRODUCT-ACCEPTANCE-20261013
+  title: daily_dev_typical_to_full_product_acceptance
+  status: active
+  formal_product_layer: P4
+  layer_target: daily_development_runtime_acceptance
+  module:
+    - .agent
+    - docs/ops/iterations
+    - scripts/verify
+    - make
+  objective: >-
+    Advance the daily development server (sc-root:/opt/projects/repos/sce-product-odoo,
+    ENV=dev, DB sc_demo, custom frontend) to the exact current mainline 2e2951ea
+    through the governed candidate bundle-sync lane, rebuild the served frontend,
+    align the served source revision and converge the published face, then confirm
+    product acceptance as a real user: start from the affected typical page (the
+    payment-request chain delivered by PR #649) and extend to the full formal
+    product entry set (contract/role driven count, not hardcoded 89/90), verifying
+    entry responsibility, permission boundary and key writes. No assertion, ACL,
+    field permission or negative case is relaxed; no product semantics change; no
+    new environment or credential authority is created.
+  baseline:
+    branch: audit/daily-dev-full-product-acceptance-20261013
+    full_sha: 2e2951ea81cd3f9899f12e7d0bfb533882ee81ad
+    source: clean_main_and_origin_main_after_pr_649
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_runtime_acceptance_tool
+    why_here: >-
+      Deploying the exact mainline to the daily runtime and verifying it as a real
+      user is the P4 ops delivery/acceptance layer; it owns no product semantics.
+    why_not_elsewhere:
+      - no_p0_platform_kernel_change
+      - no_p1_construction_industry_semantic_change
+      - no_p2_customer_preference_or_data_baseline_change
+      - no_p3_runtime_lowcode_configuration_change
+      - no_database_schema_or_migration_change
+    blast_radius:
+      - sc-root daily runtime repository and its served frontend bundle
+      - sc_demo user acceptance data on the daily runtime
+      - the wutao and fixture_role_finance acceptance accounts
+      - one acceptance record, one run and the goal metadata
+  batches:
+    - id: A
+      title: align_daily_runtime_to_mainline_and_confirm_typical_page
+      status: in_progress
+      evidence:
+        - daily_runtime_candidate_bundle_sync_to_2e2951ea
+        - daily_runtime_source_revision_aligned
+        - daily_runtime_frontend_rebuilt
+        - daily_runtime_published_face_converged
+        - record_identity_resolved
+        - payment_request_typical_page_confirmed
+    - id: B
+      title: full_formal_product_entry_acceptance
+      status: planned
+      evidence:
+        - full_formal_entry_readonly_probe
+        - entry_responsibility_and_permission_boundary_checked
+        - contract_driven_navigation_count_reconciled
+  constraints:
+    - reuse_existing_governed_make_entries_only_no_handbuilt_compose
+    - reuse_unchanged_evidence_before_rerunning
+    - zero_test_or_unknown_result_is_not_a_pass
+    - separate_batch_vs_mainline_vs_deployment_vs_product_delivery_status
+  next_exact_step: >-
+    Run the governed daily candidate bundle sync to 2e2951ea, then align source
+    revision, rebuild frontend, converge the published face and resolve the record
+    identity; confirm the affected payment-request typical page before the full entry set.

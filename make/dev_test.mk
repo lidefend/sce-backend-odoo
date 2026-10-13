@@ -75,6 +75,22 @@ verify.contract.entry_equivalence.guard: guard.prod.forbid
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_contract_v2_entry_equivalence_guard.py
 	@python3 scripts/verify/contract_v2_entry_equivalence_guard.py
 
+# An unbound structural low-code form config that competes with a view-bound
+# native semantic surface makes the whole page fail closed
+# (CONFIG_TARGET_BINDING_REQUIRED). Retiring the stale config is a live write
+# against the demo-backed daily database, so its driver is wired here: the entry
+# compiles the script and runs the sandboxed behavioural test that drives the
+# same source through the real fail-closed ladder (unresolved target,
+# unpublished, view-bound, no structural declaration, foreign identity, no
+# owning native surface, dry-run default, single-write apply). The entry is
+# container-free and runs beside the collection/entry guards the contract
+# architecture suite already enforces, so the driver can never become dead
+# surface again.
+.PHONY: verify.contract.unbound_structural_form_contract.repair.unit
+verify.contract.unbound_structural_form_contract.repair.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/repair_unbound_structural_form_contract.py scripts/ops/test_repair_unbound_structural_form_contract.py
+	@python3 scripts/ops/test_repair_unbound_structural_form_contract.py
+
 # The delete-data guard is a text probe over the frontend write path, so the
 # only way to know it still proves anything is to falsify it on purpose.  This
 # entry is container-free and runs beside the guard it protects.

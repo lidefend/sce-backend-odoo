@@ -74,6 +74,38 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
         self.PageAssembler = _load_page_assembler()
         self.assembler = self.PageAssembler.__new__(self.PageAssembler)
 
+    def test_requested_view_type_binds_the_active_view_identity(self):
+        # A record-detail load declares ``view_type=form`` while the same action
+        # still assembles its tree/search family.  Keying the published
+        # ``view_id`` on "exactly one assembled view type" then dropped it, and
+        # a view-scoped published orchestration contract binds ``view_id`` --
+        # so the form lost its orchestration.  The requested view type is the
+        # surface the caller opened and must win.
+        self.assertEqual(
+            self.assembler._resolve_active_view_id("form", ["tree", "search", "form"], {"tree": 11, "form": 1699}),
+            1699,
+        )
+        # No requested view type: only a single assembled view type can stand in.
+        self.assertEqual(
+            self.assembler._resolve_active_view_id("", ["form"], {"form": 1699}),
+            1699,
+        )
+        self.assertEqual(
+            self.assembler._resolve_active_view_id("", ["tree", "search"], {"tree": 11, "search": 12}),
+            0,
+        )
+        # Preserved contract: when the requested type was not assembled at all,
+        # the single assembled view type still stands in (unchanged behaviour).
+        self.assertEqual(
+            self.assembler._resolve_active_view_id("form", ["tree"], {"tree": 11}),
+            11,
+        )
+        # An unresolved/zero view id is not published as an identity.
+        self.assertEqual(
+            self.assembler._resolve_active_view_id("form", ["form"], {"form": 0}),
+            0,
+        )
+
     def test_rejected_configuration_cannot_enter_native_fallback(self):
         # Execute the shipped view-loading exception boundary, with only its
         # loader replaced: this distinguishes typed rejection from old fallback.

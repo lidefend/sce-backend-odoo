@@ -1554,6 +1554,11 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
   background: var(--sc-app-danger-bg);
   color: var(--sc-app-danger-text);
 }
+.native-form-tree.native-form-tree .alert-link {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+}
 
 /* A declared layout container must apply to its declared children.  The
  * recursive child renderer inserts one wrapper node between a container and its
