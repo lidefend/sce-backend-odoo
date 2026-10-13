@@ -820,6 +820,7 @@ class ScEquipmentPrice(models.Model):
     _order = "effective_date desc, id desc"
 
     name = fields.Char(string="价格编号", required=True, default="新建", tracking=True)
+    company_id = fields.Many2one("res.company", related="project_id.company_id", store=True, readonly=True, index=True)
     project_id = fields.Many2one("project.project", string="适用项目", index=True, tracking=True)
     supplier_id = fields.Many2one("res.partner", string="供应单位", index=True)
     equipment_name = fields.Char(string="设备名称", required=True, index=True, tracking=True)

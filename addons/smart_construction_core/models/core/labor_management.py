@@ -883,6 +883,7 @@ class ScLaborPrice(models.Model):
     _order = "effective_date desc, id desc"
 
     name = fields.Char(string="价格编号", required=True, default="新建", tracking=True)
+    company_id = fields.Many2one("res.company", related="project_id.company_id", store=True, readonly=True, index=True)
     project_id = fields.Many2one("project.project", string="适用项目", index=True, tracking=True)
     contractor_id = fields.Many2one("res.partner", string="劳务单位", index=True)
     labor_team = fields.Char(string="班组", index=True)
