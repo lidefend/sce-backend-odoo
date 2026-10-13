@@ -9,7 +9,10 @@ guard reads source only (offline lane) and enforces two things:
   can widen it) whose domain constrains the declared company anchor path; every
   ``exempt`` model names one isolation dimension and its owning module; every
   ``deferred`` model belongs to a group with an issue id, an anchor, an owner
-  and an actionable reason; rule xml ids stay unique across security files.
+  and an actionable reason *and* carries the same global ceiling an enforced
+  model does (deferred records the delivery order, never the isolation), so the
+  rule set can be regenerated from the declaration and deleting it cannot hide;
+  rule xml ids stay unique across security files.
 * the declaration *covers* the product model surface: every model defined by a
   product module (config/tenant/module_sets.v1.json) that declares a
   ``company_id`` field is either enforced, exempt, deferred, transient, or
@@ -216,26 +219,23 @@ def check(root: Path, declarations_path: Path, module_sets_path: str = DEFAULT_M
             owners.update(defined_models(root, {owner_module}))
         return model in owners[owner_module]
 
-    for entry in enforced:
-        model = entry["model"]
-        anchor = entry["anchor"]
-        if model in seen:
-            failures.append(f"duplicate enforced entry: {model}")
-        seen.add(model)
+    def ceiling(model: str, anchor: str, note: str = "") -> list[dict]:
+        """Require one global rule whose domain constrains ``anchor``.
+
+        The same requirement holds for an enforced declaration and for every
+        model inside a deferred group: a deferred ceiling is still a ceiling the
+        runtime must carry, it is only recorded as deferred delivery. Without
+        this, deleting the generated ceiling file would leave the guard green
+        and the isolation hole silent.
+        """
+        suffix = f" (deferred {note})" if note else ""
         expected = "model_" + model.replace(".", "_")
         candidates = by_ref.get(expected, [])
         if not candidates:
-            failures.append(f"{model}: no ir.rule references {expected}")
-            continue
+            failures.append(f"{model}: no ir.rule references {expected}{suffix}")
+            return []
         needle = f"('{anchor}'"
         scoped = [r for r in candidates if r["global"] and needle in r["domain"]]
-        for owner in {r["owner_module"] for r in scoped}:
-            if owner not in owners:
-                owners.update(defined_models(root, {owner}))
-            if model not in owners[owner]:
-                failures.append(
-                    f"{model}: rule in {owner} cannot resolve; {owner} does not define it"
-                )
         if not scoped:
             global_rules = [r for r in candidates if r["global"]]
             detail = (
@@ -243,7 +243,24 @@ def check(root: Path, declarations_path: Path, module_sets_path: str = DEFAULT_M
                 if global_rules
                 else "every matching rule is group-scoped (group union could widen it)"
             )
-            failures.append(f"{model}: {detail}")
+            failures.append(f"{model}: {detail}{suffix}")
+            return []
+        for owner in {r["owner_module"] for r in scoped}:
+            if owner not in owners:
+                owners.update(defined_models(root, {owner}))
+            if model not in owners[owner]:
+                failures.append(
+                    f"{model}: rule in {owner} cannot resolve; {owner} does not define it"
+                )
+        return scoped
+
+    for entry in enforced:
+        model = entry["model"]
+        anchor = entry["anchor"]
+        if model in seen:
+            failures.append(f"duplicate enforced entry: {model}")
+        seen.add(model)
+        ceiling(model, anchor)
 
     exempt_models: set[str] = set()
     for entry in exempt:
@@ -299,8 +316,8 @@ def check(root: Path, declarations_path: Path, module_sets_path: str = DEFAULT_M
                 failures.append(f"{model}: declared enforced and deferred")
             if model in exempt_models:
                 failures.append(f"{model}: declared exempt and deferred")
-            if covers_company(rules_for(by_ref, model)):
-                failures.append(f"{model}: deferred but a company-constraining rule already exists")
+            if anchor:
+                ceiling(model, anchor, note=issue)
             if model not in universe:
                 failures.append(f"{model}: deferred but no product module declares company_id")
 

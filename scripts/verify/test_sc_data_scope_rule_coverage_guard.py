@@ -321,7 +321,25 @@ class DataScopeRuleCoverageGuardTest(unittest.TestCase):
             self.assertTrue(any("issue id" in f for f in report["failures"]))
             self.assertTrue(any("reason is missing" in f for f in report["failures"]))
 
-    def test_deferred_model_that_already_has_a_company_rule_fails(self) -> None:
+    def test_deferred_model_without_a_ceiling_rule_fails(self) -> None:
+        """A deferred model still needs the global ceiling; deferral orders the
+        delivery, it does not excuse the missing isolation."""
+        with tempfile.TemporaryDirectory() as raw:
+            root, declarations = write_company_case(
+                Path(raw), [],
+                {"enforced": [], "exempt": [],
+                 "deferred": [{"issue": "DEMO-1", "anchor": "company_id",
+                               "owner_module": "demo_module",
+                               "reason": "ceiling derived from the declaration",
+                               "models": ["demo.company"]}]},
+                {"product_modules": ["demo_module"]},
+            )
+            report = guard.check(root, declarations)
+            self.assertEqual("failed", report["status"])
+            self.assertTrue(any("no ir.rule references" in f for f in report["failures"]))
+            self.assertTrue(any("(deferred DEMO-1)" in f for f in report["failures"]))
+
+    def test_deferred_model_with_its_ceiling_rule_passes(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             root, declarations = write_company_case(
                 Path(raw),
@@ -329,13 +347,31 @@ class DataScopeRuleCoverageGuardTest(unittest.TestCase):
                 {"enforced": [], "exempt": [],
                  "deferred": [{"issue": "DEMO-1", "anchor": "company_id",
                                "owner_module": "demo_module",
-                               "reason": "claims a gap that is already closed",
+                               "reason": "ceiling derived from the declaration",
+                               "models": ["demo.company"]}]},
+                {"product_modules": ["demo_module"]},
+            )
+            report = guard.check(root, declarations)
+            self.assertEqual([], report["failures"])
+            self.assertEqual("passed", report["status"])
+            self.assertEqual(1, report["deferred"])
+
+    def test_deferred_model_with_only_a_group_rule_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root, declarations = write_company_case(
+                Path(raw),
+                [{"ident": "c", "ref": "model_demo_company", "domain": GLOBAL_DOMAIN,
+                  "groups": '        <field name="groups" eval="[(4, ref(\'base.group_user\'))]"/>\n'}],
+                {"enforced": [], "exempt": [],
+                 "deferred": [{"issue": "DEMO-1", "anchor": "company_id",
+                               "owner_module": "demo_module",
+                               "reason": "group union must not widen the ceiling",
                                "models": ["demo.company"]}]},
                 {"product_modules": ["demo_module"]},
             )
             report = guard.check(root, declarations)
             self.assertEqual("failed", report["status"])
-            self.assertTrue(any("already exists" in f for f in report["failures"]))
+            self.assertTrue(any("group union could widen it" in f for f in report["failures"]))
 
     def test_deferred_and_exempt_overlap_fails(self) -> None:
         with tempfile.TemporaryDirectory() as raw:

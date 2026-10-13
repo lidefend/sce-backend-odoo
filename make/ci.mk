@@ -467,11 +467,27 @@ verify.sc_price.company_ownership_boundary: guard.prod.forbid
 	@python3 -m py_compile addons/smart_construction_core/models/core/labor_management.py addons/smart_construction_core/models/core/equipment_management.py addons/smart_construction_core/models/core/subcontract_management.py addons/smart_construction_core/tests/test_price_family_company_ownership.py
 	@python3 addons/smart_construction_core/tests/test_price_family_company_ownership.py
 
+# The global company-scope ceilings are derived, not hand-written: the generator
+# renders every enforced and deferred model from the same declaration the guard
+# reads, so one source owns isolation and a new ceiling is a declaration line.
+# `...ceiling.sync` is the regeneration entry a developer types after editing the
+# declaration; `...ceiling.check` proves the committed record set has not drifted.
+.PHONY: verify.sc_data_scope.ceiling.sync
+verify.sc_data_scope.ceiling.sync: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/sc_data_scope_ceiling_generate.py
+	@python3 scripts/verify/sc_data_scope_ceiling_generate.py
+
+.PHONY: verify.sc_data_scope.ceiling.check
+verify.sc_data_scope.ceiling.check: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/sc_data_scope_ceiling_generate.py scripts/verify/test_sc_data_scope_ceiling_generate.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_sc_data_scope_ceiling_generate.py
+	@python3 scripts/verify/sc_data_scope_ceiling_generate.py --check
+
 # Every declared P1 model carries its company-scope ceiling as one global
 # ir.rule, so no group union can widen it.  The declaration next to the guard
 # is the single source; an exemption must carry a reason, never an absence.
 .PHONY: verify.sc_data_scope.rule_coverage
-verify.sc_data_scope.rule_coverage: guard.prod.forbid
+verify.sc_data_scope.rule_coverage: guard.prod.forbid verify.sc_data_scope.ceiling.check
 	@python3 -m py_compile scripts/verify/sc_data_scope_rule_coverage_guard.py scripts/verify/test_sc_data_scope_rule_coverage_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_sc_data_scope_rule_coverage_guard.py
 	@python3 scripts/verify/sc_data_scope_rule_coverage_guard.py
