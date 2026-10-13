@@ -980,7 +980,7 @@
     "verify.backend_business_fact.model_standard currently FAILs on documentation drift: docs/architecture/backend_business_model_audit_findings_v1.md records 372 model classes and 0 unclassified models while the measured values are 378 and 1. The target is a zero-reference lane entry (not reachable from any gate anchor), so it is not a blocker for this batch.",
     "Audit follow-up: the committed company-ceiling set grew to 150 rules while the last governed activation readback proved 125/125 installed, so the runtime readback is stale for the current set; the 25 newly declared ceilings (24 previously unreported product models + ui.menu.config.policy surfaced by the constant-_name blind-spot closure) are source-only until the next authorized `local.dev` activation."
   ],
-  "next_exact_step": "Backend single-fact-input closure is complete at source for both audit rounds: company scope universe 138 with uncovered=[] (constant-named and extension-class company-bearing models fail closed), and the money fact is derived, not assumed - 12 standard-currency models, 37 registered caller-context models (including 5 models that only inherit the field from sc.business.fact.mixin and 5 with no company column), 6 declared currency write paths, 1 declared field override and a verified company-currency authority. NEXT, in order: (1) the governed L3 activation readback for the 150-rule ceiling set is STALE (the last readback proved 125/125 for the previous set) and needs the same authorized path `make local.dev.snapshot` -> `make local.dev.upgrade MODULE=smart_construction_core` -> `make local.dev.data_scope.inventory`; (2) a second independent read-only review is running on the non-currency fact dimensions; (3) then commit in layers, freeze the clean candidate and integrate through the protected GitHub PR (gitee mirror as backup). This batch is 批次验收完成 at source + guards level and is NOT mainline-integrated, deployed or user-accepted.",
+  "next_exact_step": "Timed-CI blocker is closed at source (17b48549) and locally verified in-lane. NEXT, in order: (1) finish this bookkeeping commit (run.json + J段 batch record); (2) close the remaining backend single-fact omissions found by the two read-only review rounds before integrating: the duplicate account.move.line.project_id field definition (models/support/account_extend.py vs account_move_line_ext.py), res.company.currency_id write points in XML/hooks.py that the CURRENCY_WRITE declaration pattern does not match, and sc_data_scope_rule_coverage_guard.record_is_global misclassifying groups=[(5,0,0)] as group-scoped (global_rules_seen=191 vs actual 194); (3) freeze the clean candidate (make ci.delivery.freeze.prepare before the final commit, then one exact-head make ci.local.quick) and integrate through the protected GitHub PR (gitee mirror as backup only); (4) the governed L3 activation readback for the 150-rule ceiling set is STALE (last readback proved 125/125 for the previous set) and needs the authorized path make local.dev.snapshot -> make local.dev.upgrade MODULE=smart_construction_core -> make local.dev.data_scope.inventory. Delivery freeze is still fail-closed on the registered contract defect CD-20261013-LAYOUT-COLUMNS-FALLBACK (frontend T2, out of this batch). This batch is 批次验收完成 at source + guards level and is NOT mainline-integrated, deployed or user-accepted.",
   "acceptance_authority_layout": {
     "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
     "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",
@@ -3096,7 +3096,7 @@
       "not_divergent": "construction.contract, sc.general.contract, sc.office.asset and sc.settlement.order default company_id and currency_id from the same caller environment company, so the money fact has one source and they are deliberately not registered here."
     },
     "guard": "scripts/verify/fact_source_coverage_guard.py: the standard set must equal source; the runtime pin must be a declared subset; every model whose money fact would come from the caller while its owning company is not that caller must be registered through all three shapes; every currency_id write outside the field default must be declared with its source relation; a company_id/currency_id redefined by an extension class must be declared; the company-currency authority must exist and name the standard currency; currency_id related+default is a contradiction; any non-standard hard-coded currency reference fails. Inheritance and extension-class resolution are shared with scripts/verify/sc_data_scope_rule_coverage_guard.py instead of being reimplemented. Wired as verify.fact_source.coverage and as a prerequisite of verify.contract.architecture.suite.",
-    "evidence": "make verify.fact_source.coverage -> 20 tests OK; failures []; caller_context=37 (5 inherited); currency_write_paths=6; company_field_overrides=1; authority verified and the architecture suite (366 tests, exit=0) (.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/backend_fact_source_closure_guards_2.log, arch_suite_backend_fact_source_2.log).",
+    "evidence": "make verify.fact_source.coverage -> 20 tests OK; failures []; caller_context=37 (5 inherited); currency_write_paths=6; company_field_overrides=1; authority verified and the architecture suite (366 tests, exit=0) (.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/backend_fact_source_closure_guards_2.log, arch_suite_backend_fact_source_2.log). State-fact closure (2026-10-14, commits 4084d94c / 174a938e / 904fef31): make verify.fact_source.coverage -> 28 tests OK, failures=[], state_fact registry_models=6 enforced_models=6 unenforced_models=[]; make verify.contract.architecture.suite all green; make local.dev.test MODULE=smart_construction_core TEST_TAGS=p0_state -> 0 failed, 0 error of 86 tests.",
     "currency_write_paths": {
       "models": 5,
       "sites": 6,
@@ -3146,5 +3146,60 @@
       ],
       "closed_by": "scripts/verify/fact_source_coverage_guard.py + fact_source_declarations.json + shared inheritance resolution in sc_data_scope_rule_coverage_guard.py, with 7 new negative controls"
     }
+  },
+  "state_fact_single_writer": {
+    "status": "closed_at_source_and_guards",
+    "question": "每个 registry 模型的 state 事实是否只有一个写入者，还是仍有私有迁移表与直写旁路：同一业务事实若同时存在于声明表和某个模型的私有字典，就是第二事实源。",
+    "commits": [
+      "4084d94c",
+      "174a938e",
+      "904fef31"
+    ],
+    "findings": [
+      "sc.general.contract 的 draft/confirmed/signed/cancel 跃迁此前没有进入声明表，workflow profile 与模型写入路径各有一套理解。",
+      "sc.settlement.order 在 core/settlement_order.py 里维护私有 _LIFECYCLE_TRANSITIONS，与 ScStateMachine 的 SETTLEMENT_ORDER 并存——典型的同一事实两张表。",
+      "三个核心模型（construction.contract / sc.general.contract / project.settlement）允许 write() 直接改 state，绕过迁移校验，使声明表只是建议而非事实。",
+      "contract_views.xml 中 3 处 action_cancel 的 invisible 条件把 closed 也算作可取消，按钮出现在必然报错的状态上。"
+    ],
+    "changes": [
+      "support/state_machine.py: 新增 GENERAL_CONTRACT 表（draft->{confirmed,cancel}、confirmed->{signed,cancel}、signed/legacy_confirmed 无跃迁）；CONTRACT_TRANSITIONS['cancel']={'draft'} 作为唯一受控 reopen；SETTLEMENT_ORDER 补 draft->{submit,approve,cancel}、submit->{draft,approve,cancel}。",
+      "support/contract_center.py、core/general_contract.py、core/settlement.py: write() 直写 state 拒绝（CONTRACT_GUARD_DIRECT_STATE_WRITE / GENERAL_CONTRACT_GUARD_DIRECT_STATE_WRITE / SETTLEMENT_GUARD_DIRECT_STATE_WRITE）+ assert_transition；受控动作显式 allow_transition=True。",
+      "core/settlement_order.py: 删除私有 _LIFECYCLE_TRANSITIONS，_write_lifecycle 委托 ScStateMachine。",
+      "views/core/contract_views.xml: 3 处 action_cancel 的 invisible 收为 state not in [draft,confirmed,running]。",
+      "scripts/verify/fact_source_declarations.json: state_fact 6 个 registry 模型全部 enforced=true，transition_tables 收敛为 2 条，bypass_sites 18 条；守卫 scripts/verify/fact_source_coverage_guard.py 对 unenforced 模型 fail closed。"
+    ],
+    "existing_drift_not_a_regression": {
+      "measurement": "TEST_TAGS=p0_state,contract,daily_contract_settlement,workflow_contract_backend -> 1 failed, 15 error(s) of 126; git stash 基线为 1 failed, 15 error(s) of 118，失败集合逐条相同（NEW=[]、GONE=[]），差异仅为新增 8 个用例带来的总数变化。",
+      "cause": "本地 demo 库数据漂移（已存在的销项 VAT 9% 税、项目/一般合同的 tier 审批定义、sc.expense.claim 必须绑有效项目），失败文件相对 origin/main 零改动。",
+      "already_recorded": [
+        "docs/ops/iterations/model_layer_contract_governance_import_boundary_20261008.md §4.2",
+        "docs/audit/frontend_shared_foundation_gap_audit_20260909.md"
+      ],
+      "known_debt_pin": "config/tenant/p0_state_known_debt.v1.json 冻结 TestP0StateClosure 16 条已知欠账（baseline_sha 6b7ec6a6, failure_count=16），由 scripts/verify/tenant_p04_p0_debt_guard.py 校验并通过。",
+      "own_regressions_fixed": "自写用例中曾有 3 条真实回归（撞上 demo 既有 tier 门与结算行必须绑合同），已按声明表 + 真实前置条件重写，不再是回归。"
+    },
+    "evidence": [
+      "make verify.fact_source.coverage -> 28 tests OK, failures=[]",
+      "make verify.contract.architecture.suite -> exit=0",
+      "make local.dev.test MODULE=smart_construction_core TEST_TAGS=p0_state -> 0 failed, 0 error of 86 tests",
+      "/tmp/l2_state_fact_BASELINE.log vs /tmp/l2_state_fact_after.log（stash 对照）"
+    ],
+    "limits": "在 environment.kind=runtime 的既有声明下，run 评估器把这些离线 receipt 标为 stale（runtime evidence requires authoritative environment readback），这是既有声明冲突，本轮未处置；L3 激活回读对 150 条集仍过期。"
+  },
+  "scheduled_ci_scan_unit_isolation": {
+    "status": "closed_at_source_locally_verified_not_mainline_integrated",
+    "trigger": "main 定时运行（schedule, 2026-10-13T00:52Z, head 2e2951ea81cd，已是 origin/main 祖先）三车道同时红：public_guard 38329383719、professional_quality_gate 38329459061、release_candidate_gate 38329628180；上一次同车道定时运行 10-11T22:10Z 为绿，此前连续五次全绿。",
+    "root_cause": "scripts/ci/trusted_scan_group.py:178 把 SC_TRUSTED_SCAN_GROUP_JOBS 写入自身环境，run_members 用它启动成员 make 进程，该变量透传到成员的前置单测 security.parallel_scan.unit；GitHub runner 为 4 vCPU，machine_budget() 得 4-CPU_HEADROOM(2)=2，于是 resolve_workers(2) 返回 2//2=1，而 test_item_count_bounds_the_pool 断言 2 -> AssertionError: 1 != 2，两个成员 rc=2。",
+    "not_a_product_defect": "组已持有 jobs 并发、成员按 budget//jobs 共享一台机器是 parallel_scan 的既定语义（模块 docstring 与 test_group_concurrency_divides_one_machine_budget 均已声明）。缺陷在单测：它把“item 数上界”的断言交给了调用方机器预算。引入者为 2e19c4f1（PR #650）。",
+    "fix": "17b48549 fix(ci): 扫描单测不再读取治理组环境预算——显式声明 cpu=18/memory=64GiB 并清空 SC_SCAN_WORKERS/SC_SCAN_SERIAL/SC_TRUSTED_SCAN_GROUP_JOBS，断言扩为 2/3/1000 三档；同类隐患 test_invalid_group_concurrency_is_rejected 一并隔离。",
+    "cascade": "release_candidate_gate 失败步骤为 test \"$result\" = success 对上游 public_guard 结果断言，日志显示 result=\"failure\" 即为全部原因，未执行产品检查；两个真失败点日志尾部同为 [trusted_scan_group] members=3 jobs=2 worker_budget_per_member=1 status=failed，即同一根因。",
+    "evidence": [
+      "make security.parallel_scan.unit -> 18 tests OK",
+      "A/B harness（环境预算=2 + SC_TRUSTED_SCAN_GROUP_JOBS=2）：HEAD 精确复现 AssertionError: 1 != 2，修复后 7/7 通过",
+      "make security.trusted_scan.group -> status=passed，三个成员 rc=0（41.3s/44.7s/79.7s, scan_workers=5），且 security.parallel_scan.unit 正是在 SC_TRUSTED_SCAN_GROUP_JOBS=3 已导出的组环境内 18 tests OK",
+      "依赖单测同时复跑非零通过：security.online_capture.unit 13 / security.personal_data.unit 9 / security.trusted_scan_group.unit 16 / verify.repository.clean_history.unit 37"
+    ],
+    "observation": "CI runner 4 vCPU 下 resolve_jobs=2、machine_budget=2，每成员仅 1 worker，PR #650 引入的并行机制在 GitHub runner 上收益为 0，只体现为组间并发。这是 CPU_HEADROOM=2 在 4 vCPU 机器上的保守取舍，属性能议题而非正确性缺陷，本轮不改动以避免过订。",
+    "limits": "远端车道只有候选合并后才会重新评估，不得报 main 已转绿。"
   }
 }

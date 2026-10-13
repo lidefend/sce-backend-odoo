@@ -1165,3 +1165,48 @@ L2 定向 ORM 反例 1 test 0 failed（日志 `relationship_review_queue_project
   其中本轮改动的两个守卫贡献 33 + 20 条）。
 - 状态边界：仍为**批次验收完成（源码 + 守卫）**；L3 激活回读对 150 条集**仍过期**，
   未主线集成、未部署、未产品交付。
+
+### J 段：主线定时 CI 失败收口（2026-10-14，所有者“定时 CI 有失败先排查一并收口”）
+
+- 触发：`main` 最近一次定时运行（`schedule`，2026-10-13T00:52Z，head `2e2951ea81cd`，
+  已是 `origin/main` 祖先）三车道同时红：`public_guard`（38329383719）、
+  `professional_quality_gate`（38329459061）、`release_candidate_gate`（38329628180）。
+  上一次同车道定时运行（10-11T22:10Z）是绿的，10-13 之前连续五次定时全绿。
+- **根因（已用 CI 原始日志确证，不靠推断）**：`security.trusted_scan_group` 报
+  `members=3 jobs=2 worker_budget_per_member=1 status=failed`，两个成员（`security.secrets.scan`、
+  `security.personal_data_scan`）均以 `rc=2` 失败于同一断言——
+  `scripts/ci/test_parallel_scan.py::ResolveWorkersTests::test_item_count_bounds_the_pool`
+  `AssertionError: 1 != 2`。链路：`scripts/ci/trusted_scan_group.py:178` 把
+  `SC_TRUSTED_SCAN_GROUP_JOBS` 写入自身环境，`run_members` 用它启动成员 make 进程，
+  该变量经成员目标的前置依赖透传到 `security.parallel_scan.unit`；GitHub runner 为 4 vCPU，
+  `machine_budget()` 得 `4 - CPU_HEADROOM(2) = 2`，于是 `resolve_workers(2)` 返回 `2 // 2 = 1`。
+- **实现无缺陷，缺陷在单测**：组已持有 `jobs` 并发，成员按 `budget // jobs` 共享一台机器是
+  `parallel_scan` 的既定语义（模块 docstring 与 `test_group_concurrency_divides_one_machine_budget`
+  均已声明）。`test_item_count_bounds_the_pool` 要验的是“worker 数被 item 数上界约束”，
+  却把该上界交给了调用方机器预算，因此只在 CI 的机器规模下暴露。
+- **修复（`17b48549`）**：与同文件既有用例一致，显式声明 `cpu=18, memory=64GiB` 并清空
+  `SC_SCAN_WORKERS`/`SC_SCAN_SERIAL`/`SC_TRUSTED_SCAN_GROUP_JOBS`；顺带隔离
+  `test_invalid_group_concurrency_is_rejected`（环境存在 `SC_SCAN_WORKERS` 时会提前返回，
+  永远走不到 `GROUP_JOBS_ENV` 校验，属同类隐患）。断言扩为 2/3/1000 三档，同时锁定
+  “item 上界”与“机器预算不无界”两件事。
+- **`release_candidate_gate` 为纯级联，无独立缺陷**：其失败步骤是 `test "$result" = success`
+  对上游 `public_guard` 结果断言，日志显示 `result="failure"` 即为全部原因，未执行任何产品检查。
+  两个真失败点（`public_guard`、`professional_quality_gate`）日志尾部同为
+  `[trusted_scan_group] ... status=failed`，即同一根因，不是两个独立缺陷。
+- **修复前/后 A/B（可复现证据）**：harness 以“环境预算=2 + `SC_TRUSTED_SCAN_GROUP_JOBS=2`”
+  模拟 runner，对 `HEAD` 版本精确复现 `AssertionError: 1 != 2`（与 CI 日志逐字一致），
+  对修复版本 7/7 通过。
+- **车道内回归证明**：`make security.trusted_scan.group` 本地 `status=passed`，
+  三个成员 `rc=0`（41.3s / 44.7s / 79.7s，`scan_workers=5`），且 `security.parallel_scan.unit`
+  正是在 `SC_TRUSTED_SCAN_GROUP_JOBS=3` 已导出的组环境内 18 tests OK——即最初触发失败的
+  环境条件本身已被覆盖。依赖该单测的其余 unit 同时复跑：`security.online_capture.unit` 13 tests、
+  `security.personal_data.unit` 9 tests、`security.trusted_scan_group.unit` 16 tests、
+  `verify.repository.clean_history.unit` 37 tests，全部非零通过。
+- **观察（不改行为，登记待议）**：CI runner 4 vCPU 下 `resolve_jobs` 取 2、`machine_budget` 取 2，
+  于是每成员 1 worker——PR #650 引入的并行机制在 GitHub runner 上收益为 0，只体现为组间并发。
+  这是 `CPU_HEADROOM=2` 在 4 vCPU 机器上的保守取舍，属性能议题而非正确性缺陷，本轮不改动，
+  避免过订。
+- 影响面：仅测试隔离，未触碰 `parallel_scan`/`trusted_scan_group` 实现，扫描覆盖面不变
+  （`scanned_blobs=24441`，`confirmed_matches=0`，`sensitive_values_recorded=false`）。
+- 状态边界：该 CI 失败已**在源码层收口并本地验证**；远端车道只有在候选经受保护 PR 合并后
+  才会重新评估，因此当前仍**未主线集成**，不得报 `main` 已转绿。
