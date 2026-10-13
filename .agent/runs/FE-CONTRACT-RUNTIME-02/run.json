@@ -909,14 +909,15 @@
     "sc_data_scope_rule_coverage": {
       "target": "verify.sc_data_scope.rule_coverage",
       "inputs": [
-        "scripts/verify/sc_data_scope_rule_coverage_guard.py",
-        "scripts/verify/test_sc_data_scope_rule_coverage_guard.py",
-        "scripts/verify/data_scope_declarations.json",
         "addons/smart_construction_core/security/",
+        "addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml",
+        "addons/smart_core/model/",
         "addons/smart_core/security/",
         "make/ci.mk",
+        "scripts/verify/data_scope_declarations.json",
         "scripts/verify/sc_data_scope_ceiling_generate.py",
-        "addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml"
+        "scripts/verify/sc_data_scope_rule_coverage_guard.py",
+        "scripts/verify/test_sc_data_scope_rule_coverage_guard.py"
       ],
       "kind": "offline"
     },
@@ -947,6 +948,19 @@
         "make/ci.mk"
       ],
       "kind": "offline"
+    },
+    "fact_source_coverage": {
+      "target": "verify.fact_source.coverage",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/fact_source_coverage_guard.py",
+        "scripts/verify/test_fact_source_coverage_guard.py",
+        "scripts/verify/fact_source_declarations.json",
+        "scripts/verify/finance_p0_currency_default_audit.py",
+        "scripts/verify/sc_data_scope_rule_coverage_guard.py",
+        "scripts/verify/test_sc_data_scope_rule_coverage_guard.py",
+        "make/ci.mk"
+      ]
     }
   },
   "blockers": [
@@ -963,9 +977,10 @@
     "Delivery freeze is fail-closed on the registered contract defect CD-20261013-LAYOUT-COLUMNS-FALLBACK (frontend defaults/clamps columns when the declaration is missing); owned by T2/Step 5, not this batch.",
     "This run declares environment.kind=runtime, so the run evaluator marks every offline receipt stale ('runtime evidence requires authoritative environment readback'). Receipts are truthful but not reusable in-tool until that pre-existing declaration is reconciled.",
     "Corrected while closing data-scope batch 1: the earlier premise that the sc.business.fact.mixin family and the cockpit/workbench fact models have no company path was wrong - they carry project_id, so sc.dashboard.cockpit.fact, sc.workbench.item, sc.document.admin.document and sc.office.admin.document are now covered by a global company-scope ir.rule anchored on project_id.company_id (scripts/verify/data_scope_declarations.json). No schema change is required for isolation. What remains is governed activation readback (L3), not a schema change.",
-    "verify.backend_business_fact.model_standard currently FAILs on documentation drift: docs/architecture/backend_business_model_audit_findings_v1.md records 372 model classes and 0 unclassified models while the measured values are 378 and 1. The target is a zero-reference lane entry (not reachable from any gate anchor), so it is not a blocker for this batch."
+    "verify.backend_business_fact.model_standard currently FAILs on documentation drift: docs/architecture/backend_business_model_audit_findings_v1.md records 372 model classes and 0 unclassified models while the measured values are 378 and 1. The target is a zero-reference lane entry (not reachable from any gate anchor), so it is not a blocker for this batch.",
+    "Audit follow-up: the committed company-ceiling set grew to 150 rules while the last governed activation readback proved 125/125 installed, so the runtime readback is stale for the current set; the 25 newly declared ceilings (24 previously unreported product models + ui.menu.config.policy surfaced by the constant-_name blind-spot closure) are source-only until the next authorized `local.dev` activation."
   ],
-  "next_exact_step": "Data-scope isolation is closed at source and activated in the governed local.dev environment: 125 global company ceilings (99 enforced + 26 deferred) are generated from one declaration, drift-gated, and read back as 125/125 installed in sc_dev_demo after `make local.dev.snapshot` + `make local.dev.upgrade MODULE=smart_construction_core` (recovery point artifacts/local-dev/snapshots/20261013T190439Z). NEXT: this batch is 批次验收完成 at the source+I3 level; it is NOT mainline-integrated, deployed or user-accepted. Remaining owner decisions, in order: (1) authorize push and the protected-PR merge of e84b20e1 (GitHub first, gitee mirror) - no such authorization exists yet; (2) when a delivery version is selected, reuse this activation readback instead of re-running it, and add only the affected keys for whatever else that version changes.",
+  "next_exact_step": "Backend single-fact-input closure is complete at source for both audit rounds: company scope universe 138 with uncovered=[] (constant-named and extension-class company-bearing models fail closed), and the money fact is derived, not assumed - 12 standard-currency models, 37 registered caller-context models (including 5 models that only inherit the field from sc.business.fact.mixin and 5 with no company column), 6 declared currency write paths, 1 declared field override and a verified company-currency authority. NEXT, in order: (1) the governed L3 activation readback for the 150-rule ceiling set is STALE (the last readback proved 125/125 for the previous set) and needs the same authorized path `make local.dev.snapshot` -> `make local.dev.upgrade MODULE=smart_construction_core` -> `make local.dev.data_scope.inventory`; (2) a second independent read-only review is running on the non-currency fact dimensions; (3) then commit in layers, freeze the clean candidate and integrate through the protected GitHub PR (gitee mirror as backup). This batch is 批次验收完成 at source + guards level and is NOT mainline-integrated, deployed or user-accepted.",
   "acceptance_authority_layout": {
     "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
     "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",
@@ -2981,11 +2996,10 @@
     "limits": "the refreshed checks are syntax locks, so a future semantic change to the action-feedback ownership boundary must consciously update the side-effect guard"
   },
   "data_scope_ceiling_inventory": {
-    "status": "derived_fail_closed_activated",
+    "status": "derived_fail_closed_activated_and_audited",
     "scope": "Product-module models (config/tenant/module_sets.v1.json) that declare a company_id field; the 744-model installed registry stays inspection scope.",
-    "universe": 137,
-    "enforced_global_ceiling": 99,
-    "source_company_rule": 49,
+    "universe": 138,
+    "enforced_global_ceiling": 124,
     "declared_exempt": 33,
     "deferred": 26,
     "transient": 2,
@@ -2994,12 +3008,13 @@
     "method": "One authoritative ownership identity at the root with details inheriting; reuse native ACL, industry record rules and parent anchors instead of duplicating every isolation dimension onto every model. The enforced and deferred ceilings are generated from the declaration instead of hand-written per model.",
     "corrected_rationale": "Five scene/pack exemptions previously read 'needs an ownership anchor'. The source facts are a delivery-only orchestration object (sc.scene source_authority_contract: delivery_only, no_business_fact_authority), a deployment-wide pack manifest, and validation/audit rows owned by their subject.",
     "evidence": {
-      "verify.sc_data_scope.rule_coverage": "23 guard tests passed, uncovered=0, failures=[]",
-      "verify.sc_data_scope.ceiling.check": "7 generator tests passed; 125 generated rules (99 enforced + 26 deferred) match the declaration",
-      "verify.contract.architecture.suite": "335 tests passed, exit=0",
-      "local.dev.data_scope.inventory": "before 0/125 installed, after 125/125 installed, name-for-name equal to the generated record set"
+      "verify.sc_data_scope.rule_coverage": "33 guard tests passed, uncovered=[], failures=[], universe=138, generated rules=150 (124 enforced + 26 deferred); the universe now follows company_field_models through _inherit-only extension classes and fails closed when such a class names its parent with an unresolvable expression",
+      "verify.sc_data_scope.ceiling.check": "7 generator tests passed; 150 generated rules match the declaration",
+      "verify.fact_source.coverage": "20 guard tests passed, failures=[] (12 standard-currency models, 37 caller-context models of 133 currency models, 6 declared currency write paths, 1 declared field override, company-currency authority verified)",
+      "verify.contract.architecture.suite": "366 tests, exit=0, same suite marker set as the previous round (.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/arch_suite_backend_fact_source_2.log); the two changed guards contribute 33 (scope) + 20 (fact source) tests.",
+      "local.dev.data_scope.inventory": "STALE for the current set: the last activation readback proved 125/125 installed (99 enforced + 26 deferred) and name-for-name equal to the then-generated set; the committed set is now 150, so the 25 newly declared ceilings are source-only until the next governed activation."
     },
-    "gate": "make verify.sc_data_scope.rule_coverage, make verify.sc_data_scope.ceiling.check and make verify.contract.architecture.suite all pass at this HEAD.",
+    "gate": "make verify.sc_data_scope.rule.coverage, make verify.sc_data_scope.ceiling.check, make verify.fact_source.coverage and make verify.contract.architecture.suite all pass at this HEAD.",
     "generator": "scripts/verify/sc_data_scope_ceiling_generate.py renders all enforced and deferred models into addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml from the same declaration; verify.sc_data_scope.ceiling.check runs 7 generator tests and fails when the committed record set differs, so one declaration owns isolation and a new ceiling is a declaration line.",
     "runtime_activation": {
       "status": "passed",
@@ -3022,6 +3037,17 @@
       "module_load": "upgrade log line: loading smart_construction_core/security/sc_data_scope_ceiling_generated.xml",
       "post_write_checks": "make local.dev.upgrade ran local.dev.verify_authority -> PASS; make local.dev.health -> PASS profile=persistent project=sc-local-dev db=sc_dev_demo",
       "limits": "The readback proves the installed ceiling set is exactly the generated set by rule name per model (125/125, no missing, no extra). It does not independently re-assert installed groups/domain per rule; the source guard proves globality and anchor, and the loader consumed that file verbatim (0 rules existed before the upgrade, so there is no stale value to retain)."
+    },
+    "source_bounded_named_rule": 25,
+    "enforced_in_universe": 75,
+    "exempt_in_universe": 12,
+    "deferred_in_universe": 26,
+    "unresolved_model_names": 0,
+    "blind_spot_closure": {
+      "finding": "the coverage universe was derived with a literal-only _name regex, so a model that names itself through a constant (addons/smart_core/model/ui_menu_config_policy.py, _name = MENU_CONFIG_POLICY_MODEL, company_id default self.env.company, ACL only for smart_core.group_smart_core_business_config_admin, zero ir.rule) was invisible to both the ceiling universe and the declaration ledger. universe was reported as 137 with uncovered=0 while a product-module company-bearing model escaped coverage.",
+      "closure": "scripts/verify/sc_data_scope_rule_coverage_guard.py now resolves _name through a module constant table (model_name_constants/resolve_model_name) and fails closed on any declared _name it cannot resolve (unresolved_model_names). scripts/verify/fact_source_coverage_guard.py uses the same identity resolution, so the company and money universes cannot diverge on model identity.",
+      "declared": "ui.menu.config.policy declared enforced (anchor company_id, class root) in scripts/verify/data_scope_declarations.json; the generator emits rule_sc_data_scope_ui_menu_config_policy with a cross-module ref smart_core.model_ui_menu_config_policy.",
+      "negative_controls": "3 new guard tests: constant-named company model appears in the universe and fails when undeclared; declared constant-named model passes; unresolvable _name stops the run. 1 new money-fact test asserts a constant-named model is not silently exempt from the standard-currency declaration."
     }
   },
   "deferred_data_scope_gaps": {
@@ -3046,6 +3072,79 @@
     "activation": {
       "evidence": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/l3_upgrade.log + .runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/l3_data_scope_inventory_after.log",
       "result": "99/99 enforced and 26/26 deferred installed global company ceilings; source and installed sets identical"
+    }
+  },
+  "fact_source_coverage": {
+    "status": "passed_guarded",
+    "scope": "config/tenant/module_sets.v1.json product modules; every model declaring a currency_id field (133 seen), including models that only inherit the field from a mixin and extension classes (_inherit without _name) that redefine company_id/currency_id.",
+    "single_source": "scripts/verify/fact_source_declarations.json",
+    "standard_currency": {
+      "currency": "CNY",
+      "models": 12,
+      "note": "models that default a new record to the tenant standard currency; scripts/verify/finance_p0_currency_default_audit.py pins the runtime subset and the guard fails if the pin lists an undeclared model."
+    },
+    "caller_context_currency": {
+      "issue": "CURRENCY-OWNER-ALIGNMENT-01",
+      "owner_module": "smart_construction_core",
+      "models": 37,
+      "note": "The three shapes above were all invisible before: the first two to a derived-company-only scan and the third to any field-default scan. The guard now fails closed for a new model in any of them, so adding a mixin inheritor or dropping a company column is a declaration change, not a silent second money-fact source.",
+      "shapes": {
+        "derived_company": "company_id is a related field derived from an owning relation (the original 27 arrivals)",
+        "no_company_column": "the model has no company_id column, so the record owns no company to own the currency: project.settlement, sc.business.fact.mixin, sc.material.purchase.request.line, sc.material.rfq.line, sc.treasury.ledger (readonly company written by the projection)",
+        "inherited_from_mixin": "the model inherits the caller-context currency from sc.business.fact.mixin without declaring its own field: sc.dashboard.cockpit.fact, sc.workbench.item, sc.document.admin.document, sc.office.admin.document, sc.hr.payroll.document"
+      },
+      "not_divergent": "construction.contract, sc.general.contract, sc.office.asset and sc.settlement.order default company_id and currency_id from the same caller environment company, so the money fact has one source and they are deliberately not registered here."
+    },
+    "guard": "scripts/verify/fact_source_coverage_guard.py: the standard set must equal source; the runtime pin must be a declared subset; every model whose money fact would come from the caller while its owning company is not that caller must be registered through all three shapes; every currency_id write outside the field default must be declared with its source relation; a company_id/currency_id redefined by an extension class must be declared; the company-currency authority must exist and name the standard currency; currency_id related+default is a contradiction; any non-standard hard-coded currency reference fails. Inheritance and extension-class resolution are shared with scripts/verify/sc_data_scope_rule_coverage_guard.py instead of being reimplemented. Wired as verify.fact_source.coverage and as a prerequisite of verify.contract.architecture.suite.",
+    "evidence": "make verify.fact_source.coverage -> 20 tests OK; failures []; caller_context=37 (5 inherited); currency_write_paths=6; company_field_overrides=1; authority verified and the architecture suite (366 tests, exit=0) (.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/backend_fact_source_closure_guards_2.log, arch_suite_backend_fact_source_2.log).",
+    "currency_write_paths": {
+      "models": 5,
+      "sites": 6,
+      "note": "A currency_id assignment inside a method overwrites the money fact after the field default ran, so it is a second source that a field-default scan cannot see. All six sites on product models are declared with their source relation: construction.contract._onchange_original_contract_id, sc.output.invoice.adjustment._sync_original_invoice_snapshot, sc.receipt.income._onchange_payment_request_id and sc.settlement.order.{_onchange_contract_id_fill_header,_onchange_general_contract_id} copy the owning document or ledger (single source, no divergence). sc.norm.catalog._onchange_region_currency is the one open alignment: it copies region_id.country_id.currency_id, a country fact, so a foreign region can leave the tenant standard currency.",
+      "open_alignment": "sc.norm.catalog -> CURRENCY-OWNER-ALIGNMENT-01"
+    },
+    "company_field_overrides": {
+      "models": 1,
+      "note": "sc.labor.usage redefines company_id in labor_product_extension.py only to add the 所属公司 label; the owning relation is unchanged. A redefinition is now a declaration line instead of a silent override."
+    },
+    "company_currency_authority": {
+      "model": "res.company",
+      "module": "smart_construction_core",
+      "method": "_sc_ensure_cny_currency",
+      "status": "verified",
+      "note": "The statement that a caller-context default still resolves to the tenant standard currency depends on this pin; the guard fails if the method disappears, stops naming the standard currency, or a standard-currency model set is declared without a registered authority."
+    }
+  },
+  "backend_fact_source_audit": {
+    "status": "completed_read_only_two_rounds_all_findings_closed",
+    "question": "does the backend still own any duplicated or derived fact that the single-source closure missed?",
+    "dimensions": [
+      "model identity: every product-module model class must resolve to a name, else fail closed (finding: 1 blind model, closed).",
+      "company scope universe: independent multi-line-safe scan reproduced exactly the guard universe (138) after the fix - no field-level omission.",
+      "currency/money default: independent scan of 272 currency_id/company_id assignments found no expression class outside {no-default, base.CNY, env.company.currency_id}; no env.user.company_id.currency_id or helper-default pattern exists.",
+      "security XML: 495 ir.rule / ir.model.access records across addons/*/security/*.xml, 0 duplicated xmlids and 0 duplicate rule names, so the generated ceiling does not shadow a hand-written record.",
+      "declaration carriers: data_scope_declarations.json, fact_source_declarations.json and config/frontend/role_surface_exposure_declarations_v1.json each have a consumer, a wound Make target and a lane anchor; no orphan declaration file.",
+      "lane surface: python3 scripts/audit/verification_lane_coverage.py --check -> PASS (surface within the frozen baseline, no zero-reference or remote-only surface added).",
+      "generated artefact loading: addons/smart_construction_core/__manifest__.py loads security/sc_data_scope_ceiling_generated.xml, so the derived ceilings are not an orphan file."
+    ],
+    "open_items": [
+      "46 models declare both project_id and a non-derived company_id (11 env.company default, 35 independent). All are declared in the company-scope ledger, so none is silently unbounded, but whether each company value must be derived from its project is a product decision (same class as the price family) and is NOT mechanically decidable.",
+      "The 37 caller-context models are a registered open alignment, not a closed fix: each still starts a new record with the caller's currency. The single source must be the owning company's currency and the per-model migration changes data, so it is a product decision (same class as the price family), not a mechanical rewrite.",
+      "sc.norm.catalog._onchange_region_currency copies the region country currency, a country fact, so a foreign region can leave the tenant standard currency even though the company-currency pin keeps the tenant on CNY. Registered as an open alignment with the owner to decide.",
+      "verify.backend_business_fact.model_standard still FAILs on documentation drift (372/0 recorded vs 378/1 measured) and is a zero-reference lane entry; it is not a blocker for this batch and was not widened here."
+    ],
+    "not_claimed": "Two read-only rounds reproduced the guard universe and the money-fact classes; no further duplicate fact, second currency source, hidden field override or unresolved model identity was found. That is a bounded source-level result: the 150-rule ceiling activation readback is still stale and no runtime, browser or product acceptance was performed in this round.",
+    "audit_round_2_20261014": {
+      "question": "the independent read-only review asked whether the money-fact closure left any source shape invisible",
+      "findings": [
+        "INHERITED CURRENCY (real, closed): 5 models (sc.dashboard.cockpit.fact, sc.workbench.item, sc.document.admin.document, sc.office.admin.document, sc.hr.payroll.document) inherit the caller-context currency from sc.business.fact.mixin without declaring their own currency_id, so no field-default scan could see them. They are now declared and the guard derives them through the _inherit chain.",
+        "NO COMPANY COLUMN (real, closed): project.settlement, sc.business.fact.mixin, sc.material.purchase.request.line, sc.material.rfq.line and sc.treasury.ledger default currency_id from the caller environment company while owning no company column, so the record has no company of its own to own the money fact. sc.treasury.ledger's readonly company_id is written by the projection, so the row company can differ from the caller. All five are now declared and derived.",
+        "SECOND WRITE PATH (real, closed): a currency_id assignment inside a method is a second money-fact source invisible to a field-default scan. Six sites on product models exist; all are declared with their source relation and one (sc.norm.catalog._onchange_region_currency) is registered as an open alignment.",
+        "EXTENSION-CLASS FIELD OVERRIDE (real, closed): an _inherit-only class can redefine company_id/currency_id on a model; the guard now attributes such a definition to the extended model and requires a declaration, and the company-scope guard uses the same resolution so such a model cannot escape its universe. One live case (sc.labor.usage, label-only redefinition) is declared.",
+        "COMPANY CURRENCY PIN (verified, not an omission): res.company._sc_ensure_cny_currency is what keeps env.company.currency_id at the tenant standard currency for companies without journal items. It is now a declared, checked authority instead of an unregistered assumption.",
+        "DICT-STYLE CURRENCY WRITES (inventoried, not a gate): 38 vals dict sites write currency_id in product modules. They were classified as owning-document derivations or payload copies; no new gate was added because the target is not statically decidable, and a hard-coded non-standard currency still fails the existing reference check."
+      ],
+      "closed_by": "scripts/verify/fact_source_coverage_guard.py + fact_source_declarations.json + shared inheritance resolution in sc_data_scope_rule_coverage_guard.py, with 7 new negative controls"
     }
   }
 }

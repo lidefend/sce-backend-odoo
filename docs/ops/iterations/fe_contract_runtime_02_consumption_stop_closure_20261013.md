@@ -1079,3 +1079,89 @@ L2 定向 ORM 反例 1 test 0 failed（日志 `relationship_review_queue_project
   `l3_upgrade.log`、`data_scope_inventory_before_ceiling.log`、`l3_data_scope_inventory_after.log`。
 - 状态边界：本批为**批次验收完成**（源码 + L3 激活回读）；**未**主线集成、**未**部署、**未**产品交付，
   push/merge 仍未授权。
+
+### H 段：全量后端事实源复核与盲区收口（2026-10-14，所有者要求“复核全量后端审核有无遗漏”）
+
+- 复核方式：不做叙述性审计，只用可复现扫描回答“后端是否还有多头事实被漏掉”。六个维度：
+  模型身份、公司范围 universe、币种/金额默认、security XML 记录、声明载体接线、lane 面与生成物装载。
+- **发现（真实遗漏，已收口）**：覆盖 universe 用 `_name = "字面量"` 正则推导，
+  `addons/smart_core/model/ui_menu_config_policy.py` 的 `_name = MENU_CONFIG_POLICY_MODEL`（导入常量）
+  因此**逃出 universe**：它有独立 `company_id`（`default=self.env.company`）、ACL 仅
+  `smart_core.group_smart_core_business_config_admin`、零 ir.rule，却既不在声明台账也不在任何桶里；
+  旧口径因此报出 `universe=137 / uncovered=0` 的**假绿**。
+- 收口：
+  - `scripts/verify/sc_data_scope_rule_coverage_guard.py` 增加模块常量表解析
+    （`model_name_constants` / `resolve_model_name`），`_name` 为常量时同样得到真实身份；
+    任何**声明了 `_name` 却无法解析**的类一律 fail-closed（`unresolved_model_names`），
+    不再“解析不到就静默跳过”。`defined_models` 同步按同一口径归属模块。
+  - `scripts/verify/fact_source_coverage_guard.py` 改用同一身份解析，
+    公司范围与金额事实的 universe 不会在“模型身份”上分叉。
+  - `ui.menu.config.policy` 按既有 `ui.*` 范式声明为 `enforced`（anchor `company_id`，class `root`），
+    生成器产出 `rule_sc_data_scope_ui_menu_config_policy`（跨模块 ref `smart_core.model_ui_menu_config_policy`）。
+  - 新增负向控制 4 条：常量命名模型进入 universe 且未声明即 FAIL；声明后 PASS；
+    `_name` 不可解析即停机；常量命名模型的金额事实不得逃出标准币种声明。
+- 收口后事实：`universe=138`、`enforced=124`（universe 内 75）、`exempt=33`（12）、`deferred=26`（26）、
+  `source_bounded=25`、`uncovered=[]`、`unresolved_model_names=[]`；生成上限 **150** 条
+  （124 enforced + 26 deferred），manifest 装载该文件。
+- 其余维度结论（未发现遗漏）：多行安全的独立扫描复现出与守卫完全一致的 universe；
+  272 处 `currency_id`/`company_id` 赋值无第三种默认表达式（无 `env.user.company_id.currency_id`、
+  无 helper 默认）；`addons/*/security/*.xml` 495 条 rule/access 记录 **0 重名 xmlid、0 重名规则**；
+  三个声明文件均有消费者、Make 目标与 lane 锚点；`verification_lane_coverage --check` PASS
+  （无新增零引用/仅远端面）；生成物由 `__manifest__.py` 装载，不是孤儿文件。
+- 登记未决（不属本轮缺陷，禁扩大范围）：①46 个模型同时声明 `project_id` 与非派生 `company_id`
+  （11 个 `env.company` 默认、35 个独立），均已进入公司范围台账、不存在静默无界，
+  但“是否必须由项目派生公司”属产品语义裁定（与价格族同类），不可机械判定；
+  ②`verify.backend_business_fact.model_standard` 仍因文档漂移 FAIL，且是零引用 lane 项，未在本轮扩大处理。
+- 证据（`.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/`）：
+  `backend_fact_source_closure_guards.log`（31 + 13 tests OK，uncovered=[]，failures=[]）、
+  `arch_suite_backend_fact_source.log`（31 套件 / **356** tests / exit=0）。
+- L3 状态边界（必须明说）：上次激活回读只证明**当时 125 条**逐名相等；当前提交集为 **150 条**，
+  因此激活回读对本集合**已过期**，新增的 25 条目前只有源码与守卫证明。
+
+### I 段：币种/金额事实源第二层盲区收口（2026-10-14，独立只读复核后的第二轮）
+
+- 触发：H 段只证明“字段默认表达式”这一层；独立只读复核指出金额事实还有第二层写入面。
+  复核结论经我独立取证后分为四类**真实遗漏（全部收口）**与两类**已核实非遗漏**。
+- **遗漏 1——继承事实（5 个模型）**：`sc.business.fact.mixin` 声明
+  `currency_id = default=self.env.company.currency_id`，被
+  `sc.dashboard.cockpit.fact`、`sc.workbench.item`、`sc.document.admin.document`、
+  `sc.office.admin.document`、`sc.hr.payroll.document` 通过 `_inherit` 继承，这 5 个模型自身没有
+  `currency_id` 字段定义，任何“扫描字段默认”的口径都看不到它们的金额事实来源。
+- **遗漏 2——无公司列事实（5 个模型）**：`project.settlement`、`sc.business.fact.mixin`、
+  `sc.material.purchase.request.line`、`sc.material.rfq.line` 默认调用方公司币种且**没有任何
+  `company_id` 列**——记录根本没有“自己的公司”来拥有金额事实；`sc.treasury.ledger` 的
+  `company_id` 是只读（由投影写入），因此行公司可与调用方不同，属同一类。
+- **遗漏 3——字段默认以外的写入点（6 处）**：`<record>.currency_id = ...` 在字段默认之后再次覆盖
+  金额事实，字段默认口径完全看不到。6 处全部登记并绑定来源关系：
+  `construction.contract._onchange_original_contract_id`、`sc.output.invoice.adjustment._sync_original_invoice_snapshot`、
+  `sc.receipt.income._onchange_payment_request_id`、`sc.settlement.order._onchange_contract_id_fill_header`
+  与 `_onchange_general_contract_id`（复制所属单据/台账，单一来源）；
+  唯一**未决**是 `sc.norm.catalog._onchange_region_currency`：它复制
+  `region_id.country_id.currency_id`（国家事实，非公司事实），境外区域可覆盖租户标准币种，
+  以 `CURRENCY-OWNER-ALIGNMENT-01` 登记待裁定。
+- **遗漏 4——扩展类字段重定义（1 处，且同一盲区同时存在于公司范围守卫）**：只有 `_inherit`、没有
+  `_name` 的扩展类可以重定义 `company_id`/`currency_id`。`sc.labor.usage` 在
+  `labor_product_extension.py` 重定义 `company_id`（仅加“所属公司”标签，关系不变）。更关键的是
+  **公司范围守卫 `company_field_models` 同样只看有 `_name` 的类**：若某扩展类给一个自身没有
+  `company_id` 的模型补上公司列，该模型会直接逃出 universe。两个守卫现已共用同一继承解析
+  （`scope_guard.inherit_names` / `target_models`，不再各写一份），并新增 fail-closed：
+  一个声明了 `company_id` 却用无法解析表达式写 `_inherit` 的类必须停机。
+- **已核实非遗漏**：①`construction.contract`、`sc.general.contract`、`sc.office.asset`、
+  `sc.settlement.order` 的 `company_id` 与 `currency_id` 同源于调用方公司，单一来源，刻意不登记；
+  ②`res.company._sc_ensure_cny_currency` 不是遗漏而是**被遗漏登记的事实**：它是“公司币种＝租户标准币种”
+  这一前提的权威实现，现已声明并由守卫校验（方法存在、仍引用 `base.CNY`），
+  标准币种声明不再建立在未登记假设上。
+- **登记但不设闸**：产品模块内另有 38 处 `vals` 字典式 `currency_id` 写入，经分类均为“所属单据派生”
+  或“载荷复制”，目标不可静态判定，且其中非标准币种硬编码已由既有引用检查覆盖，故只做盘点不新增闸。
+- 收口后事实：`currency_models=133`、`standard=12`、`caller_context=37`（其中 5 个为继承、5 个无公司列）、
+  `currency_write_paths=6`、`company_field_overrides=1`、`company_currency_authority=verified`；
+  公司范围 `universe=138`、`uncovered=[]`、生成上限 **150** 条不变（本轮未新增 enforced 模型）。
+- 新增负向控制：金额守卫 13→**20** 用例（继承、无公司列、写入点、缺来源/缺理由、扩展类重定义、
+  权威缺失/方法不存在）；公司范围守卫 31→**33** 用例（扩展类公司列进入 universe、
+  `_inherit` 不可解析即停机）。正反两向都证明“缺席不是豁免”。
+- 证据（`.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/`）：
+  `backend_fact_source_closure_guards_2.log`（ceiling 7 + fact_source 20 + scope 33 用例 OK，
+  failures=[]）、`arch_suite_backend_fact_source_2.log`（exit=0，**366** 用例全绿，套件标记集与上一轮完全一致；
+  其中本轮改动的两个守卫贡献 33 + 20 条）。
+- 状态边界：仍为**批次验收完成（源码 + 守卫）**；L3 激活回读对 150 条集**仍过期**，
+  未主线集成、未部署、未产品交付。
