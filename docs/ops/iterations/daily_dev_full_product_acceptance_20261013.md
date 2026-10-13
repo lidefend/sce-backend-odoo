@@ -2,8 +2,8 @@
 
 Goal: `DAILY-DEV-FULL-PRODUCT-ACCEPTANCE-20261013`
 Run: `.agent/runs/DAILY-DEV-FULL-PRODUCT-ACCEPTANCE-20261013/run.json`
-Branch: `audit/daily-dev-full-product-acceptance-20261013`
-Baseline: clean `main` == `origin/main` == `2e2951ea81cd3f9899f12e7d0bfb533882ee81ad` (after PR #649)
+Branch: `audit/daily-dev-full-product-acceptance-20261013` (merged); the batch's closure carrier is `codex/daily-dev-acceptance-deployment-closeout`
+Baseline: `2e2951ea81cd3f9899f12e7d0bfb533882ee81ad` (after PR #649); the batch baseline advanced to `f0a549ea7969a0d58f764a96efc145c3242419e4` once PR #650 merged, and the closure delta is the bookkeeping change only
 
 ## Objective
 
@@ -42,6 +42,28 @@ seed vs #525 document state-guard conflict).
       entries PASS (`daily-9b6a1128-fix4`, `entries=4 problems=0 console_errors=0`) and the full
       matrix PASS (`daily-9b6a1128-full`, `completeness=complete entries=89 problems=0
       console_errors=0`, negative authority 10 fixture roles / 89 entries checked / 0 leaked).
+- [x] B3: close the two gates the B2 fixes left behind (served assembled-contract cache re-pin and
+      the unwired ops repair driver). PR **#650** merged (squash) so `main == origin/main ==
+      f0a549ea7969a0d58f764a96efc145c3242419e4`.
+- [x] C: deploy that exact mainline to the daily runtime through the governed lane and read it back.
+      `daily.runtime.main.bundle_sync` normalized the detached candidate `9b6a1128` back onto `main`
+      (`normalized_from_candidate=true`, `bundle_sha256=c02a2733…`), `source_revision.align` declared
+      the served revision, `frontend.build` rebuilt the served bundle at the **identical**
+      fingerprint `00baf0f0…` (entry asset `index-BHZ82tmH.js`), `published_face.converge`
+      re-froze 90 released pages per product key (snapshot ids 93/94), and `record_identity.resolve`
+      resolved the 10 acceptance carriers. Receipts: `.runtime/final-acceptance/daily-deployed/`.
+      Read back from `http://1.95.85.92:18081/api/runtime-version`: `source_revision = git_sha =
+      f0a549ea…`, `database=sc_demo`, `environment=dev`; the SPA entry serves
+      `/assets/index-BHZ82tmH.js`.
+
+### Evidence carried forward across `9b6a1128 -> f0a549ea`
+
+The B2 matrix evidence is reused, not rerun, on a recorded deterministic impact analysis: the served
+frontend fingerprint is byte-identical (`00baf0f0…`, so no rendering surface changed) and the only
+backend delta between the two revisions is the assembled-contract cache identity plus test-only
+wiring, which the B3 section records as behaviour-neutral. The cache bump strictly widens delivery
+(warm clients stop serving the pre-facet assembly), so it cannot invalidate a page that already
+passed at `9b6a1128`.
 
 ## B1 findings (all four entries are backend/contract-boundary defects)
 
@@ -126,7 +148,10 @@ under `artifacts/frontend-business-entry-matrix/`. Original logs are referenced,
 
 ## Status boundary (reported separately)
 
-- Batch acceptance: complete (A + B1 + B2; full formal 89-entry matrix PASS at `9b6a1128`)
-- Mainline integration: pending (the fixes are not yet merged)
-- Deployment: daily runtime serves `9b6a1128` / `frontend_build_sha256=00baf0f0…` (post-fix)
-- Product delivery: pending owner login confirmation
+- Batch acceptance: complete (A + B1 + B2 + B3).
+- Mainline integration: complete — PR #650 merged; `main == origin/main == f0a549ea`.
+- Version deployment to the daily development server: complete — the daily runtime serves
+  `f0a549ea` / `frontend_build_sha256=00baf0f0…` on `sc_demo`, with the published face re-frozen at
+  90 released pages per product key. This is the daily development runtime, not a formal release.
+- Product delivery: **pending the owner's own login acceptance** as `wutao` on `sc_demo` at
+  `http://1.95.85.92:18081`.
