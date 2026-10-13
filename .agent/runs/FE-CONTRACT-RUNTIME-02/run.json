@@ -841,7 +841,7 @@
     "Administrator capability-model ownership and function/data separation not yet closed",
     "Pure administrator data-denial and final historical menu monotonicity not yet verified"
   ],
-  "next_exact_step": "Inspect sc.interfund.movement.project.summary and source sc.interfund.movement.fact ownership and existing tests; record exact affected set; create cross-company/currency partition and drilldown counterexamples before fixing the P1 source/SQL boundary.",
+  "next_exact_step": "Interfund summary source fix, static boundary guard (6 tests) and drilldown ORM test (1 test) pass; the fail-closed audit proves the deployed sc_dev_demo view is still the stale MIN(company)/MIN(currency) SQL. Next: under an authorized write, take the governed recovery point then run `make local.dev.upgrade MODULE=smart_construction_core`, re-run `make ENV=dev ENV_FILE=.env.dev verify.interfund_movement_project.summary.audit` and record the receipt; only then continue to sc.output.invoice.ledger cross-company invoice dedup.",
   "acceptance_authority_layout": {
     "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
     "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",
