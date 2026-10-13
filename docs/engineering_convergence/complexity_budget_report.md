@@ -55,8 +55,8 @@ Generated from repository source files. This report is informational during the 
 | 1864 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1841 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1801 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
+| 1733 | YAML workflow | `scripts/verify/registry.yaml` |
 | 1727 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
-| 1725 | YAML workflow | `scripts/verify/registry.yaml` |
 | 1719 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1713 | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
 | 1693 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
@@ -243,8 +243,8 @@ Generated from repository source files. This report is informational during the 
 | 1864 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1841 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1801 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
+| 1733 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 1727 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
-| 1725 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 1719 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1713 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
 | 1693 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |

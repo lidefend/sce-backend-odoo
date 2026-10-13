@@ -138,7 +138,6 @@ export function useRecordFormLayout(context: {
       disabled:Boolean(authority.readonly||blocked), reasonCode };
   };
   const isFieldVisible = (name: string) => {
-    const descriptor = formFields.value[String(name || '').trim()];
     if (nativeStatusbar.value.field === String(name || '').trim()) return false;
     const semantic = context.fieldSemanticMeta(name);
     if ((semantic.technical || semantic.semantic_type === 'technical') && !context.showHud.value) return false;

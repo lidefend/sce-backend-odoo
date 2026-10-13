@@ -1404,6 +1404,14 @@ entries:
   date: '2026-07-30'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_list_surface_evidence_binding_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-13'
+  wire_or_retire: file-consumed
+  reason: invoked as 'python3 -m unittest scripts.verify.<module>' inside make/frontend.mk
+    (target verify.frontend.list_surface_evidence_binding.unit); module-form invocation
+    is a file reference
 - script: test_local_dev_candidate_frontend.py
   status: active
   owner: platform-team
