@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: DAILY-DEV-FULL-PRODUCT-ACCEPTANCE-20261013
   title: daily_dev_typical_to_full_product_acceptance
-  status: active
+  status: completed
   formal_product_layer: P4
   layer_target: daily_development_runtime_acceptance
   module:
@@ -44,7 +44,7 @@ goal:
   batches:
     - id: A
       title: align_daily_runtime_to_mainline_and_confirm_typical_page
-      status: in_progress
+      status: completed
       evidence:
         - daily_runtime_candidate_bundle_sync_to_2e2951ea
         - daily_runtime_source_revision_aligned
@@ -54,17 +54,31 @@ goal:
         - payment_request_typical_page_confirmed
     - id: B
       title: full_formal_product_entry_acceptance
-      status: planned
+      status: completed
       evidence:
         - full_formal_entry_readonly_probe
         - entry_responsibility_and_permission_boundary_checked
         - contract_driven_navigation_count_reconciled
+        - full_matrix_pass_at_9b6a1128_entries_89_problems_0_console_errors_0
+        - negative_authority_10_fixture_roles_89_entries_0_leaked
+    - id: C
+      title: mainline_integration_deployment_and_identity_at_f0a549ea
+      status: completed
+      evidence:
+        - pr_650_merged_squash_main_equals_origin_main_f0a549ea
+        - daily_runtime_bundle_sync_normalized_candidate_9b6a1128_to_main_f0a549ea
+        - daily_runtime_source_revision_aligned_f0a549ea
+        - daily_runtime_frontend_rebuilt_same_fingerprint_00baf0f0
+        - daily_runtime_published_face_converged_90_pages_per_product_key
+        - record_identity_resolved_10_carriers
   constraints:
     - reuse_existing_governed_make_entries_only_no_handbuilt_compose
     - reuse_unchanged_evidence_before_rerunning
     - zero_test_or_unknown_result_is_not_a_pass
     - separate_batch_vs_mainline_vs_deployment_vs_product_delivery_status
   next_exact_step: >-
-    Run the governed daily candidate bundle sync to 2e2951ea, then align source
-    revision, rebuild frontend, converge the published face and resolve the record
-    identity; confirm the affected payment-request typical page before the full entry set.
+    Closed. All three batches (A: mainline alignment and typical-page confirmation, B: full formal
+    product entry acceptance, C: mainline integration, deployment and record identity) are complete,
+    and the daily runtime serves the exact mainline f0a549ea. The only remaining item is the
+    separately reported product-delivery status: the owner's own login acceptance as wutao on
+    sc_demo at http://1.95.85.92:18081. A defect found there starts a new goal.
