@@ -2,8 +2,10 @@
 import base64
 
 from odoo import fields
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
+
+from odoo.addons.smart_construction_core.models.support.state_machine import ScStateMachine
 
 
 @tagged("post_install", "-at_install", "sc_gate", "p0_state")
@@ -3453,3 +3455,187 @@ class TestP0StateClosure(TransactionCase):
         )
         with self.assertRaises(UserError):
             settlement.action_cancel()
+
+
+@tagged("post_install", "-at_install", "sc_gate", "p0_state")
+class TestDeclaredStateTableIsTheOnlyStateWriter(TransactionCase):
+    """The declared table must be the only writer of a record lifecycle.
+
+    Before this guard the legal edges lived in the per-action
+    ``if state not in (...)`` checks, so a bare ``write({"state": ...})`` could
+    jump anywhere that list happened not to cover - and ``closed``/``cancel``
+    were only terminal by accident. The table is now consulted on every write
+    and only a declared writer may lift the direct-write guard.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.env.user.groups_id = [
+            (4, self.env.ref("smart_construction_core.group_sc_cap_project_manager").id)
+        ]
+        self.company = self.env.ref("base.main_company")
+        owner = self.env["res.partner"].create({"name": "State Fact Owner"})
+        self.project = self.env["project.project"].create(
+            {
+                "name": "State Fact Project",
+                "company_id": self.company.id,
+                "owner_id": owner.id,
+                "manager_id": self.env.user.id,
+            }
+        )
+        self.partner = self.env["res.partner"].create({"name": "State Fact Partner"})
+        self.tax = self.env["account.tax"].create(
+            {
+                "name": "State Fact VAT 9%",
+                "amount": 9.0,
+                "amount_type": "percent",
+                "type_tax_use": "purchase",
+                "price_include": False,
+                "company_id": self.company.id,
+            }
+        )
+
+    def _contract(self, **overrides):
+        vals = {
+            "subject": "State Fact Contract",
+            "type": "in",
+            "project_id": self.project.id,
+            "partner_id": self.partner.id,
+            "tax_id": self.tax.id,
+        }
+        vals.update(overrides)
+        return self.env["construction.contract"].create(vals)
+
+    def _general_contract(self):
+        return self.env["sc.general.contract"].create(
+            {
+                "project_id": self.project.id,
+                "partner_id": self.partner.id,
+                "contract_name": "State Fact 一般合同",
+                "contract_type": "材料采购",
+                "amount_total": 100.0,
+            }
+        )
+
+    def _settlement(self, state="draft"):
+        vals = {
+            "project_id": self.project.id,
+            "partner_id": self.partner.id,
+            "amount": 100.0,
+            "date_settle": fields.Date.today(),
+        }
+        if state != "draft":
+            vals["state"] = state
+        return self.env["project.settlement"].create(vals)
+
+    def test_contract_rejects_a_bare_state_write(self):
+        contract = self._contract()
+        with self.assertRaises(UserError) as caught:
+            contract.write({"state": "closed"})
+        self.assertIn("CONTRACT_GUARD_DIRECT_STATE_WRITE", str(caught.exception))
+        self.assertEqual(contract.state, "draft")
+
+    def test_contract_rejects_an_undeclared_edge_from_a_declared_writer(self):
+        contract = self._contract()
+        with self.assertRaises(UserError) as caught:
+            contract.with_context(allow_transition=True).write({"state": "closed"})
+        self.assertIn("P0_STATE_ILLEGAL_TRANSITION", str(caught.exception))
+        self.assertEqual(contract.state, "draft")
+
+    def test_contract_declares_closed_and_cancel_as_terminal(self):
+        # The demo database carries live tier definitions for 项目合同, so the
+        # draft -> confirmed write is gated by base_tier_validation. The declared
+        # table is therefore asserted directly and the record-level proof uses the
+        # edges that do not cross that approval gate.
+        transitions = ScStateMachine.transitions(ScStateMachine.CONTRACT)
+        self.assertEqual(transitions["closed"], set(), "已关闭 must declare no edge at all")
+        self.assertEqual(
+            transitions["cancel"], {"draft"},
+            "已取消 declares only the controlled reopen, never an approval jump",
+        )
+        contract = self._contract()
+        contract.action_cancel()
+        self.assertEqual(contract.state, "cancel")
+        with self.assertRaises(UserError) as caught:
+            contract.with_context(allow_transition=True).write({"state": "closed"})
+        self.assertIn("P0_STATE_ILLEGAL_TRANSITION", str(caught.exception))
+        with self.assertRaises(UserError):
+            contract.with_context(allow_transition=True).write({"state": "confirmed"})
+        self.assertEqual(contract.state, "cancel")
+
+    def test_contract_reopen_is_the_declared_cancel_edge(self):
+        contract = self._contract()
+        contract.action_cancel()
+        self.assertEqual(contract.state, "cancel")
+        contract.action_reset_draft()
+        self.assertEqual(contract.state, "draft")
+
+    def test_settlement_rejects_a_bare_state_write(self):
+        settlement = self._settlement()
+        with self.assertRaises(UserError) as caught:
+            settlement.write({"state": "confirmed"})
+        self.assertIn("SETTLEMENT_GUARD_DIRECT_STATE_WRITE", str(caught.exception))
+        self.assertEqual(settlement.state, "draft")
+
+    def test_settlement_walks_only_the_declared_ladder(self):
+        settlement = self._settlement()
+        settlement.action_confirm()
+        self.assertEqual(settlement.state, "confirmed")
+        settlement.action_done()
+        self.assertEqual(settlement.state, "done")
+        with self.assertRaises(UserError):
+            settlement.with_context(allow_transition=True).write({"state": "draft"})
+
+    def test_general_contract_declares_no_draft_to_signed_edge(self):
+        transitions = ScStateMachine.transitions(ScStateMachine.GENERAL_CONTRACT)
+        self.assertEqual(transitions["draft"], {"confirmed", "cancel"})
+        self.assertNotIn("signed", transitions["draft"])
+        self.assertEqual(transitions["signed"], set(), "已签署 is the published terminal state")
+        self.assertEqual(transitions["legacy_confirmed"], set())
+
+        contract = self._general_contract()
+        with self.assertRaises(UserError) as caught:
+            contract.with_context(allow_transition=True).write({"state": "signed"})
+        self.assertIn("P0_STATE_ILLEGAL_TRANSITION", str(caught.exception))
+        contract.with_context(allow_transition=True).write({"state": "cancel"})
+        self.assertEqual(contract.state, "cancel")
+        with self.assertRaises(UserError):
+            contract.with_context(allow_transition=True).write({"state": "confirmed"})
+
+    def test_settlement_order_enforces_the_declared_table(self):
+        transitions = ScStateMachine.transitions(ScStateMachine.SETTLEMENT_ORDER)
+        self.assertIn("approve", transitions["draft"])
+        self.assertNotIn("done", transitions["draft"])
+        self.assertFalse(
+            hasattr(type(self.env["sc.settlement.order"]), "_LIFECYCLE_TRANSITIONS"),
+            "the model must not keep a private copy of the declared table",
+        )
+        contract = self._contract()
+        settlement = self.env["sc.settlement.order"].create(
+            {
+                "project_id": self.project.id,
+                "partner_id": self.partner.id,
+                "contract_id": contract.id,
+                "settlement_type": "out",
+                "line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "name": "State Fact Line",
+                            "contract_id": contract.id,
+                            "qty": 1.0,
+                            "price_unit": 10.0,
+                        },
+                    )
+                ],
+            }
+        )
+        settlement._write_lifecycle("submit")
+        self.assertEqual(settlement.state, "submit")
+        settlement._write_lifecycle("draft")
+        self.assertEqual(settlement.state, "draft")
+        with self.assertRaises(AccessError):
+            settlement._write_lifecycle("done")
+        with self.assertRaises(AccessError):
+            settlement.write({"state": "approve"})

@@ -6,9 +6,9 @@
     "gated": 4,
     "on_demand": 11,
     "unwired": 144,
-    "odoo_tag_declarations": 366,
-    "gated_declarations": 88,
-    "uncovered_declarations": 278,
+    "odoo_tag_declarations": 368,
+    "gated_declarations": 89,
+    "uncovered_declarations": 279,
     "ci_unit_scripts": 14,
     "ci_unit_scripts_wired": 14,
     "ci_unit_scripts_unwired": 0
@@ -18,7 +18,7 @@
       "group": "sc_gate",
       "status": "gated",
       "kind": "odoo_tag",
-      "declarations": 60,
+      "declarations": 61,
       "files": [
         "addons/sc_norm_engine/tests/test_boq_norm_link.py",
         "addons/smart_construction_acceptance_fixture/tests/test_acceptance_fixture_guard.py",
@@ -408,6 +408,18 @@
       "declarations": 2,
       "files": [
         "addons/smart_construction_core/tests/test_stock_cost.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "p0_state",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 2,
+      "files": [
+        "addons/smart_construction_core/tests/test_p0_state_closure.py"
       ],
       "owner": "construction-product",
       "evidence": [],
@@ -1009,18 +1021,6 @@
       "declarations": 1,
       "files": [
         "addons/smart_construction_core/tests/test_office_asset.py"
-      ],
-      "owner": "construction-product",
-      "evidence": [],
-      "disposition": "wire-pending"
-    },
-    {
-      "group": "p0_state",
-      "status": "unwired",
-      "kind": "odoo_tag",
-      "declarations": 1,
-      "files": [
-        "addons/smart_construction_core/tests/test_p0_state_closure.py"
       ],
       "owner": "construction-product",
       "evidence": [],
