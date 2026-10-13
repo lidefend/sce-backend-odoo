@@ -217,10 +217,13 @@ class ScWorkflowInstance(models.Model):
     workflow_def_id = fields.Many2one("sc.workflow.def", required=True, ondelete="restrict", index=True, string="工作流定义")
     company_id = fields.Many2one(
         "res.company",
-        default=lambda self: self.env.company,
         index=True,
         string="公司",
-        help="归属公司：由业务单据继承，不从流程模板或当前环境推断。",
+        help=(
+            "归属公司：由业务单据继承，不从流程模板或当前环境推断。"
+            "没有默认值：create_instance 从目标单据解析后显式写入，"
+            "缺省创建会被 _check_company_attribution 拒绝。"
+        ),
     )
 
     model_name = fields.Char(required=True, index=True, string="模型")

@@ -273,6 +273,19 @@ class WorkflowInstanceOwnershipSourceTests(unittest.TestCase):
         self.assertIn('@api.constrains("company_id")', self.source)
         self.assertIn("归属公司：由业务单据继承，不从流程模板或当前环境推断。", self.source)
 
+    def test_instance_company_field_carries_no_default(self):
+        """A field default would be a second ownership source.
+
+        ``create_instance`` resolves the company from the target document, so the
+        instance field itself must not fall back to the caller's environment; the
+        constraint is the only thing allowed to decide a missing company.
+        """
+        body = self.source.split("class ScWorkflowInstance(", 1)[1].split(
+            "class ScWorkflowWorkitem(", 1
+        )[0]
+        declaration = body.split("company_id = fields.Many2one(", 1)[1].split(")", 1)[0]
+        self.assertNotIn("default=", declaration)
+
 
 if __name__ == "__main__":
     unittest.main()
