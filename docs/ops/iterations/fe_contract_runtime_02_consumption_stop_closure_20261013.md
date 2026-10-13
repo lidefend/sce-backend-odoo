@@ -1051,3 +1051,31 @@ L2 定向 ORM 反例 1 test 0 failed（日志 `relationship_review_queue_project
   `arch_suite_data_scope_ceiling.log`（30 个套件、合计 **335** tests、`exit=0`）。
 - 未做／限制：无受管升级、无 DB 写；`sc_dev_demo` 仍是改动前的模型与规则安装态，新记录集的 L3
   激活回读（`local.dev.data_scope.inventory` 的 `installed_company_scoped_rule_count`）待写授权。
+
+#### G 段续：L3 受管激活与权威回读（2026-10-14，所有者授权）
+
+- 授权对象：`make local.dev.snapshot` → `make local.dev.upgrade MODULE=smart_construction_core` →
+  `make local.dev.data_scope.inventory`。环境身份：`project=sc-local-dev`、`db=sc_dev_demo`（注册的
+  persistent demo-backing profile），写入前 HEAD `e84b20e1`、工作区 clean。
+- 回滚保障：`artifacts/local-dev/snapshots/20261013T190439Z/`（`sc_dev_demo.dump` +
+  `sc_dev_demo-filestore.tar.gz`），升级前生成。
+- 激活前事实（只读）：已安装的 `SC Data Scope - … by allowed companies` 规则 **0 / 125**。即 99 条
+  enforced 与 26 条 deferred 此前都只是源码声明，从未在 `sc_dev_demo` 激活过；26 个 deferred 模型当时
+  只有项目/能力范围的 groups 规则（`installed_company_scoped_rule_count` 是命中 `project_id` token 的
+  粗口径，不等于存在公司条款）。
+- 升级：`make local.dev.upgrade` `exit=0`，日志确认
+  `loading smart_construction_core/security/sc_data_scope_ceiling_generated.xml`；升级后自带
+  `local.dev.verify_authority` PASS（`finance_xmlid/membership/company_currency=CNY/sale_tax_9`），
+  `make local.dev.health` PASS。
+- 激活后权威回读：已安装同名规则 **125 / 125**，与生成物**逐名相等**（`missing=[]`、`extra=[]`），
+  其中 enforced **99/99**、deferred **26/26** 各自带上了
+  `SC Data Scope - <model> by allowed companies`。
+- 证据链：源码守卫证明「全局 + 域约束声明 anchor」（23 用例）→ 漂移闸证明「已提交记录集＝声明」
+  （7 用例）→ 激活前回读证明「确实待激活」→ 升级日志证明「加载了该文件」→ 激活后回读证明
+  「安装集与源集一致」。因升级前该 xmlid 集合为空，不存在残留 `groups` 需要覆盖。
+- 限制：本次回读按「规则名 × 模型」证明安装集与生成集一致，未逐条再断言安装态的 `groups`/`domain`；
+  后者由源码守卫与「逐字加载该文件」共同覆盖。
+- 证据日志（`.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/`）：`l3_snapshot.log`、
+  `l3_upgrade.log`、`data_scope_inventory_before_ceiling.log`、`l3_data_scope_inventory_after.log`。
+- 状态边界：本批为**批次验收完成**（源码 + L3 激活回读）；**未**主线集成、**未**部署、**未**产品交付，
+  push/merge 仍未授权。
