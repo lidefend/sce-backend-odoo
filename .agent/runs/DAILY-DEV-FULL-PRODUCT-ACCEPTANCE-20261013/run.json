@@ -15,7 +15,10 @@
     "addons/smart_core/handlers/ui_contract_v2_projection.py",
     "addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py",
     "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
-    "docs/product/frontend_business_entry_acceptance_v1.csv"
+    "docs/product/frontend_business_entry_acceptance_v1.csv",
+    "scripts/verify/form_container_presentation_consumption_guard.py",
+    "scripts/verify/form_structure_contract_runtime_audit.py",
+    "scripts/ops/repair_unbound_structural_form_contract.py"
   ],
   "environment": {
     "kind": "runtime",
