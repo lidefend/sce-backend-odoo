@@ -2711,6 +2711,37 @@
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
         </record>
 
+        <!-- =========================================================
+             AR/AP report family: company isolation via the project anchor
+             The physical provider (sc.ar.ap.project.summary) stores project and
+             partner dimensions but no company column, so a row's only verifiable
+             company anchor is its project (see projection_relation_lifecycle.py,
+             stage=company_ownership).  A row whose project resolves to no company
+             has unknown ownership and stays denied instead of being attributed
+             from a label or the current environment.
+        ========================================================== -->
+        <record id="rule_sc_ar_ap_project_summary_company" model="ir.rule">
+            <field name="name">AR/AP project summary - company isolation via project anchor</field>
+            <field name="model_id" ref="model_sc_ar_ap_project_summary"/>
+            <field name="domain_force">[('project_id.company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="rule_sc_ar_ap_company_summary_company" model="ir.rule">
+            <field name="name">AR/AP company summary - company isolation via project anchor</field>
+            <field name="model_id" ref="model_sc_ar_ap_company_summary"/>
+            <field name="domain_force">[('project_id.company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
         <record id="rule_sc_project_cost_ledger_company" model="ir.rule">
             <field name="name">SC Project Cost Ledger - allowed company</field>
             <field name="model_id" ref="model_project_cost_ledger"/>
