@@ -1874,3 +1874,37 @@ class TestP1FinanceProjectionAuthority(TransactionCase):
         domain = position._interfund_fact_counterparty_domain()
         self.assertIn(("company_id", "=", self.env.company.id), domain)
         self.assertIn(("currency_id", "=", self.env.company.currency_id.id), domain)
+
+    def test_interfund_project_summary_drilldown_keeps_company_and_currency_slice(self):
+        # Counterexample lock for the partition boundary: a summary row reports one
+        # company and one currency, so its drill-down must open exactly that slice.
+        # Filtering by project and movement type alone reopened every company's and
+        # every currency's rows under a total that had never been summed that way.
+        summary = self.env["sc.interfund.movement.project.summary"].new(
+            {
+                "project_id": self.project.id,
+                "company_id": self.env.company.id,
+                "currency_id": self.env.company.currency_id.id,
+                "movement_type": "company_to_project_borrow",
+            }
+        )
+        domain = summary._project_fact_domain()
+        self.assertIn(("company_id", "=", self.env.company.id), domain)
+        self.assertIn(("currency_id", "=", self.env.company.currency_id.id), domain)
+        self.assertIn(("movement_type", "=", "company_to_project_borrow"), domain)
+        self.assertIn(("source_project_id", "=", self.project.id), domain)
+        self.assertIn(("target_project_id", "=", self.project.id), domain)
+
+        # The project-less bucket is still a company/currency slice, never a
+        # cross-company/cross-currency dump.
+        projectless = self.env["sc.interfund.movement.project.summary"].new(
+            {
+                "company_id": self.env.company.id,
+                "currency_id": self.env.company.currency_id.id,
+            }
+        )
+        projectless_domain = projectless._project_fact_domain()
+        self.assertIn(("company_id", "=", self.env.company.id), projectless_domain)
+        self.assertIn(("currency_id", "=", self.env.company.currency_id.id), projectless_domain)
+        for project_field in ("source_project_id", "target_project_id", "project_id"):
+            self.assertIn((project_field, "=", False), projectless_domain)
