@@ -133,8 +133,17 @@
         "make/frontend.mk"
       ],
       "kind": "offline"
+    },
+    "verification_lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "inputs": [
+        "Makefile",
+        "make/",
+        "scripts/"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "Review rework complete: independent-review S1-1..S1-4, S2 and the read-only master-detail gap are fixed with lock tests; the 10 registered offline checks are recorded as reusable (contract_consumption_verdicts added) and ledger entry CD-20261013-EVIDENCE-ARCHIVE-AND-ACTING-CLOSURE closes the archive/acting-closure defect (openContractDefects 0). Next: run make ci.delivery.freeze.prepare, review the generated evidence, commit on fix/*, freeze the exact tracked+untracked fingerprint, run one exact-head make ci.local.quick, push, complete remote required checks and merge via the protected PR flow. Do not rerun the browser matrix per commit; the consolidated affected-surface product review remains pending."
+  "next_exact_step": "Freeze-gate lane blocker closed with zero baseline growth: the new verify.frontend.contract_consumption_verdicts.unit is wired into verify.frontend.pr.unit/release.unit/quick.gate and ci.delivery.freeze.prepare, and verify.frontend.list_surface_evidence_binding.unit is wired into verify.contract.architecture.suite so its guard scripts are no longer remote-only; audit.verification.lane_coverage --check now PASSES at the frozen baseline (zero-reference 760, remote-only 83, unregistered 0/0). Next: record the lane-coverage receipt, re-record agent_ledger, run make ci.delivery.freeze.prepare, commit on fix/*, freeze the exact tracked+untracked fingerprint, run one exact-head make ci.local.quick, push, complete remote required checks and merge via the protected PR flow. The consolidated affected-surface product review remains pending."
 }

@@ -138,9 +138,38 @@ Current recorded checks:
 | business_entry_evidence_scope | `verify.frontend.business_entry.evidence_scope.unit` | 123 |
 | list_surface_evidence_binding | `verify.frontend.list_surface_evidence_binding.unit` | 12 |
 | contract_consumption_verdicts | `verify.frontend.contract_consumption_verdicts.unit` | 21 |
+| verification_lane_coverage | `verify.verification.lane_coverage` | 44 |
 
 Auxiliary (not a registered run check): `make verify.frontend.typecheck.strict` rc=0
 (`.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/typecheck_strict.log`).
+
+## Freeze-gate lane closure (2026-10-13)
+
+The first exact-head Quick surfaced one remaining blocker: `audit.verification.lane_coverage --check`
+DENY, because this batch added verification surface. Both halves were closed by wiring, not by
+rewriting the frozen baseline (the ratchet may only shrink):
+
+- `verify.frontend.contract_consumption_verdicts.unit` was defined but referenced nowhere
+  (zero-reference `761 > 760`). It is now a prerequisite of `verify.frontend.pr.unit`,
+  `verify.frontend.release.unit`, `verify.frontend.quick.gate` and `ci.delivery.freeze.prepare`, so
+  the S1-1/S1-2 consumption locks run on the remote frontend lanes and at freeze instead of sitting
+  as dead surface.
+- `scripts/ops/evidence_archive_fetch.py` and `scripts/verify/list_surface_evidence_binding_guard.py`
+  were reachable only from remote lanes (remote-only `85 > 83`). `verify.frontend.list_surface_evidence_binding.unit`
+  is now a prerequisite of `verify.contract.architecture.suite` — the single source consumed by both
+  `ci.local.quick.run` and `ci.professional.backend.shard-verify` — so the evidence-binding guard (and
+  its `evidence.archive.verify` prerequisite) is enforced on the local exact-head lane and the remote
+  gate at once. The suite wire carries no pnpm/esbuild token, so `static_suite_frontend_toolchain_guard`
+  stays satisfied.
+
+`python3 scripts/audit/verification_lane_coverage.py --check` → PASS at the frozen baseline
+(zero-reference 760, remote-only 83, unregistered `0/0`; no baseline or exemption file changed).
+
+Invalidation was limited to the changed inputs: `make/frontend.mk` invalidated
+`contract_gap_primitive`, `business_entry_evidence_scope`, `list_surface_evidence_binding` and
+`contract_consumption_verdicts`; the `run.json` check registration invalidated `agent_ledger`. All
+five were re-run and re-recorded, and one new check (`verification_lane_coverage`, 44 tests) was
+added. No unrelated check was re-run.
 
 The consolidated product review / browser journeys for the affected list, form, read-only detail,
 master-detail, action and permission surfaces are the final step after the mechanisms above are frozen.
