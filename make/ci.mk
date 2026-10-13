@@ -458,6 +458,15 @@ verify.workflow_instance.ownership_boundary: guard.prod.forbid
 	@python3 -m py_compile addons/smart_construction_core/models/support/sc_workflow.py addons/smart_construction_core/tests/test_workflow_instance_ownership.py
 	@python3 addons/smart_construction_core/tests/test_workflow_instance_ownership.py
 
+# Company ownership of the P1 price libraries (sc.labor.price, sc.equipment.price,
+# sc.subcontract.price) is a source-level fact: the company is derived from the
+# owning project and the record rules scope the caller's allowed companies.  It
+# runs in-process so the boundary stays provable without a container-backed lane.
+.PHONY: verify.sc_price.company_ownership_boundary
+verify.sc_price.company_ownership_boundary: guard.prod.forbid
+	@python3 -m py_compile addons/smart_construction_core/models/core/labor_management.py addons/smart_construction_core/models/core/equipment_management.py addons/smart_construction_core/models/core/subcontract_management.py addons/smart_construction_core/tests/test_price_family_company_ownership.py
+	@python3 addons/smart_construction_core/tests/test_price_family_company_ownership.py
+
 .PHONY: verify.workflow_contract.backend
 verify.workflow_contract.backend: guard.prod.forbid audit.workflow_state.inventory verify.workflow_action_semantics.guard verify.workflow_instance.ownership_boundary
 	@python3 -m py_compile addons/smart_core/core/action_semantics_vocabulary.py addons/smart_construction_core/models/support/workflow_contract_service.py addons/smart_construction_core/tests/test_workflow_contract_backend.py addons/smart_construction_core/tests/test_user_feedback_business_views.py scripts/audit/workflow_state_inventory.py scripts/verify/workflow_inventory_profile_method_guard.py scripts/verify/workflow_contract_custom_coverage_guard.py scripts/verify/workflow_action_semantics_completeness_guard.py
@@ -1076,7 +1085,8 @@ verify.contract.architecture.suite: \
 	verify.local.clean.frontend_output.unit \
 	verify.payment_slice.data_authority.unit \
 	verify.data_space.policy.unit \
-	verify.local.dev.layout_authority.unit
+	verify.local.dev.layout_authority.unit \
+	verify.sc_price.company_ownership_boundary
 	@python3 scripts/verify/static_suite_frontend_toolchain_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_static_suite_frontend_toolchain_guard.py
 	@python3 scripts/verify/contract_form_runtime_state_protocol_guard.py
