@@ -211,7 +211,7 @@
   ],
   "environment": {
     "kind": "runtime",
-    "authority": "Existing make local.dev.* only; sc-local-dev/sc_dev_demo, ^sc_dev_demo$, sc_local_dev_db_data/sc_local_dev_redis_data/sc_local_dev_odoo_data; credentials from LOCAL_DEV_ENV_FILE. Read-only affected-surface product review; no fixture reset or business writes. Runtime receipts require declared readback.",
+    "authority": "Existing make local.dev.* only; sc-local-dev/sc_dev_demo, ^sc_dev_demo$, sc_local_dev_db_data/sc_local_dev_redis_data/sc_local_dev_odoo_data; credentials from LOCAL_DEV_ENV_FILE. Read-only affected-surface product review by default; owner-authorized governed `make local.dev.upgrade MODULE=<module>` is permitted after a `make local.dev.snapshot` recovery point (CODEX_NEED_UPGRADE=1 CODEX_MODULES=<module>); no fixture reset or business writes. Runtime receipts require declared readback.",
     "base_url": "http://127.0.0.1:18081",
     "database": "sc_dev_demo"
   },
@@ -826,6 +826,9 @@
         "addons/smart_construction_core/models/projection/interfund_movement_fact.py",
         "scripts/verify/interfund_movement_project_summary_audit.py"
       ],
+      "readback": {
+        "artifact": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/interfund_summary_audit_deployed.log"
+      },
       "kind": "runtime"
     }
   },
@@ -841,7 +844,7 @@
     "Administrator capability-model ownership and function/data separation not yet closed",
     "Pure administrator data-denial and final historical menu monotonicity not yet verified"
   ],
-  "next_exact_step": "Interfund summary source fix, static boundary guard (6 tests) and drilldown ORM test (1 test) pass; the fail-closed audit proves the deployed sc_dev_demo view is still the stale MIN(company)/MIN(currency) SQL. Next: under an authorized write, take the governed recovery point then run `make local.dev.upgrade MODULE=smart_construction_core`, re-run `make ENV=dev ENV_FILE=.env.dev verify.interfund_movement_project.summary.audit` and record the receipt; only then continue to sc.output.invoice.ledger cross-company invoice dedup.",
+  "next_exact_step": "Interfund summary closure: source fix + static boundary guard (6 tests) + drilldown ORM test (1 test) pass; owner-authorized governed upgrade (recovery point artifacts/local-dev/snapshots/20261013T135743Z) deployed the new partition view and the audit passes with the fail-closed deployed-view equality. Residual gap: sc_dev_demo holds a single (project,type,company,currency) fact row, so no real-data mixed-partition counterexample yet; do not reset fixtures for it. Next: sc.output.invoice.ledger cross-company invoice-number dedup/window source fix with counterexamples, then sc.p1.relationship.review.queue.",
   "acceptance_authority_layout": {
     "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
     "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",
