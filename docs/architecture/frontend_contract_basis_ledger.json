@@ -169,14 +169,7 @@
       "rationale": "已声明 native field.help 的固定按需帮助映射：官方 Popover 由可聚焦按钮 click/键盘激活，在 edit 与 readonly 同 occurrence 显示原文；不是业务条件或可配置触发规则。"
     }
   ],
-  "openContractDefects": [
-    {
-      "id": "CD-20261013-LAYOUT-COLUMNS-FALLBACK",
-      "missing": "NativeFormTreeRenderer.normalizeColumns defaults missing/invalid columns to 2; FormSection readonly descriptionColumns clamps/defaults to 1..3/2 without declaration authority",
-      "owner": "P0:layout declaration and generic form consumer",
-      "closureCondition": "Publish explicit column counts at owning declaration; consumer rejects missing/invalid declaration with ContractGapError, without frontend default or clamp. Preserve 24-track rendering mechanism. Owner screenshot is a historical payment edit task layout; current whitespace must be tied to declaration/geometry, not blamed on roles."
-    }
-  ],
+  "openContractDefects": [],
   "closedContractDefects": [
     {
       "id": "CD-20261008-WORKSHEET-PAGE-SIZE",
@@ -369,6 +362,29 @@
         ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/lowcode_scope_orm.log",
         ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/lowcode_scope_orm_global_fixed.log",
         ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/columns-authority-editable.json"
+      ]
+    },
+    {
+      "id": "CD-20261013-LAYOUT-COLUMNS-FALLBACK",
+      "missing": "NativeFormTreeRenderer.normalizeColumns defaults missing/invalid columns to 2; FormSection readonly descriptionColumns clamps/defaults to 1..3/2 without declaration authority",
+      "surface": "NativeFormTreeRenderer / FormSection / contracts/v2 解码器 / layoutSpan 渲染函数",
+      "discoveredBy": "独立评审在列数/跨度缺声明时发现前端自行补默认与夹取：normalizeColumns 把缺失或非法 columns 落成 2，FormSection readonly descriptionColumns 夹取到 1..3/2，解码器把缺失 span 补成 24、渲染函数把非法值落成全宽——四条路径都能把缺失声明伪装成合法布局，使缺口不可见。",
+      "requiredDeclarationLayer": "P0:layout declaration and generic form consumer",
+      "closureCondition": "Publish explicit column counts at owning declaration; consumer rejects missing/invalid declaration with ContractGapError, without frontend default or clamp. Preserve 24-track rendering mechanism. Owner screenshot is a historical payment edit task layout; current whitespace must be tied to declaration/geometry, not blamed on roles.",
+      "resolution": "声明层发布显式列数与 24 单元跨度，消费层缺失即停机：装配层 declared_container_columns/declare_container_columns 只为自带网格声明的容器发布 columns，其余节点不发布、由渲染器要求声明；解码器改为 requiredIntegerInRange(raw,'span',...,24) 把 span 设为必填，columns 必须为 1..24 且整除 24，缺失或非法进入 decode issue 而不是被补默认；渲染器统一走 requireDeclaredLayoutSpan/requireDeclaredLayoutColumns，缺失或非法抛 ContractGapError，源码中不再存在 normalizeColumns 与 descriptionColumns 的默认值/夹取。24 轨网格机制保留（layoutGridUnits()=24）。窄屏单列由前端视口断点表达，但断点前仍要求契约列数存在。",
+      "reVerified": "结项前对当前源码复核：frontend/ 下已无 normalizeColumns/descriptionColumns 实现（仅验收脚本 frontend/apps/web/scripts/low_code_form_layout_acceptance.mjs 内有同名局部函数，属验证工具而非渲染路径）；columns 相关 `||`/`??` 只出现在契约编辑器的声明读取与列表列名解析，不产生布局默认。",
+      "closureEvidence": [
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "frontend/apps/web/src/components/template/layoutSpan.ts",
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "scripts/verify/frontend_form_canvas_layout_contract_test.ts",
+        "scripts/verify/frontend_form_canvas_wide_grid_guard.py",
+        ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/verify_frontend_form_canvas_layout_guard.log",
+        ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/verify_frontend_native_form_structure_responsibility_unit.log",
+        ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/verify_frontend_contract_basis_unit.log"
       ]
     }
   ],
