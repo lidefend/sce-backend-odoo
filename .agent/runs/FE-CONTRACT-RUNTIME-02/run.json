@@ -945,11 +945,11 @@
     "Pure administrator data-denial and final historical menu monotonicity not yet verified",
     "Delivery freeze is fail-closed on the registered contract defect CD-20261013-LAYOUT-COLUMNS-FALLBACK (frontend defaults/clamps columns when the declaration is missing); owned by T2/Step 5, not this batch.",
     "This run declares environment.kind=runtime, so the run evaluator marks every offline receipt stale ('runtime evidence requires authoritative environment readback'). Receipts are truthful but not reusable in-tool until that pre-existing declaration is reconciled.",
-    "sc.ar.ap.report.summary (company_id column, action restricted to finance groups, typed-empty projection) still has no company rule; recorded for the Step 3 native-rule coverage pass.",
     "Corrected while closing data-scope batch 1: the earlier premise that the sc.business.fact.mixin family and the cockpit/workbench fact models have no company path was wrong - they carry project_id, so sc.dashboard.cockpit.fact, sc.workbench.item, sc.document.admin.document and sc.office.admin.document are now covered by a global company-scope ir.rule anchored on project_id.company_id (scripts/verify/data_scope_declarations.json). No schema change is required for isolation. What remains is governed activation readback (L3), not a schema change.",
-    "verify.backend_business_fact.model_standard currently FAILs on documentation drift: docs/architecture/backend_business_model_audit_findings_v1.md records 372 model classes and 0 unclassified models while the measured values are 378 and 1. The target is a zero-reference lane entry (not reachable from any gate anchor), so it is not a blocker for this batch."
+    "verify.backend_business_fact.model_standard currently FAILs on documentation drift: docs/architecture/backend_business_model_audit_findings_v1.md records 372 model classes and 0 unclassified models while the measured values are 378 and 1. The target is a zero-reference lane entry (not reachable from any gate anchor), so it is not a blocker for this batch.",
+    "DATA-SCOPE-CEILING-01: 26 P1 business models with a company_id column are recorded as deferred (scripts/verify/data_scope_declarations.json); they carry only capability/project-scoped groups rules, so no group union is bounded by a company ceiling. Resolution is one derived ceiling, not 26 hand-written rules; needs the governed activation readback described in next_exact_step."
   ],
-  "next_exact_step": "Architecture suite is green again after the P4 evidence/guard refresh (split evidence, test-coverage registry, side-effect token lock - all drift from earlier branch frontend commits, not the company-rule change). Data-scope batch 1 (99 global company-scope ir.rule for the declared P1 models) is source-complete with a fail-closed coverage guard. NEXT, in order: (1) L3 activation readback - after a governed make local.dev.snapshot, run make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core, then re-run make local.dev.data_scope.inventory and compare installed_company_scoped_rule_count; (2) batch 2 - find a real ownership anchor for the 5 actor-only models (sc.scene, sc.pack.registry, sc.scene.validation, sc.capability.audit.log, sc.scene.audit.log); (3) re-check the residual company_id = False visibility for business documents.",
+  "next_exact_step": "Data-scope coverage is now a source-verified, fail-closed inventory: the guard derives the 137-model product company universe, 99 models carry a verified global company ceiling, 49 are covered by a company-constraining rule in source, 33 are exempt with a named isolation dimension and owning module, 2 are transient, and 26 P1 business models are recorded under DATA-SCOPE-CEILING-01 rather than silently exempted. NEXT, in order: (1) decide and implement one derived global company ceiling for the 26 deferred models (single source, no per-model hand-written rules); (2) L3 activation readback for the 99+ ceiling batch - after a governed make local.dev.snapshot, run make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core, then make local.dev.data_scope.inventory and compare installed_company_scoped_rule_count; (3) re-check residual company_id = False visibility for business documents.",
   "acceptance_authority_layout": {
     "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
     "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",
@@ -2962,5 +2962,34 @@
     ],
     "verification": "verify.contract.architecture.suite exit=0 (30 unittest groups, 316 tests); all 56 suite recipe lines also run individually (55 passed, the single failure fixed); ci.local.iteration PASS; negative mutation re-confirmed the side-effect guard fails closed",
     "limits": "the refreshed checks are syntax locks, so a future semantic change to the action-feedback ownership boundary must consciously update the side-effect guard"
+  },
+  "data_scope_ceiling_inventory": {
+    "status": "source_complete_pending_execution",
+    "scope": "Product-module models (config/tenant/module_sets.v1.json) that declare a company_id field; the 744-model installed registry stays inspection scope.",
+    "universe": 137,
+    "enforced_global_ceiling": 99,
+    "source_company_rule": 49,
+    "declared_exempt": 33,
+    "deferred": 26,
+    "transient": 2,
+    "uncovered": 0,
+    "guard": "scripts/verify/sc_data_scope_rule_coverage_guard.py now derives the coverage universe from source, requires one named isolation dimension plus a real owning module per exemption, rejects placeholder reasons, and fails closed when a company model has no ceiling, exemption or deferred decision.",
+    "method": "One authoritative ownership identity at the root with details inheriting; reuse native ACL, industry record rules and parent anchors instead of duplicating every isolation dimension onto every model.",
+    "corrected_rationale": "Five scene/pack exemptions previously read 'needs an ownership anchor'. The source facts are a delivery-only orchestration object (sc.scene source_authority_contract: delivery_only, no_business_fact_authority), a deployment-wide pack manifest, and validation/audit rows owned by their subject.",
+    "evidence": {
+      "verify.sc_data_scope.rule_coverage": "21 tests passed, uncovered=0",
+      "verify.contract.architecture.suite": "327 tests passed, exit=0"
+    },
+    "gate": "make verify.sc_data_scope.rule_coverage and make verify.contract.architecture.suite both pass at this HEAD."
+  },
+  "deferred_data_scope_gaps": {
+    "issue": "DATA-SCOPE-CEILING-01",
+    "count": 26,
+    "dimension": "company_project_business_scope",
+    "anchor": "company_id",
+    "owner_module": "smart_construction_core",
+    "detail": "Declared in scripts/verify/data_scope_declarations.json -> deferred. P1 business models exposing a company_id column that carry only capability/project-scoped groups rules, so a manager-level group can read other companies rows.",
+    "resolution": "Derive one global company ceiling from the declaration instead of hand-writing 26 near-duplicate ir.rule records; needs the same governed activation readback as the 99-model batch.",
+    "not_a_substitute_for": "The 137-model coverage universe and the guard result, which stay authoritative."
   }
 }

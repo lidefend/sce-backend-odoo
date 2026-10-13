@@ -2,7 +2,7 @@
   "version": 1,
   "authority": "docs/governance/database_architecture_policy.md",
   "decision": ".agent/decisions/data-authority-boundary.yaml",
-  "purpose": "Explicit declaration of the company-scope dimension for the P1 model inventory. No absence-based exemption: a P1 business model either has an enforced company-scoped global rule or an explicit, reasoned exemption here.",
+  "purpose": "Explicit company-scope decision for every product-module model that declares a company_id field. No absence-based exemption: each such model is enforced with a verified global company ceiling, exempt with a single named isolation dimension, deferred with an owned issue, transient, or already covered by a company-constraining ir.rule in source.",
   "enforced": [
     {
       "model": "construction.contract.line",
@@ -503,87 +503,249 @@
   "exempt": [
     {
       "model": "project.cost.code",
+      "dimension": "master_data",
+      "owner_module": "smart_construction_core",
       "reason": "construction industry cost dictionary; global reference, no company ownership"
     },
     {
       "model": "project.dictionary",
+      "dimension": "master_data",
+      "owner_module": "smart_construction_core",
       "reason": "construction industry dictionary; global reference, no company ownership"
     },
     {
       "model": "res.groups",
+      "dimension": "identity_registry",
+      "owner_module": "odoo_base",
       "reason": "platform identity/authorization registry; company scope is not its ownership dimension"
     },
     {
       "model": "res.partner.category",
+      "dimension": "master_data",
+      "owner_module": "odoo_base",
       "reason": "master-data tag category; shared reference, not customer business data"
     },
     {
       "model": "sc.approval.scope",
+      "dimension": "role_scope",
+      "owner_module": "smart_construction_core",
       "reason": "approval scope is scoped by group_id/user_ids, not by company"
     },
     {
       "model": "sc.capability",
+      "dimension": "role_scope",
+      "owner_module": "smart_construction_core",
       "reason": "platform capability registry scoped by role_scope/capability_scope"
     },
     {
       "model": "sc.capability.audit.log",
-      "reason": "append-only audit trail; only actor_user_id.company_id exists and the actor is not the record owner; ownership must come from the audited object"
+      "dimension": "audit_trail",
+      "owner_module": "smart_construction_core",
+      "reason": "append-only capability create/update/import audit trail; the actor is not the record owner and the audited subject is scoped by role/capability scope, not company"
     },
     {
       "model": "sc.capability.group",
+      "dimension": "role_scope",
+      "owner_module": "smart_construction_core",
       "reason": "platform capability grouping, same dimension as sc.capability"
     },
     {
       "model": "sc.dictionary",
+      "dimension": "scope_ref",
+      "owner_module": "smart_construction_core",
       "reason": "runtime dictionary scoped by its own scope_type/scope_ref dimension, not by company"
     },
     {
       "model": "sc.pack.registry",
-      "reason": "needs an ownership anchor: only published_by.company_id exists, which is the publisher, not the owner; record as an anchor gap"
+      "dimension": "delivery_orchestration",
+      "owner_module": "smart_construction_core",
+      "reason": "deployment-wide pack/package manifest (pack_id, channel, pack_type, vendor); identifies published packages, not company-owned business data, and declares no company dimension"
     },
     {
       "model": "sc.product.policy",
+      "dimension": "platform_state",
+      "owner_module": "smart_core",
       "reason": "platform product policy (P0/P3 editing surface), deployment-wide by design"
     },
     {
       "model": "sc.project.capability.roadmap",
+      "dimension": "master_data",
+      "owner_module": "smart_construction_core",
       "reason": "industry-standard capability roadmap; global definition data"
     },
     {
       "model": "sc.project.next_action.rule",
+      "dimension": "master_data",
+      "owner_module": "smart_construction_core",
       "reason": "industry-standard next-action rule set; global definition data"
     },
     {
       "model": "sc.project.stage.requirement.item",
+      "dimension": "master_data",
+      "owner_module": "smart_construction_core",
       "reason": "industry-standard stage requirement list; global definition data"
     },
     {
       "model": "sc.scene",
-      "reason": "needs an ownership anchor: only published_by.company_id exists, which is the publisher, not the owner; record as an anchor gap"
+      "dimension": "delivery_orchestration",
+      "owner_module": "smart_construction_core",
+      "reason": "scene delivery/orchestration definition; source_authority_contract declares kind=scene_delivery_orchestration, delivery_only and no_business_fact_authority, so the record carries no company-owned business fact"
     },
     {
       "model": "sc.scene.audit.log",
-      "reason": "append-only audit trail; only actor_user_id.company_id exists and the actor is not the record owner; ownership must come from the audited object"
+      "dimension": "audit_trail",
+      "owner_module": "smart_construction_core",
+      "reason": "append-only scene publish/rollback audit trail; neither the actor nor the delivery-only subject is the record owner, so no company anchor exists"
     },
     {
       "model": "sc.scene.tile",
+      "dimension": "delivery_orchestration",
+      "owner_module": "smart_construction_core",
       "reason": "scene composition element scoped by scene_id"
     },
     {
       "model": "sc.scene.validation",
-      "reason": "needs an ownership anchor: only checked_by.company_id exists, which is the checker, not the owner; record as an anchor gap"
+      "dimension": "delivery_orchestration",
+      "owner_module": "smart_construction_core",
+      "reason": "validation result owned by scene_id; sc.scene is delivery-only orchestration, so the record inherits a delivery boundary rather than a company boundary"
     },
     {
       "model": "sc.scene.version",
+      "dimension": "delivery_orchestration",
+      "owner_module": "smart_construction_core",
       "reason": "scene version snapshot scoped by scene_id"
     },
     {
       "model": "sc.signup.throttle",
+      "dimension": "technical_state",
+      "owner_module": "smart_construction_core",
       "reason": "platform anti-abuse throttle; deployment-wide technical state"
     },
     {
       "model": "sc.supplier.type",
+      "dimension": "master_data",
+      "owner_module": "smart_construction_core",
       "reason": "supplier type master data; shared reference, not customer business data"
+    },
+    {
+      "model": "app.menu.config",
+      "dimension": "technical_state",
+      "owner_module": "smart_core",
+      "reason": "generated application menu navigation cache keyed by company/model/scene; regenerated from menus and actions, not customer business data"
+    },
+    {
+      "model": "sc.contract.slo.observation",
+      "dimension": "technical_state",
+      "owner_module": "smart_core",
+      "reason": "contract SLO observability telemetry; operational measurement rows, not company-owned business facts"
+    },
+    {
+      "model": "sc.entitlement",
+      "dimension": "platform_state",
+      "owner_module": "smart_core",
+      "reason": "platform entitlement/plan state keyed by company for plan and limit resolution, read through the internal sudo service; not customer business data"
+    },
+    {
+      "model": "sc.idempotency.record",
+      "dimension": "technical_state",
+      "owner_module": "smart_core",
+      "reason": "write idempotency dedup record keyed by actor and company; technical replay protection, not business data"
+    },
+    {
+      "model": "sc.scene.company.channel",
+      "dimension": "delivery_orchestration",
+      "owner_module": "smart_construction_scene",
+      "reason": "per-company scene channel delivery configuration, admin-managed and admin-readable only; delivery orchestration, not business data"
+    },
+    {
+      "model": "sc.scene.governance.log",
+      "dimension": "audit_trail",
+      "owner_module": "smart_construction_scene",
+      "reason": "append-only scene governance trail written through the internal sudo service; the actor is not the record owner"
+    },
+    {
+      "model": "sc.subscription",
+      "dimension": "platform_state",
+      "owner_module": "smart_core",
+      "reason": "platform subscription state keyed by company for plan resolution, read through the internal sudo service; not customer business data"
+    },
+    {
+      "model": "sc.ui.base.contract.asset",
+      "dimension": "platform_state",
+      "owner_module": "smart_core",
+      "reason": "platform UI base-contract asset delivered per company; UI delivery state, not customer business data"
+    },
+    {
+      "model": "sc.usage.counter",
+      "dimension": "platform_state",
+      "owner_module": "smart_core",
+      "reason": "platform usage counter keyed by company for entitlement limits; technical metering state"
+    },
+    {
+      "model": "ui.dynamic.config",
+      "dimension": "technical_state",
+      "owner_module": "smart_core",
+      "reason": "UI dynamic configuration defaults scoped by company and optional user; presentation runtime configuration, not business data"
+    },
+    {
+      "model": "sc.scene.governance.wizard",
+      "dimension": "transient",
+      "owner_module": "smart_construction_scene",
+      "reason": "transient governance wizard; company is the operating context and the wizard model persists no row of its own"
+    },
+    {
+      "model": "ui.form.custom.field.wizard",
+      "dimension": "transient",
+      "owner_module": "smart_core",
+      "reason": "transient custom-field wizard; company is the operating context and the rows are not persisted"
+    }
+  ],
+  "policy": {
+    "isolation_dimensions": [
+      "ownership_identity",
+      "customer_demo_test_purpose",
+      "company_industry_platform_sharing",
+      "company_project_business_scope",
+      "capability_acl_operation"
+    ],
+    "reuse_first": "Reuse native ACL, existing industry record rules and parent-relation anchors before introducing a new mechanism; a model must not duplicate every isolation dimension.",
+    "coverage": "The coverage universe is every model defined by a product module in config/tenant/module_sets.v1.json that declares a company_id field. scripts/verify/sc_data_scope_rule_coverage_guard.py derives that universe from source and fails closed when a model has no ceiling, exemption, deferred decision or company-constraining rule."
+  },
+  "deferred": [
+    {
+      "issue": "DATA-SCOPE-CEILING-01",
+      "dimension": "company_project_business_scope",
+      "anchor": "company_id",
+      "owner_module": "smart_construction_core",
+      "reason": "P1 business models that expose a company_id column but carry only capability/project-scoped groups rules (domains such as (1,'=',1) or project-member predicates), so no group union is bounded by a company ceiling and a manager-level group can read other companies rows. Fix by deriving one global company ceiling from this declaration instead of hand-writing another near-duplicate ir.rule for each model.",
+      "models": [
+        "project.material.plan",
+        "project.risk",
+        "sc.attendance.checkin",
+        "sc.equipment.plan",
+        "sc.equipment.request",
+        "sc.equipment.settlement",
+        "sc.equipment.usage",
+        "sc.finance.business.fact",
+        "sc.finance.project.counterparty.position",
+        "sc.general.contract",
+        "sc.interfund.movement.fact",
+        "sc.labor.plan",
+        "sc.labor.request",
+        "sc.labor.settlement",
+        "sc.labor.usage",
+        "sc.material.acceptance",
+        "sc.material.inbound",
+        "sc.material.outbound",
+        "sc.material.purchase.request",
+        "sc.material.rfq",
+        "sc.material.settlement",
+        "sc.subcontract.plan",
+        "sc.subcontract.register",
+        "sc.subcontract.request",
+        "sc.subcontract.settlement",
+        "sc.treasury.ledger"
+      ]
     }
   ]
 }
