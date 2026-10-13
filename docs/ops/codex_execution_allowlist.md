@@ -551,6 +551,20 @@ make workspace.worktree.cleanup \
 该模式只删除工作树目录并验证本地分支引用保持不变，因此允许未合并分支和受保护的
 `release/main` 分支；目标为主工作树、状态非干净或 SHA 漂移时均拒绝执行。
 
+该模式**不要求**交付证据 receipt：分支引用原样保留（每个提交都还在），且入口已锁定精确
+expected HEAD 与干净的 linked worktree，所以目录移除不会丢失任何提交或未跟踪文件。若仍传入
+`CLEAN_WORKTREE_EVIDENCE_RECEIPT`，入口照旧逐文件校验并在任何不匹配时拒绝（fail-closed）。
+交付证据归档（`make workspace.evidence.archive`）与 receipt 是**删除分支**的
+`make workspace.worktree.cleanup` 普通清理路径的前置要求，与 detach 路径无关。
+
+这也是受保护 `release/*` 工作树唯一的目录移除通道：普通清理路径按设计只接受
+`feature|fix|refactor|audit|codex` 主题分支，对 `release/*` 一律以
+`branch is not cleanup-eligible` 拒绝，绝不删除发布线分支。
+
+> 修订记录：2026-08-13 引入 detach 时就约定"只删目录、保留分支"，未要求任何证据。
+> 2026-09-16 的 #482（材料表单主题）顺带把 detach 的 receipt 改为必填且未同步本节，
+> 使受保护 `release/*` 工作树失去唯一移除通道；本次按既有文档口径恢复该契约。
+
 已合入但**从未归档交付证据**的历史工作树没有可迁移证据，只能在受审治理记录与外部恢复
 bundle 同时就位时整体清理：
 

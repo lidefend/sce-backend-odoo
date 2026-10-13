@@ -331,6 +331,9 @@ main 的必需检查保持；人工审核按上方最新合并规则执行。新
   目录。摘要、身份、截图和复核报告必须满足各自文件类型并绑定同一候选 HEAD；归档入口逐文件
   重读并校验 SHA256。清理入口还会重读本批清单，只接受候选路径、精确 HEAD、文件角色和哈希
   全部匹配的外部 verified receipt。不得用任意文件、重跑或补造文件替换原候选证据。
+  以上 receipt 要求只约束**删除分支**的普通清理路径；`CLEAN_WORKTREE_KEEP_BRANCH=1`
+  的 detach 路径保留原分支引用、不要求 receipt（传入时仍逐文件校验），是受保护
+  `release/*` 工作树唯一的目录移除通道，普通清理路径按设计不删除 `release/*` 分支。
 - 合入方式为 squash 的历史工作树，其 HEAD 不在 `origin/main` 祖先链上，因此整体清理除
   已合并 PR 精确 `headRefOid` 外，还要求该 PR 的 merge commit 位于 `origin/main`、为单亲
   提交，且其树与工作树 HEAD 的树逐字节一致。仅当这些条件全部成立时才允许清理，`gh`

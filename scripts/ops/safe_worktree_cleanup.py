@@ -24,6 +24,11 @@ from pathlib import Path
 import archive_worktree_delivery_evidence as evidence_archive
 
 
+# Deletion candidates are the ordinary topic prefixes only. The protected
+# `release/*` lines are deliberately absent: a branch-deleting cleanup may never
+# remove one. Such a worktree's directory is removed only through the
+# branch-preserving detach path below (see
+# docs/ops/codex_execution_allowlist.md, "仍需保留分支成果...").
 ALLOWED_BRANCH = re.compile(r"^(feature|fix|refactor|audit|codex)/.+$")
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 DETACH_CONFIRMATION = "DETACH_VERIFIED_WORKTREE_KEEP_BRANCH"
@@ -550,11 +555,18 @@ def detach_worktree(
     confirmation: str,
     evidence_receipt: Path | None = None,
 ) -> Worktree:
+    """Remove one clean, non-primary linked worktree directory, keeping its branch.
+
+    This is the sole removal route for a protected ``release/*`` worktree, so it
+    must not require archived delivery evidence: the retained branch still owns
+    every commit, and ``plan_detach`` already pins an exact expected HEAD on a
+    clean linked worktree. When a receipt *is* supplied it is still verified
+    file-by-file, fail-closed.
+    """
     selected = plan_detach(root, candidate, expected_head=expected_head)
     if apply:
-        if evidence_receipt is None:
-            raise CleanupError("apply requires an external verified evidence receipt")
-        verify_evidence_receipt(selected, evidence_receipt)
+        if evidence_receipt is not None:
+            verify_evidence_receipt(selected, evidence_receipt)
         if confirmation != DETACH_CONFIRMATION:
             raise CleanupError(
                 f"worktree detach apply requires confirmation={DETACH_CONFIRMATION}"
