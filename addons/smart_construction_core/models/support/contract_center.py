@@ -7,6 +7,7 @@ from odoo.tools import config
 
 from . import operating_metrics as opm
 from .state_machine import ScStateMachine
+from .state_guard import raise_guard
 
 
 _logger = logging.getLogger(__name__)
@@ -1092,6 +1093,22 @@ class ConstructionContract(models.Model):
         )
     def write(self, vals):
         vals = dict(vals or {})
+        if "state" in vals and not self.env.context.get("allow_transition"):
+            sample = self[:1]
+            raise_guard(
+                "CONTRACT_GUARD_DIRECT_STATE_WRITE",
+                _("项目合同[%s]") % (sample.display_name if sample else ""),
+                _("状态变更"),
+                reasons=[_("合同状态只能由受控业务动作推进，不允许直接改写")],
+            )
+        if "state" in vals:
+            for record in self:
+                ScStateMachine.assert_transition(
+                    ScStateMachine.CONTRACT,
+                    record.state,
+                    vals["state"],
+                    record.display_name,
+                )
         economic_identity_fields = {"type", "project_id", "company_id", "currency_id", "partner_id"}
 
         def assert_identity_mutable(record, candidate_vals):
@@ -1163,9 +1180,9 @@ class ConstructionContract(models.Model):
             if policy._start_submission_review(contract):
                 contract.with_context(skip_validation_check=True).write({"reject_reason": False})
                 continue
-            contract.with_context(skip_validation_check=True).write(
-                {"state": "confirmed", "reject_reason": False}
-            )
+            contract.with_context(
+                skip_validation_check=True, allow_transition=True
+            ).write({"state": "confirmed", "reject_reason": False})
             contract._post_contract_state_message("合同状态：草稿 → 已生效")
 
     def _check_state_from_condition(self):
@@ -1185,9 +1202,9 @@ class ConstructionContract(models.Model):
         for contract in self:
             if contract.state != "draft" or not contract.review_ids or contract.validation_status != "validated":
                 continue
-            contract.with_context(skip_validation_check=True).write(
-                {"state": "confirmed", "reject_reason": False}
-            )
+            contract.with_context(
+                skip_validation_check=True, allow_transition=True
+            ).write({"state": "confirmed", "reject_reason": False})
             contract._post_contract_state_message("合同状态：草稿 → 已生效")
         return True
 
@@ -1215,8 +1232,8 @@ class ConstructionContract(models.Model):
         for contract in self:
             old = contract.state
             self.env["sc.approval.policy"]._assert_submission_approved(contract, ("confirmed",))
-            contract.state = "running"
-            if old != contract.state:
+            contract.with_context(allow_transition=True).write({"state": "running"})
+            if old != "running":
                 contract._post_contract_state_message("合同状态：%s → 执行中" % ("已生效" if old == "confirmed" else "草稿"))
 
     def action_close(self):
@@ -1227,27 +1244,25 @@ class ConstructionContract(models.Model):
             self.env["sc.approval.policy"]._assert_submission_approved(contract, ("confirmed", "running"))
             if not contract.line_ids:
                 raise UserError("无合同明细的合同不可关闭，请补充明细。")
-            contract.state = "closed"
-            if old != contract.state:
+            contract.with_context(allow_transition=True).write({"state": "closed"})
+            if old != "closed":
                 contract._post_contract_state_message("合同状态：%s → 已关闭" % ("已生效" if old == "confirmed" else "执行中"))
 
     def action_cancel(self):
         for contract in self:
-            old = contract.state
             if contract.is_locked:
                 raise UserError("合同已被付款申请/结算单引用，禁止取消。")
             if contract.state != "cancel":
-                contract.state = "cancel"
-                if old != contract.state:
-                    contract._post_contract_state_message("合同状态：取消")
+                contract.with_context(allow_transition=True).write({"state": "cancel"})
+                contract._post_contract_state_message("合同状态：取消")
 
     def action_reset_draft(self):
         for contract in self:
             old = contract.state
             if contract.is_locked:
                 raise UserError("合同已被付款申请/结算单引用，禁止重置为草稿。")
-            contract.state = "draft"
-            if old != contract.state:
+            contract.with_context(allow_transition=True).write({"state": "draft"})
+            if old != "draft":
                 contract._post_contract_state_message("合同状态：重置为草稿")
 
     def action_open_payment_requests(self):
