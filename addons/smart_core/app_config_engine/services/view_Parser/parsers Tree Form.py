@@ -839,6 +839,9 @@ class _TreeFormParserMixin:
                         else "overflow"
                     ),
                     **({"icon": icon} if icon else {}),
+                    **({"action_guidance": self._safe_eval_expr(options_raw)["action_guidance"]}
+                       if isinstance(self._safe_eval_expr(options_raw), dict)
+                       and "action_guidance" in self._safe_eval_expr(options_raw) else {}),
                 },
                 "badge": badge or None,
                 "native_identity": {

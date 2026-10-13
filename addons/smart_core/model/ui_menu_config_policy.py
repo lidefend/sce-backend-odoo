@@ -104,7 +104,10 @@ class UiMenuConfigPolicy(models.Model):
         index=True,
         required=True,
     )
-    menu_id = fields.Many2one("ir.ui.menu", string="菜单", required=True, index=True, ondelete="cascade")
+    menu_id = fields.Many2one(
+        "ir.ui.menu", string="菜单", required=True, index=True, ondelete="cascade",
+        help="先选择要调整的菜单，再设置显示方式，最后选择可见业务角色。业务角色留空时，对当前公司所有用户生效；保存后刷新页面即可看到结果。",
+    )
     menu_complete_name = fields.Char(string="菜单路径", readonly=True)
     original_label = fields.Char(string="原菜单名称", readonly=True)
     current_parent_menu_id = fields.Many2one(

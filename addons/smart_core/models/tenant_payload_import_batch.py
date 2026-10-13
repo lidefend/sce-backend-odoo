@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 
-from odoo import api, fields, models
+from odoo import SUPERUSER_ID, api, fields, models
 from odoo.exceptions import UserError, ValidationError, AccessError
 
 from odoo.addons.smart_core.utils.tenant_payload_v1 import (
@@ -11,6 +11,11 @@ from odoo.addons.smart_core.utils.tenant_payload_v1 import (
 )
 from odoo.addons.smart_core.utils.tenant_payload_capability import (
     maintenance_capability_matches,
+)
+from odoo.addons.smart_core.security.data_space import (
+    CUSTOMER_PURPOSE,
+    validate_customer_registration,
+    validate_non_customer_creation,
 )
 
 
@@ -48,6 +53,24 @@ class ResCompany(models.Model):
     )
 
 
+class ScDataSpaceSerialization(models.Model):
+    """Transaction coordination only; never an ownership or permission fact.
+
+    No user ACL or public mutation API. Rows outlive registration deletion so
+    concurrent registration/re-registration always touches the same key.
+    """
+
+    _name = "sc.data.space.serialization"
+    _description = "Data Space Registration Transaction Coordination"
+    _log_access = False
+
+    tenant_key = fields.Char(required=True)
+    revision = fields.Integer(required=True, default=0)
+    _sql_constraints = [
+        ("tenant_key_unique", "unique(tenant_key)", "One transaction key per tenant."),
+    ]
+
+
 class ScTenantCompanyRegistration(models.Model):
     """Explicit binding between a tenant payload and a business company.
 
@@ -62,6 +85,15 @@ class ScTenantCompanyRegistration(models.Model):
     _order = "tenant_key, company_id"
 
     tenant_key = fields.Char(required=True, index=True, readonly=True)
+    data_purpose = fields.Selection(
+        [("customer", "Customer business"), ("demo", "Demonstration"), ("test", "Test")],
+        default=CUSTOMER_PURPOSE,
+        required=True,
+        index=True,
+        readonly=True,
+        copy=False,
+        help="Immutable purpose of this registered data space; unknown history stays customer data.",
+    )
     company_id = fields.Many2one(
         "res.company",
         required=True,
@@ -89,6 +121,13 @@ class ScTenantCompanyRegistration(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         _assert_signed_import_boundary(self.env)
+        for values in vals_list:
+            try:
+                validate_customer_registration(values)
+            except ValueError as exc:
+                raise ValidationError(str(exc)) from exc
+        # Explicitly defeat default_data_purpose from an RPC context.
+        vals_list = [dict(values, data_purpose=CUSTOMER_PURPOSE) for values in vals_list]
         if any(
             str(values.get("source_module") or "").strip().startswith(("smart_", "sc_"))
             for values in vals_list
@@ -109,6 +148,67 @@ class ScTenantCompanyRegistration(models.Model):
         registrations._after_tenant_company_registration()
         self.env.registry.clear_cache()
         return registrations
+
+    @api.constrains("tenant_key", "data_purpose")
+    def _check_tenant_purpose(self):
+        self._serialize_tenant_keys(self.mapped("tenant_key"))
+        for registration in self:
+            if self.sudo().with_context(active_test=False).search_count([
+                ("tenant_key", "=", registration.tenant_key),
+                ("data_purpose", "!=", registration.data_purpose),
+            ]):
+                raise ValidationError("DATA_SPACE_TENANT_PURPOSE_CONFLICT")
+
+    @api.model
+    def _serialize_tenant_keys(self, tenant_keys):
+        # A real row write is necessary under REPEATABLE READ. An advisory
+        # lock followed by a query would still see an old transaction snapshot.
+        # Serialization failures deliberately propagate to the transaction
+        # owner; never retry inside this already-failed transaction.
+        for tenant_key in sorted(set(tenant_keys)):
+            self.env.cr.execute("""
+                INSERT INTO sc_data_space_serialization (tenant_key, revision)
+                VALUES (%s, 1)
+                ON CONFLICT (tenant_key) DO UPDATE
+                SET revision = sc_data_space_serialization.revision + 1
+            """, [tenant_key])
+
+    @api.model
+    def _create_non_customer_space(self, *, tenant_key, purpose, company_name):
+        """Maintenance-only creation; never relabel an existing company.
+
+        Private ORM entry, unavailable over RPC. A sudo product-admin
+        environment is explicitly insufficient. Fixtures use this entry and
+        keep the resulting registration as their immutable ownership anchor.
+        """
+        try:
+            validate_non_customer_creation(
+                uid=self.env.uid, superuser_id=SUPERUSER_ID, su=self.env.su,
+                purpose=purpose, tenant_key=tenant_key,
+            )
+        except PermissionError as exc:
+            raise AccessError(str(exc)) from exc
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
+        if not isinstance(company_name, str) or not company_name.strip():
+            raise ValidationError("DATA_SPACE_COMPANY_NAME_REQUIRED")
+        # Roll back the company too if registration or product defaults fail.
+        with self.env.cr.savepoint():
+            company = self.env["res.company"].create({
+                "name": company_name.strip(),
+                "is_platform_bootstrap_company": False,
+            })
+            registration = super().create([{
+                "tenant_key": tenant_key.strip(),
+                "data_purpose": purpose,
+                "company_id": company.id,
+                "source_module": "smart_core",
+                "source_external_key": str(company.id),
+                "active": True,
+            }])
+            registration._after_tenant_company_registration()
+            self.env.registry.clear_cache()
+            return registration
 
     def _after_tenant_company_registration(self):
         """Extension point for product modules' neutral company defaults."""
@@ -142,7 +242,10 @@ class ScTenantCompanyRegistration(models.Model):
     def unlink(self):
         if not self.env.context.get("allow_audited_tenant_destroy"):
             raise UserError("TPV1_COMPANY_REGISTRATION_IMMUTABLE")
-        return super().unlink()
+        _assert_signed_import_boundary(self.env)
+        result = super().unlink()
+        self.env.registry.clear_cache()
+        return result
 
 
 class ScTenantPayloadAdapter(models.AbstractModel):

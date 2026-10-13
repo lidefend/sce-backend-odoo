@@ -78,22 +78,11 @@ def declared_layout_columns(node: dict[str, Any]) -> int | None:
     accepted up to the grid width so a governance column count is not silently
     degraded by a renderer-side enum.
     """
-    attributes = node.get("attributes") if isinstance(node.get("attributes"), dict) else {}
-    for value in (
-        node.get("cols"),
-        node.get("columns"),
-        node.get("col"),
-        attributes.get("cols"),
-        attributes.get("columns"),
-        attributes.get("col"),
-    ):
-        try:
-            columns = int(value)
-        except (TypeError, ValueError):
-            continue
-        if 1 <= columns <= LAYOUT_GRID_UNITS:
-            return columns
-    return None
+    value = node.get("columns")
+    if value is None:
+        return None
+    from ..core.form_structure_authority import validated_field_grid_columns
+    return validated_field_grid_columns(value)
 
 
 def declared_bootstrap_span(node: dict[str, Any]) -> int | None:
@@ -149,7 +138,8 @@ def descendant_field_column_span(columns: int | None) -> int | None:
     """Return the span a leaf takes inside a container declaring ``columns``."""
     if not columns:
         return None
-    return max(1, min(LAYOUT_GRID_UNITS, round(LAYOUT_GRID_UNITS / columns)))
+    from ..core.form_structure_authority import validated_field_grid_columns
+    return LAYOUT_GRID_UNITS // validated_field_grid_columns(columns)
 
 
 def _declared_node_classes(node: dict[str, Any]) -> list[str]:
@@ -362,6 +352,8 @@ def normalize_post_projected_container_tree(
             # the field-column count its container declares, then the grid
             # width (full row).
             leaf_span = inherited_leaf_span if node_type in LAYOUT_LEAF_NODE_TYPES else None
+            if "span" in node and _layout_span_value(node["span"]) is None:
+                raise ValueError("invalid declared layout span: %s" % container_id)
             node["span"] = (
                 _layout_span_value(node.get("span"))
                 or declared_field_size_span(node)
@@ -385,6 +377,10 @@ def normalize_post_projected_container_tree(
                     f"layout node {container_id} has ambiguous parallel child carriers: {carriers}"
                 )
             canonical_children = child_carriers[0][1] if child_carriers else []
+            # Declare before descending so an omitted native col gets the same
+            # producer default as an explicit col, including child placement.
+            node["children"] = canonical_children
+            declare_container_columns(node)
             node["children"] = normalize(
                 canonical_children,
                 container_id,
@@ -430,6 +426,10 @@ def normalize_post_projected_container_tree(
                         f"widget {widget_id} owner conflicts: {existing_owner} != {owner_id}"
                     )
                 widget["ownerContainerId"] = owner_id
+                # This widget projects this exact field occurrence in its
+                # parent's coordinates; ownerContainerId is identity, not a new grid.
+                if str(owner.get("containerType") or owner.get("type") or "").lower() == "field":
+                    widget["span"] = owner["span"]
                 for source_key, widget_key in (
                     ("nativeLocator", "nativeLocator"),
                     ("occurrenceIndex", "occurrenceIndex"),

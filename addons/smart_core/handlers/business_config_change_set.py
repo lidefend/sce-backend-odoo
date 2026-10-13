@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 from typing import Any
+from types import SimpleNamespace
+
+from ..core.form_structure_authority import assert_role_form_permissions_only
 
 from odoo import fields
 from odoo.exceptions import AccessError, ValidationError
@@ -27,6 +30,17 @@ FORMAL_MUTATION_MODELS = (
     "ui.menu.config.policy",
     "ui.form.field.policy",
 )
+
+
+
+def _stage_target_scope(params, config_type, draft_payload):
+    """Separate the authenticated owner role from the explicit target scope."""
+    target = dict(params)
+    target["role_key"] = _text(params.get("target_role_key", "" if config_type == "form" else params.get("role_key")))
+    if config_type == "form":
+        assert_role_form_permissions_only(SimpleNamespace(
+            name=_text(params.get("target_key")), role_key=target["role_key"], contract_json=draft_payload))
+    return target
 
 
 def _text(value: Any) -> str:
@@ -135,7 +149,10 @@ class _ChangeSetBase(BaseIntentHandler):
     def _authenticate_item(self, item):
         self._ensure_access()
         record = item.change_set_id.with_env(self.env)
-        record.assert_owner_scope(role_key=item.role_key or "")
+        record.assert_owner_scope(role_key=record.role_key or "")
+        if item.config_type == "form":
+            assert_role_form_permissions_only(SimpleNamespace(
+                name=item.target_key, role_key=item.role_key, contract_json=item.draft_payload or {}))
         if item.target_contract_id:
             self._assert_contract_scope(item.target_contract_id, {
                 "model": item.model, "action_id": item.action_id,
@@ -155,14 +172,15 @@ class _ChangeSetBase(BaseIntentHandler):
         if item.config_type != "form" or not spec.get("node_patches"):
             return {"status": "not_run"}
         from .ui_contract_v2 import UiContractV2Handler, authoritative_form_role_key
-        if item.role_key and item.role_key != authoritative_form_role_key(self.env):
+        owner_role = item.change_set_id.role_key or ""
+        if owner_role and owner_role != authoritative_form_role_key(self.env):
             raise AccessError("表单预览必须使用当前已认证角色；不可用角色字符串代替目标权限身份。")
         if not item.action_id or not item.view_id:
             raise ValidationError("结构配置必须绑定正式action和view。")
         params = {"op": "model", "model": item.model, "action_id": item.action_id,
                   "view_id": item.view_id, "view_type": "form", "render_profile": "create"}
         if preview_token:
-            params.update(preview_token=preview_token, preview_role_key=item.role_key or "")
+            params.update(preview_token=preview_token, preview_role_key=owner_role)
         result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle(params)
         result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
         if not result.get("ok", True) or not (result.get("data") or {}).get("layoutContract"):
@@ -292,7 +310,9 @@ class BusinessConfigChangeSetStageHandler(_ChangeSetBase):
         model = _text(params.get("model"))
         if not target_key or not model:
             return self._err(400, "MISSING_SCOPE", "变更项缺少页面或配置目标。")
-        contract = self._target_contract(params)
+        # The authenticated change-set role owns editing, not layout selection.
+        target_scope = _stage_target_scope(params, config_type, draft_payload)
+        contract = self._target_contract(target_scope)
         requested_definition = _text(params.get("current_definition_hash"))
         actual_definition = str(contract.definition_sha256) if contract else "absent"
         if requested_definition and requested_definition != actual_definition:
@@ -313,7 +333,7 @@ class BusinessConfigChangeSetStageHandler(_ChangeSetBase):
             "view_type": _text(params.get("view_type")) or False,
             "action_id": _integer(params.get("action_id")),
             "view_id": _integer(params.get("view_id")),
-            "role_key": _text(params.get("role_key")) or False,
+            "role_key": target_scope["role_key"] or False,
             "target_contract_id": contract.id if contract else False,
             "base_version_no": int(contract.version_no or 0) if contract else 0,
             "base_payload_hash": (stable_payload_hash({**contract._definition_payload(), "status": contract.status})

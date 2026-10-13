@@ -428,6 +428,46 @@ class TestUiContractV2Boundaries(unittest.TestCase):
     def setUp(self):
         self.module = _load_handler()
 
+    def test_interaction_field_cannot_override_native_usage_through_list_schema(self):
+        assembler = sys.modules["odoo.addons.smart_core.core._real_unified_page_contract_v2_assembler"]
+        source = {"meta_fields": [{"name": "new_guidance_name", "sc_ui_usage": "interaction", "type": "char"}]}
+        for overlay in ({"sc_ui_usage": "fact"}, {"invisible": True}, {"visible": False}):
+            ui = {"views": {"tree": {"columns": ["new_guidance_name"], "columnsSchema": [{"name": "new_guidance_name", **overlay}]}}}
+            with self.subTest(overlay=overlay), self.assertRaisesRegex(ValueError, "INTERACTION_FIELD_BODY_FORBIDDEN"):
+                assembler._field_rows(source, ui, view_type="tree")
+
+    def test_native_field_projection_rejects_interaction_body_but_retains_hidden_dependency(self):
+        assembler = sys.modules["odoo.addons.smart_core.core._real_unified_page_contract_v2_assembler"]
+        field = {"name": "new_guidance_name", "sc_ui_usage": "interaction", "type": "char"}
+        with self.assertRaisesRegex(ValueError, "INTERACTION_FIELD_BODY_FORBIDDEN"):
+            assembler._field_widget(field, layout_type="form")
+        widget = assembler._field_widget({**field, "invisible": True}, layout_type="form")
+        self.assertTrue(widget["componentConfig"]["invisible"])
+        with self.assertRaisesRegex(ValueError, "INTERACTION_FIELD_BODY_FORBIDDEN"):
+            assembler._normalize_native_layout_nodes([{"type": "field", "name": "new_guidance_name", "fieldInfo": {"sc_ui_usage": "fact"}}], {"new_guidance_name": field}, layout_type="form", component_keys=set(), container_status=[], widget_status=[])
+
+    def test_change_set_target_role_is_distinct_from_owner(self):
+        from odoo.addons.smart_core.core.form_structure_authority import assert_role_form_permissions_only
+        path = Path(__file__).resolve().parents[1] / "handlers/business_config_change_set.py"
+        tree = ast.parse(path.read_text())
+        functions = [node for node in tree.body if isinstance(node, ast.FunctionDef)
+                     and node.name in {"_stage_target_scope", "_text"}]
+        ns = {"Any": object, "SimpleNamespace": types.SimpleNamespace,
+              "assert_role_form_permissions_only": assert_role_form_permissions_only}
+        exec(compile(ast.Module(body=functions, type_ignores=[]), str(path), "exec"), ns)
+        resolve = ns["_stage_target_scope"]
+        owner = {"role_key": "config_admin", "target_key": "test.form"}
+        structure = {"view_orchestration": {"views": {"form": {"columns": 2}}}}
+        self.assertEqual(resolve(owner, "form", structure)["role_key"], "")
+        self.assertEqual(owner["role_key"], "config_admin")
+        self.assertEqual(resolve(owner, "list", {})["role_key"], "config_admin")
+        with self.assertRaisesRegex(ValueError, "CONFIG_ROLE_STRUCTURE_FORBIDDEN"):
+            resolve({**owner, "target_role_key": "finance"}, "form", structure)
+        permissions = {"view_orchestration": {"views": {"form": {
+            "fields": [{"name": "name", "readonly": True}]}}}}
+        self.assertEqual(resolve({**owner, "target_role_key": "finance"}, "form", permissions)["role_key"], "finance")
+        self.assertEqual(resolve({**owner, "target_role_key": ""}, "list", {})["role_key"], "")
+
     def test_configuration_error_is_structured_on_both_source_paths(self):
         from unittest.mock import patch
         error = self.module.FormConfigurationError(
@@ -4923,6 +4963,52 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         handler._apply_business_config_form_groups_to_v2(contract, source_contract=source_contract)
         self.assertEqual(contract["layoutContract"]["containerTree"], first)
 
+    def test_final_layout_declares_columns_and_one_span_per_occurrence(self):
+        for columns in (None, 1, 2, 3, 4, 6, 8, 12, 24):
+            group = {"type": "group", "name": "g", "children": [
+                {"type": "field", "name": "name", "widgetId": "w", "children": [], "widgetList": []}],
+                "widgetList": [{"widgetId": "w", "span": 6}]}
+            if columns is not None:
+                group["attributes"] = {"col": str(columns)}
+            contract = {"layoutContract": {"containerTree": [group]}}
+            self.module._projection.normalize_final_layout_contract(contract)
+            actual = contract["layoutContract"]["containerTree"][0]
+            with self.subTest(columns=columns):
+                self.assertEqual(actual["columns"], columns or 2)
+                self.assertEqual(actual["children"][0]["span"], 24 // (columns or 2))
+                self.assertEqual(actual["widgetList"][0]["span"], actual["children"][0]["span"])
+                self.assertEqual(actual["widgetList"][0]["ownerContainerId"], actual["children"][0]["containerId"])
+
+    def test_authorized_columns_patch_updates_native_aliases_before_projection(self):
+        from odoo.addons.smart_core.core.form_configuration_compiler import compile_form_configuration
+        group = {"type": "group", "name": "g", "native_locator": "/form/group", "occurrence_index": 1,
+                 "attributes": {"col": "2"}, "cols": 2, "children": [{"type": "field", "name": "name", "native_locator": "/form/group/field", "occurrence_index": 1}]}
+        config = types.SimpleNamespace(id=1, name="view_orchestration:sample", role_key="", priority=100, version_no=1,
+            contract_json={"view_orchestration": {"context": {"source": "smart_core.lowcode.business_config"}, "views": {"form": {"node_patches": [
+                {"target": "/form/group", "expected": {"type": "group", "name": "g", "occurrence_index": 1}, "set": {"columns": 4}}]}}}})
+        tree, _ = compile_form_configuration([group], [config])
+        contract = {"layoutContract": {"containerTree": tree}}
+        self.module._projection.normalize_final_layout_contract(contract)
+        actual = contract["layoutContract"]["containerTree"][0]
+        self.assertEqual(actual["columns"], 4)
+        self.assertEqual(actual["children"][0]["span"], 6)
+        self.assertEqual(group["attributes"]["col"], "2")
+
+    def test_final_layout_rejects_invalid_explicit_columns_and_span(self):
+        from copy import deepcopy
+        base = {"layoutContract": {"containerTree": [{"type": "group", "name": "g", "children": [{"type": "field", "name": "name"}]}]}}
+        for columns in (True, 0, -1, 1.5, 5, 7, 25, "oops"):
+            broken = deepcopy(base); broken["layoutContract"]["containerTree"][0]["columns"] = columns
+            with self.subTest(columns=columns), self.assertRaises(ValueError):
+                self.module._projection.normalize_final_layout_contract(broken)
+        broken = deepcopy(base); broken["layoutContract"]["containerTree"][0].update(columns=2, attributes={"col": "3"})
+        with self.assertRaisesRegex(ValueError, "conflicting"):
+            self.module._projection.normalize_final_layout_contract(broken)
+        for span in (False, 0, "12", 25):
+            broken = deepcopy(base); broken["layoutContract"]["containerTree"][0]["children"][0]["span"] = span
+            with self.subTest(span=span), self.assertRaises(ValueError):
+                self.module._projection.normalize_final_layout_contract(broken)
+
     def test_final_layout_normalization_restores_root_container_invariants(self):
         handler = self.module.UiContractV2Handler(env=object())
         contract = {
@@ -4968,7 +5054,9 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(field["containerId"], "name")
         self.assertEqual(field["containerType"], "field")
         self.assertEqual(field["title"], "名称")
-        self.assertEqual(field["span"], 24)
+        # P0 native source omission resolves to two equal columns before child projection.
+        self.assertEqual(group["columns"], 2)
+        self.assertEqual(field["span"], 12)
         self.assertEqual(
             {row["containerId"] for row in contract["statusContract"]["containerStatus"]},
             {"status", "business_details", "name"},

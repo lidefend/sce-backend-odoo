@@ -23,6 +23,7 @@ def project_native_field_descriptor(
         "readonly": bool(meta.get("readonly", False)),
         "invisible": bool(meta.get("invisible", False)),
         "help": str(meta.get("help") or ""),
+        "sc_ui_usage": meta.get("sc_ui_usage", "fact"),
         "widget": resolved_widget,
         "domain": meta.get("domain", []),
         "context": meta.get("context", {}),

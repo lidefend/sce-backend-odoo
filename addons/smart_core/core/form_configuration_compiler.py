@@ -90,6 +90,7 @@ def compile_form_configuration(layout, configs, *, fields_meta=None):
     wraps existing direct siblings, preserving all inherited restrictions. Order
     is an explicit permutation of direct children, never a field-name lookup.
     """
+    from .field_presentation_usage import assert_configuration_field_usage
     result = deepcopy(layout)
     meta = fields_meta or {}
     baseline_blocked = _unfillable_required_fields(layout, meta)
@@ -113,7 +114,10 @@ def compile_form_configuration(layout, configs, *, fields_meta=None):
     provenance = []
     plans = {}
     for config in sorted(configs, key=view_orchestration_apply_order_key):
+        from .form_structure_authority import assert_role_form_permissions_only
+        assert_role_form_permissions_only(config)
         spec = ((config.contract_json.get("view_orchestration") or {}).get("views") or {}).get("form") or {}
+        assert_configuration_field_usage(spec, meta)
         patches = spec.get("node_patches")
         if not patches:
             continue
@@ -185,10 +189,23 @@ def compile_form_configuration(layout, configs, *, fields_meta=None):
             if isinstance(node.get("fieldInfo"), dict):
                 node["fieldInfo"].update(string=properties["label"], label=properties["label"])
         if "columns" in properties:
-            if node.get("type") not in {"group", "sheet"} or type(properties["columns"]) is not int or properties["columns"] not in {1, 2, 3}:
+            from .form_structure_authority import validated_field_grid_columns
+            try:
+                validated_field_grid_columns(properties["columns"])
+            except ValueError:
+                _error("CONFIG_COLUMNS_INVALID", target)
+            if node.get("type") not in {"group", "sheet"}:
                 _error("CONFIG_COLUMNS_INVALID", target)
             node["col"] = properties["columns"]
             node["columns"] = properties["columns"]
+            # This authorized setter owns all aliases of this exact property.
+            # Retain unrelated native attributes; never use alias precedence to
+            # conceal an unconfigured conflict at the final projection.
+            if "cols" in node:
+                node["cols"] = properties["columns"]
+            for alias in ("col", "cols", "columns"):
+                if alias in (node.get("attributes") or {}):
+                    node["attributes"][alias] = str(properties["columns"])
     # All winning attributes are now materialized. Structural operations do not
     # perform safety decisions against a partially configured tree.
     for target in sorted(plans):

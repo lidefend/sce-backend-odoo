@@ -1046,11 +1046,19 @@ class TestSingleStructureResolution(unittest.TestCase):
                 fields = {field.get("name"): field for field in record.findall("field")}
                 if fields.get("model") is None or fields["model"].text != "payment.request":
                     continue
+                if fields.get("active") is not None and fields["active"].get("eval") == "False":
+                    continue
+                if fields.get("status") is not None and fields["status"].text != "published":
+                    continue
                 payload = ast.literal_eval(fields["contract_json"].get("eval"))
                 if not ((payload.get("view_orchestration") or {}).get("views") or {}).get("form"):
                     continue
                 configs.append(SimpleNamespace(id=len(configs)+1, name=record.get("id"), version_no=1, contract_json=payload))
-        self.assertGreaterEqual(len(configs), 4)
+        self.assertEqual({config.name for config in configs}, {
+            "business_config_contract_payment_request_p1_form_business_facts_v1",
+            "business_config_contract_payment_request_pay_productized_form_v1",
+            "business_config_contract_payment_request_receive_productized_form_v1",
+        })
         config_model = _ConfigModel({})
         config_model._effective_view_orchestration_contracts = lambda *a, **kw: configs
         layout = [{"type": "group", "string": "Native business", "children": [{"type": "field", "name": "name"}]}]
@@ -1184,7 +1192,7 @@ class TestConfiguredNativeTree(unittest.TestCase):
         return SimpleNamespace(id=identifier, name="view_orchestration:sample:%s" % identifier,
                                contract_json={"view_orchestration": {"context": {"source": "smart_core.lowcode.business_config"},
                                               "views": {"form": {"node_patches": patches}}}},
-                               action_id=546, view_id=1431, role_key="business_config_admin", priority=100, version_no=1)
+                               action_id=546, view_id=1431, role_key="", priority=100, version_no=1)
 
     def patch(self, field=0, **values):
         node = self.tree[0]["children"][field]
@@ -1326,6 +1334,188 @@ class TestConfiguredNativeTree(unittest.TestCase):
         anchors = [group["children"][0]["attributes"]["data-sc-anchor"] for group in result]
         self.assertEqual(len(set(anchors)), 2)
 
+
+class TestRoleScopedFormBoundary(unittest.TestCase):
+    def setUp(self):
+        self.orchestrator = _load_orchestrator()
+        from odoo.addons.smart_core.core import form_structure_authority as authority
+        from odoo.addons.smart_core.core.form_configuration_compiler import FormConfigurationError
+        self.authority = authority
+        self.error = FormConfigurationError
+
+    def config(self, spec, role="finance"):
+        return types.SimpleNamespace(id=9, name="role-test", role_key=role,
+            model="res.partner", active=True, status="published", view_type="form",
+            action_id=types.SimpleNamespace(id=11), view_id=types.SimpleNamespace(id=22),
+            contract_json={"view_orchestration": {"views": {"form": spec}}})
+
+    def test_role_presentation_and_replacement_carriers_are_rejected(self):
+        for spec in ({"columns": 2}, {"composition_mode": "native_semantic_surface"},
+                     {"sections": []}, {"action_slots": {}}, {"actions": [{"name": "save", "visible": False}]},
+                     {"header_buttons": []}, *({"fields": [{"name": "name", key: value}]} for key, value in
+                         (("label", "Other"), ("widget", "text"), ("sequence", 1), ("span", 24), ("help", "Guide")))):
+            with self.subTest(spec=spec), self.assertRaises(self.error) as caught:
+                self.authority.assert_role_form_permissions_only(self.config(spec))
+            self.assertEqual(caught.exception.code, "CONFIG_ROLE_STRUCTURE_FORBIDDEN")
+        self.authority.assert_role_form_permissions_only(self.config({"columns": 2, "sections": []}, role=""))
+
+    def test_sparse_permissions_keep_native_members_order_identity_span(self):
+        source = {"layout": [{"type": "group", "name": "group", "span": 24, "children": [
+            {"type": "field", "name": "email", "widgetId": "email#1", "span": 8},
+            {"type": "field", "name": "name", "widgetId": "name#1", "span": 16, "readonly": True}]}]}
+        config = self.config({"fields": [{"name": "name", "readonly": False},
+                                           {"name": "state", "readonly": True}]})
+        runtime = self.orchestrator(_Env({"res.partner": _Model()}))
+        result = runtime._apply_business_config_contract(source, config, "form", "res.partner")
+        self.assertEqual(result["layout"], source["layout"])
+        config.contract_json["view_orchestration"]["views"]["form"]["fields"] = [{"name": "email", "readonly": True}]
+        result = runtime._apply_business_config_contract(source, config, "form", "res.partner")
+        fields = result["layout"][0]["children"]
+        self.assertEqual([(f["name"], f["widgetId"], f["span"]) for f in fields], [("email", "email#1", 8), ("name", "name#1", 16)])
+        self.assertTrue(fields[0]["readonly"])
+        self.assertNotIn("readonly", source["layout"][0]["children"][0])
+        config.contract_json["view_orchestration"]["views"]["form"]["fields"] = [{"name": "email", "visible": False}]
+        source["field_modifiers"] = {"email": {"readonly": True}}
+        result = runtime._apply_business_config_contract(source, config, "form", "res.partner")
+        self.assertEqual([f["widgetId"] for f in result["layout"][0]["children"]], ["email#1", "name#1"])
+        self.assertEqual(result["layout"][0]["children"][0]["span"], 8)
+        self.assertFalse(result["layout"][0]["children"][0]["visible"])
+        self.assertTrue(result["layout"][0]["children"][0]["modifiers"]["invisible"])
+        self.assertEqual(result["field_modifiers"], source["field_modifiers"])
+
+    def test_exact_permission_patch_preserves_button_and_duplicate_occurrence(self):
+        fixture = TestConfiguredNativeTree(); fixture.setUp()
+        tree = fixture.tree
+        tree[0]["children"][1].update(name="name", occurrence_index=2, type="button")
+        config = fixture.config([fixture.patch(1, visible=False)])
+        config.role_key = "finance"
+        result, _ = fixture.compile(tree, [config])
+        self.assertNotIn("visible", result[0]["children"][0])
+        self.assertFalse(result[0]["children"][1]["visible"])
+        self.assertEqual([n["native_locator"] for n in result[0]["children"]], [n["native_locator"] for n in tree[0]["children"]])
+        config.contract_json["view_orchestration"]["views"]["form"]["node_patches"][0]["set"] = {"label": "Changed"}
+        with self.assertRaises(self.error):
+            fixture.compile(tree, [config])
+
+    def test_role_permission_patch_cannot_relax_native_restrictions(self):
+        fixture = TestConfiguredNativeTree(); fixture.setUp()
+        for prop, native in (("readonly", {"readonly": True}), ("visible", {"invisible": True})):
+            fixture.tree[0]["children"][0].update(native)
+            config = fixture.config([fixture.patch(**{prop: prop == "visible"})]); config.role_key = "finance"
+            with self.subTest(prop=prop), self.assertRaises(self.error):
+                fixture.compile(fixture.tree, [config])
+
+    def model_functions(self):
+        import ast, logging
+        path = Path(__file__).resolve().parents[1] / "model/ui_business_config_contract.py"
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == "UIBusinessConfigContract")
+        names = {"_runtime_contract_validation", "_check_published_runtime_contract", "_effective_view_orchestration_contracts"}
+        nodes = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
+        for node in nodes:
+            node.decorator_list = []
+        namespace = {"Any": object, "STALE_TRANSITION_FIELD_PREFIXES": (), "ValidationError": ValueError,
+                     "role_form_structure_violations": self.authority.role_form_structure_violations,
+                     "assert_role_form_permissions_only": self.authority.assert_role_form_permissions_only,
+                     "assert_configuration_field_usage": __import__("odoo.addons.smart_core.core.field_presentation_usage", fromlist=["assert_configuration_field_usage"]).assert_configuration_field_usage,
+                     "_logger": logging.getLogger(__name__), "view_orchestration_apply_order_key": lambda c: c.id,
+                     "ViewOrchestrationContractProjection": types.SimpleNamespace(from_record=lambda c: c, from_preview_item=lambda i: i),
+                     "fields": types.SimpleNamespace(Datetime=types.SimpleNamespace(now=lambda: 0))}
+        exec(compile(ast.Module(body=nodes, type_ignores=[]), str(path), "exec"), namespace)
+        return namespace
+
+    def model_owner(self, functions):
+        env = _Env({"res.partner": _Model()}); env.context = {}; env.company = types.SimpleNamespace(id=1); env.cr = types.SimpleNamespace(dbname="test")
+        owner = types.SimpleNamespace(env=env,
+            _normalize_view_orchestration_view_type=lambda value: value,
+            _view_orchestration_rows=lambda payload, view: [],
+            _unknown_view_orchestration_fields=lambda *args: [],
+            _simple_view_orchestration_field_name=lambda value: "",
+            contract_contributes_view=lambda *args: True)
+        owner._runtime_contract_validation = types.MethodType(functions["_runtime_contract_validation"], owner)
+        return owner
+
+    def test_publish_validation_same_predicate_including_role_only_change(self):
+        functions = self.model_functions(); owner = self.model_owner(functions)
+        config = self.config({"columns": 2}, role="")
+        config._runtime_contract_validation = owner._runtime_contract_validation
+        class Records(list): pass
+        records = Records([config]); records.env = owner.env
+        publish = functions["_check_published_runtime_contract"]
+        publish(records)
+        before = repr(config.contract_json)
+        config.role_key = "finance"
+        with self.assertRaisesRegex(ValueError, "CONFIG_ROLE_STRUCTURE_FORBIDDEN"):
+            publish(records)
+        self.assertEqual(repr(config.contract_json), before)
+        self.assertEqual(config.status, "published")
+
+    def test_live_and_preview_reject_without_fallback(self):
+        functions = self.model_functions(); owner = self.model_owner(functions)
+        bad = self.config({"columns": 2})
+        owner.sudo = lambda: owner
+        owner.search = lambda *a, **k: [bad]
+        with self.assertRaises(self.error):
+            functions["_effective_view_orchestration_contracts"](owner, "res.partner", view_type="form", action_id=11, view_id=22, role_key="finance")
+        owner.search = lambda *a, **k: []
+        class Items(list):
+            def filtered(self, predicate): return Items(x for x in self if predicate(x))
+        bad.action_id = 11; bad.view_id = 22; bad.config_type = "form"
+        change_set = types.SimpleNamespace(role_key="finance", item_ids=Items([bad]))
+        lookup = types.SimpleNamespace(search=lambda *a, **k: change_set); lookup.sudo = lambda: lookup
+        owner.env["ui.business.config.change.set"] = lookup
+        owner.env.context = {"business_config_preview_token": "t", "business_config_preview_user_id": 2, "business_config_preview_role_key": "finance"}
+        with self.assertRaises(self.error):
+            functions["_effective_view_orchestration_contracts"](owner, "res.partner", view_type="form", action_id=11, view_id=22, role_key="finance")
+
+
+
+class TestNativeFieldPresentationUsage(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        _load_orchestrator()
+        from odoo.addons.smart_core.core import field_presentation_usage
+        cls.usage = field_presentation_usage
+
+    def test_backend_default_and_enum(self):
+        self.assertEqual(self.usage.field_presentation_usage(), "fact")
+        for invalid in (False, 1, "advice", [], {}):
+            with self.subTest(invalid=invalid), self.assertRaisesRegex(ValueError, "FIELD_PRESENTATION_USAGE_INVALID"):
+                self.usage.field_presentation_usage(invalid)
+
+    def test_new_arbitrary_field_cannot_be_reintroduced_in_body(self):
+        fields = {"new_domain_guidance": {"sc_ui_usage": "interaction"}, "amount": {"sc_ui_usage": "fact"}}
+        for spec in (
+            {"fields": ["new_domain_guidance"]},
+            {"columns": [{"name": "new_domain_guidance"}]},
+            {"sections": [{"fields": ["new_domain_guidance"]}]},
+            {"layout": [{"type": "group", "children": [{"type": "field", "name": "new_domain_guidance"}]}]},
+            {"node_patches": [{"expected": {"type": "field", "name": "new_domain_guidance"}, "set": {"visible": True}}]},
+        ):
+            with self.subTest(spec=spec), self.assertRaisesRegex(ValueError, "INTERACTION_FIELD_BODY_FORBIDDEN"):
+                self.usage.assert_configuration_field_usage(spec, fields)
+        self.usage.assert_configuration_field_usage({"fields": ["amount"]}, fields)
+
+    def test_real_base_fields_get_preserves_native_acl_and_attribute_filter(self):
+        import ast
+        source = Path(__file__).resolve().parents[1] / "model" / "base_field_presentation.py"
+        parsed = ast.parse(source.read_text())
+        definition = next(n for n in parsed.body if isinstance(n, ast.ClassDef))
+        class NativeBase:
+            _fields = {"allowed": types.SimpleNamespace(sc_ui_usage="interaction"), "denied": types.SimpleNamespace(sc_ui_usage="interaction")}
+            def fields_get(self, allfields=None, attributes=None):
+                return {"allowed": {"string": "Allowed"}}
+        namespace = {"api": types.SimpleNamespace(model=lambda method: method), "models": types.SimpleNamespace(AbstractModel=NativeBase), "field_presentation_usage": self.usage.field_presentation_usage}
+        exec(compile(ast.Module(body=[definition], type_ignores=[]), str(source), "exec"), namespace)
+        model = namespace[definition.name]()
+        self.assertEqual(model.fields_get(), {"allowed": {"string": "Allowed", "sc_ui_usage": "interaction"}})
+        self.assertEqual(model.fields_get(attributes=["string"]), {"allowed": {"string": "Allowed"}})
+        self.assertNotIn("denied", model.fields_get(attributes=["sc_ui_usage"]))
+
+    def test_hidden_dependency_is_not_visible_override(self):
+        fields = {"new_domain_guidance": {"sc_ui_usage": "interaction"}}
+        self.usage.assert_configuration_field_usage({"fields": [{"name": "new_domain_guidance", "visible": False}]}, fields)
+        with self.assertRaisesRegex(ValueError, "INTERACTION_FIELD_BODY_FORBIDDEN"):
+            self.usage.assert_configuration_field_usage({"fields": [{"name": "new_domain_guidance", "visible": True}]}, fields)
 
 if __name__ == "__main__":
     unittest.main()
