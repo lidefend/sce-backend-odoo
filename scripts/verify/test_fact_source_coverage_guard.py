@@ -832,5 +832,262 @@ class DemoLifecycle(models.Model):
             )
 
 
+NUMBER_MODEL = '''
+class DemoDoc(models.Model):
+    _name = "demo.doc"
+
+    def create(self, vals_list):
+        for vals in vals_list:
+            vals["name"] = self.env["ir.sequence"].next_by_code("demo.doc.no") or _("Demo")
+        return super().create(vals_list)
+'''
+
+NUMBER_LABEL_FALLBACK_MODEL = '''
+class DemoDoc(models.Model):
+    _name = "demo.doc"
+
+    def action_submit(self):
+        self.ensure_one()
+        if self.name == "新建":
+            self.name = self.env["ir.sequence"].next_by_code("demo.doc.no") or self.name
+'''
+
+NUMBER_DYNAMIC_MODEL = '''
+class DemoDoc(models.Model):
+    _name = "demo.doc"
+
+    def create(self, vals_list):
+        for vals in vals_list:
+            vals["name"] = self.env["ir.sequence"].next_by_code(seq_code) or _("Demo")
+        return super().create(vals_list)
+'''
+
+NUMBER_SEQUENCE_XML = """<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="seq_demo_doc" model="ir.sequence">
+        <field name="code">demo.doc.no</field>
+    </record>
+</odoo>
+"""
+
+NUMBER_READER = "addons/demo_module/models/definition.py"
+
+
+def number_declaration(**overrides) -> dict:
+    declaration = {
+        "business_number_authority": {
+            "issue": "BUSINESS-NUMBER-AUTHORITY-01",
+            "owner_module": "demo_module",
+            "reason": "one published ir.sequence is the single generator of the demo document number",
+            "reader_files": [{"file": NUMBER_READER, "codes": ["demo.doc.no"]}],
+            "codes": [],
+            "dynamic_reads": [],
+            "second_value_sites": [],
+        }
+    }
+    declaration["business_number_authority"].update(overrides)
+    return declaration
+
+
+def run_number(tmp: Path, source: str, declarations: dict, sequence_xml: str = NUMBER_SEQUENCE_XML, extra_files: dict | None = None):
+    files = {"addons/demo_module/data/sequence.xml": sequence_xml}
+    files.update(extra_files or {})
+    return run(tmp, source, declarations, extra_files=files)
+
+
+class BusinessNumberAuthorityGuardTest(unittest.TestCase):
+    def test_registered_reader_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            report = run_number(Path(raw), NUMBER_MODEL, number_declaration())
+            self.assertEqual([], report["failures"], report["failures"])
+            self.assertEqual(1, report["business_number_authority"]["reader_files"])
+            self.assertEqual(1, report["business_number_authority"]["codes"])
+
+    def test_undeclared_authority_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            report = run_number(Path(raw), NUMBER_MODEL, {})
+            self.assertTrue(
+                any("business_number_authority is not declared" in f for f in report["failures"]),
+                report["failures"],
+            )
+
+    def test_unregistered_reader_file_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            report = run_number(Path(raw), NUMBER_MODEL, number_declaration(reader_files=[]))
+            self.assertTrue(
+                any("without naming it in" in f for f in report["failures"]),
+                report["failures"],
+            )
+
+    def test_reader_code_drift_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            declarations = number_declaration(
+                reader_files=[{"file": NUMBER_READER, "codes": ["demo.doc.other"]}]
+            )
+            report = run_number(Path(raw), NUMBER_MODEL, declarations)
+            self.assertTrue(
+                any("business-number codes changed to" in f for f in report["failures"]),
+                report["failures"],
+            )
+
+    def test_unread_published_rule_needs_registration(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            xml = NUMBER_SEQUENCE_XML.replace(
+                "</odoo>",
+                '    <record id="seq_orphan" model="ir.sequence">\n'
+                '        <field name="code">demo.orphan.no</field>\n'
+                "    </record>\n</odoo>",
+            )
+            report = run_number(Path(raw), NUMBER_MODEL, number_declaration(), sequence_xml=xml)
+            self.assertTrue(
+                any("publishes this business-number rule but no" in f for f in report["failures"]),
+                report["failures"],
+            )
+
+    def test_unread_published_rule_registered_with_reason_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            xml = NUMBER_SEQUENCE_XML.replace(
+                "</odoo>",
+                '    <record id="seq_orphan" model="ir.sequence">\n'
+                '        <field name="code">demo.orphan.no</field>\n'
+                "    </record>\n</odoo>",
+            )
+            declarations = number_declaration(
+                codes=[{"code": "demo.orphan.no", "reason": "kept until a demo document consumer lands"}]
+            )
+            report = run_number(Path(raw), NUMBER_MODEL, declarations, sequence_xml=xml)
+            self.assertEqual([], report["failures"], report["failures"])
+
+    def test_unpublished_read_code_registered_with_reason_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            xml = NUMBER_SEQUENCE_XML.replace("demo.doc.no", "demo.other.no")
+            declarations = number_declaration(
+                codes=[
+                    {"code": "demo.doc.no", "reason": "the demo read has no publication yet"},
+                    {"code": "demo.other.no", "reason": "published while no demo code reads it"},
+                ]
+            )
+            report = run_number(Path(raw), NUMBER_MODEL, declarations, sequence_xml=xml)
+            self.assertEqual([], report["failures"], report["failures"])
+            self.assertEqual(
+                ["demo.doc.no"], report["business_number_authority"]["unpublished_codes"]
+            )
+
+    def test_exception_without_a_reason_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            xml = NUMBER_SEQUENCE_XML.replace("demo.doc.no", "demo.other.no")
+            declarations = number_declaration(codes=[{"code": "demo.doc.no"}])
+            report = run_number(Path(raw), NUMBER_MODEL, declarations, sequence_xml=xml)
+            self.assertTrue(
+                any("business-number exception without a reason" in f for f in report["failures"]),
+                report["failures"],
+            )
+
+    def test_normal_code_registered_as_an_exception_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            declarations = number_declaration(
+                codes=[{"code": "demo.doc.no", "reason": "should not be needed"}]
+            )
+            report = run_number(Path(raw), NUMBER_MODEL, declarations)
+            self.assertTrue(
+                any("source has no publication/read mismatch" in f for f in report["failures"]),
+                report["failures"],
+            )
+
+    def test_second_value_site_needs_registration(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            report = run_number(Path(raw), NUMBER_LABEL_FALLBACK_MODEL, number_declaration())
+            self.assertTrue(
+                any("fall back to a second fact" in f for f in report["failures"]),
+                report["failures"],
+            )
+
+    def test_benign_second_value_class_passes_without_an_issue(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            declarations = number_declaration(
+                second_value_sites=[
+                    {
+                        "file": NUMBER_READER,
+                        "function": "action_submit",
+                        "class": "name_label_fallback",
+                        "reason": "the name field falls back to its own declared label",
+                    }
+                ]
+            )
+            report = run_number(Path(raw), NUMBER_LABEL_FALLBACK_MODEL, declarations)
+            self.assertEqual([], report["failures"], report["failures"])
+
+    def test_registered_second_value_class_needs_the_owning_issue(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            declarations = number_declaration(
+                second_value_sites=[
+                    {
+                        "file": NUMBER_READER,
+                        "function": "create",
+                        "class": "unique_key_second_generator",
+                        "reason": "the document key falls back to a generated token",
+                    }
+                ]
+            )
+            source = NUMBER_MODEL.replace('vals["name"]', 'vals["document_no"]').replace(
+                '_("Demo")', 'self.id'
+            )
+            report = run_number(Path(raw), source, declarations)
+            self.assertTrue(
+                any("still needs the owning issue" in f for f in report["failures"]),
+                report["failures"],
+            )
+
+    def test_dynamic_read_needs_registration(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            report = run_number(
+                Path(raw),
+                NUMBER_DYNAMIC_MODEL,
+                number_declaration(
+                    reader_files=[],
+                    codes=[{"code": "demo.doc.no", "reason": "resolved through the dynamic read"}],
+                ),
+            )
+            self.assertTrue(
+                any("non-literal code" in f for f in report["failures"]),
+                report["failures"],
+            )
+
+    def test_registered_dynamic_read_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            declarations = number_declaration(
+                reader_files=[],
+                codes=[{"code": "demo.doc.no", "reason": "resolved only through the dynamic read"}],
+                dynamic_reads=[
+                    {
+                        "file": NUMBER_READER,
+                        "function": "create",
+                        "argument": "seq_code",
+                        "reason": "the demo document resolves its sequence code at runtime",
+                    }
+                ],
+            )
+            report = run_number(Path(raw), NUMBER_DYNAMIC_MODEL, declarations)
+            self.assertEqual([], report["failures"], report["failures"])
+
+    def test_registered_fallback_site_no_longer_in_source_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            declarations = number_declaration(
+                second_value_sites=[
+                    {
+                        "file": NUMBER_READER,
+                        "function": "action_submit",
+                        "class": "name_label_fallback",
+                        "reason": "the name field falls back to its own declared label",
+                    }
+                ]
+            )
+            report = run_number(Path(raw), NUMBER_MODEL, declarations)
+            self.assertTrue(
+                any("fallback site no longer" in f for f in report["failures"]),
+                report["failures"],
+            )
+
+
 if __name__ == "__main__":
     unittest.main()

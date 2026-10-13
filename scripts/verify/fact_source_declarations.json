@@ -522,5 +522,308 @@
         "reason": "A general_contract transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared GENERAL_CONTRACT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
       }
     ]
+  },
+  "business_number_authority": {
+    "issue": "BUSINESS-NUMBER-AUTHORITY-01",
+    "owner_module": "smart_construction_core",
+    "reason": "One published ir.sequence is the single generator of a business number. The literal code a module reads, the code product data publishes and the place where the value can become a second fact are the same fact seen from three scans, and they drifted independently: three codes were read with no publication at all, three publications had no reader, and seven call sites could turn a missing sequence into a second value. Every reader file now names the codes it reads, every dynamic read names its argument, and every fallback carries its class so a fallback stays a decision instead of a habit.",
+    "reader_files": [
+      {
+        "file": "addons/smart_construction_core/models/core/business_menu_facts.py",
+        "codes": [
+          "sc.business.fact"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/construction_diary.py",
+        "codes": [
+          "sc.construction.diary"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/equipment_management.py",
+        "codes": [
+          "sc.equipment.plan",
+          "sc.equipment.price",
+          "sc.equipment.request",
+          "sc.equipment.settlement",
+          "sc.equipment.usage"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/expense_claim.py",
+        "codes": [
+          "sc.expense.claim"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/financing_loan.py",
+        "codes": [
+          "sc.financing.loan"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/fund_account_operation.py",
+        "codes": [
+          "sc.fund.account.operation"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/general_contract.py",
+        "codes": [
+          "sc.general.contract",
+          "sc.general.contract.no"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/hr_payroll_document.py",
+        "codes": [
+          "sc.business.fact"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/invoice_registration.py",
+        "codes": [
+          "sc.invoice.registration"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/labor_management.py",
+        "codes": [
+          "sc.attendance.checkin",
+          "sc.labor.plan",
+          "sc.labor.price",
+          "sc.labor.request",
+          "sc.labor.settlement",
+          "sc.labor.usage"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/material_acceptance.py",
+        "codes": [
+          "sc.material.acceptance",
+          "sc.material.inbound",
+          "sc.material.outbound",
+          "sc.material.purchase.request",
+          "sc.material.rfq",
+          "sc.material.settlement"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/material_plan.py",
+        "codes": [
+          "project.material.plan"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/material_rental.py",
+        "codes": [
+          "sc.material.rental.order",
+          "sc.material.rental.plan",
+          "sc.material.rental.settlement"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/material_supplier_return.py",
+        "codes": [
+          "sc.material.supplier.return"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/output_invoice_adjustment.py",
+        "codes": [
+          "sc.output.invoice.adjustment"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/payment_execution.py",
+        "codes": [
+          "sc.payment.execution"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/payment_request.py",
+        "codes": [
+          "payment.request"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/project_core.py",
+        "codes": [
+          "project.project.code"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/receipt_income.py",
+        "codes": [
+          "sc.receipt.income"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/self_funding_registration.py",
+        "codes": [
+          "sc.self.funding.registration"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/settlement.py",
+        "codes": [
+          "project.settlement"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/settlement_adjustment.py",
+        "codes": [
+          "sc.settlement.adjustment"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/settlement_order.py",
+        "codes": [
+          "sc.settlement.order"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/subcontract_management.py",
+        "codes": [
+          "sc.subcontract.plan",
+          "sc.subcontract.price",
+          "sc.subcontract.register",
+          "sc.subcontract.request",
+          "sc.subcontract.settlement"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/tax_certificate_registration.py",
+        "codes": [
+          "sc.tax.certificate.registration"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/tax_deduction_registration.py",
+        "codes": [
+          "sc.tax.deduction.registration"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/tax_filing.py",
+        "codes": [
+          "sc.tax.filing"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/treasury_reconciliation.py",
+        "codes": [
+          "sc.treasury.reconciliation"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/projection/treasury_ledger.py",
+        "codes": [
+          "sc.treasury.ledger"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/support/contract_center.py",
+        "codes": [
+          "construction.contract"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/support/labor_product.py",
+        "codes": [
+          "sc.labor.deduction"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/support/variation_change.py",
+        "codes": [
+          "sc.contract.change",
+          "sc.site.variation"
+        ]
+      }
+    ],
+    "codes": [
+      {
+        "code": "construction.contract.expense",
+        "reason": "the expense contract subtype resolves this sequence through contract_center.create's dynamic seq_code argument, so it is published and read without ever being named by a literal call."
+      },
+      {
+        "code": "construction.contract.income",
+        "reason": "the income contract subtype resolves this sequence through contract_center.create's dynamic seq_code argument, so it is published and read without ever being named by a literal call."
+      },
+      {
+        "code": "sc.contract.change",
+        "reason": "contract change records take their name from this code in variation_change.py, but no product data file publishes an ir.sequence for it, so the read always falls through to the declared label; recorded as a publication gap, not a silent fallback."
+      },
+      {
+        "code": "sc.labor.deduction",
+        "reason": "labor deduction records take their name from this code in labor_product.py, but no product data file publishes an ir.sequence for it, so the read always falls through to the declared label; recorded as a publication gap, not a silent fallback."
+      },
+      {
+        "code": "sc.project.document",
+        "reason": "product data publishes this rule while no product module reads the code; it is an unused published rule, kept until a document-numbering consumer lands or the record is removed."
+      },
+      {
+        "code": "sc.site.variation",
+        "reason": "site variation records take their name from this code in variation_change.py, but no product data file publishes an ir.sequence for it, so the read always falls through to the declared label; recorded as a publication gap, not a silent fallback."
+      }
+    ],
+    "dynamic_reads": [
+      {
+        "file": "addons/smart_construction_core/models/support/contract_center.py",
+        "function": "create",
+        "argument": "seq_code",
+        "reason": "contract_center.create resolves the contract subtype first and then falls back to construction.contract, so the sequence code is a runtime value rather than a literal; the read is registered here so the literal scan still stays the only naming rule."
+      }
+    ],
+    "second_value_sites": [
+      {
+        "file": "addons/smart_construction_core/models/core/business_menu_facts.py",
+        "function": "_next_document_no",
+        "class": "derived_token",
+        "issue": "BUSINESS-NUMBER-AUTHORITY-01",
+        "reason": "document_no is built from a type token plus the sc.business.fact sequence, falling back to the literal NEW; the sequence is the number and the token only names the fact class."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/general_contract.py",
+        "function": "create",
+        "class": "unique_key_from_label",
+        "issue": "BUSINESS-NUMBER-AUTHORITY-01",
+        "reason": "contract_no falls back to the record name when sc.general.contract.no is missing; contract_no is a unique business key, so the name becomes a second generator instead of a label."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/hr_payroll_document.py",
+        "function": "create",
+        "class": "unique_key_second_generator",
+        "issue": "BUSINESS-NUMBER-AUTHORITY-01",
+        "reason": "the SALPAY- name embeds the sc.business.fact sequence and falls back to the record id, so a missing sequence yields an id-derived number instead of the declared token."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/material_plan.py",
+        "function": "action_submit",
+        "class": "name_label_fallback",
+        "reason": "the plan name falls back to the record's own declared label when project.material.plan is missing, which is not a second business value."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/project_core.py",
+        "function": "create",
+        "class": "unique_key_second_generator",
+        "issue": "BUSINESS-NUMBER-AUTHORITY-01",
+        "reason": "project_code falls back to a timestamp-uuid token when project.project.code is missing; project_code is constrained unique, so the fallback is a real second generator."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/settlement_order.py",
+        "function": "create",
+        "class": "name_label_fallback",
+        "reason": "the settlement name falls back to the record's own declared label when sc.settlement.order is missing, which is not a second business value."
+      },
+      {
+        "file": "addons/smart_construction_core/models/support/contract_center.py",
+        "function": "create",
+        "class": "chained_sequence_then_label",
+        "reason": "the contract name tries the subtype sequence, then construction.contract, then the declared label; the chain is tolerated because both steps still read a published ir.sequence before the label."
+      }
+    ]
   }
 }

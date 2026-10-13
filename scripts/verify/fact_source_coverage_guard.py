@@ -71,6 +71,29 @@ METHOD_DEF = re.compile(r"^([ \t]+)def\s+(\w+)\s*\(", re.M)
 CURRENCY_WRITE = re.compile(r"^[ \t]*[A-Za-z_][\w.]*\.currency_id\s*=", re.M)
 OVERRIDE_FIELDS = ("currency_id", "company_id")
 
+# A business document number has exactly one generator: the ir.sequence record
+# product data publishes for a code, read back through ``next_by_code(code)``.
+# The shapes below let the scan see, per function, whether the value can become
+# something other than that sequence: an ``or`` fallback on the call, a local
+# that holds the sequence value and is then OR-ed or guarded, and a call whose
+# code argument is not a literal.
+NEXT_BY_CODE_CALL = re.compile(r"next_by_code\(([^()]*)\)")
+NEXT_BY_CODE_OR = re.compile(r"next_by_code\([^()]*\)\s*or\s+([^\n]{0,80})")
+SEQUENCE_LOCAL = re.compile(r"([A-Za-z_]\w*)\s*=\s*[^\n]*next_by_code\([^()]*\)")
+ASSIGN_TAIL = re.compile(r'''([A-Za-z_][\w.]*(?:\[["'][\w]+["']\])?)\s*=\s*[^\n]*$''')
+NAME_TARGET = re.compile(r'''(?:^|[.\[])[\"']?name[\"']?\]?$''')
+SEQUENCE_MODEL = "ir.sequence"
+
+# A fallback that only restores the field's own declared label is not a second
+# authority: the name field already defaults to that label when the sequence is
+# absent. Every other fallback class is a real second value and is registered.
+BENIGN_SECOND_VALUE_CLASSES = ("name_label_fallback", "chained_sequence_then_label")
+REGISTERED_SECOND_VALUE_CLASSES = (
+    "derived_token",
+    "unique_key_second_generator",
+    "unique_key_from_label",
+)
+
 
 def field_assignment(block: str, field: str) -> str | None:
     """The raw ``field = fields.X(...)`` text, with balanced parentheses."""
@@ -700,6 +723,243 @@ def state_fact(root: Path, modules: list[str], declares: dict) -> tuple[list[str
     }
 
 
+def sequence_codes_published(root: Path, modules: list[str]) -> dict[str, str]:
+    """code -> the product-module data file that publishes the ir.sequence."""
+    published: dict[str, str] = {}
+    for module in modules:
+        base = root / "addons" / module
+        if not base.is_dir():
+            continue
+        for path in sorted(base.rglob("*.xml")):
+            try:
+                tree = ET.parse(path)
+            except ET.ParseError:
+                continue
+            for record in tree.getroot().iter("record"):
+                if record.get("model") != SEQUENCE_MODEL:
+                    continue
+                code = None
+                for field in record.findall("field"):
+                    if field.get("name") == "code":
+                        code = (field.text or "").strip()
+                if code:
+                    published.setdefault(code, str(path.relative_to(root)))
+    return published
+
+
+def sequence_read_sites(root: Path, modules: list[str]) -> dict:
+    """Every product-module read of a business-number sequence.
+
+    Returns the reader files with the codes they read, the calls whose code is
+    not a literal, and the functions where the value can become a second fact.
+    """
+    readers: dict[str, set[str]] = {}
+    dynamic: set[tuple[str, str, str]] = set()
+    second_value: set[tuple[str, str]] = set()
+    for module in modules:
+        base = root / "addons" / module
+        if not base.is_dir():
+            continue
+        for path in sorted(base.rglob("*.py")):
+            if "tests" in path.parts:
+                continue
+            try:
+                text = path.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            if "next_by_code" not in text:
+                continue
+            relative = str(path.relative_to(root))
+            for match in NEXT_BY_CODE_CALL.finditer(text):
+                argument = match.group(1).strip()
+                if argument[:1] in ("\"", "'"):
+                    readers.setdefault(relative, set()).add(argument.strip("\"'"))
+            functions = function_bodies(text, MODULE_FUNC_DEF, 1, None)
+            functions += function_bodies(text, METHOD_DEF, 2, 1)
+            for name, body in functions:
+                if "next_by_code" not in body:
+                    continue
+                for match in NEXT_BY_CODE_CALL.finditer(body):
+                    argument = match.group(1).strip()
+                    if argument[:1] not in ("\"", "'"):
+                        dynamic.add((relative, name, argument))
+                second = False
+                for match in NEXT_BY_CODE_OR.finditer(body):
+                    head = body[: match.start()].rsplit("\n", 1)[-1]
+                    targets = ASSIGN_TAIL.findall(head)
+                    target = targets[-1] if targets else ""
+                    fallback = match.group(1).strip()
+                    label = fallback.startswith("_(") or fallback[:1] in ("\"", "'")
+                    if not (target and NAME_TARGET.search(target) and label):
+                        second = True
+                for match in SEQUENCE_LOCAL.finditer(body):
+                    local = match.group(1)
+                    tail = body[match.end():]
+                    guarded = re.search(r"if\s+not\s+%s\s*:" % re.escape(local), tail)
+                    ored = re.search(r"(?<![\w.])%s\s+or\s+" % re.escape(local), tail)
+                    if (guarded or ored) and not NAME_TARGET.search(local):
+                        second = True
+                if second:
+                    second_value.add((relative, name))
+    return {
+        "readers": {file: sorted(codes) for file, codes in readers.items()},
+        "dynamic": sorted(dynamic),
+        "second_value": sorted(second_value),
+    }
+
+
+def business_number_authority(root: Path, modules: list[str], declares: dict) -> tuple[list[str], dict]:
+    """One published ir.sequence is the single generator of a business number.
+
+    Every product-module read has to name the code it reads, the published set
+    has to match what the declaration says, and every site where the value can
+    become a second fact has to be registered with its class. A code that no
+    product data publishes is a declaration gap, not a silent fallback.
+    """
+    declared = declares.get("business_number_authority") or {}
+    failures: list[str] = []
+    measured = sequence_read_sites(root, modules)
+    published = sequence_codes_published(root, modules)
+
+    if not declared:
+        if measured["readers"] or published:
+            failures.append(
+                "product modules read ir.sequence business numbers but "
+                "business_number_authority is not declared"
+            )
+        return failures, {"readers": 0, "codes": 0}
+
+    issue = (declared.get("issue") or "").strip()
+    reason = (declared.get("reason") or "").strip()
+    if not issue:
+        failures.append("business_number_authority without an issue id")
+    if not reason or any(token in reason.lower() for token in PLACEHOLDER_REASONS):
+        failures.append("business_number_authority reason is missing or a placeholder")
+
+    declared_readers = {
+        entry.get("file"): set(entry.get("codes") or [])
+        for entry in (declared.get("reader_files") or [])
+    }
+    if len(declared_readers) != len(declared.get("reader_files") or []):
+        failures.append("business_number_authority lists a reader file twice")
+    measured_readers = measured["readers"]
+    for file in sorted(set(measured_readers) - set(declared_readers)):
+        failures.append(
+            f"{file}: reads an ir.sequence business number without naming it in "
+            "business_number_authority.reader_files"
+        )
+    for file in sorted(set(declared_readers) - set(measured_readers)):
+        failures.append(
+            f"{file}: declared as a business-number reader but no longer reads one"
+        )
+    for file in sorted(set(measured_readers) & set(declared_readers)):
+        codes = measured_readers[file]
+        if codes != sorted(declared_readers[file]):
+            failures.append(
+                f"{file}: business-number codes changed to {codes}; the declaration "
+                f"still says {sorted(declared_readers[file])}"
+            )
+
+    read_codes = {code for codes in measured_readers.values() for code in codes}
+    published_codes = set(published)
+    # ``codes`` is an exception registry: the reader files already name every
+    # code a product module reads, so repeating the published-and-read set here
+    # would create a second place to keep in sync. Only the two mismatches are
+    # registered, each with the reason it is tolerated.
+    exception_codes = (published_codes - read_codes) | (read_codes - published_codes)
+    declared_code_list = [entry.get("code") for entry in (declared.get("codes") or [])]
+    for code in declared_code_list:
+        if not code:
+            failures.append("business_number_authority lists a code without an id")
+    for code in sorted({code for code in declared_code_list if declared_code_list.count(code) > 1}):
+        failures.append(f"{code}: business_number_authority lists this code twice")
+    declared_codes = set(declared_code_list)
+    for code in sorted(published_codes - read_codes):
+        if code not in declared_codes:
+            failures.append(
+                f"{code}: product data publishes this business-number rule but no "
+                "product code reads it; register it as an unread published rule"
+            )
+    for code in sorted(read_codes - published_codes):
+        if code not in declared_codes:
+            failures.append(
+                f"{code}: a product module reads this business-number code but no "
+                "product data publishes it; publish the ir.sequence or register the gap"
+            )
+    for entry in declared.get("codes") or []:
+        code = entry.get("code")
+        if not code:
+            continue
+        if code not in exception_codes:
+            failures.append(
+                f"{code}: registered as a business-number exception but source has no "
+                "publication/read mismatch for it"
+            )
+        if not (entry.get("reason") or "").strip():
+            failures.append(f"{code}: business-number exception without a reason")
+
+    for entry in declared.get("dynamic_reads") or []:
+        site = (entry.get("file"), entry.get("function"), entry.get("argument"))
+        if site not in set(measured["dynamic"]):
+            failures.append(
+                f"{entry.get('file')}:{entry.get('function')}: registered dynamic "
+                "business-number read no longer matches source"
+            )
+        if not (entry.get("reason") or "").strip():
+            failures.append(
+                f"{entry.get('file')}:{entry.get('function')}: dynamic business-number "
+                "read without a reason"
+            )
+    for site in sorted(set(measured["dynamic"])):
+        if site not in {
+            (e.get("file"), e.get("function"), e.get("argument"))
+            for e in (declared.get("dynamic_reads") or [])
+        }:
+            failures.append(
+                f"{site[0]}:{site[1]}: reads the business-number sequence through the "
+                f"non-literal code {site[2]!r} without a registration"
+            )
+
+    declared_second = {
+        (entry.get("file"), entry.get("function")): entry
+        for entry in (declared.get("second_value_sites") or [])
+    }
+    for site in sorted(set(measured["second_value"])):
+        if site not in declared_second:
+            failures.append(
+                f"{site[0]}:{site[1]}: a business-number read can fall back to a second "
+                "fact without a registered class"
+            )
+    for site in sorted(set(declared_second) - set(measured["second_value"])):
+        failures.append(
+            f"{site[0]}:{site[1]}: registered business-number fallback site no longer "
+            "matches source"
+        )
+    for site, entry in sorted(declared_second.items()):
+        klass = (entry.get("class") or "").strip()
+        if klass not in BENIGN_SECOND_VALUE_CLASSES + REGISTERED_SECOND_VALUE_CLASSES:
+            failures.append(
+                f"{site[0]}:{site[1]}: unknown business-number fallback class {klass!r}"
+            )
+        if klass in REGISTERED_SECOND_VALUE_CLASSES and not (entry.get("issue") or "").strip():
+            failures.append(
+                f"{site[0]}:{site[1]}: a {klass} fallback still needs the owning issue"
+            )
+        if not (entry.get("reason") or "").strip():
+            failures.append(f"{site[0]}:{site[1]}: fallback site without a reason")
+
+    return failures, {
+        "issue": issue,
+        "reader_files": len(measured_readers),
+        "codes": len(read_codes),
+        "published_codes": len(published),
+        "unpublished_codes": sorted(read_codes - set(published)),
+        "unread_published_codes": sorted(set(published) - read_codes),
+        "dynamic_reads": [":".join(site) for site in measured["dynamic"]],
+        "second_value_sites": [":".join(site) for site in measured["second_value"]],
+    }
+
+
 def check(root: Path, declarations_path: Path, module_sets_path: str = DEFAULT_MODULE_SETS,
           runtime_pin: Path | None = None) -> dict:
     declaration = json.loads(declarations_path.read_text(encoding="utf-8"))
@@ -914,9 +1174,13 @@ def check(root: Path, declarations_path: Path, module_sets_path: str = DEFAULT_M
     state_failures, state_report = state_fact(root, modules, declares)
     failures.extend(state_failures)
 
+    number_failures, number_report = business_number_authority(root, modules, declares)
+    failures.extend(number_failures)
+
     return {
         "status": "failed" if failures else "passed",
         "state_fact": state_report,
+        "business_number_authority": number_report,
         "standard_currency": STANDARD_CURRENCY,
         "standard_currency_models": derived_standard,
         "caller_context_currency_models": derived_caller,
