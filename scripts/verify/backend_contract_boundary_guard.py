@@ -285,13 +285,6 @@ ALLOWED_LOWCODING_POLICY_RUNTIME_WRITERS = {
         "expected_source": BOUNDARY_CONSTANTS["MENU_ORCHESTRATION_SOURCE_TENANT_LOWCODING"],
         "target_models": ["ui.menu.config.policy"],
     },
-    "addons/smart_construction_core/models/support/product_policy_sync.py": {
-        "layer": "L2",
-        "boundary": "industry_product_menu_policy_projection",
-        "reason": "industry product policy sync writes baseline menu visibility overlays",
-        "expected_source": "smart_construction_core.product_policy_sync",
-        "target_models": ["ui.menu.config.policy"],
-    },
     "addons/smart_construction_core/migrations/17.0.0.61/post-migration.py": {
         "layer": "L2",
         "boundary": "industry_product_menu_policy_baseline_migration",
