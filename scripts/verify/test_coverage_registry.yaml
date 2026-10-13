@@ -1,5 +1,14 @@
 version: 1
 entries:
+- group: acceptance_fixture_data_space
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Acceptance-fixture data-space creation coverage added by FE-CONTRACT-RUNTIME-02 (P1/P4). The
+    acceptance-fixture lane selects other tags, not this one, so it never re-runs. Wire it to a
+    governed ORM entry or retire the tag before treating the creation boundary as covered.
+  review_by: '2026-12-31'
 - group: acceptance_fixture_execution_freeze
   kind: odoo_tag
   status: on-demand
@@ -249,6 +258,15 @@ entries:
   dispose: wire-pending
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: data_space_boundary
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: wire-pending
+  reason: smart_core data-space registration boundary coverage added by FE-CONTRACT-RUNTIME-02 (P0
+    kernel). It asserts the persisted registration and tenant-space boundary, not whole-product data
+    rule acceptance. No governed ORM entry selects the tag yet; wire it or retire it.
   review_by: '2026-12-31'
 - group: demo_gate
   kind: odoo_tag
@@ -557,6 +575,15 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: payroll_data_space_rules
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Actual native XML payroll company rules read back from the smart_core security XML, added
+    by FE-CONTRACT-RUNTIME-02. Needs a governed ORM selection entry before it re-runs; the fixed-tag
+    ORM runner allowlist does not include it.
+  review_by: '2026-12-31'
 - group: perm_runtime_uid
   kind: odoo_tag
   status: unwired
@@ -788,6 +815,14 @@ entries:
   dispose: wire-pending
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: salary_summary_data_scope
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Salary summary company-scope coverage added by FE-CONTRACT-RUNTIME-02. Needs a governed
+    ORM selection entry before it re-runs; recorded as known coverage debt until then.
   review_by: '2026-12-31'
 - group: sc_approval_policy
   kind: odoo_tag

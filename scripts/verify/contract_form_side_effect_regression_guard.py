@@ -184,19 +184,21 @@ def main() -> int:
         if "busyKind.value" in onchange_body:
             errors.append("runOnchangeRoundtrip must stay silent and not own global busyKind")
 
+    # The action-feedback ownership predicate (owner.owns()) is part of the locked
+    # duplicate-click boundary: a superseded run must not confirm, save or clobber state.
     action_body = _method_body(action_runtime, "runAction")
     if not action_body:
         errors.append("useFormActionRuntime.ts must keep runAction transaction owner")
     else:
         for token in [
             "if (!action.enabled) return;",
-            "if (!await params.confirmActionSafety(action)) return;",
+            "if (!await params.confirmActionSafety(action) || (owner && !owner.owns())) return;",
             "const plan = buildFormActionExecutionPlan({",
             "if (plan.kind === 'scene_mutation')",
             "if (actionParams === null) return;",
             "params.busyKind.value = 'action';",
             "await params.executeSceneMutation({",
-            "if (!await params.ensureSavedBeforeRecordAction()) return;",
+            "if (!await params.ensureSavedBeforeRecordAction() || (owner && !owner.owns())) return;",
             "const response = await executeButton({",
             "applyFormRuntimeStatusEvent(params, {",
             "params.busyKind.value = null;",

@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 155,
+    "odoo_tags": 159,
     "gated": 4,
     "on_demand": 11,
-    "unwired": 140,
-    "odoo_tag_declarations": 362,
+    "unwired": 144,
+    "odoo_tag_declarations": 366,
     "gated_declarations": 88,
-    "uncovered_declarations": 274,
+    "uncovered_declarations": 278,
     "ci_unit_scripts": 14,
     "ci_unit_scripts_wired": 14,
     "ci_unit_scripts_unwired": 0
@@ -465,6 +465,18 @@
       "disposition": "wire-pending"
     },
     {
+      "group": "acceptance_fixture_data_space",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_acceptance_fixture/tests/test_data_space_creation.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
       "group": "acceptance_fixture_execution_freeze",
       "status": "on-demand",
       "kind": "odoo_tag",
@@ -742,6 +754,18 @@
         "addons/smart_construction_core/tests/test_data_permission_surface.py"
       ],
       "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "data_space_boundary",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_data_space_boundary.py"
+      ],
+      "owner": "platform-team",
       "evidence": [],
       "disposition": "wire-pending"
     },
@@ -1196,6 +1220,18 @@
       ]
     },
     {
+      "group": "payroll_data_space_rules",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_payroll_data_space_rules.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
       "group": "perm_runtime_uid",
       "status": "unwired",
       "kind": "odoo_tag",
@@ -1518,6 +1554,18 @@
       "declarations": 1,
       "files": [
         "addons/smart_construction_core/tests/test_runtime_user_management.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "salary_summary_data_scope",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_salary_summary_data_scope.py"
       ],
       "owner": "construction-product",
       "evidence": [],

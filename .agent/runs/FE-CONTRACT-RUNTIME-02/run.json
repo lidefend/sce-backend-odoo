@@ -915,6 +915,21 @@
         "make/ci.mk"
       ],
       "kind": "offline"
+    },
+    "arch_suite_evidence_drift_repair": {
+      "target": "verify.contract.architecture.suite",
+      "inputs": [
+        "make/ci.mk",
+        "scripts/verify/contract_form_side_effect_regression_guard.py",
+        "scripts/verify/test_coverage_registry.yaml",
+        "scripts/verify/test_coverage_registry_audit.py",
+        "scripts/ci/verify_contract_form_split_evidence.py",
+        "docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md",
+        "docs/audit/test_coverage_registry/test_coverage_registry.json",
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "frontend/apps/web/src/pages/contractForm/useFormActionRuntime.ts"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [
@@ -931,10 +946,10 @@
     "Delivery freeze is fail-closed on the registered contract defect CD-20261013-LAYOUT-COLUMNS-FALLBACK (frontend defaults/clamps columns when the declaration is missing); owned by T2/Step 5, not this batch.",
     "This run declares environment.kind=runtime, so the run evaluator marks every offline receipt stale ('runtime evidence requires authoritative environment readback'). Receipts are truthful but not reusable in-tool until that pre-existing declaration is reconciled.",
     "sc.ar.ap.report.summary (company_id column, action restricted to finance groups, typed-empty projection) still has no company rule; recorded for the Step 3 native-rule coverage pass.",
-    "Unattributed fact family discovered while classifying the 20 undecided-source models: sc.dashboard.cockpit.fact and sc.workbench.item carry ACL base.group_user 1111 with no ir.rule, and the shared sc.business.fact.mixin (also used by sc.document.admin.document, sc.office.admin.document, hr.payroll document) has no company field at all, so company isolation cannot be enforced; ownership must be anchored on project_id/company declaration before any write capability is kept. Owned by the next Step 1 slice (schema change -> authorized upgrade).",
+    "Corrected while closing data-scope batch 1: the earlier premise that the sc.business.fact.mixin family and the cockpit/workbench fact models have no company path was wrong - they carry project_id, so sc.dashboard.cockpit.fact, sc.workbench.item, sc.document.admin.document and sc.office.admin.document are now covered by a global company-scope ir.rule anchored on project_id.company_id (scripts/verify/data_scope_declarations.json). No schema change is required for isolation. What remains is governed activation readback (L3), not a schema change.",
     "verify.backend_business_fact.model_standard currently FAILs on documentation drift: docs/architecture/backend_business_model_audit_findings_v1.md records 372 model classes and 0 unclassified models while the measured values are 378 and 1. The target is a zero-reference lane entry (not reachable from any gate anchor), so it is not a blocker for this batch."
   ],
-  "next_exact_step": "Data-scope batch 1 (company ceiling rules) source-complete: 99 global company-scope ir.rule added, explicit declaration registry + fail-closed guard wired into verify.contract.architecture.suite. NEXT: verify the rules activate without breaking legitimate flows once a governed upgrade is authorized (L3): make local.dev.snapshot then make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core, then re-run local.dev.data_scope.inventory and compare installed_company_scoped_rule_count. Then batch 2: give the 5 actor-only models (sc.scene, sc.pack.registry, sc.scene.validation, sc.capability.audit.log, sc.scene.audit.log) a real ownership anchor, and re-check the residual company_id = False visibility for business documents.",
+  "next_exact_step": "Architecture suite is green again after the P4 evidence/guard refresh (split evidence, test-coverage registry, side-effect token lock - all drift from earlier branch frontend commits, not the company-rule change). Data-scope batch 1 (99 global company-scope ir.rule for the declared P1 models) is source-complete with a fail-closed coverage guard. NEXT, in order: (1) L3 activation readback - after a governed make local.dev.snapshot, run make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core, then re-run make local.dev.data_scope.inventory and compare installed_company_scoped_rule_count; (2) batch 2 - find a real ownership anchor for the 5 actor-only models (sc.scene, sc.pack.registry, sc.scene.validation, sc.capability.audit.log, sc.scene.audit.log); (3) re-check the residual company_id = False visibility for business documents.",
   "acceptance_authority_layout": {
     "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
     "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",
@@ -2917,5 +2932,35 @@
       "scope_note": "A price row without a project has no company fact, so its derived company stays False and the rule keeps it visible as a company-wide default, exactly as before this slice."
     },
     "runtime_pending": "No governed module upgrade was run, so sc_dev_demo still holds the pre-change model and rule state; L3 readback of the derived column and the new rule domain awaits write authorization."
+  },
+  "contract_runtime_evidence_drift_repair": {
+    "status": "closed",
+    "trigger": "verify.contract.architecture.suite failed on three pre-existing gates after nothing in the data-scope batch touched them; all three are evidence/guard drift introduced by earlier FE-CONTRACT-RUNTIME-02 frontend commits (265963f6 and earlier), not by the company-rule change.",
+    "layer": "P4 evidence/guard refresh only; no product behaviour change",
+    "items": [
+      {
+        "gate": "verify.contract_form_split_evidence",
+        "cause": "ContractFormPage.vue grew 2012 -> 2024 in 265963f6 while docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md still recorded 2012",
+        "fix": "make refresh.contract_form_split_evidence (the sanctioned writer); 2024 stays below the 5947-line complexity ceiling"
+      },
+      {
+        "gate": "verify.test.coverage.registry",
+        "cause": "four odoo groups declared by this branch (data_space_boundary, salary_summary_data_scope, payroll_data_space_rules, acceptance_fixture_data_space) had no disposition and the tracked snapshot was stale",
+        "fix": "make test.coverage.registry.seed, then specific owner/reason review of the four seeded entries, then make test.coverage.registry.export",
+        "note": "recorded as unwired/wire-pending debt, the repository's existing disposition for a declared group with no governed selection entry; wiring them to a governed ORM lane is follow-up work"
+      },
+      {
+        "gate": "contract_form_side_effect_regression_guard",
+        "cause": "265963f6 added the action-feedback ownership predicate (owner && !owner.owns()) to runAction but left the guard's exact-token lock at the pre-ownership form",
+        "fix": "refresh the two locked tokens to the ownership-checked form; a negative test that removes the predicate still FAILs the guard"
+      }
+    ],
+    "evidence": [
+      ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/arch_suite_drift_repair_pass.log",
+      ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/arch_suite_recipe_sweep_20261014.log",
+      ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/ci_local_iteration_drift_repair.log"
+    ],
+    "verification": "verify.contract.architecture.suite exit=0 (30 unittest groups, 316 tests); all 56 suite recipe lines also run individually (55 passed, the single failure fixed); ci.local.iteration PASS; negative mutation re-confirmed the side-effect guard fails closed",
+    "limits": "the refreshed checks are syntax locks, so a future semantic change to the action-feedback ownership boundary must consciously update the side-effect guard"
   }
 }
