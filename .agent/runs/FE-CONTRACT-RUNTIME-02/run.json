@@ -29,11 +29,191 @@
     "docs/engineering_convergence/",
     "scripts/audit/",
     "scripts/ci/",
-    "docs/audit/"
+    "docs/audit/",
+    "make/dev.mk",
+    "scripts/dev/",
+    "config/acceptance/",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+    "addons/smart_construction_core/views/core/project_views.xml",
+    "addons/smart_construction_core/tests/test_project_initiation_native_lowcode.py",
+    "docs/architecture/unified_page_contract_v2/",
+    "frontend/apps/web/src/components/design-system/",
+    ".agent/decisions/layout-contract-ownership.yaml",
+    "docs/architecture/backend_contract_boundaries.md",
+    "docs/architecture/native_view_reuse_frontend_spec_v1.md",
+    "addons/smart_core/core/form_structure_authority.py",
+    "addons/smart_core/core/form_configuration_compiler.py",
+    "addons/smart_core/core/view_orchestrator.py",
+    "addons/smart_core/model/ui_business_config_contract.py",
+    "addons/smart_core/tests/test_view_orchestrator.py",
+    "addons/smart_core/handlers/ui_contract_v2_projection.py",
+    "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+    "frontend/apps/web/src/components/template/layoutSpan.ts",
+    "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+    "frontend/apps/web/src/components/template/FormSection.vue",
+    "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
+    "frontend/apps/web/src/pages/contractForm/canonicalNativeFormBridge.ts",
+    "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+    "frontend/apps/web/src/app/presentation/canonicalFormRenderModel.ts",
+    "frontend/apps/web/src/app/contracts/v2/schema.ts",
+    "scripts/verify/frontend_form_canvas_layout_contract_test.ts",
+    "scripts/verify/frontend_form_canvas_wide_grid_guard.py",
+    "scripts/verify/test_frontend_form_canvas_wide_grid_guard.py",
+    "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+    "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+    "docs/architecture/native_view_reuse_frontend_spec_v1.en.md",
+    "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+    "addons/smart_core/handlers/business_config_change_set.py",
+    "addons/smart_core/tests/test_business_config_change_set.py",
+    "frontend/apps/web/src/api/businessConfig.ts",
+    "frontend/apps/web/src/pages/contractForm/BoundFormSettingsPanel.vue",
+    "frontend/apps/web/src/pages/contractForm/useFormConfigSaveRuntime.ts",
+    "frontend/apps/web/scripts/formal_form_lowcode_loop.mjs",
+    "scripts/verify/local_dev_form_lowcode_scope.py",
+    "frontend/apps/web/src/app/contract/contractAuthLevel.ts",
+    "frontend/apps/web/src/app/runtime/recordEntryContract.ts",
+    "addons/smart_construction_core/models/core/project_core.py",
+    "addons/smart_construction_core/data/view_orchestration_form_section_contract_data.xml",
+    "scripts/verify/local_dev_project_create_contract_action_scope.py",
+    "scripts/dev/local_environment_doctor.sh",
+    "addons/smart_core/core/contract_lifecycle.py",
+    "addons/smart_core/tests/test_contract_lifecycle.py",
+    "docs/architecture/unified_page_contract_v2/examples/",
+    "addons/smart_construction_core/views/core/payment_request_views.xml",
+    "addons/smart_construction_core/data/payment_request_form_productization_contract.xml",
+    "addons/smart_construction_core/models/support/workflow_contract_service.py",
+    "frontend/apps/web/src/pages/contractForm/contractActionPresentation.ts",
+    "frontend/apps/web/src/pages/contractForm/actionContract.ts",
+    "addons/smart_construction_core/handlers/payment_request_available_actions.py",
+    "addons/smart_construction_core/tests/test_payment_request_available_actions_backend.py",
+    "docs/architecture/unified_page_contract_v2_action_contract_batch_d.md",
+    "addons/smart_core/core/action_guidance.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/test_action_guidance.py",
+    "addons/smart_construction_core/models/support/partner_business.py",
+    "addons/smart_construction_core/models/core/payment_request.py",
+    "addons/smart_construction_core/core_extension.py",
+    "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py",
+    "addons/smart_construction_core/models/core/payment_ledger.py",
+    "addons/smart_construction_core/tests/test_p1_funding_authority.py",
+    "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+    "addons/smart_construction_core/views/support/labor_product_views.xml",
+    "addons/smart_construction_core/views/support/quality_acceptance_views.xml",
+    "addons/smart_construction_core/views/support/tender_product_views.xml",
+    "addons/smart_construction_core/views/support/variation_change_views.xml",
+    "addons/smart_construction_core/views/core/equipment_management_views.xml",
+    "addons/smart_construction_core/views/core/subcontract_management_views.xml",
+    "addons/smart_construction_core/views/core/material_supplier_return_views.xml",
+    "addons/smart_construction_core/views/core/hr_payroll_document_views.xml",
+    "addons/smart_construction_core/views/support/current_account_workspace_views.xml",
+    "addons/smart_construction_core/views/support/company_project_refund_workspace_views.xml",
+    "addons/smart_construction_core/views/support/team_loan_deduction_workspace_views.xml",
+    "addons/smart_construction_core/views/core/cost_domain_views.xml",
+    "addons/smart_construction_core/views/core/material_acceptance_views.xml",
+    "addons/smart_construction_core/views/core/contract_views.xml",
+    "addons/smart_construction_core/models/support/quality_acceptance.py",
+    "addons/smart_construction_core/models/support/business_form_policy_templates.py",
+    "addons/smart_construction_core/models/support/labor_product.py",
+    "addons/smart_construction_core/models/support/tender_product.py",
+    "addons/smart_construction_core/models/support/team_loan_deduction_workspace.py",
+    "addons/smart_construction_core/models/support/current_account_workspace.py",
+    "addons/smart_construction_core/models/support/variation_change.py",
+    "addons/smart_construction_core/models/support/tender.py",
+    "addons/smart_construction_core/models/support/company_project_refund_workspace.py",
+    "addons/smart_construction_core/models/core/hr_payroll_document.py",
+    "addons/smart_construction_core/models/core/subcontract_management.py",
+    "addons/smart_construction_core/models/core/material_supplier_return.py",
+    "addons/smart_construction_core/models/core/labor_product_extension.py",
+    "addons/smart_construction_core/models/core/equipment_management.py",
+    "addons/smart_construction_core/data/quality_safety_form_productization_contract.xml",
+    "addons/smart_construction_core/data/company_project_refund_workspace_contract.xml",
+    "addons/smart_construction_core/data/current_account_workspace_contract.xml",
+    "addons/smart_construction_core/data/team_loan_deduction_workspace_contract.xml",
+    "addons/smart_core/core/navigation_entry_target.py",
+    "addons/smart_core/tests/test_navigation_entry_target.py",
+    "frontend/packages/schema/src/index.ts",
+    "frontend/apps/web/src/api/executeButton.ts",
+    "frontend/packages/ui/src/primitives.ts",
+    "addons/smart_construction_core/views/core/project_overview_views.xml",
+    "addons/smart_construction_core/views/core/project_information_edit_views.xml",
+    "addons/smart_construction_core/views/core/historical_payment_fact_views.xml",
+    "addons/smart_construction_core/views/support/tender_views.xml",
+    "addons/smart_construction_core/views/support/user_confirmed_formal_list_views.xml",
+    "addons/smart_core/model/base_field_presentation.py",
+    "addons/smart_core/model/__init__.py",
+    "addons/smart_core/core/field_presentation_usage.py",
+    "addons/smart_construction_core/models/support/system_default_mixin.py",
+    "addons/smart_construction_core/models/support/company_contractor_responsibility_context_mixin.py",
+    "addons/smart_core/utils/native_field_descriptor.py",
+    "addons/smart_core/handlers/form_field_configuration.py",
+    "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+    "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_construction_core/data/native_guidance_form_retirement.xml",
+    "addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml",
+    "make/contract.mk",
+    "addons/smart_construction_core/data/expense_claim_form_productization_contract.xml",
+    "addons/smart_construction_core/data/business_category_seed.xml",
+    "addons/smart_construction_core/views/core/expense_claim_views.xml",
+    "addons/smart_construction_core/views/core/receipt_income_views.xml",
+    "addons/smart_construction_core/views/core/self_funding_registration_views.xml",
+    "addons/smart_construction_core/views/core/tax_deduction_registration_views.xml",
+    "addons/smart_construction_core/views/core/payment_execution_views.xml",
+    "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_receipt_income_native_lowcode.py",
+    "addons/smart_core/views/ui_menu_config_policy_views.xml",
+    "addons/smart_core/model/ui_menu_config_policy.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_payment_request_floorplan_demo.py",
+    "scripts/demo/run_seed.sh",
+    "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+    "addons/smart_construction_core/views/menu_product_project_wave1.xml",
+    "config/product_menu_contract_v1.json",
+    "addons/smart_construction_core/data/product_menu_source.json",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+    "addons/smart_construction_core/services/product_menu_source.py",
+    "addons/smart_construction_core/services/locked_menu_policy_contract.py",
+    "addons/smart_construction_core/models/support/product_policy_sync.py",
+    "make/dev_test.mk",
+    "Dockerfile.production-candidate",
+    "scripts/release/test_production_release_contract.py",
+    "scripts/release/test_locked_menu_policy_contract.py",
+    "addons/smart_construction_core/views/menu_product_finance_wave1.xml",
+    "addons/smart_construction_core/data/remaining_p2_form_productization_contract.xml",
+    "addons/smart_core/delivery/menu_service.py",
+    "addons/smart_core/tests/test_delivery_menu_entry_target.py",
+    "addons/smart_construction_core/services/payment_slice_entry_service.py",
+    "scripts/verify/test_payment_slice_data_authority.py",
+    "addons/smart_core/models/tenant_payload_import_batch.py",
+    "addons/smart_core/models/res_users.py",
+    "addons/smart_core/tests/test_data_space_boundary.py",
+    "addons/smart_core/tests/__init__.py",
+    "addons/smart_core/security/data_space.py",
+    "scripts/verify/test_data_space_policy.py",
+    "addons/smart_construction_core/models/support/contract_center.py",
+    "addons/smart_core/security/smart_core_security.xml",
+    "scripts/verify/local_dev_data_scope_inventory.py",
+    ".agent/decisions/data-authority-boundary.yaml",
+    "addons/smart_construction_core/models/projection/salary_summary.py",
+    "addons/smart_construction_core/models/projection/interfund_movement_project_summary.py",
+    "addons/smart_construction_core/models/projection/interfund_movement_fact.py",
+    "addons/smart_construction_core/views/projection/interfund_movement_project_summary_views.xml",
+    "addons/smart_construction_core/tests/test_p1_finance_projection_authority.py",
+    "addons/smart_construction_core/tests/test_um_p2_interfund_relation_aggregation_boundaries.py",
+    "addons/smart_construction_core/tests/test_salary_summary_data_scope.py",
+    "addons/smart_construction_core/tests/__init__.py",
+    "addons/smart_construction_core/tests/test_project_salary_product.py",
+    "addons/smart_construction_core/security/sc_record_rules.xml",
+    "addons/smart_construction_core/tests/test_payroll_data_space_rules.py",
+    "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_data_space_creation.py",
+    "addons/smart_construction_acceptance_fixture/tests/__init__.py"
   ],
   "environment": {
-    "kind": "offline",
-    "authority": "existing local Make entrypoints and bundled frontend dependencies; no database, service or browser access in this batch"
+    "kind": "runtime",
+    "authority": "Existing make local.dev.* only; sc-local-dev/sc_dev_demo, ^sc_dev_demo$, sc_local_dev_db_data/sc_local_dev_redis_data/sc_local_dev_odoo_data; credentials from LOCAL_DEV_ENV_FILE. Read-only affected-surface product review; no fixture reset or business writes. Runtime receipts require declared readback.",
+    "base_url": "http://127.0.0.1:18081",
+    "database": "sc_dev_demo"
   },
   "checks": {
     "contract_basis_guard": {
@@ -77,7 +257,10 @@
       "inputs": [
         "frontend/apps/web/src/app/runtime/recordEntryContract.ts",
         "frontend/apps/web/scripts/record_entry_contract_test.ts",
-        "frontend/apps/web/scripts/collection_view_semantics_test.ts"
+        "frontend/apps/web/scripts/collection_view_semantics_test.ts",
+        "frontend/apps/web/src/app/contract/contractGap.ts",
+        "addons/smart_core/core/navigation_entry_target.py",
+        "addons/smart_core/tests/test_navigation_entry_target.py"
       ],
       "kind": "offline"
     },
@@ -156,7 +339,9 @@
         "scripts/verify/test_business_entry_matrix_incremental.py",
         "scripts/verify/business_entry_negative_closures.mjs",
         "scripts/ops/evidence_scope.py",
-        "make/frontend.mk"
+        "make/frontend.mk",
+        "scripts/verify/business_entry_matrix_browser.mjs",
+        "scripts/verify/lib/frontend_acceptance_environment.mjs"
       ],
       "kind": "offline"
     },
@@ -202,8 +387,2261 @@
         "scripts/ci/test_secret_scan.py"
       ],
       "kind": "offline"
+    },
+    "record_entry_navigation": {
+      "target": "verify.frontend.collection_row_action_identity.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/runtime/recordEntryContract.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewNavigationRuntime.ts",
+        "frontend/apps/web/scripts/collection_row_action_identity_test.ts",
+        "make/frontend.mk",
+        "frontend/apps/web/src/app/contract/contractGap.ts"
+      ]
+    },
+    "local_floorplan_contract_binding": {
+      "target": "verify.frontend.list_surface_search_contract.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/acceptance_contract_receipt_test.mjs",
+        "scripts/verify/lib/acceptance_contract_receipt.mjs",
+        "scripts/verify/local_dev_payment_request_floorplan_readonly.mjs",
+        "scripts/verify/local_dev_payment_request_floorplan_readonly.sh",
+        "scripts/verify/local_dev_payment_request_native_parity_ids.py",
+        "scripts/ops/dev_acceptance_release_probe.py",
+        "config/acceptance/backend_contract_instance_daily_v1.json",
+        "make/dev.mk",
+        "make/frontend.mk",
+        "scripts/verify/test_frontend_list_surface_search_contract.py"
+      ]
+    },
+    "mounted_detail_consumption": {
+      "target": "verify.frontend.professional_relation_field.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+        "frontend/apps/web/scripts/professional_relation_field_model_test.ts",
+        "frontend/apps/web/scripts/relation_column_descriptor_authority_test.ts",
+        "frontend/apps/web/src/components/template",
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "header_action_unique": {
+      "target": "verify.frontend.product_page_header.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+        "frontend/apps/web/src/pages/contractForm/mobileFormActionSettlement.ts",
+        "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+        "frontend/apps/web/scripts/product_page_header_model_test.ts",
+        "frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
+        "make/frontend.mk",
+        "frontend/apps/web/src/components/design-system/",
+        "frontend/apps/web/src/pages/contractForm/useRecordFormLayout.ts"
+      ]
+    },
+    "native_action_declaration": {
+      "target": "verify.frontend.native_form_action_presentation.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "frontend/apps/web/src/components/template/NativeSmartAction.vue",
+        "scripts/verify/frontend_native_form_action_presentation_guard.py",
+        "scripts/verify/test_frontend_native_form_action_presentation_guard.py",
+        "scripts/verify/frontend_native_form_action_presentation_browser.mjs",
+        "scripts/verify/local_dev_candidate_visual_smoke.mjs",
+        "make/frontend.mk"
+      ]
+    },
+    "workflow_denial_message": {
+      "target": "verify.unified_page_contract.v2.runtime",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+        "docs/architecture/unified_page_contract_v2/",
+        "make/ci.mk",
+        "addons/smart_core/core/action_guidance.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py"
+      ]
+    },
+    "workflow_message_consumer": {
+      "target": "verify.frontend.professional_workflow.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/contracts/v2/",
+        "frontend/apps/web/src/app/presentation/",
+        "frontend/apps/web/src/pages/contractForm/",
+        "frontend/apps/web/scripts/professional_workflow_model_test.ts",
+        "scripts/verify/frontend_professional_workflow_guard.py",
+        "scripts/verify/test_frontend_professional_workflow_guard.py",
+        "make/frontend.mk"
+      ]
+    },
+    "canonical_message_projection": {
+      "target": "verify.frontend.canonical_form_presenter.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/contracts/v2/",
+        "frontend/apps/web/src/app/presentation/",
+        "frontend/apps/web/src/pages/contractForm/",
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "denial_primitive_adapter": {
+      "target": "verify.frontend.primitive_adapter.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/components/design-system/",
+        "frontend/apps/web/scripts/primitive_adapter_contract_test.ts",
+        "scripts/verify/frontend_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_primitive_adapter_guard.py",
+        "make/frontend.mk"
+      ]
+    },
+    "workflow_message_strict": {
+      "target": "verify.frontend.typecheck.strict",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk",
+        "frontend/packages/design-tokens/README.md",
+        "frontend/packages/design-tokens/dist/shared/tokens.ts",
+        "frontend/packages/design-tokens/dist/web/tokens.css",
+        "frontend/packages/design-tokens/dist/web/tokens.dark.css",
+        "frontend/packages/design-tokens/dist/web/tokens.light.css",
+        "frontend/packages/design-tokens/package.json",
+        "frontend/packages/design-tokens/platform/mini.json",
+        "frontend/packages/design-tokens/platform/mobile.json",
+        "frontend/packages/design-tokens/platform/web.json",
+        "frontend/packages/design-tokens/scripts/build_tokens.py",
+        "frontend/packages/design-tokens/scripts/verify_tokens.py",
+        "frontend/packages/design-tokens/tests_build_tokens.py",
+        "frontend/packages/design-tokens/token-authority.json",
+        "frontend/packages/design-tokens/tokens/base.json",
+        "frontend/packages/design-tokens/tokens/component.json",
+        "frontend/packages/design-tokens/tokens/pattern.json",
+        "frontend/packages/design-tokens/tokens/semantic.dark.json",
+        "frontend/packages/design-tokens/tokens/semantic.light.json",
+        "frontend/packages/schema/package.json",
+        "frontend/packages/schema/src/actionSemantics.ts",
+        "frontend/packages/schema/src/index.ts",
+        "frontend/packages/sdk/package.json",
+        "frontend/packages/tools/package.json",
+        "frontend/packages/ui/package.json",
+        "frontend/packages/ui/src/bridge.ts",
+        "frontend/packages/ui/src/collection.ts",
+        "frontend/packages/ui/src/components/SceneCollectionSurface.vue",
+        "frontend/packages/ui/src/components/SceneHierarchySurface.vue",
+        "frontend/packages/ui/src/components/SceneObjectPage.vue",
+        "frontend/packages/ui/src/components/SceneUiProvider.vue",
+        "frontend/packages/ui/src/components/primitives/SceneActivityTabs.vue",
+        "frontend/packages/ui/src/components/primitives/SceneButton.vue",
+        "frontend/packages/ui/src/components/primitives/SceneFieldControl.vue",
+        "frontend/packages/ui/src/components/primitives/SceneNotice.vue",
+        "frontend/packages/ui/src/components/primitives/ScenePageFrame.vue",
+        "frontend/packages/ui/src/components/primitives/SceneRelationTable.vue",
+        "frontend/packages/ui/src/components/primitives/SceneReviewPanel.vue",
+        "frontend/packages/ui/src/components/primitives/SceneWorkspaceHeader.vue",
+        "frontend/packages/ui/src/components/primitives/sceneFieldControlValue.ts",
+        "frontend/packages/ui/src/contracts/normalizedCollectionAdapter.ts",
+        "frontend/packages/ui/src/contracts/sceneCollection.ts",
+        "frontend/packages/ui/src/contracts/sceneObjectPage.ts",
+        "frontend/packages/ui/src/form.ts",
+        "frontend/packages/ui/src/icons.ts",
+        "frontend/packages/ui/src/index.ts",
+        "frontend/packages/ui/src/kits/context.ts",
+        "frontend/packages/ui/src/kits/preference.ts",
+        "frontend/packages/ui/src/kits/registry.ts",
+        "frontend/packages/ui/src/kits/tdesign/register.ts",
+        "frontend/packages/ui/src/kits/tdesign/theme.css",
+        "frontend/packages/ui/src/kits/tokens.ts",
+        "frontend/packages/ui/src/kits/types.ts",
+        "frontend/packages/ui/src/primitives.ts"
+      ]
+    },
+    "layout_authority_probe": {
+      "target": "verify.local.dev.layout_authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/local_dev_payment_request_native_parity_ids.py",
+        "scripts/verify/local_dev_payment_request_floorplan_readonly.sh",
+        "scripts/verify/test_local_development_lifecycle.py",
+        "make/dev.mk"
+      ]
+    },
+    "role_layout_guard": {
+      "target": "verify.business_config.formal_list.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/form_structure_authority.py",
+        "addons/smart_core/core/form_configuration_compiler.py",
+        "addons/smart_core/core/view_orchestrator.py",
+        "addons/smart_core/model/ui_business_config_contract.py",
+        "addons/smart_core/tests/test_view_orchestrator.py",
+        "make/runtime_ops.mk",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "addons/smart_core/tests/test_load_contract_response_cache.py",
+        "scripts/verify/test_formal_list_configuration_baseline.py",
+        "addons/smart_core/core/field_presentation_usage.py",
+        "addons/smart_core/model/base_field_presentation.py",
+        "addons/smart_core/model/__init__.py",
+        "addons/smart_core/utils/native_field_descriptor.py",
+        "addons/smart_core/handlers/form_field_configuration.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py"
+      ]
+    },
+    "columns_backend": {
+      "target": "verify.business_config.formal_list.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/handlers/ui_contract_v2_projection.py",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "frontend/apps/web/src/components/template/layoutSpan.ts",
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
+        "frontend/apps/web/src/pages/contractForm/canonicalNativeFormBridge.ts",
+        "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+        "frontend/apps/web/src/app/presentation/canonicalFormRenderModel.ts",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "scripts/verify/frontend_form_canvas_layout_contract_test.ts",
+        "scripts/verify/frontend_form_canvas_wide_grid_guard.py",
+        "scripts/verify/test_frontend_form_canvas_wide_grid_guard.py",
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+        "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+        "docs/architecture/native_view_reuse_frontend_spec_v1.en.md",
+        "addons/smart_core/core/form_structure_authority.py",
+        "addons/smart_core/core/form_configuration_compiler.py",
+        "addons/smart_core/model/ui_business_config_contract.py",
+        "make/frontend.mk",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json"
+      ]
+    },
+    "columns_layout": {
+      "target": "verify.frontend.form_canvas_layout.guard",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/handlers/ui_contract_v2_projection.py",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "frontend/apps/web/src/components/template/layoutSpan.ts",
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
+        "frontend/apps/web/src/pages/contractForm/canonicalNativeFormBridge.ts",
+        "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+        "frontend/apps/web/src/app/presentation/canonicalFormRenderModel.ts",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "scripts/verify/frontend_form_canvas_layout_contract_test.ts",
+        "scripts/verify/frontend_form_canvas_wide_grid_guard.py",
+        "scripts/verify/test_frontend_form_canvas_wide_grid_guard.py",
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+        "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+        "docs/architecture/native_view_reuse_frontend_spec_v1.en.md",
+        "addons/smart_core/core/form_structure_authority.py",
+        "addons/smart_core/core/form_configuration_compiler.py",
+        "addons/smart_core/model/ui_business_config_contract.py",
+        "make/frontend.mk",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json"
+      ]
+    },
+    "columns_canonical": {
+      "target": "verify.frontend.canonical_form_presenter.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/handlers/ui_contract_v2_projection.py",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "frontend/apps/web/src/components/template/layoutSpan.ts",
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
+        "frontend/apps/web/src/pages/contractForm/canonicalNativeFormBridge.ts",
+        "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+        "frontend/apps/web/src/app/presentation/canonicalFormRenderModel.ts",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "scripts/verify/frontend_form_canvas_layout_contract_test.ts",
+        "scripts/verify/frontend_form_canvas_wide_grid_guard.py",
+        "scripts/verify/test_frontend_form_canvas_wide_grid_guard.py",
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+        "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+        "docs/architecture/native_view_reuse_frontend_spec_v1.en.md",
+        "addons/smart_core/core/form_structure_authority.py",
+        "addons/smart_core/core/form_configuration_compiler.py",
+        "addons/smart_core/model/ui_business_config_contract.py",
+        "make/frontend.mk",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json"
+      ]
+    },
+    "lowcode_scope_backend": {
+      "target": "verify.business_config.formal_list.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/handlers/business_config_change_set.py",
+        "addons/smart_core/tests/test_business_config_change_set.py",
+        "frontend/apps/web/src/api/businessConfig.ts",
+        "frontend/apps/web/src/pages/contractForm/BoundFormSettingsPanel.vue",
+        "frontend/apps/web/src/pages/contractForm/useFormConfigSaveRuntime.ts",
+        "frontend/apps/web/scripts/formal_form_lowcode_loop.mjs",
+        "scripts/verify/local_dev_form_lowcode_scope.py",
+        "addons/smart_core/core/form_structure_authority.py",
+        "addons/smart_core/core/form_configuration_compiler.py",
+        "addons/smart_core/model/ui_business_config_contract.py",
+        "addons/smart_core/model/ui_business_config_change_set.py",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "addons/smart_core/tests/test_view_orchestrator.py",
+        "make/runtime_ops.mk",
+        "make/frontend.mk"
+      ]
+    },
+    "lowcode_scope_frontend": {
+      "target": "verify.business_config.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/handlers/business_config_change_set.py",
+        "addons/smart_core/tests/test_business_config_change_set.py",
+        "frontend/apps/web/src/api/businessConfig.ts",
+        "frontend/apps/web/src/pages/contractForm/BoundFormSettingsPanel.vue",
+        "frontend/apps/web/src/pages/contractForm/useFormConfigSaveRuntime.ts",
+        "frontend/apps/web/scripts/formal_form_lowcode_loop.mjs",
+        "scripts/verify/local_dev_form_lowcode_scope.py",
+        "addons/smart_core/core/form_structure_authority.py",
+        "addons/smart_core/core/form_configuration_compiler.py",
+        "addons/smart_core/model/ui_business_config_contract.py",
+        "addons/smart_core/model/ui_business_config_change_set.py",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "addons/smart_core/tests/test_view_orchestrator.py",
+        "make/runtime_ops.mk",
+        "make/frontend.mk",
+        "frontend/apps/web/scripts/business_config_change_set_presentation_test.ts",
+        "frontend/apps/web/scripts/business_config_draft_scope_race_test.mjs",
+        "frontend/apps/web/scripts/designer_draft_ownership_test.mjs",
+        "frontend/apps/web/scripts/designer_popup_readiness_test.mjs",
+        "frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts"
+      ]
+    },
+    "floorplan_evidence_recording": {
+      "target": "verify.local.development_lifecycle.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/test_local_development_lifecycle.py",
+        "scripts/verify/local_dev_payment_request_floorplan_readonly.sh",
+        "scripts/verify/local_dev_payment_request_floorplan_readonly.mjs",
+        "scripts/verify/local_dev_payment_request_native_parity_ids.py",
+        "scripts/ops/evidence_scope.py",
+        "scripts/verify/lib/acceptance_contract_receipt.mjs",
+        "make/dev.mk"
+      ]
+    },
+    "environment_doctor_readback": {
+      "target": "verify.local.development_lifecycle.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/dev/local_environment_doctor.sh",
+        "scripts/verify/test_local_development_lifecycle.py",
+        "scripts/common/env.sh",
+        "scripts/common/compose.sh",
+        "make/dev.mk"
+      ]
+    },
+    "schema_digest_authority": {
+      "target": "verify.backend.contract_lifecycle.authority",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/contract_lifecycle.py",
+        "addons/smart_core/tests/test_contract_lifecycle.py",
+        "addons/smart_core/tests/test_backend_contract_boundary_guard.py",
+        "docs/architecture/unified_page_contract_v2/",
+        "scripts/verify/contract_schema_declaration_sync.py",
+        "scripts/verify/test_contract_schema_declaration_sync.py",
+        "scripts/verify/backend_contract_lifecycle_authority_guard.py",
+        "scripts/verify/test_backend_contract_lifecycle_runtime_schema_guard.py",
+        "scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py",
+        "make/dev_test.mk"
+      ]
+    },
+    "payment_guidance_declarations": {
+      "target": "verify.native_view.workflow_action_coverage",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "addons/smart_construction_core/views/core/payment_request_views.xml",
+        "addons/smart_construction_core/data/payment_request_form_productization_contract.xml",
+        "addons/smart_construction_core/handlers/payment_request_available_actions.py",
+        "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
+        "scripts/verify/workflow_contract_profile_loader.py",
+        "scripts/verify/native_view_workflow_action_coverage_guard.py",
+        "make/ci.mk",
+        "addons/smart_construction_core/models/support/partner_business.py",
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py",
+        "addons/smart_construction_core/models/core/payment_ledger.py",
+        "addons/smart_construction_core/views",
+        "addons/smart_construction_core/models/support",
+        "addons/smart_construction_core/data"
+      ]
+    },
+    "native_action_result": {
+      "target": "verify.frontend.contract_header_action.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/schema/src",
+        "frontend/packages/ui/src",
+        "frontend/pnpm-lock.yaml",
+        "frontend/apps/web/package.json",
+        "make/frontend.mk",
+        "frontend/apps/web/scripts/contract_header_action_presentation_test.ts",
+        "frontend/apps/web/scripts/native_action_notification_test.ts"
+      ]
+    },
+    "native_guidance_markup": {
+      "target": "verify.frontend.native_text_presentation.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/schema/src",
+        "frontend/packages/ui/src",
+        "frontend/pnpm-lock.yaml",
+        "frontend/apps/web/package.json",
+        "make/frontend.mk",
+        "frontend/apps/web/scripts/native_text_presentation_test.ts"
+      ]
+    },
+    "interfund_project_summary_partition": {
+      "target": "verify.interfund_movement_project.summary.audit",
+      "inputs": [
+        "addons/smart_construction_core/models/projection/interfund_movement_project_summary.py",
+        "addons/smart_construction_core/models/projection/interfund_movement_fact.py",
+        "scripts/verify/interfund_movement_project_summary_audit.py"
+      ],
+      "kind": "runtime"
     }
   },
-  "blockers": [],
-  "next_exact_step": "Steps 1-5 of the owner 9-step plan are closed on this candidate: P4 governance verified (archive fetch wired, reuse identity binds acting role closure, clean-env guard fails closed); the status-bar node-identity regression, the none/read/edit/admin occurrence consumption and the read-only detail visibility are fixed and now locked (detail_collection_pagination_test.ts + frontend_professional_detail_collection_guard.py, recorded as professional_detail_collection_guard); and the contract producer->consumer chain (collection_capabilities.actions, relation_entry.page_size, containerTree span, entry_target.record_entry, permission auth level) is verified end to end with verify.frontend.contract_basis.enforce PASS (open_defects=0). Next: step 6 consolidated affected-surface product review - generate affected keys with scripts/ops/evidence_scope.py, approve the backend contract first and then verify the frontend consumes the same instance, covering form create-visibility / same-field-multiple-occurrences / legal+illegal span, permission none/read/edit/admin with real representative roles (not admin-only), master-detail blank-visible rows + non-default page size + cross-page count consistency, collection/entry action display-disable-invoke and record entry edit/readonly consistency, and the affected template at desktop and narrow viewports; then independent re-review, freeze the clean candidate, one exact-head Quick, protected PR merge, and target-environment upgrade/user acceptance as separate verdicts."
+  "blockers": [
+    "P3 risk severity editing/publishing unavailable; current operational policy is DB-global",
+    "Authorized clean install and baseline generation in progress",
+    "Project create four keys runtime in progress",
+    "Frozen independent review and delivery gates not_run",
+    "Accounting navigation order repair awaits governed runtime verification",
+    "P0 catalog/default fallback and release-snapshot authority audit incomplete",
+    "Full native product-vs-experiment disposition incomplete; preview129 source / installed preview109 is intermediate, not final scope",
+    "P0 edition boundary reproduced: role-exposed native menu absent from product policy can be appended; block further menu runtime publication pending product/platform plane enforcement",
+    "Administrator capability-model ownership and function/data separation not yet closed",
+    "Pure administrator data-denial and final historical menu monotonicity not yet verified"
+  ],
+  "next_exact_step": "Inspect sc.interfund.movement.project.summary and source sc.interfund.movement.fact ownership and existing tests; record exact affected set; create cross-company/currency partition and drilldown counterexamples before fixing the P1 source/SQL boundary.",
+  "acceptance_authority_layout": {
+    "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
+    "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",
+    "investigation": "Compare actual non-sudo actors and effective configuration provenance; denial is not_comparable, not a sudo retry.",
+    "authority_layers": [
+      "model default view: base source only",
+      "action-selected pay_form: fixed entry layout baseline",
+      "ACL projection: authorized visibility/readonly/actions; role_key-selected configuration is a separate mechanism and must be reported",
+      "frontend: consumes final contract; no role-driven template/reordering"
+    ],
+    "mode_comparison": "requested edit does not prove effective edit; report actual effectiveRenderProfile, differing modes are not same-edit comparison"
+  },
+  "layout_authority_diagnostic_validation": {
+    "prior_target": "verify.local.development_lifecycle.unit",
+    "status": "failed",
+    "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/layout_authority_probe.log",
+    "failures": [
+      "full_chain old primary selector",
+      "parity old locateCollectionRecord token",
+      "submit_reset old sync_demo token"
+    ],
+    "impact": "These historical browser/write journey assertions do not execute the new readonly authority class. They remain unresolved; focused authority target does not claim whole lifecycle PASS."
+  },
+  "layout_authority_observation": {
+    "stage_head": "b5728a5220dabdd98ea1ec9f549df5646c2bcc4d",
+    "dirty": true,
+    "execution": "governed local.dev readonly Odoo handler; business actors sudo(False), metadata resolver retains production authority",
+    "command": "make verify.local.dev.payment_request.floorplan.readonly SOURCE_SHA=b5728a5220dabdd98ea1ec9f549df5646c2bcc4d LOCAL_DEV_FLOORPLAN_SCOPE=authority LOCAL_DEV_AUTHORITY_TARGET=editable",
+    "original": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/authority-editable-record.json",
+    "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/layout_authority_runtime_02.log",
+    "fixed_identity": {
+      "model": "payment.request",
+      "record_id": 3,
+      "state": "draft",
+      "company_id": 1,
+      "action_id": 809,
+      "menu_id": 559,
+      "action_view_id": 2096,
+      "model_base_view_id": 1759
+    },
+    "actors": [
+      "sc_test_admin",
+      "demo_role_finance"
+    ],
+    "effective_profiles": [
+      "edit",
+      "edit"
+    ],
+    "effective_configs": [
+      "145:v2",
+      "4:v3",
+      "207:v11"
+    ],
+    "role_scopes": [
+      "",
+      "",
+      ""
+    ],
+    "result": "same main form structure: 121 nodes/83 field nodes; 319 raw differences confined to relation and audit authority; independently reviewed from raw data",
+    "limits": "Current worktree backend handler observation, not HTTP served-bundle/browser proof, not all roles/models. Historical screenshot is not current evidence. Completed record 2880 observation retained separately; both readonly and not used to prove edit."
+  },
+  "role_layout_guard_execution": {
+    "layer": "P0",
+    "target": "smart_core configuration publication/preview/runtime form boundary",
+    "scope": [
+      "addons/smart_core/core/form_structure_authority.py",
+      "addons/smart_core/core/form_configuration_compiler.py",
+      "addons/smart_core/core/view_orchestrator.py",
+      "addons/smart_core/model/ui_business_config_contract.py",
+      "addons/smart_core/tests/test_view_orchestrator.py",
+      "docs/architecture/native_view_reuse_frontend_spec_v1.md"
+    ],
+    "reason": "Role scopes may restrict authorization but cannot declare a different form structure. Existing native structure ownership classifier unchanged. No DB/frontend/industry changes.",
+    "validation": "L1 ci.local.iteration then registered formal_list unit; no runtime/browser because configuration validation only; actual existing role-empty configs unaffected",
+    "first_L1": {
+      "status": "failed",
+      "owner": "P4 run scope registration",
+      "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/role_layout_guard_iteration.log",
+      "recovery": "Added already authorized 5 paths to actual run.scope (previously only execution scope metadata). No L2 had run."
+    },
+    "validation_result": {
+      "L1": {
+        "status": "passed",
+        "command": "make ci.local.iteration",
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/role_layout_guard_iteration_fixed.log"
+      },
+      "L2": {
+        "status": "passed",
+        "command": "make verify.business_config.formal_list.unit",
+        "counts": [
+          135,
+          9,
+          58,
+          5
+        ],
+        "total": 207,
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/role_layout_guard_unit.log"
+      },
+      "limits": "Pure actual-function and orchestration tests; no ORM writes/runtime/browser. role-only publication test invokes actual constraint on model substitutes, not real ORM write. Existing field permissions annotate all same-name occurrences; exact exceptions use node_patches. Full action replacement is rejected for role scopes, not silently interpreted as sparse grants."
+    }
+  },
+  "low_code_layout_boundary": {
+    "status": "documented_implementation_incomplete",
+    "decision": ".agent/decisions/layout-contract-ownership.yaml",
+    "spec": "docs/architecture/native_view_reuse_frontend_spec_v1.md#144",
+    "scope": "P0 capability and logical layout boundary; P1/P2 defaults; P3 authorized configuration; frontend declared mapping",
+    "validation": "git diff --check and decision YAML parse passed; documentation-only update does not establish runtime enforcement",
+    "next_exact_step": "Close layout columns producer/consumer gap and verify effective low-code mapping; retain real ORM role-only publication rollback as not_run."
+  },
+  "columns_guard_execution": {
+    "layer": "P0",
+    "scope": [
+      "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+      "addons/smart_core/handlers/ui_contract_v2_projection.py",
+      "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+      "frontend/apps/web/src/components/template/layoutSpan.ts",
+      "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+      "frontend/apps/web/src/components/template/FormSection.vue",
+      "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
+      "frontend/apps/web/src/pages/contractForm/canonicalNativeFormBridge.ts",
+      "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+      "frontend/apps/web/src/app/presentation/canonicalFormRenderModel.ts",
+      "frontend/apps/web/src/app/contracts/v2/schema.ts",
+      "scripts/verify/frontend_form_canvas_layout_contract_test.ts",
+      "scripts/verify/frontend_form_canvas_wide_grid_guard.py",
+      "scripts/verify/test_frontend_form_canvas_wide_grid_guard.py",
+      "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+      "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+      "docs/architecture/native_view_reuse_frontend_spec_v1.en.md",
+      "addons/smart_core/core/form_structure_authority.py",
+      "addons/smart_core/core/form_configuration_compiler.py",
+      "addons/smart_core/model/ui_business_config_contract.py",
+      "make/frontend.mk",
+      "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json"
+    ],
+    "coordinates": "native leaf span and same occurrence widget span share parent placement; singleton wrapper consumes parent span once and fills internal cell with registered 24/1 mapping, never based on visible field count",
+    "exclusions": "No role layout, industry structure, runtime or browser; role designer scope issue remains pending independently",
+    "validation": {
+      "l1": {
+        "status": "passed",
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/columns_iteration.log",
+        "recovery": "subsequent bounded compiler/test edits py_compile and diff-check passed"
+      },
+      "backend": {
+        "status": "passed",
+        "count": 210,
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/columns_backend_fixed.log",
+        "receipt": "reconcile: originally overbroad inputs included subsequently corrected frontend test fixtures; all backend execution inputs unchanged; deterministic carry-forward only, not a new receipt"
+      },
+      "layout": {
+        "status": "passed",
+        "count": 107,
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/columns_layout_fixed3.log"
+      },
+      "canonical": {
+        "status": "passed",
+        "reported_count": 239,
+        "additional_column_negative_cases": 7,
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/columns_canonical_fixed2.log",
+        "receipt": "reconcile: subsequent unrelated Python guard mutation tests changed overbroad check inputs; actual canonical inputs unchanged"
+      },
+      "strict": {
+        "status": "passed",
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/columns_strict_fixed.log"
+      },
+      "failure_logs_preserved": [
+        "columns_backend.log",
+        "columns_layout.log",
+        "columns_canonical.log",
+        "columns_strict.log",
+        "columns_layout_fixed.log",
+        "columns_canonical_fixed.log",
+        "columns_layout_fixed2.log"
+      ],
+      "review": "scene_boundary_review limited source PASS; runtime not_run",
+      "next": "lowcode owner/target scope separation; no browser until upstream scope passes"
+    },
+    "runtime": {
+      "status": "passed",
+      "kind": "governed readonly shell contract projection; not served browser",
+      "artifact": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/columns-authority-editable.json",
+      "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/columns_authority_runtime.log",
+      "identity": {
+        "record": 3,
+        "state": "draft",
+        "action": 809,
+        "view": 2096,
+        "company": 1,
+        "actors": "two non-sudo actors effective edit"
+      },
+      "review": "121 nodes/19 grids/83 widget occurrence spans valid; native coordinates/order/columns unchanged; 82 widget spans6→12, one6→24; cross-actor319 differences permissions/relations, structure signatures equal"
+    }
+  },
+  "lowcode_owner_target_execution": {
+    "layer": "P0; P4 caller alignment",
+    "scope": [
+      "addons/smart_core/handlers/business_config_change_set.py",
+      "addons/smart_core/tests/test_business_config_change_set.py",
+      "frontend/apps/web/src/api/businessConfig.ts",
+      "frontend/apps/web/src/pages/contractForm/BoundFormSettingsPanel.vue",
+      "frontend/apps/web/src/pages/contractForm/useFormConfigSaveRuntime.ts",
+      "frontend/apps/web/scripts/formal_form_lowcode_loop.mjs",
+      "scripts/verify/local_dev_form_lowcode_scope.py"
+    ],
+    "boundary": "change-set role_key remains authenticated owner; stage target_role_key independently scopes target. Form structure defaults global; explicit role permissions-only remains valid; invalid role structure rejects without fallback. No DB execution.",
+    "status": "implementing",
+    "comment_guard_recovery": {
+      "failure_log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/lowcode_scope_frontend.log",
+      "owner": "pure developer comments, not product text",
+      "changed_paths": [
+        "frontend/apps/web/src/app/contract/contractAuthLevel.ts",
+        "frontend/apps/web/src/app/runtime/recordEntryContract.ts"
+      ],
+      "recovery": "replace Chinese technical synonym with exact ContractGapError mechanism; no guard weakening; strict product inputs semantically unchanged"
+    },
+    "validation": {
+      "l1": "lowcode_scope_iteration.log PASS",
+      "backend": "lowcode_scope_backend.log 211 PASS",
+      "frontend": "lowcode_scope_frontend_fixed.log 236 PASS after comment-only recovery",
+      "strict": "lowcode_scope_strict.log PASS",
+      "orm": {
+        "original": "lowcode_scope_orm.log:4 executed,3pass/1fail test missing expected.occurrence_index",
+        "recovery": "lowcode_scope_orm_global_fixed.log:1 actual preview/publish/rollback PASS after complete binding",
+        "composed_pass_count": 4
+      },
+      "runtime": "local.dev.test sc_dev_demo transaction rollback; no new database/no explicit commit"
+    }
+  },
+  "floorplan_evidence_closure": {
+    "layer": "P4",
+    "scope": [
+      "scripts/verify/local_dev_payment_request_floorplan_readonly.sh",
+      "scripts/verify/local_dev_payment_request_floorplan_readonly.mjs",
+      "scripts/verify/test_local_development_lifecycle.py"
+    ],
+    "boundary": "approval precedes unit plan; per-profile semantic hash and actor/request authority; revision provenance only; fresh actual fingerprinted executed keys only; missing/changed authoritative after-readback invalidates all executed outcomes; one existing evidence engine; no runtime during tool edits",
+    "status": "validation_ready",
+    "validation": {
+      "l1": "floorplan_evidence_iteration.log PASS",
+      "l2": "floorplan_evidence_unit_fixed2.log 28 PASS (6 new evidence behavior,6 authority,16 lifecycle)",
+      "review": "concurrency_review limited source PASS",
+      "runtime": "not_run; actual seven-key closure still requires evidence_scope uncovered=0"
+    }
+  },
+  "frontend_batch_build": {
+    "status": "passed",
+    "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/frontend_batch_build.log",
+    "duration_seconds": 22.36,
+    "target": "make local.dev.frontend",
+    "classification": "dirty batch review, not deployment/product delivery"
+  },
+  "project_guidance_retirement": {
+    "layer": "P1, P4 assertion alignment",
+    "scope": [
+      "addons/smart_construction_core/views/core/project_views.xml",
+      "addons/smart_construction_core/models/core/project_core.py",
+      "addons/smart_construction_core/tests/test_project_initiation_native_lowcode.py",
+      "addons/smart_construction_core/data/view_orchestration_form_section_contract_data.xml",
+      "scripts/verify/local_dev_project_create_contract_action_scope.py"
+    ],
+    "authority": "guidance-references-before.json: only two project create views reference the two nonstored fields; payment fields/config207 excluded",
+    "status": "source_and_local_dev_native_runtime_passed; generated_clean_baseline_blocked",
+    "preserve": "business field order/required/labels/status/actions; hidden message_needaction/display_name retained",
+    "validation_plan": "L1 syntax/source, existing native_lowcode ORM after governed local.dev upgrade; exact references readback; no newDB",
+    "l1": "project_guidance_iteration.log PASS; Python and XML syntax PASS",
+    "runtime": {
+      "initial_upgrade": {
+        "status": "failed",
+        "owner": "P4 invocation prerequisite; no DB upgrade started",
+        "log": "logs/project_guidance_upgrade.log"
+      },
+      "upgrade": {
+        "status": "passed",
+        "command": "make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core",
+        "log": "logs/project_guidance_upgrade_declared.log"
+      },
+      "native_orm": {
+        "status": "passed",
+        "tests": 15,
+        "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestProjectInitiationNativeLowcode",
+        "log": "logs/project_guidance_native_orm.log"
+      },
+      "references": {
+        "status": "passed",
+        "log": "logs/guidance_references_after_runtime.log",
+        "before": "guidance-references-before.json",
+        "after": "guidance-references-after.json",
+        "project_carriers_before": 2,
+        "project_carriers_after": 0,
+        "payment_carriers": 6,
+        "payment_reference_content_unchanged": true
+      }
+    },
+    "generated_baseline": "blocked: original local.clean fixed volumes absent; no substitute local.dev export permitted"
+  },
+  "environment_doctor_scope": {
+    "layer": "P4",
+    "reason": "Resolve existing registered clean-profile volume identity before generated-view baseline recovery; no new environment or credentials",
+    "changed_paths": [
+      "scripts/dev/local_environment_doctor.sh",
+      "scripts/verify/test_local_development_lifecycle.py"
+    ],
+    "risk": "read-only bounded environment diagnostics",
+    "validation_layers": {
+      "L0": "current HEAD plus existing dirty scope",
+      "L1": "shell syntax and diff check",
+      "L2": "existing lifecycle target, including real doctor script with mock transport",
+      "L3": "governed local.clean.logs exact archived original environment file",
+      "L4": "not applicable: no frontend or business declaration changed",
+      "L5": "pending overall finalization"
+    },
+    "status": "passed",
+    "tests": 32,
+    "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/doctor_readback_unit.log",
+    "runtime_readback": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/view_baseline_volume_readback.log"
+  },
+  "generated_view_baseline_recovery": {
+    "status": "blocked",
+    "observed": "Original archived clean-profile authority resolves sc-local-clean/sc_clean/^sc_clean$, but all three registered volumes and all service containers are absent. No environment created.",
+    "readback": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/view_baseline_volume_readback.log",
+    "reason": "Current retired project guidance fields remain in generated clean view baseline used by semantic registry; local.dev must not impersonate its clean authority.",
+    "next_exact_step": "Finish remaining authorized scoped runtime review first; prepare precise clean-profile restoration under existing Make entrypoints for owner authorization before any creation."
+  },
+  "consumption_schema_drift": {
+    "status": "L1_L2_passed_pending_worker_reload_and_affected_runtime",
+    "owner": "P0 lifecycle pinned schema digest stale after schema edit",
+    "original_evidence": [
+      "consumption-schema-drift-approval-edit.json",
+      "consumption-schema-drift-approval-edit.log",
+      "logs/consumption_runtime.log"
+    ],
+    "correction": "Earlier resolver attribution was unsupported; actual approval failed contract_schema_digest_not_bound. Resolver success diagnostic is not approval recovery.",
+    "repair": "existing make contract.schema.declaration.sync updates owner constant and four examples; no weakened receipt check",
+    "browser": "not_run",
+    "diagnostic_tool": "bounded resolver logs and approval error summary; temporary resolve-only removed",
+    "validation": {
+      "l1": "logs/schema_digest_iteration.log PASS",
+      "l2": "logs/schema_digest_authority.log 46 tests PASS",
+      "wrapper": "logs/resolver_diagnostic_lifecycle.log 33 tests PASS",
+      "syntax": "bash -n / diff --check PASS"
+    },
+    "source_sha": "b5728a5220dabdd98ea1ec9f549df5646c2bcc4d + explicit dirty batch",
+    "impact": "Only failed approval and its downstream consumption resume; no frontend rebuild. project-create not implemented while runtime dependencies frozen."
+  },
+  "doctor_final_review": {
+    "reviewer": "concurrency_review",
+    "status": "source_PASS",
+    "scope": "fixed profile volume existence/labels/mount readers; labels observation only, not ownership assertion; existing logs not claimed redacted",
+    "runtime": "local.clean three fixed volumes absent, generated baseline blocked"
+  },
+  "statusbar_occurrence_repair": {
+    "layer": "P0",
+    "status": "L1_L2_strict_source_review_passed_built_runtime_pending",
+    "evidence": "statusbar-readonly-failure/",
+    "root_cause": "selected statusbar occurrence discarded before VM; duplicate state widgets correctly omitted name-level aggregation, but header used name-level runtimeState default false",
+    "inputs": [
+      "frontend/apps/web/src/pages/contractForm/useRecordFormLayout.ts",
+      "frontend/apps/web/scripts/readonly_block_component_test.mjs"
+    ],
+    "impact": "6 unexecuted consumption keys remain; entry_click only actual passed key unaffected by header readonly; revalidation derived from consumer input and current sealed snapshot; no weakened probe",
+    "validation": {
+      "L1": "logs/statusbar_iteration.log PASS",
+      "header": "logs/statusbar_header_unit_fixed2.log: mounted34+model28+Python70 PASS",
+      "strict": "logs/statusbar_strict.log: two configs PASS",
+      "browser_build": "logs/statusbar_frontend_build.log PASS22.05s"
+    },
+    "backend_authority": "B confirmed P1 business_form_policy_templates SYSTEM_FIELDS state + readonly_all all profiles; P0 projects read; payment_request.py2122 rejects ordinary state writes; both actors same. No P1 policy change."
+  },
+  "floorplan_executor_refinement": {
+    "status": "L1_L2_passed_waiting_final_source_review_then_parent_runtime",
+    "impact_keys": [
+      "entry_click",
+      "edit:auth_occurrence:1440",
+      "edit:auth_occurrence:390",
+      "edit:span:1440",
+      "edit:span:390",
+      "readonly:auth_occurrence:1440",
+      "readonly:auth_occurrence:390"
+    ],
+    "entry_reexecution_reason": "Actual executor navigation/entry gating control flow changed; one tool migration verification authorized, not header product dependency. Old pass preserved, no fabricated carry receipt.",
+    "engine": "existing evidence_scope only; plan affected consumed; unknown/duplicate/blocked rejected; empty affected skips browser/record; actual executed only recorded",
+    "entry_dependencies": "independent entry files/readback identity; no form profile seal or form page/header dependency",
+    "original_evidence": "statusbar-readonly-failure/units.json summary.json *.source",
+    "validation": {
+      "L1": "logs/floorplan_executor_final_iteration.log PASS",
+      "binding": "logs/floorplan_binding_final.log Python22+local11+consumption8+affected10 PASS",
+      "partial_engine": "logs/floorplan_partial_engine_unit_truth_fixed.log 36 tests PASS"
+    },
+    "partial_policy": "completed unit_results explicit; later local failure preserves earlier PASS; global errors/mutations/afterreadback failure invalidate completed outcomes; unexecuted siblings remain uncovered; overall scope exit remains failed"
+  },
+  "generated_clean_recovery_pending": {
+    "status": "first clean install failed",
+    "reason": "all three original fixed volumes absent",
+    "planned_steps": [
+      "verify existing archive .env.local.clean identity/hash",
+      "make local.clean.install LOCAL_CLEAN_ENV_FILE=<existing archive absolute path> LOCAL_CLEAN_MODULES=sc_norm_engine",
+      "governed health",
+      "view_structure_baseline",
+      "semantic.registry.generate"
+    ],
+    "identity": "sc-local-clean / sc_clean / original fixed three volumes; no-demo; dependencies smart_core and smart_construction_core",
+    "boundary": "requires separate P4 environment restoration authorization; no new credentials; do not touch local.dev",
+    "approval": "owner explicitly authorized new isolated acceptance in current turn",
+    "env_sha256": "4cce959a5e17d695a885c402a7aaa9f881cd6cbc04c01ca21177f4cbe995c055",
+    "database_role": "isolated clean installation rehearsal; no customer tenant or production data",
+    "tenant": "internal sc-local-clean rehearsal",
+    "environment": "sc-local-clean",
+    "database": "sc_clean",
+    "exact_filter": "^sc_clean$",
+    "filestore": "sc_local_clean_odoo_data / filestore/sc_clean; distinct from sc_local_dev_odoo_data",
+    "volumes": [
+      "sc_local_clean_db_data",
+      "sc_local_clean_redis_data",
+      "sc_local_clean_odoo_data"
+    ],
+    "volume_readback": "all absent immediately before creation",
+    "frontend_dist": "frontend/apps/web/dist-clean; dev dist unaffected",
+    "fixtures": "no-demo install; no development data copied",
+    "rollback": "make local.clean.down with exact original env preserves isolated volumes; do not discard data or alter local.dev",
+    "failure": "required fields.Json empty dict serializes NULL for retired generated contract payload",
+    "owner": "P1 generated seed via existing P4 generator",
+    "next": "nonempty inert view_orchestration payload, regenerate owner output, focused checks, retry install in same isolated DB"
+  },
+  "floorplan_plan_identity_repair": {
+    "layer": "P4",
+    "failure": "JSON.stringify compared key insertion order despite identical parsed identity values",
+    "original_log": "logs/statusbar_consumption_runtime.log",
+    "original_artifacts": "plan-identity-order-failure/",
+    "actual_browser_keys": 0,
+    "upstream": "both backend approvals PASS; after readback true",
+    "repair": "node:util isDeepStrictEqual; retains every field and type; object key order irrelevant",
+    "tests": "logs/plan_identity_unit.log:22 Python+11 prerequisite+8 consumption+10 executor+5 identity PASS",
+    "syntax": "node --check PASS",
+    "reuse": "product/frontend build/other independent tests unchanged",
+    "next": "parent governed consumption retry after B source check"
+  },
+  "readonly_empty_consumption": {
+    "owner": "P0 generic frontend consumer",
+    "status": "L1_L2_passed_runtime_pending",
+    "reason": "No declared hide-empty policy; remove value-based visibility in FormSection and canonical bridge. Preserve upstream visibility and empty presentation.",
+    "affected_runtime_keys": "readonly auth_occurrence 1440/390 only; prior entry/edit five passes retained pending deterministic engine reuse",
+    "evidence": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/readonly-occurrence-failure",
+    "tests": [
+      "columns_layout",
+      "columns_canonical",
+      "workflow_message_strict"
+    ],
+    "logs": [
+      "readonly_empty_iteration_final.log",
+      "readonly_empty_layout_final.log",
+      "readonly_empty_canonical_final.log",
+      "readonly_empty_strict.log"
+    ]
+  },
+  "payment_guidance_declarations": {
+    "status": "implementing_native_single_fact_source",
+    "owner": "P1 payment pay form + P0 exact action advisory projection",
+    "reason": "Pay inheritance still contains blocked/review_required body alerts and obsolete task/risk semantic anchors. Eligible live sample cannot waive conditional declaration defects.",
+    "scope": [
+      "addons/smart_construction_core/views/core/payment_request_views.xml",
+      "addons/smart_construction_core/data/payment_request_form_productization_contract.xml",
+      "addons/smart_construction_core/models/support/workflow_contract_service.py",
+      "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+      "frontend/apps/web/src/pages/contractForm/contractActionPresentation.ts",
+      "frontend/apps/web/src/pages/contractForm/actionContract.ts"
+    ],
+    "validation": "backend blocked/review_required/eligible declarations then exact frontend confirmation consumer; only afterward fresh edit guidance 1440/390 keys; preserve old five passes",
+    "carrier": "Existing actionRule.presentation Dictionary: requires_confirmation + warning_message, no new top-level field/schema.",
+    "latest_authority": "P1 native model decision and guard are one fact source; native button options reference actor-readable JSON fact and default invoke interaction. No config when/outcome evaluator.",
+    "unified_authority": "P1 native model decision and guard are one fact source; native button options reference actor-readable JSON fact and default invoke interaction. No config when/outcome evaluator.",
+    "mechanism_scope": [
+      "addons/smart_core/core/action_guidance.py",
+      "addons/smart_core/handlers/ui_contract_v2.py",
+      "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py"
+    ],
+    "final_owner_boundary": "P1 native model decision and guard are one fact source; native button options reference actor-readable JSON fact and default invoke interaction. No config when/outcome evaluator.",
+    "pending_remove_or_rework": [
+      "complete risk-policy default-soft versus invariant tests",
+      "complete native metadata/parser/contract/execution consumer tests"
+    ],
+    "risk_policy": {
+      "authority": "existing sc.payment.force_block_all OR sc.payment.force_block.<reason_code>, default False",
+      "default": "business risk soft confirmation, explicit policy can hard-block",
+      "invariants": "ACL, actor, invalid state transition, archived partner, incompatible project/currency/party and unconfirmed material basis remain hard",
+      "scope": "payment ordinary/material balance and partner risk; other shared partner guard callers preserved",
+      "user_editing": "not_delivered: existing change-set supports form/list/search/analysis/menu; no risk-severity edit/publish/rollback carrier. P3 future supported severity overrides must feed the same native policy, no conditions engine.",
+      "scope_authority": "Existing ir.config_parameter values are database-global operational settings, not company-isolated low-code configuration."
+    },
+    "managed_environment": {
+      "health": {
+        "status": "passed",
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/prompt_closure_environment_health.log"
+      },
+      "frontend_build": {
+        "status": "passed",
+        "duration_seconds": 22.76,
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/native_guidance_frontend_build.log",
+        "boundary": "dirty batch build, not runtime acceptance"
+      },
+      "module_upgrade": {
+        "status": "passed",
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/native_guidance_module_upgrade.log"
+      }
+    },
+    "tests": {
+      "l1": {
+        "status": "passed",
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/native_guidance_iteration_fixed.log"
+      },
+      "p1_pure": {
+        "status": "passed",
+        "count": 65,
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/native_guidance_declarations.log"
+      },
+      "p0_projection": {
+        "status": "passed",
+        "count": 148,
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/native_guidance_projection_fixed.log"
+      },
+      "canonical": {
+        "status": "passed",
+        "count": 239,
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/native_guidance_canonical.log"
+      },
+      "orm": {
+        "status": "passed",
+        "count": 2,
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/native_guidance_orm.log",
+        "collector_correction": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/native_guidance_collector_orm.log",
+        "boundary": "actual partner facts and submit; collector correction 1 case; material/form follow-up pending"
+      },
+      "material_form_orm": {
+        "status": "passed",
+        "count": 2,
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/native_guidance_material_form_orm.log",
+        "boundary": "real material default soft submit, per-code/global hard, unconfirmed invariant; actual combined pay view declarations"
+      },
+      "strict": {
+        "status": "passed",
+        "configurations": 2,
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/native_guidance_strict.log"
+      }
+    },
+    "p4_scope": {
+      "payment_keys": [
+        "entry_click",
+        "edit:auth_occurrence:1440",
+        "edit:auth_occurrence:390",
+        "edit:span:1440",
+        "edit:span:390",
+        "readonly:auth_occurrence:1440",
+        "readonly:auth_occurrence:390",
+        "edit:guidance:1440",
+        "edit:guidance:390"
+      ],
+      "reason": "native body declarations and shared form consumer changed; new guidance assertions and shared executor changed; not HEAD-only invalidation",
+      "project_keys": [
+        "project_create:standard:1440",
+        "project_create:standard:390",
+        "project_create:quick:1440",
+        "project_create:quick:390"
+      ],
+      "project_authority": "native XMLID action/view/menu and non-sudo system administrator; live create schema and DOM seal, not record approval",
+      "status": "implementing_targeted_tools"
+    }
+  },
+  "guidance_system_closure": {
+    "status": "targeted_source_tests_passed_managed_upgrade_running",
+    "owner_directive": "All formal product guidance declarations must use native facts plus explicit purpose/association/trigger/severity; pay-only migration is not global closure. No implicit task+readonly+nonempty guidance inference.",
+    "unclosed_known": [
+      "managed upgrade and focused ORM outcomes pending",
+      "new browser observations pending",
+      "clean-install baseline environment absent",
+      "final independent review unavailable after collaborator quota limit"
+    ],
+    "product_source": "stable pending final global execution order",
+    "tests_ready": {
+      "p4_l1": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/guidance_project_tools_iteration.log",
+      "p4_l2": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/guidance_project_tools_unit.log",
+      "count": 67
+    },
+    "runtime": "not_run; prior pay-only browser paused by new global scope",
+    "declaration_paths": [
+      "addons/smart_construction_core/views/support/labor_product_views.xml",
+      "addons/smart_construction_core/views/support/quality_acceptance_views.xml",
+      "addons/smart_construction_core/views/support/tender_product_views.xml",
+      "addons/smart_construction_core/views/support/variation_change_views.xml",
+      "addons/smart_construction_core/views/core/equipment_management_views.xml",
+      "addons/smart_construction_core/views/core/subcontract_management_views.xml",
+      "addons/smart_construction_core/views/core/material_supplier_return_views.xml",
+      "addons/smart_construction_core/views/core/hr_payroll_document_views.xml",
+      "addons/smart_construction_core/views/support/current_account_workspace_views.xml",
+      "addons/smart_construction_core/views/support/company_project_refund_workspace_views.xml",
+      "addons/smart_construction_core/views/support/team_loan_deduction_workspace_views.xml",
+      "addons/smart_construction_core/views/core/payment_request_views.xml",
+      "addons/smart_construction_core/views/core/cost_domain_views.xml",
+      "addons/smart_construction_core/views/core/material_acceptance_views.xml",
+      "addons/smart_construction_core/views/core/contract_views.xml",
+      "addons/smart_construction_core/models/support/quality_acceptance.py",
+      "addons/smart_construction_core/models/support/business_form_policy_templates.py",
+      "addons/smart_construction_core/models/support/labor_product.py",
+      "addons/smart_construction_core/models/support/tender_product.py",
+      "addons/smart_construction_core/models/support/team_loan_deduction_workspace.py",
+      "addons/smart_construction_core/models/support/current_account_workspace.py",
+      "addons/smart_construction_core/models/support/variation_change.py",
+      "addons/smart_construction_core/models/support/tender.py",
+      "addons/smart_construction_core/models/support/company_project_refund_workspace.py",
+      "addons/smart_construction_core/models/core/hr_payroll_document.py",
+      "addons/smart_construction_core/models/core/subcontract_management.py",
+      "addons/smart_construction_core/models/core/material_supplier_return.py",
+      "addons/smart_construction_core/models/core/labor_product_extension.py",
+      "addons/smart_construction_core/models/core/equipment_management.py",
+      "addons/smart_construction_core/models/support/business_form_policy_templates.py",
+      "addons/smart_construction_core/data/quality_safety_form_productization_contract.xml",
+      "addons/smart_construction_core/data/company_project_refund_workspace_contract.xml",
+      "addons/smart_construction_core/data/current_account_workspace_contract.xml",
+      "addons/smart_construction_core/data/team_loan_deduction_workspace_contract.xml"
+    ],
+    "remaining_set": {
+      "processing_advisory": "16 models / 19 entries native form/list; retain backend business use, remove normal-success noise",
+      "p0": "task role must not infer guidance; native field help interactive; reasonCode not help",
+      "siblings": "payment base/receive/execution; progress tutorial; material default note; contract historical explanation",
+      "source_generation": "clean baseline blocked; no hand edit generated"
+    },
+    "notification_mechanism": {
+      "owner": "P0",
+      "defaults": {
+        "type": "warning",
+        "sticky": false,
+        "title": ""
+      },
+      "reason": "Platform normalization for optional native display_notification presentation fields; not a claim about unavailable upstream Odoo source. Message remains mandatory. Official TDesign maps danger to error and sticky to duration 0; nonsticky uses registered 5000ms presentation timer.",
+      "help": "Explicit native field.help opens official popover on click/keyboard activation in edit and readonly occurrences; this is registered fixed rendering interaction, not a configurable business trigger."
+    },
+    "root_takeover": {
+      "writer": "root; implementation and concurrency reviewers interrupted by usage limit",
+      "stage_identity": "b5728a5220dabdd98ea1ec9f549df5646c2bcc4d + explicit dirty scope; not frozen",
+      "boundary": "P1 native XML retirement authority; P4 deterministic owner generator; P0 notification and field usage consumption",
+      "validation": {
+        "L1": {
+          "status": "passed",
+          "command": "make ci.local.iteration",
+          "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_takeover_iteration.log",
+          "limit": "before seed retirement changes"
+        },
+        "notification": {
+          "status": "passed",
+          "command": "make verify.frontend.contract_header_action.unit",
+          "count": 46,
+          "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_notifications_final.log",
+          "scope": "22 owner +9 actual-router +15 created ordinary/intake/dialog; existing header suite also passed"
+        },
+        "strict": {
+          "status": "passed",
+          "command": "make verify.frontend.typecheck.strict",
+          "configurations": 2,
+          "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_strict_final.log"
+        },
+        "seed_retirement": {
+          "status": "passed",
+          "count": 4,
+          "command": "make verify.contract.form_structure.guidance_retirement.unit",
+          "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/guidance_seed_retirement_unit.log"
+        },
+        "L1_seed_scope": {
+          "status": "passed",
+          "command": "make ci.local.iteration",
+          "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_retirement_iteration_fixed.log"
+        },
+        "L1_handoff": {
+          "status": "passed",
+          "command": "make ci.local.iteration",
+          "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_handoff_iteration.log",
+          "reuse": "subsequent async parent callback is local TS consumer edit checked by strict/lifecycle/header targets; seed inputs unchanged; ORM test addition parsed separately"
+        },
+        "declarations": {
+          "status": "passed",
+          "command": "make verify.native_view.workflow_action_coverage",
+          "count": 66,
+          "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_declarations_final.log"
+        },
+        "layout": {
+          "status": "passed",
+          "command": "make verify.frontend.form_canvas_layout.unit",
+          "count": 95,
+          "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_layout_final.log"
+        },
+        "relation_lifecycle": {
+          "status": "passed",
+          "command": "make verify.frontend.professional_relation_lifecycle.unit",
+          "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_relations_final.log"
+        },
+        "usage": {
+          "status": "passed",
+          "command": "make verify.business_config.formal_list.unit",
+          "count": 217,
+          "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/native_field_usage_fixed_unit.log",
+          "reuse": "field usage producer/compiler/assembler and its tests unchanged since A result"
+        },
+        "upgrade": {
+          "status": "failed",
+          "execution": "completed",
+          "command": "make local.dev.upgrade MODULE=smart_core,smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_core,smart_construction_core",
+          "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_upgrade.log",
+          "owner": "P1 responsibility notice remained in payment execution semantic anchors; dependency scan also found native siblings, expense/category declarations. Source corrected before rerun; no gate relaxation."
+        },
+        "descendant_declarations": {
+          "status": "passed",
+          "count": 5,
+          "command": "make verify.contract.form_structure.guidance_retirement.unit",
+          "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_descendants_seed.log",
+          "scope": "8 seeds; native declared interaction fields -> P1 views, contract_json and category form_policy_json"
+        },
+        "descendant_actions": {
+          "status": "passed",
+          "count": 66,
+          "command": "make verify.native_view.workflow_action_coverage",
+          "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_descendants_actions.log",
+          "reuse": "later Make dependency wires separately passed 5-case descendant check; parent composition awaits next governed invocation"
+        },
+        "upgrade_retry": {
+          "status": "passed",
+          "execution": "completed; module install and authoritative finance/currency/tax readback passed",
+          "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_upgrade_descendants_fixed.log",
+          "changed_recovery_fact": "removed responsibility notice from all native and product/category declaration descendants; source checks pass; exact eighth retired seed added; no constraint bypass"
+        },
+        "orm_guidance": {
+          "status": "passed",
+          "count": 6,
+          "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_orm.log",
+          "owner": "P1 test fixtures/assertions",
+          "recovery": "Grant test actor declared config-admin role; align receive contract direction; assert retired hints absent and native domain/attachment dependencies hidden. Two passed methods reused; only four failed methods rerun. Product code and runtime unchanged.",
+          "partial_recheck": {
+            "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_orm_fixed.log",
+            "passed": [
+              "native_guidance_field_metadata_and_effective_views",
+              "every_declared_fact_still_renders_exactly_once"
+            ],
+            "remaining": [
+              "receive_native_partner_decision_matches_available_and_submit",
+              "payment_form_exposes_controls_and_task_sections"
+            ],
+            "changed_recovery_fact": "Receive helper now builds matching direction and tax together; full old payment method audited and retired strategy assertions reversed. Four successful methods carried forward; syntax and diff checks passed."
+          },
+          "final_logs": [
+            "root_guidance_orm.log: seed retirement and receipt methods passed",
+            "root_guidance_orm_fixed.log: metadata/effective views and expense methods passed",
+            "root_guidance_orm_final_two.log: receive soft/hard native actions passed",
+            "root_guidance_payment_policy_final.log: payment declarations passed"
+          ],
+          "product_fix": "Removed partner_transaction_eligibility_reason from Python product policy template; added template outputs to same native usage descendant guard (5 passed). Upgrade invalidated only for changed policy synchronization; other five methods do not consume that template."
+        },
+        "policy_upgrade": {
+          "status": "passed",
+          "command": "make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core",
+          "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_policy_upgrade.log",
+          "readback": "module installed; finance membership authoritative; CNY and sale tax present"
+        },
+        "combined_declarations": {
+          "status": "passed",
+          "count": 71,
+          "command": "make verify.native_view.workflow_action_coverage",
+          "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_combined_declarations.log"
+        },
+        "policy_L1": {
+          "status": "passed",
+          "command": "make ci.local.iteration",
+          "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_python_policy_iteration.log"
+        }
+      },
+      "next_exact_step": "Read fixed upgrade receipt, then affected actual ORM checks; no browser before owning backend passes.",
+      "not_run": [
+        "fresh installation absent clean profile volumes",
+        "new ORM field usage and receive checks",
+        "new browser observations",
+        "final independent review",
+        "freeze/Quick/publication"
+      ],
+      "xml_formatting": {
+        "status": "passed",
+        "proof": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/guidance_xml_format_preservation.log",
+        "method": "Retain original lines equal modulo surrounding whitespace/self-close space; require stdlib XML C14N strip_text=True with comments equality before write",
+        "diagnostic": "first lxml comparison unavailable before any file mutation; switched to stdlib canonicalize"
+      }
+    }
+  },
+  "guidance_browser_impact_20261013": {
+    "identity": "b5728a5220dabdd98ea1ec9f549df5646c2bcc4d plus recorded dirty scope; sc-local-dev/sc_dev_demo finance actor",
+    "changed_inputs": [
+      "native P1 view and category declarations",
+      "P0 interaction usage and action guidance projection",
+      "form/action notification consumers",
+      "guidance assertions"
+    ],
+    "method": "existing floorplan wrapper derives per-key fingerprints from declared files x live actor/record/action and approved edit/readonly contracts, then evidence_scope selects affected keys; deploy revision alone not used",
+    "candidate_keys": [
+      "entry_click",
+      "edit:auth_occurrence:1440",
+      "edit:span:1440",
+      "edit:guidance:1440",
+      "edit:auth_occurrence:390",
+      "edit:span:390",
+      "edit:guidance:390",
+      "readonly:auth_occurrence:1440",
+      "readonly:auth_occurrence:390"
+    ],
+    "execution": "failed; 0 keys executed; authoritative after-readback passed",
+    "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_consumption_browser.log",
+    "limits": "targeted batch observation only; no broad matrix or frozen candidate claim",
+    "failure_owner": "P0 native action guidance projection",
+    "failure": "list action_open 409 NATIVE_ACTION_GUIDANCE_INVALID/action_guidance.record_identity",
+    "recovery": "Gate native per-record guidance on declared form viewType; missing viewType and missing form record still fail. Added collection negative-read and form failure cases. Same P0 unit found platform menu alert; migrate native tutorial to menu_id.help. No frontend change. Reuse built frontend and P1 ORM evidence; backend approval and 9 unexecuted keys affected.",
+    "retry_log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_consumption_collection_fixed.log",
+    "fixture_retry_log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_consumption_owned_fixture.log",
+    "fixture_invalidation": "resolver/probe identity changed from non-discriminating legacy record to exact governed soft-risk record: all 9 keys depend on this identity; prior entry-click result remains historical, not reused for another record"
+  },
+  "guidance_p0_collection_fix": {
+    "status": "L1/L2/upgrade passed; backend restarted with current source revision; targeted browser running",
+    "command": "make verify.unified_page_contract.v2.runtime",
+    "count": 149,
+    "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_platform_negative_unit.log",
+    "negative": "restoring alert class must raise NATIVE_FEEDBACK_INTERACTION_REQUIRED; list never reads record fact; form still rejects missing record",
+    "next": "smart_core governed upgrade then runtime up with source revision; recheck approval before browser",
+    "upgrade_log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_platform_upgrade.log",
+    "restart_log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_platform_restart.log"
+  },
+  "guidance_fixture_gap": {
+    "owner": "P4 existing demo seed/acceptance tooling",
+    "reason": "all current candidates lack enabled soft-warning submit; keep product hard prerequisites unchanged",
+    "scope": "extend existing seed with explicit guidance mode, exact owned XMLIDs, no shared-partner or policy edits; managed Make reset; consumption resolver uses this exact record",
+    "status": "L1 and 36 tooling tests passed; governed seed completed; readback/contract/browser running",
+    "authority": "owner permits acceptance data adaptation; existing sc-local-dev demo seed authority, no new environment/credential",
+    "prepare_command": "make local.dev.reset_payment_request_fixture LOCAL_DEV_PAYMENT_FIXTURE_SCOPE=guidance",
+    "prepare_log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_fixture_prepare.log",
+    "test_log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_fixture_tools_fixed.log",
+    "xmlids": [
+      "smart_construction_demo.payment_guidance_demo_partner",
+      "smart_construction_demo.payment_guidance_demo_contract",
+      "smart_construction_demo.payment_guidance_demo_record"
+    ],
+    "rollback": "fixture-only demo records retained under exact XMLIDs for reuse; no shared partner or policy modified; no submit executed"
+  },
+  "guidance_visual_review": {
+    "observation": "1791888306355-1682637",
+    "behavior": "9/9 passed; errors=[]; mutations=[]; after-readback unchanged; actual help click/open/close in edit/readonly at 1440/390",
+    "remaining": "clean install/baseline generation and project create browser; final frozen review/publication not done",
+    "ownership": "P0 generic label/help consumption; P4 screenshot animation stabilization; P1 native partner risk state label and advisory usage/help",
+    "impact": "form consumer and native partner declarations invalidate affected form keys; no whole product matrix",
+    "checks": {
+      "L1": "root_guidance_visual_iteration.log passed",
+      "frontend_layout": "root_guidance_help_layout_unit.log 95 passed",
+      "strict": "root_guidance_help_accessibility_strict.log passed",
+      "native_usage": "root_guidance_blacklist_declarations.log 5 passed",
+      "upgrade": "root_guidance_partner_usage_upgrade.log passed, authoritative readback valid",
+      "build": "root_guidance_visual_build.log passed"
+    },
+    "review": "scene_boundary_review independent incremental review: no blockers, bound current dirty scope, not frozen L5",
+    "status": "passed",
+    "screenshots": [
+      "artifacts/playwright/local-dev-payment-request-floorplan/1791888306355-1682637-edit-guidance-1440.png",
+      "artifacts/playwright/local-dev-payment-request-floorplan/1791888306355-1682637-edit-guidance-390-confirmation.png"
+    ],
+    "manual_review": "no persistent current-task guidance; full-width 2-column native form; help on label row; mobile official confirmation settled and readable; risk fact label no longer claims unconditional ban"
+  },
+  "project_create_retired_scope": {
+    "classification": "P4 tool scope mismatch, not product menu failure",
+    "source": "addons/smart_construction_core/views/menu_product_project_wave1.xml menu_sc_project_quick_create active=False",
+    "actual": "standard 1440/390 passed; quick absent from released navigation; zero runtime errors; authoritative after readback unchanged",
+    "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_project_create_browser.log",
+    "repair": "resolver derives active entry set from native menu declaration; retired entries explicitly excluded, never reported as rendered or reactivated",
+    "owner_correction": "Owner explicitly requires quick creation on product surface; restore P1 native menu and released menu contract, preserve native role ACL and dedicated quick action/view. Prior retirement exclusion superseded."
+  },
+  "menu_fact_unification": {
+    "status": "verification_pending; native authority tightened; accounting adapter order fixed in source, runtime recheck pending",
+    "authority": "Owner: 产品面的菜单事实数据一起排查；彻底保证数据统一；快速创建保留产品面",
+    "stage_identity": "b5728a5220dabdd98ea1ec9f549df5646c2bcc4d plus owned dirty scope",
+    "formal_product_layer": "P1 industry menu defaults; P0 generic projection/permission clipping; P4 generation and verification only",
+    "layer_target": "smart_construction_core product menu metadata, native ir.ui.menu/actions, locked policy publisher",
+    "why_here": "Industry menu identity/publication is shipped product data; ops and verification must only derive it.",
+    "why_not_elsewhere": "No frontend menu inference; no independent ops lists; P3 is an explicit override of identified facts, not a replacement source.",
+    "findings": [
+      {
+        "id": "MENU-1",
+        "status": "confirmed",
+        "fact": "Product shape config and ops RELEASED_MENU_BINDINGS independently own path/name/target; runtime reads generated baseline under scripts/verify."
+      },
+      {
+        "id": "MENU-2",
+        "status": "confirmed",
+        "fact": "Quick native record is overlaid in four manifest-ordered XML files; current active=True, but absent from both 90-row published product baselines and still in LOCKED_TARGET_UNPUBLISHED_MENU_XMLIDS."
+      },
+      {
+        "id": "MENU-3",
+        "status": "confirmed",
+        "fact": "Native hierarchy plus policy visible_menu_path/group_label duplicate structure; synchronization can reactivate native records. Need single owner and deterministic identity validation."
+      },
+      {
+        "id": "MENU-4",
+        "status": "confirmed",
+        "fact": "Explicit company/role low-code menu policies can rename/reorder/reparent; must preserve configured provenance and distinguish from ACL clipping."
+      },
+      {
+        "id": "MENU-5",
+        "status": "static_residual",
+        "fact": "Historical 62-row constants and normalization methods remain in product_policy_sync; repository Python search found definitions without callers. Not asserted active runtime authority."
+      }
+    ],
+    "next_exact_step": "Finish affected pure guards and read-only all-current-actor menu snapshot; then governed upgrade, monotonic comparison and only affected browser observations. Finish clean frontend prerequisite and installation parity before freeze.",
+    "validation_plan": [
+      "L1 source/projection equality and no ops-owned facts",
+      "L2 nonzero generation, invalid-reference, drift and quick-presence tests",
+      "L3 governed dev upgrade and clean install/readback",
+      "L4 only affected released navigation and quick create keys; reuse unaffected guidance evidence"
+    ],
+    "completion_gate": "Canonical source, derived copies, effective backend navigation and observed frontend agree; fresh install and upgrade both verified. Not complete.",
+    "owner_constraints": [
+      "Existing users visible menu identities may only grow; count-only comparisons forbidden. Preserve existing labels/hierarchy/targets and ACL boundaries.",
+      "Restore quick creation and menu configuration as product entries for authorized users.",
+      "Unified facts become the formal product baseline only after fresh-install, upgrade, actor/company effective navigation and exact frozen evidence pass."
+    ],
+    "implementation": "P1 metadata selects native XMLIDs and product versions/roles; names/parents/action/model/view modes of module-owned entries are derived in manifest/dependency order from Odoo XML. Three upstream accounting entries retain explicit P1 presentation mappings. Config, runtime policy and verifier baseline are generated copies; default runtime checks source equality and never reads an alternate image/verifier source.",
+    "checks": {
+      "projection": "18 tests passed, including byte-exact 92-entry artifacts and fail-closed native ownership/external adapter provenance",
+      "role": "33 locked policy tests passed; missing action negative test forbids native record fabrication",
+      "monotonic_source": "90 -> 91 no removed identities/presentation/role change; original evidence under .runtime/agent-runs/FE-CONTRACT-RUNTIME-02/menu_monotonic_source_audit.json; latest addition requires update",
+      "runtime": "before snapshot 59 actor/company passed; governed dev upgrade and restart passed; after snapshot running",
+      "clean": "managed no-demo installation then upgrade and frontend build completed; latest health PASS; fresh-from-zero latest candidate proof remains pending",
+      "before_runtime": {
+        "status": "passed",
+        "actor_company_pairs": 59,
+        "errors": 0,
+        "artifact": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/menu_facts_before.json",
+        "read_method": "actual SystemInitHandler navigation.nav; commits forbidden, each actor transaction rolled back; first strict-read-only probe rejected lazy initialization and obsolete nav carrier, diagnostic result not reused"
+      },
+      "upgrade": {
+        "dev": "passed, managed module/currency/finance membership readback",
+        "clean": "passed and health PASS; menu_fact_clean_health.log",
+        "logs": [
+          "menu_fact_baseline_dev_upgrade.log",
+          "menu_fact_baseline_clean_upgrade.log"
+        ]
+      },
+      "dead_cleanup_reuse": "Removed unreferenced constants/functions after upgrade; AST equality proved active ScProductPolicy class unchanged. No database upgrade repeat for this cleanup; source guard changes get their own focused check.",
+      "native_action_no_fabrication": {
+        "layer": "L2",
+        "status": "passed",
+        "tests": 33,
+        "command": "python3 -m unittest scripts.release.test_locked_menu_policy_contract",
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/menu_native_missing_action_unit.log",
+        "head": "b5728a5220dabdd98ea1ec9f549df5646c2bcc4d",
+        "dirty": true,
+        "impact": "Removed missing-action dynamic create path and two duplicated action specs. Current 92-entry generated product set has no references to either initialization spec; normal installed native-menu path unchanged. Runtime absence now fails closed; no broad snapshot repeat on this unused-path removal."
+      },
+      "after_runtime": {
+        "status": "failed",
+        "snapshot_status": "passed",
+        "actor_company_pairs": 59,
+        "snapshot_errors": 0,
+        "artifact": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/menu_facts_after.json",
+        "comparison": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/menu_facts_monotonic.json",
+        "missing_or_changed_nodes": 0,
+        "order_drift_principals": [
+          39,
+          38,
+          52,
+          51,
+          19,
+          46,
+          40,
+          6
+        ],
+        "tool_failure": "Odoo shell final commit refused after final rollback; original commit method now restored only after final rollback; no new runtime pass claimed."
+      },
+      "external_placement": {
+        "layer": "L2",
+        "status": "passed",
+        "tests": 52,
+        "command": "python3 -m unittest scripts.ops.test_promote_product_ten_center_policy scripts.release.test_locked_menu_policy_contract",
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/menu_external_placement_unit.log",
+        "impact": "Only three account external adapter placements changed: explicit 93/94/95 before native 96/97/98. No model/view/ACL change. All 8 observed accounting-visible actor/company pairs require recheck; derive final affected set using authority/evidence scope engine before execution."
+      },
+      "native_owner_iteration": {
+        "layer": "L1",
+        "status": "passed",
+        "command": "make ci.local.iteration",
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/native_fact_direct_owner_iteration.log",
+        "reuse_limit": "Before external placement delta; affected source checks require refresh before runtime."
+      }
+    },
+    "native_fact_owner_directive": {
+      "order": [
+        "native model and field declarations",
+        "native action/view inheritance",
+        "groups ACL record rules field permissions",
+        "product projection",
+        "explicit scoped customization",
+        "runtime contract",
+        "derived release record",
+        "frontend consumption"
+      ],
+      "owned_source": "Fix standard product defects in the owning module source; no persistent configuration, ops or release override substitute.",
+      "external_exception": "Only externally maintained modules without editable source may use explicit inheritance/adaptation with source module, reason and bounded scope.",
+      "layout": "Role permissions prune visible/actionable/readonly only; never invent a different layout.",
+      "status": "implementation_in_progress_not_formal_baseline"
+    },
+    "native_authority_boundary_check": {
+      "layer": "L2",
+      "command": "python3 -m unittest scripts.ops.test_promote_product_ten_center_policy",
+      "head": "b5728a5220dabdd98ea1ec9f549df5646c2bcc4d",
+      "dirty": true,
+      "status": "passed",
+      "tests": 18,
+      "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/menu_native_authority_boundary_unit.log",
+      "impact": "Adds fail-closed selection validation and external provenance. Byte-identical generated product projection asserted; existing successful navigation snapshot inputs have unchanged product semantics. No ACL/view/layout mutations."
+    },
+    "remaining_authority_audit": [
+      "P0 product policy catalog/minimal fallback paths",
+      "release snapshot versus native product authority",
+      "actual actor/company no-loss comparison",
+      "model/action/view and permission runtime linkage"
+    ],
+    "edition_scope": {
+      "owner_rule": "Standard retains original 90 formally released identities; preview contains real unreleased product capabilities, not a count ceiling. Abandon development experiments and roadmap placeholders; preserve genuine product and native permissions.",
+      "source_current": {
+        "standard": 90,
+        "preview": 109,
+        "restored_native_business_candidates": 17
+      },
+      "status": "source_projection_passed_runtime_pending_full_inventory_disposition_incomplete",
+      "tests": {
+        "count": 56,
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/retained_product_preview_units.log"
+      },
+      "guards": [
+        "retained_product_manifest.log",
+        "retained_product_closeout.log"
+      ],
+      "runtime": "Prior 90/92 intermediate candidate dev upgrade passed; subsequent 17 retained native capabilities have NOT been upgraded or runtime accepted."
+    },
+    "full_native_inventory": {
+      "artifact": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/native_menu_fact_inventory.json",
+      "initial_counts": {
+        "structure_only": 78,
+        "native_action_requires_review": 204,
+        "registered_product": 89,
+        "same_action_as_registered_entry": 20,
+        "roadmap_carrier": 17
+      },
+      "scope": "408 local P1 native menu records; external 3 accounting adapters excluded from local-source count",
+      "limitation": "Source evidence is not effective ORM view/ACL or business-usability proof. Classifications are evidence buckets, not automatic release decisions.",
+      "next": "Classify remaining genuine capability vs technical/experimental vs duplicate from action/domain/view/ACL facts; rebuild inventory after decisions."
+    },
+    "edition_boundary_diagnostic": {
+      "status": "failed",
+      "owner": "P0 MenuService.build_nav",
+      "artifact": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/menu_edition_native_bypass_diagnostic.json",
+      "finding": "Native role-exposed entries outside policy.menu_groups are appended to a nonempty standard policy. Synthetic mechanism reproduction declared101 observed101and102. Not a deployed principal claim.",
+      "required_fix": "Closed product-edition entry membership intersected with native ACL and role visibility; platform administration must have separately declared plane, not a role-based bypass of product edition.",
+      "validation": "Non-zero P0 regression: standard excludes preview even when role exposes it, preview retains it when declared, ACL denial preserved, platform administrative plane preserved by explicit declaration."
+    },
+    "edition_boundary_implementation": {
+      "layer": "P0",
+      "module": "smart_core",
+      "standard_vs_user_specific": "generic edition navigation mechanism",
+      "why_here": "MenuService owns merging version menu declarations with native authorization and role exposure",
+      "why_not_elsewhere": "P1 supplies native entry/version facts; frontend and ops cannot fix authoritative navigation membership",
+      "blast_radius": "product primary navigation and primary route authorities when explicit navigation supplied; independent admin/contextual buckets preserved",
+      "risk": "authorization/visibility",
+      "earliest_validation": "L1 syntax and L2 real MenuService synthetic edition/ACL regressions; L3 after owner tests pass; no broad browser or final Quick",
+      "checks": {
+        "L1": {
+          "status": "passed",
+          "command": "make ci.local.iteration",
+          "log": "edition_boundary_final_iteration.log"
+        },
+        "L2": {
+          "status": "passed",
+          "command": "make verify.backend.navigation_delivery.unit",
+          "tests": 46,
+          "log": "edition_boundary_navigation_final.log",
+          "prior_failures": [
+            "edition_boundary_navigation_unit.log",
+            "edition_boundary_navigation_fixed.log"
+          ],
+          "recovery": "Remove admin-role unconditional authorization; layout-only test fixtures now include native authorization facts rather than borrowing admin bypass. Edition/ACL/admin-context assertions retained."
+        },
+        "upgrade": {
+          "status": "passed",
+          "command": "make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core",
+          "log": "edition_boundary_supply_upgrade.log"
+        },
+        "runtime": {
+          "status": "superseded",
+          "log": "edition_boundary_runtime.log",
+          "observation": "Installed standard90/preview129; two-edition startup passed subset checks before subsequent native-authority and function/data correction. Not final-candidate evidence."
+        }
+      },
+      "runtime_identity": {
+        "project": "sc-local-dev",
+        "database": "sc_dev_demo",
+        "filter": "^sc_dev_demo$",
+        "tenant": "existing internal development/demo tenant",
+        "role": "persistent feature-development database",
+        "env_authority": ".env.dev governed local.dev",
+        "filestore": "existing sc_local_dev volumes, unchanged",
+        "fixture_reset": false,
+        "production": false
+      },
+      "impact": "MenuService generic merge and primary authority change; focused two-edition backend observation first. Full historical per-principal monotonic comparison still required before claiming no visible-menu loss. No browser/full-matrix/Quick evidence claimed."
+    },
+    "admin_monotonicity": {
+      "status": "verification_pending",
+      "initial_comparison": "edition_boundary_actor51_comparison.json",
+      "first_recovery_log": "admin_native_authority_actor51_snapshot.log",
+      "observation": "After authoritative native input repair nodes111 vs baseline112; this predates final explicit functional discovery capability correction. Do not claim historical no-loss yet."
+    }
+  },
+  "isolated_clean_install_latest": {
+    "status": "failed",
+    "database_install": "command passed; authoritative installed-module readback pending",
+    "failure_owner": "P4 clean frontend output ownership",
+    "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_guidance_clean_install_seed_fixed.log",
+    "failure": "Vite EACCES copying public/runtime-config.js to dist-clean/runtime-config.js",
+    "next": "Repair exact governed build-output ownership through local.clean tool; do not rerun DB install solely for a frontend build failure."
+  },
+  "quick_native_upgrade_latest": {
+    "status": "passed",
+    "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/root_quick_creation_upgrade.log",
+    "limits": "Native upgrade and managed readback only; quick not yet in released policy."
+  },
+  "native_redundancy_cleanup": {
+    "formal_product_layer": "P1 native model/action/view product facts; P4 exact migration generator only",
+    "module": "smart_construction_core",
+    "reason": "Owner explicitly requires removal of redundant capability projections and source-first facts",
+    "source_retirement": {
+      "total_form_mirror_identities": 109,
+      "already_retired": 8,
+      "newly_retired": 101,
+      "semantics": "only form fields/sequence mirrors, no new business meaning",
+      "preserved": "native views, distinct non-form seeds, user-created low-code records",
+      "compatibility": "Inactive empty-payload XMLID tombstones remain solely to target existing-database retirement; no product authority",
+      "generator": "Runtime form-mirror generation removed; existing migration-only CLI preserved"
+    },
+    "checks": {
+      "unit": {
+        "status": "passed",
+        "tests": 6,
+        "command": "make verify.contract.form_structure.guidance_retirement.unit",
+        "log": "native_form_mirror_retire_unit.log"
+      },
+      "L1": {
+        "status": "failed",
+        "owner": "run scope metadata",
+        "reason": "finance native menu owner path missing from run scope; added exact already-authorized path before retry"
+      }
+    },
+    "runtime": "not_run for latest scope; do not claim upgraded or accepted",
+    "remaining": "Other semantic-bearing productization XML requires native-carrier migration; menu overlay consolidation and full capability dispositions pending.",
+    "remaining_capability_review": {
+      "reviewer": "scene_boundary_review",
+      "status": "source_only_partial_no_runtime_claim",
+      "retained_groups": [
+        "material plan/purchase request/acceptance/rfq/settlement; return/transfer/loss distinct business conditions",
+        "labor/equipment/rental/subcontract plan/request/settlement",
+        "leave/seal-use/archive/borrow independent administrative facts",
+        "receive-payment direction, treasury reconciliation, contractor/project/company borrowing/repayment, deposits and treasury operations",
+        "real SQL reports including contract execution, payroll/expense summaries and capital position"
+      ],
+      "merge_views": [
+        "social-person/social-registration into formal social-fund capability",
+        "salary/subsidy/bonus into formal payroll capability",
+        "labor ticket/casual into formal labor cost; equipment shift into formal equipment usage",
+        "same-domain borrowing and reimbursement entry variants"
+      ],
+      "unresolved": [
+        "quotation_only context consumption",
+        "quotation/request alternative action views",
+        "line-level audit/query versus creation",
+        "legacy textual expense_type domains and historical read-only archives",
+        "technical workflow/scene/package configuration separation"
+      ]
+    },
+    "next_slice": {
+      "layer": "P1",
+      "target": "tender.doc.purchase native action/form",
+      "reason": "Unique existing traceability fields migrate to native form before removing two competing P1 configuration records; preserve ACL and active editability. Odoo inherited views are authoritative, not persistent generated form data.",
+      "blast_radius": [
+        "tender.doc.purchase form",
+        "existing native tender.opening unchanged"
+      ],
+      "validation": "L1 static/run scope; focused L2 native declaration/retirement negative cases; no browser until governed upgrade and effective contract readback.",
+      "checks": {
+        "L1": {
+          "status": "passed",
+          "log": "tender_native_projection_iteration.log"
+        },
+        "native_migration_unit": {
+          "status": "passed",
+          "tests": 8,
+          "log": "tender_native_projection_unit.log"
+        },
+        "contract_unit": {
+          "status": "passed",
+          "tests": 217,
+          "log": "native_projection_contract_units_final.log",
+          "recovery": "Retired mirror count assumption replaced by exact active semantic-record identities; retired rows excluded as effective resolver does. Existing behavior assertions retained."
+        },
+        "upgrade": {
+          "status": "passed",
+          "log": "native_projection_dev_upgrade.log"
+        },
+        "runtime_readback": {
+          "status": "passed",
+          "command": "make local.dev.native_projection.audit",
+          "log": "native_projection_runtime_audit_list_fix.log",
+          "checks": 4,
+          "retired": 111,
+          "environment": "sc-local-dev/sc_dev_demo",
+          "limitations": "actor51 company1 tender form; not browser or all roles",
+          "recovery": "Historical noupdate exact retirement applied; probe consumes actual list projections using config.id. Previous failed log native_projection_runtime_audit_fixed.log retained."
+        },
+        "noupdate_unit": {
+          "status": "passed",
+          "tests": 8,
+          "log": "tender_native_projection_noupdate_unit.log"
+        },
+        "noupdate_upgrade": {
+          "status": "passed",
+          "log": "native_projection_noupdate_upgrade.log"
+        },
+        "probe_L1": {
+          "status": "passed",
+          "log": "native_projection_probe_iteration.log"
+        }
+      }
+    },
+    "runtime_readback_tool": {
+      "layer": "P4",
+      "target": "local.dev.native_projection.audit",
+      "environment": "existing sc-local-dev/sc_dev_demo; existing actor sc_test_admin; no new credentials or data",
+      "assertions": [
+        "exact 109 historical mirror + 2 tender projection records inactive/draft",
+        "installed edition identities and release states equal P1 declaration",
+        "actor effective native form and delivered layout retain trace fields/attachment, native structure owner",
+        "retired records not selected by effective configuration resolver"
+      ],
+      "write_policy": "commit forbidden during evaluation, unconditional rollback and restore original shell commit only after rollback",
+      "scope": "metadata projection and actor contract; not full product usability acceptance"
+    },
+    "retained_supply_preview": {
+      "layer": "P1",
+      "module": "smart_construction_core",
+      "standard_vs_user_specific": "industry product",
+      "why_here": "Existing native business models/actions/ACL were hidden by parent retirement; restore native menu placement and select unreleased identities in preview",
+      "why_not_elsewhere": "No frontend semantic fallback or ops-created capability",
+      "risk": "menu visibility and edition separation",
+      "earliest_layer": "L1 then source projection L2; consolidated L3 pending; no browser while source convergence incomplete",
+      "scope": "20 material/labor/equipment/rental/subcontract handling entries and five native parent groups",
+      "source_counts": {
+        "standard": 90,
+        "preview": 129
+      },
+      "runtime_status": "not_upgraded: installed policy last readback standard90/preview109",
+      "checks": {
+        "L1": {
+          "status": "passed",
+          "command": "make ci.local.iteration",
+          "log": "supply_preview_iteration.log"
+        },
+        "projection": {
+          "status": "passed",
+          "command": "make verify.product.menu.release_manifest_v2.guard",
+          "tests": 22,
+          "log": "supply_preview_projection.log"
+        },
+        "native_guards": {
+          "status": "passed",
+          "command": "make verify.product.project_center.wave1.guard verify.product.menu.runtime_closeout.guard",
+          "tests": 2,
+          "log": "supply_preview_guards.log"
+        },
+        "contract_and_ownership": {
+          "status": "passed",
+          "command": "make verify.product.menu.contract_v1.guard verify.product.business_entry.ownership.guard",
+          "tests": 14,
+          "log": "supply_preview_contract_boundaries_fixed.log",
+          "recovery": "P4 guard now validates PREVIEW_FOUNDATION=preview and RELEASED_FOUNDATION=released; mismatched or absent state rejected. Earlier failure retained in supply_preview_contract_boundaries.log."
+        },
+        "original_identity_floor": {
+          "status": "passed",
+          "source": "HEAD:scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+          "current": "working tree same path",
+          "standard_old": 90,
+          "standard_new": 90,
+          "removed": [],
+          "added": []
+        }
+      },
+      "reuse": "217 backend tests unchanged by menu-only delta; tender retirement observation remains specific to prior runtime readback, not proof of newly selected menu usability. No browser/Quick/full matrix rerun."
+    }
+  },
+  "owner_clarification_admin_authority": {
+    "requirement": "System administrator has functional capability permissions, not customer business-data permissions. Reuse existing capability model, do not replace it with native menu ACL or add parallel authorization.",
+    "status": "research_in_progress",
+    "sources": {
+      "startup": "smart_core.core.capability_provider -> P1 core_extension -> services/capability_registry.py",
+      "model": "smart_construction_core/models/support/scene_orchestration.py sc.capability role_scope/required_group_ids/required_flag/capability_scope",
+      "permission_check": "smart_core/handlers/permission_check.py primarily entitlement flag; missing model/capability can allow",
+      "execution": "smart_core/security/intent_permission.py capability lookup plus separate model ACL/record-rule checks",
+      "platform_function_identity": "smart_core/security/platform_admin.py can_discover_platform_capabilities; has_customer_business_data_scope never infers scope from admin identity"
+    },
+    "findings": [
+      "Startup registry and permission ORM model use distinct read paths; runtime key/value correspondence not yet established.",
+      "Registry role resolver defaults missing role to owner; must audit against explicit capability declarations.",
+      "Do not infer function visibility from customer model read ACL.",
+      "sc_test_admin has many explicit business groups and is not a pure platform-admin proof principal."
+    ],
+    "candidate_changes": "Navigation version intersection retained; pure role-label grant replaced with existing native platform discovery capability, separate action/data checks unchanged. Still candidate, not final administrator architecture.",
+    "checks": {
+      "unit": {
+        "status": "passed",
+        "tests": 48,
+        "command": "make verify.backend.navigation_delivery.unit",
+        "log": "admin_function_data_separation_unit.log"
+      },
+      "pure_admin_data_denial": {
+        "status": "not_run",
+        "reason": "Resolve representative governed principal and existing capability evaluation chain first; do not use mixed-role actor51 as proof."
+      }
+    },
+    "next": "Map registry/model synchronization, evaluation/consumption and explicit data boundary; inspect existing pure admin principal, then derive exact cases for functional entry/metadata and business read/write/export/attachment denial."
+  },
+  "admin_data_isolation": {
+    "status": "in_progress",
+    "owner_boundary": "Product administrator may use explicitly owned demo/test records, never customer business records, including when combined with business groups.",
+    "layer_scope": {
+      "P0": "smart_core native classification protection and administrator identity",
+      "P1": "smart_construction_core native business ownership, global ir.rule and caller-scoped services",
+      "P4": "existing governed fixture and nonzero focused verification"
+    },
+    "candidate": "b5728a5220dabdd98ea1ec9f549df5646c2bcc4d + existing dirty scope",
+    "implementation_order": [
+      "Close confirmed payment shortcut sudo bypass with caller ACL/rule checks",
+      "Reuse unified tenant/company registration data ownership; inventory root/detail/shared/SQL scope (supersedes independent per-record classification)",
+      "Enforce global administrator rules and classification/relationship immutability",
+      "Bind explicit demo/test creation and existing capability operation grants",
+      "Pure administrator and mixed-role real ORM denial/allowance matrix; affected contract/browser check"
+    ],
+    "validation": {
+      "L1": "passed data_space_serialization_iteration.log; new readonly metadata inventory separately syntax-checked",
+      "L2": "passed 12 pure policy + 18 original ORM + 2 supplemental ORM tests (signature unlink and company default containment); original logs retained; no whole-product isolation conclusion",
+      "L3": "smart_core schema and serialization model upgrades passed with managed dev authority readback. Whole-product data rules not yet installed.",
+      "L4": "not_run: earlier required layers pending",
+      "L5": "not_run: product blocker open"
+    },
+    "prohibited": [
+      "XMLID/name/database-name inferred authorization",
+      "group-only restrictive rule",
+      "grant all business groups",
+      "frontend role decisions",
+      "claim existing mixed actor proves isolation"
+    ],
+    "owner_refinement": {
+      "single_identity": "One authoritative data ownership identity, classified customer/demo/test; roots bind it, details/attachments inherit. Do not independently label every business row.",
+      "reuse_first": "sc.tenant.company.registration is existing tenant-company authority; preserve signed customer registration and separate governed demo/test registration. A company containing mixed or unclassified historical data cannot be relabeled wholesale.",
+      "dimensions": [
+        "data ownership/tenant",
+        "allowed companies",
+        "authorized projects",
+        "role/capability operations"
+      ],
+      "composition": "Functional operation allowed AND ownership ceiling AND company scope AND project scope AND native ACL/record rules. Group union cannot widen the administrator customer-data prohibition.",
+      "shared_metadata": "Explicit product metadata and own identity only; company_id=False does not mean public business data.",
+      "two_way_isolation": "Customer business identities cannot access demo/test. Dedicated non-customer test identity may exercise business capabilities only in demo/test; no identity receives both realms from group union.",
+      "sharing_layers": [
+        "company",
+        "industry",
+        "platform"
+      ],
+      "systemic_scope": "One complete data-authority design before piecemeal business-rule activation: ownership x purpose x sharing x business scope x operation authorization; public references and customer facts distinct, sharing never overrides purpose or tenant boundaries.",
+      "model_first": "Owner explicitly requires native source models, not just aggregates: root ownership, detail inheritance, allowed relationships, create/write/copy/import validation must be supported before projection closure.",
+      "all_models": "Every installed model must explicitly support applicable isolation dimensions, including roots/details/SQL/shared/identity/transient services; no absence-based exemptions. Existing 282 P1-referenced model inventory is not the complete registry scope.",
+      "proportional_implementation": "Owner approved: constrain every access path; do not add all dimensions/fields to every registered model. Reuse native ownership/relations/ACL/record rules; fix only missing facts and bypasses. 744 registry entries are inspection scope, not 744 rewrite tasks."
+    },
+    "independent_review": {
+      "status": "bounded_fix_accepted",
+      "scope": "payment slice no active elevation; caller env may itself be sudo and is not covered",
+      "full_isolation": "not_implemented",
+      "reviewer": "admin_data_boundary_audit"
+    },
+    "current_slice": {
+      "formal_product_layer": "P1",
+      "layer_target": "native payroll root/detail/report record rules",
+      "module": "smart_construction_core",
+      "standard_vs_user_specific": "industry standard security using verified P0 purpose resolver",
+      "why_here": "native business model permissions belong to owning industry module; existing company fields and actual parent are sufficient",
+      "why_not_elsewhere": "no frontend filters, new field copies or parallel permission engine",
+      "blast_radius": [
+        "sc.hr.payroll.document",
+        "sc.hr.salary.payment",
+        "sc.salary.summary"
+      ],
+      "risk": "high confidentiality",
+      "earliest_layer": "L1 XML syntax and iteration",
+      "L2": "transactionally load exact changed native XML records; real non-sudo business actor allow/deny CRUD/search/export/aggregate",
+      "L3": "deferred until registered-data authority and upgrade migration gaps closed; test XML rollback is not persistent activation",
+      "L4_L5": "not_run: broader model and shared-data gaps remain",
+      "environment": "existing sc-local-dev/sc_dev_demo/^sc_dev_demo$/sc_local_dev_odoo_data; transaction rollback fixtures; no new authority",
+      "scope_limit": "purpose/company ceilings only; per-project/per-person report visibility and sudo service coverage remain explicit independent gaps",
+      "readiness_extension": {
+        "owner": "P4",
+        "entry": "local.dev.payroll.data_scope.readiness",
+        "scope": "same 3 models only; counts, native registration coverage, parent owner consistency, installed view columns and rule-vs-source equality",
+        "authority": "reuse existing local.dev profile/DB/credentials; rollback and forbid commit; no fixture changes",
+        "reason": "Needed before persistent native rule activation; 744-model re-inventory is unnecessary"
+      }
+    },
+    "concurrency": {
+      "old_advisory_lock": "rejected: repeatable-read stale snapshot",
+      "replacement": "native technical synchronization model stores only tenant_key/revision; real row write forces serialization failure, registration remains sole purpose fact",
+      "two_connection_test": "passed in data_space_orm_signed_format.log; stale REPEATABLE READ technical-row write rejected; not a full concurrent pair of business registrations"
+    },
+    "model_inventory": {
+      "artifact": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/data_scope_inventory.log",
+      "status": "read-only observed, not classified/authorized",
+      "native_models": 282,
+      "concrete_models": 251,
+      "concrete_with_company_id": 140,
+      "concrete_sql_projections": 31,
+      "coverage_limit": "P1 referenced models only; expanded complete registry read-only inventory now required by owner scope expansion",
+      "complete_registry": {
+        "artifact": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/data_scope_registry_inventory.log",
+        "total": 744,
+        "persistent": 510,
+        "transient": 118,
+        "abstract": 116,
+        "status": "read_only_observed_not_authorized",
+        "p1_referenced": 282
+      }
+    },
+    "systemic_execution": [
+      {
+        "step": "D1",
+        "owner": "P0/P1 architecture",
+        "result": "Five orthogonal dimensions, public reference vs business facts, native model admission and closure criteria",
+        "status": "documented"
+      },
+      {
+        "step": "D2",
+        "owner": "P0 smart_core",
+        "result": "immutable native data purpose, two-way principal scope, safe registration, concurrent transaction integrity",
+        "status": "20 actual ORM tests (18+2 affected-only) and 12 pure tests passed"
+      },
+      {
+        "step": "D3",
+        "owner": "P1 native facts",
+        "result": "Reuse native owner/parent/rules where adequate; fix source gaps in classified business families. Complete registry is inspection perimeter, not rewrite scope.",
+        "status": "744 installed registry observed; 220 P1 persistent models classified; payroll owner/lifecycle/derived scope verified; remaining facts and access paths pending"
+      },
+      {
+        "step": "D4",
+        "owner": "P0 mechanism + P1 native rules",
+        "result": "Global purpose/ownership ceiling intersecting existing company/project/operation authorization; guarded creates/relationships",
+        "status": "Native ir.rule composition and revocation verified (8 affected ORM cases); production business-model scope application remains pending"
+      },
+      {
+        "step": "D5",
+        "owner": "P0/P1 product reference publication",
+        "result": "Company/industry/platform sharing, publication/revocation and cache invalidation; no customer-data relabel bypass",
+        "status": "not_implemented"
+      },
+      {
+        "step": "D6",
+        "owner": "P4 governed acceptance + independent review",
+        "result": "Discriminating allow/deny evidence for every declared affected unit; uncovered=0",
+        "status": "not_run"
+      }
+    ],
+    "projection_audit": {
+      "status": "source_review_complete_runtime_pending",
+      "reviewer": "scene_boundary_review",
+      "counts": {
+        "defective": 6,
+        "retains_scope_pending_rules": 16,
+        "empty_source_projection": 8,
+        "physical_provider_gap": 1
+      },
+      "defective_models": [
+        "sc.output.invoice.ledger",
+        "sc.salary.summary",
+        "sc.interfund.movement.project.summary",
+        "sc.p1.relationship.review.queue",
+        "sc.ar.ap.company.summary",
+        "sc.finance.counterparty.position.summary"
+      ],
+      "physical_provider": "sc.ar.ap.project.summary",
+      "limitation": "source structure only; no assumption about installed relation definitions"
+    },
+    "shared_reference_audit": {
+      "status": "open",
+      "reviewer": "admin_data_boundary_audit",
+      "confirmed_defect": "system_init_dictionary_data_helper sudo reads company-scoped dictionary rows and maps them to __global__",
+      "required": "native ownership/publication before company/industry/platform consumption; no whole-model shared exemption"
+    },
+    "salary_projection": {
+      "status": "source_partition_verified_not_runtime_deployed",
+      "layer": "P1",
+      "inputs": [
+        "addons/smart_construction_core/models/projection/salary_summary.py",
+        "addons/smart_construction_core/tests/test_salary_summary_data_scope.py"
+      ],
+      "L1": {
+        "status": "passed",
+        "command": "make ci.local.iteration; python3 -m py_compile affected files",
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/salary_scope_iteration.log"
+      },
+      "L2": {
+        "status": "passed",
+        "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestSalarySummaryDataScope",
+        "tests": 6,
+        "failed": 0,
+        "errors": 0,
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/salary_scope_orm_complete.log"
+      },
+      "impact_analysis": "First 4 tests passed; B review found unknown ownership and empty payer normalization defects. SQL predicate, grouped payer key and drilldown changed, affecting all four prior partition cases. Reran this exact class (4 affected + 2 new), no broader model/browser matrix.",
+      "keys": [
+        "same_labels_do_not_combine_companies_or_projects",
+        "drilldown_matches_source_partition_and_done_state",
+        "currency_partitions_and_drilldown_remain_separate",
+        "same_partition_still_aggregates",
+        "unknown_ownership_is_not_a_shared_aggregate",
+        "empty_payer_values_share_one_exact_partition"
+      ],
+      "limits": [
+        "TransactionCase installs candidate view transactionally and rolls it back; daily runtime view not yet upgraded",
+        "Tests intentionally use sudo to inspect all partitions, not proof of native record-rule isolation",
+        "Unknown company/project payroll excluded until explicit source ownership exists"
+      ],
+      "review": "B final bounded review passed; 6 actual tests verified. Subsequent source-model ownership work invalidates dependent projection cases and will be retested."
+    },
+    "source_model_validation": {
+      "earliest_layer": "L1",
+      "status": "bounded_source_changes_passed",
+      "owner": "documentation whitespace",
+      "recovery": "remove extra EOF blank line, then rerun iteration before ORM",
+      "affected_set": "all 6 salary SQL cases depend on changed native source ownership; add 5 source-model cases; full browser skipped because systemic coverage incomplete",
+      "L1": "passed payroll_owner_iteration_scoped.log",
+      "L2": "19 ORM passed payroll_source_orm.log; 3 exact affected opening-authority cases passed payroll_opening_authority_orm.log. Final B review identified payment default_state and non-salary-to-salary conversion bypasses; fix those only, retain original evidence.",
+      "impact_analysis": "Native payroll create/write/lifecycle/parent relations changed: all 11 new scope tests plus existing TestProjectSalaryProduct payment conservation case affected; add non-sudo and relationship/lifecycle counterexamples. No browser or other model suite rerun.",
+      "final_entrypoints": {
+        "status": "passed",
+        "tests": 3,
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/payroll_final_entrypoints_orm.log",
+        "scope": "2 new negative/positive entrypoint tests + prior project salary payment conservation"
+      },
+      "review": "B accepted final payroll default-state and type-conversion fixes; no new blocker in this bounded slice",
+      "limits": [
+        "Native ownership and lifecycle tests do not prove production purpose rules",
+        "No installed-schema/view upgrade performed for payroll changes",
+        "No blanket rewrite of 744 models"
+      ]
+    },
+    "native_classification": {
+      "scope": "220 ordinary persistent P1-referenced models only",
+      "reviewer": "admin_data_boundary_audit",
+      "counts": {
+        "business_roots": 86,
+        "details": 66,
+        "company_configuration": 11,
+        "potential_public_reference": 21,
+        "identity_and_technical": 16,
+        "unresolved_source_ownership": 20
+      },
+      "unresolved_models": [
+        "account.analytic.account",
+        "hr.department",
+        "hr.job",
+        "project.collaborator",
+        "project.milestone",
+        "project.task",
+        "sc.dashboard.cockpit.fact",
+        "sc.document.admin.document",
+        "sc.equipment.price",
+        "sc.hazard.source",
+        "sc.labor.price",
+        "sc.material.catalog",
+        "sc.material.price",
+        "sc.office.admin.document",
+        "sc.site.photo.batch",
+        "sc.subcontract.price",
+        "sc.workbench.item",
+        "sc.workflow.instance",
+        "tier.definition",
+        "tier.review"
+      ],
+      "status": "source classification only, not rule proof"
+    },
+    "native_rule_validation_plan": {
+      "layer": "P0",
+      "owner": "smart_core native registration and Odoo ir.rule",
+      "goal": "Prove existing scope resolver composes with native global AND, role OR and selected-company intersection; no custom permission engine",
+      "scope": [
+        "addons/smart_core/models/tenant_payload_import_batch.py",
+        "addons/smart_core/tests/test_data_space_boundary.py"
+      ],
+      "runtime": "sc-local-dev/sc_dev_demo transactional tests, existing signed fixture authority",
+      "production_rule_activation": false,
+      "tests": "Use temporary ir.rule on native res.company for platform mechanism proof only, not business isolation acceptance",
+      "risk": "Cached domains must revoke on signed registration deletion; create/write already invalidate registry cache",
+      "earliest_layer": "L1 syntax then exact L2 methods; no schema change/upgrade, no browser",
+      "red_result": {
+        "status": "failed_expected",
+        "tests": 1,
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/native_rule_delete_red.log",
+        "failure_owner": "P0 registration unlink did not invalidate native ir.rule cache",
+        "recovery": "clear existing registry caches after successful signed unlink; rerun failed case plus 5 independent new native-rule cases and existing signature-unlink boundary"
+      },
+      "result": {
+        "status": "passed",
+        "L1": "py_compile and owned diff whitespace checks passed; iteration passed data_boundary_simplified_iteration.log",
+        "L2": [
+          {
+            "command": "make local.dev.test MODULE=smart_core TEST_TAGS=<6 exact native-rule methods + signature unlink method>",
+            "tests": 7,
+            "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/native_rule_scope_orm.log"
+          },
+          {
+            "command": "make local.dev.test MODULE=smart_core TEST_TAGS=/smart_core:TestDataSpaceBoundary.test_native_rule_revokes_company_membership_and_stale_context",
+            "tests": 1,
+            "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/native_rule_company_revocation_orm.log"
+          }
+        ],
+        "red_to_green": "Deleted registration remained in cached rule result before fix; clear existing registry cache after successful signed unlink removes it",
+        "limitation": "Only native rule composition and cache lifecycle; temporary test rule is not production business-model integration",
+        "impact_reuse": "Existing P0 purpose-policy and earlier registration tests unchanged except unlink cache invalidation; affected signed unlink tested, new native-rule tests run, final added company-membership case alone executed"
+      },
+      "independent_review": {
+        "reviewer": "admin_data_boundary_audit",
+        "status": "bounded_pass",
+        "scope": "registration purpose resolution and native rule cache revocation; not production business-rule integration"
+      }
+    },
+    "payroll_rules_validation": {
+      "L1": "passed XML stdlib parse, py_compile, payroll_rules_iteration.log; host lxml unavailable so syntax check used stdlib, no runtime dependency changed",
+      "L2": "failed setup: Odoo XML loader requires file-like .name; BytesIO lacked it; 0 tests/1 error, not a pass",
+      "failure_owner": "P4 test input adapter",
+      "recovery": "Name the in-memory exact XML subset; product declaration unchanged",
+      "failed_log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/payroll_data_space_rules_orm.log",
+      "named_run": {
+        "tests": 7,
+        "errors": 6,
+        "failed": 0,
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/payroll_data_space_rules_named_orm.log",
+        "classification": "Six subtest errors in export test: fixture lacked native export capability; other six methods passed",
+        "recovery": "Grant native export capability only within export test; prove allowed export first, retain strict AccessError for denied records",
+        "affected_set": [
+          "test_direct_read_and_export_cannot_bypass_purpose"
+        ],
+        "reuse": "Other six methods retain unchanged source, XML, fixture and actor setup; export group mutation occurs only in this rolled-back test method"
+      },
+      "export_recovery": {
+        "status": "passed",
+        "tests": 1,
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/payroll_data_space_export_orm.log",
+        "conclusion": "7 unique methods covered: unchanged 6 from named run + repaired export method; no whole-class reassurance rerun"
+      }
+    },
+    "runtime_readiness": {
+      "status": "blocked",
+      "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/payroll_data_scope_readiness.log",
+      "facts": {
+        "registered_spaces": 0,
+        "payroll_rows": 2,
+        "payroll_company_id": 1,
+        "payments": 0,
+        "parent_mismatches": 0,
+        "project_mismatches": 0
+      },
+      "pending": [
+        "authoritative data registration",
+        "salary summary schema upgrade",
+        "three native rule upgrades"
+      ],
+      "no_reclassification": true
+    },
+    "fixture_identity_slice": {
+      "formal_product_layer": "P4",
+      "layer_target": "existing managed frontend fixture creation",
+      "module": "smart_construction_acceptance_fixture",
+      "standard_vs_user_specific": "acceptance tooling reusing P0 fact authority",
+      "why_here": "new test companies and identities must be born with native test-purpose registration; no retrospective company relabeling",
+      "why_not_elsewhere": "purpose vocabulary/ownership remains P0; no frontend logic or alternate fixture environment",
+      "scope": "_company and _user only; reject existing unregistered fixture company, preserve naming/currency/credentials",
+      "runtime": "existing installed fixture module in sc-local-dev confirmed from data_space_serialization_upgrade.log; TransactionCase only",
+      "earliest_layer": "L1 syntax and iteration then native fixture tests",
+      "runtime_apply": false,
+      "limitation": "Does not classify company 1 or rewrite legacy fixtures; activation requires coordinated registered baseline",
+      "validation": {
+        "L1": "passed fixture_data_scope_iteration.log",
+        "L2": {
+          "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/fixture_data_scope_orm.log",
+          "tests": 9,
+          "passed": 7,
+          "errors": 2,
+          "failure_owner": "P4 fixture tax duplicates native P1 registration seeds"
+        }
+      },
+      "tax_recovery": {
+        "scope": "_tax reads exact active company-native 13 percent non-price-included reference without rewriting or binding ownership",
+        "affected_set": [
+          "TestAcceptanceFixtureExecutionFreeze (2 methods)",
+          "3 new native tax reference methods"
+        ],
+        "reuse": "7 registration/actor methods unchanged; tax helper is not a dependency of those methods",
+        "runtime": "transaction rollback only; no baseline reset or persistent activation",
+        "first_result": {
+          "tests": 5,
+          "failed": 2,
+          "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/fixture_native_tax_orm.log",
+          "owner": "P4 tests assumed native tax supports arbitrary name and duplicate copy; actual P1 normalizes names and deduplicates create",
+          "recovery": "assert preserved sequence; construct duplicate via real sale-to-none write, assert distinct record before rejection",
+          "affected_set": [
+            "test_tax_consumes_company_native_reference_without_ownership",
+            "test_tax_ambiguous_native_reference_is_not_guessed"
+          ],
+          "reuse": "native missing-reference case and two business chains passed, no dependent input changed"
+        },
+        "result": {
+          "status": "passed",
+          "tests": 2,
+          "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/fixture_native_tax_recovery_orm.log",
+          "total_unique_covered": 12
+        }
+      },
+      "journal_slice": {
+        "layer": "P4 same fixture module",
+        "reason": "existing whole-database first general journal can select non-test company and cross data-purpose boundary",
+        "change": "create/reuse namespace-owned general journal in explicit native registered fixture test company; never adopt unowned journal",
+        "earliest_layer": "L1 iteration then 3 new native ORM journal cases",
+        "affected_set": "new journal helper, initializer journal selection; prior _company/_user/_tax and execution helpers unchanged",
+        "limits": "transactional helper tests only; full persistent initializer still not applied",
+        "result": {
+          "status": "passed",
+          "layer": "L2",
+          "tests": 3,
+          "command": "make local.dev.test MODULE=smart_construction_acceptance_fixture TEST_TAGS=/smart_construction_acceptance_fixture:TestAcceptanceFixtureDataSpace.test_activity_journal_and_move_stay_in_owned_test_company,/smart_construction_acceptance_fixture:TestAcceptanceFixtureDataSpace.test_activity_journal_rejects_unregistered_company,/smart_construction_acceptance_fixture:TestAcceptanceFixtureDataSpace.test_activity_journal_does_not_adopt_same_code",
+          "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/fixture_journal_orm.log",
+          "L1": "passed fixture_journal_iteration.log; py_compile; diff --check"
+        },
+        "review_recovery": {
+          "finding": "fixed activity XMLIDs could migrate old unknown/customer company records through generic _upsert",
+          "owner": "P4 two activity helpers",
+          "fix": "guard native test registration and existing model/company before any mutation; generic upsert unchanged",
+          "affected_set": "3 existing journal methods + 2 new old-XMLID migration negatives",
+          "reuse": "12 identity/tax/business-chain methods unchanged",
+          "status": "passed",
+          "L1": "fixture_journal_ownership_iteration.log; py_compile; diff --check",
+          "L2": {
+            "tests": 5,
+            "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/fixture_journal_ownership_orm.log"
+          },
+          "review": "B bounded final source review passed; generic upsert unchanged"
+        }
+      },
+      "stage_identity": {
+        "head": "b5728a5220dabdd98ea1ec9f549df5646c2bcc4d",
+        "dirty": true,
+        "scope": "fixture builder, fixture tests/__init__.py and test_data_space_creation.py; retained prior batch dirty scope"
+      },
+      "covered_unique_methods": 17,
+      "evidence_reuse": "7 unchanged identity tests from fixture_data_scope_orm.log; missing-tax test and 2 existing business chains from fixture_native_tax_orm.log; 2 repaired tax tests from fixture_native_tax_recovery_orm.log; 5 affected journal tests from fixture_journal_ownership_orm.log (supersedes prior 3 journal tests). Failed full commands remain failures; only individual unchanged methods carried forward.",
+      "limitations": [
+        "Fresh helper chain tested transactionally only; ensure_fixture end-to-end not executed",
+        "Existing unregistered fixture/company1 not reclassified",
+        "Fixture helpers are private administrative Python; only native new-space creator independently requires true uid1+su",
+        "No persistent rule/schema activation or target-environment product acceptance"
+      ],
+      "status": "bounded_fixture_helper_tests_passed_not_runtime_applied"
+    }
+  },
+  "executor_handoff": {
+    "requested_by_owner": true,
+    "date": "2026-10-13",
+    "status": "ready_for_successor_original_executor_stopped",
+    "head": "b5728a5220dabdd98ea1ec9f549df5646c2bcc4d",
+    "dirty": true,
+    "plan": "docs/ops/iterations/fe_contract_runtime_02_consumption_stop_closure_20261013.md",
+    "plan_section": "执行器交接计划（2026-10-13，所有者要求记录后停止）",
+    "single_writer": "successor takes over; previous executor stops after handoff",
+    "resume_command": "make agent.run.resume",
+    "next_exact_step": "Inspect sc.interfund.movement.project.summary and source sc.interfund.movement.fact ownership and existing tests; record exact affected set; create cross-company/currency partition and drilldown counterexamples before fixing the P1 source/SQL boundary.",
+    "stage_status": {
+      "batch": "in_progress_bounded_fixture_slice_passed",
+      "mainline": "not_completed",
+      "deployment": "not_completed",
+      "user_acceptance": "not_completed"
+    },
+    "no_automatic_write_replay": true,
+    "reuse": "admin_data_isolation holds original evidence; fixture 17 unique methods passed; no broad rerun",
+    "runtime_blocker": "sc_dev_demo has zero active registrations; installed payroll view/rules pending. Existing fixture initializer does not authorize sc_dev_demo.",
+    "prior_blockers": "Reconcile top-level blocker entries with original evidence before branch closure; do not delete as stale without proof."
+  }
 }

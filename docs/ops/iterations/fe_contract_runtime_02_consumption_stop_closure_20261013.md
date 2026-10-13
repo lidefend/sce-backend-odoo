@@ -237,3 +237,479 @@ unrelated check was re-run.
 
 Still open (not part of this step): the consolidated affected-surface product review with real
 representative roles/companies, and the target-environment upgrade/user acceptance.
+
+
+## Controller takeover and independent review (2026-10-13)
+
+Stage identity: b5728a5220dabdd98ea1ec9f549df5646c2bcc4d, initially clean; subsequent metadata and explicitly assigned P0/P4 edits are iteration scope, not frozen delivery. agent.run.resume resolved 13 reusable registered checks. Local health passed sc-local-dev/sc_dev_demo and exact filter/volumes; runtime-version readback reported unknown.
+
+Boundary: P0 generic record-entry consumption owns rejection of a present malformed formal carrier; P4 existing local.dev wrappers own the exact-instance approval and observation binding. No model-specific frontend rule, new profile/database/credential or fixture system. Impact: formal record navigation plus existing payment list/form/detail representative consumer. Backend page_size addition is Python-only; reload via governed local.dev.restart, no schema/module upgrade unless a real prerequisite requires it. Build only after affected L1/L2 pass.
+
+Independent review found a remaining T5 defect: missing model/id/intent in a present record_entry returns null and can reach legacy/route. A-line owns the bounded fix, B-line reviews; root is the controller. Required checks remain not_run downstream of the failure. Runtime review reuses the existing internal development tenant sc_dev_demo, not a customer-production or control-plane database; existing filestore sc_local_dev_odoo_data and filter ^sc_dev_demo$ were confirmed by local.dev.health. No business data writes or resets are scheduled. Restart/build are authorized by the owner takeover and governed Make entries; preserve the existing data and infrastructure.
+
+Affected evidence plan: derive exact list/create/edit/readonly/navigation/relationship keys from the governed target and approved contract for desktop/narrow views. Malformed declarations remain controlled negative tests, not shared database corruption. The sole evidence_scope engine decides reuse. Existing independent passing units are retained; final Quick and publication wait for product convergence.
+
+T5 follow-up fixed by A-line (3 files, 20 new discriminating cases); L1 and collection_view_semantics/collection_row_action_identity passed. Original logs: /tmp/fe-cr02-t5-iteration.log, /tmp/fe-cr02-t5-collection-view.log, /tmp/fe-cr02-t5-row-identity.log. The eight malformed-formal-carrier navigation combinations assert ContractGapError and zero router pushes; absent-carrier compatibility remains.
+
+P4 independent review additionally found closure snapshots not checked against their base_url/database, and record_existing observations rebound with only company identity checked. These invalidate only affected scope import/record paths, not existing product units. Repair source/actor/input binding before new evidence is recorded; never pretend an old observation carried fields it did not capture.
+
+P4 identity follow-up: six existing model/scope/browser/incremental/test files now bind closure snapshots to source URL/database and record actual observation identity + per-unit inputs. Import compares observed/original-plan/current identities and executed fingerprints; missing historical binding is rejected, partial unexecuted siblings are untouched. L1 /tmp/fe-cr02-evidence-iteration-fixed.log PASS; L2 /tmp/fe-cr02-evidence-unit-fixed.log Python66 + JS57 + binding16 =139 PASS. First fixture failure retained /tmp/fe-cr02-evidence-unit.log; recovery changed fixture source identities, not assertions. B-line source re-review PASS.
+
+Runtime preparation: make local.dev.restart SC_SOURCE_REVISION=b5728a5220dabdd98ea1ec9f549df5646c2bcc4d PASS (/tmp/fe-cr02-local-restart.log), readback source_revision exactly b5728a52 and database sc_dev_demo; no module/schema/data writes. make local.dev.frontend PASS (/tmp/fe-cr02-local-frontend-build.log) for current iteration frontend including T5 dirty scope; not frozen evidence. Post-restart make local.dev.health PASS (/tmp/fe-cr02-local-health.log). make evidence.archive.verify read actual original files, 3/3 hashes matching (/tmp/fe-cr02-evidence-archive-verify.log); this is actual local artifact verification, not proof of external archive retrieval.
+
+Approved P4 adapter scope: existing local_dev_payment_request_native_parity_ids.py, floorplan_readonly.sh/.mjs and make/dev.mk; preserve fixed local.dev identity/credentials and before/after readback. Reuse dev_acceptance_release_probe.py and acceptance_contract_receipt.mjs, no new profile. Backend approval precedes browser; observed HTTP request/response must match the approved exact instance and semantic digest. Parameter context derives from system.init, never hardcoded company.
+
+P4 local.dev adapter L1 and registered local_floorplan_contract_binding L2 passed (Python22 + local prerequisite11, existing unnumbered receipt suite also passed). Original log .runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/floorplan_contract_binding.log. Approval separates edit and readonly exact record seals; list/create remain live-contract observations, never mislabeled approved record instances. Eight declared keys are list/create/edit/readonly x 1440/390, derived from the existing actor/record/declarations and per-unit inputs through evidence_scope; no full 89-entry matrix.
+
+Runtime attempt 01: both backend approvals PASS for sc_dev_demo/demo_role_finance/company1, b5728a52; browser stopped before any executed key because .first() selected the hidden mobile row at desktop width. Classified P4 locator defect, corrected to the visible declared record row, with production ListPage row-attributes through ScTable as selector authority. Business fingerprint unchanged. Original .runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/local_floorplan_runtime_01.log retained. Targeted helper test passed after correction (.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/floorplan_contract_binding_visible.log). Attempt02 is justified by this changed probe input; all eight keys remain uncovered, not a reassurance rerun.
+
+T6 mounted consumer evidence added to the existing readonly_block_component_test.mjs and existing professional_relation_field target: actual X2ManyRelationRenderer.vue retains the blank row, total5, declared page_size2, next/previous events produce 2/2/1 windows, and six invalid declarations reach ContractGapError without publishing a table. Mounted assertions38 (previous attachment15 + collection23) passed; model/descriptor/option/guard subtests also passed. Original .runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/mounted_detail_consumption.log. This complements the production visibleOne2manyRows pure tests and does not claim a database sample with nondefault pagination was observed.
+
+Receipt reuse boundary: switching the run environment from offline to the governed runtime makes existing local advisory receipts non-reusable under the current agent context engine, even for unchanged pure tests. Their original results remain referenced with impact analysis; no environment is relabeled offline and no old pass is forged. Runtime approval uses actual authoritative readback; final exact-head gates remain pending.
+
+Owner feedback (same active task): duplicate More controls and persistent current-task/help content must be closed. P0 narrow recordActions were rendered both directly and in mobile overflow; fixed to one responsive host with identity-preserving dispatch, including colon-containing keys and busy/disabled protection. Actual mounted19 + model28 + Python70 passed (header_action_unique_fixed3.log); no new browser claim yet. Native smart groups separately invent a four-action truncation and More label without declaration: explicit open ledger gap blocks freeze until removed or declared. Selected minimal fix is consume all declared visible native smart buttons in original order, preserve existing explicitly declared header/canonical overflow. P1 project-create guidance groups belong in the XML declaration; P0 action feedback must move to interaction carriers, while configuration contract gaps remain persistent stop states. No frontend label/model filtering is authorized.
+
+
+### 动作提示事实层收口（进行中）
+
+本轮 P0 删除前端 warning/evidence 常驻主体及其无用 props/computed 接线。后端 workflow evidence 仍是动作可用性判定输入；拒绝原因由同记录、同方法的 availableActions.blocked_message 与 reason_code 成对投射到正式 actionRule/buttonStatus，再由动作交互呈现。此变更不删除业务风险事实、审批信息、严格契约缺口停机或操作后字段反馈，不将 actionKeys/evidenceGate 文案猜配为动作权限。P1 创建指导布局声明另批处理。定向反例覆盖旧常驻模板注入和严格停机被删除，浏览器证据待后续受影响集验证。
+
+
+### 同入口布局事实核查
+
+所有者明确系统未设计角色选择不同布局。相同 action/menu XMLID、视图、记录、公司、编辑态必须共享布局声明；ACL 只影响获权字段/动作与只读，不能切换模板、分区或 layout authority。历史 action807 与当前809 是同一 action_payment_request_user_payment_apply/menu_sc_user_payment_apply，不据数字变化判为不同入口。只读 authority scope 对比普通 actor 的最终契约，保留节点/字段 occurrence、顺序与 span，权限另表；拒绝记 not_comparable，禁止 sudo 补齐 actor 契约。旧图片未与 summary 做 hash 绑定，不宣称精确图片 SHA。
+
+布局核查边界：模型默认视图仅为基础来源，action 绑定的 pay_form 是入口布局基线；ACL 投影负责授权可见/只读/动作，role_key 命中布局配置必须单独报告，不能混称权限裁剪。前端只消费终契约。相同入口、视图、有效编辑态的模板/章节/顺序/宽度不得因角色权限另选或重排（产品约束，尚非本次事实结论）。requested edit 与实际 effectiveRenderProfile 分别记录；模式不同不能作为同编辑态比较。结构保留所有字段 occurrence，原始结构与具体差异保留，差异本身不证明角色因果。
+
+### 同入口跨账号实测与架构边界纠偏
+
+身份仍为 HEAD `b5728a5220dabdd98ea1ec9f549df5646c2bcc4d` 加本运行的显式 dirty scope，未冻结。
+Formal Product Layer：P0 平台契约职责、P4 受管只读诊断；Layer Target：视图解析／权限投影边界、既有 local.dev 探针。
+Module：smart_core 职责规范及 scripts/verify 工具。本次规范是平台规则，不是付款模型特判或客户偏好；
+不在前端猜权限原因，不修改行业字段／角色授权。影响范围为边界文档、已有架构决策、当前结果索引；
+文档修正不失效已经通过的组件行为证据，也不宣称机制已全部落实。
+
+原始截图目录 `sce-offrepo/artifacts/playwright/systemwide-public-metric-acceptance` 的报告记录历史 HEAD
+`2f4072ca01dd84bc57b4feb1b909e28759812490`、`sc_test_admin`、业务分类任务结构。截图与该报告无独立哈希绑定，
+不能当成当前版本页面证据。历史 action807 与当前809 按 XMLID 指向同一入口，不是不同菜单。
+
+本次只用受管入口 `make verify.local.dev.payment_request.floorplan.readonly` 的 `authority` scope，
+在 sc-local-dev/sc_dev_demo 内通过实际非 sudo actor 调用后端契约处理器；未重置数据、未跑浏览器或修改业务记录。
+它证明当前工作树后端处理结果，不冒称已部署 HTTP 进程或前端构建产物一致。
+
+| 实际核验 | 固定条件／结果 | 原始证据 |
+| --- | --- | --- |
+| 历史受管记录的当前实例 | floorplan XMLID 当前解析为2880，已办结；两actor实际均readonly，不能证明edit | `.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/authority-completed-record.json`；`logs/layout_authority_runtime_01.log` |
+| 现有受管草稿 | `sc_demo_pay_req_010_003`，record3/draft/company1；同action809/menu559、专用pay_form2096；模型基础view1759单独记录 | `.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/authority-editable-record.json`；`logs/layout_authority_runtime_02.log` |
+| actor及有效模式 | `sc_test_admin` uid51/system_admin 与 `demo_role_finance` uid43/finance；均env_su=false，effective profile=edit | 同上原件 |
+| 实际命中配置 | 两方均145:v2、4:v3、207:v11；role_key均为空 | 同上原件 |
+| 布局 | 两方均native_view/container_tree；121结构节点、83字段节点的位置、顺序、类型、标题、span/cols相同 | B线对两份原始树分别递归核验；未承袭readonly结论 |
+| 权限及关联差异 | 1434条独立访问标志相同；319原始差异=关联入口260+关联动作权限36+创建／写入属性20+审计授权3，无其他差异 | 同上原件；关联action/menu变化不是主表入口变化 |
+
+结论仅限这个付款申请编辑实例：主表布局相同，关联操作与审计能力不同；不能用角色解释历史截图中的另一套任务布局，
+也不能外推所有模型／角色。后端确有role_key配置筛选机制，旧规范也含角色布局作用域；所有者已明确不授权该产品能力。
+本轮同步修正 backend_contract_boundaries、native_view_reuse_frontend_spec 和 ARCH-DECISION-003；
+角色结构配置的发布／解析拒绝机制尚待专项收口，仍在契约缺陷台账，禁止把文档改动称为门禁已通过。
+
+探针 L1／精准 L2：`layout_authority_iteration_focused_final.log` PASS；`verify.local.dev.layout_authority.unit`
+首次5项、补受管editable选择后6项PASS（`layout_authority_editable_unit.log`），begin/record成功。
+此前生命周期旧类20测中的3项旧token失败保留于`layout_authority_probe.log`；它未执行新增只读类，
+不能据新类通过宣称生命周期全套通过。第二次运行是因为第一次记录已办结，替换为既有草稿这一明确输入变化，
+不是对未变失败重复尝试。
+
+补记已完成的实际组件观察：`native_action_browser_hmr_fixed.log` 为NativeFormTreeRenderer桌面／窄屏
+声明动作完整性PASS；`action_denial_browser.log` 为ScDropdown+ScPopover桌面鼠标与390触屏、键盘显示、
+逐次关闭／打开均PASS且业务事件0。仍不等于目标页面构建、声明升级或整批交付完成。
+
+### 角色作用域布局机制约束（P0，本轮增量）
+角色结构检查与旧 native ownership 分类分开：角色配置只保留现有字段可见/只读注解及精确节点权限 patch；标签、组件、章节、顺序、跨度、composition 与整体动作替换显式拒绝。权限裁剪保留节点身份、顺序、跨度，不补成员；原生更严格限制不放宽。发布约束包含 role_key，预览/正式解析同一判据，非法历史配置抛配置错误而非 continue 回退。全局布局仍可合法配置。L1 与定向 L2（135+9+58+5=207）通过，原始日志及边界见 run.role_layout_guard_execution；这不等于真实 ORM 写入或部署验收通过，未重跑浏览器。
+
+### 低代码布局边界补充（2026-10-13）
+
+所有者要求保留低代码布局能力并限定职责。已在原规范 §14.4 与 ARCH-DECISION-003 固定：逻辑分组／顺序／页签／列数／24 单位跨度；稳定出现位置身份及父容器坐标；能力白名单；配置编辑权限与发布作用域分离；后端唯一合成；生效约束不得静默不消费。权限隐藏允许自然空间收缩，不允许改写剩余业务跨度。任意 DOM/CSS/脚本及授权扩张禁止。
+
+本次只修改架构文档和当前 run，无新产品／环境写入；diff 检查及 YAML 解析通过，不使原页面观测失效，也不证明新规范全部实现。角色结构防护独立源码复核通过；真实 ORM 发布拒绝与版本回滚尚未实测。列数默认／夹取、投影坐标映射及受影响实际页面仍待闭合，不能宣布批次或分支完成。
+
+### Columns declaration convergence
+
+Backend210, canonical239 reported +7 column negatives, native layout pure80 + mounted5 + guard22, and strict typechecks passed. Original failed logs remain in the run. Governed columns-authority-editable.json readback verifies both non-sudo edit contracts: 121 nodes, 19 grids, 83 matching widget occurrence spans; native tree coordinates/order/columns unchanged. This is contract projection evidence, not served-browser geometry. Low-code owner/target role separation and real ORM tests remain pending.
+
+### 生成视图基线的受管环境回读
+
+P4 扩展原 local_environment_doctor，只读已验证 profile 的三个精确卷名、Compose 标签与挂载者，不创建环境、不打印凭据。shell/diff 与 ci.local.iteration 通过；原 lifecycle 目标32项通过（含4项实际脚本 mock transport）。原 run登记回执，日志 doctor_readback_unit.log、doctor_readback_iteration.log。
+
+旧 clean 凭据归档仍可解析 sc-local-clean/sc_clean，但受管 local.clean.logs 实测三个固定卷均不存在、无服务容器；证据 view_baseline_volume_readback.log。不能称作仅服务停机，也不能用 local.dev 冒充 clean 生成基线。当前未创建环境。先完成剩余已授权页面工作，再提交精确恢复动作供所有者授权。
+
+### P1 项目创建指导退役：原生回读
+
+首次升级在 fast guard 前置拒绝，未开始数据库升级；按真实模型/XML变更声明 CODEX_NEED_UPGRADE=1 与 CODEX_MODULES 后，既有 local.dev 升级通过。TestProjectInitiationNativeLowcode 实际 15 tests、0 failed、0 errors；两原生视图、字段退役、业务顺序/必填/标签与隐藏依赖保持由真实 ORM 校验。原日志位于当前 run 的 project_guidance_upgrade_declared.log、project_guidance_native_orm.log。
+
+引用回读 guidance-references-after.json 对比原 before：project 指导引用载体 2→0；payment 六项载体及引用内容完全不变。此结果不替代页面几何验收。生成投影仍因原 local.clean 三个固定卷不存在而 blocked，不用 local.dev 冒充 clean baseline，也未新建环境。
+
+### 状态栏最终 occurrence 消费与精确执行恢复
+
+后端来源独立核实：P1 SYSTEM_FIELDS state 与 readonly_all 声明所有模式只读，P0 投射 read；模型禁止普通 state 写入，两个实际账号一致。前端原来选中 statusbar 节点后丢弃 occurrence，读取同名聚合；同字段两个 occurrence 时聚合故意不提供，结果误作 writable。本次直接消费选定 widget 的最终 verdict，并保留同字段 workflow 只读收紧。实际 composable→Header 挂载 34、模型 28、Python 70 与 strict 两配置通过，受管前端已构建；真实页面仍待恢复。
+
+精确 executor 消费唯一 evidence_scope 的 affected 集合；空集合不执行/不记录，新旧部分结果不混用。普通后项失败保留已完成 key PASS，readback/全局错误或业务写企图使完成结果失效。entry 指纹与 form header/semantic seal 分离；本次因工具导航执行控制流实际变化，授权 entry 一次迁移验证，加六个尚未完成产品键，共七键；不是 header 导致 entry 产品失效，不伪造迁移收据。最终 L1、绑定 51 项与生命周期/真实 engine 36 项通过，日志均索引原 run。
+
+### Readonly empty occurrence and payment guidance follow-up
+
+Five consumption keys passed (entry plus edit auth/span at 1440/390); readonly two did not execute after the visible empty cost-category field was omitted. Evidence is preserved under `.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/readonly-occurrence-failure/`. FormSection and canonical native bridge no longer derive visibility from empty values. L1 and layout (80 pure + 9 mounted + 22 guard), canonical, and both strict configurations passed; original failure logs remain. Current consumption did not generate fresh screenshots: old edit PNGs are not current evidence.
+
+Payment guidance remains open at declaration level: the pay view still inherited conditional blocked/review alerts and its productized configuration retained old task/risk guidance anchors. Eligible sample data cannot waive these declarations. Partial P1/P0 changes are retained, but the owner now requires a single structured backend declaration of conditions, fact references, action association, trigger, severity, presentation and continue/block outcome. Dedicated new status branches must be reconciled to that authority before L2 or browser acceptance. Existing action-bound presentation and confirmation executors can be reused; business facts remain persistent, guidance is interaction-bound. No new environment, runtime write or browser was performed by this executor.
+
+Owner refinement: native facts and business guards remain the sole business-decision source. The newly added generic action_guidance module and XML condition/outcome rules are retained as dirty, unvalidated work and must be reconciled; they must not become a parallel fact authority. Configuration may publish fact references and interaction metadata only. No guidance L2, upgrade or browser pass is claimed.
+
+### 风险级别编辑能力边界（当前）
+
+P1原生风险事实与默认soft由同一后端policy消费；现有force_block参数为数据库全局运维设置，不是公司隔离低代码能力。现通用变更集没有risk编辑/发布/回退入口，P3用户调整能力尚未交付，本批不新建设计器或条件引擎。后续仅开放产品支持风险项的severity覆盖，必须合成同份原生policy。
+
+### 正式产品提示族统一收口（最新目标）
+
+付款专用入口修复不代表全局收口。shared payment base/receive 的条件alerts及task字段、execution task/risk锚点和其余正式声明须经同一原生事实用途分类与交互迁移；未声明用途不能由前端当普通事实兜底。当前产品源保持稳定，待独立声明清单及定版执行单。P4新增付款guidance两key和project-create四key的L1与67项定向检查通过，浏览器未执行；旧pay-only观察暂停，不能写验收完成。
+
+
+### 系统提示统一：根执行器接管（2026-10-13）
+
+两个协作执行器因额度限制中断，root 接回唯一写入职责。身份仍为 `b5728a5220dabdd98ea1ec9f549df5646c2bcc4d` 加明确 dirty 范围，不是冻结候选。完整结果以 run 的 `guidance_system_closure.root_takeover` 为唯一索引。
+
+P1 `native_guidance_form_retirement.xml` 声明八条退役模板；P4 既有生成器按该声明把精确八条生成种子转为不生效的草稿占位，保留 XMLID、其他记录不变；同一 XML function 用于已有库升级。没有手改生成文件、没有安装期校验豁免。原有三条退役重复执行为幂等；补齐其余五条。生成器及原生用途后继声明五项检查通过。新安装还须既有 clean profile 恢复后验证，源码顺序和单测不等于实库新装。
+
+P0 动作通知新增对新记录、录入列表及关联弹窗的受管交接：使用同一原生通知类型，父页 owner 在打开弹窗时创建；关联回复需原 nonce、来源窗口和上下文匹配，不能在收到迟到回复后新建 owner 伪造有效性。已通过 46 项通知行为检查及相关 header/lifecycle 测试、两套严格类型检查；布局 95 项、原生动作声明 66 项通过。用途约束的 217 项结果输入未变，沿用原始日志。
+
+当前进入既有 sc-local-dev/sc_dev_demo 受管升级；升级、ORM、浏览器、最终独立审查、主线集成与用户交付仍未判通过。clean 环境缺失以及协作审核额度中断分别保留为环境与交付审查前置。
+
+本次升级首次拒绝付款登记契约残留的责任提示字段；按原生 `sc_ui_usage` 声明追踪并清除原生视图、产品契约和业务类别策略的同类引用后，第二次受管升级及权威回读通过。六项 ORM 方法首次执行：两项通过，其余四项存在测试身份、收款合同方向、旧提示正文断言和隐藏依赖断言问题；仅修改这些测试输入后重跑四项。隐藏依赖须保持原生 invisible 声明，不得作为可见事实放行。产品代码未因此更改；其余定向证据沿用。
+
+后续两项中，收款原生 soft/per-code/global-hard 路径通过；付款反向断言实际发现 Python 业务策略模板仍引用 `partner_transaction_eligibility_reason`。已在 P1 源删除两处，防回流检查增加实际 Python 模板输出（不只扫描 XML）。五项声明检查与最后付款 ORM 方法通过；六项 ORM 现按受影响集合闭合，原始失败日志保留。此产品变更使策略同步升级失效，正在重新执行 P1 受管升级，前端及其他原生用途机制测试输入未变。
+
+浏览器前置身份首次为 unknown，已用原 local.dev.up 入口注入当前 HEAD 恢复（dirty 范围仍显式记录）。编辑/只读契约审批随后通过，证据引擎选择九项；浏览器在列表入口遇到 P0 单记录提示错误，实际执行零项，未形成通过证据。P0 修复仅在 form 表面求值原生记录提示，列表不读取单记录事实；缺少表面声明或表单记录身份仍失败。同层测试还发现平台菜单配置的正文教程，已迁到原生 menu_id.help；原生布局测试增加恢复 alert 必须失败的反证。149 项 P0 测试与 L1 通过，正在升级 smart_core；前端输入未变，复用已成功构建产物，不重复构建。
+
+## Menu fact unification — owner scope extension, 2026-10-13
+
+Owner requires quick project creation on the formal product surface and complete menu-fact unity. This is P1 product metadata with P0 projection/ACL clipping and P4 generated evidence; no frontend product rule is added. Exact findings and execution status live in run.json `menu_fact_unification`.
+
+The source audit found split ownership: config/product_menu_contract_v1.json owns product paths, scripts/ops/promote_product_ten_center_policy.py owns target bindings and repeats labels/paths, and runtime loads scripts/verify/baselines/formal_business_product_menu_policy_v1.json. Both products currently declare 90 entries without quick creation. Quick is overlaid by four manifest-ordered native XML files and remains in the unpublished set after its native active flag was restored. Native restoration alone is not publication.
+
+Required execution order: consolidate P1-owned menu declarations; make config and locked verification artifacts deterministic projections; validate native identities and hierarchy; restore quick in the unique source and remove contradictory retirement; test drift rejection; upgrade and clean-install readback; observe only affected navigation/create keys. Explicit low-code changes must carry their source and remain distinct from role permission clipping. Historical 62-menu normalization methods have no callers found by repository Python search; that is static residual evidence, not proof of runtime execution.
+
+Known independent prerequisite: clean DB module install command now succeeds after nonempty inactive JSON payload correction, but the overall install fails at dist-clean/runtime-config.js EACCES. Repair the exact output ownership and resume frontend stage; do not repeat successful DB installation to diagnose build permissions. Daily native upgrade succeeded, but formal quick publication remains pending. No unified-menu completion or final delivery claim.
+
+### Native-source consolidation continuation
+
+The owner clarified that editable module source is the first correction point:
+native model/field/view/action/ACL facts must not be shadowed by release lists or
+persistent generated configurations. External module adapters require explicit
+source provenance; actual low-code customization remains a scoped user capability.
+The original 90 released menu identities remain the standard edition floor.
+Preview includes real unreleased product capabilities, has no 92-entry ceiling,
+and excludes development experiments and roadmap-only carriers.
+
+P1 source selection now references native facts in manifest/dependency order;
+the ops generator only serializes derived files. Runtime rejects source/projection
+drift and no longer prefers image/verifier copies. Missing actions cannot be
+fabricated by policy synchronization. Installed menu names, ordering, targets,
+and actual actor/company visibility are compared independently of aggregate counts.
+The 59-pair observation found no removed/changed old node identities, but eight
+pairs had accounting-order drift. Its three external placements have been corrected
+in source; the failed command teardown and outstanding runtime recheck remain
+recorded in the single run. The later expanded preview scope supersedes that
+intermediate affected-set plan.
+
+The current intermediate source contains 90 standard entries and 109 preview
+entries. Seventeen restored candidates have independent native business models,
+views and ACL declarations; seventeen roadmap-only entries are explicitly retired.
+The full native inventory is evidence, not publication authority: other true
+business capabilities, duplicate views, internal tools and historical read-only
+surfaces still require individual dispositions. No claim that 109 is final.
+
+All 109 historical generated form mirrors now carry inactive, empty payloads;
+101 were still effective before this continuation, eight had already been retired.
+The generator's new-mirror path was removed. XMLIDs remain only as migration
+tombstones for exact existing-database retirement; user-created low-code records
+are outside this set. Other semantic-bearing XML cannot be removed before its
+unique facts are migrated. For tender.doc.purchase, six unique trace/archive fields
+were moved to its native form, their edit/read constraints preserved, attachment
+visibility restored to the native declaration, and two conflicting projection
+records retired, including an upgrade write outside legacy noupdate data.
+
+L1 and 217 focused backend contract tests passed; eight native migration tests
+passed. A stale test requiring at least four configuration records was replaced
+with exact active semantic identities while preserving its structure/semantic
+behavior assertions. Latest governed local.dev upgrade/readback is tracked in
+run.json; neither source tests nor the earlier intermediate upgrade imply current
+runtime acceptance, frozen baseline, mainline integration or product delivery.
+
+### Continuation: native retirement readback and retained supply capabilities
+
+Stage identity remains HEAD `b5728a5220dabdd98ea1ec9f549df5646c2bcc4d` plus owned dirty scope; not frozen. The exact noupdate repair upgrade completed. `make local.dev.native_projection.audit` passed four runtime checks: 111 retired configurations inactive/draft, installed standard90/preview109 identities and release states equal the then-current source, and actor51/company1 tender native form delivered all seven retained fields with container_tree/native_view ownership and no effective old configuration. Probe list-vs-recordset assumption was repaired; both original failures remain referenced in the run.
+
+P1 source now retains 20 additional material/labor/equipment/rental/subcontract entries in preview and restores five native parent groups directly beneath the project center. Standard90 identities equal HEAD exactly (no additions/removals); source preview129 retains all original90. Native actions, models and ACL remain their existing source owners. Runtime remains at preview109: new source scope has not been upgraded. L1 passed; projection22, native guards2, contract/ownership14 tests passed. The menu-contract guard was missing preview vocabulary; it now additionally rejects inconsistent or absent release states. Source classification and complete real-user usability remain open.
+
+An offline diagnostic using the real MenuService.build_nav implementation reproduced a P0 version-boundary failure: policy declared menu101 only, role exposure declared101+102, delivered navigation included102. Artifact `menu_edition_native_bypass_diagnostic.json` is mechanism evidence only, not proof of a specific deployed principal. Block further menu runtime publication until product-edition membership is intersected with role/native authorization and platform administration is explicitly separated. Do not solve this by dropping legitimate admin menus or silently narrowing the historical90. Subsequent work resumes from this owning-layer defect, not a full browser matrix. See run.json for commands, original logs, counts and next exact step.
+
+### Continuation: P0 edition navigation and primary authority
+
+P0 MenuService now treats an explicit menu_groups declaration (including empty) as a closed product navigation set. Native menu discovery and role exposure cannot add entries to it. Independent ADMIN_ROUTE/CONTEXTUAL_ROUTE declarations remain separate. Primary/role-home authority is intersected with the final delivered navigation before the existing explicit-denial partition is completed. The admin-role unconditional authorization shortcut was removed; native menu or action/model authorization is still required. Two layout-only unit fixtures now supply native facts instead of relying on that shortcut.
+
+`make verify.backend.navigation_delivery.unit` is the extracted existing backend portion of navigation_shell.unit, plus the existing final-authority integration static tests. It passed 46 tests, including a 12-case role/edition/native-visibility matrix and independent management/context preservation. Earlier failures and changed recovery inputs are preserved in the run. L1 passed (`edition_boundary_final_iteration.log`); no frontend build or browser was needed for this backend-only change. The managed P1 upgrade installs source90/129 in the existing development profile, followed by actor51/company1 standard+preview startup readback. Upgrade/readback final outcomes remain in run.json, not inferred here. Full historical actor monotonicity and complete remaining capability classification are still outstanding.
+
+### Owner clarification: functional capabilities are not customer-data access
+
+The owner explicitly confirmed system-admin functional permissions with no implicit user-business-data permission, and required reuse of the existing capability model. The previous native-ACL-only interpretation of function visibility is superseded. Current candidate uses the existing native platform discovery capability for function visibility, not a role-name grant; action/model data checks remain independent. 48 focused tests pass, but the complete admin path is NOT closed. Actor51 carries many business groups and cannot prove pure platform-admin data isolation.
+
+Research traced startup through P0 capability_provider and P1 capability_registry, while sc.capability in scene_orchestration owns role/group/entitlement/dependency evaluation and permission.check/intent_permission query ORM capability records. Registry/model synchronization must be established per key; different read paths alone are not proof of runtime disagreement. permission.check currently mostly evaluates entitlement flags and can allow on missing entitlement/capability; do not interpret it as a complete function/data grant. Registry role inference also defaults an unresolved role to owner and requires audit. Continue at these existing declaration/evaluation carriers, without adding a parallel permission layer.
+
+The managed upgrade completed (standard90/preview129). Initial two-edition readback passed but the historical navigation comparison caught112->53 nodes. Native authority repair recovered111 nodes before the later function-visibility correction. These are intermediate observations, not final monotonicity or administrator acceptance. The run records exact logs and superseded evidence. No business-data grants were added.
+
+### 管理员与多维数据隔离：所有者确认后的实施边界
+
+所有者进一步明确：统一业务数据归属身份，并同时完善公司、角色、项目的数据隔离。
+此前按每条业务记录分别保存 customer/demo/test 分类的建议不作为实施方向。
+归属引用现有 `sc.tenant.company.registration` 事实；用途由数据空间唯一声明，
+根对象绑定、明细和附件继承。历史混合公司、未注册记录不能整体标记为 demo。
+
+授权结果 = 功能能力允许 ∩ 数据归属上限 ∩ 公司授权 ∩ 项目授权 ∩ 原生 ACL/记录规则。
+管理员即使兼任业务角色，也不能扩大到客户业务空间。前端仅消费结果，不改变布局。
+切换当前公司/项目属于查询上下文，不构成授予该公司/项目访问权。
+
+实施顺序与责任：
+
+1. P0 原生注册事实：复用 tenant/company registration，声明 customer/demo/test 用途及
+   不可自行改归属的约束；保留客户 signed import，演示/测试走用途限定受管入口。
+   禁止用客户端 context 布尔值、数据库名、记录名或 XMLID 直接授予数据访问。
+2. P1 模型事实：逐类声明根归属、父单继承、共享产品元数据和 SQL 投影分区。
+   res.partner 中认证身份与客户往来单位必须区分；company_id=False 不代表公开。
+   无项目单据也必须有归属；SQL 汇总必须在聚合前保留归属，原表规则不自动保护 SQL。
+3. P0/P1 原生授权：管理员限制为全局 AND 上限，不能用会被组规则 OR 扩大的组限制；
+   保留现有能力模型，分别验证 ACL 操作许可和数据规则，不授予全部业务组补菜单。
+4. 业务调用：读写、导出、附件、统计、关联和派生记录遵守同一归属；消除未经授权 sudo。
+5. 受管验收：纯管理员、管理员+业务组、普通业务角色，覆盖 customer/demo/test/未知归属、
+   跨公司/跨项目、直读/list/count/read_group/export/附件及创建/修改/删除。
+   当前 sc_test_admin 混合角色观察不能替代纯管理员证据。
+
+本轮实际有界修复：payment_slice_entry_service 移除查询/创建主动 sudo；传入项目与伙伴
+重绑调用环境后检查 read ACL/rule，付款 create ACL 在解析关联前检查。7 条定向替身测试
+通过（包含拒绝不写入、传入特权 recordset 重绑、不得 sudo 重试）。独立 B 线复核通过
+此有界结论；服务如果整体传入 sudo env，仍不受此修复覆盖，完整数据隔离尚未实现。
+
+原始证据：`.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/payment_slice_data_authority_unit.log`。
+L1 首次因新路径未登记 run scope 失败；修正准确路径后运行
+`admin_data_boundary_iteration_scoped.log`。未执行升级、浏览器矩阵或 Quick；原因是
+归属事实与全模型覆盖的前置尚未完成，不把局部服务测试当作系统隔离验收。
+# 数据边界体系补充（2026-10-13，进行中）
+
+所有者后续批准收敛实施强度：所有访问路径须受正确边界约束，不要求每个模型新增全部隔离字段，
+不建设平行权限引擎。完整注册表 744 项（510 持久模型、118 transient、116 abstract）为检查范围，
+不是重写清单。复用 native company、父关系、ACL 与 ir.rule，仅补事实缺失和绕过点。
+
+工资源模型已补原生公司归属、可选项目一致性、父对象公司变更约束、付款明细继承、
+状态与付款派生值入口保护。最终两项 context 默认状态／带付款事实转工资缺口通过新增反例，
+与原项目工资发放守恒用例合计 3 项通过；此前测试按影响保留，不能把重复执行次数当覆盖数量。
+模型和汇总的生产升级、用途规则接入仍未完成。
+
+P0 用临时 native `res.company` 记录规则验证机制，未激活生产公司规则：实测删除注册后缓存
+仍放行（1 项红例），修复成功删除后的 registry cache 失效；6 项原生规则用例和签名删除
+用例通过，再单独补公司授权撤销／旧上下文拒绝 1 项通过。作用域、精确命令、失败与通过的
+原始日志仅登记于 run 的 `admin_data_isolation.native_rule_validation_plan`。
+该证据证明原生全局规则交集、组规则并集和缓存撤销机制可用，不代替业务 create/write、
+附件、SQL 汇总及 sudo 服务的逐路径验收。
+
+所有者要求整套数据边界一次收敛。架构权威已在
+`docs/architecture/backend_contract_boundaries.md` 的“统一数据事实与授权边界”固定：
+归属、用途、共享、公司／项目、操作权限五个维度相交；公司／行业／平台共享不扩大用途边界。
+执行与原始证据仍只登记在既有 run，不建立第二张结果台账。
+
+P0 原生注册与用途解析已有 12 个纯策略、20 个真实 ORM 用例通过；其中 ORM 是原先 18 项
+加新增签名删除／公司初始化范围 2 项，未重复原套件。该结果不证明业务记录规则已经接入。
+
+B 线对 31 个非自动表模型完成源码分类：6 个明确聚合缺口、16 个保留归属但规则待接入、
+8 个源码空投影、1 个物理 provider 协议缺口。共享资料审计发现启动字典消费者把公司配置
+映射为全局配置；根模型原生归属与发布声明需先补齐，不能豁免整个“字典”模型。
+
+本次 P1 工资汇总修复公司／项目／币种分组及下钻，拒绝未知归属参与汇总，统一空值分区，
+不再以任意公司的币种补齐来源。真实 ORM 建单、完成、SQL 汇总和下钻 6 项通过；测试中
+事务性创建的候选视图随回滚恢复，不是日常服务器升级证明，也不是用途授权证明。
+首轮 4 项通过后，独立评审指出空归属与空值问题；更改 SQL 输入后仅重验这个受影响类的
+4 项及 2 项新反例。命令、原始日志、精确用例和未覆盖项见 run 的
+`admin_data_isolation.salary_projection`。
+
+后续顺序：完成原生模型分类与余下投影／provider 修正 → 公司、行业、平台参考资料的
+归属与发布载体 → 全局权限上限及关联写入约束 → 受管升级 → 逐入口允许／拒绝验证。
+已知缺口关闭前不冻结、不跑完整浏览器矩阵、不宣称全产品数据隔离完成。
+
+工资根单、付款明细和汇总已接入同一原生全局公司／用途规则，候选 XML 在真实 ORM
+事务中加载验证后回滚。7 个独立用例覆盖列表、直接读、导出、聚合、建单、写入、父对象
+及撤销边界；导出先证明允许端，再验证拒绝端。精确失败、恢复和未变用例复用记录于 run，
+不能将事务测试描述为服务器已升级。只读运行时核对仍为 blocked：日常库没有有效公司注册，
+两条工资属于未注册公司 1，汇总列和安装规则待升级；不按数据库名称推定历史数据用途。
+
+P4 原有验收数据创建器改为通过 P0 注册入口创建原生 test 公司；未注册历史公司、其他
+租户及同名无归属数据拒绝认领。验收用户显式获得非客户数据身份，功能仍由原业务组决定。
+公司注册生成的 P1 税率只读引用，不再由 fixture 重复创建或绑定所有权。活动凭证原先
+从全库取第一本日记账，现改为在本 fixture 的已注册测试公司创建／复用自有日记账，
+消除隐式使用其他公司数据的路径。
+
+此差量的验收范围为 17 个不重复真实 ORM 方法：7 个身份边界、3 个税率引用边界、2 条原业务链、
+5 个日记账／凭证归属用例。新税率测试首次错误假设税率名称可任改且 copy 可生成重复，
+按实际 P1 规范化／去重行为修正测试输入后，仅重跑受影响的两项；业务断言没有放宽。
+原始日志、命令与各次失败保留于 run 的 `admin_data_isolation.fixture_identity_slice`。
+未执行完整 fixture 初始化，未重标记历史数据，未激活持久规则，未冻结或集成主线。
+
+B 复核补充发现固定旧 XMLID 可能经通用 upsert 跨公司迁移；仅在活动日记账和凭证 helper
+补齐已注册测试公司及既有 model/company 校验，不改通用 upsert。新建与旧 XMLID 重用都须
+守住公司事实；旧归属不符要求受管 reset。仅重验 3 个受影响活动用例及 2 个新反例。
+
+## 执行器交接计划（2026-10-13，所有者要求记录后停止）
+
+### 批次信息与入口
+
+- 沿用唯一批次／run：`FE-CONTRACT-RUNTIME-02`，不新建平行结果表。
+- 当前直接目标：从原生事实到访问路径完成客户／demo／test 双向隔离，保留管理员功能能力，
+  为本分支整体收口提供可验收基础；不是仅让工资或 fixture 测试通过。
+- 分支：`fix/fe-contract-runtime-02-consumption-stop-closure`；交接 HEAD：
+  `b5728a5220dabdd98ea1ec9f549df5646c2bcc4d`，工作区含大量既有已跟踪和未跟踪改动，未冻结。
+- 唯一索引：`.agent/runs/FE-CONTRACT-RUNTIME-02/run.json`。本节是执行方案，结果仍写回 run。
+- 允许范围：P0 `smart_core` 原生注册、授权机制与共享声明；P1 `smart_construction_core`
+  事实模型、标准权限和投影；P4 已有受管测试与 fixture。逐层实施与复核，不混成一个大补丁。
+- 不做：重写 744 个模型、给所有模型复制五组字段、另建权限引擎、凭名称重标历史数据、
+  给管理员叠加全部业务组、在前端修权限、创设新数据库／profile／凭据或绕过门禁。
+- 首次接手依次执行 `pwd`、`git rev-parse --show-toplevel`、`git branch --show-current`、
+  `git status --short`、`make agent.run.resume`；读 run 和本节，只核对发生变化的身份／依赖。
+  不 reset、不 clean、不 stash 掩盖现场，不重新完整盘点菜单、仓库或环境。
+- A 是唯一写入者；B 做同层只读复核。B 可并行审计不争用运行时的独立源码，不能共同改文件。
+  共享验收库的测试／升级串行执行。交接后由新执行器接管，原执行器停止。
+
+### 已通过证据如何复用
+
+原始日志统一位于 `.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/`，具体命令和限制见 run。
+
+- P0 注册／用途：12 个纯策略及 20 个 ORM；原生规则组合与撤销 8 个相关 ORM 已通过。
+  这些是机制证据，不代表全部产品规则已安装。
+- 工资源模型、状态／付款入口、SQL 分区及下钻已修；工资根单／明细／汇总 7 个独立
+  规则方法已覆盖允许和拒绝。候选视图和规则在测试事务中加载后回滚，不是持久升级。
+- fixture 共 17 个不重复方法：7 个身份边界复用 `fixture_data_scope_orm.log` 中已通过方法；
+  缺失税率及两条原业务链复用 `fixture_native_tax_orm.log` 中已通过方法；
+  2 个税率恢复用例见 `fixture_native_tax_recovery_orm.log`；
+  5 个活动归属用例见 `fixture_journal_ownership_orm.log`，替代较早的 3 个活动用例。
+  原命令包含失败仍记失败，不改写成整次 PASS；复用单位是有确定输入依赖的已通过方法。
+- fixture 源头保证新测试身份；税率引用不认领；活动链拒绝误用公司和旧 XMLID 跨公司迁移。
+  B 有限范围审查通过，但尚未执行 `ensure_fixture` 整体持久初始化。
+- 每次修改先登记 changed inputs → affected keys → 复用理由，再执行精确集合。
+  使用现有 `scripts/ops/evidence_scope.py` 权威，不建立新的检查专用缓存。
+
+### 实施顺序与完成判据
+
+#### Step 1：关闭剩余事实与 SQL 分区缺口（P1）
+
+依赖：接手身份与 run 有效。**下一项具体动作**：定位
+`sc.interfund.movement.project.summary` 与其 `sc.interfund.movement.fact` 来源，
+核对公司／项目／币种原生字段和现有测试，先为混公司／混币种及下钻越界建立反例，
+再修来源或聚合归属；禁止只把 `MIN(company_id)` 换成表面字段而保留混合分组。
+
+随后按已有审计逐项处理，不重新审计所有 SQL：
+
+| 模型／范围 | 已知问题与必要产物 | 完成判据 |
+| --- | --- | --- |
+| `sc.interfund.movement.project.summary` | 公司／币种取 MIN，分区与下钻需一致 | 同项目／类型不同归属和币种不混合，下钻精确 |
+| `sc.output.invoice.ledger` | 发票号独自参与去重／窗口，可能跨公司 | 同号不同公司不合并，金额守恒 |
+| `sc.p1.relationship.review.queue` | 多来源项目用 MIN 归并 | 来源归属明确，未知或混合归属不可公开 |
+| `sc.ar.ap.company.summary` | 项目维度不能代替公司，空项目混合 | 有公司无项目仍按公司隔离，未知归属拒绝 |
+| `sc.finance.counterparty.position.summary` | 丢失来源项目边界 | 公司／项目权限不能被汇总绕过 |
+| `sc.ar.ap.project.summary` | 物理 provider 缺公司协议 | 保留物理表和数据，提供可验证来源边界，禁止 drop 当视图重建 |
+| 已分类的 20 项归属待定源模型 | 优先 workflow.instance、tier.review、material.price；再处理可选项目事实 | 业务记录继承真实业务根，不从流程模板或当前环境猜公司 |
+
+`sc.salary.summary` 已有证据，不因开始另一模型重新跑。其余 16 个保留归属的 SQL 模型
+还需规则证明；8 个源码空投影不能记作可用产品。220 个 P1 模型的分类表在 run，
+对其余注册模型只补适用性结论／真实访问路径，不做无差别字段改造。
+
+输出：源事实修复、对应投影／下钻修复、非零定向测试、B 复核和 run 差量结果。
+每个家族 L1/L2 通过后处理下一家族；已知同层失败先处理，不靠 Quick 发现兄弟缺陷。
+风险／回滚：分组变化影响总额和 ID，须测试金额守恒与引用；仅回退本次家族变更，
+不回退他人／历史工作区，持久 SQL 升级前保留受管恢复路径。
+
+#### Step 2：完成共享参考资料原生归属与发布（先 P0 声明，再 P1 标准）
+
+依赖：Step 1 的根归属口径可用；可先做只读设计，不得先改消费者绕过缺声明。
+定位 `smart_core/core/system_init_dictionary_data_helper.py`：现有 sudo 消费把公司级字典
+映射为 `__global__`，这是已确认缺口。先查 `sc.dictionary` 原生模型及 scope_ref 载体，
+补公司／行业／平台范围、明确发布状态和发布权限，再调整契约投影消费。
+公司、行业、平台共享仅适用于显式参考资料；客户业务事实不能靠发布或 company=False 变公共。
+
+输出：原生声明、发布／撤销权限、契约读取与缓存失效测试。具体载体在源模型决策中记录，
+禁止先建一份配置表替代模型事实。完成判据：未发布不可见、授权范围外不可见、撤销立即生效、
+共享不赋予修改权、客户与测试用途边界不被扩大；res.partner/users/bank 的必要身份引用
+只声明最小字段，不豁免整个模型。风险／回滚：防止公开面扩大；失败保留拒绝，不兜底全局。
+
+#### Step 3：接入剩余原生规则和真实访问路径（P0 机制／P1 声明分开）
+
+依赖：对应模型的 Step 1 归属已明确，涉及共享的模型 Step 2 已通过。
+复用 `_sc_data_company_ids()` 与 Odoo 全局规则交集，不改变组规则并集的原生语义。
+按家族覆盖 root/detail、附件、关联字段、read/search/name_search/export/read_group、
+写入／导入、流程执行及 sudo 服务；每一项记录适用、已证明或明确阻断，不能只测菜单。
+单独使用“纯产品系统管理员”验证能力模型；现有管理员＋业务组测试不等于纯管理员功能验收。
+
+完成判据：管理员可办授权功能但客户数据不可见；普通用户客户数据允许、demo/test 拒绝；
+专用测试用户仅允许非客户空间；公司／项目／操作权限继续相交；混合角色不能放大用途上限；
+已知 ID、关联父对象、聚合和 sudo 服务无旁路。输出为每类允许与拒绝实测证据。
+风险／回滚：全局规则可能锁住合法功能，必须先证明合法端；不能删除规则恢复“可用”。
+
+#### Step 4：准备并升级受管基线（P4，前置未满足不得执行）
+
+依赖：待激活范围的 Step 1–3 L1/L2 通过，且原生注册、凭据、数据角色与恢复路径已明确。
+当前只读 readiness 已给出：`sc_dev_demo` 有效注册 0、公司 1 有两条工资、汇总列／规则未升级。
+这是 blocker，不能凭 `sc_dev_demo` 名称将公司 1 注册成 demo/test。
+
+复用 `make local.dev.*`、`sc-local-dev/sc_dev_demo`、固定卷和既有凭据。
+`make local.dev.payroll.data_scope.readiness` 的现有失败先复用，只有相关环境事实改变才重跑。
+既有 fixture guard 仅声明 `sc_frontend_acceptance` 和旧 `sc_demo`，不允许直接在
+`sc_dev_demo` 调 `ensure_fixture` 绕过 guard。需要适配时走最小 P4 受管入口改动，明确
+现有环境权威、精确作用域、非零工具测试、恢复和写后回读；不得手拼 Compose／数据库命令。
+用户已允许开发数据适配和隔离验收，但这不代替工具对具体重置对象的身份／确认要求。
+
+输出：复用或受管重建的已注册基线、备份／恢复点、精确模块升级结果、权威回读。
+先核对现有 `make local.dev.upgrade` 参数和升级依赖，不在计划里猜造写命令。
+完成判据：合法 test/demo/customer 数据来源明确；安装视图／规则等于候选声明；fixture
+整体初始化及幂等通过；历史未注册行有明确处置，不得以“查不到”充当迁移成功。
+风险／回滚：仅用受管恢复入口还原匹配 DB/filestore；失败停止后续浏览器与发布。
+
+#### Step 5：分层产品验收与本分支剩余阻断对账（先后端，再前端）
+
+依赖：Step 4 回读通过。先验后端真实角色契约、允许／拒绝结果，再以确定契约验前端消费。
+布局来自模型／动作正式视图，角色只裁剪可见／可办，不重新布局；readonly 保留权限／状态
+原因。统一提示、快速创建、标准／预览产品边界和菜单单调性仍属原分支目标。
+
+首先逐项对账 run 顶层既有 blocker（含 P3 提醒强度编辑／发布、菜单产品／平台边界、
+预览停用项、纯管理员能力与历史菜单、旧运行中记录）。有有效完成证据才清除，旧文字不
+自动认定现在失败或成功，也不能在完成数据隔离后遗漏这些原目标。
+菜单口径按用户“标准产品至少 90、原可见只能多不能少、真实预览能力保留”及已登记事实
+逐项验证，不用旧 89 或中间 92/109/129 的总数替代职责验收。
+
+使用 `make verify.frontend.business_entry.matrix.incremental` 等既有入口按影响集执行；
+冻结前产品复核只覆盖受影响面。完成判据：后端事实→运行时契约→前端行为三段对应，
+所声明验收集合 uncovered=0，正反例真实命中，未声明权限／文案／默认产品语义不由前端补齐。
+失败返回责任层，不放宽探针、不重跑无关矩阵。截图是观察，不能代替契约和交互结果。
+
+#### Step 6：冻结与交付边界（P4）
+
+依赖：所有本次交付 blocker 关闭、B 独立复核、阶段产品复核通过。更新生成证据和文档，
+按实际选择的发布车道执行现有 Make 门禁；用户既有方向为 GitHub 优先，先核验现有远端，
+不能因仓库同时存在 Gitee 规则就自行切换。适用 GitHub／正式交付车道时，干净候选完整
+指纹绑定一次 Quick、独立审查、远端检查与外部归档。Gitee 特定例外不外推到其他车道。
+不同 SHA／目标基线不能继承远端通过；不直接推 main，不将合并等同部署。
+
+完成状态分别回报：批次验收、主线集成、版本发布、用户产品验收。只有目标环境中的账号、
+数据边界与关键业务闭环通过才能称产品交付完成；最终 17 项 fixture 通过不代表任何后三项。
+
+### 验证与停机规则
+
+- 每个修改先登记层级、风险、最早验证层和跳过理由；默认 `make ci.local.iteration`
+  为 L1，再用 `make local.dev.test MODULE=<所属模块> TEST_TAGS=<精确类或方法>` 做非零 L2。
+  上述占位符须由已有测试实际名称解析，禁止把占位符原样执行。
+- `make verify.data_space.policy.unit` 仅在相关纯策略输入变化时重跑；规则／模块改变需要
+  实际 ORM，不用静态 token 出现证明授权效果。契约改变才更新相应快照并检查消费者；
+  UI smoke 等后端与安装态通过后执行。L0–L5 不得跳过失败前置。
+- 验证失败停止受影响下游，可继续独立且前置已通过的廉价检查；不重复同输入失败命令。
+- 未知数据归属、共享发布语义未定、数据库身份不明或工具强制确认未满足时，停止依赖写入；
+  先完成可独立的源码／测试工作。已有授权不重复询问，但不得靠延时或历史计划推定写授权。
+- 本次交接仅写计划与台账，不新增产品修改、不运行产品测试、不升级、不提交、不推送。

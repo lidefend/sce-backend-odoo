@@ -19,6 +19,9 @@ goal:
     full_sha: e4b8fd957e364a4d1749127d563398c8de80256d
     source: owner_directed_audit_tasklist_20261013
   objective: >-
+    Include the owner-authorized formal-product guidance closure: native facts
+    with declared purpose, action/field association, trigger and risk policy;
+    no pay-only presentation exception or frontend guidance inference.
     Close the six confirmed frontend contract-consumption gaps (T1 contract
     create-visibility inference, T2 missing/invalid layout span, T3 loose numeric
     stop primitive, T4 silently-empty collection action declaration, T5 record
@@ -57,10 +60,11 @@ goal:
     - one_worktree_one_writer_and_governed_make_entrypoints_only
     - reuse_unchanged_evidence_do_not_rerun_a_matrix_per_commit
   next_exact_step: >-
-    Batch 02-A registered. Implement T3 (strict stop primitives) first because T2,
-    T4, T5 and T6 all consume it, then T1, T4, T5, T6 with their targeted
-    behaviour tests and the T7 ledger/guard registration; T2 follows its producer
-    survey. T8/T9 evidence closure is the second batch.
+    Complete the affected local.dev product review against approved edit/readonly
+    instances and declared list/create surfaces. Bind actual occurrence, auth,
+    span and entry consumption; retain mounted detail pagination evidence.
+    Resolve any owning-layer blocker before independent review, clean freeze,
+    exact-head gates and protected mainline integration.
   completion:
     scope: frontend_contract_consumption_stop_closure
     overall_goal: incomplete
