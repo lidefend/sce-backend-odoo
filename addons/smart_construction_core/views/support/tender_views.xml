@@ -21,7 +21,6 @@
             </tree>
         </field>
     </record>
-
     <!-- Form view -->
     <record id="view_tender_bid_form" model="ir.ui.view">
         <field name="name">tender.bid.form</field>
@@ -29,34 +28,18 @@
         <field name="arch" type="xml">
             <form string="投标记录">
                 <header>
-                    <button name="action_to_estimating" type="object" string="进入造价测算"
-                            class="oe_highlight"
-                            invisible="state != 'prepare'"/>
-                    <button name="action_to_submitted" type="object" string="提交投标"
-                            class="oe_highlight"
-                            invisible="state not in ['prepare', 'estimating']"/>
-                    <button name="action_to_waiting" type="object" string="等待开标"
-                            class="oe_highlight"
-                            invisible="state != 'submitted'"/>
-                    <button name="action_mark_won" type="object" string="确认中标事实"
-                            class="oe_highlight"
-                            invisible="state not in ['submitted', 'waiting', 'won'] or award_confirmed_at"/>
-                    <button name="action_mark_lost" type="object" string="未中标"
-                            invisible="state not in ['submitted', 'waiting']"/>
-                    <button name="action_to_prepare" type="object" string="重回准备"
-                            invisible="state == 'prepare' or award_confirmed_at"/>
+                    <button name="action_to_estimating" type="object" string="进入造价测算" class="oe_highlight" invisible="state != 'prepare'" />
+                    <button name="action_to_submitted" type="object" string="提交投标" class="oe_highlight" invisible="state not in ['prepare', 'estimating']" />
+                    <button name="action_to_waiting" type="object" string="等待开标" class="oe_highlight" invisible="state != 'submitted'" />
+                    <button name="action_mark_won" type="object" string="确认中标事实" class="oe_highlight" invisible="state not in ['submitted', 'waiting', 'won'] or award_confirmed_at" />
+                    <button name="action_mark_lost" type="object" string="未中标" invisible="state not in ['submitted', 'waiting']" />
+                    <button name="action_to_prepare" type="object" string="重回准备" invisible="state == 'prepare' or award_confirmed_at" />
                     <!-- 状态变化由领域动作承接；中标不得绕过事实确认。 -->
-                    <field name="state" widget="statusbar"
-                           statusbar_visible="prepare,estimating,submitted,waiting,won,lost"
-                           statusbar_colors="{'won':'success','lost':'danger','waiting':'warning','estimating':'info'}"/>
+                    <field name="state" widget="statusbar" statusbar_visible="prepare,estimating,submitted,waiting,won,lost" statusbar_colors="{'won':'success','lost':'danger','waiting':'warning','estimating':'info'}" />
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
-                        <button name="%(smart_construction_core.action_project_wbs)d"
-                                type="action"
-                                class="oe_stat_button"
-                                icon="fa-sitemap"
-                                modifiers="{'invisible': [['project_id','=',False]]}">
+                        <button name="%(smart_construction_core.action_project_wbs)d" type="action" class="oe_stat_button" icon="fa-sitemap" modifiers="{'invisible': [['project_id','=',False]]}">
                             <field name="project_id" invisible="1"/>
                             <span class="o_stat_text">工程结构</span>
                         </button>
@@ -81,38 +64,23 @@
                             <field name="currency_id" invisible="1"/>
                         </group>
                     </group>
-
-                    <group name="sc_tender_award_confirmation"
-                           string="中标事实确认"
-                           data-sc-anchor="tender-award-confirmation"
-                           invisible="state not in ['submitted', 'waiting', 'won']">
+                    <group name="sc_tender_award_confirmation" string="中标事实确认" data-sc-anchor="tender-award-confirmation" invisible="state not in ['submitted', 'waiting', 'won']">
                         <group>
-                            <field name="award_opening_id"
-                                   domain="[('bid_id','=',id),('result','=','won')]"
-                                   readonly="award_confirmed_at"/>
-                            <field name="award_source_kind"
-                                   readonly="award_confirmed_at"/>
-                            <field name="award_source_reference"
-                                   readonly="award_confirmed_at"/>
-                            <field name="award_source_attachment_id"
-                                   readonly="award_confirmed_at"/>
+                            <field name="award_opening_id" domain="[('bid_id','=',id),('result','=','won')]" readonly="award_confirmed_at" />
+                            <field name="award_source_kind" readonly="award_confirmed_at" />
+                            <field name="award_source_reference" readonly="award_confirmed_at" />
+                            <field name="award_source_attachment_id" readonly="award_confirmed_at" />
                         </group>
                         <group>
-                            <field name="award_tax_basis"
-                                   readonly="award_confirmed_at"/>
+                            <field name="award_tax_basis" readonly="award_confirmed_at" />
                             <field name="award_confirmation_state" readonly="1"/>
-                            <field name="award_amount" readonly="1"
-                                   invisible="not award_confirmed_at"/>
-                            <field name="award_currency_id" readonly="1"
-                                   invisible="not award_confirmed_at"/>
-                            <field name="award_confirmed_by_id" readonly="1"
-                                   invisible="not award_confirmed_at"/>
+                            <field name="award_amount" readonly="1" invisible="not award_confirmed_at" />
+                            <field name="award_currency_id" readonly="1" invisible="not award_confirmed_at" />
+                            <field name="award_confirmed_by_id" readonly="1" invisible="not award_confirmed_at" />
                             <field name="award_confirmed_at" readonly="1"/>
                         </group>
-                        <field name="award_contract_handoff_message" readonly="1" nolabel="1"
-                               invisible="not award_contract_handoff_message"/>
+                        <field name="award_contract_handoff_message" readonly="1" nolabel="1" invisible="not award_contract_handoff_message" />
                     </group>
-
                         <group string="清单" col="1" data-sc-anchor="tender-lines">
                             <field name="line_ids">
                                 <tree editable="bottom">
@@ -217,7 +185,6 @@
             </form>
         </field>
     </record>
-
     <!-- Search view -->
     <record id="view_tender_bid_search" model="ir.ui.view">
         <field name="name">tender.bid.search</field>
@@ -243,7 +210,6 @@
             </search>
         </field>
     </record>
-
     <record id="view_tender_opening_search" model="ir.ui.view">
         <field name="name">tender.opening.search</field>
         <field name="model">tender.opening</field>
@@ -259,7 +225,6 @@
             </search>
         </field>
     </record>
-
     <record id="view_tender_opening_tree" model="ir.ui.view">
         <field name="name">tender.opening.tree</field>
         <field name="model">tender.opening</field>
@@ -274,7 +239,6 @@
             </tree>
         </field>
     </record>
-
     <record id="view_tender_opening_form" model="ir.ui.view">
         <field name="name">tender.opening.form</field>
         <field name="model">tender.opening</field>
@@ -314,7 +278,6 @@
             </form>
         </field>
     </record>
-
     <record id="view_tender_guarantee_search" model="ir.ui.view">
         <field name="name">tender.guarantee.search</field>
         <field name="model">tender.guarantee</field>
@@ -336,7 +299,6 @@
             </search>
         </field>
     </record>
-
     <record id="view_tender_doc_purchase_search" model="ir.ui.view">
         <field name="name">tender.doc.purchase.search</field>
         <field name="model">tender.doc.purchase</field>
@@ -367,7 +329,6 @@
             </search>
         </field>
     </record>
-
     <record id="view_tender_doc_purchase_tree" model="ir.ui.view">
         <field name="name">tender.doc.purchase.tree</field>
         <field name="model">tender.doc.purchase</field>
@@ -386,12 +347,10 @@
                 <field name="invoice_no"/>
                 <field name="legacy_source_created_by" string="录入人" optional="show"/>
                 <field name="legacy_source_created_at" string="录入时间" optional="show"/>
-                <field name="processing_advisory" optional="show"/>
                 <field name="state"/>
             </tree>
         </field>
     </record>
-
     <record id="view_tender_doc_purchase_form" model="ir.ui.view">
         <field name="name">tender.doc.purchase.form</field>
         <field name="model">tender.doc.purchase</field>
@@ -432,27 +391,29 @@
                             <field name="receipt_bank_account"/>
                         </group>
                     </group>
-                    <group string="历史来源">
+                    <group string="来源追溯" name="tender_purchase_source_trace">
                         <group>
+                            <field name="legacy_visible_applicant_name" readonly="1"/>
+                            <field name="legacy_visible_document_state" readonly="1"/>
                             <field name="legacy_source_created_by" string="录入人" readonly="1"/>
+                            <field name="legacy_record_id" readonly="1"/>
                         </group>
                         <group>
                             <field name="legacy_source_created_at" string="录入时间" readonly="1"/>
+                            <field name="legacy_source_table" readonly="1"/>
+                            <field name="legacy_attachment_ref" readonly="1"/>
+                            <field name="active"/>
                         </group>
                     </group>
                     <group string="备注与附件">
                         <field name="remark"/>
                         <field name="attachment_ids" widget="many2many_binary"/>
                     </group>
-                    <group string="办理提示">
-                        <field name="processing_advisory" readonly="1" nolabel="1"/>
-                    </group>
                 </sheet>
                 <chatter/>
             </form>
         </field>
     </record>
-
     <record id="view_tender_guarantee_tree" model="ir.ui.view">
         <field name="name">tender.guarantee.tree</field>
         <field name="model">tender.guarantee</field>
@@ -470,7 +431,6 @@
             </tree>
         </field>
     </record>
-
     <record id="view_tender_guarantee_form" model="ir.ui.view">
         <field name="name">tender.guarantee.form</field>
         <field name="model">tender.guarantee</field>
@@ -514,7 +474,6 @@
             </form>
         </field>
     </record>
-
     <!-- Action -->
     <record id="action_tender_bid" model="ir.actions.act_window">
         <field name="name">投标管理</field>
@@ -542,7 +501,6 @@
         <field name="context">{'search_default_group_project': 1}</field>
         <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_project_user')), (4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
     </record>
-
     <!-- Project form: 投标页签 -->
     <record id="view_project_form_inherit_tender" model="ir.ui.view">
         <field name="name">project.project.form.inherit.tender</field>
@@ -550,20 +508,13 @@
         <field name="inherit_id" ref="project.edit_project"/>
         <field name="arch" type="xml">
             <xpath expr="//div[@name='button_box']" position="inside">
-                <button name="%(smart_construction_core.action_tender_bid)d"
-                        type="action"
-                        class="oe_stat_button"
-                        icon="fa-gavel"
-                        groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"
-                        context="{'search_default_project_id': id, 'default_project_id': id}"
-                        domain="[('project_id','=', id)]">
+                <button name="%(smart_construction_core.action_tender_bid)d" type="action" class="oe_stat_button" icon="fa-gavel" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager" context="{'search_default_project_id': id, 'default_project_id': id}" domain="[('project_id','=', id)]">
                     <field name="tender_count" widget="statinfo" string="投标"/>
                 </button>
             </xpath>
             <!-- 若项目视图已定义 sc_tender 页签，则复用并替换其内容，避免重复新增投标管理页 -->
             <xpath expr="//sheet//notebook/page[@name='sc_tender']" position="replace">
-                <page string="投标管理" name="sc_tender"
-                      groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager">
+                <page string="投标管理" name="sc_tender" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager">
                     <field name="tender_bid_ids" context="{'default_project_id': id, 'default_state': 'prepare'}">
                         <tree string="投标记录" editable="bottom">
                             <field name="tender_name"/>

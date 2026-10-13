@@ -8,7 +8,19 @@ class ScLaborUsageProductAdvisory(models.Model):
     company_id = fields.Many2one(
         related="project_id.company_id", store=True, readonly=True, string="所属公司"
     )
-    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory")
+    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction")
+
+    attachment_ids = fields.Many2many(help='建议上传用工依据')
+
+    construction_part = fields.Char(help='建议补充施工部位')
+
+    contractor_id = fields.Many2one(help='建议补充劳务单位')
+
+    foreman_name = fields.Char(help='建议补充带班人')
+
+    price_unit = fields.Monetary(help='建议补充用工单价')
+
+    work_type = fields.Char(help='建议补充工种')
 
     @api.depends(
         "contractor_id",
@@ -34,5 +46,5 @@ class ScLaborUsageProductAdvisory(models.Model):
             if not usage.attachment_ids:
                 suggestions.append("建议上传用工依据")
             usage.processing_advisory = (
-                "；".join(suggestions) if suggestions else "当前劳务成本资料已完善"
+                "；".join(suggestions) if suggestions else ""
             )

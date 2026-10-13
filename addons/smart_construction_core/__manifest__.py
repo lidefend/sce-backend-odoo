@@ -191,6 +191,7 @@
         'views/menu.xml',
         # Project form contracts reference the action and view declared above.
         'data/view_orchestration_contract_generated_data.xml',
+        'data/native_guidance_form_retirement.xml',
         'data/view_orchestration_form_section_contract_data.xml',
         'views/support/business_category_views.xml',
         'views/support/approval_policy_views.xml',

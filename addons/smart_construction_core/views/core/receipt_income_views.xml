@@ -165,7 +165,6 @@
                                     <field name="company_contractor_arrival_unprocessed_amount" readonly="1"/>
                                     <field name="company_contractor_arrival_over_processed_amount" readonly="1"/>
                                     <field name="company_contractor_self_funding_balance" readonly="1"/>
-                                    <field name="company_contractor_responsibility_notice" readonly="1" nolabel="1"/>
                                     <button name="action_view_company_contractor_responsibility_summary"
                                             type="object"
                                             string="查看责任余额"

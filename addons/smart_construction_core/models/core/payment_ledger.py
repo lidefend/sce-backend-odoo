@@ -461,11 +461,8 @@ class PaymentLedger(models.Model):
                 return
             raise UserError("付款申请关联合同无效或已取消，不能登记付款。")
         if basis_type == "standard_settlement" and request.settlement_id.state not in ("approve", "done"):
-            ICP = self.env["ir.config_parameter"].sudo()
             soft_gate = bool(self.env.context.get("payment_soft_gate"))
-            force_block = str(
-                ICP.get_param("sc.payment.force_block.p0_payment_settlement_not_ready", "False") or ""
-            ).strip().lower() in ("1", "true", "yes", "on")
+            force_block = request._payment_force_block_enabled("P0_PAYMENT_SETTLEMENT_NOT_READY")
             if soft_gate and not force_block:
                 return
             raise UserError("结算单未处于已审批状态，不能登记付款。")

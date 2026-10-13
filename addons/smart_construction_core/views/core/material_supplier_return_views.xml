@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="view_sc_material_supplier_return_search" model="ir.ui.view">
         <field name="name">sc.material.supplier.return.search</field>
@@ -33,7 +32,6 @@
                 <field name="amount_total" sum="退货金额合计"/>
                 <field name="responsible_id"/>
                 <field name="state"/>
-                <field name="processing_advisory" optional="hide"/>
             </tree>
         </field>
     </record>
@@ -89,8 +87,7 @@
                             <field name="reason" nolabel="1"/>
                             <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
                         </page>
-                        <page string="办理提示">
-                            <field name="processing_advisory" readonly="1" nolabel="1"/>
+                        <page string="关联库存凭证">
                             <field name="stock_picking_id" readonly="1"/>
                         </page>
                     </notebook>

@@ -27,7 +27,7 @@ class ScTenantCompanyRegistration(models.Model):
 
     def _after_tenant_company_registration(self):
         result = super()._after_tenant_company_registration()
-        self.env["construction.contract"].sudo()._sc_ensure_contract_tax_seeds()
+        self.env["construction.contract"].sudo()._sc_ensure_contract_tax_seeds(companies=self.company_id)
         return result
 
 
@@ -371,12 +371,13 @@ class ConstructionContract(models.Model):
         return Group.create(vals)
 
     @api.model
-    def _sc_ensure_contract_tax_seeds(self):
+    def _sc_ensure_contract_tax_seeds(self, companies=None):
         """Create defaults only for explicitly registered business companies."""
         Tax = self.env["account.tax"].sudo().with_context(active_test=False)
-        registrations = self.env["sc.tenant.company.registration"].sudo().search(
-            [("active", "=", True)]
-        )
+        domain = [("active", "=", True)]
+        if companies is not None:
+            domain.append(("company_id", "in", companies.ids))
+        registrations = self.env["sc.tenant.company.registration"].sudo().search(domain)
         for company in registrations.mapped("company_id").filtered(
             lambda candidate: not candidate.is_platform_bootstrap_company
         ):

@@ -60,7 +60,7 @@ class ScLaborWorker(models.Model):
         "attachment_id",
         string="实名资料",
     )
-    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory")
+    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction")
 
     _sql_constraints = [
         (
@@ -91,7 +91,7 @@ class ScLaborWorker(models.Model):
             if not worker.attachment_ids:
                 suggestions.append("建议上传实名资料")
             worker.processing_advisory = (
-                "；".join(suggestions) if suggestions else "当前实名信息已完善"
+                "；".join(suggestions) if suggestions else ""
             )
 
     def _check_operator(self):
@@ -113,7 +113,7 @@ class ScLaborWorker(models.Model):
                 values["entry_date"] = today
             worker.write(values)
         suggestions = [
-            item for item in self.mapped("processing_advisory") if item != "当前实名信息已完善"
+            item for item in self.mapped("processing_advisory") if item
         ]
         return _warning_notification("进场办理已完成，建议继续完善实名信息", suggestions)
 
@@ -176,7 +176,7 @@ class ScLaborDeduction(models.Model):
         "attachment_id",
         string="扣款依据",
     )
-    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory")
+    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction")
 
     _sql_constraints = [
         ("amount_nonnegative", "CHECK(amount >= 0)", "劳务扣款金额不能为负数。")
@@ -209,7 +209,7 @@ class ScLaborDeduction(models.Model):
             if not deduction.attachment_ids:
                 suggestions.append("建议上传扣款依据")
             deduction.processing_advisory = (
-                "；".join(suggestions) if suggestions else "当前扣款资料已完善"
+                "；".join(suggestions) if suggestions else ""
             )
 
     def _check_operator(self):
@@ -228,7 +228,7 @@ class ScLaborDeduction(models.Model):
             raise UserError(_("确认劳务扣款必须填写大于零的金额，否则无法形成成本事实。"))
         self.write({"state": "confirmed"})
         suggestions = [
-            item for item in self.mapped("processing_advisory") if item != "当前扣款资料已完善"
+            item for item in self.mapped("processing_advisory") if item
         ]
         return _warning_notification("扣款已确认，建议继续完善依据", suggestions)
 

@@ -1,7 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <data>
-
         <record id="view_payment_request_tree" model="ir.ui.view">
             <field name="name">payment.request.tree</field>
             <field name="model">payment.request</field>
@@ -41,14 +39,13 @@
                 </tree>
             </field>
         </record>
-
         <record id="view_payment_request_form" model="ir.ui.view">
             <field name="name">payment.request.form</field>
             <field name="model">payment.request</field>
             <field name="arch" type="xml">
                 <form string="付款与收款申请办理">
                     <header>
-                        <button name="action_submit" type="object" string="提交审批" class="btn-primary" invisible="state not in ['draft', 'rejected'] or validation_status in ('waiting', 'pending', 'validated')" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_finance_user"/>
+                        <button name="action_submit" type="object" string="提交审批" class="btn-primary" invisible="state not in ['draft', 'rejected'] or validation_status in ('waiting', 'pending', 'validated')" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_finance_user" options="{'action_guidance': {'field': 'submit_action_guidance', 'profiles': ['edit', 'readonly'], 'trigger': 'invoke'}}" />
                         <button name="action_approval_decision" type="object" string="审批通过" class="btn-primary" invisible="state not in ('submit', 'approve') or not can_review or validation_status not in ('waiting', 'pending')" groups="smart_construction_core.group_sc_cap_finance_manager"/>
                         <button name="reject_tier" type="object" string="审批驳回" invisible="not can_review or validation_status not in ('waiting', 'pending')" groups="smart_construction_core.group_sc_cap_finance_manager"/>
                         <button name="action_done" type="object" string="完成" class="btn-secondary" invisible="type == 'pay' or state not in ['approve', 'approved']" groups="smart_construction_core.group_sc_cap_finance_manager"/>
@@ -64,29 +61,17 @@
                     <sheet>
                         <div class="oe_title">
                             <label for="name" string="付款/收款申请"/>
-                            <h1><field name="name" readonly="1"/></h1>
+                            <h1>
+                                <field name="name" readonly="1" />
+                            </h1>
                             <div class="text-muted">
                                 <field name="payment_flow_label" readonly="1" class="oe_inline"/>
                                 · <field name="project_id" readonly="state not in ['draft', 'rejected']" class="oe_inline" options="{'relation_entry': {'create_mode': 'dialog', 'action_xmlid': 'smart_construction_core.action_project_initiation', 'menu_xmlid': 'smart_construction_core.menu_sc_project_initiation'}}"/>
                                 · <field name="partner_id" readonly="state not in ['draft', 'rejected']" class="oe_inline"/>
                             </div>
                         </div>
-                        <div class="alert alert-danger" role="alert" invisible="partner_transaction_eligibility != 'blocked'">
-                            当前往来单位已停止办理新业务，本申请不能提交。<field name="partner_transaction_eligibility_reason" readonly="1" nolabel="1"/>
-                        </div>
-                        <div class="alert alert-warning" role="alert" invisible="partner_transaction_eligibility != 'review_required'">
-                            当前往来单位需要风险复核。<field name="partner_transaction_eligibility_reason" readonly="1" nolabel="1"/>
-                        </div>
-                        <div class="alert alert-warning" role="alert" invisible="type != 'pay' or payee_account_completeness != 'incomplete'">
-                            收款账户信息待补充；审批可继续，但付款执行前必须形成完整的户名、开户行和账号快照。
-                        </div>
                         <div class="oe_button_box" name="button_box">
-                            <button name="%(smart_construction_core.action_payment_ledger)d"
-                                    string="付款记录"
-                                    type="action"
-                                    class="oe_stat_button"
-                                    context="{'default_payment_request_id': context.get('active_id'), 'search_default_payment_request_id': context.get('active_id')}"
-                                    groups="smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager"/>
+                            <button name="%(smart_construction_core.action_payment_ledger)d" string="付款记录" type="action" class="oe_stat_button" context="{'default_payment_request_id': context.get('active_id'), 'search_default_payment_request_id': context.get('active_id')}" groups="smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
                         </div>
                         <group>
                             <group string="申请识别与状态">
@@ -99,8 +84,6 @@
                                 <field name="payee_account_completeness" readonly="1"/>
                                 <field name="payee_account_source_display" readonly="1"/>
                                 <field name="payment_execution_status_display" readonly="1"/>
-                                <field name="legal_next_action_display" readonly="1"/>
-                                <field name="payment_blocking_reason_display" readonly="1"/>
                                 <field name="reject_reason" readonly="1" invisible="state != 'rejected'"/>
                             </group>
                             <group string="项目与收款对象">
@@ -109,7 +92,6 @@
                                 <field name="operation_strategy" readonly="1"/>
                                 <field name="partner_id" readonly="state not in ['draft', 'rejected']"/>
                                 <field name="partner_transaction_eligibility" readonly="1"/>
-                                <field name="partner_transaction_eligibility_reason" readonly="1"/>
                             </group>
                         </group>
                         <group>
@@ -173,12 +155,7 @@
                                     <field name="company_contractor_arrival_unprocessed_amount" readonly="1"/>
                                     <field name="company_contractor_arrival_over_processed_amount" readonly="1"/>
                                     <field name="company_contractor_self_funding_balance" readonly="1"/>
-                                    <field name="company_contractor_responsibility_notice" readonly="1" nolabel="1"/>
-                                    <button name="action_view_company_contractor_responsibility_summary" groups="smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager"
-                                            type="object"
-                                            string="查看责任余额"
-                                            class="btn-secondary"
-                                            invisible="not company_contractor_responsibility_summary_id"/>
+                                    <button name="action_view_company_contractor_responsibility_summary" groups="smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" type="object" string="查看责任余额" class="btn-secondary" invisible="not company_contractor_responsibility_summary_id" />
                                 </group>
                             </page>
                             <page string="结算与来源匹配">
@@ -190,41 +167,17 @@
                                 <group string="结算依据">
                                     <field name="settlement_id" domain="[('state','=','approve'), ('project_id','=', project_id)]" options="{'no_create': True, 'no_create_edit': True}"/>
                                     <field name="material_settlement_id" domain="[('state','=','confirmed'), ('project_id','=', project_id)]" options="{'no_create': True, 'no_create_edit': True}"/>
-                                    <field name="settlement_amount_total"
-                                           readonly="1"
-                                           modifiers="{'invisible': [['settlement_id', '=', False]]}"/>
-                                    <field name="settlement_paid_amount"
-                                           readonly="1"
-                                           modifiers="{'invisible': [['settlement_id', '=', False]]}"/>
-                                    <field name="settlement_amount_payable"
-                                           readonly="1"
-                                           modifiers="{'invisible': [['settlement_id', '=', False]]}"/>
+                                    <field name="settlement_amount_total" readonly="1" modifiers="{'invisible': [['settlement_id', '=', False]]}" />
+                                    <field name="settlement_paid_amount" readonly="1" modifiers="{'invisible': [['settlement_id', '=', False]]}" />
+                                    <field name="settlement_amount_payable" readonly="1" modifiers="{'invisible': [['settlement_id', '=', False]]}" />
                                     <field name="is_overpay_risk" readonly="1"/>
-                                    <field name="settlement_remaining_amount"
-                                           readonly="1"
-                                           modifiers="{'invisible': [['settlement_id', '=', False], ['settlement_amount_insufficient', '=', True]]}"/>
-                                    <field name="settlement_remaining_amount"
-                                           string="剩余额度（风险）"
-                                           readonly="1"
-                                           class="text-danger"
-                                           modifiers="{'invisible': [['settlement_id', '=', False], ['settlement_amount_insufficient', '=', False]]}"/>
+                                    <field name="settlement_remaining_amount" readonly="1" modifiers="{'invisible': [['settlement_id', '=', False], ['settlement_amount_insufficient', '=', True]]}" />
+                                    <field name="settlement_remaining_amount" string="剩余额度（风险）" readonly="1" class="text-danger" modifiers="{'invisible': [['settlement_id', '=', False], ['settlement_amount_insufficient', '=', False]]}" />
                                     <field name="settlement_amount_insufficient" invisible="1"/>
-                                    <div class="o_form_label text-danger"
-                                         modifiers="{'invisible': [['settlement_amount_insufficient', '=', False]]}">
-                                        结算额度不足（剩余额度低于申请金额），系统将提示风险，是否继续办理由审批人判断。
-                                    </div>
                                 </group>
                                 <group string="来源匹配">
                                     <field name="settlement_match_blocked" invisible="1"/>
                                     <field name="settlement_match_warn" invisible="1"/>
-                                    <field name="settlement_compliance_message" nolabel="1" readonly="1"
-                                           class="text-danger"
-                                           modifiers="{'invisible': [['settlement_match_blocked', '=', False]]}"/>
-                                    <field name="settlement_compliance_message" nolabel="1" readonly="1"
-                                           class="text-warning"
-                                           modifiers="{'invisible': [['settlement_match_warn', '=', False]]}"/>
-                                    <field name="settlement_compliance_message" nolabel="1" readonly="1"
-                                           modifiers="{'invisible': ['|', ['settlement_match_blocked', '=', True], ['settlement_match_warn', '=', True]]}"/>
                                 </group>
                             </page>
                             <page string="付款申请明细" invisible="type != 'pay'">
@@ -269,7 +222,6 @@
                 </form>
             </field>
         </record>
-
         <!--
             The formal payment-application entry owns a payment-specific
             business sequence while inheriting every header action and
@@ -293,15 +245,13 @@
                 <xpath expr="/form/sheet/group[1]/group[1]/field[@name='state']" position="attributes">
                     <attribute name="invisible">1</attribute>
                 </xpath>
-                <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payment_blocking_reason_display']" position="replace"/>
                 <!-- The action bar is the executable authority.  The derived
                      next-step text does not account for every header modifier,
                      so it must not be presented as an unconditional task. -->
-                <xpath expr="/form/sheet/group[1]/group[1]/field[@name='legal_next_action_display']" position="replace"/>
-                <!-- Account completeness is already projected as a submit/approve
-                     advisory.  Keep it action-scoped instead of presenting a
-                     later payment-execution condition as a page-load warning. -->
-                <xpath expr="/form/sheet/div[contains(concat(' ', normalize-space(@class), ' '), ' alert ')][@invisible=&quot;type != 'pay' or payee_account_completeness != 'incomplete'&quot;]" position="replace"/>
+                <!-- Account completeness remains a native submit/approve advisory and a
+                     payment-execution prerequisite; neither is a page-load tutorial. -->
+                <!-- Eligibility guidance belongs to the exact submit action:
+                     native invariant denies; risk policy supplies confirmation or explicit override. -->
                 <!-- Keep one account-completeness fact with the account snapshot
                      instead of repeating it ahead of the payment identity. -->
                 <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payee_account_completeness']" position="replace"/>
@@ -314,10 +264,8 @@
                 <xpath expr="/form/sheet/group[1]/group[2]/field[@name='partner_transaction_eligibility']" position="attributes">
                     <attribute name="widget">badge</attribute>
                 </xpath>
-                <!-- Non-normal eligibility states are already rendered by the
-                     action-scoped alerts above; the normal explanation is not a
+                <!-- Non-normal eligibility guidance is declared by the submit action; the normal explanation is not a
                      separate business fact. -->
-                <xpath expr="/form/sheet/group[1]/group[2]/field[@name='partner_transaction_eligibility_reason']" position="replace"/>
                 <!-- The formal payment entry starts with the party identity.
                      Inner groups remain layout containers, not section owners. -->
                 <xpath expr="/form/sheet/group[1]/group[2]/field[@name='project_id']" position="after">
@@ -402,19 +350,9 @@
                 </xpath>
                 <xpath expr="/form/sheet/group[2]/group[2]/field[@name='currency_id']" position="after">
                     <field name="amount_uses_details" invisible="1"/>
-                    <div class="alert alert-warning"
-                         role="alert"
-                         invisible="not detail_amount_consistency_message">
-                        <field name="detail_amount_consistency_message"
-                               nolabel="1"
-                               readonly="1"/>
-                    </div>
                 </xpath>
                 <xpath expr="/form/sheet/group[2]" position="after">
-                    <group name="sc_payment_request_pay_amount"
-                           string="申请金额"
-                           col="1"
-                           data-sc-anchor="payment-request-pay-amount"/>
+                    <group name="sc_payment_request_pay_amount" string="申请金额" col="1" data-sc-anchor="payment-request-pay-amount" />
                 </xpath>
                 <xpath expr="//group[@name='sc_payment_request_pay_amount']" position="inside">
                     <xpath expr="/form/sheet/group[2]/group[2]" position="move"/>
@@ -425,9 +363,7 @@
                      the relation field before the amount container. -->
                 <xpath expr="//group[@name='sc_payment_request_pay_amount_facts']" position="inside">
                     <xpath expr="/form/sheet/notebook/page[3]/field[@name='outflow_line_ids']" position="move"/>
-                    <field name="detail_amount_total"
-                           readonly="1"
-                           invisible="not amount_uses_details"/>
+                    <field name="detail_amount_total" readonly="1" invisible="not amount_uses_details" />
                 </xpath>
                 <xpath expr="/form/sheet/group[4]" position="attributes">
                     <attribute name="name">sc_payment_request_pay_parties</attribute>
@@ -441,13 +377,7 @@
                 </xpath>
                 <xpath expr="/form/sheet/notebook/page[3]" position="replace"/>
                 <xpath expr="/form/sheet/notebook" position="before">
-                    <group name="sc_payment_request_pay_trace"
-                           string="履约与追溯"
-                           col="1"
-                           data-sc-anchor="payment-request-pay-trace"
-                           data-sc-navigation-role="subordinate"
-                           data-sc-collapsible="1"
-                           data-sc-collapsed-by-default="1"/>
+                    <group name="sc_payment_request_pay_trace" string="履约与追溯" col="1" data-sc-anchor="payment-request-pay-trace" data-sc-navigation-role="subordinate" data-sc-collapsible="1" data-sc-collapsed-by-default="1" />
                 </xpath>
                 <xpath expr="//group[@name='sc_payment_request_pay_trace']" position="inside">
                     <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payment_execution_status_display']" position="move"/>
@@ -455,16 +385,11 @@
                 </xpath>
                 <xpath expr="//group[@name='sc_payment_request_pay_trace']/notebook" position="inside">
                     <page name="sc_payment_request_historical_amount" string="历史金额确认">
-                        <field name="accepted_amount_uppercase"
-                               string="历史确认金额大写"
-                               readonly="1"
-                               help="历史验收数据延续，仅供追溯；不参与当前申请金额计算或付款明细合计校验。"
-                               options="{'sc_readonly_empty_text': '无历史确认记录'}"/>
+                        <field name="accepted_amount_uppercase" string="历史确认金额大写" readonly="1" help="历史验收数据延续，仅供追溯；不参与当前申请金额计算或付款明细合计校验。" options="{'sc_readonly_empty_text': '无历史确认记录'}" />
                     </page>
                 </xpath>
             </field>
         </record>
-
         <record id="view_payment_request_search" model="ir.ui.view">
             <field name="name">payment.request.search</field>
             <field name="model">payment.request</field>
@@ -511,7 +436,6 @@
                 </search>
             </field>
         </record>
-
         <record id="action_payment_request" model="ir.actions.act_window">
             <field name="name">付款/收款申请</field>
             <field name="res_model">payment.request</field>
@@ -519,14 +443,8 @@
             <field name="search_view_id" ref="view_payment_request_search"/>
             <field name="domain">['|', ('legacy_source_table', '=', False), ('legacy_source_table', '!=', 'T_FK_Supplier')]</field>
             <field name="context">{'search_default_group_by_project_id': 1}</field>
-            <field name="groups_id" eval="[(6, 0, [
-                ref('smart_construction_core.group_sc_cap_finance_read'),
-                ref('smart_construction_core.group_sc_cap_finance_user'),
-                ref('smart_construction_core.group_sc_cap_finance_manager'),
-                ref('smart_construction_core.group_sc_cap_business_initiator'),
-            ])]"/>
+            <field name="groups_id" eval="[(6, 0, [                 ref('smart_construction_core.group_sc_cap_finance_read'),                 ref('smart_construction_core.group_sc_cap_finance_user'),                 ref('smart_construction_core.group_sc_cap_finance_manager'),                 ref('smart_construction_core.group_sc_cap_business_initiator'),             ])]" />
         </record>
-
         <record id="action_payment_request_pay" model="ir.actions.act_window">
             <field name="name">付款申请</field>
             <field name="res_model">payment.request</field>
@@ -534,35 +452,20 @@
             <field name="search_view_id" ref="view_payment_request_search"/>
             <field name="domain">['&amp;', ('business_category_id.code', '=', 'finance.payment.apply.pay'), '|', ('legacy_source_table', '=', False), ('legacy_source_table', '!=', 'T_FK_Supplier')]</field>
             <field name="context">{'default_type': 'pay', 'default_business_category_code': 'finance.payment.apply.pay', 'search_default_type_pay': 1, 'search_default_group_by_project_id': 1}</field>
-            <field name="groups_id" eval="[(6, 0, [
-                ref('smart_construction_core.group_sc_cap_finance_read'),
-                ref('smart_construction_core.group_sc_cap_finance_user'),
-                ref('smart_construction_core.group_sc_cap_finance_manager'),
-                ref('smart_construction_core.group_sc_cap_business_initiator'),
-            ])]"/>
+            <field name="groups_id" eval="[(6, 0, [                 ref('smart_construction_core.group_sc_cap_finance_read'),                 ref('smart_construction_core.group_sc_cap_finance_user'),                 ref('smart_construction_core.group_sc_cap_finance_manager'),                 ref('smart_construction_core.group_sc_cap_business_initiator'),             ])]" />
         </record>
-
         <record id="action_payment_request_receive" model="ir.actions.act_window">
             <field name="name">收款申请</field>
             <field name="res_model">payment.request</field>
             <field name="view_mode">tree,form</field>
             <field name="view_id" ref="view_payment_request_tree"/>
             <field name="views" eval="[(ref('view_payment_request_tree'), 'tree'), (ref('view_payment_request_form'), 'form')]"/>
-            <field name="view_ids" eval="[(5, 0, 0),
-                (0, 0, {'view_mode': 'tree', 'view_id': ref('view_payment_request_tree')}),
-                (0, 0, {'view_mode': 'form', 'view_id': ref('view_payment_request_form')})
-            ]"/>
+            <field name="view_ids" eval="[(5, 0, 0),                 (0, 0, {'view_mode': 'tree', 'view_id': ref('view_payment_request_tree')}),                 (0, 0, {'view_mode': 'form', 'view_id': ref('view_payment_request_form')})             ]" />
             <field name="search_view_id" ref="view_payment_request_search"/>
             <field name="domain">[('business_category_id.code', '=', 'finance.payment.apply.receive')]</field>
             <field name="context">{'default_type': 'receive', 'default_business_category_code': 'finance.payment.apply.receive', 'search_default_type_receive': 1, 'search_default_group_by_receipt_type': 1, 'search_default_group_by_project_id': 1}</field>
-            <field name="groups_id" eval="[(6, 0, [
-                ref('smart_construction_core.group_sc_cap_finance_read'),
-                ref('smart_construction_core.group_sc_cap_finance_user'),
-                ref('smart_construction_core.group_sc_cap_finance_manager'),
-                ref('smart_construction_core.group_sc_cap_business_initiator'),
-            ])]"/>
+            <field name="groups_id" eval="[(6, 0, [                 ref('smart_construction_core.group_sc_cap_finance_read'),                 ref('smart_construction_core.group_sc_cap_finance_user'),                 ref('smart_construction_core.group_sc_cap_finance_manager'),                 ref('smart_construction_core.group_sc_cap_business_initiator'),             ])]" />
         </record>
-
         <record id="action_payment_request_my" model="ir.actions.act_window">
             <field name="name">我的付款申请</field>
             <field name="res_model">payment.request</field>
@@ -570,27 +473,9 @@
             <field name="domain">['&amp;', ('create_uid', '=', uid), '|', ('legacy_source_table', '=', False), ('legacy_source_table', '!=', 'T_FK_Supplier')]</field>
             <field name="search_view_id" ref="view_payment_request_search"/>
             <field name="context">{'search_default_group_by_project_id': 1}</field>
-            <field name="groups_id" eval="[(6, 0, [
-                ref('smart_construction_core.group_sc_cap_finance_read'),
-                ref('smart_construction_core.group_sc_cap_finance_user'),
-                ref('smart_construction_core.group_sc_cap_finance_manager'),
-                ref('smart_construction_core.group_sc_cap_business_initiator'),
-            ])]"/>
+            <field name="groups_id" eval="[(6, 0, [                 ref('smart_construction_core.group_sc_cap_finance_read'),                 ref('smart_construction_core.group_sc_cap_finance_user'),                 ref('smart_construction_core.group_sc_cap_finance_manager'),                 ref('smart_construction_core.group_sc_cap_business_initiator'),             ])]" />
         </record>
-
-        <menuitem id="menu_payment_request"
-                  name="付款申请"
-                  parent="smart_construction_core.menu_sc_finance_center"
-                  action="action_payment_request_pay"
-                  sequence="25"
-                  groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager"/>
-
-        <menuitem id="menu_payment_request_receive"
-                  name="收款申请"
-                  parent="smart_construction_core.menu_sc_finance_center"
-                  action="action_payment_request_receive"
-                  sequence="26"
-                  groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager"/>
-
+        <menuitem id="menu_payment_request" name="付款申请" parent="smart_construction_core.menu_sc_finance_center" action="action_payment_request_pay" sequence="25" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
+        <menuitem id="menu_payment_request_receive" name="收款申请" parent="smart_construction_core.menu_sc_finance_center" action="action_payment_request_receive" sequence="26" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager" />
     </data>
 </odoo>

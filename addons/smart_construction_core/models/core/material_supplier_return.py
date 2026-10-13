@@ -22,9 +22,12 @@ class ScMaterialSupplierReturn(models.Model):
         index=True,
         domain="[('project_id', '=', project_id), ('state', '=', 'received')]",
         tracking=True,
+        help='建议关联来源入库单，便于核对可退数量',
     )
     supplier_id = fields.Many2one(
         "res.partner", string="退货供应商", domain=[("supplier_rank", ">", 0)], index=True
+,
+        help='建议补充退货供应商',
     )
     warehouse_id = fields.Many2one(
         "stock.warehouse",
@@ -40,8 +43,8 @@ class ScMaterialSupplierReturn(models.Model):
         index=True,
         default=lambda self: self._sc_default_location_id(),
     )
-    return_date = fields.Date("退货日期", default=fields.Date.context_today, index=True)
-    reason = fields.Text("退货原因")
+    return_date = fields.Date("退货日期", default=fields.Date.context_today, index=True, help='建议补充退货日期')
+    reason = fields.Text("退货原因", help='建议补充退货原因')
     responsible_id = fields.Many2one(
         "res.users", string="经办人", default=lambda self: self.env.user, index=True
     )
@@ -60,6 +63,7 @@ class ScMaterialSupplierReturn(models.Model):
         "return_id",
         "attachment_id",
         string="退货依据",
+        help='建议上传退货依据',
     )
     stock_picking_id = fields.Many2one(
         "stock.picking", string="库存退货单", readonly=True, copy=False, index=True
@@ -77,7 +81,7 @@ class ScMaterialSupplierReturn(models.Model):
         tracking=True,
         index=True,
     )
-    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory")
+    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction")
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -127,7 +131,7 @@ class ScMaterialSupplierReturn(models.Model):
             if not record.attachment_ids:
                 suggestions.append("建议上传退货依据")
             record.processing_advisory = (
-                "；".join(suggestions) if suggestions else "当前退货资料已完善"
+                "；".join(suggestions) if suggestions else ""
             )
 
     @api.onchange("source_inbound_id")

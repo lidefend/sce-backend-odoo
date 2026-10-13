@@ -103,32 +103,13 @@
             <field name="name">tender_doc_purchase_productized_form_v1</field>
             <field name="model">tender.doc.purchase</field>
             <field name="view_type">form</field>
-            <field name="action_id" ref="smart_construction_core.action_sc_tender_registration_fee"/>
+            <field name="action_id" ref="smart_construction_core.action_sc_tender_registration_fee" />
             <field name="priority">700</field>
-            <field name="company_id" eval="False"/>
-            <field name="active" eval="True"/>
-            <field name="status">published</field>
+            <field name="company_id" eval="False" />
+            <field name="active" eval="False" />
+            <field name="status">draft</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval="{
-                'view_orchestration': {
-                    'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},
-                    'views': {
-                        'form': {
-                            'title': '投标报名费申请',
-                            'composition_mode': 'entry_semantic_surface',
-                            'columns': 2,
-                            'sections': [
-                                {'title': '申请主信息', 'sequence': 10, 'columns': 2, 'fields': ['state', 'bid_id', 'project_id', 'applicant_id', 'apply_date']},
-                                {'title': '费用信息', 'sequence': 20, 'columns': 2, 'fields': ['amount', 'currency_id', 'payment_method', 'invoice_no']},
-                                {'title': '收款信息', 'sequence': 30, 'columns': 2, 'fields': ['receipt_partner_id', 'receipt_partner_name', 'receipt_payee_name', 'receipt_bank_name', 'receipt_bank_account']},
-                                {'title': '说明与附件', 'sequence': 40, 'columns': 1, 'fields': ['remark', 'attachment_ids']},
-                                {'title': '来源追溯', 'sequence': 50, 'columns': 2, 'fields': ['legacy_visible_applicant_name', 'legacy_visible_document_state', 'legacy_source_created_by', 'legacy_source_created_at', 'legacy_record_id', 'legacy_source_table', 'legacy_attachment_ref', 'active']}
-                            ],
-                            'fields': [{'name': 'state', 'sequence': 10, 'readonly': True}, {'name': 'bid_id', 'sequence': 20}, {'name': 'project_id', 'sequence': 30, 'readonly': True}, {'name': 'applicant_id', 'sequence': 40}, {'name': 'apply_date', 'sequence': 50}, {'name': 'amount', 'sequence': 60}, {'name': 'currency_id', 'sequence': 70, 'readonly': True}, {'name': 'payment_method', 'sequence': 80}, {'name': 'invoice_no', 'sequence': 90}, {'name': 'receipt_partner_id', 'sequence': 100}, {'name': 'receipt_partner_name', 'sequence': 110, 'readonly': True}, {'name': 'receipt_payee_name', 'sequence': 120}, {'name': 'receipt_bank_name', 'sequence': 130}, {'name': 'receipt_bank_account', 'sequence': 140}, {'name': 'remark', 'sequence': 150}, {'name': 'attachment_ids', 'sequence': 160}, {'name': 'legacy_visible_applicant_name', 'sequence': 170, 'readonly': True}, {'name': 'legacy_visible_document_state', 'sequence': 180, 'readonly': True}, {'name': 'legacy_source_created_by', 'sequence': 190, 'readonly': True}, {'name': 'legacy_source_created_at', 'sequence': 200, 'readonly': True}, {'name': 'legacy_record_id', 'sequence': 210, 'readonly': True}, {'name': 'legacy_source_table', 'sequence': 220, 'readonly': True}, {'name': 'legacy_attachment_ref', 'sequence': 230, 'readonly': True}, {'name': 'active', 'sequence': 240}]
-                        }
-                    }
-                }
-            }"/>
+            <field name="contract_json" eval="{'view_orchestration': {'views': {}}}" />
         </record>
 
         <function model="ui.business.config.contract" name="write">
@@ -143,4 +124,9 @@
             <value eval="{'active': False}"/>
         </function>
     </data>
+    <!-- Outside noupdate data: exact historical product projection retirement. -->
+    <function model="ui.business.config.contract" name="write">
+        <value eval="[ref('smart_construction_core.business_config_contract_tender_doc_purchase_productized_form_v1')]"/>
+        <value eval="{'active': False, 'status': 'draft'}"/>
+    </function>
 </odoo>

@@ -601,6 +601,7 @@ class TenderDocPurchase(models.Model):
         "办理建议",
         compute="_compute_processing_advisory",
         help="资料完整性只形成办理建议，不阻断提交或审核节奏。",
+        sc_ui_usage="interaction",
     )
     currency_id = fields.Many2one(
         "res.currency", related="bid_id.currency_id", store=True, readonly=True
@@ -628,7 +629,7 @@ class TenderDocPurchase(models.Model):
             if not record.receipt_bank_account:
                 suggestions.append("建议补充收款账户")
             record.processing_advisory = (
-                "；".join(suggestions) if suggestions else "当前办理资料已完善"
+                "；".join(suggestions) if suggestions else ""
             )
 
     def _processing_notification(self, title):

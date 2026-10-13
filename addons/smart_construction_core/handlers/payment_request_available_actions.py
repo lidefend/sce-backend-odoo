@@ -5,6 +5,7 @@ import re
 from uuid import uuid4
 
 from odoo.exceptions import AccessError
+from odoo.addons.smart_core.core.form_configuration_compiler import FormConfigurationError
 from odoo.addons.smart_core.core.base_handler import BaseIntentHandler
 from odoo.addons.smart_core.core.project_context import (
     project_scope_denied_response,
@@ -231,6 +232,8 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
             self._advisory_evaluation_cache = evaluation_cache
         try:
             return list(record._collect_payment_advisories(key, evaluation_cache=evaluation_cache) or [])
+        except FormConfigurationError:
+            raise
         except Exception:
             return []
 
@@ -373,7 +376,7 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
             "delivery_priority": int(spec.get("delivery_priority") or 100),
             "presentation": {
                 **dict(spec.get("presentation") or {}),
-                "requires_confirmation": True,
+                "requires_confirmation": bool(warning_message),
                 "requires_reason": "reason" in required_params,
             },
         }

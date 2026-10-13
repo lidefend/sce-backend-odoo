@@ -272,7 +272,6 @@ def _payment_request_policy(title: str, counterparty_title: str) -> dict:
         "settlement_remaining_amount",
         "settlement_amount_payable",
         "settlement_compliance_state",
-        "settlement_compliance_message",
         "is_fully_paid",
         "is_overpay_risk",
     )
@@ -289,8 +288,6 @@ def _payment_request_policy(title: str, counterparty_title: str) -> dict:
                     "payee_account_completeness",
                     "payee_account_source_display",
                     "payment_execution_status_display",
-                    "payment_blocking_reason_display",
-                    "legal_next_action_display",
                 ],
                 10,
             ),
@@ -303,7 +300,6 @@ def _payment_request_policy(title: str, counterparty_title: str) -> dict:
                     "operation_strategy",
                     "partner_id",
                     "partner_transaction_eligibility",
-                    "partner_transaction_eligibility_reason",
                     "contract_id",
                 ],
                 20,
@@ -367,10 +363,7 @@ def _payment_request_policy(title: str, counterparty_title: str) -> dict:
             "payee_account_completeness",
             "payee_account_source_display",
             "payment_execution_status_display",
-            "payment_blocking_reason_display",
-            "legal_next_action_display",
             "partner_transaction_eligibility",
-            "partner_transaction_eligibility_reason",
             "contract_payment_terms",
             "contract_change_amount",
             "contract_final_amount",
@@ -396,7 +389,6 @@ def _payment_request_policy(title: str, counterparty_title: str) -> dict:
             "settlement_remaining_amount",
             "settlement_amount_payable",
             "settlement_compliance_state",
-            "settlement_compliance_message",
             "line_settlement_count",
             "line_settlement_summary",
             "legacy_relation_count",
@@ -425,7 +417,6 @@ def _expense_claim_policy(title: str) -> dict:
         "company_contractor_arrival_unprocessed_amount",
         "company_contractor_arrival_over_processed_amount",
         "company_contractor_self_funding_balance",
-        "company_contractor_responsibility_notice",
     )
     return _policy(
         [
@@ -624,7 +615,6 @@ def _payment_execution_policy(title: str) -> dict:
                     "company_contractor_arrival_unprocessed_amount",
                     "company_contractor_arrival_over_processed_amount",
                     "company_contractor_self_funding_balance",
-                    "company_contractor_responsibility_notice",
                 ],
                 70,
                 collapsed=True,
@@ -658,7 +648,6 @@ def _payment_execution_policy(title: str) -> dict:
             "company_contractor_arrival_unprocessed_amount",
             "company_contractor_arrival_over_processed_amount",
             "company_contractor_self_funding_balance",
-            "company_contractor_responsibility_notice",
         ),
         trace=trace,
     )
@@ -708,7 +697,6 @@ def _self_funding_policy(title: str) -> dict:
         "company_contractor_arrival_unprocessed_amount",
         "company_contractor_arrival_over_processed_amount",
         "company_contractor_self_funding_balance",
-        "company_contractor_responsibility_notice",
     )
     trace = ("document_no", "active")
     return _policy(
@@ -749,13 +737,13 @@ def _tax_deduction_policy() -> dict:
             _section("invoice", "发票信息", ["invoice_date", "invoice_no", "invoice_code", "tax_rate_text", "invoice_amount_untaxed", "invoice_tax_amount", "invoice_amount_total"], 30),
             _section("deduction", "抵扣信息", ["deduction_confirm_date", "deduction_amount", "deduction_tax_amount", "deduction_surcharge_amount", "is_transfer_out"], 40),
             _section("handling", "办理说明", ["deduction_unit_name", "withholding_amount", "deduction_reason", "note", "attachment_ids"], 50),
-            _section("responsibility", "责任与余额", ["company_contractor_responsibility_state", "company_contractor_responsibility_notice"], 70, collapsed=True),
+            _section("responsibility", "责任与余额", ["company_contractor_responsibility_state"], 70, collapsed=True),
             _section("source_trace", "来源与系统追溯", list(trace), 90, collapsed=True),
         ],
         required=("business_category_id", "project_id", "invoice_no", "invoice_date", "deduction_tax_amount"),
         readonly_all=("operation_strategy", "deduction_flow_label", "source_origin") + SYSTEM_FIELDS,
         trace=trace,
-        ledger=("company_contractor_responsibility_state", "company_contractor_responsibility_notice"),
+        ledger=("company_contractor_responsibility_state"),
     )
 
 
@@ -1377,10 +1365,10 @@ BUSINESS_CATEGORY_FORM_POLICY_TEMPLATES = {
             ),
             _section("document_lines", "退货明细", ["line_ids"], 30),
             _section("handling", "退货说明与附件", ["reason", "attachment_ids"], 50),
-            _section("execution", "执行结果", ["stock_picking_id", "processing_advisory"], 70, collapsed=True, visible_profiles=READONLY_ONLY),
+            _section("execution", "执行结果", ["stock_picking_id"], 70, collapsed=True, visible_profiles=READONLY_ONLY),
         ],
         required=("project_id", "warehouse_id", "source_location_id"),
-        readonly_all=("state", "name", "amount_total", "stock_picking_id", "processing_advisory"),
+        readonly_all=("state", "name", "amount_total", "stock_picking_id"),
         ledger=("stock_picking_id",),
     ),
     "material.rfq": _material_policy(

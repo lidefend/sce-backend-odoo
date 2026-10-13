@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
 
-from odoo import _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo import SUPERUSER_ID, _, api, fields, models
+from odoo.exceptions import AccessError, UserError, ValidationError
+
+
+_PAYROLL_STATE_TOKEN = object()
+_SALARY_PAYMENT_STATE_TOKEN = object()
+_SALARY_PAYMENT_SUMMARY_TOKEN = object()
 
 
 class ScHrPayrollDocument(models.Model):
@@ -20,23 +25,24 @@ class ScHrPayrollDocument(models.Model):
             ("bonus", "奖金"),
         ]
 
-    employee_user_id = fields.Many2one("res.users", string="人员", index=True, tracking=True)
+    employee_user_id = fields.Many2one("res.users", string="人员", index=True, tracking=True, help='公积金登记建议补充缴存人员')
     company_id = fields.Many2one(
-        related="project_id.company_id", store=True, readonly=True, string="所属公司"
+        "res.company", readonly=True, string="所属公司", index=True, ondelete="restrict",
+        help="薪酬事实的公司归属；项目为可选业务范围，不能代替公司归属。",
     )
-    employee_name = fields.Char(string="人员姓名", index=True, tracking=True)
+    employee_name = fields.Char(string="人员姓名", index=True, tracking=True, help='公积金登记建议补充缴存人员')
     employee_status = fields.Char(string="人员状态", index=True)
     employee_type = fields.Char(string="人员类型", index=True)
     id_number = fields.Char(string="身份证号", index=True)
     contact_phone = fields.Char(string="联系方式", index=True)
-    period_year = fields.Integer(string="年度", index=True)
-    period_month = fields.Integer(string="月份", index=True)
-    payer_unit = fields.Char(string="缴纳单位", index=True)
-    payout_unit = fields.Char(string="发放单位", index=True)
+    period_year = fields.Integer(string="年度", index=True, help='公积金登记建议补充缴存期间')
+    period_month = fields.Integer(string="月份", index=True, help='公积金登记建议补充缴存期间')
+    payer_unit = fields.Char(string="缴纳单位", index=True, help='建议补充缴存单位')
+    payout_unit = fields.Char(string="发放单位", index=True, help='建议补充发放单位')
     people_count = fields.Integer(string="人数")
     social_security_base = fields.Monetary(string="社保基数", currency_field="currency_id")
-    provident_fund_account = fields.Char(string="公积金账号", index=True, tracking=True)
-    provident_fund_base = fields.Monetary(string="公积金基数", currency_field="currency_id")
+    provident_fund_account = fields.Char(string="公积金账号", index=True, tracking=True, help='建议补充公积金账号')
+    provident_fund_base = fields.Monetary(string="公积金基数", currency_field="currency_id", help='建议补充公积金基数')
     company_contribution_rate = fields.Float(string="单位缴存比例(%)", digits=(8, 4))
     individual_contribution_rate = fields.Float(string="个人缴存比例(%)", digits=(8, 4))
     company_amount = fields.Monetary(string="公司承担", currency_field="currency_id")
@@ -84,12 +90,13 @@ class ScHrPayrollDocument(models.Model):
         "document_id",
         "attachment_id",
         string="附件",
+        help='建议上传薪资核算依据',
     )
     legacy_document_no = fields.Char(string="历史单号", index=True, readonly=True)
     legacy_document_state = fields.Char(string="历史状态", index=True, readonly=True)
     legacy_source_table = fields.Char(string="历史来源表", index=True, readonly=True)
     legacy_source_id = fields.Char(string="历史来源ID", index=True, readonly=True)
-    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory")
+    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction")
 
     _sql_constraints = [
         (
@@ -101,26 +108,65 @@ class ScHrPayrollDocument(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        defaults = self.default_get([
+            "company_id", "project_id", "fact_type", "state", "paid_amount",
+            "payment_opening_amount", "payment_detail_initialized",
+        ])
         for values in vals_list:
-            fact_type = values.get("fact_type") or self.env.context.get(
-                "default_fact_type"
-            )
-            is_project_salary = fact_type == "salary_registration" and values.get(
-                "project_id"
-            )
+            project_id = values.get("project_id", defaults.get("project_id"))
+            company_id = values.get("company_id", defaults.get("company_id"))
+            if project_id:
+                project = self.env["project.project"].browse(project_id)
+                project.check_access_rights("read")
+                project.check_access_rule("read")
+                if not project.exists() or not project.company_id:
+                    raise ValidationError(_("薪酬项目必须具有明确公司归属。"))
+                if company_id and company_id != project.company_id.id:
+                    raise ValidationError(_("薪酬公司必须与项目公司一致。"))
+                company_id = project.company_id.id
+            elif "company_id" not in values and not company_id:
+                company_id = self.env.company.id
+            if not company_id:
+                raise ValidationError(_("薪酬事实必须声明公司归属。"))
+            if not self.env.su and company_id not in self.env.companies.ids:
+                raise AccessError(_("无权在该公司创建薪酬事实。"))
+            values["company_id"] = company_id
+            fact_type = values.get("fact_type", defaults.get("fact_type"))
+            is_salary = fact_type == "salary_registration"
             is_legacy = bool(
                 values.get("legacy_source_table") or values.get("legacy_source_id")
             )
-            if not is_project_salary:
+            if not is_salary:
                 continue
-            if not is_legacy and values.get("state", "draft") != "draft":
-                raise UserError(_("新建项目薪资核算单必须从草稿开始。"))
-            if not is_legacy and values.get("paid_amount"):
-                raise UserError(_("新建项目薪资已付款金额必须由薪资发放登记形成。"))
-            if is_legacy and values.get("paid_amount"):
-                values.setdefault("payment_opening_amount", values["paid_amount"])
+            maintenance_import = is_legacy and self.env.su and self.env.uid == SUPERUSER_ID
+            state = values.get("state", defaults.get("state", "draft"))
+            paid_amount = values.get("paid_amount", defaults.get("paid_amount", 0))
+            if not maintenance_import and state != "draft":
+                raise UserError(_("新建薪资核算单必须从草稿开始。"))
+            if not maintenance_import and paid_amount:
+                raise UserError(_("新建薪资已付款金额必须由薪资发放登记形成。"))
+            if not maintenance_import and any(
+                values.get(field, defaults.get(field))
+                for field in ("payment_opening_amount", "payment_detail_initialized")
+            ):
+                raise UserError(_("薪资历史付款承接只能由受管导入生成。"))
+            if maintenance_import and paid_amount:
+                values.setdefault("payment_opening_amount", paid_amount)
                 values.setdefault("payment_detail_initialized", True)
         return super().create(vals_list)
+
+    @api.constrains("company_id", "project_id", "department_id")
+    def _check_payroll_ownership(self):
+        for record in self:
+            if not record.company_id:
+                raise ValidationError(_("薪酬事实必须声明公司归属。"))
+            if record.project_id:
+                record.project_id.check_access_rights("read")
+                record.project_id.check_access_rule("read")
+                if record.project_id.company_id != record.company_id:
+                    raise ValidationError(_("薪酬公司必须与项目公司一致。"))
+            if record.department_id and record.department_id.company_id != record.company_id:
+                raise ValidationError(_("薪酬部门必须属于同一公司。"))
 
     def _business_specific_fields(self):
         return [
@@ -206,7 +252,7 @@ class ScHrPayrollDocument(models.Model):
                 if not record.provident_fund_base:
                     suggestions.append("建议补充公积金基数")
             record.processing_advisory = (
-                "；".join(suggestions) if suggestions else "当前办理资料已完善"
+                "；".join(suggestions) if suggestions else ""
             )
 
     @api.depends("net_salary", "paid_amount")
@@ -287,7 +333,7 @@ class ScHrPayrollDocument(models.Model):
             raise UserError(_("只有草稿状态的薪酬单据可以提交。"))
         return super(
             ScHrPayrollDocument,
-            self.with_context(sc_payroll_state_transition=True),
+            self.with_context(sc_payroll_state_transition=_PAYROLL_STATE_TOKEN),
         ).action_submit()
 
     def action_done(self):
@@ -296,7 +342,7 @@ class ScHrPayrollDocument(models.Model):
             raise UserError(_("只有办理中的薪酬单据可以完成。"))
         return super(
             ScHrPayrollDocument,
-            self.with_context(sc_payroll_state_transition=True),
+            self.with_context(sc_payroll_state_transition=_PAYROLL_STATE_TOKEN),
         ).action_done()
 
     def action_cancel(self):
@@ -309,7 +355,7 @@ class ScHrPayrollDocument(models.Model):
                 raise UserError(_("只有草稿或办理中的薪酬单据可以取消。"))
         return super(
             ScHrPayrollDocument,
-            self.with_context(sc_payroll_state_transition=True),
+            self.with_context(sc_payroll_state_transition=_PAYROLL_STATE_TOKEN),
         ).action_cancel()
 
     def action_reset_draft(self):
@@ -318,27 +364,38 @@ class ScHrPayrollDocument(models.Model):
             raise UserError(_("只有已取消的薪酬单据可以重置为草稿。"))
         return super(
             ScHrPayrollDocument,
-            self.with_context(sc_payroll_state_transition=True),
+            self.with_context(sc_payroll_state_transition=_PAYROLL_STATE_TOKEN),
         ).action_reset_draft()
 
     def write(self, vals):
-        project_salary = self.filtered(
-            lambda record: (
-                vals.get("fact_type", record.fact_type) == "salary_registration"
-                and (
-                    bool(vals["project_id"])
-                    if "project_id" in vals
-                    else bool(record.project_id)
-                )
-            )
+        # Ownership is not a editable label. In particular, changing project
+        # must never silently reclassify a salary into another company's realm.
+        if "company_id" in vals and any(
+            record.company_id.id != vals["company_id"] for record in self
+        ):
+            raise ValidationError(_("薪酬事实公司归属不能直接修改；历史归属须通过受管迁移核实。"))
+        if any(not record.company_id for record in self):
+            raise ValidationError(_("历史薪酬归属未核实，禁止继续办理。"))
+        if vals.get("fact_type") == "salary_registration" and any(
+            record.fact_type != "salary_registration" and (
+                record.state != "draft" or record.paid_amount
+                or record.payment_opening_amount or record.payment_detail_initialized
+                or record.payment_ids
+            ) for record in self
+        ):
+            raise UserError(_("仅无付款事实的草稿可以转为工资核算。"))
+        salary_records = self.filtered(
+            lambda record: record.fact_type == "salary_registration"
+            or vals.get("fact_type") == "salary_registration"
         )
         if (
             "state" in vals
-            and project_salary
-            and not self.env.context.get("sc_payroll_state_transition")
+            and salary_records
+            and self.env.context.get("sc_payroll_state_transition") is not _PAYROLL_STATE_TOKEN
         ):
             raise UserError(_("项目薪资状态必须通过正式办理动作变更。"))
         immutable_after_done = {
+            "fact_type",
             "project_id",
             "employee_user_id",
             "employee_name",
@@ -349,14 +406,14 @@ class ScHrPayrollDocument(models.Model):
             "deduction_amount",
             "net_salary",
         }
-        if immutable_after_done.intersection(vals) and project_salary.filtered(
+        if immutable_after_done.intersection(vals) and salary_records.filtered(
             lambda record: record.state == "done"
         ):
             raise UserError(_("已完成的薪资核算核心数据不能直接修改。"))
         if (
-            "paid_amount" in vals
-            and not self.env.context.get("sc_salary_payment_summary_sync")
-            and project_salary
+            {"paid_amount", "payment_opening_amount", "payment_detail_initialized"}.intersection(vals)
+            and self.env.context.get("sc_salary_payment_summary_sync") is not _SALARY_PAYMENT_SUMMARY_TOKEN
+            and salary_records
         ):
             raise UserError(_("项目薪资已付款金额必须由薪资发放登记汇总，不能直接修改。"))
         return super().write(vals)
@@ -376,12 +433,44 @@ class ScHrPayrollDocument(models.Model):
             """
         )
 
+    department_id = fields.Many2one(ondelete="restrict", help='薪资核算建议补充所属部门')
+
+    description = fields.Text(help='薪资核算建议补充核算说明')
+
+    project_id = fields.Many2one(ondelete="restrict", help='薪资核算建议关联所属项目')
+
     def unlink(self):
         locked = self.filtered(lambda rec: rec.state not in ("draft", "cancel"))
         if locked:
             raise UserError("仅草稿或已取消的人事薪酬办理单允许删除。")
         self._sc_raise_delete_blockers(action_label="删除人事薪酬办理单")
         return super().unlink()
+
+
+class ScPayrollProjectOwnership(models.Model):
+    _inherit = "project.project"
+
+    def write(self, vals):
+        if "company_id" in vals:
+            changed = self.filtered(lambda record: record.company_id.id != vals["company_id"])
+            if changed and self.env["sc.hr.payroll.document"].sudo().with_context(active_test=False).search_count(
+                [("project_id", "in", changed.ids)], limit=1
+            ):
+                raise ValidationError(_("项目已有薪酬事实，不允许改变公司归属。"))
+        return super().write(vals)
+
+
+class ScPayrollDepartmentOwnership(models.Model):
+    _inherit = "hr.department"
+
+    def write(self, vals):
+        if "company_id" in vals:
+            changed = self.filtered(lambda record: record.company_id.id != vals["company_id"])
+            if changed and self.env["sc.hr.payroll.document"].sudo().with_context(active_test=False).search_count(
+                [("department_id", "in", changed.ids)], limit=1
+            ):
+                raise ValidationError(_("部门已有薪酬事实，不允许改变公司归属。"))
+        return super().write(vals)
 
 
 class ScHrSalaryPayment(models.Model):
@@ -397,13 +486,13 @@ class ScHrSalaryPayment(models.Model):
         required=True,
         index=True,
         ondelete="restrict",
-        domain="[('fact_type', '=', 'salary_registration'), ('project_id', '!=', False), ('state', '=', 'done')]",
+        domain="[('fact_type', '=', 'salary_registration'), ('company_id', '!=', False), ('state', '=', 'done')]",
     )
     project_id = fields.Many2one(
         related="payroll_document_id.project_id", store=True, readonly=True, string="项目", index=True
     )
     company_id = fields.Many2one(
-        related="project_id.company_id", store=True, readonly=True, string="所属公司"
+        related="payroll_document_id.company_id", store=True, readonly=True, string="所属公司"
     )
     employee_user_id = fields.Many2one(
         related="payroll_document_id.employee_user_id", store=True, readonly=True, string="人员"
@@ -431,7 +520,7 @@ class ScHrSalaryPayment(models.Model):
         default="bank",
         required=True,
     )
-    payment_reference = fields.Char("支付凭证号", index=True)
+    payment_reference = fields.Char("支付凭证号", index=True, help='建议补充支付凭证号')
     responsible_id = fields.Many2one(
         "res.users", string="经办人", default=lambda self: self.env.user, index=True
     )
@@ -448,13 +537,15 @@ class ScHrSalaryPayment(models.Model):
         "payment_id",
         "attachment_id",
         string="附件",
+        help='建议上传发放依据',
     )
-    note = fields.Text("发放说明")
-    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory")
+    note = fields.Text("发放说明", help='建议补充发放说明')
+    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction")
 
     @api.model_create_multi
     def create(self, vals_list):
-        if any(values.get("state", "draft") != "draft" for values in vals_list):
+        default_state = self.default_get(["state"]).get("state", "draft")
+        if any(values.get("state", default_state) != "draft" for values in vals_list):
             raise UserError(_("新建薪资发放登记必须从草稿开始。"))
         records = super().create(vals_list)
         sequence = self.env["ir.sequence"].sudo()
@@ -465,7 +556,7 @@ class ScHrSalaryPayment(models.Model):
                 )
             payroll = record.payroll_document_id
             if not payroll.payment_detail_initialized:
-                payroll.sudo().with_context(sc_salary_payment_summary_sync=True).write(
+                payroll.sudo().with_context(sc_salary_payment_summary_sync=_SALARY_PAYMENT_SUMMARY_TOKEN).write(
                     {
                         "payment_opening_amount": payroll.paid_amount,
                         "payment_detail_initialized": True,
@@ -479,6 +570,15 @@ class ScHrSalaryPayment(models.Model):
             if record.payment_amount <= 0:
                 raise ValidationError(_("本次发放金额必须大于0。"))
 
+    @api.constrains("payroll_document_id")
+    def _check_payroll_parent_ownership(self):
+        for record in self:
+            payroll = record.payroll_document_id
+            payroll.check_access_rights("read")
+            payroll.check_access_rule("read")
+            if payroll.fact_type != "salary_registration" or not payroll.company_id:
+                raise ValidationError(_("薪资发放必须关联归属明确的工资核算单。"))
+
     @api.depends("payment_reference", "attachment_ids", "note")
     def _compute_processing_advisory(self):
         for record in self:
@@ -490,7 +590,7 @@ class ScHrSalaryPayment(models.Model):
             if not record.attachment_ids:
                 suggestions.append("建议上传发放依据")
             record.processing_advisory = (
-                "；".join(suggestions) if suggestions else "当前薪资发放资料已完善"
+                "；".join(suggestions) if suggestions else ""
             )
 
     def _check_project_manager(self):
@@ -526,7 +626,7 @@ class ScHrSalaryPayment(models.Model):
             paid_total = (payroll.payment_opening_amount or 0.0) + confirmed_total
             if payroll.currency_id.compare_amounts(paid_total, payroll.net_salary) > 0:
                 raise ValidationError(_("累计薪资发放金额不能超过薪资核算单实发工资。"))
-            payroll.sudo().with_context(sc_salary_payment_summary_sync=True).write(
+            payroll.sudo().with_context(sc_salary_payment_summary_sync=_SALARY_PAYMENT_SUMMARY_TOKEN).write(
                 {"paid_amount": paid_total}
             )
 
@@ -535,7 +635,7 @@ class ScHrSalaryPayment(models.Model):
         self._check_payroll_ready()
         if self.filtered(lambda record: record.state != "draft"):
             raise UserError(_("只有草稿状态的薪资发放登记可以提交。"))
-        self.with_context(sc_salary_payment_state_transition=True).write(
+        self.with_context(sc_salary_payment_state_transition=_SALARY_PAYMENT_STATE_TOKEN).write(
             {"state": "submitted"}
         )
         return True
@@ -545,7 +645,7 @@ class ScHrSalaryPayment(models.Model):
         self._check_payroll_ready()
         if self.filtered(lambda record: record.state != "submitted"):
             raise UserError(_("只有待确认状态的薪资发放登记可以确认。"))
-        self.with_context(sc_salary_payment_state_transition=True).write(
+        self.with_context(sc_salary_payment_state_transition=_SALARY_PAYMENT_STATE_TOKEN).write(
             {"state": "confirmed"}
         )
         self._sync_payroll_payment_summary()
@@ -555,7 +655,7 @@ class ScHrSalaryPayment(models.Model):
         self._check_project_manager()
         if self.filtered(lambda record: record.state not in ("draft", "submitted", "confirmed")):
             raise UserError(_("当前薪资发放登记不能取消。"))
-        self.with_context(sc_salary_payment_state_transition=True).write(
+        self.with_context(sc_salary_payment_state_transition=_SALARY_PAYMENT_STATE_TOKEN).write(
             {"state": "cancel"}
         )
         self._sync_payroll_payment_summary()
@@ -565,15 +665,21 @@ class ScHrSalaryPayment(models.Model):
         self._check_project_manager()
         if self.filtered(lambda record: record.state != "cancel"):
             raise UserError(_("只有已取消的薪资发放登记可以重置为草稿。"))
-        self.with_context(sc_salary_payment_state_transition=True).write(
+        self.with_context(sc_salary_payment_state_transition=_SALARY_PAYMENT_STATE_TOKEN).write(
             {"state": "draft"}
         )
         return True
 
     def write(self, vals):
-        if "state" in vals and not self.env.context.get(
+        if vals.get("payroll_document_id"):
+            target = self.env["sc.hr.payroll.document"].browse(vals["payroll_document_id"])
+            target.check_access_rights("read")
+            target.check_access_rule("read")
+            if any(record.company_id != target.company_id for record in self):
+                raise ValidationError(_("薪资发放不能跨公司更换核算单。"))
+        if "state" in vals and self.env.context.get(
             "sc_salary_payment_state_transition"
-        ):
+        ) is not _SALARY_PAYMENT_STATE_TOKEN:
             raise UserError(_("薪资发放状态必须通过正式办理动作变更。"))
         protected_fields = {
             "payroll_document_id",

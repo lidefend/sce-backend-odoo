@@ -1353,6 +1353,8 @@ class ScWorkflowContractService(models.AbstractModel):
                 row for row in evidence_gate
                 if row.get("blocking") and key in (row.get("actionKeys") or [])
             ]
+            advisories = [row for row in evidence_gate if row.get("blocking") is False
+                          and key in (row.get("actionKeys") or []) and row.get("message")]
             enabled = not blockers
             actions.append(
                 {
@@ -1363,6 +1365,8 @@ class ScWorkflowContractService(models.AbstractModel):
                     **({"action_semantics": dict(spec["action_semantics"])} if spec.get("action_semantics") else {}),
                     "method": method,
                     "enabled": enabled,
+                    **({"presentation": {"requires_confirmation": True,
+                                          "warning_message": "\n".join(row["message"] for row in advisories)}} if advisories else {}),
                     "reason_code": blockers[0].get("reasonCode") if blockers else "",
                     "blocked_message": blockers[0].get("message") if blockers else "",
                     "target": {
@@ -1470,31 +1474,15 @@ class ScWorkflowContractService(models.AbstractModel):
             has_basis = bool(record.contract_id or record.settlement_id or record.material_settlement_id)
         if not has_basis:
             gates.append(self._gate("PAYMENT_MISSING_BASIS", "请先选择关联合同、结算单、材料结算单或历史关联依据。"))
-        if record.type == "pay" and record.settlement_id:
-            try:
-                metrics = opm.compute_payment_payable_excluding_self(record)
-            except Exception:
-                metrics = {}
-            payable = metrics.get("payable") if isinstance(metrics, dict) else None
-            precision = metrics.get("precision") if isinstance(metrics, dict) else None
-            if payable is not None:
-                precision = precision or (record.currency_id.rounding if record.currency_id else 0.01)
-                if float_compare(payable, 0.0, precision_rounding=precision) <= 0:
-                    gates.append(self._gate("PAYMENT_SETTLEMENT_NO_PAYABLE_BALANCE", "结算单剩余额度不足。"))
-                elif float_compare(record.amount or 0.0, payable, precision_rounding=precision) == 1:
-                    gates.append(self._gate("PAYMENT_OVER_SETTLEMENT_BALANCE", "申请金额 %s 超过结算单剩余额度 %s。" % (record.amount or 0.0, payable)))
-        if record.type == "pay" and record.material_settlement_id:
-            settlement = record.material_settlement_id
-            if getattr(settlement, "state", "") != "confirmed":
-                gates.append(self._gate("PAYMENT_MATERIAL_SETTLEMENT_NOT_CONFIRMED", "材料结算单未确认。"))
-            try:
-                requested = record._material_settlement_requested_amount_excluding_self()
-            except Exception:
-                requested = 0.0
-            payable = (settlement.amount_total or 0.0) - (requested or 0.0)
-            precision = record.currency_id.rounding if record.currency_id else 0.01
-            if float_compare(record.amount or 0.0, payable, precision_rounding=precision) == 1:
-                gates.append(self._gate("PAYMENT_OVER_MATERIAL_SETTLEMENT_BALANCE", "本次申请金额 %s 超过材料结算剩余可申请金额 %s。" % (record.amount or 0.0, payable)))
+        if record.type == "pay":
+            for action in ("submit", "approve"):
+                for advisory in record._collect_payment_advisories(action):
+                    if advisory.get("reason_code") not in {"P0_PAYMENT_OVER_BALANCE", "P0_MATERIAL_PAYMENT_OVER_BALANCE", "P0_MATERIAL_SETTLEMENT_NOT_CONFIRMED"}:
+                        continue
+                    blocking = advisory.get("force_block_enabled") is True
+                    gates.append(self._gate(advisory["reason_code"], advisory["message"],
+                                            action_keys=[action], blocking=blocking,
+                                            severity="block" if blocking else "warning"))
         return gates
 
     @api.model

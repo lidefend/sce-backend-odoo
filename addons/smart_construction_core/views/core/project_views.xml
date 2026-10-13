@@ -35,15 +35,6 @@
                     <div class="oe_button_box" name="button_box">
                         <button name="%(smart_construction_core.action_project_quick_create_wizard)d" type="action" string="快速创建项目" class="oe_stat_button" />
                     </div>
-                    <div class="alert alert-info" role="status" invisible="context.get('intake_mode') != 'quick'">
-                        快速创建模式：仅需填写项目名称与项目经理即可创建项目，其他信息可在项目驾驶舱补充。
-                    </div>
-                    <group name="current_task" data-sc-anchor="current_task" string="当前任务" col="1">
-                        <field name="intake_next_action_display" readonly="1"/>
-                    </group>
-                    <group name="intake_risk" data-sc-anchor="intake_risk" string="立项条件" col="1">
-                        <field name="intake_blocking_reason_display" readonly="1"/>
-                    </group>
                     <group name="project_create_required" data-sc-anchor="project_create_required" string="项目创建（必填）" col="2">
                         <group>
                             <field name="name" placeholder="请输入项目名称" required="1" />
@@ -64,9 +55,6 @@
                             <field name="end_date" />
                         </group>
                     </group>
-                    <div class="text-muted mt-2" invisible="context.get('intake_mode') == 'quick'">
-                        建议先完成最小立项（项目名称 + 项目经理），其余信息可在项目驾驶舱持续补充。
-                    </div>
                 </sheet>
             </form>
         </field>
@@ -77,13 +65,6 @@
         <field name="arch" type="xml">
             <form string="快速创建项目">
                 <sheet>
-                    <div class="alert alert-info" role="status">
-                        快速创建模式：仅填写最小必填信息，创建后进入项目驾驶舱继续补充。
-                    </div>
-                    <group string="当前任务" col="1">
-                        <field name="intake_next_action_display" readonly="1"/>
-                        <field name="intake_blocking_reason_display" readonly="1"/>
-                    </group>
                     <group string="最小立项信息" col="2">
                         <group>
                             <field name="name" placeholder="请输入项目名称" required="1" />
@@ -140,9 +121,6 @@
             <xpath expr="//sheet/*[1]" position="before">
                 <field name="message_needaction" invisible="1" />
                 <field name="display_name" invisible="1" />
-                <div class="alert alert-info" role="alert" invisible="lifecycle_state != 'draft'">
-                    当前为草稿。请使用“保存修改”保存资料；“提交立项”用于完成立项审批，通过后使用“启动项目”开始执行。
-                </div>
             </xpath>
             <xpath expr="//sheet/div[@name='button_box']" position="after">
                 <widget name="sc_insight_banner" options="{'scene': 'project.entry'}" invisible="lifecycle_state == 'draft'" />

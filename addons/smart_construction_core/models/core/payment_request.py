@@ -398,6 +398,7 @@ class PaymentRequest(models.Model):
         string="匹配提示",
         readonly=True,
         store=True,
+        sc_ui_usage="interaction",
     )
     settlement_match_blocked = fields.Boolean(
         string="匹配阻断",
@@ -422,13 +423,14 @@ class PaymentRequest(models.Model):
     )
     partner_transaction_eligibility = fields.Selection(
         related="partner_id.sc_transaction_eligibility",
-        string="往来单位可办理性",
+        string="往来单位交易状态",
         readonly=True,
     )
     partner_transaction_eligibility_reason = fields.Char(
         related="partner_id.sc_transaction_eligibility_reason",
         string="往来单位办理提示",
         readonly=True,
+        sc_ui_usage="interaction",
     )
     currency_id = fields.Many2one(
         "res.currency",
@@ -670,11 +672,13 @@ class PaymentRequest(models.Model):
     legal_next_action_display = fields.Char(
         string="下一步办理",
         compute="_compute_legal_next_action_display",
+        sc_ui_usage="interaction",
     )
     payment_blocking_reason_display = fields.Char(
         string="办理阻断与修复",
         compute="_compute_payment_blocking_reason_display",
         store=True,
+        sc_ui_usage="interaction",
     )
     reject_reason = fields.Text(
         string="当前驳回原因",
@@ -734,6 +738,7 @@ class PaymentRequest(models.Model):
         string="明细金额一致性提示",
         compute="_compute_detail_amount_consistency",
         readonly=True,
+        sc_ui_usage="interaction",
     )
     receipt_invoice_line_ids = fields.One2many(
         "sc.receipt.invoice.line",
@@ -2337,19 +2342,23 @@ class PaymentRequest(models.Model):
             "suggested_action": str(suggested_action or ""),
             "reasons": [str(item) for item in (reasons or []) if str(item or "").strip()],
             "hints": [str(item) for item in (hints or []) if str(item or "").strip()],
-            "force_block_enabled": self._payment_force_block_enabled(code),
+            "force_block_enabled": code == "P0_MATERIAL_SETTLEMENT_NOT_CONFIRMED" or self._payment_force_block_enabled(code),
         }
 
-    def _payment_advisory_from_exception(self, exc, fallback_code="BUSINESS_RULE_FAILED"):
-        if isinstance(exc, AccessError):
-            return self._payment_advisory(
-                "RELATED_INFORMATION_RESTRICTED",
-                _("部分关联信息当前无权读取，不影响本次操作结果。"),
-                hints=[_("如需核对完整关联信息，请联系相应业务负责人。")],
-            )
+    def _payment_advisory_from_exception(self, exc):
+        # Only named native risk signals may enter the soft-policy channel.
+        # ACL, malformed declarations and unclassified business failures propagate.
         text = str(exc or "").strip()
         match = re.search(r"\[SC_GUARD:([A-Z0-9_]+)\]", text)
-        code = str(match.group(1) if match else fallback_code).strip().upper()
+        code = str(match.group(1) if match else "").strip().upper()
+        supported = {
+            "P0_PAYMENT_OVER_BALANCE", "P0_MATERIAL_PAYMENT_OVER_BALANCE",
+            "P0_PAYMENT_SETTLEMENT_NOT_READY", "P0_PAYMENT_FUNDING_NOT_READY",
+            "P0_PAYMENT_FUNDING_CAP_EXCEEDED",
+            "P0_MATERIAL_SETTLEMENT_NOT_CONFIRMED",
+        }
+        if isinstance(exc, (AccessError, ValidationError)) or not isinstance(exc, UserError) or code not in supported:
+            raise exc
         suggested = {
             "PAYMENT_ATTACHMENTS_REQUIRED": "upload_attachment",
             "P0_PAYMENT_SETTLEMENT_NOT_READY": "complete_settlement_approval",
@@ -2360,10 +2369,40 @@ class PaymentRequest(models.Model):
         }.get(code, "")
         return self._payment_advisory(code, text or code, suggested_action=suggested)
 
+    submit_action_guidance = fields.Json(
+        string="提交办理提示", compute="_compute_submit_action_guidance", readonly=True,
+        sc_ui_usage="interaction",
+    )
+
+    def _native_submit_action_guidance(self):
+        self.ensure_one()
+        decision = (self.partner_id._sc_transaction_guidance(_("付款申请") if self.type == "pay" else _("收款申请"))
+                    if self.partner_id else {"blocking": False, "requires_confirmation": False,
+                                            "message": "", "reason_code": "", "severity": "none"})
+        if decision.get("policy_kind") == "risk":
+            advisory = self._payment_advisory(decision["reason_code"], decision["risk_message"])
+            decision.update(blocking=advisory["force_block_enabled"],
+                            requires_confirmation=not advisory["force_block_enabled"],
+                            severity="error" if advisory["force_block_enabled"] else "warning",
+                            message=advisory["message"])
+        return {"method": "action_submit", **{key: decision[key] for key in
+                ("blocking", "requires_confirmation", "message", "reason_code", "severity")}}
+
+    @api.depends("partner_id", "partner_id.sc_transaction_eligibility", "partner_id.sc_transaction_eligibility_reason", "type")
+    def _compute_submit_action_guidance(self):
+        for record in self:
+            record.submit_action_guidance = record._native_submit_action_guidance()
+
     def _collect_payment_advisories(self, action_name, evaluation_cache=None):
         self.ensure_one()
         action_key = str(action_name or "").strip().lower()
         advisories = []
+        if action_key == "submit":
+            guidance = self._native_submit_action_guidance()
+            if guidance["requires_confirmation"] or guidance["blocking"]:
+                advisory = self._payment_advisory(guidance["reason_code"], guidance["message"])
+                advisory["force_block_enabled"] = guidance["blocking"]
+                advisories.append(advisory)
         if action_key in ("submit", "approve") and self.type == "pay" and self.payee_account_completeness == "incomplete":
             advisories.append(
                 self._payment_advisory(
@@ -2422,13 +2461,14 @@ class PaymentRequest(models.Model):
             ),
             self._check_settlement_remaining_amount,
             self._check_material_settlement_remaining_amount,
+            self._check_material_settlement_balance_risk,
             self._check_not_overpay_settlement,
             self._check_settlement_consistency,
             lambda: self._check_settlement_compliance_or_raise(strict=False),
         ):
             try:
                 check()
-            except Exception as exc:
+            except UserError as exc:
                 advisories.append(self._payment_advisory_from_exception(exc))
         return advisories
 
@@ -3106,6 +3146,14 @@ class PaymentRequest(models.Model):
                     reasons=[_("材料结算单未确认")],
                     hints=[_("请先确认材料结算单")],
                 )
+            if rec._payment_force_block_enabled("P0_MATERIAL_PAYMENT_OVER_BALANCE"):
+                rec._check_material_settlement_balance_risk()
+
+    def _check_material_settlement_balance_risk(self):
+        for rec in self:
+            settlement = rec.material_settlement_id
+            if rec.type != "pay" or not settlement:
+                continue
             precision = rec.currency_id.rounding if rec.currency_id else 0.01
             requested = rec._material_settlement_requested_amount_excluding_self()
             payable = (settlement.amount_total or 0.0) - (requested or 0.0)
@@ -3188,9 +3236,9 @@ class PaymentRequest(models.Model):
                 )
             if (rec.amount or 0.0) <= 0:
                 raise UserError(_("申请金额必须大于 0。"))
-            rec.partner_id._sc_assert_transaction_eligible(
-                _("付款申请") if rec.type == "pay" else _("收款申请")
-            )
+            guidance = rec._native_submit_action_guidance()
+            if guidance["blocking"]:
+                raise UserError(guidance["message"])
             if not rec._has_payment_basis():
                 raise UserError("请先选择关联合同或结算单后再提交付款/收款申请。")
             canceled_settlements = rec._linked_settlement_orders().filtered(

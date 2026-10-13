@@ -11,10 +11,10 @@ class ScCompanyProjectRefundWorkspace(models.TransientModel):
     _description = "公司与项目退款办理工作台"
 
     project_id = fields.Many2one("project.project", string="项目", required=True)
-    partner_id = fields.Many2one("res.partner", string="退款方/收款方")
-    business_date = fields.Date(string="办理日期", default=fields.Date.context_today)
-    note = fields.Text(string="办理说明")
-    processing_advisory = fields.Char(string="办理提示", compute="_compute_processing_advisory")
+    partner_id = fields.Many2one("res.partner", string="退款方/收款方", help='建议选择退款方/收款方，便于责任与资金台账归集')
+    business_date = fields.Date(string="办理日期", default=fields.Date.context_today, help='建议补充办理日期')
+    note = fields.Text(string="办理说明", help='建议补充退款原因或办理说明')
+    processing_advisory = fields.Char(string="办理提示", compute="_compute_processing_advisory", sc_ui_usage="interaction")
 
     @api.depends("partner_id", "business_date", "note")
     def _compute_processing_advisory(self):
@@ -26,7 +26,7 @@ class ScCompanyProjectRefundWorkspace(models.TransientModel):
                 suggestions.append("建议补充办理日期")
             if not record.note:
                 suggestions.append("建议补充退款原因或办理说明")
-            record.processing_advisory = "；".join(suggestions) if suggestions else "退款办理上下文已完善"
+            record.processing_advisory = "；".join(suggestions) if suggestions else ""
 
     def _sc_readable_context_name(self):
         self.ensure_one()

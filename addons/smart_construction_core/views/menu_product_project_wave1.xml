@@ -18,25 +18,31 @@
         <record id="menu_sc_project_document_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_project_risk_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_project_closeout_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
-        <record id="menu_sc_project_quick_create" model="ir.ui.menu"><field name="active">False</field></record>
+        <!-- Owner-confirmed quick creation remains a product entry; edition release is declared separately. -->
+        <record id="menu_sc_project_quick_create" model="ir.ui.menu">
+            <field name="name">快速创建项目</field>
+            <field name="parent_id" ref="smart_construction_core.menu_sc_project_management_group"/>
+            <field name="sequence">20</field>
+            <field name="active">True</field>
+        </record>
 
         <record id="menu_sc_tender_prepare" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_tender_registration" model="ir.ui.menu"><field name="active">False</field></record>
-        <record id="menu_sc_tender_registration_fee" model="ir.ui.menu"><field name="active">False</field></record>
-        <record id="menu_sc_tender_opening" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_tender_registration_fee" model="ir.ui.menu"><field name="active">True</field></record>
+        <record id="menu_sc_tender_opening" model="ir.ui.menu"><field name="active">True</field></record>
         <record id="menu_sc_field_mobile_roadmap_v2" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_bim_collaboration_roadmap_v2" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_supply_collaboration_roadmap_v2" model="ir.ui.menu"><field name="active">False</field></record>
 
-        <record id="menu_sc_schedule_delivery_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
-        <record id="menu_sc_quality_delivery_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
-        <record id="menu_sc_safety_delivery_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_schedule_delivery_group_v2" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_center"/><field name="sequence">70</field><field name="active">True</field></record>
+        <record id="menu_sc_quality_delivery_group_v2" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_center"/><field name="sequence">80</field><field name="active">True</field></record>
+        <record id="menu_sc_safety_delivery_group_v2" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_center"/><field name="sequence">90</field><field name="active">True</field></record>
 
-        <record id="menu_sc_material_management_group" model="ir.ui.menu"><field name="active">False</field></record>
-        <record id="menu_sc_labor_management_group" model="ir.ui.menu"><field name="active">False</field></record>
-        <record id="menu_sc_equipment_management_group" model="ir.ui.menu"><field name="active">False</field></record>
-        <record id="menu_sc_material_rental_group" model="ir.ui.menu"><field name="active">False</field></record>
-        <record id="menu_sc_subcontract_management_group" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_sc_material_management_group" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_center"/><field name="sequence">100</field><field name="active">True</field></record>
+        <record id="menu_sc_labor_management_group" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_center"/><field name="sequence">110</field><field name="active">True</field></record>
+        <record id="menu_sc_equipment_management_group" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_center"/><field name="sequence">120</field><field name="active">True</field></record>
+        <record id="menu_sc_material_rental_group" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_center"/><field name="sequence">130</field><field name="active">True</field></record>
+        <record id="menu_sc_subcontract_management_group" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_center"/><field name="sequence">140</field><field name="active">True</field></record>
 
         <!-- Locked level-two project domains. -->
         <record id="menu_sc_project_management_group" model="ir.ui.menu">
