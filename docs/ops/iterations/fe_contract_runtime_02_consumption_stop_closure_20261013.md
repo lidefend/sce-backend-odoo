@@ -133,12 +133,14 @@ Current recorded checks:
 | native_form_structure_responsibility | `verify.frontend.native_form_structure_responsibility.unit` | 18 |
 | form_canvas_layout | `verify.frontend.form_canvas_layout.unit` | 60 |
 | collection_view_semantics | `verify.frontend.collection_view_semantics.unit` | 54 |
-| collection_action_capability | `verify.frontend.collection_action_capability.unit` | 50 |
+| collection_action_capability | `verify.frontend.collection_action_capability.unit` | 59 |
+| professional_detail_collection_guard | `verify.frontend.professional_detail_collection.unit` | 136 |
 | agent_ledger | `verify.agent.ledger.unit` | 15 |
 | business_entry_evidence_scope | `verify.frontend.business_entry.evidence_scope.unit` | 123 |
 | list_surface_evidence_binding | `verify.frontend.list_surface_evidence_binding.unit` | 12 |
 | contract_consumption_verdicts | `verify.frontend.contract_consumption_verdicts.unit` | 21 |
-| verification_lane_coverage | `verify.verification.lane_coverage` | 44 |
+| verification_lane_coverage | `verify.verification.lane_coverage` | 66 |
+| trusted_scan_scope_unit | `verify.trusted_scan.unit` | 68 |
 
 Auxiliary (not a registered run check): `make verify.frontend.typecheck.strict` rc=0
 (`.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/typecheck_strict.log`).
@@ -173,3 +175,65 @@ added. No unrelated check was re-run.
 
 The consolidated product review / browser journeys for the affected list, form, read-only detail,
 master-detail, action and permission surfaces are the final step after the mechanisms above are frozen.
+
+## P4 verification-system governance closure (2026-10-13)
+
+The owner-directed P4 governance task (9 items) landed in this same run and is verified separately
+from the product gaps:
+
+- `scripts/audit/verification_lane_coverage.py` now freezes item identities (a count-neutral
+  replacement of a registered problem fails), replaces the blanket `review_by=2026-12-31` with
+  per-class `review_triggers`, hard-checks owner/basis/expiry/unwired-gate-candidate, and prints the
+  structural coverage separately from a functional verdict.
+- The three ledgers moved only what the facts required (3 `gate_candidate` reclassifications to
+  `release_runbook` / `ops_runbook`); nothing was deleted to make a gate pass. The ratchet counts
+  may only shrink.
+- `scripts/ci/trusted_scan_scope.py` bounds transient `git` spawn failures (EAGAIN/ENOMEM/EFAULT)
+  with a bounded retry instead of failing the Quick gate on a flake.
+
+## Declared-visible detail collection: regression lock (2026-10-13)
+
+The independently reviewed T6/pre-existing read-only filter removal had no behavioural lock; the
+source-grep guard only asserted "the amount total is not narrowed to the current page". The
+declared-visible rule is now single-sourced and locked:
+
+- `pages/contractForm/one2manyUtils.ts` owns `visibleOne2manyRows(rowsByField, fieldName)`: the only
+  exclusion is a declared removal (`!row.removed`). A blank display value is not a visibility fact.
+- `pages/contractForm/useOne2manyRuntime.ts` delegates `visibleRows` to that helper, so the runtime
+  cannot carry a second visibility rule.
+- `frontend/apps/web/scripts/detail_collection_pagination_test.ts` (run by
+  `verify.frontend.collection_action_capability.unit`, the ledger binding `[5]` regression guard)
+  asserts that every-blank rows stay in the set, that record identity/count/pagination all read the
+  same set, and that an undeclared field yields an empty set rather than a fabricated default.
+- `scripts/verify/frontend_professional_detail_collection_guard.py` fails if the helper filters by
+  display text, if the runtime stops delegating, or if the renderer adds a second visibility rule;
+  two negative fixtures prove those branches fire.
+
+## Contract producer → consumer chain re-verified (2026-10-13)
+
+Every declaration the strict consumers now require is produced by the real backend and bound in
+`docs/architecture/frontend_contract_basis_ledger.json` (`frontend_contract_basis_guard` asserts the
+declaration symbol still exists at the producer and the consumption symbol at the consumer):
+
+| declaration | producer | consumer |
+|---|---|---|
+| `surfacePolicies.collection_capabilities.actions[]` (action/scope/intent/available) | `addons/smart_core/utils/collection_action_capability.py` `build_collection_capabilities` | `app/runtime/actionViewCollectionCapabilityRuntime.ts` |
+| `relation_entry.page_size` | `app_config_engine/services/assemblers/page_assembler.py` `_build_relation_entry_for_field` | `components/template/detailCollectionPagination.ts` |
+| containerTree `span` (1..24) | `handlers/ui_contract_v2_projection.py` | `components/template/layoutSpan.ts` |
+| `entry_target.record_entry` (`entry_intent`, `model_write_authority`) | `core/navigation_entry_target.py` `_build_record_entry` | `app/runtime/recordEntryContract.ts` |
+| permission auth level `none\|read\|edit\|admin` | `core/unified_page_contract_v2_permissions.py` `permission_auth_level` | `app/contract/contractAuthLevel.ts` |
+
+Lane evidence at this candidate: `verify.frontend.contract_basis.enforce` PASS (`open_defects=0`),
+`verify.frontend.canonical_form_presenter.unit` PASS, `verify.frontend.page_pattern_reference_parity.unit`
+PASS (`owned_gaps=0`), `verify.frontend.product_page_pattern.unit` PASS. `make ci.local.iteration` PASS
+(L1 only; `unmappedPathCount=17` by design).
+
+Invalidation was limited to the changed inputs: the new/changed frontend sources invalidated
+`contract_basis_guard` (its input is the `frontend/apps/web/src` tree), `run.json` invalidated
+`agent_ledger`, and the changed `scripts/verify` sources invalidated `verification_lane_coverage`.
+All three were re-run and re-recorded; `collection_action_capability` and the new
+`professional_detail_collection_guard` were recorded against their corrected input lists. No
+unrelated check was re-run.
+
+Still open (not part of this step): the consolidated affected-surface product review with real
+representative roles/companies, and the target-environment upgrade/user acceptance.

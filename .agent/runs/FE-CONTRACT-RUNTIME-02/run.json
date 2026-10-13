@@ -86,7 +86,52 @@
       "inputs": [
         "frontend/apps/web/src/app/runtime/actionViewCollectionCapabilityRuntime.ts",
         "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
-        "frontend/apps/web/scripts/collection_action_capability_test.ts"
+        "frontend/apps/web/scripts/collection_action_capability_test.ts",
+        "frontend/apps/web/src/app/contract/contractGap.ts",
+        "frontend/apps/web/src/components/template/detailCollectionPagination.ts",
+        "frontend/apps/web/scripts/detail_collection_pagination_test.ts",
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+        "frontend/apps/web/src/pages/contractForm/useOne2manyRuntime.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "professional_detail_collection_guard": {
+      "target": "verify.frontend.professional_detail_collection.unit",
+      "inputs": [
+        "addons/smart_construction_core/core_extension_contract_normalizers.py",
+        "addons/smart_construction_core/core_extension_project_layout.py",
+        "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/handlers/load_contract.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py",
+        "contracts/registry/component.yaml",
+        "contracts/registry/semantic.yaml",
+        "docs/architecture/unified_page_contract_v2/examples/nested_form_relation.json",
+        "frontend/apps/web/scripts/payment_settlement_introduce_dialog_contract_test.ts",
+        "frontend/apps/web/scripts/professional_detail_collection_model_test.ts",
+        "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+        "frontend/apps/web/src/components/design-system/ScSelect.vue",
+        "frontend/apps/web/src/components/professional-fields/PaymentSettlementDetailCollectionControl.vue",
+        "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalDetailCollectionControl.vue",
+        "frontend/apps/web/src/components/professional-fields/paymentSettlementIntroduceDialogModel.ts",
+        "frontend/apps/web/src/components/professional-fields/professionalDetailCollectionModel.ts",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/template/One2ManyCellEditor.vue",
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+        "frontend/apps/web/src/components/template/detailCollectionPagination.ts",
+        "frontend/apps/web/src/components/template/one2manyRelationQuery.ts",
+        "frontend/apps/web/src/components/template/relationField.types.ts",
+        "frontend/apps/web/src/pages/contractForm/one2manyColumnOptionsRuntime.ts",
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+        "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
+        "frontend/apps/web/src/pages/contractForm/useOne2manyRuntime.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts",
+        "make/frontend.mk",
+        "scripts/verify/frontend_professional_detail_collection_guard.py",
+        "scripts/verify/test_frontend_professional_detail_collection_guard.py"
       ],
       "kind": "offline"
     },
@@ -160,5 +205,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "P4 verification-system governance (9 items) landed in the same run: the coverage instrument now freezes item identities (count-neutral replacement fails), replaces the blanket review_by date with per-class review triggers, hard-checks owner/basis/expiry, refuses an unwired required check, and splits structural-coverage output from a functional verdict. Next: record the lane-coverage and trusted-scan receipts, re-record agent_ledger, run make ci.delivery.freeze.prepare, commit on fix/*, freeze the exact tracked+untracked fingerprint, run one exact-head make ci.local.quick, push, complete the remote required checks and merge via the protected PR flow. The consolidated affected-surface product review and the product-side independent-review rework remain owned by the product executor."
+  "next_exact_step": "Steps 1-5 of the owner 9-step plan are closed on this candidate: P4 governance verified (archive fetch wired, reuse identity binds acting role closure, clean-env guard fails closed); the status-bar node-identity regression, the none/read/edit/admin occurrence consumption and the read-only detail visibility are fixed and now locked (detail_collection_pagination_test.ts + frontend_professional_detail_collection_guard.py, recorded as professional_detail_collection_guard); and the contract producer->consumer chain (collection_capabilities.actions, relation_entry.page_size, containerTree span, entry_target.record_entry, permission auth level) is verified end to end with verify.frontend.contract_basis.enforce PASS (open_defects=0). Next: step 6 consolidated affected-surface product review - generate affected keys with scripts/ops/evidence_scope.py, approve the backend contract first and then verify the frontend consumes the same instance, covering form create-visibility / same-field-multiple-occurrences / legal+illegal span, permission none/read/edit/admin with real representative roles (not admin-only), master-detail blank-visible rows + non-default page size + cross-page count consistency, collection/entry action display-disable-invoke and record entry edit/readonly consistency, and the affected template at desktop and narrow viewports; then independent re-review, freeze the clean candidate, one exact-head Quick, protected PR merge, and target-environment upgrade/user acceptance as separate verdicts."
 }

@@ -402,6 +402,21 @@ export function ensureOne2manyRows(
   return rowsByField[fieldName];
 }
 
+/**
+ * 声明可见行集合：唯一依据是「该行是否已被声明移除」。
+ *
+ * 展示文本是否为空不是可见性依据——一个每列都为空值的行仍然是契约声明可见的
+ * 记录，不得因为显示值为空就从集合中消失（只读明细集合可见性回归锁）。
+ * 记录身份（id/key）与集合数量只由行本身决定，渲染层不参与裁决。
+ */
+export function visibleOne2manyRows(
+  rowsByField: Record<string, One2ManyInlineRow[]>,
+  fieldName: string,
+): One2ManyInlineRow[] {
+  const rows = Array.isArray(rowsByField[fieldName]) ? rowsByField[fieldName] : [];
+  return rows.filter((row) => !row.removed);
+}
+
 export function appendOne2manyDraftRow(params: {
   rowsByField: Record<string, One2ManyInlineRow[]>;
   fieldName: string;

@@ -22,6 +22,32 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
             return value + "\n// payment.request\n" if path.endswith("professionalDetailCollectionModel.ts") else value
         self.assertTrue(any("forbidden product special case" in item for item in validate(read_text)))
 
+    def test_blank_value_visibility_filter_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useOne2manyRuntime.ts"):
+                return value.replace(
+                    "return visibleOne2manyRows(rowsByField, name);",
+                    "return fieldRows(name).filter((row) => one2manyColumnDisplayValue(row));",
+                )
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("single declared-set authority" in item for item in failures))
+
+    def test_renderer_second_visibility_rule_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace(
+                    "return props.adapter.visibleOne2manyRows(props.field.name);",
+                    "return one2manyRows.value.filter((row) => String(row.values.name || '').trim() !== '');",
+                )
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("second visibility rule" in item for item in failures))
+
     def test_page_scoped_amount_total_fails(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")

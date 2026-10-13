@@ -5,6 +5,10 @@ import {
   paginateDetailCollectionRows,
   resolveDetailCollectionPageSize,
 } from '../src/components/template/detailCollectionPagination';
+import {
+  one2manyRowCollectionIdentity,
+  visibleOne2manyRows,
+} from '../src/pages/contractForm/one2manyUtils';
 
 function assertGap(label: string, run: () => unknown) {
   let stopped = false;
@@ -59,4 +63,52 @@ assert.equal(detailCollectionPageCount(21, 10), 3);
 assert.equal(detailCollectionPageCount(40, 5), 8);
 assert.equal(detailCollectionPageCount(40, null), 1);
 
-console.log('[detail_collection_pagination_test] PASS cases=28');
+// 只读明细集合的声明可见性（回归锁）：可见集合的唯一依据是「该行是否已被声明移除」。
+// 每列都为空值的行仍然是契约声明可见的记录：展示文本是否为空不是可见性依据，
+// 否则一个合法空值行会从集合里消失，记录身份、数量与分页随之漂移。
+type ProbeRow = {
+  key: string;
+  id: number | null;
+  isNew: boolean;
+  removed: boolean;
+  dirty: boolean;
+  dirtyFields: string[];
+  values: Record<string, unknown>;
+};
+
+function probeRow(key: string, id: number | null, removed: boolean, values: Record<string, unknown>): ProbeRow {
+  return { key, id, isNew: id === null, removed, dirty: false, dirtyFields: [], values };
+}
+
+const declaredRows: ProbeRow[] = [
+  probeRow('new:1', null, false, { product_id: '', qty: '', price_unit: '' }),
+  probeRow('id:7', 7, false, { product_id: null, qty: 0, price_unit: false }),
+  probeRow('id:8', 8, true, { product_id: '', qty: '', price_unit: '' }),
+];
+
+const declaredVisible = visibleOne2manyRows({ line_ids: declaredRows }, 'line_ids');
+// 声明可见行不因展示值为空而消失：只有被声明移除的行被排除。
+assert.equal(declaredVisible.length, 2);
+assert.deepEqual(declaredVisible.map(one2manyRowCollectionIdentity), ['key:new:1', 'id:7']);
+// 两个保留行的每一列都是空值 —— 说明"显示文本非空"从未参与可见性裁决。
+assert.equal(
+  declaredVisible.filter(row => Object.values(row.values).every(value => ['', null, 0, false].includes(value as never))).length,
+  2,
+);
+// 未声明的字段返回空集合，不构造第二套来源或默认行。
+assert.deepEqual(visibleOne2manyRows({}, 'line_ids'), []);
+assert.deepEqual(visibleOne2manyRows({ line_ids: declaredRows }, 'other_ids'), []);
+
+// 数量与分页落在同一个可见集合上：计数、切片、跨页并集都不脱离该集合。
+assert.equal(declaredVisible.length, detailCollectionPageCount(2, 2) * 2);
+assert.deepEqual(paginateDetailCollectionRows(declaredVisible, 1, 1).map(one2manyRowCollectionIdentity), ['key:new:1']);
+assert.deepEqual(paginateDetailCollectionRows(declaredVisible, 2, 1).map(one2manyRowCollectionIdentity), ['id:7']);
+assert.deepEqual(
+  [
+    ...paginateDetailCollectionRows(declaredVisible, 1, 1),
+    ...paginateDetailCollectionRows(declaredVisible, 2, 1),
+  ].map(one2manyRowCollectionIdentity),
+  ['key:new:1', 'id:7'],
+);
+
+console.log('[detail_collection_pagination_test] PASS cases=37');

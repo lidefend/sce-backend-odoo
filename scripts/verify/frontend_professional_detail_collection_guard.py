@@ -103,6 +103,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     sc_select = read_text("frontend/apps/web/src/components/design-system/ScSelect.vue")
     relation_types = read_text("frontend/apps/web/src/components/template/relationField.types.ts")
     relation_utils = read_text("frontend/apps/web/src/pages/contractForm/one2manyUtils.ts")
+    relation_row_runtime = read_text("frontend/apps/web/src/pages/contractForm/useOne2manyRuntime.ts")
     relation_runtime = "\n".join((
         read_text("frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts"),
         read_text("frontend/apps/web/src/pages/contractForm/one2manyColumnOptionsRuntime.ts"),
@@ -178,6 +179,22 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
             or "ContractGapError" not in pagination
             or "requiredDeclarationLayer" not in pagination):
         failures.append("detail collection pagination does not fail closed on an undeclared page size")
+    # The declared visible set is decided once, in the row runtime: only rows the
+    # contract declared removed leave the collection.  A blank display value is
+    # not a visibility fact, so no consumer may re-filter the set by display text
+    # and no renderer may add a second visibility rule.
+    visible_helper = relation_utils.split("export function visibleOne2manyRows(", 1)
+    visible_helper_body = visible_helper[1].split("\n}", 1)[0] if len(visible_helper) == 2 else ""
+    if ("return rows.filter((row) => !row.removed);" not in visible_helper_body
+            or "one2manyColumnDisplayValue" in visible_helper_body
+            or "trim()" in visible_helper_body):
+        failures.append("declared-visible detail rows are not decided by declared removal alone")
+    if "return visibleOne2manyRows(rowsByField, name);" not in relation_row_runtime:
+        failures.append("detail collection visibility is not delegated to the single declared-set authority")
+    if ("return props.adapter.visibleOne2manyRows(props.field.name);" not in renderer
+            or "one2manyRows.value.filter(" in renderer
+            or "visibleOne2manyRows(props.field.name).filter(" in renderer):
+        failures.append("readonly detail renderer drops declared-visible rows through a second visibility rule")
     if ("detailCollectionColumnPresentation(column, columnIndex, false)" not in renderer
             or "ellipsis: readonly &&" not in model):
         failures.append("detail collection editable controls are wrapped by TDesign text ellipsis")

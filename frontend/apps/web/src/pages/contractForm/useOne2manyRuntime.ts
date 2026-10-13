@@ -13,6 +13,7 @@ import {
   resolveOne2manyRowColumnBehavior,
   restoreOne2manyDraftRow,
   setOne2manyDraftRowField,
+  visibleOne2manyRows,
 } from './one2manyUtils';
 
 function makeOne2manyKey() {
@@ -42,8 +43,10 @@ export function useOne2manyRuntime(params: {
     return Array.isArray(rowsByField[name]) ? rowsByField[name] : [];
   }
 
+  // 声明可见集合由 one2manyUtils.visibleOne2manyRows 单点裁决：只排除已声明移除的行，
+  // 空值展示行不得被丢弃。运行时不在此处新增第二套可见性口径。
   function visibleRows(name: string) {
-    return fieldRows(name).filter((row) => !row.removed);
+    return visibleOne2manyRows(rowsByField, name);
   }
 
   function removedRows(name: string) {
