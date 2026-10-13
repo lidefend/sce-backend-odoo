@@ -1390,3 +1390,48 @@ L2 定向 ORM 反例 1 test 0 failed（日志 `relationship_review_queue_project
   `PASS candidate=unfrozen next=review_generated_changes_commit_freeze_then_run_quick_once`）。
 - 状态边界：本段仍只支撑**批次验收完成（源码 + 守卫 + 定向测试）**与**冻结准备通过**；
   精确 HEAD 的 `ci.local.quick` 仍在未推送状态下重跑，未主线集成、未部署、未产品交付。
+
+### 同 shard 被 fail-fast 掩盖的下一项：Web 契约 v2 前端架构守卫令牌同步
+
+- 现象：修复测试桩后，同一 shard（6/7）的下一项暴露失败
+  `verify.unified_page_contract.v2.web_architecture` →
+  `web_contract_v2_frontend_architecture_guard FAIL`：
+  - `pages/contractForm/useRecordActionPresentation.ts` 缺 `resolveWorkflowContractFromStore(v2ContractStore.value)`
+  - `pages/contractForm/useRecordActionPresentation.ts` 缺 `normalizeWorkflowEvidenceGateRows`
+  - `pages/ContractFormPage.vue` 缺 `workflowEvidenceGateRows`
+- 为什么现在才出现：上一轮 `774dee1a` 的 shard 6/7 在
+  `verify.native_view.workflow_action_coverage` 处 fail-fast 中止，而该目标在
+  `make/ci.mk` 的目标顺序中**先于**本守卫，故被掩盖。按“同一层独立失败一次收全”的要求，
+  本次连带把该 shard 失败点之后的目标一并跑完，不再靠下一轮 Quick 才发现兄弟失败。
+- 事实（先证后改）：
+  - 本分支 `265963f6` 删除前端 warning/evidence 常驻主体，并在代码注释中明确
+    “executable availability is already joined into Contract V2 action authority and
+    must not be recomputed here”；该退休在批次记录 P0 段已登记，**只是本守卫的
+    REQUIRED 令牌表未随之更新**。
+  - `resolveWorkflowContractFromStore(v2ContractStore.value)` 仍存在，现由
+    `pages/ContractFormPage.vue:1137` 的 `validateSubmissionRequirements` 消费，
+    “表单必须从 v2 store 解析工作流契约”这一不变量仍成立。
+  - `workflowEvidenceGateRows` 在 `frontend/` 源码中已无任何出现；
+    `normalizeWorkflowEvidenceGateRows` 仅作为 `workflowContract.ts` 的导出序列化器保留、
+    无消费者。
+  - `scripts/verify/frontend_professional_workflow_guard.py` 已对
+    “模板重新出现 `warnings|workflowEvidenceGateRows`” fail-closed。
+- 修法（保意图、不降覆盖）：把 store 解析令牌改指真实消费点
+  `pages/ContractFormPage.vue`；把两条已退休的重算令牌**从正向必需改为反向禁止**
+  （新增 `FORBIDDEN_WORKFLOW_EVIDENCE_RECOMPUTE_TOKENS`，由
+  `validate_workflow_contract_projection()` 执行），因此保护从“必须有重算”升级为
+  “不得在表单呈现层重算”，与既有的 professional workflow 守卫同向。
+- 反例验证（注入即必须失败）：
+  - 向 `useRecordActionPresentation.ts` 注入 `workflowEvidenceGateRows` → **FAIL**，rc=2，
+    报 `workflow evidence gate must not be recomputed ...`；随后已还原。
+  - 改名 `ContractFormPage.vue` 中的必需 store 解析令牌 → **FAIL** 缺必需令牌，rc=2；
+    随后已还原。
+- 同 shard 其余目标（原先从未跑到的）：`make verify.unified_page_contract.v2` **rc=0**
+  （整链含 web_architecture PASS / stable_projection / frontend_static 前端构建）、
+  `verify.frontend.dev.incremental.unit` **29 tests OK**、`verify.frontend.lint.src`
+  **rc=0（0 errors，65 warnings）**。
+- 其它：`make verify.frontend.professional_workflow.unit` rc=0（8 tests OK）、
+  `make verify.guard.registry` AUDIT PASS（1443 scripts）、
+  `make ci.delivery.freeze.prepare` 再次 **rc=0** 且无生成物差异。
+- 状态边界：仍只支撑**批次验收完成（源码 + 守卫 + 定向测试）**与**冻结准备通过**；
+  精确 HEAD 的 `ci.local.quick` 重跑、推送、主线集成、部署、产品交付均未发生。

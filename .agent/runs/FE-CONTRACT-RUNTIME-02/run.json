@@ -980,7 +980,7 @@
     "verify.backend_business_fact.model_standard currently FAILs on documentation drift: docs/architecture/backend_business_model_audit_findings_v1.md records 372 model classes and 0 unclassified models while the measured values are 378 and 1. The target is a zero-reference lane entry (not reachable from any gate anchor), so it is not a blocker for this batch.",
     "Audit follow-up: the committed company-ceiling set is now 143 rules after the generated-vs-manual review retired 7 redundant ceilings (enforced 124 -> 117, source_bounded 25 -> 32), while the last governed activation readback proved 125/125 installed, so the runtime readback is stale for the current set; the remaining newly declared ceilings are source-only until the next authorized `local.dev` activation."
   ],
-  "next_exact_step": "Backend single-fact closure is complete (timed-CI blocker 17b48549; duplicate field declaration / currency write points / record_is_global e059394b and 6e0dd571; generated-vs-manual ceiling convergence 0b76ddf9 with 7 models enforced->source_bounded and ceiling 150->143; BUSINESS-NUMBER-AUTHORITY-01 83f371c3) and the delivery freeze is unblocked: CD-20261013-LAYOUT-COLUMNS-FALLBACK re-verified against source and retired to closedContractDefects (d963dee6), the frozen-candidate assembler cache re-pinned (774dee1a), and the last failing quick shard verify.native_view.workflow_action_coverage repaired as a test-stub sync (see quick_stub_sync_repair). NEXT, in order: (1) commit this bookkeeping and re-run make ci.delivery.freeze.prepare once to confirm the clean HEAD stays frozen; (2) run ONE exact-head make ci.local.quick on that frozen HEAD; (3) rewrite artifacts/pr_body.md and integrate through the protected GitHub PR (make pr.push -> make pr.create -> make pr.merge.prep -> make pr.merge EXPECTED_HEAD=<sha>), gitee mirror as backup only; (4) the governed L3 activation readback set is 143 rules (the earlier 150/125 readbacks are stale) and needs the authorized path make local.dev.snapshot -> make local.dev.upgrade MODULE=smart_construction_core -> make local.dev.data_scope.inventory. This batch is 批次验收完成 at source + guards level plus freeze-preparation pass, and is NOT yet pushed, mainline-integrated, deployed or user-accepted.",
+  "next_exact_step": "Backend single-fact closure is complete and the delivery lane is now blocked only by its own frozen-candidate guards, all three closed: CD-20261013-LAYOUT-COLUMNS-FALLBACK retired (d963dee6), the assembler cache re-pinned (774dee1a), the workflow-action-coverage test stub synced (5cc400af), and this web_contract_v2_frontend_architecture_guard token list synced to the recorded frontend retirement (see web_architecture_guard_token_sync). All shard-6/7 targets that the fail-fast had masked now pass individually. NEXT, in order: (1) commit this fix + bookkeeping, run make ci.delivery.freeze.prepare once more and confirm no residual generated delta so the clean HEAD stays frozen; (2) run ONE exact-head make ci.local.quick on that frozen HEAD; (3) rewrite artifacts/pr_body.md and integrate through the protected GitHub PR (make pr.push -> make pr.create -> make pr.merge.prep -> make pr.merge EXPECTED_HEAD=<sha>), gitee mirror as backup only; (4) the governed L3 activation readback set is 143 rules (the earlier 150/125 readbacks are stale) and needs the authorized path make local.dev.snapshot -> make local.dev.upgrade MODULE=smart_construction_core -> make local.dev.data_scope.inventory. This batch is 批次验收完成 at source + guards level plus freeze-preparation pass, and is NOT yet pushed, mainline-integrated, deployed or user-accepted.",
   "acceptance_authority_layout": {
     "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
     "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",
@@ -3278,5 +3278,33 @@
       "make ci.delivery.freeze.prepare -> rc=0, PASS all content-bound generated evidence is current"
     ],
     "generated_followup": "docs/engineering_convergence/complexity_budget_report.md re-sorted because the test file grew 818 -> 826 lines; committed with the stub fix."
+  },
+  "web_architecture_guard_token_sync": {
+    "status": "closed",
+    "failing_lane": "verify.unified_page_contract.v2.web_architecture -> web_contract_v2_frontend_architecture_guard",
+    "symptom": "web_contract_v2_frontend_architecture_guard FAIL: workflow contract projection missing token in pages/contractForm/useRecordActionPresentation.ts (resolveWorkflowContractFromStore(v2ContractStore.value), normalizeWorkflowEvidenceGateRows) and in pages/ContractFormPage.vue (workflowEvidenceGateRows)",
+    "why_it_appeared_now": "The earlier quick run at 774dee1a failed shard 6/7 at verify.native_view.workflow_action_coverage, which precedes this guard in the same shard's target order, so fail-fast masked it. Fixing the stub exposed the next sibling failure in the same shard instead of discovering it through another Quick cycle.",
+    "classification": "guard token list lagging an intentional, already-recorded frontend retirement; not a product regression",
+    "facts": [
+      "Commit 265963f6 (branch-only) removed the frontend warning/evidence permanent body surface and explicitly documented: executable availability is already joined into Contract V2 action authority and must not be recomputed in the presentation layer.",
+      "The batch record (docs/ops/iterations/fe_contract_runtime_02_consumption_stop_closure_20261013.md, P0 section) already registered this retirement; only this guard's REQUIRED token list was not updated.",
+      "resolveWorkflowContractFromStore(v2ContractStore.value) still exists and is now consumed by pages/ContractFormPage.vue:1137 inside validateSubmissionRequirements, so the invariant 'the form consumes the workflow contract from the V2 store' still holds.",
+      "workflowEvidenceGateRows has no occurrence anywhere in frontend/ (source); normalizeWorkflowEvidenceGateRows survives only as the exported serializer in pages/contractForm/workflowContract.ts with no consumer.",
+      "scripts/verify/frontend_professional_workflow_guard.py already fails closed when warnings/workflowEvidenceGateRows reappear in the form presentation template."
+    ],
+    "change": [
+      "REQUIRED_WORKFLOW_CONTRACT_PROJECTION_TOKENS: re-pointed the store-resolution token to pages/ContractFormPage.vue (its real current consumer) and dropped the two retired recomputation tokens.",
+      "Added FORBIDDEN_WORKFLOW_EVIDENCE_RECOMPUTE_TOKENS (useRecordActionPresentation.ts: workflowEvidenceGateRows / normalizeWorkflowEvidenceGateRows(, ContractFormPage.vue: workflowEvidenceGateRows) so validate_workflow_contract_projection() now enforces the new invariant instead of dropping the protection."
+    ],
+    "evidence": [
+      "make verify.unified_page_contract.v2.web_architecture -> rc=0 PASS mode=debt_lock findings=0",
+      "counterexample A (inject workflowEvidenceGateRows into useRecordActionPresentation.ts) -> FAIL with the forbidden-recompute error, rc=2; file restored",
+      "counterexample B (rename the required store-resolution token in ContractFormPage.vue) -> FAIL missing required token, rc=2; file restored",
+      "make verify.unified_page_contract.v2 -> rc=0 (full chain incl. web_architecture PASS, stable_projection, frontend_static frontend build)",
+      "make verify.frontend.professional_workflow.unit -> rc=0 (8 tests OK, guard PASS components=3)",
+      "same-shard siblings after the failure point: make verify.frontend.dev.incremental.unit -> 29 tests OK; make verify.frontend.lint.src -> rc=0 (0 errors, 65 warnings)",
+      "make verify.guard.registry -> AUDIT PASS 1443 scripts",
+      "make ci.delivery.freeze.prepare -> rc=0, no generated delta"
+    ]
   }
 }
