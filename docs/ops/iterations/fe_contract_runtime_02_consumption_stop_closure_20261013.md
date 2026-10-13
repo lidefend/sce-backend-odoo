@@ -580,6 +580,27 @@ fixture；事务内 `Ledger.init()` 随回滚恢复，不是日常服务器升�
 `sc.output.invoice.ledger` 视图仍是旧定义，受管模块升级与部署视图回读待写授权，不据此
 宣称已部署。下一项：`sc.p1.relationship.review.queue`。
 
+Step 1 下一项：P1 关系人工复核队列 `sc.p1.relationship.review.queue`（只读派生视图）的
+项目归属。原 `grouped` CTE 对每个「来源模型＋来源字段」分组取
+`MIN(project_id) FILTER (WHERE project_id IS NOT NULL)`，分组根本不按项目切分；一个跨多个
+项目的分组因此被发布成某一个任意项目，视图与列表还提供「按项目分组」的入口，属于把
+错误归属直接暴露给复核人。修复为仅当该分组全部候选属于同一个项目时才发布项目
+（`COUNT(project_id) = COUNT(*) AND MIN(project_id) = MAX(project_id)`），混合或含未知
+归属一律留空。来源表无 `project_id` 列的模型（如 `sc.business.entity`）自然为空。
+
+验证：L1 `ci.local.iteration` PASS（日志 `relationship_review_queue_iteration.log`）。
+L2 定向 ORM 反例 1 test 0 failed（日志 `relationship_review_queue_project_orm.log`）：
+同一分组内两家项目各建一条 `sc.financing.loan` 候选，断言该分组不发布任何项目，并另用
+独立 SQL oracle 复核「仅单一项目才发布」；再断言无项目列的来源分组不伪造项目。
+负向对照：还原 HEAD 旧视图后同用例 1 failed
+（`AssertionError: {project.project(5883,)} is not false`），日志
+`relationship_review_queue_project_orm_negative_control.log`；修复源随后已恢复。
+
+残余与边界：`Queue.init()` 仍在事务内建视图并随回滚恢复，不是日常服务器升级证明，
+`sc_dev_demo` 中已安装视图仍为旧定义；受管升级与部署视图回读同样待写授权。
+下一项：Step 1 剩余投影（`sc.ar.ap.company.summary`、`sc.finance.counterparty.position.summary`、
+`sc.ar.ap.project.summary` 及 20 项归属待定源模型）。
+
 ## 执行器交接计划（2026-10-13，所有者要求记录后停止）
 
 ### 批次信息与入口
