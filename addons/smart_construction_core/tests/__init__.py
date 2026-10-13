@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 from . import test_action_groups_gate
+from . import test_salary_summary_data_scope
+from . import test_payroll_data_space_rules
 from . import test_ar_ap_projection_relation_lifecycle
 from . import test_role_regression_minimal
 from . import test_smoke_security

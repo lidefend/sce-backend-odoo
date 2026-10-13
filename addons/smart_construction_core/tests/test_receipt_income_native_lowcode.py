@@ -49,7 +49,7 @@ class TestReceiptIncomeNativeLowcode(TransactionCase):
         "company_contractor_arrival_unprocessed_amount",
         "company_contractor_arrival_over_processed_amount",
         "company_contractor_self_funding_balance",
-        "company_contractor_responsibility_notice", "can_review",
+        "can_review",
     )
     FORM_ANCHORS = (
         "receipt_main", "receipt_project", "receipt_income_items", "receipt_account",
@@ -153,6 +153,7 @@ class TestReceiptIncomeNativeLowcode(TransactionCase):
             # section may survive next to the native structure
             self.assertEqual(g["configuredSections"], [], action_key)
             names = [n.get("name") for n in self.tree_nodes(data) if n.get("type") == "field"]
+            self.assertNotIn("company_contractor_responsibility_notice", names)
             for field in (*required, *self.RECOVERED_FIELDS, *self.SHARED_PRESENT_FIELDS):
                 self.assertIn(field, names, (action_key, field))
                 self.assertEqual(names.count(field), 1, (action_key, field))

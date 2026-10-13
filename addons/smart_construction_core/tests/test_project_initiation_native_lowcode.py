@@ -72,15 +72,15 @@ class TestProjectInitiationNativeLowcode(TransactionCase):
     QUICK_SIBLING_ACTION = "action_project_initiation_quick"
     QUICK_SIBLING_VIEW = "view_project_create_form_quick"
     QUICK_SIBLING_FIELDS = (
-        "intake_next_action_display", "intake_blocking_reason_display", "name",
+        "name",
         "initiation_date", "manager_id", "operation_strategy", "owner_id",
     )
 
     # Business field set the native arch renders for the create form, in
     # document order.  Pinned so the batch provably keeps the rendered field
-    # set unchanged (same 12 rows, none added or removed).
+    # set unchanged (same 10 business rows; two retired tutorial-only fields removed).
     RENDERED_FIELDS = (
-        "intake_next_action_display", "intake_blocking_reason_display", "name",
+        "name",
         "initiation_date", "manager_id", "operation_strategy", "owner_id",
         "project_type_id", "project_category_id", "location", "start_date",
         "end_date",
@@ -89,16 +89,13 @@ class TestProjectInitiationNativeLowcode(TransactionCase):
     # Anchored native business sections this batch declares.  The two keyed
     # ones carry the section identity the retired entry declared.
     NATIVE_SECTIONS = (
-        ("current_task", "当前任务"),
-        ("intake_risk", "立项条件"),
         ("project_create_required", "项目创建（必填）"),
         ("project_create_optional", "项目标识（可选）"),
     )
 
-    # Read-only policy the retired declaration pinned and the native arch has
-    # to restate, because the model itself does not report these fields
-    # read-only.
-    RETIRED_READONLY_FIELDS = ("intake_next_action_display", "intake_blocking_reason_display")
+    # Tutorial-only nonstored facts are retired in both model and projection.
+    # Keep their identities as negative controls, never as an empty test loop.
+    RETIRED_GUIDANCE_FIELDS = ("intake_next_action_display", "intake_blocking_reason_display")
 
     # Labels the retired declaration pinned.  A label is a rendered fact: if the
     # arch does not restate one, the page silently falls back to the model's own
@@ -317,9 +314,7 @@ class TestProjectInitiationNativeLowcode(TransactionCase):
         data = self._native_contract(
             self.QUICK_SIBLING_ACTION, self.QUICK_SIBLING_VIEW, self.MODEL)
         self.assertEqual(self._rendered_fields(data), self.QUICK_SIBLING_FIELDS)
-        readonly = self._rendered_readonly(data, self.RETIRED_READONLY_FIELDS)
-        for name in self.RETIRED_READONLY_FIELDS:
-            self.assertEqual(readonly.get(name), [True] * len(readonly[name]))
+        self.assertFalse(set(self.RETIRED_GUIDANCE_FIELDS).intersection(self._rendered_fields(data)))
 
     # -- native arch ---------------------------------------------------------
 
@@ -332,13 +327,26 @@ class TestProjectInitiationNativeLowcode(TransactionCase):
         data = self._native_contract(self.ACTION, self.VIEW, self.MODEL)
         self.assertEqual(self._rendered_fields(data), self.RENDERED_FIELDS)
 
-    def test_the_retired_readonly_policy_survives_on_the_native_surface(self):
-        data = self._native_contract(self.ACTION, self.VIEW, self.MODEL)
-        readonly = self._rendered_readonly(data, self.RETIRED_READONLY_FIELDS)
-        self.assertEqual(sorted(readonly), sorted(self.RETIRED_READONLY_FIELDS))
-        for name, flags in readonly.items():
-            with self.subTest(field=name):
-                self.assertTrue(flags and all(flags))
+    def test_retired_guidance_has_no_model_or_native_projection_consumer(self):
+        for field in self.RETIRED_GUIDANCE_FIELDS:
+            self.assertNotIn(field, self.env[self.MODEL]._fields)
+        for action, view in ((self.ACTION, self.VIEW), (self.QUICK_SIBLING_ACTION, self.QUICK_SIBLING_VIEW)):
+            data = self._native_contract(action, view, self.MODEL)
+            self.assertFalse(set(self.RETIRED_GUIDANCE_FIELDS).intersection(self._rendered_fields(data)))
+            arch = self.env.ref("smart_construction_core." + view).arch_db
+            root = etree.fromstring(arch.encode())
+            for name in ("name", "initiation_date", "manager_id"):
+                fields = root.xpath(".//field[@name='%s']" % name)
+                self.assertEqual(len(fields), 1)
+                self.assertEqual(fields[0].get("required"), "1")
+            for phrase in ("快速创建模式：", "建议先完成最小立项", "当前任务", "立项条件"):
+                self.assertNotIn(phrase, arch)
+        inherited = self.env.ref("smart_construction_core.view_project_form_sc_core").arch_db
+        self.assertIn('name="message_needaction"', inherited)
+        self.assertIn('name="display_name"', inherited)
+        for action in ("action_sc_submit", "action_sc_start"):
+            self.assertIn(action, inherited)
+        self.assertNotIn("当前为草稿。", inherited)
 
     def test_the_retired_field_labels_survive_on_the_native_surface(self):
         """A pinned label is a rendered fact: the arch has to restate it."""

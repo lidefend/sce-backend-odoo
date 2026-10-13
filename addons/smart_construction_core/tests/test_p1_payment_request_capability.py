@@ -40,7 +40,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
         "payment_bank_name", "payment_account_no", "bank_account",
         "document_no", "kingdee_document_no", "note", "attachment_ids",
         "handler_name", "company_contractor_responsibility_state",
-        "company_contractor_responsibility_notice", "cancellation_kind",
+        "cancellation_kind",
         "reversal_reason", "source_kind", "payment_family", "push_result",
     )
     def test_payment_request_search_prioritizes_workflow_status_filters(self):
@@ -585,7 +585,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
         with self.assertRaisesRegex(UserError, "结算单未处于已审批状态"):
             request._ensure_payment_ledger()
 
-    def test_blocked_counterparty_cannot_submit_payment(self):
+    def test_explicit_partner_risk_policy_blocks_submit_payment(self):
         self.partner.write(
             {
                 "sc_blacklisted": True,
@@ -594,7 +594,8 @@ class TestP1PaymentRequestCapability(TransactionCase):
             }
         )
         request = self._request()
-        with self.assertRaisesRegex(UserError, "无法发起付款申请"):
+        self.env["ir.config_parameter"].sudo().set_param("sc.payment.force_block.partner_transaction_blocked", True)
+        with self.assertRaisesRegex(UserError, "停止付款合作"):
             request.action_submit()
         self.assertEqual(request.state, "draft")
 
@@ -2021,8 +2022,8 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertIn('name="payee_account_completeness"', form.arch_db)
         self.assertIn('name="payee_account_source_display"', form.arch_db)
         self.assertIn('name="payment_execution_status_display"', form.arch_db)
-        self.assertIn('name="legal_next_action_display"', form.arch_db)
-        self.assertIn('name="payment_blocking_reason_display"', form.arch_db)
+        self.assertNotIn('name="legal_next_action_display"', form.arch_db)
+        self.assertNotIn('name="payment_blocking_reason_display"', form.arch_db)
         self.assertIn("state != 'approved'", form.arch_db)
 
         product_contract = self.env.ref(
@@ -2041,15 +2042,10 @@ class TestP1PaymentRequestCapability(TransactionCase):
                 "name", "state", "project_id", "actual_payee_unit", "payment_basis_type", "amount",
                 "payee_account_completeness", "payment_execution_status_display",
             ],
-            "task": ["legal_next_action_display"],
-            "risk": [
-                "payment_blocking_reason_display", "partner_transaction_eligibility_reason",
-                "settlement_compliance_message",
-            ],
             "audit": ["validation_status", "reject_reason"],
         })
-        self.assertEqual(sum(len(fields) for role, fields in anchors.items() if role != "audit"), 12)
-        self.assertEqual(sum(len(fields) for fields in anchors.values()), 14)
+        self.assertEqual(sum(len(fields) for role, fields in anchors.items() if role != "audit"), 8)
+        self.assertEqual(sum(len(fields) for fields in anchors.values()), 10)
         self.assertNotIn("selection_labels", str(product_payload))
         legacy_product_fields = {
             "legacy_source_model", "legacy_source_table", "legacy_record_id",
@@ -2063,6 +2059,9 @@ class TestP1PaymentRequestCapability(TransactionCase):
         payment_form_arch = payment_form._get_combined_arch()
         if isinstance(payment_form_arch, (str, bytes)):
             payment_form_arch = etree.fromstring(payment_form_arch)
+        for field_name in ("legal_next_action_display", "payment_blocking_reason_display"):
+            self.assertFalse(payment_form_arch.xpath(".//field[@name='%s']" % field_name))
+        self.assertFalse(payment_form_arch.xpath(".//div[contains(@invisible, 'partner_transaction_eligibility')]"))
         payment_section_nodes = payment_form_arch.xpath(
             "/form/sheet/group[@data-sc-anchor]"
         )
@@ -2095,10 +2094,12 @@ class TestP1PaymentRequestCapability(TransactionCase):
         current_action_alerts = payment_form_arch.xpath(
             "/form/sheet/div[contains(concat(' ', normalize-space(@class), ' '), ' alert ')]"
         )
-        self.assertIn(
-            "partner_transaction_eligibility != 'blocked'",
-            [node.get("invisible") for node in current_action_alerts],
-        )
+        self.assertEqual(current_action_alerts, [])
+        native_submit = payment_form_arch.xpath("/form/header/button[@name='action_submit']")
+        self.assertEqual(len(native_submit), 1)
+        from ast import literal_eval
+        self.assertEqual(literal_eval(native_submit[0].get("options"))["action_guidance"],
+                         {"field": "submit_action_guidance", "profiles": ["edit", "readonly"], "trigger": "invoke"})
         self.assertFalse(
             payment_form_arch.xpath("/form/sheet/group[1]//field[@name='payee_account_completeness']")
         )
@@ -2261,6 +2262,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
         }
         for field_name in self.EXECUTION_FORM_BODY_FIELDS:
             self.assertIn(field_name, native_fields, field_name)
+        self.assertNotIn("company_contractor_responsibility_notice", native_fields)
         for anchor in ("payment_request_id", "project_id", "partner_id", "contract_id"):
             self.assertEqual(native_fields[anchor].get("readonly"), "1", anchor)
 
@@ -2312,20 +2314,8 @@ class TestP1PaymentRequestCapability(TransactionCase):
         generated_contract = self.env.ref(
             "smart_construction_core.business_config_contract_payment_request_form_structure_generated"
         )
-        generated_fields = {
-            row["name"]
-            for row in generated_contract.contract_json["view_orchestration"]["views"]["form"]["fields"]
-        }
-        self.assertTrue(
-            {
-                "payment_flow_label",
-                "payee_account_completeness",
-                "payee_account_source_display",
-                "payment_execution_status_display",
-                "payment_blocking_reason_display",
-                "legal_next_action_display",
-            }.issubset(generated_fields)
-        )
+        self.assertFalse(generated_contract.active)
+        self.assertEqual(generated_contract.status, "draft")
         payment_policy = get_business_category_form_policy_templates()[
             "finance.payment.apply.pay"
         ]
@@ -2340,10 +2330,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
                 "payee_account_completeness",
                 "payee_account_source_display",
                 "payment_execution_status_display",
-                "payment_blocking_reason_display",
-                "legal_next_action_display",
                 "partner_transaction_eligibility",
-                "partner_transaction_eligibility_reason",
                 "settlement_period_start",
                 "settlement_period_end",
                 "settlement_submitted_amount",
@@ -2360,10 +2347,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
             "payee_account_completeness",
             "payee_account_source_display",
             "payment_execution_status_display",
-            "payment_blocking_reason_display",
-            "legal_next_action_display",
             "partner_transaction_eligibility",
-            "partner_transaction_eligibility_reason",
             "settlement_period_start",
             "settlement_period_end",
             "settlement_submitted_amount",
@@ -2377,6 +2361,10 @@ class TestP1PaymentRequestCapability(TransactionCase):
                 payment_field_policies[fact_name]["readonly_profiles"],
                 ["create", "edit", "readonly"],
             )
+
+        for retired_hint in ("payment_blocking_reason_display", "legal_next_action_display", "partner_transaction_eligibility_reason"):
+            self.assertNotIn(retired_hint, governed_fields)
+            self.assertNotIn(retired_hint, payment_field_policies)
 
     def test_payment_readonly_normalized_contract_is_complete_and_authoritative(self):
         request = self._set_request_state(self._request())
