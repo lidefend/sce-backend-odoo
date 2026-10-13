@@ -7,6 +7,11 @@ every listed model. This script turns that declaration into the ir.rule records
 that actually constrain access, so a new company ceiling is a one-line
 declaration change instead of another hand-written near-duplicate record.
 
+A ``source_bounded`` entry is deliberately *not* rendered: that model already
+carries the named global ir.rule the declaration points at, and emitting a second
+ceiling would duplicate one fact. The coverage guard verifies the named rule, so
+the declaration stays the single source for both paths.
+
 ``--check`` regenerates in memory and fails when the committed file differs, so
 the generated output can never drift from the declaration.
 """
@@ -33,7 +38,10 @@ HEADER = """<?xml version="1.0" encoding="UTF-8"?>
              Generated from scripts/verify/data_scope_declarations.json.
              Global rules: no group union can widen them, and the anchor is
              the owning business relation, so company_id = False stays
-             visible. Do not edit by hand; run
+             visible. An ``enforced`` entry and every model of a ``deferred``
+             group are rendered here; a ``source_bounded`` entry is not, since
+             it already names an existing global rule in a security file. Do
+             not edit by hand; run
              `make verify.sc_data_scope.ceiling.sync` to regenerate.
         ========================================================== -->
 """

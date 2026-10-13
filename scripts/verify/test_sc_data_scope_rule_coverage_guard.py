@@ -74,6 +74,43 @@ class DemoWizard(models.TransientModel):
     company_id = fields.Many2one("res.company")
 """
 
+CONSTANT_NAMED_MODEL = '''
+POLICY_MODEL = "demo.policy"
+
+
+class DemoPolicy(models.Model):
+    _name = POLICY_MODEL
+    company_id = fields.Many2one("res.company")
+'''
+
+EXTENSION_ONLY_COMPANY_MODEL = '''
+class DemoOwner(models.Model):
+    _name = "demo.owner"
+    project_id = fields.Many2one("project.project")
+
+
+class DemoOwnerExtension(models.Model):
+    _inherit = "demo.owner"
+    company_id = fields.Many2one("res.company", related="project_id.company_id", store=True)
+'''
+
+UNRESOLVABLE_INHERIT_MODEL = '''
+class DemoOwner(models.Model):
+    _name = "demo.owner"
+    project_id = fields.Many2one("project.project")
+
+
+class DemoOwnerExtension(models.Model):
+    _inherit = EXTERNAL_COMPANY_MIXIN
+    company_id = fields.Many2one("res.company")
+'''
+
+UNRESOLVABLE_NAMED_MODEL = '''
+class DemoBroken(models.Model):
+    _name = DYNAMIC_NAME
+    company_id = fields.Many2one("res.company")
+'''
+
 
 def write_company_case(tmp: Path, rules: list[dict], declarations: dict,
                        module_sets: dict | None = None) -> tuple[Path, Path]:
@@ -92,14 +129,92 @@ def company_rule(ref: str, ident: str = "c") -> dict:
     return {"ident": ident, "ref": ref, "domain": GLOBAL_DOMAIN}
 
 
+WIZARD_EXEMPT = {
+    "model": "demo.wizard",
+    "dimension": "transient",
+    "owner_module": "demo_module",
+    "reason": "transient wizard carries no persistent company rows",
+}
+
+
 class DataScopeRuleCoverageGuardTest(unittest.TestCase):
+    def test_extension_class_company_field_enters_universe(self) -> None:
+        """A company_id declared by an _inherit-only class still owns the model."""
+        with tempfile.TemporaryDirectory() as raw:
+            root, declarations = write_company_case(
+                Path(raw),
+                [company_rule("model_demo_model")],
+                {"enforced": [{"model": "demo.model", "anchor": "company_id"}], "exempt": []},
+            )
+            (root / "addons/demo_module/models/extension.py").write_text(
+                EXTENSION_ONLY_COMPANY_MODEL, encoding="utf-8"
+            )
+            report = guard.check(root, declarations)
+            self.assertEqual("failed", report["status"])
+            self.assertTrue(
+                any("demo.owner" in f for f in report["failures"]), report["failures"]
+            )
+
+        with tempfile.TemporaryDirectory() as raw:
+            root, declarations = write_company_case(
+                Path(raw),
+                [
+                    company_rule("model_demo_model"),
+                    company_rule("model_demo_owner", "owner"),
+                    company_rule("model_demo_company", "company"),
+                ],
+                {
+                    "enforced": [
+                        {"model": "demo.model", "anchor": "company_id"},
+                        {"model": "demo.owner", "anchor": "company_id"},
+                        {"model": "demo.company", "anchor": "company_id"},
+                    ],
+                    "exempt": [WIZARD_EXEMPT],
+                },
+                {"product_modules": ["demo_module"]},
+            )
+            (root / "addons/demo_module/models/extension.py").write_text(
+                EXTENSION_ONLY_COMPANY_MODEL, encoding="utf-8"
+            )
+            report = guard.check(root, declarations)
+            self.assertEqual([], report["failures"])
+            self.assertEqual([], report["uncovered"])
+            self.assertEqual(3, report["universe"])
+
+    def test_unresolvable_inherit_on_company_class_fails_closed(self) -> None:
+        """A company-bearing class whose _inherit cannot resolve must not escape."""
+        with tempfile.TemporaryDirectory() as raw:
+            root, declarations = write_company_case(
+                Path(raw),
+                [company_rule("model_demo_model")],
+                {"enforced": [{"model": "demo.model", "anchor": "company_id"}], "exempt": []},
+            )
+            (root / "addons/demo_module/models/extension.py").write_text(
+                UNRESOLVABLE_INHERIT_MODEL, encoding="utf-8"
+            )
+            report = guard.check(root, declarations)
+            self.assertEqual("failed", report["status"])
+            self.assertTrue(
+                any("does not resolve to a model name" in f for f in report["failures"]),
+                report["failures"],
+            )
+
     def test_repository_declaration_passes(self) -> None:
         report = guard.check(ROOT, ROOT / "scripts/verify/data_scope_declarations.json")
         self.assertEqual([], report["failures"])
         self.assertGreater(report["enforced"], 0)
         self.assertEqual([], report["uncovered"])
-        self.assertGreater(report["universe"], report["enforced"])
         self.assertGreater(report["deferred"], 0)
+        self.assertGreater(report["source_bounded_count"], 0)
+        # every universe model carries exactly one explicit declaration
+        self.assertEqual(
+            report["universe"],
+            report["enforced_in_universe"]
+            + report["exempt_in_universe"]
+            + report["deferred_in_universe"]
+            + report["source_bounded_count"]
+            + len(report["uncovered"]),
+        )
 
     def test_missing_rule_fails(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
@@ -216,7 +331,7 @@ class DataScopeRuleCoverageGuardTest(unittest.TestCase):
             )
             report = guard.check(root, declarations)
             self.assertEqual("failed", report["status"])
-            self.assertTrue(any("no company ceiling" in f for f in report["failures"]))
+            self.assertTrue(any("carries no enforced" in f for f in report["failures"]))
             self.assertIn("demo.company", report["uncovered"])
 
     def test_transient_company_model_is_not_a_gap(self) -> None:
@@ -234,7 +349,78 @@ class DataScopeRuleCoverageGuardTest(unittest.TestCase):
             self.assertNotIn("demo.wizard", report["uncovered"])
             self.assertEqual([], report["failures"])
 
-    def test_source_company_rule_covers_without_a_declaration(self) -> None:
+    def test_undeclared_transient_model_still_fails(self) -> None:
+        """Transient is a declaration, not an automatic pass."""
+        with tempfile.TemporaryDirectory() as raw:
+            root, declarations = write_case(
+                Path(raw), [], {"enforced": [], "exempt": []}
+            )
+            (root / "addons/demo_module/models/company.py").write_text(
+                WIZARD_ONLY, encoding="utf-8"
+            )
+            report = guard.check(root, declarations)
+            self.assertEqual("failed", report["status"])
+            self.assertIn("demo.wizard", report["uncovered"])
+
+    def test_constant_named_company_model_is_still_in_the_universe(self) -> None:
+        """A model that names itself through a constant must not escape the universe."""
+        with tempfile.TemporaryDirectory() as raw:
+            root, declarations = write_case(
+                Path(raw), [],
+                {"enforced": [{"model": "demo.model", "anchor": "company_id"}], "exempt": []},
+            )
+            (root / "addons/demo_module/models/policy.py").write_text(
+                CONSTANT_NAMED_MODEL, encoding="utf-8"
+            )
+            report = guard.check(root, declarations)
+            self.assertEqual("failed", report["status"])
+            self.assertIn("demo.policy", report["uncovered"])
+
+    def test_declared_constant_named_model_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root, declarations = write_case(
+                Path(raw),
+                [
+                    {"ident": "m", "ref": "model_demo_model", "domain": GLOBAL_DOMAIN},
+                    {"ident": "p", "ref": "model_demo_policy", "domain": GLOBAL_DOMAIN},
+                ],
+                {
+                    "enforced": [
+                        {"model": "demo.model", "anchor": "company_id"},
+                        {"model": "demo.policy", "anchor": "company_id"},
+                    ],
+                    "exempt": [],
+                },
+            )
+            (root / "addons/demo_module/models/policy.py").write_text(
+                CONSTANT_NAMED_MODEL, encoding="utf-8"
+            )
+            report = guard.check(root, declarations)
+            self.assertEqual([], report["failures"])
+            # the constant-named model is the universe and carries its ceiling
+            self.assertEqual(1, report["universe"])
+            self.assertEqual(1, report["enforced_in_universe"])
+            self.assertEqual([], report["uncovered"])
+
+    def test_unresolvable_model_name_fails_closed(self) -> None:
+        """An identity the guard cannot resolve must stop the run, not hide a model."""
+        with tempfile.TemporaryDirectory() as raw:
+            root, declarations = write_case(
+                Path(raw), [],
+                {"enforced": [{"model": "demo.model", "anchor": "company_id"}], "exempt": []},
+            )
+            (root / "addons/demo_module/models/broken.py").write_text(
+                UNRESOLVABLE_NAMED_MODEL, encoding="utf-8"
+            )
+            report = guard.check(root, declarations)
+            self.assertEqual("failed", report["status"])
+            self.assertTrue(
+                any("does not resolve to a model name" in f for f in report["failures"])
+            )
+            self.assertTrue(report["unresolved_model_names"])
+
+    def test_source_rule_alone_is_not_coverage(self) -> None:
+        """A rule that mentions a company column is not a declaration."""
         with tempfile.TemporaryDirectory() as raw:
             root, declarations = write_company_case(
                 Path(raw),
@@ -243,9 +429,106 @@ class DataScopeRuleCoverageGuardTest(unittest.TestCase):
                 {"product_modules": ["demo_module"]},
             )
             report = guard.check(root, declarations)
+            self.assertEqual("failed", report["status"])
+            self.assertIn("demo.company", report["uncovered"])
+            self.assertEqual(0, report["source_bounded_count"])
+
+    def test_source_bounded_names_a_verified_global_rule(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root, declarations = write_company_case(
+                Path(raw),
+                [company_rule("model_demo_company")],
+                {
+                    "enforced": [],
+                    "exempt": [WIZARD_EXEMPT],
+                    "source_bounded": [
+                        {
+                            "model": "demo.company",
+                            "anchor": "company_id",
+                            "rule": "rule_c",
+                            "file": "addons/demo_module/security/demo_rules.xml",
+                            "reason": "bounded by the named global company rule rule_c",
+                        }
+                    ],
+                },
+                {"product_modules": ["demo_module"]},
+            )
+            report = guard.check(root, declarations)
             self.assertEqual([], report["failures"])
-            self.assertIn("demo.company", [m for m in ["demo.company"]])
-            self.assertEqual(1, report["source_company_rule"])
+            self.assertEqual(["demo.company"], report["source_bounded"])
+
+    def test_source_bounded_group_scoped_rule_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root, declarations = write_company_case(
+                Path(raw),
+                [{"ident": "c", "ref": "model_demo_company", "domain": GLOBAL_DOMAIN,
+                  "groups": '        <field name="groups" eval="[(4, ref(\'base.group_user\'))]"/>\n'}],
+                {
+                    "enforced": [],
+                    "exempt": [],
+                    "source_bounded": [
+                        {
+                            "model": "demo.company",
+                            "anchor": "company_id",
+                            "rule": "c",
+                            "file": "addons/demo_module/security/demo_rules.xml",
+                            "reason": "bounded by the named global company rule c",
+                        }
+                    ],
+                },
+                {"product_modules": ["demo_module"]},
+            )
+            report = guard.check(root, declarations)
+            self.assertEqual("failed", report["status"])
+            self.assertTrue(any("group-scoped" in f for f in report["failures"]))
+
+    def test_source_bounded_missing_rule_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root, declarations = write_company_case(
+                Path(raw),
+                [company_rule("model_demo_company")],
+                {
+                    "enforced": [],
+                    "exempt": [],
+                    "source_bounded": [
+                        {
+                            "model": "demo.company",
+                            "anchor": "company_id",
+                            "rule": "not_a_rule",
+                            "file": "addons/demo_module/security/demo_rules.xml",
+                            "reason": "bounded by the named global company rule",
+                        }
+                    ],
+                },
+                {"product_modules": ["demo_module"]},
+            )
+            report = guard.check(root, declarations)
+            self.assertEqual("failed", report["status"])
+            self.assertTrue(any("is missing, group-scoped" in f for f in report["failures"]))
+
+    def test_source_bounded_wrong_file_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root, declarations = write_company_case(
+                Path(raw),
+                [company_rule("model_demo_company")],
+                {
+                    "enforced": [],
+                    "exempt": [],
+                    "source_bounded": [
+                        {
+                            "model": "demo.company",
+                            "anchor": "company_id",
+                            "rule": "rule_c",
+                            "file": "addons/demo_module/security/elsewhere.xml",
+                            "reason": "bounded by the named global company rule rule_c",
+                        }
+                    ],
+                },
+                {"product_modules": ["demo_module"]},
+            )
+            report = guard.check(root, declarations)
+            self.assertEqual("failed", report["status"])
+            self.assertTrue(any("not the declared" in f for f in report["failures"]))
 
     def test_exempt_requires_a_dimension(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
@@ -344,7 +627,7 @@ class DataScopeRuleCoverageGuardTest(unittest.TestCase):
             root, declarations = write_company_case(
                 Path(raw),
                 [company_rule("model_demo_company")],
-                {"enforced": [], "exempt": [],
+                {"enforced": [], "exempt": [WIZARD_EXEMPT],
                  "deferred": [{"issue": "DEMO-1", "anchor": "company_id",
                                "owner_module": "demo_module",
                                "reason": "ceiling derived from the declaration",

@@ -2,13 +2,8 @@
   "version": 1,
   "authority": "docs/governance/database_architecture_policy.md",
   "decision": ".agent/decisions/data-authority-boundary.yaml",
-  "purpose": "Explicit company-scope decision for every product-module model that declares a company_id field. No absence-based exemption: each such model is enforced with a verified global company ceiling, exempt with a single named isolation dimension, deferred with an owned issue, transient, or already covered by a company-constraining ir.rule in source.",
+  "purpose": "Explicit company-scope decision for every product-module model that declares a company_id field. No absence-based exemption and no inferred coverage: each such model is enforced with a generated global company ceiling, deferred with an owned issue, exempt with a single named isolation dimension, transient (declared), or source_bounded by a named global ir.rule that the guard verifies.",
   "enforced": [
-    {
-      "model": "construction.contract.line",
-      "anchor": "project_id.company_id",
-      "class": "detail"
-    },
     {
       "model": "construction.contract.section",
       "anchor": "company_id",
@@ -26,11 +21,16 @@
     },
     {
       "model": "construction.wbs.plan",
-      "anchor": "company_id",
+      "anchor": "project_id.company_id",
       "class": "root"
     },
     {
       "model": "construction.work.breakdown",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "payment.request",
       "anchor": "company_id",
       "class": "root"
     },
@@ -40,34 +40,14 @@
       "class": "root"
     },
     {
-      "model": "project.boq.analysis.norm.line",
-      "anchor": "analysis_id.project_id.company_id",
-      "class": "detail"
-    },
-    {
-      "model": "project.boq.analysis.resource.line",
-      "anchor": "analysis_id.project_id.company_id",
-      "class": "detail"
-    },
-    {
       "model": "project.budget",
       "anchor": "company_id",
       "class": "root"
     },
     {
-      "model": "project.budget.boq.line",
-      "anchor": "project_id.company_id",
-      "class": "detail"
-    },
-    {
       "model": "project.budget.cost.alloc",
       "anchor": "project_id.company_id",
       "class": "root"
-    },
-    {
-      "model": "project.budget.line",
-      "anchor": "project_id.company_id",
-      "class": "detail"
     },
     {
       "model": "project.cost.compare",
@@ -93,11 +73,6 @@
       "model": "project.settlement",
       "anchor": "project_id.company_id",
       "class": "root"
-    },
-    {
-      "model": "project.settlement.line",
-      "anchor": "settlement_id.project_id.company_id",
-      "class": "detail"
     },
     {
       "model": "sc.approval.policy",
@@ -171,12 +146,12 @@
     },
     {
       "model": "sc.construction.diary",
-      "anchor": "company_id",
+      "anchor": "project_id.company_id",
       "class": "root"
     },
     {
       "model": "sc.contract.event",
-      "anchor": "company_id",
+      "anchor": "project_id.company_id",
       "class": "root"
     },
     {
@@ -195,9 +170,9 @@
       "class": "root"
     },
     {
-      "model": "sc.expense.claim.deduction.line",
-      "anchor": "claim_id.company_id",
-      "class": "detail"
+      "model": "sc.equipment.price",
+      "anchor": "project_id.company_id",
+      "class": "root"
     },
     {
       "model": "sc.expense.contract.ledger",
@@ -240,6 +215,16 @@
       "class": "root"
     },
     {
+      "model": "sc.hr.payroll.document",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.hr.salary.payment",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
       "model": "sc.income.contract.ledger",
       "anchor": "company_id",
       "class": "root"
@@ -255,34 +240,39 @@
       "class": "root"
     },
     {
-      "model": "sc.material.rental.order",
+      "model": "sc.labor.price",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.material.catalog",
       "anchor": "company_id",
       "class": "root"
     },
     {
-      "model": "sc.material.rental.order.line",
-      "anchor": "order_id.company_id",
-      "class": "detail"
+      "model": "sc.material.price",
+      "anchor": "material_catalog_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.material.rental.order",
+      "anchor": "project_id.company_id",
+      "class": "root"
     },
     {
       "model": "sc.material.rental.plan",
-      "anchor": "company_id",
-      "class": "root"
-    },
-    {
-      "model": "sc.material.rental.plan.line",
       "anchor": "project_id.company_id",
-      "class": "detail"
+      "class": "root"
     },
     {
       "model": "sc.material.rental.settlement",
-      "anchor": "company_id",
+      "anchor": "project_id.company_id",
       "class": "root"
     },
     {
-      "model": "sc.material.rental.settlement.line",
-      "anchor": "settlement_id.company_id",
-      "class": "detail"
+      "model": "sc.material.settlement.purchase.scope",
+      "anchor": "company_id",
+      "class": "root"
     },
     {
       "model": "sc.material.stock.summary",
@@ -295,13 +285,18 @@
       "class": "root"
     },
     {
+      "model": "sc.office.asset",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
       "model": "sc.operating.metrics.project",
       "anchor": "company_id",
       "class": "root"
     },
     {
       "model": "sc.output.invoice.adjustment",
-      "anchor": "company_id",
+      "anchor": "project_id.company_id",
       "class": "root"
     },
     {
@@ -325,9 +320,9 @@
       "class": "root"
     },
     {
-      "model": "sc.partner.business.fact.line",
-      "anchor": "project_id.company_id",
-      "class": "detail"
+      "model": "sc.payment.execution",
+      "anchor": "company_id",
+      "class": "root"
     },
     {
       "model": "sc.plan",
@@ -335,18 +330,13 @@
       "class": "root"
     },
     {
-      "model": "sc.plan.line",
-      "anchor": "contract_id.company_id",
-      "class": "detail"
-    },
-    {
       "model": "sc.plan.report",
-      "anchor": "company_id",
+      "anchor": "plan_id.company_id",
       "class": "root"
     },
     {
       "model": "sc.plan.version",
-      "anchor": "company_id",
+      "anchor": "plan_id.company_id",
       "class": "root"
     },
     {
@@ -356,6 +346,11 @@
     },
     {
       "model": "sc.project.document",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.project.member.assignment",
       "anchor": "company_id",
       "class": "root"
     },
@@ -375,9 +370,9 @@
       "class": "root"
     },
     {
-      "model": "sc.receipt.invoice.line",
-      "anchor": "project_id.company_id",
-      "class": "detail"
+      "model": "sc.receipt.income",
+      "anchor": "company_id",
+      "class": "root"
     },
     {
       "model": "sc.risk.item",
@@ -391,7 +386,7 @@
     },
     {
       "model": "sc.safety.disclosure",
-      "anchor": "company_id",
+      "anchor": "project_id.company_id",
       "class": "root"
     },
     {
@@ -406,7 +401,7 @@
     },
     {
       "model": "sc.safety.plan",
-      "anchor": "company_id",
+      "anchor": "project_id.company_id",
       "class": "root"
     },
     {
@@ -420,6 +415,11 @@
       "class": "root"
     },
     {
+      "model": "sc.salary.summary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
       "model": "sc.self.funding.registration",
       "anchor": "company_id",
       "class": "root"
@@ -430,12 +430,37 @@
       "class": "root"
     },
     {
+      "model": "sc.settlement.order",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
       "model": "sc.site.photo.batch",
       "anchor": "project_id.company_id",
       "class": "root"
     },
     {
+      "model": "sc.subcontract.price",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.tenant.company.registration",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.tenant.payload.external.identity",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
       "model": "sc.treasury.reconciliation",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.user.profile.document",
       "anchor": "company_id",
       "class": "root"
     },
@@ -450,6 +475,11 @@
       "class": "root"
     },
     {
+      "model": "sc.workflow.instance",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
       "model": "sc.workflow.node",
       "anchor": "workflow_def_id.company_id",
       "class": "root"
@@ -460,13 +490,8 @@
       "class": "root"
     },
     {
-      "model": "tender.bid.line",
-      "anchor": "project_id.company_id",
-      "class": "detail"
-    },
-    {
       "model": "tender.doc.purchase",
-      "anchor": "company_id",
+      "anchor": "project_id.company_id",
       "class": "root"
     },
     {
@@ -485,19 +510,119 @@
       "class": "root"
     },
     {
-      "model": "tender.opening.competitor",
-      "anchor": "opening_id.project_id.company_id",
-      "class": "detail"
-    },
-    {
       "model": "tender.survey",
       "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "ui.business.config.change.set",
+      "anchor": "company_id",
       "class": "root"
     },
     {
       "model": "ui.business.config.contract",
       "anchor": "company_id",
       "class": "root"
+    },
+    {
+      "model": "ui.business.config.mutation.audit",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "ui.form.field.policy",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "ui.menu.config.policy",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "ui.tenant.extension.field",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "ui.tenant.extension.value",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "construction.contract.line",
+      "anchor": "project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "project.boq.analysis.norm.line",
+      "anchor": "analysis_id.project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "project.boq.analysis.resource.line",
+      "anchor": "analysis_id.project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "project.budget.boq.line",
+      "anchor": "project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "project.budget.line",
+      "anchor": "project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "project.settlement.line",
+      "anchor": "settlement_id.project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "sc.expense.claim.deduction.line",
+      "anchor": "claim_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "sc.material.rental.order.line",
+      "anchor": "order_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "sc.material.rental.plan.line",
+      "anchor": "project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "sc.material.rental.settlement.line",
+      "anchor": "settlement_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "sc.partner.business.fact.line",
+      "anchor": "project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "sc.plan.line",
+      "anchor": "contract_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "sc.receipt.invoice.line",
+      "anchor": "project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "tender.bid.line",
+      "anchor": "project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "tender.opening.competitor",
+      "anchor": "opening_id.project_id.company_id",
+      "class": "detail"
     }
   ],
   "exempt": [
@@ -746,6 +871,183 @@
         "sc.subcontract.settlement",
         "sc.treasury.ledger"
       ]
+    }
+  ],
+  "source_bounded": [
+    {
+      "model": "construction.contract",
+      "anchor": "company_id",
+      "rule": "rule_sc_construction_contract_allowed_company_global",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_construction_contract_allowed_company_global, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "payment.ledger",
+      "anchor": "company_id",
+      "rule": "rule_payment_ledger_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_payment_ledger_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "payment.ledger.allocation",
+      "anchor": "company_id",
+      "rule": "rule_payment_ledger_allocation_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_payment_ledger_allocation_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "project.cost.ledger",
+      "anchor": "company_id",
+      "rule": "rule_sc_project_cost_ledger_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_project_cost_ledger_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "project.funding.actual.event.allocation",
+      "anchor": "company_id",
+      "rule": "rule_project_funding_actual_event_allocation_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_project_funding_actual_event_allocation_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "project.funding.baseline",
+      "anchor": "company_id",
+      "rule": "rule_project_funding_baseline_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_project_funding_baseline_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "project.funding.baseline.line",
+      "anchor": "company_id",
+      "rule": "rule_project_funding_baseline_line_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_project_funding_baseline_line_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.contract.change",
+      "anchor": "company_id",
+      "rule": "rule_sc_contract_change_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_contract_change_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.contract.execution.position",
+      "anchor": "company_id",
+      "rule": "rule_sc_contract_execution_position_allowed_company_global",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_contract_execution_position_allowed_company_global, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.expense.claim",
+      "anchor": "company_id",
+      "rule": "rule_sc_expense_claim_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_expense_claim_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.financing.loan",
+      "anchor": "company_id",
+      "rule": "rule_sc_financing_loan_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_financing_loan_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.fund.account.operation",
+      "anchor": "company_id",
+      "rule": "rule_sc_fund_account_operation_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_fund_account_operation_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.historical.payment.fact",
+      "anchor": "company_id",
+      "rule": "rule_sc_historical_payment_fact_allowed_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_historical_payment_fact_allowed_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.invoice.registration",
+      "anchor": "company_id",
+      "rule": "rule_sc_invoice_registration_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_invoice_registration_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.labor.deduction",
+      "anchor": "company_id",
+      "rule": "rule_sc_labor_deduction_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_labor_deduction_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.labor.subcontract.report",
+      "anchor": "company_id",
+      "rule": "rule_sc_labor_subcontract_report_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_labor_subcontract_report_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.labor.worker",
+      "anchor": "company_id",
+      "rule": "rule_sc_labor_worker_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_labor_worker_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.material.supplier.return",
+      "anchor": "company_id",
+      "rule": "rule_sc_material_supplier_return_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_material_supplier_return_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.quality.acceptance",
+      "anchor": "company_id",
+      "rule": "rule_sc_quality_acceptance_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_quality_acceptance_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.site.variation",
+      "anchor": "company_id",
+      "rule": "rule_sc_site_variation_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_site_variation_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.tax.certificate.registration",
+      "anchor": "company_id",
+      "rule": "rule_sc_tax_certificate_registration_allowed_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_tax_certificate_registration_allowed_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.tax.deduction.registration",
+      "anchor": "company_id",
+      "rule": "rule_sc_tax_deduction_registration_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_tax_deduction_registration_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.tax.filing",
+      "anchor": "company_id",
+      "rule": "rule_sc_tax_filing_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_tax_filing_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "tender.document",
+      "anchor": "company_id",
+      "rule": "rule_sc_tender_document_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_tender_document_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "tender.opportunity",
+      "anchor": "company_id",
+      "rule": "rule_sc_tender_opportunity_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_tender_opportunity_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
     }
   ]
 }
