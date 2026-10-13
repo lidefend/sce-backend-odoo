@@ -5,12 +5,14 @@ Legacy Quick receipts remain exact-head evidence but cannot skip scanning.
 """
 from __future__ import annotations
 
+import errno
 import hashlib
 import json
 import os
 import re
 import subprocess
 import tempfile
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -54,8 +56,29 @@ def revision_args(kind: str) -> tuple[str, ...]:
     return ('HEAD', '--branches', '--tags', '--remotes') if kind == 'history' else ('HEAD', '--all')
 
 
+# A spawn can fail before the child exists with a host-level errno: EAGAIN under
+# a thread/process ceiling, ENOMEM under memory pressure, or EFAULT from a
+# fork/vfork window while another thread of this multi-threaded parent is
+# allocating. None is a product or contract signal and none can have run the
+# child, so retrying replays nothing; a bounded number of transient failures
+# still fails closed on the last attempt. Without this bound one host hiccup
+# discards a multi-minute candidate run that had already passed its other shards.
+TRANSIENT_SPAWN_ERRNOS = frozenset({errno.EAGAIN, errno.ENOMEM, errno.EFAULT})
+SPAWN_ATTEMPTS = 3
+SPAWN_RETRY_BACKOFF_SECONDS = 0.25
+
+
 def git(root: Path, *args: str) -> str:
-    return subprocess.check_output(['git', '-C', str(root), *args], text=True)
+    for attempt in range(1, SPAWN_ATTEMPTS + 1):
+        try:
+            return subprocess.check_output(['git', '-C', str(root), *args], text=True)
+        except OSError as exc:
+            if exc.errno not in TRANSIENT_SPAWN_ERRNOS or attempt == SPAWN_ATTEMPTS:
+                raise
+            print(f"[trusted_scan_scope] RETRY git {' '.join(args)}: transient spawn "
+                  f"failure errno={exc.errno} attempt={attempt}/{SPAWN_ATTEMPTS}", flush=True)
+            time.sleep(SPAWN_RETRY_BACKOFF_SECONDS)
+    raise AssertionError("unreachable: the retry loop always returns or raises")
 
 
 @dataclass(frozen=True)
