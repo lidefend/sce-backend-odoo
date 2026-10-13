@@ -19,6 +19,11 @@
     "scripts/verify/form_container_presentation_consumption_guard.py",
     "scripts/verify/form_structure_contract_runtime_audit.py",
     "scripts/ops/repair_unbound_structural_form_contract.py"
+    ,"docs/engineering_convergence/complexity_budget_report.md"
+    ,"docs/engineering_convergence/split_plan_queue.md"
+    ,"docs/engineering_convergence/test_inventory.csv"
+    ,"docs/engineering_convergence/test_inventory_summary.md"
+    ,"docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
   ],
   "environment": {
     "kind": "runtime",
@@ -95,5 +100,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Deploy 8ad256ce to the daily runtime through the governed candidate bundle sync, then align the served source revision (restarts the backend so the assembler fix is live), rebuild the served frontend (the renderer vocabulary changed), converge the published face and resolve the acceptance record identity; then re-walk the full formal 89-entry matrix at the new served identity and confirm the 4 previously failing entries (menu_sc_p1_daily_contract, menu_action_move_journal_line_form, menu_action_account_form, menu_sc_account_journal_foundation)."
+  "next_exact_step": "B2 is closed: the daily runtime now serves 9b6a1128 / frontend_build_sha256=00baf0f0... and the full formal 89-entry matrix PASSes with zero problems and zero console errors (artifacts/frontend-business-entry-matrix/daily-9b6a1128-full/), after a targeted re-walk of the four previously failing entries (artifacts/frontend-business-entry-matrix/daily-9b6a1128-fix4/). Remaining work is integration and owner acceptance: publish the three boundary fixes (8ad256ce, 9b6a1128, f9df902a) at this exact head through the governed PR lane, and hand the served runtime (http://1.95.85.92:18081, sc_demo, wutao) to the owner for login acceptance. No further product write is required for this batch."
 }

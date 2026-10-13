@@ -33,14 +33,17 @@ seed vs #525 document state-guard conflict).
       Served identity read back as `2e2951ea` / `frontend_build_sha256=3730b10d…` on
       `http://1.95.85.92:18081`, DB `sc_demo`. Payment-request typical page PASS
       (`artifacts/frontend-business-entry-matrix/daily-2e2951ea-payment/`).
-- [~] B1: full formal 89-entry matrix. First full walk at `2e2951ea` is complete
+- [x] B1: first full formal 89-entry matrix at `2e2951ea`
       (`artifacts/frontend-business-entry-matrix/daily-2e2951ea-full/`, `completeness=complete`,
-      `entries=89`) with **4 failures**, all in the formal 89 scope and all on the record-detail
-      open of an otherwise healthy list.
-- [ ] B2: redeploy the boundary fix, re-walk the full matrix at the new served identity and
-      confirm zero problems.
+      `entries=89`) reported **4 failures** and 8 console errors, all in the formal 89 scope and all
+      on the record-detail open of an otherwise healthy list.
+- [x] B2: redeploy the boundary fixes and re-walk the matrix at the new served identity. The served
+      identity is now `9b6a1128` / `frontend_build_sha256=00baf0f0…`. A targeted re-walk of the four
+      entries PASS (`daily-9b6a1128-fix4`, `entries=4 problems=0 console_errors=0`) and the full
+      matrix PASS (`daily-9b6a1128-full`, `completeness=complete entries=89 problems=0
+      console_errors=0`, negative authority 10 fixture roles / 89 entries checked / 0 leaked).
 
-## B1 findings (both root causes are backend/contract-boundary defects)
+## B1 findings (all four entries are backend/contract-boundary defects)
 
 | entry | model | action | observed |
 |---|---|---|---|
@@ -55,13 +58,27 @@ seed vs #525 document state-guard conflict).
    was dropped and the published view-scoped orchestration contract (bound by `view_id`) stopped
    applying — the form lost its orchestration and its native layout. Fixed in the owning layer
    (`page_assembler._resolve_active_view_id`); the contract itself was already correct.
-2. **Unclassified native class (500).** The container presentation projection fails closed on a
-   declared class it cannot classify. Odoo's own accounting arches declare the native
-   `alert-link` class, which the declared vocabulary did not carry. Fixed by adding the token to
-   the projection vocabulary **and** implementing it in the renderer vocabulary, so the
-   projection's accepted tokens stay equal to the renderer's implemented vocabulary.
+2. **Unbound structural low-code config over a bound native surface (400).** A low-code contract
+   saved on 2026-10-11 without a view target
+   (`view_orchestration:sc.general.contract:form:action:669:view:0`) declares a structural layout
+   while the view-bound native semantic surface `daily_contract_form_native_v1` (view 1699) owns the
+   same scope. The runtime view orchestrator must fail closed there (`CONFIG_TARGET_BINDING_REQUIRED`),
+   the assembler then degrades the form view contract and the native form projection has no resolved
+   layout. The edit is stale (`subcontract_mode` already reaches the page from view 1699's arch and
+   from the scope's field policy), so it was retired through a narrow, dry-run-first ops script bound
+   to the exact contract id.
+3. **Native arch markup leaked into the presentation facet (500 ×3).** The container presentation
+   projection derived the declared presentation facet (`styleToken`) from the native form arch's own
+   CSS classes and failed the whole page closed on a class its closed vocabulary could not classify.
+   Bootstrap/Odoo markup (`mx-3`, `col`, `oi`) is native rendering implementation, not product
+   delivery semantics, so the vocabulary could never be complete — the earlier "add the missing
+   token" fix was the same symptom. **Owner ruling: the presentation facet does not carry native arch
+   class names.** The facet now publishes only product-declared presentation (pre-existing tokens,
+   the declared layout vocabulary, the `sc-*` namespace); every other container class is dropped, so a
+   native view can no longer fail a page through its own decoration and the facet stops growing with
+   the arch vocabulary.
 
-Fix commit: `8ad256ce`.
+Fix commits: `8ad256ce` (1), `9b6a1128` (2), `f9df902a` (3).
 
 ## Result index
 
@@ -71,7 +88,7 @@ under `artifacts/frontend-business-entry-matrix/`. Original logs are referenced,
 
 ## Status boundary (reported separately)
 
-- Batch acceptance: A complete; B1 root-caused and fixed locally, B2 pending redeploy + re-walk
-- Mainline integration: pending (fix not yet merged)
-- Deployment: daily runtime currently serves `2e2951ea` (pre-fix)
+- Batch acceptance: complete (A + B1 + B2; full formal 89-entry matrix PASS at `9b6a1128`)
+- Mainline integration: pending (the fixes are not yet merged)
+- Deployment: daily runtime serves `9b6a1128` / `frontend_build_sha256=00baf0f0…` (post-fix)
 - Product delivery: pending owner login confirmation
