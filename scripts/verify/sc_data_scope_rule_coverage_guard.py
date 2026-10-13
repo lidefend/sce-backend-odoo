@@ -519,6 +519,12 @@ def check(root: Path, declarations_path: Path, module_sets_path: str = DEFAULT_M
             if model not in universe:
                 failures.append(f"{model}: deferred but no product module declares company_id")
 
+    # A source_bounded entry names the existing global ir.rule that owns the
+    # company scope, so it is legitimate for a relation-anchored model that has
+    # no company_id column of its own (for example a *line model bounded through
+    # its parent's company anchor). Such a model is outside the company_id-based
+    # coverage universe by construction; it still has to resolve to a product
+    # module and to a real global rule below, which is checked for every entry.
     bounded_models: set[str] = set()
     for entry in declaration.get("source_bounded") or []:
         model = entry.get("model")
@@ -535,10 +541,6 @@ def check(root: Path, declarations_path: Path, module_sets_path: str = DEFAULT_M
             failures.append(f"{model}: declared exempt and source_bounded")
         if model in deferred_models:
             failures.append(f"{model}: declared deferred and source_bounded")
-        if model not in universe:
-            failures.append(
-                f"{model}: declared source_bounded but no product module declares company_id"
-            )
         if not reason or any(token in reason.lower() for token in PLACEHOLDER_REASONS):
             failures.append(
                 f"{model}: source_bounded reason is missing or a placeholder"
@@ -587,11 +589,12 @@ def check(root: Path, declarations_path: Path, module_sets_path: str = DEFAULT_M
     enforced_in_universe = sum(1 for model in universe if model in seen)
     exempt_in_universe = sum(1 for model in universe if model in exempt_models)
     deferred_in_universe = sum(1 for model in universe if model in deferred_models)
+    source_bounded_in_universe = sum(1 for model in universe if model in bounded_models)
     declared_total = (
         enforced_in_universe
         + exempt_in_universe
         + deferred_in_universe
-        + len(bounded_models)
+        + source_bounded_in_universe
         + len(uncovered)
     )
     if declared_total != len(universe):
@@ -612,6 +615,10 @@ def check(root: Path, declarations_path: Path, module_sets_path: str = DEFAULT_M
         "deferred_in_universe": deferred_in_universe,
         "source_bounded": sorted(bounded_models),
         "source_bounded_count": len(bounded_models),
+        "source_bounded_in_universe": source_bounded_in_universe,
+        "source_bounded_out_of_universe": sorted(
+            model for model in bounded_models if model not in universe
+        ),
         "transient": sum(1 for transient in universe.values() if transient),
         "uncovered": sorted(uncovered),
         "unresolved_model_names": unresolved_names,

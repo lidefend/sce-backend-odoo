@@ -85,16 +85,6 @@
       "class": "root"
     },
     {
-      "model": "sc.ar.ap.company.summary",
-      "anchor": "project_id.company_id",
-      "class": "root"
-    },
-    {
-      "model": "sc.ar.ap.project.summary",
-      "anchor": "project_id.company_id",
-      "class": "root"
-    },
-    {
       "model": "sc.ar.ap.report.summary",
       "anchor": "company_id",
       "class": "root"
@@ -212,16 +202,6 @@
     {
       "model": "sc.hazard.source",
       "anchor": "project_id.company_id",
-      "class": "root"
-    },
-    {
-      "model": "sc.hr.payroll.document",
-      "anchor": "company_id",
-      "class": "root"
-    },
-    {
-      "model": "sc.hr.salary.payment",
-      "anchor": "company_id",
       "class": "root"
     },
     {
@@ -415,11 +395,6 @@
       "class": "root"
     },
     {
-      "model": "sc.salary.summary",
-      "anchor": "company_id",
-      "class": "root"
-    },
-    {
       "model": "sc.self.funding.registration",
       "anchor": "company_id",
       "class": "root"
@@ -552,16 +527,6 @@
     {
       "model": "construction.contract.line",
       "anchor": "project_id.company_id",
-      "class": "detail"
-    },
-    {
-      "model": "project.boq.analysis.norm.line",
-      "anchor": "analysis_id.project_id.company_id",
-      "class": "detail"
-    },
-    {
-      "model": "project.boq.analysis.resource.line",
-      "anchor": "analysis_id.project_id.company_id",
       "class": "detail"
     },
     {
@@ -896,6 +861,20 @@
       "reason": "bounded in source by the global ir.rule rule_payment_ledger_allocation_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
     },
     {
+      "model": "project.boq.analysis.norm.line",
+      "anchor": "analysis_id.project_id.company_id",
+      "rule": "rule_sc_boq_analysis_norm_allowed_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_boq_analysis_norm_allowed_company, whose domain is byte-identical to the generated ceiling; the generated record declared no additional fact, so it is removed and this single rule owns the company scope"
+    },
+    {
+      "model": "project.boq.analysis.resource.line",
+      "anchor": "analysis_id.project_id.company_id",
+      "rule": "rule_sc_boq_analysis_resource_allowed_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_boq_analysis_resource_allowed_company, whose domain is byte-identical to the generated ceiling; the generated record declared no additional fact, so it is removed and this single rule owns the company scope"
+    },
+    {
       "model": "project.cost.ledger",
       "anchor": "company_id",
       "rule": "rule_sc_project_cost_ledger_company",
@@ -922,6 +901,20 @@
       "rule": "rule_project_funding_baseline_line_company",
       "file": "addons/smart_construction_core/security/sc_record_rules.xml",
       "reason": "bounded in source by the global ir.rule rule_project_funding_baseline_line_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.ar.ap.company.summary",
+      "anchor": "project_id.company_id",
+      "rule": "rule_sc_ar_ap_company_summary_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_ar_ap_company_summary_company, whose domain (project_id.company_id in company_ids) is strictly narrower than the generated ceiling (which also admitted project_id.company_id = False); AND-composition made the generated record redundant, so this single rule owns the company scope"
+    },
+    {
+      "model": "sc.ar.ap.project.summary",
+      "anchor": "project_id.company_id",
+      "rule": "rule_sc_ar_ap_project_summary_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_ar_ap_project_summary_company, whose domain (project_id.company_id in company_ids) is strictly narrower than the generated ceiling (which also admitted project_id.company_id = False); AND-composition made the generated record redundant, so this single rule owns the company scope"
     },
     {
       "model": "sc.contract.change",
@@ -966,6 +959,20 @@
       "reason": "bounded in source by the global ir.rule rule_sc_historical_payment_fact_allowed_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
     },
     {
+      "model": "sc.hr.payroll.document",
+      "anchor": "company_id",
+      "rule": "rule_sc_hr_payroll_document_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_hr_payroll_document_company, whose domain narrows the generated ceiling with user._sc_data_company_ids(); AND-composition made the generated record redundant, so this single rule owns the company scope"
+    },
+    {
+      "model": "sc.hr.salary.payment",
+      "anchor": "company_id",
+      "rule": "rule_sc_hr_salary_payment_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_hr_salary_payment_company, whose domain narrows the generated ceiling with user._sc_data_company_ids(); AND-composition made the generated record redundant, so this single rule owns the company scope"
+    },
+    {
       "model": "sc.invoice.registration",
       "anchor": "company_id",
       "rule": "rule_sc_invoice_registration_company",
@@ -1006,6 +1013,13 @@
       "rule": "rule_sc_quality_acceptance_company",
       "file": "addons/smart_construction_core/security/sc_record_rules.xml",
       "reason": "bounded in source by the global ir.rule rule_sc_quality_acceptance_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.salary.summary",
+      "anchor": "company_id",
+      "rule": "rule_sc_salary_summary_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_salary_summary_company, whose domain narrows the generated ceiling with user._sc_data_company_ids(); AND-composition made the generated record redundant, so this single rule owns the company scope"
     },
     {
       "model": "sc.site.variation",

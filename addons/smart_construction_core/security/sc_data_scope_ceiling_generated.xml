@@ -84,24 +84,6 @@
             <field name="perm_create" eval="True"/>
             <field name="perm_unlink" eval="True"/>
         </record>
-        <record id="rule_sc_data_scope_project_boq_analysis_norm_line" model="ir.rule">
-            <field name="name">SC Data Scope - project.boq.analysis.norm.line by allowed companies</field>
-            <field name="model_id" ref="model_project_boq_analysis_norm_line"/>
-            <field name="domain_force">['|', ('analysis_id.project_id.company_id', '=', False), ('analysis_id.project_id.company_id', 'in', company_ids)]</field>
-            <field name="perm_read" eval="True"/>
-            <field name="perm_write" eval="True"/>
-            <field name="perm_create" eval="True"/>
-            <field name="perm_unlink" eval="True"/>
-        </record>
-        <record id="rule_sc_data_scope_project_boq_analysis_resource_line" model="ir.rule">
-            <field name="name">SC Data Scope - project.boq.analysis.resource.line by allowed companies</field>
-            <field name="model_id" ref="model_project_boq_analysis_resource_line"/>
-            <field name="domain_force">['|', ('analysis_id.project_id.company_id', '=', False), ('analysis_id.project_id.company_id', 'in', company_ids)]</field>
-            <field name="perm_read" eval="True"/>
-            <field name="perm_write" eval="True"/>
-            <field name="perm_create" eval="True"/>
-            <field name="perm_unlink" eval="True"/>
-        </record>
         <record id="rule_sc_data_scope_project_budget" model="ir.rule">
             <field name="name">SC Data Scope - project.budget by allowed companies</field>
             <field name="model_id" ref="model_project_budget"/>
@@ -223,24 +205,6 @@
             <field name="name">SC Data Scope - sc.approval.step by allowed companies</field>
             <field name="model_id" ref="model_sc_approval_step"/>
             <field name="domain_force">['|', ('policy_id.company_id', '=', False), ('policy_id.company_id', 'in', company_ids)]</field>
-            <field name="perm_read" eval="True"/>
-            <field name="perm_write" eval="True"/>
-            <field name="perm_create" eval="True"/>
-            <field name="perm_unlink" eval="True"/>
-        </record>
-        <record id="rule_sc_data_scope_sc_ar_ap_company_summary" model="ir.rule">
-            <field name="name">SC Data Scope - sc.ar.ap.company.summary by allowed companies</field>
-            <field name="model_id" ref="model_sc_ar_ap_company_summary"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
-            <field name="perm_read" eval="True"/>
-            <field name="perm_write" eval="True"/>
-            <field name="perm_create" eval="True"/>
-            <field name="perm_unlink" eval="True"/>
-        </record>
-        <record id="rule_sc_data_scope_sc_ar_ap_project_summary" model="ir.rule">
-            <field name="name">SC Data Scope - sc.ar.ap.project.summary by allowed companies</field>
-            <field name="model_id" ref="model_sc_ar_ap_project_summary"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -538,24 +502,6 @@
             <field name="name">SC Data Scope - sc.hazard.source by allowed companies</field>
             <field name="model_id" ref="model_sc_hazard_source"/>
             <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
-            <field name="perm_read" eval="True"/>
-            <field name="perm_write" eval="True"/>
-            <field name="perm_create" eval="True"/>
-            <field name="perm_unlink" eval="True"/>
-        </record>
-        <record id="rule_sc_data_scope_sc_hr_payroll_document" model="ir.rule">
-            <field name="name">SC Data Scope - sc.hr.payroll.document by allowed companies</field>
-            <field name="model_id" ref="model_sc_hr_payroll_document"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
-            <field name="perm_read" eval="True"/>
-            <field name="perm_write" eval="True"/>
-            <field name="perm_create" eval="True"/>
-            <field name="perm_unlink" eval="True"/>
-        </record>
-        <record id="rule_sc_data_scope_sc_hr_salary_payment" model="ir.rule">
-            <field name="name">SC Data Scope - sc.hr.salary.payment by allowed companies</field>
-            <field name="model_id" ref="model_sc_hr_salary_payment"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1051,15 +997,6 @@
             <field name="name">SC Data Scope - sc.safety.rectification by allowed companies</field>
             <field name="model_id" ref="model_sc_safety_rectification"/>
             <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
-            <field name="perm_read" eval="True"/>
-            <field name="perm_write" eval="True"/>
-            <field name="perm_create" eval="True"/>
-            <field name="perm_unlink" eval="True"/>
-        </record>
-        <record id="rule_sc_data_scope_sc_salary_summary" model="ir.rule">
-            <field name="name">SC Data Scope - sc.salary.summary by allowed companies</field>
-            <field name="model_id" ref="model_sc_salary_summary"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>

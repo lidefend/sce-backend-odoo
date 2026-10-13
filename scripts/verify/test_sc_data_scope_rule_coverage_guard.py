@@ -112,6 +112,13 @@ class DemoBroken(models.Model):
 '''
 
 
+RELATION_ANCHORED_MODEL = '''
+class DemoOwner(models.Model):
+    _name = "demo.owner"
+    project_id = fields.Many2one("project.project")
+'''
+
+
 def write_company_case(tmp: Path, rules: list[dict], declarations: dict,
                        module_sets: dict | None = None) -> tuple[Path, Path]:
     """A fixture whose module defines company-bearing models, so the guard's
@@ -206,13 +213,15 @@ class DataScopeRuleCoverageGuardTest(unittest.TestCase):
         self.assertEqual([], report["uncovered"])
         self.assertGreater(report["deferred"], 0)
         self.assertGreater(report["source_bounded_count"], 0)
-        # every universe model carries exactly one explicit declaration
+        # every universe model carries exactly one explicit declaration; a
+        # source_bounded entry may name a relation-anchored model outside the
+        # company_id universe, so the accounting must use its in-universe count
         self.assertEqual(
             report["universe"],
             report["enforced_in_universe"]
             + report["exempt_in_universe"]
             + report["deferred_in_universe"]
-            + report["source_bounded_count"]
+            + report["source_bounded_in_universe"]
             + len(report["uncovered"]),
         )
 
@@ -492,6 +501,76 @@ class DataScopeRuleCoverageGuardTest(unittest.TestCase):
             report = guard.check(root, declarations)
             self.assertEqual([], report["failures"])
             self.assertEqual(["demo.company"], report["source_bounded"])
+
+    def test_source_bounded_relation_anchored_model_stays_explicit(self) -> None:
+        """A model without its own company_id column can still be company scoped
+        through a parent anchor. Naming the global rule keeps that decision
+        explicit instead of leaving it to absence, and the coverage accounting
+        must not count it against the company_id universe."""
+        with tempfile.TemporaryDirectory() as raw:
+            root, declarations = write_company_case(
+                Path(raw),
+                [
+                    company_rule("model_demo_company"),
+                    {
+                        "ident": "owner",
+                        "ref": "model_demo_owner",
+                        "domain": "['|', ('project_id.company_id', '=', False), "
+                                  "('project_id.company_id', 'in', company_ids)]",
+                    },
+                ],
+                {
+                    "enforced": [{"model": "demo.company", "anchor": "company_id"}],
+                    "exempt": [WIZARD_EXEMPT],
+                    "source_bounded": [
+                        {
+                            "model": "demo.owner",
+                            "anchor": "project_id.company_id",
+                            "rule": "rule_owner",
+                            "file": "addons/demo_module/security/demo_rules.xml",
+                            "reason": "bounded by the named global rule rule_owner on the "
+                                      "parent project company anchor",
+                        }
+                    ],
+                },
+                {"product_modules": ["demo_module"]},
+            )
+            (root / "addons/demo_module/models/owner.py").write_text(
+                RELATION_ANCHORED_MODEL, encoding="utf-8"
+            )
+            report = guard.check(root, declarations)
+            self.assertEqual([], report["failures"])
+            self.assertEqual(2, report["universe"])
+            self.assertEqual(1, report["source_bounded_count"])
+            self.assertEqual(0, report["source_bounded_in_universe"])
+            self.assertEqual(["demo.owner"], report["source_bounded_out_of_universe"])
+
+    def test_source_bounded_unknown_model_still_fails_closed(self) -> None:
+        """Dropping the company_id requirement must not let a phantom model in."""
+        with tempfile.TemporaryDirectory() as raw:
+            root, declarations = write_company_case(
+                Path(raw),
+                [company_rule("model_demo_company")],
+                {
+                    "enforced": [{"model": "demo.company", "anchor": "company_id"}],
+                    "exempt": [WIZARD_EXEMPT],
+                    "source_bounded": [
+                        {
+                            "model": "ghost.line",
+                            "anchor": "company_id",
+                            "rule": "rule_ghost",
+                            "file": "addons/demo_module/security/demo_rules.xml",
+                            "reason": "bounded by the named global rule rule_ghost",
+                        }
+                    ],
+                },
+                {"product_modules": ["demo_module"]},
+            )
+            report = guard.check(root, declarations)
+            self.assertEqual("failed", report["status"])
+            self.assertTrue(
+                any("ghost.line" in f for f in report["failures"]), report["failures"]
+            )
 
     def test_source_bounded_group_scoped_rule_fails(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
