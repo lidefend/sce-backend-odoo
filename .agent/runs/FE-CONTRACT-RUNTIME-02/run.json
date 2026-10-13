@@ -903,6 +903,18 @@
         "make/ci.mk"
       ],
       "kind": "offline"
+    },
+    "sc_data_scope_rule_coverage": {
+      "target": "verify.sc_data_scope.rule_coverage",
+      "inputs": [
+        "scripts/verify/sc_data_scope_rule_coverage_guard.py",
+        "scripts/verify/test_sc_data_scope_rule_coverage_guard.py",
+        "scripts/verify/data_scope_declarations.json",
+        "addons/smart_construction_core/security/",
+        "addons/smart_core/security/",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [
@@ -922,7 +934,7 @@
     "Unattributed fact family discovered while classifying the 20 undecided-source models: sc.dashboard.cockpit.fact and sc.workbench.item carry ACL base.group_user 1111 with no ir.rule, and the shared sc.business.fact.mixin (also used by sc.document.admin.document, sc.office.admin.document, hr.payroll document) has no company field at all, so company isolation cannot be enforced; ownership must be anchored on project_id/company declaration before any write capability is kept. Owned by the next Step 1 slice (schema change -> authorized upgrade).",
     "verify.backend_business_fact.model_standard currently FAILs on documentation drift: docs/architecture/backend_business_model_audit_findings_v1.md records 372 model classes and 0 unclassified models while the measured values are 378 and 1. The target is a zero-reference lane entry (not reachable from any gate anchor), so it is not a blocker for this batch."
   ],
-  "next_exact_step": "Data-isolation scope re-inventory DONE against the installed DB (local.dev.data_scope.inventory now also reads installed ir.rule coverage). Confirmed the recorded decision: the full 744-model registry is inspection scope, not a rewrite list, and no customer business document lacks an ownership path. Cheapest open class = 102 P1 models that already resolve a company path but install no company-scoped rule (96 of them have no rule at all). NEXT (needs owner go-ahead): fix that class in dependency order - details by parent-relation rules (construction.contract.line, project.budget.line, project.budget.boq.line, sc.plan.line, sc.material.rental.*.line, sc.expense.claim.deduction.line, tender.bid.line, ...), then roots by their own/parent company (sc.hazard.source, sc.site.photo.batch, tender.*, project.cost.period, sc.quality.*, sc.safety.*), then explicitly declare the not-company dimensions instead of adding fields. Schema-change family (sc.business.fact.mixin) stays a separate later slice.",
+  "next_exact_step": "Data-scope batch 1 (company ceiling rules) source-complete: 99 global company-scope ir.rule added, explicit declaration registry + fail-closed guard wired into verify.contract.architecture.suite. NEXT: verify the rules activate without breaking legitimate flows once a governed upgrade is authorized (L3): make local.dev.snapshot then make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core, then re-run local.dev.data_scope.inventory and compare installed_company_scoped_rule_count. Then batch 2: give the 5 actor-only models (sc.scene, sc.pack.registry, sc.scene.validation, sc.capability.audit.log, sc.scene.audit.log) a real ownership anchor, and re-check the residual company_id = False visibility for business documents.",
   "acceptance_authority_layout": {
     "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
     "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",
@@ -2824,6 +2836,21 @@
         "no runtime upgrade or ORM run for this slice",
         "workitem/log ownership is inherited through instance_id and unchanged"
       ]
+    },
+    "company_rule_batch": {
+      "status": "source_complete_runtime_activation_pending",
+      "scope": "99 P1 models that already resolved a company path but installed no company-scoped rule",
+      "mechanism": "one global ir.rule per model (no groups, so group union cannot widen it); domain keeps company_id = False visible and hides only a foreign company",
+      "declaration": "scripts/verify/data_scope_declarations.json (enforced 99 / exempt 21, every exemption reasoned)",
+      "guard": "verify.sc_data_scope.rule_coverage (10 tests; also fails an unresolvable ir.rule ref before an install would)",
+      "exempt_classes": [
+        "framework/identity (ir.sequence, res.company handled by base)",
+        "industry/reference dictionary (project.cost.code, project.dictionary, sc.supplier.type, res.partner.category)",
+        "platform config with a non-company dimension (sc.capability, sc.dictionary, sc.scene.tile/version, sc.approval.scope, sc.product.policy, sc.*.rule, sc.signup.throttle)",
+        "audit trails and registries whose only path is the actor/publisher, recorded as anchor gaps (sc.scene, sc.pack.registry, sc.scene.validation, sc.capability.audit.log, sc.scene.audit.log)"
+      ],
+      "remaining": "detail children fixed through a two-hop parent path are covered; sc.business.fact.mixin family now provable by rule (project_id.company_id) - schema change no longer required for isolation",
+      "limits": "source-level proof only; activation needs a governed module upgrade and ORM readback (L3 pending, no DB write authority)"
     }
   },
   "executor_handoff": {

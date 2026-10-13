@@ -1,0 +1,589 @@
+{
+  "version": 1,
+  "authority": "docs/governance/database_architecture_policy.md",
+  "decision": ".agent/decisions/data-authority-boundary.yaml",
+  "purpose": "Explicit declaration of the company-scope dimension for the P1 model inventory. No absence-based exemption: a P1 business model either has an enforced company-scoped global rule or an explicit, reasoned exemption here.",
+  "enforced": [
+    {
+      "model": "construction.contract.line",
+      "anchor": "project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "construction.contract.section",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "construction.execution.scope",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "construction.location.breakdown",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "construction.wbs.plan",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "construction.work.breakdown",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "project.boq.allocation",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "project.boq.analysis.norm.line",
+      "anchor": "analysis_id.project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "project.boq.analysis.resource.line",
+      "anchor": "analysis_id.project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "project.budget",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "project.budget.boq.line",
+      "anchor": "project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "project.budget.cost.alloc",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "project.budget.line",
+      "anchor": "project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "project.cost.compare",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "project.cost.period",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "project.profit.compare",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "project.responsibility",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "project.settlement",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "project.settlement.line",
+      "anchor": "settlement_id.project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "sc.approval.policy",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.approval.step",
+      "anchor": "policy_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.ar.ap.company.summary",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.ar.ap.project.summary",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.ar.ap.report.summary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.audit.log",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.business.category",
+      "anchor": "approval_policy_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.business.entity",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.check.standard",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.check.standard.item",
+      "anchor": "standard_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.company.contractor.responsibility.fact",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.company.contractor.responsibility.summary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.company.operation.summary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.comprehensive.cost.summary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.construction.diary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.contract.event",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.contract.recon.summary",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.dashboard.cockpit.fact",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.document.admin.document",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.expense.claim.deduction.line",
+      "anchor": "claim_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "sc.expense.contract.ledger",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.expense.reimbursement.summary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.finance.business.project.summary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.finance.counterparty.position.summary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.finance.project.capital.position",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.fund.account",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.fund.daily.summary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.hazard.source",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.income.contract.ledger",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.interfund.movement.project.summary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.invoice.category.summary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.material.rental.order",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.material.rental.order.line",
+      "anchor": "order_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "sc.material.rental.plan",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.material.rental.plan.line",
+      "anchor": "project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "sc.material.rental.settlement",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.material.rental.settlement.line",
+      "anchor": "settlement_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "sc.material.stock.summary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.office.admin.document",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.operating.metrics.project",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.output.invoice.adjustment",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.output.invoice.ledger",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.p1.relationship.review.queue",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.p1.relationship.suggestion",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.pack.installation",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.partner.business.fact.line",
+      "anchor": "project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "sc.plan",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.plan.line",
+      "anchor": "contract_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "sc.plan.report",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.plan.version",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.plan.warning.log",
+      "anchor": "plan_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.project.document",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.quality.issue",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.quality.recheck",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.quality.rectification",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.receipt.invoice.line",
+      "anchor": "project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "sc.risk.item",
+      "anchor": "library_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.risk.library",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.safety.disclosure",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.safety.issue",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.safety.patrol.task",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.safety.plan",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.safety.recheck",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.safety.rectification",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.self.funding.registration",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.settlement.adjustment",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.site.photo.batch",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.treasury.reconciliation",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.workbench.item",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.workflow.def",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.workflow.node",
+      "anchor": "workflow_def_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "tender.bid",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "tender.bid.line",
+      "anchor": "project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "tender.doc.purchase",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "tender.doc.review",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "tender.guarantee",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "tender.opening",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "tender.opening.competitor",
+      "anchor": "opening_id.project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "tender.survey",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "ui.business.config.contract",
+      "anchor": "company_id",
+      "class": "root"
+    }
+  ],
+  "exempt": [
+    {
+      "model": "project.cost.code",
+      "reason": "construction industry cost dictionary; global reference, no company ownership"
+    },
+    {
+      "model": "project.dictionary",
+      "reason": "construction industry dictionary; global reference, no company ownership"
+    },
+    {
+      "model": "res.groups",
+      "reason": "platform identity/authorization registry; company scope is not its ownership dimension"
+    },
+    {
+      "model": "res.partner.category",
+      "reason": "master-data tag category; shared reference, not customer business data"
+    },
+    {
+      "model": "sc.approval.scope",
+      "reason": "approval scope is scoped by group_id/user_ids, not by company"
+    },
+    {
+      "model": "sc.capability",
+      "reason": "platform capability registry scoped by role_scope/capability_scope"
+    },
+    {
+      "model": "sc.capability.audit.log",
+      "reason": "append-only audit trail; only actor_user_id.company_id exists and the actor is not the record owner; ownership must come from the audited object"
+    },
+    {
+      "model": "sc.capability.group",
+      "reason": "platform capability grouping, same dimension as sc.capability"
+    },
+    {
+      "model": "sc.dictionary",
+      "reason": "runtime dictionary scoped by its own scope_type/scope_ref dimension, not by company"
+    },
+    {
+      "model": "sc.pack.registry",
+      "reason": "needs an ownership anchor: only published_by.company_id exists, which is the publisher, not the owner; record as an anchor gap"
+    },
+    {
+      "model": "sc.product.policy",
+      "reason": "platform product policy (P0/P3 editing surface), deployment-wide by design"
+    },
+    {
+      "model": "sc.project.capability.roadmap",
+      "reason": "industry-standard capability roadmap; global definition data"
+    },
+    {
+      "model": "sc.project.next_action.rule",
+      "reason": "industry-standard next-action rule set; global definition data"
+    },
+    {
+      "model": "sc.project.stage.requirement.item",
+      "reason": "industry-standard stage requirement list; global definition data"
+    },
+    {
+      "model": "sc.scene",
+      "reason": "needs an ownership anchor: only published_by.company_id exists, which is the publisher, not the owner; record as an anchor gap"
+    },
+    {
+      "model": "sc.scene.audit.log",
+      "reason": "append-only audit trail; only actor_user_id.company_id exists and the actor is not the record owner; ownership must come from the audited object"
+    },
+    {
+      "model": "sc.scene.tile",
+      "reason": "scene composition element scoped by scene_id"
+    },
+    {
+      "model": "sc.scene.validation",
+      "reason": "needs an ownership anchor: only checked_by.company_id exists, which is the checker, not the owner; record as an anchor gap"
+    },
+    {
+      "model": "sc.scene.version",
+      "reason": "scene version snapshot scoped by scene_id"
+    },
+    {
+      "model": "sc.signup.throttle",
+      "reason": "platform anti-abuse throttle; deployment-wide technical state"
+    },
+    {
+      "model": "sc.supplier.type",
+      "reason": "supplier type master data; shared reference, not customer business data"
+    }
+  ]
+}
