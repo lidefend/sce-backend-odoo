@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: DAILY-DEV-FULL-PRODUCT-ACCEPTANCE-20261013
   title: daily_dev_typical_to_full_product_acceptance
-  status: active
+  status: completed
   formal_product_layer: P4
   layer_target: daily_development_runtime_acceptance
   module:
@@ -77,8 +77,8 @@ goal:
     - zero_test_or_unknown_result_is_not_a_pass
     - separate_batch_vs_mainline_vs_deployment_vs_product_delivery_status
   next_exact_step: >-
-    Batches A, B and C are closed: PR #650 is merged (main == origin/main ==
-    f0a549ea), and the daily runtime serves that exact revision. The only remaining
-    step is the owner's own login acceptance as wutao on sc_demo at
-    http://1.95.85.92:18081; the executor owns no further write unless that
-    acceptance exposes a defect.
+    Closed. All three batches (A: mainline alignment and typical-page confirmation, B: full formal
+    product entry acceptance, C: mainline integration, deployment and record identity) are complete,
+    and the daily runtime serves the exact mainline f0a549ea. The only remaining item is the
+    separately reported product-delivery status: the owner's own login acceptance as wutao on
+    sc_demo at http://1.95.85.92:18081. A defect found there starts a new goal.

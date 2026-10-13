@@ -2,8 +2,7 @@
   "branches": {
     "audit/daily-dev-mainline-product-acceptance-closeout-20261009": ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json",
     "audit/fe-contract-runtime-00-20261012": ".agent/runs/FE-CONTRACT-RUNTIME-00/run.json",
-    "fix/payment-request-chain-alignment-20261013": ".agent/runs/PAYMENT-REQUEST-CHAIN-ALIGNMENT/run.json",
-    "codex/daily-dev-acceptance-deployment-closeout": ".agent/runs/DAILY-DEV-FULL-PRODUCT-ACCEPTANCE-20261013/run.json"
+    "fix/payment-request-chain-alignment-20261013": ".agent/runs/PAYMENT-REQUEST-CHAIN-ALIGNMENT/run.json"
   },
   "schema_version": 1
 }

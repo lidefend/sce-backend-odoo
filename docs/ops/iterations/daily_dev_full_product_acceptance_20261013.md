@@ -1,8 +1,8 @@
 # Daily Dev — Typical Page to Full Product Acceptance (2026-10-13)
 
 Goal: `DAILY-DEV-FULL-PRODUCT-ACCEPTANCE-20261013`
-Run: `.agent/runs/DAILY-DEV-FULL-PRODUCT-ACCEPTANCE-20261013/run.json`
-Branch: `audit/daily-dev-full-product-acceptance-20261013` (merged); the batch's closure carrier is `codex/daily-dev-acceptance-deployment-closeout`
+Run: `.agent/runs/DAILY-DEV-FULL-PRODUCT-ACCEPTANCE-20261013/run.json` (status `completed`)
+Branch: `audit/daily-dev-full-product-acceptance-20261013` (merged); the batch's closure carrier `codex/daily-dev-acceptance-deployment-closeout` retires with this record
 Baseline: `2e2951ea81cd3f9899f12e7d0bfb533882ee81ad` (after PR #649); the batch baseline advanced to `f0a549ea7969a0d58f764a96efc145c3242419e4` once PR #650 merged, and the closure delta is the bookkeeping change only
 
 ## Objective
@@ -155,3 +155,12 @@ under `artifacts/frontend-business-entry-matrix/`. Original logs are referenced,
   90 released pages per product key. This is the daily development runtime, not a formal release.
 - Product delivery: **pending the owner's own login acceptance** as `wutao` on `sc_demo` at
   `http://1.95.85.92:18081`.
+
+## Closure
+
+This record closes the goal: the executor-side work (mainline alignment, full formal entry
+acceptance, integration and deployment) is finished and the daily runtime serves `f0a549ea`. The
+goal and its run are marked `completed` and the run is removed from `.agent/active-runs.json`;
+the deployment carrier branch retires with this change. The owner's login acceptance is reported
+separately as the product-delivery status and is not executor work — a defect found there starts a
+new goal rather than reopening this one.
