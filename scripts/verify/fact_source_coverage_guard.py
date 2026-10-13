@@ -25,6 +25,13 @@ declares a ``currency_id`` field. It reads source only and enforces:
 * a ``company_id``/``currency_id`` field defined by an extension class instead of
   the model's own class is declared, so a redefinition is a decision, not a
   silent override.
+* a field declared by more than one class block on the same model is declared,
+  because Odoo merges the two definitions attribute by attribute: the surviving
+  field is a union of both, so neither file alone shows the real declaration.
+* every product source that writes ``res.company.currency_id`` -- an XML record, a
+  method on the company model, or a bootstrap function that resolves the company
+  model -- is declared, so the four shapes that carry the tenant standard
+  currency cannot hide behind each other.
 * the tenant standard currency is pinned onto the company by a named authority;
   the declaration must name the module and method that keeps
   ``res.company.currency_id`` at the standard currency, so the caller-context
@@ -40,6 +47,7 @@ import argparse
 import json
 import re
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -53,6 +61,10 @@ STANDARD_CURRENCY = "CNY"
 PLACEHOLDER_REASONS = scope_guard.PLACEHOLDER_REASONS
 
 FIELD_START = r"^\s+{field}\s*=\s*fields\.\w+\("
+FIELD_DEFINITION = re.compile(r"^[ \t]+(\w+)\s*=\s*fields\.\w+\(", re.M)
+CURRENCY_DICT_WRITE = re.compile(r"\.write\(\s*\{[^}]*[\"']currency_id[\"']", re.S)
+COMPANY_MODEL_REF = re.compile(r"[\"']res\.company[\"']")
+MODULE_FUNC_DEF = re.compile(r"^def\s+(\w+)\s*\(", re.M)
 HARD_CODED_REF = re.compile(r"env\.ref\(\s*[\"']base\.([A-Z]{3})[\"']")
 PIN_MODELS = re.compile(r"^\s*MODELS\s*=\s*\[(.*?)\]", re.M | re.S)
 METHOD_DEF = re.compile(r"^([ \t]+)def\s+(\w+)\s*\(", re.M)
@@ -124,15 +136,8 @@ def ancestors(model: str, fields: dict[str, dict]) -> set[str]:
     return seen
 
 
-def model_fields(root: Path, modules: list[str]) -> dict[str, dict]:
-    """model -> {currency, company, file, inherit, definitions} in product modules.
-
-    ``currency``/``company`` are the effective field definitions: a definition in
-    an extension class (``_inherit`` without ``_name``) overrides the model's own
-    class, which mirrors how Odoo merges such a class into the model, so a
-    redefinition cannot hide from the money-fact classification.
-    """
-    constants = scope_guard.model_name_constants(root, modules)
+def class_source_blocks(root: Path, modules: list[str]) -> list[tuple[Path, str]]:
+    """(file, class body) for every model class in the product modules."""
     blocks: list[tuple[Path, str]] = []
     for module in modules:
         base = root / "addons" / module
@@ -146,6 +151,19 @@ def model_fields(root: Path, modules: list[str]) -> dict[str, dict]:
             except OSError:
                 continue
             blocks.extend((path, block) for _match, block in scope_guard.class_blocks(text))
+    return blocks
+
+
+def model_fields(root: Path, modules: list[str]) -> dict[str, dict]:
+    """model -> {currency, company, file, inherit, definitions} in product modules.
+
+    ``currency``/``company`` are the effective field definitions: a definition in
+    an extension class (``_inherit`` without ``_name``) overrides the model's own
+    class, which mirrors how Odoo merges such a class into the model, so a
+    redefinition cannot hide from the money-fact classification.
+    """
+    constants = scope_guard.model_name_constants(root, modules)
+    blocks = class_source_blocks(root, modules)
 
     known: set[str] = set()
     for _path, block in blocks:
@@ -289,6 +307,134 @@ def company_field_overrides(fields: dict[str, dict]) -> set[str]:
             if any(definition.get("extension") for definition in definitions):
                 overrides.add(model)
     return overrides
+
+
+def function_bodies(
+    text: str, definition: re.Pattern, name_group: int, indent_group: int | None
+) -> list[tuple[str, str]]:
+    """``(name, body)`` for the functions one scan should read.
+
+    ``indent_group`` names the capture that holds indentation when only one
+    nesting level is wanted (methods inside a class body); ``None`` keeps every
+    match, which is right for module-level ``def`` at column zero.
+    """
+    matches = list(definition.finditer(text))
+    if not matches:
+        return []
+    if indent_group is None:
+        boundaries = [(match.start(), match.group(name_group)) for match in matches]
+    else:
+        indent = min(len(match.group(indent_group)) for match in matches)
+        boundaries = [
+            (match.start(), match.group(name_group))
+            for match in matches
+            if len(match.group(indent_group)) == indent
+        ]
+    bodies: list[tuple[str, str]] = []
+    for index, (start, name) in enumerate(boundaries):
+        end = boundaries[index + 1][0] if index + 1 < len(boundaries) else len(text)
+        bodies.append((name, text[start:end]))
+    return bodies
+
+
+def company_currency_write_sites(root: Path, modules: list[str]) -> list[tuple[str, str, str]]:
+    """``(file, kind, site)`` for every product source that writes the company currency.
+
+    ``res.company.currency_id`` is the carrier of the tenant standard currency,
+    and it is written through three shapes that no single scan sees together: an
+    XML record on ``res.company``, a method on a class that extends the company
+    model, and a module-level bootstrap function that resolves ``res.company``
+    and writes the field through a ``vals`` dict. Reading one shape hid the
+    others, so all of them are named and compared as one set.
+    """
+    sites: set[tuple[str, str, str]] = set()
+    for module in modules:
+        base = root / "addons" / module
+        if not base.is_dir():
+            continue
+        for path in sorted(base.rglob("*.xml")):
+            try:
+                tree = ET.parse(path)
+            except ET.ParseError:
+                continue
+            for record in tree.iter("record"):
+                if record.get("model") != "res.company":
+                    continue
+                if any(field.get("name") == "currency_id" for field in record.findall("field")):
+                    sites.add(
+                        (
+                            path.relative_to(root).as_posix(),
+                            "xml_record",
+                            record.get("id") or "",
+                        )
+                    )
+        for path in sorted(base.rglob("*.py")):
+            if "tests" in path.parts:
+                continue
+            try:
+                text = path.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            relative = path.relative_to(root).as_posix()
+            for _match, source in scope_guard.class_blocks(text):
+                name, _unresolvable = scope_guard.resolve_model_name(source, {})
+                if "res.company" not in set(inherit_names(source)) and name != "res.company":
+                    continue
+                for method, body in function_bodies(source, METHOD_DEF, 2, 1):
+                    if CURRENCY_WRITE.search(body) or CURRENCY_DICT_WRITE.search(body):
+                        sites.add((relative, "function", method))
+            for function, body in function_bodies(text, MODULE_FUNC_DEF, 1, None):
+                if COMPANY_MODEL_REF.search(body) and (
+                    CURRENCY_WRITE.search(body) or CURRENCY_DICT_WRITE.search(body)
+                ):
+                    sites.add((relative, "function", function))
+    return sorted(sites)
+
+
+def duplicate_field_declarations(root: Path, modules: list[str]) -> dict[str, list[dict]]:
+    """``model.field`` declared by more than one class block, with its files.
+
+    Odoo merges two same-name field definitions attribute by attribute, so the
+    surviving definition is a union of both classes, not the nearest one. A
+    reader of either file alone therefore cannot see the real field, which makes
+    a redefinition a second declaration of the same fact. Every such pair is
+    registered in fact_source_declarations.json so it stays a decision.
+
+    The target set admits a class that extends a model declared outside the
+    product modules (``_inherit`` without ``_name``), because its field
+    declaration is still product source; the narrow ``_name``-only view used by
+    the money-fact classification cannot see such a duplicate.
+    """
+    constants = scope_guard.model_name_constants(root, modules)
+    blocks = class_source_blocks(root, modules)
+    known: set[str] = set()
+    for _path, block in blocks:
+        name, _unresolvable = scope_guard.resolve_model_name(block, constants)
+        if name:
+            known.add(name)
+        known.update(inherit_names(block))
+
+    found: dict[str, list[dict]] = {}
+    for path, block in blocks:
+        owner = bool(scope_guard.resolve_model_name(block, constants)[0])
+        relative = path.relative_to(root).as_posix()
+        for model in target_models(block, constants, known):
+            role = "owning class" if owner else "extension class"
+            for match in FIELD_DEFINITION.finditer(block):
+                found.setdefault(f"{model}.{match.group(1)}", []).append(
+                    {"file": relative, "role": role}
+                )
+    duplicates: dict[str, list[dict]] = {}
+    for key, declarations in found.items():
+        if len(declarations) < 2:
+            continue
+        unique: list[dict] = []
+        for declaration in declarations:
+            if declaration not in unique:
+                unique.append(declaration)
+        if len(unique) > 1:
+            duplicates[key] = sorted(unique, key=lambda item: (item["file"], item["role"]))
+    return dict(sorted(duplicates.items()))
 
 
 def company_currency_authority(
@@ -680,6 +826,75 @@ def check(root: Path, declarations_path: Path, module_sets_path: str = DEFAULT_M
         if isinstance(entry, dict) and not (entry.get("reason") or "").strip():
             failures.append(f"{entry.get('model')}: field override without a reason")
 
+    duplicates = duplicate_field_declarations(root, modules)
+    declared_duplicates = {
+        f"{entry.get('model')}.{entry.get('field')}": entry
+        for entry in ((declares.get("duplicate_field_declarations") or {}).get("models") or [])
+        if isinstance(entry, dict)
+    }
+    missing = sorted(set(duplicates) - set(declared_duplicates))
+    extra = sorted(set(declared_duplicates) - set(duplicates))
+    if missing:
+        failures.append(
+            "a field is declared by more than one class on the same model without a "
+            "registration; Odoo merges the definitions attribute by attribute, so the "
+            f"real field is a union of both: {', '.join(missing)}"
+        )
+    if extra:
+        failures.append(
+            "registered duplicate field declaration no longer matches source: "
+            f"{', '.join(extra)}"
+        )
+    for key, entry in declared_duplicates.items():
+        if not (entry.get("reason") or "").strip():
+            failures.append(f"{key}: duplicate field declaration without a reason")
+        if key not in duplicates:
+            continue
+        declared_sites = sorted(
+            (item.get("file"), item.get("role"))
+            for item in (entry.get("declarations") or [])
+            if isinstance(item, dict)
+        )
+        measured_sites = sorted(
+            (item["file"], item["role"]) for item in duplicates[key]
+        )
+        if declared_sites != measured_sites:
+            failures.append(
+                f"{key}: declared declaring classes {declared_sites} do not match source "
+                f"{measured_sites}"
+            )
+
+    company_sites = company_currency_write_sites(root, modules)
+    declared_sites = sorted(
+        (
+            entry.get("file"),
+            entry.get("kind"),
+            entry.get("site"),
+        )
+        for entry in ((declares.get("company_currency_write_sites") or {}).get("sites") or [])
+        if isinstance(entry, dict)
+    )
+    measured_sites = sorted(company_sites)
+    missing_sites = [site for site in measured_sites if site not in declared_sites]
+    extra_sites = [site for site in declared_sites if site not in measured_sites]
+    if missing_sites:
+        failures.append(
+            "a product source writes res.company.currency_id, the carrier of the tenant "
+            "standard currency, without a registration: "
+            + ", ".join(":".join(site) for site in missing_sites)
+        )
+    if extra_sites:
+        failures.append(
+            "registered company-currency write site no longer matches source: "
+            + ", ".join(":".join(site) for site in extra_sites)
+        )
+    for entry in ((declares.get("company_currency_write_sites") or {}).get("sites") or []):
+        if isinstance(entry, dict) and not (entry.get("reason") or "").strip():
+            failures.append(
+                f"{entry.get('file')}:{entry.get('site')}: company-currency write site "
+                "without a reason"
+            )
+
     authority_failures, authority = company_currency_authority(root, modules, declares, standard)
     failures.extend(authority_failures)
 
@@ -708,7 +923,9 @@ def check(root: Path, declarations_path: Path, module_sets_path: str = DEFAULT_M
         "caller_context_inherited_models": sorted(derived_inherited),
         "currency_write_paths": write_paths,
         "company_field_overrides": sorted(overrides),
+        "duplicate_field_declarations": sorted(duplicates),
         "company_currency_authority": authority,
+        "company_currency_write_sites": [":".join(site) for site in measured_sites],
         "currency_models": len([m for m, e in fields.items() if e.get("currency")]),
         "ownership_derived_currency": len(
             [m for m, e in fields.items() if e.get("currency") and "related=" in e["currency"]]

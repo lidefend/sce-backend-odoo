@@ -95,7 +95,62 @@ class DemoStandard(models.Model):
 '''
 
 
-def write_case(tmp: Path, source: str, declarations: dict, pin: str = "MODELS = []\n"):
+# The extension fixture is declared twice on the same model and both classes
+# live in one file, so the duplicate registry names the same file in both roles.
+# The same declaration is also a money-field override, so both registries apply.
+DUPLICATE_OVERRIDE_DECLARATION = {
+    "company_field_overrides": {
+        "reason": "a redefinition is a decision, not a silent override",
+        "models": [
+            {
+                "model": "demo.overridden",
+                "field": "currency_id",
+                "file": "models/definition.py",
+                "reason": "the extension derives the currency from the owning company",
+            }
+        ],
+    },
+    "duplicate_field_declarations": {
+        "reason": "a field declared twice is the union of both definitions",
+        "models": [
+            {
+                "model": "demo.overridden",
+                "field": "currency_id",
+                "declarations": [
+                    {
+                        "file": "addons/demo_module/models/definition.py",
+                        "role": "owning class",
+                        "adds": "the base definition",
+                    },
+                    {
+                        "file": "addons/demo_module/models/definition.py",
+                        "role": "extension class",
+                        "adds": "the company-derived currency",
+                    },
+                ],
+                "reason": "the extension derives the currency from the owning company",
+            }
+        ],
+    }
+}
+
+
+COMPANY_CURRENCY_XML = """<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="base.main_company" model="res.company">
+        <field name="currency_id" ref="base.CNY"/>
+    </record>
+</odoo>
+"""
+
+
+def write_case(
+    tmp: Path,
+    source: str,
+    declarations: dict,
+    pin: str = "MODELS = []\n",
+    extra_files: dict | None = None,
+):
     module = tmp / "addons/demo_module"
     (module / "models").mkdir(parents=True, exist_ok=True)
     (module / "models/definition.py").write_text(source, encoding="utf-8")
@@ -104,6 +159,10 @@ def write_case(tmp: Path, source: str, declarations: dict, pin: str = "MODELS = 
         '    return "base.CNY"\n',
         encoding="utf-8",
     )
+    for relative, content in (extra_files or {}).items():
+        target = tmp / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
     sets = tmp / "config/tenant/module_sets.v1.json"
     sets.parent.mkdir(parents=True, exist_ok=True)
     sets.write_text(json.dumps({"product_modules": ["demo_module"]}), encoding="utf-8")
@@ -114,8 +173,14 @@ def write_case(tmp: Path, source: str, declarations: dict, pin: str = "MODELS = 
     return tmp, declarations_path, pin_path
 
 
-def run(tmp: Path, source: str, declarations: dict, pin: str = "MODELS = []\n"):
-    root, declarations_path, pin_path = write_case(tmp, source, declarations, pin)
+def run(
+    tmp: Path,
+    source: str,
+    declarations: dict,
+    pin: str = "MODELS = []\n",
+    extra_files: dict | None = None,
+):
+    root, declarations_path, pin_path = write_case(tmp, source, declarations, pin, extra_files)
     return guard.check(root, declarations_path, "config/tenant/module_sets.v1.json", pin_path)
 
 
@@ -149,6 +214,8 @@ class FactSourceCoverageGuardTest(unittest.TestCase):
         self.assertGreater(len(report["caller_context_currency_models"]), 0)
         self.assertGreater(len(report["currency_write_paths"]), 0)
         self.assertEqual("verified", report["company_currency_authority"]["status"])
+        self.assertGreater(len(report["duplicate_field_declarations"]), 0)
+        self.assertGreater(len(report["company_currency_write_sites"]), 0)
 
     def test_undeclared_standard_currency_default_fails(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
@@ -349,20 +416,162 @@ class DemoOther(models.Model):
         with tempfile.TemporaryDirectory() as raw:
             declarations = {
                 "standard_currency": {"currency": "CNY", "models": []},
-                "company_field_overrides": {
-                    "reason": "a redefinition is a decision, not a silent override",
-                    "models": [
-                        {
-                            "model": "demo.overridden",
-                            "field": "currency_id",
-                            "file": "models/definition.py",
-                            "reason": "the extension derives the currency from the owning company",
-                        }
-                    ],
-                },
+                **DUPLICATE_OVERRIDE_DECLARATION,
             }
             report = run(Path(raw), EXTENSION_OVERRIDE_MODEL, declarations)
             self.assertEqual([], report["failures"])
+
+    def test_duplicate_field_declaration_requires_registration(self) -> None:
+        """A field declared by two classes is a union and must be registered."""
+        with tempfile.TemporaryDirectory() as raw:
+            report = run(
+                Path(raw), EXTENSION_OVERRIDE_MODEL,
+                {"standard_currency": {"currency": "CNY", "models": []}},
+            )
+            self.assertEqual("failed", report["status"])
+            self.assertTrue(
+                any("declared by more than one class" in f for f in report["failures"]),
+                report["failures"],
+            )
+            self.assertEqual(
+                ["demo.overridden.currency_id"], report["duplicate_field_declarations"]
+            )
+
+    def test_registered_duplicate_field_declaration_matches_source(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            declarations = {
+                "standard_currency": {"currency": "CNY", "models": []},
+                **DUPLICATE_OVERRIDE_DECLARATION,
+            }
+            report = run(Path(raw), EXTENSION_OVERRIDE_MODEL, declarations)
+            self.assertEqual([], report["failures"])
+            self.assertEqual(
+                ["demo.overridden.currency_id"], report["duplicate_field_declarations"]
+            )
+
+    def test_duplicate_field_declaration_without_reason_fails(self) -> None:
+        declarations = {
+            "standard_currency": {"currency": "CNY", "models": []},
+            "duplicate_field_declarations": {
+                "models": [{"model": "demo.overridden", "field": "currency_id"}]
+            },
+        }
+        with tempfile.TemporaryDirectory() as raw:
+            report = run(Path(raw), EXTENSION_OVERRIDE_MODEL, declarations)
+            self.assertEqual("failed", report["status"])
+            self.assertTrue(
+                any(
+                    "demo.overridden.currency_id: duplicate field declaration without a reason" in f
+                    for f in report["failures"]
+                ),
+                report["failures"],
+            )
+
+    def test_duplicate_field_declaration_site_drift_fails(self) -> None:
+        declarations = json.loads(json.dumps(DUPLICATE_OVERRIDE_DECLARATION))
+        entry = declarations["duplicate_field_declarations"]["models"][0]
+        entry["declarations"][1]["role"] = "owning class"
+        declarations["standard_currency"] = {"currency": "CNY", "models": []}
+        with tempfile.TemporaryDirectory() as raw:
+            report = run(Path(raw), EXTENSION_OVERRIDE_MODEL, declarations)
+            self.assertEqual("failed", report["status"])
+            self.assertTrue(
+                any("do not match source" in f for f in report["failures"]),
+                report["failures"],
+            )
+
+    def test_stale_duplicate_field_declaration_fails(self) -> None:
+        """A registration that no longer matches source must not stay silent."""
+        with tempfile.TemporaryDirectory() as raw:
+            declarations = {
+                "standard_currency": {"currency": "CNY", "models": []},
+                **DUPLICATE_OVERRIDE_DECLARATION,
+            }
+            report = run(Path(raw), PLAIN_MODEL, declarations)
+            self.assertEqual("failed", report["status"])
+            self.assertTrue(
+                any("no longer matches source" in f for f in report["failures"]),
+                report["failures"],
+            )
+
+    def test_company_currency_write_site_requires_registration(self) -> None:
+        """An XML record that sets the company currency is a second fact source."""
+        extra = {"addons/demo_module/data/currency.xml": COMPANY_CURRENCY_XML}
+        with tempfile.TemporaryDirectory() as raw:
+            report = run(
+                Path(raw), STANDARD_MODEL, standard_declaration("demo.standard"),
+                extra_files=extra,
+            )
+            self.assertEqual("failed", report["status"])
+            self.assertTrue(
+                any("without a registration" in f for f in report["failures"]),
+                report["failures"],
+            )
+            self.assertEqual(
+                ["addons/demo_module/data/currency.xml:xml_record:base.main_company"],
+                report["company_currency_write_sites"],
+            )
+
+    def test_registered_company_currency_write_site_matches_source(self) -> None:
+        extra = {"addons/demo_module/data/currency.xml": COMPANY_CURRENCY_XML}
+        declarations = standard_declaration("demo.standard")
+        declarations["company_currency_write_sites"] = {
+            "reason": "every source that writes the company currency is named",
+            "sites": [
+                {
+                    "file": "addons/demo_module/data/currency.xml",
+                    "kind": "xml_record",
+                    "site": "base.main_company",
+                    "reason": "the demo bootstrap sets the main company to the standard currency",
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory() as raw:
+            report = run(Path(raw), STANDARD_MODEL, declarations, extra_files=extra)
+            self.assertEqual([], report["failures"])
+
+    def test_registered_company_currency_write_site_drift_fails(self) -> None:
+        extra = {"addons/demo_module/data/currency.xml": COMPANY_CURRENCY_XML}
+        declarations = standard_declaration("demo.standard")
+        declarations["company_currency_write_sites"] = {
+            "reason": "every source that writes the company currency is named",
+            "sites": [
+                {
+                    "file": "addons/demo_module/data/currency.xml",
+                    "kind": "xml_record",
+                    "site": "base.other_company",
+                    "reason": "stale identifier",
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory() as raw:
+            report = run(Path(raw), STANDARD_MODEL, declarations, extra_files=extra)
+            self.assertEqual("failed", report["status"])
+            self.assertTrue(
+                any("no longer matches source" in f for f in report["failures"]),
+                report["failures"],
+            )
+
+    def test_company_currency_write_site_without_reason_fails(self) -> None:
+        extra = {"addons/demo_module/data/currency.xml": COMPANY_CURRENCY_XML}
+        declarations = standard_declaration("demo.standard")
+        declarations["company_currency_write_sites"] = {
+            "models": [],
+            "sites": [
+                {
+                    "file": "addons/demo_module/data/currency.xml",
+                    "kind": "xml_record",
+                    "site": "base.main_company",
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory() as raw:
+            report = run(Path(raw), STANDARD_MODEL, declarations, extra_files=extra)
+            self.assertEqual("failed", report["status"])
+            self.assertTrue(
+                any("company-currency write site without a reason" in f for f in report["failures"]),
+                report["failures"],
+            )
 
     def test_company_currency_authority_required_with_standard_currency(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
