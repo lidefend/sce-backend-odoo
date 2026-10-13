@@ -7,9 +7,20 @@ from copy import deepcopy
 import json
 import hashlib
 
-from ..utils.backend_contract_boundaries import (
-    classify_view_orchestration_contract, view_orchestration_apply_order_key,
-)
+try:  # Odoo import root: ``smart_core.core.form_configuration_compiler``.
+    from ..utils.backend_contract_boundaries import (
+        classify_view_orchestration_contract, view_orchestration_apply_order_key,
+    )
+except ImportError as error:
+    # ``core`` is also imported as a top-level package by standalone tooling (the
+    # semantic-registry build script and its focused tests put ``addons/smart_core``
+    # on sys.path).  There ``..`` is beyond the top-level package, so the same
+    # module must resolve ``utils`` directly; any other import failure is a defect.
+    if "relative import" not in str(error):
+        raise
+    from utils.backend_contract_boundaries import (
+        classify_view_orchestration_contract, view_orchestration_apply_order_key,
+    )
 
 
 def is_configured_surface(config):
