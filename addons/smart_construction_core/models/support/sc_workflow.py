@@ -12,6 +12,62 @@ def _user_is_tenant_business_admin(user):
     return bool(user and user.has_group(TENANT_BUSINESS_ADMIN_GROUP))
 
 
+WORKFLOW_INSTANCE_TARGET_NOT_FOUND = "WORKFLOW_INSTANCE_TARGET_NOT_FOUND"
+WORKFLOW_INSTANCE_UNATTRIBUTED_TARGET = "WORKFLOW_INSTANCE_UNATTRIBUTED_TARGET"
+WORKFLOW_INSTANCE_COMPANY_MISMATCH = "WORKFLOW_INSTANCE_COMPANY_MISMATCH"
+
+
+def resolve_workflow_instance_company(env, model_name, res_id, workflow_def):
+    """Return the res.company record that owns a workflow instance.
+
+    A workflow instance is a record about a business document, so its company
+    fact is inherited from that document. The workflow definition is configuration
+    and the current environment is only the caller context; neither may invent
+    ownership. Anything that cannot be attributed fails closed with an explicit
+    reason code instead of guessing a company.
+    """
+    target_model = (model_name or "").strip()
+    if not target_model or target_model not in env:
+        raise UserError(
+            _("%s: workflow target model is not registered (%s).")
+            % (WORKFLOW_INSTANCE_UNATTRIBUTED_TARGET, target_model or "-")
+        )
+    # The owner company is a system-level fact of the target record, not business
+    # data the caller has to be allowed to read, so the anchor is read with sudo.
+    target = env[target_model].browse(res_id).sudo()
+    if not res_id or not target.exists():
+        raise UserError(
+            _("%s: workflow target record %s#%s does not exist.")
+            % (WORKFLOW_INSTANCE_TARGET_NOT_FOUND, target_model, res_id)
+        )
+    if "company_id" not in target:
+        raise UserError(
+            _("%s: workflow target model %s has no company owner.")
+            % (WORKFLOW_INSTANCE_UNATTRIBUTED_TARGET, target_model)
+        )
+    company = target.company_id
+    if not company:
+        raise UserError(
+            _("%s: workflow target record %s#%s has no owning company.")
+            % (WORKFLOW_INSTANCE_UNATTRIBUTED_TARGET, target_model, res_id)
+        )
+    declared_company = workflow_def.company_id if workflow_def else False
+    if declared_company and declared_company.id != company.id:
+        raise UserError(
+            _(
+                "%s: workflow definition company %s does not own %s#%s (company %s)."
+            )
+            % (
+                WORKFLOW_INSTANCE_COMPANY_MISMATCH,
+                declared_company.id,
+                target_model,
+                res_id,
+                company.id,
+            )
+        )
+    return company
+
+
 class ScWorkflowDef(models.Model):
     _name = "sc.workflow.def"
     _description = "SC 历史流程定义"
@@ -159,7 +215,13 @@ class ScWorkflowInstance(models.Model):
 
     name = fields.Char(string="实例", compute="_compute_name", store=True)
     workflow_def_id = fields.Many2one("sc.workflow.def", required=True, ondelete="restrict", index=True, string="工作流定义")
-    company_id = fields.Many2one("res.company", default=lambda self: self.env.company, index=True, string="公司")
+    company_id = fields.Many2one(
+        "res.company",
+        default=lambda self: self.env.company,
+        index=True,
+        string="公司",
+        help="归属公司：由业务单据继承，不从流程模板或当前环境推断。",
+    )
 
     model_name = fields.Char(required=True, index=True, string="模型")
     res_id = fields.Integer(required=True, index=True, string="资源ID")
@@ -179,6 +241,15 @@ class ScWorkflowInstance(models.Model):
 
     workitem_ids = fields.One2many("sc.workflow.workitem", "instance_id")
     log_ids = fields.One2many("sc.workflow.log", "instance_id")
+
+    @api.constrains("company_id")
+    def _check_company_attribution(self):
+        for rec in self:
+            if not rec.company_id:
+                raise UserError(
+                    _("%s: workflow instance %s has no owning company.")
+                    % (WORKFLOW_INSTANCE_UNATTRIBUTED_TARGET, rec.id)
+                )
 
     @api.depends("workflow_def_id", "res_id")
     def _compute_name(self):
@@ -272,9 +343,12 @@ class ScWorkflowInstance(models.Model):
         if not start:
             raise UserError(_("Workflow definition has no active start node."))
 
+        owner_company = resolve_workflow_instance_company(
+            self.env, model_name, res_id, workflow_def
+        )
         inst = self.create({
             "workflow_def_id": workflow_def.id,
-            "company_id": workflow_def.company_id.id or self.env.company.id,
+            "company_id": owner_company.id,
             "model_name": model_name,
             "res_id": res_id,
             "current_node_id": start.id,
