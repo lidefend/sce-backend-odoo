@@ -188,28 +188,33 @@
       {
         "model": "sc.settlement.order",
         "file": "addons/smart_construction_core/models/core/settlement_order.py",
-        "token": "_LIFECYCLE_SERVICE_TOKEN",
-        "enforced": true
+        "token": "ScStateMachine.SETTLEMENT_ORDER",
+        "enforced": true,
+        "reason": "write() refuses any state change that is not the lifecycle-service call, and _write_lifecycle now reads the declared ScStateMachine.SETTLEMENT_ORDER table instead of a private copy, so the guard and the table cannot drift apart again."
+      },
+      {
+        "model": "sc.general.contract",
+        "file": "addons/smart_construction_core/models/core/general_contract.py",
+        "token": "ScStateMachine.assert_transition",
+        "enforced": true,
+        "reason": "write() refuses a bare state write and asserts ScStateMachine.GENERAL_CONTRACT on every declared writer, so the published ladder (draft->confirmed->signed) is the only one the model accepts."
       },
       {
         "model": "construction.contract",
-        "enforced": false,
-        "reason": "The registered CONTRACT table is not consulted by write(): only the per-action 'if state not in (...)' checks stand between a caller and an undeclared jump such as write({'state': 'closed'}) on a draft contract.",
-        "next_exact_step": "consult the declared CONTRACT table from write() and from the reopen action"
+        "file": "addons/smart_construction_core/models/support/contract_center.py",
+        "token": "ScStateMachine.assert_transition",
+        "enforced": true,
+        "reason": "write() refuses a bare state write and asserts ScStateMachine.CONTRACT on every declared writer, so closed/cancel are the terminal states the table declares rather than whatever an action happened to allow."
       },
       {
         "model": "project.settlement",
-        "enforced": false,
-        "reason": "The registered SETTLEMENT table is declared for the state Selection but no write() consults it, so the legal edges live only in the three action methods and a direct state write bypasses them.",
-        "next_exact_step": "add the declared-table assertion to the settlement write() path"
+        "file": "addons/smart_construction_core/models/core/settlement.py",
+        "token": "ScStateMachine.assert_transition",
+        "enforced": true,
+        "reason": "write() refuses a bare state write and asserts ScStateMachine.SETTLEMENT on the three action writers, so the declared ladder is the one fact instead of the three per-action if-checks."
       }
     ],
     "transition_tables": [
-      {
-        "file": "addons/smart_construction_core/models/core/settlement_order.py",
-        "name": "_LIFECYCLE_TRANSITIONS",
-        "reason": "A second copy of the declared SETTLEMENT_ORDER table and the one actually enforced. It is wider than the canonical table on two edges (draft->approve and submit->draft), so the enforced lifecycle and the declared lifecycle disagree. OPEN ITEM: it must delegate to ScStateMachine instead of restating the edges."
-      },
       {
         "file": "addons/smart_construction_core/handlers/project_connection_transition.py",
         "name": "TRANSITIONS",
@@ -242,27 +247,92 @@
       {
         "file": "addons/smart_construction_core/models/core/payment_request.py",
         "method": "_complete_payment_approval",
-        "reason": "A payment transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared PAYMENT_REQUEST table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+        "reason": "A payment_request transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared PAYMENT_REQUEST table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
       },
       {
         "file": "addons/smart_construction_core/models/core/payment_request.py",
         "method": "action_cancel",
-        "reason": "A payment transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared PAYMENT_REQUEST table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+        "reason": "A payment_request transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared PAYMENT_REQUEST table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
       },
       {
         "file": "addons/smart_construction_core/models/core/payment_request.py",
         "method": "action_done",
-        "reason": "A payment transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared PAYMENT_REQUEST table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+        "reason": "A payment_request transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared PAYMENT_REQUEST table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
       },
       {
         "file": "addons/smart_construction_core/models/core/payment_request.py",
         "method": "action_on_tier_rejected",
-        "reason": "A payment transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared PAYMENT_REQUEST table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+        "reason": "A payment_request transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared PAYMENT_REQUEST table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
       },
       {
         "file": "addons/smart_construction_core/models/core/payment_request.py",
         "method": "action_submit",
-        "reason": "A payment transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared PAYMENT_REQUEST table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+        "reason": "A payment_request transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared PAYMENT_REQUEST table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/support/contract_center.py",
+        "method": "action_confirm",
+        "reason": "A contract transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared CONTRACT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/support/contract_center.py",
+        "method": "action_on_tier_approved",
+        "reason": "A contract transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared CONTRACT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/support/contract_center.py",
+        "method": "action_set_running",
+        "reason": "A contract transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared CONTRACT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/support/contract_center.py",
+        "method": "action_close",
+        "reason": "A contract transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared CONTRACT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/support/contract_center.py",
+        "method": "action_cancel",
+        "reason": "A contract transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared CONTRACT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/support/contract_center.py",
+        "method": "action_reset_draft",
+        "reason": "A contract transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared CONTRACT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/settlement.py",
+        "method": "action_confirm",
+        "reason": "A settlement transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared SETTLEMENT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/settlement.py",
+        "method": "action_done",
+        "reason": "A settlement transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared SETTLEMENT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/settlement.py",
+        "method": "action_cancel",
+        "reason": "A settlement transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared SETTLEMENT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/general_contract.py",
+        "method": "action_confirm",
+        "reason": "A general_contract transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared GENERAL_CONTRACT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/general_contract.py",
+        "method": "action_on_tier_approved",
+        "reason": "A general_contract transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared GENERAL_CONTRACT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/general_contract.py",
+        "method": "action_signed",
+        "reason": "A general_contract transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared GENERAL_CONTRACT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/general_contract.py",
+        "method": "action_cancel",
+        "reason": "A general_contract transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared GENERAL_CONTRACT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
       }
     ]
   }
