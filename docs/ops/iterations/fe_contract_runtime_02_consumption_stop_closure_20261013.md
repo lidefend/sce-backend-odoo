@@ -1343,3 +1343,50 @@ L2 定向 ORM 反例 1 test 0 failed（日志 `relationship_review_queue_project
   （本分支新增业务编号 15 例 + 数据范围核算 4 例）。
 - 状态边界：到本段为止可报**批次验收完成（源码 + 守卫 + 定向测试）**与**冻结准备通过**；
   尚未跑一次精确 HEAD 的 `ci.local.quick`、未推送、未开 PR、未主线集成、未部署、未产品交付。
+
+## 冻结后 Quick 失败收口（2026-10-14，交接执行器）
+
+冻结准备通过后按规约只跑一次精确 HEAD 的 `make ci.local.quick`，连续暴露两个
+**冻结门禁自身的问题**，均为收口项、非产品缺陷，逐项定位后修复并重跑。
+
+### 装配契约缓存版本/指纹重钉（`774dee1a`）
+
+- 现象：`make ci.local.quick` shard `verify.unified_page_contract.v2.assembler` 报
+  “assembled contract cache inputs changed without re-pinning”。
+- 根因：本分支在 `f0a549ea` 之后修改了 3 个装配缓存输入
+  （`addons/smart_core/contract/unified_page_contract_v2_assembler.py`、
+  `handlers/ui_contract_v2.py`、`handlers/ui_contract_v2_projection.py`），
+  但缓存版本串与内容指纹未同步更新，守卫按“输入变更未重钉”fail-closed。
+- 修复：缓存版本 → `ui-contract-v2-2026-10-14-declared-layout-columns-and-action-denial-guidance`
+  （`handlers/ui_contract_v2.py` 与 `scripts/verify/unified_page_contract_v2_assembler_guard.py`
+  两处同步）；内容指纹 → `727e308bfca58642bc8716ed59420b653b3502ae55de3caed36a07bf117bf2c5`。
+- 取证：`.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/verify_upc_v2_assembler_repin.log`，
+  `make verify.unified_page_contract.v2.assembler` **rc=0**。
+
+### 工作流动作覆盖泳道测试桩与模型实现同步
+
+- 现象：第二次 `ci.local.quick`（HEAD `774dee1a`）7/8 shard 通过，唯一失败
+  `verify.native_view.workflow_action_coverage`：
+  `test_native_view_workflow_action_coverage_guard.py:417`
+  `test_signing_executes_the_existing_confirmation_before_draft_transition` 抛
+  `AttributeError: 'types.SimpleNamespace' object has no attribute 'with_context'`，
+  栈指向 `addons/smart_construction_core/models/core/general_contract.py:434`。
+- 根因：模型 `action_signed` 已改为受控跃迁
+  `rec.with_context(allow_transition=True).write({"state": "signed"})`，
+  而测试辅助 `_sign_record()` 仍以裸 `SimpleNamespace` 打桩，缺 `with_context` 与 `write`。
+  属**测试桩滞后于模型实现**，不是产品缺陷；同文件既有桩约定（约 163、617 行）
+  本就是给桩补 `with_context`。
+- 修复（限定在该测试文件）：`_sign_record()` 的桩补 `with_context`（记录传入 kwargs）
+  与 `write`（更新桩属性）；草稿跃迁用例追加断言
+  `self.assertIn({"allow_transition": True}, record.contexts)`，确认受控跃迁上下文
+  确实被传入。**未放宽任何既有断言**。
+- 取证：`logs/verify_native_view_workflow_action_coverage_stub_fix.log`，
+  `make verify.native_view.workflow_action_coverage` **rc=0**
+  （8 + 8 + 58 tests OK；守卫 `registered=40 document_helper=14 navigation=26`）。
+- 生成物联动：测试文件 818 → 826 行，`docs/engineering_convergence/complexity_budget_report.md`
+  的复杂度排序随之刷新，随桩修复一并提交（不改历史数字，只随源码如实刷新）。
+- 复核：`make ci.delivery.freeze.prepare` 再次 **rc=0**
+  （`PASS all content-bound generated evidence is current`，
+  `PASS candidate=unfrozen next=review_generated_changes_commit_freeze_then_run_quick_once`）。
+- 状态边界：本段仍只支撑**批次验收完成（源码 + 守卫 + 定向测试）**与**冻结准备通过**；
+  精确 HEAD 的 `ci.local.quick` 仍在未推送状态下重跑，未主线集成、未部署、未产品交付。

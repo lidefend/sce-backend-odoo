@@ -180,9 +180,9 @@ Generated from repository source files. This report is informational during the 
 | 832 | Python source | `scripts/audit/test_verification_lane_coverage.py` |
 | 832 | Python source | `scripts/ops/production_acceptance_clone_runtime.py` |
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
+| 826 | Python source | `scripts/verify/test_native_view_workflow_action_coverage_guard.py` |
 | 823 | Python source | `addons/smart_core/handlers/ui_contract.py` |
 | 819 | Python source | `scripts/verify/workflow_action_semantics_completeness_guard.py` |
-| 818 | Python source | `scripts/verify/test_native_view_workflow_action_coverage_guard.py` |
 | 810 | Python source | `addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py` |
 | 807 | Python source | `addons/smart_construction_core/models/core/material_rental.py` |
 | 802 | TypeScript source | `frontend/apps/web/src/api/businessConfig.ts` |

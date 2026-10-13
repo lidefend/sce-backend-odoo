@@ -400,7 +400,7 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "action_signed")
         namespace = {"UserError": ValueError, "_": lambda text: text}
         exec(compile(ast.fix_missing_locations(ast.Module(body=[method], type_ignores=[])), str(path), "exec"), namespace)
-        record = SimpleNamespace(state=state, approval_calls=0)
+        record = SimpleNamespace(state=state, approval_calls=0, contexts=[])
         def confirm():
             record.approval_calls += 1
             if approval_completes:
@@ -408,8 +408,15 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         def check_anchor():
             if not anchor_valid:
                 raise ValueError("missing business anchor")
+        def with_context(**kwargs):
+            record.contexts.append(kwargs)
+            return record
+        def write(values):
+            record.__dict__.update(values)
         record.action_confirm = confirm
         record._check_business_anchor = check_anchor
+        record.with_context = with_context
+        record.write = write
         return record, lambda: namespace["action_signed"]([record])
 
     def test_signing_executes_the_existing_confirmation_before_draft_transition(self):
@@ -417,6 +424,7 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         execute()
         self.assertEqual(record.approval_calls, 1)
         self.assertEqual(record.state, "signed")
+        self.assertIn({"allow_transition": True}, record.contexts)
 
     def test_pending_approval_does_not_become_signed(self):
         record, execute = self._sign_record("draft", approval_completes=False)
