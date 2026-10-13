@@ -373,6 +373,27 @@
       "model_file": "addons/smart_construction_core/models/core/general_contract.py",
       "module": "",
       "odoo_model": "ScGeneralContract",
+      "state_machine": {
+        "constant": "GENERAL_CONTRACT",
+        "model": "sc.general.contract",
+        "states": [
+          "cancel",
+          "confirmed",
+          "draft",
+          "legacy_confirmed",
+          "signed"
+        ],
+        "transitions": {
+          "confirmed": [
+            "cancel",
+            "signed"
+          ],
+          "draft": [
+            "cancel",
+            "confirmed"
+          ]
+        }
+      },
       "version": 1
     },
     {
