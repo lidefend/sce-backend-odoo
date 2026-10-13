@@ -189,6 +189,45 @@ class SafeWorktreeCleanupTest(unittest.TestCase):
             )
         self.assertTrue(path.is_dir())
 
+    def test_detach_without_evidence_receipt_keeps_branch(self) -> None:
+        # The documented detach contract is exact HEAD + clean + non-primary, and it
+        # keeps the branch, so it must not depend on archived delivery evidence: a
+        # protected release/* worktree has no branch-deleting cleanup route at all.
+        path = self.add_worktree("release/retained-no-evidence")
+        expected_head = git(path, "rev-parse", "HEAD")
+        selected = cleanup.detach_worktree(
+            self.root,
+            path,
+            expected_head=expected_head,
+            apply=True,
+            confirmation=cleanup.DETACH_CONFIRMATION,
+        )
+        self.assertEqual(selected.head, expected_head)
+        self.assertFalse(path.exists())
+        self.assertEqual(git(self.root, "rev-parse", "release/retained-no-evidence"), expected_head)
+
+    def test_detach_with_mismatched_evidence_receipt_is_still_denied(self) -> None:
+        path = self.add_worktree("release/wrong-receipt")
+        expected_head = git(path, "rev-parse", "HEAD")
+        with self.assertRaisesRegex(cleanup.CleanupError, "HEAD mismatch"):
+            cleanup.detach_worktree(
+                self.root,
+                path,
+                expected_head=expected_head,
+                apply=True,
+                confirmation=cleanup.DETACH_CONFIRMATION,
+                evidence_receipt=self.evidence_receipt(path, "0" * 40),
+            )
+        self.assertTrue(path.is_dir())
+
+    def test_release_topic_is_not_branch_deleting_cleanup_eligible(self) -> None:
+        # Guard the deliberate asymmetry: release/* is created like any topic but is
+        # never a deletion candidate; only the branch-preserving detach removes it.
+        path = self.add_worktree("release/not-deletable")
+        with self.assertRaisesRegex(cleanup.CleanupError, "not cleanup-eligible"):
+            cleanup.plan_cleanup(self.root, path)
+        self.assertTrue(path.is_dir())
+
     def test_apply_without_external_evidence_receipt_is_denied(self) -> None:
         path = self.add_worktree("fix/missing-receipt")
         with self.assertRaisesRegex(cleanup.CleanupError, "evidence receipt"):

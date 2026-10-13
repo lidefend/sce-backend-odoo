@@ -1,0 +1,67 @@
+{
+ "schema_version": 1,
+ "id": "WORKSPACE-RELEASE-WORKTREE-DETACH-CLOSURE",
+ "branch": "fix/workspace-release-worktree-detach-closure",
+ "status": "active",
+ "baseline_sha": "fc4164a5333600aa48836e3dd7a922401c1801f8",
+ "goal": ".agent/goals/WORKSPACE-RELEASE-WORKTREE-DETACH-CLOSURE.yaml",
+ "record": "docs/ops/iterations/workspace_release_worktree_detach_closure_20261013.md",
+ "scope": [
+  ".agent/active-runs.json",
+  ".agent/goals/WORKSPACE-RELEASE-WORKTREE-DETACH-CLOSURE.yaml",
+  ".agent/runs/WORKSPACE-RELEASE-WORKTREE-DETACH-CLOSURE/",
+  "docs/ops/codex_execution_allowlist.md",
+  "docs/ops/codex_workspace_execution_rules.md",
+  "docs/ops/iterations/workspace_release_worktree_detach_closure_20261013.md",
+  "scripts/ops/safe_worktree_cleanup.py",
+  "scripts/ops/test_safe_worktree_cleanup.py"
+ ],
+ "environment": {
+  "kind": "offline",
+  "authority": "existing local Make entrypoints and workspace dependencies; no database, service or browser access in this batch"
+ },
+ "checks": {
+  "worktree_guard": {
+   "target": "verify.workspace.worktree.guard",
+   "inputs": [
+    "scripts/ops/safe_worktree_cleanup.py",
+    "scripts/ops/test_safe_worktree_cleanup.py",
+    "scripts/ops/safe_worktree_create.py",
+    "scripts/ops/test_safe_worktree_create.py",
+    "scripts/ops/archive_worktree_delivery_evidence.py",
+    "make/codex.mk"
+   ],
+   "kind": "offline"
+  },
+  "branch_governance": {
+   "target": "verify.branch.governance.consistency",
+   "inputs": [
+    "AGENTS.md",
+    "docs/ops/codex_execution_allowlist.md",
+    "docs/ops/codex_workspace_execution_rules.md",
+    "make/codex.mk",
+    "scripts/verify/branch_governance_consistency_guard.py",
+    "scripts/verify/test_branch_governance_consistency_guard.py",
+    "scripts/ops/git_safe_push.sh",
+    "scripts/ops/branch_cleanup_safe.sh"
+   ],
+   "kind": "offline"
+  },
+  "agent_ledger": {
+   "target": "verify.agent.ledger.unit",
+   "inputs": [
+    ".agent/goals",
+    ".agent/runs",
+    ".agent/active-runs.json",
+    "scripts/verify/agent_ledger_consistency_guard.py",
+    "scripts/verify/test_agent_ledger_consistency_guard.py"
+   ],
+   "kind": "offline"
+  }
+ },
+ "blockers": [
+  "pre-existing residual, deliberately NOT cleaned in this batch: the local topic branches audit/daily-dev-mainline-product-acceptance-closeout-20261009, audit/fe-contract-runtime-00-20261012 and fix/payment-request-chain-alignment-20261013 are the carriers of the three runs still registered active/verification_pending in .agent/active-runs.json. A whole-workspace sweep (make workspace.retain-main-only) would destroy live carriers, so it is not used here.",
+  "pre-existing residual, recorded not fixed: the local branch audit/daily-dev-full-product-acceptance-20261013 is not in the active-run index and is not an origin/main ancestor (its carrier was retired separately). It is out of this batch's scope."
+ ],
+ "next_exact_step": "All three offline L1 checks pass (verify.workspace.worktree.guard 140, verify.branch.governance.consistency 73, verify.agent.ledger.unit 15) and ci.local.iteration PASS (L1 only, risk-selected non-zero L2 = the worktree guard). Next: ci.delivery.freeze.prepare, commit the candidate, freeze the full fingerprint, run one exact-head ci.local.quick, push, wait for remote required checks, merge, then remove the residual release/daily-main-mode-20261011 worktree through the governed detach entry (branch retained)."
+}

@@ -1,0 +1,59 @@
+schema_version: 1
+goal:
+  id: WORKSPACE-RELEASE-WORKTREE-DETACH-CLOSURE
+  title: workspace_release_worktree_detach_lane_restoration
+  status: active
+  formal_product_layer: P4
+  supporting_layer: P4
+  layer_target: governed_linked_worktree_cleanup_entry
+  module:
+    - scripts/ops
+    - docs/ops
+    - .agent
+  baseline:
+    branch: fix/workspace-release-worktree-detach-closure
+    full_sha: fc4164a5333600aa48836e3dd7a922401c1801f8
+    source: owner_approved_independent_small_task_20261013
+  objective: >-
+    Close the residual linked worktree `sce-backend-odoo-mainmode`
+    (`release/daily-main-mode-20261011` @ a0afb331) without weakening the
+    deliberate `release/*` branch-deletion protection, and restore the
+    documented branch-preserving detach contract that the unrelated PR #482
+    tightened incidentally.
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_tool
+    why_here: >-
+      The worktree cleanup/creation entries are the governed P4 tooling for local
+      workspace hygiene; the residual is a governed-created ops scaffold, so its
+      closure belongs to this tool layer.
+    why_not_elsewhere:
+      - no_p0_p1_p2_product_semantics_change
+      - no_frontend_rendering_or_contract_declaration_change
+      - no_release_line_branch_deletion_and_no_gate_relaxation
+      - no_new_environment_database_credential_or_fixture_authority
+    blast_radius:
+      - scripts_ops_safe_worktree_cleanup_and_its_offline_unit_suite
+      - docs_ops_execution_allowlist_and_workspace_execution_rules
+      - agent_ledger_metadata_only
+  constraints:
+    - release_branch_deletion_protection_is_deliberate_and_is_not_weakened
+    - detach_keeps_the_branch_so_no_evidence_receipt_is_required
+    - a_supplied_evidence_receipt_is_still_verified_fail_closed
+    - no_direct_git_worktree_and_no_hand_assembled_cleanup_command
+    - do_not_touch_active_registered_runs_or_their_carrier_branches
+  next_exact_step: >-
+    Record the batch (worktree guard + branch governance + ledger checks), then
+    integrate the reviewed candidate and close the residual worktree through the
+    restored governed detach entry.
+  completion:
+    scope: ops_tool_contract_restoration_only
+    overall_goal: incomplete
+    result_index: .agent/runs/WORKSPACE-RELEASE-WORKTREE-DETACH-CLOSURE/run.json
+    local_batch_acceptance: not_run
+    mainline_integration: not_run
+    deployment: not_run
+    target_user_delivery: not_run
+    limits: >-
+      This goal restores one documented ops entrypoint contract and removes one
+      local scaffold directory; it is not a product change, not a release-line
+      retirement and not a delivery or acceptance result.

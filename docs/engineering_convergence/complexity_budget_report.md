@@ -113,11 +113,11 @@ Generated from repository source files. This report is informational during the 
 | 1217 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1207 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
+| 1196 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
 | 1179 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1169 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
-| 1157 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1147 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
