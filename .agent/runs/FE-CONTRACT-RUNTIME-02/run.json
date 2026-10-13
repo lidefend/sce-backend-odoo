@@ -215,7 +215,10 @@
     "addons/smart_construction_core/models/projection_relation_lifecycle.py",
     "addons/smart_construction_core/tests/test_ar_ap_projection_relation_lifecycle.py",
     "addons/smart_construction_core/models/support/sc_workflow.py",
-    "addons/smart_construction_core/tests/test_workflow_instance_ownership.py"
+    "addons/smart_construction_core/tests/test_workflow_instance_ownership.py",
+    "addons/smart_construction_core/models/core/labor_management.py",
+    "addons/smart_construction_core/tests/test_price_family_company_ownership.py",
+    "addons/smart_core/tests/test_backend_contract_boundary_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -775,7 +778,9 @@
         "scripts/verify/backend_contract_lifecycle_authority_guard.py",
         "scripts/verify/test_backend_contract_lifecycle_runtime_schema_guard.py",
         "scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py",
-        "make/dev_test.mk"
+        "make/dev_test.mk",
+        "scripts/verify/backend_contract_boundary_guard.py",
+        "addons/smart_core/utils/backend_contract_boundaries.py"
       ]
     },
     "payment_guidance_declarations": {
@@ -886,6 +891,18 @@
         "make/ci.mk"
       ],
       "kind": "offline"
+    },
+    "sc_price_company_ownership_boundary_guard": {
+      "target": "verify.sc_price.company_ownership_boundary",
+      "inputs": [
+        "addons/smart_construction_core/models/core/labor_management.py",
+        "addons/smart_construction_core/models/core/equipment_management.py",
+        "addons/smart_construction_core/models/core/subcontract_management.py",
+        "addons/smart_construction_core/security/sc_record_rules.xml",
+        "addons/smart_construction_core/tests/test_price_family_company_ownership.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [
@@ -902,9 +919,10 @@
     "Delivery freeze is fail-closed on the registered contract defect CD-20261013-LAYOUT-COLUMNS-FALLBACK (frontend defaults/clamps columns when the declaration is missing); owned by T2/Step 5, not this batch.",
     "This run declares environment.kind=runtime, so the run evaluator marks every offline receipt stale ('runtime evidence requires authoritative environment readback'). Receipts are truthful but not reusable in-tool until that pre-existing declaration is reconciled.",
     "sc.ar.ap.report.summary (company_id column, action restricted to finance groups, typed-empty projection) still has no company rule; recorded for the Step 3 native-rule coverage pass.",
-    "Unattributed fact family discovered while classifying the 20 undecided-source models: sc.dashboard.cockpit.fact and sc.workbench.item carry ACL base.group_user 1111 with no ir.rule, and the shared sc.business.fact.mixin (also used by sc.document.admin.document, sc.office.admin.document, hr.payroll document) has no company field at all, so company isolation cannot be enforced; ownership must be anchored on project_id/company declaration before any write capability is kept. Owned by the next Step 1 slice (schema change -> authorized upgrade)."
+    "Unattributed fact family discovered while classifying the 20 undecided-source models: sc.dashboard.cockpit.fact and sc.workbench.item carry ACL base.group_user 1111 with no ir.rule, and the shared sc.business.fact.mixin (also used by sc.document.admin.document, sc.office.admin.document, hr.payroll document) has no company field at all, so company isolation cannot be enforced; ownership must be anchored on project_id/company declaration before any write capability is kept. Owned by the next Step 1 slice (schema change -> authorized upgrade).",
+    "verify.backend_business_fact.model_standard currently FAILs on documentation drift: docs/architecture/backend_business_model_audit_findings_v1.md records 372 model classes and 0 unclassified models while the measured values are 378 and 1. The target is a zero-reference lane entry (not reachable from any gate anchor), so it is not a blocker for this batch."
   ],
-  "next_exact_step": "Step 1 item #7 (20 undecided-attribution source models). DONE: sc.workflow.instance ownership source (resolve_workflow_instance_company derives the company from the business document, mismatch/unattributed fail closed, guarded by verify.workflow_instance.ownership_boundary, 13 tests). NEXT: anchor the sc.business.fact.mixin family (sc.dashboard.cockpit.fact, sc.workbench.item, sc.document.admin.document, sc.office.admin.document) - company declaration inherited from project/creator plus a company-scoped global rule, then re-check the over-broad base.group_user 1111 ACLs; after that: tier.review/tier.definition (external module disposition), project.task / sc.hazard.source / sc.site.photo.batch, and the sc.*.price group-vs-ACL coverage. Also correct the stale step text below that still lists sc.output.invoice.ledger and sc.p1.relationship.review.queue as pending (both landed: 57ec1573, fc8586b5).",
+  "next_exact_step": "Step 1 item #7 (20 undecided-attribution source models). DONE: sc.workflow.instance ownership source (13 tests) and the sc.{labor,equipment,subcontract}.price company fact (derived from the owning project, company-scoped rules, 10 tests). NEXT: anchor the sc.business.fact.mixin family (sc.dashboard.cockpit.fact, sc.workbench.item, sc.document.admin.document, sc.office.admin.document) - company declaration inherited from project/creator plus a company-scoped rule, then re-check the over-broad base.group_user 1111 ACLs; needs a schema change + authorized upgrade. After that: tier.review/tier.definition (external module disposition) and project.task / sc.hazard.source / sc.site.photo.batch. sc.material.catalog / sc.material.price stay in unresolved_models until their group-vs-ACL coverage is proven.",
   "acceptance_authority_layout": {
     "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
     "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",
@@ -2476,7 +2494,7 @@
         "company_configuration": 11,
         "potential_public_reference": 21,
         "identity_and_technical": 16,
-        "unresolved_source_ownership": 19
+        "unresolved_source_ownership": 16
       },
       "unresolved_models": [
         "account.analytic.account",
@@ -2487,14 +2505,11 @@
         "project.task",
         "sc.dashboard.cockpit.fact",
         "sc.document.admin.document",
-        "sc.equipment.price",
         "sc.hazard.source",
-        "sc.labor.price",
         "sc.material.catalog",
         "sc.material.price",
         "sc.office.admin.document",
         "sc.site.photo.batch",
-        "sc.subcontract.price",
         "sc.workbench.item",
         "tier.definition",
         "tier.review"
@@ -2514,6 +2529,33 @@
           "tests": 13,
           "read_isolation_evidence": "addons/smart_construction_core/tests/test_role_regression_minimal.py::test_workflow_runtime_is_scoped_by_allowed_company_without_count_leak",
           "limits": "In-process resolver proof only; no installed-schema/ORM run of the legacy create API in this slice."
+        },
+        "sc.labor.price": {
+          "verdict": "resolved",
+          "owner_anchor": "project.project company (project_id.company_id), read as a stored related fact",
+          "declaration": "company_id = fields.Many2one(\"res.company\", related=\"project_id.company_id\", store=True, readonly=True, index=True)",
+          "removed_guess": "default=self.env.company company_id plus a tautological project/company constraint",
+          "guard": "verify.sc_price.company_ownership_boundary",
+          "tests": 10,
+          "limits": "Source-level declaration and rule proof only; no installed-schema/ORM readback in this slice."
+        },
+        "sc.equipment.price": {
+          "verdict": "resolved",
+          "owner_anchor": "project.project company (project_id.company_id), read as a stored related fact",
+          "declaration": "company_id = fields.Many2one(\"res.company\", related=\"project_id.company_id\", store=True, readonly=True, index=True)",
+          "removed_guess": "default=self.env.company company_id plus a tautological project/company constraint",
+          "guard": "verify.sc_price.company_ownership_boundary",
+          "tests": 10,
+          "limits": "Source-level declaration and rule proof only; no installed-schema/ORM readback in this slice."
+        },
+        "sc.subcontract.price": {
+          "verdict": "resolved",
+          "owner_anchor": "project.project company (project_id.company_id), read as a stored related fact",
+          "declaration": "company_id = fields.Many2one(\"res.company\", related=\"project_id.company_id\", store=True, readonly=True, index=True)",
+          "removed_guess": "default=self.env.company company_id plus a tautological project/company constraint",
+          "guard": "verify.sc_price.company_ownership_boundary",
+          "tests": 10,
+          "limits": "Source-level declaration and rule proof only; no installed-schema/ORM readback in this slice."
         }
       }
     },
@@ -2763,5 +2805,26 @@
       "readonly_db_fact": "sc_dev_demo: both AR/AP summary tables exist with 0 rows; project_id is nullable in the preserved provider, so an unanchored row is representable and the fail-closed gate is meaningful."
     },
     "runtime_pending": "No governed module upgrade was run, so the installed views/rules in sc_dev_demo still equal the pre-change state; L3 runtime readback of the new ir.rule records awaits write authorization."
+  },
+  "price_family_company_ownership": {
+    "layer": "P1",
+    "status": "L1_passed_runtime_readback_pending",
+    "decision": "The company of sc.labor.price / sc.equipment.price / sc.subcontract.price is not a second, independently editable fact. It is derived from the owning project (related=project_id.company_id, store=True, readonly=True), the same shape as the proven sc.material.price sibling. The first attempt in this slice added a plain company_id with default self.env.company plus a project/company _check_project_company constraint; that duplicated the fact and made the constraint a tautology, so it was replaced by the derived declaration and the duplicate validation was removed.",
+    "access_boundary": "rule_sc_internal_{labor,equipment,subcontract}_price now AND the company clause ('|', ('company_id','=',False), ('company_id','in',company_ids)) with the pre-existing project-membership clause. perm_read/write/create/unlink, groups and the group-scoped declaration are unchanged; rule_sc_super_admin_* stays [(1,'=',1)] for group_sc_super_admin.",
+    "inputs": [
+      "addons/smart_construction_core/models/core/labor_management.py",
+      "addons/smart_construction_core/models/core/equipment_management.py",
+      "addons/smart_construction_core/models/core/subcontract_management.py",
+      "addons/smart_construction_core/security/sc_record_rules.xml",
+      "addons/smart_construction_core/tests/test_price_family_company_ownership.py",
+      "make/ci.mk"
+    ],
+    "validation": {
+      "entrypoint": "make verify.sc_price.company_ownership_boundary",
+      "tests": 10,
+      "negative_control": "Declaring the independent company_id again on sc.labor.price made 2 cases FAIL; restoring the derived declaration returned 10 tests OK.",
+      "scope_note": "A price row without a project has no company fact, so its derived company stays False and the rule keeps it visible as a company-wide default, exactly as before this slice."
+    },
+    "runtime_pending": "No governed module upgrade was run, so sc_dev_demo still holds the pre-change model and rule state; L3 readback of the derived column and the new rule domain awaits write authorization."
   }
 }

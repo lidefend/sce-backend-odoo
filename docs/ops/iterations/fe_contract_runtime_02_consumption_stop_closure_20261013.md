@@ -957,3 +957,60 @@ L2 定向 ORM 反例 1 test 0 failed（日志 `relationship_review_queue_project
 （另被 `sc.document.admin.document`、`sc.office.admin.document` 及 hr 文档模型继承）**完全没有公司字段**，
 因此公司隔离在该族无法表达。归属必须落到 `project_id`／公司声明后才能继续保留写能力。
 该族需要 schema 变更 + 受管升级，属下一片切片，本次只登记事实，未改代码。
+
+### F 段：价格族公司归属回到事实层单一来源（Step 1 第 7 项）
+
+- 目标：`sc.labor.price`／`sc.equipment.price`／`sc.subcontract.price` 三个 P1 价格库的公司归属收口。
+- 事实：三模型此前无任何公司字段；规则只有 `rule_sc_internal_*`（仅 creator／项目负责人／项目关注者，
+  **无公司条款**）与 `rule_sc_super_admin_*`（`[(1,'=',1)]`）；ACL 仅
+  `group_sc_internal_user`(1110)／`group_sc_super_admin`(1111)。
+- 裁定（架构边界）：**后端必须回到事实层数据单一来源**。价格行的公司不是第二个可独立编辑的事实，
+  它就是所属项目的公司；独立再存一份（哪怕带 `default=self.env.company`）等于制造第二来源与漂移口。
+- 实现：三模型统一改为
+  `company_id = fields.Many2one("res.company", related="project_id.company_id", store=True, readonly=True, index=True)`，
+  与既有 `ScSubcontractPlan`（`subcontract_management.py:39`）以及材料样板 `sc.material.price`
+  （派生自 `material_catalog_id.company_id`）同一范式；仓库内同型派生声明约 30 处，非新机制。
+- 本切片内先前的**重复冗长逻辑**已移除：一是三份独立的
+  `company_id = fields.Many2one(..., required=True, default=lambda self: self.env.company, index=True, ondelete="restrict")`
+  字段块，二是三条 `@api.constrains("company_id","project_id") _check_project_company`。后者在派生写法下
+  是恒真约束（拿项目公司比自己），属重复校验，无信息量。
+- 规则：`rule_sc_internal_{labor,equipment,subcontract}_price` 的 `domain_force` 追加公司条款
+  `('|', ('company_id','=',False), ('company_id','in',company_ids))` 并与既有项目成员条款 `AND`；
+  `perm_read/write/create/unlink`、`groups`、group-scoped 声明不变；`rule_sc_super_admin_*` 仍
+  `[(1,'=',1)]`。域形状与材料样板 `rule_sc_material_*_price` 一致。
+- 边界语义：无项目的价格行没有公司事实，派生公司为 `False`，规则按“全局默认价”继续可见——与改动前
+  行为一致，不会因派生而丢可见性，也不会凭空归到调用者公司。
+- 测试与负向控制：`addons/smart_construction_core/tests/test_price_family_company_ownership.py`
+  10 用例（派生声明唯一、无独立默认/可选写、无重复约束、规则公司条款、项目成员范围、权限、
+  group-scoped、super_admin ALL、材料样板未回退、材料派生范式仍在）。负向控制：把某个模型改回独立
+  `company_id` 声明 → 2 用例 FAIL；还原 → 10 用例 OK。
+- 接线：新增 `verify.sc_price.company_ownership_boundary`（`make/ci.mk`），作为
+  `verify.contract.architecture.suite` 依赖；该 suite 同时被 `ci.local.quick.run` 与
+  `ci.professional.backend.shard-verify` 两个闸锚点可达，因此本地/远端无 lane 分叉。
+- 同批真实红灯修复（非本切片业务能力，属边界治理）：本分支 `a74a5c9f` 把
+  `models/support/product_policy_sync.py` 从写 `ui.menu.config.policy` 改为投影到 P1 产品事实模型
+  `sc.product.policy` 后，`scripts/verify/backend_contract_boundary_guard.py` 的
+  `ALLOWED_LOWCODING_POLICY_RUNTIME_WRITERS` 仍登记该文件，导致
+  `test_backend_contract_boundary_guard.py` 断言 `lowcoding_policy_writer_count == 5` 失败（实测 4）。
+  已退役该白名单条目并同步期望值（lowcoding 5→4、writer_boundary 12→11、writer_file 8→7）与
+  `docs/architecture/backend_contract_boundaries.md`；未改扫描/判定逻辑，未回退产品迁移。
+- 输入清单修正：`schema_digest_authority` 的 inputs 补
+  `scripts/verify/backend_contract_boundary_guard.py` 与 `addons/smart_core/utils/backend_contract_boundaries.py`
+  （前者被测试 import、后者被前者读取，属被遗漏的测试/工具依赖）。
+- 证据（`.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/`）：
+  - `logs/sc_price_company_ownership_boundary.log`：`Ran 10 tests ... OK`；receipt
+    `sc_price_company_ownership_boundary_guard.json`（`status=passed`、`test_count=10`）。
+  - `logs/backend_contract_lifecycle_authority.log`：四个套件 `12+10+11+13=46` 用例 `OK`；receipt
+    `schema_digest_authority.json`（`status=passed`、`test_count=46`）。
+- 静态门禁：`make verify.sc_price.company_ownership_boundary`（10 OK）、
+  `make audit.verification.lane_coverage.check` PASS、`make verify.guard.registry` AUDIT PASS、
+  `make ci.local.iteration` PASS（`L1_only`，dirty）。
+- 分类台账差量：`unresolved_source_ownership` 19 → 16；三个价格模型进入
+  `native_classification.resolved_source_ownership`（锚点＝`project_id.company_id` 派生 +
+  公司域规则，guard＝`verify.sc_price.company_ownership_boundary`）。
+- 未做／限制：无受管升级、无 fixture、无业务写；`sc_dev_demo` 仍是改动前的模型与规则安装态，
+  派生列与新规则域的 L3 运行态回读待写授权。`sc.material.catalog`／`sc.material.price` 仍留在
+  `unresolved_models`，等其 group-vs-ACL 覆盖证明后再收。
+- 附带发现（已登 run blockers，非本批阻塞）：`make verify.backend_business_fact.model_standard`
+  当前因文档计数漂移而 FAIL（`backend_business_model_audit_findings_v1.md` 记 372/0，实测 378/1）；
+  该 target 是 zero-reference、不可达任何闸锚点的 lane 条目。
