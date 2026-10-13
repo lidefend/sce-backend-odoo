@@ -922,7 +922,7 @@
     "Unattributed fact family discovered while classifying the 20 undecided-source models: sc.dashboard.cockpit.fact and sc.workbench.item carry ACL base.group_user 1111 with no ir.rule, and the shared sc.business.fact.mixin (also used by sc.document.admin.document, sc.office.admin.document, hr.payroll document) has no company field at all, so company isolation cannot be enforced; ownership must be anchored on project_id/company declaration before any write capability is kept. Owned by the next Step 1 slice (schema change -> authorized upgrade).",
     "verify.backend_business_fact.model_standard currently FAILs on documentation drift: docs/architecture/backend_business_model_audit_findings_v1.md records 372 model classes and 0 unclassified models while the measured values are 378 and 1. The target is a zero-reference lane entry (not reachable from any gate anchor), so it is not a blocker for this batch."
   ],
-  "next_exact_step": "Step 1 item #7 (20 undecided-attribution source models). DONE: sc.workflow.instance ownership source (13 tests) and the sc.{labor,equipment,subcontract}.price company fact (derived from the owning project, company-scoped rules, 10 tests). NEXT: anchor the sc.business.fact.mixin family (sc.dashboard.cockpit.fact, sc.workbench.item, sc.document.admin.document, sc.office.admin.document) - company declaration inherited from project/creator plus a company-scoped rule, then re-check the over-broad base.group_user 1111 ACLs; needs a schema change + authorized upgrade. After that: tier.review/tier.definition (external module disposition) and project.task / sc.hazard.source / sc.site.photo.batch. sc.material.catalog / sc.material.price stay in unresolved_models until their group-vs-ACL coverage is proven.",
+  "next_exact_step": "Data-isolation scope re-inventory DONE against the installed DB (local.dev.data_scope.inventory now also reads installed ir.rule coverage). Confirmed the recorded decision: the full 744-model registry is inspection scope, not a rewrite list, and no customer business document lacks an ownership path. Cheapest open class = 102 P1 models that already resolve a company path but install no company-scoped rule (96 of them have no rule at all). NEXT (needs owner go-ahead): fix that class in dependency order - details by parent-relation rules (construction.contract.line, project.budget.line, project.budget.boq.line, sc.plan.line, sc.material.rental.*.line, sc.expense.claim.deduction.line, tender.bid.line, ...), then roots by their own/parent company (sc.hazard.source, sc.site.photo.batch, tender.*, project.cost.period, sc.quality.*, sc.safety.*), then explicitly declare the not-company dimensions instead of adding fields. Schema-change family (sc.business.fact.mixin) stays a separate later slice.",
   "acceptance_authority_layout": {
     "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
     "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",
@@ -2347,7 +2347,7 @@
     },
     "model_inventory": {
       "artifact": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/data_scope_inventory.log",
-      "status": "read-only observed, not classified/authorized",
+      "status": "read-only installed readback (ownership paths + installed ir.rule coverage); observed, not authorized",
       "native_models": 282,
       "concrete_models": 251,
       "concrete_with_company_id": 140,
@@ -2361,6 +2361,70 @@
         "abstract": 116,
         "status": "read_only_observed_not_authorized",
         "p1_referenced": 282
+      },
+      "superseded_artifacts": [
+        ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/data_scope_inventory.log (pre price-family change)",
+        ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/data_scope_registry_inventory.log (pre price-family change)"
+      ],
+      "artifact_installed_rules": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/data_scope_inventory_rules.log",
+      "tool": "local.dev.data_scope.inventory (read-only; forbids commit; sc_dev_demo only)",
+      "classification": {
+        "own": "model declares its own company_id",
+        "rel_only": "no own company_id but a business relation resolves to a company (e.g. project_id.company_id)",
+        "none": "no business company path; only audit actors (create_uid/write_uid/activity_user_id)",
+        "audit_actors_excluded": [
+          "create_uid.company_id",
+          "write_uid.company_id",
+          "activity_user_id.company_id"
+        ]
+      },
+      "installed_readback_20261014": {
+        "registry_total": 744,
+        "persistent": 510,
+        "transient": 118,
+        "abstract": 116,
+        "p1_referenced": 282,
+        "persistent_classification": {
+          "own": 230,
+          "rel_only": 139,
+          "none": 141
+        },
+        "p1_persistent_total": 251,
+        "p1_classification": {
+          "own": 144,
+          "rel_only": 87,
+          "none": 20
+        },
+        "p1_with_path_but_no_company_rule": 102,
+        "p1_with_path_with_zero_rules_at_all": 96
+      },
+      "no_path_decomposition": {
+        "registry_persistent_none": 141,
+        "framework_reference_platform": 119,
+        "remaining_22": "4 detail children that inherit a parent company path + 18 platform/industry/reference configuration; zero customer business documents",
+        "p1_none_20": {
+          "inherit_from_parent_with_a_company_path": [
+            "project.settlement.line (settlement_id.project_id.company_id)",
+            "project.boq.analysis.norm.line / project.boq.analysis.resource.line (analysis_id.project_id.company_id)",
+            "tender.opening.competitor (opening_id.project_id.company_id)"
+          ],
+          "applicable_dimension_is_not_company": [
+            "res.groups",
+            "res.partner.category",
+            "sc.supplier.type",
+            "project.cost.code",
+            "project.dictionary",
+            "sc.dictionary (scope_type/scope_ref)",
+            "sc.capability / sc.capability.group (role_scope/capability_scope)",
+            "sc.scene.tile / sc.scene.version (scene_id)",
+            "sc.product.policy",
+            "sc.approval.scope (group_id/user_ids)",
+            "sc.project.capability.roadmap",
+            "sc.project.next_action.rule",
+            "sc.project.stage.requirement.item",
+            "sc.signup.throttle"
+          ]
+        }
       }
     },
     "systemic_execution": [
