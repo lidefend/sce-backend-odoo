@@ -401,5 +401,227 @@ class DemoNoMoney(models.Model):
             self.assertEqual(0, report["currency_models"])
 
 
+STATE_MACHINE = '''
+class ScStateMachine:
+    DEMO = "demo.lifecycle"
+
+    DEMO_STATES = [
+        ("draft", "草稿"),
+        ("done", "完成"),
+    ]
+    DEMO_TRANSITIONS = {
+        "draft": {"done"},
+        "done": set(),
+    }
+
+    _REGISTRY = {
+        DEMO: (DEMO_STATES, DEMO_TRANSITIONS),
+    }
+'''
+
+ENFORCED_MODEL = '''
+class DemoLifecycle(models.Model):
+    _name = "demo.lifecycle"
+    state = fields.Selection(ScStateMachine.selection(ScStateMachine.DEMO))
+
+    def write(self, vals):
+        if "state" in vals:
+            ScStateMachine.assert_transition(self._name, self.state, vals["state"])
+        return super().write(vals)
+'''
+
+
+def write_state_case(tmp: Path, source: str, declarations: dict, state_source: str = STATE_MACHINE):
+    module = tmp / "addons/demo_module"
+    (module / "models/support").mkdir(parents=True, exist_ok=True)
+    (module / "models/definition.py").write_text(source, encoding="utf-8")
+    (module / "models/support/state_machine.py").write_text(state_source, encoding="utf-8")
+    sets = tmp / "config/tenant/module_sets.v1.json"
+    sets.parent.mkdir(parents=True, exist_ok=True)
+    sets.write_text(json.dumps({"product_modules": ["demo_module"]}), encoding="utf-8")
+    declarations_path = tmp / "declarations.json"
+    declarations_path.write_text(json.dumps(declarations), encoding="utf-8")
+    pin_path = tmp / "pin.py"
+    pin_path.write_text("MODELS = []\n", encoding="utf-8")
+    return tmp, declarations_path, pin_path
+
+
+def run_state(tmp: Path, source: str, declarations: dict, state_source: str = STATE_MACHINE):
+    root, declarations_path, pin_path = write_state_case(tmp, source, declarations, state_source)
+    return guard.check(root, declarations_path, "config/tenant/module_sets.v1.json", pin_path)
+
+
+def state_declaration(**overrides) -> dict:
+    declaration = {
+        "state_fact": {
+            "issue": "STATE-FACT-SINGLE-SOURCE-01",
+            "owner_module": "demo_module",
+            "reason": "the declared lifecycle is the one fact every writer obeys",
+            "enforcements": [
+                {
+                    "model": "demo.lifecycle",
+                    "file": "addons/demo_module/models/definition.py",
+                    "token": "ScStateMachine.assert_transition",
+                    "enforced": True,
+                }
+            ],
+            "transition_tables": [],
+            "selection_stage_references": [],
+            "bypass_sites": [],
+        }
+    }
+    declaration["state_fact"].update(overrides)
+    return declaration
+
+
+class StateFactGuardTest(unittest.TestCase):
+    def test_enforced_registered_model_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            report = run_state(Path(raw), ENFORCED_MODEL, state_declaration())
+            self.assertEqual([], report["failures"], report["failures"])
+            self.assertEqual(
+                ["demo.lifecycle"], report["state_fact"]["enforced_models"]
+            )
+
+    def test_registered_model_without_a_declared_enforcement_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            declarations = state_declaration(enforcements=[])
+            report = run_state(Path(raw), ENFORCED_MODEL, declarations)
+            self.assertTrue(
+                any(
+                    "demo.lifecycle is registered but has no declared enforcement" in f
+                    for f in report["failures"]
+                ),
+                report["failures"],
+            )
+
+    def test_enforcement_token_must_exist_in_the_declared_file(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            declarations = state_declaration(
+                enforcements=[
+                    {
+                        "model": "demo.lifecycle",
+                        "file": "addons/demo_module/models/definition.py",
+                        "token": "_validate_lifecycle_transition",
+                        "enforced": True,
+                    }
+                ]
+            )
+            report = run_state(Path(raw), ENFORCED_MODEL, declarations)
+            self.assertTrue(
+                any("enforcement token" in f and "is absent from" in f for f in report["failures"]),
+                report["failures"],
+            )
+
+    def test_unenforced_model_needs_a_reason_and_a_next_step(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            declarations = state_declaration(
+                enforcements=[{"model": "demo.lifecycle", "enforced": False}]
+            )
+            report = run_state(Path(raw), ENFORCED_MODEL, declarations)
+            self.assertTrue(
+                any("demo.lifecycle is unenforced without a reason" in f for f in report["failures"]),
+                report["failures"],
+            )
+            self.assertTrue(
+                any("demo.lifecycle is unenforced without a next step" in f for f in report["failures"]),
+                report["failures"],
+            )
+
+    def test_second_transition_table_must_be_declared(self) -> None:
+        source = ENFORCED_MODEL + '''
+
+class DemoLifecycleCopy(models.Model):
+    _inherit = "demo.lifecycle"
+    _LIFECYCLE_TRANSITIONS = {"draft": {"done"}}
+'''
+        with tempfile.TemporaryDirectory() as raw:
+            report = run_state(Path(raw), source, state_declaration())
+            self.assertTrue(
+                any("declares a second transition table _LIFECYCLE_TRANSITIONS" in f for f in report["failures"]),
+                report["failures"],
+            )
+            declared = state_declaration(
+                transition_tables=[
+                    {
+                        "file": "addons/demo_module/models/definition.py",
+                        "name": "_LIFECYCLE_TRANSITIONS",
+                        "reason": "the test copy is declared, so it is a decision",
+                    }
+                ]
+            )
+            report = run_state(Path(raw), source, declared)
+            self.assertEqual([], report["failures"], report["failures"])
+
+    def test_borrowed_lifecycle_selection_must_be_declared(self) -> None:
+        source = ENFORCED_MODEL + '''
+
+class DemoStage(models.Model):
+    _name = "demo.stage"
+    lifecycle_state = fields.Selection(ScStateMachine.selection(ScStateMachine.DEMO))
+'''
+        with tempfile.TemporaryDirectory() as raw:
+            report = run_state(Path(raw), source, state_declaration())
+            self.assertTrue(
+                any("demo.stage borrows the DEMO lifecycle selection undeclared" in f for f in report["failures"]),
+                report["failures"],
+            )
+            declared = state_declaration(
+                selection_stage_references=[
+                    {"model": "demo.stage", "key": "DEMO", "reason": "a stage reference, not a status"}
+                ]
+            )
+            report = run_state(Path(raw), source, declared)
+            self.assertEqual([], report["failures"], report["failures"])
+
+    def test_bypass_site_must_be_declared(self) -> None:
+        source = '''
+class DemoLifecycle(models.Model):
+    _name = "demo.lifecycle"
+    state = fields.Selection(ScStateMachine.selection(ScStateMachine.DEMO))
+
+    def action_done(self):
+        return self.with_context(allow_transition=True).write({"state": "done"})
+
+    def write(self, vals):
+        if "state" in vals:
+            ScStateMachine.assert_transition(self._name, self.state, vals["state"])
+        return super().write(vals)
+'''
+        with tempfile.TemporaryDirectory() as raw:
+            report = run_state(Path(raw), source, state_declaration())
+            self.assertTrue(
+                any(
+                    "bypasses the declared table in action_done undeclared" in f
+                    for f in report["failures"]
+                ),
+                report["failures"],
+            )
+            declared = state_declaration(
+                bypass_sites=[
+                    {
+                        "file": "addons/demo_module/models/definition.py",
+                        "method": "action_done",
+                        "reason": "the method writes the target under an explicit bypass",
+                    }
+                ]
+            )
+            report = run_state(Path(raw), source, declared)
+            self.assertEqual([], report["failures"], report["failures"])
+
+    def test_disappeared_declaration_is_reported(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            declarations = state_declaration(
+                transition_tables=[
+                    {"file": "addons/demo_module/models/definition.py", "name": "_GONE_TRANSITIONS"}
+                ]
+            )
+            report = run_state(Path(raw), ENFORCED_MODEL, declarations)
+            self.assertTrue(
+                any("declared transition table" in f and "is gone" in f for f in report["failures"]),
+                report["failures"],
+            )
+
+
 if __name__ == "__main__":
     unittest.main()

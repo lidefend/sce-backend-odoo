@@ -167,5 +167,103 @@
     "method": "_sc_ensure_cny_currency",
     "currency": "CNY",
     "reason": "The statement that a caller-context default still resolves to the tenant standard currency depends on this pin: it makes CNY active and sets every company without journal items to it, skipping companies that already own accounting facts. The guard fails if this method disappears, stops naming the standard currency, or if standard-currency models are declared without a registered authority."
+  },
+  "state_fact": {
+    "issue": "STATE-FACT-SINGLE-SOURCE-01",
+    "owner_module": "smart_construction_core",
+    "reason": "A record lifecycle is a fact. It was declared in four places at once: the ScStateMachine tables, a second table copied next to one model, ad-hoc 'if state not in (...)' checks inside each action, and the workflow profile map. Whichever one a writer happened to consult became the truth, so a caller could write a state the declared table forbids. The table is now the single declared source and this registry records, per registered model, where that table is actually consulted, which models only borrow a lifecycle Selection, which second tables exist and why, and every site that writes state under an explicit bypass so a bypass stays a decision, not a habit.",
+    "enforcements": [
+      {
+        "model": "project.project",
+        "file": "addons/smart_construction_core/models/core/project_core.py",
+        "token": "_validate_lifecycle_transition",
+        "enforced": true
+      },
+      {
+        "model": "payment.request",
+        "file": "addons/smart_construction_core/models/core/payment_request.py",
+        "token": "ScStateMachine.assert_transition",
+        "enforced": true
+      },
+      {
+        "model": "sc.settlement.order",
+        "file": "addons/smart_construction_core/models/core/settlement_order.py",
+        "token": "_LIFECYCLE_SERVICE_TOKEN",
+        "enforced": true
+      },
+      {
+        "model": "construction.contract",
+        "enforced": false,
+        "reason": "The registered CONTRACT table is not consulted by write(): only the per-action 'if state not in (...)' checks stand between a caller and an undeclared jump such as write({'state': 'closed'}) on a draft contract.",
+        "next_exact_step": "consult the declared CONTRACT table from write() and from the reopen action"
+      },
+      {
+        "model": "project.settlement",
+        "enforced": false,
+        "reason": "The registered SETTLEMENT table is declared for the state Selection but no write() consults it, so the legal edges live only in the three action methods and a direct state write bypasses them.",
+        "next_exact_step": "add the declared-table assertion to the settlement write() path"
+      }
+    ],
+    "transition_tables": [
+      {
+        "file": "addons/smart_construction_core/models/core/settlement_order.py",
+        "name": "_LIFECYCLE_TRANSITIONS",
+        "reason": "A second copy of the declared SETTLEMENT_ORDER table and the one actually enforced. It is wider than the canonical table on two edges (draft->approve and submit->draft), so the enforced lifecycle and the declared lifecycle disagree. OPEN ITEM: it must delegate to ScStateMachine instead of restating the edges."
+      },
+      {
+        "file": "addons/smart_construction_core/handlers/project_connection_transition.py",
+        "name": "TRANSITIONS",
+        "reason": "Project connection state (whether a data connection is linked), not the record lifecycle of a business object; it is not a second source for any registered model."
+      },
+      {
+        "file": "addons/smart_core/delivery/edition_release_snapshot_promotion_service.py",
+        "name": "ALLOWED_TRANSITIONS",
+        "reason": "Edition release promotion stages for the delivery tooling, not a product record lifecycle; it does not describe any registered model."
+      }
+    ],
+    "selection_stage_references": [
+      {
+        "model": "sc.project.stage.requirement.item",
+        "key": "PROJECT",
+        "reason": "lifecycle_state names which project stage a requirement applies to; the field help states it is not the record's own status, so it is a stage reference and owns no lifecycle."
+      },
+      {
+        "model": "sc.project.stage.requirement.wizard",
+        "key": "PROJECT",
+        "reason": "read-only carrier of the project stage being configured"
+      },
+      {
+        "model": "sc.project.stage.requirement.wizard.line",
+        "key": "PROJECT",
+        "reason": "read-only carrier of the project stage for one wizard line"
+      }
+    ],
+    "bypass_sites": [
+      {
+        "file": "addons/smart_construction_core/models/core/payment_request.py",
+        "method": "_complete_payment_approval",
+        "reason": "A payment transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared PAYMENT_REQUEST table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/payment_request.py",
+        "method": "action_cancel",
+        "reason": "A payment transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared PAYMENT_REQUEST table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/payment_request.py",
+        "method": "action_done",
+        "reason": "A payment transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared PAYMENT_REQUEST table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/payment_request.py",
+        "method": "action_on_tier_rejected",
+        "reason": "A payment transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared PAYMENT_REQUEST table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/payment_request.py",
+        "method": "action_submit",
+        "reason": "A payment transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared PAYMENT_REQUEST table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      }
+    ]
   }
 }

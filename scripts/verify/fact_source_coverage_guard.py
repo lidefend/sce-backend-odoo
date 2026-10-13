@@ -336,6 +336,224 @@ def company_currency_authority(
     return failures, {"status": "failed" if failures else "verified", **declared}
 
 
+STATE_MACHINE_REL = "models/support/state_machine.py"
+CLASS_CONSTANT = re.compile(
+    r"^\s{4}([A-Z][A-Z0-9_]*)\s*=\s*[\"']([a-z][a-z0-9_.]*)[\"']\s*$", re.M
+)
+REGISTRY_BLOCK = re.compile(r"_REGISTRY\s*=\s*\{(?P<body>.*?)\n\s{4}\}", re.S)
+REGISTRY_KEY = re.compile(r"^\s{8}([A-Z][A-Z0-9_]*)\s*:", re.M)
+TRANSITION_ATTR = re.compile(
+    r"^[ \t]+(?P<name>_?[A-Za-z0-9_]*TRANSITIONS[A-Za-z0-9_]*)\s*=", re.M
+)
+SELECTION_CONSUMER = re.compile(
+    r"ScStateMachine\.selection\(\s*ScStateMachine\.(?P<key>[A-Z][A-Z0-9_]*)\s*\)"
+)
+BYPASS_SITE = re.compile(r"allow_transition\s*=\s*True")
+
+
+def state_machine_path(root: Path, modules: list[str]) -> Path | None:
+    """The one file that owns the declared lifecycle tables."""
+    for module in modules:
+        candidate = root / "addons" / module / STATE_MACHINE_REL
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def state_registry(text: str) -> dict[str, str]:
+    """``REGISTRY_KEY -> model name`` for every model the tables cover."""
+    constants = {match.group(1): match.group(2) for match in CLASS_CONSTANT.finditer(text)}
+    block = REGISTRY_BLOCK.search(text)
+    if not block:
+        return {}
+    return {
+        key: constants[key]
+        for key in REGISTRY_KEY.findall(block.group("body"))
+        if key in constants
+    }
+
+
+def product_sources(root: Path, modules: list[str]):
+    """Every non-test Python file of the product modules."""
+    for module in sorted(modules):
+        base = root / "addons" / module
+        if not base.is_dir():
+            continue
+        for path in sorted(base.rglob("*.py")):
+            if "tests" in path.parts:
+                continue
+            yield path
+
+
+def enclosing_method(text: str, offset: int) -> str:
+    """The method a byte offset sits in, for a stable site label."""
+    name = "<module>"
+    for match in METHOD_DEF.finditer(text):
+        if match.start() > offset:
+            break
+        name = match.group(2)
+    return name
+
+
+def state_fact(root: Path, modules: list[str], declares: dict) -> tuple[list[str], dict]:
+    """The declared lifecycle must be the one fact every writer obeys.
+
+    Three ways a second state fact used to appear silently: a registered model
+    whose ``write`` never consults its table, a model that declares its own
+    transition table next to the canonical one, and a model that borrows a
+    lifecycle ``Selection`` without belonging to it. Each is derived here and
+    must equal the declaration; absence is never an exemption.
+    """
+    declared = declares.get("state_fact") or {}
+    failures: list[str] = []
+    source = state_machine_path(root, modules)
+    if source is None:
+        if declared.get("enforcements"):
+            return [
+                "state_fact: an enforcement is declared but no product module owns the "
+                "state-machine source"
+            ], {}
+        return [], {"status": "not_applicable"}
+    registry = state_registry(source.read_text(encoding="utf-8", errors="replace"))
+    if not registry:
+        return ["state_fact: the state registry could not be read"], {}
+
+    entries = declared.get("enforcements") or []
+    by_model: dict[str, dict] = {}
+    for entry in entries:
+        model = entry.get("model")
+        if not model:
+            failures.append("state_fact: an enforcement entry has no model")
+            continue
+        if model in by_model:
+            failures.append(f"state_fact: {model} is declared twice")
+        by_model[model] = entry
+    for model in sorted(set(registry.values()) - set(by_model)):
+        failures.append(f"state_fact: {model} is registered but has no declared enforcement")
+    for model in sorted(set(by_model) - set(registry.values())):
+        failures.append(f"state_fact: {model} declares an enforcement but is not registered")
+
+    enforced_models: list[str] = []
+    for model in sorted(set(registry.values()) & set(by_model)):
+        entry = by_model[model]
+        if entry.get("enforced"):
+            rel = entry.get("file")
+            token = entry.get("token")
+            if not rel or not token:
+                failures.append(f"state_fact: {model} is enforced without a file and token")
+                continue
+            path = root / rel
+            if not path.is_file():
+                failures.append(f"state_fact: {model} enforcement file is missing: {rel}")
+                continue
+            if token not in path.read_text(encoding="utf-8", errors="replace"):
+                failures.append(
+                    f"state_fact: {model} enforcement token {token!r} is absent from {rel}"
+                )
+                continue
+            enforced_models.append(model)
+            continue
+        if not (entry.get("reason") or "").strip():
+            failures.append(f"state_fact: {model} is unenforced without a reason")
+        if not (entry.get("next_exact_step") or "").strip():
+            failures.append(f"state_fact: {model} is unenforced without a next step")
+
+    canonical = source.relative_to(root).as_posix()
+    derived_tables: dict[tuple[str, str], int] = {}
+    for path in product_sources(root, modules):
+        rel = path.relative_to(root).as_posix()
+        if rel == canonical:
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for match in TRANSITION_ATTR.finditer(text):
+            key = (rel, match.group("name"))
+            derived_tables[key] = derived_tables.get(key, 0) + 1
+    declared_tables = {
+        (entry.get("file"), entry.get("name"))
+        for entry in declared.get("transition_tables") or []
+    }
+    for key in sorted(set(derived_tables) - declared_tables):
+        failures.append(f"state_fact: {key[0]} declares a second transition table {key[1]}")
+    for key in sorted(declared_tables - set(derived_tables)):
+        failures.append(f"state_fact: declared transition table {key[0]}:{key[1]} is gone")
+    for key, count in sorted(derived_tables.items()):
+        if count > 1:
+            failures.append(
+                f"state_fact: {key[0]} declares {key[1]} {count} times"
+            )
+
+    constants = scope_guard.model_name_constants(root, modules)
+    known = set(registry.values())
+    for names in scope_guard.defined_models(root, set(modules)).values():
+        known.update(names)
+    declared_stage = {
+        (entry.get("model"), entry.get("key"))
+        for entry in declared.get("selection_stage_references") or []
+    }
+    derived_stage: set[tuple[str, str]] = set()
+    for path in product_sources(root, modules):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        if "ScStateMachine.selection(" not in text:
+            continue
+        if path == source:
+            continue
+        for match in SELECTION_CONSUMER.finditer(text):
+            block = None
+            for candidate, body in scope_guard.class_blocks(text):
+                if candidate.start() > match.start():
+                    break
+                block = body
+            if block is None:
+                failures.append(
+                    f"state_fact: a {match.group('key')} selection consumer outside any class: "
+                    f"{path.relative_to(root).as_posix()}"
+                )
+                continue
+            for model in scope_guard.target_models(block, constants, known):
+                derived_stage.add((model, match.group("key")))
+    for model, key in sorted(derived_stage):
+        if model in registry.values():
+            continue
+        if (model, key) in declared_stage:
+            continue
+        failures.append(f"state_fact: {model} borrows the {key} lifecycle selection undeclared")
+    for model, key in sorted(declared_stage - derived_stage):
+        failures.append(f"state_fact: declared stage reference {model}:{key} is gone")
+
+    derived_bypass: dict[tuple[str, str], int] = {}
+    for model in sorted(set(registry.values()) & set(by_model)):
+        entry = by_model[model]
+        rel = entry.get("file")
+        if not rel:
+            continue
+        path = root / rel
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for match in BYPASS_SITE.finditer(text):
+            key = (rel, enclosing_method(text, match.start()))
+            derived_bypass[key] = derived_bypass.get(key, 0) + 1
+    declared_bypass = {
+        (entry.get("file"), entry.get("method"))
+        for entry in declared.get("bypass_sites") or []
+    }
+    for key in sorted(set(derived_bypass) - declared_bypass):
+        failures.append(
+            f"state_fact: {key[0]} bypasses the declared table in {key[1]} undeclared"
+        )
+    for key in sorted(declared_bypass - set(derived_bypass)):
+        failures.append(f"state_fact: declared bypass site {key[0]}:{key[1]} is gone")
+
+    return failures, {
+        "registry_models": sorted(registry.values()),
+        "enforced_models": sorted(enforced_models),
+        "unenforced_models": sorted(set(registry.values()) - set(enforced_models)),
+        "transition_tables": sorted(f"{rel}:{name}" for rel, name in derived_tables),
+        "selection_consumers": sorted(f"{model}:{key}" for model, key in derived_stage),
+        "bypass_sites": sorted(f"{rel}:{method}" for rel, method in derived_bypass),
+    }
+
+
 def check(root: Path, declarations_path: Path, module_sets_path: str = DEFAULT_MODULE_SETS,
           runtime_pin: Path | None = None) -> dict:
     declaration = json.loads(declarations_path.read_text(encoding="utf-8"))
@@ -478,8 +696,12 @@ def check(root: Path, declarations_path: Path, module_sets_path: str = DEFAULT_M
     for finding in hard_coded_currencies(root, modules):
         failures.append(finding)
 
+    state_failures, state_report = state_fact(root, modules, declares)
+    failures.extend(state_failures)
+
     return {
         "status": "failed" if failures else "passed",
+        "state_fact": state_report,
         "standard_currency": STANDARD_CURRENCY,
         "standard_currency_models": derived_standard,
         "caller_context_currency_models": derived_caller,
