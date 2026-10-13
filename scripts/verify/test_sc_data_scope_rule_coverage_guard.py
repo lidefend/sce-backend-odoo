@@ -239,6 +239,42 @@ class DataScopeRuleCoverageGuardTest(unittest.TestCase):
             self.assertEqual("failed", report["status"])
             self.assertIn("group-scoped", report["failures"][0])
 
+    def test_group_clear_command_is_global_coverage(self) -> None:
+        """A rule that clears every group is global, not group-scoped.
+
+        ``(5, 0, 0)`` is the ORM unlink-all command and ``(6, 0, [])`` replaces
+        the group set with nothing. Both leave a rule that no group union can
+        widen, so reading them as a group scope under-reported the global rules.
+        """
+        for expression in ("[(5, 0, 0)]", "[(6, 0, [])]"):
+            with self.subTest(expression=expression):
+                with tempfile.TemporaryDirectory() as raw:
+                    root, declarations = write_case(
+                        Path(raw),
+                        [{"ident": "a", "ref": "model_demo_model", "domain": GLOBAL_DOMAIN,
+                          "groups": f'        <field name="groups" eval="{expression}"/>\n'}],
+                        {"enforced": [{"model": "demo.model", "anchor": "company_id"}],
+                         "exempt": []},
+                    )
+                    report = guard.check(root, declarations)
+                    self.assertEqual("passed", report["status"], report["failures"])
+                    self.assertEqual(1, report["global_rules_seen"])
+
+    def test_group_clear_command_beside_a_real_group_stays_group_scoped(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root, declarations = write_case(
+                Path(raw),
+                [{"ident": "a", "ref": "model_demo_model", "domain": GLOBAL_DOMAIN,
+                  "groups": ('        <field name="groups" eval="[(5, 0, 0), '
+                             '(4, ref(\'base.group_user\'))]"/>\n')}],
+                {"enforced": [{"model": "demo.model", "anchor": "company_id"}],
+                 "exempt": []},
+            )
+            report = guard.check(root, declarations)
+            self.assertEqual("failed", report["status"])
+            self.assertIn("group-scoped", report["failures"][0])
+            self.assertEqual(0, report["global_rules_seen"])
+
     def test_wrong_anchor_fails(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             root, declarations = write_case(

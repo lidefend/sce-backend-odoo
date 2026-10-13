@@ -69,6 +69,11 @@ COMPANY_FIELD = re.compile(r"^\s+company_id\s*=\s*fields\.Many2one", re.M)
 INHERIT_LINE = re.compile(r"^[ \t]*_inherit\s*=\s*(.+?)\s*$", re.M)
 INHERIT_LITERAL = re.compile(r"[\"']([\w.]+)[\"']")
 INHERIT_TOKEN = re.compile(r"[A-Za-z_][\w.]*")
+# ``groups`` is an x2many, so "no group" can be declared by an ORM command as
+# well as by an empty literal: ``(5, 0, 0)`` unlinks every existing link and
+# ``(6, 0, [])`` replaces the set with nothing. Both leave the rule global.
+GROUPS_CLEAR_COMMAND = re.compile(r"\(5\s*,\s*0\s*,\s*0\)|\(6\s*,\s*0\s*,\s*\[\s*\]\)")
+ORM_SYNTAX = re.compile(r"[\s,\[\]()]")
 
 
 def record_ref(record: ET.Element) -> str | None:
@@ -86,11 +91,21 @@ def record_domain(record: ET.Element) -> str:
 
 
 def record_is_global(record: ET.Element) -> bool:
+    """A rule is global when it ends up carrying no group.
+
+    ``[(5, 0, 0)]`` (unlink all) and ``[(6, 0, [])]`` (replace with nothing)
+    are the ORM's two ways of saying "no groups"; reading them as a group scope
+    under-reported the global rules and could report a fully global rule set as
+    if a group union were able to widen it.
+    """
     for field in record.findall("field"):
         if field.get("name") == "groups":
             expression = (field.get("eval") or "").strip()
             text = "".join(field.itertext()).strip()
-            return expression == "[]" or (not expression and not text)
+            if not expression:
+                return not text
+            remainder = GROUPS_CLEAR_COMMAND.sub("", expression)
+            return not ORM_SYNTAX.sub("", remainder)
     return True
 
 
