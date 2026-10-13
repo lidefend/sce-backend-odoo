@@ -560,6 +560,26 @@ B 复核补充发现固定旧 XMLID 可能经通用 upsert 跨公司迁移；仅
 补齐已注册测试公司及既有 model/company 校验，不改通用 upsert。新建与旧 XMLID 重用都须
 守住公司事实；旧归属不符要求受管 reset。仅重验 3 个受影响活动用例及 2 个新反例。
 
+Step 1 下一项：销项发票台账 `sc.output.invoice.ledger`（`_auto=False` 的 SQL 视图）的
+收款发票去重窗口原按发票号单列分区。不同公司或不同币种打印出相同发票号时被合并为一条，
+`ROW_NUMBER()=1` 只保留一行，另一公司的发票静默消失。修复为按
+`（规范化发票号，项目公司 company_id，币种 currency_id）` 三元分区，新增
+`LEFT JOIN project_project` 取项目公司，并在登记反连接上补公司维度，避免其他公司的
+登记行压掉本公司的收款行；收款行金额按公司／币种分别守恒。
+
+验证：L1 `ci.local.iteration` PASS（16 tests，日志
+`invoice_ledger_partition_iteration_resolved.log`）；离线静态边界守卫 9 tests OK
+（新增用例断言所有 `PARTITION BY` 行同时含 `pp.company_id` 与 `ril.currency_id`、存在项目
+JOIN、反连接含公司断言；日志 `invoice_ledger_static_boundaries.log`）；旧源码反例使该守卫
+FAIL。L2 定向 ORM 反例 1 test 0 failed（日志 `output_invoice_ledger_cross_company_orm.log`）：
+同号发票在两家公司各建一条收款行，断言两条均在、金额各 100.0／250.0 守恒、合计 350.0；
+旧源码同用例 1 failed。3 个改动文件 `py_compile` 通过。
+
+残余与边界：`sc_dev_demo` 只有单公司数据，混公司反例由事务内 ORM 用例覆盖，不为此重置
+fixture；事务内 `Ledger.init()` 随回滚恢复，不是日常服务器升级证明。`sc_dev_demo` 中已安装的
+`sc.output.invoice.ledger` 视图仍是旧定义，受管模块升级与部署视图回读待写授权，不据此
+宣称已部署。下一项：`sc.p1.relationship.review.queue`。
+
 ## 执行器交接计划（2026-10-13，所有者要求记录后停止）
 
 ### 批次信息与入口

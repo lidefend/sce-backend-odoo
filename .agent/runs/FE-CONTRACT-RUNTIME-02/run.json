@@ -207,7 +207,9 @@
     "addons/smart_construction_core/tests/test_payroll_data_space_rules.py",
     "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
     "addons/smart_construction_acceptance_fixture/tests/test_data_space_creation.py",
-    "addons/smart_construction_acceptance_fixture/tests/__init__.py"
+    "addons/smart_construction_acceptance_fixture/tests/__init__.py",
+    "addons/smart_construction_core/models/core/output_invoice_ledger.py",
+    "addons/smart_construction_core/tests/test_um_p2_invoice_relation_aggregation_boundaries.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -844,7 +846,7 @@
     "Administrator capability-model ownership and function/data separation not yet closed",
     "Pure administrator data-denial and final historical menu monotonicity not yet verified"
   ],
-  "next_exact_step": "Interfund summary closure: source fix + static boundary guard (6 tests) + drilldown ORM test (1 test) pass; owner-authorized governed upgrade (recovery point artifacts/local-dev/snapshots/20261013T135743Z) deployed the new partition view and the audit passes with the fail-closed deployed-view equality. Residual gap: sc_dev_demo holds a single (project,type,company,currency) fact row, so no real-data mixed-partition counterexample yet; do not reset fixtures for it. Next: sc.output.invoice.ledger cross-company invoice-number dedup/window source fix with counterexamples, then sc.p1.relationship.review.queue.",
+  "next_exact_step": "Output invoice ledger closure (sc.output.invoice.ledger, _auto=False SQL view): receipt-invoice dedup window fixed to partition by (normalized invoice_no, project company_id, currency_id) with a LEFT JOIN project_project and a company dimension on the registration anti-join, so same-numbered invoices in different companies/currencies are no longer merged or silently dropped. Evidence: L1 ci.local.iteration PASS (16 tests, invoice_ledger_partition_iteration_resolved.log); offline static boundary guard 9 tests OK with the old source failing it (invoice_ledger_static_boundaries.log); targeted ORM counterexample 1 test 0 failed, old source 1 failed (output_invoice_ledger_cross_company_orm.log); py_compile of the 3 changed files OK. Residual: sc_dev_demo holds single-company data, so the mixed-company case is proven only by the transactional ORM test and the installed sc_dev_demo view is still the old definition -- a governed module upgrade plus deployed-view readback needs write authorization; Ledger.init() in a test transaction is not a persistent upgrade receipt. Next: sc.p1.relationship.review.queue multi-source project attribution (MIN-collapse; unclear/mixed ownership must not be published), then the remaining Step 1 sources.",
   "acceptance_authority_layout": {
     "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
     "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",
