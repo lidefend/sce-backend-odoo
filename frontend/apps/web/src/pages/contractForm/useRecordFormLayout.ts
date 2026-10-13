@@ -5,7 +5,7 @@ import type { NativeFormLayoutNode } from '../../components/template/NativeFormT
 import { buildRuntimeFieldStates } from '../../app/modifierEngine';
 import { resolveOccurrenceAuthVerdict } from '../../app/contract/contractAuthLevel';
 import {
-  collectContractV2FieldStatusByCode, resolveContractV2ContainerTree, resolveContractV2FormFieldMap, resolveContractV2MainData,
+  collectContractV2FieldStatusByCode, resolveContractV2ContainerTree, resolveContractV2FormFieldMap, resolveContractV2MainData, resolveContractV2WorkflowContract,
 } from '../../app/contracts/v2';
 import {
   applyNativeFieldOrderPreview as applyNativeFieldOrderPreviewFromTree,
@@ -215,7 +215,7 @@ export function useRecordFormLayout(context: {
           : Array.isArray(fieldInfo.selection) ? fieldInfo.selection as Array<[string,string]> : [];
         const states=(visible.length?visible:selection.map(item=>String(item[0]??'')))
           .map(value=>{const match=selection.find(item=>String(item[0]??'')===value);return {value,label:String(match?.[1]??value)};});
-        return {field,states,nodeIdentity:nativeNodeIdentity(node)};
+        return {field,states,nodeIdentity:nativeNodeIdentity(node),node};
       }
       for(const key of ['children','pages','tabs','nodes','items'] as const){
         const children=source[key];if(Array.isArray(children))queue.push(...children as NativeFormLayoutNode[]);
@@ -225,16 +225,24 @@ export function useRecordFormLayout(context: {
     if(fallback){
       const [field,descriptor]=fallback;
       const selection=Array.isArray(descriptor.selection)?descriptor.selection:[];
-      return {field,states:selection.map(item=>({value:String(item[0]??''),label:String(item[1]??item[0]??'')})),nodeIdentity:''};
+      return {field,states:selection.map(item=>({value:String(item[0]??''),label:String(item[1]??item[0]??'')})),nodeIdentity:'',node:null};
     }
-    return {field:'',states:[] as Array<{value:string;label:string}>,nodeIdentity:''};
+    return {field:'',states:[] as Array<{value:string;label:string}>,nodeIdentity:'',node:null};
   });
   const nativeStatusbar=computed<NativeStatusbarVm>(()=>{
     const main=resolveContractV2MainData(context.v2ContractStore.value);
-    return normalizeNativeFormStatusbar({recordId:context.recordId.value,formView:{statusbar:canonicalNativeStatusbar.value},
-      fields:formFields.value,formData:context.formData,mainData:main,fieldReadonly:(field)=>runtimeState(field).readonly,
-      readonly:context.renderProfile.value==='readonly'||(context.recordId.value?!context.rights.value.write:!context.rights.value.create),
+    const selected=canonicalNativeStatusbar.value;
+    const occurrence=selected.node?runtimeOccurrenceState(selected.node):null;
+    const workflow=resolveContractV2WorkflowContract(context.v2ContractStore.value);
+    const workflowStatus=workflow.statusbar&&typeof workflow.statusbar==='object'&&!Array.isArray(workflow.statusbar)
+      ? workflow.statusbar as Record<string,unknown>:{};
+    const workflowReadonly=workflowStatus.field===selected.field&&workflowStatus.readonly===true;
+    const status=normalizeNativeFormStatusbar({recordId:context.recordId.value,formView:{statusbar:selected},
+      fields:formFields.value,formData:context.formData,mainData:main,
+      fieldReadonly:(field)=>occurrence?occurrence.readonly:runtimeState(field).readonly,
+      readonly:workflowReadonly||context.renderProfile.value==='readonly'||(context.recordId.value?!context.rights.value.write:!context.rights.value.create),
       fallback:{visible:false,field:'',current:'',states:[],reachedValues:[],readonly:true}});
+    return occurrence?.invisible?{...status,visible:false,readonly:true}:status;
   });
   const setStatusbarValue=(value:string)=>{const field=nativeStatusbar.value.field;if(!field||nativeStatusbar.value.readonly)return;
     context.formData[field]=resolveStatusbarSelectionValue(formFields.value[field],value);context.markFieldChanged(field);};

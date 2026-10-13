@@ -1,3 +1,4 @@
+import { ContractGapError } from '../../app/contract/contractGap';
 export type NativeTextTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 
 export type NativeTextPresentation = {
@@ -32,18 +33,13 @@ function classTokens(node: NativeTextPresentationNode): Set<string> {
   return new Set(raw.split(/\s+/).filter(Boolean));
 }
 
-function calloutTone(tokens: Set<string>): Exclude<NativeTextTone, 'neutral'> {
-  if (tokens.has('alert-danger')) return 'danger';
-  if (tokens.has('alert-warning')) return 'warning';
-  if (tokens.has('alert-success')) return 'success';
-  return 'info';
-}
-
 export function resolveNativeTextPresentation(node: NativeTextPresentationNode): NativeTextPresentation {
   const tokens = classTokens(node);
   const explicitAlert = tokens.has('alert') || String(node.attributes?.role || '').trim().toLowerCase() === 'alert';
   if (explicitAlert) {
-    return { kind: 'callout', tone: calloutTone(tokens), role: 'alert' };
+    throw new ContractGapError({ kind: 'contract_defect', missing: 'native feedback interaction declaration',
+      requiredDeclarationLayer: 'P1: native field help or action/result feedback metadata' },
+      'Native alert markup cannot declare permanent form guidance');
   }
   if (tokens.has('text-danger')) return { kind: 'inline', tone: 'danger' };
   if (tokens.has('text-warning')) return { kind: 'inline', tone: 'warning' };

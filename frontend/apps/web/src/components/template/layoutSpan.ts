@@ -100,3 +100,18 @@ export function declaredLayoutBand(value: unknown): 'full' | 'half' {
 export function declaredLayoutFoldBreakpoints(): { single: number; mediumMax: number } {
   return { single: 479, mediumMax: 959 };
 }
+
+/** Container field grids are explicit backend declarations, not component defaults. */
+export function requireDeclaredLayoutColumns(value: unknown): number {
+  const columns = requireDeclaredLayoutSpan(value, { missing: 'layout.columns' });
+  if (layoutGridUnits() % columns) {
+    throw new ContractGapError({ kind: 'contract_defect', missing: 'layout.columns.equalTracks', requiredDeclarationLayer: LAYOUT_SPAN_DECLARATION_LAYER }, '契约列数不能精确映射到24单位网格');
+  }
+  return columns;
+}
+
+/** Registered singleton mapping: outer declared field node owns parent placement;
+ * its internal control fills that cell. Never selected from visible field count. */
+export function containedFieldLayout(): { columns: number; span: number } {
+  return { columns: 1, span: layoutGridUnits() };
+}

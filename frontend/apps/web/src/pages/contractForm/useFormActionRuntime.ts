@@ -1,3 +1,5 @@
+import type { ActionResponseNavigationResult } from './useActionResponseNavigation';
+import type { ActionFeedbackOwner } from './useNativeActionFeedback';
 import { relationActionOrigin, workItemActionOrigin } from './relationActionOrigin';
 import type { Ref } from 'vue';
 import type { Router, LocationQueryRaw } from 'vue-router';
@@ -17,6 +19,7 @@ type SceneMutationInput = {
 };
 
 export function useFormActionRuntime(params: {
+  beginActionFeedback?: () => ActionFeedbackOwner;
   actionId: () => number;
   applyClientMode: (mode: string, toggle?: boolean) => boolean | void;
   applyProjectionRefreshPolicy: (policy?: ContractAction['refreshPolicy']) => Promise<void>;
@@ -28,7 +31,7 @@ export function useFormActionRuntime(params: {
   errorMessage: Ref<string>;
   executeSceneMutation: (input: SceneMutationInput) => Promise<unknown>;
   modelName: () => string;
-  navigateActionResponseResult: (result: unknown) => Promise<boolean>;
+  navigateActionResponseResult: (result: unknown, owner?: ActionFeedbackOwner) => Promise<ActionResponseNavigationResult>;
   recordId: () => number | null;
   reload: () => Promise<void>;
   resolveNavigationUrl: (url: string) => string;
@@ -42,7 +45,8 @@ export function useFormActionRuntime(params: {
   async function runAction(action: ContractAction) {
     if (!action.enabled) return;
     if (params.validateSubmissionRequirements?.(action) === false) return;
-    if (!await params.confirmActionSafety(action)) return;
+    const owner = params.beginActionFeedback?.();
+    if (!await params.confirmActionSafety(action) || (owner && !owner.owns())) return;
     const plan = buildFormActionExecutionPlan({
       action,
       modelName: params.modelName(),
@@ -105,7 +109,7 @@ export function useFormActionRuntime(params: {
       if (actionParams === null) return;
       params.busyKind.value = 'action';
       try {
-        await params.executeSceneMutation({
+        const response = await params.executeSceneMutation({
           mutation: plan.mutation,
           actionKey: plan.actionKey,
           recordId: plan.recordId,
@@ -113,11 +117,10 @@ export function useFormActionRuntime(params: {
           context: plan.context,
           params: actionParams,
         });
-        params.submissionFeedback.value = {
-          kind: 'success',
-          message: '操作已完成，页面数据已刷新。',
-        };
+        if (owner && !owner.owns()) return;
+        const data = response && typeof response === 'object' ? (response as { data?: unknown }).data : undefined;
         await params.applyProjectionRefreshPolicy(plan.refreshPolicy);
+        await owner?.publish(data);
         return;
       } catch (err) {
         applyFormRuntimeStatusEvent(params, {
@@ -128,11 +131,11 @@ export function useFormActionRuntime(params: {
         });
         return;
       } finally {
-        params.busyKind.value = null;
+        if (!owner || owner.owns()) params.busyKind.value = null;
       }
     }
     if (plan.kind === 'record_button') {
-      if (!await params.ensureSavedBeforeRecordAction()) return;
+      if (!await params.ensureSavedBeforeRecordAction() || (owner && !owner.owns())) return;
       params.busyKind.value = 'action';
       try {
         const response = await executeButton({
@@ -155,8 +158,11 @@ export function useFormActionRuntime(params: {
             work_item_origin: workItemActionOrigin(params.currentQuery()),
           },
         });
+        if (owner && !owner.owns()) return;
         const result = response?.result;
-        if (await params.navigateActionResponseResult(result)) {
+        const navigation = await params.navigateActionResponseResult(result, owner);
+      if (navigation === 'invalidated') return;
+      if (navigation) {
           if (plan.refreshPolicy) {
             await params.applyProjectionRefreshPolicy(plan.refreshPolicy);
           }
@@ -165,6 +171,7 @@ export function useFormActionRuntime(params: {
         const refresh = result?.type;
         if (refresh === 'refresh' && !plan.refreshPolicy) {
           await params.reload();
+          await owner?.publish(result);
           return;
         }
         if (plan.refreshPolicy) {
@@ -172,8 +179,10 @@ export function useFormActionRuntime(params: {
         } else {
           await params.reload();
         }
+        await owner?.publish(result);
         return;
       } catch (err) {
+        if (owner && !owner.owns()) return;
         applyFormRuntimeStatusEvent(params, {
           kind: 'status',
           transaction: 'runAction',
@@ -181,7 +190,7 @@ export function useFormActionRuntime(params: {
           errorMessage: err instanceof Error ? err.message : '操作执行失败',
         });
       } finally {
-        params.busyKind.value = null;
+        if (!owner || owner.owns()) params.busyKind.value = null;
       }
     }
   }

@@ -13,7 +13,7 @@ export type RecordOpenIntent = typeof RECORD_ENTRY_INTENTS[number];
 
 /**
  * 声明了「进入后可编辑」的意图集合。缺失写权限事实时不得降级为只读，
- * 必须作为契约缺口停机（T5：分开「明确禁止」与「声明缺失」）。
+ * 必须作为ContractGapError停机（T5：分开「明确禁止」与「声明缺失」）。
  */
 export const WRITE_IMPLYING_RECORD_ENTRY_INTENTS = ['open', 'handling', 'explicit_edit'] as const;
 
@@ -102,8 +102,8 @@ function asRecord(value: unknown): Dict {
 /**
  * Decode the formal `entry_target.record_entry` carrier.
  *
- * Structural absence (no model / no record id / no `entry_intent` key) returns
- * `null`.  A *declared* carrier whose declaration is illegal or missing stops
+ * Only an absent carrier (`undefined`) returns `null`. A declared carrier
+ * whose structure or required declaration is illegal or missing stops
  * with a contract gap instead of being downgraded (T5):
  *
  * - an illegal `entry_intent` value raises a gap (no fallback to explicit_readonly);
@@ -114,10 +114,22 @@ function asRecord(value: unknown): Dict {
  * The write authority is never recovered from a stringly typed hint.
  */
 export function decodeFormalRecordEntry(raw: unknown): RecordEntryContract | null {
-  const value = asRecord(raw);
-  const model = String(value.model || '').trim();
+  if (raw === undefined) return null;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    raiseRecordEntryGap('entry_target.record_entry', '正式记录入口必须声明对象，前端不得回退到兼容导航');
+  }
+  const value = raw as Dict;
+  const model = typeof value.model === 'string' ? value.model.trim() : '';
+  if (!model) {
+    raiseRecordEntryGap('entry_target.record_entry.model', '正式记录入口缺少有效 model，前端不得回退到兼容导航');
+  }
   const recordId = resolveRecordEntryId(value.record_id);
-  if (!model || recordId === null || !Object.prototype.hasOwnProperty.call(value, 'entry_intent')) return null;
+  if (recordId === null) {
+    raiseRecordEntryGap('entry_target.record_entry.record_id', '正式记录入口缺少有效 record_id，前端不得回退到兼容导航');
+  }
+  if (!Object.prototype.hasOwnProperty.call(value, 'entry_intent')) {
+    raiseRecordEntryGap('entry_target.record_entry.entry_intent', '正式记录入口缺少 entry_intent，前端不得回退到兼容导航');
+  }
 
   const entryIntent = normalizeRecordOpenIntent(value.entry_intent);
   if (!entryIntent) {

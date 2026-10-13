@@ -714,6 +714,10 @@ function decodeContainer(
   const widgetList = widgetRows
     .map((item, index) => decodeWidget(item, `${path}.widgetList[${index}]`, issues))
     .filter((item): item is ContractV2Widget => Boolean(item));
+  const ownsFieldGrid = children.some(child => child.containerType === 'field');
+  const columns = raw.columns === undefined && !ownsFieldGrid
+    ? undefined : requiredIntegerInRange(raw, 'columns', path, issues, 24);
+  if (columns !== undefined && 24 % columns) issues.push({ path: `${path}.columns`, message: 'must exactly divide the 24-unit grid' });
   const attributes = optionalRecord(raw, 'attributes', path, issues);
   const fieldInfo = optionalRecord(raw, 'fieldInfo', path, issues);
   const action = optionalNullableRecord(raw, 'action', path, issues);
@@ -768,7 +772,7 @@ function decodeContainer(
     ...(asString(raw.styleToken) ? { styleToken: asString(raw.styleToken) } : {}),
     ...(zone ? { zone } : {}),
     ...(typeof raw.cols === 'number' && Number.isInteger(raw.cols) && raw.cols > 0 ? { cols: raw.cols } : {}),
-    ...(typeof raw.columns === 'number' && Number.isInteger(raw.columns) && raw.columns > 0 ? { columns: raw.columns } : {}),
+    ...(columns !== undefined ? { columns } : {}),
     ...(asString(raw.widget) ? { widget: asString(raw.widget) } : {}),
     ...(widgetId ? { widgetId } : {}),
     ...(nativeLocator ? { nativeLocator } : {}),
@@ -1408,8 +1412,8 @@ function decodeFormStructureGroup(
   rejectUnknownKeys(raw, ['name', 'title', 'role', 'fieldRefs', 'fieldLabels', 'columns'], path, issues);
   const columns = raw.columns;
   if (columns !== undefined && (
-    typeof columns !== 'number' || !Number.isInteger(columns) || columns < 1
-  )) issues.push({ path: `${path}.columns`, message: 'must be a positive integer' });
+    typeof columns !== 'number' || !Number.isInteger(columns) || columns < 1 || columns > 24 || 24 % columns !== 0
+  )) issues.push({ path: `${path}.columns`, message: 'must be an integer divisor of 24' });
   return {
     name: requiredString(raw, 'name', path, issues),
     title: requiredDisplayString(raw, 'title', path, issues),
@@ -1666,8 +1670,8 @@ function decodeFormStructureContract(
   }
   const columns = raw.columns;
   if (columns !== undefined && (
-    typeof columns !== 'number' || !Number.isInteger(columns) || columns < 1
-  )) issues.push({ path: `${path}.columns`, message: 'must be a positive integer' });
+    typeof columns !== 'number' || !Number.isInteger(columns) || columns < 1 || columns > 24 || 24 % columns !== 0
+  )) issues.push({ path: `${path}.columns`, message: 'must be an integer divisor of 24' });
   const objectProfileRaw = requiredRecord(raw, 'objectProfile', path, issues);
   rejectUnknownKeys(objectProfileRaw, ['model', 'kind', 'factAuthority'], `${path}.objectProfile`, issues);
   const objectProfileModel = requiredString(objectProfileRaw, 'model', `${path}.objectProfile`, issues);
@@ -1814,7 +1818,10 @@ function decodeActionRule(raw: unknown, path: string, issues: DecodeIssue[]): Co
     actionSemantics: raw.actionSemantics, intent: optionalString(raw, 'intent'), target,
     visibleProfiles,
   });
+  const reasonMessage = optionalStringField(raw, 'reasonMessage', path, issues);
+  if (reasonMessage && !optionalString(raw, 'reasonCode')) issues.push({ path: `${path}.reasonMessage`, message: 'requires its declared reasonCode' });
   return {
+    ...(reasonMessage !== undefined ? { reasonMessage } : {}),
     actionId,
     ...(actionSemantics ? { actionSemantics } : {}),
     ...(raw.actionSemantics !== undefined && !actionSemantics ? { actionSemanticsInvalid: true } : {}),
@@ -2120,13 +2127,16 @@ function decodeButtonStatus(raw: unknown, path: string, issues: DecodeIssue[]): 
     issues.push({ path, message: 'must be an object' });
     return null;
   }
-  rejectUnknownKeys(raw, ['btnId', 'backendIdentity', 'visible', 'disabled', 'reasonCode'], path, issues);
+  rejectUnknownKeys(raw, ['btnId', 'backendIdentity', 'visible', 'disabled', 'reasonCode', 'reasonMessage'], path, issues);
   const btnId = asString(raw.btnId);
   if (!btnId) {
     issues.push({ path: `${path}.btnId`, message: 'is required' });
     return null;
   }
+  const reasonMessage = optionalStringField(raw, 'reasonMessage', path, issues);
+  if (reasonMessage && !optionalString(raw, 'reasonCode')) issues.push({ path: `${path}.reasonMessage`, message: 'requires its declared reasonCode' });
   return {
+    ...(reasonMessage !== undefined ? { reasonMessage } : {}),
     btnId,
     ...(asString(raw.backendIdentity) ? { backendIdentity: asString(raw.backendIdentity) } : {}),
     visible: optionalBooleanField(raw, 'visible', path, issues),

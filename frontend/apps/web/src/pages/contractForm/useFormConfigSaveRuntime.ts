@@ -126,6 +126,7 @@ export function useFormConfigSaveRuntime(params: {
         ? await stageBusinessConfigChangeSetItem({
           change_set_token: changeSetToken,
           config_type: 'form',
+          target_role_key: '',
           target_key: contractName,
           contract_name: contractName,
           model: modelName,
@@ -136,7 +137,7 @@ export function useFormConfigSaveRuntime(params: {
           draft_payload: contractPayload,
           diff_summary: { summary: saveOperationSummary },
         })
-        : await saveStandaloneFormConfig({ baseParams, name: contractName, model: modelName, contractPayload });
+        : await saveStandaloneFormConfig({ baseParams: { ...baseParams, role_key: '' }, name: contractName, model: modelName, contractPayload });
       params.lowCodePrecheckWarnings.value = responsePrecheckWarnings(saveResult);
       if (Object.keys(changedVisibility).length) {
         params.fieldVisibilityBase.value = {

@@ -1,3 +1,5 @@
+import type { ActionResponseNavigationResult } from './useActionResponseNavigation';
+import type { ActionFeedbackOwner } from './useNativeActionFeedback';
 import { relationActionOrigin, workItemActionOrigin } from './relationActionOrigin';
 import { nextTick, type Ref } from 'vue';
 import { executeButton } from '../../api/executeButton';
@@ -6,6 +8,7 @@ import { applyFormRuntimeStatusEvent } from './runtimeStateApplier';
 import type { BusyKind, ContractAction, SubmissionFeedback, UiStatus } from './types';
 
 export function usePrimaryFormActionRuntime(params: {
+  beginActionFeedback?: () => ActionFeedbackOwner;
   actionId: () => number;
   applyProjectionRefreshPolicy: (policy?: ContractAction['refreshPolicy']) => Promise<void>;
   busyKind: Ref<BusyKind>;
@@ -14,8 +17,8 @@ export function usePrimaryFormActionRuntime(params: {
   executeButtonRequest?: typeof executeButton;
   hasChanges: () => boolean;
   modelName: () => string;
-  navigateActionResponseResult: (result: unknown) => Promise<boolean>;
-  navigateCreatedRecord?: (id: number, policy?: ContractAction['refreshPolicy'], recovery?: 'submit') => Promise<unknown>;
+  navigateActionResponseResult: (result: unknown, owner?: ActionFeedbackOwner) => Promise<ActionResponseNavigationResult>;
+  navigateCreatedRecord?: (id: number, policy?: ContractAction['refreshPolicy'], recovery?: 'submit', feedback?: { result: unknown; owner: ActionFeedbackOwner }) => Promise<unknown>;
   primaryCreateFooterAction: () => ContractAction | null;
   primarySubmitAction: () => ContractAction | null;
   recordId: Ref<number>;
@@ -33,7 +36,8 @@ export function usePrimaryFormActionRuntime(params: {
 }) {
   async function executePrimarySubmitAction(action: ContractAction, resId: number, created = false) {
     if (!action.enabled) return;
-    if (!await params.confirmActionSafety(action)) return;
+    const owner = params.beginActionFeedback?.();
+    if (!await params.confirmActionSafety(action) || (owner && !owner.owns())) return;
     params.busyKind.value = 'action';
     try {
       const response = await (params.executeButtonRequest || executeButton)({
@@ -56,19 +60,23 @@ export function usePrimaryFormActionRuntime(params: {
           work_item_origin: workItemActionOrigin(params.currentQuery?.() || {}),
         },
       });
+      if (owner && !owner.owns()) return;
       const result = response?.result;
-      if (await params.navigateActionResponseResult(result)) {
+      const navigation = await params.navigateActionResponseResult(result, owner);
+      if (navigation === 'invalidated') return;
+      if (navigation) {
         await params.applyProjectionRefreshPolicy(action.refreshPolicy || { on_success: ['scene_projection'] });
         return;
       }
-      params.submissionFeedback.value = { kind: 'success', message: '提交成功' };
       if (created && params.navigateCreatedRecord) {
-        await params.navigateCreatedRecord(resId, action.refreshPolicy);
+        await params.navigateCreatedRecord(resId, action.refreshPolicy, undefined, owner ? { result, owner } : undefined);
         return;
       }
       await params.applyProjectionRefreshPolicy(action.refreshPolicy || { on_success: ['scene_projection'] });
       await params.reload();
+      await owner?.publish(result);
     } catch (err) {
+      if (owner && !owner.owns()) return;
       const message = sanitizeUiErrorMessage(err instanceof Error ? err.message : err, '提交失败，请检查填写内容');
       params.validationErrors.value = [message];
       params.submissionFeedback.value = { kind: 'error', message: '提交失败，请检查填写内容' };
@@ -81,7 +89,7 @@ export function usePrimaryFormActionRuntime(params: {
         await params.navigateCreatedRecord(resId, action.refreshPolicy, 'submit');
       }
     } finally {
-      params.busyKind.value = null;
+      if (!owner || owner.owns()) params.busyKind.value = null;
     }
   }
 

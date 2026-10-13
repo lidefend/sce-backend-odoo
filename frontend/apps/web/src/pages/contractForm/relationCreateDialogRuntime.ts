@@ -1,3 +1,5 @@
+import type { NativeActionNotification } from '@sc/schema';
+
 export type RelationCreateDialogState = {
   open: boolean;
   title: string;
@@ -14,6 +16,7 @@ export type RelationCreatedDialogResult = {
   relationModel: string;
   id: number;
   label: string;
+  notification?: NativeActionNotification;
 };
 
 export type RelationCreateDialogEvent = ProfessionalRelationLifecycleEvent;

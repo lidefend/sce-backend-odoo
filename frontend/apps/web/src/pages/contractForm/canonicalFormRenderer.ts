@@ -188,7 +188,7 @@ export function canonicalFieldToFormSection(
     errorText: field.errorText || undefined,
     readonly: field.readonly || field.disabled,
     auth: field.auth || undefined,
-    helpText: field.reasonCode,
+    helpText: typeof field.fieldDescriptor.help === 'string' ? field.fieldDescriptor.help : undefined,
     inputPlaceholder: field.placeholder || undefined,
     span: field.span,
     value: relation ? relation.displayName : field.value,

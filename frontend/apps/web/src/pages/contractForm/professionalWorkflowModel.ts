@@ -3,7 +3,7 @@ import type { NativeStatusbarVm } from './types';
 
 export function workflowDisabledReason(action: CanonicalFormAction): string {
   if (action.enabled) return '';
-  return String(action.reasonCode || '').trim() || '当前操作不可用';
+  return String(action.reasonMessage || action.reasonCode || '').trim() || '当前操作不可用';
 }
 
 export function resolveWorkflowActionBarAuthority(

@@ -150,6 +150,7 @@ export function collectContractV2ButtonStatusById(store: ContractV2NormalizedSto
       ...(status.backendIdentity ? { backendIdentity: status.backendIdentity } : {}),
       ...(typeof status.visible === 'boolean' ? { visible: status.visible } : {}),
       ...(typeof status.disabled === 'boolean' ? { disabled: status.disabled } : {}),
+      ...(status.reasonMessage ? { reasonMessage: status.reasonMessage } : {}),
       ...(status.reasonCode ? { reasonCode: status.reasonCode } : {}),
     };
   });

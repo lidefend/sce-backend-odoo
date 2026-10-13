@@ -9,6 +9,7 @@ export {
   TDesignDropdown,
   TDesignEmpty,
   TDesignAlert,
+  TDesignNotificationPlugin,
   TDesignDialog,
   TDesignDatePicker,
   TDesignDescriptions,

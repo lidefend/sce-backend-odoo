@@ -1,3 +1,10 @@
+import type { ActionFeedbackOwner } from './useNativeActionFeedback';
+import { watch } from 'vue';
+import { isNavigationFailure } from 'vue-router';
+import type { NativeActionNotification } from '@sc/schema';
+import { currentContextSignal } from '../../app/contextEpoch';
+import { decodeNativeActionNotification } from '../../app/contract/nativeActionNotification';
+import { ContractGapError } from '../../app/contract/contractGap';
 import type { LocationQueryRaw, Router } from 'vue-router';
 import { toPositiveInt } from '../../app/contractRuntime';
 import { buildEntryTargetRouteTarget } from '../../app/routeQuery';
@@ -6,10 +13,14 @@ import {
   actionResponseRouteTarget,
 } from './actionContract';
 
+export type ActionResponseNavigationResult = boolean | 'invalidated';
+
 export function useActionResponseNavigation(params: {
   router: Router;
   currentQuery: () => LocationQueryRaw;
   currentModel: () => string;
+  notificationIdentity?: () => string;
+  showNotification?: (notification: NativeActionNotification, onClosed: () => void) => Promise<() => void>;
 }) {
   function navQuery(result: object | null | undefined, extra?: Record<string, unknown>) {
     return actionResponseNavQuery(params.currentQuery() as Record<string, unknown>, result, extra, {
@@ -23,7 +34,46 @@ export function useActionResponseNavigation(params: {
     });
   }
 
-  async function navigateActionResponseResult(result: unknown) {
+  async function pushResultTarget(target: Parameters<Router['push']>[0], result: unknown, owner?: ActionFeedbackOwner, replace = false) {
+    const notification = decodeNativeActionNotification(result);
+    if (!notification) { const navigation = await (replace ? params.router.replace(target) : params.router.push(target)); return !isNavigationFailure(navigation); }
+    if (!params.notificationIdentity || !params.showNotification) {
+      throw new ContractGapError({ kind: 'contract_defect', missing: 'native notification navigation owner',
+        requiredDeclarationLayer: 'P0: action navigation' }, 'Missing notification navigation owner');
+    }
+    const ticket = owner?.navigationTicket();
+    if (!ticket) return false;
+    const source = params.router.currentRoute.value.fullPath;
+    const expected = params.router.resolve(target).fullPath;
+    const principal = params.notificationIdentity();
+    const signal = currentContextSignal();
+    let valid = !signal.aborted;
+    let completed = false;
+    let dismiss: (() => void) | undefined;
+    const stopTicket = watch(ticket, current => { if (!current) invalidate(); }, { flush: 'sync' });
+    const stopIdentity = watch(params.notificationIdentity, () => invalidate(), { flush: 'sync' });
+    const stopRoute = watch(() => params.router.currentRoute.value.fullPath, path => {
+      if (path !== expected && (completed || path !== source)) invalidate();
+    }, { flush: 'sync' });
+    function cleanup() { stopTicket(); stopIdentity(); stopRoute(); signal.removeEventListener('abort', invalidate); }
+    function invalidate() { valid = false; dismiss?.(); cleanup(); }
+    signal.addEventListener('abort', invalidate, { once: true });
+    try {
+      const navigation = await (replace ? params.router.replace(target) : params.router.push(target));
+      completed = true;
+      if (isNavigationFailure(navigation) || !valid || !ticket() || signal.aborted
+        || params.notificationIdentity() !== principal || params.router.currentRoute.value.fullPath !== expected) {
+        invalidate(); return false;
+      }
+      // This response's exact governed destination owns the notification. Watchers
+      // deliberately outlive the source form until close or identity/navigation change.
+      dismiss = await params.showNotification(notification, cleanup);
+      if (!valid || !ticket() || signal.aborted || params.router.currentRoute.value.fullPath !== expected) { dismiss(); return false; }
+      return true;
+    } catch (error) { invalidate(); throw error; }
+  }
+
+  async function navigateActionResponseResult(result: unknown, owner?: ActionFeedbackOwner): Promise<ActionResponseNavigationResult> {
     const resultRecord = result && typeof result === 'object'
       ? result as Record<string, unknown>
       : null;
@@ -50,17 +100,16 @@ export function useActionResponseNavigation(params: {
       // transient record after an object button. Vue Router treats that as a
       // no-op, so let the caller refresh the current contract and record.
       if (params.router.resolve(target as never).fullPath === params.router.currentRoute.value.fullPath) return false;
-      await params.router.push(target as never);
-      return true;
+      return await pushResultTarget(target as never, result, owner) ? true : 'invalidated';
     }
     const nextActionId = toPositiveInt(resultRecord?.action_id);
     if (nextActionId) {
-      await params.router.push({
+      const navigated = await pushResultTarget({
         name: 'action',
         params: { actionId: String(nextActionId) },
         query: navQuery(resultRecord, { action_id: nextActionId }),
-      });
-      return true;
+      }, result, owner);
+      return navigated ? true : 'invalidated';
     }
     return false;
   }
@@ -69,5 +118,6 @@ export function useActionResponseNavigation(params: {
     actionResponseNavQuery: navQuery,
     actionResponseRouteTarget: routeTarget,
     navigateActionResponseResult,
+    navigateNotificationTarget: (target: Parameters<Router['push']>[0], result: unknown, owner: ActionFeedbackOwner) => pushResultTarget(target, result, owner, true),
   };
 }

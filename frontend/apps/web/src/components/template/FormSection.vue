@@ -1,6 +1,6 @@
 <template>
   <ScCard
-    v-if="displayFields.length || fieldSelectionMode || fieldConfigEditable || slots.action || hint"
+    v-if="displayFields.length || fieldSelectionMode || fieldConfigEditable || slots.action"
     :bordered="frame ? undefined : false"
     :class="['template-form-section', toneClass, { 'template-form-section--readonly': allFieldsReadonly, 'template-form-section--frameless': !frame }]"
     data-component="FormSection"
@@ -12,7 +12,6 @@
     :appearance="preferReadonlyFacts ? 'fact' : 'form-section'"
   >
     <template v-if="showHead && $slots.action" #actions><slot name="action" /></template>
-    <p v-if="hint" class="template-form-section-hint">{{ hint }}</p>
     <ScForm
       ref="sectionFormRef"
       :bare="!adoptedComposition"
@@ -36,6 +35,13 @@
       layout="horizontal"
       item-layout="horizontal"
     >
+      <template #label="{ item }">
+        {{ item.label }}
+        <ScPopover v-if="detailFactField(item).helpText" :trigger="NATIVE_FIELD_HELP_TRIGGER" data-field-help>
+          <template #trigger><ScButton variant="ghost" size="small" type="button" :aria-label="detailFactField(item).label" :aria-controls="fieldHelpId(detailFactField(item))" data-field-help-trigger>?</ScButton></template>
+          <span :id="fieldHelpId(detailFactField(item))">{{ detailFactField(item).helpText }}</span>
+        </ScPopover>
+      </template>
       <template #item="{ item }">
         <div class="detail-fact-value"
           :data-field-name="detailFactField(item).name"
@@ -137,6 +143,10 @@
               @change="emitFieldLabelChange(field, $event)"
               @keydown.enter.prevent="emitFieldLabelChange(field, ($event.target as HTMLInputElement).value)"
             />
+          <ScPopover v-if="field.helpText" :trigger="NATIVE_FIELD_HELP_TRIGGER" data-field-help>
+            <template #trigger><ScButton variant="ghost" size="small" type="button" :aria-label="field.label" :aria-controls="fieldHelpId(field)" data-field-help-trigger>?</ScButton></template>
+            <span :id="fieldHelpId(field)">{{ field.helpText }}</span>
+          </ScPopover>
             <div v-if="fieldActionsFor(field).length" class="field-inline-config">
               <ScRadioGroup
                 v-if="fieldActionsFor(field).length"
@@ -373,7 +383,6 @@
               </template>
             </div>
           </ScFormItem>
-          <p v-if="field.helpText" :id="fieldHelpId(field)" class="field-supporting-text">{{ field.helpText }}</p>
           <p v-if="field.errorText" :id="fieldErrorId(field)" class="field-error-text" role="alert">{{ field.errorText }}</p>
         </div>
       </template>
@@ -385,10 +394,12 @@
 </template>
 
 <script setup lang="ts">
+// Registered fixed accessibility interaction for explicit native field.help.
+const NATIVE_FIELD_HELP_TRIGGER = 'click' as const;
 import { computed, inject, onBeforeUnmount, onMounted, ref, useId, useSlots } from 'vue';
 import { useNarrowViewport } from '../../composables/useNarrowViewport';
 import { businessErrorKey } from '../../app/businessValidationError';
-import { fieldHasEmptyValue, readonlyFactIsPresentable } from './formSection.mapper';
+import { fieldHasEmptyValue } from './formSection.mapper';
 import { SceneFieldControl, useOptionalSceneUiKit } from '@sc/ui/form';
 import ScCard from '../design-system/ScCard.vue';
 import ScDescriptions from '../design-system/ScDescriptions.vue';
@@ -400,6 +411,7 @@ import { useOptionalStandardFormComposition } from '../../pages/contractForm/sta
 import { useOptionalStandardDetailComposition } from '../../pages/contractForm/standardDetailCompositionRuntime';
 import { resolveStandardDetailFactLayout, partitionStandardDetailFields } from '../../app/presentation/standardDetailComposition';
 import ScButton from '../design-system/ScButton.vue';
+import ScPopover from '../design-system/ScPopover.vue';
 import ScDateField from '../design-system/ScDateField.vue';
 import ScFileField from '../design-system/ScFileField.vue';
 import ScIcon from '../design-system/ScIcon.vue';
@@ -419,7 +431,7 @@ import {
   isProfessionalDetailCollectionField,
   optionalDetailCollectionSpan,
 } from '../professional-fields/professionalDetailCollectionModel';
-import { layoutGridUnits, declaredLayoutSpan, declaredLayoutBand } from './layoutSpan';
+import { layoutGridUnits, declaredLayoutSpan, declaredLayoutBand, requireDeclaredLayoutColumns } from './layoutSpan';
 import { isProfessionalRelationField } from '../professional-fields/professionalRelationFieldModel';
 import { isPaymentSettlementDetailCollectionField } from '../professional-fields/paymentSettlementDetailCollectionModel';
 import X2ManyRelationRenderer from './X2ManyRelationRenderer.vue';
@@ -449,7 +461,6 @@ import { PROFESSIONAL_COMPONENT_RENDERERS } from '../../app/presentation/profess
 
 const props = withDefaults(defineProps<{
   title: string;
-  hint?: string;
   /**
    * Whether this section draws its own surface frame (card + inline-size
    * container).  A declared layout container arranges its declared children
@@ -478,9 +489,7 @@ const props = withDefaults(defineProps<{
   preferReadonlyFacts?: boolean;
   fillOrphanRows?: boolean;
 }>(), {
-  hint: '',
   frame: true,
-  columns: 2,
   tone: 'core',
   fields: () => [],
   relationAdapter: undefined,
@@ -555,9 +564,10 @@ const detailFieldSegments = computed(() => partitionStandardDetailFields(
  * viewport keeps one fact per row so a long business value cannot be squeezed
  * into half a phone screen; the contract's own column count is kept elsewhere.
  */
+const columns = computed(() => requireDeclaredLayoutColumns(props.columns));
 const narrowDetailFactViewport = useNarrowViewport(640);
 const detailFactColumns = computed(() => (
-  narrowDetailFactViewport.value ? 1 : Math.max(1, Math.min(3, Number(props.columns) || 2))
+  narrowDetailFactViewport.value ? (requireDeclaredLayoutColumns(props.columns), 1) : columns.value
 ));
 const formSectionDomId = `form-section-${useId().replace(/[^A-Za-z0-9_-]/g, '-')}`;
 
@@ -662,7 +672,6 @@ function fieldErrorId(field: FormSectionFieldSchema) {
 
 function fieldDescribedBy(field: FormSectionFieldSchema) {
   const ids = [];
-  if (field.helpText) ids.push(fieldHelpId(field));
   if (field.errorText) ids.push(fieldErrorId(field));
   return ids.length ? ids.join(' ') : undefined;
 }
@@ -902,10 +911,9 @@ function readonlyText(field: FormSectionFieldSchema) {
 
 const taskActionResolver = inject(ScTaskActionResolverKey, null);
 
-const displayFields = computed(() => props.fields.filter((field) => {
-  if (!props.preferReadonlyFacts || props.fieldSelectionMode || props.fieldConfigEditable) return true;
-  return readonlyFactIsPresentable(field, Boolean(taskActionFor(field)));
-}));
+// Visibility is already resolved by the authoritative occurrence projection.
+// Empty values affect presentation only, never membership in the field set.
+const displayFields = computed(() => props.fields);
 
 /**
  * Resolve a readonly fact into a clickable business action, when the page
@@ -1178,11 +1186,6 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   min-width: 0;
 }
 
-/* Native group/page col="1" is authoritative: every child owns the only
-   available column even when its field descriptor has no reliable type. */
-.template-form-section-grid--columns-1 > .field {
-  grid-column: 1 / -1;
-}
 
 /* 小屏幕：1 列布局，减小间隙 */
 @container (max-width: 479px) {

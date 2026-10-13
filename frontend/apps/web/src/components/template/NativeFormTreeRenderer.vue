@@ -55,34 +55,8 @@
         >
           <span v-if="fieldOrderDraggingKey">拖到这里加入此分组</span>
         </div>
-        <ScInlineState
-          v-if="isNativeFeedbackContainer(node)"
-          class="native-form-feedback"
-          :state="nativeFeedbackState(node)"
-          density="compact"
-          :data-feedback-tone="nativeTextPresentation(node).tone"
-        >
-          <div class="native-form-feedback__content">
-            <p v-if="nodeText(node)" class="native-form-feedback__copy">{{ nodeText(node) }}</p>
-            <FormSection
-              v-if="fieldSchemasForNodes(fieldChildren(node)).length"
-              title=""
-              :columns="1"
-              :fields="fieldSchemasForNodes(fieldChildren(node))"
-              :relation-adapter="relationAdapter"
-              :prefer-readonly-facts="true"
-              :fill-orphan-rows="false"
-              @field-change="emit('field-change', $event)"
-              @field-action="emit('field-action', $event)"
-            >
-              <template v-if="$slots.readonly" #readonly="{ field }">
-                <slot name="readonly" :field="field" />
-              </template>
-            </FormSection>
-          </div>
-        </ScInlineState>
         <p
-          v-else-if="nodeText(node)"
+          v-if="nodeText(node)"
           class="native-static-text"
           :class="[...nativeTextPresentationClass(node), ...declaredPresentationTokens(node)]"
           :data-native-text-presentation="nativeTextPresentation(node).kind"
@@ -226,7 +200,7 @@
         <template v-else>
           <template v-for="(segment, segmentIndex) in renderSegments(node)" :key="segmentIndex">
           <FormSection
-            v-if="segment.kind === 'field' && !isNativeFeedbackContainer(node) && fieldSchemasForNodes(segment.nodes).length"
+            v-if="segment.kind === 'field' && fieldSchemasForNodes(segment.nodes).length"
             :frame="!isDeclaredLayoutContainer(node)"
             :style="layoutItemStyle(node)"
             :title="segmentIndex === renderSegments(node).findIndex((item) => item.kind === 'field') ? fieldSectionTitle(node) : ''"
@@ -266,7 +240,7 @@
             </template>
           </FormSection>
           <div v-if="segment.kind === 'button' && segment.nodes.length" :class="nativeActionsClass(node)">
-            <template v-for="(buttonNode, buttonIndex) in visibleActionButtons(node).filter((button) => segment.nodes.includes(button))" :key="nodeKey(buttonNode, buttonIndex)">
+            <template v-for="(buttonNode, buttonIndex) in buttonChildren(node).filter((button) => segment.nodes.includes(button))" :key="nodeKey(buttonNode, buttonIndex)">
               <ScButton
                 v-if="!isSmartButtonNode(buttonNode)"
                 v-bind="nativeActionEvidenceAttributes(buttonNode)"
@@ -293,18 +267,6 @@
                 @click.stop.prevent="emitNativeAction(buttonNode)"
               />
             </template>
-            <NativeActionOverflowMenu
-              v-if="segment.nodes.includes(overflowActionButtons(node)[0])"
-              :actions="overflowActionButtons(node)"
-              :identity="nodeKey(node, index)"
-              :key-resolver="overflowActionKey"
-              :evidence-resolver="nativeActionEvidenceAttributes"
-              :label-resolver="buttonLabel"
-              :icon-resolver="buttonIcon"
-              :disabled-resolver="nativeActionDisabled"
-              :title-resolver="nativeActionTitle"
-              @select="emitNativeAction"
-            />
           </div>
           <template v-for="(widgetNode, widgetIndex) in (segment.kind === 'widget' ? segment.nodes : [])" :key="nodeKey(widgetNode, widgetIndex)">
             <div v-if="widgetName(widgetNode) === 'web_ribbon'" class="native-ribbon" :class="widgetClass(widgetNode)">
@@ -365,8 +327,8 @@
         :class="[...nodeClassList(node), ...declaredPresentationTokens(node)]"
         :style="layoutItemStyle(node)"
         :title="fieldSectionTitle(node)"
-        :columns="nodeColumns(node)"
-        :fields="fieldSchemasForNodes([node])"
+        :columns="containedFieldLayout().columns"
+        :fields="containedFieldSchemas(node)"
         :relation-adapter="relationAdapter"
         :field-actions="fieldActions"
         :field-order-editable="fieldOrderEditable"
@@ -440,8 +402,7 @@
 import { computed, ref } from 'vue';
 import FormSection from './FormSection.vue';
 import { declaredLayoutChildSegments, isDeclaredLayoutContainerToken, nativeChildSegments } from './nativeChildSequence';
-import { layoutGridUnits, declaredLayoutSpan } from './layoutSpan';
-import NativeActionOverflowMenu from './NativeActionOverflowMenu.vue';
+import { layoutGridUnits, declaredLayoutSpan, requireDeclaredLayoutColumns, containedFieldLayout } from './layoutSpan';
 import NativeSmartAction from './NativeSmartAction.vue';
 import ScCard from '../design-system/ScCard.vue';
 import { useOptionalStandardDetailComposition } from '../../pages/contractForm/standardDetailCompositionRuntime';
@@ -449,7 +410,6 @@ import ScButton from '../design-system/ScButton.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScIconButton from '../design-system/ScIconButton.vue';
 import ScInput from '../design-system/ScInput.vue';
-import ScInlineState from '../design-system/ScInlineState.vue';
 import ScTabs, { type ScTabItem } from '../design-system/ScTabs.vue';
 import { canonicalFormActionIconClass } from '../../pages/contractForm/canonicalFormActionIcon';
 import { nativeSectionNavigationRole } from '../../pages/contractForm/nativeSectionNavigation';
@@ -539,7 +499,6 @@ const props = withDefaults(defineProps<{
   authoritativeBusinessSectionMode?: boolean;
   columns?: number;
 }>(), {
-  columns: 2,
   isNodeVisible: () => true,
   nativeActionHandler: undefined,
   nativeActionStateResolver: undefined,
@@ -596,7 +555,6 @@ const emit = defineEmits<{
 
 const activePageIndex = ref(0);
 const collapsedContainers = ref<Record<string, boolean>>({});
-const SMART_BUTTON_DIRECT_LIMIT = 4;
 const visibleNodes = computed(() => (props.nodes || []).filter((node) => isNodeRenderable(node)));
 
 function isNodeRenderable(node: NativeFormLayoutNode): boolean {
@@ -744,14 +702,6 @@ function nativeTextPresentationClass(node: NativeFormLayoutNode) {
   ];
 }
 
-function isNativeFeedbackContainer(node: NativeFormLayoutNode) {
-  return resolveNativeTextPresentation(node).kind === 'callout';
-}
-
-function nativeFeedbackState(node: NativeFormLayoutNode): 'info' | 'error' {
-  return resolveNativeTextPresentation(node).tone === 'danger' ? 'error' : 'info';
-}
-
 function isContainerNode(node: NativeFormLayoutNode) {
   return ['header', 'footer', 'sheet', 'group', 'notebook', 'page', 'container', 'div', 'span', 'h1', 'h2', 'h3'].includes(nodeType(node));
 }
@@ -823,27 +773,6 @@ function buttonChildren(node: NativeFormLayoutNode) {
   return rawChildren(node).filter((child) => nodeType(child) === 'button' && isNodeRenderable(child));
 }
 
-function visibleActionButtons(node: NativeFormLayoutNode) {
-  const children = buttonChildren(node);
-  if (!isSmartActionGroup(node)) return children;
-  const smartButtons = children.filter((child) => isSmartButtonNode(child));
-  if (smartButtons.length <= SMART_BUTTON_DIRECT_LIMIT) return children;
-  let smartSeen = 0;
-  return children.filter((child) => {
-    if (!isSmartButtonNode(child)) return true;
-    smartSeen += 1;
-    return smartSeen <= SMART_BUTTON_DIRECT_LIMIT;
-  });
-}
-
-function overflowActionButtons(node: NativeFormLayoutNode) {
-  const children = buttonChildren(node);
-  if (!isSmartActionGroup(node)) return [];
-  const smartButtons = children.filter((child) => isSmartButtonNode(child));
-  if (smartButtons.length <= SMART_BUTTON_DIRECT_LIMIT) return [];
-  return smartButtons.slice(SMART_BUTTON_DIRECT_LIMIT);
-}
-
 function widgetChildren(node: NativeFormLayoutNode) {
   return rawChildren(node).filter((child) => nodeType(child) === 'widget' && isNodeRenderable(child));
 }
@@ -905,15 +834,14 @@ function fieldSectionTitle(node?: NativeFormLayoutNode) {
  * enum: clamping a declared ``col="4"`` group to ``2`` is what dropped the
  * declaration and left the renderer to invent the layout.
  */
-function normalizeColumns(value: unknown): number {
-  const columns = Number(value);
-  return Number.isInteger(columns) && columns >= 1 && columns <= layoutGridUnits() ? columns : 2;
+function nodeColumns(node?: NativeFormLayoutNode): number | undefined {
+  const declared = (node as { columns?: unknown } | undefined)?.columns;
+  return declared === undefined ? undefined : requireDeclaredLayoutColumns(declared);
 }
 
-function nodeColumns(node?: NativeFormLayoutNode): number {
-  const attrs = node ? nodeAttributes(node) : {};
-  const layoutNode = node as { cols?: unknown; columns?: unknown } | undefined;
-  return normalizeColumns(attrs.col ?? attrs.columns ?? layoutNode?.cols ?? layoutNode?.columns ?? props.columns);
+function containedFieldSchemas(node: NativeFormLayoutNode) {
+  // Parent placement is already consumed by layoutItemStyle on this exact field host.
+  return props.fieldSchemasForNodes([node]).map(field => ({ ...field, span: containedFieldLayout().span }));
 }
 
 /**
@@ -1127,9 +1055,6 @@ function emitNativeAction(node: NativeFormLayoutNode) {
   emit('native-action', action);
 }
 
-function overflowActionKey(node: Record<string, unknown>, index: number) {
-  return `more-${nodeKey(node as NativeFormLayoutNode, index)}`;
-}
 </script>
 
 <style scoped>
@@ -1291,32 +1216,6 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
   background: var(--sc-app-success-bg);
 }
 
-.native-form-feedback {
-  width: 100%;
-  min-width: 0;
-}
-
-/* The feedback band is a full-width alert, so its body must fill the band and
-   wrap. `inline-size: max-content` shrank the band to the content's intrinsic
-   width, which is 0 for a body whose only child is a grid-typed fact: the fact
-   then received ~2px and every character wrapped onto its own line, and a long
-   copy was laid out on one clipped line instead of wrapping. A definite
-   `minmax(0, 1fr)` track keeps the copy and any nested fact section wrapping
-   inside the band at every width. */
-.native-form-feedback__content {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  inline-size: 100%;
-  max-inline-size: 100%;
-  min-inline-size: 0;
-  gap: var(--sc-space-xs);
-}
-
-.native-form-feedback__copy {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-
 .native-ribbon {
   font: var(--sc-font-mark-small);
   justify-self: end;
@@ -1363,13 +1262,12 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 
 .native-actions--smart {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(104px, max-content));
+  grid-template-columns: repeat(auto-fit, minmax(min(104px, 100%), 1fr));
   gap: 1px;
   border: 1px solid var(--sc-app-border);
   border-radius: 8px;
-  overflow: hidden;
   background: var(--sc-app-border);
-  width: fit-content;
+  width: 100%;
   max-width: 100%;
 }
 
@@ -1453,7 +1351,7 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 
 /* ============================ Declared presentation vocabulary ============
  * The contract declares container presentation on the `styleToken` facet
- * (`d-flex`, `mb-3`, `card`, `alert alert-info`, `sc-project-stage`, ...).  This
+ * (`d-flex`, `mb-3`, `card`, `sc-project-stage`, ...).  This
  * block implements that vocabulary.  It used to be missing entirely, which made
  * every declared class a no-op and collapsed the project overview region into a
  * stack of full-width blocks.
@@ -1532,34 +1430,6 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
   border-radius: var(--sc-product-panel-radius);
   background: var(--sc-app-subtle-bg);
 }
-.native-form-tree.native-form-tree .alert {
-  padding: var(--sc-space-sm) var(--sc-space-md);
-  border: 1px solid var(--sc-app-info-border);
-  border-radius: var(--sc-product-radius-control);
-  background: var(--sc-app-info-bg);
-  color: var(--sc-app-info-text);
-}
-.native-form-tree.native-form-tree .alert-info {
-  border-color: var(--sc-app-info-border);
-  background: var(--sc-app-info-bg);
-  color: var(--sc-app-info-text);
-}
-.native-form-tree.native-form-tree .alert-warning {
-  border-color: var(--sc-app-warning-border);
-  background: var(--sc-app-warning-bg);
-  color: var(--sc-app-warning-text);
-}
-.native-form-tree.native-form-tree .alert-danger {
-  border-color: var(--sc-app-danger-border);
-  background: var(--sc-app-danger-bg);
-  color: var(--sc-app-danger-text);
-}
-.native-form-tree.native-form-tree .alert-link {
-  color: inherit;
-  font-weight: 600;
-  text-decoration: underline;
-}
-
 /* A declared layout container must apply to its declared children.  The
  * recursive child renderer inserts one wrapper node between a container and its
  * children; that wrapper is a renderer artifact and must not consume the layout

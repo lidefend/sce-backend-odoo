@@ -137,6 +137,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     if (next === observedSurfaceKey) return;
     observedSurfaceKey = next;
     surfaceEpoch.value += 1;
+    submissionFeedback.value = null;
     if (busyOwnerOperationId) { busyOwnerOperationId = 0; busyKind.value = null; }
   }, { flush: 'sync' });
 

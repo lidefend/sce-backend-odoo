@@ -96,7 +96,19 @@ assert.equal(
   resolvedPath(adaptLegacyRecordEntry({ model: 'x.model', record_id: 7 }, { legacyRoute: '/r/x.model/7' })!),
   '/r/x.model/7',
 );
-assert.equal(decodeFormalRecordEntry({ model: 'x.model', record_id: 7 }), null);
+assert.equal(decodeFormalRecordEntry(undefined), null, 'absent formal carrier retains compatibility');
+const incompleteFormalEntries = [
+  { model: 'x.model', record_id: 7 },
+  { record_id: 7, entry_intent: 'explicit_readonly' },
+  { model: 'x.model', entry_intent: 'explicit_readonly' },
+  { model: {}, record_id: 7, entry_intent: 'explicit_readonly' },
+  { model: 'x.model', record_id: '', entry_intent: 'explicit_readonly' },
+  {}, null, [], 'legacy',
+];
+for (const entry of incompleteFormalEntries) {
+  assertGap('declared incomplete/invalid formal carrier', () => decodeFormalRecordEntry(entry));
+}
+console.log('[OK] formal carrier structural boundary: 10 cases');
 assert.equal(
   resolvedPath(recordEntryFromModelRights({ model: 'x.model', recordId: 7, modelRights: { write: true } })),
   '/f/x.model/7',

@@ -64,16 +64,15 @@
       />
     </ScCard>
     <div
-      v-if="decisionMode && (blockedActionMessage || taskNodes.length || $slots.actions)"
+      v-if="decisionMode && (taskNodes.length || $slots.actions)"
       class="object-task-page__current-task"
       data-floorplan-region="current-task"
-      data-form-feedback-scope="page"
+      data-form-facts-scope="task"
     >
-      <ScInlineState v-if="blockedActionMessage || taskNodes.length" class="object-task-page__feedback" state="info" density="compact" :data-feedback-kind="blockedActionMessage ? 'current-action-blocker' : 'page-guidance'">
+      <div v-if="taskNodes.length" class="object-task-page__facts">
         <div class="object-task-page__current-task-copy">
-          <strong v-if="blockedActionMessage" class="object-task-page__blocked-action">{{ blockedActionMessage }}</strong>
           <CanonicalFormNodeRenderer
-            v-for="node in blockedActionMessage ? [] : taskNodes"
+            v-for="node in taskNodes"
             :key="node.nodeId"
             :node="node"
             :relation-adapter="relationAdapter"
@@ -84,7 +83,7 @@
             @field-action="emit('field-action', $event)"
           />
         </div>
-      </ScInlineState>
+      </div>
       <template v-if="$slots.actions">
         <div class="object-task-page__current-task-actions" data-floorplan-region="action-bar" data-mobile-action-surface>
           <slot name="actions" />
@@ -371,7 +370,6 @@ import CanonicalFormNodeRenderer from './CanonicalFormNodeRenderer.vue';
 import ProfessionalAuditTimeline from './ProfessionalAuditTimeline.vue';
 import FormSectionNavigation from './FormSectionNavigation.vue';
 import ScCard from '../../components/design-system/ScCard.vue';
-import ScInlineState from '../../components/design-system/ScInlineState.vue';
 import { canonicalFieldHasPresentableValue, canonicalNodeHasPresentableContent } from './canonicalFormRenderer';
 import {
   contractSurfaceNavigationItems,
@@ -413,7 +411,6 @@ const props = defineProps<{
   auditAuthorized?: boolean;
   collaborationTitle?: string;
   decisionMode?: boolean;
-  blockedActionMessage?: string;
 }>();
 const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange]; 'field-action': [payload: FormSectionFieldActionPayload] }>();
 const presentableRelationNodes = computed(() => props.relationNodes.filter((node) => (

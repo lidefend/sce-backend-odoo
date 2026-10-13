@@ -9,6 +9,7 @@
  * navigation runtime to the declared row placement instead.
  */
 import assert from 'node:assert/strict';
+import { isContractGapError } from '../src/app/contract/contractGap';
 import {
   ROW_PLACEMENT_WIDGET_ID,
   isRowPlacementAction,
@@ -62,8 +63,8 @@ function makeStore(actionRuleList: Dict[], viewType = 'list') {
 
 type Push = Dict;
 
-function drive(actionRuleList: Dict[], row: Dict, options?: { viewType?: string; editable?: boolean }) {
-  const pushes: Push[] = [];
+function drive(actionRuleList: Dict[], row: Dict, options?: { viewType?: string; editable?: boolean; pushes?: Push[] }) {
+  const pushes: Push[] = options?.pushes || [];
   const runtime = useActionViewNavigationRuntime({
     routeQueryMap: { value: { view_mode: 'list' } } as never,
     showHud: { value: true } as never,
@@ -133,3 +134,33 @@ assert.equal(isRowPlacementAction({ sourceWidgetId: ' page.row ' }), true, 'plac
 }
 
 console.log('[OK] collection row action identity: 6 cases');
+
+// An existing malformed formal declaration cannot be rescued by either fallback.
+let formalBoundaryCases = 0;
+for (const recordEntry of [
+  { model: 'project.project', record_id: 10 },
+  { record_id: 10, entry_intent: 'explicit_readonly' },
+  { model: 'project.project', entry_intent: 'explicit_readonly' },
+  null,
+]) {
+  for (const fallback of [
+    { model: 'project.project', record_id: 10, open_intent: 'process', model_write_authority: true },
+    { route: '/r/project.project/10' },
+  ]) {
+    const pushes: Push[] = [];
+    const action = rule({ ...rowAction, target: { ...fallback, record_entry: recordEntry } });
+    assert.throws(() => drive([action], { id: 10, model: 'project.project' }, { pushes }), isContractGapError);
+    assert.equal(pushes.length, 0, 'contract gap must stop before router publication');
+    formalBoundaryCases += 1;
+  }
+}
+for (const [target, expected] of [
+  [{ model: 'project.project', record_id: 10, open_intent: 'process', model_write_authority: true }, '/f/project.project/10'],
+  [{ route: '/r/project.project/10' }, '/r/project.project/10'],
+] as const) {
+  const pushes = drive([rule({ ...rowAction, target })], { id: 10, model: 'project.project' });
+  assert.equal(pushes.length, 1, 'fully absent formal carrier retains declared compatibility');
+  assert.equal(pushes[0].path, expected);
+  formalBoundaryCases += 1;
+}
+console.log(`[OK] row formal carrier stop/compatibility: ${formalBoundaryCases} cases`);

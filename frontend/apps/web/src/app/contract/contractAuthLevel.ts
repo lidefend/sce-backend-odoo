@@ -10,7 +10,7 @@
  *
  * 语义分工（T5：分开「明确禁止」与「声明缺失」）：
  * - `none`  = 契约显式禁止访问（明确禁止，消费点据此只读/拒绝），
- * - `null`  = 未声明或非法（声明缺失），消费点须按契约缺口处理，不得当作 readonly 兜底，
+ * - `null`  = 未声明或非法（声明缺失），消费点须按ContractGapError处理，不得当作 readonly 兜底，
  * - `read`/`edit`/`admin` = 逐级放行。
  */
 import { ContractGapError } from './contractGap';
@@ -81,7 +81,7 @@ export type OccurrenceAuthVerdict = {
  *
  * - 非字段 verdict（按钮/容器）不携带 auth，不得据它判只读；
  * - 字段 verdict 必须携带已声明枚举：none/read 只读，edit/admin 可编辑；
- * - 缺失或非法 = 契约缺口，fail closed（不可静默变只读）。
+ * - 缺失或非法 = ContractGapError，fail closed（不可静默变只读）。
  */
 export function resolveOccurrenceAuthVerdict(input: {
   hasWidgetVerdict: boolean;

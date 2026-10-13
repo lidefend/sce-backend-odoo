@@ -578,6 +578,13 @@ export interface ButtonEffect {
   message?: string;
 }
 
+export interface NativeActionNotification {
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'danger';
+  sticky: boolean;
+}
+
 export interface ExecuteButtonResponse {
   result: ExecuteButtonResult;
   effect?: ButtonEffect;

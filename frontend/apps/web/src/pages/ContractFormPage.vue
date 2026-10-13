@@ -48,9 +48,6 @@
       @run-primary="runPrimaryFormAction" @run-action="runAction" @canonical-action="runCanonicalFormAction($event.actionRef)" @canonical-save="saveRecord()" @discard="discardChanges" @copy="copyContractJson" @export="exportContractJson" @reload="reload"
     >
       <template #notice>
-        <ScInlineState v-if="renderProfile === 'readonly' && !isConfigurationPreview && recordActionDenialMessages.length" data-record-action-denials>
-          <span v-for="message in recordActionDenialMessages" :key="message">{{ message }}</span>
-        </ScInlineState>
     <ScInlineState v-if="isConfigurationPreview" class="configuration-preview-banner" data-configuration-preview>
       <strong>未发布配置预览 · 不产生业务写入</strong>
       <div>{{ pageDisplayTitle }} · 入口 {{ actionId }} · 公司 {{ session.recordContext?.company_name || session.recordContext?.selected?.company_name || session.recordContext?.company_id || '待验证' }} · 视图 {{ route.query.view_id }} · {{ route.query.preview_role_key }}</div>
@@ -81,8 +78,6 @@
         :suppress-workflow-transitions="actionPlaceholderGate.suppressWorkflowTransitions"
         :suppress-body-actions="actionPlaceholderGate.suppressBodyActions"
         :use-native-form-tree="useNativeFormTree"
-        :warnings="warnings"
-        :workflow-evidence-gate-rows="workflowEvidenceGateRows"
         :workflow-transitions="workflowTransitions"
         @run-action="runAction"
       />
@@ -292,6 +287,8 @@
 </template>
 <script setup lang="ts">
 import ScInlineState from '../components/design-system/ScInlineState.vue';
+import { showNativeActionNotification } from '../components/design-system/scActionNotification';
+import { useNativeActionFeedback, type ActionFeedbackOwner } from './contractForm/useNativeActionFeedback';
 import { computed, nextTick, onErrorCaptured, onMounted, provide, reactive, ref, shallowRef, watch } from 'vue';
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router';
 import StatusPanel from '../components/StatusPanel.vue';
@@ -594,7 +591,6 @@ import {
   strictContractMissingSummary as strictContractMissingSummaryFromGuard,
 } from './contractForm/sceneValidation';
 import {
-  normalizeWorkflowEvidenceGateRows,
   resolveWorkflowContractFromStore,
 } from './contractForm/workflowContract';
 import {
@@ -643,7 +639,6 @@ import {
 } from './contractForm/types';
 import { useIntakeAutosaveRuntime } from './contractForm/useIntakeAutosaveRuntime';
 import { createStandardFormCompositionRuntime } from './contractForm/standardFormCompositionRuntime';
-import { describeRecordActionDenials } from '../app/presentation/recordActionDenialPresentation';
 import { resolveRecordDeleteDecision } from '../app/presentation/recordDeleteAction';
 import { createStandardDetailCompositionRuntime } from './contractForm/standardDetailCompositionRuntime';
 import { resolveStandardPageTypeFromStore, type StandardPageTypeDecision } from '../app/presentation/standardPageType';
@@ -723,7 +718,6 @@ import {
   buildWorkflowTransitions,
   buildRouteContractContext,
   buildContractFormPolicyContext,
-  normalizeContractWarnings,
   resolveBusinessCategoryContext,
   resolveNativeStructureAuthority,
   resolveRuntimeRoleCode,
@@ -740,10 +734,13 @@ const {
   actionResponseNavQuery,
   actionResponseRouteTarget,
   navigateActionResponseResult,
+  navigateNotificationTarget,
 } = useActionResponseNavigation({
   router,
   currentQuery: () => route.query,
   currentModel: () => String(route.params.model || v2ContractStore.value?.snapshot.pageInfo.model || ''),
+  notificationIdentity: () => JSON.stringify({ token: session.token, actor: session.user, context: session.recordContext }),
+  showNotification: showNativeActionNotification,
 });
 const designerRouteQueryText = (key: string) => readRouteQueryText(route.query as Record<string, unknown>, key);
 const {
@@ -829,7 +826,9 @@ const canonicalProductFloorplan = computed(() => canonicalFormRenderState.value.
   ? composeCanonicalFormFloorplan(canonicalFormRenderState.value.model)
   : null);
 const relationCreateDialog = reactive<RelationCreateDialogState>(closedRelationCreateDialogState());
+let relationCreateFeedbackOwner: ActionFeedbackOwner | undefined;
 function openRelationCreateDialog(dialog: Omit<RelationCreateDialogState, 'open'>) {
+  relationCreateFeedbackOwner = actionFeedback.begin();
   Object.assign(relationCreateDialog, dialog, { open: true });
 }
 function settleActiveRelationCreateDialog(
@@ -845,6 +844,7 @@ function settleActiveRelationCreateDialog(
   });
 }
 function cancelRelationCreateDialog() {
+  relationCreateFeedbackOwner = undefined;
   settleActiveRelationCreateDialog('cancelled');
 }
 // Product routes have one rendering authority. Contract/driver failures stay in
@@ -1141,13 +1141,20 @@ function validateSubmissionRequirements(action: ContractAction): boolean {
   submissionFeedback.value = { kind: 'error', message: errors.join('；') };
   return false;
 }
+const actionFeedback = useNativeActionFeedback({
+  identity: () => JSON.stringify({ model: model.value, record: recordId.value, route: route.fullPath,
+    token: session.token, actor: session.user, context: session.recordContext }),
+  active: () => isComponentActive.value && isFormPageRouteOwner(route.name),
+  show: showNativeActionNotification,
+});
 const {
   runPrimaryFormAction,
 } = usePrimaryFormActionRuntime({
+  beginActionFeedback: actionFeedback.begin,
   validateSubmissionRequirements,
   currentQuery: () => route.query,
-  navigateCreatedRecord: (createdId, refreshPolicy, recovery) => navigateCreatedRecord({
-    createdId, refreshPolicy, recovery,
+  navigateCreatedRecord: (createdId, refreshPolicy, recovery, feedback) => navigateCreatedRecord({
+    createdId, refreshPolicy, recovery, feedback,
     createdLabel: String(formData.display_name || formData.name || '').trim(),
     nextSceneKey: String(sceneReadyFormSurface.value.nextSceneKey || '').trim(),
     nextSceneRoute: String(sceneReadyFormSurface.value.nextSceneRoute || '').trim(),
@@ -1158,7 +1165,7 @@ const {
   confirmActionSafety: (action) => confirmActionSafety(action),
   errorMessage, hasChanges: () => hasChanges.value,
   modelName: () => model.value,
-  navigateActionResponseResult: (result) => navigateActionResponseResult(result),
+  navigateActionResponseResult: (result, owner) => navigateActionResponseResult(result, owner),
   primaryCreateFooterAction: () => primaryCreateFooterAction.value,
   primarySubmitAction: () => primarySubmitAction.value,
   recordId,
@@ -1172,6 +1179,7 @@ const {
 const {
   runAction,
 } = useFormActionRuntime({
+  beginActionFeedback: actionFeedback.begin,
   validateSubmissionRequirements,
   actionId: () => actionId.value || 0,
   applyClientMode: (mode, toggle) => applyClientMode(mode, toggle),
@@ -1184,7 +1192,7 @@ const {
   errorMessage,
   executeSceneMutation: (input) => executeSceneMutation(input),
   modelName: () => model.value,
-  navigateActionResponseResult: (result) => navigateActionResponseResult(result),
+  navigateActionResponseResult: (result, owner) => navigateActionResponseResult(result, owner),
   recordId: () => recordId.value,
   reload: () => reload(),
   resolveNavigationUrl: (url) => resolveNavigationUrl(url),
@@ -1203,7 +1211,8 @@ const {
   isStandardIntakeMode: () => isStandardIntakeMode.value,
   modelName: () => model.value,
   resolveWorkspaceContextQuery: () => readWorkspaceContext(route.query as Record<string, unknown>),
-  returnToIntakeList: (createdId) => returnToIntakeList(createdId),
+  returnToIntakeList: (createdId, navigate) => returnToIntakeList(createdId, navigate),
+  navigateNotificationTarget: (target, result, owner) => navigateNotificationTarget(target, result, owner),
   router,
 });
 const {
@@ -1271,7 +1280,6 @@ const standardDetailComposition = createStandardDetailCompositionRuntime(() => c
  * keep the reason the contract published; an undeclared page stays denied.
  */
 const recordActionStates = computed(() => resolveContractV2RecordActionStates(v2ContractStore.value));
-const recordActionDenialMessages = computed(() => describeRecordActionDenials(recordActionStates.value));
 const rights = computed(() => {
   const denied = { read: false, write: false, create: false, unlink: false, duplicate: false };
   // The page does not judge its own access: the store owns the single verdict
@@ -1615,7 +1623,6 @@ const policyContext = computed(() => buildContractFormPolicyContext({
   profile: renderProfile.value, formData: formData as Record<string, unknown>,
   session, roleSurface: session.roleSurface,
 }));
-const warnings = computed(() => normalizeContractWarnings(undefined));
 const contractAccessPolicy = computed<ContractAccessPolicy>(() => {
   // Page-level access is declared by the contract's statusContract.globalStatus;
   // the page only projects that fact and never invents its own verdict.
@@ -1695,13 +1702,16 @@ const {
   selectOne2manySubview, selectRelationSearchOptionFromRuntime, selectedRelationOptionsFromRuntime,
   setRelationKeywordValue, v2ContractStore, validationErrors,
 });
-function completeRelationCreateDialog(result: RelationCreatedDialogResult) {
-  settleActiveRelationCreateDialog('created', () => {
+async function completeRelationCreateDialog(result: RelationCreatedDialogResult) {
+  const owner = relationCreateFeedbackOwner;
+  relationCreateFeedbackOwner = undefined;
+  const completed = settleActiveRelationCreateDialog('created', () => {
     setMany2oneOption(result.fieldName, { id: result.id, label: result.label });
   });
+  if (completed && result.notification) await owner?.publishNotification(result.notification);
 }
 const {
-  workflowEvidenceGateRows, contractActions, headerActions, bodyActions, contractFieldLabels,
+  contractActions, headerActions, bodyActions, contractFieldLabels,
   contractFieldLabel, activeChatterAction, messageAction, activeActivityAction, nativeAttachmentMaxBytes, nativeAttachmentUploadEnabled, nativeChatterActions, nativeAttachments, nativeFollowerContract,
   nativeCollaborationPanelProps, nativeCollaborationPanelListeners, resolveNativeAttachmentLabel, hasNativeChatterNode, nativeLayoutContainsType,
   contractActionFromNativeRow, resolveNativeActionState, isUnifiedSubmitMethod, isUnifiedSubmitAction,
@@ -1717,6 +1727,7 @@ const {
   runtimeState, setStatusbarValue, showNativeDefaultSectionTitle, useNativeFormTree, layoutNodes,
   nativeFieldSchemasForNodes, collectSceneValidationPrecheckErrors, onTemplateFieldChange, relationFieldAdapter,
 } = useRecordActionPresentation({
+  beginActionFeedback: actionFeedback.begin,
   ErrorCodes, actionId, activeChatterLabel,
   activeChatterMode, activityAssigneeId, activityDeadline,
   activityNote, activitySummary, activityUpdatingIds,
@@ -1743,7 +1754,7 @@ const {
   many2oneValue, markFieldChanged, model,
   nativeFormDesignFieldKeys, nativeFormDesignFieldLabels, nativeLayoutVisibilityRevision,
   navigateActionResponseResult, normalizeActionKind, normalizeActionSafety,
-  normalizeRequiredParams, normalizeWorkflowEvidenceGateRows,
+  normalizeRequiredParams,
   onNativeAttachmentSelected, onchangeModifiersPatch, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink,
   one2manyRowRecordId, canOpenRelationRecord, openRelationRecord, effectiveFieldDescriptor,
   one2manyEffectiveColumn,
@@ -1879,6 +1890,7 @@ const {
   resolveNavigationUrl, viewOrchestrationHudSummary, hudEntries, loadContract,
   loadRecord, handleSceneBlockAction, reload, ensureFormInitialReload, preloadFormAuxiliaryData,
 } = useRecordPageLifecycle({
+  submissionFeedback,
   clearRelationRuntime, captureRelationRequest,
   resetPendingInlineRelationCreates,
   ApiError, ContractAccessPolicyError, ContractV2DecodeError,
