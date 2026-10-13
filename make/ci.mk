@@ -492,6 +492,16 @@ verify.sc_data_scope.rule_coverage: guard.prod.forbid verify.sc_data_scope.ceili
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_sc_data_scope_rule_coverage_guard.py
 	@python3 scripts/verify/sc_data_scope_rule_coverage_guard.py
 
+# The money fact of a product model has one source as well: which models default
+# a new record to the tenant standard currency, and every known caller-context
+# currency alignment, are declared in fact_source_declarations.json and verified
+# here so an inline currency fact can never drift undeclared.
+.PHONY: verify.fact_source.coverage
+verify.fact_source.coverage: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/fact_source_coverage_guard.py scripts/verify/test_fact_source_coverage_guard.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_fact_source_coverage_guard.py
+	@python3 scripts/verify/fact_source_coverage_guard.py
+
 .PHONY: verify.workflow_contract.backend
 verify.workflow_contract.backend: guard.prod.forbid audit.workflow_state.inventory verify.workflow_action_semantics.guard verify.workflow_instance.ownership_boundary
 	@python3 -m py_compile addons/smart_core/core/action_semantics_vocabulary.py addons/smart_construction_core/models/support/workflow_contract_service.py addons/smart_construction_core/tests/test_workflow_contract_backend.py addons/smart_construction_core/tests/test_user_feedback_business_views.py scripts/audit/workflow_state_inventory.py scripts/verify/workflow_inventory_profile_method_guard.py scripts/verify/workflow_contract_custom_coverage_guard.py scripts/verify/workflow_action_semantics_completeness_guard.py
@@ -1112,7 +1122,8 @@ verify.contract.architecture.suite: \
 	verify.data_space.policy.unit \
 	verify.local.dev.layout_authority.unit \
 	verify.sc_price.company_ownership_boundary \
-	verify.sc_data_scope.rule_coverage
+	verify.sc_data_scope.rule_coverage \
+	verify.fact_source.coverage
 	@python3 scripts/verify/static_suite_frontend_toolchain_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_static_suite_frontend_toolchain_guard.py
 	@python3 scripts/verify/contract_form_runtime_state_protocol_guard.py

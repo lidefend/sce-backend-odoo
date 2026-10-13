@@ -1,0 +1,171 @@
+{
+  "version": 1,
+  "authority": "docs/governance/database_architecture_policy.md",
+  "decision": ".agent/decisions/data-authority-boundary.yaml",
+  "purpose": "Explicit money-fact source for every product-module model that declares a currency_id field. The declaration is the single source for which models default a new record to the tenant standard currency, and for every known caller-context currency alignment, so an undeclared inline currency fact fails closed in scripts/verify/fact_source_coverage_guard.py.",
+  "standard_currency": {
+    "currency": "CNY",
+    "runtime_pin": "scripts/verify/finance_p0_currency_default_audit.py",
+    "models": [
+      {
+        "model": "payment.request",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed. It is also asserted at runtime by scripts/verify/finance_p0_currency_default_audit.py."
+      },
+      {
+        "model": "sc.business.entity",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed."
+      },
+      {
+        "model": "sc.expense.claim",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed. It is also asserted at runtime by scripts/verify/finance_p0_currency_default_audit.py."
+      },
+      {
+        "model": "sc.financing.loan",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed. It is also asserted at runtime by scripts/verify/finance_p0_currency_default_audit.py."
+      },
+      {
+        "model": "sc.fund.account",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed. It is also asserted at runtime by scripts/verify/finance_p0_currency_default_audit.py."
+      },
+      {
+        "model": "sc.fund.account.operation",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed. It is also asserted at runtime by scripts/verify/finance_p0_currency_default_audit.py."
+      },
+      {
+        "model": "sc.invoice.registration",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed. It is also asserted at runtime by scripts/verify/finance_p0_currency_default_audit.py."
+      },
+      {
+        "model": "sc.norm.catalog",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed."
+      },
+      {
+        "model": "sc.payment.execution",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed. It is also asserted at runtime by scripts/verify/finance_p0_currency_default_audit.py."
+      },
+      {
+        "model": "sc.receipt.income",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed. It is also asserted at runtime by scripts/verify/finance_p0_currency_default_audit.py."
+      },
+      {
+        "model": "sc.self.funding.registration",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed. It is also asserted at runtime by scripts/verify/finance_p0_currency_default_audit.py."
+      },
+      {
+        "model": "sc.tax.deduction.registration",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed. It is also asserted at runtime by scripts/verify/finance_p0_currency_default_audit.py."
+      }
+    ]
+  },
+  "caller_context_currency": {
+    "issue": "CURRENCY-OWNER-ALIGNMENT-01",
+    "owner_module": "smart_construction_core",
+    "reason": "These models take their money fact from the caller's environment company while their owning company is not that caller, so a document created in one company context while pointing at another company's object can start with a currency that does not belong to its owning company. The divergence appears in three shapes and the list carries all three: (a) company_id is a related field derived from an owning relation (project/plan/contract), (b) the model has no company_id column at all and therefore no company of its own to own the currency (project.settlement, sc.business.fact.mixin and the two material line models), and (c) the model inherits the caller-context currency from the sc.business.fact.mixin carrier without declaring its own currency_id (sc.dashboard.cockpit.fact, sc.workbench.item, sc.document.admin.document, sc.office.admin.document, sc.hr.payroll.document). sc.treasury.ledger is listed because its readonly company_id is written by the projection, so the row company can differ from the caller. The single source for the money fact is the owning company's currency; the per-model migration changes which value an existing record carries, so it is recorded here for a product decision instead of being silently rewritten.",
+    "models": [
+      "project.budget",
+      "project.settlement",
+      "sc.business.fact.mixin",
+      "sc.contract.event",
+      "sc.dashboard.cockpit.fact",
+      "sc.document.admin.document",
+      "sc.equipment.price",
+      "sc.equipment.request",
+      "sc.equipment.settlement",
+      "sc.equipment.usage",
+      "sc.hr.payroll.document",
+      "sc.labor.deduction",
+      "sc.labor.price",
+      "sc.labor.request",
+      "sc.labor.settlement",
+      "sc.labor.usage",
+      "sc.material.outbound",
+      "sc.material.price",
+      "sc.material.purchase.request",
+      "sc.material.purchase.request.line",
+      "sc.material.rental.order",
+      "sc.material.rental.plan",
+      "sc.material.rental.settlement",
+      "sc.material.rfq.line",
+      "sc.material.settlement",
+      "sc.office.admin.document",
+      "sc.output.invoice.adjustment",
+      "sc.settlement.adjustment",
+      "sc.site.variation",
+      "sc.subcontract.plan",
+      "sc.subcontract.price",
+      "sc.subcontract.register",
+      "sc.subcontract.request",
+      "sc.subcontract.settlement",
+      "sc.treasury.ledger",
+      "sc.treasury.reconciliation",
+      "sc.workbench.item"
+    ]
+  },
+  "currency_write_paths": {
+    "issue": "CURRENCY-OWNER-ALIGNMENT-01",
+    "owner_module": "smart_construction_core",
+    "reason": "A currency_id assignment inside a method overwrites the money fact after the field default ran, so it is a second money-fact source that a field-default-only scan cannot see. Every such assignment on a product model is registered here: four copy the currency of the owning document or ledger (single source, no divergence), sc.settlement.order fills the header from its contract in two places, and sc.norm.catalog is the one open alignment because it copies the region country currency instead of a company fact, which can leave the tenant standard currency.",
+    "models": [
+      {
+        "model": "construction.contract",
+        "methods": [
+          "_onchange_original_contract_id"
+        ],
+        "source": "original_contract_id.currency_id",
+        "reason": "the re-issued contract copies the money fact of the contract it originates from, so the owning document stays the single source"
+      },
+      {
+        "model": "sc.norm.catalog",
+        "methods": [
+          "_onchange_region_currency"
+        ],
+        "source": "region_id.country_id.currency_id",
+        "issue": "CURRENCY-OWNER-ALIGNMENT-01",
+        "reason": "OPEN ALIGNMENT: the region country currency is a country fact, not the tenant or company fact, so selecting a foreign region can overwrite the tenant standard currency. The company currency pin keeps the tenant on CNY; the owner must decide whether this write path stays or the currency derives from a company fact"
+      },
+      {
+        "model": "sc.output.invoice.adjustment",
+        "methods": [
+          "_sync_original_invoice_snapshot"
+        ],
+        "source": "original_ledger_id.currency_id",
+        "reason": "the red-flush snapshot copies the money fact of its original ledger entry, so the ledger stays the single source"
+      },
+      {
+        "model": "sc.receipt.income",
+        "methods": [
+          "_onchange_payment_request_id"
+        ],
+        "source": "payment_request_id.currency_id",
+        "reason": "the receipt copies the money fact of the payment request it registers, so the request stays the single source"
+      },
+      {
+        "model": "sc.settlement.order",
+        "methods": [
+          "_onchange_contract_id_fill_header",
+          "_onchange_general_contract_id"
+        ],
+        "source": "contract_id.currency_id",
+        "reason": "both header-fill onchanges take the money fact from the selected contract, so the contract stays the single source; two write sites on one model are recorded so a third cannot appear unnoticed"
+      }
+    ]
+  },
+  "company_field_overrides": {
+    "reason": "A company_id or currency_id redefined by an extension class (an _inherit class without _name) replaces the definition of the model's own class. It is registered so a redefinition stays a decision instead of a silent override.",
+    "models": [
+      {
+        "model": "sc.labor.usage",
+        "field": "company_id",
+        "file": "addons/smart_construction_core/models/core/labor_product_extension.py",
+        "reason": "the product extension re-declares the same project-derived company_id only to add the 所属公司 label; the owning relation is unchanged"
+      }
+    ]
+  },
+  "company_currency_authority": {
+    "model": "res.company",
+    "module": "smart_construction_core",
+    "method": "_sc_ensure_cny_currency",
+    "currency": "CNY",
+    "reason": "The statement that a caller-context default still resolves to the tenant standard currency depends on this pin: it makes CNY active and sets every company without journal items to it, skipping companies that already own accounting facts. The guard fails if this method disappears, stops naming the standard currency, or if standard-currency models are declared without a registered authority."
+  }
+}
