@@ -80,6 +80,44 @@ seed vs #525 document state-guard conflict).
 
 Fix commits: `8ad256ce` (1), `9b6a1128` (2), `f9df902a` (3).
 
+## B3 findings (two gates the B2 fixes left behind)
+
+The B2 fixes were correct at the product layer but left two verification gates
+red, both caused by this batch's own inputs. They are closed here rather than
+deferred, because a red gate on the batch's own input would otherwise be
+inherited by every later candidate.
+
+1. **Served assembled-contract cache no longer matched its pin (P0/P1 contract
+   runtime).** `f9df902a` changed `ui_contract_v2_projection.py`, which is one of
+   the pinned inputs of the assembled-contract response cache. The cache serves a
+   whole assembled contract, so an unpinned change would keep serving the previous
+   assembly and the presentation-facet correction would never reach a client with
+   a warm cache. Fixed in the owning layer: `ASSEMBLED_CONTRACT_CACHE_VERSION`
+   bumped to `ui-contract-v2-2026-10-13-drop-native-arch-class-from-presentation-facet`
+   in the handler and in the guard, and `ASSEMBLED_CACHE_INPUTS_SHA256` re-pinned
+   to `11385d19d89e04710b35be4adf286a38ff24f304ecdec95ed0ea20834acd7091`. No
+   behaviour changed; only the cache identity did.
+2. **The new ops repair driver was dead surface.** The verification-lane coverage
+   audit correctly refused `scripts/ops/repair_unbound_structural_form_contract.py`
+   as an unreferenced script under a frozen ratchet. The driver retires a live
+   config on the demo-backed daily database, so it is wired instead of retired:
+   `verify.contract.unbound_structural_form_contract.repair.unit` compiles it and
+   runs a sandboxed behavioural test that drives the same source through the real
+   fail-closed ladder, and the entry is a prerequisite of
+   `verify.contract.architecture.suite` (reached by both `ci.local.quick.run` and
+   the remote backend verify shard). The script count is back under the baseline
+   and the target count is unchanged.
+
+## Execution order correction
+
+The B2 round pushed first and only then let the PR merge step trigger the
+exact-head Quick, so the two gate fixes above invalidated an already-green
+remote run and cost one wasted remote cycle. The governed order for the rest of
+this batch is: fix -> `ci.local.iteration` -> risk-selected L2 ->
+`ci.delivery.freeze.prepare` -> commit -> freeze the full fingerprint -> one
+exact-head Quick **locally** -> push -> remote required checks -> merge. The
+Quick result is produced before publication, never discovered by the merge step.
+
 ## Result index
 
 Layer-level checks, exact commands, stage identity and receipts are recorded in the run record at

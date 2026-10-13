@@ -24,6 +24,11 @@
     ,"docs/engineering_convergence/test_inventory.csv"
     ,"docs/engineering_convergence/test_inventory_summary.md"
     ,"docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+    ,"addons/smart_core/handlers/ui_contract_v2.py"
+    ,"make/ci.mk"
+    ,"make/dev_test.mk"
+    ,"scripts/verify/unified_page_contract_v2_assembler_guard.py"
+    ,"scripts/ops/test_repair_unbound_structural_form_contract.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -100,5 +105,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "B2 is closed: the daily runtime now serves 9b6a1128 / frontend_build_sha256=00baf0f0... and the full formal 89-entry matrix PASSes with zero problems and zero console errors (artifacts/frontend-business-entry-matrix/daily-9b6a1128-full/), after a targeted re-walk of the four previously failing entries (artifacts/frontend-business-entry-matrix/daily-9b6a1128-fix4/). Remaining work is integration and owner acceptance: publish the three boundary fixes (8ad256ce, 9b6a1128, f9df902a) at this exact head through the governed PR lane, and hand the served runtime (http://1.95.85.92:18081, sc_demo, wutao) to the owner for login acceptance. No further product write is required for this batch."
+  "next_exact_step": "B3 closes the two gates the B2 fixes left behind, both caused by this batch's own inputs: the served assembled-contract cache is re-pinned and its version bumped in the owning layer (ui_contract_v2.py + unified_page_contract_v2_assembler_guard.py) after f9df902a changed a pinned input, and the new ops repair driver is wired into verify.contract.architecture.suite through verify.contract.unbound_structural_form_contract.repair.unit instead of being left as dead surface. Execution order corrected to: fix -> ci.local.iteration -> risk-selected L2 -> ci.delivery.freeze.prepare -> commit -> freeze fingerprint -> one exact-head Quick LOCALLY -> push -> remote required checks -> merge, so the Quick is never discovered by the merge step. Remaining: freeze this head, run the exact-head Quick once, publish through the governed PR lane, merge, then hand the served runtime (http://1.95.85.92:18081, sc_demo, wutao) to the owner for login acceptance. No further product write is required for this batch."
 }
