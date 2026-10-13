@@ -83,11 +83,46 @@ the branch-deleting path.
   index and is not an `origin/main` ancestor; its carrier was retired separately and it
   is out of scope here.
 
-## Closure outcome
+## Mainline integration and terminal retirement (2026-10-13)
 
-The residual `release/daily-main-mode-20261011` worktree directory is removed through
-the restored governed detach entry **after** this record is committed at the primary
-worktree HEAD (i.e. after merge). The branch `release/daily-main-mode-20261011` @
-`a0afb331` is retained. Its ignored `.runtime/final-acceptance/daily-deployed/*.json`
-files are copied to the external workspace archive before removal by reference (the
-primary worktree already holds newer copies of the same paths).
+- The reviewed candidate `7c8e7f4bca75f2c85d351e63462967618fc0950b` merged through the
+  protected PR flow: **PR #652**, squash commit
+  **`0f13a23878d5996c549476a0c2a232e69c15d18c`**; base `main` advanced from `fc4164a5`.
+- Pre-merge binding check: `headRefOid=7c8e7f4b`, `mergeStateStatus=CLEAN`,
+  `mergeable=MERGEABLE`, `isDraft=false`. The four required checks
+  (`public_guard` / `merge_policy_gate` / `professional_quality_gate` /
+  `frontend_release_gate`) all `pass` on the exact head; the merge-lane
+  `ci.local.quick` prerequisite **REUSE**d the exact-head receipt
+  (`.git/codex/evidence/ci.local.quick/7c8e7f4bca75….json`).
+- Post-merge readback: PR `state=MERGED`, `mergedAt=2026-10-13T03:04:30Z`,
+  `mergeCommit=0f13a238`; local `main == origin/main == 0f13a238`, worktree clean.
+- **Residual removal**: the `sce-backend-odoo-mainmode` worktree directory was removed
+  through the restored governed detach entry
+  (`make workspace.worktree.cleanup CLEAN_WORKTREE_KEEP_BRANCH=1
+  CLEAN_WORKTREE_EXPECTED_HEAD=a0afb331… APPLY=1`). Readback: directory **removed**,
+  branch `release/daily-main-mode-20261011` @ `a0afb331` **retained**, and
+  `git worktree list` shows only the primary worktree.
+- Its ignored `.runtime/final-acceptance/daily-deployed/*.json` were copied
+  (non-destructively) to the external workspace archive
+  `/home/lidefend/workspace/.codex-evidence/workspace-archives/20261013/main-mode-residual-daily-deployed/`
+  before removal:
+
+  | File | SHA256 |
+  | --- | --- |
+  | `bundle-sync.json` | `e5bd9191de88b87cdad163ab57b73765687041aa8a5f1d8bde7cb31323124075` |
+  | `published-face-converge.json` | `8a530b905995d6ff12d810b4be7fa682e45190d2dfb2466033fd0985efea5750` |
+  | `source-revision-align.json` | `d5b902d31bf8aee4fa02f9cbe6eb86c6f7d264c9ebf253741a500e98a23d5554` |
+
+  The primary worktree holds newer copies of the same paths; this archive is a
+  by-reference snapshot, not a parallel ledger.
+- **Terminal retirement**: this goal/run is flipped to `completed`, and
+  `.agent/active-runs.json` no longer binds
+  `fix/workspace-release-worktree-detach-closure`; no index entry points at the merged
+  branch. Per the `pr.merge.local_quick_gate` design, `.agent`/`docs` bookkeeping must
+  normally ride with an adjacent product candidate; this topic is substantively
+  complete and has **no** adjacent candidate, so it follows the gate's explicit
+  instruction (`PR_MERGE_BOOKKEEPING_TERMINAL_RETIRE=<reason>`) with one real
+  exact-head Quick for the whole batch.
+- Boundary: the merge does **not** trigger a product deployment; no version release or
+  product delivery is claimed. The `release/*` branch-deletion protection is unchanged
+  and no other registered run or its carrier branch was touched.

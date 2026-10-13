@@ -2,7 +2,7 @@
  "schema_version": 1,
  "id": "WORKSPACE-RELEASE-WORKTREE-DETACH-CLOSURE",
  "branch": "fix/workspace-release-worktree-detach-closure",
- "status": "active",
+ "status": "completed",
  "baseline_sha": "fc4164a5333600aa48836e3dd7a922401c1801f8",
  "goal": ".agent/goals/WORKSPACE-RELEASE-WORKTREE-DETACH-CLOSURE.yaml",
  "record": "docs/ops/iterations/workspace_release_worktree_detach_closure_20261013.md",
@@ -63,5 +63,5 @@
   "pre-existing residual, deliberately NOT cleaned in this batch: the local topic branches audit/daily-dev-mainline-product-acceptance-closeout-20261009, audit/fe-contract-runtime-00-20261012 and fix/payment-request-chain-alignment-20261013 are the carriers of the three runs still registered active/verification_pending in .agent/active-runs.json. A whole-workspace sweep (make workspace.retain-main-only) would destroy live carriers, so it is not used here.",
   "pre-existing residual, recorded not fixed: the local branch audit/daily-dev-full-product-acceptance-20261013 is not in the active-run index and is not an origin/main ancestor (its carrier was retired separately). It is out of this batch's scope."
  ],
- "next_exact_step": "All three offline L1 checks pass (verify.workspace.worktree.guard 140, verify.branch.governance.consistency 73, verify.agent.ledger.unit 15) and ci.local.iteration PASS (L1 only, risk-selected non-zero L2 = the worktree guard). Next: ci.delivery.freeze.prepare, commit the candidate, freeze the full fingerprint, run one exact-head ci.local.quick, push, wait for remote required checks, merge, then remove the residual release/daily-main-mode-20261011 worktree through the governed detach entry (branch retained)."
+ "next_exact_step": "Completed and retired. PR #652 (head 7c8e7f4bca75f2c85d351e63462967618fc0950b, base main fc4164a5333600aa48836e3dd7a922401c1801f8) merged through the protected PR flow as squash commit 0f13a23878d5996c549476a0c2a232e69c15d18c after the four required checks (public_guard / merge_policy_gate / professional_quality_gate / frontend_release_gate) passed on the exact head; the merge-lane ci.local.quick prerequisite reused the exact-head receipt. The residual `sce-backend-odoo-mainmode` worktree directory was then removed through the restored governed detach entry (workspace.worktree.cleanup CLEAN_WORKTREE_KEEP_BRANCH=1) while the branch release/daily-main-mode-20261011 @ a0afb331e1a56d636c316c39e22b63453626cbbd is retained; its ignored .runtime/final-acceptance/daily-deployed/*.json were copied to /home/lidefend/workspace/.codex-evidence/workspace-archives/20261013/main-mode-residual-daily-deployed/ (bundle-sync.json e5bd9191, published-face-converge.json 8a530b90, source-revision-align.json d5b902d3) before removal. The release/* branch-deletion protection is unchanged. Status boundaries: batch acceptance done; mainline integration merged; version release NOT claimed; product delivery NOT claimed. This ledger is retired by its own terminal retirement candidate, so no adjacent product candidate carries it."
 }

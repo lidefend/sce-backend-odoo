@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: WORKSPACE-RELEASE-WORKTREE-DETACH-CLOSURE
   title: workspace_release_worktree_detach_lane_restoration
-  status: active
+  status: completed
   formal_product_layer: P4
   supporting_layer: P4
   layer_target: governed_linked_worktree_cleanup_entry
@@ -42,18 +42,23 @@ goal:
     - no_direct_git_worktree_and_no_hand_assembled_cleanup_command
     - do_not_touch_active_registered_runs_or_their_carrier_branches
   next_exact_step: >-
-    Record the batch (worktree guard + branch governance + ledger checks), then
-    integrate the reviewed candidate and close the residual worktree through the
-    restored governed detach entry.
+    Delivered and closed. PR #652 (head 7c8e7f4b, base main fc4164a5) merged as
+    squash commit 0f13a238; local main == origin/main == 0f13a238 and the worktree
+    is clean. The residual `sce-backend-odoo-mainmode` worktree directory was then
+    removed through the restored governed detach entry
+    (workspace.worktree.cleanup KEEP_BRANCH=1) while the branch
+    `release/daily-main-mode-20261011` @ a0afb331 is retained. No follow-on work
+    belongs to this goal.
   completion:
     scope: ops_tool_contract_restoration_only
-    overall_goal: incomplete
+    overall_goal: complete
     result_index: .agent/runs/WORKSPACE-RELEASE-WORKTREE-DETACH-CLOSURE/run.json
-    local_batch_acceptance: not_run
-    mainline_integration: not_run
-    deployment: not_run
-    target_user_delivery: not_run
+    local_batch_acceptance: passed
+    mainline_integration: merged
+    deployment: not_claimed
+    target_user_delivery: not_claimed
     limits: >-
-      This goal restores one documented ops entrypoint contract and removes one
-      local scaffold directory; it is not a product change, not a release-line
-      retirement and not a delivery or acceptance result.
+      This goal restored one documented ops entrypoint contract and removed one
+      local scaffold directory; it was not a product change, not a release-line
+      branch retirement (the branch is retained) and not a deployment or
+      user-acceptance result.
