@@ -1014,3 +1014,40 @@ L2 定向 ORM 反例 1 test 0 failed（日志 `relationship_review_queue_project
 - 附带发现（已登 run blockers，非本批阻塞）：`make verify.backend_business_fact.model_standard`
   当前因文档计数漂移而 FAIL（`backend_business_model_audit_findings_v1.md` 记 372/0，实测 378/1）；
   该 target 是 zero-reference、不可达任何闸锚点的 lane 条目。
+
+### G 段：数据隔离公司上限回到声明派生单一来源（`DATA-SCOPE-CEILING-01`）
+
+- 目标：把 `DATA-SCOPE-CEILING-01` 的 26 个 deferred P1 业务模型补上公司上限，同时不让 99 个 enforced
+  模型继续靠 99 条近乎重复的手写 `ir.rule` 维持——即“数据隔离不是每个模型添加隔离维度”，而是
+  **一个声明派生一条统一上限**。
+- 事实（改动前）：99 条 enforced 公司域规则全部内联在
+  `addons/smart_construction_core/security/sc_record_rules.xml`（本段删除其第 3306–4201 行，共 892 行
+  = 一段注释 + 99 条 `rule_sc_data_scope_*`）；26 个 deferred 模型只有 capability/project 范围的
+  groups 规则（域形如 `(1,'=',1)` 或项目成员谓词），没有任何公司条款，因此 `group` 并集不设上限，
+  经理级 group 可读他公司行。
+- 裁定（事实层单一来源）：唯一事实源是 `scripts/verify/data_scope_declarations.json`。生成器
+  `scripts/verify/sc_data_scope_ceiling_generate.py` 从该声明渲染
+  `addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml`（125 条 =
+  99 enforced + 26 deferred）；`sc_record_rules.xml` 的手写块删除，只留 4 行注释指向生成物与生成器。
+  跨模块模型按引用前缀区分：`ui.business.config.contract` 归 `smart_core` 定义，生成记录仍落在
+  `smart_construction_core`，`model_id` 用 `smart_core.model_ui_business_config_contract` 引用——
+  该文件本已跨模块引用 `smart_core`（`depends` 第 20 行），非新机制。
+- 等价性证明：删除前把生成物与旧手写块逐条比对，99 条 enforced 记录 **byte-identical**（内容差异 0），
+  另加 26 条 deferred 新增，未改动任何已生效域的形状或 `perm_*`。
+- 守卫语义升级：`scripts/verify/sc_data_scope_rule_coverage_guard.py` 现在对 enforced **和** deferred
+  都要求“存在一条全局规则且其域约束声明的 anchor”；`deferred` 记录的是交付顺序，不是隔离缺失。
+  因此删除生成文件会 fail-closed——实测移除
+  `security/sc_data_scope_ceiling_generated.xml` → 20+ 条 FAIL、exit=120；还原 → exit=0、文件一致。
+- 漂移闸：`python3 scripts/verify/sc_data_scope_ceiling_generate.py --check` 重新渲染并与已提交文件
+  比对，不一致即 FAIL。接为 `make verify.sc_data_scope.ceiling.check`，并作为
+  `verify.sc_data_scope.rule_coverage` 的前置；`verify.sc_data_scope.rule_coverage` 同时被
+  `ci.local.quick.run` 与 `ci.professional.backend.shard-verify` 两个闸锚点可达，故本地/远端无 lane
+  分叉。生成入口为 `make verify.sc_data_scope.ceiling.sync`（编辑声明后重新生成）。
+- 测试：guard 用例 21 → **23**（新增：deferred 缺规则 FAIL、deferred 有规则 PASS、deferred 只有
+  group 规则 FAIL）；生成器用例 **7**（声明与已提交记录集一致、enforced/deferred 各渲染一条、anchor
+  去重优先 enforced、跨模块前缀、全局且无 `groups`、无归属模型 fail、根外路径打印）。
+- 证据（`.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/`）：
+  `data_scope_coverage_batch2.log`（23 tests，`uncovered=0`）、
+  `arch_suite_data_scope_ceiling.log`（30 个套件、合计 **335** tests、`exit=0`）。
+- 未做／限制：无受管升级、无 DB 写；`sc_dev_demo` 仍是改动前的模型与规则安装态，新记录集的 L3
+  激活回读（`local.dev.data_scope.inventory` 的 `installed_company_scoped_rule_count`）待写授权。

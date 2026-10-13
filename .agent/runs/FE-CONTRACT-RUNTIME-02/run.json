@@ -205,6 +205,8 @@
     "addons/smart_construction_core/tests/__init__.py",
     "addons/smart_construction_core/tests/test_project_salary_product.py",
     "addons/smart_construction_core/security/sc_record_rules.xml",
+    "scripts/verify/test_sc_data_scope_ceiling_generate.py",
+    "addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml",
     "addons/smart_construction_core/tests/test_payroll_data_space_rules.py",
     "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
     "addons/smart_construction_acceptance_fixture/tests/test_data_space_creation.py",
@@ -912,7 +914,9 @@
         "scripts/verify/data_scope_declarations.json",
         "addons/smart_construction_core/security/",
         "addons/smart_core/security/",
-        "make/ci.mk"
+        "make/ci.mk",
+        "scripts/verify/sc_data_scope_ceiling_generate.py",
+        "addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml"
       ],
       "kind": "offline"
     },
@@ -928,6 +932,19 @@
         "docs/audit/test_coverage_registry/test_coverage_registry.json",
         "frontend/apps/web/src/pages/ContractFormPage.vue",
         "frontend/apps/web/src/pages/contractForm/useFormActionRuntime.ts"
+      ],
+      "kind": "offline"
+    },
+    "sc_data_scope_ceiling_generate": {
+      "target": "verify.sc_data_scope.ceiling.check",
+      "inputs": [
+        "scripts/verify/sc_data_scope_ceiling_generate.py",
+        "scripts/verify/test_sc_data_scope_ceiling_generate.py",
+        "scripts/verify/data_scope_declarations.json",
+        "scripts/verify/sc_data_scope_rule_coverage_guard.py",
+        "addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml",
+        "config/tenant/module_sets.v1.json",
+        "make/ci.mk"
       ],
       "kind": "offline"
     }
@@ -947,9 +964,9 @@
     "This run declares environment.kind=runtime, so the run evaluator marks every offline receipt stale ('runtime evidence requires authoritative environment readback'). Receipts are truthful but not reusable in-tool until that pre-existing declaration is reconciled.",
     "Corrected while closing data-scope batch 1: the earlier premise that the sc.business.fact.mixin family and the cockpit/workbench fact models have no company path was wrong - they carry project_id, so sc.dashboard.cockpit.fact, sc.workbench.item, sc.document.admin.document and sc.office.admin.document are now covered by a global company-scope ir.rule anchored on project_id.company_id (scripts/verify/data_scope_declarations.json). No schema change is required for isolation. What remains is governed activation readback (L3), not a schema change.",
     "verify.backend_business_fact.model_standard currently FAILs on documentation drift: docs/architecture/backend_business_model_audit_findings_v1.md records 372 model classes and 0 unclassified models while the measured values are 378 and 1. The target is a zero-reference lane entry (not reachable from any gate anchor), so it is not a blocker for this batch.",
-    "DATA-SCOPE-CEILING-01: 26 P1 business models with a company_id column are recorded as deferred (scripts/verify/data_scope_declarations.json); they carry only capability/project-scoped groups rules, so no group union is bounded by a company ceiling. Resolution is one derived ceiling, not 26 hand-written rules; needs the governed activation readback described in next_exact_step."
+    "DATA-SCOPE-CEILING-01: the 26 P1 company-scoped models are no longer only deferred. Their global company ceiling is derived from scripts/verify/data_scope_declarations.json by scripts/verify/sc_data_scope_ceiling_generate.py into addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml (125 records = 99 enforced + 26 deferred), the guard now requires that ceiling for deferred models too so deletion fails closed, and verify.sc_data_scope.ceiling.check fails on drift. What remains is the governed L3 activation readback described in next_exact_step."
   ],
-  "next_exact_step": "Data-scope coverage is now a source-verified, fail-closed inventory: the guard derives the 137-model product company universe, 99 models carry a verified global company ceiling, 49 are covered by a company-constraining rule in source, 33 are exempt with a named isolation dimension and owning module, 2 are transient, and 26 P1 business models are recorded under DATA-SCOPE-CEILING-01 rather than silently exempted. NEXT, in order: (1) decide and implement one derived global company ceiling for the 26 deferred models (single source, no per-model hand-written rules); (2) L3 activation readback for the 99+ ceiling batch - after a governed make local.dev.snapshot, run make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core, then make local.dev.data_scope.inventory and compare installed_company_scoped_rule_count; (3) re-check residual company_id = False visibility for business documents.",
+  "next_exact_step": "Data-scope isolation is now derived and fail-closed at source: 137-model product company universe, 99 enforced + 26 deferred models all carrying a global company ceiling generated from one declaration (125 rules), 49 covered by a company-constraining source rule, 33 exempt with a named dimension and owning module, 2 transient, uncovered=0; verify.sc_data_scope.ceiling.check proves the committed record set has not drifted, and the guard now fails if any enforced or deferred ceiling is removed. NEXT, in order: (1) commit this boundary as the declared data-scope ceiling batch (files split: generator+record set+manifest, then guard/tests/make/run record); (2) governed L3 activation readback - after an authorized make local.dev.snapshot, run make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core, then make local.dev.data_scope.inventory and compare installed_company_scoped_rule_count; (3) re-check residual company_id = False visibility for business documents. No deployment or user acceptance is implied; write authorization stays required for (2).",
   "acceptance_authority_layout": {
     "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
     "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",
@@ -2965,7 +2982,7 @@
     "limits": "the refreshed checks are syntax locks, so a future semantic change to the action-feedback ownership boundary must consciously update the side-effect guard"
   },
   "data_scope_ceiling_inventory": {
-    "status": "source_complete_pending_execution",
+    "status": "derived_fail_closed_pending_runtime_activation",
     "scope": "Product-module models (config/tenant/module_sets.v1.json) that declare a company_id field; the 744-model installed registry stays inspection scope.",
     "universe": 137,
     "enforced_global_ceiling": 99,
@@ -2974,14 +2991,16 @@
     "deferred": 26,
     "transient": 2,
     "uncovered": 0,
-    "guard": "scripts/verify/sc_data_scope_rule_coverage_guard.py now derives the coverage universe from source, requires one named isolation dimension plus a real owning module per exemption, rejects placeholder reasons, and fails closed when a company model has no ceiling, exemption or deferred decision.",
-    "method": "One authoritative ownership identity at the root with details inheriting; reuse native ACL, industry record rules and parent anchors instead of duplicating every isolation dimension onto every model.",
+    "guard": "scripts/verify/sc_data_scope_rule_coverage_guard.py derives the coverage universe from source, requires one named isolation dimension plus a real owning module per exemption, rejects placeholder reasons, and requires a global rule constraining the declared anchor for every enforced *and* deferred model, so deleting the generated ceiling fails closed instead of reporting green.",
+    "method": "One authoritative ownership identity at the root with details inheriting; reuse native ACL, industry record rules and parent anchors instead of duplicating every isolation dimension onto every model. The enforced and deferred ceilings are generated from the declaration instead of hand-written per model.",
     "corrected_rationale": "Five scene/pack exemptions previously read 'needs an ownership anchor'. The source facts are a delivery-only orchestration object (sc.scene source_authority_contract: delivery_only, no_business_fact_authority), a deployment-wide pack manifest, and validation/audit rows owned by their subject.",
     "evidence": {
-      "verify.sc_data_scope.rule_coverage": "21 tests passed, uncovered=0",
-      "verify.contract.architecture.suite": "327 tests passed, exit=0"
+      "verify.sc_data_scope.rule_coverage": "23 guard tests passed, uncovered=0, failures=[]",
+      "verify.sc_data_scope.ceiling.check": "7 generator tests passed; 125 generated rules (99 enforced + 26 deferred) match the declaration",
+      "verify.contract.architecture.suite": "335 tests passed, exit=0"
     },
-    "gate": "make verify.sc_data_scope.rule_coverage and make verify.contract.architecture.suite both pass at this HEAD."
+    "gate": "make verify.sc_data_scope.rule_coverage, make verify.sc_data_scope.ceiling.check and make verify.contract.architecture.suite all pass at this HEAD.",
+    "generator": "scripts/verify/sc_data_scope_ceiling_generate.py renders all enforced and deferred models into addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml from the same declaration; verify.sc_data_scope.ceiling.check runs 7 generator tests and fails when the committed record set differs, so one declaration owns isolation and a new ceiling is a declaration line."
   },
   "deferred_data_scope_gaps": {
     "issue": "DATA-SCOPE-CEILING-01",
@@ -2990,7 +3009,16 @@
     "anchor": "company_id",
     "owner_module": "smart_construction_core",
     "detail": "Declared in scripts/verify/data_scope_declarations.json -> deferred. P1 business models exposing a company_id column that carry only capability/project-scoped groups rules, so a manager-level group can read other companies rows.",
-    "resolution": "Derive one global company ceiling from the declaration instead of hand-writing 26 near-duplicate ir.rule records; needs the same governed activation readback as the 99-model batch.",
-    "not_a_substitute_for": "The 137-model coverage universe and the guard result, which stay authoritative."
+    "resolution": "Implemented as one derived ceiling (no per-model hand-written rules): scripts/verify/sc_data_scope_ceiling_generate.py renders all 125 enforced+deferred models from scripts/verify/data_scope_declarations.json into addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml, and verify.sc_data_scope.ceiling.check fails on drift.",
+    "not_a_substitute_for": "The 137-model coverage universe and the guard result, which stay authoritative.",
+    "implementation": {
+      "generator": "scripts/verify/sc_data_scope_ceiling_generate.py",
+      "record_set": "addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml",
+      "replaced_handwritten_block": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "guard": "scripts/verify/sc_data_scope_rule_coverage_guard.py",
+      "tests": "scripts/verify/test_sc_data_scope_rule_coverage_guard.py (23) and scripts/verify/test_sc_data_scope_ceiling_generate.py (7)",
+      "make": "verify.sc_data_scope.ceiling.sync / verify.sc_data_scope.ceiling.check, wired into verify.sc_data_scope.rule_coverage"
+    },
+    "remaining": "Governed L3 activation readback only: confirm the installed rule count after the module upgrade; the source-level ceiling and its drift check are closed."
   }
 }
