@@ -1,5 +1,7 @@
 """Governed read-only ORM proof for native projection retirement.
 
+Executed only by local.dev.native_projection.audit in the registered demo DB.
+
 No record creation or configuration writes. Uses the existing project actor;
 metadata retirement reads use sudo, actor view/access reads do not.
 """

@@ -1061,7 +1061,13 @@ verify.contract.architecture.suite: \
 	verify.contract.entry_equivalence.guard \
 	verify.contract.unbound_structural_form_contract.repair.unit \
 	verify.verification.lane_coverage \
-	verify.frontend.list_surface_evidence_binding.unit
+	verify.frontend.list_surface_evidence_binding.unit \
+	verify.product.menu.monotonic.unit \
+	verify.product.menu.native_inventory.unit \
+	verify.local.clean.frontend_output.unit \
+	verify.payment_slice.data_authority.unit \
+	verify.data_space.policy.unit \
+	verify.local.dev.layout_authority.unit
 	@python3 scripts/verify/static_suite_frontend_toolchain_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_static_suite_frontend_toolchain_guard.py
 	@python3 scripts/verify/contract_form_runtime_state_protocol_guard.py

@@ -1,5 +1,7 @@
 """Read-only native ownership candidates, not an authorization declaration.
 
+Executed only by local.dev.data_scope.inventory in the registered demo DB.
+
 Uses existing local.dev metadata only. No business values, fixtures or actor
 credentials are read. Candidate paths require owning-model review before use.
 """

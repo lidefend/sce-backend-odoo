@@ -3,6 +3,9 @@
 
 This tool owns serialization only. Product identities, targets, versions and
 roles live in smart_construction_core/data/product_menu_source.json.
+
+The write path is executed only by contract.product_menu.generate; the check
+path is executed by the read-only product menu guards.
 """
 from __future__ import annotations
 

@@ -1,4 +1,7 @@
-"""Read-only readiness of the exact payroll data-space slice, no business values."""
+"""Read-only readiness of the exact payroll data-space slice, no business values.
+
+Executed only by local.dev.payroll.data_scope.readiness in the registered demo DB.
+"""
 import json
 from lxml import etree
 from odoo.tools import file_open

@@ -2907,6 +2907,10 @@ contract.product_menu.generate: guard.prod.forbid
 verify.product.menu.monotonic.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_menu_fact_monotonic
 
+.PHONY: verify.product.menu.native_inventory.unit
+verify.product.menu.native_inventory.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_product_native_menu_inventory
+
 .PHONY: verify.local.clean.frontend_output.unit
 verify.local.clean.frontend_output.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_local_clean_frontend_output
