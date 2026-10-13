@@ -175,6 +175,7 @@
     "addons/smart_construction_core/services/locked_menu_policy_contract.py",
     "addons/smart_construction_core/models/support/product_policy_sync.py",
     "make/dev_test.mk",
+    "make/runtime_ops.mk",
     "Dockerfile.production-candidate",
     "scripts/release/test_production_release_contract.py",
     "scripts/release/test_locked_menu_policy_contract.py",
@@ -833,6 +834,35 @@
         "artifact": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/interfund_summary_audit_deployed.log"
       },
       "kind": "runtime"
+    },
+    "finance_position_audit_partition_guard": {
+      "target": "verify.finance_position.audit_partition_guard",
+      "inputs": [
+        "scripts/verify/finance_position_audit_partition_guard.py",
+        "scripts/verify/test_finance_position_audit_partition_guard.py",
+        "scripts/verify/finance_project_counterparty_position_audit.py",
+        "scripts/verify/finance_counterparty_position_summary_audit.py",
+        "addons/smart_construction_core/models/projection/finance_project_counterparty_position.py",
+        "addons/smart_construction_core/models/projection/finance_counterparty_position_summary.py",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
+    },
+    "semantic_registry_lint": {
+      "target": "verify.semantic.registry.lint",
+      "inputs": [
+        "scripts/contract/generate_semantic_registry.py",
+        "scripts/verify/semantic_registry_lint.py",
+        "addons/smart_core/core/form_configuration_compiler.py",
+        "addons/smart_core/core/field_presentation_usage.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
+        "addons/smart_core/core/contract_runtime/domain_field_semantics_generated.py",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+        "addons/smart_core/tests/test_contract_runtime_semantic_resolver.py",
+        "make/contract.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [
@@ -845,9 +875,11 @@
     "Full native product-vs-experiment disposition incomplete; preview129 source / installed preview109 is intermediate, not final scope",
     "P0 edition boundary reproduced: role-exposed native menu absent from product policy can be appended; block further menu runtime publication pending product/platform plane enforcement",
     "Administrator capability-model ownership and function/data separation not yet closed",
-    "Pure administrator data-denial and final historical menu monotonicity not yet verified"
+    "Pure administrator data-denial and final historical menu monotonicity not yet verified",
+    "Delivery freeze is fail-closed on the registered contract defect CD-20261013-LAYOUT-COLUMNS-FALLBACK (frontend defaults/clamps columns when the declaration is missing); owned by T2/Step 5, not this batch.",
+    "This run declares environment.kind=runtime, so the run evaluator marks every offline receipt stale ('runtime evidence requires authoritative environment readback'). Receipts are truthful but not reusable in-tool until that pre-existing declaration is reconciled."
   ],
-  "next_exact_step": "P1 relationship review queue closure (sc.p1.relationship.review.queue readonly view): the grouped CTE collapsed each source model + candidate field group to MIN(project_id) FILTER (WHERE project_id IS NOT NULL) while not grouping by project, so a group spanning several projects was published under one arbitrary project -- and the list exposes a group-by-project entry. Now a project is published only when the whole group has COUNT(project_id)=COUNT(*) AND MIN(project_id)=MAX(project_id); mixed or unknown attribution stays blank. Evidence: L1 ci.local.iteration PASS (relationship_review_queue_iteration.log); targeted ORM counterexample 1 test 0 failed with an independent SQL oracle and a no-project-column source check (relationship_review_queue_project_orm.log); negative control on the HEAD view 1 failed with AssertionError {project.project(5883,)} is not false (relationship_review_queue_project_orm_negative_control.log), then the fixed source was restored and re-verified. Residual: Queue.init() is transactional DDL, so the installed sc_dev_demo view is still the old definition and a governed upgrade plus readback still needs write authorization, same as the output invoice ledger. Next: remaining Step 1 projections (sc.ar.ap.company.summary, sc.finance.counterparty.position.summary, sc.ar.ap.project.summary) and the 20 unowned source models (workflow.instance, tier.review, material.price first).",
+  "next_exact_step": "Batch A/B/C closure on branch fix/fe-contract-runtime-02-consumption-stop-closure (dirty until the layer-owned commits land). (A) counterparty-position row-count oracles now group by company_id+currency_id matching the projection identity key, guarded by verify.finance_position.audit_partition_guard (3 tests), with a pre-fix negative control showing 4 missing partitions and read-only sc_dev_demo oracle equivalence (summary 3=3, project 3=3). (B) the two required remote gates failing on this branch's unwired tools are closed by wiring, not baseline edits: audit.verification.lane_coverage.check PASS (6 node-free L2 units added to verify.contract.architecture.suite, each confirmed non-zero; 4 runtime targets declared their entry target in docstrings) and verify.guard.registry PASS (8 file-consumed entries). (C) ci.delivery.freeze.prepare exposed two blockers: a branch regression where core/* modules using parent-relative imports broke the standalone top-level core import root, fixed in addons/smart_core/core/form_configuration_compiler.py (dual-root import) so verify.semantic.registry.lint is now PASS (66 tests); and the deliberately-open registered defect CD-20261013-LAYOUT-COLUMNS-FALLBACK, which keeps the delivery freeze fail-closed and is scheduled for T2/Step 5, not this batch. Next: continue Step 1 remaining projections -- sc.ar.ap.company.summary and sc.ar.ap.project.summary are _auto=False physical tables (relkind=r) with 0 rows in sc_dev_demo and no company/currency dimension, so completing them requires a destructive-schema adjudication first; sc.finance.counterparty.position.summary and upstream are already correctly partitioned. Afterwards the 20 unowned source models (workflow.instance, tier.review, material.price first).",
   "acceptance_authority_layout": {
     "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
     "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",

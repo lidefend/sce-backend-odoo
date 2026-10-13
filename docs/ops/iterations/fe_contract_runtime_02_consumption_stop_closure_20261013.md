@@ -754,3 +754,116 @@ L2 定向 ORM 反例 1 test 0 failed（日志 `relationship_review_queue_project
 - 未知数据归属、共享发布语义未定、数据库身份不明或工具强制确认未满足时，停止依赖写入；
   先完成可独立的源码／测试工作。已有授权不重复询问，但不得靠延时或历史计划推定写授权。
 - 本次交接仅写计划与台账，不新增产品修改、不运行产品测试、不升级、不提交、不推送。
+
+## 接手执行器 A／B 段收口记录（2026-10-13，FE-CONTRACT-RUNTIME-02）
+
+### A 段：往来对象位置 oracle 分区收口
+
+- 缺陷：两个已接线审计守卫 `verify.finance_project_counterparty.position.audit` 与
+  `verify.finance_counterparty.position_summary.audit` 的行数 oracle 重建聚合时漏
+  `company_id`／`currency_id`，而被验证的投影视图把公司、币种作为身份键的一部分。oracle
+  键因此严格更粗，跨公司／跨币种塌缩对它不可见：当投影把两家公司或两种币种的往来对象位置
+  并成一行时，守卫仍显示 PASS。
+- 参考正确写法：`addons/smart_construction_core/models/projection/interfund_movement_project_summary.py`
+  （`GROUP BY project_id, movement_type, company_id, currency_id`）。
+- 修复：两个审计脚本的 `GROUP BY` 补齐 `company_id, currency_id`——summary 1 处；
+  project 4 个 CTE 分支各补 `f.company_id, f.currency_id`，以及 oracle 1 处，使 oracle 键
+  与投影身份键一致。
+- 新守卫：`scripts/verify/finance_position_audit_partition_guard.py`——静态扫描 2 个投影模型
+  与 2 个审计脚本，凡 `GROUP BY` 已含身份锚 `counterparty_project_id` + `counterparty_name`，
+  就必须同时含 `company_id`、`currency_id`；含 `--selftest`。
+  防回归单测 `scripts/verify/test_finance_position_audit_partition_guard.py`（3 用例）。
+- 接线：`verify.finance_position.audit_partition_guard`（`make/runtime_ops.mk`），
+  作为 `verify.finance_interfund.position.all` 前置。
+- 证据（`.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/`）：
+  - `finance_position_partition_guard.log`：守卫 PASS，`Ran 3 tests ... OK`。
+  - `finance_position_audit_partition_guard_selftest.log`：`SELFTEST_PASS`。
+  - `finance_position_audit_partition_guard_negative_control.log`：修复前 HEAD 上两脚本
+    各报 company_id+currency_id 缺失共 4 处（负向对照，exit 0）。
+  - `finance_position_audit_oracle_equivalence.log`：`sc_dev_demo` 只读 psql，改后 oracle SQL
+    与投影一致（summary 3=3；project position 3=3）。
+  - `finance_position_audit_partition_iteration.log`：`make ci.local.iteration` PASS（L1_only，dirty）。
+- 边界：本轮未做数据库写入，psql 全只读。`sc.ar.ap.company.summary` 与 `sc.ar.ap.project.summary`
+  均为 `_auto=False` 普通表（`relkind=r`），当前 `sc_dev_demo` 中 0 行，无公司／币种维度；
+  补齐属破坏性 schema 变更（`AR_AP_COLUMNS` 受指纹校验，`refresh_ar_ap_project_summary` fail-closed），
+  留待 Step 1 剩余投影单独裁定。
+
+### B 段：两个必需远端门禁的验证面棘轮修复
+
+两个门禁同属 `ci.professional.backend.shard-verify` 必需链，不修则无法合并。9 项零引用目标与
+7 个 unwired 脚本 100% 源自本分支 `2acccf85` 新增工具未接线（main 上不存在）。本次是**接线**，
+不是修改基线。
+
+- 门禁 1 `make audit.verification.lane_coverage.check`：
+  - 原 FAIL：`targets_zero_reference 769 > 760`、`unregistered 9 > 0`，且 9 项在冻结身份集外。
+  - 修复：6 个 L2 单元接入 `verify.contract.architecture.suite`（`make/ci.mk`）——
+    `verify.product.menu.monotonic.unit`、`verify.product.menu.native_inventory.unit`、
+    `verify.local.clean.frontend_output.unit`、`verify.payment_slice.data_authority.unit`、
+    `verify.data_space.policy.unit`、`verify.local.dev.layout_authority.unit`；
+    `make/dev_test.mk` 新增 `verify.product.menu.native_inventory.unit`；4 个运行时目标按其脚本
+    docstring 声明入口目标名（与既有 `local_dev_menu_fact_snapshot.py` 惯例一致）：
+    `contract.product_menu.generate`、`local.dev.native_projection.audit`、
+    `local.dev.data_scope.inventory`、`local.dev.payroll.data_scope.readiness`。
+  - 证据：`lane_coverage_closure.log` PASS；`verification_lane_coverage_closure.log`
+    `Ran 69 tests ... OK`；`lane_coverage_selftest.log` `Ran 69 tests ... OK`。
+- 门禁 2 `make verify.guard.registry`：
+  - 原 FAIL：7 个 unwired／orphan 脚本。
+  - 修复：`scripts/verify/registry.yaml` 新增 8 条 `wire_or_retire: file-consumed` 登记
+    （`menu_fact_monotonic.py`、`product_native_menu_inventory.py`、`test_data_space_policy.py`、
+    `test_local_clean_frontend_output.py`、`test_menu_fact_monotonic.py`、
+    `test_payment_slice_data_authority.py`、`test_product_native_menu_inventory.py`、
+    `test_finance_position_audit_partition_guard.py`），理由为模块式 `python3 -m unittest`
+    调用是粗文件名匹配看不见的文件引用。
+  - 证据：`guard_registry_closure.log` PASS（1437 scripts，198/198 unwired dispositioned，
+    3/3 gate_required enforced）。
+- 新接入 suite 的 6 个单元已逐个实跑确认非零通过，且均为纯 Python／bash，不依赖前端
+  node_modules（遵从 `make/ci.mk` 对 tsc 车道隔离的既有约束）：`new_suite_prereqs.log`
+  （6/2/2/7/12/6 tests 全 PASS）。
+- 未改 `scripts/audit/verification_lane_baseline.json`；未执行 `guard.registry.export`
+  （`registry.yaml` 与 `docs/audit/guard_registry/guard_registry.json` 是不同文件）。
+
+### 本轮状态
+
+- 批次验收：A／B 段目标完成，非零定向测试与 L1 通过；`ci.delivery.freeze.prepare` 与
+  最终 Quick／远端门禁待干净 HEAD。
+- 主线集成、版本发布、用户产品验收：均未达成。
+- 下一步（Step 1 剩余投影）：`sc.ar.ap.company.summary` 与 `sc.ar.ap.project.summary` 需先裁定
+  是否接受破坏性 schema 变更；`sc.finance.counterparty.position.summary` 及上游已核对按完整
+  属性分组、无塌缩缺陷。之后处理 20 项归属待定源模型（优先 `workflow.instance`、
+  `tier.review`、`material.price`）。
+
+### C 段：冻结准备暴露的两个本分支回归（已修其一，另一个为刻意门禁）
+
+执行 `make ci.delivery.freeze.prepare` 时按顺序暴露两个阻断：
+
+1. **`contract.semantic.registry.generate` ImportError（本分支回归，已修）**
+   - 现象：`make verify.semantic.registry.lint` 与冻结准备的生成步骤均以
+     `ImportError: attempted relative import beyond top-level package` 失败。
+   - 根因：`core` 是双根包——Odoo 以 `smart_core.core.*` 导入，而语义注册表构建脚本
+     （`scripts/contract/generate_semantic_registry.py`）与其定向测试
+     （`addons/smart_core/tests/test_contract_runtime_semantic_resolver.py`）刻意以顶层 `core.*`
+     导入（把 `addons/smart_core` 放进 `sys.path`，避免触发 `smart_core/__init__.py` 的 Odoo 引导）。
+     本分支 `cfd8580e` 给 `unified_page_contract_v2_assembler` 新增
+     `from .field_presentation_usage import ...`，该模块又导入
+     `form_configuration_compiler`，其模块级 `from ..utils.backend_contract_boundaries import`
+     只在 `smart_core.core.*` 身份下成立，于是在顶层 `core.*` 身份下 `..` 越过顶层包。
+   - 修复（P0 内核导入边界，单文件最小根因）：`addons/smart_core/core/form_configuration_compiler.py`
+     改为双根导入——优先 `..utils`，仅当 `ImportError` 文本确为相对导入越界时才回退
+     `utils.backend_contract_boundaries`；其它导入失败一律 `raise`，不吞真实缺陷。
+   - 证据：`tools_import_shapes.log`（两种导入身份均可用）；`semantic_registry_lint_diag.log`
+     （修复前 FAIL，同栈回溯）；`semantic_registry_lint_diag2.log` 与 receipt
+     `semantic_registry_lint`（修复后 `verify.semantic.registry.lint` 全链 PASS）。
+   - 潜在同类：`core/context.py`（`..security.auth`）与 `core/system_init_payload_builder.py`
+     （`..utils.product_release`）具有相同形态，当前不在顶层 `core.*` 导入路径上，未改；
+     若后续被工具链触及，按同一方式收口。
+
+2. **`verify.frontend.contract_basis.enforce` 契约缺陷 STOP（刻意 fail-closed，未修）**
+   - 现象：`[frontend_contract_basis_guard] STOP 存在未闭合的契约缺陷：交付（freeze）车道禁止放行`，
+     缺陷 `CD-20261013-LAYOUT-COLUMNS-FALLBACK`——缺失时
+     `NativeFormTreeRenderer.normalizeColumns` 默认 columns=2、`FormSection` readonly
+     `descriptionColumns` 夹取到 1..3/2，均无声明权威。
+   - 判定：该缺陷条目在 `origin/main` 上不存在（main 的 `openContractDefects` 为空），属本分支
+     登记；`verify.frontend.contract_basis.enforce` 只被 `ci.delivery.freeze.prepare`（本地交付车道）
+     消费，不在远端必需门禁内。按计划该收口属 T2／Step 5（声明层补齐 + 前端原样消费、缺失即
+     ContractGapError 停机），**本轮不做**。
+   - 结论：交付冻结在缺陷闭合前保持 fail-closed，属预期；本批次作为迭代提交，不宣称冻结通过。
