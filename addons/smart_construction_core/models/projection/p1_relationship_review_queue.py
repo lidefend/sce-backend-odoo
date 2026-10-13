@@ -217,7 +217,16 @@ class ScP1RelationshipReviewQueue(models.Model):
                         COUNT(*)::integer AS candidate_record_count,
                         MIN(candidate_value) AS sample_candidate_value,
                         MIN(source_record_name) FILTER (WHERE source_record_name IS NOT NULL) AS sample_record_name,
-                        MIN(project_id) FILTER (WHERE project_id IS NOT NULL) AS sample_project_id
+                        -- Publish a project only when every candidate in the group
+                        -- belongs to one and the same project. A MIN/ignored-NULL
+                        -- collapse would attribute a mixed-project (or partly
+                        -- unknown) group to an arbitrary project.
+                        CASE
+                            WHEN COUNT(project_id) = COUNT(*)
+                             AND MIN(project_id) = MAX(project_id)
+                            THEN MIN(project_id)
+                            ELSE NULL
+                        END AS sample_project_id
                     FROM normalized
                     GROUP BY
                         source_family,

@@ -2032,3 +2032,60 @@ class TestP1FinanceProjectionAuthority(TransactionCase):
         self.assertEqual(amounts[line_b.id], 250.0)
         self.assertEqual(sum(rows.mapped("invoice_amount")), 350.0)
         self.assertTrue(all(row.receipt_line_count == 1 for row in rows))
+
+    def test_relationship_review_queue_publishes_only_unambiguous_project(self):
+        # Counterexample lock for the P1 relationship review queue attribution
+        # boundary: the readonly queue used to collapse every candidate of a
+        # (source model, candidate field) group to MIN(project_id), so a group
+        # that spans several projects was published under one arbitrary project.
+        # A project may be published only when the whole group belongs to
+        # exactly one project; mixed or unknown attribution must stay blank.
+        Queue = self.env["sc.p1.relationship.review.queue"]
+        # Transactional DDL exercises the candidate view definition and rolls
+        # back with this test. It is not an installed-runtime upgrade receipt.
+        Queue.init()
+
+        other_project = self.env["project.project"].create(
+            {
+                "name": "P1 复核队列跨项目",
+                "code": "P1-REVIEW-OTHER",
+                "company_id": self.env.company.id,
+                "operation_strategy": "direct",
+            }
+        )
+        for index, project in enumerate((self.project, other_project)):
+            self.env["sc.financing.loan"].create(
+                {
+                    "name": "P1-REVIEW-LOAN-%s" % index,
+                    "project_id": project.id,
+                    "amount": 10.0 + index,
+                    "legacy_counterparty_name": "复核跨项目往来方%s" % index,
+                }
+            )
+
+        rows = Queue.search([("source_model", "=", "sc.financing.loan")])
+        self.assertTrue(rows, "the financing-loan review group must exist")
+        self.assertFalse(
+            set(rows.mapped("project_id")),
+            "a group spanning several projects must not publish a single project",
+        )
+
+        # Independent oracle over the source table: the view must agree with
+        # "publish a project only when all candidates share exactly one".
+        self.env.cr.execute(
+            """
+            SELECT DISTINCT project_id
+            FROM sc_financing_loan
+            WHERE partner_id IS NULL
+              AND NULLIF(BTRIM(COALESCE(legacy_counterparty_name, '')), '') IS NOT NULL
+            """
+        )
+        oracle = {row[0] for row in self.env.cr.fetchall() if row[0]}
+        expected = oracle if len(oracle) == 1 else set()
+        self.assertEqual(set(rows.mapped("project_id")), expected)
+
+        # A source table that carries no project column can never fabricate one.
+        self.env["sc.business.entity"].create({"name": "复核无项目来源"})
+        entity_rows = Queue.search([("source_model", "=", "sc.business.entity")])
+        self.assertTrue(entity_rows, "the business-entity review group must exist")
+        self.assertFalse(set(entity_rows.mapped("project_id")))
