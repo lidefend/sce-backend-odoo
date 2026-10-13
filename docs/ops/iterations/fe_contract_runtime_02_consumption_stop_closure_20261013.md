@@ -901,3 +901,59 @@ L2 定向 ORM 反例 1 test 0 failed（日志 `relationship_review_queue_project
   同样缺公司规则——归 Step 3 原生规则覆盖，**本行不改**，已登入 run blockers。
 - 未做：受管升级、fixture、业务写。安装态视图／规则仍等于改前状态，新规则的 L3 运行态回读
   待写授权。
+
+### E 段：Step 1 item #7 首家族——`sc.workflow.instance` 公司归属来源
+
+- 对象：`sc.workflow.instance`（其 `sc.workflow.workitem` / `sc.workflow.log` 经
+  `instance_id.company_id` 继承同一归属，本次不改）。
+- 缺口定性：归属来源（source ownership）而非规则缺口。读隔离此前已由
+  `rule_sc_workflow_instance_tenant_business_admin_company` 与 ACL 限定到业务管理员证明；
+  真正的"猜公司"发生在创建路径——`create_instance` 取
+  `workflow_def.company_id.id or self.env.company.id`，即**用流程模板（配置）或当前环境（调用上下文）
+  断定业务事实**。这正是 Step 1 完成判据禁止的形态。
+- 归属规则（P1 声明，`models/support/sc_workflow.py`）：
+  - 新增模块级纯函数 `resolve_workflow_instance_company(env, model_name, res_id, workflow_def)`：
+    归属公司**只**来自业务单据（`model_name` + `res_id` 的公司锚点），以 `sudo` 读取该锚点
+    （归属是系统事实，不是调用者需要被授权读取的业务数据）。
+  - 无法归属即 fail-closed，不猜：目标模型未注册／名称为空 →
+    `WORKFLOW_INSTANCE_UNATTRIBUTED_TARGET`；目标记录不存在或 `res_id` 为空 →
+    `WORKFLOW_INSTANCE_TARGET_NOT_FOUND`；目标模型无 `company_id` 字段或该字段为空 →
+    `WORKFLOW_INSTANCE_UNATTRIBUTED_TARGET`；流程定义声明了公司且与目标公司不一致 →
+    `WORKFLOW_INSTANCE_COMPANY_MISMATCH`（把公司 A 的审批模板套到公司 B 的单据是配置错误，必须拒绝）。
+  - `create_instance` 改为 `"company_id": owner_company.id`，不再出现 `env.company` 或
+    `workflow_def.company_id` 回退。
+  - 新增 `@api.constrains("company_id") _check_company_attribution`：实例必须有归属公司，
+    堵住 `company_id IS NULL` 被规则当作"全局可见"的口子。
+  - 字段声明补 help：归属公司由业务单据继承，不从流程模板或当前环境推断。
+- 证据（`.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/`）：
+  - `logs/workflow_instance_ownership_l1.log`：`Ran 13 tests ... OK`
+    （10 归属解析用例：正文公司胜出、定义未声明不回填、定义不一致拒绝、记录缺失拒绝、
+    `res_id` 为空拒绝、未注册模型拒绝、空模型名拒绝、目标无 `company_id` 字段拒绝、
+    目标无归属公司拒绝、锚点经 `sudo` 读取；3 源码断言：`create_instance` 委派解析器且不再引用
+    `env.company`/`workflow_def.company_id`、解析器不读调用者环境公司、实例归属为 fail-closed 声明）。
+  - receipt `workflow_instance_ownership_boundary_guard.json`：`status=passed`、`test_count=13`。
+  - 读数边界证据（既有，未重跑）：
+    `tests/test_role_regression_minimal.py::test_workflow_runtime_is_scoped_by_allowed_company_without_count_leak`
+    已证明业务管理员只看到本允许公司的实例且不泄漏计数。
+- 测试装载安全性：新测试优先真实导入 `odoo.addons.smart_construction_core...`；仅在无 Odoo 的
+  inner loop 才临时注入 stub，并在 `finally` 中恢复 `sys.modules`，不覆写真实 `odoo` 模块
+  （现有 `test_ar_ap_projection_relation_lifecycle.py` 的同名 stub 是无条件覆写，本次不模仿）。
+- 接线：新增 `verify.workflow_instance.ownership_boundary`（`make/ci.mk`），作为
+  `verify.workflow_contract.backend` 前置；作为被引用目标登记 run check
+  `workflow_instance_ownership_boundary_guard`，不改变 lane coverage 冻结配额。
+- 静态门禁通过：`make verify.verification.lane_coverage`、`make verify.guard.registry`
+  （1437 scripts，198/198 unwired dispositioned）、`make ci.local.iteration`（`L1_only`，dirty）。
+- 分类台账差量：20 项归属待定 → 19 项；`sc.workflow.instance` 转入
+  `native_classification.resolved_source_ownership`（含锚点、声明、守卫与限制）。
+- 未做／限制：受管升级、fixture、业务写均未执行；未做安装态 ORM 回读，`create_instance` 是
+  legacy 运行时入口（`LEGACY_WORKFLOW_RUNTIME_*` 门禁，仓库内无调用方），本次以解析器级非零测试
+  为证据，运行态回读待写授权。`sc.workflow.def` 仍只有 `smart_core.group_smart_core_admin` 的
+  写 ACL 且无规则（平台配置，非客户业务数据），本行不改。
+
+### E 段附带发现（下一家族，已登 run blockers）
+
+分类 19 项剩余模型时定位到一个**无归属事实族**：`sc.dashboard.cockpit.fact`、`sc.workbench.item`
+的 ACL 是 `base.group_user` 全 1111 且**零 ir.rule**；共享抽象 `sc.business.fact.mixin`
+（另被 `sc.document.admin.document`、`sc.office.admin.document` 及 hr 文档模型继承）**完全没有公司字段**，
+因此公司隔离在该族无法表达。归属必须落到 `project_id`／公司声明后才能继续保留写能力。
+该族需要 schema 变更 + 受管升级，属下一片切片，本次只登记事实，未改代码。

@@ -213,7 +213,9 @@
     "addons/smart_construction_core/tests/test_um_p2_invoice_relation_aggregation_boundaries.py",
     "addons/smart_construction_core/models/projection/p1_relationship_review_queue.py",
     "addons/smart_construction_core/models/projection_relation_lifecycle.py",
-    "addons/smart_construction_core/tests/test_ar_ap_projection_relation_lifecycle.py"
+    "addons/smart_construction_core/tests/test_ar_ap_projection_relation_lifecycle.py",
+    "addons/smart_construction_core/models/support/sc_workflow.py",
+    "addons/smart_construction_core/tests/test_workflow_instance_ownership.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -875,6 +877,15 @@
         "make/runtime_ops.mk"
       ],
       "kind": "offline"
+    },
+    "workflow_instance_ownership_boundary_guard": {
+      "target": "verify.workflow_instance.ownership_boundary",
+      "inputs": [
+        "addons/smart_construction_core/models/support/sc_workflow.py",
+        "addons/smart_construction_core/tests/test_workflow_instance_ownership.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [
@@ -890,9 +901,10 @@
     "Pure administrator data-denial and final historical menu monotonicity not yet verified",
     "Delivery freeze is fail-closed on the registered contract defect CD-20261013-LAYOUT-COLUMNS-FALLBACK (frontend defaults/clamps columns when the declaration is missing); owned by T2/Step 5, not this batch.",
     "This run declares environment.kind=runtime, so the run evaluator marks every offline receipt stale ('runtime evidence requires authoritative environment readback'). Receipts are truthful but not reusable in-tool until that pre-existing declaration is reconciled.",
-    "sc.ar.ap.report.summary (company_id column, action restricted to finance groups, typed-empty projection) still has no company rule; recorded for the Step 3 native-rule coverage pass."
+    "sc.ar.ap.report.summary (company_id column, action restricted to finance groups, typed-empty projection) still has no company rule; recorded for the Step 3 native-rule coverage pass.",
+    "Unattributed fact family discovered while classifying the 20 undecided-source models: sc.dashboard.cockpit.fact and sc.workbench.item carry ACL base.group_user 1111 with no ir.rule, and the shared sc.business.fact.mixin (also used by sc.document.admin.document, sc.office.admin.document, hr.payroll document) has no company field at all, so company isolation cannot be enforced; ownership must be anchored on project_id/company declaration before any write capability is kept. Owned by the next Step 1 slice (schema change -> authorized upgrade)."
   ],
-  "next_exact_step": "Step 1 remaining finance projections. DONE: sc.interfund.movement.project.summary partition (75b1de76); sc.ar.ap.project.summary + sc.ar.ap.company.summary ownership boundary (AR_AP_PROJECTION_REFRESH_VALIDATION_FAILED stage=company_ownership before the official write + global project-anchored company read rule, guarded by verify.ar_ap.projection.ownership_boundary, 17 tests). NEXT: sc.output.invoice.ledger (invoice-number dedup/window may merge across companies), then sc.p1.relationship.review.queue (multi-source MIN attribution), then the 20 undecided-attribution source models (workflow.instance, tier.review, material.price first). Do not change sc.ar.ap.report.summary in this row.",
+  "next_exact_step": "Step 1 item #7 (20 undecided-attribution source models). DONE: sc.workflow.instance ownership source (resolve_workflow_instance_company derives the company from the business document, mismatch/unattributed fail closed, guarded by verify.workflow_instance.ownership_boundary, 13 tests). NEXT: anchor the sc.business.fact.mixin family (sc.dashboard.cockpit.fact, sc.workbench.item, sc.document.admin.document, sc.office.admin.document) - company declaration inherited from project/creator plus a company-scoped global rule, then re-check the over-broad base.group_user 1111 ACLs; after that: tier.review/tier.definition (external module disposition), project.task / sc.hazard.source / sc.site.photo.batch, and the sc.*.price group-vs-ACL coverage. Also correct the stale step text below that still lists sc.output.invoice.ledger and sc.p1.relationship.review.queue as pending (both landed: 57ec1573, fc8586b5).",
   "acceptance_authority_layout": {
     "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
     "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",
@@ -2464,7 +2476,7 @@
         "company_configuration": 11,
         "potential_public_reference": 21,
         "identity_and_technical": 16,
-        "unresolved_source_ownership": 20
+        "unresolved_source_ownership": 19
       },
       "unresolved_models": [
         "account.analytic.account",
@@ -2484,11 +2496,26 @@
         "sc.site.photo.batch",
         "sc.subcontract.price",
         "sc.workbench.item",
-        "sc.workflow.instance",
         "tier.definition",
         "tier.review"
       ],
-      "status": "source classification only, not rule proof"
+      "status": "source classification only, not rule proof",
+      "resolved_source_ownership": {
+        "sc.workflow.instance": {
+          "verdict": "resolved",
+          "owner_anchor": "business document company (model_name + res_id), read with sudo as a system fact",
+          "declaration": "resolve_workflow_instance_company + ScWorkflowInstance._check_company_attribution",
+          "removed_guess": "workflow_def.company_id or self.env.company in create_instance",
+          "inherits": [
+            "sc.workflow.workitem",
+            "sc.workflow.log"
+          ],
+          "guard": "verify.workflow_instance.ownership_boundary",
+          "tests": 13,
+          "read_isolation_evidence": "addons/smart_construction_core/tests/test_role_regression_minimal.py::test_workflow_runtime_is_scoped_by_allowed_company_without_count_leak",
+          "limits": "In-process resolver proof only; no installed-schema/ORM run of the legacy create API in this slice."
+        }
+      }
     },
     "native_rule_validation_plan": {
       "layer": "P0",
@@ -2671,6 +2698,26 @@
         "No persistent rule/schema activation or target-environment product acceptance"
       ],
       "status": "bounded_fixture_helper_tests_passed_not_runtime_applied"
+    },
+    "workflow_instance_ownership": {
+      "layer": "P1 declaration for sc.workflow.instance ownership source",
+      "change": "create_instance derives the owning company from the business document; definition-company mismatch and unattributed targets fail closed; the instance company declaration is required",
+      "owner": "smart_construction_core/models/support/sc_workflow.py",
+      "tests": {
+        "status": "passed",
+        "count": 13,
+        "target": "verify.workflow_instance.ownership_boundary",
+        "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/workflow_instance_ownership_l1.log"
+      },
+      "checks": [
+        "verify.verification.lane_coverage",
+        "verify.guard.registry",
+        "ci.local.iteration"
+      ],
+      "limits": [
+        "no runtime upgrade or ORM run for this slice",
+        "workitem/log ownership is inherited through instance_id and unchanged"
+      ]
     }
   },
   "executor_handoff": {

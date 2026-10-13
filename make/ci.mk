@@ -449,8 +449,17 @@ verify.workflow_action_semantics.guard: guard.prod.forbid
 	@python3 scripts/verify/workflow_action_semantics_completeness_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_workflow_action_semantics_completeness_guard.py
 
+# Workflow instance company ownership is a source-level fact: the instance
+# inherits the owning company from the business document, never from the workflow
+# definition or from the caller's environment.  It runs in-process so the rule
+# stays provable without the container-backed lane below.
+.PHONY: verify.workflow_instance.ownership_boundary
+verify.workflow_instance.ownership_boundary: guard.prod.forbid
+	@python3 -m py_compile addons/smart_construction_core/models/support/sc_workflow.py addons/smart_construction_core/tests/test_workflow_instance_ownership.py
+	@python3 addons/smart_construction_core/tests/test_workflow_instance_ownership.py
+
 .PHONY: verify.workflow_contract.backend
-verify.workflow_contract.backend: guard.prod.forbid audit.workflow_state.inventory verify.workflow_action_semantics.guard
+verify.workflow_contract.backend: guard.prod.forbid audit.workflow_state.inventory verify.workflow_action_semantics.guard verify.workflow_instance.ownership_boundary
 	@python3 -m py_compile addons/smart_core/core/action_semantics_vocabulary.py addons/smart_construction_core/models/support/workflow_contract_service.py addons/smart_construction_core/tests/test_workflow_contract_backend.py addons/smart_construction_core/tests/test_user_feedback_business_views.py scripts/audit/workflow_state_inventory.py scripts/verify/workflow_inventory_profile_method_guard.py scripts/verify/workflow_contract_custom_coverage_guard.py scripts/verify/workflow_action_semantics_completeness_guard.py
 	@python3 scripts/verify/workflow_inventory_profile_method_guard.py
 	@python3 scripts/verify/workflow_contract_custom_coverage_guard.py
