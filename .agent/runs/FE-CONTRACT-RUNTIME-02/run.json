@@ -2856,7 +2856,7 @@
       "status": "source_complete_runtime_activation_pending",
       "scope": "99 P1 models that already resolved a company path but installed no company-scoped rule",
       "mechanism": "one global ir.rule per model (no groups, so group union cannot widen it); domain keeps company_id = False visible and hides only a foreign company",
-      "declaration": "scripts/verify/data_scope_declarations.json (enforced 99 / exempt 21, every exemption reasoned)",
+      "declaration": "scripts/verify/data_scope_declarations.json (enforced 99 global company ceilings / exempt 33 with a named isolation dimension and owning module / deferred 26 recorded as DATA-SCOPE-CEILING-01)",
       "guard": "verify.sc_data_scope.rule_coverage (10 tests; also fails an unresolvable ir.rule ref before an install would)",
       "exempt_classes": [
         "framework/identity (ir.sequence, res.company handled by base)",
@@ -2865,7 +2865,8 @@
         "audit trails and registries whose only path is the actor/publisher, recorded as anchor gaps (sc.scene, sc.pack.registry, sc.scene.validation, sc.capability.audit.log, sc.scene.audit.log)"
       ],
       "remaining": "detail children fixed through a two-hop parent path are covered; sc.business.fact.mixin family now provable by rule (project_id.company_id) - schema change no longer required for isolation",
-      "limits": "source-level proof only; activation needs a governed module upgrade and ORM readback (L3 pending, no DB write authority)"
+      "limits": "source-level proof only; activation needs a governed module upgrade and ORM readback (L3 pending, no DB write authority)",
+      "coverage": "verify.sc_data_scope.rule_coverage now derives the 137-model product company universe from source: 99 enforced, 49 covered by a company-constraining rule in source, 33 exempt, 2 transient, 26 deferred, uncovered 0."
     }
   },
   "executor_handoff": {
