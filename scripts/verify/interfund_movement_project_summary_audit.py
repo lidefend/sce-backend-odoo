@@ -136,6 +136,34 @@ expected_group_count = sql_one(
 actual_group_count = sql_one("SELECT COUNT(*)::integer FROM sc_interfund_movement_project_summary")
 assert_equal(errors, "project_summary_group_count", expected_group_count, actual_group_count)
 
+# The runtime grouping above is only decisive if the deployed view actually
+# carries the full partition.  A stale view still exposes company_id/currency_id
+# (through MIN) and still yields one row per project/type, so the counts can
+# agree while companies and currencies are silently merged.  Pin the deployed
+# definition: it must group by the (project, type, company, currency) tuple and
+# must not pick an owner with MIN().
+deployed_viewdef = " ".join(
+    (sql_one("SELECT pg_get_viewdef('sc_interfund_movement_project_summary'::regclass, true)") or "").split()
+).lower()
+PARTITION_GROUP_BY = "group by pp.project_id, pp.movement_type, pp.company_id, pp.currency_id"
+if PARTITION_GROUP_BY not in deployed_viewdef:
+    errors.append(
+        {
+            "key": "deployed_view_missing_full_partition_group_by",
+            "expected": PARTITION_GROUP_BY,
+            "actual": deployed_viewdef[:600],
+        }
+    )
+for owner_predicate in ("min(pp.company_id)", "min(pp.currency_id)"):
+    if owner_predicate in deployed_viewdef:
+        errors.append(
+            {
+                "key": "deployed_view_uses_min_partition_owner",
+                "expected": "full partition grouping",
+                "actual": owner_predicate,
+            }
+        )
+
 mixed_partition_rows = sql_one(
     """
     SELECT COUNT(*)::integer
