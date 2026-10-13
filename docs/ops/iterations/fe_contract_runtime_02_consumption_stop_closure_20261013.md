@@ -827,10 +827,11 @@ L2 定向 ORM 反例 1 test 0 failed（日志 `relationship_review_queue_project
 - 批次验收：A／B 段目标完成，非零定向测试与 L1 通过；`ci.delivery.freeze.prepare` 与
   最终 Quick／远端门禁待干净 HEAD。
 - 主线集成、版本发布、用户产品验收：均未达成。
-- 下一步（Step 1 剩余投影）：`sc.ar.ap.company.summary` 与 `sc.ar.ap.project.summary` 需先裁定
-  是否接受破坏性 schema 变更；`sc.finance.counterparty.position.summary` 及上游已核对按完整
-  属性分组、无塌缩缺陷。之后处理 20 项归属待定源模型（优先 `workflow.instance`、
-  `tier.review`、`material.price`）。
+- 下一步（Step 1 剩余投影）：`sc.ar.ap.company.summary` 与 `sc.ar.ap.project.summary` 已按
+  非破坏性归属边界收口（见 D 段）；`sc.finance.counterparty.position.summary` 及上游已核对
+  按完整属性分组、无塌缩缺陷。下一项是 `sc.output.invoice.ledger`（发票号可能跨公司去重），
+  再 `sc.p1.relationship.review.queue`（多来源 MIN 归并），之后处理 20 项归属待定源模型
+  （优先 `workflow.instance`、`tier.review`、`material.price`）。
 
 ### C 段：冻结准备暴露的两个本分支回归（已修其一，另一个为刻意门禁）
 
@@ -867,3 +868,36 @@ L2 定向 ORM 反例 1 test 0 failed（日志 `relationship_review_queue_project
      消费，不在远端必需门禁内。按计划该收口属 T2／Step 5（声明层补齐 + 前端原样消费、缺失即
      ContractGapError 停机），**本轮不做**。
    - 结论：交付冻结在缺陷闭合前保持 fail-closed，属预期；本批次作为迭代提交，不宣称冻结通过。
+
+### D 段：Step 1 剩余投影——AR/AP 汇总公司归属边界（非破坏性裁定）
+
+- 对象：`sc.ar.ap.project.summary`、`sc.ar.ap.company.summary`（`_auto=False`，物理表 `relkind=r`，
+  `sc_dev_demo` 中 0 行）。
+- 裁定：拒绝破坏性 schema 变更。物理 provider 的 14 列签名与
+  `AR_AP_EVIDENCE_STRUCTURE_FINGERPRINT` 被 `refresh_ar_ap_project_summary`、
+  `migrations/17.0.0.73/pre-migration.py`（就地保留）与单测共同锁定；新增公司列会打断冻结的
+  迁移路径，且该 provider 无填充器、当前 0 行。改为**可验证归属边界**：公司锚点＝项目。
+- 来源边界（P1，`projection_relation_lifecycle.py`）：`refresh_ar_ap_project_summary` 在
+  `stage=project_isolation` 之后、正式 `ON CONFLICT` 写入之前新增归属校验——`stage.project_id IS NULL`
+  或 `project_project.company_id IS NULL`（`LEFT JOIN project_project company_anchor`）命中即
+  `AR_AP_PROJECTION_REFRESH_VALIDATION_FAILED:...:stage=company_ownership`，整事务回滚。
+  迁移路径只调用 `ensure_ar_ap_project_summary_provider`（保留／创建），不调用 refresh，
+  因此本次不改升级行为。
+- 访问边界（P1，`security/sc_record_rules.xml`）：两模型此前对 7 个组有读 ACL 但无公司规则，
+  存在跨公司可见。新增全局只读规则 `rule_sc_ar_ap_project_summary_company` /
+  `rule_sc_ar_ap_company_summary_company`，域
+  `[('project_id.company_id', 'in', company_ids)]`；无项目或项目无公司的行归属未知，保持拒绝，
+  不由标签或当前环境回填。
+- 证据（`.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/`）：
+  - `logs/arap_ownership_boundary.log`：`Ran 17 tests ... OK`
+    （14 生命周期 + 3 记录规则边界：锚点域、精确域等值、只读权限）。
+  - receipt `ar_ap_projection_ownership_boundary_guard.json`：`status=passed`、`test_count=17`。
+  - 只读 psql：两表存在且 0 行；provider 的 `project_id` 可空，故"无锚点行"可被表达，
+    fail-closed 门禁有意义。
+- 接线：`verify.ar_ap.projection.ownership_boundary`（`make/runtime_ops.mk`），作为
+  `verify.finance_interfund.position.all` 前置；新增一个被引用的目标，不改变 lane coverage
+  冻结配额。
+- 边界与后续：`sc.ar.ap.report.summary` 有真实 `company_id` 列、动作限财务组、投影为空视图，
+  同样缺公司规则——归 Step 3 原生规则覆盖，**本行不改**，已登入 run blockers。
+- 未做：受管升级、fixture、业务写。安装态视图／规则仍等于改前状态，新规则的 L3 运行态回读
+  待写授权。

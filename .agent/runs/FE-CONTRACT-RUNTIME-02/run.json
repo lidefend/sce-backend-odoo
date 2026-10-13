@@ -211,7 +211,9 @@
     "addons/smart_construction_acceptance_fixture/tests/__init__.py",
     "addons/smart_construction_core/models/core/output_invoice_ledger.py",
     "addons/smart_construction_core/tests/test_um_p2_invoice_relation_aggregation_boundaries.py",
-    "addons/smart_construction_core/models/projection/p1_relationship_review_queue.py"
+    "addons/smart_construction_core/models/projection/p1_relationship_review_queue.py",
+    "addons/smart_construction_core/models/projection_relation_lifecycle.py",
+    "addons/smart_construction_core/tests/test_ar_ap_projection_relation_lifecycle.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -863,6 +865,16 @@
         "make/contract.mk"
       ],
       "kind": "offline"
+    },
+    "ar_ap_projection_ownership_boundary_guard": {
+      "target": "verify.ar_ap.projection.ownership_boundary",
+      "inputs": [
+        "addons/smart_construction_core/models/projection_relation_lifecycle.py",
+        "addons/smart_construction_core/tests/test_ar_ap_projection_relation_lifecycle.py",
+        "addons/smart_construction_core/security/sc_record_rules.xml",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [
@@ -877,9 +889,10 @@
     "Administrator capability-model ownership and function/data separation not yet closed",
     "Pure administrator data-denial and final historical menu monotonicity not yet verified",
     "Delivery freeze is fail-closed on the registered contract defect CD-20261013-LAYOUT-COLUMNS-FALLBACK (frontend defaults/clamps columns when the declaration is missing); owned by T2/Step 5, not this batch.",
-    "This run declares environment.kind=runtime, so the run evaluator marks every offline receipt stale ('runtime evidence requires authoritative environment readback'). Receipts are truthful but not reusable in-tool until that pre-existing declaration is reconciled."
+    "This run declares environment.kind=runtime, so the run evaluator marks every offline receipt stale ('runtime evidence requires authoritative environment readback'). Receipts are truthful but not reusable in-tool until that pre-existing declaration is reconciled.",
+    "sc.ar.ap.report.summary (company_id column, action restricted to finance groups, typed-empty projection) still has no company rule; recorded for the Step 3 native-rule coverage pass."
   ],
-  "next_exact_step": "Batch A/B/C closure on branch fix/fe-contract-runtime-02-consumption-stop-closure (dirty until the layer-owned commits land). (A) counterparty-position row-count oracles now group by company_id+currency_id matching the projection identity key, guarded by verify.finance_position.audit_partition_guard (3 tests), with a pre-fix negative control showing 4 missing partitions and read-only sc_dev_demo oracle equivalence (summary 3=3, project 3=3). (B) the two required remote gates failing on this branch's unwired tools are closed by wiring, not baseline edits: audit.verification.lane_coverage.check PASS (6 node-free L2 units added to verify.contract.architecture.suite, each confirmed non-zero; 4 runtime targets declared their entry target in docstrings) and verify.guard.registry PASS (8 file-consumed entries). (C) ci.delivery.freeze.prepare exposed two blockers: a branch regression where core/* modules using parent-relative imports broke the standalone top-level core import root, fixed in addons/smart_core/core/form_configuration_compiler.py (dual-root import) so verify.semantic.registry.lint is now PASS (66 tests); and the deliberately-open registered defect CD-20261013-LAYOUT-COLUMNS-FALLBACK, which keeps the delivery freeze fail-closed and is scheduled for T2/Step 5, not this batch. Next: continue Step 1 remaining projections -- sc.ar.ap.company.summary and sc.ar.ap.project.summary are _auto=False physical tables (relkind=r) with 0 rows in sc_dev_demo and no company/currency dimension, so completing them requires a destructive-schema adjudication first; sc.finance.counterparty.position.summary and upstream are already correctly partitioned. Afterwards the 20 unowned source models (workflow.instance, tier.review, material.price first).",
+  "next_exact_step": "Step 1 remaining finance projections. DONE: sc.interfund.movement.project.summary partition (75b1de76); sc.ar.ap.project.summary + sc.ar.ap.company.summary ownership boundary (AR_AP_PROJECTION_REFRESH_VALIDATION_FAILED stage=company_ownership before the official write + global project-anchored company read rule, guarded by verify.ar_ap.projection.ownership_boundary, 17 tests). NEXT: sc.output.invoice.ledger (invoice-number dedup/window may merge across companies), then sc.p1.relationship.review.queue (multi-source MIN attribution), then the 20 undecided-attribution source models (workflow.instance, tier.review, material.price first). Do not change sc.ar.ap.report.summary in this row.",
   "acceptance_authority_layout": {
     "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
     "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",
@@ -2681,5 +2694,27 @@
     "reuse": "admin_data_isolation holds original evidence; fixture 17 unique methods passed; no broad rerun",
     "runtime_blocker": "sc_dev_demo has zero active registrations; installed payroll view/rules pending. Existing fixture initializer does not authorize sc_dev_demo.",
     "prior_blockers": "Reconcile top-level blocker entries with original evidence before branch closure; do not delete as stale without proof."
+  },
+  "ar_ap_ownership_boundary": {
+    "layer": "P1",
+    "status": "L1_L2_passed_runtime_readback_pending",
+    "decision": "Non-destructive boundary instead of a destructive schema change: the physical provider keeps its 14-column signature and AR_AP_EVIDENCE_STRUCTURE_FINGERPRINT (locked by refresh_ar_ap_project_summary, migrations/17.0.0.73 in-place preservation and the unit tests). Adding a company column would break the frozen migration path and has no filler and 0 rows.",
+    "refresh_gate": "refresh_ar_ap_project_summary now validates company ownership BEFORE the official ON CONFLICT write: a staged row with no project, or whose project carries no company, raises AR_AP_PROJECTION_REFRESH_VALIDATION_FAILED:...:stage=company_ownership. The migration path calls only ensure_ar_ap_project_summary_provider, so upgrade is unaffected.",
+    "access_boundary": "sc.ar.ap.project.summary and sc.ar.ap.company.summary had read ACL for 7 groups and no company rule; both now carry a global read-only ir.rule with domain [('project_id.company_id','in',company_ids)], so a row whose project resolves to no company stays denied instead of being attributed from a label or the running environment.",
+    "out_of_scope_followup": "sc.ar.ap.report.summary has a real company_id column, an action restricted to finance groups and no company rule; it belongs to the Step 3 native-rule coverage pass, not this row, and was not changed.",
+    "inputs": [
+      "addons/smart_construction_core/models/projection_relation_lifecycle.py",
+      "addons/smart_construction_core/security/sc_record_rules.xml",
+      "addons/smart_construction_core/tests/test_ar_ap_projection_relation_lifecycle.py",
+      "make/runtime_ops.mk"
+    ],
+    "validation": {
+      "entrypoint": "make verify.ar_ap.projection.ownership_boundary",
+      "tests": "17 tests OK (14 lifecycle + 3 record-rule boundary)",
+      "log": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/arap_ownership_boundary.log",
+      "receipt": ".runtime/agent-runs/FE-CONTRACT-RUNTIME-02/ar_ap_projection_ownership_boundary_guard.json",
+      "readonly_db_fact": "sc_dev_demo: both AR/AP summary tables exist with 0 rows; project_id is nullable in the preserved provider, so an unanchored row is representable and the fail-closed gate is meaningful."
+    },
+    "runtime_pending": "No governed module upgrade was run, so the installed views/rules in sc_dev_demo still equal the pre-change state; L3 runtime readback of the new ir.rule records awaits write authorization."
   }
 }
