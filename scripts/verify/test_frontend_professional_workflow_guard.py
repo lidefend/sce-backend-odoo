@@ -28,6 +28,26 @@ class ProfessionalWorkflowGuardTests(unittest.TestCase):
                     return value.replace(before, after)
                 self.assertTrue(any(reason in item for item in validate(read_text)))
 
+    def test_initial_guidance_cannot_return_to_body(self):
+        for source in ('<section v-if="warnings.length"><li v-for="row in warnings">{{row}}</li></section>',
+                       '<section v-if="workflowEvidenceGateRows.length">{{workflowEvidenceGateRows}}</section>'):
+            def read_text(path):
+                text = (ROOT / path).read_text(encoding="utf-8")
+                return text.replace('<template>', '<template>' + source, 1) if path.endswith('ContractFormActionBlocks.vue') else text
+            self.assertTrue(any('permanent body' in error for error in validate(read_text)))
+
+    def test_strict_gap_stop_cannot_be_removed_with_guidance(self):
+        def read_text(path):
+            text = (ROOT / path).read_text(encoding="utf-8")
+            return text.replace('v-if="strictContractMissingSummary && !isIntakeCreateMode"', 'v-if="false"') if path.endswith('ContractFormActionBlocks.vue') else text
+        self.assertTrue(any('explicit stop' in error for error in validate(read_text)))
+
+    def test_synthesized_task_blocker_cannot_return(self):
+        def read_text(path):
+            text = (ROOT / path).read_text(encoding="utf-8")
+            return text.replace('<template>', '<template><strong>{{blockedActionMessage}}</strong>', 1) if path.endswith('ObjectTaskPage.vue') else text
+        self.assertTrue(any('task blocker' in error for error in validate(read_text)))
+
     def test_missing_action_marker_fails(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")

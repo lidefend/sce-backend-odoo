@@ -438,6 +438,20 @@ def is_prose(rel: str) -> bool:
     return rel.startswith("docs/") or rel.startswith(".agent/")
 
 
+def execution_reference_text(text: str) -> str:
+    """Exclude a literal structured check identity, not its enclosing line/file.
+
+    Evidence units name their check as provenance. Calls alongside that data
+    remain executable references, including shell Make and subprocess argv.
+    Only a complete quoted identifier value with a mapping delimiter qualifies.
+    """
+    return re.sub(
+        r"(?P<prefix>['\"]check['\"]\s*:\s*)(?P<quote>['\"])(?P<value>[A-Za-z0-9_.-]+)(?P=quote)(?=\s*[,}])",
+        lambda match: match.group("prefix") + match.group("quote") * 2,
+        text,
+    )
+
+
 def tracked_files(root: Path) -> list[Path]:
     import subprocess
 
@@ -770,7 +784,7 @@ def measure(root: Path, exemptions_path: Path = DEFAULT_EXEMPTIONS, dispositions
             continue
         prose = is_prose(rel)
         if not prose:
-            for token in set(IDENT_RE.findall(text)):
+            for token in set(IDENT_RE.findall(execution_reference_text(text))):
                 if token in interest:
                     token_index[token].add(rel)
         # A doc or an agent ledger narrates the surface, it never consumes it.

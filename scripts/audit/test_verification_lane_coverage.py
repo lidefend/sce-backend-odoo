@@ -9,6 +9,7 @@ from pathlib import Path
 
 from scripts.audit.verification_lane_coverage import (
     DEFAULT_BASELINE,
+    execution_reference_text,
     DEFAULT_DISPOSITIONS,
     IDENTITY_FREEZE_METRICS,
     ROOT,
@@ -40,6 +41,27 @@ from scripts.audit.verification_lane_coverage import (
 # tests lock the two behaviours that make the metric trustworthy: the reference
 # test is token-exact (never a regex substring), and every dead name must be
 # registered or it fails the ratchet.
+
+
+class StructuredCheckReferenceTest(unittest.TestCase):
+    def test_metadata_only_does_not_reference_target(self):
+        text = "units = {'check': 'verify.example.unit', 'units': []}"
+        self.assertNotIn('verify.example.unit', execution_reference_text(text))
+
+    def test_same_file_real_calls_remain_references(self):
+        for call in ('make verify.example.unit', '$(MAKE) verify.example.unit',
+                     "subprocess.run(['make', 'verify.example.unit'])"):
+            with self.subTest(call=call):
+                text = "units = {'check': 'verify.example.unit'}; " + call
+                cleaned = execution_reference_text(text)
+                self.assertEqual(cleaned.count('verify.example.unit'), 1)
+                self.assertIn(call, cleaned)
+
+    def test_nonliteral_or_other_mapping_values_are_not_exempt(self):
+        for text in ("{'command': 'verify.example.unit'}", "{'check': run('verify.example.unit')}",
+                     "{'check': 'verify.example.unit' + suffix}"):
+            with self.subTest(text=text):
+                self.assertEqual(execution_reference_text(text), text)
 
 
 class JoinContinuationsTest(unittest.TestCase):

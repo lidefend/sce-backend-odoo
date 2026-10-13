@@ -359,11 +359,15 @@ entries:
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
 - script: form_structure_contract_seed_generate.py
-  status: orphan
+  status: active
   owner: platform-team
-  date: '2026-07-20'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
+  date: '2026-10-13'
+  reason: governed contract.form_structure.guidance.retire consumes native P1 retirement declarations
+- script: test_form_structure_guidance_retirement.py
+  status: active
+  owner: platform-team
+  date: '2026-10-13'
+  reason: verify.contract.form_structure.guidance_retirement.unit covers exact seed retirement and rejection boundaries
 - script: form_structure_standardization_audit.py
   status: active
   owner: platform-team

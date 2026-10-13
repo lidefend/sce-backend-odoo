@@ -613,7 +613,7 @@ if os.environ.get("LOWCODE_CONFIG_BATCH") == "1":
     other_rows = principal[other_action.res_model].search([], order="id").read(["write_date", "state"])
     configuration_entry["other_business_fingerprint"] = hashlib.sha256(json.dumps(other_rows, default=str, sort_keys=True).encode()).hexdigest()
     target_name = "view_orchestration:%s:form:action:%s:view:%s:role:%s" % (
-        entries[0]["model"], entries[0]["action_id"], entries[0]["view_id"], resolver.resolve_role_code(resolver.user_group_xmlids(user)))
+        entries[0]["model"], entries[0]["action_id"], entries[0]["view_id"], "")
     Contract = principal["ui.business.config.contract"].with_context(active_test=False)
     target = Contract.search([("name", "=", target_name), ("company_id", "=", user.company_id.id)])
     if len(target) != 1:
@@ -687,7 +687,7 @@ for rec in ChangeSet.search([
 print("FORM_LOWCODE_SCOPE=" + json.dumps({
     "configuration_inventory": inventory, "configuration_entry": configuration_entry, "designer_scope": designer_scope, "topic": topic, "designer_drafts": designer_drafts, "database": env.cr.dbname, "company_id": user.company_id.id, "user_id": user.id, "login": user.login,
     "representative": TOPIC_REPRESENTATIVE.get(topic),
-    "role_key": resolver.resolve_role_code(resolver.user_group_xmlids(user)), "entries": entries,
+    "role_key": resolver.resolve_role_code(resolver.user_group_xmlids(user)), "target_role_key": "", "entries": entries,
     "runtime_revision": os.environ.get("SC_SOURCE_REVISION", "unknown"),
     "compiler_sha256": hashlib.sha256(Path(inspect.getfile(form_configuration_compiler)).read_bytes()).hexdigest(),
 }, default=str, sort_keys=True))

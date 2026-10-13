@@ -138,11 +138,16 @@ verify.frontend.scene_entry_contract.unit: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_system_init_scene_runtime_surface_builder.py
 	@python3 addons/smart_core/tests/test_scene_provider_target_identity_merge.py
 
+.PHONY: verify.backend.navigation_delivery.unit
+verify.backend.navigation_delivery.unit: guard.prod.forbid
+	@python3 -m py_compile addons/smart_core/delivery/menu_service.py addons/smart_core/tests/test_delivery_menu_entry_target.py
+	@python3 addons/smart_core/tests/test_delivery_menu_entry_target.py
+	@python3 addons/smart_core/tests/test_system_init_final_route_authority_static.py
+
 .PHONY: verify.frontend.navigation_shell.unit
-verify.frontend.navigation_shell.unit: guard.prod.forbid verify.frontend.scene_entry_contract.unit
+verify.frontend.navigation_shell.unit: guard.prod.forbid verify.frontend.scene_entry_contract.unit verify.backend.navigation_delivery.unit
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/canonical_navigation_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/canonical-navigation-model-test.mjs >/dev/null
 	@node /tmp/canonical-navigation-model-test.mjs
-	@python3 addons/smart_core/tests/test_delivery_menu_entry_target.py
 	@python3 addons/smart_construction_core/tests/test_business_category_entry_policy.py
 	@python3 -m unittest scripts/verify/test_frontend_navigation_shell_guard.py
 	@python3 scripts/verify/frontend_navigation_shell_guard.py
@@ -179,6 +184,7 @@ verify.frontend.overview_rich_text.unit: guard.prod.forbid
 
 .PHONY: verify.frontend.product_page_header.unit verify.frontend.collection_action_toolbar.unit verify.frontend.collection_aggregate_footer.unit verify.frontend.collection_group_header.unit verify.frontend.collection_summary_strip.unit verify.frontend.collection_mobile_record_row.unit verify.frontend.collection_kanban_record_card.unit verify.frontend.collection_navigation_controls.unit verify.frontend.collection_row_action_identity.unit verify.frontend.collection_row_cell.unit verify.frontend.collection_selection_control.unit
 verify.frontend.product_page_header.unit: guard.prod.forbid
+	@node frontend/apps/web/scripts/readonly_block_component_test.mjs --kind form-header
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_page_header_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/product-page-header-model-test.mjs >/dev/null
 	@node /tmp/product-page-header-model-test.mjs
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts --bundle --platform=node --format=esm --outfile=/tmp/product-page-header-adapter-contract-test.mjs >/dev/null
@@ -701,6 +707,7 @@ verify.frontend.page_width_contract.guard: verify.frontend.workspace_content_ali
 verify.frontend.form_canvas_layout.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild scripts/verify/frontend_form_canvas_layout_contract_test.ts --bundle --platform=node --format=esm --outfile=/tmp/form-canvas-layout-contract-test.mjs >/dev/null
 	@node /tmp/form-canvas-layout-contract-test.mjs
+	@node frontend/apps/web/scripts/readonly_block_component_test.mjs --kind native-layout
 
 verify.frontend.form_canvas_layout.guard: guard.prod.forbid verify.frontend.form_canvas_layout.unit
 	@python3 -m unittest scripts.verify.test_frontend_form_canvas_wide_grid_guard

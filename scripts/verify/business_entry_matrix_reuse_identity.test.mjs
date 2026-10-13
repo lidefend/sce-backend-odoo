@@ -270,3 +270,33 @@ assert.notEqual(fingerprint(baseline, { row: { model: 'res.company' } }), report
 cases += 2;
 
 console.log(`[business_entry_matrix_reuse_identity_test] PASS cases=${cases}`);
+
+// Import must prove original execution identity and per-unit input, not relabel
+// an old outcome with the current unit fingerprint.
+const { observationBinding, validateObservationBinding, validateClosureEnvironment } = await import('./business_entry_matrix_model.mjs');
+const importDocument = { identity: baseline, units: [{ id: 'menu.a', fingerprint: 'a'.repeat(64) }, { id: 'menu.b', fingerprint: 'b'.repeat(64) }] };
+const binding = observationBinding(importDocument);
+const importPlan = { execute: ['menu.a', 'menu.b'], observation_binding: binding };
+const observation = { base_url: BASE, database: DATABASE, login: LOGIN, session_company_id: COMPANY,
+  acting: { login: LOGIN, company_id: COMPANY, role_xmlids: ['base.group_user', 'base.group_partner_manager'] },
+  selection: { keys: ['menu.a', 'menu.b'] }, entries: [{ entry: 'menu.a', status: 'passed' }],
+  completeness: 'partial', observation_binding: binding };
+let importCases = 0;
+function rejectsImport(value, plan = importPlan, current = importDocument) {
+  assert.throws(() => validateObservationBinding(value, plan, current)); importCases += 1;
+}
+validateObservationBinding(observation, importPlan, importDocument); importCases += 1;
+for (const patch of [{ login: 'other' }, { database: 'other' }, { base_url: 'http://other.invalid' },
+  { acting: { ...observation.acting, role_xmlids: ['base.group_user'] } },
+  { acting: { ...observation.acting, login: 'other' }, login: 'other' },
+  { observation_binding: undefined }, { acting: undefined }]) rejectsImport({ ...observation, ...patch });
+rejectsImport(observation, { execute: ['menu.a'] });
+rejectsImport(observation, importPlan, { ...importDocument, units: [{ id: 'menu.a', fingerprint: 'c'.repeat(64) }] });
+rejectsImport({ ...observation, entries: [{ entry: 'menu.c', status: 'passed' }] });
+// Unexecuted sibling changes do not invalidate the actual partial outcome.
+validateObservationBinding(observation, importPlan, { ...importDocument, units: [importDocument.units[0], { id: 'menu.b', fingerprint: 'c'.repeat(64) }] }); importCases += 1;
+validateObservationBinding({ ...observation, target_sha: 'new-deploy', frontend_build_sha256: 'new-bundle' }, importPlan, importDocument); importCases += 1;
+for (const patch of [{ database: 'other' }, { base_url: 'http://other.invalid' }, { database: undefined }]) {
+  assert.throws(() => validateClosureEnvironment({ base_url: BASE, database: DATABASE, ...patch }, { baseUrl: BASE, database: DATABASE })); importCases += 1;
+}
+console.log(`[business-entry-observation-binding] PASS ${importCases} cases`);

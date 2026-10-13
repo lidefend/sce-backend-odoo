@@ -56,6 +56,7 @@ class EmitResultsStatusTests(unittest.TestCase):
             (tmpdir / "closures.json").write_text(
                 json.dumps({
                     "schema": "business_entry_negative_closures.v1",
+                    "base_url": "http://fixture.invalid", "database": "sc_demo",
                     "acting": {"login": "wutao", "company_id": 1, "role_xmlids": ["base.group_user"]},
                     "candidates": {},
                 }),
@@ -68,6 +69,8 @@ class EmitResultsStatusTests(unittest.TestCase):
             env = dict(os.environ)
             env.update(
                 {
+                    "SC_ACCEPTANCE_FRONTEND_URL": "http://fixture.invalid",
+                    "SC_ACCEPTANCE_DATABASE": "sc_demo",
                     "SC_ACCEPTANCE_TARGET_SHA": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
                     "SC_ENTRY_MATRIX_CSV": str(tmpdir / "matrix.csv"),
                     "SC_ENTRY_MATRIX_OVERLAY": str(tmpdir / "overlay.json"),
@@ -75,6 +78,21 @@ class EmitResultsStatusTests(unittest.TestCase):
                     "ACCEPTANCE_LOGIN": "wutao",
                 }
             )
+            units_path = tmpdir / "units.json"
+            subprocess.run(["node", str(SCOPE_ADAPTER), "--emit-units", str(units_path)],
+                           cwd=REPO_ROOT, env=env, check=True, capture_output=True)
+            units = json.loads(units_path.read_text())
+            binding = {"identity": units["identity"], "units": units["units"]}
+            bound = {
+                "schema": "business_entry_matrix_browser.v1",
+                "base_url": "http://fixture.invalid", "database": "sc_demo", "login": "wutao",
+                "acting": {"login": "wutao", "company_id": 1, "role_xmlids": ["base.group_user"]},
+                "observation_binding": binding, **bound,
+            }
+            (tmpdir / "summary.json").write_text(json.dumps(bound), encoding="utf-8")
+            (tmpdir / "plan.json").write_text(json.dumps({
+                "affected": ["menu.a", "menu.b"], "observation_binding": binding,
+            }), encoding="utf-8")
             result = subprocess.run(
                 [
                     "node",
@@ -252,11 +270,13 @@ class EmitUnitsIdentityTests(unittest.TestCase):
         (tmpdir / "overlay.json").write_text(
             json.dumps({"denied_role_candidates": [], "entries": {}, "defaults": {}}), encoding="utf-8"
         )
-        (tmpdir / "closures.json").write_text(json.dumps(closures), encoding="utf-8")
+        (tmpdir / "closures.json").write_text(json.dumps({"base_url": "http://fixture.invalid", "database": "sc_demo", **closures}), encoding="utf-8")
         out = tmpdir / "units.json"
         env = dict(os.environ)
         env.update(
             {
+                "SC_ACCEPTANCE_FRONTEND_URL": "http://fixture.invalid",
+                "SC_ACCEPTANCE_DATABASE": "sc_demo",
                 "SC_ACCEPTANCE_TARGET_SHA": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
                 "SC_ENTRY_MATRIX_CSV": str(tmpdir / "matrix.csv"),
                 "SC_ENTRY_MATRIX_OVERLAY": str(tmpdir / "overlay.json"),

@@ -17,6 +17,7 @@ L2_RECORDS = {
     "menu_sc_material_center": ("材料成本", "60"),
 }
 L3 = {
+    "menu_sc_project_quick_create": ("快速创建项目", "smart_construction_core.menu_sc_project_management_group", "20"),
     "menu_sc_project_initiation": ("新项目立项", "smart_construction_core.menu_sc_project_management_group", "10"),
     "menu_sc_customer_partner": ("客户档案", "smart_construction_core.menu_sc_project_partner_group_wave1", "10"),
     "menu_sc_supplier_partner": ("供应商档案", "smart_construction_core.menu_sc_project_partner_group_wave1", "20"),
@@ -30,15 +31,17 @@ L3 = {
     "menu_sc_material_inbound": ("材料入库", "smart_construction_core.menu_sc_material_center", "10"),
     "menu_sc_material_outbound": ("材料出库", "smart_construction_core.menu_sc_material_center", "20"),
 }
+PREVIEW_GROUPS = {
+    "menu_sc_material_management_group": "100",
+    "menu_sc_labor_management_group": "110",
+    "menu_sc_equipment_management_group": "120",
+    "menu_sc_material_rental_group": "130",
+    "menu_sc_subcontract_management_group": "140",
+}
+PREVIEW_LEAVES = {"menu_sc_tender_registration_fee", "menu_sc_tender_opening"}
 INCOMPLETE = {
-    "menu_sc_project_quick_create",
     "menu_sc_tender_prepare",
     "menu_sc_tender_registration",
-    "menu_sc_tender_registration_fee",
-    "menu_sc_tender_opening",
-    "menu_sc_labor_management_group",
-    "menu_sc_equipment_management_group",
-    "menu_sc_subcontract_management_group",
     "menu_sc_field_mobile_roadmap_v2",
     "menu_sc_bim_collaboration_roadmap_v2",
     "menu_sc_supply_collaboration_roadmap_v2",
@@ -73,6 +76,15 @@ def validate() -> list[str]:
         data = _fields(node) if node is not None else {}
         if node is None or (data.get("name"), _parent(node), data.get("sequence"), data.get("active")) != (name, parent, sequence, "True"):
             errors.append(f"invalid released project L3 page: {xmlid}")
+    for xmlid, sequence in PREVIEW_GROUPS.items():
+        node = records.get(xmlid)
+        data = _fields(node) if node is not None else {}
+        if node is None or (_parent(node), data.get("sequence"), data.get("active")) != (PROJECT, sequence, "True"):
+            errors.append(f"retained preview group must be reachable at project L2: {xmlid}")
+    for xmlid in PREVIEW_LEAVES:
+        node = records.get(xmlid)
+        if node is None or _fields(node).get("active") != "True":
+            errors.append(f"retained preview entry must be active: {xmlid}")
     for xmlid in INCOMPLETE:
         node = records.get(xmlid)
         if node is None or _fields(node).get("active") != "False":

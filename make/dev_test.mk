@@ -2898,3 +2898,24 @@ policy.ensure.extension_modules: guard.prod.forbid check-compose-project check-c
 .PHONY: verify.page_contract_gate_wiring.unit
 verify.page_contract_gate_wiring.unit: guard.prod.forbid
 	@python3 scripts/verify/test_page_contract_gate_wiring.py
+
+.PHONY: contract.product_menu.generate
+contract.product_menu.generate: guard.prod.forbid
+	@python3 scripts/ops/promote_product_ten_center_policy.py --write
+
+.PHONY: verify.product.menu.monotonic.unit
+verify.product.menu.monotonic.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_menu_fact_monotonic
+
+.PHONY: verify.local.clean.frontend_output.unit
+verify.local.clean.frontend_output.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_local_clean_frontend_output
+
+.PHONY: verify.payment_slice.data_authority.unit
+verify.payment_slice.data_authority.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_payment_slice_data_authority
+
+.PHONY: verify.data_space.policy.unit
+verify.data_space.policy.unit: guard.prod.forbid
+	@python3 -m py_compile addons/smart_core/models/tenant_payload_import_batch.py addons/smart_core/models/res_users.py
+	@python3 -m unittest scripts.verify.test_data_space_policy

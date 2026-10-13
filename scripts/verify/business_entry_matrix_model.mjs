@@ -451,3 +451,53 @@ export function environmentIdentity({
     [ACTING_CLOSURE_KEY]: closure,
   };
 }
+
+// Observation import binds the original execution inputs, never current labels
+// pasted onto an old outcome. Deployment revisions remain provenance only.
+export function observationBinding(document) {
+  return { identity: document.identity, units: document.units.map(({ id, fingerprint }) => ({ id, fingerprint })) };
+}
+
+export function validateClosureEnvironment(document, { baseUrl, database }) {
+  if (!baseUrl || !database || document.base_url !== baseUrl || document.database !== database) {
+    throw new Error('closure snapshot runtime URL/database mismatch; refresh the snapshot');
+  }
+}
+
+export function validateObservationBinding(summary, plan, current) {
+  const observed = summary.observation_binding;
+  const planned = plan.observation_binding;
+  if (!observed?.identity || !Array.isArray(observed.units) || !planned?.identity || !Array.isArray(planned.units)) {
+    throw new Error('observation/plan missing original execution input binding');
+  }
+  const actor = actingContext({ acting: summary.acting }, { login: summary.login });
+  const actual = environmentIdentity({ baseUrl: summary.base_url, database: summary.database,
+    login: actor.login, actingCompanyId: actor.company_id, actingRoleClosureSha256: actor.role_closure_sha256 });
+  for (const identity of [observed.identity, planned.identity, current.identity]) {
+    if (canonicalJson(identity) !== canonicalJson(actual)) throw new Error('observation runtime/actor identity mismatch');
+  }
+  if (summary.session_company_id !== actor.company_id) throw new Error('observation acting company mismatch');
+  const plannedKeys = new Set(plan.execute || plan.affected || []);
+  const selected = summary.selection?.keys;
+  if (!Array.isArray(selected) || !selected.length || selected.some(key => !plannedKeys.has(key))) {
+    throw new Error('observation selection is not bound to original plan');
+  }
+  const maps = [observed, planned, current].map(doc => {
+    const result = new Map();
+    for (const unit of doc.units) {
+      if (!unit.id || !/^[a-f0-9]{64}$/.test(unit.fingerprint || '') || result.has(unit.id)) {
+        throw new Error('invalid or duplicate execution input fingerprint');
+      }
+      result.set(unit.id, unit.fingerprint);
+    }
+    return result;
+  });
+  for (const entry of summary.entries || []) {
+    const key = entry.entry;
+    if (!selected.includes(key) || !maps[0].has(key)
+      || maps[0].get(key) !== maps[1].get(key) || maps[0].get(key) !== maps[2].get(key)) {
+      throw new Error(`observation input fingerprint/selection mismatch: ${key}`);
+    }
+  }
+  return observed;
+}

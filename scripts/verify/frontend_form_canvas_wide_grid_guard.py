@@ -49,7 +49,6 @@ for required in (
     ".field[data-field-span='12'] {\n  grid-column: span 12;",
     ".field[data-field-span='16'] {\n  grid-column: span 16;",
     ".field[data-field-span='24'] {\n  grid-column: span 24;",
-    ".template-form-section-grid--columns-1 > .field {\n  grid-column: 1 / -1;",
     ".template-form-section-grid > .field[data-field-band='full'] {\n    grid-column: 1 / -1;",
     ':data-field-span="fieldSpan(',
     ':data-field-band="fieldSpanBand(',
@@ -137,7 +136,7 @@ for forbidden in ("container.cols", "structure?.columns", "structure.columns", "
     if forbidden in presented_columns_fn.group(0):
         fail(f"the presenter re-derives a container column count instead of presenting the declaration: {forbidden}")
 layout_columns_fn = re.search(r"const layoutColumns = computed\(\(\) => \{[\s\S]*?\n\}\);", canonical_renderer)
-if layout_columns_fn is None or "Number(props.node.columns)" not in layout_columns_fn.group(0):
+if layout_columns_fn is None or "requireDeclaredLayoutColumns(props.node.columns)" not in layout_columns_fn.group(0):
     fail("the canonical renderer does not present the declared container column count")
 for forbidden in ("Math.max(", "Math.min(", "?? 2", "|| 2", "?? 3", "|| 3"):
     if forbidden in layout_columns_fn.group(0):
@@ -426,3 +425,6 @@ if ":deep(.template-page-header" in form_css:
     fail("form page bypasses shared header layout ownership")
 
 print("[frontend_form_canvas_wide_grid_guard] PASS")
+
+if ".template-form-section-grid--columns-1 > .field" in section:
+    fail("container columns must not override an explicit field span")

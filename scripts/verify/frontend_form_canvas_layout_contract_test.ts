@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import {
   declaredLayoutSpan,
+  requireDeclaredLayoutColumns,
+  containedFieldLayout,
   isDeclaredLayoutSpan,
   layoutGridUnits,
   requireDeclaredLayoutSpan,
@@ -65,6 +67,13 @@ expectThrows(() => presentation({ name: 'amount', field_size: '' }), ContractGap
 // The editable field-order preview resolves through the editor's own size, which
 // is not a contract declaration, so it never reaches the span gap.
 expectEqual(presentation({ name: 'amount' }, true).span, 12);
+
+for (const count of [1, 2, 3, 4, 6, 8, 12, 24]) expectEqual(requireDeclaredLayoutColumns(count), count);
+for (const count of [undefined, null, false, '2', 0, -1, 1.5, 5, 7, 25]) {
+  expectThrows(() => requireDeclaredLayoutColumns(count), ContractGapError);
+}
+expectEqual(containedFieldLayout().columns, 1);
+expectEqual(containedFieldLayout().span, 24);
 
 console.log(
   `[frontend_form_canvas_layout_contract_test] PASS cases=${cases} declared=${declared.length} undeclared=${undeclared.length} facets=3`,

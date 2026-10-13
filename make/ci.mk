@@ -360,7 +360,7 @@ verify.payment.approval_state_machine.unit: guard.prod.forbid
 	@python3 scripts/verify/test_payment_approval_state_machine.py
 
 .PHONY: verify.native_view.workflow_action_coverage
-verify.native_view.workflow_action_coverage: guard.prod.forbid
+verify.native_view.workflow_action_coverage: guard.prod.forbid verify.contract.form_structure.guidance_retirement.unit
 	@python3 -m py_compile scripts/verify/workflow_contract_profile_loader.py scripts/verify/native_view_workflow_action_coverage_guard.py
 	@python3 scripts/verify/native_view_workflow_action_coverage_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_workflow_contract_profile_loader.py

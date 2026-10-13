@@ -26,6 +26,30 @@ def _baseline() -> dict:
 
 
 class NativeViewActionCoverageGuardTest(unittest.TestCase):
+    def test_native_quality_action_emits_only_real_nonempty_advisories(self):
+        path = Path("addons/smart_construction_core/models/support/quality_acceptance.py")
+        tree = ast.parse(path.read_text())
+        owner = next(node for node in tree.body if isinstance(node, ast.ClassDef))
+        method = copy.deepcopy(next(node for node in owner.body if isinstance(node, ast.FunctionDef) and node.name == "action_confirm"))
+        method.decorator_list = []
+        namespace = {"UserError": RuntimeError, "_": lambda value: value}
+        exec(compile(ast.fix_missing_locations(ast.Module(body=[method], type_ignores=[])), str(path), "exec"), namespace)
+        class Record:
+            def __init__(self, advisory): self.advisory = advisory; self.state = "draft"
+            def _check_operator(self): pass
+            def filtered(self, predicate): return []
+            def write(self, values): self.state = values["state"]
+            def mapped(self, field): return [self.advisory]
+        for empty in (False, ""):
+            record = Record(empty)
+            self.assertIs(namespace["action_confirm"](record), True)
+            self.assertEqual(record.state, "confirmed")
+        record = Record("建议补充验收附件")
+        result = namespace["action_confirm"](record)
+        self.assertEqual(result["tag"], "display_notification")
+        self.assertEqual(result["params"]["message"], record.advisory)
+
+
     def _assert_material_state_projection(self, class_name, model, method_name):
         # Compare the real projection against the business method's state guard,
         # so changes to business authority cannot leave copied expectations green.
@@ -242,6 +266,93 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         self.assertNotIn("action_sc_start", [row["method"] for row in available])
         self.assertNotIn("validate_tier", [row["method"] for row in available])
         self.assertEqual(namespace["_declared_actions"](service, {"method_by_action": {"undeclared": "action_guess"}}), [])
+
+    def test_pay_entry_retires_conditional_body_guidance_and_old_anchors(self):
+        root = Path(__file__).resolve().parents[2]
+        views = ET.parse(root / "addons/smart_construction_core/views/core/payment_request_views.xml")
+        pay = views.find(".//record[@id='view_payment_request_pay_form']/field[@name='arch']")
+        base = views.find(".//record[@id='view_payment_request_form']/field[@name='arch']/form")
+        self.assertIsNotNone(base)
+        self.assertFalse([node for node in base.iter() if "alert" in node.get("class", "").split()])
+        for name in ("legal_next_action_display", "payment_blocking_reason_display", "settlement_compliance_message"):
+            self.assertIsNone(base.find(".//field[@name='%s']" % name))
+        self.assertFalse([node for node in pay.findall("xpath") if "alert" in node.get("expr", "")])
+        self.assertTrue(base.findall(".//field[@name='amount']"))
+        self.assertIn("action_guidance", base.find("header/button[@name='action_submit']").get("options", ""))
+        config = ET.parse(root / "addons/smart_construction_core/data/payment_request_form_productization_contract.xml")
+        carrier = config.find(".//record[@id='business_config_contract_payment_request_pay_productized_form_v1']/field[@name='contract_json']")
+        form = ast.literal_eval(carrier.get("eval"))["view_orchestration"]["views"]["form"]
+        self.assertTrue(form["semantic_anchors"])
+        self.assertFalse({"task", "risk"}.intersection(row["role"] for row in form["semantic_anchors"]))
+        # The shared base and sibling receipt retain their separate responsibilities.
+        self.assertIsNotNone(views.find(".//record[@id='view_payment_request_form']"))
+
+    def test_native_partner_decision_guard_and_payment_override_share_fact(self):
+        root = Path(__file__).resolve().parents[2]
+        partner_path = root / "addons/smart_construction_core/models/support/partner_business.py"
+        payment_path = root / "addons/smart_construction_core/models/core/payment_request.py"
+        names = {"_sc_transaction_guidance", "_sc_assert_transaction_eligible", "_native_submit_action_guidance", "_payment_advisory", "_payment_force_block_enabled"}
+        methods = []
+        for path in (partner_path, payment_path):
+            for node in ast.walk(ast.parse(path.read_text())):
+                if isinstance(node, ast.FunctionDef) and node.name in names:
+                    node.decorator_list = []
+                    methods.append(node)
+        class UserError(Exception):
+            pass
+        ns = {"UserError": UserError, "_": lambda text, **values: text % values if values else text}
+        exec(compile(ast.fix_missing_locations(ast.Module(body=methods, type_ignores=[])), "native-guidance", "exec"), ns)
+        for state, active in (("eligible", True), ("review_required", True), ("blocked", True), ("blocked", False)):
+            partner = SimpleNamespace(ensure_one=lambda: None, active=active, sc_transaction_eligibility=state,
+                                      sc_transaction_eligibility_reason="Native reason", display_name="Party")
+            partner._sc_transaction_guidance = lambda label=None: ns["_sc_transaction_guidance"](partner, label)
+            decision = partner._sc_transaction_guidance()
+            if state == "blocked":
+                with self.assertRaises(UserError):
+                    ns["_sc_assert_transaction_eligible"]([partner])
+            else:
+                self.assertTrue(ns["_sc_assert_transaction_eligible"]([partner]))
+            for force in (False, True):
+                record = SimpleNamespace(ensure_one=lambda: None, partner_id=partner, type="pay", _get_bool_param=lambda key, default=False: force)
+                record._payment_force_block_enabled = lambda code: ns["_payment_force_block_enabled"](record, code)
+                record._payment_advisory = lambda *args, **kwargs: ns["_payment_advisory"](record, *args, **kwargs)
+                fact = ns["_native_submit_action_guidance"](record)
+                expected_block = not active or (state != "eligible" and force)
+                self.assertEqual(fact["blocking"], expected_block)
+                self.assertEqual(fact["requires_confirmation"], active and state != "eligible" and not force)
+                self.assertEqual(fact["method"], "action_submit")
+                if state != "eligible":
+                    self.assertIn("Native reason", fact["message"])
+
+    def test_risk_exception_allowlist_and_ledger_policy_share_native_resolver(self):
+        import re
+        root = Path(__file__).resolve().parents[2]
+        paths = [root / "addons/smart_construction_core/models/core" / name for name in ("payment_request.py", "payment_ledger.py")]
+        names = {"_payment_advisory_from_exception", "_payment_force_block_enabled", "_payment_advisory", "_check_request_state"}
+        methods = [n for p in paths for n in ast.walk(ast.parse(p.read_text())) if isinstance(n, ast.FunctionDef) and n.name in names]
+        class UserError(Exception): pass
+        class AccessError(UserError): pass
+        class ValidationError(UserError): pass
+        ns = {"re": re, "UserError": UserError, "AccessError": AccessError, "ValidationError": ValidationError, "_": lambda value: value}
+        exec(compile(ast.fix_missing_locations(ast.Module(body=methods, type_ignores=[])), "payment-policy", "exec"), ns)
+        for global_force, code_force in ((False, False), (True, False), (False, True)):
+            record = SimpleNamespace(state="approved", payment_basis_type="standard_settlement", settlement_id=SimpleNamespace(state="draft"))
+            record._get_bool_param = lambda key, default=False: global_force if key == "sc.payment.force_block_all" else code_force
+            record._payment_force_block_enabled = lambda code: ns["_payment_force_block_enabled"](record, code)
+            record._payment_advisory = lambda *a, **kw: ns["_payment_advisory"](record, *a, **kw)
+            for code in ("P0_PAYMENT_OVER_BALANCE", "P0_MATERIAL_PAYMENT_OVER_BALANCE"):
+                result = ns["_payment_advisory_from_exception"](record, UserError("[SC_GUARD:%s] risk" % code))
+                self.assertEqual(result["force_block_enabled"], global_force or code_force)
+            ledger = SimpleNamespace(env=SimpleNamespace(context={"payment_soft_gate": True}))
+            if global_force or code_force:
+                with self.assertRaises(UserError): ns["_check_request_state"](ledger, record)
+            else:
+                ns["_check_request_state"](ledger, record)
+            ledger.env.context = {}
+            with self.assertRaises(UserError): ns["_check_request_state"](ledger, record)
+            for error in (AccessError("[SC_GUARD:P0_PAYMENT_OVER_BALANCE] denied"), ValidationError("invalid"), UserError("[SC_GUARD:UNKNOWN] unknown"), UserError("[SC_GUARD:P0_PAYMENT_FUNDING_BASELINE_INVALID] invariant"), RuntimeError("unexpected")):
+                with self.assertRaises(type(error)) as caught: ns["_payment_advisory_from_exception"](record, error)
+                self.assertIs(caught.exception, error)
 
     def _general_contract_actions(self, state, *, approval_phase="none", can_review=False, model="sc.general.contract", record_fields=None, evidence_gate=None):
         # Execute the shipped projection method, not a duplicate of its algorithm.

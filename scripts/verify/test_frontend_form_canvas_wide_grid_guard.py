@@ -93,7 +93,7 @@ class ReadonlyGridGuardTests(unittest.TestCase):
     def test_late_projection_must_complete_the_grid_declaration(self):
         target = '/addons/smart_core/handlers/ui_contract_v2_projection.py'
         for rewrite in (
-            lambda value: value.replace('declare_container_columns(node)', 'declared_layout_columns(node)', 1),
+            lambda value: value.replace('declare_container_columns(node)', 'declared_layout_columns(node)'),
             lambda value: value.replace('from ..core.unified_page_contract_v2_assembler import declare_container_columns\n', '', 1),
         ):
             with self.assertRaisesRegex(SystemExit, 'late-appended grid container'):
@@ -103,7 +103,7 @@ class ReadonlyGridGuardTests(unittest.TestCase):
         target = '/app/presentation/contractFormPresenter.ts'
         for rewrite in (
             lambda value: value.replace('columns: declaredContainerColumns(container),', 'columns: container.cols || 1,', 1),
-            lambda value: value.replace('const declared = Number(container.columns);', 'const declared = Number(container.cols);', 1),
+            lambda value: value.replace('return requireDeclaredLayoutColumns(container.columns);', 'return requireDeclaredLayoutColumns(container.cols);', 1),
         ):
             with self.assertRaisesRegex(SystemExit, 'present the declared container column count|re-derives a container column count'):
                 self.run_guard(target=target, rewriter=rewrite)
@@ -111,8 +111,8 @@ class ReadonlyGridGuardTests(unittest.TestCase):
     def test_renderer_must_not_raise_or_clamp_the_declared_columns(self):
         target = '/pages/contractForm/CanonicalFormNodeRenderer.vue'
         for rewrite in (
-            lambda value: value.replace('const declared = Number(props.node.columns);', 'const declared = Math.max(2, Number(props.node.columns));', 1),
-            lambda value: value.replace('const declared = Number(props.node.columns);', 'const declared = Number(props.node.cols) || 2;', 1),
+            lambda value: value.replace('return requireDeclaredLayoutColumns(props.node.columns);', 'return Math.max(2, requireDeclaredLayoutColumns(props.node.columns));', 1),
+            lambda value: value.replace('return requireDeclaredLayoutColumns(props.node.columns);', 'return Number(props.node.cols) || 2;', 1),
         ):
             with self.assertRaisesRegex(SystemExit, 'canonical'):
                 self.run_guard(target=target, rewriter=rewrite)

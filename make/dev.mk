@@ -69,6 +69,10 @@ LOCAL_ENV_ISOLATE = env \
 	-u VITE_ODOO_DB -u VITE_APP_ENV -u FRONTEND_DIST_DIR \
 	-u SC_ENVIRONMENT -u SC_ALLOW_DEMO_DATA -u ISOLATED_DEMO_TENANT
 
+.PHONY: verify.local.dev.layout_authority.unit
+verify.local.dev.layout_authority.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_local_development_lifecycle.LayoutAuthorityReadonlyProbeTest
+
 verify.local.development_lifecycle.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_local_development_lifecycle
 
@@ -156,7 +160,7 @@ local.dev.sync_demo: guard.prod.forbid local.dev.ready local.dev.demo_credential
 
 local.dev.reset_payment_request_fixture: guard.prod.forbid local.dev.ready local.dev.demo_credentials.prepare
 	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
-	  SC_ENVIRONMENT=demo SC_ALLOW_DEMO_DATA=1 STEPS=payment_request_floorplan_demo \
+	  SC_ENVIRONMENT=demo SC_ALLOW_DEMO_DATA=1 STEPS=payment_request_floorplan_demo PAYMENT_REQUEST_FIXTURE_SCOPE="$(if $(LOCAL_DEV_PAYMENT_FIXTURE_SCOPE),$(LOCAL_DEV_PAYMENT_FIXTURE_SCOPE),submit)" \
 	  bash scripts/demo/run_seed.sh
 
 # Governed repair for the demo invoice-snapshot drift that the demo seed can
@@ -368,7 +372,7 @@ verify.local.dev.payment_request.native_parity.readonly: guard.prod.forbid local
 	  bash scripts/verify/local_dev_payment_request_native_parity_readonly.sh
 
 verify.local.dev.payment_request.floorplan.readonly: guard.prod.forbid local.dev.ready
-	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" SOURCE_SHA="$(SOURCE_SHA)" LOCAL_DEV_FLOORPLAN_SCOPE="$(LOCAL_DEV_FLOORPLAN_SCOPE)" \
 	  bash scripts/verify/local_dev_payment_request_floorplan_readonly.sh
 
 .PHONY: verify.frontend.professionalization.payment_domain.browser
@@ -650,7 +654,7 @@ local.clean.prepare: guard.prod.forbid
 	@ROOT_DIR="$(ROOT_DIR)" SOURCE_ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  TARGET_ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" bash scripts/dev/local_clean_env_prepare.sh
 
-local.clean.up: guard.prod.forbid local.clean.prepare
+local.clean.up: guard.prod.forbid local.clean.prepare local.clean.frontend.prepare_output
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" up
 
 local.clean.down: guard.prod.forbid local.clean.require_env
@@ -663,7 +667,7 @@ local.clean.logs: guard.prod.forbid local.clean.require_env
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/dev/local_environment_doctor.sh clean
 
-local.clean.frontend: guard.prod.forbid local.clean.prepare
+local.clean.frontend: guard.prod.forbid local.clean.prepare local.clean.frontend.prepare_output
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/dev/frontend_static_build.sh
 
@@ -1090,3 +1094,28 @@ local.clean.view_capability_ledger_gate: guard.prod.forbid local.clean.require_e
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" gate.contract.view_capability_ledger
 
 # ======================================================
+
+.PHONY: local.dev.menu_facts.snapshot
+local.dev.menu_facts.snapshot: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_menu_fact_snapshot.py
+
+.PHONY: local.dev.native_projection.audit
+local.dev.native_projection.audit: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_native_projection_audit.py
+
+.PHONY: local.clean.frontend.prepare_output
+local.clean.frontend.prepare_output: guard.prod.forbid local.clean.prepare
+	@$(LOCAL_ENV_ISOLATE) ROOT_DIR="$(ROOT_DIR)" ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" \
+	  bash scripts/dev/local_clean_frontend_output_prepare.sh
+
+.PHONY: local.dev.data_scope.inventory
+local.dev.data_scope.inventory: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_data_scope_inventory.py
+
+.PHONY: local.dev.payroll.data_scope.readiness
+local.dev.payroll.data_scope.readiness: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_payroll_data_scope_readiness.py

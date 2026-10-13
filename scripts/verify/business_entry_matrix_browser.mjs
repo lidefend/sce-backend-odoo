@@ -20,10 +20,13 @@
 //   config/frontend/acceptance_environments_v1.json profiles.daily
 //   ENV=dev, database sc_demo, expected served revision required.
 import fs from 'node:fs';
+import { surface } from './business_entry_matrix_scope.mjs';
 import path from 'node:path';
 import { launchChromium } from './playwright_runtime.mjs';
 import { findReleasedNavigationTarget } from './released_navigation_target.mjs';
 import {
+  observationBinding,
+  validateObservationBinding,
   candidateStates,
   countReleasedNavigationTargets,
   declaredEntryGroups,
@@ -63,6 +66,7 @@ const OUT_DIR = process.env.SC_ACCEPTANCE_OUTPUT_DIR
 // with zero conclusions, so an interrupted pass proved nothing about the part it
 // did reach. Writing each conclusion as it is produced makes an interrupted run
 // a usable partial observation that the next pass resumes from.
+const EXECUTION_BINDING = observationBinding(surface());
 const SUMMARY_PATH = path.join(OUT_DIR, 'summary.json');
 const ENTRIES_PATH = path.join(OUT_DIR, 'entries.jsonl');
 // Bounded session recovery. A rejected intent drops the app to /login; the
@@ -136,6 +140,7 @@ function attachCapture(page, state) {
         const body = await response.json();
         const data = envelopeData(body);
         const principal = data && data.principal;
+        state.actorLogin = data?.user?.login || null;
         if (principal && Array.isArray(principal.role_xmlids)) {
           state.roleXmlids = principal.role_xmlids.map(String);
         }
@@ -766,7 +771,7 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
 // `partial` document proves only the entries it carries, and the recorder must
 // never lift an unobserved entry to a pass or to a failure on the strength of
 // the surface verdict alone.
-function buildOutput({ selected, mutating, servedRevisionId, servedBundle, sessionCompany, summary, completeness }) {
+function buildOutput({ selected, mutating, servedRevisionId, servedBundle, sessionCompany, state, summary, completeness }) {
   return {
     schema: 'business_entry_matrix_browser.v1',
     generated_at: new Date().toISOString(),
@@ -778,6 +783,8 @@ function buildOutput({ selected, mutating, servedRevisionId, servedBundle, sessi
     database: DB,
     login: LOGIN,
     session_company_id: sessionCompany,
+    acting: { login: state.actorLogin, company_id: sessionCompany, role_xmlids: state.roleXmlids },
+    observation_binding: EXECUTION_BINDING,
     completeness,
     selection: {
       domain: DOMAIN_FILTER || null,
@@ -808,10 +815,14 @@ function appendEntry(record) {
 // holds conclusions for part of this selection. Reusing them stops an
 // interrupted pass from being re-walked, while any identity change (served
 // bundle, target revision, database, selected keys) starts a clean observation.
-function restorePartialObservation({ summary }) {
+function restorePartialObservation({ summary, acting }) {
   if (!fs.existsSync(SUMMARY_PATH)) return 0;
   let previous;
   try { previous = JSON.parse(fs.readFileSync(SUMMARY_PATH, 'utf8')); } catch { return 0; }
+  try {
+    validateObservationBinding(previous, { execute: KEYS_FILTER, observation_binding: EXECUTION_BINDING }, EXECUTION_BINDING);
+    if (JSON.stringify(previous.acting) !== JSON.stringify(acting)) return 0;
+  } catch { return 0; }
   const sameIdentity = previous.schema === 'business_entry_matrix_browser.v1'
     && String(previous.target_sha || '') === EXPECTED_SHA
     && String(previous.base_url || '') === BASE
@@ -953,13 +964,13 @@ async function main() {
   if (!state.nav) throw new Error('released navigation was not observed from system.init');
 
   const summary = [];
-  const restoredEntries = restorePartialObservation({ summary });
+  const restoredEntries = restorePartialObservation({ summary, acting: { login: state.actorLogin, company_id: sessionCompany, role_xmlids: state.roleXmlids } });
   if (restoredEntries) {
     process.stdout.write(`[business-entry-matrix] resumed ${restoredEntries} completed entr${restoredEntries === 1 ? 'y' : 'ies'} from ${SUMMARY_PATH}\n`);
   }
   const completedEntries = new Set(summary.map((record) => record.entry));
   const writeObservation = (completeness) => persistOutput(
-    buildOutput({ selected, mutating, servedRevisionId, servedBundle, sessionCompany, summary, completeness }),
+    buildOutput({ selected, mutating, servedRevisionId, servedBundle, sessionCompany, state, summary, completeness }),
   );
   partialWriter = () => writeObservation('partial');
   for (const { row, behaviour } of selected) {

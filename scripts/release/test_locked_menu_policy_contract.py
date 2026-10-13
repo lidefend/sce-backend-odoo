@@ -161,13 +161,16 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
             self.assertTrue(menu_xmlid.startswith("smart_construction_core.menu_"))
             self.assertTrue(action_xmlid.startswith("smart_construction_core.action_"))
 
-    def test_formal_restore_consumes_action_only_contract(self):
+    def test_formal_restore_delegates_to_product_owner_without_menu_overrides(self):
         source = self.restore_script.read_text(encoding="utf-8")
-        self.assertIn("FORMAL_ACTION_ONLY_MENU_TARGETS", source)
-        self.assertIn("def _resolve_runtime_target", source)
-        self.assertIn('route = "/a/%s" % action_id', source)
-        self.assertIn("_resolve_runtime_target(menu_xmlid, payload)", source)
-        self.assertIn("PRESERVED_INACTIVE_MENU_XMLIDS", source)
+        tree = ast.parse(source)
+        main = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "main")
+        delegated = [node for node in ast.walk(main) if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "synchronize_locked_formal_menu_policy"]
+        self.assertEqual(len(delegated), 1)
+        self.assertIn("load_locked_menu_policy_contract()", source)
+        self.assertNotIn("FORMAL_MASTER_DATA_MENU_CONFIG", source)
+        self.assertNotIn("def _hydrate_menu_row", source)
+        self.assertNotIn("def _resolve_runtime_target", source)
         self.assertNotIn('menu_record.sudo().write({"active": True})', source)
 
     def test_runtime_release_audit_consumes_action_only_contract(self):
@@ -183,13 +186,31 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         self.assertIn("def _locked_contract_menu_keys", source)
         self.assertNotIn("REQUIRED_RELEASED_SETTLEMENT_MENU_XMLIDS", source)
 
-    def test_formal_initialization_action_specs_are_stable_and_complete(self):
-        for action_xmlid, spec in CONTRACT.FORMAL_INITIALIZATION_ACTION_SPECS.items():
-            self.assertIn(action_xmlid, CONTRACT.FORMAL_ACTION_ONLY_MENU_TARGETS.values())
-            self.assertTrue(spec["name"])
-            self.assertTrue(spec["res_model"])
-            self.assertIn("domain", spec)
-            self.assertIn("context", spec)
+    def test_synchronization_missing_native_action_fails_without_fabrication(self):
+        self.assertEqual(CONTRACT.FORMAL_INITIALIZATION_ACTION_SPECS, {})
+        source = (ROOT / "addons/smart_construction_core/models/support/product_policy_sync.py").read_text()
+        tree = ast.parse(source)
+        klass = next(node for node in tree.body if isinstance(node, ast.ClassDef))
+        method = next(node for node in klass.body if isinstance(node, ast.FunctionDef) and node.name == "synchronize_locked_formal_menu_policy")
+        method.decorator_list = []
+        namespace = {"_text": lambda value: str(value or "").strip(),
+                     "load_locked_menu_policy_contract": lambda **kw: {"products": {"test": {"menu_groups": [{"menus": [{"menu_xmlid": "test.menu", "action_xmlid": "test.action"}]}]}}},
+                     "canonical_group_label": lambda value: value,
+                     "declared_scene_entry_key": lambda row: "",
+                     "FORMAL_ACTION_ONLY_MENU_TARGETS": {},
+                     "FORMAL_BUSINESS_DECISION_REQUIRED_TARGETS": {},
+                     "LockedMenuPolicyContractError": CONTRACT.LockedMenuPolicyContractError}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), "sync_under_test", "exec"), namespace)
+        reads = []
+        class MissingNativeEnvironment:
+            def ref(self, key, **kwargs):
+                reads.append(key)
+                return False
+            def __getitem__(self, model):
+                raise AssertionError("must not fabricate native records: " + model)
+        with self.assertRaisesRegex(CONTRACT.LockedMenuPolicyContractError, "unresolved action"):
+            namespace[method.name](types.SimpleNamespace(env=MissingNativeEnvironment()), "test")
+        self.assertEqual(reads, ["test.menu", "test.action"])
 
     def test_fund_archives_are_installed_xml_contracts_not_dynamic_fallbacks(self):
         xml = self.archive_views.read_text(encoding="utf-8")
@@ -590,7 +611,7 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         contract = CONTRACT.load_locked_menu_policy_contract(self.baseline, self.checksum)
         self.assertEqual(
             contract["sha256"],
-            "bcefc90c4ef5bf61b32806fd75afea6eaaa93cb513c9d970d86dfb14bb5f0551",
+            hashlib.sha256(CONTRACT.default_contract_paths()[0].read_bytes()).hexdigest(),
         )
         declared = self._declared_menu_count(contract)
         for product_key in CONTRACT.REQUIRED_PRODUCT_KEYS:

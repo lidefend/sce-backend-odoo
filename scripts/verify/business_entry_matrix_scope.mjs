@@ -13,8 +13,11 @@
 //                               the units this run actually executed, for recording
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import {
   ACTING_COMPANY_KEY,
+  validateClosureEnvironment,
+  validateObservationBinding,
   MODEL_INPUTS,
   PROBE_INPUTS,
   actingContext,
@@ -86,6 +89,7 @@ function loadClosures() {
   if (document.schema !== 'business_entry_negative_closures.v1') {
     throw new Error(`${CLOSURES_PATH}: unexpected schema ${document.schema}`);
   }
+  validateClosureEnvironment(document, { baseUrl: BASE, database: DATABASE });
   return document;
 }
 
@@ -98,7 +102,7 @@ function loadSurfaceScopes() {
   };
 }
 
-function surface() {
+export function surface() {
   if (!SERVED_REVISION) throw new Error('SC_ACCEPTANCE_TARGET_SHA is required so the observation is traceable to a deployment');
   const matrix = loadMatrix(CSV_PATH);
   const overlay = loadOverlay(OVERLAY_PATH);
@@ -190,6 +194,7 @@ function surface() {
   };
 }
 
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
 const args = argsOf(process.argv.slice(2));
 if (args['emit-units']) {
   const document = surface();
@@ -227,6 +232,7 @@ if (args['emit-units']) {
       + `company ${boundCompany}`,
     );
   }
+  validateObservationBinding(summary, plan, document);
   // Per-unit status is read from the probe's own per-entry record and nothing
   // else. The probe aggregates a surface verdict (summary.ok / summary.fatal)
   // for its process exit code; that aggregate must never rewrite a sibling's
@@ -273,4 +279,6 @@ if (args['emit-units']) {
   console.log(`[business-entry-scope] executed=${executed.length} planned_affected=${results.planned_affected.length} ok=${summary.ok}`);
 } else {
   throw new Error('one of --emit-units or --emit-results is required');
+}
+
 }
