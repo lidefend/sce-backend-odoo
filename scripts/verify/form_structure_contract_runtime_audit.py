@@ -224,13 +224,13 @@ def runtime_boundary_issues(contract: dict[str, Any]) -> list[str]:
 
 
 def presentation_facet_issues(tree: list[dict[str, Any]]) -> list[str]:
-    """Every declared container presentation class must be classified and published.
+    """Every product-declared presentation class must be published, not dropped.
 
-    A class the projection cannot classify means the client receives a declared
-    facet it has no presentation token for; a class that is declared in the arch
-    but missing from the published ``styleToken`` means the declaration was
-    dropped on the way out.  Either one makes the renderer draw an unstyled stack
-    of blocks, which is exactly the defect this check must not let ship quietly.
+    Native arch markup is rendering implementation and the projection drops it
+    by design; what remains declared must still reach the client.  A declared
+    product token that is missing from the published ``styleToken`` was dropped
+    on the way out, which makes the renderer draw an unstyled stack of blocks —
+    exactly the defect this check must not let ship quietly.
     """
     from odoo.addons.smart_core.handlers.ui_contract_v2_projection import declared_presentation_tokens
 

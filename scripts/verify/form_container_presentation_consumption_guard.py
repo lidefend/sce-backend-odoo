@@ -3,9 +3,11 @@
 """Guard that a declared container presentation facet is consumed, not dropped.
 
 A native form arch declares container presentation with CSS classes.  The
-projection publishes them on the renderer-neutral ``styleToken`` facet and fails
-closed on a class it cannot classify.  The renderer implements that vocabulary
-and merges the declared tokens into every container it renders.
+projection publishes the product-declared ones on the renderer-neutral
+``styleToken`` facet and drops the native rendering markup it also carries
+(Bootstrap grid/spacing, Odoo structural and icon decoration) instead of
+promoting it or failing the page.  The renderer implements the declared
+vocabulary and merges the declared tokens into every container it renders.
 
 The defect this guard prevents: the projection published the declaration, but
 the renderer never consumed it (``containerClass()`` did not merge the declared
@@ -16,7 +18,7 @@ layer reported an error, which is exactly why the region collapsed silently.
 Checks (functional, negative-first):
 
 1. The projection derives ``styleToken`` from the declared classes.
-2. A class the renderer has no token for fails closed instead of shipping.
+2. Native arch markup is dropped: never published, never fatal.
 3. Native structural markers (``o_*``/``oe_*``) and exempt node types
    (field/button/widget) are not region presentation and never fail.
 4. The renderer merges ``declaredPresentationTokens`` into the container class.
@@ -256,16 +258,24 @@ def _projection_checks(module, errors: list[str]) -> None:
             errors.append(f"declared presentation class {expected!r} was not projected")
 
     try:
-        module.declared_presentation_tokens(
-            {"type": "group", "attributes": {"class": "text-truncate"}}, "guard.c2",
+        native_markup = module.declared_presentation_tokens(
+            {
+                "type": "group",
+                "attributes": {"class": "text-truncate col oi mx-3 o_form_label btn"},
+            },
+            "guard.c2",
         )
-    except ValueError:
-        pass
-    else:
+    except ValueError as exc:
         errors.append(
-            "an unclassifiable declared presentation class must fail closed, not be "
-            "silently dropped by the projection"
+            "native arch markup classes are rendering implementation and must be dropped "
+            f"by the projection instead of failing the page: {exc}"
         )
+    else:
+        if native_markup:
+            errors.append(
+                "native arch markup (Bootstrap grid/spacing, Odoo decoration) must not be "
+                f"promoted into the contract presentation facet; got {native_markup!r}"
+            )
 
     for node_type in ("field", "button", "widget"):
         try:

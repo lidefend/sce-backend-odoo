@@ -13,17 +13,15 @@ _CONTAINER_CHILD_KEYS = ("children", "pages", "tabs", "nodes", "items")
 
 
 # --- Declared container presentation ---------------------------------------
-# A native form arch declares presentation with CSS classes on its containers.
-# The product renderer is the Vue front end, which implements its own
-# design-system vocabulary (``sc-*``) plus a small generic layout vocabulary.
-# The projection therefore classifies every declared class into the declared
-# presentation facet (``styleToken``) that the renderer consumes, and fails
-# closed on a class it cannot classify: shipping an unclassified class would
-# reproduce the exact defect where a declared presentation facet is dropped and
-# the region renders as an unstyled stack of blocks.  Native marker prefixes are
-# excluded because they are consumed structurally, not as presentation.
+# The presentation facet (``styleToken``) carries only product-declared
+# presentation: the declared layout vocabulary below and the ``sc-*`` product
+# namespace.  A native form arch also decorates its containers with Bootstrap
+# and Odoo markup classes (``col``, ``oi``, ``mx-3``, ``o_*``, ``btn``, ...).
+# That markup is native rendering implementation, so the projection neither
+# promotes it into the contract facet nor treats an unseen name as a missing
+# declaration: it is dropped.  The facet therefore never grows with the arch
+# vocabulary, and a native view cannot fail a page through its own decoration.
 FORM_PRESENTATION_PRODUCT_PREFIX = "sc-"
-FORM_PRESENTATION_NATIVE_MARKER_PREFIXES = ("o_", "oe_")
 FORM_PRESENTATION_LAYOUT_TOKENS = frozenset({
     # display mode (how a declared container arranges its declared children)
     "d-flex", "d-inline-flex", "flex-wrap", "flex-row", "justify-content-between",
@@ -40,31 +38,10 @@ FORM_PRESENTATION_LAYOUT_TOKENS = frozenset({
     "card", "card-body", "content-group",
     "alert", "alert-info", "alert-danger", "alert-warning", "alert-link",
 })
-# Grid *placement* classes (``col-12``/``col-md-6``/``col-lg-3``/``col-lg-12``)
-# are the arch's width declaration.  The projection folds every declared width
-# into the single 24-unit ``span`` facet, so these tokens must never travel to
-# the renderer beside it: a renderer that re-reads a ``col-*`` name has a second
-# width dialect and the contract stops being the one layout authority.  They are
-# therefore classified explicitly (never published, never fail-closed) exactly
-# like the native icon markers.
-FORM_PRESENTATION_GRID_PLACEMENT_TOKENS = frozenset({
-    "col-12", "col-md-6", "col-lg-3", "col-lg-12",
-})
-
-# Native icon glyph classes (``<i class="fa fa-lightbulb-o"/>``) are structural
-# decoration: the icon font supplies the glyph and the renderer consumes the node
-# itself, so no region presentation token is published for them.  They are
-# classified explicitly (never dropped, never published) exactly like the other
-# native markers.
-FORM_PRESENTATION_ICON_MARKER_TOKENS = frozenset({"fa", "fas", "far", "fab", "fad"})
-FORM_PRESENTATION_ICON_MARKER_PREFIXES = ("fa-",)
-# Control markup is native button decoration; the button's presentation is
-# declared by ``actionContract`` (the action presentation tier), not by the arch
-# class.  These classes are therefore classified explicitly instead of either
-# being published as region presentation or dropped without a decision.
-FORM_PRESENTATION_ACTION_MARKERS = frozenset({
-    "btn", "btn-link", "btn-primary", "btn-secondary", "btn-outline-primary",
-})
+# Grid *placement* classes (``col-12``/``col-md-6``/``col-lg-3``) are the arch's
+# width declaration.  The projection folds every declared width into the single
+# 24-unit ``span`` facet and drops the class itself with the rest of the native
+# markup, so no second width dialect can reach the renderer.
 # Nodes whose class facet the renderer already consumes (fields) or whose
 # presentation is declared by another contract facet (actions, widgets) are not
 # part of the container presentation facet.
@@ -200,11 +177,11 @@ def declared_presentation_tokens(node: dict[str, Any], container_id: str) -> lis
     """Return the renderer-neutral presentation tokens a node declares.
 
     ``styleToken`` is the declared presentation facet consumed by the renderer.
-    Pre-existing tokens are mechanism-generated and are preserved; every
-    declared CSS class on a container must then classify as either a product
-    presentation token (``sc-*``), a declared layout token, or a native
-    structural/control marker.  Anything else is a declaration the renderer has
-    no token for, so it fails closed instead of shipping a dropped facet.
+    Pre-existing tokens are product declarations and are preserved; beyond them
+    only the declared layout vocabulary and the ``sc-*`` product namespace are
+    published.  Every other container class is native arch markup (Bootstrap
+    grid/spacing, Odoo structural and icon decoration) and is dropped, so a
+    native view can never fail a page through its own rendering markup.
     """
     tokens: list[str] = []
     existing = node.get("styleToken")
@@ -213,25 +190,11 @@ def declared_presentation_tokens(node: dict[str, Any], container_id: str) -> lis
     if _node_type(node) in FORM_PRESENTATION_EXEMPT_NODE_TYPES:
         return tokens
     for token in _declared_node_classes(node):
-        if token.startswith(FORM_PRESENTATION_NATIVE_MARKER_PREFIXES):
-            continue
-        if token in FORM_PRESENTATION_GRID_PLACEMENT_TOKENS:
-            continue
-        if token in FORM_PRESENTATION_ICON_MARKER_TOKENS:
-            continue
-        if token.startswith(FORM_PRESENTATION_ICON_MARKER_PREFIXES):
-            continue
-        if token in FORM_PRESENTATION_ACTION_MARKERS:
-            continue
         if not (
             token.startswith(FORM_PRESENTATION_PRODUCT_PREFIX)
             or token in FORM_PRESENTATION_LAYOUT_TOKENS
         ):
-            raise ValueError(
-                f"container {container_id} declares presentation class {token!r} that the "
-                "renderer has no declared token for; declare it in the product presentation "
-                "vocabulary instead of shipping a dropped facet"
-            )
+            continue
         if token not in tokens:
             tokens.append(token)
     return tokens
