@@ -1,0 +1,75 @@
+schema_version: 1
+goal:
+  id: FE-CONTRACT-RUNTIME-02
+  title: frontend_contract_consumption_stop_closure
+  status: active
+  formal_product_layer: P0
+  supporting_layer: P4
+  layer_target: frontend_contract_consumption_and_stop_mechanism
+  module:
+    - frontend/apps/web/src/app/contract
+    - frontend/apps/web/src/app/contracts/v2
+    - frontend/apps/web/src/app/runtime
+    - frontend/apps/web/src/components/template
+    - frontend/apps/web/src/pages/contractForm
+    - scripts/verify
+    - docs/architecture
+  baseline:
+    branch: fix/fe-contract-runtime-02-consumption-stop-closure
+    full_sha: e4b8fd957e364a4d1749127d563398c8de80256d
+    source: owner_directed_audit_tasklist_20261013
+  objective: >-
+    Close the six confirmed frontend contract-consumption gaps (T1 contract
+    create-visibility inference, T2 missing/invalid layout span, T3 loose numeric
+    stop primitive, T4 silently-empty collection action declaration, T5 record
+    entry intent/write-authority downgrade, T6 frontend-fixed relation page size)
+    so that every missing or invalid declaration actually stops the surface
+    instead of being defaulted, then bind each fix into the contract-basis ledger
+    and guard (T7), correct the evidence reuse identity to the real company/role
+    context per unit (T8), and close the evidence re-binding gaps with the single
+    evidence_scope authority (T9). The frontend keeps only rendering and
+    interaction; products are declared by the backend configuration
+    (model / view / permission -> runtime contract).
+  product_boundary:
+    standard_vs_user_specific: platform_mechanism
+    why_here: >-
+      The stop primitive, the contract decoder, the layout unit and the runtime
+      resolvers are the P0 contract-runtime mechanisms every product surface
+      inherits; the guard and the evidence-scope model are the P4 verification
+      tooling for the same boundary. No construction-industry or customer
+      semantics live here.
+    why_not_elsewhere:
+      - no_business_page_layout_rewrite
+      - no_new_component_or_new_environment_authority
+      - no_contract_capability_reduction_to_fit_a_consumer
+      - no_relaxation_of_any_guard_or_required_check
+      - no_state_machine_dsl_this_goal
+    blast_radius:
+      - frontend_contract_consumption_units_and_their_behaviour_tests
+      - frontend_contract_basis_ledger_and_guard
+      - business_entry_matrix_evidence_identity_and_scope
+      - affected_backend_declaration_producers_only_where_a_required_span_or_visibility_is_missing
+  constraints:
+    - contract_is_the_only_authority_for_business_semantics
+    - missing_or_invalid_declaration_stops_the_surface_never_defaults
+    - a_required_declaration_is_added_at_the_producer_before_a_consumer_fallback_is_removed
+    - keep_declared_but_unconsumed_capability_it_is_consumption_debt_not_a_defect
+    - one_worktree_one_writer_and_governed_make_entrypoints_only
+    - reuse_unchanged_evidence_do_not_rerun_a_matrix_per_commit
+  next_exact_step: >-
+    Batch 02-A registered. Implement T3 (strict stop primitives) first because T2,
+    T4, T5 and T6 all consume it, then T1, T4, T5, T6 with their targeted
+    behaviour tests and the T7 ledger/guard registration; T2 follows its producer
+    survey. T8/T9 evidence closure is the second batch.
+  completion:
+    scope: frontend_contract_consumption_stop_closure
+    overall_goal: incomplete
+    result_index: .agent/runs/FE-CONTRACT-RUNTIME-02/run.json
+    local_batch_acceptance: not_run
+    mainline_integration: not_run
+    deployment: not_run
+    target_user_delivery: not_run
+    limits: >-
+      This goal closes frontend consumption/stop gaps and their guard and
+      evidence bindings. It is not a product page rewrite, not a deployment and
+      not a target-user acceptance result.

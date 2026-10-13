@@ -436,6 +436,42 @@ verify.frontend.contract_basis.unit: guard.prod.forbid
 verify.frontend.contract_basis.enforce: guard.prod.forbid
 	@python3 scripts/verify/frontend_contract_basis_guard.py --enforce
 
+# 证据归档：台账结论绑定的 identity（sha256 + schema + gate 数）记录在受版本管理的
+# 归档清单里，因此守卫不再依赖执行者机器上的 .runtime 残留文件。先校验归档身份与本地
+# 副本哈希，再跑绑定守卫。需要还原完整报告时用 evidence.archive.fetch
+# ARCHIVE_ROOT=<外部归档目录>（逐文件哈希校验后才落盘）。
+.PHONY: evidence.archive.verify evidence.archive.fetch
+evidence.archive.verify: guard.prod.forbid
+	@python3 scripts/ops/evidence_archive_fetch.py --verify
+
+evidence.archive.fetch: guard.prod.forbid
+	@test -n "$(ARCHIVE_ROOT)" || { echo "❌ ARCHIVE_ROOT is required (external directory holding the archived artifacts)"; exit 2; }
+	@python3 scripts/ops/evidence_archive_fetch.py --archive-root "$(ARCHIVE_ROOT)" --apply
+
+# 证据绑定守卫：页面模式台账把结论绑到 observation。曾被错绑的
+# .runtime/final-acceptance/list-surface-structure.json（已被 payment.request 新建/编辑运行
+# 覆盖为 gated 0/0）不再能证明「列表 XX/XX gated」；引用必须绑定到归档身份、且本地副本
+# 哈希一致、且归档 gate 数与声称数一致，否则 FAIL。随台账一起回归。
+.PHONY: verify.frontend.list_surface_evidence_binding.unit
+verify.frontend.list_surface_evidence_binding.unit: guard.prod.forbid evidence.archive.verify
+	@python3 -m unittest scripts.verify.test_list_surface_evidence_binding_guard
+	@python3 scripts/verify/list_surface_evidence_binding_guard.py
+
+# 唯一停机原语的行为锁：声明缺失/非法必须停机，且合法声明原样返回。用例驱动生产
+# helper，覆盖布尔/字符串/数组/小数/越界等反例，回归再引入 Number()/Math.trunc 夹取即失败。
+.PHONY: verify.frontend.contract_gap_primitive.unit
+verify.frontend.contract_gap_primitive.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_gap_primitive_test.ts --bundle --platform=node --format=esm --outfile=/tmp/contract-gap-primitive-test.mjs >/dev/null
+	@node /tmp/contract-gap-primitive-test.mjs
+
+# 权限枚举与状态栏去重的消费判定：admin 蕴含 edit，缺失/非法 auth 停机，正文里
+# 「同名字段的不同出现」不因状态栏占位而被隐藏。用生产 helper，回归到
+# `auth !== 'edit'` 或字段名级去重即失败。
+.PHONY: verify.frontend.contract_consumption_verdicts.unit
+verify.frontend.contract_consumption_verdicts.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_consumption_verdicts_test.ts --bundle --platform=node --format=esm --outfile=/tmp/contract-consumption-verdicts-test.mjs >/dev/null
+	@node /tmp/contract-consumption-verdicts-test.mjs
+
 .PHONY: verify.frontend.action_view_page_size_runtime.unit
 # Behavioural lock for the list page-size declaration surface. It drives the
 # production resolver with the production contract store, so a consumption-shape
@@ -507,6 +543,8 @@ verify.frontend.record_delete_action.unit: guard.prod.forbid
 verify.frontend.collection_action_capability.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/collection_action_capability_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/collection-action-capability-test.mjs >/dev/null
 	@node /tmp/collection-action-capability-test.mjs
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/detail_collection_pagination_test.ts --bundle --platform=node --format=esm --outfile=/tmp/detail-collection-pagination-test.mjs >/dev/null
+	@node /tmp/detail-collection-pagination-test.mjs
 
 # A declared node's authoritative verdict (field widgetStatus / declared action
 # buttonStatus / container containerStatus) must be consumed for that node; a
@@ -569,14 +607,14 @@ verify.frontend.page_pattern_reference_parity.unit: guard.prod.forbid
 verify.frontend.collection_status_presentation.unit: guard.prod.forbid
 	@node scripts/verify/frontend_collection_status_presentation.test.mjs
 
-verify.frontend.quick.gate: verify.frontend.official_icon.unit verify.frontend.global_component_capability.unit verify.frontend.component_driver_takeover.unit verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_contract.consumption.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.collection_action_toolbar.unit verify.frontend.collection_aggregate_footer.unit verify.frontend.collection_group_header.unit verify.frontend.collection_summary_strip.unit verify.frontend.collection_mobile_record_row.unit verify.frontend.collection_kanban_record_card.unit verify.frontend.collection_navigation_controls.unit verify.frontend.collection_row_action_identity.unit verify.frontend.collection_row_cell.unit verify.frontend.collection_selection_control.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit verify.frontend.professional_business_value.unit verify.frontend.professional_relation_field.unit verify.frontend.professional_detail_collection.unit verify.frontend.professional_workflow.unit verify.frontend.professional_audit.unit verify.frontend.professional_collaboration.unit verify.frontend.professional_relation_lifecycle.unit verify.frontend.contract_prompt_action_presentation.unit verify.frontend.low_code_field_create_dialog.unit verify.frontend.form_header_action_primitives.unit verify.frontend.action_view_page_actions.unit verify.frontend.relational_action_primitives.unit verify.frontend.native_form_action_presentation.unit verify.frontend.native_text_presentation.unit verify.frontend.native_form_structure_responsibility.unit verify.frontend.overlay_lifecycle.unit verify.frontend.state_dashboard.unit verify.frontend.rendering_detail_state.unit verify.frontend.hierarchical_worksheet.unit verify.frontend.page_pattern_reference_parity.unit verify.frontend.professional.extensions.unit verify.frontend.theme_profile.unit verify.frontend.intent_request_identity.unit verify.frontend.intent_request_coalescing.unit verify.frontend.decision_authority.unit verify.frontend.capability_policy.unit verify.frontend.contract_basis.unit verify.frontend.action_view_page_size_runtime.unit verify.frontend.action_view_surface_gate_runtime.unit verify.frontend.contract_shape_projection.unit
+verify.frontend.quick.gate: verify.frontend.official_icon.unit verify.frontend.global_component_capability.unit verify.frontend.component_driver_takeover.unit verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_contract.consumption.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.collection_action_toolbar.unit verify.frontend.collection_aggregate_footer.unit verify.frontend.collection_group_header.unit verify.frontend.collection_summary_strip.unit verify.frontend.collection_mobile_record_row.unit verify.frontend.collection_kanban_record_card.unit verify.frontend.collection_navigation_controls.unit verify.frontend.collection_row_action_identity.unit verify.frontend.collection_row_cell.unit verify.frontend.collection_selection_control.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit verify.frontend.professional_business_value.unit verify.frontend.professional_relation_field.unit verify.frontend.professional_detail_collection.unit verify.frontend.professional_workflow.unit verify.frontend.professional_audit.unit verify.frontend.professional_collaboration.unit verify.frontend.professional_relation_lifecycle.unit verify.frontend.contract_prompt_action_presentation.unit verify.frontend.low_code_field_create_dialog.unit verify.frontend.form_header_action_primitives.unit verify.frontend.action_view_page_actions.unit verify.frontend.relational_action_primitives.unit verify.frontend.native_form_action_presentation.unit verify.frontend.native_text_presentation.unit verify.frontend.native_form_structure_responsibility.unit verify.frontend.overlay_lifecycle.unit verify.frontend.state_dashboard.unit verify.frontend.rendering_detail_state.unit verify.frontend.hierarchical_worksheet.unit verify.frontend.page_pattern_reference_parity.unit verify.frontend.professional.extensions.unit verify.frontend.theme_profile.unit verify.frontend.intent_request_identity.unit verify.frontend.intent_request_coalescing.unit verify.frontend.decision_authority.unit verify.frontend.capability_policy.unit verify.frontend.contract_basis.unit verify.frontend.action_view_page_size_runtime.unit verify.frontend.action_view_surface_gate_runtime.unit verify.frontend.contract_shape_projection.unit verify.frontend.contract_gap_primitive.unit verify.frontend.list_surface_evidence_binding.unit
 
 verify.frontend.pr.unit: verify.frontend.official_icon.unit verify.frontend.global_component_capability.unit verify.frontend.component_driver_takeover.unit verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.state_dashboard.unit verify.frontend.professional.extensions.unit verify.frontend.boq_import_preview.unit verify.frontend.chart_dataset.unit verify.frontend.mobile_viewport.unit verify.frontend.intent_request_identity.unit verify.frontend.intent_request_coalescing.unit verify.frontend.collection_row_action_identity.unit verify.frontend.action_view_page_size_runtime.unit verify.frontend.action_view_surface_gate_runtime.unit verify.menu_config_tree_editor.behavior verify.contract_form_runtime_state.behavior verify.action_view_runtime_smoke.behavior
 
 verify.frontend.release.unit: verify.frontend.official_icon.unit verify.frontend.global_component_capability.unit verify.frontend.component_driver_takeover.unit verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit verify.frontend.professional_business_value.unit verify.frontend.professional_relation_field.unit verify.frontend.professional_detail_collection.unit verify.frontend.professional_workflow.unit verify.frontend.professional_audit.unit verify.frontend.professional_collaboration.unit verify.frontend.professional_relation_lifecycle.unit verify.frontend.contract_prompt_action_presentation.unit verify.frontend.low_code_field_create_dialog.unit verify.frontend.form_header_action_primitives.unit verify.frontend.action_view_page_actions.unit verify.frontend.relational_action_primitives.unit verify.frontend.state_dashboard.unit verify.frontend.professional.extensions.unit verify.frontend.boq_import_preview.unit verify.frontend.chart_dataset.unit verify.frontend.mobile_viewport.unit verify.frontend.intent_request_identity.unit verify.frontend.intent_request_coalescing.unit verify.frontend.collection_row_action_identity.unit verify.frontend.action_view_page_size_runtime.unit verify.frontend.action_view_surface_gate_runtime.unit verify.menu_config_tree_editor.behavior verify.contract_form_runtime_state.behavior verify.action_view_runtime_smoke.behavior
 
-verify.frontend.pr.unit: verify.frontend.decision_authority.unit verify.frontend.record_delete_action.unit verify.frontend.collection_action_capability.unit verify.semantic_runtime_resolution
-verify.frontend.release.unit: verify.frontend.decision_authority.unit verify.frontend.record_delete_action.unit verify.frontend.collection_action_capability.unit verify.semantic_runtime_resolution
+verify.frontend.pr.unit: verify.frontend.decision_authority.unit verify.frontend.record_delete_action.unit verify.frontend.collection_action_capability.unit verify.frontend.contract_gap_primitive.unit verify.semantic_runtime_resolution verify.frontend.list_surface_evidence_binding.unit
+verify.frontend.release.unit: verify.frontend.decision_authority.unit verify.frontend.record_delete_action.unit verify.frontend.collection_action_capability.unit verify.frontend.contract_gap_primitive.unit verify.semantic_runtime_resolution verify.frontend.list_surface_evidence_binding.unit
 
 verify.frontend.lint.src: guard.prod.forbid
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web lint:src
@@ -1279,7 +1317,8 @@ SC_ENTRY_SCOPE_PLAN ?=
 verify.frontend.business_entry.negative_closures: guard.prod.forbid
 	@test -n "$(ACCEPTANCE_BASE_URL)" || (echo "ACCEPTANCE_BASE_URL is required"; exit 2)
 	@test -n "$(ACCEPTANCE_PASSWORD)" || (echo "ACCEPTANCE_PASSWORD is required"; exit 2)
-	@SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" SC_ENTRY_MATRIX_OVERLAY="$(SC_ENTRY_MATRIX_OVERLAY)" SC_ENTRY_MATRIX_CLOSURES_OUT="$(SC_ENTRY_MATRIX_CLOSURES)" SC_ENTRY_MATRIX_CLOSURES_FROM="$(SC_ENTRY_MATRIX_CLOSURES_FROM)" node scripts/verify/business_entry_negative_closures.mjs
+	@test -n "$(ACCEPTANCE_LOGIN)" || (echo "ACCEPTANCE_LOGIN is required: it observes the acting principal whose company binds reuse"; exit 2)
+	@SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" SC_ENTRY_MATRIX_OVERLAY="$(SC_ENTRY_MATRIX_OVERLAY)" SC_ENTRY_MATRIX_CLOSURES_OUT="$(SC_ENTRY_MATRIX_CLOSURES)" SC_ENTRY_MATRIX_CLOSURES_FROM="$(SC_ENTRY_MATRIX_CLOSURES_FROM)" node scripts/verify/business_entry_negative_closures.mjs
 
 verify.frontend.business_entry.matrix.incremental: guard.prod.forbid
 	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)

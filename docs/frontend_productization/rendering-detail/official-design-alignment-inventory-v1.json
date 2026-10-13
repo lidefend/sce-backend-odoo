@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "0f5dcaa16a0bafd107675cfa3bc9e203ac161035104afb8d33157ff0ab03f787",
+  "inputDigest": "01c93061aba79736ed6d864ba244d4bdb0175ceb1172e55bda245a8baa68c4d6",
   "internalVendorSelectorGaps": [],
   "productAppearanceVariants": [
     {
@@ -101,6 +101,7 @@
         "frontend/apps/web/src/app/presentation/productPageHeader.ts",
         "frontend/apps/web/src/app/presentation/productPageHeaderAdapters.ts",
         "frontend/apps/web/src/app/presentation/productPagePattern.ts",
+        "frontend/apps/web/src/app/runtime/actionViewCollectionCapabilityRuntime.ts",
         "frontend/apps/web/src/components/design-system/ScTable.vue",
         "frontend/apps/web/src/components/product-page-patterns/CollectionPattern.vue",
         "frontend/apps/web/src/pages/ListPage.vue",

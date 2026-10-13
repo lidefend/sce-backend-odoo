@@ -509,7 +509,6 @@ import {
   nativeModifierValue,
   nativeFieldSubview as nativeFieldSubviewFromTree,
   nativeFieldPresentation,
-  isCreateWorkflowStateField,
   nativeLayoutNodeType,
   nativeNodeFieldDescriptor as nativeNodeFieldDescriptorFromNode,
   nativeNodeWidget,

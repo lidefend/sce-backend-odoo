@@ -98,6 +98,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     model = read_text("frontend/apps/web/src/components/professional-fields/professionalDetailCollectionModel.ts")
     section = read_text("frontend/apps/web/src/components/template/FormSection.vue")
     renderer = read_text("frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue")
+    pagination = read_text("frontend/apps/web/src/components/template/detailCollectionPagination.ts")
     cell_editor = read_text("frontend/apps/web/src/components/template/One2ManyCellEditor.vue")
     sc_select = read_text("frontend/apps/web/src/components/design-system/ScSelect.vue")
     relation_types = read_text("frontend/apps/web/src/components/template/relationField.types.ts")
@@ -163,8 +164,20 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection title ownership is not shared across formal detail renderers")
     if "<X2ManyRelationRenderer" not in section:
         failures.append("detail collection bypasses the governed x2many runtime")
-    if "data-detail-collection-pagination" not in renderer or "one2manyPageSize = 20" not in renderer:
+    # The page size is a contract declaration (relation_entry.page_size), not a
+    # frontend constant: the renderer consumes resolveDetailCollectionPageSize
+    # and the pagination module stops (ContractGapError) when it is missing or
+    # illegal, so the visible record set can no longer be decided by a hardcoded
+    # 20 in the frontend.
+    if ("data-detail-collection-pagination" not in renderer
+            or "resolveDetailCollectionPageSize" not in renderer
+            or "props.field.one2manyPageSize" not in renderer
+            or "one2manyPageSize = 20" in renderer):
         failures.append("detail collection pagination is not bounded and explicit")
+    if ("resolveDetailCollectionPageSize" not in pagination
+            or "ContractGapError" not in pagination
+            or "requiredDeclarationLayer" not in pagination):
+        failures.append("detail collection pagination does not fail closed on an undeclared page size")
     if ("detailCollectionColumnPresentation(column, columnIndex, false)" not in renderer
             or "ellipsis: readonly &&" not in model):
         failures.append("detail collection editable controls are wrapped by TDesign text ellipsis")
@@ -287,7 +300,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     readonly_template = renderer.split('<div v-if="field.readonly" class="o2m-readonly"', 1)[-1].split("<template v-else>", 1)[0]
     if "one2manyRowStateLabel(row)" in readonly_template:
         failures.append("readonly mobile detail cards expose draft row-change status")
-    if "第 {{ (one2manyPage - 1) * one2manyPageSize + rowIndex + 1 }} 条" not in readonly_template:
+    if "第 {{ (one2manyPage - 1) * (one2manyPageSize || 1) + rowIndex + 1 }} 条" not in readonly_template:
         failures.append("readonly mobile detail cards omit stable row identity")
     if "one2manyEffectiveColumn: (name: string, row: RelationFieldRow, column: RelationFieldColumn)" not in relation_types:
         failures.append("detail collection adapter omits row-specific modifier consumption")

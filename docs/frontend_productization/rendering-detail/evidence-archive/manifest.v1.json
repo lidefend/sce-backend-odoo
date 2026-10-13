@@ -1,0 +1,99 @@
+{
+  "schema": "frontend_evidence_archive.v1",
+  "policy": "Ledger claims bind to archived evidence identity, not to a mutable working path. Each entry records the artifact path, its sha256, the schema and the gate counts the claim relies on. A cited artifact must be archived; when a local file exists it must match the archived sha256, so a path that was overwritten by another run cannot silently prove a claim (the original defect). Restore content with `make evidence.archive.fetch ARCHIVE_ROOT=<dir>`; the guard itself never depends on a machine-local file.",
+  "entries": [
+    {
+      "artifact": ".runtime/final-acceptance/list-surface-all-7add8be3.json",
+      "sha256": "79e5f44bb9cc102419593ca5d89388a112495c8f4dac3daa716671490a032679",
+      "bytes": 28002961,
+      "schema": "frontend_list_surface_structure_browser.v1",
+      "build": "7add8be3",
+      "variant": "light",
+      "gated": {
+        "passed": 108,
+        "total": 108,
+        "failed": 0
+      },
+      "records": {
+        "passed": 10,
+        "total": 10
+      },
+      "negative_fixtures": {
+        "detected": 5,
+        "total": 5
+      },
+      "runtime_errors": 0,
+      "identity": {
+        "base_url": "http://1.95.85.92:18081",
+        "database": "sc_demo",
+        "login": "fixture_role_finance",
+        "company_id": 21,
+        "route": "/a/780?menu_id=550"
+      },
+      "produced_by": "scripts/verify/frontend_list_surface_structure_browser.mjs (make verify.frontend.list_surface_structure.browser)",
+      "description": "List-surface structure evidence, build 7add8be3, light theme: 108/108 gated over 1440/390 x normal/batch/empty, negative fixtures 5/5, runtime errors 0."
+    },
+    {
+      "artifact": ".runtime/final-acceptance/list-surface-all-7a58470d.json",
+      "sha256": "19bc24ecc91a5df4000843f4551075dcea4e9b57e55bff65eb369bac7f78303e",
+      "bytes": 28002538,
+      "schema": "frontend_list_surface_structure_browser.v1",
+      "build": "7a58470d",
+      "variant": "light",
+      "gated": {
+        "passed": 108,
+        "total": 108,
+        "failed": 0
+      },
+      "records": {
+        "passed": 10,
+        "total": 10
+      },
+      "negative_fixtures": {
+        "detected": 5,
+        "total": 5
+      },
+      "runtime_errors": 0,
+      "identity": {
+        "base_url": "http://1.95.85.92:18081",
+        "database": "sc_demo",
+        "login": "fixture_role_finance",
+        "company_id": 21,
+        "route": "/a/780?menu_id=550"
+      },
+      "produced_by": "scripts/verify/frontend_list_surface_structure_browser.mjs (make verify.frontend.list_surface_structure.browser)",
+      "description": "List-surface structure evidence, build 7a58470d, light theme: dark-theme twin of 7add8be3 with the same gate counts."
+    },
+    {
+      "artifact": ".runtime/final-acceptance/list-surface-all-7add8be3-dark.json",
+      "sha256": "12891e390ad8798f4647d04ba2d7b2fee5c4180a3b91d0a002cdb30374b5d9e6",
+      "bytes": 28002964,
+      "schema": "frontend_list_surface_structure_browser.v1",
+      "build": "7add8be3",
+      "variant": "dark",
+      "gated": {
+        "passed": 108,
+        "total": 108,
+        "failed": 0
+      },
+      "records": {
+        "passed": 10,
+        "total": 10
+      },
+      "negative_fixtures": {
+        "detected": 5,
+        "total": 5
+      },
+      "runtime_errors": 0,
+      "identity": {
+        "base_url": "http://1.95.85.92:18081",
+        "database": "sc_demo",
+        "login": "fixture_role_finance",
+        "company_id": 21,
+        "route": "/a/780?menu_id=550"
+      },
+      "produced_by": "scripts/verify/frontend_list_surface_structure_browser.mjs (make verify.frontend.list_surface_structure.browser)",
+      "description": "List-surface structure evidence, build 7add8be3, dark theme."
+    }
+  ]
+}

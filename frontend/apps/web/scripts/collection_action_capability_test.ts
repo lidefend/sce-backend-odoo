@@ -159,4 +159,54 @@ check(
   'a collection policy without a selection declaration stops the surface instead of guessing one',
 );
 
+// --- a declared collection capability carries a declared action list ---
+const gapPath = (run: () => unknown) => {
+  try {
+    run();
+    return 'no-stop';
+  } catch (err) {
+    return err instanceof ContractGapError ? err.defect.missing : 'unexpected-error';
+  }
+};
+
+check(
+  gapPath(() => surface({ collection_capabilities: { enabled: true } })),
+  'actionContract.surfacePolicies.collection_capabilities.actions',
+  'a declared capability with no actions array stops instead of defaulting to an empty list',
+);
+check(
+  gapPath(() => surface({ collection_capabilities: { enabled: true, actions: 'import' } })),
+  'actionContract.surfacePolicies.collection_capabilities.actions',
+  'a non-array actions declaration stops instead of being coerced',
+);
+checkDeep(
+  surface({ collection_capabilities: { enabled: false, actions: [] } }).actions,
+  [],
+  'an explicitly declared empty action list is a legal empty set, not a defect',
+);
+check(
+  gapPath(() => surface({ collection_capabilities: { enabled: true, actions: [{ scope: 'selection', intent: 'api.data', available: true }] } })),
+  'actionContract.surfacePolicies.collection_capabilities.actions[0].action',
+  'an entry without an action name stops instead of being silently dropped',
+);
+check(
+  gapPath(() => surface({ collection_capabilities: { enabled: true, actions: [{ action: 'export', intent: 'api.data', available: true }] } })),
+  'actionContract.surfacePolicies.collection_capabilities.actions[0].scope',
+  'an entry without a scope stops instead of being silently dropped',
+);
+check(
+  gapPath(() => surface({ collection_capabilities: { enabled: true, actions: [{ action: 'export', scope: 'row', intent: 'api.data', available: true }] } })),
+  'actionContract.surfacePolicies.collection_capabilities.actions[0].scope',
+  'an entry with an undeclared scope stops instead of being routed by guesswork',
+);
+checkDeep(
+  resolveSurfaceCapabilities(
+    surface({ collection_capabilities: { enabled: true, actions: [{ action: 'import', scope: 'collection', intent: 'api.data.import', available: true }] } }),
+    COLLECTION_SCOPE,
+    text,
+  ).map((row) => [row.action, row.enabled]),
+  [['import', true]],
+  'a fully declared entry still routes and enables exactly as declared after the stricter decode',
+);
+
 console.log(`[collection_action_capability_test] PASS cases=${cases}`);

@@ -1,3 +1,5 @@
+import { ContractGapError } from '../contract/contractGap';
+
 type Dict = Record<string, unknown>;
 
 export const RECORD_ENTRY_INTENTS = [
@@ -10,11 +12,40 @@ export const RECORD_ENTRY_INTENTS = [
 export type RecordOpenIntent = typeof RECORD_ENTRY_INTENTS[number];
 
 /**
+ * 声明了「进入后可编辑」的意图集合。缺失写权限事实时不得降级为只读，
+ * 必须作为契约缺口停机（T5：分开「明确禁止」与「声明缺失」）。
+ */
+export const WRITE_IMPLYING_RECORD_ENTRY_INTENTS = ['open', 'handling', 'explicit_edit'] as const;
+
+export function entryIntentImpliesWrite(intent: RecordOpenIntent): boolean {
+  return (WRITE_IMPLYING_RECORD_ENTRY_INTENTS as readonly string[]).includes(intent);
+}
+
+/** 正式记录入口契约的声明归属层，供停机引用。 */
+export const RECORD_ENTRY_DECLARATION_LAYER = 'P0:smart_core:entry_target.record_entry';
+
+function raiseRecordEntryGap(missing: string, message: string): never {
+  throw new ContractGapError(
+    {
+      kind: 'contract_defect',
+      missing,
+      requiredDeclarationLayer: RECORD_ENTRY_DECLARATION_LAYER,
+    },
+    message,
+  );
+}
+
+/**
  * The only record-open authority consumed by production navigation.
  *
  * `modelWriteAuthority` is a backend contract fact.  It is deliberately not
- * inferred from a route, a label, or a query string.  `null` means the fact is
- * unavailable and therefore fails closed to the readonly route.
+ * inferred from a route, a label, or a query string.
+ *
+ * Tri-state semantics (T5):
+ * - `true`  = backend declared write allowed;
+ * - `false` = backend declared write forbidden (explicit deny -> readonly route);
+ * - `null`  = not required by the declared intent (readonly entry), never a
+ *   silent downgrade of an undeclared write authority.
  */
 export interface RecordEntryContract {
   model: string;
@@ -69,8 +100,18 @@ function asRecord(value: unknown): Dict {
 }
 
 /**
- * Decode the formal `entry_target.record_entry` carrier.  Invalid or absent
- * authority remains null; it is never recovered from a stringly typed hint.
+ * Decode the formal `entry_target.record_entry` carrier.
+ *
+ * Structural absence (no model / no record id / no `entry_intent` key) returns
+ * `null`.  A *declared* carrier whose declaration is illegal or missing stops
+ * with a contract gap instead of being downgraded (T5):
+ *
+ * - an illegal `entry_intent` value raises a gap (no fallback to explicit_readonly);
+ * - a write-implying intent without a declared boolean `model_write_authority`
+ *   raises a gap (no silent read-only downgrade);
+ * - `model_write_authority === false` is an explicit deny and stays read-only.
+ *
+ * The write authority is never recovered from a stringly typed hint.
  */
 export function decodeFormalRecordEntry(raw: unknown): RecordEntryContract | null {
   const value = asRecord(raw);
@@ -78,22 +119,36 @@ export function decodeFormalRecordEntry(raw: unknown): RecordEntryContract | nul
   const recordId = resolveRecordEntryId(value.record_id);
   if (!model || recordId === null || !Object.prototype.hasOwnProperty.call(value, 'entry_intent')) return null;
 
-  const rawIntent = value.entry_intent;
-  const entryIntent = normalizeRecordOpenIntent(rawIntent);
-  if (!entryIntent) return {
-    model,
-    recordId,
-    entryIntent: 'explicit_readonly',
-    modelWriteAuthority: null,
-    actionId: positiveInteger(value.action_id),
-    menuId: positiveInteger(value.menu_id),
-  };
+  const entryIntent = normalizeRecordOpenIntent(value.entry_intent);
+  if (!entryIntent) {
+    raiseRecordEntryGap(
+      'entry_target.record_entry.entry_intent',
+      `契约声明了非法 entry_intent=${String(value.entry_intent)}：前端不得降级为只读，等待声明层补齐`,
+    );
+  }
+
+  const hasAuthorityKey = Object.prototype.hasOwnProperty.call(value, 'model_write_authority');
+  let modelWriteAuthority: boolean | null = null;
+  if (hasAuthorityKey) {
+    if (typeof value.model_write_authority !== 'boolean') {
+      raiseRecordEntryGap(
+        'entry_target.record_entry.model_write_authority',
+        `契约声明了非法 model_write_authority=${String(value.model_write_authority)}：前端不得降级为只读，等待声明层补齐`,
+      );
+    }
+    modelWriteAuthority = value.model_write_authority;
+  } else if (entryIntentImpliesWrite(entryIntent)) {
+    raiseRecordEntryGap(
+      'entry_target.record_entry.model_write_authority',
+      '契约缺少 model_write_authority：进入写行为的意图必须带出写权限事实，前端不得降级为只读',
+    );
+  }
 
   return {
     model,
     recordId,
     entryIntent,
-    modelWriteAuthority: normalizeModelWriteAuthority(value.model_write_authority),
+    modelWriteAuthority,
     actionId: positiveInteger(value.action_id),
     menuId: positiveInteger(value.menu_id),
   };

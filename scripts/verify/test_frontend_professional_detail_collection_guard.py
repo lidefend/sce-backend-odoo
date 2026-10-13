@@ -210,7 +210,7 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("X2ManyRelationRenderer.vue"):
                 return value.replace(
-                    "第 {{ (one2manyPage - 1) * one2manyPageSize + rowIndex + 1 }} 条",
+                    "第 {{ (one2manyPage - 1) * (one2manyPageSize || 1) + rowIndex + 1 }} 条",
                     "{{ adapter.one2manyRowStateLabel(row) }}",
                     1,
                 )

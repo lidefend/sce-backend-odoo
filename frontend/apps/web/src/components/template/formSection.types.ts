@@ -56,6 +56,10 @@ export type FormSectionFieldSchema = {
   // derives a width from a class name, a column enum or a field type.
   span?: number;
 
+  // P0 契约声明：主从关系明细集合每页记录数（relation_entry.page_size）。
+  // 由契约投影原样透出；渲染层严格消费，缺失或非法即停机，不再硬编码。
+  one2manyPageSize?: unknown;
+
   favoriteToggle?: {
     name: string;
     label: string;

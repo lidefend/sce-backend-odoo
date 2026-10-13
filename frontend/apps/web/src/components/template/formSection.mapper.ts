@@ -34,6 +34,7 @@ export type BuildFormSectionFieldSchemasOptions = {
   resolveErrorText?: (field: FormSectionMapperFieldNode) => string;
   resolveSelectionOptions: (descriptor?: FieldDescriptor) => TemplateSelectOption[];
   resolveRelationOptions: (fieldName: string) => TemplateSelectOption[];
+  resolveOne2manyPageSize: (fieldName: string, descriptor?: FieldDescriptor) => unknown;
   resolveRelationCreateMode: (fieldName: string, descriptor?: FieldDescriptor) => 'none' | 'quick' | 'page' | 'dialog';
   resolveRelationInlineCreate: (fieldName: string, descriptor?: FieldDescriptor) => FormSectionFieldSchema['relationInlineCreate'];
   resolveRelationTextValue: (fieldName: string) => string;
@@ -257,6 +258,9 @@ export function buildFormSectionFieldSchemas(
       inputPlaceholder: options.resolveInputPlaceholder(field.label),
       selectionOptions: options.resolveSelectionOptions(field.descriptor),
       relationOptions,
+      one2manyPageSize: type === 'one2many'
+        ? options.resolveOne2manyPageSize(field.name, field.descriptor)
+        : undefined,
       ...many2oneCapabilities,
       ...many2manyCapabilities,
       many2oneTextValue: relationDisplayText || undefined,

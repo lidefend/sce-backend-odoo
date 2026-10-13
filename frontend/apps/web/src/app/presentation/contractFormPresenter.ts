@@ -1,4 +1,5 @@
 import { normalizeActionSemantics } from '@sc/schema';
+import { contractAuthLevelDeniesAccess, contractAuthLevelGrantsEdit, normalizeContractAuthLevel } from '../contract/contractAuthLevel';
 import {
   actionRequiresPersistedRecord,
   declaredVisibilityModifier,
@@ -668,7 +669,8 @@ export function presentContractV2Form(
   const globalStatus = snapshot.statusContract.globalStatus;
   const pageVisible = bool(globalStatus.pageVisible, true);
   const pageAuth = text(globalStatus.pageAuth);
-  const pageCanEdit = mode !== 'readonly' && ['edit', 'admin'].includes(pageAuth);
+  const pageAuthLevel = normalizeContractAuthLevel(pageAuth);
+  const pageCanEdit = mode !== 'readonly' && contractAuthLevelGrantsEdit(pageAuthLevel);
   const actionIdentityCounts = new Map<string, number>();
   const actionIdCounts = new Map<string, number>();
   snapshot.actionContract.actionRuleList.forEach((action) => {
@@ -709,7 +711,7 @@ export function presentContractV2Form(
   const nodes = snapshot.layoutContract.containerTree.map((container, index) => (
     presentNode(
       container, declaredZoneRole(container) ?? 'primary', index, store, contractValues, runtimeValues, mode, presentationMode, pageCanEdit,
-      pageVisible, pageAuth === 'none', false, actionsByIdentity, actionsByNativeOccurrence, authoritativeFieldLabels, structure,
+      pageVisible, contractAuthLevelDeniesAccess(pageAuthLevel), false, actionsByIdentity, actionsByNativeOccurrence, authoritativeFieldLabels, structure,
       snapshot.layoutContract.componentRegistry, snapshot.pageInfo.clientType,
     )
   ));

@@ -760,9 +760,11 @@ function decodeContainer(
     title: nestedNativeNode
       ? structuralContainerText(raw, 'title')
       : requiredDisplayString(raw, 'title', path, issues),
-    span: !Object.prototype.hasOwnProperty.call(raw, 'span')
-      ? 24
-      : requiredIntegerInRange(raw, 'span', path, issues, 24),
+    // Every layout node the renderer places declares its 24-unit span.  A
+    // node that reaches the decoder without one is a declaration gap, not a
+    // styling choice: surface it as a decode issue instead of fabricating the
+    // full grid width (``24``) so the missing declaration fails closed.
+    span: requiredIntegerInRange(raw, 'span', path, issues, 24),
     ...(asString(raw.styleToken) ? { styleToken: asString(raw.styleToken) } : {}),
     ...(zone ? { zone } : {}),
     ...(typeof raw.cols === 'number' && Number.isInteger(raw.cols) && raw.cols > 0 ? { cols: raw.cols } : {}),

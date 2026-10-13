@@ -115,7 +115,7 @@ export function candidateStates(candidateOrder, closures) {
   for (const role of candidateOrder) {
     const observed = closures && closures[role];
     if (!observed) {
-      states.set(role, { role, eligible: false, missing: true, roleXmlids: [], releasedTargets: 0 });
+      states.set(role, { role, eligible: false, missing: true, roleXmlids: [], releasedTargets: 0, company: null });
       continue;
     }
     const roleXmlids = Array.isArray(observed.role_xmlids) ? observed.role_xmlids.map(String) : [];
@@ -126,6 +126,11 @@ export function candidateStates(candidateOrder, closures) {
       missing: false,
       roleXmlids,
       releasedTargets,
+      // The company the candidate's closure was observed in. It is part of the
+      // permission fact: the same capability closure grants a different record
+      // set in another company, so a change here must re-open the units bound to
+      // this candidate and nothing else.
+      company: observed.company === undefined || observed.company === null ? null : Number(observed.company),
     });
   }
   return states;
@@ -238,14 +243,23 @@ export const MODEL_INPUTS = [
 ];
 export const PROBE_INPUTS = ['scripts/verify/business_entry_matrix_browser.mjs'];
 
-export function entryFingerprint({ row, behaviour, environment, derived, modelRevision, probeRevision }) {
+export function entryFingerprint({
+  row, behaviour, environment, surfaceInputs, derived, permissionContext, modelRevision, probeRevision,
+}) {
   const consumed = {};
   for (const field of CONSUMED_ROW_FIELDS) consumed[field] = row[field] === undefined ? '' : String(row[field]);
   return sha256(canonicalJson({
     row: consumed,
     behaviour,
     environment,
+    // What the assertions were measured against, bound per unit so a change to
+    // one entry's declared surface re-opens exactly that entry.
+    surface_inputs: surfaceInputs || null,
     derived: derived || null,
+    // The permission fact this one entry's denial observation depends on,
+    // bound per unit so a change to one candidate's closure re-opens exactly
+    // the entries bound to that candidate instead of every declared entry.
+    permission_context: permissionContext || null,
     model_revision: modelRevision,
     // The browser probe carries the entry assertions themselves, so an edit to
     // it re-opens every key unless the executor explicitly declares the change
@@ -254,47 +268,186 @@ export function entryFingerprint({ row, behaviour, environment, derived, modelRe
   }));
 }
 
-// Identity that governs reuse. Every browser assertion here runs against the
-// bundle the target serves, so the served *bundle* is part of the identity: a
-// candidate built from another bundle may render another surface, and reusing
-// the older observation would report coverage the run never produced.
-//
-// The bundle identity is the served frontend artifact fingerprint the runtime
-// publishes as `frontend_build_sha256`, not the deployed commit. The commit
-// changes on every mainline merge, including merges that never rebuild the
-// frontend, so binding the commit re-walked every entry on every deployment and
-// destroyed the incremental lane. The artifact fingerprint changes exactly when
-// the served bundle changed, which is the input the assertions depend on. The
-// probe still binds the *deployment* revision, so an observation is only taken
-// on the declared deployment; that revision is recorded as provenance.
-//
-// Fail-closed: when the runtime declares no bundle fingerprint, reuse degrades
-// to the deployed revision (never silently across bundles), and the caller
-// records `reuse_identity_key=served_revision` so the degradation is visible.
 export const BUNDLE_IDENTITY_KEY = 'frontend_build_sha256';
 export const FALLBACK_IDENTITY_KEY = 'served_revision';
-const BUNDLE_FINGERPRINT = /^[0-9a-f]{64}$/;
+export const ACTING_COMPANY_KEY = 'acting_company_id';
+export const ACTING_CLOSURE_KEY = 'acting_role_closure_sha256';
+export const SURFACE_SCOPE_WHOLE = 'whole_artifact';
+export const SURFACE_SCOPE_DECLARED = 'declared_surfaces';
+export const SURFACE_SCOPE_REVISION = 'served_revision_degraded';
+const SHA256_HEX = /^[0-9a-f]{64}$/;
+
+// Deployment provenance is recorded, never bound as a validity input.
+//
+// The deploying commit (served revision) changes on every mainline merge,
+// including merges that never rebuild the frontend, so binding it re-walked
+// every entry on every deployment and destroyed the incremental lane. It is
+// still recorded so an observation stays traceable to the deployment that
+// produced it, but the validity basis is the served surface (below).
+export function deploymentProvenance({ servedRevision, bundleFingerprint } = {}) {
+  const revision = String(servedRevision || '').trim();
+  if (!revision) {
+    throw new Error(
+      'deploymentProvenance: the served revision is required so an observation is traceable to a deployment',
+    );
+  }
+  const bundle = String(bundleFingerprint || '').trim().toLowerCase();
+  return {
+    served_revision: revision,
+    [BUNDLE_IDENTITY_KEY]: SHA256_HEX.test(bundle) ? bundle : null,
+  };
+}
 
 export function reuseIdentityKey({ bundleFingerprint } = {}) {
-  return BUNDLE_FINGERPRINT.test(String(bundleFingerprint || '').trim().toLowerCase())
+  return SHA256_HEX.test(String(bundleFingerprint || '').trim().toLowerCase())
     ? BUNDLE_IDENTITY_KEY
     : FALLBACK_IDENTITY_KEY;
 }
 
-export function environmentIdentity({ baseUrl, database, login, candidateOrder, servedRevision, bundleFingerprint }) {
-  const revision = String(servedRevision || '').trim();
-  if (!revision) {
-    throw new Error('environmentIdentity: the served revision is required to bind reuse');
+// The per-unit surface dependency: what this one entry's assertions were
+// measured against.
+//
+// It is bound per unit, not folded into the shared environment identity, so a
+// change to the served surface re-opens exactly the entries whose declared
+// surface moved. When the build publishes a per-surface hash map
+// (`surfaceScopes`) and the entry declares the surfaces it renders, only those
+// hashes bind, so an unrelated frontend change does not re-open this entry.
+// When no per-surface declaration is available the binding degrades, fail-closed,
+// to the whole served artifact and records `scope=whole_artifact`.
+export function surfaceInputs({
+  bundleFingerprint, servedRevision, surfaces = [], surfaceScopes = {},
+} = {}) {
+  const declared = (Array.isArray(surfaces) ? surfaces : [])
+    .map((surface) => String(surface || '').trim())
+    .filter(Boolean);
+  const unique = [...new Set(declared)].sort();
+  const scopes = surfaceScopes && typeof surfaceScopes === 'object' ? surfaceScopes : {};
+  const hashes = unique
+    .map((surface) => ({ surface, sha: String(scopes[surface] || '').trim().toLowerCase() }))
+    .filter((item) => SHA256_HEX.test(item.sha));
+  if (unique.length && hashes.length === unique.length) {
+    return {
+      scope: SURFACE_SCOPE_DECLARED,
+      surfaces: unique,
+      sha256: sha256(hashes.map((item) => `${item.surface}:${item.sha}`).join('\n')),
+    };
   }
-  const environment = {
+  const whole = String(bundleFingerprint || '').trim().toLowerCase();
+  if (SHA256_HEX.test(whole)) {
+    return { scope: SURFACE_SCOPE_WHOLE, surfaces: [], sha256: whole };
+  }
+  // Last-resort degradation: a runtime that publishes no artifact fingerprint
+  // cannot narrow the binding, so reuse degrades to the serving deployment
+  // (never across deployments) and records the degradation. Fail-closed.
+  const revision = String(servedRevision || '').trim();
+  if (revision) {
+    return { scope: SURFACE_SCOPE_REVISION, surfaces: [], sha256: sha256(revision) };
+  }
+  throw new Error(
+    'surfaceInputs: this entry declares no fully hashed surface scope and the runtime published no '
+    + 'artifact fingerprint or serving deployment, so its assertions cannot be bound to the surface '
+    + 'they were measured on',
+  );
+}
+
+// The authoritative acting-principal readback the denial plan is bound to.
+//
+// The negative-closure diagnostic logs in as the acting principal as well as
+// the denied-role candidates, so both the company and the acting account's own
+// role closure are observed facts rather than assumptions. A snapshot that
+// observes another login, carries no company, or carries no closure cannot bind
+// reuse: the same login in another company sees another record set, and a role
+// change on the same account in the same company changes what it can reach, so
+// reuse across either would report coverage the run never produced. Fail-closed.
+export function actingContext(closures = {}, { login } = {}) {
+  const acting = (closures && closures.acting) || {};
+  const observedLogin = String(acting.login || '').trim();
+  const expectedLogin = String(login || '').trim();
+  if (!observedLogin || !expectedLogin || observedLogin !== expectedLogin) {
+    throw new Error(
+      `actingContext: the closure snapshot observed login ${observedLogin || '(none)'} but reuse is bound `
+      + `to ${expectedLogin || '(none)'}; refresh the snapshot before planning reuse`,
+    );
+  }
+  const company = Number(acting.company_id);
+  if (!Number.isInteger(company) || company <= 0) {
+    throw new Error(
+      'actingContext: the closure snapshot carries no authoritative acting-company readback '
+      + '(closures.acting.company_id); refresh the snapshot before planning reuse',
+    );
+  }
+  const roleXmlids = Array.isArray(acting.role_xmlids) ? acting.role_xmlids.map(String).filter(Boolean) : [];
+  if (!roleXmlids.length) {
+    throw new Error(
+      'actingContext: the closure snapshot carries no authoritative acting-principal role closure '
+      + "(closures.acting.role_xmlids); the acting account's own permissions must invalidate reuse, "
+      + 'so the closure is required -- refresh the snapshot before planning reuse',
+    );
+  }
+  return {
+    login: observedLogin,
+    company_id: company,
+    role_closure_sha256: sha256([...new Set(roleXmlids)].sort().join('\n')),
+  };
+}
+
+// The permission fact a single entry's denial observation depends on.
+//
+// It is deliberately *not* part of the shared environment identity: the shared
+// identity would invalidate every declared entry whenever any candidate's
+// permissions moved, and it never carried the readback at all, so a change to
+// one candidate's closure was invisible and its units were wrongly reused.
+export function permissionContext({ candidate, state } = {}) {
+  const role = candidate === undefined || candidate === null ? '' : String(candidate);
+  if (!role) {
+    // The declaration assigned this entry no denial candidate, so it has no
+    // permission fact to bind; the undecidable set is reported separately.
+    return {
+      denied_candidate: null,
+      eligible: false,
+      released_targets: 0,
+      capability_closure_sha256: null,
+      company_id: null,
+    };
+  }
+  if (!state || state.missing === true) {
+    throw new Error(
+      `permissionContext: no authoritative closure readback for the denied candidate ${role}`,
+    );
+  }
+  const roleXmlids = Array.isArray(state.roleXmlids) ? state.roleXmlids.map(String).sort() : [];
+  return {
+    denied_candidate: role,
+    eligible: state.eligible === true,
+    released_targets: Number(state.releasedTargets || 0),
+    capability_closure_sha256: sha256(roleXmlids.join('\n')),
+    company_id: state.company === undefined || state.company === null ? null : Number(state.company),
+  };
+}
+
+// Who/where the observation was taken as: the runtime and the acting principal's
+// own permission context. These are shared by every declared entry, so a change
+// invalidates all of them, which is correct: they define what the run could see
+// at all. The served surface is *not* here; it binds per unit (surfaceInputs).
+export function environmentIdentity({
+  baseUrl, database, login, actingCompanyId, actingRoleClosureSha256,
+}) {
+  const company = Number(actingCompanyId);
+  if (!Number.isInteger(company) || company <= 0) {
+    throw new Error('environmentIdentity: the authoritative acting-company readback is required to bind reuse');
+  }
+  const closure = String(actingRoleClosureSha256 || '').trim().toLowerCase();
+  if (!SHA256_HEX.test(closure)) {
+    throw new Error(
+      "environmentIdentity: the acting principal's authoritative role closure "
+      + '(actingRoleClosureSha256) is required to bind reuse',
+    );
+  }
+  return {
     base_url: String(baseUrl || ''),
     database: String(database || ''),
     login: String(login || ''),
-    denied_role_candidates: candidateOrder.map(String),
+    [ACTING_COMPANY_KEY]: company,
+    [ACTING_CLOSURE_KEY]: closure,
   };
-  const bundle = String(bundleFingerprint || '').trim().toLowerCase();
-  if (BUNDLE_FINGERPRINT.test(bundle)) {
-    return { ...environment, [BUNDLE_IDENTITY_KEY]: bundle };
-  }
-  return { ...environment, [FALLBACK_IDENTITY_KEY]: revision };
 }

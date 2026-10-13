@@ -56,20 +56,76 @@
       "regressionGuard": "verify.frontend.professional_relation_field.unit",
       "behaviourTest": "frontend/apps/web/scripts/relation_entry_option_limits_test.ts"
     },
-{
-    "surface": "ActionView 集合/选择动作面（collection_capabilities.actions）",
-    "declared": "actionContract.surfacePolicies.collection_capabilities.actions[]（action/scope/intent）",
-    "declaredBy": "addons/smart_core/utils/collection_action_capability.py",
-    "declaredMethod": "build_collection_capabilities",
-    "declaredSymbol": "SELECTION_SCOPE_INTENTS",
-    "consumedBy": "frontend/apps/web/src/app/runtime/actionViewCollectionCapabilityRuntime.ts",
-    "consumedSymbol": "resolveDeclaredCapabilities",
-    "onMissing": "stop",
-    "stopSymbol": "ContractGapError",
-    "stopDetail": "集合面动作由契约单一声明面发布，batch_policy 是同一份声明的 selection 投影。前端只按声明的 scope 路由、按声明的 intent 查本构建执行器；声明缺失时不停机兜底、也不由 selection_policy 反推（反推会把 collection 作用域动作静默降级），而是抛 ContractGapError 回声明层补齐。",
-    "regressionGuard": "verify.frontend.collection_action_capability.unit",
-    "behaviourTest": "frontend/apps/web/scripts/collection_action_capability_test.ts"
-}
+    {
+      "surface": "ActionView 集合/选择动作面（collection_capabilities.actions）",
+      "declared": "actionContract.surfacePolicies.collection_capabilities.actions[]（action/scope/intent）",
+      "declaredBy": "addons/smart_core/utils/collection_action_capability.py",
+      "declaredMethod": "build_collection_capabilities",
+      "declaredSymbol": "SELECTION_SCOPE_INTENTS",
+      "consumedBy": "frontend/apps/web/src/app/runtime/actionViewCollectionCapabilityRuntime.ts",
+      "consumedSymbol": "resolveDeclaredCapabilities",
+      "onMissing": "stop",
+      "stopSymbol": "ContractGapError",
+      "stopDetail": "集合面动作由契约单一声明面发布，batch_policy 是同一份声明的 selection 投影。前端只按声明的 scope 路由、按声明的 intent 查本构建执行器；声明缺失时不停机兜底、也不由 selection_policy 反推（反推会把 collection 作用域动作静默降级），而是抛 ContractGapError 回声明层补齐。",
+      "regressionGuard": "verify.frontend.collection_action_capability.unit",
+      "behaviourTest": "frontend/apps/web/scripts/collection_action_capability_test.ts"
+    },
+    {
+      "surface": "主从关系明细集合每页记录数（relation_entry.page_size）",
+      "declared": "relation_entry.page_size（主从明细声明的每页记录数）",
+      "declaredBy": "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+      "declaredMethod": "_build_relation_entry_for_field",
+      "declaredSymbol": "\"page_size\": RELATION_ENTRY_PAGE_SIZE",
+      "consumedBy": "frontend/apps/web/src/components/template/detailCollectionPagination.ts",
+      "consumedSymbol": "resolveDetailCollectionPageSize",
+      "onMissing": "stop",
+      "stopSymbol": "ContractGapError",
+      "stopDetail": "主从明细的实际可见记录集合由契约声明的 page_size 决定；前端只原样消费声明值（resolveDetailCollectionPageSize），缺失或非法即 ContractGapError 停机，不再用硬编码 20 形成第二套参数来源。非 one2many 集合声明不适用（null），不是补默认值。",
+      "regressionGuard": "verify.frontend.collection_action_capability.unit",
+      "behaviourTest": "frontend/apps/web/scripts/detail_collection_pagination_test.ts"
+    },
+    {
+      "surface": "表单布局跨度（layout span / 24 栅格单元）",
+      "declared": "containerTree 每个布局节点的 span（native col/col-* 与低代码 columns/field_size 折叠为唯一 24 栅格单元）",
+      "declaredBy": "addons/smart_core/handlers/ui_contract_v2_projection.py",
+      "declaredMethod": "normalize（containerTree span 投影）",
+      "declaredSymbol": "node[\"span\"] = (",
+      "consumedBy": "frontend/apps/web/src/components/template/layoutSpan.ts",
+      "consumedSymbol": "requireDeclaredLayoutSpan",
+      "onMissing": "stop",
+      "stopSymbol": "ContractGapError",
+      "stopDetail": "渲染器只按声明的 24 栅格单元放置节点；解码层对缺失 span 的布局节点报缺陷，渲染层对缺失或非法 span 抛 ContractGapError 停机，不再补 24 或把非法值折成全宽。",
+      "regressionGuard": "verify.frontend.form_canvas_layout.unit",
+      "behaviourTest": "scripts/verify/frontend_form_canvas_layout_contract_test.ts"
+    },
+    {
+      "surface": "正式记录入口意图与写权限（entry_target.record_entry）",
+      "declared": "record_entry.entry_intent / record_entry.model_write_authority",
+      "declaredBy": "addons/smart_core/core/navigation_entry_target.py",
+      "declaredMethod": "_build_record_entry",
+      "declaredSymbol": "\"entry_intent\": _normalize_record_entry_intent(entry_intent),",
+      "consumedBy": "frontend/apps/web/src/app/runtime/recordEntryContract.ts",
+      "consumedSymbol": "raiseRecordEntryGap",
+      "onMissing": "stop",
+      "stopSymbol": "ContractGapError",
+      "stopDetail": "入口意图非法即停机；写语义意图（open/handling/explicit_edit）缺 model_write_authority 声明即停机；显式 false 才表达只读，缺失不能由前端降级为只读。",
+      "regressionGuard": "verify.frontend.collection_view_semantics.unit",
+      "behaviourTest": "frontend/apps/web/scripts/record_entry_contract_test.ts"
+    },
+    {
+      "surface": "契约权限级别枚举（none/read/edit/admin）",
+      "declared": "contract 权限级别声明（permission_auth_level）",
+      "declaredBy": "addons/smart_core/core/unified_page_contract_v2_permissions.py",
+      "declaredMethod": "permission_auth_level",
+      "declaredSymbol": "def permission_auth_level(rights: Any, *, fallback: str = \"read\") -> str:",
+      "consumedBy": "frontend/apps/web/src/app/contract/contractAuthLevel.ts",
+      "consumedSymbol": "requireContractAuthLevel",
+      "onMissing": "stop",
+      "stopSymbol": "ContractGapError",
+      "stopDetail": "权限级别是唯一枚举（none/read/edit/admin）；前端只按枚举判定读/写与禁止访问，非法或缺失即 ContractGapError 停机。admin 蕴含 edit 由声明层给出（permission_auth_level），不由前端猜测。",
+      "regressionGuard": "verify.frontend.collection_view_semantics.unit",
+      "behaviourTest": "frontend/apps/web/scripts/record_entry_contract_test.ts"
+    }
   ],
   "registeredMechanismExemptions": [
     {
@@ -175,6 +231,78 @@
         "make/frontend.mk",
         "scripts/verify/frontend_contract_basis_guard.py"
       ]
+    },
+    {
+      "id": "CD-20261013-CREATE-STATUS-NAME-INFERENCE",
+      "missing": "新建表单按字段名或中文标签以“状态”结尾推断隐藏字段，覆盖契约可见性声明",
+      "surface": "契约表单新建态（ContractFormPage / useRecordFormLayout / nativeLayoutUtils）",
+      "discoveredBy": "新建态曾以 isCreateWorkflowStateField 之类的名称/标签推断隐藏“状态”字段，等于前端替契约决定字段可见性；同标签不同声明的字段无法区分，普通“状态”字段被误隐藏。",
+      "requiredDeclarationLayer": "P0:smart_core:page_assembler（字段可见性/结构声明）+ P0 前端消费层",
+      "resolution": "删除名称/标签推断（isCreateWorkflowStateField 等），新建态只消费契约声明的新建可见性；同名同标签字段按各自声明显示或隐藏。",
+      "closureEvidence": [
+        "frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordFormLayout.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordFormFieldSchemas.ts",
+        "frontend/apps/web/scripts/native_form_structure_responsibility_test.ts"
+      ]
+    },
+    {
+      "id": "CD-20261013-NUMERIC-GAP-COERCION",
+      "missing": "契约数值停机原语把 true 转成 1、把 1.9 截成 1，掩盖非法声明",
+      "surface": "通用契约消费原语（contractGap.ts）",
+      "discoveredBy": "requireDeclaredNumber 等曾用 Number(value)/Math.trunc 夹取，把布尔、数字字符串、小数等非法声明折成看似合法的数值。",
+      "requiredDeclarationLayer": "P0 前端消费层（契约停机原语）",
+      "resolution": "统一严格校验：真正的数值类型、整数（除非显式允许小数）、范围；合法值原样返回，非法即 ContractGapError 停机，不再夹取或改写契约事实。",
+      "closureEvidence": [
+        "frontend/apps/web/src/app/contract/contractGap.ts",
+        "frontend/apps/web/scripts/contract_gap_primitive_test.ts"
+      ]
+    },
+    {
+      "id": "CD-20261013-COLLECTION-ACTION-SILENT-DROP",
+      "missing": "集合动作缺 actions 声明时变空数组、缺 action/scope 的条目被静默丢弃",
+      "surface": "ActionView 集合/选择动作面（collection_capabilities.actions）",
+      "discoveredBy": "resolveDeclaredCapabilities 曾把缺数组当空集、把缺 action 或非法 scope 的条目静默过滤，掩盖声明层缺项。",
+      "requiredDeclarationLayer": "P0:smart_core:utils/collection_action_capability.build_collection_capabilities + P0 前端消费层",
+      "resolution": "区分合法空集合（显式 []）与非法声明：缺数组、缺 action、非法 scope 一律 ContractGapError 停机；合法动作按声明可见、可执行或按声明禁用。",
+      "closureEvidence": [
+        "frontend/apps/web/src/app/runtime/actionViewCollectionCapabilityRuntime.ts",
+        "frontend/apps/web/scripts/collection_action_capability_test.ts"
+      ]
+    },
+    {
+      "id": "CD-20261013-LIST-SURFACE-EVIDENCE-MISBINDING",
+      "missing": "页面模式台账把 collection.header-actions / collection.toolbar-surface 的结论绑到 .runtime/final-acceptance/list-surface-structure.json 并声称 316/316 gated，而该可变路径已被 payment.request 新建/编辑运行覆盖为 records 12/12、gated 0/0",
+      "surface": "页面模式台账 evidence 绑定（frontend_list_surface_structure_browser.v1）",
+      "discoveredBy": "T9 证据重绑定审计：同一路径作为可写 .runtime 产物被后续运行覆盖，台账却继续用它证明列表表面覆盖",
+      "requiredDeclarationLayer": "P4:scripts/verify/list_surface_evidence_binding_guard.py + 台账 evidence 路径修正",
+      "resolution": "每处 X/Y gated 声称必须至少引用一个真实存在、声明 list-surface schema 且 summary.gated 与声称数一致的 observation；可变路径不再能证明其已不覆盖的面。台账改绑 .runtime/final-acceptance/list-surface-all-7add8be3.json 的 108/108 gated 事实。",
+      "closureEvidence": [
+        "scripts/verify/list_surface_evidence_binding_guard.py",
+        "scripts/verify/test_list_surface_evidence_binding_guard.py",
+        "docs/frontend_productization/rendering-detail/page-pattern-reference-detail-ledger-v1.json",
+        "docs/frontend_productization/rendering-detail/page-pattern-reference-contract-gaps-v1.md"
+      ]
+    },
+    {
+      "id": "CD-20261013-EVIDENCE-ARCHIVE-AND-ACTING-CLOSURE",
+      "missing": "证据复用身份与证据归档三处不成立：acting readback 只保存 login/company、未绑定实际操作账号的权威角色闭包（同账号同公司权限变化仍可复用旧结果）；必需验证车道依赖被 gitignore 的 .runtime 本地报告（换机器即失败）；部署来源被折入所有单元共享身份（无关部署触发全量失效）。",
+      "surface": "P4 证据复用身份与证据归档（business_entry_matrix reuse identity + list-surface evidence binding）",
+      "discoveredBy": "独立评审（REQUEST_CHANGES）：新增 readback 丢弃角色闭包、新增守卫依赖机器本地 .runtime 文件、environmentIdentity 仍含整包 bundle/deployment revision。",
+      "requiredDeclarationLayer": "P4:scripts/verify/business_entry_matrix_model.mjs + scripts/ops/evidence_archive_fetch.py + make/frontend.mk",
+      "resolution": "复用身份改为绑定实际操作账号的权威角色闭包（acting_role_closure_sha256，缺失即拒绝）；部署来源降级为 provenance（served_revision/frontend_build_sha256），每单元以 surface_inputs 按声明 surface 判定失效，缺声明回退整包为显式退化态；列表表面证据改绑受版本管理、可哈希校验的归档清单，本地副本存在则须哈希一致、缺失也能判定，机器无关。",
+      "closureEvidence": [
+        "scripts/verify/business_entry_matrix_model.mjs",
+        "scripts/verify/business_entry_matrix_scope.mjs",
+        "scripts/verify/business_entry_negative_closures.mjs",
+        "scripts/verify/business_entry_matrix_reuse_identity.test.mjs",
+        "scripts/verify/test_business_entry_matrix_incremental.py",
+        "scripts/ops/evidence_archive_fetch.py",
+        "docs/frontend_productization/rendering-detail/evidence-archive/manifest.v1.json",
+        "scripts/verify/list_surface_evidence_binding_guard.py",
+        "scripts/verify/test_list_surface_evidence_binding_guard.py",
+        "make/frontend.mk"
+      ]
     }
   ],
   "frontendLogicInventory": [
@@ -226,6 +354,7 @@
       }
     ],
     "stopSemantics": "fail-closed：未登记站点或未闭合缺陷都不得放行；收口只能在声明层补齐声明并由前端原样消费。",
-    "allowances": "仅登记在 registeredMechanismExemptions 且 carriesProductSemantics=false 的传输/渲染机制常量可用。"
+    "allowances": "仅登记在 registeredMechanismExemptions 且 carriesProductSemantics=false 的传输/渲染机制常量可用。",
+    "coverageBoundary": "静态扫描（SCAN_RULES）只覆盖分页/取数规模类的默认值兜底模式，因此它不是「前端判断已全部清零」的证明；语义消费面的覆盖由 declarationBindings（声明站点+消费符号+停机符号+回归守卫+行为测试）与对应行为测试的反例共同锁定。未被行为测试锁定的消费面属于未覆盖集合，不得据本守卫 PASS 判定收口。"
   }
 }

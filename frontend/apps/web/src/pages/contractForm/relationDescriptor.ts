@@ -57,6 +57,9 @@ export function relationEntry(descriptor?: FieldDescriptor) {
     // page_assembler._build_relation_entry_for_field 与 contract-basis 台账绑定。
     options_limit: row.options_limit,
     options_search_limit: row.options_search_limit,
+    // P0 契约声明：主从关系明细集合每页记录数。投影只原样透出声明值，
+    // 消费点经 requireDeclaredNumber 缺失或非法即停机；此处不得补前端默认值。
+    pageSize: row.page_size,
     inlineCreate: {
       enabled: inlineRaw.enabled === true,
       createOnNoMatch: inlineRaw.create_on_no_match === true,

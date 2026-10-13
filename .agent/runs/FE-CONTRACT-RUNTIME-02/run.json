@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "id": "FE-CONTRACT-RUNTIME-02",
+  "branch": "fix/fe-contract-runtime-02-consumption-stop-closure",
+  "status": "active",
+  "baseline_sha": "e4b8fd957e364a4d1749127d563398c8de80256d",
+  "goal": ".agent/goals/FE-CONTRACT-RUNTIME-02.yaml",
+  "record": "docs/ops/iterations/fe_contract_runtime_02_consumption_stop_closure_20261013.md",
+  "scope": [
+    ".agent/goals/FE-CONTRACT-RUNTIME-02.yaml",
+    ".agent/runs/FE-CONTRACT-RUNTIME-02/",
+    ".agent/active-runs.json",
+    "frontend/apps/web/src/app/contract/",
+    "frontend/apps/web/src/app/contracts/v2/",
+    "frontend/apps/web/src/app/runtime/",
+    "frontend/apps/web/src/components/template/",
+    "frontend/apps/web/src/pages/contractForm/",
+    "frontend/apps/web/scripts/",
+    "scripts/verify/",
+    "docs/architecture/frontend_contract_basis_ledger.json",
+    "docs/ops/iterations/fe_contract_runtime_02_consumption_stop_closure_20261013.md",
+    "make/frontend.mk",
+    "make/ci.mk",
+    "frontend/apps/web/src/pages/ContractFormPage.vue",
+    "frontend/apps/web/src/app/presentation/",
+    "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+    "docs/frontend_productization/",
+    "scripts/ops/",
+    "docs/engineering_convergence/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make entrypoints and bundled frontend dependencies; no database, service or browser access in this batch"
+  },
+  "checks": {
+    "contract_basis_guard": {
+      "target": "verify.frontend.contract_basis.unit",
+      "inputs": [
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "scripts/verify/test_frontend_contract_basis_guard.py",
+        "frontend/apps/web/src"
+      ],
+      "kind": "offline"
+    },
+    "contract_gap_primitive": {
+      "target": "verify.frontend.contract_gap_primitive.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/contract/contractGap.ts",
+        "frontend/apps/web/scripts/contract_gap_primitive_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "native_form_structure_responsibility": {
+      "target": "verify.frontend.native_form_structure_responsibility.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts",
+        "frontend/apps/web/scripts/native_form_structure_responsibility_test.ts"
+      ],
+      "kind": "offline"
+    },
+    "form_canvas_layout": {
+      "target": "verify.frontend.form_canvas_layout.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/template/layoutSpan.ts",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "scripts/verify/frontend_form_canvas_layout_contract_test.ts"
+      ],
+      "kind": "offline"
+    },
+    "collection_view_semantics": {
+      "target": "verify.frontend.collection_view_semantics.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/runtime/recordEntryContract.ts",
+        "frontend/apps/web/scripts/record_entry_contract_test.ts",
+        "frontend/apps/web/scripts/collection_view_semantics_test.ts"
+      ],
+      "kind": "offline"
+    },
+    "collection_action_capability": {
+      "target": "verify.frontend.collection_action_capability.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/runtime/actionViewCollectionCapabilityRuntime.ts",
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+        "frontend/apps/web/scripts/collection_action_capability_test.ts"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/goals",
+        ".agent/runs",
+        ".agent/active-runs.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "business_entry_evidence_scope": {
+      "target": "verify.frontend.business_entry.evidence_scope.unit",
+      "inputs": [
+        "scripts/verify/business_entry_matrix_model.mjs",
+        "scripts/verify/business_entry_matrix_scope.mjs",
+        "scripts/verify/business_entry_matrix_reuse_identity.test.mjs",
+        "scripts/verify/business_entry_matrix_incremental.py",
+        "scripts/verify/test_business_entry_matrix_incremental.py",
+        "scripts/verify/business_entry_negative_closures.mjs",
+        "scripts/ops/evidence_scope.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "list_surface_evidence_binding": {
+      "target": "verify.frontend.list_surface_evidence_binding.unit",
+      "inputs": [
+        "scripts/verify/list_surface_evidence_binding_guard.py",
+        "scripts/verify/test_list_surface_evidence_binding_guard.py",
+        "scripts/ops/evidence_archive_fetch.py",
+        "docs/frontend_productization/rendering-detail",
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_consumption_verdicts": {
+      "target": "verify.frontend.contract_consumption_verdicts.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/contract/contractAuthLevel.ts",
+        "frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts",
+        "frontend/apps/web/scripts/contract_consumption_verdicts_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Review rework complete: independent-review S1-1..S1-4, S2 and the read-only master-detail gap are fixed with lock tests; the 10 registered offline checks are recorded as reusable (contract_consumption_verdicts added) and ledger entry CD-20261013-EVIDENCE-ARCHIVE-AND-ACTING-CLOSURE closes the archive/acting-closure defect (openContractDefects 0). Next: run make ci.delivery.freeze.prepare, review the generated evidence, commit on fix/*, freeze the exact tracked+untracked fingerprint, run one exact-head make ci.local.quick, push, complete remote required checks and merge via the protected PR flow. Do not rerun the browser matrix per commit; the consolidated affected-surface product review remains pending."
+}

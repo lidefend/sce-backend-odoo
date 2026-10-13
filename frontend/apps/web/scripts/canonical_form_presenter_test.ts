@@ -2683,19 +2683,34 @@ assert.deepEqual(
 );
 
 const productionNativeChildren = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
-delete productionNativeChildren.layoutContract.containerTree[0].span;
 const nativeChild = productionNativeChildren.layoutContract.containerTree[0].children[0] as Record<string, unknown>;
 nativeChild.widgetId = 'field.name';
 delete nativeChild.containerId;
 delete nativeChild.containerType;
 delete nativeChild.title;
-delete nativeChild.span;
 const normalizedNativeChild = decodeContractV2Snapshot(productionNativeChildren).layoutContract.containerTree[0].children[0];
-assert.equal(decodeContractV2Snapshot(productionNativeChildren).layoutContract.containerTree[0].span, 24);
 assert.equal(normalizedNativeChild.containerId, 'field.name');
 assert.equal(normalizedNativeChild.containerType, 'field');
 assert.equal(normalizedNativeChild.title, '', 'native identity must not become a visible title');
-assert.equal(normalizedNativeChild.span, 24);
+assert.equal(normalizedNativeChild.span, 12);
+
+// A layout node without a declared span is a declaration gap, not a full-row
+// default.  The decoder fails closed instead of fabricating ``24`` so the
+// missing declaration is visible and closed at the declaration layer.
+const spanlessRoot = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
+delete spanlessRoot.layoutContract.containerTree[0].span;
+assert.throws(
+  () => decodeContractV2Snapshot(spanlessRoot),
+  /containerTree\[0\]\.span must be an integer between 1 and 24/,
+  'a layout root without a declared span must stop',
+);
+const spanlessChild = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
+delete (spanlessChild.layoutContract.containerTree[0].children[0] as Record<string, unknown>).span;
+assert.throws(
+  () => decodeContractV2Snapshot(spanlessChild),
+  /containerTree\[0\]\.children\[0\]\.span must be an integer between 1 and 24/,
+  'a layout child without a declared span must stop',
+);
 
 const anonymousNativeContainer = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
 const anonymousGroup = anonymousNativeContainer.layoutContract.containerTree[0].children[0] as Record<string, unknown>;

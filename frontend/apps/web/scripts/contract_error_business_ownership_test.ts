@@ -395,7 +395,6 @@ const layoutNodes = buildLegacyLayoutNodes({
   containerStatus: {},
   visibleFields: [],
   fallbackFieldNames: [],
-  isCreate: true,
   readonly: false,
   resolveFieldLabel: (name: string) => name,
   evaluatePolicy: (_name: string, row: FieldDescriptor) => ({ visible: true, required: Boolean(row.required), readonly: Boolean(row.readonly) }),

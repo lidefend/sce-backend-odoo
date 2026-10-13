@@ -1858,7 +1858,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "3eba67d9aa0181b6d237ed17d9c0750cd8671c8dd93d6a32042afe99bdf67097",
+      "digest": "d43401c7ba583ec02e5236d7d4fa8f92439b376889771a26192039791c3d99ef",
       "nativeStyleSelectors": [],
       "path": "components/template/FormSection.vue",
       "referenceNativeStyleSelectors": [
@@ -1906,7 +1906,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "b09b36fb2b3218eb4661da98f609f68a3eabb9995b9f469595ea395b9ad7cbf3",
+      "digest": "258a58263e5d1e4190d8499c9dc73d562e75034dbbadd0699723215a526035e4",
       "nativeStyleSelectors": [],
       "path": "components/template/NativeFormTreeRenderer.vue",
       "referenceNativeStyleSelectors": [],
@@ -1963,7 +1963,7 @@
     },
     {
       "category": "relations-x2many",
-      "digest": "5f70b0affa0a2a5d17341e431d7f2616f29f9ec9a362de92987776ecb84556fa",
+      "digest": "2dd13eb84d24621dd17e349ff883bc32effb2968ccdf65be8aeed9dd3be4a88a",
       "nativeStyleSelectors": [],
       "path": "components/template/X2ManyRelationRenderer.vue",
       "referenceNativeStyleSelectors": [
@@ -2092,7 +2092,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "ffd913b0eb80356393d709c80cbc6d6818dae498fe4ed7f14fa69425843ae35a",
+      "digest": "56d364f247b629190372845b108bc7dc07274f1c850f483fde742e2e1e25877c",
       "nativeStyleSelectors": [],
       "path": "pages/ContractFormPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2217,7 +2217,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "c7d61d4d45fc4edd5a81fc03522f6d2b735675139c18e78c56a3cbca929c9897",
+      "digest": "a00b1b324b9c0a17c42b179752369d679c6f4140b31d5870ea9dce5c73420370",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormDriverHost.vue",
       "referenceNativeStyleSelectors": [
@@ -2253,7 +2253,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "f8714931d0e561937f3349aa0587dfc1f76a55748083f78b302c445bb69ef50b",
+      "digest": "4f45efbfe405b889ded6426d3fedef3b99fd3a42c0dd9adfbd6d0f5a706cf76e",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormProductHeader.vue",
       "referenceNativeStyleSelectors": [],
@@ -2532,7 +2532,7 @@
     },
     {
       "category": "collection",
-      "digest": "5b41bc417b0a3944bd8ff5532983a2434cece7dd25ab08f3d781157a9c1479e5",
+      "digest": "f614e304d1f566e70f29065b554ffd063f042558dc183a59e0ec6afcef100b83",
       "nativeStyleSelectors": [],
       "path": "views/ActionView.vue",
       "referenceNativeStyleSelectors": [],
@@ -3000,7 +3000,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "36fa363f823d64603f9d3d692bd7a4cecc99fe08374ed30c0bb370d99a19b123",
+  "currentInputDigest": "6ccdc840e110cafd9b7c4aa9fbc0e930418faf0210e8ce8ac12e0baf72cd9c09",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

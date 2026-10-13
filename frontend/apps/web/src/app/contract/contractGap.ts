@@ -33,58 +33,63 @@ export class ContractGapError extends Error {
 }
 
 /**
- * 消费一个必须由契约声明的数值参数。声明缺失、非数值或非法（<= min）时立即
- * 停机：前端不提供默认值、不夹取范围，缺口以 `ContractGapError` 暴露。
+ * 契约声明缺失或非法时的唯一停机出口：前端不夹取、不默认、不改写，缺口以
+ * `ContractGapError` 暴露给声明层。
+ */
+function raiseGap(spec: { missing: string; requiredDeclarationLayer: string }): never {
+  throw new ContractGapError(
+    {
+      kind: 'contract_defect',
+      missing: spec.missing,
+      requiredDeclarationLayer: spec.requiredDeclarationLayer,
+    },
+    `契约缺少合法声明 ${spec.missing}：前端不停机兜底，等待声明层补齐`,
+  );
+}
+
+/**
+ * 消费一个必须由契约声明的数值参数。
+ *
+ * 校验口径（严格、无夹取、无改写）：
+ * - 必须是真正的数值类型（`typeof === 'number'` 且有限）；布尔、字符串、数组、对象、
+ *   空串等一律视为非法声明。旧实现用 `Number(value)` 会把 `true` 变成 `1`、把 `'20'`
+ *   当成 `20`，等于前端替声明层补语义，已被禁止。
+ * - `integer` 默认为真：声明必须本身是整数，不再用 `Math.trunc` 把 `1.9` 截成 `1`。
+ * - `min`（含）与可选 `max` 越界即停机。
+ * - 合法声明以原始值原样返回，前端绝不修改契约事实。
  *
  * @param value 契约声明的原始值
  * @param spec.missing 缺失字段路径
  * @param spec.requiredDeclarationLayer 应补齐声明的归属层
- * @param spec.min 合法下界（含），用于判定「非法声明」
+ * @param spec.min 合法下界（含），默认 1
+ * @param spec.max 合法上界（含），可选
+ * @param spec.integer 是否要求整数，默认 true
  */
 export function requireDeclaredNumber(
   value: unknown,
-  spec: { missing: string; requiredDeclarationLayer: string; min?: number; integer?: boolean },
+  spec: { missing: string; requiredDeclarationLayer: string; min?: number; max?: number; integer?: boolean },
 ): number {
-  const numeric = Number(value);
-  const declared = (spec.integer ?? true) ? Math.trunc(numeric) : numeric;
+  if (typeof value !== 'number' || !Number.isFinite(value)) raiseGap(spec);
+  if ((spec.integer ?? true) && !Number.isInteger(value)) raiseGap(spec);
   const min = spec.min ?? 1;
-  if (!Number.isFinite(declared) || declared < min) {
-    throw new ContractGapError(
-      {
-        kind: 'contract_defect',
-        missing: spec.missing,
-        requiredDeclarationLayer: spec.requiredDeclarationLayer,
-      },
-      `契约缺少合法声明 ${spec.missing}：前端不停机兜底，等待声明层补齐`,
-    );
-  }
-  return declared;
+  if (value < min) raiseGap(spec);
+  if (spec.max !== undefined && value > spec.max) raiseGap(spec);
+  return value;
 }
 
 /**
  * 消费一个必须由契约声明的数值列表（例如列表页可选的每页条数）。
- * 声明缺失、非数组、空数组或含非法项时立即停机。
+ *
+ * 声明缺失、非数组、空数组或含非法项即停机。每一项都按 `requireDeclaredNumber`
+ * 同口径严格校验（真正的数值类型、整数、范围），并且原样返回，不再用 `Math.trunc`
+ * 或过滤把非法项悄悄丢弃 —— 静默丢弃会掩盖声明层缺项。
  */
 export function requireDeclaredNumberList(
   value: unknown,
-  spec: { missing: string; requiredDeclarationLayer: string; min?: number },
+  spec: { missing: string; requiredDeclarationLayer: string; min?: number; max?: number; integer?: boolean },
 ): number[] {
-  const min = spec.min ?? 1;
-  const rows = Array.isArray(value) ? value : null;
-  const declared = rows
-    ? rows.map((item) => Math.trunc(Number(item))).filter((item) => Number.isFinite(item) && item >= min)
-    : [];
-  if (!rows || !declared.length || declared.length !== rows.length) {
-    throw new ContractGapError(
-      {
-        kind: 'contract_defect',
-        missing: spec.missing,
-        requiredDeclarationLayer: spec.requiredDeclarationLayer,
-      },
-      `契约缺少合法声明 ${spec.missing}：前端不停机兜底，等待声明层补齐`,
-    );
-  }
-  return declared;
+  if (!Array.isArray(value) || value.length === 0) raiseGap(spec);
+  return value.map((item) => requireDeclaredNumber(item, spec));
 }
 
 /**

@@ -29,7 +29,7 @@ function buttonNode(name: string, backendIdentity: string, occurrenceIndex: numb
   const locator = `/form[1]/sheet[1]/div[1]/div[2]/div[1]/div[2]/button[${occurrenceIndex}]`;
   return {
     containerId: name, containerType: 'button', type: 'button', name, string: name, title: name,
-    nativeLocator: locator, occurrenceIndex, sourcePosition: occurrenceIndex,
+    span: 12, nativeLocator: locator, occurrenceIndex, sourcePosition: occurrenceIndex,
     attributes: { name, type: 'object' },
     action: { name, actionId: `action.${name}`, backendIdentity, kind: 'object', level: 'body', intent: 'execute' },
     children: [], widgetList: [],
@@ -40,7 +40,7 @@ function fieldNode(name: string, widgetId: string, occurrenceIndex: number) {
   const locator = `/form[1]/sheet[1]/div[1]/div[2]/div[1]/div[2]/field[${occurrenceIndex}]`;
   return {
     containerId: widgetId, containerType: 'field', type: 'field', name, widgetId,
-    fieldCode: name, label: name,
+    span: 12, fieldCode: name, label: name,
     title: name, nativeLocator: locator, occurrenceIndex, sourcePosition: occurrenceIndex,
     fieldInfo: { name, type: 'selection', readonly: true, required: true, modifiers: { readonly: true } },
     children: [],
@@ -72,14 +72,14 @@ const snapshot = {
     // declared stage fields and the declared stage actions, in declared order.
     containerTree: [{
       containerId: 'container.native.0', containerType: 'container', type: 'container',
-      title: '', styleToken: 'd-flex flex-wrap gap-2', children: [
+      title: '', span: 24, styleToken: 'd-flex flex-wrap gap-2', children: [
         buttonNode('action_sc_submit', VISIBLE_BUTTON_IDENTITY, 5),
         buttonNode('action_sc_start', HIDDEN_BUTTON_IDENTITY, 4),
         fieldNode('sc_approval_state', 'field.sc_approval_state.occ.1', 1),
         fieldNode('validation_status', 'field.validation_status.occ.1', 2),
         {
           containerId: 'container.hidden.1', containerType: 'container', type: 'container',
-          title: '', nativeLocator: '/form[1]/sheet[1]/div[1]/div[2]/div[1]/div[3]', occurrenceIndex: 1,
+          title: '', span: 24, nativeLocator: '/form[1]/sheet[1]/div[1]/div[2]/div[1]/div[3]', occurrenceIndex: 1,
           children: [], widgetList: [],
         },
       ],

@@ -15,12 +15,17 @@ import { countReleasedNavigationTargets, loadOverlay } from './business_entry_ma
 const BASE = (process.env.SC_ACCEPTANCE_FRONTEND_URL || '').replace(/\/$/, '');
 const DB = process.env.SC_ACCEPTANCE_DATABASE || process.env.DB_NAME || 'sc_demo';
 const PASSWORD = process.env.ACCEPTANCE_PASSWORD || '';
+// The acting principal the matrix evidence is collected as. Its company is the
+// company-level half of the reuse identity, so it must be observed here rather
+// than assumed by the planner.
+const ACTING_LOGIN = (process.env.ACCEPTANCE_LOGIN || '').trim();
 const OVERLAY_PATH = process.env.SC_ENTRY_MATRIX_OVERLAY || 'scripts/verify/business_entry_matrix_overlay.json';
 const OUT = process.env.SC_ENTRY_MATRIX_CLOSURES_OUT
   || path.join('artifacts', 'frontend-business-entry-matrix', 'negative_closures.json');
 
 if (!BASE) throw new Error('SC_ACCEPTANCE_FRONTEND_URL is required');
 if (!PASSWORD) throw new Error('ACCEPTANCE_PASSWORD is required');
+if (!ACTING_LOGIN) throw new Error('ACCEPTANCE_LOGIN is required to observe the acting principal');
 
 function servedRevisionOf(payload) {
   const data = payload?.data || payload?.result || payload || {};
@@ -94,7 +99,21 @@ function adoptSnapshot() {
       adopted_from: SNAPSHOT,
     };
   }
-  return { candidates, served: String(document.served_revision || '') };
+  const acting = document.acting && typeof document.acting === 'object'
+    ? {
+      login: String(document.acting.login || ''),
+      company_id: document.acting.company_id === undefined ? null : document.acting.company_id,
+      // The acting account's own role closure. It is part of the reuse identity
+      // (same login + company with a changed closure reaches a different set of
+      // records), so it must survive the snapshot, not just the company.
+      role_xmlids: Array.isArray(document.acting.role_xmlids)
+        ? document.acting.role_xmlids.map(String)
+        : [],
+      error: document.acting.error || null,
+      adopted_from: SNAPSHOT,
+    }
+    : null;
+  return { candidates, acting, served: String(document.served_revision || '') };
 }
 
 const overlay = loadOverlay(OVERLAY_PATH);
@@ -103,9 +122,11 @@ if (!order.length) throw new Error(`${OVERLAY_PATH} declares no denied_role_cand
 
 const served = { value: '' };
 let candidates;
+let acting;
 if (SNAPSHOT) {
   const adopted = adoptSnapshot();
   candidates = adopted.candidates;
+  acting = adopted.acting;
   served.value = adopted.served;
   const missing = order.filter((role) => !Object.prototype.hasOwnProperty.call(candidates, role));
   if (missing.length) {
@@ -126,12 +147,28 @@ if (SNAPSHOT) {
         error: observed.error,
       };
     }
+    const observedActing = await observe(browser, ACTING_LOGIN, served);
+    acting = {
+      login: ACTING_LOGIN,
+      company_id: observedActing.company,
+      role_xmlids: observedActing.roleXmlids,
+      error: observedActing.error,
+    };
   } finally {
     await browser.close();
   }
 }
 
 const failed = Object.entries(candidates).filter(([, value]) => value.error);
+if (!acting || acting.error || !Number.isInteger(Number(acting.company_id)) || Number(acting.company_id) <= 0) {
+  failed.push([`acting:${ACTING_LOGIN}`, { error: (acting && acting.error) || 'no company readback' }]);
+}
+if (acting && String(acting.login || '') !== ACTING_LOGIN) {
+  failed.push([`acting:${ACTING_LOGIN}`, { error: `snapshot observed acting login ${acting.login}` }]);
+}
+if (acting && !(Array.isArray(acting.role_xmlids) && acting.role_xmlids.length)) {
+  failed.push([`acting:${ACTING_LOGIN}`, { error: 'no authoritative acting-principal role closure readback' }]);
+}
 const payload = {
   schema: 'business_entry_negative_closures.v1',
   generated_at: new Date().toISOString(),
@@ -139,6 +176,7 @@ const payload = {
   database: DB,
   served_revision: served.value,
   reused_observation: SNAPSHOT || null,
+  acting,
   candidates,
 };
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
