@@ -38,6 +38,7 @@ import re
 import subprocess
 import sys
 from collections import defaultdict
+from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -152,6 +153,45 @@ TARGET_DISPOSITION_VOCABULARY = SCRIPT_DISPOSITION_VOCABULARY | frozenset(
         "gate_candidate",
     }
 )
+
+
+# The four raw buckets that carry a non-zero allowance. A count allowance alone
+# is replaceable: delete dead item A, add dead item B, the total is unchanged
+# and a count-only ratchet passes while the surface churned. Each of these
+# buckets therefore also freezes the *identity* of every item at freeze time, and
+# `compare` fails on any item that is not in the frozen set - even when the count
+# did not move. `--write-baseline` is the only way to widen the identities, and
+# it is a deliberate, reviewed governance action.
+IDENTITY_FREEZE_METRICS = (
+    "targets_zero_reference",
+    "scripts_unreferenced_anywhere",
+    "local_only_scripts",
+    "remote_only_scripts",
+)
+
+
+def read_review_policy(path: Path) -> dict[str, dict]:
+    """Per-class re-review triggers for registered debt.
+
+    A single blanket date ("revisit everything on 2026-12-31") is not a review
+    trigger; it is a promise nobody can keep, and it lets a registration support
+    a pass forever as long as the date is in the future. Instead every
+    disposition / exemption code declares *when* its registrations must be
+    revisited (a trigger condition), and only optionally a hard deadline. An
+    entry whose effective deadline has passed is expired and may not support a
+    pass: `compare` fails on any expired registration.
+    """
+    if not path.is_file():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    policy = data.get("review_policy")
+    if not isinstance(policy, dict):
+        return {}
+    return {
+        str(code): dict(entry)
+        for code, entry in policy.items()
+        if isinstance(entry, dict)
+    }
 
 
 def read_make_files(root: Path) -> list[Path]:
@@ -484,6 +524,113 @@ def read_disposition_entries(path: Path) -> dict:
     }
 
 
+def read_exemption_entries(path: Path) -> list[dict]:
+    """The exemption registry as written, not just its script name sets.
+
+    ``read_exemptions`` answers "is this script a registered lane divergence";
+    the registration-quality check additionally needs each entry's owner, code
+    and reason, so it reads the full list. Both views come from the same file.
+    """
+    if not path.is_file():
+        return []
+    data = json.loads(path.read_text(encoding="utf-8"))
+    entries: list[dict] = []
+    for direction in ("local_only", "remote_only"):
+        for entry in data.get(direction) or []:
+            if isinstance(entry, dict):
+                entries.append({"direction": direction, **entry})
+    return entries
+
+
+def registration_state(
+    disposition_entries: dict,
+    exemption_entries: list[dict],
+    policy: dict[str, dict],
+    today: date,
+) -> dict:
+    """Classify registered debt by ownership, basis and expiry.
+
+    A registration only supports a pass while it is a *claim someone still owns
+    with a stated reason and a live review trigger*. This reads the registries
+    and reports the three ways that stops being true:
+
+    * ``registrations_missing_owner`` - no owner, so nobody is accountable;
+    * ``registrations_missing_basis`` - no reason, or a disposition / exemption
+      code that declares no review trigger, so the claim has no disposal basis;
+    * ``expired_registrations`` - the effective deadline (entry ``review_by`` if
+      present, else the class policy deadline) is in the past. An expired entry
+      may not support a pass, so it is a failure, not a warning.
+
+    A stale entry (registered but no longer true) is a *different* defect and is
+    reported by the raw ratchet (``stale_*``), which also fails closed.
+    """
+    missing_owner: list[str] = []
+    missing_basis: list[str] = []
+    expired: list[str] = []
+
+    def _deadline(entry: dict, code: str) -> str:
+        own = (entry.get("review_by") or "").strip()
+        if own:
+            return own
+        return (policy.get(code) or {}).get("deadline") or ""
+
+    def _has_trigger(code: str) -> bool:
+        entry = policy.get(code) or {}
+        return bool((entry.get("trigger") or "").strip())
+
+    def _classify(label: str, entry: dict, code: str) -> None:
+        # Dispositions carry ``owner``; exemption entries carry ``lane_owner``.
+        if not (entry.get("owner") or entry.get("lane_owner") or "").strip():
+            missing_owner.append(label)
+        if not (entry.get("reason") or "").strip() or not _has_trigger(code):
+            missing_basis.append(label)
+        deadline = _deadline(entry, code)
+        if deadline and deadline < today.isoformat():
+            expired.append(label)
+
+    for name, entry in sorted((disposition_entries.get("targets") or {}).items()):
+        _classify(f"targets:{name}", entry, entry.get("disposition", ""))
+    for name, entry in sorted((disposition_entries.get("scripts") or {}).items()):
+        _classify(f"scripts:{name}", entry, entry.get("disposition", ""))
+    for name, entry in sorted((disposition_entries.get("absent_assets") or {}).items()):
+        # absent-asset entries carry no disposition code; their basis is the
+        # recorded missing_asset list plus the reason, and their review class is
+        # the shared policy key.
+        if not (entry.get("owner") or "").strip():
+            missing_owner.append(f"absent_assets:{name}")
+        if not (entry.get("reason") or "").strip() or not _has_trigger("_absent_assets"):
+            missing_basis.append(f"absent_assets:{name}")
+        deadline = _deadline(entry, "_absent_assets")
+        if deadline and deadline < today.isoformat():
+            expired.append(f"absent_assets:{name}")
+    for entry in exemption_entries:
+        script = entry.get("script", "")
+        _classify(f"exemption:{script}", entry, entry.get("reason_code", ""))
+
+    # A "gate_candidate" claims the surface *should* be a required check but is
+    # not wired yet. Registering it is not acceptance: while it stays a
+    # candidate, "a required check exists only as a historical registration" is
+    # exactly the defect this audit exists to stop, so the count is hard-checked
+    # at zero. The owning batch must wire it into a lane or reclassify it to the
+    # capability it actually is.
+    unwired_gate_candidates = sorted(
+        f"targets:{name}"
+        for name, entry in (disposition_entries.get("targets") or {}).items()
+        if entry.get("disposition") == "gate_candidate"
+    ) + sorted(
+        f"scripts:{name}"
+        for name, entry in (disposition_entries.get("scripts") or {}).items()
+        if entry.get("disposition") == "gate_candidate"
+    )
+
+    return {
+        "registrations_missing_owner": sorted(missing_owner),
+        "registrations_missing_basis": sorted(missing_basis),
+        "expired_registrations": sorted(expired),
+        "unwired_gate_candidates": unwired_gate_candidates,
+    }
+
+
 def missing_asset_state(missing_asset: dict, registered: dict) -> dict:
     """Classify make targets whose recipe calls a path absent from the tree.
 
@@ -685,6 +832,14 @@ def measure(root: Path, exemptions_path: Path = DEFAULT_EXEMPTIONS, dispositions
     dispositions = read_dispositions(dispositions_path)
     disposition = disposition_state(zero_reference_targets, unreferenced_scripts, dispositions)
 
+    # Registration quality: owner, disposal basis and a live review trigger.
+    # A registration without these may not support a pass, so it is measured
+    # here and hard-checked at zero rather than trusted from prose.
+    review_policy = {
+        **read_review_policy(exemptions_path),
+        **read_review_policy(dispositions_path),
+    }
+
     # "The recipe names a file that is not here" is a target that cannot run.
     # Measured over every defined rule, not only the ones nothing references: a
     # broken recipe is broken whether or not something types its name.
@@ -703,6 +858,9 @@ def measure(root: Path, exemptions_path: Path = DEFAULT_EXEMPTIONS, dispositions
     entry_registry = read_disposition_entries(dispositions_path)
     missing_asset_classification = missing_asset_state(
         missing_asset, entry_registry["absent_assets"]
+    )
+    registration = registration_state(
+        entry_registry, read_exemption_entries(exemptions_path), review_policy, date.today()
     )
 
     return {
@@ -733,8 +891,46 @@ def measure(root: Path, exemptions_path: Path = DEFAULT_EXEMPTIONS, dispositions
         **disposition,
         "targets_missing_asset": missing_asset,
         **missing_asset_classification,
+        **registration,
     }
 
+
+# Per-group re-review triggers, replacing the single blanket "2026-12-31"
+# date. Each entry names the condition that forces the group's registrations to
+# be revisited; a group with a genuine deadline also carries ``deadline``. The
+# condition is the review basis - a bare date in the future is not evidence that
+# anyone re-examined the debt.
+BASELINE_REVIEW_TRIGGERS = [
+    {
+        "group": "targets_zero_reference",
+        "trigger": "Any batch that wires a currently-zero-reference make target to "
+                   "a lane, retires one, or edits a recipe it names; re-measure and "
+                   "shrink the frozen identity set with --write-baseline.",
+    },
+    {
+        "group": "scripts_unreferenced_anywhere",
+        "trigger": "Any batch whose diff adds or removes a scripts/** consumer, or "
+                   "retires a script; re-measure and re-freeze.",
+    },
+    {
+        "group": "targets_missing_asset",
+        "trigger": "Any batch that restores, relocates or removes a recipe path "
+                   "recorded under absent_assets; the recorded list must match the "
+                   "measurement exactly or --check fails.",
+    },
+    {
+        "group": "local_only_scripts / remote_only_scripts",
+        "trigger": "Any batch that changes which lane executes a guard (make/*.mk, "
+                   "ci.* targets); a divergence that is neither removed nor "
+                   "registered fails, and a registration without a live trigger "
+                   "fails.",
+    },
+    {
+        "group": "candidate_dispositions",
+        "trigger": "The owning batch must wire-or-retire a 'candidate' registration "
+                   "before it is due; until then it holds no functional acceptance.",
+    },
+]
 
 # Metric corrections are recorded in the instrument, not only in the JSON
 # baseline. --write-baseline rewrites the file, so a note that lived only in the
@@ -799,7 +995,10 @@ def baseline_payload(result: dict) -> dict:
             "--check until it is explicitly reviewed and the baseline is "
             "deliberately rewritten."
         ),
-        "review_by": "2026-12-31",
+        # No blanket "revisit everything on <date>" promise. Every debt group
+        # declares the *condition* that forces its re-review; only groups with a
+        # real deadline carry one. See review_triggers below.
+        "review_triggers": BASELINE_REVIEW_TRIGGERS,
         "metric_corrections": BASELINE_METRIC_CORRECTIONS,
         # Hard-checked debt: surface with no owner and no enforcement.
         "max_targets_zero_reference": len(result["targets_zero_reference"]),
@@ -833,6 +1032,22 @@ def baseline_payload(result: dict) -> dict:
         "recorded_targets_defined": result["targets_defined"],
         "recorded_targets_unreached_from_anchor": result["targets_unreached_from_anchor"],
         "recorded_anchor_union_targets": result["anchor_union_targets"],
+        # A registration (disposition / exemption) may only support a pass while
+        # it has an accountable owner, a stated reason with a live review
+        # trigger, and an unexpired deadline. All three are hard-checked at zero.
+        "max_registrations_missing_owner": 0,
+        "max_registrations_missing_basis": 0,
+        "max_expired_registrations": 0,
+        # A "gate_candidate" is a required check that exists only as a
+        # registration; that is not a pass. Wire it or reclassify it.
+        "max_unwired_gate_candidates": 0,
+        # Identity freeze: the exact item names behind each non-zero allowance.
+        # Count equality is not enough - a batch that deletes A and adds B keeps
+        # the total and must still fail. See IDENTITY_FREEZE_METRICS.
+        "frozen_identities": {
+            metric: sorted(result.get(metric) or [])
+            for metric in IDENTITY_FREEZE_METRICS
+        },
     }
 
 
@@ -860,6 +1075,41 @@ def compare(result: dict, baseline: dict) -> list[str]:
             continue
         if value > allowed:
             regressions.append(f"{key}: {value} > frozen baseline {allowed}")
+
+    # Registration quality: an owner-less, basis-less or expired registration
+    # cannot support a pass. These are measured names, so the message names them.
+    for key in (
+        "registrations_missing_owner",
+        "registrations_missing_basis",
+        "expired_registrations",
+        "unwired_gate_candidates",
+    ):
+        names = sorted(result.get(key) or [])
+        if names:
+            preview = ", ".join(names[:5]) + (" ..." if len(names) > 5 else "")
+            regressions.append(
+                f"{key}: {len(names)} registration(s) cannot support a pass: {preview}"
+            )
+
+    # Identity freeze - the quota-replacement defect. A count that did not move
+    # can still hide churn: delete dead item A, add dead item B, total unchanged.
+    # Compare the item identities, not just the total, so a replacement fails.
+    frozen = baseline.get("frozen_identities")
+    if not isinstance(frozen, dict) or not frozen:
+        regressions.append(
+            "frozen_identities: baseline does not freeze item identities; "
+            "rewrite it with --write-baseline in a reviewed batch"
+        )
+    else:
+        for metric in IDENTITY_FREEZE_METRICS:
+            frozen_names = set(frozen.get(metric) or [])
+            added = sorted(set(result.get(metric) or []) - frozen_names)
+            if added:
+                preview = ", ".join(added[:5]) + (" ..." if len(added) > 5 else "")
+                regressions.append(
+                    f"{metric}: {len(added)} item(s) outside the frozen identity "
+                    f"set (count-neutral replacement is not a pass): {preview}"
+                )
     return regressions
 
 
@@ -900,6 +1150,51 @@ def render_summary(result: dict) -> str:
     lines.append(
         f"  stale exemptions           : {len(result['stale_local_only_exemptions'])}"
         f" / {len(result['stale_remote_only_exemptions'])} (must be 0)"
+    )
+    # Item 8: keep the structural coverage result from reading as a functional
+    # verdict. "Structure PASS" says the lane wiring is honest; it says nothing
+    # about whether the product works, which is a separate evidence chain.
+    lines.append("")
+    lines.append("  ---- structural coverage only; NOT a functional acceptance ----")
+    lines.append(
+        f"  required chain (unregistered) : targets "
+        f"{len(result['targets_zero_reference_unregistered'])}"
+        f" / scripts {len(result['scripts_unreferenced_unregistered'])} (must be 0)"
+    )
+    lines.append(
+        f"  newly-unregistered divergences: local "
+        f"{len(result['unregistered_local_only_scripts'])}"
+        f" / remote {len(result['unregistered_remote_only_scripts'])} (must be 0)"
+    )
+    lines.append(
+        f"  registrations missing owner   : "
+        f"{len(result.get('registrations_missing_owner') or [])} (must be 0)"
+    )
+    lines.append(
+        f"  registrations missing basis   : "
+        f"{len(result.get('registrations_missing_basis') or [])} (must be 0)"
+    )
+    lines.append(
+        f"  expired registrations         : "
+        f"{len(result.get('expired_registrations') or [])} (must be 0)"
+    )
+    lines.append(
+        f"  unwired required checks       : "
+        f"{len(result.get('unwired_gate_candidates') or [])} (must be 0)"
+    )
+    lines.append(
+        f"  historical-open (registered)  : targets "
+        f"{len(result['targets_zero_reference']) - len(result['targets_zero_reference_unregistered'])}"
+        f" / scripts "
+        f"{len(result['scripts_unreferenced_anywhere']) - len(result['scripts_unreferenced_unregistered'])}"
+        f" / absent-assets {len(result.get('targets_missing_asset') or {})}"
+        f" / exemptions "
+        f"{len(result['local_only_scripts']) + len(result['remote_only_scripts'])}"
+    )
+    lines.append(
+        f"  scan scope                    : make targets {result['targets_defined']}"
+        f" / scripts on disk {result['scripts_on_disk']}"
+        f" / registries baseline+dispositions+exemptions"
     )
     return "\n".join(lines)
 
@@ -1055,19 +1350,17 @@ def cmd_register_batch(root: Path, dispositions_path: Path, manifest: Path) -> i
             if disposition not in vocabulary:
                 errors.append(f"{name}: unknown {label} disposition '{disposition}'")
                 continue
-            if not reason or not owner or not review_by:
-                errors.append(f"{name}: reason, owner and review_by are required")
+            if not reason or not owner:
+                errors.append(f"{name}: reason and owner are required")
                 continue
             existing = registered.get(name)
             if existing and existing.get("disposition") != disposition:
                 errors.append(f"{name}: already registered as '{existing.get('disposition')}'")
                 continue
-            planned[bucket][name] = {
-                "disposition": disposition,
-                "owner": owner,
-                "review_by": review_by,
-                "reason": reason,
-            }
+            entry = {"disposition": disposition, "owner": owner, "reason": reason}
+            if review_by:
+                entry["review_by"] = review_by
+            planned[bucket][name] = entry
 
     if errors:
         for line in errors:
@@ -1111,9 +1404,10 @@ def cmd_record_missing_assets(
     """
     if not _require_reason(reason):
         return 2
-    if not (owner or "").strip() or not (review_by or "").strip():
-        print("[verification-lane-coverage] --owner and --review-by are required")
+    if not (owner or "").strip():
+        print("[verification-lane-coverage] --owner is required")
         return 2
+    review_by = (review_by or "").strip()
     result = measure(root, DEFAULT_EXEMPTIONS, dispositions_path)
     missing_asset = result["targets_missing_asset"]
     doc = {"schema_version": "verification-lane-dispositions/v1", "targets": {}, "scripts": {}}
@@ -1124,15 +1418,17 @@ def cmd_record_missing_assets(
     for target, paths in sorted(missing_asset.items()):
         entry = register.get(target) or {}
         if (entry.get("missing_asset") == paths and entry.get("owner") == owner.strip()
-                and entry.get("review_by") == review_by.strip()
+                and (entry.get("review_by") or "") == review_by
                 and entry.get("reason") == reason.strip()):
             continue
-        register[target] = {
+        written = {
             "missing_asset": paths,
             "owner": owner.strip(),
-            "review_by": review_by.strip(),
             "reason": reason.strip(),
         }
+        if review_by:
+            written["review_by"] = review_by
+        register[target] = written
         changed += 1
     dropped = sorted(set(register) - set(missing_asset))
     for target in dropped:
@@ -1217,8 +1513,8 @@ def cmd_register(
             "add it to SCRIPT_DISPOSITION_VOCABULARY in review first"
         )
         return 2
-    if not (owner or "").strip() or not (review_by or "").strip():
-        print("[verification-lane-coverage] --owner and --review-by are required")
+    if not (owner or "").strip():
+        print("[verification-lane-coverage] --owner is required")
         return 2
 
     result = measure(root, DEFAULT_EXEMPTIONS, dispositions_path)
@@ -1244,12 +1540,16 @@ def cmd_register(
             f"'{existing.get('disposition')}'; refusing to silently reclassify"
         )
         return 3
-    scripts[script] = {
+    entry = {
         "disposition": disposition,
         "owner": owner.strip(),
-        "review_by": review_by.strip(),
         "reason": reason.strip(),
     }
+    # A per-entry deadline is optional: the disposition's review_policy carries
+    # the trigger, and a blanket date is not a review basis.
+    if (review_by or "").strip():
+        entry["review_by"] = review_by.strip()
+    scripts[script] = entry
     doc["scripts"] = dict(sorted(scripts.items()))
     dispositions_path.write_text(
         json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
@@ -1437,9 +1737,11 @@ def main(argv=None) -> int:
                 file=sys.stderr,
             )
             return 2
+        triggers = baseline.get("review_triggers") or []
         print(
             "[verification-lane-coverage] PASS surface within the frozen baseline "
-            f"(review_by {baseline.get('review_by', 'n/a')})"
+            f"({len(triggers)} review trigger(s); structural coverage only, "
+            "not a functional acceptance)"
         )
     return 0
 
