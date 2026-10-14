@@ -2011,6 +2011,11 @@ class PaymentRequest(models.Model):
         )
         if not claim_authority and any(claim_fields.intersection(vals) for vals in vals_list):
             raise AccessError(_("付款/收款申请的终态现金来源只能由事实权威服务绑定。"))
+        # 与同族财务单据一致：终态只能由正式审批与办理动作产生，受管历史导入除外。
+        if not self.env.context.get("sc_tenant_payload_import"):
+            for values in vals_list:
+                if values.get("state", self.env.context.get("default_state", "draft")) != "draft":
+                    raise UserError(_("单据必须从草稿通过正式审批和业务动作流转。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
             project_id = self._context_project_id()

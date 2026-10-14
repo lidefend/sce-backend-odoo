@@ -1052,8 +1052,16 @@ class ScExpenseClaim(models.Model):
                 raise UserError(_("只有已批准的费用/保证金单据可以完成。"))
             before = rec._snapshot_audit_payload()
             rec._check_business_ready()
-            rec._sync_payment_request_done()
-            rec._write_finance_authority({"state": "done"})
+            # The terminal state is written before the linked request is
+            # synchronised, mirroring sc.receipt.income.action_received: a
+            # receive request only accepts a posted cash fact once its source
+            # document is already terminal (payment.request._check_can_done ->
+            # _receive_cash_authority_state_map).  Syncing first made the posted
+            # treasury fact look unclaimed, so a cash-in deposit claim could
+            # never reach done.  The savepoint keeps the two writes atomic.
+            with self.env.cr.savepoint():
+                rec._write_finance_authority({"state": "done"})
+                rec._sync_payment_request_done()
             rec._ensure_interfund_cash_ledger()
             rec._audit_transition(
                 "expense_claim_done",
