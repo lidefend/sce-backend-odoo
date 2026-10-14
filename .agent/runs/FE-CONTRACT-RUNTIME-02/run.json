@@ -165,7 +165,6 @@
     "addons/smart_core/model/ui_menu_config_policy.py",
     "demo_addons/smart_construction_demo/seed/steps/step_payment_request_floorplan_demo.py",
     "scripts/demo/run_seed.sh",
-    "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
     "addons/smart_construction_core/views/menu_product_project_wave1.xml",
     "config/product_menu_contract_v1.json",
     "addons/smart_construction_core/data/product_menu_source.json",
@@ -238,7 +237,38 @@
     "addons/smart_core/core/dictionary_scope_projection.py",
     "addons/smart_core/core/system_init_dictionary_data_helper.py",
     "contracts/generated/contract_structure_fingerprint.json",
-    "frontend/apps/web/src/app/action_runtime/hierarchicalWorksheetDataSource.ts"
+    "frontend/apps/web/src/app/action_runtime/hierarchicalWorksheetDataSource.ts",
+    "demo_addons/smart_construction_demo/data/scenario/",
+    "addons/smart_construction_core/core_extension_system_init_rows.py",
+    "addons/smart_construction_core/models/core/contract_event.py",
+    "addons/smart_construction_core/models/core/expense_claim.py",
+    "addons/smart_construction_core/models/core/material_acceptance.py",
+    "addons/smart_construction_core/models/core/material_rental.py",
+    "addons/smart_construction_core/models/core/output_invoice_adjustment.py",
+    "addons/smart_construction_core/models/support/approval_policy.py",
+    "addons/smart_construction_core/models/support/document_center.py",
+    "addons/smart_construction_core/tests/test_approval_policy_toggle_backend.py",
+    "addons/smart_construction_core/tests/test_source_bounded_data_space_rules.py",
+    "addons/smart_core/models/__init__.py",
+    "addons/smart_core/models/platform_database_registry.py",
+    "addons/smart_core/security/database_governance.py",
+    "addons/smart_core/security/ir.model.access.csv",
+    "addons/smart_core/tests/test_data_space_identity_enrollment.py",
+    "addons/smart_core/tests/test_dictionary_scope_delivery.py",
+    "addons/smart_core/tests/test_platform_database_governance_orm.py",
+    "demo_addons/smart_construction_demo/__manifest__.py",
+    "demo_addons/smart_construction_demo/data/base/12_departments.xml",
+    "demo_addons/smart_construction_demo/models/__init__.py",
+    "demo_addons/smart_construction_demo/models/payment_request_demo_seed.py",
+    "demo_addons/smart_construction_demo/models/project_demo_cockpit_seed.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_20_projects_demo.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_40_contracts_demo.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_60_attachments_demo.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_90_verify_demo.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_demo_showroom.py",
+    "demo_addons/smart_construction_demo/seed/tier_flow.py",
+    "demo_addons/smart_construction_demo/tools/scenario_loader.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_funding_baseline_lifecycle.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -1025,6 +1055,17 @@
         "make/dev.mk",
         "make/dev_test.mk"
       ]
+    },
+    "demo_scenario_alignment": {
+      "target": "verify.demo",
+      "kind": "runtime",
+      "inputs": [
+        "demo_addons/smart_construction_demo/tools/scenario_loader.py",
+        "demo_addons/smart_construction_demo/models/project_demo_cockpit_seed.py",
+        "demo_addons/smart_construction_demo/seed/steps/",
+        "demo_addons/smart_construction_demo/data/scenario/",
+        "demo_addons/smart_construction_demo/tests/test_demo_funding_baseline_lifecycle.py"
+      ]
     }
   },
   "blockers": [
@@ -1044,16 +1085,16 @@
     "verify.backend_business_fact.model_standard currently FAILs on documentation drift: docs/architecture/backend_business_model_audit_findings_v1.md records 372 model classes and 0 unclassified models while the measured values are 378 and 1. The target is a zero-reference lane entry (not reachable from any gate anchor), so it is not a blocker for this batch.",
     "Audit follow-up: the committed company-ceiling set is 143 rules after the generated-vs-manual review retired 7 redundant ceilings (enforced 124 -> 117, source_bounded 25 -> 32). A fresh governed read-only readback on 2026-10-14 (`make local.dev.data_scope.ceiling.readiness`) proves source_rule_count=143 == installed_match_count=143 with mismatches=[], so the runtime ceiling is current and the earlier 125/125 activation is superseded rather than stale. What still blocks delivery is the data-space fact below (bootstrap company owns business rows), not the ceiling.",
     "CLOSED by the Option 1 ruling (2026-10-14, DEMO_IS_FIRST_ONBOARDED_COMPANY): the earlier P4 DATA-SPACE-MIGRATION-01 premise (base.main_company owns 31240 ceiling rows + 61 residual models) is resolved without re-ownership. The demo environment main company is the first onboarded business company, so onboarding retires its carrier marker and writes ONE registration row; no business row changes company. See platform_initialization_strategy.",
-    "OPEN (pre-existing main defect, not this batch): demo scenario seeds lag the 2026-10-01 guards that reject non-draft create(); make local.dev.rebuild_demo fails at the scenario stage with ~30 root records across ~10 scenarios. Tracked as DEMO-SCENARIO-PRODUCT-DRIFT-01 and detailed in run.json/demo_scenario_product_drift. Does not block platform initialization or demo onboarding (both verified on a clean rebuilt database).",
+    "CLOSED (第 36 棒, 2026-10-14): DEMO-SCENARIO-PRODUCT-DRIFT-01 closed. The demo scenarios now create drafts and advance them with the product's own actions; the 2026-10-01 create() guard was not relaxed. make local.dev.rebuild_demo -> EXIT=0 with [verify.demo] PASS ALL, all 30 scenarios diagnose OK, and a fresh-database readback proves the cockpit receipts are received/normalized facts. See run.json/demo_scenario_product_drift.",
     "PRE-EXISTING, not this batch: verify.workflow_contract.backend is a red lane (workflow_contract_custom_coverage_guard reads a re-collected document and Odoo's base action_archive inflates uncovered 16 -> 207). It is absent from the ci.local.quick.run prerequisite list, so it does not block freezing; it needs a lane-repair batch.",
     "PRE-EXISTING, not this batch: the uc4 native-lowcode container lanes fail on view XML drift (processing_advisory field); the same failure reproduces on the stashed baseline and none of those lanes is wired to a required gate.",
     "PRE-EXISTING, not this batch: TestApprovalPolicyToggleBackend.test_native_create_context_state_guard raises AccessError for sc.labor.plan / sc.material.rental.order (2 errors) both before and after this batch; the two new one-step tests in the same class pass. Also pre-existing and unchanged: 8 ERRORs in the p0_state suite (fix-set identical to the stashed baseline), and 3 residual errors in verify.payment.approval_state_machine.unit (registered history_probe_runbook, textually identical to baseline).",
     "CLOSED (e9da2148 + 8b2318a6 + 4add5172): 独立复审 S1 第 1 项 —— source_bounded 29 条具名规则缺用途上限，已按守卫判定的三种形态补齐并配套 fail-closed 守卫、反例与真实账号运行时用例；make verify.sc_data_scope.rule_coverage rc=0 与 4/4 定向运行时用例通过。",
     "OPEN (独立复审 2026-10-14 第 2 项): 公司级字典共享目标未完成 —— helper 通过 sudo() 读取公司级字典并把非角色范围映射为 __global__；addons/smart_core/core/dictionary_scope_projection.py 已自述公司范围尚无交付语义。越界已阻断，交付语义未实现，不得标记完成。",
-    "OPEN (独立复审 2026-10-14 第 3 项): 完整演示基线仍不能重建 —— local.dev.rebuild_demo 场景加载失败（DEMO-SCENARIO-PRODUCT-DRIFT-01），影响本次目标环境与产品验收；归入下一批不能证明整体目标达成。",
+    "CLOSED (第 36 棒, 2026-10-14): 独立复审第 3 项（完整演示基线不能重建）已解除 —— 本地全部场景 30/30 通过，受管全新库重建 PASS 且 verify.demo PASS ALL。",
     "OPEN (独立复审 2026-10-14 第 4 项): 最终交付证据未齐备 —— 本次 HEAD 尚无 ci.local.quick receipt；已找到的 143 条规则安装回读不证明真实角色的允许/拒绝行为，纯管理员可用、客户数据不可见、用户与测试数据双向隔离仍需绑定最终环境验收。泳道台账阻塞（762>760、unregistered 2）已由 4add5172 解除。"
   ],
-  "next_exact_step": "本棒（第 35 棒）已完成独立复审第 1 项并解除 Quick 泳道台账阻塞，三笔提交 e9da2148 / 8b2318a6 / 4add5172。下一步顺序：(1) 追加本棒批次文档与 run 结果索引（已完成本段写入）；(2) 处理复审第 2 项：公司级字典共享交付语义（addons/smart_core/core/dictionary_scope_projection.py 所属 P0 边界），先把公司/行业/平台共享的交付语义与投影落地，再谈共享目标；(3) 处理复审第 3 项：DEMO-SCENARIO-PRODUCT-DRIFT-01，把 demo 场景种子按 2026-10-01 守卫对齐（种子落 draft，再用受治动作推进；一步式闸门已使单个终态动作足够），禁止放宽 create() 守卫；(4) make ci.delivery.freeze.prepare -> 提交生成物 -> 冻结干净 HEAD -> 一次 exact-head make ci.local.quick 取 receipt（复审第 4 项硬要求）；(5) 绑定最终环境的角色级允许/拒绝验收：纯管理员可用、客户数据不可见、用户与测试数据双向隔离；(6) make pr.push（GitHub 主线优先，gitee 镜像备用）-> PR #654 必需检查 -> 受保护 PR 合并。不得报主线集成完成或产品交付完成，直到 (2)-(5) 关闭。",
+  "next_exact_step": "第 36 棒已关闭 DEMO-SCENARIO-PRODUCT-DRIFT-01（demo 场景按产品动作推进；cockpit 收款登记脱离迁移载体授权；rebuild PASS + 30/30 场景 + 全新库事实回读）。下一步顺序：(1) make ci.delivery.freeze.prepare -> 分笔提交本批（平台数据库治理/数据空间入驻、demo 场景对齐、泳道接线与生成证据）-> 冻结干净 HEAD；(2) make pr.push（GitHub 主线优先，gitee 镜像备用）-> 远端必需检查 -> 受保护 PR 合并；按所有者 2026-09-23 政策，本地 ci.local.quick 不再是普通 PR 推送前置，完整扫描与前后端集成检查由远端 PR 执行；(3) 仍开放：独立复审第 2 项（公司级字典共享交付语义，addons/smart_core/core/dictionary_scope_projection.py 自述公司范围尚无交付语义）与第 4 项（最终交付证据：真实角色允许/拒绝验收，纯管理员可用、客户数据不可见、用户与测试数据双向隔离）。不得报主线集成完成或产品交付完成，直到 (3) 关闭。",
   "acceptance_authority_layout": {
     "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
     "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",
@@ -3443,44 +3484,25 @@
     ]
   },
   "demo_scenario_product_drift": {
-    "status": "pre_existing_main_defect_reported_not_fixed_in_this_batch",
-    "summary": "make local.dev.rebuild_demo fails in the scenario stage: guards introduced 2026-10-01 by 2d164a1f (#525) reject any create() with a non-draft state while the demo scenario seeds were last authored 2026-09-05 (#435) and were never synced. Demo lags the product; the fix must align the demo to the product, never relax the guard.",
-    "symptom": "make demo.load SCENARIO=s70_daily_business_surface -> ParseError at 10_daily_business_records.xml:74 (sc.payment.execution state=confirmed) -> UserError '单据必须从草稿通过正式审批和业务动作流转。'",
-    "measured_2026_10_14": "one-pass record-level diagnostic (savepoint rollback, no commit): 62 record failures, ~30 root causes, the rest cascade (External ID not found under a failed parent)",
-    "root_cause_models": [
-      "sc.payment.execution",
-      "sc.treasury.reconciliation",
-      "sc.construction.diary",
-      "sc.invoice.registration (x2)",
-      "sc.project.document (x2)",
-      "sc.material.purchase.request",
-      "sc.plan",
-      "sc.plan.line",
-      "sc.safety.plan (x2)",
-      "sc.labor.plan",
-      "sc.labor.request",
-      "sc.attendance.checkin",
-      "sc.labor.settlement",
-      "sc.equipment.plan",
-      "sc.equipment.request",
-      "sc.equipment.usage",
-      "sc.equipment.settlement",
-      "sc.subcontract.plan",
-      "sc.subcontract.register",
-      "sc.subcontract.settlement",
-      "sc.material.rental.plan",
-      "sc.material.rental.order",
-      "sc.material.rental.settlement",
-      "tender.doc.purchase",
-      "sc.contract.event (x2)",
-      "sc.financing.loan",
-      "sc.hr.payroll.document",
-      "sc.settlement.adjustment",
-      "sc.output.invoice.adjustment (missing original_ledger_id; data not state)"
+    "status": "closed",
+    "closed_by": "第 36 棒 (2026-10-14)",
+    "summary": "Demo scenario seeds now reach their terminal states through the product's own actions instead of declaring them at create(); the 2026-10-01 create() guard was never relaxed.",
+    "defects_fixed": [
+      "DEMO-VERIFY-TERMINAL-PAYMENT-EXPECTATION: demo_90_verify demanded pay/receive facts on 保修/关闭 projects, which the product's P0_PROJECT_TERMINAL_BLOCKED guard refuses. Step 90 now asserts 'no in-flight submit/approve payment' for terminal-lifecycle projects and keeps the full fact assertion for the rest.",
+      "DEMO-LIFECYCLE-DRIVER-IDEMPOTENCY: _advance_scenario_lifecycle compared target state with == only, so a replay over a record already beyond the target (s86 rental settlement paid > confirmed) re-ran action_submit() and failed. Added _DEMO_LIFECYCLE_BEYOND_TARGET.",
+      "CONTRACT-ENSURE-DIRECT-STATE-WRITE: step_40 _ensure_contract wrote state directly on an existing contract (CONTRACT_GUARD_DIRECT_STATE_WRITE once enforced, and economic identity freezes afterwards). It now aligns business fields only in draft and lets action_confirm() own the state.",
+      "DEMO-COCKPIT-RECEIPT-CARRIER-AUTHORITY: sc_demo_seed_cockpit_round2 created sc.receipt.income while the scenario XML ran under the governed-migration carrier context, so create() skipped its draft and finance-identity guards and finance_identity_state resolved to NULL (NotNullViolation on sc_receipt_income). The seed now clears sc_receipt_fact_authority_token for that new-system receipt, so the row goes through the ordinary product path (draft + normalized identity) and is then advanced by action_confirm()/action_received()."
     ],
-    "fix_direction": "seed XML into draft, then advance through the governed actions from the existing _ensure_*(env) hooks in demo_addons/smart_construction_demo/tools/scenario_loader.py (the same pattern as _ensure_s85_payroll_lifecycle / _ensure_s80_material_lifecycle / _ensure_s69_*).",
-    "owning_task": "DEMO-SCENARIO-PRODUCT-DRIFT-01 (independent, separately acceptable product result; ~15 models / 10 scenarios, some requiring approval workflows)",
-    "alignment_premise_2026_10_14": "The one-step handling gate (see one_step_handling_closure, this batch) removes one of the two reasons the seeds were hard to align: a draft row now reaches its terminal state with a single governed action, so the loader hooks no longer need an explicit action_submit() before the terminal action. The remaining work is unchanged and still belongs to DEMO-SCENARIO-PRODUCT-DRIFT-01: author the scenario XML in draft and let the existing _ensure_*(env) hooks advance it; never relax the 2026-10-01 create() guard."
+    "regression_guard": "demo_addons/smart_construction_demo/tests/test_demo_funding_baseline_lifecycle.py::test_cockpit_receipt_create_leaves_the_migration_carrier_authority",
+    "evidence": {
+      "scenario_diagnostic": "30/30 scenarios OK, fail: [] (governed shell, savepoint rollback)",
+      "cockpit_probe": "/tmp/probe_s60.py -> S60_OK (savepoint rollback)",
+      "governed_rebuild": "make local.dev.rebuild_demo -> EXIT=0, [local.dev.rebuild] PASS, [verify.demo] PASS ALL on sc_dev_demo (/tmp/rebuild_evidence/rebuild3.log)",
+      "fresh_db_readback": "6 x DEMO_COCKPIT_R2-节点回款B sc.receipt.income = received/normalized/manual/1650000; linked payment.request = done with terminal_cash_source_model=sc.receipt.income",
+      "guards_intact": "probe_create_guard 7/7 GUARD_OK (terminal create() still refused)",
+      "seed_chain": "probe_showroom SHOWROOM_CHAIN_OK; probe_demofull DEMO_FULL_OK (includes demo_90_verify)",
+      "hermetic_unit": "python3 demo_addons/smart_construction_demo/tests/test_demo_funding_baseline_lifecycle.py -> 7 tests OK"
+    }
   },
   "one_step_handling_closure": {
     "status": "batch_verified_pending_freeze",

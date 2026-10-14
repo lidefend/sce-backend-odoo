@@ -1729,3 +1729,67 @@ XML 追加的连接子必须写 `&amp;`（首版裸 `&` 导致 XML 非法，已�
 状态：**批次验收完成**（源码 + 守卫 + 4 项定向运行时用例 + 泳道台账）。
 主线集成、版本发布、产品交付均未发生。未做：新页面、新组件、状态机 DSL、批量重构
 `extractListProfile`。
+
+## DEMO-SCENARIO-PRODUCT-DRIFT-01 收口：demo 场景按产品动作推进（2026-10-14，第 36 棒）
+
+`DEMO-SCENARIO-PRODUCT-DRIFT-01` 是 main 既有缺陷（见上文第 1439/1560 段）：场景种子成文早于
+2026-10-01 的产品守卫（`create()` 拒绝非草稿），此后未同步，导致 `make local.dev.rebuild_demo`
+在场景阶段失败。裁定始终是「demo 对齐产品，禁止放宽守卫」，本棒按该目标收口。
+
+### 事实核对
+
+失败面是记录级的：种子 XML 直接声明终态。一步式闸门（上文第 1583 段）已把对齐前提减半——
+种子落 `draft` 后，单个受治动作即可到终态，不必再显式 `action_submit()`。
+
+### 修改（全部在 demo 侧，产品守卫一行未改）
+
+| 缺陷 | 位置 | 处理 |
+|---|---|---|
+| `demo_90_verify` 与产品终态守卫冲突 | `seed/steps/step_90_verify_demo.py` | 终端生命周期项目（warranty/closed）改为断言「无在途 submit/approve 付款」，非终态项目仍要求 pay/receive 事实齐全；不放宽 `P0_PROJECT_TERMINAL_BLOCKED` |
+| 生命周期驱动非幂等 | `tools/scenario_loader.py` | 新增 `_DEMO_LIFECYCLE_BEYOND_TARGET`，`_advance_scenario_lifecycle` 认定「已达或越过目标状态」即跳过（s86 租赁结算 `paid` 越过 `confirmed` 时重复 `action_submit()` 会报「只有草稿或待重新提交的租赁结算可以提交」） |
+| 合同状态直写 | `seed/steps/step_40_contracts_demo.py` | `_ensure_contract` 对已存在合同只在草稿态对齐业务字段（剔除 `state`），状态交给 `action_confirm()`，非草稿不动。原直写触发 `CONTRACT_GUARD_DIRECT_STATE_WRITE` |
+| cockpit 收款登记建在迁移载体授权下 | `models/project_demo_cockpit_seed.py` | 场景 XML 在受治迁移载体上下文执行，`sc_receipt_fact_authority_token` 会使 `create()` 跳过草稿/财务身份守卫，`finance_identity_state` 取 `vals.get(...)` 得 NULL 而违反 NOT NULL。改为**清空该令牌**后建单，让这张新系统收款走普通产品路径（草稿 + `normalized` 身份 + 完整守卫），再由 `action_confirm()` / `action_received()` 推进 |
+
+cockpit 收尾动作保持产品语义：草稿 → `action_confirm()` → 财务经理 `action_received()`；
+不新增 token、不新增放行。清空令牌只会让守卫变严，不会获得额外写权限。
+
+### 防回归
+
+`demo_addons/smart_construction_demo/tests/test_demo_funding_baseline_lifecycle.py` 新增
+`test_cockpit_receipt_create_leaves_the_migration_carrier_authority`，钉住 cockpit 建收款登记前必须
+清空收款载体令牌（与既有 `test_finance_fact_records_pin_identity_state` 同一 hermetic 风格）。
+
+### 验证回执
+
+| 入口 | 结果 |
+|---|---|
+| `/tmp/probe_s60.py`（受管 shell，savepoint 回滚） | `S60_OK` |
+| 全部场景逐项诊断（受管 shell，savepoint 回滚） | `fail: []`（30/30 OK） |
+| `make local.dev.rebuild_demo`（`CONFIRM_LOCAL_DEV_DEMO_REBUILD=REBUILD_CURRENT_FEATURE_DEMO`） | `EXIT=0`，`[local.dev.rebuild] PASS`，`[verify.demo] PASS ALL on sc_dev_demo` |
+| 全新库只读事实回读 | 6 条 `DEMO_COCKPIT_R2-节点回款B` 收款登记 = `received` / `normalized` / `manual` / 1,650,000；对应申请 `done` 且 `terminal_cash_source_model=sc.receipt.income` |
+| `probe_create_guard` | 7/7 `GUARD_OK`（终态 `create()` 仍被拒绝） |
+| `probe_showroom` / `probe_demofull` | `SHOWROOM_CHAIN_OK` / `DEMO_FULL_OK`（含 `demo_90_verify`） |
+| `python3 demo_addons/smart_construction_demo/tests/test_demo_funding_baseline_lifecycle.py` | 7 tests OK |
+
+### 边界
+
+- 未放宽任何产品守卫，未新增跨模型放行；cockpit 仅清空自己那张单据的迁移载体令牌（净效果是更严）。
+- 未做：新页面、新组件、状态机 DSL；`span → deliverySpan` 迁移继续延后。
+- 上文「N 段」登记的第 2 项（公司级字典共享交付语义）与第 4 项（最终交付证据）仍开放，
+  不得据此报整体完成。
+
+### 收尾对账（第 36 棒续跑）
+
+冻结前把两个真实阻塞定位并解除，均为台账/接线缺陷，不涉及产品语义：
+
+| 阻塞 | 根因 | 处置 |
+|---|---|---|
+| `audit.verification.lane_coverage.check` DENY（`761 > 760`，1 项未登记） | 新入口 `local.dev.data_space.enroll_identities` 的声明只写在当时尚未纳入索引的 `scripts/ops/enroll_local_dev_demo_data_space_identities.py` 里；`git ls-files` 看不到它，入口被判为零引用 | 将该脚本纳入索引，引用解析成立，lane coverage 回到 `760` 并 `PASS`；未新增泳道、未改写基线 |
+| `agent.run.resume` rc=2（check 未指向已注册 verify 入口） | 台账里 `demo_scenario_alignment` / `demo_cockpit_receipt_authority` 指向了 `make local.dev.rebuild_demo` 与裸 `python3`，两者都不是 `verify.*` 入口 | 收敛为一个 `demo_scenario_alignment` → `verify.demo`（runtime），并把 hermetic 回归用例纳入其 inputs；`demo_cockpit_receipt_authority` 删除（同一事实由该 check 的输入集覆盖） |
+
+| 入口 | 结果 |
+|---|---|
+| `python3 scripts/ops/agent_run_context.py` | `rc=0`，`status=resolved`，`outside_scope=[]` |
+| `make audit.verification.lane_coverage.check` | `rc=0 PASS`（冻结基线内，760） |
+| `make ci.local.iteration` | `rc=0 PASS`（`change_state=dirty`，L1 only） |
+| `make ci.delivery.freeze.prepare` | `rc=0 PASS`（生成物已 review 后提交） |

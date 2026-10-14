@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 159,
+    "odoo_tags": 163,
     "gated": 4,
-    "on_demand": 11,
+    "on_demand": 15,
     "unwired": 144,
-    "odoo_tag_declarations": 368,
+    "odoo_tag_declarations": 372,
     "gated_declarations": 89,
-    "uncovered_declarations": 279,
+    "uncovered_declarations": 283,
     "ci_unit_scripts": 14,
     "ci_unit_scripts_wired": 14,
     "ci_unit_scripts_unwired": 0
@@ -782,6 +782,20 @@
       "disposition": "wire-pending"
     },
     {
+      "group": "data_space_identity_enrollment",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_data_space_identity_enrollment.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make:verify.local.dev.data_space_identity_enrollment.orm :: data_space_identity_enrollment"
+      ],
+      "disposition": "class-selected"
+    },
+    {
       "group": "demo_gate",
       "status": "unwired",
       "kind": "odoo_tag",
@@ -792,6 +806,20 @@
       "owner": "demo-team",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "dictionary_scope_delivery",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_dictionary_scope_delivery.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make:verify.local.dev.dictionary_scope_delivery.orm :: dictionary_scope_delivery"
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "e2e_fixed_journey",
@@ -1242,6 +1270,20 @@
       "owner": "platform-team",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "platform_database_governance",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_platform_database_governance_orm.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make:verify.local.dev.platform_database_governance.orm :: platform_database_governance"
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "policy_document",
@@ -1882,6 +1924,20 @@
       "owner": "construction-product",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "source_bounded_data_space_rules",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_source_bounded_data_space_rules.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.local.dev.source_bounded_data_space_rules.orm :: source_bounded_data_space_rules"
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "subcontract_cost_registration",
