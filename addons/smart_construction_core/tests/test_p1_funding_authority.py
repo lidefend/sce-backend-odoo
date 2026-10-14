@@ -959,7 +959,7 @@ class TestP1FundingAuthority(TransactionCase):
             })
             tax = setup_env["account.tax"].search([
                 ("company_id", "=", setup_env.company.id),
-                ("type_tax_use", "=", tax_use),
+                ("type_tax_use", "=", "purchase"),
             ], limit=1)
             created_tax_id = False
             if not tax:
@@ -1094,7 +1094,7 @@ class TestP1FundingAuthority(TransactionCase):
             partner = setup_env["res.partner"].create({"name": "P1 权威切换供应商"})
             tax = setup_env["account.tax"].search([
                 ("company_id", "=", setup_env.company.id),
-                ("type_tax_use", "=", tax_use),
+                ("type_tax_use", "=", "purchase"),
             ], limit=1)
             contract = setup_env["construction.contract"].create({
                 "subject": "P1 权威切换合同", "type": "in",
