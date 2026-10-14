@@ -1,0 +1,128 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Fail-closed guard for the platform database governance product capability.
+
+Owns one question only: is the database governance declaration still the single
+source, and does the platform capability still implement the two boundaries the
+owner named?
+
+* database isolation never replaces record permission;
+* platform database management never grants customer business data read, and a
+  special maintenance access needs explicit authorization plus audit.
+
+A missing layer, a lifecycle state without a legal entry, a maintenance access
+that could grant business scope, or a capability that hardcodes its own role or
+purpose vocabulary instead of consuming the declaration all fail here.
+"""
+from __future__ import annotations
+
+import importlib.util
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+GOVERNANCE_MODULE = "addons/smart_core/security/database_governance.py"
+PROVISIONING_MODULE = "addons/smart_core/security/data_space_provisioning.py"
+REGISTRY_MODEL = "addons/smart_core/models/platform_database_registry.py"
+DECLARATION = "addons/smart_core/data/tenant/database_strategy.v1.json"
+
+REQUIRED_MANAGED_ENTRIES = ("_register_database", "_apply_operation")
+REQUIRED_MAINTENANCE_ENTRIES = (
+    "_request_access",
+    "_approve_access",
+    "_revoke_access",
+    "_assert_access_authorized",
+)
+
+
+def _load(relative, name):
+    spec = importlib.util.spec_from_file_location(name, ROOT / relative)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def check(root: Path = ROOT) -> list[str]:
+    failures: list[str] = []
+    governance = _load(GOVERNANCE_MODULE, "governance_under_guard")
+
+    declaration = governance.load_declaration(root / DECLARATION)
+    failures.extend(governance.validate_governance_declaration(declaration))
+
+    provisioning = _load(PROVISIONING_MODULE, "provisioning_under_guard")
+    # The onboarding declaration stays the single source: the governance layer
+    # consumes it instead of restating roles, purposes or strategies.
+    for purpose in provisioning.PURPOSE_STRATEGY:
+        role = provisioning.PURPOSE_ENVIRONMENT_ROLE[purpose]
+        if role not in (declaration.get("environment_roles") or {}):
+            failures.append(
+                f"environment_roles: {role} is used by onboarding but not declared"
+            )
+
+    registry_path = root / REGISTRY_MODEL
+    if not registry_path.is_file():
+        failures.append(f"{REGISTRY_MODEL}: missing platform database registry model")
+        return failures
+    source = registry_path.read_text(encoding="utf-8")
+
+    for entry in REQUIRED_MANAGED_ENTRIES + REQUIRED_MAINTENANCE_ENTRIES:
+        if f"def {entry}" not in source:
+            failures.append(f"{REGISTRY_MODEL}: managed entry {entry} is missing")
+
+    if "resolve_operation_target_state" not in source:
+        failures.append(
+            f"{REGISTRY_MODEL}: the lifecycle entry must resolve through the declared transitions"
+        )
+    if "maintenance_access_grants_business_data_scope" not in source:
+        failures.append(
+            f"{REGISTRY_MODEL}: the maintenance access must read the declared scope fact"
+        )
+    if "grants_business_data_scope" not in source:
+        failures.append(
+            f"{REGISTRY_MODEL}: the maintenance access must expose grants_business_data_scope"
+        )
+    # The capability consumes the declared vocabulary instead of restating it,
+    # which is what keeps one declaration source true over time.
+    for symbol in (
+        "DATABASE_LIFECYCLE_STATES",
+        "DATABASE_LIFECYCLE_INITIAL_STATE",
+        "MAINTENANCE_ACCESS_CAPABILITIES",
+        "MAINTENANCE_ACCESS_MAX_VALIDITY_HOURS",
+    ):
+        if symbol not in source:
+            failures.append(f"{REGISTRY_MODEL}: must consume the declared {symbol} vocabulary")
+    if "security.database_governance" not in source:
+        failures.append(
+            f"{REGISTRY_MODEL}: must import its vocabulary from security.database_governance"
+        )
+    # The platform layer must never decide a tenant, a purpose or an
+    # initialization rule for itself.
+    for forbidden in ("in initialization_order", 'data_purpose = "'):
+        if forbidden in source:
+            failures.append(
+                f"{REGISTRY_MODEL}: the platform layer restates an onboarding rule ({forbidden})"
+            )
+    return failures
+
+
+def main() -> int:
+    failures = check()
+    if failures:
+        print("PLATFORM_DATABASE_GOVERNANCE_GUARD=FAIL")
+        for failure in failures:
+            print(f" - {failure}")
+        return 1
+    governance = _load(GOVERNANCE_MODULE, "governance_under_guard")
+    print(
+        "PLATFORM_DATABASE_GOVERNANCE_GUARD=PASS layers=%s states=%s capabilities=%s"
+        % (
+            len(governance.RESPONSIBILITY_LAYERS),
+            len(governance.DATABASE_LIFECYCLE_STATES),
+            len(governance.MAINTENANCE_ACCESS_CAPABILITIES),
+        )
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -43,9 +43,27 @@ REQUIRED_ENTRYPOINTS = (
     "declare_environment_role",
     "main_company_onboarding_purpose",
     "onboard_environment_main_company",
+    "enroll_data_space_identities",
+    "assert_data_space_identities_enrolled",
+    "data_space_operators_pending_enrollment",
 )
 INDUSTRY_HOOK_TOKEN = "_after_tenant_company_registration"
 PLATFORM_MODULE_PREFIXES = ("addons/smart_core/",)
+
+#: Onboarding owns the operator identity realm, not just the registration row.
+#: The consumer lane must call the platform entry: a registration whose
+#: operators were never enrolled is readable by nobody.
+ENROLLMENT_PLATFORM_TOKENS = (
+    "DATA_SPACE_IDENTITY_ENROLLMENT_INCOMPLETE",
+    "DATA_SPACE_ONBOARDING_REQUIRED_BEFORE_IDENTITY_ENROLLMENT",
+)
+ENROLLMENT_LANE_TOKENS = (
+    "enroll_data_space_identities",
+    "assert_data_space_identities_enrolled",
+)
+ENROLLMENT_CONSUMER_LANES = (
+    "demo_addons/smart_construction_demo/hooks.py",
+)
 
 
 def load(relative, name):
@@ -139,6 +157,22 @@ def check():
             "industry initialization: no non-platform module implements %s, so industry rows "
             "cannot be proven to land after onboarding" % INDUSTRY_HOOK_TOKEN
         )
+    provisioning_text = PROVISIONING.read_text(encoding="utf-8")
+    for token in ENROLLMENT_PLATFORM_TOKENS:
+        if token not in provisioning_text:
+            failures.append("identity enrollment: platform entry lost fail-closed token %s" % token)
+    for relative in ENROLLMENT_CONSUMER_LANES:
+        lane = REPO_ROOT / relative
+        if not lane.is_file():
+            failures.append("identity enrollment: %s is missing" % relative)
+            continue
+        lane_text = lane.read_text(encoding="utf-8")
+        for token in ENROLLMENT_LANE_TOKENS:
+            if token not in lane_text:
+                failures.append(
+                    "identity enrollment: %s does not consume %s, so its onboarded space "
+                    "can exist with every operator outside the realm" % (relative, token)
+                )
     return failures, owners
 
 

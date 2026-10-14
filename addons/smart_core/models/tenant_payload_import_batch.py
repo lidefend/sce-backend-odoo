@@ -14,6 +14,7 @@ from odoo.addons.smart_core.utils.tenant_payload_capability import (
 )
 from odoo.addons.smart_core.security.data_space import (
     CUSTOMER_PURPOSE,
+    NON_CUSTOMER_DATA_USER_GROUP,
     validate_customer_registration,
     validate_non_customer_creation,
 )
@@ -277,6 +278,80 @@ class ScTenantCompanyRegistration(models.Model):
     def _after_tenant_company_registration(self):
         """Extension point for product modules' neutral company defaults."""
         return True
+
+    def _data_space_operator_users(self):
+        """Internal identities authorized in this registration's company.
+
+        An operator is an internal (non-share), active user whose authorized
+        company set contains the registered business company. Portal/public
+        identities are never data-space operators, and a name, a login or a
+        fixture XMLID never establishes membership.
+        """
+        self.ensure_one()
+        return self.env["res.users"].sudo().with_context(active_test=False).search([
+            ("share", "=", False),
+            ("active", "=", True),
+            ("company_ids", "in", self.company_id.id),
+        ])
+
+    @api.model
+    def _enroll_data_space_operators(self, registrations):
+        """Grant the non-customer identity realm to an onboarded space's operators.
+
+        The realm is an explicit grant, never inferred: ``res.users.
+        _sc_data_company_ids`` keeps treating an identity that was never granted
+        as a customer identity, so a space whose operators were never enrolled is
+        readable by nobody. Onboarding owns this grant, which makes "the space
+        exists" and "its operators can work in it" one governed act instead of a
+        per-user assembly. Idempotent: an operator that already carries the group
+        is reported, not rewritten. A formal customer space is refused — a
+        customer identity must never be relabelled into the non-customer realm.
+        """
+        group = self.env.ref(NON_CUSTOMER_DATA_USER_GROUP, raise_if_not_found=False)
+        if not group:
+            raise ValidationError("DATA_SPACE_NON_CUSTOMER_IDENTITY_GROUP_MISSING")
+        enrolled_ids, effective_ids = set(), set()
+        companies = set()
+        for registration in registrations:
+            if registration.data_purpose == CUSTOMER_PURPOSE:
+                raise ValidationError("DATA_SPACE_CUSTOMER_IDENTITY_NOT_ENROLLABLE")
+            self._assert_non_customer_maintenance(
+                purpose=registration.data_purpose, tenant_key=registration.tenant_key)
+            companies.add(registration.company_id.id)
+            for user in registration._data_space_operator_users():
+                if group in user.groups_id:
+                    effective_ids.add(user.id)
+                else:
+                    enrolled_ids.add(user.id)
+        enrolled = self.env["res.users"].sudo().browse(sorted(enrolled_ids)).exists()
+        if enrolled:
+            # A realm change is a security change: keep the platform's own
+            # session-invalidation on groups_id, never a bypass.
+            enrolled.write({"groups_id": [(4, group.id)]})
+        effective = self.env["res.users"].sudo().browse(sorted(effective_ids)).exists()
+        return {
+            "group": NON_CUSTOMER_DATA_USER_GROUP,
+            "companies": sorted(companies),
+            "enrolled": sorted(enrolled.mapped("login")),
+            "already_effective": sorted(effective.mapped("login")),
+        }
+
+    @api.model
+    def _data_space_operators_pending_enrollment(self, registrations):
+        """Operators of these spaces that still lack the non-customer identity."""
+        group = self.env.ref(NON_CUSTOMER_DATA_USER_GROUP, raise_if_not_found=False)
+        if not group:
+            raise ValidationError("DATA_SPACE_NON_CUSTOMER_IDENTITY_GROUP_MISSING")
+        pending = set()
+        for registration in registrations:
+            for user in registration._data_space_operator_users():
+                # Direct membership read: this build's _has_group restores a
+                # superuser pass-through, so has_group() cannot classify a
+                # concrete operator under an elevated caller.
+                if group in user.groups_id:
+                    continue
+                pending.add(user.login)
+        return sorted(pending)
 
     @api.model
     def resolve_registered_company(self, company_id, *, require_active=True):

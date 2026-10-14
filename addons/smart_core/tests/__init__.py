@@ -51,4 +51,6 @@ from . import test_res_users_audience_group_boundary
 from . import test_intent_permission_menu_visibility
 from . import test_smart_core_model_init_table_recovery
 from . import test_data_space_boundary
+from . import test_data_space_identity_enrollment
 from . import test_dictionary_scope_delivery
+from . import test_platform_database_governance_orm

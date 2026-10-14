@@ -36,6 +36,10 @@ def readback():
         'registered_company_ids': sorted(registrations.company_id.ids),
         'onboarded_demo_company_ids': provisioning.onboarded_registrations(
             env, purpose='demo').company_id.ids,
+        'operators_pending_enrollment': (
+            provisioning.data_space_operators_pending_enrollment(env, purpose='demo')
+            if provisioning.onboarded_registrations(env, purpose='demo') else None
+        ),
         'bootstrap_company_ids': provisioning.bootstrap_company_ids(env),
         'companies': [
             {'id': company.id, 'name': company.name,
@@ -56,6 +60,8 @@ if confirmation != CONFIRMATION_TOKEN:
         'declare_environment_role(%s) on ir.config_parameter sc.environment.role' % ENVIRONMENT_ROLE,
         'onboard_environment_main_company(tenant_key="%s"): retire the bootstrap marker '
         'and write one sc.tenant.company.registration row' % DEMO_TENANT_KEY,
+        'enroll_data_space_identities(purpose="demo"): grant the non-customer data realm to '
+        'this space\'s operating identities, so onboarding produces a readable data space',
         'no business row changes company; re-run make local.dev.data_scope.ceiling.readiness',
     ]
     print('LOCAL_DEV_DATA_SPACE_ONBOARDING_PLAN=' + json.dumps(plan, ensure_ascii=False, sort_keys=True))
@@ -63,15 +69,18 @@ if confirmation != CONFIRMATION_TOKEN:
 else:
     provisioning.declare_environment_role(env, ENVIRONMENT_ROLE)
     registration = provisioning.onboard_environment_main_company(env, tenant_key=DEMO_TENANT_KEY)
+    enrollment = provisioning.enroll_data_space_identities(env, purpose='demo')
     env.cr.commit()
     after = readback()
     after['writes'] = True
     after['registration_tenant_key'] = registration.tenant_key
+    after['enrollment'] = enrollment
     after['post_conditions'] = {
         'main_company_is_not_a_carrier': bool(after['main_company_id'] not in after['bootstrap_company_ids']),
         'no_bootstrap_company_remains': not after['bootstrap_company_ids'],
         'one_registration_row': after['registration_rows'] == 1,
         'demo_registration_visible': bool(after['onboarded_demo_company_ids']),
+        'operators_pending_enrollment_is_empty': after['operators_pending_enrollment'] == [],
     }
     after['passed'] = all(after['post_conditions'].values())
     print('LOCAL_DEV_DATA_SPACE_ONBOARDING=' + json.dumps(after, ensure_ascii=False, sort_keys=True))

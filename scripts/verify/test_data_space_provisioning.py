@@ -39,7 +39,8 @@ class _Registrations:
 
 
 class _Model:
-    def __init__(self, *, ids=(), count=0, created=None, field_names=(), creates=False):
+    def __init__(self, *, ids=(), count=0, created=None, field_names=(), creates=False,
+                 pending_enrollment=()):
         self._ids = list(ids)
         self._count = count
         self._created = created if created is not None else []
@@ -48,6 +49,22 @@ class _Model:
         self._creates = creates
         self._registered = []
         self._adopted = []
+        self._pending_enrollment = list(pending_enrollment)
+        self._enrollments = []
+        self._enrollment_queries = []
+
+    def _enroll_data_space_operators(self, registrations):
+        self._enrollments.append(registrations)
+        return {
+            "group": "smart_core.group_smart_core_non_customer_data_user",
+            "companies": list(registrations.company_id.ids),
+            "enrolled": ["probe-operator"],
+            "already_effective": [],
+        }
+
+    def _data_space_operators_pending_enrollment(self, registrations):
+        self._enrollment_queries.append(registrations)
+        return list(self._pending_enrollment)
 
     def sudo(self):
         return self
@@ -311,6 +328,52 @@ class MainCompanyOnboardingTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "FORBIDS_MAIN_COMPANY_ONBOARDING"):
             provisioning.onboard_environment_main_company(env, tenant_key="customer-main")
         self.assertEqual(registration._adopted, [])
+
+
+class IdentityEnrollmentTest(unittest.TestCase):
+    """Onboarding must enroll the space's operators, or nobody can read it."""
+
+    def test_enrollment_requires_an_onboarded_space(self):
+        env = FakeEnv(registration=_Model(ids=[]))
+        with self.assertRaises(ValueError) as ctx:
+            provisioning.enroll_data_space_identities(env, purpose="demo")
+        self.assertIn("ONBOARDING_REQUIRED", str(ctx.exception))
+
+    def test_enrollment_delegates_to_the_registration_authority(self):
+        registration = _Model(ids=[7, 9])
+        env = FakeEnv(registration=registration)
+        receipt = provisioning.enroll_data_space_identities(env, purpose="demo")
+        self.assertEqual(receipt["companies"], [7, 9])
+        self.assertEqual(len(registration._enrollments), 1)
+        self.assertEqual(receipt["group"], "smart_core.group_smart_core_non_customer_data_user")
+
+    def test_enrollment_never_relabels_a_customer_space(self):
+        registration = _Model(ids=[7])
+        env = FakeEnv(registration=registration)
+        with self.assertRaises(ValueError):
+            provisioning.enroll_data_space_identities(env, purpose="customer")
+        self.assertEqual(registration._enrollments, [])
+
+    def test_identity_readiness_fails_closed_while_operators_are_outside_the_realm(self):
+        registration = _Model(ids=[7], pending_enrollment=["pm1", "fin1"])
+        env = FakeEnv(registration=registration)
+        with self.assertRaises(ValueError) as ctx:
+            provisioning.assert_data_space_identities_enrolled(env, purpose="demo")
+        self.assertIn("DATA_SPACE_IDENTITY_ENROLLMENT_INCOMPLETE", str(ctx.exception))
+        self.assertIn("pm1", str(ctx.exception))
+        self.assertIn("fin1", str(ctx.exception))
+
+    def test_identity_readiness_passes_when_every_operator_is_enrolled(self):
+        registration = _Model(ids=[7])
+        env = FakeEnv(registration=registration)
+        self.assertTrue(provisioning.assert_data_space_identities_enrolled(env, purpose="demo"))
+        self.assertEqual(len(registration._enrollment_queries), 1)
+
+    def test_identity_readiness_requires_an_onboarded_space(self):
+        env = FakeEnv(registration=_Model(ids=[]))
+        with self.assertRaises(ValueError) as ctx:
+            provisioning.assert_data_space_identities_enrolled(env, purpose="demo")
+        self.assertIn("ONBOARDING_REQUIRED", str(ctx.exception))
 
 
 class ReadinessGateTest(unittest.TestCase):

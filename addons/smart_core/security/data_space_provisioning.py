@@ -261,6 +261,43 @@ def assert_business_data_space_ready(env, purpose=None):
     return registrations
 
 
+def enroll_data_space_identities(env, *, purpose):
+    """Enroll an onboarded non-customer space's operators into its identity realm.
+
+    Onboarding owns three facts, and this is the third: the environment role, the
+    registered company (ownership) and the operator identity realm. The realm is
+    an explicit grant by design -- ``res.users._sc_data_company_ids`` never infers
+    it from company membership -- so a space whose operators were never enrolled
+    is readable by nobody and the whole demo/acceptance surface silently shows an
+    empty product. Re-runs are idempotent, and a formal customer space can never
+    be relabelled this way.
+    """
+    if purpose not in PROVISIONABLE_PURPOSES:
+        raise ValueError("DATA_SPACE_UNKNOWN_DATA_PURPOSE:%s" % (purpose,))
+    registrations = onboarded_registrations(env, purpose=purpose)
+    if not registrations:
+        raise ValueError("DATA_SPACE_ONBOARDING_REQUIRED_BEFORE_IDENTITY_ENROLLMENT")
+    return _registration_model(env)._enroll_data_space_operators(registrations)
+
+
+def data_space_operators_pending_enrollment(env, *, purpose):
+    """Operators of an onboarded space that still lack the non-customer identity."""
+    if purpose not in PROVISIONABLE_PURPOSES:
+        raise ValueError("DATA_SPACE_UNKNOWN_DATA_PURPOSE:%s" % (purpose,))
+    registrations = onboarded_registrations(env, purpose=purpose)
+    if not registrations:
+        raise ValueError("DATA_SPACE_ONBOARDING_REQUIRED_BEFORE_INITIALIZATION")
+    return _registration_model(env)._data_space_operators_pending_enrollment(registrations)
+
+
+def assert_data_space_identities_enrolled(env, *, purpose):
+    """Fail closed while an onboarded space still has operators outside its realm."""
+    pending = data_space_operators_pending_enrollment(env, purpose=purpose)
+    if pending:
+        raise ValueError("DATA_SPACE_IDENTITY_ENROLLMENT_INCOMPLETE:%s" % (",".join(pending),))
+    return onboarded_registrations(env, purpose=purpose)
+
+
 def unregistered_business_companies(env, company_ids):
     """Company ids with no active registration; unknown ownership never passes."""
     candidates = sorted({int(company_id) for company_id in company_ids if company_id})

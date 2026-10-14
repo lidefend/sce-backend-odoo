@@ -268,6 +268,15 @@ entries:
     kernel). It asserts the persisted registration and tenant-space boundary, not whole-product data
     rule acceptance. No governed ORM entry selects the tag yet; wire it or retire it.
   review_by: '2026-12-31'
+- group: data_space_identity_enrollment
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-team
+  dispose: class-selected
+  gate: 'make:verify.local.dev.data_space_identity_enrollment.orm :: data_space_identity_enrollment test.safe'
+  reason: Onboarding owns the operator identity realm, not only the registration row; a space whose
+    operators were never enrolled is readable by nobody. Reachable only through a hand-invoked
+    make/test entry; no recurring workflow selects this group yet.
 - group: demo_gate
   kind: odoo_tag
   status: unwired
@@ -276,6 +285,13 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: dictionary_scope_delivery
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-team
+  dispose: class-selected
+  gate: 'make:verify.local.dev.dictionary_scope_delivery.orm :: dictionary_scope_delivery test.safe'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group. Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: e2e_fixed_journey
   kind: odoo_tag
   status: on-demand
@@ -592,6 +608,13 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: platform_database_governance
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-team
+  dispose: class-selected
+  gate: 'make:verify.local.dev.platform_database_governance.orm :: platform_database_governance test.safe'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group. Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: policy_document
   kind: odoo_tag
   status: unwired
@@ -1081,6 +1104,13 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: source_bounded_data_space_rules
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-team
+  dispose: class-selected
+  gate: 'make:verify.local.dev.source_bounded_data_space_rules.orm :: source_bounded_data_space_rules test.safe'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group. Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: subcontract_cost_registration
   kind: odoo_tag
   status: unwired

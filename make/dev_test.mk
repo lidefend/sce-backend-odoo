@@ -2939,3 +2939,12 @@ verify.database.strategy.guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/database_strategy_guard.py scripts/verify/test_database_strategy_guard.py
 	@python3 scripts/verify/database_strategy_guard.py
 	@python3 -m unittest scripts.verify.test_database_strategy_guard
+
+# Platform database governance: the declaration stays the single source and the
+# two owner-named boundaries (isolation never replaces record permission;
+# platform database management never grants business data read) stay true.
+.PHONY: verify.platform.database.governance.guard
+verify.platform.database.governance.guard: guard.prod.forbid
+	@python3 -m py_compile addons/smart_core/security/database_governance.py addons/smart_core/models/platform_database_registry.py scripts/verify/platform_database_governance_guard.py scripts/verify/test_platform_database_governance.py
+	@python3 scripts/verify/platform_database_governance_guard.py
+	@python3 -m unittest scripts.verify.test_platform_database_governance
