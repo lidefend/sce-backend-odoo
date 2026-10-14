@@ -26,77 +26,93 @@
   不手工拼装 compose/数据库/凭据命令
 - `Blast Radius`：仅目标环境只读验收证据与 `.agent`/`docs` 记账
 
-## 3. 结果
+## 4. 目标环境 403 根因（2026-10-14，部署面 `d2079888`，DB `sc_demo`）
 
-见结果索引 `.agent/runs/TARGET-ENV-ROLE-ACCEPTANCE/run.json`。本文件随实际执行结果更新。
-
-状态边界：批次验收 / 主线集成 / 版本发布 / 产品交付 必须分开汇报；未绑定的层不得声明完成。
-
-## 4. 目标环境只读探测（2026-10-14，部署面 `d2079888`，DB `sc_demo`）
-
-受管只读载体 `odoo.shell.exec`（`sc-root`，远程 HEAD 回读 = `d2079888`）实测：
+### 4.1 事实回读
 
 | 事实 | 值 |
 |---|---|
-| `sc.tenant.company.registration` 行数 | **0**（无任何数据空间登记） |
-| `sc.environment.role` | 未声明 |
-| `is_platform_bootstrap_company=True` 公司 | 无 |
-| fixture 自有公司 | `fe_company_a`→21「FE Company A」、`fe_company_b`→22「FE Company B」 |
-| `fixture_role_finance` | uid 210，company_ids [21,22]，非客户组=False，`_sc_data_company_ids()`=**[]** |
-| payment.request 36178 | company_id=21，`check_access_rights('read')`=ok，`check_access_rule('read')`=**AccessError** |
-| 全局规则 | `ir.rule#832`「SC Data Scope - payment.request by allowed companies」 |
+| `sc.tenant.company.registration` | **2 行**：company 21「FE Company A」、company 22「FE Company B」，`data_purpose=test`，`tenant_key=frontend-productization-fixture`，`active=True`，`is_platform_bootstrap_company=False` |
+| `fixture_role_finance`（uid 210） | `company_ids=[21,22]`；持久化成员关系含 `smart_core.group_smart_core_non_customer_data_user`（res.groups 152） |
+| payment.request 36180 / 36181 | company_id=**21**（在 FE 数据空间内），`ui.contract.v2` 仍返回 403 |
+| payment.request 36029 / 1246、project 1246 | company_id=**1**（受管基线预置的示例公司），无登记行，按设计不在任何责任人数据空间内 |
+| `payment.request` 全局规则 | `ir.rule#832`「SC Data Scope - payment.request by allowed companies」，domain 含 `('company_id','in',user._sc_data_company_ids())` |
 
-结论：`/api/v1/intent`（`ui.contract.v2`）403 的唯一根因是**目标库未完成数据空间登记**，
-使 PR #654 的全局用途上限规则 fail-closed 命中 `('company_id','in',[])`。
+### 4.2 根因：授权事实被 ORM 缓存遮蔽
+
+`_sc_data_company_ids()` 的文档承诺「成员、注册与当前公司授权每次解析实时读取」，
+但实现委托给 `res.users.has_group`，而该方法是 `tools.ormcache('self._uid', group_ext_id)`
+**跨请求缓存**。判定链因此变成：
+
+```
+用途上限 → has_group(非客户数据组) → 命中 worker 缓存
+        → 数据空间为空 → ir.rule#832 命中 ('company_id','in',[])
+        → 即使记录就在已登记的 FE 数据空间内，也返回 403
+```
+
+决定性只读证据（同一 uid、同一数据库、同一记录）：
+
+| 观测点 | `fixture_role_finance`(210) | `wutao`(16) |
+|---|---|---|
+| shell 直接 SQL / 关系表 | 有 (152,210) 行 | 无该行 |
+| HTTP `/web/dataset/call_kw` `res.users.has_group` | **false** | false |
+| shell 内 `env.registry.clear_cache()` + `signal_changes()` 之后的同一 HTTP 调用 | **true** | false（不变） |
+
+即：**HTTP 与 shell 的差异只来自缓存，不来自事实**。受管夹具经 `odoo shell` 写入，
+而 shell 是请求周期之外的写入者，不会发出缓存失效信号，长驻 worker 于是一直沿用旧答案。
+同一窗口在反向也成立：撤销授权后 worker 会继续放行，属于安全方向的错误。
+
+`wutao`(uid 16) 的 403 不是缺陷：它本就不持有非客户数据组，
+读不到 `data_purpose=test` 的 FE 数据空间正是双向隔离的设计结果。
+
+### 4.3 根因修复（工作区，已验证）
+
+- **拥有层**：`addons/smart_core/models/res_users.py::_sc_data_company_ids()` 改为读取持久化成员关系
+  （与原生 `_has_group` 同一断言，去掉跨请求缓存）；新增
+  `_sc_resolved_group_ids()` / `_sc_current_group_ids()` 两个事实读取助手。
+- **回归门禁**：新增 `verify.local.dev.data_space_uncached_membership.orm`
+  （tag `data_space_uncached_membership`，4 个用例）。绑定证据：修复版 **4/4 通过**；
+  临时还原旧实现后 **4/4 失败**。
+- **通道层**：`scripts/ops/daily_runtime_lifecycle_fixture_prepare.py` 在提交后显式
+  `clear_cache() + signal_changes()`，使受管 shell 通道自己宣告失效；
+  其单测固定该行为（18 项通过）。
 
 ## 5. 本轮产品修复（工作区，已验证）
 
 ### 回归 1：契约导航丢失「角色首页」
 
 - 事实：契约 `index` 声明 90（`config/frontend/acceptance_environments_v1.json` →
-  `navigation_policy.action_count_authority`，principal_role `business_config_admin`），
-  部署实测 89。
+  `navigation_policy.action_count_authority`，principal_role `business_config_admin`），部署实测 89。
 - 根因：Odoo `_visible_menu_ids()` 以 action 为中心，`menu_sc_workspace_home`（`res_model=""`、无 action、
   `entry_target_policy=scene_entry`）永不可见；PR #654 让授权阶段消费该集合，于是该载体在授权链被丢弃。
 - 修复：`MenuFactService.export_authorized_menu_facts()`（按 `groups_id` + 祖先链 ACL 过滤，fail-closed）
   成为授权来源；`export_visible_menu_facts()` 保持渲染语义不变。
+- 状态：**已合入 main**（PR #657 → `28e19f60`）。部署面仍为 `d2079888`，故目标环境读数仍为 89，
+  需重发布才会变为 90。
 
-### 回归 2：fixture 遗留载体无法完成数据空间入驻
+### 回归 2：fixture 遗留载体公司归属漂移
 
-- 事实：`smart_construction_acceptance_fixture` 已安装，但目标库无登记；
-  旧版 fixture 先绑定 `fe_company_a/b` 再补登记能力，HEAD 版 `_company()` 对此直接
-  `RuntimeError(... use governed baseline reset)`，即目标库无法重跑 fixture。
-- 修复：fixture 对**自己 XMLID 锚定**的遗留公司改走声明维护入口
-  `data_space_provisioning.adopt_business_company(...)` 收养一次（幂等、逐公司、fail-closed：
-  非自有公司 / bootstrap 公司绝不收养）。定位为「新增平台维度 → 迁移收养」，
-  与「自有业务事实冲突 → 基线重置」区分。
+- 事实：`fe_activity_journal_entry`（`account.move` id 8）company_id=**1**（受管基线预置的示例公司），
+  而 fixture 声明其属于 FE Company A；受管 `ensure_fixture` 因此 fail-closed，夹具无法完成入驻。
+- 修复：按与 `_reconcile_project_company` 相同的边界，构建器收敛**自己这一行**——
+  仅当分录为草稿、从未过账且无日记账行时改写 `company_id/journal_id/currency_id` 并重置 `name="/"`；
+  任何已过账的漂移仍然抛 `Activity move ownership mismatch; use governed baseline reset`。
+  区分依据：这是「夹具自有、且可证明不含业务事实」的行，不是基线重置，也不放开守卫。
+- 验证：受管入口 `make daily.runtime.lifecycle_fixture.prepare` 在目标库执行 **status=PASS，carrier id=2022**；
+  `verify.daily_dev.acceptance_fixture.unit` 31 项通过。
 
-### 修复 2 在目标环境的首轮执行结果（2026-10-14）
+### 守卫边界（本轮未做）
 
-经受管入口 `make daily.runtime.lifecycle_fixture.prepare`
-（`CONFIRM_DAILY_RUNTIME_LIFECYCLE_FIXTURE=DRIVE_DAILY_SC_DEMO_PROJECT_LIFECYCLE`，
-`DAILY_RUNTIME_EXPECTED_SHA=d2079888…`，仅写 `daily_dev` fixture 范围）驱动**工作区** builder：
-
-- 登记收养路径已生效（`_require_activity_company` 通过，说明 FE 公司登记已在本事务内建立）；
-- 随后被**另一处既有载体漂移**阻断：
-  `RuntimeError: Activity move ownership mismatch; use governed baseline reset`
-  —— `fe_activity_journal_entry`（`account.move` id 8）company_id=**1**（受管基线预置的示例公司，非 FE Company A），
-  而 fixture 声明其属于 FE Company A；
-- 事务整体回滚：复测 `registration_count` 仍为 0，**目标库未被改动**。
-
-即：`sc_demo` 存在两类事实，需分开处置：
-
-| 事实 | 性质 | 处置方向 |
-|---|---|---|
-| FE 公司缺数据空间登记 | 新平台维度未迁移 | 本轮修复（收养），已验证可执行 |
-| `fe_activity_journal_entry` 公司归属漂移 | 自有业务事实冲突 | fixture 自身声明的「governed baseline reset」，或单列受管数据修复 |
+- 未为 demo 放开任何写入权限、未注入绕过 token、未改写登记行 `data_purpose`。
+- 未把「平台 + 行业 + 客户」语义写入平台内核；数据空间事实仍唯一来自
+  `sc.tenant.company.registration`。
 
 ## 6. 状态
 
-- 批次验收：**未完成**。两条产品回归已修复并通过所属层门禁；
-  目标环境验收仍受「目标库未完成登记 + 需部署修复后才能达到契约 90」双重阻塞。
-- 主线集成：本棒后续完成（产品修复走受保护 PR）。
-- 版本发布：沿用上一棒（目标环境 = main `d2079888`）。
+- 批次验收：**未完成**。三条产品缺陷已在拥有层修复并通过所属层门禁；
+  目标环境只读验收仍需在**重发布后**重新绑定（部署面 `d2079888` 不含本轮修复）。
+- 主线集成：回归 1 已完成（PR #657）；回归 2/3（夹具载体 + 无缓存上限）待本条分支集成。
+- 版本发布：**未完成**。目标环境仍为 `d2079888`。
 - 产品交付：**未声明**。
 
 ## 7. 交接
@@ -104,16 +120,15 @@
 | 项 | 值 |
 |---|---|
 | 候选分支 | `audit/target-env-role-acceptance-20261014` |
-| 候选 HEAD | `36bbf88cdf181bc0b8d6f15d5549cd204974e958` |
-| 基线 | `d2079888`（main，含 PR #654/#655/#656） |
-| PR | https://github.com/lidefend/sce-backend-odoo/pull/657（base `main`，远端门禁运行中） |
+| 基线 | `d2079888`（main 已推进到 `28e19f60`） |
+| 已合入 | PR #657（导航授权来源） |
 | 目标环境 | daily `sc_demo`，部署面仍为 `d2079888`（未变） |
-| 未改动 | 目标库（复测 `registration_count`=0）、部署 checkout、任何业务数据 |
+| 本轮写入 | 仅 `daily_dev` fixture 范围（FE 数据集与其数据空间登记）；无租户业务数据、无 schema、无部署 checkout 改动 |
 
 下一精确步骤：
 
-1. 等 PR #657 在**该精确 HEAD 与基线**上远端门禁通过（新 HEAD 不继承旧结果）；
-2. 取得所有者裁定：`fe_activity_journal_entry` 公司归属漂移如何处置
-   （受管基线重置 / 按行受管修复）；
-3. 集成并重新发布 daily 后，重跑受管 fixture 入驻与分角色只读验收，
-   绑定允许/拒绝证据。未完成前不得声明批次验收或产品交付完成。
+1. 推送本条分支并按所有者「CI 通过即合并」规则走受保护 PR 合并；
+2. 经受管入口重发布 daily，回读 `/api/runtime-version` 绑定新 SHA，并确认导航面达到契约 90；
+3. 重跑受管夹具入驻与分角色只读验收，绑定**每责任人显式允许/拒绝期望**：
+   `fixture_role_finance`(210) 可读 FE Company A 记录；`wutao`(16) 在 FE 数据空间被拒（双向隔离）；
+4. 未完成前不得声明批次验收、版本发布或产品交付完成。
