@@ -1630,6 +1630,8 @@ verify.product.menu.governance.m4.closure: guard.prod.forbid
 verify.system_init.menu_boundary.guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/system_init_menu_boundary_guard.py
 	@python3 scripts/verify/system_init_menu_boundary_guard.py
+	@python3 -m py_compile scripts/verify/system_init_dictionary_scope_guard.py
+	@python3 scripts/verify/system_init_dictionary_scope_guard.py
 
 .PHONY: verify.release.phase1.navigation_convergence.guard
 verify.release.phase1.navigation_convergence.guard: guard.prod.forbid
@@ -2923,3 +2925,15 @@ verify.payment_slice.data_authority.unit: guard.prod.forbid
 verify.data_space.policy.unit: guard.prod.forbid
 	@python3 -m py_compile addons/smart_core/models/tenant_payload_import_batch.py addons/smart_core/models/res_users.py
 	@python3 -m unittest scripts.verify.test_data_space_policy
+
+.PHONY: verify.data_space.provisioning.guard
+verify.data_space.provisioning.guard: guard.prod.forbid
+	@python3 -m py_compile addons/smart_core/security/data_space_provisioning.py scripts/verify/data_space_provisioning_guard.py scripts/verify/test_data_space_provisioning.py
+	@python3 scripts/verify/data_space_provisioning_guard.py
+	@python3 -m unittest scripts.verify.test_data_space_provisioning
+
+.PHONY: verify.database.strategy.guard
+verify.database.strategy.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/database_strategy_guard.py scripts/verify/test_database_strategy_guard.py
+	@python3 scripts/verify/database_strategy_guard.py
+	@python3 -m unittest scripts.verify.test_database_strategy_guard

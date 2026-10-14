@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "authority": "docs/governance/database_architecture_policy.md",
+  "boundary": "docs/architecture/platform_industry_initialization_and_database_strategy_v1.md",
+  "strategies": {
+    "database_per_customer_tenant": {
+      "summary": "One dedicated database per formal customer tenant; several res.company may still share that one tenant database.",
+      "dedicated_database_per_customer": true,
+      "allows_multiple_customers_in_one_business_database": false
+    },
+    "single_db_multi_company": {
+      "summary": "One database, several business companies separated by company scope plus data purpose.",
+      "dedicated_database_per_customer": false,
+      "allows_multiple_customers_in_one_business_database": false
+    }
+  },
+  "data_purposes": ["customer", "demo", "test"],
+  "environment_roles": {
+    "platform_internal_demo": {
+      "strategy": "single_db_multi_company",
+      "data_purpose": "demo",
+      "bootstrap_company_carries_business_data": false,
+      "onboarded_company_required": true,
+      "initialization_order": [
+        "platform_technical_baseline",
+        "platform_mechanisms",
+        "bootstrap_company_marker",
+        "database_strategy_declaration",
+        "data_space_onboarding",
+        "industry_initialization",
+        "customer_differentiation"
+      ]
+    },
+    "industry_acceptance": {
+      "strategy": "single_db_multi_company",
+      "data_purpose": "test",
+      "bootstrap_company_carries_business_data": false,
+      "onboarded_company_required": true,
+      "initialization_order": [
+        "platform_technical_baseline",
+        "platform_mechanisms",
+        "bootstrap_company_marker",
+        "database_strategy_declaration",
+        "data_space_onboarding",
+        "industry_initialization",
+        "customer_differentiation"
+      ]
+    },
+    "customer_production": {
+      "strategy": "database_per_customer_tenant",
+      "data_purpose": "customer",
+      "bootstrap_company_carries_business_data": false,
+      "onboarded_company_required": true,
+      "dedicated_database_per_customer": true,
+      "initialization_order": [
+        "platform_technical_baseline",
+        "platform_mechanisms",
+        "bootstrap_company_marker",
+        "database_strategy_declaration",
+        "data_space_onboarding",
+        "industry_initialization",
+        "customer_differentiation"
+      ]
+    }
+  },
+  "invariants": [
+    "business_data_never_in_platform_bootstrap_company",
+    "onboarding_precedes_industry_initialization",
+    "one_formal_customer_owns_one_business_database",
+    "unregistered_company_ownership_fails_closed",
+    "strategy_is_declared_per_environment_role"
+  ]
+}

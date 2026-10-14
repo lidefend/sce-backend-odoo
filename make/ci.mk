@@ -1120,6 +1120,8 @@ verify.contract.architecture.suite: \
 	verify.local.clean.frontend_output.unit \
 	verify.payment_slice.data_authority.unit \
 	verify.data_space.policy.unit \
+	verify.database.strategy.guard \
+	verify.data_space.provisioning.guard \
 	verify.local.dev.layout_authority.unit \
 	verify.sc_price.company_ownership_boundary \
 	verify.sc_data_scope.rule_coverage \
