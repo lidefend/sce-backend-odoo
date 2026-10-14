@@ -498,7 +498,7 @@
       ],
       "owner": "construction-product",
       "evidence": [
-        "make:verify.acceptance_fixture.execution_freeze.orm :: acceptance_fixture_execution_freeze test.safe"
+        "scripts/test/frontend_acceptance_fixture_orm.sh :: acceptance_fixture_execution_freeze"
       ],
       "disposition": "class-selected"
     },

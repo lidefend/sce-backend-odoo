@@ -1,0 +1,52 @@
+schema_version: 1
+goal:
+  id: FE-RECORD-FORM-CONSUMPTION-CLOSURE
+  title: core_record_form_journey_contract_consumption_closure
+  status: active
+  formal_product_layer: P0
+  supporting_layer: P4
+  layer_target: frontend_contract_consumption_and_acceptance_lane_wiring
+  module:
+    - frontend/apps/web/src/pages/contractForm
+    - frontend/apps/web/scripts
+    - scripts/verify
+    - scripts/test
+    - make
+  baseline:
+    branch: main
+    full_sha: 9c3851d323a7a0c639d3faab9548d98bcc99d873
+    source: post_merge_contract_runtime_ledger_closeout
+  objective: >-
+    收口核心记录表单旅程（J12/J13/J14）暴露的契约消费缺陷，并把验收夹具的 ORM 冻结
+    车道接回唯一受管入口。三项已定位：真实角色 fixture 绑定「已声明但未交付」的结算
+    单身份导致前端守卫正确拒绝；保存成功后 canSave 抖动把成功回执判成换页；金额等值
+    字段的更正聚焦落到同容器内先出现的配置按钮而不是取值控件。目标是把每一处都改回
+    「消费契约声明 + 官方组件组合」，不新增前端业务推断，也不为夹具放开产品守卫。
+  product_boundary:
+    standard_vs_user_specific: platform_contract_consumption_standard
+    why_here: >-
+      这三处都在 P0 通用消费层：旅程夹具绑定入口身份、表单动作的 surface 身份、
+      错误聚焦的控件排序，都是所有业务对象共享的通用机制，不含任何行业或客户语义。
+    why_not_elsewhere:
+      - no_product_guard_weakening
+      - no_frontend_business_inference
+      - no_hand_assembled_compose_database_or_credential_command
+      - no_change_to_the_delivered_contract_or_schema
+    blast_radius:
+      - contract form focus and save feedback on every business form
+      - core record form journey fixtures for the acceptance carrier only
+  constraints:
+    - governed_make_entrypoints_only
+    - one_worktree_one_writer
+    - zero_test_results_are_never_a_pass
+    - report_batch_mainline_and_delivery_status_separately
+  next_exact_step: >-
+    见 .agent/runs/FE-RECORD-FORM-CONSUMPTION-CLOSURE/run.json 的 next_exact_step。
+  completion:
+    scope: core_record_form_journey_contract_consumption_closure
+    overall_goal: in_progress
+    result_index: .agent/runs/FE-RECORD-FORM-CONSUMPTION-CLOSURE/run.json
+    local_batch_acceptance: in_progress
+    mainline_integration: not_started
+    deployment: not_started
+    target_user_delivery: not_started

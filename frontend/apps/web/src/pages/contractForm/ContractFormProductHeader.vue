@@ -79,7 +79,7 @@
         <ScButton v-if="showReturn" variant="ghost" size="small" :disabled="busy" type="button" @click="$emit('return-workbench')">返回工作台</ScButton>
       </span>
       <span v-if="showDraftSave || showPrimaryFormAction || directActions.length || canonicalDirectActions.length" class="form-header-primary-actions">
-        <ScButton v-if="showDraftSave" variant="ghost" size="small" :disabled="draftSaveDisabled" type="button" @click="$emit('save-draft')">{{ draftSaveLabel }}</ScButton>
+        <ScButton v-if="showDraftSave" variant="ghost" size="small" :disabled="draftSaveDisabled" type="button" data-form-draft-save="save-draft" @click="$emit('save-draft')">{{ draftSaveLabel }}</ScButton>
         <ScPopover v-if="showPrimaryFormAction" trigger="click" :disabled="!primaryFormActionDisabled || !primaryFormActionHint">
           <template #trigger><span :tabindex="primaryFormActionDisabled && primaryFormActionHint ? 0 : undefined" :role="primaryFormActionDisabled && primaryFormActionHint ? 'button' : undefined" :aria-label="primaryFormActionDisabled ? primaryFormActionHint : undefined" :class="{ 'form-action-denial-trigger': primaryFormActionDisabled && primaryFormActionHint }" @keydown="activateReasonTrigger"><ScButton data-product-primary-action v-bind="actionEvidenceAttributes(primaryAction)" variant="primary" size="small" :disabled="primaryFormActionDisabled" :title="primaryFormActionHint || undefined" type="button" @click="!primaryFormActionDisabled && !busy && $emit('run-primary')">{{ submitLabel }}</ScButton></span></template>
           {{ primaryFormActionHint }}
@@ -113,7 +113,7 @@
 </template>
 
 <script setup lang="ts">
-import { formClientCommands } from '@sc/schema';
+import { formClientCommands, normalizeActionSemantics } from '@sc/schema';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import PageHeaderTemplate from '../../components/template/PageHeader.vue';
 import ScPopover from '../../components/design-system/ScPopover.vue';
@@ -261,12 +261,25 @@ function actionEvidenceAttributes(action: ContractAction | null) {
   };
 }
 
+/** The executor the contract declared for this action, verbatim.
+ *
+ * Journeys and guards bind to this declared identity instead of the action's
+ * current copy, so a label change (保存修改 -> 保存草稿) stops being reported as
+ * a product regression.
+ */
+function declaredActionExecutor(action: CanonicalFormAction): string {
+  if (action.actionRef.actionSemanticsInvalid) return '';
+  const declared = action.actionRef.actionSemantics || normalizeActionSemantics(action.actionRef);
+  return declared?.executor || '';
+}
+
 function canonicalActionEvidenceAttributes(action: CanonicalFormAction) {
   return {
     'data-action-ref': action.actionRef.actionId,
     'data-action-key': action.key,
     'data-backend-identity': action.actionRef.backendIdentity,
     'data-action-method': action.actionRef.button?.name || action.actionRef.button?.method || '',
+    'data-action-executor': declaredActionExecutor(action),
     'data-action-enabled': String(action.enabled),
     'data-action-allowed': String(action.actionRef.allowed === true),
   };

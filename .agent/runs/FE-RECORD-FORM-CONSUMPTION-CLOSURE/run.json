@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "id": "FE-RECORD-FORM-CONSUMPTION-CLOSURE",
+  "branch": "fix/fe-record-form-consumption-closure-20261015",
+  "status": "active",
+  "baseline_sha": "9c3851d323a7a0c639d3faab9548d98bcc99d873",
+  "goal": ".agent/goals/FE-RECORD-FORM-CONSUMPTION-CLOSURE.yaml",
+  "record": "docs/ops/iterations/fe_record_form_consumption_closure_20261015.md",
+  "scope": [
+    "frontend/apps/web/src/pages/contractForm/",
+    "frontend/apps/web/scripts/",
+    "scripts/verify/frontend_core_record_form_journeys.mjs",
+    "scripts/verify/frontend_productization_fixture.py",
+    "scripts/verify/test_coverage_registry.yaml",
+    "scripts/test/frontend_acceptance_fixture_orm.sh",
+    "scripts/audit/",
+    "addons/smart_construction_acceptance_fixture/",
+    "make/dev.mk",
+    "make/runtime_ops.mk",
+    "scripts/dev/",
+    ".agent/",
+    "docs/ops/iterations/"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Frontend acceptance uses only the governed acceptance carrier reached through make acceptance.frontend.core_record_form.journeys -> verify.frontend.core_record_form.journeys, which selects its own runtime profile, database and static release build; the executor never assembles a compose project, database, port or credential command by hand. The fixture ORM freeze lane runs through make acceptance.frontend.fixture_orm on the same carrier, where smart_construction_acceptance_fixture is actually installed. Read-only contract probes reuse the same profile. No product or demo database is written."
+  },
+  "checks": {
+    "contract_error_business_ownership": {
+      "target": "verify.frontend.contract_error_business_ownership.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/businessValidationError.ts",
+        "frontend/apps/web/src/pages/contractForm/validationErrorPosition.ts",
+        "frontend/apps/web/src/pages/contractForm/formValidationFocus.ts",
+        "frontend/apps/web/src/pages/contractForm/canonicalFormRenderState.ts",
+        "frontend/apps/web/src/pages/contractForm/saveRecordHelpers.ts",
+        "frontend/apps/web/scripts/contract_error_business_ownership_test.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "decision_authority": {
+      "target": "verify.frontend.decision_authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/",
+        "docs/frontend_productization/decision-authority-inventory-v1.json",
+        "scripts/verify/frontend_decision_authority.py",
+        "make/frontend.mk"
+      ]
+    },
+    "contract_form_save_failure_recovery": {
+      "target": "verify.frontend.contract_form_save_failure_recovery.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+        "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+        "frontend/apps/web/scripts/contract_form_save_failure_recovery_test.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "j13_required_value_semantics": {
+      "target": "verify.frontend.j13_required_value_semantics.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/",
+        "frontend/apps/web/scripts/",
+        "make/frontend.mk"
+      ]
+    },
+    "acceptance_fixture_freeze": {
+      "target": "verify.acceptance_fixture.execution_freeze.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_acceptance_fixture/",
+        "scripts/test/frontend_acceptance_fixture_orm.sh",
+        "make/dev.mk",
+        "make/runtime_ops.mk"
+      ]
+    },
+    "core_record_form_journeys": {
+      "target": "verify.frontend.core_record_form.journeys",
+      "kind": "runtime",
+      "readback": {
+        "artifact": "artifacts/frontend-professional/fe-pro-03/journeys/report.json"
+      },
+      "inputs": [
+        "scripts/verify/frontend_core_record_form_journeys.mjs",
+        "scripts/verify/released_navigation_target.mjs",
+        "scripts/verify/frontend_financial_workspace_runtime_ids.py",
+        "scripts/verify/playwright_runtime.mjs",
+        "frontend/apps/web/src/pages/contractForm/",
+        "make/runtime_ops.mk"
+      ]
+    }
+  },
+  "blockers": [
+    "declared_but_undelivered_entry_finding: the finance role surface declares menu_sc_settlement_center / menu_sc_settlement_order (action 762), but the released standard product face (sc.product.policy construction.standard, 90 menu rows) contains no settlement-center subtree, so system.init route authority reports the pair as PRODUCT_ENTRY_NOT_VISIBLE and the SPA correctly refuses the route. The journey now binds the delivered 付款申请 entry (menu 559 / action 878) instead. Recorded as a finding about the delivery面, not repaired here; the product guard was never weakened.",
+    "menu_sc_historical_payment_fact is the only one of the finance principal's 45 primary menus that does not render; recorded as a finding, out of this batch's scope.",
+    "the fixture's payment-request workflow freeze writes state/validation_status through the ORM on fixture-owned disposable rows and the accompanying test asserts payment.request.create still rejects a direct non-draft create, so no product guard is bypassed; a governed initialization/migration carrier remains separately designed work."
+  ],
+  "next_exact_step": "Batch evidence is complete and the remote frontend_release_gate red light is cleared locally: the decision-authority ledger line drift (533/537 for /login and access-denied in useRecordFormActions.ts) was re-exported and reviewed (only line numbers changed), and make verify.frontend.decision_authority.unit now PASSes 15 tests with all semantic_registry carriers in sync. Next: commit the ledger + iteration record in Chinese without a co-author trailer, freeze the clean HEAD, run make ci.local.quick once on that exact HEAD, push the candidate, wait for the four required remote checks on the new source commit, then merge through make pr.merge and read back PR state, merge commit and main."
+}

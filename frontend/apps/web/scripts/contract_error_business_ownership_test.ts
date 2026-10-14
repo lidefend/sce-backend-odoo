@@ -40,7 +40,7 @@ import {
   type BusinessFieldError,
 } from '../src/app/businessValidationError';
 import { applyCanonicalFormValidation } from '../src/pages/contractForm/canonicalFormRenderState';
-import { selectValidationPosition } from '../src/pages/contractForm/validationErrorPosition';
+import { selectCorrectionControl, selectValidationPosition } from '../src/pages/contractForm/validationErrorPosition';
 import { focusProductFormValidationError } from '../src/pages/contractForm/formValidationFocus';
 import { buildLegacyLayoutNodes } from '../src/pages/contractForm/nativeLayoutUtils';
 import { collectRequiredFieldValidation, validateBeforeSaveRecord } from '../src/pages/contractForm/saveRecordHelpers';
@@ -304,6 +304,38 @@ check(onlyReadonly.reason, 'no-correctable-position', 'the summary outcome recor
 const onlyHidden = selectValidationPosition([{ key: 'name', occurrenceKey: 'field.name', visible: false, correctable: true }], {});
 check(onlyHidden.outcome, 'summary', 'an unrendered position is not a correction site');
 
+// Within one correction position, document order is not a correction order. A
+// value container may render a control that only *configures* the value (a
+// currency picker button) before the control that holds it. Sending the user to
+// the configurator made the reported error summary focus a button instead of the
+// amount input.
+check(
+  selectCorrectionControl([{ tagName: 'BUTTON', type: 'button' }, { tagName: 'INPUT', type: 'number' }])?.tagName,
+  'INPUT',
+  'a value holder outranks a control that only configures the value',
+);
+check(
+  selectCorrectionControl([{ tagName: 'INPUT', type: 'button' }, { tagName: 'INPUT', type: 'text' }])?.type,
+  'text',
+  'a button-typed input is a configurator, not a value holder',
+);
+check(
+  selectCorrectionControl([{ tagName: 'INPUT', type: 'checkbox' }, { tagName: 'TEXTAREA' }])?.tagName,
+  'TEXTAREA',
+  'a text area outranks an unrelated toggle in the same container',
+);
+check(
+  selectCorrectionControl([{ tagName: 'BUTTON', type: 'button' }])?.tagName,
+  'BUTTON',
+  'a container whose only control is a button still receives focus',
+);
+check(selectCorrectionControl([]), null, 'an empty control list yields no focus target');
+check(
+  selectCorrectionControl([{ tagName: 'INPUT', type: 'text' }, { tagName: 'BUTTON', type: 'button' }])?.tagName,
+  'INPUT',
+  'the ranking never reorders two equally-ranked controls against each other',
+);
+
 // The page's real focus entry must honour that decision: it sends the user to a
 // position when one exists, and otherwise keeps the summary — never dropping the
 // error and never scrolling somewhere unrelated.
@@ -353,6 +385,53 @@ try {
   }) };
   check(await focusProductFormValidationError('line_ids:row-7:quantity'), 'summary', 'a missing row cell cannot fall back to the mounted collection');
   checkDeep(unrelatedFocus, [], 'a sibling row or collection add button never receives the missing row error focus');
+
+  // The page's focus entry must apply the same ranking: a money container whose
+  // currency picker button is mounted before the amount input still sends the
+  // user to the input.
+  const moneyFocus: string[] = [];
+  const currencyButton = {
+    parentElement: null,
+    tagName: 'BUTTON',
+    type: 'button',
+    tabIndex: 0,
+    getAttribute: () => null,
+    getClientRects: () => [{}],
+    matches: () => false,
+    focus: () => moneyFocus.push('currency-button'),
+    scrollIntoView: () => {},
+  };
+  const amountInput = {
+    parentElement: null,
+    tagName: 'INPUT',
+    type: 'number',
+    tabIndex: 0,
+    getAttribute: () => null,
+    getClientRects: () => [{}],
+    matches: () => false,
+    focus: () => moneyFocus.push('amount-input'),
+    scrollIntoView: () => {},
+  };
+  const amountContainer = {
+    parentElement: null,
+    getAttribute: (name: string) => (name === 'data-field-state' ? 'invalid' : null),
+    getClientRects: () => [{}],
+    matches: () => false,
+    hasAttribute: () => true,
+    setAttribute: () => {},
+    focus: () => moneyFocus.push('container'),
+    scrollIntoView: () => {},
+    querySelector: (selector: string) => (selector === '[data-form-error-summary]' ? { focus: () => summaryFocus.push('summary') } : amountInput),
+    querySelectorAll: () => [currencyButton, amountInput],
+  };
+  globalScope.document = {
+    querySelector: (selector: string) => (selector === '[data-product-page-mode="form"]' ? {
+      ...fakeForm,
+      querySelectorAll: (inner: string) => (inner.includes('data-validation-target') ? [amountContainer] : []),
+    } : null),
+  };
+  check(await focusProductFormValidationError('amount'), 'focused', 'a registered position is focused');
+  checkDeep(moneyFocus, ['amount-input'], 'a currency picker button never receives the value error focus');
 } finally {
   globalScope.document = savedDocument;
   globalScope.CSS = savedCSS;

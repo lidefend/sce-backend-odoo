@@ -17,6 +17,11 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/ops/iterations/onchange_draft_identity_roundtrip_20260924.md。登记待接线或退役，B3 按族处理。"
     },
+    "acceptance.frontend.fixture_guard": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "FE-CONTRACT-RUNTIME-02 收口批次有意接线的人工门面：在隔离验收载体（sc-fe-r2-p1-01 / sc_frontend_acceptance）上只读核对夹具契约，使冻结夹具事实在其产出处可复验。远端 CI 通过 verify.frontend.fixture 消费同一脚本；本地没有该载体时无法执行，因此没有其他执行引用。"
+    },
     "acceptance.runtime.infrastructure.restore": {
       "disposition": "diagnostic_cli",
       "owner": "platform-team",

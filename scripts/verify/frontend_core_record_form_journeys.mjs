@@ -99,6 +99,39 @@ async function waitForm(page) {
   await page.waitForFunction(() => !(document.querySelector('main')?.textContent || '').includes('正在加载'), null, { timeout: 45000 });
 }
 
+/**
+ * The form's own declared draft-save identity, not its current copy.
+ *
+ * The record surface deliberately labels this action 保存草稿 (it only writes a
+ * draft; submitting needs a business action), so matching the accessible name
+ * couples the journey to copy that already changed once. Two declared
+ * identities carry the same fact: the canonical action bar publishes the
+ * contract's own declared executor (`record.save`), and the legacy header
+ * publishes its static draft-save identity. Neither is derived from a label.
+ */
+function draftSaveAction(page) {
+  return page
+    .locator('[data-action-executor="record.save"]:visible, [data-form-draft-save="save-draft"]:visible')
+    .first();
+}
+
+/**
+ * The form's own declared success state, not its current copy.
+ *
+ * `submission-feedback--success` is the record surface's published answer to
+ * "this write was accepted"; the message text is contract copy that already
+ * changed once (编辑 -> 保存草稿 settled at 保存成功). Waiting on the declared
+ * state keeps the assertion as strong - a visible success answer with a
+ * non-empty message - without binding it to wording.
+ */
+async function waitSaveSuccess(page) {
+  const success = page.locator('.submission-feedback--success:visible').first();
+  await success.waitFor({ timeout: 45000 });
+  const message = String(await success.innerText() || '').replace(/\s+/g, ' ').trim();
+  check(message.length > 0, 'save success feedback has no message');
+  return message;
+}
+
 async function j12(page) {
   const target = TARGETS.general_contract;
   await page.goto(`${BASE_URL}${formRoute(target)}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -119,9 +152,9 @@ async function j12(page) {
   check((await leaveDialog.innerText()).includes('尚未保存'), 'J12 unsaved warning missing');
   await leaveDialog.getByRole('button', { name: '取消', exact: true }).click();
   check(await contractName.inputValue() === edited, 'J12 cancel leave discarded the current input');
-  const save = page.getByRole('button', { name: /^保存(?:修改)?$/ }).first();
+  const save = draftSaveAction(page);
   await save.click();
-  await page.getByText(/保存成功|已保存/, { exact: false }).first().waitFor({ timeout: 45000 });
+  await waitSaveSuccess(page);
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
   await waitForm(page);
   const persisted = await page.locator('[data-field-name="contract_name"] input, [data-field-name="contract_name"] textarea').first().inputValue();
@@ -129,12 +162,26 @@ async function j12(page) {
   return { status: 'PASS', role: 'contract_operator', dirty_guard: true, cancel_retains_input: true, save_and_reload: true };
 }
 
+/**
+ * Open the new-payment-request form through the entry the backend actually
+ * delivers to this principal.
+ *
+ * The earlier binding walked in from the settlement-order record page. That
+ * menu (menu_sc_settlement_order / action 762) is declared by the finance role
+ * surface but is not part of the released standard product face
+ * (sc.product.policy construction.standard lists 90 menus and has no
+ * settlement-center subtree), so the backend route authority reports the pair
+ * as PRODUCT_ENTRY_NOT_VISIBLE and the SPA correctly refuses the route. The
+ * declared-but-undelivered entry is recorded as a finding; the journey must not
+ * bind an identity the runtime is expected to deny.
+ *
+ * The delivered identity is the released 付款申请 entry, rebound from
+ * system.init navigation in main() (applyReleasedNavigationTarget), so the
+ * create path is exercised exactly as a finance user reaches it.
+ */
 async function openLegalPaymentCreate(page) {
-  await page.goto(`${BASE_URL}${recordRoute(TARGETS.settlement)}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  await waitForm(page);
-  const createPayment = page.getByRole('button', { name: '新建付款申请', exact: true });
-  await createPayment.waitFor({ timeout: 45000 });
-  await createPayment.click();
+  const target = TARGETS.payment_request;
+  await page.goto(`${BASE_URL}/f/${encodeURIComponent(target.model)}/new?action_id=${target.action_id}&menu_id=${target.menu_id}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.waitForURL((url) => url.pathname.includes('/f/payment.request/new'), { timeout: 45000 });
   await waitForm(page);
 }
@@ -168,13 +215,18 @@ async function j13(page) {
   const amount = page.locator('[data-field-name="amount"] input').first();
   await amount.waitFor({ timeout: 30000 });
   await amount.fill('');
-  await page.getByRole('button', { name: '保存草稿', exact: true }).click();
+  await draftSaveAction(page).click();
   const summary = page
     .getByRole('alert')
     .filter({ has: page.getByRole('heading', { name: '请检查以下内容', exact: true }) });
   await summary.waitFor({ timeout: 15000 });
-  const firstError = summary.locator('button').first();
-  await firstError.click();
+  // Focus the summary entry that owns the amount field, not whichever error is
+  // listed first: the create surface reached from the delivered entry can carry
+  // several required fields, and "first button" would then pass on an unrelated
+  // field. The entry is addressed by the amount field's own label copy.
+  const amountError = summary.getByRole('button', { name: /金额/ }).first();
+  await amountError.waitFor({ timeout: 15000 });
+  await amountError.click();
   check(await amount.evaluate((node) => node === document.activeElement), 'J13 error summary did not focus amount');
 
   await page.goto(`${BASE_URL}${formRoute(TARGETS.core_form_request)}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -185,9 +237,19 @@ async function j13(page) {
   const localValue = String(Number(authorityValue || 0) + 1);
   await existingAmount.fill(localValue);
   const removeConflict = await interceptWriteConflict(page);
-  await page.getByRole('button', { name: /^保存(?:草稿|修改)?$/ }).first().click();
+  await draftSaveAction(page).click();
   await page.getByRole('heading', { name: '记录已被其他操作更新' }).waitFor({ timeout: 30000 });
-  check(await existingAmount.inputValue() === localValue, 'J13 conflict did not retain local input');
+  // The promise is "the draft you typed is still here", not "the input keeps the
+  // exact characters you typed": the money renderer normalises its own display
+  // (201 -> 201.00 for CNY), so a string comparison would report a product
+  // failure for a formatting rule the contract declares. Compare the numbers and
+  // require the retained value to differ from the authority value, so silently
+  // discarding the user's edit still fails.
+  const retained = await existingAmount.inputValue();
+  check(
+    Number(retained) === Number(localValue) && Number(localValue) !== Number(authorityValue),
+    `J13 conflict did not retain local input (authority=${authorityValue} local=${localValue} retained=${retained})`,
+  );
   const intercepted = await removeConflict();
   check(intercepted === 1, `J13 expected one write conflict, got ${intercepted}`);
   await page.getByRole('button', { name: '加载最新数据', exact: true }).click();
@@ -198,7 +260,7 @@ async function j13(page) {
     const input = document.querySelector('[data-field-name="amount"] input');
     return input instanceof HTMLInputElement && input.value === value;
   }, authorityValue, { timeout: 45000 });
-  return { status: 'PASS', required_error_focus: true, conflict_retains_input: true, authoritative_reload: true };
+  return { status: 'PASS', required_error_focus: true, conflict_retains_input: true, authoritative_reload: true, authority_amount: authorityValue, retained_amount: retained };
 }
 
 async function interceptFirstContractWrite(page, model) {
@@ -240,7 +302,7 @@ async function j14(page) {
   check(await nameField.isEditable(), 'J14 general contract name is not editable for contract operator');
   const authority = await nameField.inputValue();
   const edited = `${authority} · J14`;
-  const save = page.getByRole('button', { name: /^保存(?:修改)?$/ }).first();
+  const save = draftSaveAction(page);
 
   // A failed save must surface the failure and keep the user's draft on screen.
   await nameField.fill(edited);
@@ -255,7 +317,7 @@ async function j14(page) {
 
   // Retrying the same draft, without retyping, must persist and read back.
   await save.click();
-  await page.getByText(/保存成功|已保存/, { exact: false }).first().waitFor({ timeout: 45000 });
+  await waitSaveSuccess(page);
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
   await waitForm(page);
   const retried = page.locator('[data-field-name="contract_name"] input, [data-field-name="contract_name"] textarea').first();
@@ -265,7 +327,7 @@ async function j14(page) {
   // Cleanup readback: leave the fixture record at the value it had on entry.
   await retried.fill(authority);
   await save.click();
-  await page.getByText(/保存成功|已保存/, { exact: false }).first().waitFor({ timeout: 45000 });
+  await waitSaveSuccess(page);
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
   await waitForm(page);
   const restored = await page.locator('[data-field-name="contract_name"] input, [data-field-name="contract_name"] textarea').first().inputValue();
@@ -280,7 +342,7 @@ async function j14(page) {
 }
 
 async function main() {
-  check(TARGETS.general_contract?.record_id > 0 && TARGETS.settlement?.record_id > 0 && TARGETS.core_form_request?.record_id > 0, 'missing J12/J13/J14 targets');
+  check(TARGETS.general_contract?.record_id > 0 && TARGETS.payment_request?.record_id > 0 && TARGETS.core_form_request?.record_id > 0, 'missing J12/J13/J14 targets');
   const browser = await launchChromium({ headless: true });
   const report = { schema_version: 'frontend_core_record_form_journeys.v1', database: DB_NAME, j12: {}, j13: {}, j14: {}, runtime: {}, pass: false };
   let page;
@@ -333,16 +395,31 @@ async function main() {
       report.j14 = await j14(page);
       await context.close();
     }
-    check(!j12Runtime.console.length && !j12Runtime.pageerror.length && !j12Runtime.unexpectedHttp.length, `J12 runtime errors ${JSON.stringify(j12Runtime)}`);
-    check(!j13Runtime.console.length && !j13Runtime.pageerror.length && !j13Runtime.unexpectedHttp.length, `J13 runtime errors ${JSON.stringify(j13Runtime)}`);
-    check(!j14Runtime.console.length && !j14Runtime.pageerror.length, `J14 runtime errors ${JSON.stringify(j14Runtime)}`);
-    // J14 injects exactly one transport failure on purpose; observing it is the
-    // point, so the zero-unexpected-HTTP rule applies to J12/J13 only.
-    check(j14Runtime.unexpectedHttp.length === 1 && j14Runtime.unexpectedHttp[0].status === 500,
-      `J14 injected failure was not observed ${JSON.stringify(j14Runtime.unexpectedHttp)}`);
+    // A run selects one journey or all three (FE_PRO_03_JOURNEY). Every check
+    // below therefore applies only to the journeys this run actually executed:
+    // asserting on a journey that never ran reported an empty runtime as a
+    // product failure and made the single-journey lanes unusable.
+    const executed = [];
+    if (JOURNEY === 'ALL' || JOURNEY === 'J12') {
+      check(!j12Runtime.console.length && !j12Runtime.pageerror.length && !j12Runtime.unexpectedHttp.length, `J12 runtime errors ${JSON.stringify(j12Runtime)}`);
+      executed.push('J12');
+    }
+    if (JOURNEY === 'ALL' || JOURNEY === 'J13') {
+      check(!j13Runtime.console.length && !j13Runtime.pageerror.length && !j13Runtime.unexpectedHttp.length, `J13 runtime errors ${JSON.stringify(j13Runtime)}`);
+      executed.push('J13');
+    }
+    if (JOURNEY === 'ALL' || JOURNEY === 'J14') {
+      check(!j14Runtime.console.length && !j14Runtime.pageerror.length, `J14 runtime errors ${JSON.stringify(j14Runtime)}`);
+      // J14 injects exactly one transport failure on purpose; observing it is
+      // the point, so the zero-unexpected-HTTP rule never applies to J14.
+      check(j14Runtime.unexpectedHttp.length === 1 && j14Runtime.unexpectedHttp[0].status === 500,
+        `J14 injected failure was not observed ${JSON.stringify(j14Runtime.unexpectedHttp)}`);
+      executed.push('J14');
+    }
     report.pass = true;
+    report.executed_journeys = executed;
     fs.writeFileSync(path.join(OUTPUT, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
-    console.log('[verify.frontend.core_record_form.journeys] PASS J12 J13 J14');
+    console.log(`[verify.frontend.core_record_form.journeys] PASS ${executed.join(' ')}`);
   } catch (error) {
     const activePage = page;
     const diagnostic = activePage
