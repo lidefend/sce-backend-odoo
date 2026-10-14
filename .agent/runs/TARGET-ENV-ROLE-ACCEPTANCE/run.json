@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "id": "TARGET-ENV-ROLE-ACCEPTANCE",
+  "branch": "audit/target-env-role-acceptance-20261014",
+  "status": "active",
+  "baseline_sha": "d20798885b45553b2a5d3d08dd99a9363ff74e55",
+  "goal": ".agent/goals/TARGET-ENV-ROLE-ACCEPTANCE.yaml",
+  "record": "docs/ops/iterations/target_env_role_acceptance_20261014.md",
+  "scope": [
+    ".agent/goals/TARGET-ENV-ROLE-ACCEPTANCE.yaml",
+    ".agent/active-runs.json",
+    ".agent/runs/TARGET-ENV-ROLE-ACCEPTANCE/",
+    "docs/ops/iterations/",
+    "artifacts/backend/",
+    "addons/smart_core/delivery/",
+    "addons/smart_core/tests/",
+    "addons/smart_construction_acceptance_fixture/",
+    "make/frontend.mk",
+    "scripts/verify/",
+    "scripts/ops/",
+    "docs/engineering_convergence/"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Target environment daily runtime is read over the governed daily.runtime.* deployment identity and the existing verify.daily_dev.* readonly acceptance lanes on the daily development server (/opt/projects/repos/sce-product-odoo, DB sc_demo, compose sc-backend-odoo-dev, port 18081). Local worktree does not serve sc_demo. The two regressions this goal found are product defects owned by this branch (addons/smart_core/delivery navigation authorization; addons/smart_construction_acceptance_fixture legacy carrier onboarding), so their repair is inside this run's scope. Additionally authorized for this run only: the existing confirmation-gated fixture entries daily.runtime.lifecycle_fixture.prepare and daily.dev.acceptance_fixture.ensure, which write only the declared daily_dev fixture scope (smart_construction_acceptance_fixture rows: the deterministic FE dataset and the data-space registrations its companies own) in DB sc_demo, proven by readback. No hand-assembled compose/database/credential command, no tenant business-data write, no schema or product-code write on the deployed checkout.",
+    "base_url": "http://127.0.0.1:18081",
+    "database": "sc_demo",
+    "fixture_write_scope": "smart_construction_acceptance_fixture/daily_dev only"
+  },
+  "checks": {
+    "navigation_delivery_unit": {
+      "target": "verify.backend.navigation_delivery.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/delivery/menu_fact_service.py",
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_core/tests/test_delivery_menu_entry_target.py",
+        "addons/smart_core/tests/test_menu_acl_carrier_authorization.py",
+        "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_navigation_shell_unit": {
+      "target": "verify.frontend.navigation_shell.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/canonical_navigation_model_test.ts",
+        "addons/smart_construction_core/tests/test_business_category_entry_policy.py",
+        "scripts/verify/test_frontend_navigation_shell_guard.py",
+        "scripts/verify/frontend_navigation_shell_guard.py",
+        "addons/smart_core/delivery/menu_service.py"
+      ]
+    },
+    "product_entry_publication_unit": {
+      "target": "verify.product.entry_publication.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/tests/test_entry_publication_authority.py",
+        "addons/smart_core/tests/test_route_authority_single_consumer.py",
+        "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+        "addons/smart_core/delivery/menu_service.py"
+      ]
+    },
+    "product_menu_monotonic_unit": {
+      "target": "verify.product.menu.monotonic.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/test_menu_fact_monotonic.py",
+        "addons/smart_core/delivery/menu_fact_service.py"
+      ]
+    },
+    "daily_fixture_lane_unit": {
+      "target": "verify.daily_dev.acceptance_fixture.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/dev/daily_dev_acceptance_fixture.sh",
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "scripts/ops/dev_acceptance_release_probe.py",
+        "scripts/verify/test_daily_acceptance_fixture_lane.py"
+      ]
+    },
+    "data_space_provisioning_guard": {
+      "target": "verify.data_space.provisioning.guard",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/security/data_space_provisioning.py",
+        "scripts/verify/data_space_provisioning_guard.py",
+        "scripts/verify/test_data_space_provisioning.py"
+      ]
+    },
+    "data_space_policy_unit": {
+      "target": "verify.data_space.policy.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/models/tenant_payload_import_batch.py",
+        "addons/smart_core/models/res_users.py",
+        "scripts/verify/test_data_space_policy.py"
+      ]
+    },
+    "daily_lifecycle_fixture_prepare_unit": {
+      "target": "verify.daily.runtime.lifecycle_fixture.prepare",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/daily_runtime_lifecycle_fixture_prepare.py",
+        "scripts/ops/test_daily_runtime_lifecycle_fixture_prepare.py"
+      ]
+    },
+    "daily_readonly_acceptance_probe": {
+      "target": "verify.daily_dev.acceptance.readonly.probe",
+      "kind": "runtime",
+      "inputs": [
+        "scripts/ops/dev_acceptance_release_probe.py",
+        "config/frontend/acceptance_environments_v1.json",
+        "config/frontend/acceptance_tool_matrix_v1.json"
+      ]
+    }
+  },
+  "blockers": [
+    "target_env_data_space_onboarding_missing: sc_demo carries zero sc.tenant.company.registration rows, so PR #654's global purpose ceiling resolves an empty company set and denies payment.request read with 403 for every principal. Repair in branch: the fixture now adopts its own XMLID-anchored legacy companies through the declared maintenance entry; the governed daily fixture entry was driven on the deployed runtime and the adoption path executed, then rolled back by blocker 2, so sc_demo is unchanged (registration_count=0 verified after the attempt).",
+    "target_env_fixture_carrier_drift: fe_activity_journal_entry (account.move id 8) carries company_id=1 (the real main company) while the fixture declares it under FE Company A, so ensure_fixture fails closed with 'Activity move ownership mismatch; use governed baseline reset'. The fixture's own answer for a conflicting owned business fact is a governed baseline reset; a per-row governed data repair is the alternative. This is an owner decision about demo-data strategy, not something this run may settle unilaterally.",
+    "target_env_nav_89_vs_90_needs_deployment: the contracted business_config_admin surface is 90 entries (config/frontend/acceptance_environments_v1.json action_count_authority) and the deployed d2079888 serves 89 because the action-less role-home carrier was dropped by the authorization source. The repair is verified at the owning layer but cannot change the deployed reading until this branch is integrated and the daily runtime re-released."
+  ],
+  "next_exact_step": "Wait for PR #657 remote gates on candidate 36bbf88c to complete on this exact head and base; a new head invalidates them. Then obtain the owner decision on how sc_demo's conflicting feeder carrier (fe_activity_journal_entry company_id=1 vs the fixture's declared FE Company A) is resolved: governed baseline reset versus a per-row governed repair. After integration and a daily re-release, re-run the governed fixture onboarding and the per-role readonly acceptance, and bind the role allow/deny evidence.",
+  "mainline_integration": {
+    "carrier": "github_pull_request",
+    "number": 657,
+    "url": "https://github.com/lidefend/sce-backend-odoo/pull/657",
+    "base": "main",
+    "state_at_record": "open_mergeable_remote_checks_pending",
+    "note": "The candidate head advances with bookkeeping commits, so the SHA above is only an observation: remote gate results must be re-read for the branch's actual live head. Remote gates had not completed when this was recorded; a pending, missing, failed or stale run is never merge qualification, and a later head must not inherit an earlier candidate's results.",
+    "candidate_head_source": "read back the live candidate identity with: git ls-remote origin refs/heads/audit/target-env-role-acceptance-20261014",
+    "candidate_head_observed": "77fc5002feb644b201e770fcdd64af2ff0210b4b"
+  }
+}

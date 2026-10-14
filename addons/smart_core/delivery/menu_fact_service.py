@@ -41,8 +41,32 @@ class MenuFactService:
         )
 
     def export_visible_menu_facts(self) -> MenuFactSnapshot:
+        """Menus Odoo would render for the current user (action-bearing entries).
+
+        Odoo resolves this set from ``ir.ui.menu`` actions: only a menu that
+        carries a resolvable action -- or that is an ancestor of one -- can be
+        visible. That is the right question for rendering, and the wrong one for
+        navigation authorization: a declared product carrier with no action (a
+        scene-entry page such as the role home) can never appear here even when
+        the user's groups allow the menu node itself.
+        """
+        return self._export_menu_facts(self._visible_menu_ids(self.env["ir.ui.menu"]))
+
+    def export_authorized_menu_facts(self) -> MenuFactSnapshot:
+        """Menu carriers the current user's groups actually authorize.
+
+        Navigation authorization asks whether this user's groups allow a menu
+        node, so this export applies exactly that ACL filter -- the same
+        ``groups_id`` intersection Odoo itself uses -- and requires the whole
+        ancestor chain to be authorized as well. It deliberately does not infer
+        a capability from the presence or absence of an action, so an
+        action-less declared carrier stays observable, and a menu the user's
+        groups do not grant can never be admitted by capability discovery.
+        """
+        return self._export_menu_facts(self._authorized_menu_ids())
+
+    def _export_menu_facts(self, visible_ids: set[int]) -> MenuFactSnapshot:
         menu_model = self.env["ir.ui.menu"]
-        visible_ids = self._visible_menu_ids(menu_model)
         if not visible_ids:
             return MenuFactSnapshot(flat=[], tree=[], source_authority=self.source_authority_contract())
 
@@ -105,6 +129,46 @@ class MenuFactService:
             return {int(menu_id) for menu_id in menu_model._visible_menu_ids()}
         except Exception:
             return set()
+
+    def _authorized_menu_ids(self) -> set[int]:
+        """Menu nodes whose groups allow the current user, ancestors included.
+
+        Fail closed: an unreadable menu registry yields no authorized carriers
+        instead of falling back to a wider projection.
+        """
+        menu_model = self.env["ir.ui.menu"]
+        try:
+            menus = menu_model.with_context({"ir.ui.menu.full_list": True}).search([]).sudo()
+        except Exception:
+            return set()
+        user_groups = self.env.user.groups_id
+        try:
+            user_groups = user_groups - self.env.ref("base.group_no_one")
+        except Exception:
+            pass
+        allowed = menus.filtered(
+            lambda menu: not menu.groups_id or bool(menu.groups_id & user_groups)
+        )
+        allowed_ids = {int(menu.id) for menu in allowed}
+        if not allowed_ids:
+            return set()
+        # ``parent_path`` carries the node's own id plus every ancestor, so one
+        # membership test proves the whole chain is authorized. A node is never
+        # admitted through an ancestor the user's groups deny.
+        by_id = {int(menu.id): menu for menu in menus}
+        authorized = set()
+        for menu_id in allowed_ids:
+            menu = by_id.get(menu_id)
+            if menu is None:
+                continue
+            parts = [
+                int(part)
+                for part in str(getattr(menu, "parent_path", "") or "").split("/")
+                if part.strip().isdigit()
+            ]
+            if parts and all(part in allowed_ids for part in parts):
+                authorized.add(menu_id)
+        return authorized
 
     def _read_menu_xmlids(self, menus) -> dict[int, str]:
         menu_ids = [int(menu.id) for menu in menus]

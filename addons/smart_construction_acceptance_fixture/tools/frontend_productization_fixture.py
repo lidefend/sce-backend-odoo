@@ -169,6 +169,49 @@ def _upsert(env, model_name, xmlid_name, domain, values):
     return record
 
 
+def _fixture_owns_company(env, company):
+    """True only when this fixture's own XMLID binds exactly this company row.
+
+    Ownership is read from the immutable XMLID anchor, never from a name, a
+    label or a coincidental field value, so "adopt" can never become "relabel".
+    """
+    rows = env["ir.model.data"].sudo().search([
+        ("module", "=", MODULE),
+        ("model", "=", "res.company"),
+        ("name", "in", ["fe_company_a", "fe_company_b"]),
+        ("res_id", "=", company.id),
+    ], limit=2)
+    return len(rows) == 1
+
+
+def _resolve_existing_fixture_company(env, company):
+    """Return the fixture carrier's registration, onboarding a legacy carrier once.
+
+    An earlier fixture version bound ``fe_company_a``/``fe_company_b`` before a
+    data-space registration existed. The fixture owns those exact rows, so a
+    rerun onboards them through the declared maintenance entry instead of
+    demanding a full database reset. Adoption stays fail-closed: a company the
+    fixture does not own and the platform bootstrap carrier are never adopted,
+    and the maintenance entry itself refuses a company that already owns a
+    registration. Because each carrier is already anchored to its own tenant
+    key, this is idempotent and per-carrier - the second carrier adopts its own
+    row independently.
+    """
+    registration_model = env["sc.tenant.company.registration"].sudo().with_context(active_test=False)
+    registration = registration_model.search([("company_id", "=", company.id)])
+    if registration:
+        return registration
+    if not _fixture_owns_company(env, company) or company.is_platform_bootstrap_company:
+        return registration_model.browse([])
+    # Imported lazily: the fixture module is also loaded outside Odoo by the
+    # declaration unit lane, so it must not import the ORM at module import.
+    from odoo.addons.smart_core.security import data_space_provisioning as provisioning
+
+    return provisioning.adopt_business_company(
+        env, tenant_key=DATA_SPACE_TENANT_KEY, purpose="test", company_id=company.id,
+    )
+
+
 def _company(env, suffix):
     name = "FE Company %s" % suffix
     xmlid_name = "fe_company_%s" % suffix.lower()
@@ -177,7 +220,7 @@ def _company(env, suffix):
     if company:
         if company._name != "res.company":
             raise RuntimeError("fixture company XMLID has wrong model")
-        registration = Registration.search([("company_id", "=", company.id)])
+        registration = _resolve_existing_fixture_company(env, company)
         if (len(registration) != 1 or not registration.active
                 or registration.data_purpose != "test"
                 or registration.tenant_key != DATA_SPACE_TENANT_KEY):

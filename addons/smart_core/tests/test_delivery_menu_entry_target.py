@@ -65,7 +65,10 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         env = object()
         facts = types.SimpleNamespace(tree=[{"menu_id": 101, "menu_xmlid": "test.menu_101",
                                             "name": "Authorized", "action_id": 201, "action_meta": {}}])
-        provider = types.SimpleNamespace(export_visible_menu_facts=lambda: facts)
+        provider = types.SimpleNamespace(
+            export_visible_menu_facts=lambda: facts,
+            export_authorized_menu_facts=lambda: facts,
+        )
         service = menu_service.MenuService(env)
         with patch.object(menu_service, "MenuFactService", return_value=provider) as factory:
             native = service._authorization_native_nav(self._runtime_role_surface("system_admin"), [])
