@@ -285,3 +285,26 @@ gate_page_count              == policy_released_menu_count + policy_preview_menu
 | 主线集成 | **完成**（PR #655 squash 合并 `17d148ad`，必需门 success） |
 | 版本发布/部署 | **完成**（目标环境 `sc_demo` 服务版本、候选树、发布面均为 main `17d148ad`） |
 | 产品交付 | **未声明**（目标环境真实角色/公司/权限用户验收仍待执行） |
+
+## 9. 收口与台账终态（2026-10-14）
+
+本 goal 的范围已交付完毕，`.agent` 台账按终态收敛：
+
+| 项 | 处置 |
+|---|---|
+| 远端分支 | `fix/fe-contract-runtime-02-runtime-view-compat` 末位台账提交 `eee61273` 已推送 origin（不发起新 PR） |
+| run 状态 | `.agent/runs/FE-CONTRACT-RUNTIME-02-VIEW-STRUCTURE-COMPAT/run.json` → `completed` |
+| goal 状态 | `.agent/goals/FE-CONTRACT-RUNTIME-02-VIEW-STRUCTURE-COMPAT.yaml` → `completed` |
+| 活跃索引 | `.agent/active-runs.json` 移除本分支绑定（终态 run 不得留在活跃索引） |
+| 台账守卫 | `make verify.agent.ledger.unit` PASS |
+
+### 9.1 明确的后续边界（不属于本 goal）
+
+以下工作必须以**新 goal / 新 run** 登记，经 `make agent.run.resume` 解析后再执行；不得在本已合并分支上继续未登记的产品写入。
+
+1. **目标环境真实角色/公司/权限用户验收（产品交付）**：`sc_demo` 上按真实业务角色（`finance` / `pm` / `owner` / `project_member` / `business_config_admin`）走查查询、办理、关键写入与权限边界；这是「版本发布完成」与「产品交付完成」之间的唯一缺口。
+2. **`FE-CONTRACT-RUNTIME-02` 消费停机收口的独立评审遗留项**：见该 run 的评审结论（S1/S2 项），属独立分支 `fix/fe-contract-runtime-02-consumption-stop-closure`。
+
+### 9.2 状态真实性说明
+
+本 goal 的 `completion.target_user_delivery` 记为 `not_run_out_of_scope`：目标环境用户验收不在本 goal 范围内，因此**不得**据此声明「产品交付完成」。
