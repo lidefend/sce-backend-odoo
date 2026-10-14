@@ -5,7 +5,12 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Tuple
 
-from .dictionary_scope_projection import DELIVERED_SCOPES, projection_bucket
+from .dictionary_scope_projection import (
+    DELIVERED_SCOPES,
+    DISPOSITION_UNKNOWN_SCOPE,
+    authorized_company_references,
+    scope_disposition,
+)
 from .source_authority import build_source_authority_contract
 
 SOURCE_KIND = "system_init_dictionary_data_projection"
@@ -33,7 +38,34 @@ def count_undelivered_scope(undelivered: Dict[str, int], scope_type: str) -> Non
     undelivered[key] = undelivered.get(key, 0) + 1
 
 
-def _fetch_role_entries(env, undelivered: Dict[str, int]) -> List[dict]:
+def count_withheld_scope(withheld: Dict[str, int], reason: str) -> None:
+    """Record a row the principal is not authorized to receive.
+
+    Withholding is a decision, not a gap: a company-level row for a company the
+    acting principal is not authorized for must never reach their contract, and
+    the count keeps that decision observable instead of indistinguishable from
+    "no row exists".
+    """
+    key = reason or "unknown"
+    withheld[key] = withheld.get(key, 0) + 1
+
+
+def _count_withheld(
+    withheld: Dict[str, int],
+    undelivered: Dict[str, int],
+    scope_type: str,
+    reason: str,
+) -> None:
+    """Route one withhold decision to the bucket that describes it."""
+    if reason == DISPOSITION_UNKNOWN_SCOPE:
+        count_undelivered_scope(undelivered, scope_type)
+        return
+    count_withheld_scope(withheld, f"{(scope_type or 'unknown').strip()}:{reason}")
+
+
+def _fetch_role_entries(
+    env, undelivered: Dict[str, int], withheld: Dict[str, int], authorized_companies: frozenset
+) -> List[dict]:
     rows = env["sc.dictionary"].sudo().search_read(
         [("type", "=", "role_entry"), ("active", "=", True)],
         fields=["code", "name", "scope_type", "scope_ref", "value_json", "sequence"],
@@ -44,9 +76,9 @@ def _fetch_role_entries(env, undelivered: Dict[str, int]) -> List[dict]:
     for row in rows:
         scope_type = str(row.get("scope_type") or "").strip() or "global"
         scope_ref = str(row.get("scope_ref") or "").strip()
-        role_code = projection_bucket(scope_type, scope_ref)
+        role_code, reason = scope_disposition(scope_type, scope_ref, authorized_companies)
         if role_code is None:
-            count_undelivered_scope(undelivered, scope_type)
+            _count_withheld(withheld, undelivered, scope_type, reason)
             continue
         value_json = row.get("value_json") if isinstance(row.get("value_json"), dict) else {}
         entry_key = (
@@ -74,7 +106,9 @@ def _fetch_role_entries(env, undelivered: Dict[str, int]) -> List[dict]:
     ]
 
 
-def _fetch_home_blocks(env, undelivered: Dict[str, int]) -> List[dict]:
+def _fetch_home_blocks(
+    env, undelivered: Dict[str, int], withheld: Dict[str, int], authorized_companies: frozenset
+) -> List[dict]:
     rows = env["sc.dictionary"].sudo().search_read(
         [("type", "=", "home_block"), ("active", "=", True)],
         fields=["code", "name", "scope_type", "scope_ref", "value_json", "sequence"],
@@ -85,9 +119,9 @@ def _fetch_home_blocks(env, undelivered: Dict[str, int]) -> List[dict]:
     for row in rows:
         scope_type = str(row.get("scope_type") or "").strip() or "global"
         scope_ref = str(row.get("scope_ref") or "").strip()
-        role_code = projection_bucket(scope_type, scope_ref)
+        role_code, reason = scope_disposition(scope_type, scope_ref, authorized_companies)
         if role_code is None:
-            count_undelivered_scope(undelivered, scope_type)
+            _count_withheld(withheld, undelivered, scope_type, reason)
             continue
 
         value_json = row.get("value_json") if isinstance(row.get("value_json"), dict) else {}
@@ -123,15 +157,17 @@ def apply_dictionary_startup_data(env, data: Dict[str, Any]) -> Dict[str, Any]:
         return data
 
     undelivered: Dict[str, int] = {}
+    withheld: Dict[str, int] = {}
+    authorized_companies, company_authority = authorized_company_references(env)
     try:
-        role_entries = _fetch_role_entries(env, undelivered)
+        role_entries = _fetch_role_entries(env, undelivered, withheld, authorized_companies)
         if role_entries:
             data["role_entries"] = role_entries
     except Exception:
         pass
 
     try:
-        home_blocks = _fetch_home_blocks(env, undelivered)
+        home_blocks = _fetch_home_blocks(env, undelivered, withheld, authorized_companies)
         if home_blocks:
             data["home_blocks"] = home_blocks
     except Exception:
@@ -141,5 +177,10 @@ def apply_dictionary_startup_data(env, data: Dict[str, Any]) -> Dict[str, Any]:
     diagnostics["source_authority"] = source_authority_contract()
     diagnostics["delivered_scopes"] = list(DELIVERED_SCOPES)
     diagnostics["undelivered_scope_counts"] = dict(sorted(undelivered.items()))
+    diagnostics["withheld_scope_counts"] = dict(sorted(withheld.items()))
+    diagnostics["company_scope_authority"] = {
+        "source": company_authority,
+        "authorized_company_count": len(authorized_companies),
+    }
     data["dictionary_data_meta"] = diagnostics
     return data

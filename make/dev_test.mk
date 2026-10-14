@@ -1632,6 +1632,8 @@ verify.system_init.menu_boundary.guard: guard.prod.forbid
 	@python3 scripts/verify/system_init_menu_boundary_guard.py
 	@python3 -m py_compile scripts/verify/system_init_dictionary_scope_guard.py
 	@python3 scripts/verify/system_init_dictionary_scope_guard.py
+	@python3 -m py_compile scripts/verify/test_dictionary_scope_projection.py
+	@python3 scripts/verify/test_dictionary_scope_projection.py
 
 .PHONY: verify.release.phase1.navigation_convergence.guard
 verify.release.phase1.navigation_convergence.guard: guard.prod.forbid
