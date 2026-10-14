@@ -220,7 +220,25 @@
     "addons/smart_construction_core/tests/test_workflow_instance_ownership.py",
     "addons/smart_construction_core/models/core/labor_management.py",
     "addons/smart_construction_core/tests/test_price_family_company_ownership.py",
-    "addons/smart_core/tests/test_backend_contract_boundary_guard.py"
+    "addons/smart_core/tests/test_backend_contract_boundary_guard.py",
+    "addons/smart_core/data/tenant/",
+    "addons/smart_core/security/data_space_provisioning.py",
+    "demo_addons/smart_construction_demo/hooks.py",
+    "docs/architecture/platform_industry_initialization_and_database_strategy_v1.md",
+    "scripts/verify/database_strategy_guard.py",
+    "scripts/verify/data_space_provisioning_guard.py",
+    "scripts/verify/test_data_space_provisioning.py",
+    "scripts/verify/test_database_strategy_guard.py",
+    "config/tenant/database_strategy.v1.json",
+    "addons/smart_construction_core/models/core/general_contract.py",
+    "addons/smart_construction_core/models/core/settlement.py",
+    "addons/smart_construction_core/models/core/settlement_order.py",
+    "addons/smart_construction_core/models/support/state_machine.py",
+    "addons/smart_construction_core/tests/test_p0_state_closure.py",
+    "addons/smart_core/core/dictionary_scope_projection.py",
+    "addons/smart_core/core/system_init_dictionary_data_helper.py",
+    "contracts/generated/contract_structure_fingerprint.json",
+    "frontend/apps/web/src/app/action_runtime/hierarchicalWorksheetDataSource.ts"
   ],
   "environment": {
     "kind": "runtime",
@@ -979,9 +997,10 @@
     "Corrected while closing data-scope batch 1: the earlier premise that the sc.business.fact.mixin family and the cockpit/workbench fact models have no company path was wrong - they carry project_id, so sc.dashboard.cockpit.fact, sc.workbench.item, sc.document.admin.document and sc.office.admin.document are now covered by a global company-scope ir.rule anchored on project_id.company_id (scripts/verify/data_scope_declarations.json). No schema change is required for isolation. What remains is governed activation readback (L3), not a schema change.",
     "verify.backend_business_fact.model_standard currently FAILs on documentation drift: docs/architecture/backend_business_model_audit_findings_v1.md records 372 model classes and 0 unclassified models while the measured values are 378 and 1. The target is a zero-reference lane entry (not reachable from any gate anchor), so it is not a blocker for this batch.",
     "Audit follow-up: the committed company-ceiling set is 143 rules after the generated-vs-manual review retired 7 redundant ceilings (enforced 124 -> 117, source_bounded 25 -> 32). A fresh governed read-only readback on 2026-10-14 (`make local.dev.data_scope.ceiling.readiness`) proves source_rule_count=143 == installed_match_count=143 with mismatches=[], so the runtime ceiling is current and the earlier 125/125 activation is superseded rather than stale. What still blocks delivery is the data-space fact below (bootstrap company owns business rows), not the ceiling.",
-    "P4 DATA-SPACE-MIGRATION-01 (awaiting owner ruling, scope corrected): base.main_company owns 31240 rows inside the 81 ceiling models plus 61 residual models (ir.attachment 14542, tier.definition 6298, ui.business.config.mutation.audit 30118, chart of accounts/journals/taxes/warehouse/purchase/stock) while sc.tenant.company.registration is empty. Option 1 (register the main company as the demo data space, amend the marker policy for the demo role) vs Option 2 (re-own every row to a distinct registered company) must be ruled on before any write."
+    "CLOSED by the Option 1 ruling (2026-10-14, DEMO_IS_FIRST_ONBOARDED_COMPANY): the earlier P4 DATA-SPACE-MIGRATION-01 premise (base.main_company owns 31240 ceiling rows + 61 residual models) is resolved without re-ownership. The demo environment main company is the first onboarded business company, so onboarding retires its carrier marker and writes ONE registration row; no business row changes company. See platform_initialization_strategy.",
+    "OPEN (pre-existing main defect, not this batch): demo scenario seeds lag the 2026-10-01 guards that reject non-draft create(); make local.dev.rebuild_demo fails at the scenario stage with ~30 root records across ~10 scenarios. Tracked as DEMO-SCENARIO-PRODUCT-DRIFT-01 and detailed in run.json/demo_scenario_product_drift. Does not block platform initialization or demo onboarding (both verified on a clean rebuilt database)."
   ],
-  "next_exact_step": "Platform/industry initialization is declared, guarded and unit-tested (database_strategy.v1.json, data_space_provisioning.py, adopt-on-existing-company entry, 2 guards, 29 tests, wired into make/dev_test.mk + make/ci.mk). A read-only migration plan (make local.dev.demo.data_space.migrate) measured the real environment gap: 31240 ceiling-set rows across 81 models plus 61 residual core models, which voids the earlier 216-row estimate. NEXT: obtain the owner ruling Option 1 (register base.main_company as the demo data space + amend the marker policy for the demo role) vs Option 2 (full data re-ownership plan), then implement the selected option, bind smart_construction_demo seeding to assert_business_data_space_ready(purpose='demo'), add the real-account demo/customer visibility test, and only then run freeze.prepare + one exact-head ci.local.quick + pr.push.",
+  "next_exact_step": "Platform/industry initialization is straightened, guarded and unit-tested on this branch: the declaration moved to addons/smart_core/data/tenant/database_strategy.v1.json, data_space_provisioning gained environment_role/onboard_environment_main_company, _adopt_environment_main_company (tenant_payload_import_batch.py) is the only entry allowed to retire the demo carrier marker, smart_construction_demo pre_init/seed consume it, and the 4 onboarding ORM cases are now self-provisioning. Verified: database.strategy.guard rc=0 (11), data_space.provisioning.guard rc=0 (28, invariants=6), local.dev.test data_space_boundary rc=0 (37, 0 failed/0 error), local.dev.data_space.onboard read-only end-to-end onboarding on a clean rebuilt database. NEXT: owner routing for DEMO-SCENARIO-PRODUCT-DRIFT-01 (align the demo scenario seeds to the product guards, ~30 records / ~15 models) either as the next batch on this branch or as its own worktree; then ci.delivery.freeze.prepare -> one exact-head ci.local.quick -> pr.push (GitHub mainline) -> required PR checks -> merge. Internal change is categorised: platform initialization + demo onboarding (this batch) vs demo scenario alignment (next).",
   "acceptance_authority_layout": {
     "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
     "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",
@@ -3312,13 +3331,17 @@
     ]
   },
   "platform_initialization_strategy": {
-    "status": "declared_guarded_and_pending_environment_migration",
+    "status": "onboarding_implemented_and_verified_pending_mainline_integration",
     "owner_ruling_2026_10_14": [
       "PLATFORM_INITIALIZATION_STRAIGHTENED=true",
+      "INDUSTRY_INITIALIZATION_FOLLOWS_PLATFORM_ONBOARDING=true",
       "TENANT_DATABASE_STRATEGY_SELECTABLE=true",
       "FORMAL_CUSTOMER_COMPANY_OWNS_DEDICATED_DATABASE=true",
       "DEMO_IS_FIRST_ONBOARDED_COMPANY=true",
       "BUSINESS_DATA_NEVER_IN_PLATFORM_BOOTSTRAP_COMPANY=true"
+    ],
+    "owner_ruling_2026_10_14_late": [
+      "demo lagging the product is the cause; demo must align to the product, never relax the guard"
     ],
     "single_order": [
       "platform_technical_baseline",
@@ -3329,97 +3352,80 @@
       "industry_initialization",
       "customer_differentiation"
     ],
+    "selected_option": "Option 1: retire the technical carrier marker of the environment main company; zero business row re-ownership",
     "artifacts": {
       "authority": "docs/governance/database_architecture_policy.md (unchanged; still the single database-architecture policy)",
       "boundary_doc": "docs/architecture/platform_industry_initialization_and_database_strategy_v1.md",
-      "declaration": "config/tenant/database_strategy.v1.json (database_per_customer_tenant for customer_production, single_db_multi_company for platform_internal_demo/industry_acceptance, 5 invariants)",
-      "onboarding_entry": "addons/smart_core/security/data_space_provisioning.py (strategy_for_purpose/validate_strategy_declaration/onboard_business_company/assert_business_data_space_ready/unregistered_business_companies/bootstrap_company_business_data_violations; imports nothing from odoo)",
+      "declaration": "addons/smart_core/data/tenant/database_strategy.v1.json (moved out of config/ because config/ is not mounted into the Odoo container; per-role main_company_onboarding_purpose demo->demo, industry_acceptance->test, customer_production->null; 6 invariants incl. environment_main_company_onboarding_is_role_scoped)",
+      "onboarding_authority": "addons/smart_core/security/data_space_provisioning.py (environment_role/declare_environment_role/main_company_onboarding_purpose/onboard_environment_main_company added; module still imports nothing from odoo)",
+      "adopt_entry": "addons/smart_core/models/tenant_payload_import_batch.py::_adopt_environment_main_company (the only entry allowed to register a bootstrap company; refuses the customer production role, a company that is not this environment's main company, a database that already owns an active registration and a company that already owns a registration; retires the marker before writing the registration row)",
+      "demo_wiring": "demo_addons/smart_construction_demo/hooks.py (ENVIRONMENT_ROLE=platform_internal_demo, DEMO_TENANT_KEY=sc-demo-main, idempotent onboard_platform_data_space + guard_demo_data_space wired into pre_init_hook and apply_demo_user_passwords; demo never manufactures its own registration)",
+      "managed_write_entry": "make local.dev.data_space.onboard (read-only by default; SC_CONFIRM_DATA_SPACE_ONBOARDING=onboard required to write). local.dev.demo.data_space.migrate and scripts/verify/local_dev_demo_data_space_migration.py were removed with the Option 1 decision.",
       "guards": [
         "scripts/verify/database_strategy_guard.py",
         "scripts/verify/data_space_provisioning_guard.py"
       ],
       "tests": [
         "scripts/verify/test_database_strategy_guard.py (11)",
-        "scripts/verify/test_data_space_provisioning.py (16)"
+        "scripts/verify/test_data_space_provisioning.py (28)",
+        "addons/smart_core/tests/test_data_space_boundary.py (37, incl. the 4 onboarding ORM cases made self-provisioning)"
       ]
     },
     "layer_declaration": {
       "formal_product_layer": "P0 platform kernel product",
-      "layer_target": "smart_core (data space onboarding authority) + config/tenant declaration",
-      "standard_vs_user_specific": "platform mechanism; the demo/test/customer purposes stay declarative",
-      "why_here": "Onboarding order, strategy resolution and the bootstrap no-business-data invariant are platform mechanisms; industry rows are seeded by P1 modules after onboarding",
-      "why_not_elsewhere": "The industry/demo layer must not invent its own registration, and the frontend must not infer a data space from a database name",
-      "blast_radius": "config/tenant/database_strategy.v1.json, docs/architecture (new doc), scripts/verify (2 guards + 2 test files), make/dev_test.mk, make/ci.mk; no business model, ACL, route or contract touched"
+      "layer_target": "smart_core (data space onboarding authority) + the onboard-by-marker-retirement mechanism; smart_construction_demo consumes it",
+      "standard_vs_user_specific": "platform mechanism; demo/test/customer purposes stay declarative and are never inferred from a database name",
+      "why_here": "Onboarding order, strategy resolution and the bootstrap no-business-data invariant are platform mechanisms; the demo/industry layer must consume them, not invent a registration",
+      "why_not_elsewhere": "The industry/demo layer must not manufacture its own registration, and the frontend must not infer a data space from a database name",
+      "blast_radius": "addons/smart_core/{data/tenant,security,models,tests}, demo_addons/smart_construction_demo/hooks.py, docs/architecture (1 doc), scripts/verify (2 guards + 3 test files), scripts/ops, make/dev.mk; no business model, ACL, route or contract touched"
     },
     "verification": {
-      "make verify.database.strategy.guard": "rc=0, DATABASE_STRATEGY_GUARD=PASS roles=customer_production,industry_acceptance,platform_internal_demo strategies=database_per_customer_tenant,single_db_multi_company; 11 unit tests OK",
-      "make verify.data_space.provisioning.guard": "rc=0, DATA_SPACE_PROVISIONING_GUARD=PASS roles=3 industry_hooks=addons/smart_construction_core/models/support/contract_center.py invariants=5; 16 unit tests OK",
-      "make verify.guard.registry": "rc=0 (1449 scripts, 198/198 unwired dispositioned) after wiring both new targets into make/dev_test.mk and make/ci.mk",
-      "make local.dev.data_scope.ceiling.readiness": "rc=0, read-only, status=blocked by the environment facts below (not by the ceiling: source 143 == installed 143)",
-      "make local.dev.demo.data_space.migrate": "rc=0 read-only plan (confirmed=false, writes=0); with SC_CONFIRM_DATA_SPACE_MIGRATION=1 it performs the same write set in one transaction and only commits after the post-conditions pass"
+      "make verify.database.strategy.guard": "rc=0, DATABASE_STRATEGY_GUARD=PASS; 11 unit tests OK",
+      "make verify.data_space.provisioning.guard": "rc=0, DATA_SPACE_PROVISIONING_GUARD=PASS invariants=6; 28 unit tests OK",
+      "make local.dev.test MODULE=smart_core TEST_TAGS=data_space_boundary": "rc=0, 37 tests, 0 failed / 0 error on the clean rebuilt database",
+      "make local.dev.data_space.onboard (read-only)": "end-to-end pre_init onboarding proven: environment_role=platform_internal_demo, registration_rows=1, registered_company_ids=[1], bootstrap_company_ids=[], onboarded_demo_company_ids=[1]"
     },
-    "environment_blocker": {
-      "finding": "the persistent local.dev demo database violates BUSINESS_DATA_NEVER_IN_PLATFORM_BOOTSTRAP_COMPANY: base.main_company (id=1 'My Company') is marked is_platform_bootstrap_company=True by addons/smart_core/data/platform_bootstrap_company.xml and owns essentially the whole dataset; sc.tenant.company.registration has 0 rows.",
-      "measured_scope_2026_10_14": {
-        "read_only_plan_entry": "make local.dev.demo.data_space.migrate (SC_CONFIRM_DATA_SPACE_MIGRATION unset -> plan + rollback, no write)",
-        "ceiling_set_models_with_bootstrap_rows": 81,
-        "ceiling_set_rows_to_re_own": 31240,
-        "largest_ceiling_holders": {
-          "ui.business.config.mutation.audit": 30118,
-          "sc.audit.log": 198,
-          "payment.request": 141,
-          "sc.project.document": 129,
-          "construction.work.breakdown": 88,
-          "ui.business.config.change.set": 88,
-          "sc.expense.contract.ledger": 77,
-          "project.project": 72
-        },
-        "residual_models_outside_the_ceiling_set": 61,
-        "largest_residuals": {
-          "ir.attachment": 14542,
-          "tier.definition": 6298,
-          "sc.ui.base.contract.asset": 3740,
-          "tier.review": 384,
-          "project.task": 155,
-          "construction.contract": 121,
-          "sc.contract.execution.position": 121,
-          "project.cost.ledger": 86,
-          "purchase.order.line": 49,
-          "account.account": 49,
-          "purchase.order": 26,
-          "stock.location": 10,
-          "account.journal": 9,
-          "account.move": 4
-        },
-        "users_reassigned_if_option_2": {
-          "gaining_demo_membership": 56,
-          "default_company_moves_off_bootstrap": 58
-        },
-        "earlier_estimate_correction": "the 216-row estimate (payment.request 141 + project.project 72 + sc.general.contract 3) came from a four-model probe and is wrong; it is superseded by the two numbers above."
-      },
-      "why_the_scope_matters": "Option 2 is not a demo-data move: it re-owns core Odoo data (chart of accounts, journals, taxes, warehouse, purchase, stock), 14.5k attachments, 6.3k tier definitions and 30k config-mutation audit rows to another company, and it changes the default company of 58 users. That is a staged migration programme, not a bounded fix, and the tool stops at a plan until it is re-authorized at this scope.",
-      "options": {
-        "option_1_labeling_and_policy": {
-          "cost": "one registration row, zero data movement",
-          "content": "register base.main_company (id=1) as this database's demo data space (purpose=demo) through smart_core.security.data_space_provisioning.adopt_business_company, and amend the marker policy so that in the platform_internal_demo (single_db_multi_company) role the environment's main company IS the first onboarded demo company instead of an unregistered technical carrier; the bootstrap-marker invariant then binds customer_production databases, where base.main_company must never carry tenant data.",
-          "requires_owner_ruling": "yes: it redefines what the bootstrap marker means for the demo role, and it touches addons/smart_core/data/platform_bootstrap_company.xml, data_space.registration_scope_domain, smart_construction_seed tax-default placement (which today deliberately seeds the bootstrap company) and the related tests.",
-          "risk": "moderate-policy, low-data: it also makes company 1 registrable, so the customer-import path must keep refusing it for customer purposes."
-        },
-        "option_2_data_migration": {
-          "cost": "31240 ceiling-set rows + 61 residual models + 58 user defaults",
-          "content": "keep the marker, onboard a distinct demo company (id=3 'Demo Secondary Company' is the only unregistered candidate) and re-own every bootstrap row to it.",
-          "requires_owner_ruling": "yes, and a staged plan: core-model re-ownership plus a rebuild-surviving migration module rather than a one-off shell write.",
-          "risk": "high: core accounting/stock/purchase data, attachments, approval-tier definitions and 30k audit rows change company; partial failure would leave inconsistent ownership."
-        }
-      },
-      "recommendation": "Option 1 matches the owner ruling DEMO_IS_FIRST_ONBOARDED_COMPANY (the platform's first demo company is the database's own main company) at a fraction of the risk, and it is the only option whose cost stays inside one batch. Option 2 should be chosen only if the bootstrap marker must keep meaning 'never a business tenant' in every role.",
-      "next_action_requires": "owner ruling on option 1 vs option 2. No environment write has been performed: the migration tool ran read-only and no company, registration, user or business row was modified."
-    },
-    "not_done": [
-      "No environment write: no company created/registered, no row re-owned, no user membership or default company changed.",
-      "Option 1 vs Option 2 is an open owner ruling; the earlier 216-row authorization is void because the measured scope is 31240 ceiling-set rows plus 61 residual models.",
-      "smart_construction_demo still gates on database name + SC_ENVIRONMENT/SC_ALLOW_DEMO_DATA; binding its seeding to assert_business_data_space_ready(purpose='demo') is the next step after the ruling.",
-      "No real-account positive/negative ORM test yet for a demo data space (requires the onboarded demo company)."
+    "superseded": [
+      "the earlier P4 DATA-SPACE-MIGRATION-01 blocker (31240 ceiling rows + 61 residual models) is closed by the Option 1 ruling: no row changes company."
     ]
+  },
+  "demo_scenario_product_drift": {
+    "status": "pre_existing_main_defect_reported_not_fixed_in_this_batch",
+    "summary": "make local.dev.rebuild_demo fails in the scenario stage: guards introduced 2026-10-01 by 2d164a1f (#525) reject any create() with a non-draft state while the demo scenario seeds were last authored 2026-09-05 (#435) and were never synced. Demo lags the product; the fix must align the demo to the product, never relax the guard.",
+    "symptom": "make demo.load SCENARIO=s70_daily_business_surface -> ParseError at 10_daily_business_records.xml:74 (sc.payment.execution state=confirmed) -> UserError '单据必须从草稿通过正式审批和业务动作流转。'",
+    "measured_2026_10_14": "one-pass record-level diagnostic (savepoint rollback, no commit): 62 record failures, ~30 root causes, the rest cascade (External ID not found under a failed parent)",
+    "root_cause_models": [
+      "sc.payment.execution",
+      "sc.treasury.reconciliation",
+      "sc.construction.diary",
+      "sc.invoice.registration (x2)",
+      "sc.project.document (x2)",
+      "sc.material.purchase.request",
+      "sc.plan",
+      "sc.plan.line",
+      "sc.safety.plan (x2)",
+      "sc.labor.plan",
+      "sc.labor.request",
+      "sc.attendance.checkin",
+      "sc.labor.settlement",
+      "sc.equipment.plan",
+      "sc.equipment.request",
+      "sc.equipment.usage",
+      "sc.equipment.settlement",
+      "sc.subcontract.plan",
+      "sc.subcontract.register",
+      "sc.subcontract.settlement",
+      "sc.material.rental.plan",
+      "sc.material.rental.order",
+      "sc.material.rental.settlement",
+      "tender.doc.purchase",
+      "sc.contract.event (x2)",
+      "sc.financing.loan",
+      "sc.hr.payroll.document",
+      "sc.settlement.adjustment",
+      "sc.output.invoice.adjustment (missing original_ledger_id; data not state)"
+    ],
+    "fix_direction": "seed XML into draft, then advance through the governed actions from the existing _ensure_*(env) hooks in demo_addons/smart_construction_demo/tools/scenario_loader.py (the same pattern as _ensure_s85_payroll_lifecycle / _ensure_s80_material_lifecycle / _ensure_s69_*).",
+    "owning_task": "DEMO-SCENARIO-PRODUCT-DRIFT-01 (independent, separately acceptable product result; ~15 models / 10 scenarios, some requiring approval workflows)"
   }
 }

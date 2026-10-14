@@ -3,7 +3,7 @@
 状态：所有者确认（2026-10-14）
 权威边界：`docs/governance/database_architecture_policy.md`（数据库架构唯一权威）
 执行登记：`.agent/runs/FE-CONTRACT-RUNTIME-02/run.json`
-声明文件：`config/tenant/database_strategy.v1.json`
+声明文件：`addons/smart_core/data/tenant/database_strategy.v1.json`
 本文件只描述初始化顺序与策略选择，不复制、不替代数据库架构政策。
 
 ## 1. 所有者裁定
@@ -33,7 +33,7 @@ BUSINESS_DATA_NEVER_IN_PLATFORM_BOOTSTRAP_COMPANY=true
 1. 平台技术基线      smart_construction_bootstrap   语言/时区/币种基线
 2. 平台机制          smart_core                     契约/权限/注册权威
 3. bootstrap 公司标记  smart_core.data               base.main_company 标记为技术载体
-4. 数据库策略声明     config/tenant/database_strategy.v1.json
+4. 数据库策略声明     addons/smart_core/data/tenant/database_strategy.v1.json
 5. 数据空间接入       smart_core.security.data_space_provisioning
                      -> 创建并注册本库业务公司（purpose=demo/test/customer）
 6. 行业初始化         smart_construction_core + smart_construction_seed

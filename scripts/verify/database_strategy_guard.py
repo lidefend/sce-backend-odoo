@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-DECLARATION = "config/tenant/database_strategy.v1.json"
+DECLARATION = "addons/smart_core/data/tenant/database_strategy.v1.json"
 
 CANONICAL_INITIALIZATION_ORDER = [
     "platform_technical_baseline",
@@ -34,6 +34,7 @@ REQUIRED_INVARIANTS = {
     "one_formal_customer_owns_one_business_database",
     "unregistered_company_ownership_fails_closed",
     "strategy_is_declared_per_environment_role",
+    "environment_main_company_onboarding_is_role_scoped",
 }
 
 
@@ -93,6 +94,22 @@ def check(root: Path = ROOT, declaration_path: str = DECLARATION) -> list[str]:
             )
         if entry.get("onboarded_company_required") is not True:
             failures.append(f"role {role}: an onboarded business company is required")
+        onboarding_purpose = entry.get("main_company_onboarding_purpose", "missing")
+        if onboarding_purpose == "missing":
+            failures.append(
+                f"role {role}: main_company_onboarding_purpose is required "
+                f"(null when the role keeps its main company a pure carrier)"
+            )
+        elif purpose == "customer":
+            if onboarding_purpose is not None:
+                failures.append(
+                    f"role {role}: the customer role keeps its main company a pure "
+                    f"carrier, so main_company_onboarding_purpose must be null"
+                )
+        elif onboarding_purpose != purpose:
+            failures.append(
+                f"role {role}: main_company_onboarding_purpose must be {purpose!r}"
+            )
         order = entry.get("initialization_order")
         if order != CANONICAL_INITIALIZATION_ORDER:
             failures.append(

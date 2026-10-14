@@ -40,6 +40,7 @@ the caller passes in.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 CUSTOMER_PURPOSE = "customer"
@@ -65,10 +66,19 @@ PURPOSE_STRATEGY = {
     CUSTOMER_PURPOSE: "database_per_customer_tenant",
 }
 
-DECLARATION_PATH = "config/tenant/database_strategy.v1.json"
+#: Declared with the code that consumes it: the runtime resolver runs inside the
+#: Odoo container, where the repository root is not mounted.
+DECLARATION_PATH = "data/tenant/database_strategy.v1.json"
 DECLARATION_SCHEMA_VERSION = 1
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+#: This database's declared environment role. Written by the environment
+#: bootstrap step (``declare_environment_role``); the deployment-time variable
+#: is the only fallback. An undeclared database resolves to the strictest role.
+ENVIRONMENT_ROLE_PARAM = "sc.environment.role"
+ENVIRONMENT_ROLE_ENV_VAR = "SC_ENVIRONMENT_ROLE"
+DEFAULT_ENVIRONMENT_ROLE = "customer_production"
+
+MODULE_ROOT = Path(__file__).resolve().parents[1]
 
 
 def strategy_for_purpose(purpose):
@@ -82,7 +92,7 @@ def strategy_for_purpose(purpose):
 
 def load_declaration(path=None):
     """Read the declared database strategy. Missing or invalid is fail closed."""
-    target = Path(path) if path else REPOSITORY_ROOT / DECLARATION_PATH
+    target = Path(path) if path else MODULE_ROOT / DECLARATION_PATH
     if not target.is_file():
         raise ValueError("DATA_SPACE_STRATEGY_DECLARATION_MISSING:%s" % (DECLARATION_PATH,))
     try:
@@ -134,6 +144,23 @@ def validate_strategy_declaration(declaration):
                 "environment role %s: the platform bootstrap company must never carry business data"
                 % (expected["environment_role"],)
             )
+        onboarding_purpose = role.get("main_company_onboarding_purpose", "missing")
+        if onboarding_purpose == "missing":
+            failures.append(
+                "environment role %s: main_company_onboarding_purpose must be declared"
+                % (expected["environment_role"],)
+            )
+        elif purpose == CUSTOMER_PURPOSE:
+            if onboarding_purpose is not None:
+                failures.append(
+                    "environment role %s: a customer role keeps its main company a pure carrier"
+                    % (expected["environment_role"],)
+                )
+        elif onboarding_purpose != purpose:
+            failures.append(
+                "environment role %s: main_company_onboarding_purpose must be %s"
+                % (expected["environment_role"], purpose)
+            )
     return failures
 
 
@@ -153,6 +180,55 @@ def _registration_model(env):
 
 def _company_model(env):
     return env["res.company"]
+
+
+def environment_role(env):
+    """Resolve this database's declared environment role.
+
+    The role is persisted by ``declare_environment_role`` during the
+    environment bootstrap step, with the deployment-time ``SC_ENVIRONMENT_ROLE``
+    as the only fallback. A database that never declared a role resolves to the
+    strictest role, so an undeclared environment never onboards its main company
+    as a business data space by accident.
+    """
+    param = env["ir.config_parameter"].sudo().get_param(ENVIRONMENT_ROLE_PARAM)
+    role = str(param or "").strip() or str(
+        os.environ.get(ENVIRONMENT_ROLE_ENV_VAR) or ""
+    ).strip()
+    return role or DEFAULT_ENVIRONMENT_ROLE
+
+
+def declare_environment_role(env, role, declaration=None):
+    """Persist the environment role as one explicit bootstrap step.
+
+    A role that the strategy declaration does not carry is refused: the role is
+    the fact every later onboarding decision reads, so it can never be written
+    as a free-form string.
+    """
+    resolved = declaration if declaration is not None else load_declaration()
+    failures = validate_strategy_declaration(resolved)
+    if failures:
+        raise ValueError(
+            "DATA_SPACE_STRATEGY_DECLARATION_INVALID:%s" % ("; ".join(failures),)
+        )
+    if role not in (resolved.get("environment_roles") or {}):
+        raise ValueError("DATA_SPACE_UNKNOWN_ENVIRONMENT_ROLE:%s" % (role,))
+    env["ir.config_parameter"].sudo().set_param(ENVIRONMENT_ROLE_PARAM, role)
+    return role
+
+
+def main_company_onboarding_purpose(env, declaration=None):
+    """Purpose the environment main company must be onboarded with, else None.
+
+    ``demo``/``test`` run a single business database whose environment main
+    company IS the first onboarded business company, so onboarding is expected
+    there. ``None`` (the customer production role) keeps the main company as a
+    pure technical carrier that must never own business data.
+    """
+    resolved = declaration if declaration is not None else load_declaration()
+    entry = (resolved.get("environment_roles") or {}).get(environment_role(env)) or {}
+    purpose = entry.get("main_company_onboarding_purpose")
+    return purpose or None
 
 
 def bootstrap_company_ids(env):
@@ -255,4 +331,32 @@ def onboard_business_company(env, *, tenant_key, purpose, company_name, declarat
         tenant_key=tenant_key,
         purpose=purpose,
         company_name=company_name,
+    )
+
+
+def onboard_environment_main_company(env, *, tenant_key=None, declaration=None):
+    """Onboard this database's environment main company as its business space.
+
+    This is the demo/test onboarding path: the environment main company is the
+    first onboarded business company, so onboarding retires its technical
+    carrier marker instead of refusing it. The strategy is proven declared
+    before any row is written, and the customer production role never reaches
+    here -- ``main_company_onboarding_purpose`` is null there and a formal
+    customer company keeps using the signed tenant payload import lane.
+    """
+    purpose = main_company_onboarding_purpose(env, declaration=declaration)
+    if not purpose:
+        raise ValueError(
+            "DATA_SPACE_ENVIRONMENT_ROLE_FORBIDS_MAIN_COMPANY_ONBOARDING:%s"
+            % (environment_role(env),)
+        )
+    assert_strategy_declared_for_purpose(purpose, declaration=declaration)
+    company = _company_model(env).sudo().browse(int(env.company.id)).exists()
+    if not company:
+        raise ValueError("DATA_SPACE_ENVIRONMENT_MAIN_COMPANY_UNRESOLVED")
+    return _registration_model(env)._adopt_environment_main_company(
+        tenant_key=str(tenant_key or company.id),
+        purpose=purpose,
+        company_id=company.id,
+        environment_role=environment_role(env),
     )

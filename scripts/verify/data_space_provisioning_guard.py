@@ -30,7 +30,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PROVISIONING = REPO_ROOT / "addons" / "smart_core" / "security" / "data_space_provisioning.py"
 REGISTRATION_MODEL = REPO_ROOT / "addons" / "smart_core" / "models" / "tenant_payload_import_batch.py"
-DECLARATION = REPO_ROOT / "config" / "tenant" / "database_strategy.v1.json"
+DECLARATION = REPO_ROOT / "addons" / "smart_core" / "data" / "tenant" / "database_strategy.v1.json"
 
 REQUIRED_ENTRYPOINTS = (
     "onboard_business_company",
@@ -39,6 +39,10 @@ REQUIRED_ENTRYPOINTS = (
     "strategy_for_purpose",
     "validate_strategy_declaration",
     "bootstrap_company_business_data_violations",
+    "environment_role",
+    "declare_environment_role",
+    "main_company_onboarding_purpose",
+    "onboard_environment_main_company",
 )
 INDUSTRY_HOOK_TOKEN = "_after_tenant_company_registration"
 PLATFORM_MODULE_PREFIXES = ("addons/smart_core/",)

@@ -21,6 +21,7 @@
       "data_purpose": "demo",
       "bootstrap_company_carries_business_data": false,
       "onboarded_company_required": true,
+      "main_company_onboarding_purpose": "demo",
       "initialization_order": [
         "platform_technical_baseline",
         "platform_mechanisms",
@@ -36,6 +37,7 @@
       "data_purpose": "test",
       "bootstrap_company_carries_business_data": false,
       "onboarded_company_required": true,
+      "main_company_onboarding_purpose": "test",
       "initialization_order": [
         "platform_technical_baseline",
         "platform_mechanisms",
@@ -52,6 +54,7 @@
       "bootstrap_company_carries_business_data": false,
       "onboarded_company_required": true,
       "dedicated_database_per_customer": true,
+      "main_company_onboarding_purpose": null,
       "initialization_order": [
         "platform_technical_baseline",
         "platform_mechanisms",
@@ -68,6 +71,7 @@
     "onboarding_precedes_industry_initialization",
     "one_formal_customer_owns_one_business_database",
     "unregistered_company_ownership_fails_closed",
-    "strategy_is_declared_per_environment_role"
+    "strategy_is_declared_per_environment_role",
+    "environment_main_company_onboarding_is_role_scoped"
   ]
 }

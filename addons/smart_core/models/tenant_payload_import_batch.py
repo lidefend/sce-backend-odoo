@@ -74,10 +74,13 @@ class ScDataSpaceSerialization(models.Model):
 class ScTenantCompanyRegistration(models.Model):
     """Explicit binding between a tenant payload and a business company.
 
-    Odoo's ``base.main_company`` remains a neutral bootstrap carrier. A
-    user-data module must create and register a distinct business company
-    through this boundary. Product and industry modules never manufacture a
-    concrete tenant identity.
+    Odoo's ``base.main_company`` stays a neutral bootstrap carrier in the
+    customer production role, where a user-data module must register a distinct
+    business company. In the demo/test roles the environment main company IS
+    the first onboarded business company, so onboarding retires its carrier
+    marker through the single governed entry
+    ``_adopt_environment_main_company``. Product and industry modules never
+    manufacture a concrete tenant identity.
     """
 
     _name = "sc.tenant.company.registration"
@@ -236,6 +239,38 @@ class ScTenantCompanyRegistration(models.Model):
                 [("company_id", "=", company.id)]):
             raise ValidationError("DATA_SPACE_COMPANY_ALREADY_REGISTERED")
         with self.env.cr.savepoint():
+            return self._open_non_customer_registration(
+                tenant_key=tenant_key, purpose=purpose, company_id=company.id)
+
+    @api.model
+    def _adopt_environment_main_company(
+        self, *, tenant_key, purpose, company_id, environment_role
+    ):
+        """Onboard the environment main company by retiring its carrier marker.
+
+        This is the one entry where a platform bootstrap company may be
+        registered: in the demo/test roles the environment main company IS the
+        first onboarded business company, so onboarding is exactly the act of
+        retiring the technical-carrier marker. It stays maintenance-only,
+        refuses the customer production role, refuses a company that is not
+        this environment's main company, and refuses a database that already
+        owns an active registration, so "reuse" still cannot become "relabel".
+        """
+        self._assert_non_customer_maintenance(purpose=purpose, tenant_key=tenant_key)
+        if environment_role == "customer_production":
+            raise ValidationError("DATA_SPACE_CUSTOMER_ROLE_MAIN_COMPANY_IS_A_CARRIER")
+        company = self.env["res.company"].sudo().browse(int(company_id or 0)).exists()
+        if not company:
+            raise ValidationError("DATA_SPACE_BUSINESS_COMPANY_REQUIRED")
+        if company.id != self.env.company.id:
+            raise ValidationError("DATA_SPACE_ENVIRONMENT_MAIN_COMPANY_REQUIRED")
+        Registration = self.sudo().with_context(active_test=False)
+        if Registration.search_count([("company_id", "=", company.id)]):
+            raise ValidationError("DATA_SPACE_COMPANY_ALREADY_REGISTERED")
+        if Registration.search_count([("active", "=", True)]):
+            raise ValidationError("DATA_SPACE_DATABASE_ALREADY_OWNS_A_REGISTRATION")
+        with self.env.cr.savepoint():
+            company.sudo().write({"is_platform_bootstrap_company": False})
             return self._open_non_customer_registration(
                 tenant_key=tenant_key, purpose=purpose, company_id=company.id)
 

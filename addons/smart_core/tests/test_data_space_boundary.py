@@ -40,6 +40,11 @@ class TestDataSpaceBoundary(TransactionCase):
         return self.admin.with_user(self.admin).with_context(
             allowed_company_ids=self.admin.company_ids.ids, **context)
 
+    def clear_active_registrations(self):
+        """Make onboarding tests independent of any ambient environment onboarding."""
+        self.Registration.with_context(active_test=False).search(
+            [('active', '=', True)]).write({'active': False})
+
     def test_customer_default_is_preserved(self):
         self.assertEqual(self.customer.data_purpose, 'customer')
 
@@ -121,6 +126,52 @@ class TestDataSpaceBoundary(TransactionCase):
         with self.assertRaisesRegex(ValidationError, 'DATA_SPACE_BUSINESS_COMPANY_REQUIRED'):
             self.Registration._register_non_customer_space(
                 tenant_key='data-space-unit-carrier', purpose='demo', company_id=carrier.id)
+
+    def test_environment_main_company_onboarding_retires_the_carrier_marker(self):
+        self.clear_active_registrations()
+        carrier = self.env['res.company'].create({
+            'name': 'Data space unit main carrier',
+            'is_platform_bootstrap_company': True})
+        Registration = self.Registration.with_context(allowed_company_ids=[carrier.id])
+        registration = Registration._adopt_environment_main_company(
+            tenant_key='data-space-unit-main', purpose='demo',
+            company_id=carrier.id, environment_role='platform_internal_demo')
+        self.assertEqual(registration.company_id, carrier)
+        self.assertEqual(registration.data_purpose, 'demo')
+        self.assertFalse(carrier.is_platform_bootstrap_company)
+
+    def test_customer_role_cannot_onboard_its_main_company(self):
+        carrier = self.env['res.company'].create({
+            'name': 'Data space unit customer main carrier',
+            'is_platform_bootstrap_company': True})
+        Registration = self.Registration.with_context(allowed_company_ids=[carrier.id])
+        with self.assertRaisesRegex(ValidationError, 'MAIN_COMPANY_IS_A_CARRIER'):
+            Registration._adopt_environment_main_company(
+                tenant_key='data-space-unit-main-customer', purpose='demo',
+                company_id=carrier.id, environment_role='customer_production')
+        self.assertTrue(carrier.is_platform_bootstrap_company)
+
+    def test_non_main_company_cannot_be_onboarded_as_the_environment_space(self):
+        other = self.env['res.company'].create({
+            'name': 'Data space unit not main', 'is_platform_bootstrap_company': True})
+        with self.assertRaisesRegex(ValidationError, 'ENVIRONMENT_MAIN_COMPANY_REQUIRED'):
+            self.Registration._adopt_environment_main_company(
+                tenant_key='data-space-unit-not-main', purpose='demo',
+                company_id=other.id, environment_role='platform_internal_demo')
+
+    def test_database_that_already_owns_a_registration_refuses_a_second_space(self):
+        self.clear_active_registrations()
+        owner = self.env['res.company'].create({'name': 'Data space unit first owner'})
+        self.Registration._register_non_customer_space(
+            tenant_key='data-space-unit-first', purpose='demo', company_id=owner.id)
+        carrier = self.env['res.company'].create({
+            'name': 'Data space unit second carrier',
+            'is_platform_bootstrap_company': True})
+        Registration = self.Registration.with_context(allowed_company_ids=[carrier.id])
+        with self.assertRaisesRegex(ValidationError, 'ALREADY_OWNS_A_REGISTRATION'):
+            Registration._adopt_environment_main_company(
+                tenant_key='data-space-unit-second', purpose='demo',
+                company_id=carrier.id, environment_role='platform_internal_demo')
 
     def test_already_registered_company_is_refused(self):
         with self.assertRaisesRegex(ValidationError, 'DATA_SPACE_COMPANY_ALREADY_REGISTERED'):

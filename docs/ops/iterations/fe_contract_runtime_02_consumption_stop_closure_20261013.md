@@ -1521,3 +1521,61 @@ L2 定向 ORM 反例 1 test 0 failed（日志 `relationship_review_queue_project
   `make verify.data_space.provisioning.guard` rc=0（18 tests + guard PASS）；
   `make verify.data_space.policy.unit` rc=0（12 tests）。
 - 状态边界：仍是**批次验收完成**；主线集成/版本发布/产品交付未发生，且交付链等待上述路线裁定。
+
+### 路线裁定与落地：选项 1（第 27 棒，2026-10-14）
+
+所有者裁定 `DEMO_IS_FIRST_ONBOARDED_COMPANY=true`：demo 用途下环境主公司**就是**第一个已接入的
+业务公司，接入动作 = 退役技术载体标记，不做任何行归属改写（选项 1，0 行数据迁移）。上面「停在不写」
+的待裁定状态由此关闭；选项 2（全量改归属 31,240 + 61 模型行）不再执行。
+
+- 声明文件从 `config/tenant/database_strategy.v1.json` 迁到
+  `addons/smart_core/data/tenant/database_strategy.v1.json`：`config/` 不在 Odoo 容器挂载内，
+  声明必须随模块分发。三角色新增 `main_company_onboarding_purpose`（demo→`demo`、
+  acceptance→`test`、customer→`null`）与不变量 `environment_main_company_onboarding_is_role_scoped`。
+- `addons/smart_core/security/data_space_provisioning.py` 新增 `environment_role()` /
+  `declare_environment_role()` / `main_company_onboarding_purpose()` /
+  `onboard_environment_main_company()`；模块仍不 import odoo。
+- `addons/smart_core/models/tenant_payload_import_batch.py` 新增唯一允许注册 bootstrap 公司的入口
+  `_adopt_environment_main_company()`：拒绝 customer 生产角色、拒绝非本环境主公司、拒绝本库已有
+  活动注册、拒绝该公司已有注册；先写 `is_platform_bootstrap_company=False` 再建注册行。
+  内部错误码 `DATA_SPACE_CUSTOMER_ROLE_MAIN_COMPANY_IS_A_CARRIER` /
+  `DATA_SPACE_ENVIRONMENT_MAIN_COMPANY_REQUIRED` / `DATA_SPACE_COMPANY_ALREADY_REGISTERED` /
+  `DATA_SPACE_DATABASE_ALREADY_OWNS_A_REGISTRATION`。既有 `_register_non_customer_space` /
+  `_open_non_customer_registration` 保留不动。
+- `demo_addons/smart_construction_demo/hooks.py`：`ENVIRONMENT_ROLE="platform_internal_demo"`、
+  `DEMO_TENANT_KEY="sc-demo-main"`，`onboard_platform_data_space(env)` 幂等入驻，
+  `guard_demo_data_space(env)` 在 `pre_init_hook` 与 `apply_demo_user_passwords` 前置；
+  demo 只在标记退役后播种，且**从不自己制造注册行**。
+- 受管写入入口 `make local.dev.data_space.onboard`（默认只读，`SC_CONFIRM_DATA_SPACE_ONBOARDING=onboard`
+  才写）；删除 `local.dev.demo.data_space.migrate` 与 `scripts/verify/local_dev_demo_data_space_migration.py`。
+- 验证回执：`make verify.database.strategy.guard` rc=0（PASS + 11 tests）；
+  `make verify.data_space.provisioning.guard` rc=0（PASS + 28 tests，invariants=6）；
+  `make local.dev.test MODULE=smart_core TEST_TAGS=data_space_boundary` rc=0（37 tests，0 failed/0 error）。
+- 环境事实（干净重建库）：`pre_init` 自动入驻端到端成立 —— `environment_role=platform_internal_demo`、
+  `registration_rows=1`、`registered_company_ids=[1]`、`bootstrap_company_ids=[]`、
+  `onboarded_demo_company_ids=[1]`。
+- 状态边界：仍只支撑**批次验收完成**（源码 + 守卫 + 定向测试 + 只读/受管回读）；
+  主线集成、版本发布、产品交付未发生。
+
+### 遗留缺陷：demo 场景种子滞后产品守卫（main 既有，非本棒引入）
+
+`make local.dev.rebuild_demo` 在 scenario 阶段失败。事实：
+
+- 守卫 `create()` 拒绝直接写入非 `draft` 状态，由 **2026-10-01 #525
+  `feat(web): adopt official template rendering...`（2d164a1f）** 引入；demo 场景种子最后更新是
+  **2026-09-05 #435**，其后未随守卫同步。即“demo 滞后产品”，属于 main 上的既有缺陷。
+- 一次性记录级诊断（savepoint 回滚、不提交）得到 **62 条**记录级失败，其中约 **30 条为根因**，
+  其余为父记录失败后的级联（External ID not found）。
+- 根因按模型/场景分布（节选）：`sc.payment.execution`、`sc.treasury.reconciliation`、
+  `sc.construction.diary`、`sc.invoice.registration`(×2)、`sc.project.document`(×2)、
+  `sc.material.purchase.request`、`sc.plan`/`sc.plan.line`、`sc.safety.plan`(×2)、
+  `sc.labor.plan`/`sc.labor.request`/`sc.attendance.checkin`/`sc.labor.settlement`、
+  `sc.equipment.plan`/`sc.equipment.request`/`sc.equipment.usage`/`sc.equipment.settlement`、
+  `sc.subcontract.plan`/`sc.subcontract.register`/`sc.subcontract.settlement`、
+  `sc.material.rental.plan`/`order`/`settlement`、`tender.doc.purchase`、`sc.contract.event`(×2)、
+  `sc.financing.loan`、`sc.hr.payroll.document`、`sc.settlement.adjustment`、`sc.output.invoice.adjustment`
+  （缺 `original_ledger_id`，非状态问题）。
+- 修复方向（与仓库既有约定一致）：XML 落 `draft`，再由 `scenario_loader` 的
+  `_ensure_*(env)` 步骤走正式动作达成终态（既有 `_ensure_s85_payroll_lifecycle` /
+  `_ensure_s80_material_lifecycle` / `_ensure_s69_*` 即此模式）。属独立、可单独验收的
+  产品结果，规模较大（约 15 个模型 / 10 个场景，部分需审批流），不并入本棒平台初始化批次。

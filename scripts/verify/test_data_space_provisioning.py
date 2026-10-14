@@ -4,8 +4,10 @@ The module under test imports nothing from odoo, so these tests drive it with a
 plain mapping. Real ORM enforcement stays with the registration model tests.
 """
 import importlib.util
+import os
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -45,6 +47,7 @@ class _Model:
         self.domains = []
         self._creates = creates
         self._registered = []
+        self._adopted = []
 
     def sudo(self):
         return self
@@ -66,17 +69,59 @@ class _Model:
         return {"tenant_key": kwargs["tenant_key"], "data_purpose": kwargs["purpose"],
                 "company_id": kwargs["company_id"]}
 
+    def _adopt_environment_main_company(self, **kwargs):
+        self._adopted.append(kwargs)
+        return {"tenant_key": kwargs["tenant_key"], "data_purpose": kwargs["purpose"],
+                "company_id": kwargs["company_id"],
+                "environment_role": kwargs["environment_role"]}
+
+    def browse(self, ids):
+        return _Recordset(ids)
+
     def with_context(self, **kwargs):
         return self
 
 
+class _Recordset:
+    def __init__(self, ids):
+        self.id = int(ids)
+
+    def exists(self):
+        return self
+
+
+class _MainCompany:
+    def __init__(self, id_):
+        self.id = int(id_)
+
+
+class _ConfigParameter:
+    def __init__(self, value=None):
+        self.value = value
+        self.writes = []
+
+    def sudo(self):
+        return self
+
+    def get_param(self, key, default=None):
+        return self.value if self.value is not None else default
+
+    def set_param(self, key, value):
+        self.writes.append((key, value))
+        self.value = value
+        return True
+
+
 class FakeEnv(dict):
-    def __init__(self, company=None, registration=None, models=None):
+    def __init__(self, company=None, registration=None, models=None,
+                 *, role=None, main_company_id=1):
         super().__init__()
         self["res.company"] = company or _Model()
         self["sc.tenant.company.registration"] = registration or _Model()
         for name, model in (models or {}).items():
             self[name] = model
+        self["ir.config_parameter"] = _ConfigParameter(role)
+        self.company = _MainCompany(main_company_id)
 
 
 class StrategyResolutionTest(unittest.TestCase):
@@ -180,6 +225,92 @@ class OnboardingEntryTest(unittest.TestCase):
                 declaration=declaration,
             )
         self.assertEqual(registration._created, [])
+
+
+class EnvironmentRoleTest(unittest.TestCase):
+    def test_declared_role_is_read_from_the_parameter(self):
+        env = FakeEnv(role="platform_internal_demo")
+        self.assertEqual(provisioning.environment_role(env), "platform_internal_demo")
+
+    def test_undeclared_role_resolves_to_the_strictest_role(self):
+        env = FakeEnv(role=None)
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop(provisioning.ENVIRONMENT_ROLE_ENV_VAR, None)
+            self.assertEqual(provisioning.environment_role(env), "customer_production")
+
+    def test_deployment_variable_is_the_only_fallback(self):
+        env = FakeEnv(role=None)
+        with patch.dict(
+            os.environ, {provisioning.ENVIRONMENT_ROLE_ENV_VAR: "industry_acceptance"}
+        ):
+            self.assertEqual(provisioning.environment_role(env), "industry_acceptance")
+
+    def test_declare_environment_role_persists_and_refuses_unknown(self):
+        env = FakeEnv(role=None)
+        self.assertEqual(
+            provisioning.declare_environment_role(env, "industry_acceptance"),
+            "industry_acceptance",
+        )
+        self.assertEqual(
+            env["ir.config_parameter"].writes[-1],
+            (provisioning.ENVIRONMENT_ROLE_PARAM, "industry_acceptance"),
+        )
+        with self.assertRaisesRegex(ValueError, "UNKNOWN_ENVIRONMENT_ROLE"):
+            provisioning.declare_environment_role(env, "shared_space")
+
+    def test_main_company_onboarding_purpose_is_role_scoped(self):
+        for role, expected in (
+            ("platform_internal_demo", "demo"),
+            ("industry_acceptance", "test"),
+            ("customer_production", None),
+        ):
+            with self.subTest(role=role):
+                self.assertEqual(
+                    provisioning.main_company_onboarding_purpose(FakeEnv(role=role)),
+                    expected,
+                )
+
+    def test_declaration_without_main_company_purpose_is_reported(self):
+        declaration = provisioning.load_declaration()
+        declaration["environment_roles"]["platform_internal_demo"].pop(
+            "main_company_onboarding_purpose")
+        failures = provisioning.validate_strategy_declaration(declaration)
+        self.assertTrue(
+            any("main_company_onboarding_purpose" in failure for failure in failures), failures)
+
+    def test_customer_role_cannot_onboard_its_main_company_in_the_declaration(self):
+        declaration = provisioning.load_declaration()
+        declaration["environment_roles"]["customer_production"][
+            "main_company_onboarding_purpose"] = "customer"
+        failures = provisioning.validate_strategy_declaration(declaration)
+        self.assertTrue(any("pure carrier" in failure for failure in failures), failures)
+
+
+class MainCompanyOnboardingTest(unittest.TestCase):
+    def test_demo_role_onboards_the_environment_main_company(self):
+        registration = _Model()
+        env = FakeEnv(registration=registration, role="platform_internal_demo",
+                      main_company_id=1)
+        result = provisioning.onboard_environment_main_company(
+            env, tenant_key="sc-demo-main")
+        self.assertEqual(result["environment_role"], "platform_internal_demo")
+        self.assertEqual(result["company_id"], 1)
+        self.assertEqual(result["data_purpose"], "demo")
+        self.assertEqual(registration._adopted[0]["purpose"], "demo")
+
+    def test_test_role_onboards_the_environment_main_company_as_test(self):
+        env = FakeEnv(registration=_Model(), role="industry_acceptance", main_company_id=5)
+        result = provisioning.onboard_environment_main_company(env, tenant_key="acceptance")
+        self.assertEqual(result["data_purpose"], "test")
+        self.assertEqual(result["company_id"], 5)
+
+    def test_customer_role_refuses_to_onboard_its_main_company(self):
+        registration = _Model()
+        env = FakeEnv(registration=registration, role="customer_production",
+                      main_company_id=1)
+        with self.assertRaisesRegex(ValueError, "FORBIDS_MAIN_COMPANY_ONBOARDING"):
+            provisioning.onboard_environment_main_company(env, tenant_key="customer-main")
+        self.assertEqual(registration._adopted, [])
 
 
 class ReadinessGateTest(unittest.TestCase):
