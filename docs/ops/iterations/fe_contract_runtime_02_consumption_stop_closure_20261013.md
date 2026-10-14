@@ -1714,9 +1714,7 @@ XML 追加的连接子必须写 `&amp;`（首版裸 `&` 导致 XML 非法，已�
 
 ### 仍开放（不得据此报整体完成）
 
-- **复审第 2 项**：公司级字典共享交付语义缺失。越界已阻断，但
-  `addons/smart_core/core/dictionary_scope_projection.py` 自述公司范围尚无交付语义，
-  公司／行业／平台共享目标未实现。
+- ~~**复审第 2 项**：公司级字典共享交付语义缺失。~~ **（已于 `30eb2274` + `8dc3b5fa` 实现并绑定回执，见文末「主线集成与镜像对齐」一节；本行是当时的开放状态，保留以便追溯。）**
 - **复审第 3 项**：`DEMO-SCENARIO-PRODUCT-DRIFT-01`，`local.dev.rebuild_demo` 场景加载失败；
   必须让 demo 对齐产品，禁止放宽 2026-10-01 `create()` 守卫。一步式闸门已把对齐前提减半
   （种子落 draft，一个受治动作即到终态）。
@@ -1775,8 +1773,8 @@ cockpit 收尾动作保持产品语义：草稿 → `action_confirm()` → 财�
 
 - 未放宽任何产品守卫，未新增跨模型放行；cockpit 仅清空自己那张单据的迁移载体令牌（净效果是更严）。
 - 未做：新页面、新组件、状态机 DSL；`span → deliverySpan` 迁移继续延后。
-- 上文「N 段」登记的第 2 项（公司级字典共享交付语义）与第 4 项（最终交付证据）仍开放，
-  不得据此报整体完成。
+- 上文「N 段」登记的第 2 项已于 `30eb2274` 实现；截至本节撰写时第 4 项（最终交付证据）仍开放。
+  合并后复核见文末「主线集成与镜像对齐」一节：第 2 项闭合，第 4 项仅剩目标环境绑定。
 
 ### 收尾对账（第 36 棒续跑）
 
@@ -1793,3 +1791,57 @@ cockpit 收尾动作保持产品语义：草稿 → `action_confirm()` → 财�
 | `make audit.verification.lane_coverage.check` | `rc=0 PASS`（冻结基线内，760） |
 | `make ci.local.iteration` | `rc=0 PASS`（`change_state=dirty`，L1 only） |
 | `make ci.delivery.freeze.prepare` | `rc=0 PASS`（生成物已 review 后提交） |
+
+## 主线集成与镜像对齐（2026-10-14，合并后收尾）
+
+本棒候选经受保护 PR 合并，主线集成状态在本节记录。
+
+| 事实 | 值 |
+|---|---|
+| 源分支 / 源 HEAD | `fix/fe-contract-runtime-02-consumption-stop-closure` / `590b42b23ee04c705ff28be75dae4049bdaf3e04` |
+| 目标基线 | `e4b8fd957e364a4d1749127d563398c8de80256d` |
+| PR | **#654** `fix(fe-contract-runtime): 消费停机收口 + 后端唯一事实收口（FE-CONTRACT-RUNTIME-02）` |
+| 远端必需检查（该源 HEAD） | `public_guard` / `merge_policy_gate` / `professional_quality_gate` / `frontend_release_gate` / `release_candidate_gate` 全部 `success` |
+| 精确头 Quick | `.git/codex/evidence/ci.local.quick/590b42b23ee04c705ff28be75dae4049bdaf3e04.json`（8/8 分片 `passed`） |
+| 合并方式 / 合并提交 | `squash` / `a2c3971179be350d9aea0d5718cf6b678cbea1e7` |
+| 合并时间 | `2026-10-14T08:32:56Z` |
+| 回读 | PR `state=MERGED`；`origin/main = a2c3971179be350d9aea0d5718cf6b678cbea1e7` |
+
+合并入口为 `make pr.merge.prep PR=654` 后 `env PR=654 EXPECTED_HEAD=590b42b2… make pr.merge`
+（本仓库实测：`PR=`/`EXPECTED_HEAD=` 必须以环境变量注入；写成 make 变量覆盖会被
+`scripts/ops/local_quick_evidence.py::require_safe_make_environment()` 判为命令覆盖注入，
+导致 Quick 分片全失败且不签发回执）。
+
+### 合并后同步（本地 + Gitee 镜像）
+
+| 动作 | 入口 | 结果 |
+|---|---|---|
+| 本地 main 对齐 | `make main.sync` | `refs/heads/main = a2c3971179be350d9aea0d5718cf6b678cbea1e7`（原 `e4b8fd95`，fast-forward） |
+| Gitee 镜像对齐 | `make mirror.main.gitee` | `[mirror.main.gitee] PASS sha=a2c3971179…mode=fast_forward_only`；`814bbc2888…` → `a2c3971179…` |
+
+Gitee 是**备用镜像**（`git@gitee.com:leegege/sce-product-odoo.git`），本次只做 fast-forward 镜像，
+未走 `main.gitee.catchup`（该入口是历史基线锚定的应急集成车道，恢复到 `de9a230d…`，不适用于普通镜像）。
+
+### 状态边界
+
+- 本棒达到「**批次验收完成**」与「**主线集成完成**」；**未**达到「版本发布完成」「产品交付完成」。
+- 复审项状态（2026-10-14 合并后复核）：
+  - 独立复审第 2 项 —— **已闭合**。`30eb2274` 把字典作用域投递收口到唯一词汇与唯一公司权威（`dictionary_scope_projection.py` 的 global/company/role 三范围 + `scope_disposition()`；公司行仅在 `scope_ref` 属于 `res.users._sc_data_company_ids()` 授权集时投递，否则 withhold 并计数；两个 producer 都走该函数，内联 `__global__` 提升已删除）。`8dc3b5fa` 补真实主体用例与受管 verify 别名。本节记录的旧表述「公司范围尚无交付语义」是 `30eb2274` 之前的源码状态，已过期。
+  - 独立复审第 4 项 —— **本地层已齐备，仅剩目标环境绑定**。未获新授权前不得启动部署或目标环境验收。
+
+### 合并后本地运行时回执（2026-10-14）
+
+环境 `sc-local-dev` / `sc_dev_demo`，全部走受管 `make` 入口，无手工 compose/凭据：
+
+| 入口 | 模块 / tag | 结果 |
+|---|---|---|
+| `make verify.local.dev.dictionary_scope_delivery.orm` | `smart_core` / `dictionary_scope_delivery` | 5 tests，`0 failed / 0 error` |
+| `make verify.local.dev.source_bounded_data_space_rules.orm` | `smart_construction_core` / `source_bounded_data_space_rules` | 4 tests，`0 failed / 0 error` |
+| `make verify.local.dev.data_space_identity_enrollment.orm` | `smart_core` / `data_space_identity_enrollment` | 7 tests，`0 failed / 0 error` |
+| `make verify.local.dev.platform_database_governance.orm` | `smart_core` / `platform_database_governance` | 9 tests，`0 failed / 0 error` |
+
+合计 25 例真实 ORM 用例。连同既有 `test_data_space_boundary.py`（38 例）与
+`test_platform_admin_boundary.py`（8 例），本地层已覆盖「客户数据不可见」「用户与测试数据双向隔离」
+与纯管理员边界。**仍未覆盖**：把同一验收绑定到交付/目标环境，以及受影响的浏览器契约消费确认。
+- 本节台账改写与 `run.json` 的记账改动**保持未提交**，须搭在下一条真实产品候选提交里；
+  单独提交 bookkeeping-only 变更会被 `pr.merge.local_quick_gate` 判 `DENY`。

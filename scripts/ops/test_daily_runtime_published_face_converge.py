@@ -33,7 +33,9 @@ def product(key: str, **overrides: object) -> dict[str, object]:
         "snapshot_id": 40,
         "snapshot_version": f"daily-navigation-{key.split('.')[-1]}-{SHA[:12]}",
         "policy_released_menu_count": 90,
+        "policy_preview_menu_count": 0,
         "snapshot_released_page_count": 90,
+        "snapshot_preview_page_count": 0,
         "gate_page_count": 90,
     }
     payload.update(overrides)
@@ -234,6 +236,30 @@ class DailyRuntimePublishedFaceConvergeTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(module.ConvergeError, "declared scope"):
             self._converge(drift)
+
+    def test_converge_accepts_the_declared_preview_caliber(self) -> None:
+        # The locked P1 product definition declares construction.preview as the
+        # released entries plus explicitly declared preview entries. The gate must
+        # expose the effective sum; comparing it to the released count alone used
+        # to reject a preview product that had converged correctly.
+        preview = product(
+            "construction.preview",
+            policy_preview_menu_count=39,
+            snapshot_preview_page_count=39,
+            gate_page_count=129,
+        )
+        result = self._converge(evidence(products=[product("construction.standard"), preview]))
+        self.assertEqual(result["status"], "PASS")
+
+    def test_converge_rejects_a_gate_that_ignores_declared_preview(self) -> None:
+        preview = product(
+            "construction.preview",
+            policy_preview_menu_count=39,
+            snapshot_preview_page_count=39,
+            gate_page_count=90,
+        )
+        with self.assertRaisesRegex(module.ConvergeError, "declared scope"):
+            self._converge(evidence(products=[product("construction.standard"), preview]))
 
     def test_converge_rejects_missing_declared_product(self) -> None:
         narrowed = evidence(

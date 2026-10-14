@@ -1090,11 +1090,11 @@
     "PRE-EXISTING, not this batch: the uc4 native-lowcode container lanes fail on view XML drift (processing_advisory field); the same failure reproduces on the stashed baseline and none of those lanes is wired to a required gate.",
     "PRE-EXISTING, not this batch: TestApprovalPolicyToggleBackend.test_native_create_context_state_guard raises AccessError for sc.labor.plan / sc.material.rental.order (2 errors) both before and after this batch; the two new one-step tests in the same class pass. Also pre-existing and unchanged: 8 ERRORs in the p0_state suite (fix-set identical to the stashed baseline), and 3 residual errors in verify.payment.approval_state_machine.unit (registered history_probe_runbook, textually identical to baseline).",
     "CLOSED (e9da2148 + 8b2318a6 + 4add5172): 独立复审 S1 第 1 项 —— source_bounded 29 条具名规则缺用途上限，已按守卫判定的三种形态补齐并配套 fail-closed 守卫、反例与真实账号运行时用例；make verify.sc_data_scope.rule_coverage rc=0 与 4/4 定向运行时用例通过。",
-    "OPEN (独立复审 2026-10-14 第 2 项): 公司级字典共享目标未完成 —— helper 通过 sudo() 读取公司级字典并把非角色范围映射为 __global__；addons/smart_core/core/dictionary_scope_projection.py 已自述公司范围尚无交付语义。越界已阻断，交付语义未实现，不得标记完成。",
+    "CLOSED (30eb2274 + 8dc3b5fa + 2026-10-14 本地回执): 独立复审第 2 项 —— 公司级字典共享交付语义已实现并绑定证据。dictionary_scope_projection.py 现在对 global/company/role 三范围给出唯一投递词汇：公司行仅在 scope_ref 属于调用主体（res.users._sc_data_company_ids()）授权公司集时投递，否则 withhold 并计数；两个 producer 均走 scope_disposition，内联 __global__ 提升已删除。回执：verify.local.dev.dictionary_scope_delivery.orm -> 5 tests / 0 failed；system_init_dictionary_scope_guard PASS；test_dictionary_scope_projection 7 OK；construction_core split guard PASS。",
     "CLOSED (第 36 棒, 2026-10-14): 独立复审第 3 项（完整演示基线不能重建）已解除 —— 本地全部场景 30/30 通过，受管全新库重建 PASS 且 verify.demo PASS ALL。",
-    "OPEN (独立复审 2026-10-14 第 4 项): 最终交付证据未齐备 —— 本次 HEAD 尚无 ci.local.quick receipt；已找到的 143 条规则安装回读不证明真实角色的允许/拒绝行为，纯管理员可用、客户数据不可见、用户与测试数据双向隔离仍需绑定最终环境验收。泳道台账阻塞（762>760、unregistered 2）已由 4add5172 解除。"
+    "OPEN (独立复审 2026-10-14 第 4 项) —— 仅剩目标环境绑定，本地层已齐备。本地层回执（2026-10-14，sc-local-dev/sc_dev_demo）：verify.local.dev.source_bounded_data_space_rules.orm 4/4、verify.local.dev.dictionary_scope_delivery.orm 5/5、verify.local.dev.data_space_identity_enrollment.orm 7/7、verify.local.dev.platform_database_governance.orm 9/9（合计 25 例真实 ORM 用例，0 failed / 0 error），连同既有 test_data_space_boundary.py(38) 与 test_platform_admin_boundary.py(8)，覆盖『客户数据不可见、用户与测试数据双向隔离』与纯管理员边界。仍需：把同一验收绑定到交付/目标环境（属版本发布阶段），以及受影响的浏览器契约消费确认。未获新授权前不得启动部署或目标环境验收。"
   ],
-  "next_exact_step": "第 36 棒已关闭 DEMO-SCENARIO-PRODUCT-DRIFT-01（demo 场景按产品动作推进；cockpit 收款登记脱离迁移载体授权；rebuild PASS + 30/30 场景 + 全新库事实回读）。下一步顺序：(1) make ci.delivery.freeze.prepare -> 分笔提交本批（平台数据库治理/数据空间入驻、demo 场景对齐、泳道接线与生成证据）-> 冻结干净 HEAD；(2) make pr.push（GitHub 主线优先，gitee 镜像备用）-> 远端必需检查 -> 受保护 PR 合并；按所有者 2026-09-23 政策，本地 ci.local.quick 不再是普通 PR 推送前置，完整扫描与前后端集成检查由远端 PR 执行；(3) 仍开放：独立复审第 2 项（公司级字典共享交付语义，addons/smart_core/core/dictionary_scope_projection.py 自述公司范围尚无交付语义）与第 4 项（最终交付证据：真实角色允许/拒绝验收，纯管理员可用、客户数据不可见、用户与测试数据双向隔离）。不得报主线集成完成或产品交付完成，直到 (3) 关闭。",
+  "next_exact_step": "主线集成已完成：PR #654（源 HEAD 590b42b23ee04c705ff28be75dae4049bdaf3e04）经受保护 PR squash 合并为 a2c3971179be350d9aea0d5718cf6b678cbea1e7；make main.sync 后本地 main 与 make mirror.main.gitee 后 gitee 镜像 main 均已 fast-forward 对齐。下一步：(1) 仍开放独立复审第 2 项（公司级字典共享交付语义未实现，addons/smart_core/core/dictionary_scope_projection.py 自述公司范围尚无交付语义）与第 4 项（真实角色的允许/拒绝验收需绑定最终环境，不能用安装回读代替）；(2) 本轮 run.json/docs 记账改动保持未提交，必须搭在下一条真实产品候选提交里，不得单独提交 bookkeeping-only 分支（pr.merge.local_quick_gate 对仅落在 .agent/ 与 docs/ 的候选判 DENY）；(3) 未获新授权前不得进行版本发布、部署或目标环境验收。不得报版本发布完成或产品交付完成。",
   "acceptance_authority_layout": {
     "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
     "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",
@@ -3027,14 +3027,15 @@
     "next_exact_step": "Inspect sc.interfund.movement.project.summary and source sc.interfund.movement.fact ownership and existing tests; record exact affected set; create cross-company/currency partition and drilldown counterexamples before fixing the P1 source/SQL boundary.",
     "stage_status": {
       "batch": "in_progress_bounded_fixture_slice_passed",
-      "mainline": "not_completed",
+      "mainline": "completed",
       "deployment": "not_completed",
       "user_acceptance": "not_completed"
     },
     "no_automatic_write_replay": true,
     "reuse": "admin_data_isolation holds original evidence; fixture 17 unique methods passed; no broad rerun",
     "runtime_blocker": "sc_dev_demo has zero active registrations; installed payroll view/rules pending. Existing fixture initializer does not authorize sc_dev_demo.",
-    "prior_blockers": "Reconcile top-level blocker entries with original evidence before branch closure; do not delete as stale without proof."
+    "prior_blockers": "Reconcile top-level blocker entries with original evidence before branch closure; do not delete as stale without proof.",
+    "mainline_integration": "PR #654 / 590b42b2 -> a2c3971179be350d9aea0d5718cf6b678cbea1e7 (squash); local main and gitee mirror main both aligned."
   },
   "ar_ap_ownership_boundary": {
     "layer": "P1",
@@ -3576,6 +3577,89 @@
       "复审第 2 项：公司级字典共享交付语义仍缺失（addons/smart_core/core/dictionary_scope_projection.py 明确记录公司范围尚无交付语义）。",
       "复审第 3 项：DEMO-SCENARIO-PRODUCT-DRIFT-01 未修，local.dev.rebuild_demo 场景加载仍失败。",
       "复审第 4 项：本 HEAD 尚无 ci.local.quick receipt；泳道台账阻塞已解除，Quick 待冻结后重跑。"
+    ]
+  },
+  "mainline_integration": {
+    "status": "completed",
+    "completed_at": "2026-10-14",
+    "repository": "origin (GitHub lidefend/sce-backend-odoo)",
+    "pull_request": 654,
+    "source_branch": "fix/fe-contract-runtime-02-consumption-stop-closure",
+    "source_head": "590b42b23ee04c705ff28be75dae4049bdaf3e04",
+    "base_head": "e4b8fd957e364a4d1749127d563398c8de80256d",
+    "merge_method": "squash",
+    "merge_commit": "a2c3971179be350d9aea0d5718cf6b678cbea1e7",
+    "merged_at": "2026-10-14T08:32:56Z",
+    "entry": "make pr.merge.prep PR=654 -> env PR=654 EXPECTED_HEAD=590b42b2... make pr.merge",
+    "remote_required_checks": {
+      "public_guard": "success",
+      "merge_policy_gate": "success",
+      "professional_quality_gate": "success",
+      "frontend_release_gate": "success",
+      "release_candidate_gate": "success"
+    },
+    "exact_head_quick": ".git/codex/evidence/ci.local.quick/590b42b23ee04c705ff28be75dae4049bdaf3e04.json (8/8 shards passed)",
+    "readback": "PR state=MERGED, mergedAt=2026-10-14T08:32:56Z, mergeCommit=a2c3971179be350d9aea0d5718cf6b678cbea1e7, origin/main=a2c3971179be350d9aea0d5718cf6b678cbea1e7",
+    "post_merge_sync": {
+      "local_main": "a2c3971179be350d9aea0d5718cf6b678cbea1e7",
+      "gitee_mirror_main": "a2c3971179be350d9aea0d5718cf6b678cbea1e7",
+      "gitee_previous_main": "814bbc2888bb5f70eca4fe013bdba79cb82fb483",
+      "entries": [
+        "make main.sync",
+        "make mirror.main.gitee"
+      ],
+      "mode": "fast_forward_only",
+      "result": "[mirror.main.gitee] PASS sha=a2c3971179be350d9aea0d5718cf6b678cbea1e7"
+    },
+    "not_claimed": [
+      "版本发布完成",
+      "产品交付完成"
+    ]
+  },
+  "post_merge_local_runtime_acceptance": {
+    "recorded_at": "2026-10-14",
+    "trigger": "合并后收尾：为复审第 2 项与第 4 项补可绑定的真实主体本地层回执（此前泳道已注册但无 receipt，run 评估器标记 stale）。",
+    "environment": "sc-local-dev / sc_dev_demo（受管入口，无手工 compose/凭据）",
+    "receipts": {
+      "verify.local.dev.dictionary_scope_delivery.orm": {
+        "module": "smart_core",
+        "tag": "dictionary_scope_delivery",
+        "tests": 5,
+        "failed": 0,
+        "errors": 0
+      },
+      "verify.local.dev.source_bounded_data_space_rules.orm": {
+        "module": "smart_construction_core",
+        "tag": "source_bounded_data_space_rules",
+        "tests": 4,
+        "failed": 0,
+        "errors": 0
+      },
+      "verify.local.dev.data_space_identity_enrollment.orm": {
+        "module": "smart_core",
+        "tag": "data_space_identity_enrollment",
+        "tests": 7,
+        "failed": 0,
+        "errors": 0
+      },
+      "verify.local.dev.platform_database_governance.orm": {
+        "module": "smart_core",
+        "tag": "platform_database_governance",
+        "tests": 9,
+        "failed": 0,
+        "errors": 0
+      }
+    },
+    "total_tests": 25,
+    "covers": [
+      "客户主体只收到自身公司范围的字典行；非客户主体只收到 demo 空间；注销注册后不再投递；无注册公司主体收不到；非法 scope 计数不投递。",
+      "admin/test/customer 三类真实主体对 tender.opportunity 与 construction.contract 双向隔离；被拒公司行 read 抛 AccessError；未注册公司行对所有主体不可见。",
+      "数据空间身份入驻的正反例（含 bootstrap 公司不可注册、已注册公司拒绝二次入驻、维护入口不可注册 customer）。",
+      "平台数据库治理与数据空间序列化边界。"
+    ],
+    "not_covered": [
+      "目标/交付环境的角色级验收（属版本发布与产品交付阶段，未授权，未执行）。",
+      "浏览器层的受影响契约消费确认。"
     ]
   }
 }

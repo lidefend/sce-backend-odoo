@@ -1,0 +1,112 @@
+schema_version: 1
+goal:
+  id: FE-CONTRACT-RUNTIME-02-VIEW-STRUCTURE-COMPAT
+  title: runtime_view_structure_compat_and_deployment_blocker_closure
+  status: active
+  formal_product_layer: P1
+  supporting_layer: P4
+  layer_target: smart_construction_core_native_view_structure_and_product_view_contract_baseline
+  module:
+    - addons/smart_construction_core/views/core/cost_domain_views.xml
+    - contracts/generated/product_view_structure_contract.json
+    - scripts/release/initialize_colocated_platform_snapshot.py
+    - scripts/ops/daily_runtime_published_face_converge.py
+    - scripts/verify
+    - docs/ops/iterations
+  baseline:
+    branch: fix/fe-contract-runtime-02-runtime-view-compat
+    full_sha: a2c3971179be350d9aea0d5718cf6b678cbea1e7
+    source: post_merge_deployment_blocker_20261014
+  objective: >-
+    Close the post-merge deployment blocker found while converging the daily
+    runtime published face at main a2c3971179: the target runtime base RNG
+    (odoo17-odoo 17.0-20251222) rejects a help attribute on a field inside an
+    RNG-validated view type, while the local base (17.0-20260630) accepts it.
+    Restore the authoritative committed product-view structure baseline by
+    removing the single attribute that the baseline never contained, so the
+    module upgrade succeeds on the target environment and the resolved tree
+    equals the committed contract again.
+  product_boundary:
+    standard_vs_user_specific: construction_product_standard_native_view
+    why_here: >-
+      The attribute lives on a native list column of the construction industry
+      standard model project.progress.entry in smart_construction_core. The
+      committed baseline contracts/generated/product_view_structure_contract.json
+      (last updated at d3bdb3aa, before PR #654) is the authority for the
+      resolved structure; the column tooltip was added by PR #654 without
+      regenerating that baseline, so the code drifted from its own contract.
+    why_not_elsewhere:
+      - no_target_environment_manual_edit
+      - no_base_image_upgrade_as_a_side_effect_of_this_fix
+      - no_regeneration_of_the_baseline_to_match_a_capability_the_target_base_cannot_validate
+      - no_change_to_the_python_side_documentation_of_the_field
+      - no_new_component_or_page
+    blast_radius:
+      - the single RNG-validated view node progress_rate in view_project_progress_entry_tree
+      - product_view_structure baseline parity for project.progress.entry
+      - daily runtime published-face converge on the target environment
+      - locked-menu release snapshot initialization for construction.standard and construction.preview
+      - the production colocated release contract binding test
+  second_defect:
+    id: RUNTIME-BOUNDARY-FIX-03
+    layer: P1 construction industry standard product
+    layer_target: smart_construction_core_locked_menu_release_initialization
+    summary: >-
+      Once the view fix let the smart_construction_core upgrade succeed on the
+      target, the published-face converge failed at construction.preview with
+      LOCKED_MENU_SNAPSHOT_MISMATCH. PR #654 declared the preview product as
+      "released plus explicitly preview entries" (90 released + 39 preview) but
+      left the frozen-snapshot post gate on the released-only assertion. The
+      initializer now compares the frozen snapshot on the declared caliber; the
+      release gate guard that decides whether an entry may be opened already
+      used that same assertion.
+    why_here: >-
+      The declared delivery rule is a LOCKED P1 product definition in
+      smart_construction_core, and this initializer is the mechanism that must
+      honor it in both the daily and production release lanes.
+    why_not_elsewhere:
+      - no_retraction_of_the_declared_preview_widening
+      - no_frontend_compensation
+      - no_lowering_of_the_released_assertion
+      - no_change_to_the_locked_baseline_file
+  third_defect:
+    id: RUNTIME-BOUNDARY-FIX-04
+    layer: P1 construction industry standard product
+    layer_target: daily_runtime_published_face_convergence_caliber
+    summary: >-
+      发布面收敛校验器同样残留 released-only 口径：preview 产品的 gate 页数按锁定 P1
+      定义应为 released+preview（129），却被要求等于 released 计数（90），于是已正确
+      收敛的快照被判为 PUBLISHED_FACE_SCOPE_DRIFT。运行期 release gate guard 用的就是
+      有效口径，只有收敛校验器滞后。
+    why_here: >-
+      收敛校验器是日报环境发布面的验证入口，必须与锁定 P1 产品定义和运行期 gate 使用
+      同一交付口径，否则机制之间的口径分叉会阻止正确收敛。
+    why_not_elsewhere:
+      - no_retraction_of_the_declared_preview_widening
+      - no_lowering_of_the_released_assertion
+      - no_change_to_the_locked_baseline_file
+      - no_frontend_compensation
+  constraints:
+    - governed_make_entrypoints_only
+    - one_worktree_one_writer
+    - restore_authoritative_baseline_do_not_rewrite_it
+    - bookkeeping_rides_the_same_real_product_candidate
+    - report_batch_mainline_deployment_status_separately
+  next_exact_step: >-
+    Run the owning-layer offline checks (product_view_structure contract unit,
+    view structure baseline, contract structure lock), then the governed local
+    runtime module upgrade and gate.contract.view_structure to prove the resolved
+    tree equals the committed baseline again. Commit, then verify the candidate
+    on the target environment before protected GitHub mainline integration.
+  completion:
+    scope: runtime_view_structure_compat_and_deployment_blocker_closure
+    overall_goal: incomplete
+    result_index: .agent/runs/FE-CONTRACT-RUNTIME-02-VIEW-STRUCTURE-COMPAT/run.json
+    local_batch_acceptance: not_run
+    mainline_integration: not_run
+    deployment: not_run
+    target_user_delivery: not_run
+    limits: >-
+      This goal restores one native view node to the authoritative baseline and
+      re-enables the target-environment module upgrade. It is not a product page
+      rewrite, not a target-user acceptance result, and not a base-image upgrade.

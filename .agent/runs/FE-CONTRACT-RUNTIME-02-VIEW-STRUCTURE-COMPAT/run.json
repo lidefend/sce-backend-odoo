@@ -1,0 +1,256 @@
+{
+  "schema_version": 1,
+  "id": "FE-CONTRACT-RUNTIME-02-VIEW-STRUCTURE-COMPAT",
+  "branch": "fix/fe-contract-runtime-02-runtime-view-compat",
+  "status": "verification_pending",
+  "baseline_sha": "a2c3971179be350d9aea0d5718cf6b678cbea1e7",
+  "goal": ".agent/goals/FE-CONTRACT-RUNTIME-02-VIEW-STRUCTURE-COMPAT.yaml",
+  "record": "docs/ops/iterations/fe_contract_runtime_02_view_structure_compat_20261014.md",
+  "scope": [
+    ".agent/goals/FE-CONTRACT-RUNTIME-02-VIEW-STRUCTURE-COMPAT.yaml",
+    ".agent/active-runs.json",
+    ".agent/runs/FE-CONTRACT-RUNTIME-02-VIEW-STRUCTURE-COMPAT/",
+    ".agent/runs/FE-CONTRACT-RUNTIME-02/",
+    "addons/smart_construction_core/views/core/cost_domain_views.xml",
+    "contracts/generated/product_view_structure_contract.json",
+    "docs/ops/iterations/",
+    "scripts/release/initialize_colocated_platform_snapshot.py",
+    "scripts/release/test_production_colocated_release.py",
+    "scripts/ops/daily_runtime_published_face_converge.py",
+    "scripts/ops/test_daily_runtime_published_face_converge.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Offline guards read the repository only. The runtime half of this run uses the existing governed local.dev.* entries (sc-local-dev / sc_dev_demo, ^sc_dev_demo$, LOCAL_DEV_ENV_FILE) for a module upgrade after a local.dev.snapshot recovery point, plus read-only contract.view_structure.export; target-environment reads and upgrades stay on the governed daily.runtime.* entries. No fixture reset, no business writes, no hand-assembled compose/database/credential command.",
+    "base_url": "http://127.0.0.1:18081",
+    "database": "sc_dev_demo"
+  },
+  "checks": {
+    "view_structure_guard_unit": {
+      "target": "verify.product_view_structure.contract.unit",
+      "inputs": [
+        "make/guards.mk",
+        "scripts/contract/product_view_structure_common.py",
+        "scripts/verify/product_view_structure_contract_guard.py",
+        "scripts/verify/test_product_view_structure_contract.py"
+      ],
+      "kind": "offline"
+    },
+    "structure_lock": {
+      "target": "verify.contract.structure_lock",
+      "inputs": [
+        "contracts/generated/contract_structure_fingerprint.json",
+        "scripts/ci/enforce_contract_structure_lock.py",
+        "scripts/ci/generate_contract_structure_fingerprint.py"
+      ],
+      "kind": "offline"
+    },
+    "published_face_snapshot_contract": {
+      "target": "verify.role_surface.landing.contract.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/ci.mk",
+        "addons/smart_construction_core/services/locked_menu_policy_contract.py",
+        "addons/smart_construction_core/services/role_surface_contract.py",
+        "scripts/verify/baseline_policy_integrity_guard.py",
+        "scripts/release/test_locked_menu_policy_contract.py",
+        "scripts/release/initialize_colocated_platform_snapshot.py",
+        "scripts/release/test_production_colocated_release.py",
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json"
+      ]
+    },
+    "published_face_gate_parity": {
+      "target": "verify.product_menu_release_gate.contract.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/guards.mk",
+        "scripts/verify/production_menu_release_gate_guard.py",
+        "scripts/verify/test_product_menu_release_gate_contract.py",
+        "addons/smart_construction_core/services/locked_menu_policy_contract.py"
+      ]
+    },
+    "published_face_converge_caliber": {
+      "target": "verify.daily.runtime.published_face.converge",
+      "kind": "offline",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/ops/daily_runtime_published_face_converge.py",
+        "scripts/ops/test_daily_runtime_published_face_converge.py",
+        "scripts/verify/production_menu_release_gate_guard.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit RUNTIME-BOUNDARY-FIX-03 with its bookkeeping, re-sync the candidate bundle to the new SHA (daily.runtime.candidate.bundle_sync with DAILY_CANDIDATE_EXPECTED_OLD_SHA=45796be9...), re-run daily.runtime.source_revision.align, re-run daily.runtime.published_face.converge with DAILY_RUNTIME_PUBLISHED_FACE_UPGRADE_MODULES=smart_core,smart_construction_core, then push the branch, run the remote required checks and integrate through the protected PR #655.",
+  "diagnosis": {
+    "trigger": "make daily.runtime.published_face.converge at main a2c3971179 failed with MODULE_UPGRADE_FAILED / view_validation error for smart_construction_core view project.progress.entry.tree (cost_domain_views.xml line 562).",
+    "root_cause": "addons/base/rng/common.rng <rng:define name=\"field\"> on the target image (odoo17-odoo 17.0-20251222) omits <rng:optional><rng:attribute name=\"help\"/></rng:optional>; the local image (17.0-20260630) has it. tree_view.rng validates fields through that shared definition, so a help attribute on a tree column is accepted locally and rejected on the target.",
+    "evidence": [
+      "common.rng field-define help attribute count: local 4, target 3 (byte-level diff on the same define).",
+      "Whole-repository scan of RNG-validated view types (tree/list/search/kanban/pivot/graph/calendar/gantt/activity) at HEAD a2c39711 finds exactly one field with help: smart_construction_core/views/core/cost_domain_views.xml view_project_progress_entry_tree name=progress_rate.",
+      "The committed baseline contracts/generated/product_view_structure_contract.json stores that node as {\"attrs\":{\"name\":\"progress_rate\",\"type\":\"float\"},\"tag\":\"field\"} with value_sha256 a2084c5e4d1b86947e16f70bda1c79902e91248a0dbdaa89c3c1a95a12de2bde, i.e. without help; PR #654 added the attribute to the XML without regenerating the baseline, so the code silently drifted from its own contract."
+    ],
+    "fix": "Remove the help attribute from that single native list column so the resolved structure equals the authoritative committed baseline again. The tooltip is only a list-header tooltip; the python field label/documentation is untouched and no capability is removed. Revisit only if the owner chooses to upgrade the target base image so help is supported.",
+    "impact": "No other RNG-validated view node carries help, so no further view change is required for the target upgrade to pass."
+  },
+  "detected_defect_fix": {
+    "id": "RUNTIME-BOUNDARY-FIX-02",
+    "detection": "Found while converging the daily runtime published face; not a payment or semantic-registry capability extension.",
+    "scope": "smart_construction_core native view project.progress.entry tree column tooltip",
+    "side_effect_found": "PR #654 changed a view structure input without regenerating contracts/generated/product_view_structure_contract.json; the guard compares the committed manifest against a live export, so the drift is caught by gate.contract.view_structure.",
+    "not_expanded": "No scan widening, no other view edits, no base image change."
+  },
+  "runtime_observations": {
+    "local_dev_view_structure_gate": {
+      "purpose": "Prove the resolved tree read back from sc_dev_demo equals the committed baseline after a governed module upgrade.",
+      "entrypoints": [
+        "make local.dev.snapshot",
+        "make local.dev.upgrade MODULE=smart_construction_core",
+        "make gate.contract.view_structure"
+      ],
+      "status": "not_run",
+      "log": "/tmp/localdev_upgrade_viewfix.log",
+      "note": "make local.dev.upgrade aborted before reaching the view gate: the demo scenario seed smart_construction_demo/data/scenario/s60_project_cockpit/10_cockpit_business_facts.xml:3 raises AccessError under ir.rule (pre-existing lane, unrelated to this view change; no guard relaxed). Additionally this profile's base image cannot reproduce the target grammar rejection. Superseded by local_target_grammar_reproduction as the change-owning static evidence. Local dev environment left healthy: make local.dev.health PASS.",
+      "environment_left_healthy": true
+    },
+    "target_environment_published_face": {
+      "purpose": "Prove the module upgrade that previously failed on the target base succeeds at the candidate SHA and that the published face converges.",
+      "entrypoints": [
+        "make daily.runtime.candidate.bundle_sync",
+        "make verify.daily_dev.runtime_repo.clean",
+        "make daily.runtime.published_face.converge"
+      ],
+      "status": "not_run",
+      "log": null
+    }
+  },
+  "preexisting_red_lanes": {
+    "verify.contract.view_structure": {
+      "classification": "pre_existing_on_main_not_owned_by_this_change",
+      "evidence": "A clean detached worktree at main a2c39711 (0 dirty paths) fails this target with the same errors: formal menu coverage differs from policy, authority candidate fingerprint baseline_sha/scope_manifest_sha256/digest/branch mismatch, formal menu policy hash mismatch.",
+      "reason": "The target binds the current worktree fingerprint and the menu-policy hash to the identity recorded when the baseline was generated (branch feature/native-view-action-semantics-closure-v1, baseline_sha/git_head 01a29b14). It is a baseline-generation-lane integrity check, not a change-owning gate; PR #654 touched the menu policy afterwards, so it is red on main independent of this change.",
+      "action": "Not retried unchanged. The change-owning evidence is verify.product_view_structure.contract.unit plus the live gate.contract.view_structure candidate-vs-baseline comparison.",
+      "extra_cause": "Second independent cause found this round: PR #654 renamed a formal menu xmlid in the menu policy (menu_sc_product_project_edit_v1 -> menu_sc_project_project) without regenerating the tracked view-structure baseline, so the guard's own baseline self-validation fails on main. The tracked baseline is left unchanged."
+    },
+    "demo_scenario_seed_ir_rule": {
+      "classification": "pre_existing_on_main_not_owned_by_this_change",
+      "evidence": "make local.dev.upgrade MODULE=smart_construction_core on sc_dev_demo fails with AccessError (ir.rule) wrapped as ParseError at smart_construction_demo/data/scenario/s60_project_cockpit/10_cockpit_business_facts.xml:3, before any view-structure step. Log /tmp/localdev_upgrade_viewfix.log.",
+      "impact_on_this_batch": "None for the target: sc_demo has smart_construction_demo uninstalled (verified in ir_module_module), so the target upgrade path never loads demo scenario data.",
+      "action": "Not fixed here; would need data-scope/demo-alignment authority and its own batch."
+    },
+    "verify.production.release_contract": {
+      "classification": "pre_existing_on_main_not_owned_by_this_change",
+      "evidence": "At HEAD 45796be9 (and at main a2c39711) the target fails only at scripts/release/test_production_release_contract.py::test_admin_identity_tool_has_a_python310_ci_runtime_gate: it requires 'needs: [professional_authorization, python310_runtime_compatibility]' in .github/workflows/professional_quality_gate.yml, but that workflow (last changed by PR #646, unmodified by this branch) declares the professional_quality_gate job with 'needs: professional_authorization'. 56 of 57 tests pass.",
+      "reason": "The mismatch lives between a CI workflow definition and its contract test; this branch touches neither file. It is a repository mainline red, not a change-owning gate for this branch.",
+      "action": "Not retried unchanged and not fixed here. The change-owning evidence for the release-script fix is recorded through verify.role_surface.landing.contract.unit (the shared locked-menu policy contract) plus the diagnostic binding run below; the target cannot serve as a passing receipt while main is red.",
+      "diagnostic": "python3 scripts/release/test_production_colocated_release.py PASS 27 (owner entry verify.production.release_contract, run directly as a diagnostic because the owning target is red for an unrelated reason)."
+    }
+  },
+  "local_target_grammar_reproduction": {
+    "purpose": "Reproduce the target's view-structure rejection locally, using the target image's authoritative RelaxNG grammar, and prove the fix closes the whole class without deploying.",
+    "method": "Read-only pull of the target image RNG files (docker exec ... cat .../base/rng/*.rng on sc-root) plus an lxml RelaxNG validation run inside the local odoo17-odoo container. No database, no compose project, no target write.",
+    "grammars": {
+      "target": "odoo17-odoo:latest = 17.0-20251222 (field define has no 'help')",
+      "local": "odoo17-odoo:latest = 17.0-20260630 (field define has 'help')"
+    },
+    "single_node": {
+      "node": "smart_construction_core/views/core/cost_domain_views.xml :: view_project_progress_entry_tree",
+      "target_grammar_before": "INVALID (RELAXNG_ERR_EXTRACONTENT: Element tree has extra content: field)",
+      "target_grammar_after": "VALID",
+      "local_grammar_before": "VALID",
+      "local_grammar_after": "VALID",
+      "reading": "The local base image grammar is more permissive, which is why a local module upgrade could never surface this defect; local success is not target-compatibility evidence."
+    },
+    "repository_sweep": {
+      "roots": [
+        "addons",
+        "addons_external",
+        "demo_addons"
+      ],
+      "xml_files": 371,
+      "rng_validated_view_arches_checked": 432,
+      "view_types": [
+        "tree",
+        "search",
+        "graph",
+        "pivot",
+        "calendar",
+        "activity"
+      ],
+      "grammar": "target 17.0-20251222",
+      "invalid_before_fix": 1,
+      "invalid_after_fix": 0,
+      "note": "The one pre-fix failure is exactly the deployment node, with the same RelaxNG error class as the target upgrade failure."
+    },
+    "unparsable_orphan": "addons/smart_core/views/dashboard_views.xml is not well-formed but is referenced by no __manifest__.py data list, so Odoo never loads or validates it. Not touched."
+  },
+  "second_defect_fix": {
+    "id": "RUNTIME-BOUNDARY-FIX-03",
+    "title": "Locked-menu release initialization must honor the declared delivery rule for the preview product",
+    "layer": "P1 construction industry standard product (smart_construction_core locked menu policy contract + release snapshot initialization)",
+    "discovered_by": "Target-environment deployment attempt at candidate 45796be9: after the RUNTIME-BOUNDARY-FIX-02 view fix let the smart_construction_core upgrade succeed, make daily.runtime.published_face.converge failed at the construction.preview snapshot step",
+    "evidence": "ssh sc-root 'make release.daily_product_navigation.converge' -> construction.standard PASS (snapshot_id 97) then LockedMenuPolicyContractError LOCKED_MENU_SNAPSHOT_MISMATCH: construction.preview contains non-released snapshot page",
+    "root_cause": "PR #654 introduced the new locked P1 product definition (addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json) whose product_policy_profiles/delivery_rule declares 'standard includes formally released entries; preview includes released plus explicitly preview entries'. construction.preview is therefore 90 released + 39 declared preview entries. The frozen-snapshot post gate in scripts/release/initialize_colocated_platform_snapshot.py still called the released-only assertion assert_snapshot_matches_locked_contract, which rejects any preview page, so the published face could no longer converge. PR #654 changed the baseline but not the initializer.",
+    "why_not_baseline": "The delivery rule and the 39 preview entries are explicit, LOCKED P1 declarations (source product_menu_source.json entries[] release_state + product_policy_profiles[].included_release_states). The runtime already consumes the tolerant caliber: scripts/verify/production_menu_release_gate_guard.py - the authority deciding whether an entry may be opened - calls assert_snapshot_matches_policy_release_states. Only the initializer lagged, so the mechanism, not the declared fact, was wrong.",
+    "fix": "scripts/release/initialize_colocated_platform_snapshot.py now gates the frozen snapshot with assert_snapshot_matches_policy_release_states(contract, product_key, pages, policy.menu_groups): no page outside {released, preview}, released pages equal to the locked baseline exactly, preview pages equal to the policy's declared preview set exactly. Report keys keep snapshot_menu_count = released count (unchanged meaning) and add snapshot_preview_page_count / snapshot_effective_page_count.",
+    "not_weakened": "An undeclared or hidden/retired page still fails closed (others check, and the preview additions/missing check). Verified locally against the real baseline: construction.standard released=90 preview=0 PASS; construction.preview released=90 preview=39 PASS on the declared caliber while the released-only gate reports LOCKED_MENU_SNAPSHOT_MISMATCH.",
+    "tests": [
+      "make verify.role_surface.landing.contract.unit PASS 33 (recorded check published_face_snapshot_contract, owning entry for the shared locked-menu policy contract)",
+      "make verify.product_menu_release_gate.contract.unit PASS 8 (recorded check published_face_gate_parity, the runtime release-gate authority parity)",
+      "python3 scripts/release/test_production_colocated_release.py PASS 27 (diagnostic; owning target verify.production.release_contract is red on main for an unrelated CI-workflow assertion)",
+      "python3 -m py_compile scripts/release/initialize_colocated_platform_snapshot.py PASS"
+    ],
+    "test_ownership_note": "The binding static test for the initializer has no passing registered verify target on main: the only target that runs it, verify.production.release_contract, is red for the unrelated python310 CI-workflow assertion recorded under preexisting_red_lanes. The two recorded checks therefore bind the shared contract function and the runtime gate authority, and the binding test is preserved as a diagnostic observation. A narrow registered entry for it remains a P4 gap, not a blocker for this deployment fix."
+  },
+  "third_defect_fix": {
+    "id": "RUNTIME-BOUNDARY-FIX-04",
+    "title": "发布面收敛校验器沿用 released-only 口径",
+    "same_defect_class_as": "RUNTIME-BOUNDARY-FIX-03（同一交付规则口径在第二处残留）",
+    "discovered_by": "重新执行 daily.runtime.published_face.converge（目标树 f12fc5fa）时，两个产品快照都已按声明口径生成，但收敛校验报 PUBLISHED_FACE_SCOPE_DRIFT",
+    "evidence": "snapshot=[{'product_key': 'construction.standard', 'snapshot_id': 100, 'snapshot_released_page_count': 90, 'policy_released_menu_count': 90, 'gate_page_count': 90}, {'product_key': 'construction.preview', 'snapshot_id': 101, 'snapshot_released_page_count': 90, 'policy_released_menu_count': 90, 'gate_page_count': 129}] → reason=PUBLISHED_FACE_SCOPE_DRIFT",
+    "root_cause": "scripts/ops/daily_runtime_published_face_converge.py 的远端片段与本地二次校验都要求 snapshot_released_page_count == policy_released_menu_count == gate_page_count。preview 产品的 gate_page_count 按声明应为 released+preview（129），因此正确收敛的快照被 released-only 口径判为漂移。release gate guard 本身（决定入口能否打开）用的就是 released+preview 的有效口径，只有收敛校验器滞后。",
+    "fix": "两处断言都改为按锁定 P1 产品定义的声明口径：snapshot_released_page_count == policy_released_menu_count；snapshot_preview_page_count == policy_preview_menu_count；gate_page_count == policy_released_menu_count + policy_preview_menu_count。products 记录新增 policy_preview_menu_count / snapshot_preview_page_count。",
+    "not_weakened": "未声明的 preview 或对不上的 preview 计数仍 fail-closed；released 页仍必须严格等于策略声明；gate 页数必须等于有效总量。新增两条反例测试：合法 preview 口径被接受；gate 忽略声明 preview 被拒。",
+    "tests": [
+      "make verify.daily.runtime.published_face.converge PASS 24（记账 check published_face_converge_caliber）",
+      "make daily.runtime.published_face.converge PASS sha=f12fc5fa products=construction.standard,construction.preview（目标环境实跑）"
+    ]
+  },
+  "deployment": {
+    "candidate_sha": "8fff184a076480d020a5df20466a22dea5a50635",
+    "previous_candidate_sha": "45796be9793b653dd89f07583b0ce60f68904f5c",
+    "target": {
+      "ssh_host": "sc-root",
+      "remote_root": "/opt/projects/repos/sce-product-odoo",
+      "compose_project": "sc-backend-odoo-dev",
+      "database": "sc_demo",
+      "base_url": "http://127.0.0.1:18081"
+    },
+    "steps": [
+      {
+        "entry": "make daily.runtime.candidate.bundle_sync",
+        "status": "PASS",
+        "evidence": ".runtime/final-acceptance/daily-deployed/candidate-bundle-sync.json",
+        "note": "old=f12fc5fa new=8fff184a; evidence ref refs/daily-candidates/fix/fe-contract-runtime-02-runtime-view-compat; origin/main untouched"
+      },
+      {
+        "entry": "make daily.runtime.source_revision.align",
+        "status": "PASS",
+        "evidence": ".runtime/final-acceptance/daily-deployed/source-revision-align.json",
+        "note": "served.source_revision=8fff184a, frontend_build_sha256=cf803d03a08c…, env backup .env.dev.bak present, restart succeeded"
+      },
+      {
+        "entry": "make daily.runtime.published_face.converge",
+        "status": "PASS",
+        "evidence": ".runtime/final-acceptance/daily-deployed/published-face-converge.json",
+        "note": "upgrade_mode=reused (smart_core tree b3058e0d…, smart_construction_core tree 5ee929a6…); snapshots standard id=102 released 90/preview 0/gate 90, preview id=103 released 90/preview 39/gate 129; guard_status=PASS"
+      }
+    ],
+    "status_boundary": {
+      "batch_acceptance": "complete",
+      "deployment": "complete",
+      "mainline_integration": "pending PR #655 merge",
+      "product_delivery": "not_claimed"
+    }
+  }
+}

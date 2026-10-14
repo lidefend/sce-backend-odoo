@@ -559,7 +559,7 @@
                 <field name="date"/>
                 <field name="project_id"/>
                 <field name="wbs_id"/>
-                <field name="progress_rate" help="累计完成比例（0–100）。例如 35 表示 35%。" />
+                <field name="progress_rate"/>
                 <field name="qty_done"/>
                 <field name="qty_cum"/>
                 <field name="note"/>
