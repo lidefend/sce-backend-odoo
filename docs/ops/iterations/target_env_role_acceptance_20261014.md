@@ -108,26 +108,68 @@
   `sc.tenant.company.registration`。
 
 ## 6. 状态
-
 - 批次验收：**未完成**。三条产品缺陷已在拥有层修复并通过所属层门禁；
   目标环境只读验收仍需在**重发布后**重新绑定（部署面 `d2079888` 不含本轮修复）。
-- 主线集成：回归 1 已完成（PR #657）；回归 2/3（夹具载体 + 无缓存上限）待本条分支集成。
+- 主线集成：回归 1 已完成（PR #657 → `28e19f60`）；回归 2/3 与 403 根因修复已在新分支重放、
+  定向通道重跑，待推送并按所有者「CI 通过即合并」规则走受保护 PR 合并。
 - 版本发布：**未完成**。目标环境仍为 `d2079888`。
 - 产品交付：**未声明**。
 
-## 7. 交接
+## 7. 分支重放与证据刷新（2026-10-14）
+
+本主题的前 4 个提交（含回归 2）已由 PR #657 以 **squash 同树**方式进入 main：
+PR 头 `3fe59346` 与合并提交 `28e19f60`（单亲）的树逐字节一致（`git diff` 为空），
+即该主题内容已全部在 main 上。
+
+但远端同名分支已发布，治理规则禁止改写已发布历史，受管入口
+`make workspace.branch.sync-main` 对存在远端同名分支的分支一律 fail-closed。
+因此增量改在新分支继续，并保留已发布分支引用不再改写：
+
+- 新分支：`fix/data-space-uncached-membership-ceiling-closeout`（自旧 HEAD `e7e3da8b` 建立）；
+- 受管重放：`make workspace.branch.sync-main DEPENDENCY_PR=657 DEPENDENCY_HEAD=3fe59346
+  DEPENDENCY_MERGE=28e19f60`（PASS，零冲突，已生成恢复 bundle）；
+- 影响分析：重放后与旧 HEAD 仅相差 3 个台账文件（本棒自身改动），**产品内容逐字节一致**；
+- 台账改绑：run/goal 的分支绑定改为新分支，`baseline_sha` 对齐 `28e19f60`，
+  同时解除旧分支在 `.agent/active-runs.json` 的绑定——据此该已合并主题的远端同名分支
+  后续可由受管 `make branch.cleanup.feature`（合并 PR 证明 + 精确 lease）退役。
+
+新身份下的定向通道重跑并写回 run 回执（全部非零通过）：
+
+| 通道 | 目标 | 计数 |
+|---|---|---|
+| navigation_delivery_unit | `verify.backend.navigation_delivery.unit` | 56 |
+| frontend_navigation_shell_unit | `verify.frontend.navigation_shell.unit` | 106 |
+| product_entry_publication_unit | `verify.product.entry_publication.unit` | 31 |
+| product_menu_monotonic_unit | `verify.product.menu.monotonic.unit` | 6 |
+| data_space_provisioning_guard | `verify.data_space.provisioning.guard` | 34 |
+| data_space_policy_unit | `verify.data_space.policy.unit` | 12 |
+| daily_fixture_lane_unit | `verify.daily_dev.acceptance_fixture.unit` | 31 |
+| daily_lifecycle_fixture_prepare_unit | `verify.daily.runtime.lifecycle_fixture.prepare` | 18 |
+| data_space_uncached_membership_orm | `verify.local.dev.data_space_uncached_membership.orm` | 4 |
+
+- L1：`make ci.local.iteration` **PASS**（clean，L1_only）；台账一致性
+  `verify.agent.ledger.unit` 15 + `verify.agent.resume.unit` 43 **PASS**。
+- 生成物：`make ci.delivery.freeze.prepare` **PASS**（生成物已最新，无需改动）。
+- 冻结候选：`b4da1056`。
+- 边界说明：本 run 的 `environment.kind=runtime`，按现有台账语义，本地离线回执一律为
+  **不可复用观察**（非交付门禁、非 CI 回执）；上表计数是当轮真实观察，不作为可继承证据，
+  也不替代目标环境重发布后的实机验收。
+
+## 8. 交接
 
 | 项 | 值 |
 |---|---|
-| 候选分支 | `audit/target-env-role-acceptance-20261014` |
-| 基线 | `d2079888`（main 已推进到 `28e19f60`） |
-| 已合入 | PR #657（导航授权来源） |
+| 候选分支 | `fix/data-space-uncached-membership-ceiling-closeout` |
+| 集成基线 | `28e19f60`（`origin/main`；本分支基线） |
+| 已合入 | PR #657（导航授权来源 + fixture 数据空间收养） |
+| 已发布未改写 | `audit/target-env-role-acceptance-20261014` @ `3fe59346`（内容已在 main） |
+| 冻结候选 | `b4da1056` |
 | 目标环境 | daily `sc_demo`，部署面仍为 `d2079888`（未变） |
 | 本轮写入 | 仅 `daily_dev` fixture 范围（FE 数据集与其数据空间登记）；无租户业务数据、无 schema、无部署 checkout 改动 |
 
 下一精确步骤：
 
-1. 推送本条分支并按所有者「CI 通过即合并」规则走受保护 PR 合并；
+1. `make pr.push` + `make pr.create` 推送本分支并按所有者「CI 通过即合并」规则走受保护 PR 合并；
 2. 经受管入口重发布 daily，回读 `/api/runtime-version` 绑定新 SHA，并确认导航面达到契约 90；
 3. 重跑受管夹具入驻与分角色只读验收，绑定**每责任人显式允许/拒绝期望**：
    `fixture_role_finance`(210) 可读 FE Company A 记录；`wutao`(16) 在 FE 数据空间被拒（双向隔离）；
