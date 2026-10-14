@@ -56,12 +56,22 @@ class MenuFactService:
         """Menu carriers the current user's groups actually authorize.
 
         Navigation authorization asks whether this user's groups allow a menu
-        node, so this export applies exactly that ACL filter -- the same
-        ``groups_id`` intersection Odoo itself uses -- and requires the whole
-        ancestor chain to be authorized as well. It deliberately does not infer
-        a capability from the presence or absence of an action, so an
-        action-less declared carrier stays observable, and a menu the user's
-        groups do not grant can never be admitted by capability discovery.
+        node, so this export applies exactly that node-level ACL filter -- the
+        same ``groups_id`` intersection Odoo itself uses -- including Odoo's
+        non-debug removal of the developer-only ``base.group_no_one`` set. It
+        deliberately does not infer a capability from the presence or absence of
+        an action, so an action-less declared carrier stays observable, and a
+        menu the user's groups do not grant can never be admitted by capability
+        discovery.
+
+        Ancestors are not re-tested. Odoo admits a granted leaf even when an
+        intermediate folder's groups deny the user, because it only lifts
+        *granted* folders up the tree; requiring the whole path here would be
+        stricter than the platform and would silently drop released entries
+        whose parent folder is granted to another role (the chart of accounts
+        under a manager-only configuration folder). A denied ancestor is simply
+        absent from the facts, and the tree builder re-parents the orphan
+        exactly as the native projection does.
         """
         return self._export_menu_facts(self._authorized_menu_ids())
 
@@ -131,8 +141,12 @@ class MenuFactService:
             return set()
 
     def _authorized_menu_ids(self) -> set[int]:
-        """Menu nodes whose groups allow the current user, ancestors included.
+        """Menu nodes the current user's groups grant, mirroring Odoo's own ACL.
 
+        The filter is the node-level ``groups_id`` intersection Odoo's
+        ``_visible_menu_ids`` applies before it considers actions, so a granted
+        carrier is authorized regardless of whether it owns an action and
+        regardless of whether an intermediate folder is granted to the user.
         Fail closed: an unreadable menu registry yields no authorized carriers
         instead of falling back to a wider projection.
         """
@@ -149,26 +163,7 @@ class MenuFactService:
         allowed = menus.filtered(
             lambda menu: not menu.groups_id or bool(menu.groups_id & user_groups)
         )
-        allowed_ids = {int(menu.id) for menu in allowed}
-        if not allowed_ids:
-            return set()
-        # ``parent_path`` carries the node's own id plus every ancestor, so one
-        # membership test proves the whole chain is authorized. A node is never
-        # admitted through an ancestor the user's groups deny.
-        by_id = {int(menu.id): menu for menu in menus}
-        authorized = set()
-        for menu_id in allowed_ids:
-            menu = by_id.get(menu_id)
-            if menu is None:
-                continue
-            parts = [
-                int(part)
-                for part in str(getattr(menu, "parent_path", "") or "").split("/")
-                if part.strip().isdigit()
-            ]
-            if parts and all(part in allowed_ids for part in parts):
-                authorized.add(menu_id)
-        return authorized
+        return {int(menu.id) for menu in allowed}
 
     def _read_menu_xmlids(self, menus) -> dict[int, str]:
         menu_ids = [int(menu.id) for menu in menus]
