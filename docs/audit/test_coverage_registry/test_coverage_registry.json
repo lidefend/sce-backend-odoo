@@ -794,7 +794,8 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.local.dev.business_data_ownership.orm :: data_space_business_data_ownership"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "data_space_identity_enrollment",

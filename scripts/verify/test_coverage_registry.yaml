@@ -268,6 +268,14 @@ entries:
     It asserts the persisted registration and tenant-space boundary, not whole-product data rule acceptance.
     No governed ORM entry selects the tag yet; wire it or retire it.
   review_by: '2026-12-31'
+- group: data_space_business_data_ownership
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.local.dev.business_data_ownership.orm :: data_space_business_data_ownership'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: data_space_identity_enrollment
   kind: odoo_tag
   status: on-demand
@@ -285,8 +293,8 @@ entries:
   gate: 'make:verify.local.dev.data_space_uncached_membership.orm :: data_space_uncached_membership'
   reason: Pins the target-environment 403 root cause - the data-space ceiling resolved membership through
     a tools.ormcache helper instead of the persisted relation, so an out-of-band grant or revocation was
-    invisible to a long-lived worker. Reachable only through a hand-invoked ORM entry; no recurring
-    workflow selects this group yet.
+    invisible to a long-lived worker. Reachable only through a hand-invoked ORM entry; no recurring workflow
+    selects this group yet.
 - group: demo_gate
   kind: odoo_tag
   status: unwired
