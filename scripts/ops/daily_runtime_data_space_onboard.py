@@ -22,6 +22,10 @@ never an ad-hoc docker exec), and never edits a business row:
 * enroll that space's operators into its identity realm, because a registration
   whose operators were never enrolled is readable by nobody.
 
+Invoked by ``make daily.runtime.data_space.onboard`` (apply) and by
+``make daily.runtime.data_space.onboard.plan`` (read-only plan), both bound to
+the same exact expected SHA.
+
 The entry is read-only by default: without the exact confirmation it prints the
 plan and rolls back. ``--plan`` forces that read-only mode.
 """

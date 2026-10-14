@@ -8,6 +8,9 @@ empty product with nothing failing loudly.
 The report carries both halves of the same decision: the ownership readback, and
 the result of calling the real gate function the pre-migration calls. This entry
 is read-only and commits nothing.
+
+Executed only by local.dev.business_data.ownership.readiness in the registered
+demo DB.
 """
 import json
 import os
