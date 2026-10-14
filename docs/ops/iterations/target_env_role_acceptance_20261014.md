@@ -159,18 +159,61 @@ PR 头 `3fe59346` 与合并提交 `28e19f60`（单亲）的树逐字节一致（
 
 | 项 | 值 |
 |---|---|
-| 候选分支 | `fix/data-space-uncached-membership-ceiling-closeout` |
-| 集成基线 | `28e19f60`（`origin/main`；本分支基线） |
-| 已合入 | PR #657（导航授权来源 + fixture 数据空间收养） |
-| 已发布未改写 | `audit/target-env-role-acceptance-20261014` @ `3fe59346`（内容已在 main） |
-| 冻结候选 | `b4da1056` |
-| 目标环境 | daily `sc_demo`，部署面仍为 `d2079888`（未变） |
-| 本轮写入 | 仅 `daily_dev` fixture 范围（FE 数据集与其数据空间登记）；无租户业务数据、无 schema、无部署 checkout 改动 |
+| 候选分支 | `fix/nav-node-level-menu-acl-closeout`（增量分支；已合并的发布分支 `fix/data-space-uncached-membership-ceiling-closeout` 按“禁止改写已发布历史”保留在 `2ef444d6`） |
+| 集成基线 | `abddd401`（`origin/main`；与已合并候选 `2ef444d6` 树逐字节一致） |
+| 已合入 | PR #657（导航授权来源 + fixture 数据空间收养）、PR #658（数据空间无缓存成员上限等 7 提交） |
+| 已发布 | daily `sc_demo` 部署面 = `2ef444d6`（`/api/runtime-version` 回读，`frontend_build_sha256=cf803d03…` 与旧一致，前端树未变故未重建） |
+| 本轮写入 | 仅 `daily_dev` fixture 范围（FE 数据集、其数据空间登记与项目生命周期载体）；无租户业务数据、无 schema、无部署 checkout 改动 |
 
-下一精确步骤：
+下一精确步骤（顺序不可颠倒）：
 
-1. `make pr.push` + `make pr.create` 推送本分支并按所有者「CI 通过即合并」规则走受保护 PR 合并；
-2. 经受管入口重发布 daily，回读 `/api/runtime-version` 绑定新 SHA，并确认导航面达到契约 90；
-3. 重跑受管夹具入驻与分角色只读验收，绑定**每责任人显式允许/拒绝期望**：
-   `fixture_role_finance`(210) 可读 FE Company A 记录；`wutao`(16) 在 FE 数据空间被拒（双向隔离）；
-4. 未完成前不得声明批次验收、版本发布或产品交付完成。
+1. `make ci.delivery.freeze.prepare` → 提交本轮两处根因修复与其台账/文档更新 → 冻结干净 HEAD → 仅一次 exact-head `make ci.local.quick`；
+2. `make pr.push` + `make pr.create`，按所有者「CI 通过即合并」规则走受保护 PR 合并；
+3. 经受管入口重发布 daily（`make daily.runtime.candidate.release`，绑定新 expected SHA）；
+4. **先** `make daily.runtime.lifecycle_fixture.prepare`，**再** `make daily.runtime.record_identity.resolve`，**最后** `make verify.daily_dev.acceptance.readonly.probe`（顺序见 9.2，颠倒会绑定到重建前的记录 id）；
+5. 只读验收须读到 `nav_leaf_count=90`、`nav_required_path_misses=[]`、`contract.http_status=200` 且 custody 落盘；
+6. 未完成前不得声明批次验收、版本发布或产品交付完成。
+
+## 9. 目标环境重发布与只读验收事实（2026-10-14，部署面 `2ef444d6`）
+
+### 9.1 重发布结果（受管入口）
+
+- `make daily.runtime.candidate.release`（`CONFIRM_DAILY_CANDIDATE_BUNDLE_SYNC` /
+  `CONFIRM_DAILY_RUNTIME_SOURCE_REVISION_ALIGN` / `CONFIRM_DAILY_RUNTIME_PUBLISHED_FACE` 三项显式确认，
+  `DAILY_CANDIDATE_EXPECTED_SHA=2ef444d6…`，`DAILY_CANDIDATE_EXPECTED_OLD_SHA=d2079888…`）**PASS**：
+  `git_sha=source_revision=2ef444d6`；`published-face-converge` PASS，`upgrade_mode=run`，
+  `module_tree_ids.smart_core=8790ae2e…`，`construction.standard` gate `page_count=90 / released=90`。
+- `make daily.runtime.record_identity.resolve` PASS（`served_revision=2ef444d6`）。
+- `make daily.runtime.lifecycle_fixture.prepare` PASS（carrier id=2022 / company 21 / draft）。
+
+### 9.2 只读验收 FAIL 的两处归因（均已定位到自有层）
+
+| # | 现象 | 归因 | 处置 |
+|---|---|---|---|
+| 1 | `contract.request.http_status=404`，`INTENT_NOT_FOUND 记录 [36180] 不存在` | 探针绑定的记录身份是**重建前**的产物：`record_identity.resolve` 先于 `lifecycle_fixture.prepare` 运行，`ensure_fixture` 重建 FE 数据集后该行变为 36182（并新增 36183） | 顺序缺陷，非产品缺陷：固定为 prepare → resolve → probe。绑定是 fail-closed 的（陈旧 id 只会 FAIL，不会静默通过） |
+| 2 | `nav_leaf_count=89`、`nav_required_path_misses=["系统菜单 / 会计账务中心 / 会计科目表"]` | 契约面 90 有**两处**独立丢失：(a) 无 action 的「角色首页」载体被旧的“可渲染集合”授权源排除（已在本分支修复，部署态回读已见 `系统菜单 / 工作台 / 角色首页`）；(b) 同一分支新增的**祖先链校验**把 `account.menu_action_account_form`（菜单 182）静默丢掉 | (a) 已生效；(b) 已按平台规则修复（见 9.3） |
+
+部署态只读回读（uid 16，DB `sc_demo`）确认 (b)：菜单 182 自身组
+`account.group_account_readonly` 已授予，父级 181/173 仅授予 `account.group_account_manager`；
+`in_visible=true`、旧 `in_authorized=false`、修正规则 `in_authorized=true`。
+
+### 9.3 根因修复（自有层，`smart_core`）
+
+`ir.ui.menu._visible_menu_ids` 的平台规则是**逐节点** ACL：先按节点自身 `groups_id` 过滤
+（非 debug 再减去 `base.group_no_one`），只有**已授予**的文件夹才会被顺带向上抬升；
+因此“叶子已授予、但中间文件夹只授予其他角色”的已发布条目在平台眼里依然可见。
+
+本分支曾在 `MenuFactService._authorized_menu_ids()` 额外要求整条 `parent_path` 都被授予，
+比平台更严，于是静默丢掉了「会计科目表」，并使契约面从 90 掉到 89。
+
+- 修复：`_authorized_menu_ids()` 只保留平台同款**逐节点**过滤；被拒祖先不入 facts，
+  由 `_build_tree` 按原生投影语义重新挂根。
+- 回归钉：`verify.backend.navigation_delivery.unit`（`addons/smart_core/tests/test_menu_acl_carrier_authorization.py`）
+  以“已授予叶子在只授予其他角色的文件夹下仍被授权”替换原先的“祖先被拒则永不授权”。
+- 部署态规则模拟（uid 16）：可见集合 496 ⊆ 修正授权集合 555；旧授权集合 312 ⊆ 固定集合 555，
+  且 182 进入固定集合、1004 保留 ⇒ 重发布后应为 90 且 0 条 required-path miss。
+
+### 9.4 尚未完成
+
+- 上述修复尚未重发布到目标环境，因此 `nav_leaf_count=90` 与合同 custody 落盘仍需实机复核；
+- 分角色验收仍需绑定**每责任人显式允许/拒绝期望**，不能用单一 `wutao` 探针替代。

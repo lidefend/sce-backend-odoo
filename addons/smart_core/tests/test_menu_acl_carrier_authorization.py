@@ -225,10 +225,26 @@ class MenuAclCarrierAuthorizationTests(unittest.TestCase):
         ]
         self.assertEqual(self._authorized_ids(rows, groups={77}), {1})
 
-    def test_carrier_under_a_denied_ancestor_is_never_authorized(self):
+    def test_granted_carrier_survives_a_folder_its_groups_deny(self):
+        """A granted leaf is authorized even under a granted-to-another-role folder.
+
+        This mirrors Odoo's own ``_visible_menu_ids``, which filters each node by
+        its *own* groups and only lifts folders it also granted. Requiring the
+        whole ancestor chain here would be stricter than the platform and
+        silently dropped the released chart-of-accounts entry
+        (``account.menu_action_account_form``), whose parent configuration folder
+        is granted to the accounting manager role only.
+        """
         rows = [
             _Menu(1, groups=(55,), parent_path="1/"),
             _Menu(1004, parent_path="1/1004/"),
+        ]
+        self.assertEqual(self._authorized_ids(rows, groups={77}), {1004})
+
+    def test_denied_folder_itself_is_never_authorized(self):
+        rows = [
+            _Menu(1, groups=(55,), parent_path="1/"),
+            _Menu(1004, groups=(55,), parent_path="1/1004/"),
         ]
         self.assertEqual(self._authorized_ids(rows, groups={77}), set())
 
