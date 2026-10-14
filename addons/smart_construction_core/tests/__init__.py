@@ -127,3 +127,4 @@ from . import test_light_forms_configuration_native_lowcode
 from . import test_project_initiation_native_lowcode
 from . import test_daily_contract_settlement_native_lowcode
 from . import test_ledger_summary_guarantee_native_lowcode
+from . import test_source_bounded_data_space_rules
