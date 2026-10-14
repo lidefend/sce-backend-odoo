@@ -10,6 +10,7 @@ goal:
     - addons/smart_construction_core/views/core/cost_domain_views.xml
     - contracts/generated/product_view_structure_contract.json
     - scripts/release/initialize_colocated_platform_snapshot.py
+    - scripts/ops/daily_runtime_published_face_converge.py
     - scripts/verify
     - docs/ops/iterations
   baseline:
@@ -68,6 +69,23 @@ goal:
       - no_frontend_compensation
       - no_lowering_of_the_released_assertion
       - no_change_to_the_locked_baseline_file
+  third_defect:
+    id: RUNTIME-BOUNDARY-FIX-04
+    layer: P1 construction industry standard product
+    layer_target: daily_runtime_published_face_convergence_caliber
+    summary: >-
+      发布面收敛校验器同样残留 released-only 口径：preview 产品的 gate 页数按锁定 P1
+      定义应为 released+preview（129），却被要求等于 released 计数（90），于是已正确
+      收敛的快照被判为 PUBLISHED_FACE_SCOPE_DRIFT。运行期 release gate guard 用的就是
+      有效口径，只有收敛校验器滞后。
+    why_here: >-
+      收敛校验器是日报环境发布面的验证入口，必须与锁定 P1 产品定义和运行期 gate 使用
+      同一交付口径，否则机制之间的口径分叉会阻止正确收敛。
+    why_not_elsewhere:
+      - no_retraction_of_the_declared_preview_widening
+      - no_lowering_of_the_released_assertion
+      - no_change_to_the_locked_baseline_file
+      - no_frontend_compensation
   constraints:
     - governed_make_entrypoints_only
     - one_worktree_one_writer

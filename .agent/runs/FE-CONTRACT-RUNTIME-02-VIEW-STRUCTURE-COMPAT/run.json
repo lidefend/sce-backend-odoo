@@ -15,7 +15,9 @@
     "contracts/generated/product_view_structure_contract.json",
     "docs/ops/iterations/",
     "scripts/release/initialize_colocated_platform_snapshot.py",
-    "scripts/release/test_production_colocated_release.py"
+    "scripts/release/test_production_colocated_release.py",
+    "scripts/ops/daily_runtime_published_face_converge.py",
+    "scripts/ops/test_daily_runtime_published_face_converge.py"
   ],
   "environment": {
     "kind": "offline",
@@ -65,6 +67,16 @@
         "scripts/verify/production_menu_release_gate_guard.py",
         "scripts/verify/test_product_menu_release_gate_contract.py",
         "addons/smart_construction_core/services/locked_menu_policy_contract.py"
+      ]
+    },
+    "published_face_converge_caliber": {
+      "target": "verify.daily.runtime.published_face.converge",
+      "kind": "offline",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/ops/daily_runtime_published_face_converge.py",
+        "scripts/ops/test_daily_runtime_published_face_converge.py",
+        "scripts/verify/production_menu_release_gate_guard.py"
       ]
     }
   },
@@ -189,5 +201,19 @@
       "python3 -m py_compile scripts/release/initialize_colocated_platform_snapshot.py PASS"
     ],
     "test_ownership_note": "The binding static test for the initializer has no passing registered verify target on main: the only target that runs it, verify.production.release_contract, is red for the unrelated python310 CI-workflow assertion recorded under preexisting_red_lanes. The two recorded checks therefore bind the shared contract function and the runtime gate authority, and the binding test is preserved as a diagnostic observation. A narrow registered entry for it remains a P4 gap, not a blocker for this deployment fix."
+  },
+  "third_defect_fix": {
+    "id": "RUNTIME-BOUNDARY-FIX-04",
+    "title": "发布面收敛校验器沿用 released-only 口径",
+    "same_defect_class_as": "RUNTIME-BOUNDARY-FIX-03（同一交付规则口径在第二处残留）",
+    "discovered_by": "重新执行 daily.runtime.published_face.converge（目标树 f12fc5fa）时，两个产品快照都已按声明口径生成，但收敛校验报 PUBLISHED_FACE_SCOPE_DRIFT",
+    "evidence": "snapshot=[{'product_key': 'construction.standard', 'snapshot_id': 100, 'snapshot_released_page_count': 90, 'policy_released_menu_count': 90, 'gate_page_count': 90}, {'product_key': 'construction.preview', 'snapshot_id': 101, 'snapshot_released_page_count': 90, 'policy_released_menu_count': 90, 'gate_page_count': 129}] → reason=PUBLISHED_FACE_SCOPE_DRIFT",
+    "root_cause": "scripts/ops/daily_runtime_published_face_converge.py 的远端片段与本地二次校验都要求 snapshot_released_page_count == policy_released_menu_count == gate_page_count。preview 产品的 gate_page_count 按声明应为 released+preview（129），因此正确收敛的快照被 released-only 口径判为漂移。release gate guard 本身（决定入口能否打开）用的就是 released+preview 的有效口径，只有收敛校验器滞后。",
+    "fix": "两处断言都改为按锁定 P1 产品定义的声明口径：snapshot_released_page_count == policy_released_menu_count；snapshot_preview_page_count == policy_preview_menu_count；gate_page_count == policy_released_menu_count + policy_preview_menu_count。products 记录新增 policy_preview_menu_count / snapshot_preview_page_count。",
+    "not_weakened": "未声明的 preview 或对不上的 preview 计数仍 fail-closed；released 页仍必须严格等于策略声明；gate 页数必须等于有效总量。新增两条反例测试：合法 preview 口径被接受；gate 忽略声明 preview 被拒。",
+    "tests": [
+      "make verify.daily.runtime.published_face.converge PASS 24（记账 check published_face_converge_caliber）",
+      "make daily.runtime.published_face.converge PASS sha=f12fc5fa products=construction.standard,construction.preview（目标环境实跑）"
+    ]
   }
 }

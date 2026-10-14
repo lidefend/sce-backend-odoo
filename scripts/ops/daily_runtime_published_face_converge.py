@@ -240,18 +240,29 @@ if isinstance(guard, dict):
                 "snapshot_id": int(item.get("snapshot_id") or 0),
                 "snapshot_version": str(item.get("snapshot_version") or ""),
                 "policy_released_menu_count": int(item.get("policy_released_menu_count") or 0),
+                "policy_preview_menu_count": int(item.get("policy_preview_menu_count") or 0),
                 "snapshot_released_page_count": int(item.get("snapshot_released_page_count") or 0),
+                "snapshot_preview_page_count": int(item.get("snapshot_preview_page_count") or 0),
                 "gate_page_count": int(item.get("gate_page_count") or 0),
             }
         )
 
 declared = sorted(product_keys)
 observed = sorted(row["product_key"] for row in products)
+# The declared delivery rule is the locked P1 product definition: a product
+# profile serves its released entries plus (for a preview profile) its explicitly
+# declared preview entries. So the released count must equal the policy's released
+# count, the declared-preview count must equal the policy's preview count, and the
+# gate must expose exactly the effective sum. Comparing the gate count to the
+# released count alone used to reject a preview product that had converged
+# correctly.
 agreed = bool(products) and observed == declared and all(
     row["snapshot_id"] > 0
     and row["snapshot_version"]
     and row["snapshot_released_page_count"] > 0
-    and row["snapshot_released_page_count"] == row["policy_released_menu_count"] == row["gate_page_count"]
+    and row["snapshot_released_page_count"] == row["policy_released_menu_count"]
+    and row["snapshot_preview_page_count"] == row["policy_preview_menu_count"]
+    and row["gate_page_count"] == row["policy_released_menu_count"] + row["policy_preview_menu_count"]
     for row in products
 )
 guard_passed = bool(guard) and str(guard.get("status") or "") == "PASS"
@@ -478,13 +489,16 @@ def converge(
             # A remote may only claim reuse for the tree identity the caller declared.
             raise ConvergeError("daily runtime published-face reuse claim is unproven")
     for row in evidence.get("products") or []:
+        released = int(row.get("snapshot_released_page_count") or 0)
+        declared_preview = int(row.get("policy_preview_menu_count") or 0)
         if (
             int(row.get("snapshot_id") or 0) <= 0
             or not str(row.get("snapshot_version") or "")
-            or int(row.get("snapshot_released_page_count") or 0) <= 0
-            or int(row.get("snapshot_released_page_count") or 0)
-            != int(row.get("policy_released_menu_count") or 0)
-            or int(row.get("snapshot_released_page_count") or 0) != int(row.get("gate_page_count") or 0)
+            or released <= 0
+            or released != int(row.get("policy_released_menu_count") or 0)
+            or int(row.get("snapshot_preview_page_count") or 0) != declared_preview
+            or int(row.get("gate_page_count") or 0)
+            != int(row.get("policy_released_menu_count") or 0) + declared_preview
         ):
             raise ConvergeError("daily runtime published-face evidence differs from the declared scope")
     return evidence

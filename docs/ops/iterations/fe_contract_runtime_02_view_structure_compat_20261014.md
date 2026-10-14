@@ -173,3 +173,66 @@ scripts/release/test_production_release_contract.py::test_admin_identity_tool_ha
 
 因此本棒的记账 check 绑定到能通过、且真实覆盖共享契约函数与运行期权威口径的两个窄入口；
 绑定测试保留为**诊断观察**。为它补一个独立可登记的窄 verify 入口属于 P4 工具缺口，不阻塞本次部署修复。
+
+## 7. RUNTIME-BOUNDARY-FIX-04 · 发布面收敛校验器口径 + 目标环境收敛结果
+
+### 7.1 触发事实
+
+FIX-03 生效后，目标环境两个产品快照都按声明口径生成（standard id=100 released 90 / preview 0；
+preview id=101 released 90 / preview 39），但同一条 `daily.runtime.published_face.converge` 改为报：
+
+```
+PUBLISHED_FACE_SCOPE_DRIFT
+snapshot=[{construction.standard: released 90, policy 90, gate 90},
+          {construction.preview:  released 90, policy 90, gate 129}]
+```
+
+### 7.2 根因（与 FIX-03 同一交付规则口径的第二处残留）
+
+`scripts/ops/daily_runtime_published_face_converge.py` 的**远端片段**和**本地二次校验**都要求：
+
+```
+snapshot_released_page_count == policy_released_menu_count == gate_page_count
+```
+
+preview 产品的 gate 页数按锁定 P1 定义应为 released+preview（129），于是**正确收敛**的快照被判为漂移。
+运行期决定入口能否打开的 `production_menu_release_gate_guard.py` 一直使用 released+preview 的有效口径，
+只有收敛校验器滞后。
+
+### 7.3 修复
+
+两处断言统一改为锁定 P1 产品定义的声明口径：
+
+```
+snapshot_released_page_count == policy_released_menu_count
+snapshot_preview_page_count  == policy_preview_menu_count
+gate_page_count              == policy_released_menu_count + policy_preview_menu_count
+```
+
+`products` 记录新增 `policy_preview_menu_count` / `snapshot_preview_page_count`。
+未声明的 preview、对不上的 preview 计数、不等于有效总量的 gate 仍 fail-closed；released 页仍严格等于策略声明。
+新增两条反例测试：合法 preview 口径被接受、gate 忽略声明 preview 被拒。
+
+### 7.4 目标环境收敛结果（实跑）
+
+| 产品 | snapshot_id | released | preview | gate | guard |
+|---|---|---|---|---|---|
+| `construction.standard` | 100 | 90 | 0 | 90 | PASS |
+| `construction.preview` | 101 | 90 | 39 | 129 | PASS |
+
+`upgrade_mode=run`（`smart_core` + `smart_construction_core` 均完成升级），
+`expected_sha = head = f12fc5fa77d68667be76c654fcfeffaaf1165866`，`guard_status=PASS`。
+
+### 7.5 本棒最终验证分层
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | PASS（五个 check 全部 reusable） |
+| L2 定向 | `verify.role_surface.landing.contract.unit` | PASS 33 |
+| L2 定向 | `verify.product_menu_release_gate.contract.unit` | PASS 8 |
+| L2 定向 | `verify.daily.runtime.published_face.converge` | PASS 24 |
+| L2 诊断 | `python3 scripts/release/test_production_colocated_release.py` | PASS 27 |
+| L3 目标 | `daily.runtime.candidate.bundle_sync` → `source_revision.align` → `published_face.converge` | **全部 PASS**（§7.4） |
+
+结论：**批次验收完成**；目标环境部署（候选 bundle 同步 + 服务版本对齐 + 发布面收敛）已完成。
+主线集成与产品交付分别以 PR #655 合并、目标环境真实角色/公司/权限用户验收为准，尚未声明。
