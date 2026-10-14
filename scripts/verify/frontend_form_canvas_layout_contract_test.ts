@@ -7,7 +7,7 @@ import {
   layoutGridUnits,
   requireDeclaredLayoutSpan,
 } from '../../frontend/apps/web/src/components/template/layoutSpan.ts';
-import { ContractGapError } from '../../frontend/apps/web/src/app/contract/contractGap.ts';
+import { isContractGapError } from '../../frontend/apps/web/src/app/contract/contractGap.ts';
 import { nativeFieldPresentation } from '../../frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts';
 
 let cases = 0;
@@ -35,7 +35,7 @@ for (const span of declared) {
 
 function assertGap(value: unknown, label: string) {
   expectEqual(isDeclaredLayoutSpan(value), false, `undeclared ${label}`);
-  expectThrows(() => declaredLayoutSpan(value), ContractGapError, `missing declaration must stop: ${label}`);
+  expectThrows(() => declaredLayoutSpan(value), isContractGapError, `missing declaration must stop: ${label}`);
 }
 
 // A missing or malformed declaration is a contract defect: the renderer stops
@@ -53,8 +53,8 @@ for (const span of [6, 8, 12, 16, 24]) {
 }
 // Without a declared span the node stops, including one that only carries a
 // legacy width class name: a class name is not a declared width.
-expectThrows(() => presentation({ name: 'amount' }), ContractGapError, 'missing span must stop');
-expectThrows(() => presentation({ name: 'amount', class: 'field--compact' }), ContractGapError, 'class name must stop');
+expectThrows(() => presentation({ name: 'amount' }), isContractGapError, 'missing span must stop');
+expectThrows(() => presentation({ name: 'amount', class: 'field--compact' }), isContractGapError, 'class name must stop');
 // The low-code size facet is a declaration rather than a class name, so the field
 // configuration preview still resolves through the same unit.
 expectEqual(presentation({ name: 'amount', field_size: 'compact' }).span, 8);
@@ -62,15 +62,15 @@ expectEqual(presentation({ name: 'amount', field_size: 'wide' }).span, 16);
 expectEqual(presentation({ name: 'amount', field_size: 'half' }).span, 12);
 expectEqual(presentation({ name: 'amount', field_size: 'normal' }).span, 12);
 // An unrecognised facet is a contract defect, not the editor's `normal` default.
-expectThrows(() => presentation({ name: 'amount', field_size: 'nonsense' }), ContractGapError, 'unknown facet must stop');
-expectThrows(() => presentation({ name: 'amount', field_size: '' }), ContractGapError, 'empty facet must stop');
+expectThrows(() => presentation({ name: 'amount', field_size: 'nonsense' }), isContractGapError, 'unknown facet must stop');
+expectThrows(() => presentation({ name: 'amount', field_size: '' }), isContractGapError, 'empty facet must stop');
 // The editable field-order preview resolves through the editor's own size, which
 // is not a contract declaration, so it never reaches the span gap.
 expectEqual(presentation({ name: 'amount' }, true).span, 12);
 
 for (const count of [1, 2, 3, 4, 6, 8, 12, 24]) expectEqual(requireDeclaredLayoutColumns(count), count);
 for (const count of [undefined, null, false, '2', 0, -1, 1.5, 5, 7, 25]) {
-  expectThrows(() => requireDeclaredLayoutColumns(count), ContractGapError);
+  expectThrows(() => requireDeclaredLayoutColumns(count), isContractGapError);
 }
 expectEqual(containedFieldLayout().columns, 1);
 expectEqual(containedFieldLayout().span, 24);

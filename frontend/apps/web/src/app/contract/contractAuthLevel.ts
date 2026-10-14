@@ -13,7 +13,7 @@
  * - `null`  = 未声明或非法（声明缺失），消费点须按ContractGapError处理，不得当作 readonly 兜底，
  * - `read`/`edit`/`admin` = 逐级放行。
  */
-import { ContractGapError } from './contractGap';
+import { contractGapError } from './contractGap';
 
 export const CONTRACT_AUTH_LEVELS = ['none', 'read', 'edit', 'admin'] as const;
 
@@ -55,7 +55,7 @@ export function requireContractAuthLevel(
 ): ContractAuthLevel {
   const level = normalizeContractAuthLevel(raw);
   if (!level) {
-    throw new ContractGapError(
+    throw contractGapError(
       {
         kind: 'contract_defect',
         missing: spec.missing,

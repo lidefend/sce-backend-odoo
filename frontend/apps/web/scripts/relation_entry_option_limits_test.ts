@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { relationEntry, relationOptionsLimit, relationOptionsSearchLimit } from '../src/pages/contractForm/relationDescriptor';
-import { ContractGapError } from '../src/app/contract/contractGap';
+import { isContractGapError } from '../src/app/contract/contractGap';
+import type { ContractGapError } from '../src/app/contract/contractGap';
 
 // Behaviour lock for relation-entry option-volume consumption.
 //
@@ -77,7 +78,7 @@ function expectStop(
     thrown = error;
   }
   assert.ok(
-    thrown instanceof ContractGapError,
+    isContractGapError(thrown),
     `${label}: a missing declaration must stop with ContractGapError, got ${String(thrown)}`,
   );
   assert.equal(

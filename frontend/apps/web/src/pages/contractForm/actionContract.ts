@@ -1,4 +1,4 @@
-import { ContractGapError } from '../../app/contract/contractGap';
+import { contractGapError } from '../../app/contract/contractGap';
 import type { ContractV2ButtonStatus } from '../../app/contracts/v2';
 import { parseMaybeJsonRecord } from '../../app/contractRuntime';
 import {
@@ -27,7 +27,7 @@ export function contractActionConfirmationPrompt(action: ContractAction): {
   message: string;
 } | null {
   const advisory = String(action.hint || '').trim();
-  if (action.requiresConfirmation && !advisory) throw new ContractGapError({
+  if (action.requiresConfirmation && !advisory) throw contractGapError({
     kind: 'contract_defect', missing: 'action.presentation.warning_message',
     requiredDeclarationLayer: 'P0/P1: action confirmation declaration',
   }, 'Action confirmation requires a declared non-empty message');

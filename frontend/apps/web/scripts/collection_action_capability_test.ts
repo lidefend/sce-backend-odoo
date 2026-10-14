@@ -8,7 +8,7 @@
  */
 import assert from 'node:assert/strict';
 
-import { ContractGapError } from '../src/app/contract/contractGap';
+import { isContractGapError } from '../src/app/contract/contractGap';
 import {
   COLLECTION_SCOPE,
   DECLARED_CAPABILITY_EXECUTORS,
@@ -89,7 +89,7 @@ check(
       });
       return 'no-stop';
     } catch (err) {
-      return err instanceof ContractGapError ? 'contract-gap' : 'unexpected-error';
+      return isContractGapError(err) ? 'contract-gap' : 'unexpected-error';
     }
   })(),
   'contract-gap',
@@ -113,9 +113,9 @@ const stopped = (() => {
     return err;
   }
 })();
-check(stopped instanceof ContractGapError, true, 'a collection policy without the declaration stops the surface');
+check(isContractGapError(stopped), true, 'a collection policy without the declaration stops the surface');
 check(
-  stopped instanceof ContractGapError ? stopped.defect.missing : '',
+  isContractGapError(stopped) ? stopped.defect.missing : '',
   'actionContract.surfacePolicies.collection_capabilities',
   'the stop names the missing declaration instead of rebuilding it from the selection policy',
 );
@@ -152,7 +152,7 @@ check(
       resolveDeclaredSelectionCapability({ batch_policy: { available_actions: ['export'] } });
       return 'no-stop';
     } catch (err) {
-      return err instanceof ContractGapError ? err.defect.missing : 'unexpected-error';
+      return isContractGapError(err) ? err.defect.missing : 'unexpected-error';
     }
   })(),
   'actionContract.surfacePolicies.selection_policy',
@@ -165,7 +165,7 @@ const gapPath = (run: () => unknown) => {
     run();
     return 'no-stop';
   } catch (err) {
-    return err instanceof ContractGapError ? err.defect.missing : 'unexpected-error';
+    return isContractGapError(err) ? err.defect.missing : 'unexpected-error';
   }
 };
 

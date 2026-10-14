@@ -19,9 +19,18 @@
  * sits inside the collaboration authority's reviewed import closure, whose
  * members may hold nothing that is evaluated while they load.
  */
-import { ContractGapError } from '../../app/contract/contractGap';
+import { contractGapError } from '../../app/contract/contractGap';
 
-const LAYOUT_SPAN_DECLARATION_LAYER = 'P0:smart_core:page_assembler:layout';
+/**
+ * The declaration layer that owes a layout span.
+ *
+ * A function rather than a bound constant: this module sits inside the
+ * collaboration authority's reviewed import closure, whose members may hold
+ * nothing that is evaluated while they load.
+ */
+function layoutSpanDeclarationLayer(): string {
+  return 'P0:smart_core:page_assembler:layout';
+}
 export function layoutGridUnits(): number {
   return 24;
 }
@@ -57,11 +66,11 @@ export function requireDeclaredLayoutSpan(
 ): number {
   if (!isDeclaredLayoutSpan(value)) {
     const missing = spec?.missing ?? 'layout.span';
-    throw new ContractGapError(
+    throw contractGapError(
       {
         kind: 'contract_defect',
         missing,
-        requiredDeclarationLayer: spec?.requiredDeclarationLayer ?? LAYOUT_SPAN_DECLARATION_LAYER,
+        requiredDeclarationLayer: spec?.requiredDeclarationLayer ?? layoutSpanDeclarationLayer(),
       },
       `契约缺少合法布局跨度 ${missing}：前端不停机兜底，等待声明层补齐`,
     );
@@ -105,7 +114,7 @@ export function declaredLayoutFoldBreakpoints(): { single: number; mediumMax: nu
 export function requireDeclaredLayoutColumns(value: unknown): number {
   const columns = requireDeclaredLayoutSpan(value, { missing: 'layout.columns' });
   if (layoutGridUnits() % columns) {
-    throw new ContractGapError({ kind: 'contract_defect', missing: 'layout.columns.equalTracks', requiredDeclarationLayer: LAYOUT_SPAN_DECLARATION_LAYER }, '契约列数不能精确映射到24单位网格');
+    throw contractGapError({ kind: 'contract_defect', missing: 'layout.columns.equalTracks', requiredDeclarationLayer: layoutSpanDeclarationLayer() }, '契约列数不能精确映射到24单位网格');
   }
   return columns;
 }

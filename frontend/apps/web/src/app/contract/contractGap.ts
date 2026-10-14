@@ -20,16 +20,25 @@ export type ContractDefectRef = {
 };
 
 /**
- * 契约缺陷停机错误。抛出即表示「前端判断出现 → 立即停机 → 回契约要结果」。
+ * 契约缺陷停机错误的对外形状。抛出即表示「前端判断出现 → 立即停机 → 回契约要结果」。
+ *
+ * 这里只有**类型别名 + 工厂函数**，没有 class：本模块位于协作权威
+ * （`pages/contractForm/contractRuntimeVm.ts`）的受复核加载闭包内，闭包成员在模块加载期
+ * 不得求值任何东西，而 `class ContractGapError extends Error` 的 `extends` 子句在定义时就
+ * 要求值 `Error`（`frontend_scene_component_bridge_guard` 的
+ * `collaboration_import_closure_failures` 因此拒绝闭包成员里的 class、enum、namespace 以及
+ * 任何模块级绑定）。停机原语的**身份**由 `name` 与 `defect` 两个事实定义，而不是由原型
+ * 决定：`contractGapError()` 造出的就是真正的 `Error` 实例，`isContractGapError()` 按同一
+ * 口径判定。
  */
-export class ContractGapError extends Error {
-  readonly defect: ContractDefectRef;
+export type ContractGapError = Error & { readonly defect: ContractDefectRef };
 
-  constructor(defect: ContractDefectRef, message: string) {
-    super(message);
-    this.name = 'ContractGapError';
-    this.defect = defect;
-  }
+/** 构造唯一的停机错误。前端不夹取、不默认、不改写，缺口以 `ContractGapError` 交给声明层。 */
+export function contractGapError(defect: ContractDefectRef, message: string): ContractGapError {
+  const error = new Error(message) as Error & { defect: ContractDefectRef };
+  error.name = 'ContractGapError';
+  error.defect = defect;
+  return error;
 }
 
 /**
@@ -37,7 +46,7 @@ export class ContractGapError extends Error {
  * `ContractGapError` 暴露给声明层。
  */
 function raiseGap(spec: { missing: string; requiredDeclarationLayer: string }): never {
-  throw new ContractGapError(
+  throw contractGapError(
     {
       kind: 'contract_defect',
       missing: spec.missing,
@@ -114,7 +123,7 @@ export function requireDeclaredBoolean(
   spec: { missing: string; requiredDeclarationLayer: string },
 ): boolean {
   if (typeof value !== 'boolean') {
-    throw new ContractGapError(
+    throw contractGapError(
       {
         kind: 'contract_defect',
         missing: spec.missing,
@@ -136,7 +145,7 @@ export function requireDeclaredText(
 ): string {
   const declared = typeof value === 'string' ? value.trim() : '';
   if (!declared) {
-    throw new ContractGapError(
+    throw contractGapError(
       {
         kind: 'contract_defect',
         missing: spec.missing,
@@ -150,6 +159,6 @@ export function requireDeclaredText(
 
 /** 判定一个错误是否为契约缺陷停机错误（供停机态渲染与诊断使用）。 */
 export function isContractGapError(error: unknown): error is ContractGapError {
-  return error instanceof ContractGapError
-    || (typeof error === 'object' && error !== null && (error as { name?: string }).name === 'ContractGapError');
+  return typeof error === 'object' && error !== null
+    && (error as { name?: string }).name === 'ContractGapError';
 }

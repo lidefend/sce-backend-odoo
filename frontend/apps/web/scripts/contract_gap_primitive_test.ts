@@ -11,11 +11,12 @@
 import assert from 'node:assert/strict';
 
 import {
-  ContractGapError,
+  isContractGapError,
   optionalDeclaredNumber,
   requireDeclaredNumber,
   requireDeclaredNumberList,
 } from '../src/app/contract/contractGap';
+import type { ContractGapError } from '../src/app/contract/contractGap';
 
 let cases = 0;
 
@@ -28,7 +29,7 @@ function rejected(value: unknown, run: () => unknown, label: string): void {
   try {
     run();
   } catch (error) {
-    assert.ok(error instanceof ContractGapError, `${label}: expected ContractGapError, got ${String(error)}`);
+    assert.ok(isContractGapError(error), `${label}: expected ContractGapError, got ${String(error)}`);
     assert.equal((error as ContractGapError).defect.missing, spec.missing, `${label}: defect path`);
     assert.equal((error as ContractGapError).defect.requiredDeclarationLayer, spec.requiredDeclarationLayer, `${label}: owner layer`);
     cases += 1;

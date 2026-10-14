@@ -4,7 +4,7 @@ import { isNavigationFailure } from 'vue-router';
 import type { NativeActionNotification } from '@sc/schema';
 import { currentContextSignal } from '../../app/contextEpoch';
 import { decodeNativeActionNotification } from '../../app/contract/nativeActionNotification';
-import { ContractGapError } from '../../app/contract/contractGap';
+import { contractGapError } from '../../app/contract/contractGap';
 import type { LocationQueryRaw, Router } from 'vue-router';
 import { toPositiveInt } from '../../app/contractRuntime';
 import { buildEntryTargetRouteTarget } from '../../app/routeQuery';
@@ -38,7 +38,7 @@ export function useActionResponseNavigation(params: {
     const notification = decodeNativeActionNotification(result);
     if (!notification) { const navigation = await (replace ? params.router.replace(target) : params.router.push(target)); return !isNavigationFailure(navigation); }
     if (!params.notificationIdentity || !params.showNotification) {
-      throw new ContractGapError({ kind: 'contract_defect', missing: 'native notification navigation owner',
+      throw contractGapError({ kind: 'contract_defect', missing: 'native notification navigation owner',
         requiredDeclarationLayer: 'P0: action navigation' }, 'Missing notification navigation owner');
     }
     const ticket = owner?.navigationTicket();

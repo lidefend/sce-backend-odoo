@@ -1,4 +1,4 @@
-import { ContractGapError } from '../contract/contractGap';
+import { contractGapError } from '../contract/contractGap';
 
 type Dict = Record<string, unknown>;
 
@@ -25,7 +25,7 @@ export function entryIntentImpliesWrite(intent: RecordOpenIntent): boolean {
 export const RECORD_ENTRY_DECLARATION_LAYER = 'P0:smart_core:entry_target.record_entry';
 
 function raiseRecordEntryGap(missing: string, message: string): never {
-  throw new ContractGapError(
+  throw contractGapError(
     {
       kind: 'contract_defect',
       missing,

@@ -67,9 +67,9 @@
       v-if="decisionMode && (taskNodes.length || $slots.actions)"
       class="object-task-page__current-task"
       data-floorplan-region="current-task"
-      data-form-facts-scope="task"
+      data-form-feedback-scope="page"
     >
-      <div v-if="taskNodes.length" class="object-task-page__facts">
+      <ScInlineState v-if="taskNodes.length" class="object-task-page__feedback" state="info" density="compact" data-feedback-kind="page-guidance">
         <div class="object-task-page__current-task-copy">
           <CanonicalFormNodeRenderer
             v-for="node in taskNodes"
@@ -83,7 +83,7 @@
             @field-action="emit('field-action', $event)"
           />
         </div>
-      </div>
+      </ScInlineState>
       <template v-if="$slots.actions">
         <div class="object-task-page__current-task-actions" data-floorplan-region="action-bar" data-mobile-action-surface>
           <slot name="actions" />
@@ -370,6 +370,7 @@ import CanonicalFormNodeRenderer from './CanonicalFormNodeRenderer.vue';
 import ProfessionalAuditTimeline from './ProfessionalAuditTimeline.vue';
 import FormSectionNavigation from './FormSectionNavigation.vue';
 import ScCard from '../../components/design-system/ScCard.vue';
+import ScInlineState from '../../components/design-system/ScInlineState.vue';
 import { canonicalFieldHasPresentableValue, canonicalNodeHasPresentableContent } from './canonicalFormRenderer';
 import {
   contractSurfaceNavigationItems,

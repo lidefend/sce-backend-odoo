@@ -65,8 +65,8 @@
       "consumedBy": "frontend/apps/web/src/app/runtime/actionViewCollectionCapabilityRuntime.ts",
       "consumedSymbol": "resolveDeclaredCapabilities",
       "onMissing": "stop",
-      "stopSymbol": "ContractGapError",
-      "stopDetail": "集合面动作由契约单一声明面发布，batch_policy 是同一份声明的 selection 投影。前端只按声明的 scope 路由、按声明的 intent 查本构建执行器；声明缺失时不停机兜底、也不由 selection_policy 反推（反推会把 collection 作用域动作静默降级），而是抛 ContractGapError 回声明层补齐。",
+      "stopSymbol": "contractGapError",
+      "stopDetail": "集合面动作由契约单一声明面发布，batch_policy 是同一份声明的 selection 投影。前端只按声明的 scope 路由、按声明的 intent 查本构建执行器；声明缺失时不停机兜底、也不由 selection_policy 反推（反推会把 collection 作用域动作静默降级），而是抛 contractGapError（ContractGapError 停机标识）回声明层补齐。",
       "regressionGuard": "verify.frontend.collection_action_capability.unit",
       "behaviourTest": "frontend/apps/web/scripts/collection_action_capability_test.ts"
     },

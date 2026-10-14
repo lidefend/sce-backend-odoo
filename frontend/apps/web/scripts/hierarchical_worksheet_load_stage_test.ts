@@ -1,11 +1,12 @@
 import { strict as assert } from 'node:assert';
 import {
-  ContractGapError,
+  isContractGapError,
   loadHierarchicalWorksheet,
   type WorksheetHierarchyConfig,
   type WorksheetLoadResult,
   type WorksheetSheetConfig,
 } from '../src/app/action_runtime/hierarchicalWorksheetDataSource';
+import type { ContractGapError } from '../src/app/action_runtime/hierarchicalWorksheetDataSource';
 
 // These cases bind the declared load staging to actual behaviour: a worksheet is
 // "ready" once its first batch is usable, and whole-table continuation is a
@@ -191,7 +192,7 @@ async function caseMissingDeclaredPageSizeStopsTheSurface(): Promise<void> {
       { list: limitsSource(1, limits) as never, drainPageLimit: 5, drainBatchYieldMs: 0 },
     ),
     (error: unknown) => {
-      if (!(error instanceof ContractGapError)) return false;
+      if (!isContractGapError(error)) return false;
       defect = error.defect;
       return true;
     },
@@ -212,7 +213,7 @@ async function caseInvalidDeclaredPageSizeStopsTheSurface(): Promise<void> {
         {},
         { list: limitsSource(1, limits) as never, drainPageLimit: 5, drainBatchYieldMs: 0 },
       ),
-      ContractGapError,
+      isContractGapError,
       `an invalid declared page size (${String(invalid)}) must stop the surface`,
     );
     assert.equal(limits.length, 0, 'an invalid declaration must not be replaced by a fallback');

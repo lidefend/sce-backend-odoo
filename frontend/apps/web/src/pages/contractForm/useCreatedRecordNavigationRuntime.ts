@@ -1,6 +1,6 @@
 import type { ActionFeedbackOwner } from './useNativeActionFeedback';
 import { decodeNativeActionNotification } from '../../app/contract/nativeActionNotification';
-import { ContractGapError } from '../../app/contract/contractGap';
+import { contractGapError } from '../../app/contract/contractGap';
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router';
 import { pickContractNavQuery } from '../../app/navigationContext';
 import type { ContractAction } from './types';
@@ -116,7 +116,7 @@ export function useCreatedRecordNavigationRuntime(params: {
       return true;
     }
     if (feedback && !navigate) {
-      throw new ContractGapError({ kind: 'contract_defect', missing: 'created notification navigation owner',
+      throw contractGapError({ kind: 'contract_defect', missing: 'created notification navigation owner',
         requiredDeclarationLayer: 'P0: created record navigation' }, 'Missing created notification handoff');
     }
     const resolvedNextRoute = options.nextSceneRoute || (options.nextSceneKey ? `/s/${options.nextSceneKey}` : '');

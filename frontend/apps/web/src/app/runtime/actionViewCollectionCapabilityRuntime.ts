@@ -1,7 +1,7 @@
 import { fileToBase64 } from '../../api/files';
 import type { ApiDataImportContract } from '../../api/data';
 import {
-  ContractGapError,
+  contractGapError,
   requireDeclaredBoolean,
   requireDeclaredText,
 } from '../contract/contractGap';
@@ -89,7 +89,7 @@ export function resolveDeclaredCapabilities(surfacePolicies: unknown): Collectio
   const policies = asDict(surfacePolicies);
   if (!('collection_capabilities' in policies)) {
     if (declaresCollectionPolicy(policies)) {
-      throw new ContractGapError(
+      throw contractGapError(
         {
           kind: 'contract_defect',
           missing: 'actionContract.surfacePolicies.collection_capabilities',
@@ -106,7 +106,7 @@ export function resolveDeclaredCapabilities(surfacePolicies: unknown): Collectio
     requiredDeclarationLayer: DECLARATION_LAYER,
   });
   if (!Array.isArray(raw.actions)) {
-    throw new ContractGapError(
+    throw contractGapError(
       {
         kind: 'contract_defect',
         missing: 'actionContract.surfacePolicies.collection_capabilities.actions',
@@ -123,7 +123,7 @@ export function resolveDeclaredCapabilities(surfacePolicies: unknown): Collectio
     const entry = asDict(row);
     const action = asText(entry.action).toLowerCase();
     if (!action) {
-      throw new ContractGapError(
+      throw contractGapError(
         {
           kind: 'contract_defect',
           missing: `${path}.action`,
@@ -134,7 +134,7 @@ export function resolveDeclaredCapabilities(surfacePolicies: unknown): Collectio
     }
     const scope = asText(entry.scope).toLowerCase();
     if (scope !== SELECTION_SCOPE && scope !== COLLECTION_SCOPE) {
-      throw new ContractGapError(
+      throw contractGapError(
         {
           kind: 'contract_defect',
           missing: `${path}.scope`,
@@ -176,7 +176,7 @@ export function resolveDeclaredSelectionCapability(surfacePolicies: unknown): bo
   const policies = asDict(surfacePolicies);
   if (!('selection_policy' in policies)) {
     if (declaresCollectionPolicy(policies)) {
-      throw new ContractGapError(
+      throw contractGapError(
         {
           kind: 'contract_defect',
           missing: 'actionContract.surfacePolicies.selection_policy',
