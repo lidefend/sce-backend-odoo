@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 163,
+    "odoo_tags": 164,
     "gated": 4,
-    "on_demand": 15,
+    "on_demand": 16,
     "unwired": 144,
-    "odoo_tag_declarations": 372,
+    "odoo_tag_declarations": 373,
     "gated_declarations": 89,
-    "uncovered_declarations": 283,
+    "uncovered_declarations": 284,
     "ci_unit_scripts": 14,
     "ci_unit_scripts_wired": 14,
     "ci_unit_scripts_unwired": 0
@@ -794,6 +794,19 @@
         "make:verify.local.dev.data_space_identity_enrollment.orm :: data_space_identity_enrollment"
       ],
       "disposition": "class-selected"
+    },
+    {
+      "group": "data_space_uncached_membership",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_data_space_uncached_membership.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make:verify.local.dev.data_space_uncached_membership.orm :: data_space_uncached_membership"
+      ]
     },
     {
       "group": "demo_gate",
