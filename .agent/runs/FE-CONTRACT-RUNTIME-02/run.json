@@ -994,6 +994,20 @@
         "make/ci.mk"
       ],
       "kind": "runtime"
+    },
+    "source_bounded_data_space_rules": {
+      "target": "local.dev.test MODULE=smart_construction_core TEST_TAGS=source_bounded_data_space_rules",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/security/sc_record_rules.xml",
+        "addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml",
+        "addons/smart_construction_core/tests/test_source_bounded_data_space_rules.py",
+        "scripts/verify/data_scope_declarations.json",
+        "scripts/verify/sc_data_scope_rule_coverage_guard.py",
+        "addons/smart_core/models/res_users.py",
+        "addons/smart_core/security/data_space.py",
+        "make/ci.mk"
+      ]
     }
   },
   "blockers": [
@@ -1016,9 +1030,13 @@
     "OPEN (pre-existing main defect, not this batch): demo scenario seeds lag the 2026-10-01 guards that reject non-draft create(); make local.dev.rebuild_demo fails at the scenario stage with ~30 root records across ~10 scenarios. Tracked as DEMO-SCENARIO-PRODUCT-DRIFT-01 and detailed in run.json/demo_scenario_product_drift. Does not block platform initialization or demo onboarding (both verified on a clean rebuilt database).",
     "PRE-EXISTING, not this batch: verify.workflow_contract.backend is a red lane (workflow_contract_custom_coverage_guard reads a re-collected document and Odoo's base action_archive inflates uncovered 16 -> 207). It is absent from the ci.local.quick.run prerequisite list, so it does not block freezing; it needs a lane-repair batch.",
     "PRE-EXISTING, not this batch: the uc4 native-lowcode container lanes fail on view XML drift (processing_advisory field); the same failure reproduces on the stashed baseline and none of those lanes is wired to a required gate.",
-    "PRE-EXISTING, not this batch: TestApprovalPolicyToggleBackend.test_native_create_context_state_guard raises AccessError for sc.labor.plan / sc.material.rental.order (2 errors) both before and after this batch; the two new one-step tests in the same class pass. Also pre-existing and unchanged: 8 ERRORs in the p0_state suite (fix-set identical to the stashed baseline), and 3 residual errors in verify.payment.approval_state_machine.unit (registered history_probe_runbook, textually identical to baseline)."
+    "PRE-EXISTING, not this batch: TestApprovalPolicyToggleBackend.test_native_create_context_state_guard raises AccessError for sc.labor.plan / sc.material.rental.order (2 errors) both before and after this batch; the two new one-step tests in the same class pass. Also pre-existing and unchanged: 8 ERRORs in the p0_state suite (fix-set identical to the stashed baseline), and 3 residual errors in verify.payment.approval_state_machine.unit (registered history_probe_runbook, textually identical to baseline).",
+    "CLOSED (e9da2148 + 8b2318a6 + 4add5172): 独立复审 S1 第 1 项 —— source_bounded 29 条具名规则缺用途上限，已按守卫判定的三种形态补齐并配套 fail-closed 守卫、反例与真实账号运行时用例；make verify.sc_data_scope.rule_coverage rc=0 与 4/4 定向运行时用例通过。",
+    "OPEN (独立复审 2026-10-14 第 2 项): 公司级字典共享目标未完成 —— helper 通过 sudo() 读取公司级字典并把非角色范围映射为 __global__；addons/smart_core/core/dictionary_scope_projection.py 已自述公司范围尚无交付语义。越界已阻断，交付语义未实现，不得标记完成。",
+    "OPEN (独立复审 2026-10-14 第 3 项): 完整演示基线仍不能重建 —— local.dev.rebuild_demo 场景加载失败（DEMO-SCENARIO-PRODUCT-DRIFT-01），影响本次目标环境与产品验收；归入下一批不能证明整体目标达成。",
+    "OPEN (独立复审 2026-10-14 第 4 项): 最终交付证据未齐备 —— 本次 HEAD 尚无 ci.local.quick receipt；已找到的 143 条规则安装回读不证明真实角色的允许/拒绝行为，纯管理员可用、客户数据不可见、用户与测试数据双向隔离仍需绑定最终环境验收。泳道台账阻塞（762>760、unregistered 2）已由 4add5172 解除。"
   ],
-  "next_exact_step": "One-step handling is implemented, projected and verified on this branch: sc.approval.policy.ensure_handling_ready (approval_policy.py:419) is the shared gate for 18 terminal business actions across 10 model files; 17 workflow profiles declare direct_handling for draft; workflow_contract_service._handles_without_approval (:1346) replaces the submit step in the offered action list only while no approval rule is active. Verified: verify.native_view.workflow_action_coverage rc=0 (59), verify.workflow_state_phase_coverage rc=0 (17), verify.workflow_action_semantics.guard rc=0 (15), and 6 targeted ORM cases rc=0 (0 failed / 0 error) on sc_dev_demo. NEXT: DEMO-SCENARIO-PRODUCT-DRIFT-01 owner routing - align the demo scenario seeds to the product guard (seed draft, then advance through the governed actions; the one-step gate means one terminal action now suffices and no explicit action_submit() step is needed) either as the next batch on this branch or as its own worktree; then ci.delivery.freeze.prepare -> one exact-head ci.local.quick -> pr.push (GitHub mainline) -> required PR checks -> merge. Internal change is categorised: platform initialization + demo onboarding (done) vs one-step handling (this batch) vs demo scenario alignment (next).",
+  "next_exact_step": "本棒（第 35 棒）已完成独立复审第 1 项并解除 Quick 泳道台账阻塞，三笔提交 e9da2148 / 8b2318a6 / 4add5172。下一步顺序：(1) 追加本棒批次文档与 run 结果索引（已完成本段写入）；(2) 处理复审第 2 项：公司级字典共享交付语义（addons/smart_core/core/dictionary_scope_projection.py 所属 P0 边界），先把公司/行业/平台共享的交付语义与投影落地，再谈共享目标；(3) 处理复审第 3 项：DEMO-SCENARIO-PRODUCT-DRIFT-01，把 demo 场景种子按 2026-10-01 守卫对齐（种子落 draft，再用受治动作推进；一步式闸门已使单个终态动作足够），禁止放宽 create() 守卫；(4) make ci.delivery.freeze.prepare -> 提交生成物 -> 冻结干净 HEAD -> 一次 exact-head make ci.local.quick 取 receipt（复审第 4 项硬要求）；(5) 绑定最终环境的角色级允许/拒绝验收：纯管理员可用、客户数据不可见、用户与测试数据双向隔离；(6) make pr.push（GitHub 主线优先，gitee 镜像备用）-> PR #654 必需检查 -> 受保护 PR 合并。不得报主线集成完成或产品交付完成，直到 (2)-(5) 关闭。",
   "acceptance_authority_layout": {
     "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
     "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",
@@ -3046,7 +3064,7 @@
     "method": "One authoritative ownership identity at the root with details inheriting; reuse native ACL, industry record rules and parent anchors instead of duplicating every isolation dimension onto every model. The enforced and deferred ceilings are generated from the declaration instead of hand-written per model.",
     "corrected_rationale": "Five scene/pack exemptions previously read 'needs an ownership anchor'. The source facts are a delivery-only orchestration object (sc.scene source_authority_contract: delivery_only, no_business_fact_authority), a deployment-wide pack manifest, and validation/audit rows owned by their subject.",
     "evidence": {
-      "verify.sc_data_scope.rule_coverage": "37 guard tests passed, uncovered=[], failures=[], universe=138, generated rules=143 (117 enforced + 26 deferred, global_rules_seen=187, source_bounded=32); the universe follows company_field_models through _inherit-only extension classes and fails closed when such a class names its parent with an unresolvable expression",
+      "verify.sc_data_scope.rule_coverage": "38 guard tests passed (13 generator-side + 38 repo-side as reported by the target), uncovered=[], failures=[], universe=138, generated rules=143 (117 enforced + 26 deferred, global_rules_seen=187, source_bounded=32, source_bounded_in_universe=28); the named-rule check now also requires the purpose authority user._sc_data_company_ids() on the declared anchor, not just a company selector. The universe follows company_field_models through _inherit-only extension classes and fails closed when such a class names its parent with an unresolvable expression",
       "verify.sc_data_scope.ceiling.check": "13 generator tests passed; 143 generated rules match the declaration",
       "verify.fact_source.coverage": "20 guard tests passed, failures=[] (12 standard-currency models, 37 caller-context models of 133 currency models, 6 declared currency write paths, 1 declared field override, company-currency authority verified)",
       "verify.contract.architecture.suite": "366 tests, exit=0, same suite marker set as the previous round (.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/arch_suite_backend_fact_source_2.log); the two changed guards contribute 33 (scope) + 20 (fact source) tests.",
@@ -3478,5 +3496,47 @@
       "python3 addons/smart_construction_core/tests/test_approval_policy_configuration_handler.py": "rc=0 (9 tests)"
     },
     "scope_boundary": "Batch acceptance only. No mainline integration, no release, no product delivery."
+  },
+  "source_bounded_purpose_ceiling_closure": {
+    "status": "implemented_and_verified_source_and_runtime; batch product review and delivery evidence pending",
+    "trigger": "独立复审 2026-10-14 对候选 61d463a7 判 REQUEST_CHANGES，S1 第 1 项：source_bounded 的 32 个模型中 29 个具名 ir.rule 仍仅限制公司范围（合同、费用、融资、付款台账等），生成规则已带用途上限，手写这一组未闭合。",
+    "fact_check": [
+      "生成上限规则不覆盖这 29 个模型：sc_data_scope_ceiling_generated.xml 共 143 条，逐一核对不含 model_construction_contract / model_payment_ledger / model_sc_expense_claim / model_sc_financing_loan / model_tender_opportunity。",
+      "因此修改前这 29 个模型唯一生效的范围事实就是那条手写全局规则，其域只有 company_ids，客户主体可读到 demo/test 公司记录。本项是实质性修复，不是命名整理。"
+    ],
+    "changes": {
+      "guards": [
+        "scripts/verify/sc_data_scope_rule_coverage_guard.py：declared_source_rule() 在 global 且命中锚点之外，必须同时命中 user._sc_data_company_ids()；失败文案改为 does not constrain <anchor> with user._sc_data_company_ids()；docstring 说明公司范围单列不等于生成口径。",
+        "scripts/verify/test_sc_data_scope_rule_coverage_guard.py：新增 SOURCE_BOUNDED_DOMAIN 正例域与反例 test_source_bounded_company_only_rule_fails（断言缺用途授权时报出 user._sc_data_company_ids()）。"
+      ],
+      "data": [
+        "addons/smart_construction_core/security/sc_record_rules.xml：按守卫判定的三种形态补齐 29 条（+58 行）。形态1 纯公司域 5 条追加用途项；形态2 含未归属共享域 17 条改为 ['|',(False),'&',(公司),(用途)]；形态3 归一化/关系前缀域 6 条尾部追加用途项。",
+        "已带用途授权的 3 条工资类规则（rule_sc_hr_payroll_document_company、rule_sc_hr_salary_payment_company、rule_sc_salary_summary_company）保持不变。",
+        "scripts/verify/sc_data_scope_ceiling_generate.py 未改动，规则总数仍为 143。",
+        "XML 转义：新增的连接子用 &amp;，首版裸 & 会导致 XML 非法，已回退重做。"
+      ],
+      "runtime_tests": [
+        "addons/smart_construction_core/tests/test_source_bounded_data_space_rules.py（新增，已注册 tests/__init__.py，tag source_bounded_data_space_rules）：按声明从各自安全文件安装并 env.ref 回读 32 条具名规则，断言域内同时含公司选择器与用途授权；admin/test/customer 三类真实主体对 tender.opportunity、construction.contract 双向隔离；被拒公司行 read 抛 AccessError；未注册公司行对所有主体不可见。"
+      ],
+      "lane_wiring": [
+        "scripts/ops/onboard_local_dev_demo_data_space.py、scripts/verify/local_dev_demo_data_space_onboarding_plan.py：docstring 首段声明实际调用入口，接线 local.dev.data_space.onboard 与 local.dev.demo.data_space.onboarding.plan；只消除 unregistered，不降原始计数 762。"
+      ]
+    },
+    "evidence": [
+      "make verify.sc_data_scope.rule_coverage -> rc=0，13 + 38 tests OK，status=passed，failures=[]，uncovered=[]，source_bounded_count=32。",
+      "加强守卫后、修数据前：精确 FAIL 29 条具名规则（fail-closed 生效）。",
+      "make local.dev.test MODULE=smart_construction_core TEST_TAGS=source_bounded_data_space_rules -> rc=0，0 failed / 0 error of 4 tests（sc_dev_demo，4535 queries）。",
+      "make audit.verification.lane_coverage.check -> rc=0 PASS；make verify.verification.lane_coverage -> rc=0（含自测）。"
+    ],
+    "commits": [
+      "e9da2148 fix(security): 补齐 source_bounded 具名规则的数据用途上限",
+      "8b2318a6 test(verify): 具名规则守卫要求用途授权并补反例",
+      "4add5172 chore(verify): 接线 demo 数据空间两个 target 至验证泳道台账"
+    ],
+    "not_done": [
+      "复审第 2 项：公司级字典共享交付语义仍缺失（addons/smart_core/core/dictionary_scope_projection.py 明确记录公司范围尚无交付语义）。",
+      "复审第 3 项：DEMO-SCENARIO-PRODUCT-DRIFT-01 未修，local.dev.rebuild_demo 场景加载仍失败。",
+      "复审第 4 项：本 HEAD 尚无 ci.local.quick receipt；泳道台账阻塞已解除，Quick 待冻结后重跑。"
+    ]
   }
 }

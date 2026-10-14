@@ -1657,3 +1657,75 @@ create() 守卫的方式绕过。
   AccessError 漂移、p0_state 8 个既有 ERROR、`verify.contract.lint` 49 项、`res.users` 断言漂移、
   L3/L4 container。
 - 未做：新页面、新组件、状态机 DSL、批量重构 `extractListProfile`。
+
+## N 段：独立复审 4 项收口——第 1 项已闭合（2026-10-14，第 35 棒）
+
+复审对象：候选 `61d463a7f3a2`，结论 `REQUEST_CHANGES`，共 4 项。本棒处理第 1 项并解除第 4 项的
+Quick 泳道前置阻塞；第 2、3 项与第 4 项的 Quick receipt 仍开放。
+
+### 事实核对（先证实再修）
+
+复审称 source_bounded 的 32 个模型中 29 个具名规则只限公司。核对生成物
+`addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml`（143 条）：
+**不含** `model_construction_contract`、`model_payment_ledger`、`model_sc_expense_claim`、
+`model_sc_financing_loan`、`model_tender_opportunity`。也就是说这 29 个模型唯一生效的范围事实
+就是那条手写全局规则，其域只有 `company_ids`，客户主体可读到 demo/test 公司记录。
+**本项是实质性数据边界修复，不是命名整理。**
+
+### 修改
+
+守卫先 fail-closed 收紧（`scripts/verify/sc_data_scope_rule_coverage_guard.py`）：
+`declared_source_rule()` 除“global + 命中锚点”外，必须同时命中
+`user._sc_data_company_ids()`，与 enforced 模型生成上限同口径；失败文案与 docstring 同步。
+收紧后对既有 29 条**精确 FAIL**，证明守卫确实生效。自测新增
+`test_source_bounded_company_only_rule_fails`。
+
+随后按守卫判定的三种形态补齐 `addons/smart_construction_core/security/sc_record_rules.xml`
+（29 改 / +58 行）：
+
+| 形态 | 数量 | 处理 |
+|---|---|---|
+| 纯公司域 `[('cid','in',company_ids)]` | 5 | 追加用途项 |
+| 含未归属共享 `['|',('cid','=',False),('cid','in',company_ids)]` | 17 | 改为 `['|',(False),'&',(公司),(用途)]` |
+| 归一化 / 关系前缀域 | 6 | 尾部追加用途项 |
+
+已带用途授权的 3 条工资类规则（`rule_sc_hr_payroll_document_company`、
+`rule_sc_hr_salary_payment_company`、`rule_sc_salary_summary_company`）不变。
+生成器 `sc_data_scope_ceiling_generate.py` 未改动，规则总数仍 143。
+XML 追加的连接子必须写 `&amp;`（首版裸 `&` 导致 XML 非法，已回退重做）。
+
+新增真实账号运行时用例 `addons/smart_construction_core/tests/test_source_bounded_data_space_rules.py`
+（tag `source_bounded_data_space_rules`）：按声明从各自安全文件安装并 `env.ref` 回读 32 条具名规则、
+校验域内同时含公司选择器与用途授权；admin/test/customer 三类真实主体对 `tender.opportunity`、
+`construction.contract` 双向隔离；被拒公司行 `read` 抛 `AccessError`；未注册公司行对所有主体不可见。
+
+### 验证回执
+
+| 入口 | 结果 |
+|---|---|
+| `make verify.sc_data_scope.rule_coverage` | rc=0，13 + 38 tests OK，`status=passed`，`failures=[]`，`uncovered=[]`，`source_bounded_count=32` |
+| `make local.dev.test MODULE=smart_construction_core TEST_TAGS=source_bounded_data_space_rules` | rc=0，0 failed / 0 error of 4 tests（`sc_dev_demo`，4535 queries） |
+| `make audit.verification.lane_coverage.check` | rc=0 PASS（原报 762 > 760、unregistered 2） |
+| `make verify.verification.lane_coverage` | rc=0（含自测） |
+| `make verify.agent.ledger.unit` | rc=0（15 tests + PASS） |
+
+提交：`e9da2148`（数据 + 运行时用例）、`8b2318a6`（守卫收紧 + 反例）、
+`4add5172`（demo 数据空间两个 target 接线泳道台账，只消除 unregistered，不降原始计数）。
+
+### 仍开放（不得据此报整体完成）
+
+- **复审第 2 项**：公司级字典共享交付语义缺失。越界已阻断，但
+  `addons/smart_core/core/dictionary_scope_projection.py` 自述公司范围尚无交付语义，
+  公司／行业／平台共享目标未实现。
+- **复审第 3 项**：`DEMO-SCENARIO-PRODUCT-DRIFT-01`，`local.dev.rebuild_demo` 场景加载失败；
+  必须让 demo 对齐产品，禁止放宽 2026-10-01 `create()` 守卫。一步式闸门已把对齐前提减半
+  （种子落 draft，一个受治动作即到终态）。
+- **复审第 4 项**：本 HEAD 尚无 `ci.local.quick` receipt。已找到的 143 条规则安装回读**不**证明
+  真实角色的允许/拒绝行为；纯管理员可用、客户数据不可见、用户与测试数据双向隔离仍需绑定
+  最终环境的角色级验收。
+
+### 边界
+
+状态：**批次验收完成**（源码 + 守卫 + 4 项定向运行时用例 + 泳道台账）。
+主线集成、版本发布、产品交付均未发生。未做：新页面、新组件、状态机 DSL、批量重构
+`extractListProfile`。
