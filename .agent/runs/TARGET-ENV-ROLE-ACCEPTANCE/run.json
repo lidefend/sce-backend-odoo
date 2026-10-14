@@ -17,7 +17,8 @@
     "addons/smart_construction_acceptance_fixture/",
     "make/frontend.mk",
     "scripts/verify/",
-    "scripts/ops/"
+    "scripts/ops/",
+    "docs/engineering_convergence/"
   ],
   "environment": {
     "kind": "runtime",
