@@ -4,7 +4,7 @@ from odoo.exceptions import AccessError
 from odoo.addons.smart_core.security.data_space import (
     NON_CUSTOMER_DATA_USER_GROUP, principal_data_purposes, registration_scope_domain,
 )
-from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+from odoo.addons.smart_core.security.platform_admin import platform_admin_group_xmlids
 
 
 class ResUsers(models.Model):
@@ -14,6 +14,36 @@ class ResUsers(models.Model):
     NO_BUSINESS_FACT_AUTHORITY = True
 
     token_version = fields.Integer(default=0)
+
+    def _sc_resolved_group_ids(self, group_xmlids):
+        """Resolve governed group external ids without reading any membership."""
+        imd = self.env["ir.model.data"].sudo()
+        return {
+            group_id
+            for group_id in (
+                imd._xmlid_to_res_id(xmlid, raise_if_not_found=False) for xmlid in group_xmlids
+            )
+            if group_id
+        }
+
+    def _sc_current_group_ids(self, group_ids):
+        """Read *current* membership from the persisted relation.
+
+        ``res.users.has_group`` is a ``tools.ormcache`` helper, so a long-lived
+        worker keeps its last answer when membership is changed by an
+        out-of-band writer (``odoo shell``, cron, ops script) that never signals
+        cache invalidation. That both denies a just-authorized principal and
+        keeps serving a just-revoked one. A data-space ceiling decides
+        authorization, so it must read the fact. This is the same predicate as
+        the native ``_has_group``, minus the cross-request cache.
+        """
+        if not group_ids:
+            return set()
+        self.env.cr.execute(
+            "SELECT gid FROM res_groups_users_rel WHERE uid = %s AND gid = ANY(%s)",
+            (self.id, list(group_ids)),
+        )
+        return {row[0] for row in self.env.cr.fetchall()}
 
     def _sc_data_company_ids(self):
         """Metadata-only, two-way data-purpose scope for the current principal.
@@ -26,9 +56,12 @@ class ResUsers(models.Model):
         if self.id != self.env.uid:
             raise AccessError("DATA_SPACE_CURRENT_PRINCIPAL_REQUIRED")
         caller = self.with_env(self.env(su=False))
+        admin_group_ids = caller._sc_resolved_group_ids(platform_admin_group_xmlids())
+        non_customer_group_ids = caller._sc_resolved_group_ids((NON_CUSTOMER_DATA_USER_GROUP,))
+        current_group_ids = caller._sc_current_group_ids(admin_group_ids | non_customer_group_ids)
         purposes = principal_data_purposes(
-            platform_admin=user_is_platform_admin(caller),
-            non_customer_user=caller.has_group(NON_CUSTOMER_DATA_USER_GROUP),
+            platform_admin=bool(current_group_ids & admin_group_ids),
+            non_customer_user=bool(current_group_ids & non_customer_group_ids),
         )
         # env.companies validates caller-supplied allowed_company_ids. It must
         # be evaluated with su=False even when an internal caller used sudo.
