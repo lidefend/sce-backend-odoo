@@ -1,5 +1,7 @@
 """Onboard the local.dev demo database's main company as its demo data space.
 
+Executed only by local.dev.data_space.onboard in the registered demo DB.
+
 Owner ruling 2026-10-14 (DEMO_IS_FIRST_ONBOARDED_COMPANY): in the demo role the
 environment main company IS the first onboarded business company, so onboarding
 retires its bootstrap carrier marker instead of re-owning a single business row.

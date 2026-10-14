@@ -1,5 +1,7 @@
 """Read-only plan for onboarding the demo data space in the local.dev database.
 
+Executed only by local.dev.demo.data_space.onboarding.plan in the registered demo DB.
+
 Never writes. It answers the one open question for the pending governed P4
 migration: which company should become the registered demo data space, and
 exactly which rows must be re-owned so that
