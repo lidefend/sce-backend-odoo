@@ -4,8 +4,7 @@
     "audit/fe-contract-runtime-00-20261012": ".agent/runs/FE-CONTRACT-RUNTIME-00/run.json",
     "fix/nav-node-level-menu-acl-closeout": ".agent/runs/TARGET-ENV-ROLE-ACCEPTANCE/run.json",
     "fix/fe-contract-runtime-02-consumption-stop-closure": ".agent/runs/FE-CONTRACT-RUNTIME-02/run.json",
-    "fix/payment-request-chain-alignment-20261013": ".agent/runs/PAYMENT-REQUEST-CHAIN-ALIGNMENT/run.json",
-    "fix/fe-record-form-consumption-closure-20261015": ".agent/runs/FE-RECORD-FORM-CONSUMPTION-CLOSURE/run.json"
+    "fix/payment-request-chain-alignment-20261013": ".agent/runs/PAYMENT-REQUEST-CHAIN-ALIGNMENT/run.json"
   },
   "schema_version": 1
 }
