@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "id": "TARGET-ENV-ROLE-ACCEPTANCE",
-  "branch": "audit/target-env-role-acceptance-20261014",
+  "branch": "fix/data-space-uncached-membership-ceiling-closeout",
   "status": "active",
-  "baseline_sha": "d20798885b45553b2a5d3d08dd99a9363ff74e55",
+  "baseline_sha": "28e19f604e982f91647aa589e6f827a7f5f52aed",
   "goal": ".agent/goals/TARGET-ENV-ROLE-ACCEPTANCE.yaml",
   "record": "docs/ops/iterations/target_env_role_acceptance_20261014.md",
   "scope": [
@@ -20,7 +20,8 @@
     "scripts/ops/",
     "docs/engineering_convergence/",
     "addons/smart_core/models/res_users.py",
-    "make/dev.mk"
+    "make/dev.mk",
+    "docs/audit/test_coverage_registry/"
   ],
   "environment": {
     "kind": "runtime",
@@ -134,16 +135,17 @@
     "target_env_nav_89_vs_90_needs_deployment: the contracted business_config_admin surface is 90 entries (config/frontend/acceptance_environments_v1.json action_count_authority) and the deployed d2079888 serves 89 because the action-less role-home carrier was dropped by the authorization source. The repair is verified at the owning layer but cannot change the deployed reading until this branch is integrated and the daily runtime re-released.",
     "target_env_fixture_carrier_drift_repaired_in_branch: fe_activity_journal_entry carried company_id=1 instead of its declared FE Company A owner and blocked ensure_fixture, so the governed entry could not complete. The builder now converges its own empty draft carrier through `_reconcile_activity_move()` and still fails closed on any booked drift. Verified by the governed `make daily.runtime.lifecycle_fixture.prepare` run on the deployed database (status=PASS, carrier id=2022) and by `verify.daily_dev.acceptance_fixture.unit`."
   ],
-  "next_exact_step": "Commit the two repaired owning layers (uncached data-space ceiling + fixture carrier convergence) on this branch, run the affected non-zero lanes, then push and integrate through the owner's CI-passed-is-merge rule. After integration, re-release the daily runtime through the governed candidate release entry, read back the served revision and the 90-entry surface, then re-run the governed fixture onboarding and the per-role readonly acceptance binding an explicit allow/deny expectation per principal (fixture_role_finance=210 allowed on FE Company A records; wutao=16 denied there by the two-way split).",
+  "next_exact_step": "Branch re-based onto origin/main 28e19f60 with the four increment commits replayed cleanly (cd6976b6/f4dcfe21/8ff36d3d/de0f0996 lineage) and the retired published binding removed. Re-run the affected non-zero lanes, refresh generated evidence, freeze a clean HEAD, run the exact-head Quick once, then publish through `make pr.push` + `make pr.create` and merge under the owner's CI-passed-is-merge rule. After integration, re-release the daily runtime through the governed candidate release entry, read back the served revision and the 90-entry surface, then re-run the governed fixture onboarding and the per-role readonly acceptance binding an explicit allow/deny expectation per principal (fixture_role_finance=210 allowed on FE Company A records; wutao=16 denied there by the two-way split).",
   "mainline_integration": {
     "carrier": "github_pull_request",
     "number": 657,
     "url": "https://github.com/lidefend/sce-backend-odoo/pull/657",
     "base": "main",
-    "state_at_record": "open_mergeable_remote_checks_pending",
-    "note": "The candidate head advances with bookkeeping commits, so the SHA above is only an observation: remote gate results must be re-read for the branch's actual live head. Remote gates had not completed when this was recorded; a pending, missing, failed or stale run is never merge qualification, and a later head must not inherit an earlier candidate's results.",
-    "candidate_head_source": "read back the live candidate identity with: git ls-remote origin refs/heads/audit/target-env-role-acceptance-20261014",
-    "candidate_head_observed": "77fc5002feb644b201e770fcdd64af2ff0210b4b"
+    "state_at_record": "merged_squash_tree_identical",
+    "merge_commit": "28e19f604e982f91647aa589e6f827a7f5f52aed",
+    "note": "PR #657 carried the previous head (3fe59346) and was squash-merged as the single-parent commit 28e19f60 whose tree is byte-identical to that head. This branch was therefore re-based onto 28e19f60 through the governed entry `make workspace.branch.sync-main DEPENDENCY_PR=657 DEPENDENCY_HEAD=3fe59346 DEPENDENCY_MERGE=28e19f60`; only the follow-up increment commits are still unpublished. The published same-name branch of the merged topic is intentionally left in place: the governed sync entry refuses to rewrite published history, so the increment continues on a new branch and the retired binding was removed in the same ordinary change.",
+    "candidate_head_source": "read back the live candidate identity with: git ls-remote origin refs/heads/fix/data-space-uncached-membership-ceiling-closeout",
+    "candidate_head_observed": "not_yet_pushed"
   },
-  "scope_reason": "Scope extended by the acceptance audit itself: addons/smart_core/models/res_users.py owns the data-space ceiling that resolved the recorded 403 (an authorization decision read a tools.ormcache helper instead of the persisted membership), and make/dev.mk owns the registered non-zero ORM lane that pins it. Both are product defects found by this goal and repaired at their owning layer; no tenant business data, schema or deployed checkout is touched."
+  "scope_reason": "Scope extended by the acceptance audit itself: addons/smart_core/models/res_users.py owns the data-space ceiling that resolved the recorded 403 (an authorization decision read a tools.ormcache helper instead of the persisted membership), and make/dev.mk owns the registered non-zero ORM lane that pins it. Both are product defects found by this goal and repaired at their owning layer; no tenant business data, schema or deployed checkout is touched. Scope now also covers docs/audit/test_coverage_registry/ because the generated test-coverage ledger is refreshed by ci.delivery.freeze.prepare from the newly added non-zero lane (addons/smart_core/tests/test_data_space_uncached_membership.py)."
 }

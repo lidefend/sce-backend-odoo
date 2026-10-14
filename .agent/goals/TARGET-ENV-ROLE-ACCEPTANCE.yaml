@@ -14,8 +14,9 @@ goal:
     - artifacts
     - docs/ops/iterations
   baseline:
-    branch: audit/target-env-role-acceptance-20261014
+    branch: fix/data-space-uncached-membership-ceiling-closeout
     full_sha: d20798885b45553b2a5d3d08dd99a9363ff74e55
+    integration_base: 28e19f604e982f91647aa589e6f827a7f5f52aed
     source: post_deployment_target_environment_acceptance
   objective: >-
     在已完成版本发布的目标环境（daily sc_demo，服务版本/候选树/发布面均为 main
