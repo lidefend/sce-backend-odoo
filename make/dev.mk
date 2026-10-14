@@ -1139,3 +1139,19 @@ local.dev.payroll.data_scope.readiness: guard.prod.forbid local.dev.ready
 local.dev.data_scope.ceiling.readiness: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_data_scope_ceiling_readiness.py
+
+# Registered verify alias for the run index: the real-principal lock on the
+# installed data-purpose ceiling behind every declared ``source_bounded`` model,
+# pinned to the fixed test tag so a run that collects zero tests cannot pass.
+.PHONY: verify.local.dev.source_bounded_data_space_rules.orm
+verify.local.dev.source_bounded_data_space_rules.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_construction_core TEST_TAGS="source_bounded_data_space_rules" local.dev.test
+
+# Registered verify alias for the run index: the per-principal delivery lock on
+# sc.dictionary startup scope (global/company/role), pinned to the fixed test tag
+# so a run that collects zero tests cannot pass.
+.PHONY: verify.local.dev.dictionary_scope_delivery.orm
+verify.local.dev.dictionary_scope_delivery.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_core TEST_TAGS="dictionary_scope_delivery" local.dev.test

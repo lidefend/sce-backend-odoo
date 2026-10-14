@@ -996,7 +996,7 @@
       "kind": "runtime"
     },
     "source_bounded_data_space_rules": {
-      "target": "local.dev.test MODULE=smart_construction_core TEST_TAGS=source_bounded_data_space_rules",
+      "target": "verify.local.dev.source_bounded_data_space_rules.orm",
       "kind": "runtime",
       "inputs": [
         "addons/smart_construction_core/security/sc_record_rules.xml",
@@ -1006,7 +1006,24 @@
         "scripts/verify/sc_data_scope_rule_coverage_guard.py",
         "addons/smart_core/models/res_users.py",
         "addons/smart_core/security/data_space.py",
-        "make/ci.mk"
+        "make/ci.mk",
+        "make/dev.mk"
+      ]
+    },
+    "dictionary_scope_delivery": {
+      "target": "verify.local.dev.dictionary_scope_delivery.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_core/core/dictionary_scope_projection.py",
+        "addons/smart_core/core/system_init_dictionary_data_helper.py",
+        "addons/smart_construction_core/core_extension_system_init_rows.py",
+        "addons/smart_core/tests/test_dictionary_scope_delivery.py",
+        "addons/smart_core/models/res_users.py",
+        "addons/smart_core/security/data_space.py",
+        "scripts/verify/system_init_dictionary_scope_guard.py",
+        "scripts/verify/test_dictionary_scope_projection.py",
+        "make/dev.mk",
+        "make/dev_test.mk"
       ]
     }
   },
