@@ -217,3 +217,104 @@ PR 头 `3fe59346` 与合并提交 `28e19f60`（单亲）的树逐字节一致（
 
 - 上述修复尚未重发布到目标环境，因此 `nav_leaf_count=90` 与合同 custody 落盘仍需实机复核；
 - 分角色验收仍需绑定**每责任人显式允许/拒绝期望**，不能用单一 `wutao` 探针替代。
+
+## 10. 数据域天花板「遍历锚点」语义缺陷与收口（2026-10-15，部署面 `48214f7a`）
+
+### 10.1 更正 9.x 中已记录的结论
+
+9.4 之后的一轮只读探针曾在部署面 `48214f7a` 上读到一次 `contract.request.http_status=200`，
+按当时读数把「目标环境支付合同 403」记为已关闭。**该记录不成立，现更正。**
+
+同一命令、同一 expected SHA 的可复现读数如下：
+
+| 时间（CST） | 入口 | 结果 |
+|---|---|---|
+| 2026-10-14 23:34 | `make verify.daily_dev.acceptance.readonly.probe` | `contract.request.http_status=200`，custody 1,049,446 B 落盘 |
+| 2026-10-14 23:44 | 同上 | `contract.request.http_status=403`，custody 952 B |
+| 2026-10-15 00:21 | 同上 | `contract.request.http_status=403` |
+
+原因：23:31 的候选发布重启了 odoo 容器（`source_revision.align` 回执 `restarted=true`，容器日志
+`15:35:17Z` 起进程重载、`Registry loaded`），23:34 那一次读数由**尚未重载 registry 的 worker** 服务，
+因此读到了规则写入前的旧快照。从 `15:44:53Z` 起部署面稳定拒绝。
+
+### 10.2 权威根因（部署面服务端日志）
+
+```
+15:44:53Z [intent] intent=ui.contract.v2 ... record_id=36184 op=action_open model=payment.request
+15:44:53Z Access Denied by record rules for operation: read on record ids: [14], uid: 210, model: sc.business.category
+15:44:53Z POST /api/v1/intent?db=sc_demo HTTP/1.1" 403 - 92
+```
+
+403 不是 `payment.request` 被拒，而是合同装配要读的参考数据 `sc.business.category`(id 14) 被拒。
+
+部署库 `ir.rule 851`（`smart_construction_core.rule_sc_data_scope_sc_business_category`，
+`global=True`、`groups=[]`、`write_date=2026-10-14 15:29:16Z`）当时的域为：
+
+```
+['|', ('approval_policy_id.company_id', '=', False),
+     '&', ('approval_policy_id.company_id', 'in', company_ids),
+          ('approval_policy_id.company_id', 'in', user._sc_data_company_ids())]
+```
+
+Odoo 把遍历项 `('approval_policy_id.company_id', '=', False)` 编译为
+`approval_policy_id IN (SELECT id FROM <策略表> WHERE company_id IS NULL)`；当记录的
+`approval_policy_id IS NULL` 时该式为 NULL 而非 TRUE，于是声明中「未归属=共享、保持可见」的那一支
+**恰好对被静默隐藏**。声明 `enforced`、域却比声明更严 ⇒ 参考数据在真实角色下不可读 ⇒ 合同装配 403。
+
+### 10.3 自有层修复
+
+`scripts/verify/sc_data_scope_ceiling_generate.py` 新增 `unset_branch_terms()`：遍历锚点的未归属分支
+渲染为两事实之并——「没有父」∪「父无归属公司」，即
+`['|', '|', ('父', '=', False), ('父.公司', '=', False), '&', <allowed>, <purpose>]`。
+自有列锚点（`company_id`）保持单项不变；声明 `unsetOwner: unknown` 的 4 条仍严格、不获得该分支。
+
+产物经唯一允许的写入入口 `make verify.sc_data_scope.ceiling.sync` 重新生成：143 条规则中
+**57 条变化**（= 61 条遍历锚点 − 4 条 `unknown`），其余零改动。
+
+本地非零定向验证（均为受影响层）：
+
+| 入口 | 结果 |
+|---|---|
+| `make verify.sc_data_scope.ceiling.check` | 15 tests OK；`SC_DATA_SCOPE_CEILING=connected rules=143` |
+| `make verify.sc_data_scope.rule_coverage` | 15 + 38 tests OK，`uncovered=[]` |
+| `make verify.data_space.policy.unit` | 12 tests OK |
+| `make verify.data_space.provisioning.guard` | `PASS roles=customer_production,industry_acceptance,platform_internal_demo invariants=9`；34 tests OK |
+
+### 10.4 同源发现：13 条手写遍历锚点（本轮**不改**，登记为独立 P1 批次）
+
+`addons/smart_construction_core/security/sc_record_rules.xml` 另有 13 条手写全局规则带同一种
+单一遍历未归属项，语义缺陷完全相同：
+
+| 规则 | 锚点 |
+|---|---|
+| `rule_sc_workflow_workitem_tenant_business_admin_company` / `rule_sc_workflow_log_tenant_business_admin_company` | `instance_id.company_id` |
+| `rule_sc_boq_version_allowed_company` / `rule_sc_boq_line_allowed_company` / `rule_sc_boq_import_batch_allowed_company` / `rule_sc_boq_analysis_allowed_company` / `rule_sc_boq_summary_component_allowed_company` | `project_id.company_id` |
+| `rule_sc_cost_plan_allowed_company` / `rule_sc_cost_plan_line_allowed_company` / `rule_sc_cost_plan_node_allowed_company` | `project_id.company_id` |
+| `rule_sc_boq_analysis_norm_allowed_company` / `rule_sc_boq_analysis_resource_allowed_company` | `analysis_id.project_id.company_id` |
+| `rule_sc_material_supplier_return_line_company` | `return_id.company_id` |
+
+只读回读（部署库 `sc_demo`）显示这 13 个模型当前均为 **0 行**，故在该库属潜在缺陷、未观测到运行影响；
+但其中 `project.boq.analysis.norm.line` 与 `project.boq.analysis.resource.line` 是声明里的
+`source_bounded` 权威载体，不能长期停留在“声明与实现不一致”。
+
+不在本批修改的理由：它们是**手写 P1 安全规则**，与本次修复的 P4 生成器不是同一自有层；
+在没有任何实测影响的条件下改动 13 条安全规则，正是本批刚发现的失败模式（改完才暴露）。
+后续 P1 批次应把这几条**迁移进声明/注册体系并重新生成**，而不是逐条手工打补丁。
+
+### 10.5 发布前置（必须）
+
+天花板 XML 属于 `smart_construction_core`，而 daily 发布链默认只升级 `smart_core`
+（`DAILY_RUNTIME_PUBLISHED_FACE_UPGRADE_MODULES ?= smart_core`），且模块树未变时会复用升级。
+因此本修复必须显式携带：
+
+```
+DAILY_RUNTIME_PUBLISHED_FACE_UPGRADE_MODULES=smart_core,smart_construction_core
+```
+
+否则规则不会重装，`ir.rule 851` 仍是旧域，探针会继续 403。
+
+### 10.6 状态口径
+
+- 批次验收：**未完成**（本地静态/生成器测试已过；安装态与部署态探针待复核）；
+- 主线集成：上一 PR 已合并（`ddd697c2`）；本批候选待发布合并；
+- 版本发布 / 产品交付：**未声明**。

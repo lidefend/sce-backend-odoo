@@ -44,7 +44,12 @@ HEADER = """<?xml version="1.0" encoding="UTF-8"?>
 
              An unset anchor stays visible as shared reference data by default
              (``unsetOwner: shared``), which covers Odoo global configuration
-             (``company_id = False``). An entry that declares ``unsetOwner:
+             (``company_id = False``). For a traversed anchor the unset branch
+             is the union of "no parent" and "parent without an owning company",
+             because Odoo compiles ``('a.b', '=', False)`` to ``a IN (SELECT id
+             FROM a WHERE b IS NULL)``, which is NULL for a record whose ``a`` is
+             NULL and would silently hide exactly the records the declaration
+             keeps shared. An entry that declares ``unsetOwner:
              unknown`` renders a strict ceiling instead: a record without an
              owning company must not become public just because its owner
              relation is optional (the workbench/cockpit facts). The two forms
@@ -115,7 +120,33 @@ def ceiling_domain(anchor: str, unset_owner: str | None = None) -> str:
     purpose = f"('{anchor}', 'in', user._sc_data_company_ids())"
     if unset_owner == "unknown":
         return f"[{allowed}, {purpose}]"
-    return f"['|', ('{anchor}', '=', False), '&', {allowed}, {purpose}]"
+    unset = unset_branch_terms(anchor)
+    if len(unset) == 1:
+        return f"['|', {unset[0]}, '&', {allowed}, {purpose}]"
+    return f"['|', '|', {unset[0]}, {unset[1]}, '&', {allowed}, {purpose}]"
+
+
+def unset_branch_terms(anchor: str) -> list[str]:
+    """The terms that mean "the declared anchor carries no owning company".
+
+    An own column (``company_id``) is one exact term: Odoo compiles
+    ``('company_id', '=', False)`` to ``company_id IS NULL``.
+
+    A traversed anchor (``project_id.company_id``) is not: Odoo compiles
+    ``('project_id.company_id', '=', False)`` to ``project_id IN (SELECT id FROM
+    project_project WHERE company_id IS NULL)``, which evaluates to NULL - never
+    true - for a record whose ``project_id`` is NULL. The declared shared reading
+    therefore vanished for exactly the records that name no parent at all, and
+    the ceiling silently became stricter than the declaration.
+
+    The unset reading is the union of the two facts the declaration covers: the
+    record names no parent, or the parent names no owning company. Both terms are
+    read from the anchor text; nothing is inferred from data.
+    """
+    if "." not in anchor:
+        return [f"('{anchor}', '=', False)"]
+    parent = anchor.split(".", 1)[0]
+    return [f"('{parent}', '=', False)", f"('{anchor}', '=', False)"]
 
 
 def record_xml(model: str, anchor: str, owner_module: str,
