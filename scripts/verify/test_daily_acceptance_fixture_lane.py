@@ -13,16 +13,22 @@ from __future__ import annotations
 
 import json
 import os
+import importlib.util
+import sys
+import types
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
 from addons.smart_construction_acceptance_fixture.tools.frontend_productization_fixture import (
     DAILY_DEV_DB,
+    DATA_SPACE_TENANT_KEY,
     FIXTURE_SCOPES,
     FIXTURE_SCOPE_ENV,
     FRONTEND_ACCEPTANCE_DB,
+    _company,
     _guard_acceptance_scope,
+    _resolve_existing_fixture_company,
 )
 from scripts.ops.dev_acceptance_release_probe import (
     CONTRACT_PASSWORD_ENV,
@@ -152,8 +158,19 @@ class DailyDeclarationTests(unittest.TestCase):
         acceptance, daily = self._declarations()
         self.assertEqual(daily["required_checks"], acceptance["required_checks"])
         self.assertEqual(daily["resolution"], acceptance["resolution"])
-        self.assertEqual(daily["request"], acceptance["request"])
         self.assertEqual(daily["account"], acceptance["account"])
+        # The daily instance mirrors the acceptance request binding exactly, plus
+        # the one declared daily-only derived key the probe consumes verbatim.
+        # The released record page replays the runtime-declared record context
+        # into params.context and the sealed contract echoes it, so the daily
+        # instance must bind that source; the shared instance stays without it.
+        daily_only = set(daily["request"]) - set(acceptance["request"])
+        self.assertEqual(daily_only, {"params_context_from"})
+        self.assertTrue(str(daily["request"]["params_context_from"]).strip())
+        self.assertEqual(
+            {key: value for key, value in daily["request"].items() if key not in daily_only},
+            acceptance["request"],
+        )
 
     def test_daily_declaration_schema_asset_exists(self) -> None:
         _, daily = self._declarations()
@@ -234,6 +251,224 @@ class DailyFixtureVerifyOrderTests(unittest.TestCase):
         self._verify_commit_precedes_authenticate(
             CANONICAL_FIXTURE_SCRIPT.read_text(encoding="utf-8")
         )
+
+
+class _Row(types.SimpleNamespace):
+    """Record double with both attribute and field-name item access."""
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+
+class _Recordset(list):
+    """Minimal recordset double: sized, truthy and attribute-proxying."""
+
+    def __getitem__(self, key):
+        if isinstance(key, str):
+            if not self:
+                raise KeyError(key)
+            return self[0][key]
+        return list.__getitem__(self, key)
+
+    def __getattr__(self, name):
+        if not self:
+            raise AttributeError(name)
+        return getattr(self[0], name)
+
+    def exists(self):
+        return self
+
+
+class _FakeModel:
+    def __init__(self, rows=None):
+        self._rows = list(rows or [])
+        self.created = []
+
+    def sudo(self, *args, **kwargs):
+        return self
+
+    def with_context(self, *args, **kwargs):
+        return self
+
+    def search(self, domain, limit=None):
+        return _Recordset(self._rows)
+
+    def browse(self, ids=None):
+        if ids is None:
+            selected = []
+        elif isinstance(ids, int):
+            selected = [ids]
+        else:
+            selected = list(ids)
+        return _Recordset([row for row in self._rows if row.id in selected])
+
+    def create(self, values):
+        record = types.SimpleNamespace(id=99, **values)
+        self.created.append(values)
+        self._rows.append(record)
+        return record
+
+
+class _FakeEnv:
+    def __init__(self, models, refs):
+        self._models = models
+        self._refs = refs
+
+    def __getitem__(self, name):
+        return self._models[name]
+
+    def ref(self, xmlid, raise_if_not_found=False):
+        record = self._refs.get(xmlid)
+        if record is None and raise_if_not_found:
+            raise RuntimeError("missing xmlid %s" % xmlid)
+        return record
+
+
+def _load_provisioning_module():
+    """Load the provisioning module under its real import path.
+
+    The fixture builder imports it lazily by dotted path, so the double has to
+    live in ``sys.modules`` exactly where the fixture will look for it.
+    """
+    for name in ("odoo", "odoo.addons", "odoo.addons.smart_core", "odoo.addons.smart_core.security"):
+        if name not in sys.modules:
+            package = types.ModuleType(name)
+            package.__path__ = []
+            sys.modules[name] = package
+    spec = importlib.util.spec_from_file_location(
+        "odoo.addons.smart_core.security.data_space_provisioning",
+        ROOT / "addons" / "smart_core" / "security" / "data_space_provisioning.py",
+    )
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    setattr(sys.modules["odoo.addons.smart_core.security"], "data_space_provisioning", module)
+    return module
+
+
+provisioning = _load_provisioning_module()
+
+
+class TestLegacyFixtureCarrierAdoption(unittest.TestCase):
+    """A carrier a previous fixture version left unregistered is onboarded, not orphaned."""
+
+    def _company(self, *, bootstrap=False):
+        return _Row(
+            id=21, _name="res.company", name="FE Company A",
+            is_platform_bootstrap_company=bootstrap,
+        )
+
+    def test_owned_legacy_carrier_is_adopted_through_the_declared_entry(self):
+        registration_model = _FakeModel()
+        env = _FakeEnv(
+            {
+                "sc.tenant.company.registration": registration_model,
+                "ir.model.data": _FakeModel(rows=[types.SimpleNamespace(id=1)]),
+            },
+            {},
+        )
+        adopted = _Recordset([
+            types.SimpleNamespace(
+                active=True, data_purpose="test", tenant_key=DATA_SPACE_TENANT_KEY,
+            )
+        ])
+        with patch.object(provisioning, "adopt_business_company", return_value=adopted) as adopt:
+            result = _resolve_existing_fixture_company(env, self._company())
+        adopt.assert_called_once_with(
+            env, tenant_key=DATA_SPACE_TENANT_KEY, purpose="test", company_id=21,
+        )
+        self.assertIs(result, adopted)
+        self.assertEqual(len(result), 1)
+
+    def test_carrier_the_fixture_does_not_own_is_never_adopted(self):
+        env = _FakeEnv(
+            {
+                "sc.tenant.company.registration": _FakeModel(),
+                "ir.model.data": _FakeModel(rows=[]),
+            },
+            {},
+        )
+        with patch.object(provisioning, "adopt_business_company") as adopt:
+            result = _resolve_existing_fixture_company(env, self._company())
+        adopt.assert_not_called()
+        self.assertEqual(len(result), 0)
+
+    def test_bootstrap_carrier_is_never_adopted(self):
+        env = _FakeEnv(
+            {
+                "sc.tenant.company.registration": _FakeModel(),
+                "ir.model.data": _FakeModel(rows=[types.SimpleNamespace(id=1)]),
+            },
+            {},
+        )
+        with patch.object(provisioning, "adopt_business_company") as adopt:
+            result = _resolve_existing_fixture_company(env, self._company(bootstrap=True))
+        adopt.assert_not_called()
+        self.assertEqual(len(result), 0)
+
+    def test_existing_registration_is_used_without_re_onboarding(self):
+        existing = _Recordset([
+            types.SimpleNamespace(
+                active=True, data_purpose="test", tenant_key=DATA_SPACE_TENANT_KEY,
+            )
+        ])
+        env = _FakeEnv(
+            {
+                "sc.tenant.company.registration": _FakeModel(rows=list(existing)),
+                "ir.model.data": _FakeModel(rows=[types.SimpleNamespace(id=1)]),
+            },
+            {},
+        )
+        with patch.object(provisioning, "adopt_business_company") as adopt:
+            result = _resolve_existing_fixture_company(env, self._company())
+        adopt.assert_not_called()
+        self.assertEqual(len(result), 1)
+
+    def test_company_entry_completes_after_legacy_carrier_adoption(self):
+        company = self._company()
+        company._fields = {
+            "name": types.SimpleNamespace(type="char"),
+            "currency_id": types.SimpleNamespace(type="many2one"),
+            "country_id": types.SimpleNamespace(type="many2one"),
+        }
+        company.currency_id = types.SimpleNamespace(id=1)
+        company.country_id = types.SimpleNamespace(id=2)
+        xmlid_row = types.SimpleNamespace(id=7, writes=[])
+        xmlid_row.write = lambda values: xmlid_row.writes.append(values)
+        env = _FakeEnv(
+            {
+                "sc.tenant.company.registration": _FakeModel(),
+                "ir.model.data": _FakeModel(rows=[xmlid_row]),
+                "res.company": _FakeModel(rows=[company]),
+            },
+            {
+                "smart_construction_acceptance_fixture.fe_company_a": company,
+                "base.CNY": types.SimpleNamespace(id=1),
+                "base.cn": types.SimpleNamespace(id=2),
+            },
+        )
+        adopted = _Recordset([
+            types.SimpleNamespace(
+                active=True, data_purpose="test", tenant_key=DATA_SPACE_TENANT_KEY,
+            )
+        ])
+        with patch.object(provisioning, "adopt_business_company", return_value=adopted):
+            resolved = _company(env, "A")
+        self.assertIs(resolved[0], company)
+
+    def test_company_entry_fails_closed_for_an_unowned_legacy_carrier(self):
+        company = self._company()
+        env = _FakeEnv(
+            {
+                "sc.tenant.company.registration": _FakeModel(),
+                "ir.model.data": _FakeModel(rows=[]),
+                "res.company": _FakeModel(rows=[company]),
+            },
+            {"smart_construction_acceptance_fixture.fe_company_a": company},
+        )
+        with self.assertRaises(RuntimeError) as caught:
+            _company(env, "A")
+        self.assertIn("governed baseline reset", str(caught.exception))
 
 
 if __name__ == "__main__":
