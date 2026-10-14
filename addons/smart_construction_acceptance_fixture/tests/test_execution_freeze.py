@@ -9,6 +9,7 @@ from ..tools.frontend_productization_fixture import (
     _company,
     _contract,
     _execution,
+    _freeze_payment_request_state,
     _funding_baseline,
     _partner,
     _project,
@@ -163,5 +164,58 @@ class TestAcceptanceFixtureExecutionFreeze(TransactionCase):
                     "payment_request_id": request.id,
                     "partner_id": partner.id,
                     "state": "paid",
+                }
+            )
+
+    def test_payment_request_freeze_holds_and_the_create_guard_stays_intact(self):
+        """Lock the shared payment-request freeze used by every fixture owner.
+
+        ``payment.request.create`` refuses any non-draft state, so the fixture
+        creates the editable draft facts through the ORM and freezes the workflow
+        state together with its tier-validation fact on its own disposable row.
+        Both halves are asserted here: the frozen pair is readable afterwards and
+        the product guard still rejects a direct non-draft create.
+        """
+        env = self.env
+        company = _company(env, "FREEZE")
+        pm = _user(
+            env,
+            "fixture_role_freeze_pm",
+            "Acceptance Fixture Freeze PM",
+            company,
+            [company],
+            ["smart_construction_core.group_sc_role_project_manager"],
+        )
+        partner = _partner(env, "FREEZE", company)
+        tax = _tax(env, "FREEZE", company)
+        project = _project(env, "FREEZE", company, pm, partner)
+        _funding_baseline(env, "FREEZE", project)
+        contract, _line = _contract(env, "FREEZE", project, partner, tax, "confirmed", 1000.0)
+        settlement = _settlement(env, "FREEZE", project, contract, partner, "approve", 1000.0)
+        request = _request(
+            env, "FREEZE", 1, project, contract, settlement, partner, "draft", 1000.0
+        )
+        self.assertEqual(request.state, "draft")
+        self.assertIn(request.validation_status, (False, "no"))
+
+        frozen = _freeze_payment_request_state(env, request, "approved")
+
+        self.assertEqual(frozen.state, "approved")
+        self.assertEqual(request.state, "approved")
+        self.assertEqual(request.validation_status, "validated")
+        env.cr.execute(
+            "SELECT state, validation_status FROM payment_request WHERE id=%s",
+            (request.id,),
+        )
+        self.assertEqual(env.cr.fetchone(), ("approved", "validated"))
+
+        with self.assertRaisesRegex(UserError, "草稿"):
+            env["payment.request"].sudo().create(
+                {
+                    "name": "FE-FREEZE-GUARD-PR-001",
+                    "type": "receive",
+                    "project_id": project.id,
+                    "partner_id": partner.id,
+                    "state": "approved",
                 }
             )

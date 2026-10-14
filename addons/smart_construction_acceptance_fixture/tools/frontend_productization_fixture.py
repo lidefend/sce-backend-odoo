@@ -743,11 +743,30 @@ def _settlement(env, suffix, project, contract, partner, state, amount):
     return record
 
 
+def _freeze_payment_request_state(env, record, state, validation_status=None):
+    """Freeze a fixture-owned payment request workflow fact.
+
+    ``payment.request`` only admits drafts: every other state must come from the
+    formal approval and handling flow.  The fixture owns these disposable rows,
+    so - exactly like the payment-execution freeze below - it reconciles the
+    editable facts through the ORM and then records the requested workflow state
+    together with its tier-validation fact in the row's own storage.  The
+    product guard itself is left untouched.
+    """
+    if validation_status is None:
+        validation_status = "validated" if state in ("approved", "done") else "no"
+    env.cr.execute(
+        "UPDATE payment_request SET state=%s, validation_status=%s WHERE id=%s",
+        (state, validation_status, record.id),
+    )
+    record.invalidate_recordset(["state", "validation_status"])
+    return record
+
+
 def _request(env, suffix, sequence, project, contract, settlement, partner, state, amount):
     name = "FE-%s-PR-%03d" % (suffix, sequence)
     xmlid_name = "fe_request_%s_%03d" % (suffix.lower(), sequence)
     category = _ref(env, "smart_construction_core.business_category_finance_payment_apply_pay")
-    validation_status = "validated" if state in ("approved", "done") else "no"
     existing = env.ref(
         "%s.%s" % (MODULE, xmlid_name), raise_if_not_found=False
     )
@@ -796,12 +815,7 @@ def _request(env, suffix, sequence, project, contract, settlement, partner, stat
     )
     # Business state and tier-validation state are one workflow fact. Freeze
     # them together after all editable facts have been reconciled.
-    env.cr.execute(
-        "UPDATE payment_request SET state=%s, validation_status=%s WHERE id=%s",
-        (state, validation_status, record.id),
-    )
-    record.invalidate_recordset(["state", "validation_status"])
-    return record
+    return _freeze_payment_request_state(env, record, state)
 
 
 def _execution(env, suffix, project, contract, request, partner, finance, state, amount, payment_family="往来单位付款", source_kind="actual_outflow"):
@@ -1578,9 +1592,9 @@ def ensure_fixture(env) -> Dict[str, Any]:
             "company_id": company_a.id,
             "currency_id": company_a.currency_id.id,
             "amount": 30.0,
-            "state": "approved",
         },
     )
+    _freeze_payment_request_state(env, pfl035_receive, "approved")
     incomplete_partner = _upsert(
         env,
         "res.partner",
@@ -1628,12 +1642,12 @@ def ensure_fixture(env) -> Dict[str, Any]:
             "company_id": company_a.id,
             "currency_id": company_a.currency_id.id,
             "amount": 20.0,
-            "state": "approved",
             "payment_account_name": False,
             "payment_bank_name": False,
             "payment_account_no": False,
         },
     )
+    _freeze_payment_request_state(env, pfl035_incomplete, "approved")
     (
         journey_settlement,
         journey_request,

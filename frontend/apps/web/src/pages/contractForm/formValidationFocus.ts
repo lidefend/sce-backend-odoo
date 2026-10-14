@@ -1,5 +1,6 @@
 import { parseBusinessErrorDisplayPosition, type BusinessErrorDisplayPosition } from '../../app/businessValidationError';
 import {
+  selectCorrectionControl,
   selectValidationPosition,
   type ValidationPositionCandidate,
   type ValidationPositionChoice,
@@ -118,7 +119,13 @@ function applyFocus(container: HTMLElement): ProductFormFocusResult {
   const candidates = container.matches(CONTROL_SELECTOR)
     ? [container]
     : Array.from(container.querySelectorAll<HTMLElement>(CONTROL_SELECTOR));
-  const control = candidates.find((item) => isVisible(item) && !isNativeDisabled(item));
+  // Document order is not a correction order: a value container can render a
+  // control that only configures the value (a currency picker button) before the
+  // control that holds it. Rank the usable controls so the user lands on the one
+  // that can actually correct the value, and keep the document order inside one
+  // rank. A container with no ranked control still receives focus itself.
+  const usable = candidates.filter((item) => isVisible(item) && !isNativeDisabled(item));
+  const control = selectCorrectionControl(usable) || (usable.length ? usable[0] : null);
   const focusTarget = control || container;
   if (focusTarget === container && !container.hasAttribute('tabindex')) container.setAttribute('tabindex', '-1');
   focusTarget.focus({ preventScroll: true });

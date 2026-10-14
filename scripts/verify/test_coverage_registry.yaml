@@ -14,9 +14,11 @@ entries:
   status: on-demand
   owner: construction-product
   dispose: class-selected
-  gate: 'make:verify.acceptance_fixture.execution_freeze.orm :: acceptance_fixture_execution_freeze test.safe'
-  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
-    Keep as an on-demand disposition until a scheduled or PR gate selects it.
+  gate: 'make:acceptance.frontend.fixture_orm :: acceptance_fixture_execution_freeze test.safe'
+  reason: Now wired to the acceptance carrier's own ORM entry, which runs the tag on the managed
+    acceptance profile/database and fails closed on a missing summary or zero tests
+    (scripts/test/frontend_acceptance_fixture_orm.sh). Kept on-demand because it is invoked by the
+    acceptance worktree rather than a recurring PR/scheduled workflow.
 - group: acceptance_fixture_gate
   kind: odoo_tag
   status: unwired

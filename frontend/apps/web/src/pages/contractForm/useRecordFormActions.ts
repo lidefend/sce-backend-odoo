@@ -124,9 +124,17 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
   // and every save takes an operation id, so a resumed operation can prove it
   // still owns the surface before it writes an error, moves focus, sends a
   // write, paints feedback, or clears the busy flag.
+  //
+  // The key carries surface *identity* only. A save capability is not an
+  // identity: the save's own post-write scene refresh re-reads the contract and
+  // the record, so `canSave` visibly flaps false and back while that refresh
+  // runs. Counting that flap as a surface move made a save supersede itself -
+  // the write landed, the success answer was dropped, and the user got no
+  // confirmation. `canSave` is still enforced, explicitly, wherever an
+  // operation proves ownership; it is simply not evidence of a different page.
   const boundSurfaceKey = () => JSON.stringify({
     model: model.value, recordId: recordId.value ?? 'new', active: isComponentActive.value,
-    canSave: canSave.value, route: route.fullPath || route.path, query: route.query,
+    route: route.fullPath || route.path, query: route.query,
     identity: formRouteIdentity(), owner: formRouteOwnerIdentity(),
     token: session.token, user: session.user, context: session.recordContext,
   });

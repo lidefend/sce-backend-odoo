@@ -907,9 +907,12 @@ verify.smart_core.relation_entry_publication.orm: guard.prod.forbid local.dev.re
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  MODULE=smart_core TEST_TAGS=relation_entry_override test.safe
 
-verify.acceptance_fixture.execution_freeze.orm: guard.prod.forbid local.dev.ready
-	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
-	  MODULE=smart_construction_acceptance_fixture TEST_TAGS=acceptance_fixture_execution_freeze test.safe
+# The module this lane pins is listed in forbidden_implicit_modules: it is only
+# ever installed on the managed acceptance carrier. Selecting the tag on
+# local.dev matched nothing and still exited zero, so the registered lane now
+# runs where the module actually exists and its tests actually execute.
+verify.acceptance_fixture.execution_freeze.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory acceptance.frontend.fixture_orm
 
 # Carrier lock for the single project-center record entry: 项目台账 is the one
 # permission/contract-driven project record surface, and the retired 项目信息编辑

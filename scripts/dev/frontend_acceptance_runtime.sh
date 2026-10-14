@@ -560,6 +560,24 @@ PYPROBE
     preflight
     bash "$ROOT_DIR/scripts/test/frontend_productization_fixture.sh"
     ;;
+  fixture-guard)
+    # Read-only contract verification of the fixture this profile just built.
+    # The guard is CI-bound through `verify.frontend.fixture`; this operation is
+    # its local counterpart on the same managed carrier, database and
+    # credentials, so the frozen fixture facts stay verifiable where they are
+    # produced. It never writes.
+    preflight
+    bash "$ROOT_DIR/scripts/verify/frontend_productization_fixture.sh"
+    ;;
+  fixture-orm)
+    # The fixture module's own ORM lane, executed on the one profile that is
+    # allowed to carry it. `make verify.acceptance_fixture.execution_freeze.orm`
+    # selected this tag on local.dev, where the module is deliberately absent, so
+    # it reported a green zero-test receipt; the registered lane now runs where
+    # the freeze it pins actually executes.
+    preflight
+    bash "$ROOT_DIR/scripts/test/frontend_acceptance_fixture_orm.sh"
+    ;;
   db-ensure)
     preflight
     # shellcheck source=../common/compose.sh

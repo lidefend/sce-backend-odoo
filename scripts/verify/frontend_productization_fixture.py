@@ -188,6 +188,9 @@ names_a = set(requests_a.mapped("name"))
 if names_a != {
     "FE-A-PR-001",
     "FE-A-PR-002",
+    # Company-expense carrier added by the 公司财务支出 scenario: it is a real
+    # fixture-owned company-A request and must be inside the same scope answer.
+    "FE-A-PR-003",
     "FE-B-PR-001",
     "FE-PFL035-PR-001",
     "FE-PFL035-PR-002",
@@ -258,7 +261,9 @@ request_distribution = {
     )
     for suffix, project in (("A", project_a), ("B", project_b), ("C", project_c))
 }
-if request_distribution != {"A": 4, "B": 1, "C": 1}:
+# Project A owns the same-amount company isolation pair plus the company-expense
+# carrier, and the PFL-035 positive/draft pair.
+if request_distribution != {"A": 5, "B": 1, "C": 1}:
     fail("single/multi list fixture mismatch: %s" % request_distribution)
 if env["payment.request"].sudo().search_count(
     [("name", "like", "FE-%-PR-%"), ("state", "=", "cancel")]
@@ -276,11 +281,14 @@ counts = {
 }
 expected_counts = {
     "companies": 2,
-    "projects": 3,
+    # FE Project A/B/C plus the declared lifecycle carrier project.
+    "projects": 4,
     "contracts": 3,
     "settlements": 4,
-    "payment_requests": 6,
-    "payment_executions": 2,
+    # FE-A-001/002/003, FE-B-001, FE-C-001 and the PFL-035 positive/draft pair.
+    "payment_requests": 7,
+    # FE-A-PE-001, FE-C-PE-001 and the company-expense carrier FE-A2-PE-001.
+    "payment_executions": 3,
     "activity_moves": 1,
 }
 if counts != expected_counts:
