@@ -126,8 +126,9 @@
     "number": 657,
     "url": "https://github.com/lidefend/sce-backend-odoo/pull/657",
     "base": "main",
-    "candidate_head": "36bbf88cdf181bc0b8d6f15d5549cd204974e958",
     "state_at_record": "open_mergeable_remote_checks_pending",
-    "note": "Remote gates had not completed when this was recorded; a pending or stale run is never merge qualification, and a later head must not inherit this candidate's results."
+    "note": "The candidate head advances with bookkeeping commits, so the SHA above is only an observation: remote gate results must be re-read for the branch's actual live head. Remote gates had not completed when this was recorded; a pending, missing, failed or stale run is never merge qualification, and a later head must not inherit an earlier candidate's results.",
+    "candidate_head_source": "read back the live candidate identity with: git ls-remote origin refs/heads/audit/target-env-role-acceptance-20261014",
+    "candidate_head_observed": "77fc5002feb644b201e770fcdd64af2ff0210b4b"
   }
 }
