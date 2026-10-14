@@ -80,7 +80,7 @@
 - 登记收养路径已生效（`_require_activity_company` 通过，说明 FE 公司登记已在本事务内建立）；
 - 随后被**另一处既有载体漂移**阻断：
   `RuntimeError: Activity move ownership mismatch; use governed baseline reset`
-  —— `fe_activity_journal_entry`（`account.move` id 8）company_id=**1**（四川保盛建设集团有限公司），
+  —— `fe_activity_journal_entry`（`account.move` id 8）company_id=**1**（受管基线预置的示例公司，非 FE Company A），
   而 fixture 声明其属于 FE Company A；
 - 事务整体回滚：复测 `registration_count` 仍为 0，**目标库未被改动**。
 
