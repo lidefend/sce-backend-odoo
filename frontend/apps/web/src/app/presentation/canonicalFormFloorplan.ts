@@ -359,14 +359,14 @@ function authoritativeSectionTitle(nodes: CanonicalFormNode[]): string {
 
 function projectContextNode(node: CanonicalFormNode): CanonicalFormNode {
   const nodeKind = node.kind.trim().toLowerCase();
-  if ((node.semanticRole && !['context', 'risk', 'activity'].includes(node.semanticRole)) || nodeKind === 'relation') {
+  if ((node.semanticRole && !['context', 'risk', 'task', 'activity'].includes(node.semanticRole)) || nodeKind === 'relation') {
     return { ...node, fields: [], children: [] };
   }
   return {
     ...node,
     fields: node.fields.filter((field) => (
       !fieldHasRelationCapability(field)
-      && (!field.semanticRole || ['context', 'risk', 'activity'].includes(field.semanticRole))
+      && (!field.semanticRole || ['context', 'risk', 'task', 'activity'].includes(field.semanticRole))
     )),
     children: node.children.map(projectContextNode),
   };
@@ -514,7 +514,7 @@ export function composeCanonicalFormFloorplan(
   const auditNodes = semanticProductMode ? roleNodes(primaryNodes, ['audit'], false, false, true) : [];
   const auditDeclared = semanticProductMode && primaryNodes.some((node) => nodeDeclaresRole(node, 'audit'));
   const taskNodes = semanticProductMode
-    ? fieldNodes(primaryNodes, (field) => field.semanticRole === 'task' && field.readonly && hasPresentableValue(field), true)
+    ? []
     : (editableNodes.length ? editableNodes : primaryNodes);
   const conditionInputNodes = semanticProductMode && writeMode
     ? fieldNodes(primaryNodes, (field) => (
@@ -557,11 +557,11 @@ export function composeCanonicalFormFloorplan(
     : primaryNodes.filter((node) => !taskNodes.includes(node));
   const readonlyContextNodes = semanticProductMode && writeMode
     ? fieldNodes(primaryNodes, (field) => (
-      field.readonly && ['context', 'risk'].includes(field.semanticRole) && hasPresentableValue(field)
+      field.readonly && ['context', 'risk', 'task'].includes(field.semanticRole)
     ))
     : [];
   const emptySemanticNodes = semanticProductMode && !writeMode
-    ? roleNodes(primaryNodes, ['summary', 'task'], false, false, true)
+    ? roleNodes(primaryNodes, ['summary'], false, false, true)
       .map((node) => ({
         ...node,
         fields: node.fields.filter((field) => !hasPresentableValue(field)),

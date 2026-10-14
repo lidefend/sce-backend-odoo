@@ -42,8 +42,18 @@ def shared_action_bar_errors(driver: str, surface: str) -> list[str]:
 
 def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -> list[str]:
     failures: list[str] = []
+    blocks = read_text("frontend/apps/web/src/pages/contractForm/ContractFormActionBlocks.vue")
+    block_template = re.sub(r"<!--[\s\S]*?-->", "", blocks.split("<script", 1)[0])
+    if re.search(r"\b(?:warnings|workflowEvidenceGateRows)\b", block_template):
+        failures.append("initial workflow guidance must not be a permanent body surface")
+    if 'v-if="strictContractMissingSummary && !isIntakeCreateMode"' not in block_template:
+        failures.append("strict missing declaration must remain an explicit stop surface")
+
     action_bar = read_text("frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue")
     driver = read_text("frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue")
+    task_page = read_text("frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue")
+    if 'blockedActionMessage' in driver or 'blockedActionMessage' in task_page:
+        failures.append("initial workflow guidance must not be synthesized as a task blocker")
     surface = read_text("frontend/apps/web/src/pages/contractForm/CanonicalNativeFormSurface.vue")
     header = read_text("frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue")
     confirm = read_text("frontend/apps/web/src/components/business/IntentConfirmationDialog.vue")

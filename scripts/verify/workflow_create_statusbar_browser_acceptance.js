@@ -154,7 +154,12 @@ async function visibleWorkflowStateFields(page) {
         };
       })
       .filter((item) => item.visible)
-      .filter((item) => stateFieldNames.has(item.fieldName) || item.label === '状态' || item.label.endsWith('状态'));
+      // The detector matches the declared workflow state field names only. A
+      // label ending in 状态 used to be a second detector, but that mirrored the
+      // removed frontend name/label inference: an ordinary field whose label is
+      // "...状态" is now rendered by its own declaration, so flagging it here
+      // would assert the very defect that was closed.
+      .filter((item) => stateFieldNames.has(item.fieldName));
   });
 }
 

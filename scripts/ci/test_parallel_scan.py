@@ -79,7 +79,24 @@ class MapOrderedTests(unittest.TestCase):
 
 class ResolveWorkersTests(unittest.TestCase):
     def test_item_count_bounds_the_pool(self) -> None:
-        self.assertEqual(parallel_scan.resolve_workers(2), 2)
+        # The bound under test is the item count, so the machine budget is
+        # declared here instead of read from the ambient environment. A
+        # governed group exports SC_TRUSTED_SCAN_GROUP_JOBS to its members, and
+        # that value must not decide what this unit asserts.
+        with mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop(parallel_scan.WORKERS_ENV, None)
+            os.environ.pop(parallel_scan.SERIAL_ENV, None)
+            os.environ.pop(parallel_scan.GROUP_JOBS_ENV, None)
+            self.assertEqual(
+                parallel_scan.resolve_workers(2, cpu=18, memory=64 * 1024**3), 2
+            )
+            self.assertEqual(
+                parallel_scan.resolve_workers(3, cpu=18, memory=64 * 1024**3), 3
+            )
+            self.assertEqual(
+                parallel_scan.resolve_workers(1000, cpu=18, memory=64 * 1024**3),
+                16,
+            )
 
     def test_serial_escape_restores_one_worker(self) -> None:
         with mock.patch.dict(os.environ, {parallel_scan.SERIAL_ENV: "1"}):
@@ -119,7 +136,9 @@ class ResolveWorkersTests(unittest.TestCase):
         )
 
     def test_invalid_group_concurrency_is_rejected(self) -> None:
-        with mock.patch.dict(os.environ, {parallel_scan.GROUP_JOBS_ENV: "0"}):
+        with mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop(parallel_scan.WORKERS_ENV, None)
+            os.environ[parallel_scan.GROUP_JOBS_ENV] = "0"
             with self.assertRaises(ValueError):
                 parallel_scan.resolve_workers(10)
 

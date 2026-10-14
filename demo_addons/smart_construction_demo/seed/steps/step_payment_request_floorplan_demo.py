@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import base64
+import os
 import re
 
 from ..registry import SeedStep, register
@@ -96,8 +97,58 @@ def _next_fixture_name(payment_model):
     return "%s%s" % (prefix, str(highest + 1).zfill(width))
 
 
+def _guidance_fixture(env):
+    """Owned soft-risk sample; never mutate a shared partner or severity policy."""
+    def owned(name, model, create):
+        xmlid = "smart_construction_demo." + name
+        record = env.ref(xmlid, raise_if_not_found=False)
+        if record:
+            if record._name != model:
+                raise RuntimeError("guidance fixture XMLID model mismatch: " + xmlid)
+            return record
+        record = create()
+        env["ir.model.data"].sudo().create({
+            "module": "smart_construction_demo", "name": name,
+            "model": model, "res_id": record.id, "noupdate": True,
+        })
+        return record
+
+    source = env.ref("smart_construction_demo.sc_demo_contract_in_069_payment")
+    partner = owned("payment_guidance_demo_partner", "res.partner", lambda: env["res.partner"].sudo().create({
+        "name": "DEMO-GUIDANCE-专属风险往来单位", "sc_blacklisted": True,
+        "sc_blacklist_level": "blocked", "sc_blacklist_reason": "演示风险：请核实本次交易后继续。",
+    }))
+    contract = owned("payment_guidance_demo_contract", "construction.contract", lambda: source.sudo().copy({
+        "partner_id": partner.id, "subject": "DEMO-GUIDANCE-专属验收合同",
+    }))
+    baseline = env["project.funding.baseline"].sudo().search([
+        ("project_id", "=", contract.project_id.id), ("state", "=", "active"),
+        ("normalization_state", "=", "normalized"),
+    ], limit=2)
+    if len(baseline) != 1:
+        raise RuntimeError("guidance fixture requires one active normalized baseline")
+    record = owned("payment_guidance_demo_record", "payment.request", lambda: env["payment.request"].sudo().create({
+        "name": "DEMO-PR-GUIDANCE-001", "type": "pay", "project_id": contract.project_id.id,
+        "contract_id": contract.id, "partner_id": partner.id, "amount": 100.0,
+        "date_request": baseline.period_start, "payment_account_name": partner.name,
+        "payment_bank_name": "演示银行", "payment_account_no": "DEMO-GUIDANCE-ONLY",
+    }))
+    if record.state != "draft" or record.partner_id != partner or record.contract_id != contract:
+        raise RuntimeError("guidance fixture identity/state changed; refuse to overwrite")
+    fact = record.submit_action_guidance
+    if fact["blocking"] or not fact["requires_confirmation"]:
+        raise RuntimeError("guidance fixture is not a native soft-risk candidate; keep existing policy")
+    return {"ok": True, "payment_request_id": record.id, "partner_id": partner.id,
+            "contract_id": contract.id, "guidance": fact, "scope": "guidance"}
+
+
 def run(env):
     """Reset the minimal submit-ready payment request used by product acceptance."""
+    scope = os.environ.get("PAYMENT_REQUEST_FIXTURE_SCOPE", "submit")
+    if scope == "guidance":
+        return _guidance_fixture(env)
+    if scope != "submit":
+        raise RuntimeError("unsupported payment fixture scope")
     payment_model = env["payment.request"].sudo()
     ledger_model = env["payment.ledger"].sudo()
     existing = _owned_fixture(env)

@@ -137,6 +137,7 @@ export function tdesignTabsSize(size?: ScPrimitiveSize): 'medium' | 'large' {
 }
 
 export interface ScDropdownOptionInput {
+  reasonMessage?: string;
   value: string | number;
   label: string;
   disabled?: boolean;
@@ -146,6 +147,7 @@ export function tdesignDropdownOptions(items: readonly ScDropdownOptionInput[]) 
   return items.map((item) => ({
     value: item.value,
     content: item.label,
+    ...(item.reasonMessage ? { reasonMessage: item.reasonMessage } : {}),
     disabled: Boolean(item.disabled),
   }));
 }

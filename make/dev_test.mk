@@ -1630,6 +1630,10 @@ verify.product.menu.governance.m4.closure: guard.prod.forbid
 verify.system_init.menu_boundary.guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/system_init_menu_boundary_guard.py
 	@python3 scripts/verify/system_init_menu_boundary_guard.py
+	@python3 -m py_compile scripts/verify/system_init_dictionary_scope_guard.py
+	@python3 scripts/verify/system_init_dictionary_scope_guard.py
+	@python3 -m py_compile scripts/verify/test_dictionary_scope_projection.py
+	@python3 scripts/verify/test_dictionary_scope_projection.py
 
 .PHONY: verify.release.phase1.navigation_convergence.guard
 verify.release.phase1.navigation_convergence.guard: guard.prod.forbid
@@ -2898,3 +2902,49 @@ policy.ensure.extension_modules: guard.prod.forbid check-compose-project check-c
 .PHONY: verify.page_contract_gate_wiring.unit
 verify.page_contract_gate_wiring.unit: guard.prod.forbid
 	@python3 scripts/verify/test_page_contract_gate_wiring.py
+
+.PHONY: contract.product_menu.generate
+contract.product_menu.generate: guard.prod.forbid
+	@python3 scripts/ops/promote_product_ten_center_policy.py --write
+
+.PHONY: verify.product.menu.monotonic.unit
+verify.product.menu.monotonic.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_menu_fact_monotonic
+
+.PHONY: verify.product.menu.native_inventory.unit
+verify.product.menu.native_inventory.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_product_native_menu_inventory
+
+.PHONY: verify.local.clean.frontend_output.unit
+verify.local.clean.frontend_output.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_local_clean_frontend_output
+
+.PHONY: verify.payment_slice.data_authority.unit
+verify.payment_slice.data_authority.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_payment_slice_data_authority
+
+.PHONY: verify.data_space.policy.unit
+verify.data_space.policy.unit: guard.prod.forbid
+	@python3 -m py_compile addons/smart_core/models/tenant_payload_import_batch.py addons/smart_core/models/res_users.py
+	@python3 -m unittest scripts.verify.test_data_space_policy
+
+.PHONY: verify.data_space.provisioning.guard
+verify.data_space.provisioning.guard: guard.prod.forbid
+	@python3 -m py_compile addons/smart_core/security/data_space_provisioning.py scripts/verify/data_space_provisioning_guard.py scripts/verify/test_data_space_provisioning.py
+	@python3 scripts/verify/data_space_provisioning_guard.py
+	@python3 -m unittest scripts.verify.test_data_space_provisioning
+
+.PHONY: verify.database.strategy.guard
+verify.database.strategy.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/database_strategy_guard.py scripts/verify/test_database_strategy_guard.py
+	@python3 scripts/verify/database_strategy_guard.py
+	@python3 -m unittest scripts.verify.test_database_strategy_guard
+
+# Platform database governance: the declaration stays the single source and the
+# two owner-named boundaries (isolation never replaces record permission;
+# platform database management never grants business data read) stay true.
+.PHONY: verify.platform.database.governance.guard
+verify.platform.database.governance.guard: guard.prod.forbid
+	@python3 -m py_compile addons/smart_core/security/database_governance.py addons/smart_core/models/platform_database_registry.py scripts/verify/platform_database_governance_guard.py scripts/verify/test_platform_database_governance.py
+	@python3 scripts/verify/platform_database_governance_guard.py
+	@python3 -m unittest scripts.verify.test_platform_database_governance

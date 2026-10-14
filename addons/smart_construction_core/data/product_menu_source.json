@@ -1,0 +1,1357 @@
+{
+  "schema": "construction.product_menu_source.v1",
+  "product_contract": {
+    "schema": "sce.product_menu_contract.v1",
+    "contract_id": "construction-industry-product-menu-20261013",
+    "status": "LOCKED",
+    "decision_date": "2026-10-13",
+    "product_layer": "P1",
+    "module": "smart_construction_core",
+    "runtime_migration_status": "ALIGNED",
+    "rules": {
+      "maximum_business_depth": 3,
+      "project_center_is_only_center_with_level_three": true,
+      "all_non_project_centers_maximum_depth": 2,
+      "handling_is_page_action_not_menu_level": true,
+      "runtime_menu_claim": "TARGET_CONTRACT_ONLY",
+      "seed_customer_input": "VALIDATES_PRIORITY_AND_CONFIGURABILITY_ONLY"
+    },
+    "centers": [
+      {
+        "key": "workbench",
+        "native_menu_xmlid": "smart_construction_core.menu_sc_workspace_center"
+      },
+      {
+        "key": "project",
+        "native_menu_xmlid": "smart_construction_core.menu_sc_project_center"
+      },
+      {
+        "key": "contract",
+        "native_menu_xmlid": "smart_construction_core.menu_sc_contract_center"
+      },
+      {
+        "key": "cost",
+        "native_menu_xmlid": "smart_construction_core.menu_sc_cost_center"
+      },
+      {
+        "key": "finance",
+        "native_menu_xmlid": "smart_construction_core.menu_sc_finance_center"
+      },
+      {
+        "key": "tax",
+        "native_menu_xmlid": "smart_construction_core.menu_sc_tax_center"
+      },
+      {
+        "key": "accounting",
+        "native_menu_xmlid": "smart_construction_core.menu_sc_accounting_center"
+      },
+      {
+        "key": "reporting",
+        "native_menu_xmlid": "smart_construction_core.menu_sc_data_center"
+      },
+      {
+        "key": "administration",
+        "native_menu_xmlid": "smart_construction_core.menu_sc_hr_admin_center"
+      },
+      {
+        "key": "product_configuration",
+        "native_menu_xmlid": "smart_construction_core.menu_sc_business_config_center"
+      }
+    ],
+    "cross_center_ownership": [
+      {
+        "capability": "签证变更",
+        "authoritative_center": "项目中心",
+        "contract_center_rule": "已确认工程签证可形成合同变更，但不直接修改合同或结算金额"
+      },
+      {
+        "capability": "合同变更",
+        "authoritative_center": "合同中心",
+        "project_center_rule": "项目签证仅作为来源事实；合同变更独立生效后才能形成结算调整"
+      },
+      {
+        "capability": "项目薪资",
+        "authoritative_center": "行政中心",
+        "project_center_rule": "项目中心只展示项目维度工资投影，薪酬主数据与核算规则归行政中心"
+      },
+      {
+        "capability": "班组借/扣款",
+        "authoritative_center": "财务中心",
+        "project_center_rule": "项目中心只提供项目上下文入口，资金单据与资金核算归财务中心"
+      },
+      {
+        "capability": "日常合同结算",
+        "authoritative_center": "合同中心",
+        "project_center_rule": "复用结算对象并增加日常合同来源关系，不新建平行结算模型"
+      }
+    ],
+    "release_gates": [
+      "每个可见菜单必须绑定已验收 action、路由、权限与公司/项目数据域",
+      "NEW_CAPABILITY_REQUIRED 不得以空页面、占位菜单或技术模型直接对业务用户发布",
+      "菜单迁移默认保留 XMLID、action、权限与业务语义；破坏性变更需 ADR",
+      "验收必须覆盖真实角色、公司、数据库、桌面、平板和移动视口"
+    ]
+  },
+  "entries": [
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_workspace_home",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "entry_target_policy": "scene_entry",
+      "target_scene_key": "workspace.home",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_operating_metrics_project",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_project_kanban",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_workbench_my_todo_fact",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_message_notification_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_project_initiation",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_project_quick_create",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_project_lifecycle_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_project_project",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_customer_partner",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_supplier_partner",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_partner_blacklist_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_tender_information_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_project_tender",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_tender_document_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_tender_guarantee",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_tender_won",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_safety_issue",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_quality_acceptance_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_project_documents",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_construction_diary",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_construction_progress",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_site_variation_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_labor_realname_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_labor_cost_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_labor_deduction_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_material_inbound",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_material_outbound",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_material_return_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_equipment_shift_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_subcontract_cost_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_subcontract_variation_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_project_payroll_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_project_salary_payment_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_team_loan_deduction_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_p1_income_contract",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_p1_expense_contract",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_p1_contract_change",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_p1_daily_contract",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_general_contract_settlement_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_p1_income_settlement",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_p1_expense_settlement",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_p1_project_budget",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_p1_cost_plan",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_p1_cost_ledger",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_p1_profit_analysis",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_receipt_income",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_user_payment_apply",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_payment_execution",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_reimbursement_request",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_current_account_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_user_income",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_company_finance_expense",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_deduction_bill",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_company_project_refund_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_advance_fund",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_funding_plan_summary",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_tax_certificate_registration_user",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_invoice_prepaid_tax_user",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_invoice_application_user",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_invoice_registration_user",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_output_invoice_change_registration",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_invoice_input",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_tax_deduction_registration_user",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_project_tax_deduction_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_tax_filing_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "account.menu_action_move_journal_line_form",
+      "delivery": "RELEASED_FOUNDATION",
+      "external_presentation": {
+        "label": "日记账分录",
+        "center_xmlid": "smart_construction_core.menu_sc_accounting_center",
+        "action_xmlid": "account.action_move_journal_line",
+        "model": "account.move",
+        "source_kind": "p1_accounting_foundation_projection",
+        "source_module": "account",
+        "integration_reason": "上游 Odoo account 模块源码不归本仓库维护；仅适配正式产品导航位置与名称，动作、模型和权限仍由原生模块提供并在运行时核验。",
+        "sequence": 93
+      },
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "account.menu_action_account_moves_all",
+      "delivery": "RELEASED_FOUNDATION",
+      "external_presentation": {
+        "label": "日记账项目",
+        "center_xmlid": "smart_construction_core.menu_sc_accounting_center",
+        "action_xmlid": "account.action_account_moves_all",
+        "model": "account.move.line",
+        "source_kind": "p1_accounting_foundation_projection",
+        "source_module": "account",
+        "integration_reason": "上游 Odoo account 模块源码不归本仓库维护；仅适配正式产品导航位置与名称，动作、模型和权限仍由原生模块提供并在运行时核验。",
+        "sequence": 94
+      },
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "account.menu_action_account_form",
+      "delivery": "RELEASED_FOUNDATION",
+      "external_presentation": {
+        "label": "会计科目表",
+        "center_xmlid": "smart_construction_core.menu_sc_accounting_center",
+        "action_xmlid": "account.action_account_form",
+        "model": "account.account",
+        "source_kind": "p1_accounting_foundation_projection",
+        "source_module": "account",
+        "integration_reason": "上游 Odoo account 模块源码不归本仓库维护；仅适配正式产品导航位置与名称，动作、模型和权限仍由原生模块提供并在运行时核验。",
+        "sequence": 95
+      },
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_account_journal_foundation",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_accounting_foundation_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_analytic_account_foundation",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_accounting_foundation_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_analytic_distribution_foundation",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_accounting_foundation_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_project_operation_statistics_report",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_comprehensive_cost_statistics_report",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_fund_daily_summary",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_tax_report_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_labor_subcontract_report_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_organization_department",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_job_management_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_runtime_user_management",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_certificate_registration",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_social_fund_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_payroll_management",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_office_asset_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_policy_document_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_business_config_workbench",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_approval_policy",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_ui_form_field_policy_business_config",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_ui_menu_config_policy_business_config",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_data_permission_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_system_parameter_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_numbering_rule_v1",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_plan",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_plan_report",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_quality_issue",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_quality_rectification",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_quality_recheck",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_quality_standard_v2",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_quality_site_photo_v2",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_safety_plan_v2",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_safety_disclosure_v2",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_safety_risk_library_v2",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_safety_hazard_source_v2",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_safety_patrol_v2",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_safety_rectification",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_safety_recheck",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_tender_registration_fee",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_tender_opening",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_engineering_progress_income",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_project_material_plan",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_material_purchase_request",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_material_acceptance",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_material_rfq",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_material_return",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_material_transfer",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_material_loss",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_material_settlement",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_labor_plan",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_labor_request",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_labor_settlement",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_equipment_plan",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_equipment_request",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_equipment_settlement",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_material_rental_plan",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_material_rental_order",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_material_rental_settlement",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_subcontract_plan",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_subcontract_request",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_subcontract_settlement",
+      "delivery": "PREVIEW_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "preview"
+    }
+  ],
+  "root_menu_xmlid": "smart_construction_core.menu_sc_root",
+  "product_policy_profiles": {
+    "locked_reason": "single_native_product_fact_authority",
+    "policy_strategy": {
+      "authority": "native Odoo menu/action facts plus explicit P1 formal-entry selection",
+      "delivery_rule": "standard includes formally released entries; preview includes released plus explicitly preview entries; native ACLs remain authoritative for both",
+      "excluded_scope": [
+        {
+          "reason": "legacy duplicate acceptance carrier, not a formal product center",
+          "scope": "用户核对菜单"
+        },
+        {
+          "reason": "navigation structure only; delivered through native hierarchy",
+          "scope": "container nodes without actions"
+        },
+        {
+          "reason": "entered from their owning page rather than duplicated as standalone navigation",
+          "scope": "detail maintenance actions"
+        }
+      ],
+      "mode": "DECLARED_EDITION_RELEASE_SCOPE",
+      "runtime_projection": "derived_product_definition; deployment snapshots record versions and are not menu-definition inputs"
+    },
+    "role_catalog": {
+      "catalog_version": "v1",
+      "source_authority": "formal_business_product_menu_policy.v1",
+      "basis": "product default role set, delivered as contract data",
+      "delivery_rule": "default_roles is the shipped product baseline and is extendable: a runtime may add roles that bind to real res.groups. A role is never an authorization in itself - the delivered authority is always the intersection of the declaration with the principal's real group/record-rule visibility, so a role declaration can never widen access. Every non-synthetic role must bind at least one group xmlid, otherwise it cannot be delivered.",
+      "synthetic_role_codes": [
+        "restricted"
+      ],
+      "capability_role_codes": [
+        "project_member"
+      ],
+      "capability_fallback_order": [
+        "pm",
+        "finance"
+      ],
+      "default_roles": [
+        {
+          "role_code": "system_admin",
+          "label": "系统管理员",
+          "precedence": 10,
+          "exclusive_surface": true,
+          "group_xmlids": [
+            "smart_core.group_smart_core_admin"
+          ]
+        },
+        {
+          "role_code": "business_full",
+          "label": "业务全功能",
+          "precedence": 20,
+          "exclusive_surface": true,
+          "group_xmlids": [
+            "smart_construction_core.group_sc_business_full"
+          ]
+        },
+        {
+          "role_code": "business_config_admin",
+          "label": "业务配置管理员",
+          "precedence": 30,
+          "group_xmlids": [
+            "smart_construction_core.group_sc_cap_business_config_admin"
+          ]
+        },
+        {
+          "role_code": "executive",
+          "label": "管理层",
+          "precedence": 40,
+          "group_xmlids": [
+            "smart_construction_core.group_sc_role_executive"
+          ]
+        },
+        {
+          "role_code": "owner",
+          "label": "企业负责人",
+          "precedence": 50,
+          "group_xmlids": [
+            "smart_construction_core.group_sc_role_owner"
+          ]
+        },
+        {
+          "role_code": "pm",
+          "label": "项目经理",
+          "precedence": 60,
+          "group_xmlids": [
+            "smart_construction_core.group_sc_role_project_manager",
+            "smart_construction_core.group_sc_role_project_user"
+          ],
+          "capability_group_xmlids": [
+            "smart_construction_core.group_sc_cap_project_manager",
+            "smart_construction_core.group_sc_cap_project_user"
+          ]
+        },
+        {
+          "role_code": "finance",
+          "label": "财务主管",
+          "precedence": 70,
+          "group_xmlids": [
+            "smart_construction_core.group_sc_role_finance_manager",
+            "smart_construction_core.group_sc_role_finance_user"
+          ],
+          "capability_group_xmlids": [
+            "smart_construction_core.group_sc_cap_finance_user",
+            "smart_construction_core.group_sc_cap_finance_manager"
+          ]
+        },
+        {
+          "role_code": "cost",
+          "label": "成本管理",
+          "precedence": 80,
+          "group_xmlids": [
+            "smart_construction_core.group_sc_cap_cost_manager",
+            "smart_construction_core.group_sc_cap_cost_user",
+            "smart_construction_core.group_sc_role_cost_user"
+          ]
+        },
+        {
+          "role_code": "project_member",
+          "label": "项目成员",
+          "precedence": 90,
+          "group_xmlids": [
+            "smart_construction_core.group_sc_cap_project_read"
+          ]
+        }
+      ]
+    },
+    "products": [
+      {
+        "access_level": "public",
+        "active": true,
+        "allowed_role_codes": [],
+        "base_product_key": "construction",
+        "edition_key": "standard",
+        "label": "施工管理标准版",
+        "note": "P1 standard product facts; deployment state belongs to versioned release records",
+        "role_surface": {
+          "source_authority": {
+            "authorities": [
+              "formal_business_product_menu_policy.v1"
+            ],
+            "kind": "formal_product_role_surface_policy",
+            "no_business_fact_authority": true,
+            "projection_only": true,
+            "rebuildable": true
+          },
+          "authority_field": "landing_scene_candidates",
+          "platform_safe_landing_scene": "workspace.home",
+          "delivery_rule": "role landing surface is declarative contract data; the platform identity resolver projects it and guarantees workspace.home as the final safe candidate, so first hop stays authorized without frontend logic",
+          "roles": {
+            "restricted": {
+              "landing_scene_candidates": [
+                "workspace.home"
+              ]
+            },
+            "project_member": {
+              "landing_scene_candidates": [
+                "workspace.home",
+                "projects.list",
+                "projects.ledger"
+              ]
+            },
+            "business_full": {
+              "landing_scene_candidates": [
+                "workspace.home",
+                "projects.list"
+              ]
+            },
+            "business_config_admin": {
+              "landing_scene_candidates": [
+                "workspace.home",
+                "projects.list",
+                "projects.ledger",
+                "projects.intake"
+              ]
+            },
+            "system_admin": {
+              "landing_scene_candidates": [
+                "workspace.home"
+              ]
+            },
+            "owner": {
+              "landing_scene_candidates": [
+                "workspace.home",
+                "projects.list",
+                "projects.intake",
+                "project.initiation"
+              ]
+            },
+            "pm": {
+              "landing_scene_candidates": [
+                "workspace.home",
+                "portal.dashboard",
+                "projects.ledger",
+                "projects.list",
+                "projects.intake",
+                "project.management",
+                "project.dashboard",
+                "my_work.workspace"
+              ]
+            },
+            "finance": {
+              "landing_scene_candidates": [
+                "workspace.home",
+                "finance.payment_requests",
+                "projects.ledger",
+                "projects.list"
+              ]
+            },
+            "executive": {
+              "landing_scene_candidates": [
+                "workspace.home",
+                "portal.dashboard",
+                "project.management",
+                "projects.list",
+                "projects.ledger",
+                "projects.intake",
+                "project.initiation"
+              ]
+            },
+            "cost": {
+              "landing_scene_candidates": [
+                "workspace.home",
+                "projects.list",
+                "projects.ledger"
+              ]
+            }
+          }
+        },
+        "product_key": "construction.standard",
+        "scene_version_bindings": {},
+        "scenes": [],
+        "state": "stable",
+        "version": "v1",
+        "included_release_states": [
+          "released"
+        ]
+      },
+      {
+        "access_level": "public",
+        "active": true,
+        "allowed_role_codes": [],
+        "base_product_key": "construction",
+        "edition_key": "preview",
+        "label": "施工管理预览版",
+        "note": "P1 standard product facts; deployment state belongs to versioned release records",
+        "role_surface": {
+          "source_authority": {
+            "authorities": [
+              "formal_business_product_menu_policy.v1"
+            ],
+            "kind": "formal_product_role_surface_policy",
+            "no_business_fact_authority": true,
+            "projection_only": true,
+            "rebuildable": true
+          },
+          "authority_field": "landing_scene_candidates",
+          "platform_safe_landing_scene": "workspace.home",
+          "delivery_rule": "role landing surface is declarative contract data; the platform identity resolver projects it and guarantees workspace.home as the final safe candidate, so first hop stays authorized without frontend logic",
+          "roles": {
+            "restricted": {
+              "landing_scene_candidates": [
+                "workspace.home"
+              ]
+            },
+            "project_member": {
+              "landing_scene_candidates": [
+                "workspace.home",
+                "projects.list",
+                "projects.ledger"
+              ]
+            },
+            "business_full": {
+              "landing_scene_candidates": [
+                "workspace.home",
+                "projects.list"
+              ]
+            },
+            "business_config_admin": {
+              "landing_scene_candidates": [
+                "workspace.home",
+                "projects.list",
+                "projects.ledger",
+                "projects.intake"
+              ]
+            },
+            "system_admin": {
+              "landing_scene_candidates": [
+                "workspace.home"
+              ]
+            },
+            "owner": {
+              "landing_scene_candidates": [
+                "workspace.home",
+                "projects.list",
+                "projects.intake",
+                "project.initiation"
+              ]
+            },
+            "pm": {
+              "landing_scene_candidates": [
+                "workspace.home",
+                "portal.dashboard",
+                "projects.ledger",
+                "projects.list",
+                "projects.intake",
+                "project.management",
+                "project.dashboard",
+                "my_work.workspace"
+              ]
+            },
+            "finance": {
+              "landing_scene_candidates": [
+                "workspace.home",
+                "finance.payment_requests",
+                "projects.ledger",
+                "projects.list"
+              ]
+            },
+            "executive": {
+              "landing_scene_candidates": [
+                "workspace.home",
+                "portal.dashboard",
+                "project.management",
+                "projects.list",
+                "projects.ledger",
+                "projects.intake",
+                "project.initiation"
+              ]
+            },
+            "cost": {
+              "landing_scene_candidates": [
+                "workspace.home",
+                "projects.list",
+                "projects.ledger"
+              ]
+            }
+          }
+        },
+        "product_key": "construction.preview",
+        "scene_version_bindings": {},
+        "scenes": [],
+        "state": "preview",
+        "version": "v1",
+        "included_release_states": [
+          "released",
+          "preview"
+        ]
+      }
+    ],
+    "schema": "formal_business_product_menu_policy.v1",
+    "source": "P1 product definition projected from native Odoo metadata and explicit product entry selection"
+  },
+  "excluded_entries": [
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_project_organization_group_v2",
+      "disposition": "retired_experiment",
+      "reason": "仅承载能力上线说明，模型只有规划范围/上线条件等只读字段，没有对应业务办理实现；不属于预览产品能力。",
+      "evidence": "addons/smart_construction_core/models/support/project_capability_roadmap.py"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_project_milestone_group_v2",
+      "disposition": "retired_experiment",
+      "reason": "仅承载能力上线说明，模型只有规划范围/上线条件等只读字段，没有对应业务办理实现；不属于预览产品能力。",
+      "evidence": "addons/smart_construction_core/models/support/project_capability_roadmap.py"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_project_collaboration_group_v2",
+      "disposition": "retired_experiment",
+      "reason": "仅承载能力上线说明，模型只有规划范围/上线条件等只读字段，没有对应业务办理实现；不属于预览产品能力。",
+      "evidence": "addons/smart_construction_core/models/support/project_capability_roadmap.py"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_project_risk_group_v2",
+      "disposition": "retired_experiment",
+      "reason": "仅承载能力上线说明，模型只有规划范围/上线条件等只读字段，没有对应业务办理实现；不属于预览产品能力。",
+      "evidence": "addons/smart_construction_core/models/support/project_capability_roadmap.py"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_project_closeout_group_v2",
+      "disposition": "retired_experiment",
+      "reason": "仅承载能力上线说明，模型只有规划范围/上线条件等只读字段，没有对应业务办理实现；不属于预览产品能力。",
+      "evidence": "addons/smart_construction_core/models/support/project_capability_roadmap.py"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_contract_performance_roadmap_v2",
+      "disposition": "retired_experiment",
+      "reason": "仅承载能力上线说明，模型只有规划范围/上线条件等只读字段，没有对应业务办理实现；不属于预览产品能力。",
+      "evidence": "addons/smart_construction_core/models/support/project_capability_roadmap.py"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_cost_forecast_roadmap_v2",
+      "disposition": "retired_experiment",
+      "reason": "仅承载能力上线说明，模型只有规划范围/上线条件等只读字段，没有对应业务办理实现；不属于预览产品能力。",
+      "evidence": "addons/smart_construction_core/models/support/project_capability_roadmap.py"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_cost_cashflow_roadmap_v2",
+      "disposition": "retired_experiment",
+      "reason": "仅承载能力上线说明，模型只有规划范围/上线条件等只读字段，没有对应业务办理实现；不属于预览产品能力。",
+      "evidence": "addons/smart_construction_core/models/support/project_capability_roadmap.py"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_supply_collaboration_roadmap_v2",
+      "disposition": "retired_experiment",
+      "reason": "仅承载能力上线说明，模型只有规划范围/上线条件等只读字段，没有对应业务办理实现；不属于预览产品能力。",
+      "evidence": "addons/smart_construction_core/models/support/project_capability_roadmap.py"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_field_mobile_roadmap_v2",
+      "disposition": "retired_experiment",
+      "reason": "仅承载能力上线说明，模型只有规划范围/上线条件等只读字段，没有对应业务办理实现；不属于预览产品能力。",
+      "evidence": "addons/smart_construction_core/models/support/project_capability_roadmap.py"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_bim_collaboration_roadmap_v2",
+      "disposition": "retired_experiment",
+      "reason": "仅承载能力上线说明，模型只有规划范围/上线条件等只读字段，没有对应业务办理实现；不属于预览产品能力。",
+      "evidence": "addons/smart_construction_core/models/support/project_capability_roadmap.py"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_fund_forecast_roadmap_v2",
+      "disposition": "retired_experiment",
+      "reason": "仅承载能力上线说明，模型只有规划范围/上线条件等只读字段，没有对应业务办理实现；不属于预览产品能力。",
+      "evidence": "addons/smart_construction_core/models/support/project_capability_roadmap.py"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_tax_filing_roadmap_v2",
+      "disposition": "retired_experiment",
+      "reason": "仅承载能力上线说明，模型只有规划范围/上线条件等只读字段，没有对应业务办理实现；不属于预览产品能力。",
+      "evidence": "addons/smart_construction_core/models/support/project_capability_roadmap.py"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_invoice_verification_roadmap_v2",
+      "disposition": "retired_experiment",
+      "reason": "仅承载能力上线说明，模型只有规划范围/上线条件等只读字段，没有对应业务办理实现；不属于预览产品能力。",
+      "evidence": "addons/smart_construction_core/models/support/project_capability_roadmap.py"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_report_prediction_roadmap_v2",
+      "disposition": "retired_experiment",
+      "reason": "仅承载能力上线说明，模型只有规划范围/上线条件等只读字段，没有对应业务办理实现；不属于预览产品能力。",
+      "evidence": "addons/smart_construction_core/models/support/project_capability_roadmap.py"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_people_lifecycle_roadmap_v2",
+      "disposition": "retired_experiment",
+      "reason": "仅承载能力上线说明，模型只有规划范围/上线条件等只读字段，没有对应业务办理实现；不属于预览产品能力。",
+      "evidence": "addons/smart_construction_core/models/support/project_capability_roadmap.py"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_resource_capacity_roadmap_v2",
+      "disposition": "retired_experiment",
+      "reason": "仅承载能力上线说明，模型只有规划范围/上线条件等只读字段，没有对应业务办理实现；不属于预览产品能力。",
+      "evidence": "addons/smart_construction_core/models/support/project_capability_roadmap.py"
+    }
+  ]
+}

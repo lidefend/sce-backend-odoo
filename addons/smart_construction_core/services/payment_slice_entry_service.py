@@ -48,7 +48,9 @@ class PaymentSliceEntryService:
         if Partner is None:
             raise UserError("缺少可用往来单位，无法创建付款记录。")
         try:
-            partner = Partner.sudo().search([("active", "=", True)], order="id asc", limit=1)
+            partner = Partner.search([("active", "=", True)], order="id asc", limit=1)
+        except AccessError:
+            raise
         except Exception:
             partner = None
         if partner:
@@ -62,10 +64,19 @@ class PaymentSliceEntryService:
         PaymentRequest = self._model("payment.request")
         if PaymentRequest is None:
             raise UserError("缺少 payment.request，无法创建付款记录。")
+        # Rebind even a privileged record supplied by an internal caller.  A
+        # functional capability never grants access to that record's data.
+        project = self.env["project.project"].browse(project.id)
+        project.check_access_rights("read")
+        project.check_access_rule("read")
+        PaymentRequest.check_access_rights("create")
         amount = self._required_amount(values)
         description = self._required_text(values, "description") or "项目付款记录"
         entry_date = self._resolve_date(values)
         partner = self._resolve_partner(project)
+        partner = self.env["res.partner"].browse(partner.id)
+        partner.check_access_rights("read")
+        partner.check_access_rule("read")
         currency = getattr(project, "company_id", None) and getattr(project.company_id, "currency_id", None) or getattr(self.env.company, "currency_id", None)
         request_vals = {
             "type": "pay",
@@ -78,7 +89,7 @@ class PaymentSliceEntryService:
             "state": "draft",
         }
         try:
-            request = PaymentRequest.sudo().create(request_vals)
+            request = PaymentRequest.create(request_vals)
         except AccessError as exc:
             raise UserError("当前账号无权限创建付款记录。") from exc
         except Exception as exc:

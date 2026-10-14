@@ -413,7 +413,7 @@ class ScAttendanceCheckin(models.Model):
 
     def action_confirm(self):
         for record in self:
-            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
+            self.env["sc.approval.policy"].ensure_handling_ready(record, ("approved",))
             if record.state != "approved":
                 raise UserError(_("只有已审批用工单可以确认。"))
             record._check_values()
@@ -597,7 +597,7 @@ class ScLaborUsage(models.Model):
     def action_confirm(self):
         self._check_project_manager()
         for record in self:
-            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
+            self.env["sc.approval.policy"].ensure_handling_ready(record, ("approved",))
             if record.state != "approved":
                 raise UserError(_("只有已审批用工单可以确认。"))
             record._check_values()
@@ -782,7 +782,7 @@ class ScLaborSettlement(models.Model):
 
     def action_confirm(self):
         for record in self:
-            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
+            self.env["sc.approval.policy"].ensure_handling_ready(record, ("approved",))
             if record.state != "approved":
                 raise UserError(_("只有已审批劳务结算可以确认。"))
             record._check_business_anchor()
@@ -883,6 +883,7 @@ class ScLaborPrice(models.Model):
     _order = "effective_date desc, id desc"
 
     name = fields.Char(string="价格编号", required=True, default="新建", tracking=True)
+    company_id = fields.Many2one("res.company", related="project_id.company_id", store=True, readonly=True, index=True)
     project_id = fields.Many2one("project.project", string="适用项目", index=True, tracking=True)
     contractor_id = fields.Many2one("res.partner", string="劳务单位", index=True)
     labor_team = fields.Char(string="班组", index=True)

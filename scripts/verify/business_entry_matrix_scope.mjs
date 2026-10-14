@@ -13,15 +13,23 @@
 //                               the units this run actually executed, for recording
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import {
+  ACTING_COMPANY_KEY,
+  validateClosureEnvironment,
+  validateObservationBinding,
   MODEL_INPUTS,
   PROBE_INPUTS,
+  actingContext,
   candidateStates,
   declaredEntryGroups,
+  deploymentProvenance,
   entryFingerprint,
   environmentIdentity,
   fileRevision,
+  permissionContext,
   reuseIdentityKey,
+  surfaceInputs,
   loadMatrix,
   loadOverlay,
   overlayFor,
@@ -48,6 +56,12 @@ const SERVED_REVISION = process.env.SC_ACCEPTANCE_TARGET_SHA || '';
 const BUNDLE_FINGERPRINT = (process.env.SC_ACCEPTANCE_FRONTEND_BUILD_SHA || '').trim().toLowerCase();
 const LOGIN = process.env.ACCEPTANCE_LOGIN || '';
 const NEUTRAL_REVISION = (process.env.SC_ENTRY_MATRIX_PROBE_ASSERTION_NEUTRAL || '').trim();
+// Optional per-entry surface dependency declaration published by the build:
+// ``{"entries": {"<menu_xmlid>": ["surface.a", ...]}, "hashes": {"surface.a": "<sha256>"}}``.
+// When an entry declares every one of its surfaces with a hash, only those
+// hashes bind it, so an unrelated frontend change does not re-open it. Absent,
+// or partially covered, the binding degrades to the whole served artifact.
+const SURFACE_SCOPES_PATH = (process.env.SC_ENTRY_MATRIX_SURFACE_SCOPES || '').trim();
 
 function argsOf(argv) {
   const parsed = {};
@@ -75,18 +89,38 @@ function loadClosures() {
   if (document.schema !== 'business_entry_negative_closures.v1') {
     throw new Error(`${CLOSURES_PATH}: unexpected schema ${document.schema}`);
   }
+  validateClosureEnvironment(document, { baseUrl: BASE, database: DATABASE });
   return document;
 }
 
-function surface() {
-  if (!SERVED_REVISION) throw new Error('SC_ACCEPTANCE_TARGET_SHA is required to bind the environment identity');
+function loadSurfaceScopes() {
+  if (!SURFACE_SCOPES_PATH) return { entries: {}, hashes: {} };
+  const body = JSON.parse(fs.readFileSync(SURFACE_SCOPES_PATH, 'utf8'));
+  return {
+    entries: body && typeof body.entries === 'object' ? body.entries : {},
+    hashes: body && typeof body.hashes === 'object' ? body.hashes : {},
+  };
+}
+
+export function surface() {
+  if (!SERVED_REVISION) throw new Error('SC_ACCEPTANCE_TARGET_SHA is required so the observation is traceable to a deployment');
   const matrix = loadMatrix(CSV_PATH);
   const overlay = loadOverlay(OVERLAY_PATH);
   const closures = loadClosures();
   const order = overlay.deniedRoleCandidates;
   const states = candidateStates(order, closures.candidates);
+  const surfaceScopes = loadSurfaceScopes();
+  // The acting principal's company and own role closure are authoritative
+  // readbacks, not caller assumptions: the same login in another company sees
+  // another record set, and a role change on the same account changes what it
+  // can reach, so both must invalidate reuse.
+  const acting = actingContext(closures, { login: LOGIN });
   const identity = environmentIdentity({
-    baseUrl: BASE, database: DATABASE, login: LOGIN, candidateOrder: order,
+    baseUrl: BASE, database: DATABASE, login: LOGIN, actingCompanyId: acting.company_id,
+    actingRoleClosureSha256: acting.role_closure_sha256,
+  });
+  // The deploying commit is provenance, not a validity input.
+  const provenance = deploymentProvenance({
     servedRevision: SERVED_REVISION, bundleFingerprint: BUNDLE_FINGERPRINT,
   });
   const modelRevision = fileRevision(ROOT, MODEL_INPUTS);
@@ -110,7 +144,27 @@ function surface() {
     units.push({
       id: row.menu_xmlid,
       fingerprint: entryFingerprint({
-        row, behaviour, environment: identity, derived: plan, modelRevision, probeRevision,
+        row,
+        behaviour,
+        environment: identity,
+        // What these assertions were measured against, bound per unit: the
+        // declared surfaces when the build published their hashes, otherwise
+        // the whole served artifact (fail-closed, recorded).
+        surfaceInputs: surfaceInputs({
+          bundleFingerprint: BUNDLE_FINGERPRINT,
+          servedRevision: SERVED_REVISION,
+          surfaces: surfaceScopes.entries[row.menu_xmlid] || [],
+          surfaceScopes: surfaceScopes.hashes,
+        }),
+        derived: plan,
+        // Bound per unit, so a change to one candidate's authoritative closure
+        // re-opens exactly the entries bound to that candidate.
+        permissionContext: permissionContext({
+          candidate: resolved.chosen,
+          state: resolved.chosen ? states.get(resolved.chosen) : null,
+        }),
+        modelRevision,
+        probeRevision,
       }),
       required: true,
     });
@@ -120,9 +174,13 @@ function surface() {
     check: CHECK,
     identity,
     provenance: {
-      served_revision: SERVED_REVISION,
-      frontend_build_sha256: BUNDLE_FINGERPRINT,
+      ...provenance,
       reuse_identity_key: reuseIdentityKey({ bundleFingerprint: BUNDLE_FINGERPRINT }),
+      surface_scopes_declared: Boolean(SURFACE_SCOPES_PATH),
+      acting_company_id: acting.company_id,
+      acting_login: acting.login,
+      acting_role_closure_sha256: acting.role_closure_sha256,
+      denied_role_candidates: order,
       observed_at: new Date().toISOString(),
     },
     tool_revision: {
@@ -136,6 +194,7 @@ function surface() {
   };
 }
 
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
 const args = argsOf(process.argv.slice(2));
 if (args['emit-units']) {
   const document = surface();
@@ -156,6 +215,24 @@ if (args['emit-units']) {
   const fingerprints = new Map(document.units.map((unit) => [unit.id, unit.fingerprint]));
   const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
   const plan = JSON.parse(fs.readFileSync(planPath, 'utf8'));
+  // The observation must have been taken in the company the reuse identity
+  // binds; otherwise the recorded status would claim coverage from another
+  // permission context. Fail-closed on a missing or mismatched readback.
+  const boundCompany = Number(document.identity[ACTING_COMPANY_KEY]);
+  const observedCompany = Number(summary.session_company_id);
+  if (!Number.isInteger(observedCompany) || observedCompany <= 0) {
+    throw new Error(
+      `${summaryPath}: the observation carries no acting-company readback (session_company_id), `
+      + 'so it cannot be bound to the reuse identity',
+    );
+  }
+  if (observedCompany !== boundCompany) {
+    throw new Error(
+      `${summaryPath}: the observation was taken in company ${observedCompany} but reuse is bound to `
+      + `company ${boundCompany}`,
+    );
+  }
+  validateObservationBinding(summary, plan, document);
   // Per-unit status is read from the probe's own per-entry record and nothing
   // else. The probe aggregates a surface verdict (summary.ok / summary.fatal)
   // for its process exit code; that aggregate must never rewrite a sibling's
@@ -202,4 +279,6 @@ if (args['emit-units']) {
   console.log(`[business-entry-scope] executed=${executed.length} planned_affected=${results.planned_affected.length} ok=${summary.ok}`);
 } else {
   throw new Error('one of --emit-units or --emit-results is required');
+}
+
 }

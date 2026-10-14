@@ -2,6 +2,9 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
+from ..support.state_guard import raise_guard
+from ..support.state_machine import ScStateMachine
+
 
 class ScGeneralContract(models.Model):
     _name = "sc.general.contract"
@@ -229,6 +232,22 @@ class ScGeneralContract(models.Model):
             }
             if set(vals) - allowed:
                 raise UserError(_("历史迁移综合合同已确认，只允许补充往来单位和备注。"))
+        if "state" in vals and not self.env.context.get("allow_transition"):
+            sample = self[:1]
+            raise_guard(
+                "GENERAL_CONTRACT_GUARD_DIRECT_STATE_WRITE",
+                _("综合合同[%s]") % (sample.display_name if sample else ""),
+                _("状态变更"),
+                reasons=[_("综合合同状态只能由受控业务动作推进，不允许直接改写")],
+            )
+        if "state" in vals:
+            for rec in self:
+                ScStateMachine.assert_transition(
+                    ScStateMachine.GENERAL_CONTRACT,
+                    rec.state,
+                    vals["state"],
+                    rec.display_name,
+                )
         return super().write(vals)
 
     @api.model
@@ -399,7 +418,9 @@ class ScGeneralContract(models.Model):
             if policy_model._start_submission_review(rec):
                 rec.with_context(skip_validation_check=True).write({"reject_reason": False})
                 continue
-            rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
+            rec.with_context(
+                skip_validation_check=True, allow_transition=True
+            ).write({"state": "confirmed", "reject_reason": False})
 
     def action_signed(self):
         for rec in self:
@@ -410,7 +431,7 @@ class ScGeneralContract(models.Model):
                 rec.action_confirm()
                 if rec.state != "confirmed":
                     continue
-            rec.state = "signed"
+            rec.with_context(allow_transition=True).write({"state": "signed"})
 
     def _check_business_anchor(self):
         for rec in self:
@@ -441,7 +462,9 @@ class ScGeneralContract(models.Model):
             if rec.state != "draft" or not rec.review_ids or rec.validation_status != "validated":
                 continue
             rec._check_business_anchor()
-            rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
+            rec.with_context(
+                skip_validation_check=True, allow_transition=True
+            ).write({"state": "confirmed", "reject_reason": False})
         return True
 
     def action_on_tier_rejected(self, reason=None):
@@ -458,4 +481,4 @@ class ScGeneralContract(models.Model):
                 raise UserError(_("历史迁移综合合同不能在新系统取消。"))
             if rec.state not in ("draft", "confirmed"):
                 raise UserError(_("只有草稿或已确认状态的一般合同（公司）可以取消。"))
-            rec.state = "cancel"
+            rec.with_context(allow_transition=True).write({"state": "cancel"})

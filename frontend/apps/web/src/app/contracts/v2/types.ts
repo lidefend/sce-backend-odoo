@@ -446,6 +446,7 @@ export interface ContractV2ActionRule {
   sourceChannel?: string;
   permissionConstraints?: ContractV2Dictionary;
   reasonCode?: string;
+  reasonMessage?: string;
   entitlementEvaluated?: boolean;
   authorizationAllowed?: boolean;
   businessAvailable?: boolean;
@@ -531,6 +532,7 @@ export interface ContractV2ButtonStatus {
   visible?: boolean;
   disabled?: boolean;
   reasonCode?: string;
+  reasonMessage?: string;
 }
 
 export interface ContractV2ContainerStatus {

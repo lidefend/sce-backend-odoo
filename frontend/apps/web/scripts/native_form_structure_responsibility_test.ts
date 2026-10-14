@@ -7,6 +7,7 @@ import {
   collectNativeVisibleSectionTitles,
   filterVisibleNativeLayoutNodes,
   isLayoutOnlyGroupContainer,
+  isNativeFieldVisible,
   type NativeLayoutLikeNode,
 } from '../src/pages/contractForm/nativeLayoutUtils';
 import {
@@ -311,4 +312,52 @@ assert.ok(nativeCanvasSource.includes('!adoptedDetail && sectionItems.length > 2
 assert.ok(source('pages/contractForm/CanonicalNativeFormSurface.vue').includes("? 'collaboration' : undefined"));
 assert.ok(source('pages/ContractFormPage.vue').includes("'card--detail': standardDetailComposition.adopted.value"));
 
-console.log('[native_form_structure_responsibility_test] PASS cases=12');
+// 13. Create-mode body visibility comes from the declared workflow-state
+//     fact, never from the field name or a Chinese label ending in 状态.
+const visibilityInput = (name: string, statusField: string, label = '状态') => ({
+  name,
+  statusField,
+  showHud: false,
+  renderProfile: 'create',
+  isNodeVisible: () => true,
+  resolveDescriptor: () => ({ type: 'selection', string: label }),
+  resolveFieldLabel: () => label,
+  semantic: () => ({}),
+  runtimeState: () => ({ invisible: false, readonly: false, required: false }),
+  evaluatePolicy: () => ({ visible: true, readonly: false, required: false }),
+});
+assert.equal(
+  isNativeFieldVisible(visibilityInput('state', 'state')),
+  false,
+  'the body field declared as the statusbar carrier is not duplicated',
+);
+assert.equal(
+  isNativeFieldVisible(visibilityInput('state', '')),
+  true,
+  'a field merely named state is rendered unless the contract hides it',
+);
+assert.equal(
+  isNativeFieldVisible(visibilityInput('project_status', '', '项目状态')),
+  true,
+  'an ordinary field whose label ends in 状态 is no longer hidden by inference',
+);
+assert.equal(
+  isNativeFieldVisible(visibilityInput('approval_state', '', '审批状态')),
+  true,
+  'a field name that used to be on the removed inference list is rendered unless declared hidden',
+);
+assert.equal(
+  isNativeFieldVisible(visibilityInput('note', '', '备注')),
+  true,
+  'an unrelated field keeps its declared visibility',
+);
+const layoutSource = fs.readFileSync(path.join(process.cwd(), 'frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts'), 'utf8');
+for (const banned of ['isCreateWorkflowStateField', 'CREATE_WORKFLOW_STATE_FIELD_NAMES', "endsWith('状态')"]) {
+  assert.equal(
+    layoutSource.includes(banned),
+    false,
+    `the removed create-mode name/label inference must not return: ${banned}`,
+  );
+}
+
+console.log('[native_form_structure_responsibility_test] PASS cases=18');

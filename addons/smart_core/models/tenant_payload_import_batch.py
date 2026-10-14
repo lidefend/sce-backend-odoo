@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 
-from odoo import api, fields, models
+from odoo import SUPERUSER_ID, api, fields, models
 from odoo.exceptions import UserError, ValidationError, AccessError
 
 from odoo.addons.smart_core.utils.tenant_payload_v1 import (
@@ -11,6 +11,12 @@ from odoo.addons.smart_core.utils.tenant_payload_v1 import (
 )
 from odoo.addons.smart_core.utils.tenant_payload_capability import (
     maintenance_capability_matches,
+)
+from odoo.addons.smart_core.security.data_space import (
+    CUSTOMER_PURPOSE,
+    NON_CUSTOMER_DATA_USER_GROUP,
+    validate_customer_registration,
+    validate_non_customer_creation,
 )
 
 
@@ -48,13 +54,34 @@ class ResCompany(models.Model):
     )
 
 
+class ScDataSpaceSerialization(models.Model):
+    """Transaction coordination only; never an ownership or permission fact.
+
+    No user ACL or public mutation API. Rows outlive registration deletion so
+    concurrent registration/re-registration always touches the same key.
+    """
+
+    _name = "sc.data.space.serialization"
+    _description = "Data Space Registration Transaction Coordination"
+    _log_access = False
+
+    tenant_key = fields.Char(required=True)
+    revision = fields.Integer(required=True, default=0)
+    _sql_constraints = [
+        ("tenant_key_unique", "unique(tenant_key)", "One transaction key per tenant."),
+    ]
+
+
 class ScTenantCompanyRegistration(models.Model):
     """Explicit binding between a tenant payload and a business company.
 
-    Odoo's ``base.main_company`` remains a neutral bootstrap carrier. A
-    user-data module must create and register a distinct business company
-    through this boundary. Product and industry modules never manufacture a
-    concrete tenant identity.
+    Odoo's ``base.main_company`` stays a neutral bootstrap carrier in the
+    customer production role, where a user-data module must register a distinct
+    business company. In the demo/test roles the environment main company IS
+    the first onboarded business company, so onboarding retires its carrier
+    marker through the single governed entry
+    ``_adopt_environment_main_company``. Product and industry modules never
+    manufacture a concrete tenant identity.
     """
 
     _name = "sc.tenant.company.registration"
@@ -62,6 +89,15 @@ class ScTenantCompanyRegistration(models.Model):
     _order = "tenant_key, company_id"
 
     tenant_key = fields.Char(required=True, index=True, readonly=True)
+    data_purpose = fields.Selection(
+        [("customer", "Customer business"), ("demo", "Demonstration"), ("test", "Test")],
+        default=CUSTOMER_PURPOSE,
+        required=True,
+        index=True,
+        readonly=True,
+        copy=False,
+        help="Immutable purpose of this registered data space; unknown history stays customer data.",
+    )
     company_id = fields.Many2one(
         "res.company",
         required=True,
@@ -89,6 +125,13 @@ class ScTenantCompanyRegistration(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         _assert_signed_import_boundary(self.env)
+        for values in vals_list:
+            try:
+                validate_customer_registration(values)
+            except ValueError as exc:
+                raise ValidationError(str(exc)) from exc
+        # Explicitly defeat default_data_purpose from an RPC context.
+        vals_list = [dict(values, data_purpose=CUSTOMER_PURPOSE) for values in vals_list]
         if any(
             str(values.get("source_module") or "").strip().startswith(("smart_", "sc_"))
             for values in vals_list
@@ -110,9 +153,205 @@ class ScTenantCompanyRegistration(models.Model):
         self.env.registry.clear_cache()
         return registrations
 
+    @api.constrains("tenant_key", "data_purpose")
+    def _check_tenant_purpose(self):
+        self._serialize_tenant_keys(self.mapped("tenant_key"))
+        for registration in self:
+            if self.sudo().with_context(active_test=False).search_count([
+                ("tenant_key", "=", registration.tenant_key),
+                ("data_purpose", "!=", registration.data_purpose),
+            ]):
+                raise ValidationError("DATA_SPACE_TENANT_PURPOSE_CONFLICT")
+
+    @api.model
+    def _serialize_tenant_keys(self, tenant_keys):
+        # A real row write is necessary under REPEATABLE READ. An advisory
+        # lock followed by a query would still see an old transaction snapshot.
+        # Serialization failures deliberately propagate to the transaction
+        # owner; never retry inside this already-failed transaction.
+        for tenant_key in sorted(set(tenant_keys)):
+            self.env.cr.execute("""
+                INSERT INTO sc_data_space_serialization (tenant_key, revision)
+                VALUES (%s, 1)
+                ON CONFLICT (tenant_key) DO UPDATE
+                SET revision = sc_data_space_serialization.revision + 1
+            """, [tenant_key])
+
+    def _assert_non_customer_maintenance(self, *, purpose, tenant_key):
+        """One maintenance-principal rule for every non-customer onboarding entry."""
+        try:
+            validate_non_customer_creation(
+                uid=self.env.uid, superuser_id=SUPERUSER_ID, su=self.env.su,
+                purpose=purpose, tenant_key=tenant_key,
+            )
+        except PermissionError as exc:
+            raise AccessError(str(exc)) from exc
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
+
+    def _open_non_customer_registration(self, *, tenant_key, purpose, company_id):
+        """Bind an immutable ownership anchor to an already verified company."""
+        registration = super().create([{
+            "tenant_key": tenant_key.strip(),
+            "data_purpose": purpose,
+            "company_id": int(company_id),
+            "source_module": "smart_core",
+            "source_external_key": str(company_id),
+            "active": True,
+        }])
+        registration._after_tenant_company_registration()
+        self.env.registry.clear_cache()
+        return registration
+
+    @api.model
+    def _create_non_customer_space(self, *, tenant_key, purpose, company_name):
+        """Maintenance-only creation; never relabel an existing company.
+
+        Private ORM entry, unavailable over RPC. A sudo product-admin
+        environment is explicitly insufficient. Fixtures use this entry and
+        keep the resulting registration as their immutable ownership anchor.
+        """
+        self._assert_non_customer_maintenance(purpose=purpose, tenant_key=tenant_key)
+        if not isinstance(company_name, str) or not company_name.strip():
+            raise ValidationError("DATA_SPACE_COMPANY_NAME_REQUIRED")
+        # Roll back the company too if registration or product defaults fail.
+        with self.env.cr.savepoint():
+            company = self.env["res.company"].create({
+                "name": company_name.strip(),
+                "is_platform_bootstrap_company": False,
+            })
+            return self._open_non_customer_registration(
+                tenant_key=tenant_key, purpose=purpose, company_id=company.id)
+
+    @api.model
+    def _register_non_customer_space(self, *, tenant_key, purpose, company_id):
+        """Maintenance-only onboarding of an EXISTING non-bootstrap company.
+
+        Same maintenance principal and immutable anchor as creation, with the
+        guardrails that keep "reuse" from becoming "relabel": the platform
+        bootstrap company can never be registered, and a company that already
+        owns a registration is refused instead of being re-purposed.
+        """
+        self._assert_non_customer_maintenance(purpose=purpose, tenant_key=tenant_key)
+        company = self.env["res.company"].sudo().browse(int(company_id or 0)).exists()
+        if not company or company.is_platform_bootstrap_company:
+            raise ValidationError("DATA_SPACE_BUSINESS_COMPANY_REQUIRED")
+        if self.sudo().with_context(active_test=False).search_count(
+                [("company_id", "=", company.id)]):
+            raise ValidationError("DATA_SPACE_COMPANY_ALREADY_REGISTERED")
+        with self.env.cr.savepoint():
+            return self._open_non_customer_registration(
+                tenant_key=tenant_key, purpose=purpose, company_id=company.id)
+
+    @api.model
+    def _adopt_environment_main_company(
+        self, *, tenant_key, purpose, company_id, environment_role
+    ):
+        """Onboard the environment main company by retiring its carrier marker.
+
+        This is the one entry where a platform bootstrap company may be
+        registered: in the demo/test roles the environment main company IS the
+        first onboarded business company, so onboarding is exactly the act of
+        retiring the technical-carrier marker. It stays maintenance-only,
+        refuses the customer production role, refuses a company that is not
+        this environment's main company, and refuses a database that already
+        owns an active registration, so "reuse" still cannot become "relabel".
+        """
+        self._assert_non_customer_maintenance(purpose=purpose, tenant_key=tenant_key)
+        if environment_role == "customer_production":
+            raise ValidationError("DATA_SPACE_CUSTOMER_ROLE_MAIN_COMPANY_IS_A_CARRIER")
+        company = self.env["res.company"].sudo().browse(int(company_id or 0)).exists()
+        if not company:
+            raise ValidationError("DATA_SPACE_BUSINESS_COMPANY_REQUIRED")
+        if company.id != self.env.company.id:
+            raise ValidationError("DATA_SPACE_ENVIRONMENT_MAIN_COMPANY_REQUIRED")
+        Registration = self.sudo().with_context(active_test=False)
+        if Registration.search_count([("company_id", "=", company.id)]):
+            raise ValidationError("DATA_SPACE_COMPANY_ALREADY_REGISTERED")
+        if Registration.search_count([("active", "=", True)]):
+            raise ValidationError("DATA_SPACE_DATABASE_ALREADY_OWNS_A_REGISTRATION")
+        with self.env.cr.savepoint():
+            company.sudo().write({"is_platform_bootstrap_company": False})
+            return self._open_non_customer_registration(
+                tenant_key=tenant_key, purpose=purpose, company_id=company.id)
+
     def _after_tenant_company_registration(self):
         """Extension point for product modules' neutral company defaults."""
         return True
+
+    def _data_space_operator_users(self):
+        """Internal identities authorized in this registration's company.
+
+        An operator is an internal (non-share), active user whose authorized
+        company set contains the registered business company. Portal/public
+        identities are never data-space operators, and a name, a login or a
+        fixture XMLID never establishes membership.
+        """
+        self.ensure_one()
+        return self.env["res.users"].sudo().with_context(active_test=False).search([
+            ("share", "=", False),
+            ("active", "=", True),
+            ("company_ids", "in", self.company_id.id),
+        ])
+
+    @api.model
+    def _enroll_data_space_operators(self, registrations):
+        """Grant the non-customer identity realm to an onboarded space's operators.
+
+        The realm is an explicit grant, never inferred: ``res.users.
+        _sc_data_company_ids`` keeps treating an identity that was never granted
+        as a customer identity, so a space whose operators were never enrolled is
+        readable by nobody. Onboarding owns this grant, which makes "the space
+        exists" and "its operators can work in it" one governed act instead of a
+        per-user assembly. Idempotent: an operator that already carries the group
+        is reported, not rewritten. A formal customer space is refused — a
+        customer identity must never be relabelled into the non-customer realm.
+        """
+        group = self.env.ref(NON_CUSTOMER_DATA_USER_GROUP, raise_if_not_found=False)
+        if not group:
+            raise ValidationError("DATA_SPACE_NON_CUSTOMER_IDENTITY_GROUP_MISSING")
+        enrolled_ids, effective_ids = set(), set()
+        companies = set()
+        for registration in registrations:
+            if registration.data_purpose == CUSTOMER_PURPOSE:
+                raise ValidationError("DATA_SPACE_CUSTOMER_IDENTITY_NOT_ENROLLABLE")
+            self._assert_non_customer_maintenance(
+                purpose=registration.data_purpose, tenant_key=registration.tenant_key)
+            companies.add(registration.company_id.id)
+            for user in registration._data_space_operator_users():
+                if group in user.groups_id:
+                    effective_ids.add(user.id)
+                else:
+                    enrolled_ids.add(user.id)
+        enrolled = self.env["res.users"].sudo().browse(sorted(enrolled_ids)).exists()
+        if enrolled:
+            # A realm change is a security change: keep the platform's own
+            # session-invalidation on groups_id, never a bypass.
+            enrolled.write({"groups_id": [(4, group.id)]})
+        effective = self.env["res.users"].sudo().browse(sorted(effective_ids)).exists()
+        return {
+            "group": NON_CUSTOMER_DATA_USER_GROUP,
+            "companies": sorted(companies),
+            "enrolled": sorted(enrolled.mapped("login")),
+            "already_effective": sorted(effective.mapped("login")),
+        }
+
+    @api.model
+    def _data_space_operators_pending_enrollment(self, registrations):
+        """Operators of these spaces that still lack the non-customer identity."""
+        group = self.env.ref(NON_CUSTOMER_DATA_USER_GROUP, raise_if_not_found=False)
+        if not group:
+            raise ValidationError("DATA_SPACE_NON_CUSTOMER_IDENTITY_GROUP_MISSING")
+        pending = set()
+        for registration in registrations:
+            for user in registration._data_space_operator_users():
+                # Direct membership read: this build's _has_group restores a
+                # superuser pass-through, so has_group() cannot classify a
+                # concrete operator under an elevated caller.
+                if group in user.groups_id:
+                    continue
+                pending.add(user.login)
+        return sorted(pending)
 
     @api.model
     def resolve_registered_company(self, company_id, *, require_active=True):
@@ -142,7 +381,10 @@ class ScTenantCompanyRegistration(models.Model):
     def unlink(self):
         if not self.env.context.get("allow_audited_tenant_destroy"):
             raise UserError("TPV1_COMPANY_REGISTRATION_IMMUTABLE")
-        return super().unlink()
+        _assert_signed_import_boundary(self.env)
+        result = super().unlink()
+        self.env.registry.clear_cache()
+        return result
 
 
 class ScTenantPayloadAdapter(models.AbstractModel):

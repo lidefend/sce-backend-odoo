@@ -28,6 +28,41 @@
 
 ## 运行时覆盖顺序
 
+### 视图、布局与权限职责（2026-10-13，所有者明确）
+
+低代码布局的能力范围、容器坐标、呈现映射及拒绝条件统一见
+`native_view_reuse_frontend_spec_v1.md` §14.4。低代码编辑布局声明，后端合成唯一运行时结构；
+编辑权限与布局发布作用域分离，不能通过角色配置重新引入另一套布局。
+
+**角色是授权维度，不是布局选择维度。** 本节收紧下方历史配置矩阵中“角色作用域”的含义：
+角色可以限定权限策略，不能据此发布另一套表单结构。代码存在 `role_key` 筛选机制，不等于
+产品已经授权角色布局；不能把这种配置选择称为权限裁剪。
+
+| 阶段 | 权威与职责 | 禁止混用 |
+| --- | --- | --- |
+| 模型基础／默认视图 | P1/P2 模块声明模型的原生基础视图及继承；未指定动作视图时，P0 按明确的模型默认规则解析并记录来源 | 模型基础视图不一定是默认候选，更不一定是动作实际使用的视图；不能仅凭 model 相同替代入口验收 |
+| 动作选定视图 | 动作绑定的 view、类型与上下文确定入口基线；同模型不同动作可以明确绑定不同视图 | 动作已绑定专用视图时，不能退回基础视图，或以登录角色重新选布局 |
+| 合成后的布局声明 | P1 行业标准、P2 客户确认配置、P3 管理员已发布配置按合法来源合成；P0 解析、验证并记录选中配置与结构权威 | 角色或权限不能决定模板、章节、字段顺序、分栏／跨度；配置选择与权限限制不是一个覆盖顺序 |
+| 权限投影后的运行契约 | P0 按实际账号、公司、ACL、记录规则、字段组及业务状态施加访问、可见、可用与只读限制 | 不得扩大权限、另造业务分区或改写布局规则；不得为保持结构向客户端暴露无权字段数据或受限元信息 |
+| 实际页面 | 前端以官方组件执行最终契约，消费同一结构及权限；统一响应式机制独立于角色 | 不解析角色选模板，不按可见字段数推导业务布局，不为缺失布局参数补默认或夹取范围 |
+| 验收证据 | P4 绑定上述每阶段身份，分别断言结构和权限，并观察实际组件行为 | 默认视图通过不代表动作视图通过；不同记录／版本／有效模式的截图不能证明角色导致布局变化 |
+
+固定入口、动作视图、记录、公司、配置版本和有效渲染模式后，角色变化不得改变布局声明。
+合法隐藏可使可见内容减少，但应保留可见节点的声明身份、相对顺序、所属分区及宽度规则；
+不得借此添加新的“任务区”、改主副栏比例或自动重组业务信息。设备响应式、显式业务状态条件、
+已授权个人视觉偏好须分别标明来源，不能伪装成角色布局。
+
+`requestedRenderProfile=edit` 只是请求；实际有效模式可能受状态或写权限限制转为 readonly。
+此时必须报告模式转换及原因，不能把 edit 与 readonly 的组件表现当作“同编辑态不同角色布局”。
+
+角色作用域中的结构性配置必须在 P0 配置发布／解析边界拒绝或显式诊断，并回到原声明层纠正；
+不能静默忽略、让前端兜底，或删除合法 ACL 以强行使两份页面相同。此项是目标约束，
+现有 `role_key` 机制的实现审计与门禁仍以当前运行台账的未闭合项为准，文档修正不构成实现通过。
+
+同入口跨账号核验必须保留完整字段 occurrence、父节点、顺序、标题、类型、columns/span，
+另列权限状态和关联动作；不能删掉全部字段后只比较结构哈希。实际命中配置的 id、版本和
+作用域也须比较。当前付款申请两个账号的一致结果只证明该实例，不代表所有模型或角色。
+
 以下顺序仅适用于允许覆盖的展示属性，不是覆盖业务约束的通用流水线。来源按可信维护者、授权、作用域及版本识别，不按XML/JSON/数据库格式识别。`user_preference_projection` 表示客户模块发布的长期偏好，不等于普通用户个人偏好。完整规则如下。
 
 ### 配置权责矩阵（2026-09-16）
@@ -36,8 +71,8 @@
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 业务与安全定义：模型、校验、ACL、记录规则 | 有权限的产品研发及受管模块发布者 | 租户数据库、模型、公司、角色、记录与状态 | 字段类型、计算、业务必填、权限、状态流转与动作授权；须走对应业务变更流程 | 服务端强约束；页面配置只能收紧可收紧项，不能放宽或改写业务事实 | 受管安装／升级后，读写及动作执行时再校验 | 模块版本及受管迁移；回退须评估数据兼容，不由配置回滚代替 | ORM、权限引擎、动作执行器；合成器读取约束 |
 | 产品默认：原生视图、行业页面与入口配置 | 产品研发 | 产品／模块、模型、action、view、状态 | 默认章节、布局、标签、字段排列及已有动作呈现 | 保证无客户配置时完整可用；可配置属性接受合法上层覆盖 | 安装／升级及请求合成 | 模块版本；只退役明确重复默认，不覆盖租户配置 | 后端配置合成器 |
-| 客户受管扩展／长期偏好 | 客户确认后由受管客户模块维护者发布 | 租户及声明的公司、角色、入口、状态 | 授权布局、标签、分组、顺序和显示策略；业务扩展另走模型边界 | 在可配置属性上覆盖产品默认，服从业务约束及管理员显式配置 | 客户模块安装／升级及请求合成 | 客户模块版本与可重放投影；不是普通用户个人设置 | 后端配置合成器 |
-| 租户低代码：正式配置源与版本 | 授权企业／实施管理员 | 租户、公司、角色、action、view、页面状态 | 声明可配置的标签、显隐、顺序、分组、布局、条件展示和企业锁定策略；引用受管扩展字段及合法动作 | 允许的展示属性覆盖默认／客户偏好；同层同目标不兼容修改拒绝；不能获得新数据／动作权限 | 保存为草稿；同引擎预览；发布后进入正式合成并失效相关缓存 | 契约版本、审计、快照；回滚恢复完整定义、作用域及合成结果，不回滚业务数据或删除扩展字段数据 | 后端合成器；设计器编辑源，不能编辑运行契约 |
+| 客户受管扩展／长期偏好 | 客户确认后由受管客户模块维护者发布 | 租户及声明的公司、入口、状态；角色仅作授权作用域 | 授权布局、标签、分组、顺序和显示策略；结构不随角色选择，业务扩展另走模型边界 | 在可配置属性上覆盖产品默认，服从业务约束及管理员显式配置 | 客户模块安装／升级及请求合成 | 客户模块版本与可重放投影；不是普通用户个人设置 | 后端配置合成器 |
+| 租户低代码：正式配置源与版本 | 授权企业／实施管理员 | 租户、公司、action、view、页面状态；角色仅作授权作用域 | 声明可配置的标签、显隐、顺序、分组、布局、条件展示和企业锁定策略；结构不随角色选择，引用受管扩展字段及合法动作 | 允许的展示属性覆盖默认／客户偏好；同层同目标不兼容修改拒绝；不能获得新数据／动作权限 | 保存为草稿；同引擎预览；发布后进入正式合成并失效相关缓存 | 契约版本、审计、快照；回滚恢复完整定义、作用域及合成结果，不回滚业务数据或删除扩展字段数据 | 后端合成器；设计器编辑源，不能编辑运行契约 |
 | 个人偏好：`sc.user.view.preference` 等 | 当前用户本人 | 本人、当前允许的公司／入口范围 | 显式开放的列宽、密度、展开状态、列顺序等个性化项 | 白名单属性内生效，服从企业锁定；不覆盖业务布局、权限或其他用户设置 | 本人会话／页面加载；影响结构时须进入同一合成边界 | 本人偏好保存／重置；不冒称企业配置发布或全局回滚 | 通用渲染器的个人化接口；结构属性由后端合成 |
 | 运行时契约：唯一有效页面描述 | 后端引擎生成，无独立人工维护者 | 当前租户、公司、用户／角色、入口、记录状态及配置版本 | 不可作为独立配置源编辑 | 是合成与校验结果，不再次参与覆盖，不从结果反向制造新默认 | 正式请求与受控预览使用同一引擎 | 绑定输入版本／缓存身份；恢复配置后重新合成，不维护第二份页面版本 | 通用渲染器、正文、导航及预览 |
 | 设计体系：tokens、主题、组件变体、响应式规则 | 设计体系与通用组件维护者；用户仅选开放主题选项 | 产品主题、组件、设备／视口与本人主题偏好 | 字号、颜色、间距、密度、视觉变体、响应式表现 | 只影响视觉表达；不能改变业务分组、字段事实、权限或动作授权 | 前端构建及主题／视口变化 | 设计资源代码版本、个人主题重置；不混入业务配置版本 | 通用渲染器与设计体系组件 |
@@ -172,10 +207,138 @@
 | `addons/smart_core/model/ui_form_custom_field_wizard.py` | L4 | 自定义字段同步表单策略：`form_custom_field_policy_creation` | `smart_core.lowcode.form_field_policy` |
 | `addons/smart_core/handlers/menu_configuration.py` | L4 | 菜单低代码策略配置：`menu_config_policy_runtime_configuration` | `smart_core.lowcode.menu_config` |
 | `addons/smart_core/handlers/business_config_change_set.py` | L1/L4 | 仅在统一变更集事务内发布菜单策略：`atomic_menu_change_set_publish` | `ui.business.config.change.set` |
-| `addons/smart_construction_core/models/support/product_policy_sync.py` | L2 | 行业产品菜单默认策略投影：`industry_product_menu_policy_projection` | `smart_construction_core.product_policy_sync` |
 | `addons/smart_construction_core/migrations/17.0.0.61/post-migration.py` | L2 | 行业产品菜单策略基线迁移：`industry_product_menu_policy_baseline_migration` | `smart_construction_core.config_center_label_migration` |
 
 新增直接写 `ui.business.config.contract` 的入口必须先更新本表和 `scripts/verify/backend_contract_boundary_guard.py`，并说明为什么不能通过现有 handler 或用户模块承载。
 新增直接写 `sc.approval.policy` / `sc.approval.step` 的入口必须先更新本表和 `scripts/verify/backend_contract_boundary_guard.py`，并说明为什么不能通过审批配置 handler 承载。
 新增直接写 `ui.form.field.policy` / `ui.menu.config.policy` 的入口必须先更新本表和 `scripts/verify/backend_contract_boundary_guard.py`，并说明为什么不能通过现有表单/菜单配置 handler 承载。
 L2 行业默认策略入口只能发布默认看面，不能覆盖 L4 用户管理员在低代码界面保存的运行时配置。
+
+（2026-10-13 更正）行业产品菜单默认策略已迁出低代码运行时模型：`addons/smart_construction_core/models/support/product_policy_sync.py` 现在把锁定契约文件`data/formal_business_product_menu_policy_v1.json` 投影到 P1 产品事实模型 `sc.product.policy`，不再写 `ui.menu.config.policy`；该写入入口已从 `backend_contract_boundary_guard` 白名单退役。租户侧低代码菜单策略仍然只能由 `smart_core` 的菜单配置边界写入。
+
+## 动作提示的单事实源（2026-10-13 所有者确认）
+
+原生模型、字段、视图及动作元数据优先。业务能否办理由同一原生事实与业务 guard 决定；
+提示配置不得再次编写同义 blocked 条件或独立计算授权。配置是编辑、发布和差异载体，
+只能引用该事实并声明动作关联、触发、展示或确认，最终合成为同一份契约。P0 通用消费
+不得增加业务判断，P1 内容不得同时散落在 XML alert、Python profile 和前端提示逻辑。
+该约束是本轮收敛目标，当前部分 action_guidance 实现尚未通过验收。
+
+Native model/field/view/action metadata is the primary and sole fact authority.
+Business eligibility and its guard share one decision source. Configuration is an
+editing and publication carrier, not a parallel eligibility evaluator. Interaction
+metadata references that fact and declares action association, trigger, display
+and confirmation; the compiler emits one final contract. This is an owner-approved
+constraint, not evidence that the current partial implementation has passed.
+
+产品默认提示交互必须在 P1 原生模型/视图/动作元数据中完整成立，不能要求额外配置后产品才可用。P2/P3 只能在产品开放范围覆盖并合成同一份元数据。付款业务风险默认软提醒，既有 `sc.payment.force_block_all` 与 `sc.payment.force_block.<reason_code>` 可显式改为硬阻断；权限、状态转换与对象完整性不变量不属于风险开关。
+Product defaults are complete in native P1 model/view/action metadata. Optional customer configuration only composes permitted overrides into that same metadata. Payment risk advisories default to soft confirmation through the existing force-block policy; authorization and lifecycle invariants remain hard constraints.
+
+## Product facts, release records and effective navigation (2026-10-13)
+
+Product facts define the available product: native Odoo menu/action/view identities, labels, hierarchy, ordering and permissions; P1 metadata selects the formal product entries and declares additional product semantics. Module-owned native facts must be referenced, not copied into independently editable ops lists. P2/P3 overrides are explicit facts with a scope and provenance; user/role ACL evaluation does not independently rearrange the product.
+
+Release records bind a product-fact version to a build and target environment, its install/upgrade state and release receipt. A release snapshot is a derived record of that version, not another editable product catalogue. Legacy `release_state` fields in menu-policy projections do not authorize ops scripts to redefine names, groups or membership. A mismatched release snapshot must be diagnosed as a version/activation mismatch, never treated as an intentional product-menu removal.
+
+Effective user navigation is the selected product version intersected with actual user/company access plus explicit authorized overrides. This iteration has an additional no-loss requirement: every existing actor/company's visible stable menu identity remains present and reachable, with original names, hierarchy, relative order and targets preserved; quick creation and menu configuration may add entries only for authorized actors. More total entries cannot compensate for a missing old entry.
+
+The unified source becomes the formal baseline only after deterministic projections, clean installation, upgrade, effective navigation comparison and affected browser interactions pass against the frozen candidate. Source-level equality alone is not product acceptance.
+
+### 原生事实优先修正（2026-10-13 所有者进一步确认）
+
+收敛顺序从模型、视图与权限开始：模型字段及业务约束由所属模型声明；布局、字段顺序与动作选定视图由原生视图和动作声明；访问能力由原生 groups、ACL、record rules 与字段权限决定。产品元数据只引用这些事实并补充原生载体未表达的产品语义，不能重复定义或覆盖已有事实。
+
+本仓库可维护的模块，产品标准缺陷必须在所属模块源码修复。不得以 P3 配置、运行时修复脚本、发布清单或前端补丁长期替代源码修正。只有依赖外部模块且不具备直接修改其源码条件时，才允许经明确归属的原生继承或适配接入；接入记录必须声明源模块、原因与影响范围，保持原生权限约束。解析不到 XMLID 本身不构成外部接入资格。
+
+用户主动低代码定制仍是独立产品能力，必须有明确作用域和来源；它不承担修复标准产品缺陷的职责。角色权限只裁剪可见、可办与只读，不重新生成布局。模型默认视图、动作指定视图、继承后的有效视图及权限裁剪结果分别记录，不得互相冒充。
+
+### 标准版、预览版与实验退役（2026-10-13）
+
+标准版保留原有 90 个正式产品菜单身份并接受后续正式晋级；预览版包含正式集合及尚未正式发布的真实产品能力，数量无 92 上限。两版引用同一原生模型、动作、视图与权限，不复制业务实现。产品条目显式声明 `released` 或 `preview`，同步器不得将预览状态改写为正式状态；正式晋级与环境部署分别留证。
+
+开发实验、路线图占位和临时验收载体不因可访问就成为预览产品。真实产品能力不能因父菜单曾被停用而被丢弃；须核查停用声明、动作及 domain/context、有效视图、权限和实际办理结果。相同模型不等于重复能力，相同动作也需核对入口上下文。处置按保留、归并、退役逐项记录依据，原有正式入口及业务数据不因清理而删除。源码清单与中间预览数量均不是正式验收结论。
+
+显式声明 `menu_groups` 的产品版本拥有封闭的产品导航集合，包括显式空集合。原生菜单事实与角色暴露声明只能裁剪授权，不能追加集合外入口；管理员角色名不能替代原生菜单、动作或模型权限。实际导航生成后，`PRIMARY_NAV` 与 `ROLE_HOME_ACTION` 的入口及目录授权须与交付结果相交，未交付的角色声明进入既有显式拒绝分区。独立声明的 `ADMIN_ROUTE` 和 `CONTEXTUAL_ROUTE` 保留其独立权限核验，不因此进入产品侧栏或改变版本集合。未提供产品菜单声明的原生诊断预览不构成正式版本产品证明。
+
+## 统一数据事实与授权边界（2026-10-13 所有者确认）
+
+本节定义正式目标边界，不代表当前所有模型已经接入。执行状态和原始证据仅登记于
+`.agent/runs/FE-CONTRACT-RUNTIME-02/run.json`。现有数据库架构政策仍为租户隔离唯一权威，
+本节不授权跨租户共享业务数据库，也不把普通产品发布策略当作业务数据授权。
+
+### 五个正交维度
+
+| 维度 | 唯一职责与载体 |
+| --- | --- |
+| 归属身份 | 复用 `sc.tenant.company.registration` 的租户／公司绑定。业务根记录归属明确，子记录沿原生关系继承；不以创建人、名称或 XMLID 推断。 |
+| 数据用途 | 注册事实声明 `customer`、`demo` 或 `test`。客户身份与非客户身份双向隔离，未知归属不放行。 |
+| 共享层级 | 明确声明公司内、行业内、平台级；共享是可见范围，不转移所有权、不授予修改权、不覆盖用途边界。 |
+| 业务范围 | 原生公司授权、项目授权及明确的业务范围共同约束记录。当前公司／项目筛选不是授予权限。 |
+| 操作权限 | 复用能力模型、原生 ACL 和记录规则；允许发现功能、读取模板不等于允许读取客户数据或执行客户业务操作。 |
+
+有效业务权限必须同时满足上述适用维度。组规则可以在既定上限内合并业务授权，
+不能通过 OR 扩大归属、用途或公司边界。产品系统管理员仅能访问获准 demo/test 空间；
+普通客户业务身份仅能访问获准 customer 空间。明确授权的测试身份可带业务角色以验证功能，
+但不因此取得 customer 空间。技术超级用户与数据库运维属于单独受管的维护边界。
+
+### 数据类别与共享
+
+- **客户业务事实**：项目、合同、交易、人员业务档案、办理记录等。必须有归属；
+  公司内共享不取消项目和操作约束。不允许仅修改一个共享标记就跨租户公开。
+- **公司参考数据／偏好**：归属明确的公司字典、模板和低代码成果。由公司授权控制，
+  demo/test 中的参考数据仍属于非客户空间，不能流入正式客户查询。
+- **行业公共产品资料**：行业字典、标准、模板、规范等；由 P1 原生事实声明，按现有版本发布机制交付。
+  客户私有扩展不因名称相同或行业相同自动进入共享集合。
+- **平台公共产品资料**：跨行业的公共字典、基础定义和模板；由 P0 原生事实声明。
+  租户配置权限不包含改写平台公共源的权限。
+- **认证／运行元数据**：身份、会话、路由、版本等按其原有最小权限读取，不能借认证所需的
+  联系人身份例外读取该联系人的客户业务字段。`company_id=False` 不表示平台共享。
+
+公共产品资料能够被正式和测试环境共同引用，是因为其明确的产品资料性质和发布授权，
+不是因为放宽了 customer/demo/test 业务数据隔离。真实业务数据拟作为共享资料时，必须通过
+另行授权的脱敏／提取／审核与发布形成独立资产；不得直接改写原业务事实的归属或用途。
+共享范围调整、授权撤销、停用和版本回滚必须使缓存失效，并保留原有业务引用的追溯。
+跨租户共享通过版本化产品包或显式交换，不建立跨库 ORM／外键，不把客户明细同步到平台目录。
+
+### 原生模型准入
+
+准入覆盖完整已安装模型注册表，不以行业菜单、视图、是否已有 `company_id` 为范围边界。
+根模型、关系模型、明细、SQL、共享资料、认证元数据以及 transient 的业务读写均需覆盖；
+abstract 模型声明的机制必须在其具体消费者中验证。每个维度必须明确为自身事实、继承关系、
+受控公共资料或有理由的不适用，缺失声明不等于不适用，也不等于允许访问。
+不要求所有模型重复保存五套字段，但必须能从原生声明解析出唯一授权依据。
+
+实施遵循最小改造原则（所有者确认）：完整注册表是检查范围，不是逐模型重写任务。
+已有原生公司规则、父关系和 ACL 能正确覆盖的模型保留原机制；仅补归属缺失、
+共享未声明、关联不一致和越权绕过点。技术模型与向导复用自身或调用来源的权限，
+不强制增加业务归属字段；公共基础资料不重复保存客户／测试用途标记。
+不得另建平行权限引擎，也不得为统一字段外观改变已有模型的事实所有者。
+
+源模型先于投影收口：根事实须能独立表达合法业务归属；项目为可选业务范围时，不能令
+无项目公司业务失去公司归属。创建、复制、导入、换父和关联写入均需证明归属一致，
+派生模型从实际业务父记录继承，不能从审批模板、当前操作者或任意环境默认值补推断。
+历史未知数据不通过模块升级自动归入当前公司，须保留拒绝边界并由受管迁移核实。
+
+每个可访问模型必须具有可审计的分类和实际规则：
+
+1. 根记录：声明原生归属关系；缺失归属拒绝业务访问，新建不能从不可靠上下文推断授权。
+2. 明细／委托继承：声明唯一父归属；换父、复制、导入与派生写入不能跨越数据空间。
+3. 附件／消息／活动：沿原业务记录鉴权；附件自身可见、sudo 取得元数据不构成业务授权。
+4. 共享字典／认证身份：显式声明类别、共享层级和字段边界，不以空公司代替声明。
+5. SQL 投影：从来源保留公司、归属及项目维度后分组；原表 record rule 不自动保护 SQL。
+   无法证明分区正确的汇总不得作为可交付结果，不能给混合汇总行事后任选归属。
+6. 查询、计数、搜索联想、聚合、导出、直链、文件下载和业务方法使用同一授权事实；
+   业务服务不得用 sudo 绕过原调用者的边界。
+
+规则位于所属模型／原生权限事实。P0 提供统一机制；P1 定义行业模型和行业共享资料；
+P2 承载客户确认的数据基线与偏好；P3 只编辑其获准的原生事实，不能扩大自身数据权限；
+P4 负责受管导入、夹具、迁移和验证，不成为长期权限事实源。
+
+### 完成条件
+
+- 模型覆盖清单没有未分类、无归属证明或无规则的业务入口；不能用几个代表模型通过替代全量覆盖。
+- 纯管理员、管理员叠加业务角色、正式业务身份、明确测试身份分别通过允许与拒绝用例。
+- 同用途内跨公司／跨项目拒绝，正式与测试互相拒绝，未注册／停用／伪造身份拒绝。
+- 公司、行业、平台共享分别验证可见与可维护权限；未发布、撤销和越权扩大共享均拒绝。
+- 导出、SQL 聚合、附件、关联重绑、派生写入、并发注册和缓存撤销有实际反例。
+- 缺口按同一运行记录追踪；后端声明、契约消费、实际行为三段一致后才能收口。

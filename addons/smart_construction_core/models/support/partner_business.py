@@ -163,31 +163,33 @@ class ResPartner(models.Model):
         index=True,
         tracking=True,
     )
-    sc_blacklist_reason = fields.Text(string="列入原因", tracking=True)
-    sc_blacklist_review_date = fields.Date(string="复核日期", tracking=True)
+    sc_blacklist_reason = fields.Text(string="列入原因", tracking=True, help="请补充风险原因，便于后续复核；资料完整性提示不作为操作硬阻断。")
+    sc_blacklist_review_date = fields.Date(string="复核日期", tracking=True, help="请设置风险复核日期；资料完整性提示不作为操作硬阻断。")
     sc_blacklisted_at = fields.Datetime(string="列入时间", readonly=True, tracking=True)
     sc_blacklisted_by = fields.Many2one("res.users", string="列入人", readonly=True, tracking=True)
     sc_blacklist_advisory = fields.Char(
         string="完善提示",
         compute="_compute_sc_blacklist_advisory",
+        sc_ui_usage="interaction",
         help="黑名单原因和复核日期仅作治理提示，不作为操作硬阻断条件。",
     )
     sc_transaction_eligibility = fields.Selection(
         [
-            ("eligible", "可办理"),
+            ("eligible", "正常"),
             ("review_required", "需风险复核"),
-            ("blocked", "禁止新业务"),
+            ("blocked", "存在交易限制"),
         ],
-        string="交易资格",
+        string="交易风险状态",
         compute="_compute_sc_transaction_eligibility",
         store=True,
         index=True,
-        help="由档案启用状态和客商风险级别统一判定，供付款申请等新业务办理复用。",
+        help="由档案启用状态和客商风险级别判定。是否可办由当前动作权限和业务规则决定；风险提醒与硬阻断按同一业务策略执行。",
     )
     sc_transaction_eligibility_reason = fields.Char(
         string="交易资格说明",
         compute="_compute_sc_transaction_eligibility",
         store=True,
+        sc_ui_usage="interaction",
     )
     sc_attachment_ids = fields.Many2many(
         "ir.attachment",
@@ -241,24 +243,30 @@ class ResPartner(models.Model):
                 partner.sc_transaction_eligibility = "eligible"
                 partner.sc_transaction_eligibility_reason = "档案有效，可正常发起业务。"
 
-    def _sc_assert_transaction_eligible(self, business_label=None):
-        """Fail closed when a document starts business with a blocked counterparty."""
+    def _sc_transaction_guidance(self, business_label=None):
+        """One native decision consumed by the business guard and action metadata."""
+        self.ensure_one()
         label = business_label or _("业务")
-        blocked = self.filtered(
-            lambda partner: partner.sc_transaction_eligibility == "blocked"
-        )
-        if blocked:
-            details = "；".join(
-                _(
-                    "%(name)s：%(reason)s",
-                    name=partner.display_name,
-                    reason=partner.sc_transaction_eligibility_reason,
-                )
-                for partner in blocked
-            )
-            raise UserError(
-                _("无法发起%(label)s。%(details)s", label=label, details=details)
-            )
+        decision = {"blocking": False, "requires_confirmation": False, "message": "",
+                    "reason_code": "", "severity": "none", "policy_kind": "none", "risk_message": ""}
+        if self.sc_transaction_eligibility == "blocked":
+            detail = _("%(name)s：%(reason)s", name=self.display_name, reason=self.sc_transaction_eligibility_reason)
+            decision.update(blocking=True, severity="error", reason_code="PARTNER_TRANSACTION_BLOCKED",
+                            message=_("无法发起%(label)s。%(details)s", label=label, details=detail),
+                            policy_kind="invariant" if not self.active else "risk",
+                            risk_message=_("当前往来单位存在交易风险。%(reason)s", reason=self.sc_transaction_eligibility_reason))
+        elif self.sc_transaction_eligibility == "review_required":
+            decision.update(requires_confirmation=True, severity="warning", reason_code="PARTNER_TRANSACTION_REVIEW_REQUIRED",
+                            message=_("当前往来单位需要风险复核。%(reason)s", reason=self.sc_transaction_eligibility_reason),
+                            policy_kind="risk", risk_message=_("当前往来单位需要风险复核。%(reason)s", reason=self.sc_transaction_eligibility_reason))
+        return decision
+
+    def _sc_assert_transaction_eligible(self, business_label=None):
+        """Enforce the same native decision published to action consumers."""
+        blocked = [partner._sc_transaction_guidance(business_label) for partner in self]
+        messages = [decision["message"] for decision in blocked if decision["blocking"]]
+        if messages:
+            raise UserError("；".join(messages))
         return True
 
     def _check_sc_blacklist_permission(self):

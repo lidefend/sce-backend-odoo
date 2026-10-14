@@ -1,6 +1,7 @@
 import { listRecords } from '../../api/data';
 import { requireDeclaredNumber } from '../contract/contractGap';
-export { ContractGapError, isContractGapError } from '../contract/contractGap';
+export { contractGapError, isContractGapError } from '../contract/contractGap';
+export type { ContractGapError } from '../contract/contractGap';
 export type { ContractDefectRef } from '../contract/contractGap';
 import type { WorksheetDomainTab } from './hierarchicalWorksheetDomainTabs';
 

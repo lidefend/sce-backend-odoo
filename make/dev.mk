@@ -2,7 +2,7 @@
 # ==================== Dev =============================
 # ======================================================
 .PHONY: local.dev.rebuild_realistic local.dev.verify_realistic
-.PHONY: up down restart logs ps odoo-shell prod.restart.safe prod.restart.full deploy.prod.sim.oneclick prod.sim.fresh.replay prod.sim.data.replay prod.sim.business.usable.init prod.sim.replay.then.usable.init prod.sim.replay.then.project frontend.dev frontend.stop frontend.restart frontend.logs acceptance.runtime.preflight acceptance.runtime.infrastructure.restore frontend.acceptance.up frontend.acceptance.down frontend.acceptance.health backend.acceptance.up backend.acceptance.down backend.acceptance.health backend.acceptance.logs frontend.collection.acceptance.up frontend.collection.acceptance.down backend.collection.acceptance.up backend.collection.acceptance.down verify.dev.acceptance.release release.dev.acceptance.publish release.daily_dev_acceptance.publish release.daily_product_navigation.snapshot release.daily_product_navigation.refresh release.daily_product_navigation.converge local.dev.demo_credentials.prepare local.dev.ready local.dev.up local.dev.down local.dev.restart local.dev.frontend local.dev.frontend.watch local.dev.candidate.frontend.up local.dev.candidate.frontend.down local.dev.candidate.frontend.health local.dev.candidate.frontend.visual-smoke local.dev.logs local.dev.ps local.dev.test local.dev.upgrade local.dev.verify_authority local.dev.sync_demo local.dev.demo_users.sync local.dev.reset_payment_request_fixture local.dev.demo.settlement_snapshot.repair local.dev.snapshot local.dev.contract_snapshot local.dev.project_create_contract_action_scope local.dev.project_profile_write_fixture local.dev.project_profile_write_browser local.dev.personnel_authorization_fixture local.dev.personnel_authorization_browser local.dev.tender_award_fixture local.dev.tender_award_browser verify.local.dev.tender_award.unit verify.local.dev.tender_award.journey local.dev.rebuild_demo local.dev.verify_demo local.dev.health verify.local.dev.frontend.quick.unit verify.local.dev.frontend.quick.gate verify.local.dev.payment_request.native_parity.readonly verify.local.dev.payment_request.floorplan.readonly verify.local.dev.payment_request.floorplan.submit verify.local.dev.payment_request.full_chain verify.local.dev.payment_request.settlement_component.journey verify.local.dev.payment_request.attachment_m2m.journey local.sample.require_env local.sample.ready local.sample.prepare local.sample.up local.sample.down local.sample.logs local.sample.snapshot local.sample.restore local.sample.discard local.sample.health local.clean.require_env local.clean.prepare local.clean.up local.clean.down local.clean.restart local.clean.logs local.clean.frontend local.env.status verify.local.development_lifecycle.unit verify.local.dev.project_create_contract_action_scope verify.local.dev.form_structure_surface_capability.orm verify.local.dev.canonical_navigation_projection.orm
+.PHONY: up down restart logs ps odoo-shell prod.restart.safe prod.restart.full deploy.prod.sim.oneclick prod.sim.fresh.replay prod.sim.data.replay prod.sim.business.usable.init prod.sim.replay.then.usable.init prod.sim.replay.then.project frontend.dev frontend.stop frontend.restart frontend.logs acceptance.runtime.preflight acceptance.runtime.infrastructure.restore frontend.acceptance.up frontend.acceptance.down frontend.acceptance.health backend.acceptance.up backend.acceptance.down backend.acceptance.health backend.acceptance.logs frontend.collection.acceptance.up frontend.collection.acceptance.down backend.collection.acceptance.up backend.collection.acceptance.down verify.dev.acceptance.release release.dev.acceptance.publish release.daily_dev_acceptance.publish release.daily_product_navigation.snapshot release.daily_product_navigation.refresh release.daily_product_navigation.converge local.dev.demo_credentials.prepare local.dev.ready local.dev.up local.dev.down local.dev.restart local.dev.frontend local.dev.frontend.watch local.dev.candidate.frontend.up local.dev.candidate.frontend.down local.dev.candidate.frontend.health local.dev.candidate.frontend.visual-smoke local.dev.logs local.dev.ps local.dev.test local.dev.upgrade local.dev.verify_authority local.dev.sync_demo local.dev.demo_users.sync local.dev.reset_payment_request_fixture local.dev.demo.settlement_snapshot.repair local.dev.snapshot local.dev.contract_snapshot local.dev.project_create_contract_action_scope local.dev.project_profile_write_fixture local.dev.project_profile_write_browser local.dev.personnel_authorization_fixture local.dev.personnel_authorization_browser local.dev.tender_award_fixture local.dev.tender_award_browser verify.local.dev.tender_award.unit verify.local.dev.tender_award.journey local.dev.rebuild_demo local.dev.verify_demo local.dev.health verify.local.dev.frontend.quick.unit verify.local.dev.frontend.quick.gate verify.local.dev.payment_request.native_parity.readonly verify.local.dev.payment_request.floorplan.readonly verify.local.dev.payment_request.floorplan.submit verify.local.dev.payment_request.full_chain verify.local.dev.payment_request.settlement_component.journey verify.local.dev.payment_request.attachment_m2m.journey local.sample.require_env local.sample.ready local.sample.prepare local.sample.up local.sample.down local.sample.logs local.sample.snapshot local.sample.restore local.sample.discard local.sample.health local.clean.require_env local.clean.prepare local.clean.up local.clean.down local.clean.restart local.clean.logs local.clean.frontend local.env.status verify.local.development_lifecycle.unit verify.local.dev.project_create_contract_action_scope verify.local.dev.form_structure_surface_capability.orm verify.local.dev.canonical_navigation_projection.orm verify.local.dev.platform_database_governance.orm local.dev.data_space.enroll_identities verify.local.dev.data_space_identity_enrollment.orm
 up: check-compose-project check-compose-env
 	@$(RUN_ENV) bash scripts/dev/up.sh
 down: check-compose-project check-compose-env
@@ -68,6 +68,10 @@ LOCAL_ENV_ISOLATE = env \
 	-u ODOO_PORT -u LIST_DB -u COMPOSE_PROJECT_NAME -u PROJECT -u ODOO_CONF \
 	-u VITE_ODOO_DB -u VITE_APP_ENV -u FRONTEND_DIST_DIR \
 	-u SC_ENVIRONMENT -u SC_ALLOW_DEMO_DATA -u ISOLATED_DEMO_TENANT
+
+.PHONY: verify.local.dev.layout_authority.unit
+verify.local.dev.layout_authority.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_local_development_lifecycle.LayoutAuthorityReadonlyProbeTest
 
 verify.local.development_lifecycle.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_local_development_lifecycle
@@ -156,7 +160,7 @@ local.dev.sync_demo: guard.prod.forbid local.dev.ready local.dev.demo_credential
 
 local.dev.reset_payment_request_fixture: guard.prod.forbid local.dev.ready local.dev.demo_credentials.prepare
 	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
-	  SC_ENVIRONMENT=demo SC_ALLOW_DEMO_DATA=1 STEPS=payment_request_floorplan_demo \
+	  SC_ENVIRONMENT=demo SC_ALLOW_DEMO_DATA=1 STEPS=payment_request_floorplan_demo PAYMENT_REQUEST_FIXTURE_SCOPE="$(if $(LOCAL_DEV_PAYMENT_FIXTURE_SCOPE),$(LOCAL_DEV_PAYMENT_FIXTURE_SCOPE),submit)" \
 	  bash scripts/demo/run_seed.sh
 
 # Governed repair for the demo invoice-snapshot drift that the demo seed can
@@ -368,7 +372,7 @@ verify.local.dev.payment_request.native_parity.readonly: guard.prod.forbid local
 	  bash scripts/verify/local_dev_payment_request_native_parity_readonly.sh
 
 verify.local.dev.payment_request.floorplan.readonly: guard.prod.forbid local.dev.ready
-	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" SOURCE_SHA="$(SOURCE_SHA)" LOCAL_DEV_FLOORPLAN_SCOPE="$(LOCAL_DEV_FLOORPLAN_SCOPE)" \
 	  bash scripts/verify/local_dev_payment_request_floorplan_readonly.sh
 
 .PHONY: verify.frontend.professionalization.payment_domain.browser
@@ -650,7 +654,7 @@ local.clean.prepare: guard.prod.forbid
 	@ROOT_DIR="$(ROOT_DIR)" SOURCE_ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  TARGET_ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" bash scripts/dev/local_clean_env_prepare.sh
 
-local.clean.up: guard.prod.forbid local.clean.prepare
+local.clean.up: guard.prod.forbid local.clean.prepare local.clean.frontend.prepare_output
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" up
 
 local.clean.down: guard.prod.forbid local.clean.require_env
@@ -663,7 +667,7 @@ local.clean.logs: guard.prod.forbid local.clean.require_env
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/dev/local_environment_doctor.sh clean
 
-local.clean.frontend: guard.prod.forbid local.clean.prepare
+local.clean.frontend: guard.prod.forbid local.clean.prepare local.clean.frontend.prepare_output
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/dev/frontend_static_build.sh
 
@@ -1090,3 +1094,89 @@ local.clean.view_capability_ledger_gate: guard.prod.forbid local.clean.require_e
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" gate.contract.view_capability_ledger
 
 # ======================================================
+
+.PHONY: local.dev.menu_facts.snapshot
+local.dev.menu_facts.snapshot: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_menu_fact_snapshot.py
+
+.PHONY: local.dev.native_projection.audit
+local.dev.native_projection.audit: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_native_projection_audit.py
+
+.PHONY: local.clean.frontend.prepare_output
+local.clean.frontend.prepare_output: guard.prod.forbid local.clean.prepare
+	@$(LOCAL_ENV_ISOLATE) ROOT_DIR="$(ROOT_DIR)" ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" \
+	  bash scripts/dev/local_clean_frontend_output_prepare.sh
+
+.PHONY: local.dev.data_scope.inventory
+local.dev.data_scope.inventory: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_data_scope_inventory.py
+
+# Local-dev-only governed onboarding (owner ruling 2026-10-14, Option 1):
+# the demo environment's main company IS the first onboarded business company,
+# so onboarding retires its bootstrap carrier marker and writes ONE registration
+# row. No business row changes company. Without the confirmation it is read-only.
+.PHONY: local.dev.data_space.onboard
+local.dev.data_space.onboard: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  SC_CONFIRM_DATA_SPACE_ONBOARDING="$${SC_CONFIRM_DATA_SPACE_ONBOARDING:-}" \
+	  bash scripts/ops/odoo_shell_exec.sh < scripts/ops/onboard_local_dev_demo_data_space.py
+
+# Onboarding owns the operator identity realm, but an Odoo module upgrade
+# reloads the demo user data while post_init_hook does not run again. This is
+# the governed, idempotent reconcile entry for that case; read-only by default.
+.PHONY: local.dev.data_space.enroll_identities
+local.dev.data_space.enroll_identities: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  SC_CONFIRM_DATA_SPACE_IDENTITY_ENROLLMENT="$${SC_CONFIRM_DATA_SPACE_IDENTITY_ENROLLMENT:-}" \
+	  bash scripts/ops/odoo_shell_exec.sh < scripts/ops/enroll_local_dev_demo_data_space_identities.py
+
+.PHONY: local.dev.demo.data_space.onboarding.plan
+local.dev.demo.data_space.onboarding.plan: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_demo_data_space_onboarding_plan.py
+
+.PHONY: local.dev.payroll.data_scope.readiness
+local.dev.payroll.data_scope.readiness: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_payroll_data_scope_readiness.py
+
+.PHONY: local.dev.data_scope.ceiling.readiness
+local.dev.data_scope.ceiling.readiness: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_data_scope_ceiling_readiness.py
+
+# Registered verify alias for the run index: the real-principal lock on the
+# installed data-purpose ceiling behind every declared ``source_bounded`` model,
+# pinned to the fixed test tag so a run that collects zero tests cannot pass.
+.PHONY: verify.local.dev.source_bounded_data_space_rules.orm
+verify.local.dev.source_bounded_data_space_rules.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_construction_core TEST_TAGS="source_bounded_data_space_rules" local.dev.test
+
+# Registered verify alias for the run index: the per-principal delivery lock on
+# sc.dictionary startup scope (global/company/role), pinned to the fixed test tag
+# so a run that collects zero tests cannot pass.
+.PHONY: verify.local.dev.dictionary_scope_delivery.orm
+verify.local.dev.dictionary_scope_delivery.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_core TEST_TAGS="dictionary_scope_delivery" local.dev.test
+
+# Registered verify alias for the run index: the real-principal lock on platform
+# database governance (lifecycle entries, independent maintenance approval, and
+# the never-a-business-data-grant boundary), pinned to the fixed test tag so a
+# run that collects zero tests cannot pass.
+.PHONY: verify.local.dev.platform_database_governance.orm
+verify.local.dev.platform_database_governance.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_core TEST_TAGS="platform_database_governance" local.dev.test
+
+# Onboarding must produce a readable data space: the operator identity realm is
+# enrolled with the registration, never assembled per user in demo data.
+.PHONY: verify.local.dev.data_space_identity_enrollment.orm
+verify.local.dev.data_space_identity_enrollment.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_core TEST_TAGS="data_space_identity_enrollment" local.dev.test

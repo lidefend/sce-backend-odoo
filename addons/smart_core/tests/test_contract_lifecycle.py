@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import unittest
 from pathlib import Path
@@ -19,6 +20,10 @@ verify_unified_page_contract_integrity = contract_lifecycle.verify_unified_page_
 
 
 class ContractLifecycleTests(unittest.TestCase):
+    def test_published_schema_digest_matches_authoritative_file(self):
+        schema = Path(__file__).resolve().parents[3] / "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json"
+        self.assertEqual(contract_lifecycle.UNIFIED_PAGE_SCHEMA_SHA256, hashlib.sha256(schema.read_bytes()).hexdigest())
+
     def _contract(self):
         return {"pageInfo": {"pageId": "project.list", "contractVersion": "2.2.0"}}
 

@@ -24,7 +24,8 @@ import {
   resolveActionViewPageSizeOptions,
   resolveActionViewPageSizeRange,
 } from '../src/app/runtime/actionViewListPageSizeRuntime';
-import { ContractGapError } from '../src/app/contract/contractGap';
+import { isContractGapError } from '../src/app/contract/contractGap';
+import type { ContractGapError } from '../src/app/contract/contractGap';
 
 let cases = 0;
 const check = (actual: unknown, expected: unknown, label: string) => {
@@ -83,7 +84,7 @@ const expectGap = (run: () => unknown, missing: string, label: string) => {
   try {
     run();
   } catch (error) {
-    assert.ok(error instanceof ContractGapError, `${label}: expected ContractGapError`);
+    assert.ok(isContractGapError(error), `${label}: expected ContractGapError`);
     assert.equal((error as ContractGapError).defect.missing, missing, `${label}: defect path`);
     cases += 1;
     return;

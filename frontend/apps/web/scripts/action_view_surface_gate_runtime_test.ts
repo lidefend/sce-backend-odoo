@@ -15,7 +15,8 @@ import assert from 'node:assert/strict';
 
 import { createContractV2Store } from '../src/app/contracts/v2/store';
 import type { ContractV2Snapshot } from '../src/app/contracts/v2/types';
-import { ContractGapError } from '../src/app/contract/contractGap';
+import { isContractGapError } from '../src/app/contract/contractGap';
+import type { ContractGapError } from '../src/app/contract/contractGap';
 import { resolveActionViewPageSizeOptions } from '../src/app/runtime/actionViewListPageSizeRuntime';
 import {
   resolveActionViewSurfaceDisplayState,
@@ -73,7 +74,7 @@ const expectGap = (run: () => unknown, missing: string, label: string) => {
   try {
     run();
   } catch (error) {
-    assert.ok(error instanceof ContractGapError, `${label}: expected ContractGapError`);
+    assert.ok(isContractGapError(error), `${label}: expected ContractGapError`);
     assert.equal((error as ContractGapError).defect.missing, missing, `${label}: defect path`);
     cases += 1;
     return;

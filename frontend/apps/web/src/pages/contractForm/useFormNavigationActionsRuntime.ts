@@ -15,10 +15,10 @@ export function useFormNavigationActionsRuntime(params: {
     await params.router.replace({ path: target, query: params.resolveWorkspaceContextQuery() });
   }
 
-  async function returnToIntakeList(createdId: number | string) {
+  async function returnToIntakeList(createdId: number | string, navigate?: (target: Parameters<Router['replace']>[0]) => Promise<unknown>) {
     const queryActionId = Number(params.currentQuery().action_id || params.actionId() || 0) || 0;
     if (queryActionId > 0) {
-      await params.router.replace({
+      await (navigate || params.router.replace.bind(params.router))({
         path: `/a/${queryActionId}`,
         query: pickContractNavQuery(params.currentQuery(), {
           record_id: String(createdId),

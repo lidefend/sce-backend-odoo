@@ -13,6 +13,321 @@ PREPARE = ROOT / "scripts/dev/local_clean_env_prepare.sh"
 SAMPLE_PREPARE = ROOT / "scripts/dev/local_sample_env_prepare.sh"
 
 
+class EnvironmentDoctorVolumeReadbackTest(unittest.TestCase):
+    def run_doctor(self, mode="present", project="sc-local-clean"):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            common = root / "scripts/common"
+            common.mkdir(parents=True)
+            (common / "env.sh").write_text("\n".join([
+                f"COMPOSE_PROJECT_NAME={project}", "DB_NAME=sc_clean",
+                "ODOO_DBFILTER='^sc_clean$'", "ISOLATED_REHEARSAL_DATABASE=1",
+                "DB_DATA=sc_local_clean_db_data", "REDIS_DATA=sc_local_clean_redis_data",
+                "ODOO_DATA=sc_local_clean_odoo_data",
+            ]) + "\n")
+            (common / "compose.sh").write_text(r'''
+compose_dev() { printf 'compose %s\n' "$*" >> "$TRACE_FILE"; }
+docker() {
+  printf 'docker %s\n' "$*" >> "$TRACE_FILE"
+  case "$1 $2" in
+    'volume ls')
+      [[ "$MOCK_MODE" != error ]] || return 17
+      [[ "$MOCK_MODE" != absent ]] || return 0
+      [[ "$MOCK_MODE" != mismatch ]] || { echo another_volume; return 0; }
+      local name="${4#name=^}"
+      printf '%s\n' "${name%\$}"
+      ;;
+    'volume inspect') printf '%s project=sc-local-clean volume=declared\n' "${@: -1}" ;;
+    'ps -a') echo 'existing-container clean-odoo Exited project=sc-local-clean' ;;
+    *) return 99 ;;
+  esac
+}
+''')
+            trace = root / "trace"
+            result = subprocess.run(
+                ["bash", str(ROOT / "scripts/dev/local_environment_doctor.sh"), "clean"],
+                env={**os.environ, "ROOT_DIR": str(root), "TRACE_FILE": str(trace), "MOCK_MODE": mode},
+                text=True, capture_output=True,
+            )
+            return result, trace.read_text() if trace.exists() else ""
+
+    def test_stopped_profile_reports_existing_exact_volumes_and_mount_users(self):
+        result, trace = self.run_doctor()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.count("exists=true"), 3)
+        self.assertEqual(result.stdout.count("existing-container"), 3)
+        for kind in ("db", "redis", "odoo"):
+            name = f"sc_local_clean_{kind}_data"
+            self.assertIn(f"name=^{name}$", trace)
+            self.assertIn(f"volume={name}", trace)
+        self.assertNotIn("docker run", trace)
+        self.assertNotIn("create", trace)
+        self.assertNotIn("remove", trace)
+
+    def test_absent_volumes_are_observations_not_created(self):
+        result, trace = self.run_doctor("absent")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.count("exists=false"), 3)
+        self.assertNotIn("volume inspect", trace)
+        self.assertNotIn("docker ps", trace)
+
+    def test_docker_error_cannot_be_reported_as_absence(self):
+        result, trace = self.run_doctor("error")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("exists=false", result.stdout)
+        self.assertNotIn("compose", trace)
+
+    def test_mismatched_volume_or_profile_stops_before_followup(self):
+        result, trace = self.run_doctor("mismatch")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("volume inspect", trace)
+        result, trace = self.run_doctor(project="another-project")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(trace, "")
+
+
+class LayoutAuthorityReadonlyProbeTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        import ast, re
+        source = (ROOT / "scripts/verify/local_dev_payment_request_native_parity_ids.py").read_text()
+        tree = ast.parse(source)
+        names = {"guidance_reference_paths", "split_layout_authority", "layout_differences", "validate_layout_observation", "select_authority_record"}
+        namespace = {"re": re}
+        exec(compile(ast.Module(body=[node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in names], type_ignores=[]), "actual-probe-functions", "exec"), namespace)
+        cls.functions = namespace
+
+    def test_fields_occurrences_order_and_span_are_not_removed(self):
+        value = {"nodes": [{"nodeId": "one", "span": 12, "widgetList": [{"fieldCode": "name", "occurrenceIndex": 1, "visible": False}]}]}
+        flags = []
+        structure = self.functions["split_layout_authority"](value, permissions=flags)
+        self.assertEqual(structure["nodes"][0]["widgetList"], [{"fieldCode": "name", "occurrenceIndex": 1}])
+        self.assertEqual(structure["nodes"][0]["span"], 12)
+        self.assertEqual(flags, [{"path": "$.nodes[0].widgetList[0].visible", "value": False}])
+        self.assertFalse(value["nodes"][0]["widgetList"][0]["visible"])
+
+    def test_real_layout_change_is_reported_separately_from_access(self):
+        split = self.functions["split_layout_authority"]
+        diff = self.functions["layout_differences"]
+        self.assertEqual(diff(split({"span": 12, "readonly": True}), split({"span": 12, "readonly": False})), [])
+        self.assertEqual(diff({"span": 12}, {"span": 24})[0]["path"], "$.span")
+        self.assertTrue(diff({"fields": ["a", "b"]}, {"fields": ["b", "a"]}))
+
+    def test_success_requires_nonempty_exact_form_declaration(self):
+        import copy
+        validate = self.functions["validate_layout_observation"]
+        good = {"pageInfo": {"model": "example"}, "dataContract": {"mainData": {"id": 7}},
+                "layoutContract": {"containerTree": [{"id": "root", "span": 24}]},
+                "formStructureContract": {"source": "ui.contract.v2.form_structure_contract",
+                    "model": "example", "viewType": "form", "structureAuthority": "native_form_slots"}}
+        self.assertEqual(validate(good, "example", 7)["layoutContract"], good["layoutContract"])
+        for path, value in [("layoutContract", None), ("layoutContract", {"containerTree": []}),
+                            ("formStructureContract", {}), ("formStructureContract", {**good["formStructureContract"], "model": "other"})]:
+            bad = copy.deepcopy(good); bad[path] = value
+            with self.subTest(path=path, value=value), self.assertRaises(ValueError):
+                validate(bad, "example", 7)
+        with self.assertRaises(ValueError):
+            validate(good, "example", 8)
+
+    def test_editable_selection_is_exact_draft_and_never_resets(self):
+        from types import SimpleNamespace
+        select = self.functions["select_authority_record"]
+        old = SimpleNamespace(id=99, state="done")
+        draft = SimpleNamespace(id=3, state="draft")
+        self.assertIs(select("floorplan", old, draft), old)
+        self.assertIs(select("editable", old, draft), draft)
+        with self.assertRaises(ValueError):
+            select("editable", draft, old)
+        with self.assertRaises(ValueError):
+            select("other", old, draft)
+        self.assertEqual(old.state, "done")
+
+    def test_reference_tokens_are_exact_and_nested(self):
+        find = self.functions["guidance_reference_paths"]
+        self.assertEqual(find({"fields": ["guide", "guide_suffix"]}, ["guide"]), [{"field": "guide", "path": "$.fields[0]"}])
+        self.assertEqual(len(find('<field name="guide"/>', ["guide"])), 1)
+
+    def test_authority_mode_exits_before_any_browser_or_approval(self):
+        import json
+        script = ROOT / "scripts/verify/local_dev_payment_request_floorplan_readonly.sh"
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "scripts/ops").mkdir(parents=True)
+            (root / "scripts/verify").mkdir(parents=True)
+            (root / "scripts/verify/local_dev_payment_request_native_parity_ids.py").write_text("# mock transport input")
+            (root / "scripts/ops/odoo_shell_exec.sh").write_text("""#!/bin/bash
+cat >/dev/null
+printf 'LOCAL_DEV_PAYMENT_PARITY_JSON={"database":"sc_dev_demo","probe":"%s"}\\n' "$CONTRACT_REFERENCE_PREFLIGHT"
+""")
+            env_file = root / "env"
+            env_file.write_text("COMPOSE_PROJECT_NAME=sc-local-dev\nDB_NAME=sc_dev_demo\nNGINX_PORT=18081\nSC_DEMO_USER_PASSWORD=synthetic-probe-only\n")
+            result = subprocess.run(["bash", str(script)], env={**os.environ, "ROOT_DIR": str(root), "ENV_FILE": str(env_file), "SOURCE_SHA": "a" * 40, "LOCAL_DEV_FLOORPLAN_SCOPE": "authority"}, text=True, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            payload = json.loads((root / "artifacts/playwright/local-dev-payment-request-floorplan/authority.json").read_text())
+            self.assertEqual(payload["probe"], "authority")
+            self.assertFalse((root / "artifacts/playwright/local-dev-payment-request-floorplan/declaration-edit.json").exists())
+
+
+class FloorplanEvidenceRecordingTest(unittest.TestCase):
+    def test_resolver_preserves_raw_diagnostics_and_exit_status(self):
+        source = (ROOT / "scripts/verify/local_dev_payment_request_floorplan_readonly.sh").read_text()
+        function = "resolve_target() {" + source.split("resolve_target() {", 1)[1].split('\nbefore="$(resolve_target before)"', 1)[0]
+        for status, payload in ((7, "upstream exact error"), (0, "LOCAL_DEV_PAYMENT_PARITY_JSON={}"), (0, "no identity")):
+            with self.subTest(status=status, payload=payload), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                (root / "scripts/ops").mkdir(parents=True)
+                (root / "scripts/verify").mkdir()
+                (root / "scripts/verify/local_dev_payment_request_native_parity_ids.py").write_text("unused")
+                (root / "scripts/ops/odoo_shell_exec.sh").write_text("printf '%s\\n' '" + payload + "'\necho resolver-stderr >&2\nexit " + str(status))
+                result = subprocess.run(["bash", "-c", function + "\nresolve_target before"], env={**os.environ, "ROOT_DIR": directory, "output_dir": directory, "DB_NAME": "sc_dev_demo", "LOCAL_DEV_FLOORPLAN_SCOPE": "consumption"}, capture_output=True, text=True)
+                self.assertEqual(result.returncode, status if status else (0 if "PARITY_JSON" in payload else 1))
+                log = (root / "resolver-consumption-before.log").read_text()
+                self.assertIn(payload, log)
+                self.assertIn("resolver-stderr", log)
+                if status:
+                    self.assertIn("upstream exact error", result.stderr)
+                    self.assertEqual(result.stdout, "")
+                elif "PARITY_JSON" in payload:
+                    self.assertEqual(result.stdout.strip(), "{}")
+
+    def test_malformed_approval_diagnostic_preserves_original_failure(self):
+        source = (ROOT / "scripts/verify/local_dev_payment_request_floorplan_readonly.sh").read_text()
+        body = source.split('  if [[ "$approval_status" -ne 0 ]]; then', 1)[1].split('\n  fi', 1)[0]
+        with tempfile.TemporaryDirectory() as directory:
+            (Path(directory) / "approval-edit.json").write_text("{broken")
+            result = subprocess.run(["bash", "-ec", body], env={**os.environ, "output_dir": directory, "profile": "edit", "approval_status": "9"}, text=True, capture_output=True)
+            self.assertEqual(result.returncode, 9)
+            self.assertIn("malformed", result.stderr)
+
+    def script(self, marker):
+        source = (ROOT / "scripts/verify/local_dev_payment_request_floorplan_readonly.sh").read_text()
+        return source.split("<<'" + marker + "'", 1)[1].split("\n" + marker, 1)[0]
+
+    def run_results(self, *, summary, after=None, status="0"):
+        import json
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory)
+            (out / 'units.json').write_text(json.dumps({'units': [{'id': 'edit:1440', 'fingerprint': 'current'}, {'id': 'readonly:390', 'fingerprint': 'other'}]}))
+            if summary is not None:
+                (out / 'summary.json').write_text(json.dumps(summary))
+            env = {'OUTPUT_DIR': directory, 'BEFORE_JSON': '{"business_fingerprint":"same"}',
+                   'AFTER_JSON': json.dumps(after), 'READBACK_STATUS': status, 'BROWSER_STATUS': '0'}
+            with patch.dict(os.environ, env):
+                with self.assertRaises(SystemExit) as result:
+                    exec(compile(self.script('PY_RESULTS'), 'actual-wrapper-results', 'exec'), {})
+            return result.exception.code, json.loads((out / 'summary.json').read_text()), (json.loads((out / 'results.json').read_text()) if (out / 'results.json').exists() else None)
+
+    def test_partial_records_only_actual_fingerprinted_keys(self):
+        code, summary, result = self.run_results(summary={'pass': True, 'executed_keys': ['edit:1440'], 'unit_results': {'edit:1440': 'passed'}, 'unit_fingerprints': {'edit:1440': 'current'}}, after={'business_fingerprint': 'same'})
+        self.assertEqual(code, 0)
+        self.assertEqual(result['results'], {'edit:1440': 'passed'})
+        self.assertEqual(result['not_executed'], ['readonly:390'])
+
+    def test_partial_failure_records_through_real_engine_without_covering_siblings(self):
+        from scripts.ops.evidence_scope import record_units, ScopeError
+        code, summary, result = self.run_results(summary={'pass': False,
+            'affected_keys': ['edit:1440', 'readonly:390'], 'executed_keys': ['edit:1440'],
+            'unit_results': {'edit:1440': 'passed'}, 'unit_fingerprints': {'edit:1440': 'current'}}, after={'business_fingerprint': 'same'})
+        self.assertEqual(code, 1)
+        self.assertEqual(summary['affected_keys'], ['edit:1440', 'readonly:390'])
+        document = {'schema':'evidence_scope.units.v1','check':'probe','identity':{},'units':[
+            {'id':'edit:1440','fingerprint':'current'}, {'id':'readonly:390','fingerprint':'other'}]}
+        ledger = record_units(document, {}, result, source='actual-partial')
+        self.assertEqual(set(ledger['units']), {'edit:1440'})
+        self.assertEqual(ledger['units']['edit:1440']['status'], 'passed')
+        with self.assertRaises(ScopeError):
+            record_units(document, {}, {**result, 'planned_affected': summary['affected_keys']})
+
+    def test_global_browser_error_invalidates_completed_keys(self):
+        _, _, result = self.run_results(summary={'pass': False, 'errors':['HTTP500'],
+            'executed_keys':['edit:1440'], 'unit_results':{'edit:1440':'passed'}, 'unit_fingerprints':{'edit:1440':'current'}},
+            after={'business_fingerprint':'same'})
+        self.assertEqual(result['results'], {'edit:1440':'failed'})
+
+    def test_failed_after_readback_cannot_pass_completed_keys(self):
+        code, summary, result = self.run_results(summary={'pass': True, 'executed_keys': ['edit:1440'], 'unit_results': {'edit:1440': 'passed'}, 'unit_fingerprints': {'edit:1440': 'current'}}, after=None, status='1')
+        self.assertEqual(code, 1)
+        self.assertFalse(summary['pass'])
+        self.assertEqual(result['results'], {'edit:1440': 'failed'})
+
+    def test_old_summary_fingerprint_is_not_relabelled(self):
+        for fingerprint in ('old', None):
+            code, _, result = self.run_results(summary={'pass': True, 'executed_keys': ['edit:1440'], 'unit_results': {'edit:1440':'passed'}, 'unit_fingerprints': {'edit:1440': fingerprint}}, after={'business_fingerprint': 'same'})
+            self.assertIn('do not match', str(code))
+            self.assertIsNone(result)
+
+    def test_startup_failure_leaves_no_executed_units(self):
+        code, summary, result = self.run_results(summary=None, after={'business_fingerprint': 'same'})
+        self.assertEqual(code, 1)
+        self.assertEqual(result['executed_units'], [])
+        self.assertFalse(summary['pass'])
+
+    def test_approved_semantics_invalidate_only_own_profile_units(self):
+        import json
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory)
+            target = {'database': 'sc_dev_demo', 'user': {'id': 3, 'company_id': 1},
+                      'contract_resolution': {'expected_sha': 'a' * 40, 'targets': {'payment_request': {'model': 'payment.request'}}},
+                      'action': {'id': 10}, 'menu': {'id': 20}, 'record': {'id': 7, 'name': 'Sample'}}
+            def receipt(profile, digest):
+                return {'contract': {'status': 'PASS', 'approved_semantic_sha256': digest,
+                    'recomputed_semantic_sha256': digest, 'request': {'render_profile': profile},
+                    'identity': {'uid': 3, 'login': 'demo', 'company_id': 1, 'role_code': 'finance'}}}
+            for profile in ('edit', 'readonly'):
+                (out / f'declaration-{profile}.json').write_text(json.dumps({'profile': profile}))
+                (out / f'approval-{profile}.json').write_text(json.dumps(receipt(profile, 'a' * 64)))
+            env = {'ROOT_DIR': str(ROOT), 'OUTPUT_DIR': directory, 'BEFORE_JSON': json.dumps(target),
+                   'SOURCE_SHA': 'a' * 40, 'LOCAL_DEV_FLOORPLAN_SCOPE': 'consumption'}
+            def generate():
+                with patch.dict(os.environ, env):
+                    exec(compile(self.script('PY_UNITS'), 'actual-wrapper-units', 'exec'), {})
+                return {row['id']: row['fingerprint'] for row in json.loads((out / 'units.json').read_text())['units']}
+            before = generate()
+            self.assertEqual(set(before), {'entry_click'} | {
+                f'{surface}:{kind}:{width}'
+                for surface, kinds in (('edit', ('auth_occurrence', 'span', 'guidance')),
+                                       ('readonly', ('auth_occurrence',)))
+                for kind in kinds for width in (1440, 390)
+            })
+            original_read_bytes = Path.read_bytes
+            def changed_header(path):
+                value = original_read_bytes(path)
+                return value + b"\n// changed" if str(path).endswith("pages/contractForm/useRecordFormLayout.ts") else value
+            with patch.object(Path, 'read_bytes', changed_header):
+                header_changed = generate()
+            self.assertEqual(header_changed['entry_click'], before['entry_click'])
+            self.assertNotEqual(header_changed['edit:auth_occurrence:1440'], before['edit:auth_occurrence:1440'])
+            def changed_navigation(path):
+                value = original_read_bytes(path)
+                return value + b"\n// changed" if str(path).endswith("app/runtime/recordEntryContract.ts") else value
+            with patch.object(Path, 'read_bytes', changed_navigation):
+                self.assertNotEqual(generate()['entry_click'], before['entry_click'])
+            env['SOURCE_SHA'] = 'b' * 40
+            self.assertEqual(generate(), before, 'revision alone is provenance')
+            (out / 'approval-edit.json').write_text(json.dumps(receipt('edit', 'b' * 64)))
+            after = generate()
+            self.assertNotEqual(after['edit:auth_occurrence:1440'], before['edit:auth_occurrence:1440'])
+            for width in (1440, 390):
+                self.assertNotEqual(after[f'edit:guidance:{width}'], before[f'edit:guidance:{width}'])
+            self.assertEqual(after['readonly:auth_occurrence:1440'], before['readonly:auth_occurrence:1440'])
+            self.assertEqual(after['entry_click'], before['entry_click'], 'form semantic changes do not invalidate independent entry')
+            bad = receipt('edit', 'b' * 64); bad['contract']['status'] = 'FAIL'
+            (out / 'approval-edit.json').write_text(json.dumps(bad))
+            with self.assertRaisesRegex(SystemExit, 'unverified'):
+                generate()
+
+    def test_cleanup_precedes_browser_and_removes_only_owned_outputs(self):
+        source = (ROOT / "scripts/verify/local_dev_payment_request_floorplan_readonly.sh").read_text()
+        line = next(line for line in source.splitlines() if line.startswith('rm -f '))
+        self.assertLess(source.index(line), source.index('node "$ROOT_DIR/scripts/verify/local_dev_payment_request_floorplan_readonly.mjs"'))
+        with tempfile.TemporaryDirectory() as directory:
+            for name in ('summary.json', 'results.json', 'record.json', 'before.json'):
+                (Path(directory) / name).write_text('old')
+            subprocess.run(['bash', '-c', line], env={**os.environ, 'output_dir': directory}, check=True)
+            self.assertEqual(sorted(p.name for p in Path(directory).iterdir()), ['before.json'])
+
 class LocalDevelopmentLifecycleTest(unittest.TestCase):
     def test_collaboration_journey_cleanup_commits_and_fails_closed(self):
         cleanup = (
@@ -187,7 +502,8 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn('LOCAL_DEV_CANONICAL_ENV_FILE="$(readlink -f "$ENV_FILE")"', submit)
         self.assertIn('ENV_FILE="$LOCAL_DEV_CANONICAL_ENV_FILE"', submit)
-        self.assertIn('make -C "$ROOT_DIR" --no-print-directory local.dev.sync_demo', submit)
+        self.assertNotIn('local.dev.sync_demo', submit)
+        self.assertIn('local.dev.reset_payment_request_fixture', submit)
         self.assertIn('JOURNEY_SCOPE="${PAYMENT_REQUEST_JOURNEY_SCOPE:-payment}"', submit)
         self.assertIn('PAYMENT_REQUEST_JOURNEY_SCOPE="$JOURNEY_SCOPE"', submit)
         self.assertIn("if (journeyScope === 'relation')", submit_browser)
@@ -227,7 +543,7 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
             submit_browser,
         )
         self.assertIn(
-            "page.locator('[data-product-page-header]').getByRole('button', { name: /^新建$/ })",
+            "page.locator('[data-list-surface-header]').getByRole('button', { name: /^新建$/ })",
             submit_browser,
         )
         self.assertNotIn(
@@ -243,7 +559,7 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
             submit_browser,
         )
         self.assertIn(
-            "relation capabilities were duplicated into supplementary input",
+            "metrics.duplicateFields.length === 0",
             submit_browser,
         )
         self.assertNotIn(
@@ -256,7 +572,7 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         )
         self.assertIn("project create action", submit_browser)
         self.assertIn("project search-more action", submit_browser)
-        self.assertEqual(submit_browser.count("[data-disclosure-trigger]"), 2)
+        self.assertEqual(submit_browser.count("[data-disclosure-trigger]"), 1)
         self.assertNotIn("supplementaryDetails.locator('summary')", submit_browser)
         self.assertNotIn("auditRegion.locator('summary')", submit_browser)
         self.assertEqual(
@@ -264,7 +580,7 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
             3,
         )
         self.assertIn(
-            '[data-professional-workflow-component="statusbar"][data-workflow-current="submit"]',
+            "submittedStatusbar.getAttribute('data-workflow-current')",
             submit_browser,
         )
         self.assertLess(
@@ -280,8 +596,8 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         self.assertIn("Number(body?.params?.record_id || 0) === Number(expectedRecordId)", submit_browser)
         self.assertNotIn("String(body?.params?.model || '') === 'payment.request';\n  } catch", submit_browser)
         self.assertLess(
-            submit_browser.index("submittedRecordSurface.locator('[data-object-task-page]').waitFor"),
-            submit_browser.index("const statusSummary = await requireUnique"),
+            submit_browser.index("submittedRecordSurface.locator('[data-contract-form-driver]').waitFor"),
+            submit_browser.index("const statusSummaryText ="),
         )
         self.assertNotIn('data-form-mode-action="edit"', submit_browser)
         self.assertNotIn("project login database", submit_browser)
@@ -343,7 +659,7 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         self.assertIn("name: /^保存草稿$/", browser)
         self.assertIn("group_sc_role_finance_user", browser)
         self.assertIn("finance_user_execution_submitter", browser)
-        self.assertIn('data-product-primary-action][data-action-method="action_confirm"', browser)
+        self.assertIn('[data-action-method="action_confirm"][data-action-enabled="true"]:visible', browser)
         self.assertIn('data-action-method="validate_tier"', browser)
         self.assertIn("optional payment execution approval confirms directly when disabled", browser)
         self.assertIn("configured payment execution approval creates tier reviews", browser)
@@ -403,14 +719,14 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         self.assertIn("floorplanRegions", browser)
         self.assertIn("report.failureSurface", browser)
         self.assertIn("pagination:", browser)
-        self.assertIn("locateCollectionRecord", floorplan_browser)
-        self.assertIn("CollectionPaginationFooter", floorplan_browser)
-        self.assertIn("previousRowSignature", floorplan_browser)
-        self.assertIn("__paymentFloorplanListExchangeCount", floorplan_browser)
-        self.assertIn("authorized payment list row did not open the governed edit route", floorplan_browser)
-        self.assertIn("payment list row did not preserve governed action/menu/list context", floorplan_browser)
-        self.assertIn("explicit readonly route exposed a legacy edit-mode switch", floorplan_browser)
-        self.assertIn("readonly relationship surface exposed a write-capable attachment action", floorplan_browser)
+        # Exact receipt and live contract authority replaced the retired fixed floorplan.
+        for required in ('assertContractPrerequisite', 'observedContractBinding', 'formDeclaration',
+                         'approved form contract diverged', 'readonly fields became editable',
+                         'await actualRow.click()', 'page.waitForURL', 'business writes attempted',
+                         'x2many_nondefault_page_size', 'x2many_cross_page_count'):
+            self.assertIn(required, floorplan_browser)
+        self.assertNotIn("data-object-task-page]\".waitFor", floorplan_browser)
+
 
     def test_payment_settlement_component_reset_keeps_canonical_env_authority(self):
         journey = (

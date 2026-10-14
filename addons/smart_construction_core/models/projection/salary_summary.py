@@ -12,10 +12,13 @@ class ScSalarySummary(models.Model):
     _sc_readonly_navigation_button_methods = {"action_open_salary_documents"}
 
     display_name = fields.Char(string="汇总项", readonly=True)
+    company_id = fields.Many2one("res.company", string="公司", readonly=True, index=True)
+    project_id = fields.Many2one("project.project", string="项目", readonly=True, index=True)
     period_year = fields.Integer(string="年度", readonly=True, index=True)
     period_month = fields.Integer(string="月份", readonly=True, index=True)
     department_id = fields.Many2one("hr.department", string="部门", readonly=True, index=True)
     payer_unit = fields.Char(string="发放单位", readonly=True, index=True)
+    payer_unit_key = fields.Char(string="来源发放单位", readonly=True)
     currency_id = fields.Many2one("res.currency", string="币种", readonly=True)
     salary_base = fields.Monetary(string="薪资基数", currency_field="currency_id", readonly=True)
     gross_amount = fields.Monetary(string="应发工资", currency_field="currency_id", readonly=True)
@@ -49,9 +52,7 @@ class ScSalarySummary(models.Model):
 
     def _payer_unit_domain(self):
         self.ensure_one()
-        if self.payer_unit == "未填写发放单位":
-            return self._empty_aware_domain("payer_unit", False)
-        return self._empty_aware_domain("payer_unit", self.payer_unit)
+        return self._empty_aware_domain("payer_unit", self.payer_unit_key)
 
     def _salary_document_domain(self):
         self.ensure_one()
@@ -59,7 +60,10 @@ class ScSalarySummary(models.Model):
             [
                 ("active", "=", True),
                 ("fact_type", "=", "salary_registration"),
-                ("state", "!=", "cancel"),
+                ("state", "=", "done"),
+                ("company_id", "=", self.company_id.id),
+                ("project_id", "=", self.project_id.id),
+                ("currency_id", "=", self.currency_id.id),
                 ("period_year", "=", self.period_year),
                 ("period_month", "=", self.period_month),
                 ("department_id", "=", self.department_id.id if self.department_id else False),
@@ -104,12 +108,7 @@ class ScSalarySummary(models.Model):
             f"""
             CREATE OR REPLACE VIEW {self._table} AS (
                 SELECT
-                    row_number() OVER (
-                        ORDER BY h.period_year DESC NULLS LAST,
-                                 h.period_month DESC NULLS LAST,
-                                 h.department_id NULLS LAST,
-                                 h.payer_unit
-                    )::integer AS id,
+                    MIN(h.id) AS id,
                     CONCAT_WS(
                         ' / ',
                         COALESCE(NULLIF(h.period_year::text, '0'), '未填写年度')
@@ -118,11 +117,14 @@ class ScSalarySummary(models.Model):
                         COALESCE(d.name->>'zh_CN', d.name->>'en_US', '未填写部门'),
                         COALESCE(NULLIF(h.payer_unit, ''), '未填写发放单位')
                     ) AS display_name,
+                    h.company_id,
+                    h.project_id,
                     h.period_year,
                     h.period_month,
                     h.department_id,
                     COALESCE(NULLIF(h.payer_unit, ''), '未填写发放单位') AS payer_unit,
-                    COALESCE(h.currency_id, (SELECT currency_id FROM res_company ORDER BY id LIMIT 1)) AS currency_id,
+                    NULLIF(h.payer_unit, '') AS payer_unit_key,
+                    h.currency_id,
                     COALESCE(SUM(h.salary_base), 0.0) AS salary_base,
                     COALESCE(SUM(h.gross_amount), 0.0) AS gross_amount,
                     COALESCE(SUM(h.deduction_amount), 0.0) AS deduction_amount,
@@ -134,17 +136,20 @@ class ScSalarySummary(models.Model):
                     COUNT(*) FILTER (WHERE h.legacy_source_id IS NULL)::integer AS manual_count,
                     MIN(h.business_date) AS first_business_date,
                     MAX(h.business_date) AS last_business_date,
-                    '按年度、月份、部门和发放单位汇总工资登记事实' AS coverage_note
+                    '按公司、项目、币种、年度、月份、部门和发放单位汇总已完成工资登记事实' AS coverage_note
                 FROM sc_hr_payroll_document h
                 LEFT JOIN hr_department d ON d.id = h.department_id
                 WHERE h.active IS TRUE
                   AND h.fact_type = 'salary_registration'
                   AND h.state = 'done'
+                  AND h.company_id IS NOT NULL
                 GROUP BY
+                    h.company_id,
+                    h.project_id,
                     h.period_year,
                     h.period_month,
                     h.department_id,
-                    h.payer_unit,
+                    NULLIF(h.payer_unit, ''),
                     h.currency_id,
                     d.name->>'zh_CN',
                     d.name->>'en_US'

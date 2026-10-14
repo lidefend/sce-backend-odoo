@@ -13,6 +13,7 @@ class ScSystemDefaultMixin(models.AbstractModel):
         readonly=True,
         copy=False,
         default="系统默认值仅用于避免填单或级联创建被技术字段阻断，真实业务办理前需要补充完善。",
+        sc_ui_usage="interaction",
     )
 
     @classmethod

@@ -598,13 +598,13 @@ governance_source = (
     (form_structure_contract.get("sourceAuthority") or {}).get("governance_source") or {}
 )
 field_roles = form_structure_contract.get("fieldRoles") or {}
-expected_roles = {
-    "intake_next_action_display": "task",
-    "intake_blocking_reason_display": "risk",
-}
+retired_guidance_fields = {"intake_next_action_display", "intake_blocking_reason_display"}
+if retired_guidance_fields.intersection(env["project.project"]._fields):
+    raise AssertionError("retired project tutorial fields remain registered")
 expected_anchor_groups = {
-    "intake_next_action_display": "current_task",
-    "intake_blocking_reason_display": "intake_risk",
+    "name": "project_create_required",
+    "initiation_date": "project_create_required",
+    "manager_id": "project_create_required",
 }
 actual_roles = {}
 anchor_groups = {}
@@ -614,7 +614,7 @@ anchor_sections = {}
 # projects formStructureAuthority=native_authority with
 # structureAuthority=container_tree / mode=native_structured_form and the
 # compatibility re-layout that produced fieldRoles is closed. The declared
-# business-group identity (current_task / intake_risk) is carried by the native
+# business-group identity (project_create_required) is carried by the native
 # arch data-sc-anchor groups and must be projected through the container tree.
 # Assert the carrier the declaration actually names instead of the retired one;
 # do not re-open the closed re-layout and do not drop the coverage.
@@ -648,6 +648,8 @@ if governance_source.get("formStructureAuthority") == "native_authority":
             node_type = str(node.get("type") or "").strip().lower()
             node_name = str(node.get("name") or "").strip()
             if node_type == "field":
+                if node_name in retired_guidance_fields:
+                    raise AssertionError("retired project tutorial was projected")
                 if node_name in expected_anchor_groups and node_name not in anchor_groups:
                     anchor_groups[node_name] = enclosing[0] if enclosing else ""
                     if enclosing:
@@ -655,7 +657,7 @@ if governance_source.get("formStructureAuthority") == "native_authority":
                 continue
             _collect_anchor_groups(
                 node.get("children"),
-                (node_name, _section_label(node)) if node_type == "group" else enclosing,
+                (node_name, _section_label(node)) if node_type == "group" and node_name in set(expected_anchor_groups.values()) else enclosing,
             )
 
     _collect_anchor_groups((data.get("layoutContract") or {}).get("containerTree") or [])
@@ -664,12 +666,7 @@ if governance_source.get("formStructureAuthority") == "native_authority":
     if any(not label for label in anchor_sections.values()):
         raise AssertionError("project intake native section headings are not declared: %s" % anchor_sections)
 else:
-    actual_roles = {
-        field_name: (field_roles.get(field_name) or {}).get("role")
-        for field_name in expected_roles
-    }
-    if actual_roles != expected_roles:
-        raise AssertionError("project intake semantic roles are incomplete: %s" % actual_roles)
+    raise AssertionError("project creation must consume the declared native structure authority")
 statuses = {
     str(row.get("btnId") or ""): row
     for row in ((data.get("statusContract") or {}).get("buttonStatus") or [])

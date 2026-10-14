@@ -39,7 +39,8 @@ def load_methods():
     methods = [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name in names]
     assert len(methods) == len(names)
     exec(compile(ast.Module(body=methods, type_ignores=[]), str(MODEL), 'exec'), namespace)
-    for name in ('_start_submission_review', '_approve_submission_review', '_assert_submission_approved', '_reject_submission_review'):
+    for name in ('_start_submission_review', '_approve_submission_review', '_assert_submission_approved',
+                 '_reject_submission_review', 'ensure_handling_ready'):
         route = next(n for n in ast.walk(ast.parse(POLICY.read_text())) if isinstance(n, ast.FunctionDef) and n.name == name)
         route.decorator_list = []
         exec(compile(ast.Module(body=[route], type_ignores=[]), str(POLICY), 'exec'), namespace)
@@ -72,6 +73,10 @@ class Record:
         self.policy._start_submission_review = lambda record: PRODUCTION['_start_submission_review'](self.policy, record)
         self.policy._approve_submission_review = lambda record: PRODUCTION['_approve_submission_review'](self.policy, record)
         self.policy._reject_submission_review = lambda record, reason=None: PRODUCTION['_reject_submission_review'](self.policy, record, reason=reason)
+        self.policy._assert_submission_approved = lambda record, states: PRODUCTION['_assert_submission_approved'](self.policy, record, states)
+        # Terminal business actions enter through the shared one-step handling gate,
+        # so the isolated collaborator exposes the production gate bound to itself.
+        self.policy.ensure_handling_ready = lambda record, states, submit_states=('draft',): PRODUCTION['ensure_handling_ready'](self.policy, record, states, submit_states)
         self.required = required
         self.matching = matching
         self.env = types.SimpleNamespace(context={}, company=self.company_id)
@@ -3234,7 +3239,8 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                 _start_submission_review=lambda rec: required,
                 _approve_submission_review=lambda rec: calls.append('approve'),
                 _reject_submission_review=lambda rec: calls.append('reject'),
-                _assert_submission_approved=lambda rec, states: None)
+                _assert_submission_approved=lambda rec, states: None,
+                ensure_handling_ready=lambda rec, states, submit_states=('draft',): policy._assert_submission_approved(rec, states))
             event.env = {'sc.approval.policy': policy}
             namespace['action_submit'](event)
             self.assertEqual(event.state, 'submitted' if required else 'approved')

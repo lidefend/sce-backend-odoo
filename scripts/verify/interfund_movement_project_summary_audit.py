@@ -59,6 +59,8 @@ PROJECT_PERSPECTIVE_SQL = """
         SELECT
             f.target_project_id AS project_id,
             f.movement_type,
+            f.company_id,
+            f.currency_id,
             f.classification_confidence,
             f.amount,
             f.amount AS inflow_amount,
@@ -77,6 +79,8 @@ PROJECT_PERSPECTIVE_SQL = """
         SELECT
             f.source_project_id AS project_id,
             f.movement_type,
+            f.company_id,
+            f.currency_id,
             f.classification_confidence,
             f.amount,
             0.0 AS inflow_amount,
@@ -95,6 +99,8 @@ PROJECT_PERSPECTIVE_SQL = """
         SELECT
             COALESCE(f.source_project_id, f.target_project_id, f.project_id) AS project_id,
             f.movement_type,
+            f.company_id,
+            f.currency_id,
             f.classification_confidence,
             f.amount,
             0.0 AS inflow_amount,
@@ -111,19 +117,162 @@ PROJECT_PERSPECTIVE_SQL = """
 errors = []
 summary = OrderedDict()
 
+# A summary row is the aggregation of one (project, movement type, company,
+# currency) partition.  Grouping by project/type alone and reporting MIN(company)
+# / MIN(currency) would mix companies and sum different currencies under an
+# arbitrary owner, so the expected grouping here carries the full partition and
+# the drill-down slice is the same tuple.
 expected_group_count = sql_one(
     PROJECT_PERSPECTIVE_SQL
     + """
     SELECT COUNT(*)::integer
       FROM (
-            SELECT project_id, movement_type
+            SELECT project_id, movement_type, company_id, currency_id
               FROM project_perspective
-             GROUP BY project_id, movement_type
+             GROUP BY project_id, movement_type, company_id, currency_id
            ) g
     """
 )
 actual_group_count = sql_one("SELECT COUNT(*)::integer FROM sc_interfund_movement_project_summary")
 assert_equal(errors, "project_summary_group_count", expected_group_count, actual_group_count)
+
+# The runtime grouping above is only decisive if the deployed view actually
+# carries the full partition.  A stale view still exposes company_id/currency_id
+# (through MIN) and still yields one row per project/type, so the counts can
+# agree while companies and currencies are silently merged.  Pin the deployed
+# definition: it must group by the (project, type, company, currency) tuple and
+# must not pick an owner with MIN().
+deployed_viewdef = " ".join(
+    (sql_one("SELECT pg_get_viewdef('sc_interfund_movement_project_summary'::regclass, true)") or "").split()
+).lower()
+PARTITION_GROUP_BY = "group by pp.project_id, pp.movement_type, pp.company_id, pp.currency_id"
+if PARTITION_GROUP_BY not in deployed_viewdef:
+    errors.append(
+        {
+            "key": "deployed_view_missing_full_partition_group_by",
+            "expected": PARTITION_GROUP_BY,
+            "actual": deployed_viewdef[:600],
+        }
+    )
+for owner_predicate in ("min(pp.company_id)", "min(pp.currency_id)"):
+    if owner_predicate in deployed_viewdef:
+        errors.append(
+            {
+                "key": "deployed_view_uses_min_partition_owner",
+                "expected": "full partition grouping",
+                "actual": owner_predicate,
+            }
+        )
+
+mixed_partition_rows = sql_one(
+    """
+    SELECT COUNT(*)::integer
+      FROM (
+            SELECT project_id, movement_type
+              FROM sc_interfund_movement_project_summary
+             GROUP BY project_id, movement_type
+            HAVING COUNT(DISTINCT company_id) > 1
+                OR COUNT(DISTINCT currency_id) > 1
+           ) mixed
+    """
+)
+assert_equal(errors, "mixed_company_or_currency_partition_rows", 0, mixed_partition_rows)
+
+GROUP_METRIC_NAMES = [
+    "source_line_count",
+    "inflow_amount",
+    "outflow_amount",
+    "net_amount",
+    "internal_transfer_amount",
+    "low_confidence_count",
+]
+expected_groups = OrderedDict(
+    (
+        (row[0], row[1], row[2], row[3]),
+        dict(zip(GROUP_METRIC_NAMES, row[4:])),
+    )
+    for row in sql_rows(
+        PROJECT_PERSPECTIVE_SQL
+        + """
+        SELECT
+            project_id,
+            movement_type,
+            company_id,
+            currency_id,
+            COUNT(*)::integer,
+            COALESCE(SUM(inflow_amount), 0.0),
+            COALESCE(SUM(outflow_amount), 0.0),
+            COALESCE(SUM(net_amount), 0.0),
+            COALESCE(SUM(internal_transfer_amount), 0.0),
+            COUNT(*) FILTER (WHERE classification_confidence = 'low')::integer
+          FROM project_perspective
+         GROUP BY project_id, movement_type, company_id, currency_id
+        """
+    )
+)
+actual_groups = OrderedDict(
+    (
+        (row[0], row[1], row[2], row[3]),
+        dict(zip(GROUP_METRIC_NAMES, row[4:])),
+    )
+    for row in sql_rows(
+        """
+        SELECT
+            project_id,
+            movement_type,
+            company_id,
+            currency_id,
+            source_line_count,
+            inflow_amount,
+            outflow_amount,
+            net_amount,
+            internal_transfer_amount,
+            low_confidence_count
+          FROM sc_interfund_movement_project_summary
+        """
+    )
+)
+
+group_mismatches = []
+for key, expected_metrics in expected_groups.items():
+    actual_metrics = actual_groups.get(key)
+    if actual_metrics is None:
+        group_mismatches.append({"key": list(key), "missing": True})
+        continue
+    for metric_name in GROUP_METRIC_NAMES:
+        expected_value = expected_metrics[metric_name]
+        actual_value = actual_metrics[metric_name]
+        if metric_name == "source_line_count" or metric_name == "low_confidence_count":
+            if int(expected_value or 0) != int(actual_value or 0):
+                group_mismatches.append(
+                    {
+                        "key": list(key),
+                        "metric": metric_name,
+                        "expected": expected_value,
+                        "actual": actual_value,
+                    }
+                )
+        elif abs(float(expected_value or 0.0) - float(actual_value or 0.0)) > 0.01:
+            group_mismatches.append(
+                {
+                    "key": list(key),
+                    "metric": metric_name,
+                    "expected": expected_value,
+                    "actual": actual_value,
+                }
+            )
+for key in actual_groups:
+    if key not in expected_groups:
+        group_mismatches.append({"key": list(key), "unexpected": True})
+
+if group_mismatches:
+    errors.append(
+        {
+            "key": "partition_group_mismatch",
+            "count": len(group_mismatches),
+            "sample": group_mismatches[:10],
+        }
+    )
 
 expected_totals = OrderedDict(
     (row[0], row[1:])
@@ -193,6 +342,9 @@ assert_amount_close(errors, "same_project_account_transfer_net_zero", 0.0, same_
 
 summary["expected_group_count"] = expected_group_count
 summary["actual_group_count"] = actual_group_count
+summary["mixed_company_or_currency_partition_rows"] = mixed_partition_rows
+summary["partition_group_count"] = len(expected_groups)
+summary["partition_group_mismatch_count"] = len(group_mismatches)
 summary["expected_totals"] = {key: dict(zip(metric_names, value)) for key, value in expected_totals.items()}
 summary["actual_totals"] = {key: dict(zip(metric_names, value)) for key, value in actual_totals.items()}
 summary["business_totals"] = OrderedDict(
@@ -208,7 +360,7 @@ summary["business_totals"] = OrderedDict(
 summary["top_project_net"] = table(
     sql_rows(
         """
-        SELECT project_id, movement_type, source_line_count, inflow_amount, outflow_amount, net_amount
+        SELECT project_id, movement_type, company_id, currency_id, source_line_count, inflow_amount, outflow_amount, net_amount
           FROM sc_interfund_movement_project_summary
          ORDER BY ABS(net_amount) DESC, source_line_count DESC
          LIMIT 20

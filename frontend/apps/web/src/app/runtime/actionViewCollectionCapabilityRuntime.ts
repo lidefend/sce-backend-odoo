@@ -1,7 +1,7 @@
 import { fileToBase64 } from '../../api/files';
 import type { ApiDataImportContract } from '../../api/data';
 import {
-  ContractGapError,
+  contractGapError,
   requireDeclaredBoolean,
   requireDeclaredText,
 } from '../contract/contractGap';
@@ -89,7 +89,7 @@ export function resolveDeclaredCapabilities(surfacePolicies: unknown): Collectio
   const policies = asDict(surfacePolicies);
   if (!('collection_capabilities' in policies)) {
     if (declaresCollectionPolicy(policies)) {
-      throw new ContractGapError(
+      throw contractGapError(
         {
           kind: 'contract_defect',
           missing: 'actionContract.surfacePolicies.collection_capabilities',
@@ -105,26 +105,57 @@ export function resolveDeclaredCapabilities(surfacePolicies: unknown): Collectio
     missing: 'actionContract.surfacePolicies.collection_capabilities.enabled',
     requiredDeclarationLayer: DECLARATION_LAYER,
   });
-  const rows = Array.isArray(raw.actions) ? raw.actions : [];
-  const actions = rows.reduce<DeclaredCapability[]>((declared, row) => {
+  if (!Array.isArray(raw.actions)) {
+    throw contractGapError(
+      {
+        kind: 'contract_defect',
+        missing: 'actionContract.surfacePolicies.collection_capabilities.actions',
+        requiredDeclarationLayer: DECLARATION_LAYER,
+      },
+      '契约声明了 collection_capabilities 却没有声明 actions 数组：合法的空集合必须显式声明为 []，前端不代声明层补空表',
+    );
+  }
+  // A declared entry is consumed whole or not at all.  Skipping an entry that
+  // omits `action`/`scope` used to drop a business action silently, which is
+  // indistinguishable from a contract that never declared it.
+  const actions = raw.actions.map((row, index) => {
+    const path = `actionContract.surfacePolicies.collection_capabilities.actions[${index}]`;
     const entry = asDict(row);
     const action = asText(entry.action).toLowerCase();
+    if (!action) {
+      throw contractGapError(
+        {
+          kind: 'contract_defect',
+          missing: `${path}.action`,
+          requiredDeclarationLayer: DECLARATION_LAYER,
+        },
+        '契约声明了集合动作条目却没有声明 action：前端不静默丢弃该动作，等待声明层补齐',
+      );
+    }
     const scope = asText(entry.scope).toLowerCase();
-    if (!action || !scope) return declared;
-    declared.push({
+    if (scope !== SELECTION_SCOPE && scope !== COLLECTION_SCOPE) {
+      throw contractGapError(
+        {
+          kind: 'contract_defect',
+          missing: `${path}.scope`,
+          requiredDeclarationLayer: DECLARATION_LAYER,
+        },
+        `契约声明的集合动作 ${action} 缺少合法 scope（${SELECTION_SCOPE}|${COLLECTION_SCOPE}）：前端不猜测动作归属面`,
+      );
+    }
+    return {
       action,
       scope,
       intent: requireDeclaredText(entry.intent, {
-        missing: `actionContract.surfacePolicies.collection_capabilities.actions[${action}].intent`,
+        missing: `${path}.intent`,
         requiredDeclarationLayer: DECLARATION_LAYER,
       }),
       available: requireDeclaredBoolean(entry.available, {
-        missing: `actionContract.surfacePolicies.collection_capabilities.actions[${action}].available`,
+        missing: `${path}.available`,
         requiredDeclarationLayer: DECLARATION_LAYER,
       }),
-    });
-    return declared;
-  }, []);
+    } satisfies DeclaredCapability;
+  });
   return { enabled, actions };
 }
 
@@ -145,7 +176,7 @@ export function resolveDeclaredSelectionCapability(surfacePolicies: unknown): bo
   const policies = asDict(surfacePolicies);
   if (!('selection_policy' in policies)) {
     if (declaresCollectionPolicy(policies)) {
-      throw new ContractGapError(
+      throw contractGapError(
         {
           kind: 'contract_defect',
           missing: 'actionContract.surfacePolicies.selection_policy',

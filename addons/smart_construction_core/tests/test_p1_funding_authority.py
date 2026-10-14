@@ -16,6 +16,56 @@ from odoo.tests.common import TransactionCase, tagged
 
 @tagged("post_install", "-at_install", "sc_gate", "p1_funding_authority")
 class TestP1FundingAuthority(TransactionCase):
+    def test_native_guidance_field_metadata_and_effective_views(self):
+        from lxml import etree
+
+        models = (
+            "sc.labor.worker", "sc.labor.deduction", "sc.labor.usage", "sc.quality.acceptance",
+            "tender.opportunity", "tender.document", "sc.site.variation", "sc.contract.change",
+            "sc.equipment.usage", "sc.subcontract.register", "sc.material.supplier.return",
+            "sc.hr.payroll.document", "sc.hr.salary.payment", "sc.current.account.workspace",
+            "sc.company.project.refund.workspace", "sc.team.loan.deduction.workspace",
+        )
+        actor = self._finance_user(
+            "native-guidance-metadata-reader",
+            "smart_construction_core.group_sc_cap_config_admin",
+        )
+        for model in models:
+            with self.subTest(model=model):
+                Model = self.env[model].with_user(actor)
+                metadata = Model.fields_get(["processing_advisory"], attributes=["sc_ui_usage"])
+                self.assertEqual(metadata["processing_advisory"]["sc_ui_usage"], "interaction")
+                filtered = Model.fields_get(["processing_advisory"], attributes=["string"])
+                self.assertNotIn("sc_ui_usage", filtered["processing_advisory"])
+                for view_type in ("form", "tree"):
+                    if view_type == "tree" and not self.env["ir.ui.view"].search_count([
+                        ("model", "=", model), ("type", "=", view_type), ("active", "=", True),
+                    ]):
+                        continue  # Form-only workspaces do not declare a list surface.
+                    arch = etree.fromstring(Model.get_view(view_type=view_type)["arch"])
+                    self.assertFalse(arch.xpath("//field[@name='processing_advisory'][not(ancestor::field)]"))
+        payment = self.env["payment.request"].with_user(actor)
+        self.assertEqual(payment.fields_get(["submit_action_guidance"])["submit_action_guidance"]["sc_ui_usage"], "interaction")
+        self.assertEqual(payment.fields_get(["amount"])["amount"]["sc_ui_usage"], "fact")
+        for model in ("payment.request", "sc.payment.execution", "sc.expense.claim", "sc.receipt.income",
+                      "sc.self.funding.registration", "sc.tax.deduction.registration"):
+            with self.subTest(responsibility_model=model):
+                Model = self.env[model].with_user(actor)
+                metadata = Model.fields_get(["company_contractor_responsibility_notice"])
+                self.assertEqual(metadata["company_contractor_responsibility_notice"]["sc_ui_usage"], "interaction")
+                arch = etree.fromstring(Model.get_view(view_type="form")["arch"])
+                self.assertFalse(arch.xpath("//field[@name='company_contractor_responsibility_notice'][not(ancestor::field)]"))
+
+    def test_native_guidance_seed_retirement_applied(self):
+        for model_key in (
+            "payment_request", "sc_payment_execution", "sc_material_acceptance", "sc_material_inbound",
+            "sc_material_outbound", "sc_material_purchase_request", "sc_material_rfq", "sc_material_settlement",
+        ):
+            record = self.env.ref("smart_construction_core.business_config_contract_%s_form_structure_generated" % model_key)
+            with self.subTest(model=record.model):
+                self.assertFalse(record.active)
+                self.assertEqual(record.status, "draft")
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -38,20 +88,21 @@ class TestP1FundingAuthority(TransactionCase):
             ],
         })
 
-    def _commercial_basis(self, label):
+    def _commercial_basis(self, label, direction="in"):
+        tax_use = "sale" if direction == "out" else "purchase"
         partner = self.env["res.partner"].create({"name": f"{label}供应商"})
         tax = self.env["account.tax"].search([
             ("company_id", "=", self.env.company.id),
-            ("type_tax_use", "=", "purchase"),
+            ("type_tax_use", "=", tax_use),
         ], limit=1)
         if not tax:
             tax = self.env["account.tax"].create({
                 "name": f"{label}测试税率", "amount": 0.0,
-                "amount_type": "percent", "type_tax_use": "purchase",
+                "amount_type": "percent", "type_tax_use": tax_use,
                 "company_id": self.env.company.id,
             })
         contract = self.env["construction.contract"].create({
-            "subject": f"{label}合同", "type": "in",
+            "subject": f"{label}合同", "type": direction,
             "project_id": self.project.id, "partner_id": partner.id,
             "company_id": self.env.company.id,
             "currency_id": self.env.company.currency_id.id, "tax_id": tax.id,
@@ -372,6 +423,102 @@ class TestP1FundingAuthority(TransactionCase):
         self.assertEqual(
             transition["res_model"], "project.funding.baseline.transition.wizard"
         )
+
+    def test_material_payment_risk_soft_policy_preserves_basis_invariant(self):
+        self._draft(total=1000.0).action_activate()
+        partner, contract = self._commercial_basis("材料风险策略")
+        product = self.env["product.product"].create({"name": "风险验收材料", "type": "consu", "purchase_line_warn": "no-message"})
+        params = self.env["ir.config_parameter"].sudo()
+        for index, (confirmed, global_force, code_force) in enumerate(((True, False, False), (True, False, True), (True, True, False), (False, False, False))):
+            params.set_param("sc.payment.force_block_all", global_force)
+            params.set_param("sc.payment.force_block.p0_material_payment_over_balance", code_force)
+            settlement = self.env["sc.material.settlement"].create({
+                "name": "RISK-MATERIAL-%s" % index, "project_id": self.project.id,
+                "supplier_id": partner.id, "currency_id": self.env.company.currency_id.id,
+                "line_ids": [(0, 0, {"product_id": product.id, "product_uom_id": product.uom_id.id, "qty": 2, "unit_price": 30})],
+            })
+            if confirmed:
+                settlement.action_submit()
+                settlement.action_confirm()
+            request = self.env["payment.request"].create({
+                "name": "P1-MATERIAL-RISK-%s" % index, "type": "pay", "project_id": self.project.id,
+                "partner_id": partner.id, "contract_id": contract.id, "material_settlement_id": settlement.id,
+                "currency_id": self.env.company.currency_id.id, "amount": 80.0 if confirmed else 20.0,
+                "date_request": "2026-06-01", "payment_account_name": partner.name,
+                "payment_bank_name": "测试银行", "payment_account_no": "TEST-MATERIAL-RISK",
+            })
+            code = "P0_MATERIAL_PAYMENT_OVER_BALANCE" if confirmed else "P0_MATERIAL_SETTLEMENT_NOT_CONFIRMED"
+            matching = [item for item in request._collect_payment_advisories("submit") if item["reason_code"] == code]
+            self.assertTrue(matching)
+            blocked = not confirmed or global_force or code_force
+            self.assertTrue(all(item["force_block_enabled"] == blocked for item in matching))
+            if blocked:
+                with self.assertRaisesRegex(UserError, code), self.env.cr.savepoint(): request.action_submit()
+                request.invalidate_recordset()
+                self.assertEqual(request.state, "draft")
+            else:
+                request.action_submit()
+                self.assertEqual(request.state, "submit")
+
+    def test_payment_native_partner_risk_soft_submit_and_hard_override(self):
+        """No mocked eligibility: native submit and policy share the same partner fact."""
+        baseline = self._draft(total=1000.0)
+        baseline.action_activate()
+        partner, contract = self._commercial_basis("原生风险策略")
+        partner.write({"sc_blacklisted": True, "sc_blacklist_level": "blocked", "sc_blacklist_reason": "测试风险须复核"})
+        params = self.env["ir.config_parameter"].sudo()
+        for index, (global_force, code_force) in enumerate(((False, False), (False, True), (True, False))):
+            params.set_param("sc.payment.force_block_all", global_force)
+            params.set_param("sc.payment.force_block.partner_transaction_blocked", code_force)
+            request = self.env["payment.request"].create({
+                "name": "P1-NATIVE-RISK-%s" % index, "type": "pay",
+                "project_id": self.project.id, "partner_id": partner.id, "contract_id": contract.id,
+                "currency_id": self.env.company.currency_id.id, "amount": 20.0,
+                "date_request": "2026-06-01", "payment_account_name": partner.name,
+                "payment_bank_name": "测试银行", "payment_account_no": "TEST-NATIVE-RISK",
+            })
+            self.assertEqual(request.submit_action_guidance["blocking"], global_force or code_force)
+            if global_force or code_force:
+                with self.assertRaisesRegex(UserError, "测试风险须复核"), self.env.cr.savepoint():
+                    request.action_submit()
+                request.invalidate_recordset()
+                self.assertEqual(request.state, "draft")
+            else:
+                request.action_submit()
+                self.assertEqual(request.state, "submit")
+                self.assertEqual(request.funding_baseline_id, baseline)
+
+    def test_receive_native_partner_decision_matches_available_and_submit(self):
+        from odoo.addons.smart_construction_core.handlers.payment_request_available_actions import PaymentRequestAvailableActionsHandler
+        self._draft(total=1000.0).action_activate()
+        partner, contract = self._commercial_basis("收款共源策略", direction="out")
+        params = self.env["ir.config_parameter"].sudo()
+        handler = PaymentRequestAvailableActionsHandler(self.env, payload={})
+        for index, (risk, global_force, code_force) in enumerate(((False, False, False), (True, False, False), (True, False, True), (True, True, False))):
+            partner.write({"sc_blacklisted": risk, "sc_blacklist_level": "blocked", "sc_blacklist_reason": "收款风险须复核"})
+            params.set_param("sc.payment.force_block_all", global_force)
+            params.set_param("sc.payment.force_block.partner_transaction_blocked", code_force)
+            request = self.env["payment.request"].create({
+                "name": "P1-RECEIVE-RISK-%s" % index, "type": "receive",
+                "project_id": self.project.id, "partner_id": partner.id, "contract_id": contract.id,
+                "currency_id": self.env.company.currency_id.id, "amount": 20.0, "date_request": "2026-06-01",
+            })
+            blocked = risk and (global_force or code_force)
+            fact = request.submit_action_guidance
+            self.assertEqual(fact["blocking"], blocked)
+            self.assertEqual(fact["requires_confirmation"], risk and not blocked)
+            advisories = request._collect_payment_advisories("submit")
+            partner_items = [item for item in advisories if item["reason_code"].startswith("PARTNER_TRANSACTION_")]
+            self.assertEqual(len(partner_items), int(risk))
+            allowed, _reason = handler._evaluate_prerequisites(request, "submit", advisories=partner_items)
+            self.assertEqual(allowed, not blocked)
+            if blocked:
+                with self.assertRaisesRegex(UserError, "收款风险须复核"), self.env.cr.savepoint(): request.action_submit()
+                request.invalidate_recordset()
+                self.assertEqual(request.state, "draft")
+            else:
+                request.action_submit()
+                self.assertEqual(request.state, "submit")
 
     def test_request_binding_is_an_immutable_period_snapshot(self):
         baseline = self._draft()

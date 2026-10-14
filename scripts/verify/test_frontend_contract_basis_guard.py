@@ -97,6 +97,48 @@ class FrontendContractBasisGuardTest(unittest.TestCase):
         )
         self.assertIn("verify.frontend.contract_basis.enforce", freeze_line)
 
+    def test_ledger_declares_the_consumption_stop_surfaces(self) -> None:
+        # T7：T1-T6 的消费面必须回登台账，且每条绑定都指向真实的停机符号。
+        surfaces = {binding["surface"] for binding in self.ledger["declarationBindings"]}
+        for marker in (
+            "relation_entry.page_size",
+            "layout span",
+            "record_entry",
+            "契约权限级别枚举",
+        ):
+            self.assertTrue(
+                any(marker in surface for surface in surfaces),
+                f"missing declaration binding for {marker}",
+            )
+
+    def test_every_binding_consumption_symbol_must_exist(self) -> None:
+        # T7：任一条绑定的消费符号被改名/删除都必须 FAIL，覆盖所有登记面。
+        for index, binding in enumerate(self.ledger["declarationBindings"]):
+            broken = copy.deepcopy(self.ledger)
+            broken["declarationBindings"][index]["consumedSymbol"] = "consumed_symbol_that_does_not_exist"
+            errors = MODULE.check(broken)
+            self.assertTrue(
+                any("consumption no longer goes through" in error for error in errors),
+                f"{binding['surface']}: {errors}",
+            )
+
+    def test_every_binding_stop_symbol_must_exist(self) -> None:
+        # T7：停机符号消失即 FAIL，防止「有绑定但不停机」的假收口。
+        for index, binding in enumerate(self.ledger["declarationBindings"]):
+            broken = copy.deepcopy(self.ledger)
+            broken["declarationBindings"][index]["stopSymbol"] = "no_such_stop_symbol"
+            errors = MODULE.check(broken)
+            self.assertTrue(
+                any("fail-closed stop symbol" in error for error in errors),
+                f"{binding['surface']}: {errors}",
+            )
+
+    def test_coverage_boundary_is_recorded(self) -> None:
+        # T7：守卫覆盖边界必须显式登记，避免把静态扫描 PASS 当作全面结论。
+        boundary = self.ledger.get("mechanism", {}).get("coverageBoundary", "")
+        self.assertIn("不是", boundary)
+        self.assertIn("declarationBindings", boundary)
+
     def test_ledger_is_valid_json_with_expected_schema(self) -> None:
         payload = json.loads(MODULE.LEDGER.read_text(encoding="utf-8"))
         self.assertEqual(payload["schema"], "frontend.contract-basis.ledger.v1")

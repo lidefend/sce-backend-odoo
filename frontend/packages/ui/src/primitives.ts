@@ -46,3 +46,5 @@ export { Popup as TDesignPopup } from 'tdesign-vue-next/es/popup';
 export { Space as TDesignSpace } from 'tdesign-vue-next/es/space';
 export { Layout as TDesignLayout, Aside as TDesignAside, Header as TDesignHeader, Content as TDesignContent, Footer as TDesignFooter } from 'tdesign-vue-next/es/layout';
 export { Breadcrumb as TDesignBreadcrumb, BreadcrumbItem as TDesignBreadcrumbItem } from 'tdesign-vue-next/es/breadcrumb';
+
+export { default as TDesignNotificationPlugin } from 'tdesign-vue-next/es/notification/plugin';

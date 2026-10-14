@@ -94,7 +94,6 @@
       <field name="owner_id" ref="base.user_admin"/>
       <field name="plan_date">2025-08-01</field>
       <field name="approval_deadline">2025-08-03</field>
-      <field name="state">approved</field>
       <field name="description">高支模区域施工前专项方案，覆盖搭设、验收、监测和拆除要求。</field>
     </record>
 
@@ -107,7 +106,6 @@
       <field name="owner_id" ref="base.user_admin"/>
       <field name="participant_note">架子班、木工班、专职安全员。</field>
       <field name="content">重点交底立杆间距、扫地杆、剪刀撑、验收挂牌和临边防护要求。</field>
-      <field name="state">approved</field>
     </record>
 
     <record id="sc_demo_risk_library_089_safety" model="sc.risk.library">

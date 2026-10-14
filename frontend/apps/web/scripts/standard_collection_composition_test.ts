@@ -15,7 +15,7 @@ import {
   resolveStandardFormComposition,
 } from '../src/app/presentation/standardFormComposition';
 import { resolveStandardPageType } from '../src/app/presentation/standardPageType';
-import { ContractGapError } from '../src/app/contract/contractGap';
+import { isContractGapError } from '../src/app/contract/contractGap';
 import {
   COLLECTION_SCOPE,
   DECLARED_CAPABILITY_EXECUTORS,
@@ -328,7 +328,7 @@ check(
       });
       return 'no-stop';
     } catch (err) {
-      return err instanceof ContractGapError ? 'contract-gap' : 'unexpected-error';
+      return isContractGapError(err) ? 'contract-gap' : 'unexpected-error';
     }
   })(),
   'contract-gap',

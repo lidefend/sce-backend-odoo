@@ -20,6 +20,21 @@ class ProductMenuContractGuardTest(unittest.TestCase):
         contract["centers"][2]["level_two"][0]["children"] = [{"name": "不允许", "delivery": "RELEASED_FOUNDATION"}]
         self.assertTrue(validate(contract, self.baseline, self.evolution_policy))
 
+    def test_preview_requires_explicit_preview_state(self) -> None:
+        for state in (None, "released", "draft"):
+            contract = copy.deepcopy(self.contract)
+            leaf = next(child for center in contract["centers"] for item in center["level_two"]
+                        for child in (item.get("children") or [item]) if child.get("delivery") == "PREVIEW_FOUNDATION")
+            leaf["release_state"] = state
+            self.assertTrue(any("delivery/release_state mismatch" in error for error in validate(contract, self.baseline)))
+
+    def test_released_cannot_silently_become_preview(self) -> None:
+        contract = copy.deepcopy(self.contract)
+        leaf = next(child for center in contract["centers"] for item in center["level_two"]
+                    for child in (item.get("children") or [item]) if child.get("delivery") == "RELEASED_FOUNDATION")
+        leaf["release_state"] = "preview"
+        self.assertTrue(any("delivery/release_state mismatch" in error for error in validate(contract, self.baseline)))
+
     def test_project_missing_third_level_fails(self) -> None:
         contract = copy.deepcopy(self.contract)
         contract["centers"][1]["level_two"][0].pop("children")

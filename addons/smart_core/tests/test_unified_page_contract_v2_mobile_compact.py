@@ -123,6 +123,7 @@ assembler = _load_module(
     "odoo.addons.smart_core.core.unified_page_contract_v2_assembler",
     CORE_DIR / "unified_page_contract_v2_assembler.py",
 )
+action_guidance = _load_module("odoo.addons.smart_core.core.action_guidance", CORE_DIR / "action_guidance.py")
 form_structure_roles = sys.modules[
     "odoo.addons.smart_core.core.unified_page_contract_v2_form_structure"
 ]
@@ -3723,7 +3724,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                                 {
                                     "type": "div",
                                     "name": "project_risk_alert",
-                                    "class": "alert alert-warning",
+                                    "class": "native-business-note",
                                     "modifiers": {"invisible": [["risk_note", "=", False]]},
                                     "children": [{"type": "field", "name": "risk_note"}],
                                 },
@@ -3763,6 +3764,14 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                 "task_ids": {"name": "task_ids", "type": "one2many", "string": "任务"},
             },
         }
+
+        legacy_feedback = deepcopy(source)
+        legacy_feedback["views"]["form"]["layout"][1]["children"][1]["class"] = "alert alert-warning"
+        with self.assertRaisesRegex(ValueError, "NATIVE_FEEDBACK_INTERACTION_REQUIRED"):
+            assembler.assemble_unified_page_contract_v2(
+                legacy_feedback, source_type="ui.contract", client_type="web_pc",
+                request_id="test.native.feedback.rejected",
+            )
 
         full = assembler.assemble_unified_page_contract_v2(
             source,
@@ -4838,7 +4847,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                 "visible": {"attrs": {"invisible": {"kind": "field_compare", "field": "state", "operator": "!=", "value": "approved"}}},
             }
         return {
-            "pageInfo": {"model": "test.document"},
+            "pageInfo": {"model": "test.document", "viewType": "form"},
             "dataContract": {"mainData": {"id": 43, "state": "approved"}},
             "workflowContract": {"model": "test.document", "record_id": 43, "availableActions": [{
                 "method": "action_confirm", "enabled": False, "reason_code": "SOURCE_ALREADY_COMPLETED",
@@ -4851,6 +4860,96 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                 {"btnId": "btn.action_cancel", "visible": True, "disabled": False},
             ]},
         }
+
+    def test_native_button_options_publish_guidance_without_config_rule_engine(self):
+        parser = _NativeTreeFormFixtureParser()
+        node = _FixtureElement(ET.fromstring("""<button name="action_confirm" type="object" string="Confirm"
+            options="{'action_guidance': {'field': 'native_fact', 'profiles': ['edit', 'readonly'], 'trigger': 'invoke'}}"/>"""))
+        action = parser._button_to_action(node)
+        self.assertEqual(action["presentation"]["action_guidance"],
+                         {"field": "native_fact", "profiles": ["edit", "readonly"], "trigger": "invoke"})
+
+    def test_native_guidance_fact_is_exact_read_and_tightening_only(self):
+        for blocking, confirm in ((False, False), (False, True), (True, False)):
+            contract = self._workflow_denial_contract()
+            contract["statusContract"]["globalStatus"] = {"effectiveRenderProfile": "edit"}
+            action = contract["actionContract"]["actionRuleList"][0]
+            action["presentation"] = {"action_guidance": {"field": "native_fact", "profiles": ["edit", "readonly"], "trigger": "invoke"}}
+            fact = {"method": "action_confirm", "blocking": blocking, "requires_confirmation": confirm,
+                    "message": "原生业务事实。" if blocking or confirm else "", "reason_code": "NATIVE_FACT" if blocking or confirm else "",
+                    "severity": "error" if blocking else "warning" if confirm else "none"}
+            reads = []
+            action_guidance.project_native_action_guidance(contract, lambda field: (reads.append(field), fact)[1])
+            self.assertEqual(reads, ["native_fact"])
+            self.assertEqual(action["enabled"], not blocking)
+            self.assertEqual(action["presentation"].get("requires_confirmation", False), confirm)
+            self.assertNotIn("action_guidance", contract["actionContract"]["actionRuleList"][1].get("presentation", {}))
+            if confirm:
+                self.assertEqual(action["presentation"]["warning_message"], fact["message"])
+            if blocking:
+                self.assertEqual(action["reasonMessage"], fact["message"])
+
+    def test_native_fact_reader_checks_computed_field_and_actor_read(self):
+        import ast
+        path = CORE_DIR.parent / "handlers/ui_contract_v2.py"
+        node = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == "read_action_fact")
+        calls = []
+        model = types.SimpleNamespace(_fields={"fact": types.SimpleNamespace(type="json", compute=False)})
+        model.check_field_access_rights = lambda mode, fields: calls.append((mode, fields))
+        model.browse = lambda record_id: types.SimpleNamespace(read=lambda fields: [{"fact": {"native": record_id}}])
+        ns = {"self": types.SimpleNamespace(env={"test.model": model}), "contract_v2": {"pageInfo": {"model": "test.model"}, "dataContract": {"mainData": {"id": 1}}}}
+        exec(compile(ast.fix_missing_locations(ast.Module(body=[node], type_ignores=[])), str(path), "exec"), ns)
+        with self.assertRaises(ValueError): ns["read_action_fact"]("fact")
+        self.assertEqual(calls, [])
+        model._fields["fact"].compute = "_compute_fact"
+        self.assertEqual(ns["read_action_fact"]("fact"), {"native": 1})
+        self.assertEqual(calls, [("read", ["fact"])])
+        model.check_field_access_rights = lambda *_: (_ for _ in ()).throw(PermissionError("denied"))
+        with self.assertRaises(PermissionError): ns["read_action_fact"]("fact")
+
+    def test_native_guidance_rejects_bad_declarations_and_facts(self):
+        base = self._workflow_denial_contract()
+        base["statusContract"]["globalStatus"] = {"effectiveRenderProfile": "edit"}
+        base["actionContract"]["actionRuleList"][0]["presentation"] = {
+            "action_guidance": {"field": "native_fact", "profiles": ["edit"], "trigger": "invoke"}}
+        fact = {"method": "action_confirm", "blocking": False, "requires_confirmation": True,
+                "message": "Review", "reason_code": "REVIEW", "severity": "warning"}
+        for patch in ({"method": "other"}, {"message": ""}, {"blocking": "false"}, {"unexpected": 1}):
+            with self.subTest(patch=patch), self.assertRaises(ValueError):
+                action_guidance.project_native_action_guidance(deepcopy(base), lambda _: {**fact, **patch})
+        for patch in ({"trigger": "load"}, {"when": []}, {"field": "partner.name"}):
+            contract = deepcopy(base)
+            contract["actionContract"]["actionRuleList"][0]["presentation"]["action_guidance"].update(patch)
+            with self.assertRaises(ValueError):
+                action_guidance.project_native_action_guidance(contract, lambda _: fact)
+        for target in ({"method": "action_cancel"}, {"id": True}, {"id": 1.0}):
+            contract = deepcopy(base)
+            contract["actionContract"]["actionRuleList"][0]["target"] = target
+            if "id" in target:
+                contract["dataContract"]["mainData"]["id"] = 1
+            with self.assertRaises(ValueError):
+                action_guidance.project_native_action_guidance(contract, lambda _: fact)
+        with self.assertRaisesRegex(PermissionError, "field denied"):
+            action_guidance.project_native_action_guidance(deepcopy(base), lambda _: (_ for _ in ()).throw(PermissionError("field denied")))
+        base["statusContract"]["globalStatus"]["effectiveRenderProfile"] = "create"
+        action_guidance.project_native_action_guidance(base, lambda _: self.fail("create is explicitly outside binding profiles"))
+
+    def test_native_guidance_collection_does_not_read_single_record_fact(self):
+        base = self._workflow_denial_contract()
+        base["statusContract"]["globalStatus"] = {"effectiveRenderProfile": "readonly"}
+        base["dataContract"]["mainData"] = {}
+        base["actionContract"]["actionRuleList"][0]["presentation"] = {
+            "action_guidance": {"field": "native_fact", "profiles": ["edit", "readonly"], "trigger": "invoke"}}
+        for view_type in ("list", "tree", "kanban"):
+            contract = deepcopy(base)
+            contract["pageInfo"]["viewType"] = view_type
+            self.assertEqual(action_guidance.project_native_action_guidance(
+                contract, lambda _: self.fail("collection must not read a record fact")), base | {"pageInfo": contract["pageInfo"]})
+        for view_type in ("form", None):
+            contract = deepcopy(base)
+            contract["pageInfo"]["viewType"] = view_type
+            with self.assertRaises(ValueError):
+                action_guidance.project_native_action_guidance(contract, lambda _: self.fail("invalid identity must fail before reading"))
 
     def test_workflow_veto_survives_semantics_and_final_visible_native_hydration(self):
         contract = self._workflow_denial_contract()
@@ -4867,6 +4966,8 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertTrue(status["visible"])
         self.assertTrue(status["disabled"])
         self.assertEqual(status["reasonCode"], rule["reasonCode"])
+        self.assertEqual(rule["reasonMessage"], "来源已完成办理。")
+        self.assertEqual(status["reasonMessage"], rule["reasonMessage"])
         self.assertTrue(other["enabled"])
         effective_primary = [row for row in contract["actionContract"]["actionRuleList"]
                              if row.get("enabled") and row.get("presentation", {}).get("tier") == "primary"]
@@ -4881,16 +4982,42 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             contract = self._workflow_denial_contract()
             contract["workflowContract"]["availableActions"][0]["enabled"] = workflow_enabled
             rule = contract["actionContract"]["actionRuleList"][0]
-            rule.update(allowed=False, enabled=False, disabled=True, authorizationAllowed=False, reasonCode="ACL_DENIED")
+            rule.update(allowed=False, enabled=False, disabled=True, authorizationAllowed=False, reasonCode="ACL_DENIED", reasonMessage="角色不可办理")
             rule["sourceTrace"] = [{"authorizationAllowed": False, "entitlementEvaluated": True}]
             status = contract["statusContract"]["buttonStatus"][0]
-            status.update(disabled=True, reasonCode="ACL_DENIED")
+            status.update(disabled=True, reasonCode="ACL_DENIED", reasonMessage="角色不可办理")
             assembler.hydrate_final_action_modifier_status(contract)
             self.assertFalse(rule["enabled"])
             self.assertFalse(rule["authorizationAllowed"])
             self.assertEqual(rule["reasonCode"], "ACL_DENIED")
             self.assertTrue(status["disabled"])
             self.assertEqual(status["reasonCode"], "ACL_DENIED")
+            self.assertEqual(rule["reasonMessage"], "角色不可办理")
+            self.assertEqual(status["reasonMessage"], "角色不可办理")
+
+    def test_existing_same_reason_receives_its_current_message(self):
+        contract = self._workflow_denial_contract()
+        rule = contract["actionContract"]["actionRuleList"][0]
+        status = contract["statusContract"]["buttonStatus"][0]
+        rule.update(enabled=False, allowed=False, disabled=True, reasonCode="SOURCE_ALREADY_COMPLETED")
+        status.update(disabled=True, reasonCode="SOURCE_ALREADY_COMPLETED")
+        assembler._tighten_workflow_action_denials(contract)
+        self.assertEqual(rule["reasonMessage"], "来源已完成办理。")
+        self.assertEqual(status["reasonMessage"], rule["reasonMessage"])
+
+    def test_workflow_reason_message_never_borrows_other_action_or_record(self):
+        contract = self._workflow_denial_contract()
+        contract["workflowContract"]["record_id"] = 44
+        assembler._tighten_workflow_action_denials(contract)
+        self.assertNotIn("reasonMessage", contract["actionContract"]["actionRuleList"][0])
+        contract = self._workflow_denial_contract()
+        contract["workflowContract"]["availableActions"][0].pop("blocked_message")
+        rule = contract["actionContract"]["actionRuleList"][0]
+        rule["reasonMessage"] = "旧的不相关消息"
+        assembler._tighten_workflow_action_denials(contract)
+        self.assertNotIn("reasonMessage", rule)
+        self.assertNotIn("reasonMessage", contract["statusContract"]["buttonStatus"][0])
+        self.assertNotIn("reasonMessage", contract["actionContract"]["actionRuleList"][1])
 
     def test_cross_record_or_unknown_workflow_identity_cannot_restrict_this_record(self):
         for patch in [{"model": "other.document"}, {"record_id": 44}, {"record_id": 43.5}, {"record_id": None}]:

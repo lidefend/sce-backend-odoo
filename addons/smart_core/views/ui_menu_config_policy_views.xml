@@ -42,9 +42,6 @@
     <field name="arch" type="xml">
       <form string="菜单配置" create="1" edit="1" delete="1">
         <sheet>
-          <div class="alert alert-info" role="alert">
-            按三步配置：先选择要调整的菜单，再设置显示方式，最后选择可见业务角色。业务角色留空时，对当前公司所有用户生效；保存后刷新页面即可看到结果。
-          </div>
           <group>
             <group string="第一步：选择要调整的菜单">
               <field name="company_id" readonly="1"/>

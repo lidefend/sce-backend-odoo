@@ -522,11 +522,11 @@ class ScSubcontractRegister(models.Model):
     company_id = fields.Many2one(
         related="project_id.company_id", store=True, readonly=True, string="所属公司"
     )
-    request_id = fields.Many2one("sc.subcontract.request", string="来源分包申请", index=True)
-    contract_id = fields.Many2one("construction.contract", string="分包合同", index=True)
+    request_id = fields.Many2one("sc.subcontract.request", string="来源分包申请", index=True, help='建议关联来源分包申请')
+    contract_id = fields.Many2one("construction.contract", string="分包合同", index=True, help='建议关联分包合同')
     register_date = fields.Date(string="登记日期", required=True, default=fields.Date.context_today, index=True)
-    start_date = fields.Date(string="履约开始日期", index=True)
-    end_date = fields.Date(string="履约结束日期", index=True)
+    start_date = fields.Date(string="履约开始日期", index=True, help='建议补充履约期间')
+    end_date = fields.Date(string="履约结束日期", index=True, help='建议补充履约期间')
     subcontract_scope = fields.Char(string="登记分包范围", required=True, index=True, tracking=True)
     subcontractor_id = fields.Many2one("res.partner", string="分包单位", index=True, tracking=True)
     responsible_id = fields.Many2one("res.users", string="现场负责人", default=lambda self: self.env.user, index=True)
@@ -577,7 +577,7 @@ class ScSubcontractRegister(models.Model):
         tracking=True,
     )
     line_ids = fields.One2many("sc.subcontract.register.line", "register_id", string="登记明细")
-    management_note = fields.Text(string="管理要求")
+    management_note = fields.Text(string="管理要求", help='建议补充管理要求')
     note = fields.Text(string="备注")
     attachment_ids = fields.Many2many(
         "ir.attachment",
@@ -585,8 +585,9 @@ class ScSubcontractRegister(models.Model):
         "register_id",
         "attachment_id",
         string="附件",
+        help='建议上传分包成本依据',
     )
-    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory")
+    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction")
     legacy_fact_model = fields.Char(string="来源通用模型", index=True)
     legacy_fact_id = fields.Integer(string="来源通用记录ID", index=True)
     legacy_fact_type = fields.Char(string="来源业务类型", index=True)
@@ -969,7 +970,7 @@ class ScSubcontractRegister(models.Model):
             if not record.attachment_ids:
                 suggestions.append("建议上传分包成本依据")
             record.processing_advisory = (
-                "；".join(suggestions) if suggestions else "当前分包成本资料已完善"
+                "；".join(suggestions) if suggestions else ""
             )
 
     def _check_business_anchor(self):
@@ -1633,9 +1634,9 @@ class ScSubcontractSettlement(models.Model):
 
     def action_confirm(self):
         for record in self:
+            self.env["sc.approval.policy"].ensure_handling_ready(record, ("approved",))
             if record.state != "approved":
                 raise UserError(_("只有审批通过的分包结算可以确认。"))
-            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
             record._check_business_anchor()
             record.line_ids._check_values()
         self._write_approval_state({"state": "confirmed"})
@@ -2026,6 +2027,7 @@ class ScSubcontractPrice(models.Model):
     _order = "effective_date desc, id desc"
 
     name = fields.Char(string="价格编号", required=True, default="新建", tracking=True)
+    company_id = fields.Many2one("res.company", related="project_id.company_id", store=True, readonly=True, index=True)
     project_id = fields.Many2one("project.project", string="适用项目", index=True, tracking=True)
     subcontractor_id = fields.Many2one("res.partner", string="分包单位", index=True)
     work_scope = fields.Char(string="分包工作范围", required=True, index=True, tracking=True)

@@ -3,6 +3,12 @@
 The project AR/AP summary is a product-owned, physical read model.  It is not
 an optional external view.  These helpers deliberately preserve an existing
 table in place and only create the table for a genuinely absent relation.
+
+Ownership boundary: the preserved table stores project and partner dimensions
+but no company column, so a published row is only attributable to exactly one
+company through its project.  The refresh path therefore fails closed when a
+staged row has no project, or when its project carries no company, instead of
+guessing ownership from the current environment or from the row label.
 """
 
 import hashlib
@@ -257,6 +263,35 @@ def refresh_ar_ap_project_summary(cr, projection_select_sql, minimum_row_count=0
             "AR_AP_PROJECTION_REFRESH_VALIDATION_FAILED:"
             "schema=%s:relation=%s:relkind=r:"
             "fingerprint=%s:stage=project_isolation"
+            % (
+                AR_AP_SCHEMA,
+                AR_AP_RELATION,
+                AR_AP_EVIDENCE_STRUCTURE_FINGERPRINT,
+            )
+        )
+
+    # Ownership boundary (company protocol): the preserved physical provider has
+    # no company column, so a row's only verifiable company anchor is its
+    # project.  A staged row with no project, or whose project resolves to no
+    # company, has unknown ownership and must be rejected before the official
+    # write rather than being attributed from a label or the current
+    # environment.  "Company without project" cannot be represented by this
+    # source shape; it is handled on the fail-closed side of this rule.
+    cr.execute(
+        """
+        SELECT count(*)
+          FROM "sc_ar_ap_project_summary_stage" stage
+          LEFT JOIN project_project company_anchor
+            ON company_anchor.id = stage.project_id
+         WHERE stage.project_id IS NULL
+            OR company_anchor.company_id IS NULL
+        """
+    )
+    if cr.fetchone()[0]:
+        raise RuntimeError(
+            "AR_AP_PROJECTION_REFRESH_VALIDATION_FAILED:"
+            "schema=%s:relation=%s:relkind=r:"
+            "fingerprint=%s:stage=company_ownership"
             % (
                 AR_AP_SCHEMA,
                 AR_AP_RELATION,

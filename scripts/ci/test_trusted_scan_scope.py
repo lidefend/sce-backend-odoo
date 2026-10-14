@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import contextlib
+import errno
 import io
 import json
 import os
@@ -395,6 +396,44 @@ class TrustedScopeTests(unittest.TestCase):
         payload['coverage']['scanners']['history']['authority'] = 'a' * 64
         self.receipt.write_text(json.dumps(payload))
         self.assertIsNone(scope.select_scope(self.root, 'history').base)
+
+class TransientSpawnRetryTests(unittest.TestCase):
+    """A host-level spawn errno must not discard a whole candidate run.
+
+    The real defect: shard 4 of a multi-minute local Quick failed with
+    ``OSError: [Errno 14] Bad address: 'git'`` - a fork/exec resource hiccup
+    under concurrent shards, not a product or contract signal. The child cannot
+    have run, so a bounded retry replays nothing; every other failure, and the
+    last transient one, still fails closed.
+    """
+
+    def test_transient_errno_is_retried_then_succeeds(self):
+        attempts = {'n': 0}
+
+        def flaky(*_args, **_kwargs):
+            attempts['n'] += 1
+            if attempts['n'] == 1:
+                raise OSError(errno.EFAULT, 'Bad address')
+            return 'ok\n'
+
+        with mock.patch.object(scope.subprocess, 'check_output', side_effect=flaky), \
+                mock.patch.object(scope.time, 'sleep'):
+            self.assertEqual(scope.git(Path('.'), 'rev-parse', 'HEAD'), 'ok\n')
+        self.assertEqual(attempts['n'], 2)
+
+    def test_a_non_transient_errno_is_not_retried(self):
+        with mock.patch.object(scope.subprocess, 'check_output',
+                               side_effect=OSError(errno.ENOENT, 'No such file')):
+            with self.assertRaises(OSError):
+                scope.git(Path('.'), 'rev-parse', 'HEAD')
+
+    def test_the_last_transient_attempt_still_fails_closed(self):
+        with mock.patch.object(scope.subprocess, 'check_output',
+                               side_effect=OSError(errno.EAGAIN, 'Try again')), \
+                mock.patch.object(scope.time, 'sleep'):
+            with self.assertRaises(OSError):
+                scope.git(Path('.'), 'rev-parse', 'HEAD')
+
 
 if __name__ == '__main__':
     unittest.main()

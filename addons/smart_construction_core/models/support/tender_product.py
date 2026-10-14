@@ -10,21 +10,21 @@ class TenderOpportunity(models.Model):
     _order = "deadline asc, id desc"
 
     name = fields.Char("招标项目名称", required=True, tracking=True)
-    code = fields.Char("招标编号", index=True, tracking=True)
+    code = fields.Char("招标编号", index=True, tracking=True, help='建议补充招标编号')
     company_id = fields.Many2one(
         "res.company", string="所属公司", required=True, default=lambda self: self.env.company
     )
-    owner_id = fields.Many2one("res.partner", string="招标人/业主", tracking=True)
+    owner_id = fields.Many2one("res.partner", string="招标人/业主", tracking=True, help='建议补充招标人/业主')
     contact_name = fields.Char("联系人")
     contact_phone = fields.Char("联系电话")
-    location = fields.Char("项目地点")
-    publish_date = fields.Date("发布日期")
-    deadline = fields.Datetime("投标截止时间", tracking=True)
+    location = fields.Char("项目地点", help='建议补充项目地点')
+    publish_date = fields.Date("发布日期", help='建议补充发布日期')
+    deadline = fields.Datetime("投标截止时间", tracking=True, help='建议补充投标截止时间')
     estimated_amount = fields.Monetary("估算金额", currency_field="currency_id")
     currency_id = fields.Many2one(
         "res.currency", related="company_id.currency_id", store=True, readonly=True
     )
-    source = fields.Char("信息来源")
+    source = fields.Char("信息来源", help='建议补充信息来源')
     qualification_requirements = fields.Text("资格要求")
     note = fields.Text("备注")
     project_id = fields.Many2one("project.project", string="关联项目", tracking=True)
@@ -48,7 +48,7 @@ class TenderOpportunity(models.Model):
         required=True,
         tracking=True,
     )
-    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory")
+    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction")
 
     @api.depends("code", "owner_id", "location", "publish_date", "deadline", "source")
     def _compute_processing_advisory(self):
@@ -67,7 +67,7 @@ class TenderOpportunity(models.Model):
             if not record.source:
                 suggestions.append("建议补充信息来源")
             record.processing_advisory = (
-                "；".join(suggestions) if suggestions else "当前招标信息已完善"
+                "；".join(suggestions) if suggestions else ""
             )
 
     def _check_operator(self):
@@ -147,9 +147,9 @@ class TenderDocument(models.Model):
         required=True,
         tracking=True,
     )
-    version = fields.Char("版本")
-    responsible_id = fields.Many2one("res.users", string="负责人", default=lambda self: self.env.user)
-    deadline = fields.Datetime("计划完成时间")
+    version = fields.Char("版本", help='建议补充版本号')
+    responsible_id = fields.Many2one("res.users", string="负责人", default=lambda self: self.env.user, help='建议明确负责人')
+    deadline = fields.Datetime("计划完成时间", help='建议补充计划完成时间')
     submitted_at = fields.Datetime("提交时间", readonly=True)
     note = fields.Text("编制说明")
     attachment_ids = fields.Many2many(
@@ -158,6 +158,7 @@ class TenderDocument(models.Model):
         "document_id",
         "attachment_id",
         string="文件附件",
+        help='建议上传标书文件',
     )
     state = fields.Selection(
         [
@@ -171,7 +172,7 @@ class TenderDocument(models.Model):
         required=True,
         tracking=True,
     )
-    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory")
+    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction")
 
     @api.depends("version", "responsible_id", "deadline", "attachment_ids")
     def _compute_processing_advisory(self):
@@ -186,7 +187,7 @@ class TenderDocument(models.Model):
             if not record.attachment_ids:
                 suggestions.append("建议上传标书文件")
             record.processing_advisory = (
-                "；".join(suggestions) if suggestions else "当前标书资料已完善"
+                "；".join(suggestions) if suggestions else ""
             )
 
     def _check_operator(self):
@@ -206,7 +207,7 @@ class TenderDocument(models.Model):
             values["submitted_at"] = fields.Datetime.now()
         self.write(values)
         suggestions = [
-            item for item in self.mapped("processing_advisory") if item != "当前标书资料已完善"
+            item for item in self.mapped("processing_advisory") if item
         ]
         if suggestions:
             return {

@@ -20,6 +20,9 @@ import {
 } from './nativeLayoutUtils';
 import { selectFieldErrorsForTarget, type BusinessFieldError } from '../../app/businessValidationError';
 import { fieldType } from './fieldUtils';
+// 主从关系（one2many）每页记录数是契约声明事实（relation_entry.page_size），
+// 由 relationDescriptor 原样投影，渲染层严格消费，前端不再自造默认值。
+import { relationEntry } from './relationDescriptor';
 import type { LayoutNode, LowCodeFieldSize } from './types';
 
 export function useRecordFormFieldSchemas(context: {
@@ -99,7 +102,7 @@ export function useRecordFormFieldSchemas(context: {
     // changes (e.g. a many2one selection must reflect its label in the input;
     // otherwise the rendered control keeps the stale pre-change value).
     void Object.keys(context.formData).map((key)=>context.formData[key]);
-    return buildLegacyLayoutNodes({fields:formFields.value,order:[],containerStatus:collectContractV2FieldContainerStatusByCode(context.v2ContractStore.value),visibleFields:context.contractVisibleFields.value,fallbackFieldNames:[...context.coreFieldNames.value,...context.advancedFieldNames.value],isCreate:!context.recordId.value,readonly:context.recordId.value?!context.rights.value.write:!context.rights.value.create,resolveFieldLabel:context.contractFieldLabel,evaluatePolicy:(_name,descriptor)=>({visible:true,required:Boolean(descriptor?.required),readonly:Boolean(descriptor?.readonly)}),runtimeState:(name)=>context.runtimeFieldStates.value[name]||{invisible:false,readonly:false,required:false}});
+    return buildLegacyLayoutNodes({fields:formFields.value,order:[],containerStatus:collectContractV2FieldContainerStatusByCode(context.v2ContractStore.value),visibleFields:context.contractVisibleFields.value,fallbackFieldNames:[...context.coreFieldNames.value,...context.advancedFieldNames.value],readonly:context.recordId.value?!context.rights.value.write:!context.rights.value.create,resolveFieldLabel:context.contractFieldLabel,evaluatePolicy:(_name,descriptor)=>({visible:true,required:Boolean(descriptor?.required),readonly:Boolean(descriptor?.readonly)}),runtimeState:(name)=>context.runtimeFieldStates.value[name]||{invisible:false,readonly:false,required:false}});
   });
   buildSectionFieldSchemas=createFormSectionFieldSchemaBuilder({
     resolveFieldType:(descriptor)=>fieldType(descriptor)||'char',resolveRequired:(field)=>Boolean((field as LayoutNode).required),
@@ -121,6 +124,7 @@ export function useRecordFormFieldSchemas(context: {
     // It is never recovered by looking for the field label inside a message.
     resolveErrorText:(field)=>selectFieldErrorsForTarget(context.validationFieldErrors.value,{model:context.model.value,recordId:context.recordId.value,fieldCode:(field as LayoutNode).name})[0]?.message||'',
     resolveSelectionOptions:mapDescriptorSelectionOptions,resolveRelationOptions:(name)=>mapRelationOptions(context.relationOptionsForField(name)),
+    resolveOne2manyPageSize:(_name,descriptor)=>relationEntry(descriptor)?.pageSize,
     resolveRelationCreateMode:(_name,descriptor)=>context.relationCreateMode(descriptor),
     resolveRelationInlineCreate:(_name,descriptor)=>context.relationInlineCreate(descriptor),resolveRelationTextValue:context.relationKeyword,
     resolveRelationQueryKeyword:context.relationKeyword,

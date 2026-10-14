@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <record id="action_sc_subcontract_plan" model="ir.actions.act_window">
         <field name="name">分包计划</field>
@@ -338,9 +337,6 @@
                          tests/test_context_workspace_native_lowcode.py::test_the_prompt_is_feedback_not_a_section）。
                          改由渲染器已有的反馈面承载：不是 group／page，因此永远不会成为章节或导航项；
                          空提示（新建态计算未跑）时整块不显示，而不是显示一个占位的 “—”。 -->
-                    <div class="alert alert-info" role="status" invisible="not processing_advisory">
-                        <field name="processing_advisory" readonly="1" nolabel="1"/>
-                    </div>
                 </sheet>
                 <chatter/>
             </form>

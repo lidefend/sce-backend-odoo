@@ -329,7 +329,6 @@
                 <field name="company_id" readonly="1"/>
                 <field name="manager_id" readonly="1"/>
                 <field name="active" readonly="1"/>
-                <field name="lifecycle_advisory" readonly="1"/>
               </group>
               <group string="计划信息">
                 <field name="initiation_date" readonly="1"/>
@@ -338,9 +337,6 @@
                 <field name="location" readonly="1"/>
               </group>
             </group>
-            <div class="alert alert-info" role="status">
-              状态变更由后端项目状态机校验；资料与清单完整性只作提示，未完结结算或付款等会导致业务无法继续的冲突才会阻断关闭。
-            </div>
           </sheet>
           <chatter/>
         </form>
@@ -403,7 +399,7 @@
                 <field name="sc_blacklist_review_date"/><field name="sc_blacklisted_by" readonly="1"/><field name="sc_blacklisted_at" readonly="1"/>
               </group>
             </group>
-            <group><field name="sc_blacklist_reason"/><field name="sc_blacklist_advisory" readonly="1"/></group>
+            <group><field name="sc_blacklist_reason"/></group>
           </sheet>
           <chatter/>
         </form>

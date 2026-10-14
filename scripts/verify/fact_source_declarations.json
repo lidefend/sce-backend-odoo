@@ -1,0 +1,829 @@
+{
+  "version": 1,
+  "authority": "docs/governance/database_architecture_policy.md",
+  "decision": ".agent/decisions/data-authority-boundary.yaml",
+  "purpose": "Explicit money-fact source for every product-module model that declares a currency_id field. The declaration is the single source for which models default a new record to the tenant standard currency, and for every known caller-context currency alignment, so an undeclared inline currency fact fails closed in scripts/verify/fact_source_coverage_guard.py.",
+  "standard_currency": {
+    "currency": "CNY",
+    "runtime_pin": "scripts/verify/finance_p0_currency_default_audit.py",
+    "models": [
+      {
+        "model": "payment.request",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed. It is also asserted at runtime by scripts/verify/finance_p0_currency_default_audit.py."
+      },
+      {
+        "model": "sc.business.entity",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed."
+      },
+      {
+        "model": "sc.expense.claim",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed. It is also asserted at runtime by scripts/verify/finance_p0_currency_default_audit.py."
+      },
+      {
+        "model": "sc.financing.loan",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed. It is also asserted at runtime by scripts/verify/finance_p0_currency_default_audit.py."
+      },
+      {
+        "model": "sc.fund.account",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed. It is also asserted at runtime by scripts/verify/finance_p0_currency_default_audit.py."
+      },
+      {
+        "model": "sc.fund.account.operation",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed. It is also asserted at runtime by scripts/verify/finance_p0_currency_default_audit.py."
+      },
+      {
+        "model": "sc.invoice.registration",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed. It is also asserted at runtime by scripts/verify/finance_p0_currency_default_audit.py."
+      },
+      {
+        "model": "sc.norm.catalog",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed."
+      },
+      {
+        "model": "sc.payment.execution",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed. It is also asserted at runtime by scripts/verify/finance_p0_currency_default_audit.py."
+      },
+      {
+        "model": "sc.receipt.income",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed. It is also asserted at runtime by scripts/verify/finance_p0_currency_default_audit.py."
+      },
+      {
+        "model": "sc.self.funding.registration",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed. It is also asserted at runtime by scripts/verify/finance_p0_currency_default_audit.py."
+      },
+      {
+        "model": "sc.tax.deduction.registration",
+        "reason": "the new-record money fact of this tenant-standard financial document is the standard currency, so the inline default prefers base.CNY and only falls back to the caller's company currency when the standard currency is not installed. It is also asserted at runtime by scripts/verify/finance_p0_currency_default_audit.py."
+      }
+    ]
+  },
+  "caller_context_currency": {
+    "issue": "CURRENCY-OWNER-ALIGNMENT-01",
+    "owner_module": "smart_construction_core",
+    "reason": "These models take their money fact from the caller's environment company while their owning company is not that caller, so a document created in one company context while pointing at another company's object can start with a currency that does not belong to its owning company. The divergence appears in three shapes and the list carries all three: (a) company_id is a related field derived from an owning relation (project/plan/contract), (b) the model has no company_id column at all and therefore no company of its own to own the currency (project.settlement, sc.business.fact.mixin and the two material line models), and (c) the model inherits the caller-context currency from the sc.business.fact.mixin carrier without declaring its own currency_id (sc.dashboard.cockpit.fact, sc.workbench.item, sc.document.admin.document, sc.office.admin.document, sc.hr.payroll.document). sc.treasury.ledger is listed because its readonly company_id is written by the projection, so the row company can differ from the caller. The single source for the money fact is the owning company's currency; the per-model migration changes which value an existing record carries, so it is recorded here for a product decision instead of being silently rewritten.",
+    "models": [
+      "project.budget",
+      "project.settlement",
+      "sc.business.fact.mixin",
+      "sc.contract.event",
+      "sc.dashboard.cockpit.fact",
+      "sc.document.admin.document",
+      "sc.equipment.price",
+      "sc.equipment.request",
+      "sc.equipment.settlement",
+      "sc.equipment.usage",
+      "sc.hr.payroll.document",
+      "sc.labor.deduction",
+      "sc.labor.price",
+      "sc.labor.request",
+      "sc.labor.settlement",
+      "sc.labor.usage",
+      "sc.material.outbound",
+      "sc.material.price",
+      "sc.material.purchase.request",
+      "sc.material.purchase.request.line",
+      "sc.material.rental.order",
+      "sc.material.rental.plan",
+      "sc.material.rental.settlement",
+      "sc.material.rfq.line",
+      "sc.material.settlement",
+      "sc.office.admin.document",
+      "sc.output.invoice.adjustment",
+      "sc.settlement.adjustment",
+      "sc.site.variation",
+      "sc.subcontract.plan",
+      "sc.subcontract.price",
+      "sc.subcontract.register",
+      "sc.subcontract.request",
+      "sc.subcontract.settlement",
+      "sc.treasury.ledger",
+      "sc.treasury.reconciliation",
+      "sc.workbench.item"
+    ]
+  },
+  "currency_write_paths": {
+    "issue": "CURRENCY-OWNER-ALIGNMENT-01",
+    "owner_module": "smart_construction_core",
+    "reason": "A currency_id assignment inside a method overwrites the money fact after the field default ran, so it is a second money-fact source that a field-default-only scan cannot see. Every such assignment on a product model is registered here: four copy the currency of the owning document or ledger (single source, no divergence), sc.settlement.order fills the header from its contract in two places, and sc.norm.catalog is the one open alignment because it copies the region country currency instead of a company fact, which can leave the tenant standard currency.",
+    "models": [
+      {
+        "model": "construction.contract",
+        "methods": [
+          "_onchange_original_contract_id"
+        ],
+        "source": "original_contract_id.currency_id",
+        "reason": "the re-issued contract copies the money fact of the contract it originates from, so the owning document stays the single source"
+      },
+      {
+        "model": "sc.norm.catalog",
+        "methods": [
+          "_onchange_region_currency"
+        ],
+        "source": "region_id.country_id.currency_id",
+        "issue": "CURRENCY-OWNER-ALIGNMENT-01",
+        "reason": "OPEN ALIGNMENT: the region country currency is a country fact, not the tenant or company fact, so selecting a foreign region can overwrite the tenant standard currency. The company currency pin keeps the tenant on CNY; the owner must decide whether this write path stays or the currency derives from a company fact"
+      },
+      {
+        "model": "sc.output.invoice.adjustment",
+        "methods": [
+          "_sync_original_invoice_snapshot"
+        ],
+        "source": "original_ledger_id.currency_id",
+        "reason": "the red-flush snapshot copies the money fact of its original ledger entry, so the ledger stays the single source"
+      },
+      {
+        "model": "sc.receipt.income",
+        "methods": [
+          "_onchange_payment_request_id"
+        ],
+        "source": "payment_request_id.currency_id",
+        "reason": "the receipt copies the money fact of the payment request it registers, so the request stays the single source"
+      },
+      {
+        "model": "sc.settlement.order",
+        "methods": [
+          "_onchange_contract_id_fill_header",
+          "_onchange_general_contract_id"
+        ],
+        "source": "contract_id.currency_id",
+        "reason": "both header-fill onchanges take the money fact from the selected contract, so the contract stays the single source; two write sites on one model are recorded so a third cannot appear unnoticed"
+      }
+    ]
+  },
+  "company_field_overrides": {
+    "reason": "A company_id or currency_id redefined by an extension class (an _inherit class without _name) replaces the definition of the model's own class. It is registered so a redefinition stays a decision instead of a silent override.",
+    "models": [
+      {
+        "model": "sc.labor.usage",
+        "field": "company_id",
+        "file": "addons/smart_construction_core/models/core/labor_product_extension.py",
+        "reason": "the product extension re-declares the same project-derived company_id only to add the 所属公司 label; the owning relation is unchanged"
+      }
+    ]
+  },
+  "duplicate_field_declarations": {
+    "reason": "A field declared by two class blocks on the same model is not a harmless duplicate: Odoo merges the definitions attribute by attribute, so the surviving field is a union of both and neither file alone shows the real declaration. A reader who edits one file cannot see the other's contribution, which makes the second declaration a hidden second source for the same fact. Every such pair in the product modules is registered here; an undeclared one, a registration whose declaring files changed, and a registration that no longer matches source all fail closed in scripts/verify/fact_source_coverage_guard.py. This is the declaration-layer companion of company_field_overrides, which owns the money-field question of where the effective definition comes from.",
+    "models": [
+      {
+        "model": "account.move.line",
+        "field": "project_id",
+        "declarations": [
+          {
+            "file": "addons/smart_construction_core/models/support/account_move_line_ext.py",
+            "role": "extension class",
+            "adds": "related=move_id.project_id, store=True, index=True, the 项目 label and the cockpit help text"
+          },
+          {
+            "file": "addons/smart_construction_core/models/support/account_extend.py",
+            "role": "extension class",
+            "adds": "related=move_id.project_id, store=True, readonly=False"
+          }
+        ],
+        "reason": "Both classes are extensions of an Odoo core model, so neither owns the field. The merged field keeps readonly=False from account_extend.py and index=True from account_move_line_ext.py; verified by runtime readback (project_id = related move_id.project_id, store, index, readonly False, string 项目). Consolidating the two into one nearest declaration is a data-layer decision left open; deleting either is a semantic change, not deduplication"
+      },
+      {
+        "model": "construction.contract",
+        "field": "amount_untaxed",
+        "declarations": [
+          {
+            "file": "addons/smart_construction_core/models/support/contract_center.py",
+            "role": "owning class",
+            "adds": "Monetary compute=_compute_amount_total, store=True, tracking=True, label 合同金额"
+          },
+          {
+            "file": "addons/smart_construction_core/models/support/contract_business.py",
+            "role": "extension class",
+            "adds": "Monetary label 平台合同金额"
+          }
+        ],
+        "reason": "The extension replaces only the label while the compute stays, so the surviving field is the platform-facing 平台合同金额 computed by the owning class; verified by runtime readback (compute=_compute_amount_total, store, tracking, string 平台合同金额). The extension also publishes visible_contract_amount as the bridge, so this is a deliberate platform alias rather than a stray copy"
+      },
+      {
+        "model": "sc.labor.usage",
+        "field": "attachment_ids",
+        "declarations": [
+          {
+            "file": "addons/smart_construction_core/models/core/labor_management.py",
+            "role": "owning class",
+            "adds": "the full field definition"
+          },
+          {
+            "file": "addons/smart_construction_core/models/core/labor_product_extension.py",
+            "role": "extension class",
+            "adds": "Many2many, only help=建议上传用工依据"
+          }
+        ],
+        "reason": "the owning class declares the relation sc_labor_usage_attachment_rel and the 附件 label; the merger confirms comodel ir.attachment, relation sc_labor_usage_attachment_rel, help 建议上传用工依据"
+      },
+      {
+        "model": "sc.labor.usage",
+        "field": "company_id",
+        "declarations": [
+          {
+            "file": "addons/smart_construction_core/models/core/labor_management.py",
+            "role": "owning class",
+            "adds": "the full field definition"
+          },
+          {
+            "file": "addons/smart_construction_core/models/core/labor_product_extension.py",
+            "role": "extension class",
+            "adds": "Many2one(related=project_id.company_id, store=True, readonly=True, string=所属公司)"
+          }
+        ],
+        "reason": "the owning class already derives company_id from project_id.company_id; the extension only adds the 所属公司 label, and the merged field stays related + store + readonly (comodel inferred from the related path). This pair is also registered in company_field_overrides"
+      },
+      {
+        "model": "sc.labor.usage",
+        "field": "construction_part",
+        "declarations": [
+          {
+            "file": "addons/smart_construction_core/models/core/labor_management.py",
+            "role": "owning class",
+            "adds": "the full field definition"
+          },
+          {
+            "file": "addons/smart_construction_core/models/core/labor_product_extension.py",
+            "role": "extension class",
+            "adds": "Char, only help=建议补充施工部位"
+          }
+        ],
+        "reason": "the owning class supplies Char(string=施工部位); the merger keeps the owning definition plus the advisory help"
+      },
+      {
+        "model": "sc.labor.usage",
+        "field": "contractor_id",
+        "declarations": [
+          {
+            "file": "addons/smart_construction_core/models/core/labor_management.py",
+            "role": "owning class",
+            "adds": "the full field definition"
+          },
+          {
+            "file": "addons/smart_construction_core/models/core/labor_product_extension.py",
+            "role": "extension class",
+            "adds": "Many2one, only help=建议补充劳务单位"
+          }
+        ],
+        "reason": "the owning class supplies Many2one(res.partner, string=劳务单位, index=True); the merger keeps the owning definition plus the advisory help"
+      },
+      {
+        "model": "sc.labor.usage",
+        "field": "foreman_name",
+        "declarations": [
+          {
+            "file": "addons/smart_construction_core/models/core/labor_management.py",
+            "role": "owning class",
+            "adds": "the full field definition"
+          },
+          {
+            "file": "addons/smart_construction_core/models/core/labor_product_extension.py",
+            "role": "extension class",
+            "adds": "Char, only help=建议补充带班人"
+          }
+        ],
+        "reason": "the owning class supplies Char(string=带班人); the merger keeps the owning definition plus the advisory help"
+      },
+      {
+        "model": "sc.labor.usage",
+        "field": "price_unit",
+        "declarations": [
+          {
+            "file": "addons/smart_construction_core/models/core/labor_management.py",
+            "role": "owning class",
+            "adds": "the full field definition"
+          },
+          {
+            "file": "addons/smart_construction_core/models/core/labor_product_extension.py",
+            "role": "extension class",
+            "adds": "Monetary, only help=建议补充用工单价"
+          }
+        ],
+        "reason": "the owning class supplies Monetary(string=用工单价, currency_field=currency_id); the merger keeps the owning definition plus the advisory help"
+      },
+      {
+        "model": "sc.labor.usage",
+        "field": "work_type",
+        "declarations": [
+          {
+            "file": "addons/smart_construction_core/models/core/labor_management.py",
+            "role": "owning class",
+            "adds": "the full field definition"
+          },
+          {
+            "file": "addons/smart_construction_core/models/core/labor_product_extension.py",
+            "role": "extension class",
+            "adds": "Char, only help=建议补充工种"
+          }
+        ],
+        "reason": "the owning class supplies Char(string=工种); the merger keeps the owning definition plus the advisory help"
+      }
+    ]
+  },
+  "company_currency_write_sites": {
+    "reason": "res.company.currency_id is the carrier of the tenant standard currency, and it is written from three shapes that no single scan sees together: an XML record on res.company, a method on a class that extends the company model, and a module-level bootstrap function that resolves res.company and writes the field through a vals dict. Reading only the method-assignment shape hid the XML records and the bootstrap write, so all sites are named here and compared as one set; one of them is the named company_currency_authority, which keeps the declaration below from resting on a site this registry does not know.",
+    "sites": [
+      {
+        "file": "addons/smart_construction_bootstrap/data/baseline_currency.xml",
+        "kind": "xml_record",
+        "site": "base.main_company",
+        "reason": "the fresh-database bootstrap sets the main company to base.CNY while the same file activates base.CNY, so the installed tenant starts on the standard currency"
+      },
+      {
+        "file": "addons/smart_construction_bootstrap/hooks.py",
+        "kind": "function",
+        "site": "_ensure_company_currency",
+        "reason": "the post-init hook writes the resolved standard currency onto every company and refuses to switch once account.move.line rows exist, so an existing accounting fact is never overwritten"
+      },
+      {
+        "file": "addons/smart_construction_core/data/currency_defaults.xml",
+        "kind": "xml_record",
+        "site": "base.main_company",
+        "reason": "the product module restates the standard currency on the main company and then calls the authority function, so an install without the bootstrap module still lands on CNY"
+      },
+      {
+        "file": "addons/smart_construction_core/models/support/res_company.py",
+        "kind": "function",
+        "site": "_sc_ensure_cny_currency",
+        "reason": "the named authority: it activates base.CNY and moves every company without journal items onto it, skipping companies that already own accounting facts"
+      }
+    ]
+  },
+  "company_currency_authority": {
+    "model": "res.company",
+    "module": "smart_construction_core",
+    "method": "_sc_ensure_cny_currency",
+    "currency": "CNY",
+    "reason": "The statement that a caller-context default still resolves to the tenant standard currency depends on this pin: it makes CNY active and sets every company without journal items to it, skipping companies that already own accounting facts. The guard fails if this method disappears, stops naming the standard currency, or if standard-currency models are declared without a registered authority."
+  },
+  "state_fact": {
+    "issue": "STATE-FACT-SINGLE-SOURCE-01",
+    "owner_module": "smart_construction_core",
+    "reason": "A record lifecycle is a fact. It was declared in four places at once: the ScStateMachine tables, a second table copied next to one model, ad-hoc 'if state not in (...)' checks inside each action, and the workflow profile map. Whichever one a writer happened to consult became the truth, so a caller could write a state the declared table forbids. The table is now the single declared source and this registry records, per registered model, where that table is actually consulted, which models only borrow a lifecycle Selection, which second tables exist and why, and every site that writes state under an explicit bypass so a bypass stays a decision, not a habit.",
+    "enforcements": [
+      {
+        "model": "project.project",
+        "file": "addons/smart_construction_core/models/core/project_core.py",
+        "token": "_validate_lifecycle_transition",
+        "enforced": true
+      },
+      {
+        "model": "payment.request",
+        "file": "addons/smart_construction_core/models/core/payment_request.py",
+        "token": "ScStateMachine.assert_transition",
+        "enforced": true
+      },
+      {
+        "model": "sc.settlement.order",
+        "file": "addons/smart_construction_core/models/core/settlement_order.py",
+        "token": "ScStateMachine.SETTLEMENT_ORDER",
+        "enforced": true,
+        "reason": "write() refuses any state change that is not the lifecycle-service call, and _write_lifecycle now reads the declared ScStateMachine.SETTLEMENT_ORDER table instead of a private copy, so the guard and the table cannot drift apart again."
+      },
+      {
+        "model": "sc.general.contract",
+        "file": "addons/smart_construction_core/models/core/general_contract.py",
+        "token": "ScStateMachine.assert_transition",
+        "enforced": true,
+        "reason": "write() refuses a bare state write and asserts ScStateMachine.GENERAL_CONTRACT on every declared writer, so the published ladder (draft->confirmed->signed) is the only one the model accepts."
+      },
+      {
+        "model": "construction.contract",
+        "file": "addons/smart_construction_core/models/support/contract_center.py",
+        "token": "ScStateMachine.assert_transition",
+        "enforced": true,
+        "reason": "write() refuses a bare state write and asserts ScStateMachine.CONTRACT on every declared writer, so closed/cancel are the terminal states the table declares rather than whatever an action happened to allow."
+      },
+      {
+        "model": "project.settlement",
+        "file": "addons/smart_construction_core/models/core/settlement.py",
+        "token": "ScStateMachine.assert_transition",
+        "enforced": true,
+        "reason": "write() refuses a bare state write and asserts ScStateMachine.SETTLEMENT on the three action writers, so the declared ladder is the one fact instead of the three per-action if-checks."
+      }
+    ],
+    "transition_tables": [
+      {
+        "file": "addons/smart_construction_core/handlers/project_connection_transition.py",
+        "name": "TRANSITIONS",
+        "reason": "Project connection state (whether a data connection is linked), not the record lifecycle of a business object; it is not a second source for any registered model."
+      },
+      {
+        "file": "addons/smart_core/delivery/edition_release_snapshot_promotion_service.py",
+        "name": "ALLOWED_TRANSITIONS",
+        "reason": "Edition release promotion stages for the delivery tooling, not a product record lifecycle; it does not describe any registered model."
+      }
+    ],
+    "selection_stage_references": [
+      {
+        "model": "sc.project.stage.requirement.item",
+        "key": "PROJECT",
+        "reason": "lifecycle_state names which project stage a requirement applies to; the field help states it is not the record's own status, so it is a stage reference and owns no lifecycle."
+      },
+      {
+        "model": "sc.project.stage.requirement.wizard",
+        "key": "PROJECT",
+        "reason": "read-only carrier of the project stage being configured"
+      },
+      {
+        "model": "sc.project.stage.requirement.wizard.line",
+        "key": "PROJECT",
+        "reason": "read-only carrier of the project stage for one wizard line"
+      }
+    ],
+    "bypass_sites": [
+      {
+        "file": "addons/smart_construction_core/models/core/payment_request.py",
+        "method": "_complete_payment_approval",
+        "reason": "A payment_request transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared PAYMENT_REQUEST table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/payment_request.py",
+        "method": "action_cancel",
+        "reason": "A payment_request transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared PAYMENT_REQUEST table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/payment_request.py",
+        "method": "action_done",
+        "reason": "A payment_request transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared PAYMENT_REQUEST table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/payment_request.py",
+        "method": "action_on_tier_rejected",
+        "reason": "A payment_request transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared PAYMENT_REQUEST table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/payment_request.py",
+        "method": "action_submit",
+        "reason": "A payment_request transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared PAYMENT_REQUEST table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/support/contract_center.py",
+        "method": "action_confirm",
+        "reason": "A contract transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared CONTRACT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/support/contract_center.py",
+        "method": "action_on_tier_approved",
+        "reason": "A contract transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared CONTRACT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/support/contract_center.py",
+        "method": "action_set_running",
+        "reason": "A contract transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared CONTRACT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/support/contract_center.py",
+        "method": "action_close",
+        "reason": "A contract transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared CONTRACT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/support/contract_center.py",
+        "method": "action_cancel",
+        "reason": "A contract transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared CONTRACT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/support/contract_center.py",
+        "method": "action_reset_draft",
+        "reason": "A contract transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared CONTRACT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/settlement.py",
+        "method": "action_confirm",
+        "reason": "A settlement transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared SETTLEMENT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/settlement.py",
+        "method": "action_done",
+        "reason": "A settlement transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared SETTLEMENT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/settlement.py",
+        "method": "action_cancel",
+        "reason": "A settlement transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared SETTLEMENT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/general_contract.py",
+        "method": "action_confirm",
+        "reason": "A general_contract transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared GENERAL_CONTRACT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/general_contract.py",
+        "method": "action_on_tier_approved",
+        "reason": "A general_contract transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared GENERAL_CONTRACT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/general_contract.py",
+        "method": "action_signed",
+        "reason": "A general_contract transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared GENERAL_CONTRACT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/general_contract.py",
+        "method": "action_cancel",
+        "reason": "A general_contract transition method writes the target state under allow_transition=True. The flag only lifts the 'state must move through a transition method' guard; the declared GENERAL_CONTRACT table is still asserted on every one of these writes, so the entry records the method, not an extra legal edge."
+      }
+    ]
+  },
+  "business_number_authority": {
+    "issue": "BUSINESS-NUMBER-AUTHORITY-01",
+    "owner_module": "smart_construction_core",
+    "reason": "One published ir.sequence is the single generator of a business number. The literal code a module reads, the code product data publishes and the place where the value can become a second fact are the same fact seen from three scans, and they drifted independently: three codes were read with no publication at all, three publications had no reader, and seven call sites could turn a missing sequence into a second value. Every reader file now names the codes it reads, every dynamic read names its argument, and every fallback carries its class so a fallback stays a decision instead of a habit.",
+    "reader_files": [
+      {
+        "file": "addons/smart_construction_core/models/core/business_menu_facts.py",
+        "codes": [
+          "sc.business.fact"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/construction_diary.py",
+        "codes": [
+          "sc.construction.diary"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/equipment_management.py",
+        "codes": [
+          "sc.equipment.plan",
+          "sc.equipment.price",
+          "sc.equipment.request",
+          "sc.equipment.settlement",
+          "sc.equipment.usage"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/expense_claim.py",
+        "codes": [
+          "sc.expense.claim"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/financing_loan.py",
+        "codes": [
+          "sc.financing.loan"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/fund_account_operation.py",
+        "codes": [
+          "sc.fund.account.operation"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/general_contract.py",
+        "codes": [
+          "sc.general.contract",
+          "sc.general.contract.no"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/hr_payroll_document.py",
+        "codes": [
+          "sc.business.fact"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/invoice_registration.py",
+        "codes": [
+          "sc.invoice.registration"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/labor_management.py",
+        "codes": [
+          "sc.attendance.checkin",
+          "sc.labor.plan",
+          "sc.labor.price",
+          "sc.labor.request",
+          "sc.labor.settlement",
+          "sc.labor.usage"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/material_acceptance.py",
+        "codes": [
+          "sc.material.acceptance",
+          "sc.material.inbound",
+          "sc.material.outbound",
+          "sc.material.purchase.request",
+          "sc.material.rfq",
+          "sc.material.settlement"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/material_plan.py",
+        "codes": [
+          "project.material.plan"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/material_rental.py",
+        "codes": [
+          "sc.material.rental.order",
+          "sc.material.rental.plan",
+          "sc.material.rental.settlement"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/material_supplier_return.py",
+        "codes": [
+          "sc.material.supplier.return"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/output_invoice_adjustment.py",
+        "codes": [
+          "sc.output.invoice.adjustment"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/payment_execution.py",
+        "codes": [
+          "sc.payment.execution"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/payment_request.py",
+        "codes": [
+          "payment.request"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/project_core.py",
+        "codes": [
+          "project.project.code"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/receipt_income.py",
+        "codes": [
+          "sc.receipt.income"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/self_funding_registration.py",
+        "codes": [
+          "sc.self.funding.registration"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/settlement.py",
+        "codes": [
+          "project.settlement"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/settlement_adjustment.py",
+        "codes": [
+          "sc.settlement.adjustment"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/settlement_order.py",
+        "codes": [
+          "sc.settlement.order"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/subcontract_management.py",
+        "codes": [
+          "sc.subcontract.plan",
+          "sc.subcontract.price",
+          "sc.subcontract.register",
+          "sc.subcontract.request",
+          "sc.subcontract.settlement"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/tax_certificate_registration.py",
+        "codes": [
+          "sc.tax.certificate.registration"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/tax_deduction_registration.py",
+        "codes": [
+          "sc.tax.deduction.registration"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/tax_filing.py",
+        "codes": [
+          "sc.tax.filing"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/treasury_reconciliation.py",
+        "codes": [
+          "sc.treasury.reconciliation"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/projection/treasury_ledger.py",
+        "codes": [
+          "sc.treasury.ledger"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/support/contract_center.py",
+        "codes": [
+          "construction.contract"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/support/labor_product.py",
+        "codes": [
+          "sc.labor.deduction"
+        ]
+      },
+      {
+        "file": "addons/smart_construction_core/models/support/variation_change.py",
+        "codes": [
+          "sc.contract.change",
+          "sc.site.variation"
+        ]
+      }
+    ],
+    "codes": [
+      {
+        "code": "construction.contract.expense",
+        "reason": "the expense contract subtype resolves this sequence through contract_center.create's dynamic seq_code argument, so it is published and read without ever being named by a literal call."
+      },
+      {
+        "code": "construction.contract.income",
+        "reason": "the income contract subtype resolves this sequence through contract_center.create's dynamic seq_code argument, so it is published and read without ever being named by a literal call."
+      },
+      {
+        "code": "sc.contract.change",
+        "reason": "contract change records take their name from this code in variation_change.py, but no product data file publishes an ir.sequence for it, so the read always falls through to the declared label; recorded as a publication gap, not a silent fallback."
+      },
+      {
+        "code": "sc.labor.deduction",
+        "reason": "labor deduction records take their name from this code in labor_product.py, but no product data file publishes an ir.sequence for it, so the read always falls through to the declared label; recorded as a publication gap, not a silent fallback."
+      },
+      {
+        "code": "sc.project.document",
+        "reason": "product data publishes this rule while no product module reads the code; it is an unused published rule, kept until a document-numbering consumer lands or the record is removed."
+      },
+      {
+        "code": "sc.site.variation",
+        "reason": "site variation records take their name from this code in variation_change.py, but no product data file publishes an ir.sequence for it, so the read always falls through to the declared label; recorded as a publication gap, not a silent fallback."
+      }
+    ],
+    "dynamic_reads": [
+      {
+        "file": "addons/smart_construction_core/models/support/contract_center.py",
+        "function": "create",
+        "argument": "seq_code",
+        "reason": "contract_center.create resolves the contract subtype first and then falls back to construction.contract, so the sequence code is a runtime value rather than a literal; the read is registered here so the literal scan still stays the only naming rule."
+      }
+    ],
+    "second_value_sites": [
+      {
+        "file": "addons/smart_construction_core/models/core/business_menu_facts.py",
+        "function": "_next_document_no",
+        "class": "derived_token",
+        "issue": "BUSINESS-NUMBER-AUTHORITY-01",
+        "reason": "document_no is built from a type token plus the sc.business.fact sequence, falling back to the literal NEW; the sequence is the number and the token only names the fact class."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/general_contract.py",
+        "function": "create",
+        "class": "unique_key_from_label",
+        "issue": "BUSINESS-NUMBER-AUTHORITY-01",
+        "reason": "contract_no falls back to the record name when sc.general.contract.no is missing; contract_no is a unique business key, so the name becomes a second generator instead of a label."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/hr_payroll_document.py",
+        "function": "create",
+        "class": "unique_key_second_generator",
+        "issue": "BUSINESS-NUMBER-AUTHORITY-01",
+        "reason": "the SALPAY- name embeds the sc.business.fact sequence and falls back to the record id, so a missing sequence yields an id-derived number instead of the declared token."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/material_plan.py",
+        "function": "action_submit",
+        "class": "name_label_fallback",
+        "reason": "the plan name falls back to the record's own declared label when project.material.plan is missing, which is not a second business value."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/project_core.py",
+        "function": "create",
+        "class": "unique_key_second_generator",
+        "issue": "BUSINESS-NUMBER-AUTHORITY-01",
+        "reason": "project_code falls back to a timestamp-uuid token when project.project.code is missing; project_code is constrained unique, so the fallback is a real second generator."
+      },
+      {
+        "file": "addons/smart_construction_core/models/core/settlement_order.py",
+        "function": "create",
+        "class": "name_label_fallback",
+        "reason": "the settlement name falls back to the record's own declared label when sc.settlement.order is missing, which is not a second business value."
+      },
+      {
+        "file": "addons/smart_construction_core/models/support/contract_center.py",
+        "function": "create",
+        "class": "chained_sequence_then_label",
+        "reason": "the contract name tries the subtype sequence, then construction.contract, then the declared label; the chain is tolerated because both steps still read a published ir.sequence before the label."
+      }
+    ]
+  }
+}

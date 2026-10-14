@@ -1,3 +1,6 @@
+import type { ActionFeedbackOwner } from './useNativeActionFeedback';
+import { decodeNativeActionNotification } from '../../app/contract/nativeActionNotification';
+import { contractGapError } from '../../app/contract/contractGap';
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router';
 import { pickContractNavQuery } from '../../app/navigationContext';
 import type { ContractAction } from './types';
@@ -78,7 +81,8 @@ export function useCreatedRecordNavigationRuntime(params: {
   isStandardIntakeMode: () => boolean;
   modelName: () => string;
   resolveWorkspaceContextQuery: () => Record<string, unknown>;
-  returnToIntakeList: (createdId: number | string) => Promise<boolean>;
+  returnToIntakeList: (createdId: number | string, navigate?: (target: Parameters<Router['replace']>[0]) => Promise<unknown>) => Promise<boolean>;
+  navigateNotificationTarget?: (target: Parameters<Router['replace']>[0], result: unknown, owner: ActionFeedbackOwner) => Promise<boolean>;
   router: Router;
 }) {
   async function navigateCreatedRecord(options: {
@@ -88,8 +92,14 @@ export function useCreatedRecordNavigationRuntime(params: {
     nextSceneRoute: string;
     refreshPolicy?: ContractAction['refreshPolicy'];
     recovery?: 'upload' | 'submit';
+    feedback?: { result: unknown; owner: ActionFeedbackOwner };
   }) {
     const currentQuery = params.currentQuery();
+    const feedback = options.feedback && decodeNativeActionNotification(options.feedback.result) ? options.feedback : undefined;
+    if (feedback && !feedback.owner.owns()) return false;
+    const navigate = feedback && params.navigateNotificationTarget
+      ? (target: Parameters<Router['replace']>[0]) => params.navigateNotificationTarget!(target, feedback.result, feedback.owner)
+      : undefined;
     const relationDialogMessage = resolveRelationCreateDialogMessage({
       query: currentQuery,
       createdId: options.createdId,
@@ -100,15 +110,22 @@ export function useCreatedRecordNavigationRuntime(params: {
       await params.applyProjectionRefreshPolicy(
         options.refreshPolicy || { on_success: ['record', 'collection'] },
       );
+      if (feedback && !feedback.owner.owns()) return false;
+      if (feedback) relationDialogMessage.notification = decodeNativeActionNotification(feedback.result)!;
       window.parent.postMessage(relationDialogMessage, window.location.origin);
       return true;
+    }
+    if (feedback && !navigate) {
+      throw contractGapError({ kind: 'contract_defect', missing: 'created notification navigation owner',
+        requiredDeclarationLayer: 'P0: created record navigation' }, 'Missing created notification handoff');
     }
     const resolvedNextRoute = options.nextSceneRoute || (options.nextSceneKey ? `/s/${options.nextSceneKey}` : '');
     if (!options.recovery && (params.isQuickIntakeMode() || params.isStandardIntakeMode())) {
       await params.applyProjectionRefreshPolicy(options.refreshPolicy || { on_success: ['scene_projection', 'workbench_projection'] });
-      if (await params.returnToIntakeList(options.createdId)) return true;
+      if (feedback && !feedback.owner.owns()) return false;
+      if (await params.returnToIntakeList(options.createdId, navigate)) return true;
       if (resolvedNextRoute) {
-        await params.router.replace({
+        await (navigate || params.router.replace.bind(params.router))({
           path: resolvedNextRoute,
           query: {
             record_id: String(options.createdId),
@@ -123,6 +140,7 @@ export function useCreatedRecordNavigationRuntime(params: {
       params: { model: params.modelName(), id: String(options.createdId) },
       query: { ...pickContractNavQuery(currentQuery), ...(options.recovery ? { create_recovery: options.recovery } : {}) },
     });
+    if (navigate) return await navigate(createdRoute);
     window.location.replace(new URL(createdRoute.href, window.location.origin).toString());
     await new Promise<never>(() => {});
     return true;

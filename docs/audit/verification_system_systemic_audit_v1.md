@@ -409,7 +409,7 @@ target 名**，于是这一类长尾被自己的审计文本"复活"。修正为
 > `verification_lane_baseline.json` 的 `metric_corrections`，该字段由仪器常量写入）。
 
 **仅记录（体积，不硬校验）**：`recorded_targets_defined`、`recorded_targets_unreached_from_anchor`、
-`recorded_anchor_union_targets`，由 `review_by` 到期复核。
+`recorded_anchor_union_targets`，由 `review_triggers` 触发复核（不再是统一到期日；见第 9 节）。
 
 > **口径说明（实测教训）**：棘轮最初把"体积"也设为硬校验，结果本审计工具自己新增两个
 > 手工入口就把 `targets_unreached_from_anchor` 从 2044 顶到 2046 而失败。
@@ -447,3 +447,75 @@ target 名**，于是这一类长尾被自己的审计文本"复活"。修正为
   "被脚本内部动态调用"的盲区；任何据此得出的结论都应保留该限制说明。
 - `scripts/verify/registry.yaml` 的 `gate_required` 只有 3 项，是否过窄需要批次 A 一并裁定。
 - 本审计不改变任何完成状态判定：批次验收 / 主线集成 / 版本发布 / 产品交付仍分别独立结论。
+
+---
+
+## 9. P4 治理收口（2026-10-13）
+
+四类"验证结论可以被结构检查冒名顶替"的缺陷在本节一次性收口。它们都是**度量口径**缺陷，
+不是产品缺陷；修的是"用什么证明通过"，不改任何业务判定。
+
+### 9.1 额度可替换漏洞（`compare` 只比计数）
+
+原 `compare` 只比较**计数**：删掉死面 A、加入死面 B，总数不变即 PASS，于是"腾挪"可以冒充"收敛"。
+
+- `baseline_payload` 现冻结每个非零额度桶的**条目标识**（`frozen_identities`：
+  `targets_zero_reference` / `scripts_unreferenced_anywhere` / `local_only_scripts` /
+  `remote_only_scripts`）。
+- `compare` 逐条比较：`current - frozen` 非空即 FAIL，即使计数未动。缩容（子集）仍 PASS。
+- 缺少 `frozen_identities` 的旧基线直接 FAIL（"不冻结标识"本身就是要消除的漏洞）。
+- 反例自测：`test_count_neutral_replacement_fails`、`test_identity_subset_shrink_is_allowed`、
+  `test_a_baseline_without_frozen_identities_fails`。
+
+### 9.2 统一复审日期替换为复审触发条件
+
+原基线由生成器硬编码 `review_by=2026-12-31`，登记项也带统一到期日——一个未来日期并不证明有人
+复查过。现在：
+
+- 基线不再生成 `review_by`，改为 `review_triggers`：每个债务组声明**触发复核的条件**。
+- dispositions / exemptions 文件各自声明 `review_policy`（按 `disposition` / `reason_code`
+  给出 `trigger`，需要时才给 `deadline`），条目本身不再携带统一日期。
+- 到期即失效：`registration_state` 计算 `expired_registrations`，`compare` 将其当作 FAIL，
+  **到期登记不得再支持通过**。
+
+### 9.3 登记必须以责任人和处置依据为准
+
+`registration_state` 逐条校验登记是否"仍可支持通过"：
+
+- `registrations_missing_owner`：无责任人（disposition 的 `owner` 或 exemption 的 `lane_owner`）；
+- `registrations_missing_basis`：无 `reason`，或其 `disposition` / `reason_code` 在 `review_policy`
+  中没有任何 `trigger`（无处置依据）；
+- `expired_registrations`：有效截止日已过。
+
+三者均硬校验为 0。`registration` 计数写入测量结果，`compare` 逐个点名，不再只报一个总数。
+
+### 9.4 结构检查结论与功能验收结论分离
+
+`render_summary` 现分两段输出：上一段是车道结构覆盖（"结构覆盖，不是功能验收"），
+下段单列**必需链未登记数 / 新增未登记数 / 历史未结数 / 到期数 / 扫描范围**。
+`--check` 的 PASS 文案明确标注"structural coverage only, not a functional acceptance"，
+结构 PASS 不再暗示功能验收完成。
+
+### 9.5 item 7：退役的边界（本轮不删）
+
+- `ci_legacy_tooling`（2 条）已在登记理由中说明"Gitee 侧 CI 配置不在仓库内，无法在仓库内证明
+  外部不再引用"——**登记不退役**。
+- `candidate`（targets 109 / scripts 2）是明确开放项，其 `review_policy` 触发条件已登记为
+  "wire-or-retire before acceptance"；其去留取决于各自 owner 的证据，**本轮不批量删除未核实项**。
+- 新增不变式 `test_no_make_recipe_references_a_retired_script`：任何 make 配方不得引用
+  `scripts/retired/**`，且 `targets_missing_asset_unregistered` 必须为 0，保证"无悬空引用"。
+
+### 9.6 反例覆盖
+
+`scripts/audit/test_verification_lane_coverage.py` 现覆盖任务要求的全部反例：
+计数不变但条目替换、仅登记为历史欠账而无实际接入、豁免到期/缺责任人/缺处置依据、
+登记失效未清理、合法按需工具不误报为死脚本。自测 44 → **66 项**。
+
+### 9.7 已知度量边界（本轮记录，未修）
+
+- 引用索引把**非叙述文件**里出现的 target 标识符记为"被引用"（这是为了让 `$(MAKE)`-free 的
+  引用成立）。副作用：在任意脚本/配置的**注释**里写出一个死 target 名，会让它从计数中"消失"
+  （缩容方向是被允许的）。该缺陷在编写本轮自测时就真实发生：测试文件里写了
+  `test-install-gate` 字面量，导致该 target 立即从零引用集合中消失。
+  这一条属于**收缩方向的假通过**，与第 1 项"新增方向的额度替换"是不同向量；
+  本轮只记录，未改引用判定口径。规避方式：自测/脚本中不写真 target 名（用合成名）。

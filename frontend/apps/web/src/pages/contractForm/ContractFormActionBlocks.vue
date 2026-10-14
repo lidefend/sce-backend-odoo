@@ -1,22 +1,4 @@
 <template>
-  <section v-if="warnings.length && !isIntakeCreateMode" class="block warn" data-semantic-component="ContractFormActionBlocks" data-state="warning" data-form-body-action-block="warnings">
-    <h3>提示信息</h3>
-    <ul>
-      <li v-for="item in warnings" :key="item">{{ item }}</li>
-    </ul>
-  </section>
-  <section v-if="workflowEvidenceGateRows.length && !isIntakeCreateMode" class="block workflow-evidence-block">
-    <h3>办理前置条件</h3>
-    <ul class="workflow-evidence-list">
-      <li
-        v-for="item in workflowEvidenceGateRows"
-        :key="item.reasonCode"
-        :class="{ 'workflow-evidence-list__item--block': item.blocking }"
-      >
-        {{ item.message }}
-      </li>
-    </ul>
-  </section>
   <section v-if="strictContractMissingSummary && !isIntakeCreateMode" class="block contract-missing-block">
     <h3>配置状态提示</h3>
     <p class="contract-missing-summary">{{ strictContractMissingSummary }}</p>
@@ -61,12 +43,6 @@ import { computed } from 'vue';
 import type { ContractAction } from './types';
 import ScButton from '../../components/design-system/ScButton.vue';
 
-type WorkflowEvidenceGateRow = {
-  reasonCode: string;
-  message: string;
-  blocking: boolean;
-};
-
 type WorkflowTransitionRow = {
   key: string;
   label: string;
@@ -75,8 +51,6 @@ type WorkflowTransitionRow = {
 };
 
 const props = defineProps<{
-  warnings: string[];
-  workflowEvidenceGateRows: WorkflowEvidenceGateRow[];
   strictContractMissingSummary: string;
   strictContractDefaultsSummary: string;
   workflowTransitions: WorkflowTransitionRow[];

@@ -114,46 +114,16 @@ def validate(source: str | None = None, smart_action: str | None = None, overflo
         failures.append(f"native form expected two smart action branches, found {text.count('<NativeSmartAction')}")
     if ".native-action-btn--smart" in text:
         failures.append("native renderer must not retain parallel smart-action appearance")
-    overflow_required = (
-        "import NativeActionOverflowMenu from './NativeActionOverflowMenu.vue'",
-        '<NativeActionOverflowMenu',
-        '@select="emitNativeAction"',
-        'data-semantic-component="NativeActionOverflowMenu"',
-        'native-action-more-menu',
-        'aria-haspopup="menu"',
-        ':aria-expanded="open"',
-        ':aria-controls="menuId"',
-        'role="menu"',
-        'role="menuitem"',
-        '@keydown.down.stop.prevent="openMenu(\'first\')"',
-        '@keydown.up.stop.prevent="openMenu(\'last\')"',
-        '@keydown.esc.stop.prevent="close(true)"',
-        '@keydown.tab="close()"',
-        '@keydown="onMenuKeydown"',
-        "const instanceId = useId()",
-        "event.key === 'ArrowDown'",
-        "event.key === 'ArrowUp'",
-        "event.key === 'Home'",
-        "event.key === 'End'",
-        "event.key === 'Escape'",
-        "if (!items.length) return",
-        "trigger.value?.focus?.()",
-        "document.addEventListener('pointerdown', onDocumentPointerDown)",
-    )
-    combined = f"{text}\n{overflow}"
-    for marker in overflow_required:
-        if marker not in combined:
-            failures.append(f"native action overflow lost disclosure/menu semantics: {marker}")
-    for private_state in ("openMoreKeys", "toggleMore(", "closeMore(", ".native-action-more-menu"):
-        if private_state in text:
-            failures.append(f"native renderer retained private overflow implementation: {private_state}")
-    for evidence in (
-        "exerciseNativeActionOverflow",
-        'data-semantic-component="NativeSmartAction"',
-        'data-semantic-component="NativeActionOverflowMenu"',
-        "focusRestored",
-        "menuItemCount > 0",
-    ):
+    if 'buttonChildren(node).filter((button) => segment.nodes.includes(button))' not in text:
+        failures.append("native action group must render the complete ordered visible children")
+    for marker in ("SMART_BUTTON_DIRECT_LIMIT", "visibleActionButtons(", "overflowActionButtons(",
+                   "<NativeActionOverflowMenu", "openMoreKeys", "toggleMore(", "closeMore("):
+        if marker in text:
+            failures.append(f"native action group has undeclared folding: {marker}")
+    smart_layout = re.search(r"\.native-actions--smart\s*\{([^}]*)\}", text)
+    if not smart_layout or re.search(r"overflow\s*:\s*(hidden|clip)", smart_layout.group(1)):
+        failures.append("native smart group must not clip declared actions")
+    for evidence in ("exerciseNativeActionGroup", "expectedNativeActionKeys", "declaredKeys", "renderedKeys"):
         if evidence not in smoke:
             failures.append(f"governed visual smoke lost native action evidence: {evidence}")
     return failures

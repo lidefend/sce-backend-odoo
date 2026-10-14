@@ -1,8 +1,9 @@
+import { decodeNativeActionNotification } from '../app/contract/nativeActionNotification';
 import { intentRequest } from './intents';
 import type { ExecuteButtonRequest, ExecuteButtonResponse } from '@sc/schema';
 
 export async function executeButton(params: ExecuteButtonRequest) {
-  return intentRequest<ExecuteButtonResponse>({
+  const response = await intentRequest<ExecuteButtonResponse>({
     intent: 'execute_button',
     params: {
       model: params.model,
@@ -12,4 +13,6 @@ export async function executeButton(params: ExecuteButtonRequest) {
     context: params.context ?? {},
     meta: params.meta ?? {},
   });
+  decodeNativeActionNotification(response.result);
+  return response;
 }

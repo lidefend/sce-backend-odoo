@@ -43,7 +43,6 @@
         :business-section-nodes="embeddedBusinessSectionNodes"
         :subordinate-nodes="floorplanSubordinateNodes"
         :decision-mode="true"
-        :blocked-action-message="floorplan.blockedActions.length ? blockedActionMessage : ''"
         :relation-adapter="relationAdapter"
         :has-collaboration="hasCollaboration"
         :audit-authorized="auditAuthorized"
@@ -129,8 +128,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject } from 'vue';
-import { ScTaskActionResolverKey } from '../../components/template/taskActionResolver';
+import { computed } from 'vue';
 import { layoutGridUnits } from '../../components/template/layoutSpan';
 import { SceneButton, SceneUiProvider, type SceneUiKitId } from '@sc/ui/form';
 import type { ContractV2ActionRule, ContractV2FormStructureSurface } from '../../app/contracts/v2/types';
@@ -263,7 +261,6 @@ const floorplan = computed(() => floorplanModel.value ? composeCanonicalFormFloo
   claimedStatusbarNodeIdentity: props.claimedStatusbarNodeIdentity || '',
   claimedStatusbarFieldCode: props.claimedStatusbarFieldCode || '',
 }) : emptyFloorplan);
-const blockedActionMessage = computed(() => `当前操作暂不可用：${floorplan.value.blockedActions.map((action) => `${action.label}暂不可执行`).join('；')}`);
 const productWriteMode = computed(() => Boolean(
   floorplan.value.decisionMode && props.renderModel && props.renderModel.identity.mode !== 'readonly',
 ));
@@ -323,14 +320,12 @@ const nativeBridgeModel = computed<CanonicalFormRenderModel | null>(() => {
     },
   };
 });
-const taskActionResolver = inject(ScTaskActionResolverKey, null);
 const nativeBridge = computed(() => nativeBridgeModel.value
   ? buildCanonicalNativeFormBridge(
     nativeBridgeModel.value,
     props.relationAdapter as CanonicalRelationProjection,
     props.claimedStatusbarNodeIdentity || '',
     props.claimedStatusbarFieldCode || '',
-    (field) => Boolean(taskActionResolver?.(field)),
   )
   : null);
 const floorplanSubordinateNodes = computed(() => floorplan.value.subordinateNodes

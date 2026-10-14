@@ -2,6 +2,10 @@
 import os
 
 
+ENVIRONMENT_ROLE = "platform_internal_demo"
+DEMO_TENANT_KEY = "sc-demo-main"
+
+
 def guard_demo_scope(env):
     db_name = str(env.cr.dbname or "").strip()
     if not (
@@ -16,8 +20,46 @@ def guard_demo_scope(env):
         raise RuntimeError("smart_construction_demo requires SC_DEMO_USER_PASSWORD")
 
 
+def onboard_platform_data_space(env):
+    """Onboard this demo database's main company as the demo data space.
+
+    Owner ruling DEMO_IS_FIRST_ONBOARDED_COMPANY: in the demo role the
+    environment main company IS the first onboarded business company, so demo
+    seeding runs only after that company owns a registration instead of a
+    technical-carrier marker. Re-runs are idempotent and the marketing/demo
+    lane never manufactures its own registration.
+
+    Onboarding is not complete with the registration row: the demo's operating
+    identities must also be enrolled into the non-customer data realm, or the
+    data space exists and nobody can read it. Identity enrollment is therefore
+    part of this same idempotent act, never a per-user assembly in demo data.
+    """
+    from odoo.addons.smart_core.security import data_space_provisioning as provisioning
+
+    provisioning.declare_environment_role(env, ENVIRONMENT_ROLE)
+    if not provisioning.onboarded_registrations(env, purpose="demo"):
+        provisioning.onboard_environment_main_company(env, tenant_key=DEMO_TENANT_KEY)
+    return provisioning.enroll_data_space_identities(env, purpose="demo")
+
+
+def guard_demo_data_space(env):
+    """A demo database seeds only against a retired bootstrap marker."""
+    from odoo.addons.smart_core.security import data_space_provisioning as provisioning
+
+    onboard_platform_data_space(env)
+    provisioning.assert_business_data_space_ready(env, purpose="demo")
+    provisioning.assert_data_space_identities_enrolled(env, purpose="demo")
+    carriers = provisioning.bootstrap_company_ids(env)
+    if carriers:
+        raise RuntimeError(
+            "smart_construction_demo requires a retired bootstrap marker, still: %s"
+            % (carriers,)
+        )
+
+
 def apply_demo_user_passwords(env):
     guard_demo_scope(env)
+    guard_demo_data_space(env)
     password = os.environ["SC_DEMO_USER_PASSWORD"].strip()
     rows = env["ir.model.data"].sudo().search(
         [("module", "=", "smart_construction_demo"), ("model", "=", "res.users")]
@@ -30,6 +72,7 @@ def apply_demo_user_passwords(env):
 
 def pre_init_hook(env):
     guard_demo_scope(env)
+    guard_demo_data_space(env)
 
 
 def post_init_hook(env):

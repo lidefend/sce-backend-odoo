@@ -90,3 +90,5 @@ for (const invalid of [undefined, null, {}, { value: 'Selected relation' }, { e:
   assert.equal(resolvePrimitiveNativeEvent(invalid), undefined, 'invalid context must not fabricate an empty field event');
 }
 console.log(`[primitive_adapter_contract_test] PASS components=${SC_PRIMITIVE_KEYS.length} eventCases=${eventCases.length + 5}`);
+
+assert.deepEqual(tdesignDropdownOptions([{ value: 'deny', label: '办理', disabled: true, reasonMessage: '先补齐依据' }]), [{ value: 'deny', content: '办理', disabled: true, reasonMessage: '先补齐依据' }]);

@@ -57,6 +57,8 @@ export interface BusinessConfigChangeSet {
 }
 
 export interface StageBusinessConfigChangeSetItemParams {
+  /** Target configuration scope; distinct from the authenticated change-set owner role. */
+  target_role_key?: string;
   change_set_token: string;
   config_type: BusinessConfigChangeSetItem['config_type'];
   target_key: string;

@@ -14,6 +14,7 @@ from odoo.addons.smart_core.delivery.menu_fact_service import MenuFactService
 from odoo.addons.smart_core.delivery.native_config_menu_projection import native_config_delivery_groups
 from odoo.addons.smart_core.utils.backend_contract_boundaries import MENU_CONFIG_POLICY_MODEL
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
+from odoo.addons.smart_core.security.platform_admin import can_discover_platform_capabilities
 
 _PREVIEW_GROUP_ANCHOR_SKIPPED_LABELS = {"系统菜单", "业务菜单"}
 _CUSTOMER_ACCEPTANCE_GROUP_LABELS: set[str] = set()
@@ -180,9 +181,10 @@ class MenuService:
         if (
             not surface.get("exposure_policy_declared")
             or self.env is None
-            or self._discovers_installed_capabilities(surface)
         ):
             return native_nav
+        # Capability discovery does not turn a delivered menu projection into
+        # complete ACL evidence, including for system administrators.
         # The role policy must intersect the actual request user's Odoo menu
         # visibility. app.menu.config is a delivery/config projection and can
         # legitimately be empty; it is not an authorization authority.
@@ -842,6 +844,28 @@ class MenuService:
 
         return [walk(node, [], index) for index, node in enumerate(nav or [])]
 
+    @classmethod
+    def _intersect_primary_authority_with_nav(cls, buckets: dict, nav: list[dict]) -> None:
+        """Primary authority follows delivered membership; admin/context stay independent."""
+        pairs = set()
+        menu_ids = set()
+
+        def collect(nodes):
+            for node in nodes:
+                meta = node.get("meta") or {}
+                menu_id = cls._node_route_menu_id(node)
+                pairs.add((menu_id, int(node.get("action_id") or meta.get("action_id") or 0)))
+                menu_ids.add(menu_id)
+                collect(node.get("children") or [])
+
+        collect(nav)
+        for key in ("primary_actions", "role_home_actions"):
+            buckets[key] = [row for row in buckets[key]
+                            if (int(row.get("menu_id") or 0), int(row.get("action_id") or 0)) in pairs]
+        buckets["menu_containers"] = [row for row in buckets["menu_containers"]
+                                     if row.get("route_kind") not in {"PRIMARY_NAV", "ROLE_HOME_ACTION"}
+                                     or int(row.get("menu_id") or 0) in menu_ids]
+
     def build_route_authority(self, role_surface: dict | None, *, nav: list[dict] | None = None) -> dict:
         surface = role_surface if isinstance(role_surface, dict) else {}
         buckets = {
@@ -1039,6 +1063,9 @@ class MenuService:
                 for field in ("menu_key", "business_category_options"):
                     if target.get(field):
                         entry[field] = target[field]
+
+        if isinstance(nav, list):
+            self._intersect_primary_authority_with_nav(buckets, nav)
 
         # Contract-declared role surfaces must never be narrowed silently: a
         # declared menu that is neither delivered nor explicitly denied would be
@@ -1619,7 +1646,11 @@ class MenuService:
         is_admin: bool = False,
         is_business_config_admin: bool = False,
     ) -> bool:
-        if is_admin or is_business_config_admin:
+        # Product capability visibility is distinct from business-record access.
+        # Use the actual platform capability group, never a supplied role label.
+        # Runtime action and data checks remain independent and are not granted
+        # by this navigation-only decision.
+        if self.env is not None and can_discover_platform_capabilities(self.env.user):
             return True
         menu_xmlid = str(menu.get("menu_xmlid") or "").strip()
         if menu_xmlid and menu_xmlid in native_index.get("xmlids", set()):
@@ -2449,7 +2480,11 @@ class MenuService:
                 policy_authorized_routes.add(route)
             if menu_xmlid:
                 policy_authorized_xmlids.add(menu_xmlid)
-        grouped_native = (
+        # An explicit edition menu declaration is a closed product surface.
+        # Native facts and role exposure may authorize/narrow its entries, but
+        # must never append another edition's entries. Independent management
+        # routes remain declared in build_route_authority's ADMIN_ROUTE bucket.
+        grouped_native = [] if "menu_groups" in policy else (
             self._native_preview_menus(
                 native_nav=primary_native_nav,
                 policy=policy,
@@ -2468,7 +2503,7 @@ class MenuService:
             if policy_has_menu_surface
             else self._native_preview_menus(native_nav=primary_native_nav, policy=policy)
         )
-        if self.env is not None and (is_admin or is_business_config_admin) and not policy_has_menu_surface:
+        if self.env is not None and (is_admin or is_business_config_admin) and "menu_groups" not in policy:
             grouped_native = native_config_delivery_groups(self.env) + list(grouped_native or [])
         groups_by_key = {}
         group_order = []

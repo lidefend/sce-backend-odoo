@@ -38,9 +38,9 @@ def validate(read_text: Callable[[str], str] = _read) -> list[str]:
         errors.append("header overflow actions must consume the shared ScDropdown primitive")
     for event in (
         "@click=\"$emit(formClientCommands.back.event)\"",
-        "@click=\"$emit('run-primary')\"",
+        "@click=\"!primaryFormActionDisabled && !busy && $emit('run-primary')\"",
         "@click=\"$emit('run-action', action)\"",
-        "@click=\"$emit('canonical-action', action)\"",
+        "@click=\"!busy && action.enabled && $emit('canonical-action', action)\"",
         "@click=\"$emit('save-draft')\"",
         "@click=\"$emit(formClientCommands.discard.event)\"",
     ):

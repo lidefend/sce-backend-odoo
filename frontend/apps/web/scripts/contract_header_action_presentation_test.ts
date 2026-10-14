@@ -1,3 +1,4 @@
+import './native_action_notification_test';
 import { normalizeActionSemantics } from '@sc/schema';
 import assert from 'node:assert/strict';
 

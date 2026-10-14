@@ -93,6 +93,7 @@ BASE_SEED_FILES: List[str] = [
     "data/base/dictionary_demo.xml",
     "data/base/cost_demo.xml",
     "data/base/10_partners.xml",
+    "data/base/12_departments.xml",
     "data/base/20_projects.xml",
     "data/base/25_project_tasks.xml",
 ]
@@ -381,6 +382,313 @@ def _filter_files(files: List[str], step: str | None) -> List[str]:
     return filtered
 
 
+# ---------------------------------------------------------------------------
+# Demo lifecycle alignment (DEMO-SCENARIO-PRODUCT-DRIFT-01)
+#
+# The product reserves terminal document states for official办理动作
+# (create() only accepts draft). The release seed therefore declares each
+# record in its legal initial state and this table names the governed
+# action chain that carries it to the state the scenario is meant to show.
+# The driver below never writes a status field directly and never opens a
+# guard bypass: it calls the model's own public actions (approval-bearing
+# transitions are performed by the configured reviewer role).
+# ---------------------------------------------------------------------------
+
+# 少数记录在通用办理链到达 target 后，还会由场景专用 finalizer 继续推进
+# （例如 s86 租赁结算由 _ensure_s86_rental_settlement_payment 送到 paid）。
+# 重载时这些记录已经越过 target，必须按“已完成”处理，否则会再次调用只接受
+# 草稿的提交动作并被产品守卫拒绝。
+_DEMO_LIFECYCLE_BEYOND_TARGET = {
+    ("sc.material.rental.settlement", "confirmed"): frozenset({"paid"}),
+}
+
+# (scenario, xmlid-without-module) -> intended terminal state.
+_DEMO_LIFECYCLE_TARGETS = {
+    "s70_daily_business_surface": {
+        "sc_demo_receipt_income_070_progress": "confirmed",
+        "sc_demo_payment_execution_070_material": "confirmed",
+        "sc_demo_treasury_reconciliation_070_daily": "confirmed",
+        "sc_demo_invoice_registration_070_input": "registered",
+        "sc_demo_construction_diary_070_daily": "confirmed",
+    },
+    "s78_project_document_wbs_surface": {
+        "sc_demo_document_078_safety_review": "approved",
+        "sc_demo_document_078_quality_archive": "done",
+    },
+    "s80_execution_management_surface": {
+        "sc_demo_material_purchase_request_080_steel": "approved",
+        "sc_demo_material_rfq_080_steel": "selected",
+        "sc_demo_material_acceptance_080_steel": "accepted",
+        "sc_demo_material_inbound_080_steel": "received",
+        "sc_demo_plan_080_master": "in_progress",
+        "sc_demo_plan_line_080_rebar": "in_progress",
+        "sc_demo_plan_report_080_weekly": "accepted",
+        "sc_demo_safety_plan_080_lifting": "approved",
+        "sc_demo_safety_disclosure_080_lifting": "approved",
+        "sc_demo_labor_plan_080_rebar": "approved",
+        "sc_demo_labor_request_080_rebar": "approved",
+        "sc_demo_attendance_checkin_080_rebar": "confirmed",
+        "sc_demo_equipment_plan_080_crane": "approved",
+        "sc_demo_equipment_request_080_crane": "approved",
+        "sc_demo_equipment_usage_080_crane": "confirmed",
+    },
+    "s85_admin_finance_surface": {
+        "sc_demo_financing_loan_085_bank": "confirmed",
+        "sc_demo_hr_payroll_085_salary": "done",
+        "sc_demo_hr_payroll_085_bonus": "done",
+        "sc_demo_subcontract_plan_085_fitout": "approved",
+        "sc_demo_subcontract_request_085_fitout": "approved",
+        "sc_demo_subcontract_register_085_fitout": "active",
+        "sc_demo_subcontract_settlement_085_fitout": "confirmed",
+    },
+    "s86_tender_rental_finance_surface": {
+        "sc_demo_tender_doc_purchase_086": "approved",
+        "sc_demo_expense_claim_086_deposit_pay": "done",
+        "sc_demo_expense_claim_086_deposit_refund": "done",
+        "sc_demo_material_rental_plan_086_scaffold": "approved",
+        "sc_demo_material_rental_order_086_scaffold": "settled",
+        # 租赁结算的终态 paid 由 _ensure_s86_rental_settlement_payment 在付款
+        # 台账入账后推进；通用办理链只负责把结算送达到付款依据态 confirmed。
+        "sc_demo_material_rental_settlement_086_scaffold": "confirmed",
+        "sc_demo_settlement_adjustment_086_deduction": "confirmed",
+    },
+    "s87_resource_contract_surface": {
+        "sc_demo_labor_usage_087_masonry": "confirmed",
+        "sc_demo_labor_settlement_087_masonry": "confirmed",
+        "sc_demo_equipment_settlement_087_pump": "confirmed",
+        "sc_demo_contract_event_087_design_change": "approved",
+        "sc_demo_contract_event_087_output_value": "done",
+    },
+    "s88_output_invoice_surface": {
+        "sc_demo_invoice_registration_088_output": "registered",
+    },
+    "s89_quality_safety_surface": {
+        "sc_demo_safety_plan_089_dangerous": "approved",
+        "sc_demo_safety_disclosure_089_dangerous": "approved",
+    },
+}
+
+# (model, intended terminal state) -> ordered public action methods.
+# When a model carries no approval rule the submission action completes the
+# approval inline (one-step handling), so the chain is just the submit.
+_DEMO_LIFECYCLE_CHAINS = {
+    ("sc.receipt.income", "confirmed"): ("action_confirm",),
+    ("sc.payment.execution", "confirmed"): ("action_confirm",),
+    ("sc.treasury.reconciliation", "confirmed"): ("action_confirm",),
+    ("sc.invoice.registration", "registered"): ("action_confirm", "action_register"),
+    ("sc.construction.diary", "confirmed"): ("action_confirm",),
+    ("sc.project.document", "approved"): ("action_submit",),
+    ("sc.project.document", "done"): ("action_submit", "action_archive"),
+    ("sc.material.purchase.request", "approved"): ("action_submit",),
+    ("sc.material.rfq", "selected"): ("action_submit", "action_select"),
+    ("sc.material.acceptance", "accepted"): ("action_submit", "action_accept"),
+    ("sc.material.inbound", "received"): ("action_submit", "action_receive"),
+    ("sc.plan", "in_progress"): ("action_confirm", "action_start"),
+    ("sc.plan.report", "accepted"): ("action_submit",),
+    ("sc.safety.plan", "approved"): ("action_submit",),
+    ("sc.safety.disclosure", "approved"): ("action_submit",),
+    ("sc.labor.plan", "approved"): ("action_submit",),
+    ("sc.labor.request", "approved"): ("action_submit",),
+    ("sc.attendance.checkin", "confirmed"): ("action_submit", "action_confirm"),
+    ("sc.equipment.plan", "approved"): ("action_submit",),
+    ("sc.equipment.request", "approved"): ("action_submit",),
+    ("sc.equipment.usage", "confirmed"): ("action_confirm",),
+    ("sc.financing.loan", "confirmed"): ("action_confirm",),
+    ("sc.hr.payroll.document", "done"): ("action_submit", "action_done"),
+    ("sc.subcontract.plan", "approved"): ("action_submit",),
+    ("sc.subcontract.request", "approved"): ("action_submit",),
+    ("sc.subcontract.register", "active"): ("action_register",),
+    ("sc.subcontract.settlement", "confirmed"): ("action_confirm",),
+    ("tender.doc.purchase", "approved"): ("action_submit",),
+    ("sc.expense.claim", "done"): ("action_submit", "action_approve", "action_done"),
+    ("sc.material.rental.plan", "approved"): ("action_submit",),
+    ("sc.material.rental.order", "settled"): ("action_submit", "action_activate", "action_return", "action_settle"),
+    ("sc.material.rental.settlement", "confirmed"): ("action_submit", "action_confirm"),
+    ("sc.settlement.adjustment", "confirmed"): ("action_confirm",),
+    ("sc.labor.usage", "confirmed"): ("action_confirm",),
+    ("sc.labor.settlement", "confirmed"): ("action_submit", "action_confirm"),
+    ("sc.equipment.settlement", "confirmed"): ("action_submit", "action_confirm"),
+    ("sc.contract.event", "approved"): ("action_submit",),
+    ("sc.contract.event", "done"): ("action_submit", "action_done"),
+}
+
+# Records whose execution facts belong to a governed write API rather than an
+# action (sc.plan.line exposes the execution fields through write() while the
+# parent plan is in progress). Values mirror the scenario's intended snapshot.
+_DEMO_LIFECYCLE_FACT_WRITES = {
+    "sc_demo_plan_line_080_rebar": {
+        "state": "in_progress",
+        "actual_start": "2025-04-08",
+        "progress_rate": 65.0,
+    },
+}
+
+# Records whose approval-bearing steps must be carried out by the configured
+# reviewer role instead of the system loader. The user is a member of the
+# approval group of the record's policy (sc.expense.claim -> finance manager).
+_DEMO_LIFECYCLE_REVIEWER = {
+    "sc_demo_expense_claim_086_deposit_pay": "smart_construction_demo.user_sc_finance_mgr_test",
+    "sc_demo_expense_claim_086_deposit_refund": "smart_construction_demo.user_sc_finance_mgr_test",
+}
+
+# Approval tier seat map: reviewer group -> the demo account that owns that
+# seat. The product ships its user-visible approval templates with several
+# tiers (付款/收款申请: 财务经办确认 -> 项目负责人审核 -> 财务审核 -> 管理层终审),
+# and each tier may only be decided by a member of its own group. Declaring the
+# seat once means the generic driver below can walk any chain for any model, so
+# a scenario that adds an approval-bearing document needs no tier-specific code.
+_DEMO_APPROVAL_ACTORS = {
+    "smart_construction_core.group_sc_role_finance_user":
+        "smart_construction_demo.user_sc_fin_01",
+    "smart_construction_core.group_sc_cap_project_manager":
+        "smart_construction_demo.user_demo_project_manager",
+    "smart_construction_core.group_sc_cap_finance_manager":
+        "smart_construction_demo.user_sc_fin_mgr_01",
+    "smart_construction_core.group_sc_role_executive":
+        "smart_construction_demo.user_demo_role_executive",
+}
+
+# The project-side operator who raises the payment/receipt request. It holds the
+# 业务发起 capability, so the request is submitted by the business side and the
+# first approval tier (财务经办确认) stays a different seat, as in real use.
+_DEMO_DOCUMENT_SUBMITTER = "smart_construction_demo.user_demo_role_project_a_member"
+
+# Seats whose payment-request record rule is scoped to "project manager or
+# project follower": the business initiator who raises the request and the
+# 财务经办 who takes the first tier. The rules are domain-required, so these
+# demo seats must follow the project their request belongs to; the driver wires
+# that org fact instead of every scenario repeating it.
+_DEMO_PAYMENT_SCOPED_SEATS = (
+    _DEMO_DOCUMENT_SUBMITTER,
+    _DEMO_APPROVAL_ACTORS["smart_construction_core.group_sc_role_finance_user"],
+)
+
+
+def _demo_project_members(env, project, user_xmlids) -> None:
+    """Subscribe demo operators to a project.
+
+    The payment-request record rules scope a plain finance user to the projects
+    they manage or follow, so the clerk/drafter who works a project must be a
+    project member - a real business fact, not a permission change.
+    Idempotent: partners already following the project are skipped.
+    """
+    if not project:
+        return
+    project = project.sudo()
+    partners = env["res.partner"]
+    for xmlid in user_xmlids:
+        user = env.ref(xmlid, raise_if_not_found=False)
+        if user and user.partner_id:
+            partners |= user.partner_id
+    missing = partners - project.message_partner_ids
+    if missing:
+        project.message_subscribe(partner_ids=missing.ids)
+
+
+def _demo_scope_record_actors_to_project(env, record) -> None:
+    """Subscribe the record-rule-scoped demo seats to the record's project.
+
+    ``payment.request`` scopes the 业务发起 and 财务经办 seats to
+    ``project_id.user_id`` or project followers, so the seeded requester could
+    not submit its own request until it followed the project. Only a
+    subscription is written; no ACL or record rule is touched, and an
+    already-visible record keeps the submitter able to read exactly what the
+    product's own rule allows. Idempotent.
+    """
+    _demo_project_members(env, record.project_id, _DEMO_PAYMENT_SCOPED_SEATS)
+
+
+def _demo_drive_approval(env, record, submitter_xmlid: str | None = None):
+    """Carry one seeded document from draft to its approved state.
+
+    Every step is the model's own public action, taken as the demo account that
+    owns that step: ``action_submit`` by the business submitter, then one
+    ``action_approval_decision`` per pending tier by ``_DEMO_APPROVAL_ACTORS``.
+    Nothing writes a state field and nothing runs as superuser, so the product's
+    own access rules and approval gates stay in force. Idempotent: a document
+    already approved (or beyond) is returned untouched.
+    """
+    record = record.sudo()
+    _demo_scope_record_actors_to_project(env, record)
+    if record.state == "draft":
+        submitter = env.ref(submitter_xmlid or _DEMO_DOCUMENT_SUBMITTER, raise_if_not_found=False)
+        record.with_user(submitter).action_submit()
+        record.invalidate_recordset()
+    rounds = 0
+    while record.state in ("submit", "approve") and record.validation_status in ("waiting", "pending"):
+        rounds += 1
+        if rounds > 20:
+            raise ValueError("demo approval: %s did not converge" % record)
+        pending = record.review_ids.filtered(
+            lambda review: review.status in ("waiting", "pending")
+        ).sorted("sequence")[:1]
+        if not pending:
+            raise ValueError("demo approval: %s has no pending review tier" % record)
+        group = pending.reviewer_group_id
+        group_xmlid = group.get_external_id().get(group.id) if group else None
+        seat_xmlid = _DEMO_APPROVAL_ACTORS.get(group_xmlid)
+        if not seat_xmlid:
+            raise ValueError(
+                "demo approval: no demo seat declared for reviewer group %s (%s)"
+                % (group_xmlid, record)
+            )
+        seat = env.ref(seat_xmlid, raise_if_not_found=False)
+        if not seat:
+            raise ValueError("demo approval: declared seat %s is missing" % seat_xmlid)
+        record.with_user(seat).action_approval_decision()
+        record.invalidate_recordset()
+    return record
+
+
+def _advance_scenario_lifecycle(env, scenario: str) -> None:
+    """Drive seeded records from their legal draft create() to the shown state.
+
+    Each record is advanced only through the model's own public business
+    actions (``_DEMO_LIFECYCLE_CHAINS``); nothing writes a state field behind a
+    guard token. Idempotent: records already at (or beyond) the intended state
+    are left untouched, so a reload does not replay approvals.
+    """
+    targets = _DEMO_LIFECYCLE_TARGETS.get(scenario)
+    if not targets:
+        return
+    module = "smart_construction_demo"
+    for xmlid, target in targets.items():
+        record = env.ref(f"{module}.{xmlid}", raise_if_not_found=False)
+        if not record:
+            continue
+        reviewer_xmlid = _DEMO_LIFECYCLE_REVIEWER.get(xmlid)
+        actor = env.ref(reviewer_xmlid, raise_if_not_found=False) if reviewer_xmlid else None
+        record = record.sudo()
+        if actor:
+            record = record.with_user(actor)
+        state_field = getattr(record, "_state_field", "state")
+        current_state = record[state_field]
+        if current_state == target or current_state in _DEMO_LIFECYCLE_BEYOND_TARGET.get(
+            (record._name, target), ()
+        ):
+            continue
+        fact_values = _DEMO_LIFECYCLE_FACT_WRITES.get(xmlid)
+        if fact_values is not None:
+            record.write(fact_values)
+            record.invalidate_recordset()
+        else:
+            chain = _DEMO_LIFECYCLE_CHAINS.get((record._name, target))
+            if not chain:
+                raise ValueError(
+                    f"demo lifecycle: no action chain for {record._name} -> {target} ({xmlid})"
+                )
+            for method_name in chain:
+                if record[state_field] == target:
+                    break
+                getattr(record, method_name)()
+                record.invalidate_recordset()
+        if record[state_field] != target:
+            raise ValueError(
+                "demo lifecycle: %s stayed at %s, expected %s after %s"
+                % (xmlid, record[state_field], target, chain if fact_values is None else "fact write")
+            )
+
+
 def load_scenario(
     env,
     scenario: str,
@@ -442,16 +750,21 @@ def load_scenario(
         _ensure_funding_baseline(env, "sc_demo_funding_baseline_065")
     if scenario == "s69_payment_ledger_surface":
         _ensure_s69_settlement_lifecycle(env)
+        _ensure_s69_payment_request_approved(env)
         _ensure_s69_payment_ledger(env)
         _ensure_funding_baseline(env, "sc_demo_funding_baseline_069_payment")
     if scenario == "s78_project_document_wbs_surface":
         _ensure_s78_project_document_wbs(env)
     if scenario == "s80_execution_management_surface":
         _ensure_s80_material_lifecycle(env)
-    if scenario == "s85_admin_finance_surface":
-        _ensure_s85_payroll_lifecycle(env)
     if scenario == "s86_tender_rental_finance_surface":
         _ensure_s86_tender_guarantee_lifecycle(env)
+        _ensure_s86_deposit_payment_anchor(env)
+    _advance_scenario_lifecycle(env, scenario)
+    if scenario == "s86_tender_rental_finance_surface":
+        # 租赁结算必须先是 confirmed 才能作为付款依据，因此付款链只能在通用
+        # 办理链把结算送达到 confirmed 之后运行。
+        _ensure_s86_rental_settlement_payment(env)
 
     if apply_passwords:
         apply_demo_user_passwords(env)
@@ -533,6 +846,22 @@ def _ensure_funding_baseline(env, xmlid: str) -> None:
         baseline.action_activate()
 
 
+def _ensure_s69_payment_request_approved(env) -> None:
+    """Carry the S69 source request to approved through the real tier chain.
+
+    The request anchors an approved expenditure settlement, so it may only be
+    approved after the settlement lifecycle has run; it must also be approved
+    before the loader posts its payment ledger. Idempotent.
+    """
+    request = env.ref(
+        "smart_construction_demo.sc_demo_payment_request_069_pay",
+        raise_if_not_found=False,
+    )
+    if not request:
+        return
+    _demo_drive_approval(env, request)
+
+
 def _ensure_s69_settlement_lifecycle(env) -> None:
     """Advance the S69 settlement through the controlled lifecycle.
 
@@ -567,6 +896,184 @@ def _ensure_s86_tender_guarantee_lifecycle(env) -> None:
         guarantee = env.ref(xmlid, raise_if_not_found=False)
         if guarantee and guarantee.state == "draft":
             guarantee.sudo().action_confirm()
+
+
+# Xmlid pairs whose evidence attachment must be joined to the claim. The
+# business category declares ``attachment_policy = required``, so the seed
+# ships the voucher as an ``ir.attachment`` and the relation is wired here:
+# records inside a ``<data noupdate="1">`` block are created once and never
+# rewritten on reload, so a second record for the same xmlid is a no-op.
+_DEMO_CLAIM_ATTACHMENTS = {
+    "sc_demo_expense_claim_086_deposit_pay":
+        "sc_demo_attachment_086_deposit_pay",
+    "sc_demo_expense_claim_086_deposit_refund":
+        "sc_demo_attachment_086_deposit_refund",
+}
+
+
+def _demo_link_attachments(env) -> None:
+    """Join each seeded claim to its evidence attachment. Idempotent."""
+    module = "smart_construction_demo"
+    for claim_xmlid, attachment_xmlid in _DEMO_CLAIM_ATTACHMENTS.items():
+        claim = env.ref(f"{module}.{claim_xmlid}", raise_if_not_found=False)
+        attachment = env.ref(f"{module}.{attachment_xmlid}", raise_if_not_found=False)
+        if not claim or not attachment:
+            continue
+        if attachment not in claim.attachment_ids:
+            claim.sudo().write({"attachment_ids": [(4, attachment.id)]})
+
+
+def _ensure_s86_deposit_payment_anchor(env) -> None:
+    """Drive the S86 deposit payment/receipt requests through the real chain.
+
+    A deposit claim is a cash 办理事实, so the product requires an approved
+    payment/receipt request as its cash source, and a payment request is a
+    four-tier approval document (财务经办确认 -> 项目负责人审核 -> 财务审核 ->
+    管理层终审). The seed declares drafts only and the generic approval driver
+    walks every tier with the demo seat that owns it, wiring the project
+    membership the record rules require on the way. Idempotent.
+    """
+    module = "smart_construction_demo"
+    _demo_link_attachments(env)
+    for xmlid in (
+        "sc_demo_payment_request_086_deposit_pay",
+        "sc_demo_payment_request_086_deposit_refund",
+    ):
+        request = env.ref(f"{module}.{xmlid}", raise_if_not_found=False)
+        if not request:
+            continue
+        request = _demo_drive_approval(env, request)
+        if request.state not in ("approved", "done"):
+            raise ValueError(
+                "demo lifecycle: %s stayed at %s, expected an approved request"
+                % (xmlid, request.state)
+            )
+
+
+def _ensure_s86_rental_settlement_payment(env) -> None:
+    """Pay the S86 rental settlement through the real 付款登记 chain.
+
+    A rental settlement only reaches ``paid`` once an attributed payment
+    request has a fully posted payment ledger (``RENTAL_PAYMENT_ATTRIBUTION_
+    MISSING``), and the request may only exist while the settlement is already
+    ``confirmed`` (``_check_rental_settlement_consistency``), while neither
+    document may be completed by a direct state write
+    (``payment.request.action_done`` refuses both directions). The real product
+    order is therefore settlement 提交/确认 -> 付款申请(金额取未预留额) ->
+    四段审批 -> 付款登记 (``sc.payment.execution``) confirm/register -> 结算
+    确认已支付, and this finalizer runs after the generic 办理链 has delivered
+    the settlement to ``confirmed``. Idempotent.
+    """
+    module = "smart_construction_demo"
+    settlement = env.ref(
+        f"{module}.sc_demo_material_rental_settlement_086_scaffold",
+        raise_if_not_found=False,
+    )
+    if not settlement:
+        return
+    settlement = settlement.sudo()
+    if settlement.state == "paid":
+        return
+    if settlement.state != "confirmed":
+        raise ValueError(
+            "demo lifecycle: 租赁结算必须先在 confirmed 才能作为付款依据，实际为 %s"
+            % settlement.state
+        )
+
+    request = env["payment.request"].sudo().search(
+        [("rental_settlement_id", "=", settlement.id)], limit=1
+    )
+    if not request:
+        amount = settlement._payment_unreserved_amount()
+        if amount <= 0:
+            raise ValueError("demo lifecycle: 租赁结算无可付余额，无法生成付款依据")
+        # 付款申请必须由既能读取租赁结算、又有付款申请创建权的真实席位发起
+        # （付款依据关系校验 _caller_visible_payment_relations 按发起人可见性
+        # 复核来源单据）。demo 中该席位为财务经理，而非项目业务发起人。
+        request = (
+            env["payment.request"]
+            .with_user(
+                env.ref("smart_construction_demo.user_sc_fin_mgr_01")
+            )
+            .create(
+                {
+                    "type": "pay",
+                    "project_id": settlement.project_id.id,
+                    "rental_settlement_id": settlement.id,
+                    "partner_id": settlement.supplier_id.id,
+                    "contract_id": settlement.contract_id.id or False,
+                    "currency_id": settlement.currency_id.id,
+                    "amount": amount,
+                    "date_request": "2025-07-12",
+                    "actual_payee_unit": "德阳某某周转材料租赁有限公司（示例）",
+                    "payment_account_name": "德阳某某周转材料租赁有限公司（示例）",
+                    "payment_bank_name": "中国银行德阳示范支行",
+                    "payment_account_no": "DEMO-ACCOUNT-RENTAL-086",
+                    "note": "S86 周转材料租赁费支付申请。",
+                }
+            )
+        )
+    request = _demo_drive_approval(env, request)
+    if request.state not in ("approved", "done"):
+        raise ValueError(
+            "demo lifecycle: %s stayed at %s, expected an approved request"
+            % (request.name, request.state)
+        )
+    handler = env.ref(
+        "smart_construction_demo.user_sc_fin_01", raise_if_not_found=False
+    )
+    # 付款登记创建会复核来源租赁结算额度并按发起人可见性读取结算单；demo 中
+    # 同时具备“财务经办能力 + 租赁结算读取”的席位是财务经理，故由该席位创建，
+    # 经办与确认仍按财务办理/财务确认两段职责推进。
+    execution_creator = env.ref(
+        "smart_construction_demo.user_sc_fin_mgr_01", raise_if_not_found=False
+    )
+    execution = env["sc.payment.execution"].sudo().search(
+        [("payment_request_id", "=", request.id)], limit=1
+    )
+    if not execution:
+        execution = (
+            env["sc.payment.execution"]
+            .with_user(execution_creator)
+            .create(
+                {
+                    "payment_request_id": request.id,
+                    "project_id": request.project_id.id,
+                    "partner_id": request.partner_id.id,
+                    "contract_id": request.contract_id.id,
+                    "source_kind": "actual_outflow",
+                    "payment_family": "周转材料租赁费",
+                    "payment_method": "银行转账",
+                    "date_payment": "2025-07-12",
+                    "document_no": request.name,
+                    "planned_amount": request.amount,
+                    "paid_amount": request.amount,
+                    "invoice_amount": request.amount,
+                    "currency_id": request.currency_id.id,
+                    "receipt_account_name": request.payment_account_name,
+                    "receipt_bank_name": request.payment_bank_name,
+                    "receipt_account_no": request.payment_account_no,
+                    "handler_name": "测试-财务经办",
+                    "note": "S86 周转材料租赁费付款登记样例。",
+                }
+            )
+        )
+    if execution.state == "draft":
+        execution.with_user(handler).action_confirm()
+    if execution.state == "confirmed":
+        manager = env.ref(
+            "smart_construction_demo.user_sc_fin_mgr_01", raise_if_not_found=False
+        )
+        execution.with_user(manager).action_paid()
+
+    settlement.invalidate_recordset()
+    if settlement.state == "confirmed":
+        settlement.action_paid()
+        settlement.invalidate_recordset()
+    if settlement.state != "paid":
+        raise ValueError(
+            "demo lifecycle: 租赁结算付款后仍为 %s，预期 paid" % settlement.state
+        )
 
 
 def _ensure_s80_material_lifecycle(env) -> None:
@@ -631,19 +1138,6 @@ def _ensure_s78_project_document_wbs(env) -> None:
         doc.sudo().write({"attachment_ids": [(4, attachment.id)]})
 
 
-def _ensure_s85_payroll_lifecycle(env) -> None:
-    """Advance project payroll through the same lifecycle used by operators."""
-    payroll = env.ref(
-        "smart_construction_demo.sc_demo_hr_payroll_085_salary",
-        raise_if_not_found=False,
-    )
-    if not payroll:
-        return
-    payroll = payroll.sudo()
-    if payroll.state == "draft":
-        payroll.action_submit()
-    if payroll.state == "in_progress":
-        payroll.action_done()
 
 
 def load_all(env, mode: str = "update") -> None:

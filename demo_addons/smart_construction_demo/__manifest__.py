@@ -17,6 +17,7 @@
         "data/base/dictionary_demo.xml",
         "data/base/cost_demo.xml",
         "data/base/10_partners.xml",
+        "data/base/12_departments.xml",
         "data/base/15_seed_partners.xml",
         "data/base/20_projects.xml",
         "data/base/25_project_tasks.xml",

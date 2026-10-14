@@ -138,10 +138,10 @@ class ScContractEvent(models.Model):
 
     def action_done(self):
         for rec in self:
+            self.env["sc.approval.policy"].ensure_handling_ready(rec, ("approved",))
             if rec.state != "approved":
                 raise UserError(_("只有已审批的合同履约事件可以完成。"))
             rec._check_business_anchor()
-            self.env["sc.approval.policy"]._assert_submission_approved(rec, ("approved",))
             rec._write_document_state({"state": "done"})
         return True
 

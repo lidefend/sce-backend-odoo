@@ -34,6 +34,7 @@ export type BuildFormSectionFieldSchemasOptions = {
   resolveErrorText?: (field: FormSectionMapperFieldNode) => string;
   resolveSelectionOptions: (descriptor?: FieldDescriptor) => TemplateSelectOption[];
   resolveRelationOptions: (fieldName: string) => TemplateSelectOption[];
+  resolveOne2manyPageSize: (fieldName: string, descriptor?: FieldDescriptor) => unknown;
   resolveRelationCreateMode: (fieldName: string, descriptor?: FieldDescriptor) => 'none' | 'quick' | 'page' | 'dialog';
   resolveRelationInlineCreate: (fieldName: string, descriptor?: FieldDescriptor) => FormSectionFieldSchema['relationInlineCreate'];
   resolveRelationTextValue: (fieldName: string) => string;
@@ -257,6 +258,9 @@ export function buildFormSectionFieldSchemas(
       inputPlaceholder: options.resolveInputPlaceholder(field.label),
       selectionOptions: options.resolveSelectionOptions(field.descriptor),
       relationOptions,
+      one2manyPageSize: type === 'one2many'
+        ? options.resolveOne2manyPageSize(field.name, field.descriptor)
+        : undefined,
       ...many2oneCapabilities,
       ...many2manyCapabilities,
       many2oneTextValue: relationDisplayText || undefined,
@@ -291,14 +295,10 @@ export function resolveTemplateInputValue(options: ResolveTemplateInputValueOpti
   return options.resolveTextInputValue(options.fieldName);
 }
 
-/** Shared readonly fact omission rule; labels alone are not display content. */
+/** Empty-value presentation test; never determines field visibility. */
 export function fieldHasEmptyValue(field: Pick<FormSectionFieldSchema, 'type' | 'inputValue' | 'value'>): boolean {
   const value = field.inputValue ?? field.value;
   if (Array.isArray(value)) return value.length === 0;
   if (field.type === 'boolean') return value === null || value === undefined;
   return value === null || value === undefined || value === false || String(value).trim() === '';
-}
-
-export function readonlyFactIsPresentable(field: FormSectionFieldSchema, hasAction = false): boolean {
-  return !field.readonly || field.type === 'one2many' || !fieldHasEmptyValue(field) || hasAction;
 }

@@ -158,9 +158,9 @@ class ScProjectDocument(models.Model):
 
     def action_archive(self):
         for record in self:
+            self.env["sc.approval.policy"].ensure_handling_ready(record, ('approved',))
             if record.state != 'approved':
                 raise UserError('只有已批准资料可以归档。')
-            self.env['sc.approval.policy']._assert_submission_approved(record, ('approved',))
         self._check_document_operation('归档资料')
         self._write_approval_state({'state': 'done'})
         return True

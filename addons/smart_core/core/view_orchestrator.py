@@ -11,8 +11,9 @@ from copy import deepcopy
 from typing import Any
 
 from .view_orchestration_contract import source_authority_contract
-from .form_structure_authority import resolve_form_structure_governance, diagnose_structure_ownership, authenticated_form_role_key, structural_form_declarations
+from .form_structure_authority import resolve_form_structure_governance, diagnose_structure_ownership, authenticated_form_role_key, structural_form_declarations, assert_role_form_permissions_only
 from .form_configuration_compiler import compile_form_configuration, is_configured_surface
+from .field_presentation_usage import assert_configuration_field_usage
 from .lowcode_presentable_fields import LOWCODE_NON_PRESENTABLE_FIELD_NAMES
 
 
@@ -294,6 +295,9 @@ class ViewOrchestrator:
         *,
         preserve_native_members: bool = False,
     ) -> dict:
+        if view_type == "form":
+            assert_role_form_permissions_only(config)
+            preserve_native_members = preserve_native_members or bool(str(getattr(config, "role_key", "") or "").strip())
         payload = config.contract_json if isinstance(config.contract_json, dict) else {}
         spec = self._view_spec(payload, view_type)
         if not spec:
@@ -308,6 +312,7 @@ class ViewOrchestrator:
                 spec,
                 model_name,
                 preserve_native_members=preserve_native_members,
+                permission_only=bool(str(getattr(config, "role_key", "") or "").strip()),
             )
         if view_type in {"tree", "list"}:
             return self._apply_list_spec(out, spec)
@@ -551,7 +556,9 @@ class ViewOrchestrator:
         model_name: str,
         *,
         preserve_native_members: bool = False,
+        permission_only: bool = False,
     ) -> dict:
+        assert_configuration_field_usage(spec, self.env[model_name]._fields if model_name in self.env else {})
         native_layout = deepcopy(contract.get("layout"))
         self._apply_view_options(contract, spec, scalar_keys=("title",), dict_keys=("defaults", "context", "domain"))
         semantic_surface = self._is_entry_semantic_surface(spec) or self._is_native_semantic_surface(spec)
@@ -593,12 +600,12 @@ class ViewOrchestrator:
                     contract["layout"] = deepcopy(native_layout) if isinstance(native_layout, list) else []
                 layout = contract.get("layout")
                 if isinstance(layout, list):
-                    contract["layout"] = self._apply_node_field_rules(layout, effective, hidden)
+                    contract["layout"] = self._apply_node_field_rules(layout, effective, hidden, preserve_hidden_nodes=permission_only)
                     if not semantic_surface and not preserve_native_members:
                         self._sort_form_field_nodes(contract["layout"], effective)
                         self._append_missing_form_fields(contract["layout"], effective, fields_meta)
                 field_modifiers = contract.get("field_modifiers")
-                if isinstance(field_modifiers, dict):
+                if isinstance(field_modifiers, dict) and not permission_only:
                     for name in hidden:
                         field_modifiers.pop(name, None)
                     contract["field_modifiers"] = field_modifiers
@@ -1160,7 +1167,7 @@ class ViewOrchestrator:
             if policy.get(key):
                 col[key] = policy[key]
 
-    def _apply_node_field_rules(self, nodes: list, effective: dict[str, dict[str, Any]], hidden: set[str]) -> list:
+    def _apply_node_field_rules(self, nodes: list, effective: dict[str, dict[str, Any]], hidden: set[str], *, preserve_hidden_nodes: bool = False) -> list:
         result = []
         for raw in nodes:
             if not isinstance(raw, dict):
@@ -1169,13 +1176,17 @@ class ViewOrchestrator:
             if str(node.get("type") or "").strip().lower() == "field":
                 name = str(node.get("name") or "").strip()
                 if name in hidden:
-                    continue
+                    if not preserve_hidden_nodes:
+                        continue
+                    node["visible"] = False
+                    node["invisible"] = True
+                    node["modifiers"] = {**(node.get("modifiers") or {}), "invisible": True}
                 if name in effective:
                     self._apply_field_display_policy(node, effective[name])
             for child_key in ("children", "pages", "tabs", "nodes", "items"):
                 children = node.get(child_key)
                 if isinstance(children, list):
-                    node[child_key] = self._apply_node_field_rules(children, effective, hidden)
+                    node[child_key] = self._apply_node_field_rules(children, effective, hidden, preserve_hidden_nodes=preserve_hidden_nodes)
             result.append(node)
         return result
 

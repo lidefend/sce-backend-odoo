@@ -20,6 +20,7 @@ export type CreateFormSectionFieldSchemaBuilderContext = {
   resolveErrorText?: (field: FormSectionMapperFieldNode) => string;
   resolveSelectionOptions: (descriptor?: FieldDescriptor) => TemplateSelectOption[];
   resolveRelationOptions: (fieldName: string) => TemplateSelectOption[];
+  resolveOne2manyPageSize: (fieldName: string, descriptor?: FieldDescriptor) => unknown;
   resolveRelationCreateMode: (fieldName: string, descriptor?: FieldDescriptor) => 'none' | 'quick' | 'page' | 'dialog';
   resolveRelationInlineCreate: (fieldName: string, descriptor?: FieldDescriptor) => ReturnType<typeof buildFormSectionFieldSchemas>[number]['relationInlineCreate'];
   resolveRelationTextValue: (fieldName: string) => string;
@@ -54,6 +55,7 @@ export function createFormSectionFieldSchemaBuilder(context: CreateFormSectionFi
     resolveErrorText: context.resolveErrorText,
     resolveSelectionOptions: context.resolveSelectionOptions,
     resolveRelationOptions: context.resolveRelationOptions,
+    resolveOne2manyPageSize: context.resolveOne2manyPageSize,
     resolveRelationCreateMode: context.resolveRelationCreateMode,
     resolveRelationInlineCreate: context.resolveRelationInlineCreate,
     resolveRelationTextValue: context.resolveRelationTextValue,

@@ -192,3 +192,94 @@ assert.equal(semanticSha256({ meta: {}, ratio: 0.5 }), '', 'an unsupported paylo
 assert.notEqual(semanticSha256({ meta: {}, ratio: 0.5 }), SEMANTIC);
 
 process.stdout.write('[acceptance_contract_receipt_test] PASS\n');
+
+// local.dev reuses the same prerequisite, adding its resolved actor and target.
+const { approvedTarget, formDeclaration } = await import('./local_dev_payment_request_floorplan_readonly.mjs');
+const localTarget = { user: { id: 30, login: CONTEXT.login, company_name: CONTEXT.companyName },
+  acceptance_authority: { role_code: CONTEXT.roleCode }, record: { id: 1813 }, action: { id: 775 }, menu: { id: 545 },
+  contract_resolution: { targets: { payment_request: { model: 'payment.request' } } } };
+let localCases = 0;
+const acceptLocal = (receipt, target = localTarget) => approvedTarget({ receipt, target, sourceSha: SHA, database: CONTEXT.database });
+assert.equal(acceptLocal(genuineReceipt()).ok, true); localCases++;
+for (const receipt of [genuineReceipt({ status: 'FAIL' }), genuineReceipt({ identity: { ...genuineReceipt().identity, uid: 31 } }),
+  genuineReceipt({ approved_semantic_sha256: '0'.repeat(64) }),
+  genuineReceipt({ request: { ...genuineReceipt().request, database: 'other' } })]) {
+  let launched = false;
+  assert.throws(() => { acceptLocal(receipt); launched = true; });
+  assert.equal(launched, false, 'approval failure must precede any browser launch'); localCases++;
+}
+assert.throws(() => acceptLocal(genuineReceipt(), { ...localTarget, record: { id: 9 } })); localCases++;
+const nativeContract = { pageInfo: { model: 'payment.request', viewType: 'form' },
+  statusContract: { globalStatus: { effectiveRenderProfile: 'readonly' } }, dataContract: { mainData: { id: 1813 } },
+  formStructureContract: { structureAuthority: 'container_tree', presentationMode: 'task' } };
+const expectedNative = { model: 'payment.request', record: 1813, routeMode: 'readonly' };
+assert.equal(formDeclaration(nativeContract, expectedNative).bodyStructureAuthority, 'containerTree'); localCases++;
+for (const contract of [{ ...nativeContract, formStructureContract: {} },
+  { ...nativeContract, pageInfo: { model: 'other', viewType: 'form' } },
+  { ...nativeContract, statusContract: { globalStatus: { effectiveRenderProfile: 'edit' } } }]) {
+  assert.throws(() => formDeclaration(contract, expectedNative)); localCases++;
+}
+const shell = fs.readFileSync('scripts/verify/local_dev_payment_request_floorplan_readonly.sh', 'utf8');
+assert.ok(shell.indexOf('--require-contract') < shell.indexOf('node "$ROOT_DIR/scripts/verify/local_dev_payment_request_floorplan_readonly.mjs"'));
+assert.ok(shell.startsWith('#!/usr/bin/env bash\nset -euo pipefail'));
+assert.ok(shell.includes("after.get('business_fingerprint') == before.get('business_fingerprint')"));
+assert.ok(shell.includes("summary['pass'] = bool(summary.get('pass') is True and readback_ok and os.environ['BROWSER_STATUS'] == '0')")); localCases++;
+console.log(`[local-dev-floorplan-prerequisite] PASS cases=${localCases}`);
+
+const { consumptionCases } = await import('./local_dev_payment_request_floorplan_readonly.mjs');
+const field = (id, name) => ({ widgetId: id, fieldCode: name, nativeLocator: `/form/${id}`, sourcePosition: 1, span: 6,
+  componentConfig: { fieldType: 'text', nativeWidget: 'textarea' } });
+const consumptionFixture = { layoutContract: { containerTree: [{ containerId: 'root', widgetList: [field('edit', 'note')],
+  children: [{ containerId: 'hidden', widgetList: [field('dup1', 'duplicate'), field('dup2', 'duplicate')], children: [] }] }] },
+  statusContract: { containerStatus: [{ containerId: 'root', visible: true }, { containerId: 'hidden', visible: false }],
+    widgetStatus: [{ widgetId: 'edit', visible: true, readonly: false, auth: 'write' },
+      { widgetId: 'dup1', visible: true, readonly: true, auth: 'read' },
+      { widgetId: 'dup2', visible: true, readonly: true, auth: 'read' }] } };
+const consumed = consumptionCases(consumptionFixture);
+assert.deepEqual(consumed.selected.map(item => item.id), ['edit']);
+assert.deepEqual(consumed.hidden.map(item => item.id), ['dup1', 'dup2']);
+assert.ok(consumed.hidden.every(item => item.ownVisible && !item.ancestorsVisible));
+assert.equal(consumed.selected[0].span, 6);
+assert.throws(() => consumptionCases({ ...consumptionFixture, statusContract: { ...consumptionFixture.statusContract, containerStatus: [] } }));
+assert.throws(() => consumptionCases({ ...consumptionFixture, statusContract: { ...consumptionFixture.statusContract, widgetStatus: [] } }));
+const floorplanProbe = fs.readFileSync('scripts/verify/local_dev_payment_request_floorplan_readonly.mjs', 'utf8');
+assert.ok(!floorplanProbe.includes("press('Enter')"));
+assert.ok(floorplanProbe.includes('button.toolbar-search-submit:visible'));
+console.log('[local-dev-consumption-declaration] PASS cases=8');
+
+const { executionKeys } = await import('./local_dev_payment_request_floorplan_readonly.mjs');
+const exactUnits = {check:'scope',identity:{uid:1},units:[{id:'entry_click'},{id:'edit:span:1440'}]};
+const exactPlan = {schema:'evidence_scope.plan.v1',check:'scope',identity:{uid:1},affected:['edit:span:1440'],reusable:['entry_click'],blocked:[]};
+assert.deepEqual([...executionKeys(exactUnits,exactPlan)],['edit:span:1440']);
+assert.deepEqual([...executionKeys(exactUnits,{...exactPlan,affected:[],reusable:['entry_click','edit:span:1440']})],[]);
+for (const patch of [{affected:['unknown']},{affected:['entry_click']},{blocked:['entry_click']},{identity:{uid:2}},{reusable:[]}]) {
+  assert.throws(()=>executionKeys(exactUnits,{...exactPlan,...patch}));
+}
+assert.ok(floorplanProbe.includes("wants('entry_click')"));
+assert.ok(floorplanProbe.includes('if (!wants(authKey) && !wants(spanKey) && !wants(guidanceKey)) continue'));
+assert.ok(floorplanProbe.includes('affected scope was not fully executed'));
+console.log('[local-dev-affected-executor] PASS cases=10');
+
+const identityUnits = {...exactUnits, identity:{database:'sc_dev_demo',uid:1,company_id:2}};
+assert.deepEqual([...executionKeys(identityUnits,{...exactPlan,identity:{company_id:2,uid:1,database:'sc_dev_demo'}})],['edit:span:1440']);
+for (const identity of [{database:'sc_dev_demo',uid:1}, {database:'sc_dev_demo',uid:'1',company_id:2}, {database:'other',uid:1,company_id:2}, {database:'sc_dev_demo',uid:1,company_id:2,extra:true}]) {
+  assert.throws(()=>executionKeys(identityUnits,{...exactPlan,identity}), /identity mismatch/);
+}
+console.log('[local-dev-plan-identity] PASS cases=5');
+
+const { guidanceDeclaration } = await import('./local_dev_payment_request_floorplan_readonly.mjs');
+const guidanceFixture = {layoutContract:{containerTree:[{name:'amount'}]},actionContract:{actionRuleList:[{button:{type:'object',name:'action_submit'},allowed:true,enabled:true,backendIdentity:'native.submit',presentation:{requires_confirmation:true,warning_message:'Native warning'}}]}};
+assert.equal(guidanceDeclaration(guidanceFixture).message,'Native warning');
+for (const change of [c=>c.layoutContract.containerTree.push({name:'legal_next_action_display'}),c=>c.actionContract.actionRuleList[0].enabled=false,c=>c.actionContract.actionRuleList[0].presentation.warning_message='',c=>c.actionContract.actionRuleList.push(c.actionContract.actionRuleList[0])]) {
+  const fixture=structuredClone(guidanceFixture); change(fixture); assert.throws(()=>guidanceDeclaration(fixture));
+}
+console.log('[local-dev-native-guidance-declaration] PASS cases=5');
+const { projectCreateDeclaration } = await import('./local_dev_payment_request_floorplan_readonly.mjs');
+const projectEntry={model:'project.project',action_id:10,menu_id:11,view_id:12};
+const projectFixture={pageInfo:{model:'project.project',viewType:'form'},formStructureContract:{presentationMode:'task',structureAuthority:'container_tree',sourceAuthority:{governance_source:{resolvedViewId:12}}},statusContract:{globalStatus:{effectiveRenderProfile:'create'},containerStatus:[{containerId:'root',visible:true}],widgetStatus:['name','initiation_date','manager_id'].map(field=>({widgetId:field,visible:true,required:true}))},layoutContract:{containerTree:[{containerId:'root',widgetList:['name','initiation_date','manager_id'].map(field=>({widgetId:field,fieldCode:field}))}]}};
+assert.deepEqual(projectCreateDeclaration(projectFixture,projectEntry,{action_id:10,menu_id:11}).required.map(row=>row.field),['name','initiation_date','manager_id']);
+for(const change of [c=>c.statusContract.globalStatus.effectiveRenderProfile='edit',c=>c.formStructureContract.sourceAuthority.governance_source.resolvedViewId=13,c=>c.statusContract.widgetStatus[0].required=false,c=>c.layoutContract.containerTree[0].widgetList.push({widgetId:'retired',fieldCode:'intake_next_action_display'})]) {
+ const fixture=structuredClone(projectFixture);change(fixture);assert.throws(()=>projectCreateDeclaration(fixture,projectEntry,{action_id:10,menu_id:11}));
+}
+assert.throws(()=>projectCreateDeclaration(projectFixture,projectEntry,{action_id:99,menu_id:11}));
+console.log('[local-dev-project-create-declaration] PASS cases=6');

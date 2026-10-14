@@ -637,7 +637,7 @@
         "options": {},
         "visible": {"type": "boolean"},
         "cols": {"type": "integer", "minimum": 1},
-        "columns": {"type": "integer", "minimum": 1},
+        "columns": {"type": "integer", "enum": [1, 2, 3, 4, 6, 8, 12, 24]},
         "col": {"type": ["integer", "string"]},
         "class": {"type": "string"},
         "className": {"type": "string"},
@@ -784,7 +784,7 @@
         "structureAuthority": {
           "enum": ["container_tree", "native_form_slots", "task_sections"]
         },
-        "columns": {"type": "integer", "minimum": 1},
+        "columns": {"type": "integer", "enum": [1, 2, 3, 4, 6, 8, 12, 24]},
         "objectProfile": {
           "$ref": "#/$defs/formStructureObjectProfile"
         },
@@ -978,7 +978,7 @@
           "type": "object",
           "additionalProperties": {"type": "string"}
         },
-        "columns": {"type": "integer", "minimum": 1}
+        "columns": {"type": "integer", "enum": [1, 2, 3, 4, 6, 8, 12, 24]}
       }
     },
     "formStructureRole": {
@@ -1228,6 +1228,7 @@
         "reasonCode": {
           "type": "string"
         },
+        "reasonMessage": { "type": "string" },
         "backendIdentity": {
           "type": "string"
         }
@@ -1449,7 +1450,8 @@
         },
         "reasonCode": {
           "type": "string"
-        }
+        },
+        "reasonMessage": { "type": "string" }
       }
     },
     "dataContract": {

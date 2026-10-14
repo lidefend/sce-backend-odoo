@@ -47,6 +47,111 @@ class TestBusinessConfigChangeSet(TransactionCase):
             "groups_id": [(6, 0, [group_user.id])],
         })
 
+    def test_role_only_write_cannot_retarget_published_layout(self):
+        contract = self.env["ui.business.config.contract"].create({
+            "name": "test.global.layout.role.write", "model": "res.partner", "view_type": "form",
+            "company_id": self.env.company.id, "role_key": False, "status": "published",
+            "contract_json": {"view_orchestration": {"context": {"source_status": "product_release"},
+                "views": {"form": {"columns": 2}}}},
+        })
+        fields_to_read = ["role_key", "contract_json", "payload_sha256", "definition_sha256", "status", "version_no"]
+        before = contract.read(fields_to_read)
+        versions = self.env["ui.business.config.contract.version"]
+        count_before = versions.search_count([("contract_id", "=", contract.id)])
+        with self.assertRaisesRegex(ValidationError, "CONFIG_ROLE_STRUCTURE_FORBIDDEN"):
+            with self.env.cr.savepoint():
+                contract.write({"role_key": "finance"})
+        contract.invalidate_recordset()
+        self.assertEqual(contract.read(fields_to_read), before)
+        self.assertEqual(versions.search_count([("contract_id", "=", contract.id)]), count_before)
+
+    def test_form_stage_separates_owner_from_global_layout_scope(self):
+        env, draft = self._open()
+        staged = self._stage(env, draft, "test.owner.global.layout")
+        item = env["ui.business.config.change.set.item"].browse(staged["items"][0]["id"])
+        self.assertEqual(item.change_set_id.role_key, "config_admin")
+        self.assertFalse(item.role_key)
+        BusinessConfigChangeSetStageHandler(env)._authenticate_item(item)
+        with self.assertRaisesRegex(ValidationError, "CHANGE_SET_SCOPE_FORBIDDEN"):
+            BusinessConfigChangeSetStageHandler(self._env(self.other_admin))._authenticate_item(item)
+
+    def test_form_permissions_target_role_survives_owner_lifecycle(self):
+        env, draft = self._open()
+        params = {"change_set_token": draft["token"], "role_key": "config_admin"}
+        result = BusinessConfigChangeSetStageHandler(env).handle(payload={"params": {
+            **params, "target_role_key": "finance", "config_type": "form", "target_key": "test.permission.target",
+            "model": "res.partner", "view_type": "form", "draft_payload": {
+                "view_orchestration": {"views": {"form": {"fields": [{"name": "name", "readonly": True}]}}}},
+        }})
+        self.assertTrue(result["ok"], result)
+        item = env["ui.business.config.change.set.item"].browse(result["data"]["items"][0]["id"])
+        self.assertEqual(item.role_key, "finance")
+        with self.assertRaisesRegex(ValidationError, "CHANGE_SET_ROLE_MISMATCH"):
+            BusinessConfigChangeSetGetHandler(env).handle(payload={"params": {**params, "role_key": "finance"}})
+        preview = BusinessConfigChangeSetPreviewHandler(env).handle(payload={"params": params})
+        self.assertTrue(preview["ok"], preview)
+        self.assertEqual(preview["data"]["preview"]["role_key"], "config_admin")
+        validated = BusinessConfigChangeSetValidateHandler(env).handle(payload={"params": params})
+        self.assertEqual(validated["data"]["state"], "ready")
+        published = BusinessConfigChangeSetPublishHandler(env).handle(payload={"params": {**params, "request_id": "permission-target-publish"}})
+        self.assertTrue(published["ok"], published)
+        contract = env["ui.business.config.contract"].search([("name", "=", "test.permission.target")])
+        self.assertEqual(contract.role_key, "finance")
+        rolled = BusinessConfigChangeSetRollbackHandler(env).handle(payload={"params": {**params, "request_id": "permission-target-rollback"}})
+        self.assertTrue(rolled["ok"], rolled)
+        self.assertFalse(contract.active)
+
+    def test_global_layout_owner_preview_publish_and_rollback(self):
+        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler, authoritative_form_role_key
+        owner_role = authoritative_form_role_key(self._env(self.admin))
+        env, draft = self._open(role_key=owner_role)
+        view = self.env.ref("base.view_partner_form")
+        action = self.env["ir.actions.act_window"].search([("res_model", "=", "res.partner")], limit=1)
+        self.assertTrue(action, "existing partner action is required")
+        request = {"op": "model", "model": "res.partner", "view_type": "form", "view_id": view.id,
+                   "action_id": action.id, "render_profile": "create"}
+        def load(**extra):
+            result = UiContractV2Handler(env, su_env=env["ir.model"].sudo().env).handle({**request, **extra})
+            result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+            self.assertIs(result.get("ok"), True, result)
+            return result["data"]
+        def nodes(rows):
+            for row in rows:
+                yield row
+                yield from nodes(row.get("children") or [])
+        baseline = load()
+        group = next(row for row in nodes(baseline["layoutContract"]["containerTree"])
+                     if row.get("type") == "group" and row.get("nativeLocator")
+                     and any(child.get("type") == "field" for child in row.get("children", [])))
+        target_columns = 4 if group["columns"] != 4 else 2
+        # Same exact native binding emitted by the production designer bindNode.
+        self.assertTrue(group.get("occurrenceIndex"), group)
+        expected = {"type": "group", "name": group.get("name"),
+                    "occurrence_index": group["occurrenceIndex"]}
+        params = {"change_set_token": draft["token"], "role_key": owner_role}
+        result = BusinessConfigChangeSetStageHandler(env).handle(payload={"params": {
+            **params, "config_type": "form", "target_role_key": "", "target_key": "test.global.compiled.layout",
+            "model": "res.partner", "view_type": "form", "action_id": action.id, "view_id": view.id,
+            "draft_payload": {"view_orchestration": {"views": {"form": {"node_patches": [{
+                "target": group["nativeLocator"], "expected": expected, "set": {"columns": target_columns},
+            }]}}}},
+        }})
+        self.assertTrue(result["ok"], result)
+        preview = BusinessConfigChangeSetPreviewHandler(env).handle(payload={"params": params})
+        self.assertTrue(preview["ok"], preview)
+        def columns(data):
+            return next(row["columns"] for row in nodes(data["layoutContract"]["containerTree"])
+                        if row.get("nativeLocator") == group["nativeLocator"])
+        self.assertEqual(columns(load(preview_token=preview["data"]["preview"]["token"], preview_role_key=owner_role)), target_columns)
+        validated = BusinessConfigChangeSetValidateHandler(env).handle(payload={"params": params})
+        self.assertEqual(validated["data"]["state"], "ready")
+        published = BusinessConfigChangeSetPublishHandler(env).handle(payload={"params": {**params, "request_id": "global-layout-publish"}})
+        self.assertTrue(published["ok"], published)
+        self.assertEqual(columns(load()), target_columns)
+        rolled = BusinessConfigChangeSetRollbackHandler(env).handle(payload={"params": {**params, "request_id": "global-layout-rollback"}})
+        self.assertTrue(rolled["ok"], rolled)
+        self.assertEqual(columns(load()), group["columns"])
+
     def _env(self, user):
         return self.env(user=user, context={**self.env.context, "allowed_company_ids": [self.env.company.id]})
 
@@ -73,7 +178,7 @@ class TestBusinessConfigChangeSet(TransactionCase):
         handler.params = params
         return handler.handle()["data"]
 
-    def _designer_target(self, model, action_id, view_id, role_key="config_admin"):
+    def _designer_target(self, model, action_id, view_id, role_key=""):
         return "view_orchestration:%s:form:action:%s:view:%s:role:%s" % (model, action_id, view_id, role_key)
 
     def _designer_stage(self, env, change_set, target, *, model="res.partner", action_id=0, view_id=0, **extra):

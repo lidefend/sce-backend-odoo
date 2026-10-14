@@ -72,7 +72,7 @@ import { computed } from 'vue';
 import type { CanonicalFormNode } from '../../app/presentation/canonicalFormRenderModel';
 import type { ContractV2ActionRule } from '../../app/contracts/v2/types';
 import FormSection from '../../components/template/FormSection.vue';
-import { declaredLayoutBand, declaredLayoutSpan } from '../../components/template/layoutSpan';
+import { declaredLayoutBand, declaredLayoutSpan, requireDeclaredLayoutColumns, containedFieldLayout } from '../../components/template/layoutSpan';
 import ScButton from '../../components/design-system/ScButton.vue';
 import type { FormSectionFieldActionPayload, FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
@@ -108,7 +108,7 @@ const fields = computed(() => canonicalSectionFields(props.node)
     field,
     props.relationAdapter,
     (fieldCode) => props.node.fields.find((candidate) => candidate.fieldCode === fieldCode),
-  )));
+  )).map(field => nodeKind.value === 'field' ? { ...field, span: containedFieldLayout().span } : field));
 const readonlyFactLayout = computed(() => Boolean(
   props.preferReadonlyFacts
   && fields.value.length
@@ -154,10 +154,8 @@ const groupHeadingVisible = computed(() => Boolean(governedSection.value));
 // dead ``/6 -> 1..4`` span dialect and filled orphan rows with its own
 // even-count rule).
 const layoutColumns = computed(() => {
-  const children = visibleCanonicalChildren(props.node);
-  const declared = Number(props.node.columns);
-  if (!children.length || !Number.isInteger(declared) || declared < 1) return 1;
-  return declared;
+  if (nodeKind.value === 'field') return containedFieldLayout().columns;
+  return requireDeclaredLayoutColumns(props.node.columns);
 });
 const declaredNodeSpan = computed(() => declaredLayoutSpan(props.node.span));
 const declaredNodeBand = computed(() => declaredLayoutBand(declaredNodeSpan.value));

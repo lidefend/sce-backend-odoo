@@ -136,7 +136,7 @@
               @click="adapter.openOne2manyRow(field.name, row)"
             >打开</ScButton>
           <p class="o2m-readonly-state">
-            第 {{ (one2manyPage - 1) * one2manyPageSize + rowIndex + 1 }} 条
+            第 {{ (one2manyPage - 1) * (one2manyPageSize || 1) + rowIndex + 1 }} 条
           </p>
           <dl class="o2m-readonly-facts">
             <div
@@ -443,28 +443,43 @@ import {
   detailCollectionColumnPresentation,
   detailCollectionMobileColumnSplit,
 } from '../professional-fields/professionalDetailCollectionModel';
+import {
+  detailCollectionPageCount,
+  paginateDetailCollectionRows,
+  resolveDetailCollectionPageSize,
+} from './detailCollectionPagination';
 
 const props = defineProps<X2ManyRelationRendererProps>();
 const one2manyPage = ref(1);
-const one2manyPageSize = 20;
+// P0 契约声明：主从关系明细集合每页记录数来自 relation_entry.page_size。
+// 前端只消费声明值；缺失或非法即 ContractGapError 停机，回声明层要结果，
+// 不再用硬编码 20 决定实际可见记录集合（消除第二套参数来源）。
+// 非 one2many 集合不参与分页，声明不适用（null），而非补一个默认值。
+const one2manyPageSize = computed<number | null>(() => resolveDetailCollectionPageSize(
+  props.field.one2manyPageSize,
+  { name: props.field.name, type: props.field.type },
+));
 const displayOne2manyColumns = computed(() => (
   props.adapter.one2manyVisibleColumns?.(props.field.name)
   || props.adapter.one2manyColumns(props.field.name)
 ));
 const one2manyRows = computed(() => {
   if (props.field.type !== 'one2many') return [];
-  const rows = props.adapter.visibleOne2manyRows(props.field.name);
-  if (!props.field.readonly) return rows;
-  const columns = displayOne2manyColumns.value;
-  return rows.filter((row) => columns.some((column) => (
-    Boolean(props.adapter.one2manyColumnDisplayValue(column, row.values[column.name]))
-  )));
+  // The declared visible set is authoritative.  Presentation must not drop a
+  // declared-visible record because every visible column happens to be empty
+  // (a legitimate blank value is still a declared row).  The adapter already
+  // excludes contract-invisible/removed rows.
+  return props.adapter.visibleOne2manyRows(props.field.name);
 });
-const one2manyPageCount = computed(() => Math.max(1, Math.ceil(one2manyRows.value.length / one2manyPageSize)));
-const paginatedOne2manyRows = computed(() => {
-  const start = (one2manyPage.value - 1) * one2manyPageSize;
-  return one2manyRows.value.slice(start, start + one2manyPageSize);
-});
+const one2manyPageCount = computed(() => detailCollectionPageCount(
+  one2manyRows.value.length,
+  one2manyPageSize.value,
+));
+const paginatedOne2manyRows = computed(() => paginateDetailCollectionRows(
+  one2manyRows.value,
+  one2manyPage.value,
+  one2manyPageSize.value,
+));
 const readonlyMobileColumns = computed(() => detailCollectionMobileColumnSplit(
   displayOne2manyColumns.value,
 ));

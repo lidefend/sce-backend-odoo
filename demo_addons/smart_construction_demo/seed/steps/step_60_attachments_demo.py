@@ -2,8 +2,10 @@
 import base64
 
 from odoo import fields
+from odoo.exceptions import UserError
 
 from ..registry import SeedStep, register
+from ..tier_flow import approve_tier_chain
 
 
 PROJECT_EXEC_CODE = "DEMO-PJ-EXEC"
@@ -55,6 +57,37 @@ def _create_attachment(env, name, content, mimetype="text/plain"):
     )
 
 
+def _advance_document(document, target_state):
+    """把演示资料推进到声明状态，只使用产品自己的办理动作。
+
+    ``sc.project.document`` 的 create/write 都拒绝直接写终态；草稿提交后若
+    配置了审批模板会停在“审核中”，否则产品按未配置流程自动通过，再由归档
+    动作到达“已归档”。因此这里不能写 state，也不能把目标状态吞掉。
+    """
+    if target_state == "draft":
+        return document
+    if document.state == "draft":
+        document.action_submit()
+        document.invalidate_recordset()
+    if target_state == "review":
+        pass
+    elif target_state in ("approved", "done"):
+        if document.state == "review" and document.review_ids:
+            approve_tier_chain(document)
+            document.invalidate_recordset()
+        if document.state == "approved" and target_state == "done":
+            document.action_archive()
+            document.invalidate_recordset()
+    else:
+        raise UserError("演示资料声明了未知目标状态：%s" % target_state)
+    if document.state != target_state:
+        raise UserError(
+            "演示资料未到达声明状态：%s 停在 %s（目标 %s）"
+            % (document.name, document.state, target_state)
+        )
+    return document
+
+
 def run(env):
     projects = [
         _get_project(env, PROJECT_EXEC_CODE),
@@ -89,7 +122,9 @@ def run(env):
         {
             "name": "合同附件清单",
             "is_mandatory": True,
-            "state": "review",
+            # 产品只有在配置了资料审批模板时才会停留在“审核中”，未配置时提交
+            # 即自动通过；因此演示只声明产品能产生的“待提交”。
+            "state": "draft",
             "date_doc": fields.Date.context_today(env.user),
             "content": "合同附件清单-演示版",
         },
@@ -123,13 +158,23 @@ def run(env):
                 "doc_subtype_id": doc_subtype.id,
                 "date_doc": doc["date_doc"],
                 "is_mandatory": doc["is_mandatory"],
-                "state": doc["state"],
                 "attachment_ids": [(6, 0, [attachment.id])],
             }
             if existing:
-                existing.write(vals)
+                # 已归档/已作废的资料受保护，只有草稿可以改写内容字段。
+                if existing.state == "draft":
+                    existing.write(vals)
+                document = existing
             else:
-                ScDoc.create(vals)
+                document = ScDoc.create(vals)
+            # 产品的 _ensure_operation_allowed 禁止在“停工/关闭”项目上办理资料，
+            # 这类项目只保留草稿资料，不注入绕开守卫的状态。
+            target_state = (
+                "draft"
+                if project.lifecycle_state in ("paused", "closed")
+                else doc["state"]
+            )
+            _advance_document(document, target_state)
 
     ICP = env["ir.config_parameter"].sudo()
     ICP.set_param("sc.seed.demo.attachments", fields.Datetime.now().isoformat())

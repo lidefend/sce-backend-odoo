@@ -1,3 +1,4 @@
+import { contractGapError } from '../../app/contract/contractGap';
 import type { ContractV2ButtonStatus } from '../../app/contracts/v2';
 import { parseMaybeJsonRecord } from '../../app/contractRuntime';
 import {
@@ -25,17 +26,22 @@ export function contractActionConfirmationPrompt(action: ContractAction): {
   actionLabel: string;
   message: string;
 } | null {
+  const advisory = String(action.hint || '').trim();
+  if (action.requiresConfirmation && !advisory) throw contractGapError({
+    kind: 'contract_defect', missing: 'action.presentation.warning_message',
+    requiredDeclarationLayer: 'P0/P1: action confirmation declaration',
+  }, 'Action confirmation requires a declared non-empty message');
   const safety = action.actionSafety;
   if (safety?.classification === 'danger' && safety.requiresConfirm) {
     return {
       actionLabel: String(action.label || '操作'),
-      message: String(
+      message: [...new Set([
         safety.confirmMessage || action.hint || '该操作执行后将立即生效，请确认是否继续。',
-      ),
+        ...(action.requiresConfirmation ? [advisory] : []),
+      ])].join('\n'),
     };
   }
-  const advisory = String(action.hint || '').trim();
-  if (!action.requiresConfirmation || !advisory) return null;
+  if (!action.requiresConfirmation) return null;
   return {
     actionLabel: String(action.label || '操作'),
     message: advisory,

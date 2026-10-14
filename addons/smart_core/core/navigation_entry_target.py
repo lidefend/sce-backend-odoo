@@ -189,6 +189,30 @@ def normalize_odoo_action_result(env, result, *, menu_id=None, source_model: str
     if not isinstance(result, dict):
         return None
     payload = dict(result)
+    action_type = _text(payload.get("type"))
+    if action_type == "ir.actions.client" and payload.get("tag") == "display_notification":
+        notification = payload.get("params")
+        if not isinstance(notification, dict):
+            raise ValueError("ACTION_NOTIFICATION_PARAMS_INVALID")
+        notification = dict(notification)
+        if not isinstance(notification.get("message"), str) or not notification["message"].strip():
+            raise ValueError("ACTION_NOTIFICATION_MESSAGE_REQUIRED")
+        # Registered P0 optional-presentation defaults for native notifications.
+        notification.setdefault("type", "warning")
+        notification.setdefault("sticky", False)
+        notification.setdefault("title", "")
+        if notification["type"] not in ("info", "success", "warning", "danger"):
+            raise ValueError("ACTION_NOTIFICATION_TYPE_INVALID")
+        if type(notification["sticky"]) is not bool or not isinstance(notification["title"], str):
+            raise ValueError("ACTION_NOTIFICATION_PRESENTATION_INVALID")
+        if "next" in notification:
+            next_declared = notification["next"]
+            if not isinstance(next_declared, dict) or not (
+                next_declared.get("type") == "ir.actions.act_window"
+                or (next_declared.get("type") == "ir.actions.client" and next_declared.get("tag") == "reload")
+            ):
+                raise ValueError("ACTION_NOTIFICATION_NEXT_UNSUPPORTED")
+        payload["params"] = notification
     # A model method may intentionally open an action owned by a different
     # authorized menu.  Preserve that explicit backend entry authority instead
     # of pairing the returned action with the caller's current menu.
@@ -200,7 +224,8 @@ def normalize_odoo_action_result(env, result, *, menu_id=None, source_model: str
             entry_intent=_action_result_entry_intent(payload),
         )
         _project_action_result_presentation(payload["entry_target"], payload)
-        return payload
+        if not (action_type == "ir.actions.client" and payload.get("tag") == "display_notification"):
+            return payload
     action_type = _text(payload.get("type"))
     if not action_type.startswith("ir.actions."):
         return payload
@@ -223,6 +248,11 @@ def normalize_odoo_action_result(env, result, *, menu_id=None, source_model: str
             **params,
             "next": normalized_next,
         }
+
+    if action_type == "ir.actions.client" and payload.get("tag") == "display_notification":
+        if nested_entry_target and not payload.get("entry_target"):
+            payload["entry_target"] = nested_entry_target
+        return payload
 
     action_model = _text(payload.get("res_model"))
     model = action_model or _text(source_model)

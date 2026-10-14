@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 from odoo import SUPERUSER_ID, api, models, fields, tools
+from odoo.exceptions import AccessError
+from odoo.addons.smart_core.security.data_space import (
+    NON_CUSTOMER_DATA_USER_GROUP, principal_data_purposes, registration_scope_domain,
+)
+from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
 
 
 class ResUsers(models.Model):
@@ -9,6 +14,29 @@ class ResUsers(models.Model):
     NO_BUSINESS_FACT_AUTHORITY = True
 
     token_version = fields.Integer(default=0)
+
+    def _sc_data_company_ids(self):
+        """Metadata-only, two-way data-purpose scope for the current principal.
+
+        No cached result: membership, active registration and current company
+        authorization are read for every resolution. The returned IDs never
+        carry an elevated business recordset.
+        """
+        self.ensure_one()
+        if self.id != self.env.uid:
+            raise AccessError("DATA_SPACE_CURRENT_PRINCIPAL_REQUIRED")
+        caller = self.with_env(self.env(su=False))
+        purposes = principal_data_purposes(
+            platform_admin=user_is_platform_admin(caller),
+            non_customer_user=caller.has_group(NON_CUSTOMER_DATA_USER_GROUP),
+        )
+        # env.companies validates caller-supplied allowed_company_ids. It must
+        # be evaluated with su=False even when an internal caller used sudo.
+        company_ids = caller.env.companies.ids
+        registrations = caller.env["sc.tenant.company.registration"].sudo().search(
+            registration_scope_domain(company_ids, purposes)
+        )
+        return registrations.company_id.ids
 
     # Membership in these groups is an *audience* classification ("who the
     # user is"), not a capability ("what the user may do"). Odoo core derives

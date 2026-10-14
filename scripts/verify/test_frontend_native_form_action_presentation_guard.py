@@ -61,33 +61,22 @@ class NativeFormActionPresentationGuardTest(unittest.TestCase):
         altered = self.smart_action.replace('data-semantic-role="smart-action"', 'data-role="button"')
         self.assertTrue(any("smart action" in error for error in validate(self.source, altered, self.overflow_menu)))
 
-    def test_overflow_requires_escape_settlement(self):
-        altered = self.overflow_menu.replace("event.key === 'Escape'", "event.key === 'Dismiss'")
-        self.assertTrue(any("overflow" in error for error in validate(self.source, self.smart_action, altered)))
+    def test_group_cannot_limit_or_fold_declared_actions(self):
+        for marker in ("const SMART_BUTTON_DIRECT_LIMIT = 4;", "<NativeActionOverflowMenu />", "function overflowActionButtons() {}"):
+            with self.subTest(marker=marker):
+                self.assertTrue(any("undeclared folding" in error for error in validate(self.source + marker)))
 
-    def test_overflow_trigger_requires_all_disabled_settlement(self):
-        altered = self.overflow_menu.replace('@keydown.esc.stop.prevent="close(true)"', '')
-        self.assertTrue(any("overflow" in error for error in validate(self.source, self.smart_action, altered)))
+    def test_group_must_consume_complete_children(self):
+        altered = self.source.replace('buttonChildren(node).filter((button)', 'buttonChildren(node).slice(0, 4).filter((button)')
+        self.assertTrue(any("complete ordered" in error for error in validate(altered)))
 
-    def test_overflow_requires_complete_keyboard_navigation(self):
-        altered = self.overflow_menu.replace("event.key === 'Home'", "event.key === 'Start'")
-        self.assertTrue(any("overflow" in error for error in validate(self.source, self.smart_action, altered)))
+    def test_group_must_not_clip_long_actions(self):
+        altered = self.source.replace('.native-actions--smart {', '.native-actions--smart { overflow: hidden;')
+        self.assertTrue(any("must not clip" in error for error in validate(altered)))
 
-    def test_overflow_requires_unique_instance_identity(self):
-        altered = self.overflow_menu.replace("const instanceId = useId()", "const instanceId = props.identity")
-        self.assertTrue(any("overflow" in error for error in validate(self.source, self.smart_action, altered)))
-
-    def test_overflow_focus_must_use_the_sc_button_adapter_api(self):
-        altered = self.overflow_menu.replace("trigger.value?.focus?.()", "trigger.value?.$el?.focus()")
-        self.assertTrue(any("overflow" in error for error in validate(self.source, self.smart_action, altered)))
-
-    def test_overflow_state_cannot_return_to_renderer(self):
-        altered = f"{self.source}\nconst openMoreKeys = ref({{}});"
-        self.assertTrue(any("private overflow" in error for error in validate(altered, self.smart_action, self.overflow_menu)))
-
-    def test_visual_smoke_must_prove_focus_settlement(self):
-        altered = self.visual_smoke.replace("focusRestored", "focusDropped")
-        self.assertTrue(any("visual smoke" in error for error in validate(self.source, self.smart_action, self.overflow_menu, altered)))
+    def test_smoke_requires_declared_set_comparison(self):
+        altered = self.visual_smoke.replace("expectedNativeActionKeys", "oldKeys")
+        self.assertTrue(any("visual smoke" in error for error in validate(self.source, visual_smoke=altered)))
 
 
 if __name__ == "__main__":

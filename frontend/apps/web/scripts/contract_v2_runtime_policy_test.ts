@@ -109,7 +109,7 @@ console.log('[contract_v2_runtime_policy_test] preview provenance cases=2 passed
 previewSnapshot.formStructureContract.sourceAuthority.governance_source.businessConfigContracts[0].source_kind = 'change_set_preview';
 const unnamedTree = decodeContractV2Snapshot({ ...previewSnapshot, layoutContract: {
   ...previewSnapshot.layoutContract, containerTree: [{ containerId: 'native.group', containerType: 'group', type: 'group',
-    name: '', title: 'Group', nativeLocator: '/form/group[2]', occurrenceIndex: 2, children: [], widgetList: [] }],
+    name: '', title: 'Group', span: 24, nativeLocator: '/form/group[2]', occurrenceIndex: 2, children: [], widgetList: [] }],
 } }).layoutContract.containerTree;
 const { bindNode } = await import('../src/pages/contractForm/boundFormConfiguration');
 assert.equal(bindNode(unnamedTree[0]).expected.name, '', 'decode -> designer must preserve the unnamed native occurrence');

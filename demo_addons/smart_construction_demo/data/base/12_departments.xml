@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- 入住基线的组织架构事实源。
+             产品把“部门”作为多项业务事实的必填项（薪酬补贴/奖金、合同事件、
+             计划、材料验收、分包等），因此基线必须提供真实部门；否则这些规则
+             只能靠绕过守卫来满足。 -->
+        <record id="sc_demo_department_001" model="hr.department">
+            <field name="name">工程管理部</field>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+
+    </data>
+</odoo>

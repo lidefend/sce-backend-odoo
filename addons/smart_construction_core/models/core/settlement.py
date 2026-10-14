@@ -3,6 +3,7 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 from ..support.state_machine import ScStateMachine
+from ..support.state_guard import raise_guard
 
 
 class ProjectSettlement(models.Model):
@@ -74,25 +75,45 @@ class ProjectSettlement(models.Model):
                 vals["name"] = seq.next_by_code("project.settlement") or _("Settlement")
         return super().create(vals_list)
 
+    def write(self, vals):
+        vals = dict(vals or {})
+        if "state" in vals and not self.env.context.get("allow_transition"):
+            sample = self[:1]
+            raise_guard(
+                "SETTLEMENT_GUARD_DIRECT_STATE_WRITE",
+                _("项目结算[%s]") % (sample.display_name if sample else ""),
+                _("状态变更"),
+                reasons=[_("结算状态只能由受控业务动作推进，不允许直接改写")],
+            )
+        if "state" in vals:
+            for record in self:
+                ScStateMachine.assert_transition(
+                    ScStateMachine.SETTLEMENT,
+                    record.state,
+                    vals["state"],
+                    record.display_name,
+                )
+        return super().write(vals)
+
     def action_confirm(self):
         for rec in self:
             if rec.state != "draft":
                 raise UserError(_("只有草稿结算单可以确认。"))
             rec._check_business_anchor()
-            rec.write({"state": "confirmed"})
+            rec.with_context(allow_transition=True).write({"state": "confirmed"})
 
     def action_done(self):
         for rec in self:
             if rec.state != "confirmed":
                 raise UserError(_("只有已确认结算单可以完成。"))
             rec._check_business_anchor()
-            rec.write({"state": "done"})
+            rec.with_context(allow_transition=True).write({"state": "done"})
 
     def action_cancel(self):
         for rec in self:
             if rec.state not in ("draft", "confirmed"):
                 raise UserError(_("只有草稿或已确认结算单可以取消。"))
-            rec.write({"state": "cancel"})
+            rec.with_context(allow_transition=True).write({"state": "cancel"})
 
     def _check_business_anchor(self):
         for rec in self:

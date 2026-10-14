@@ -46,7 +46,7 @@ function contractSnapshot(amountReadonly: boolean, amountDetailReadonly: boolean
         'sc.relation.many2one': { version: '1.0' },
       },
       containerTree: [{
-        containerId: 'section.identity', containerType: 'group', type: 'group', title: 'Identity', span: 24,
+        containerId: 'section.identity', containerType: 'group', type: 'group', title: 'Identity', span: 24, columns: 2,
         children: [
           {
             containerId: 'field.amount', containerType: 'field', type: 'field', name: 'amount', widgetId: 'field.amount', fieldCode: 'amount', title: '', span: 12,

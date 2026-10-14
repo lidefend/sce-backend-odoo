@@ -7,11 +7,31 @@ import {
   recordEntryFromModelRights,
   resolveRecordOpenTarget,
 } from '../src/app/runtime/recordEntryContract';
+import { isContractGapError } from '../src/app/contract/contractGap';
+import {
+  contractAuthLevelDeniesAccess,
+  contractAuthLevelGrantsEdit,
+  contractAuthLevelGrantsRead,
+  normalizeContractAuthLevel,
+  requireContractAuthLevel,
+} from '../src/app/contract/contractAuthLevel';
 import { buildEntryTargetRouteTarget } from '../src/app/routeQuery';
 import { buildActionViewRowClickTarget } from '../src/app/runtime/actionViewInteractionRuntime';
 
 function resolvedPath(entry: Parameters<typeof resolveRecordOpenTarget>[0]) {
   return resolveRecordOpenTarget(entry)?.path;
+}
+
+// A declared-but-illegal formal carrier must stop with a contract gap instead
+// of being downgraded (T5).  assertGap proves the negative path is a real stop.
+function assertGap(label: string, run: () => unknown) {
+  let stopped = false;
+  try {
+    run();
+  } catch (error) {
+    stopped = isContractGapError(error);
+  }
+  assert.equal(stopped, true, `${label}: expected a ContractGapError stop`);
 }
 
 // The complete authority matrix lives here once.  Adapters only translate
@@ -39,12 +59,32 @@ assert.deepEqual(formalHandling, {
   model: 'x.model', recordId: 7, entryIntent: 'handling', modelWriteAuthority: true, actionId: 4, menuId: 3,
 });
 assert.equal(resolvedPath(formalHandling!), '/f/x.model/7');
+// T5: an illegal declaration stops; it is never downgraded to read-only.
+assertGap('formal non-boolean write authority', () => decodeFormalRecordEntry({
+  model: 'x.model', record_id: 7, entry_intent: 'handling', model_write_authority: 'true',
+}));
+assertGap('formal illegal entry intent', () => decodeFormalRecordEntry({
+  model: 'x.model', record_id: 7, entry_intent: 'process', model_write_authority: true,
+}));
+// T5: a write-implying intent without a declared write authority is a gap.
+assertGap('formal missing write authority', () => decodeFormalRecordEntry({
+  model: 'x.model', record_id: 7, entry_intent: 'handling',
+}));
+assertGap('formal missing write authority (open)', () => decodeFormalRecordEntry({
+  model: 'x.model', record_id: 7, entry_intent: 'open',
+}));
+// T5: an explicit deny stays read-only and an explicit grant stays editable.
 assert.equal(
-  resolvedPath(decodeFormalRecordEntry({ model: 'x.model', record_id: 7, entry_intent: 'handling', model_write_authority: 'true' })!),
+  resolvedPath(decodeFormalRecordEntry({ model: 'x.model', record_id: 7, entry_intent: 'handling', model_write_authority: false })!),
   '/r/x.model/7',
 );
 assert.equal(
-  resolvedPath(decodeFormalRecordEntry({ model: 'x.model', record_id: 7, entry_intent: 'process', model_write_authority: true })!),
+  resolvedPath(decodeFormalRecordEntry({ model: 'x.model', record_id: 7, entry_intent: 'handling', model_write_authority: true })!),
+  '/f/x.model/7',
+);
+// T5: a readonly intent does not require a write authority fact.
+assert.equal(
+  resolvedPath(decodeFormalRecordEntry({ model: 'x.model', record_id: 7, entry_intent: 'explicit_readonly' })!),
   '/r/x.model/7',
 );
 
@@ -56,7 +96,19 @@ assert.equal(
   resolvedPath(adaptLegacyRecordEntry({ model: 'x.model', record_id: 7 }, { legacyRoute: '/r/x.model/7' })!),
   '/r/x.model/7',
 );
-assert.equal(decodeFormalRecordEntry({ model: 'x.model', record_id: 7 }), null);
+assert.equal(decodeFormalRecordEntry(undefined), null, 'absent formal carrier retains compatibility');
+const incompleteFormalEntries = [
+  { model: 'x.model', record_id: 7 },
+  { record_id: 7, entry_intent: 'explicit_readonly' },
+  { model: 'x.model', entry_intent: 'explicit_readonly' },
+  { model: {}, record_id: 7, entry_intent: 'explicit_readonly' },
+  { model: 'x.model', record_id: '', entry_intent: 'explicit_readonly' },
+  {}, null, [], 'legacy',
+];
+for (const entry of incompleteFormalEntries) {
+  assertGap('declared incomplete/invalid formal carrier', () => decodeFormalRecordEntry(entry));
+}
+console.log('[OK] formal carrier structural boundary: 10 cases');
 assert.equal(
   resolvedPath(recordEntryFromModelRights({ model: 'x.model', recordId: 7, modelRights: { write: true } })),
   '/f/x.model/7',
@@ -81,10 +133,36 @@ assert.equal(buildEntryTargetRouteTarget({
   route: '/r/x.model/7',
   record_entry: { model: 'x.model', record_id: 7, entry_intent: 'handling', model_write_authority: true },
 }, { actionId: 4, menuId: 3 }).path, '/f/x.model/7');
-assert.equal(buildEntryTargetRouteTarget({
+assertGap('entry target missing write authority', () => buildEntryTargetRouteTarget({
   type: 'compatibility',
   route: '/r/x.model/7',
   record_entry: { model: 'x.model', record_id: 7, entry_intent: 'handling' },
+}, { actionId: 4, menuId: 3 }));
+assert.equal(buildEntryTargetRouteTarget({
+  type: 'compatibility',
+  route: '/r/x.model/7',
+  record_entry: { model: 'x.model', record_id: 7, entry_intent: 'handling', model_write_authority: false },
 }, { actionId: 4, menuId: 3 }).path, '/r/x.model/7');
+
+// T5: the auth-level enum is declared once; none is an explicit deny and an
+// undeclared/invalid level is a declaration gap, never merged into read/edit.
+assert.equal(normalizeContractAuthLevel('ADMIN'), 'admin');
+assert.equal(normalizeContractAuthLevel('read'), 'read');
+assert.equal(normalizeContractAuthLevel('owner'), null);
+assert.equal(normalizeContractAuthLevel(undefined), null);
+assert.equal(contractAuthLevelGrantsRead('read'), true);
+assert.equal(contractAuthLevelGrantsRead('edit'), true);
+assert.equal(contractAuthLevelGrantsRead('admin'), true);
+assert.equal(contractAuthLevelGrantsRead('none'), false);
+assert.equal(contractAuthLevelGrantsRead(null), false);
+assert.equal(contractAuthLevelGrantsEdit('edit'), true);
+assert.equal(contractAuthLevelGrantsEdit('admin'), true);
+assert.equal(contractAuthLevelGrantsEdit('read'), false);
+assert.equal(contractAuthLevelDeniesAccess('none'), true);
+assert.equal(contractAuthLevelDeniesAccess(null), false);
+assert.equal(requireContractAuthLevel('edit', { missing: 'x', requiredDeclarationLayer: 'y' }), 'edit');
+assertGap('requireContractAuthLevel invalid', () => requireContractAuthLevel('owner', {
+  missing: 'statusContract.globalStatus.pageAuth', requiredDeclarationLayer: 'P0:smart_core',
+}));
 
 console.log('record_entry_contract_test: ok');

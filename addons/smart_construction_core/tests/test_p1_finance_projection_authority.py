@@ -1874,3 +1874,218 @@ class TestP1FinanceProjectionAuthority(TransactionCase):
         domain = position._interfund_fact_counterparty_domain()
         self.assertIn(("company_id", "=", self.env.company.id), domain)
         self.assertIn(("currency_id", "=", self.env.company.currency_id.id), domain)
+
+    def test_interfund_project_summary_drilldown_keeps_company_and_currency_slice(self):
+        # Counterexample lock for the partition boundary: a summary row reports one
+        # company and one currency, so its drill-down must open exactly that slice.
+        # Filtering by project and movement type alone reopened every company's and
+        # every currency's rows under a total that had never been summed that way.
+        summary = self.env["sc.interfund.movement.project.summary"].new(
+            {
+                "project_id": self.project.id,
+                "company_id": self.env.company.id,
+                "currency_id": self.env.company.currency_id.id,
+                "movement_type": "company_to_project_borrow",
+            }
+        )
+        domain = summary._project_fact_domain()
+        self.assertIn(("company_id", "=", self.env.company.id), domain)
+        self.assertIn(("currency_id", "=", self.env.company.currency_id.id), domain)
+        self.assertIn(("movement_type", "=", "company_to_project_borrow"), domain)
+        self.assertIn(("source_project_id", "=", self.project.id), domain)
+        self.assertIn(("target_project_id", "=", self.project.id), domain)
+
+        # The project-less bucket is still a company/currency slice, never a
+        # cross-company/cross-currency dump.
+        projectless = self.env["sc.interfund.movement.project.summary"].new(
+            {
+                "company_id": self.env.company.id,
+                "currency_id": self.env.company.currency_id.id,
+            }
+        )
+        projectless_domain = projectless._project_fact_domain()
+        self.assertIn(("company_id", "=", self.env.company.id), projectless_domain)
+        self.assertIn(("currency_id", "=", self.env.company.currency_id.id), projectless_domain)
+        for project_field in ("source_project_id", "target_project_id", "project_id"):
+            self.assertIn((project_field, "=", False), projectless_domain)
+
+    def test_output_invoice_ledger_keeps_same_invoice_no_across_companies(self):
+        # Counterexample lock for the output-invoice ledger partition boundary:
+        # two companies may legitimately print the same invoice number.  The
+        # receipt dedup window must keep them apart so no company's invoice is
+        # silently dropped, and each company's amount must be conserved.
+        shared_invoice_no = "P1-LEDGER-CROSS-COMPANY-001"
+        Ledger = self.env["sc.output.invoice.ledger"]
+        # Transactional DDL exercises the candidate view definition and rolls
+        # back with this test. It is not an installed-runtime upgrade receipt.
+        Ledger.init()
+
+        request_a = self.env["payment.request"].create(
+            {
+                "name": "P1-LEDGER-RECEIPT-A",
+                "type": "receive",
+                "project_id": self.project.id,
+                "partner_id": self.partner.id,
+                "contract_id": self.receipt_contract.id,
+                "amount": 100.0,
+            }
+        )
+        line_a = self.env["sc.receipt.invoice.line"].create(
+            {
+                "request_id": request_a.id,
+                "legacy_invoice_line_id": "p1-ledger-line-a",
+                "legacy_receipt_id": "p1-ledger-receipt-a",
+                "invoice_no": shared_invoice_no,
+                "invoice_issue_company": "P1 Ledger Company A",
+                "invoice_amount": 100.0,
+                "current_receipt_amount": 100.0,
+            }
+        )
+
+        other_company = self.env["res.company"].create(
+            {
+                "name": "P1 销项台账跨公司",
+                "currency_id": self.env.company.currency_id.id,
+            }
+        )
+        other_partner = self.env["res.partner"].with_company(other_company).create(
+            {"name": "P1 销项台账跨公司往来单位"}
+        )
+        other_project = self.env["project.project"].with_company(other_company).create(
+            {
+                "name": "P1 销项台账跨公司项目",
+                "code": "P1-LEDGER-OTHER",
+                "company_id": other_company.id,
+                "operation_strategy": "direct",
+            }
+        )
+        other_country = (
+            other_company.account_fiscal_country_id
+            or other_company.partner_id.country_id
+            or self.env.ref("base.cn")
+        )
+        other_tax_group = self.env["account.tax.group"].with_company(other_company).create(
+            {
+                "name": "合同税率",
+                "company_id": other_company.id,
+                "country_id": other_country.id,
+            }
+        )
+        other_tax = self.env["account.tax"].with_company(other_company).create(
+            {
+                "name": "P1 销项台账跨公司合同税率",
+                "amount": 9.0,
+                "amount_type": "percent",
+                "type_tax_use": "none",
+                "price_include": False,
+                "company_id": other_company.id,
+                "tax_group_id": other_tax_group.id,
+                "country_id": other_country.id,
+            }
+        )
+        other_contract = self.env["construction.contract"].with_company(other_company).create(
+            {
+                "subject": "P1 销项台账跨公司收款合同",
+                "type": "out",
+                "project_id": other_project.id,
+                "partner_id": other_partner.id,
+                "company_id": other_company.id,
+                "currency_id": other_company.currency_id.id,
+                "tax_id": other_tax.id,
+            }
+        )
+        request_b = self.env["payment.request"].with_company(other_company).create(
+            {
+                "name": "P1-LEDGER-RECEIPT-B",
+                "type": "receive",
+                "project_id": other_project.id,
+                "partner_id": other_partner.id,
+                "contract_id": other_contract.id,
+                "amount": 250.0,
+            }
+        )
+        line_b = self.env["sc.receipt.invoice.line"].with_company(other_company).create(
+            {
+                "request_id": request_b.id,
+                "legacy_invoice_line_id": "p1-ledger-line-b",
+                "legacy_receipt_id": "p1-ledger-receipt-b",
+                "invoice_no": shared_invoice_no,
+                "invoice_issue_company": "P1 Ledger Company B",
+                "invoice_amount": 250.0,
+                "current_receipt_amount": 250.0,
+            }
+        )
+
+        rows = Ledger.sudo().search(
+            [
+                ("source_model", "=", "sc.receipt.invoice.line"),
+                ("invoice_no", "=", shared_invoice_no),
+            ]
+        )
+        self.assertEqual(
+            set(rows.mapped("source_record_id")),
+            {line_a.id, line_b.id},
+            "the same invoice number in two companies must not be merged or dropped",
+        )
+        amounts = {row.source_record_id: row.invoice_amount for row in rows}
+        self.assertEqual(amounts[line_a.id], 100.0)
+        self.assertEqual(amounts[line_b.id], 250.0)
+        self.assertEqual(sum(rows.mapped("invoice_amount")), 350.0)
+        self.assertTrue(all(row.receipt_line_count == 1 for row in rows))
+
+    def test_relationship_review_queue_publishes_only_unambiguous_project(self):
+        # Counterexample lock for the P1 relationship review queue attribution
+        # boundary: the readonly queue used to collapse every candidate of a
+        # (source model, candidate field) group to MIN(project_id), so a group
+        # that spans several projects was published under one arbitrary project.
+        # A project may be published only when the whole group belongs to
+        # exactly one project; mixed or unknown attribution must stay blank.
+        Queue = self.env["sc.p1.relationship.review.queue"]
+        # Transactional DDL exercises the candidate view definition and rolls
+        # back with this test. It is not an installed-runtime upgrade receipt.
+        Queue.init()
+
+        other_project = self.env["project.project"].create(
+            {
+                "name": "P1 复核队列跨项目",
+                "code": "P1-REVIEW-OTHER",
+                "company_id": self.env.company.id,
+                "operation_strategy": "direct",
+            }
+        )
+        for index, project in enumerate((self.project, other_project)):
+            self.env["sc.financing.loan"].create(
+                {
+                    "name": "P1-REVIEW-LOAN-%s" % index,
+                    "project_id": project.id,
+                    "amount": 10.0 + index,
+                    "legacy_counterparty_name": "复核跨项目往来方%s" % index,
+                }
+            )
+
+        rows = Queue.search([("source_model", "=", "sc.financing.loan")])
+        self.assertTrue(rows, "the financing-loan review group must exist")
+        self.assertFalse(
+            set(rows.mapped("project_id")),
+            "a group spanning several projects must not publish a single project",
+        )
+
+        # Independent oracle over the source table: the view must agree with
+        # "publish a project only when all candidates share exactly one".
+        self.env.cr.execute(
+            """
+            SELECT DISTINCT project_id
+            FROM sc_financing_loan
+            WHERE partner_id IS NULL
+              AND NULLIF(BTRIM(COALESCE(legacy_counterparty_name, '')), '') IS NOT NULL
+            """
+        )
+        oracle = {row[0] for row in self.env.cr.fetchall() if row[0]}
+        expected = oracle if len(oracle) == 1 else set()
+        self.assertEqual(set(rows.mapped("project_id")), expected)
+
+        # A source table that carries no project column can never fabricate one.
+        self.env["sc.business.entity"].create({"name": "复核无项目来源"})
+        entity_rows = Queue.search([("source_model", "=", "sc.business.entity")])
+        self.assertTrue(entity_rows, "the business-entity review group must exist")
+        self.assertFalse(set(entity_rows.mapped("project_id")))

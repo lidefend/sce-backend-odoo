@@ -359,11 +359,15 @@ entries:
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
 - script: form_structure_contract_seed_generate.py
-  status: orphan
+  status: active
   owner: platform-team
-  date: '2026-07-20'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
+  date: '2026-10-13'
+  reason: governed contract.form_structure.guidance.retire consumes native P1 retirement declarations
+- script: test_form_structure_guidance_retirement.py
+  status: active
+  owner: platform-team
+  date: '2026-10-13'
+  reason: verify.contract.form_structure.guidance_retirement.unit covers exact seed retirement and rejection boundaries
 - script: form_structure_standardization_audit.py
   status: active
   owner: platform-team
@@ -844,6 +848,12 @@ entries:
   date: '2026-07-20'
   wire_or_retire: file-consumed
   reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: menu_fact_monotonic.py
+  status: active
+  owner: platform-team
+  date: '2026-10-13'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/verify/test_menu_fact_monotonic.py, whose make target verify.product.menu.monotonic.unit is a prerequisite of verify.contract.architecture.suite
 - script: menu_governance_inventory.py
   status: active
   owner: platform-team
@@ -982,6 +992,12 @@ entries:
   date: '2026-08-12'
   wire_or_retire: file-consumed
   reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: product_native_menu_inventory.py
+  status: active
+  owner: platform-team
+  date: '2026-10-13'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/verify/test_product_native_menu_inventory.py, whose make target verify.product.menu.native_inventory.unit is a prerequisite of verify.contract.architecture.suite
 - script: project_budget_legacy_material_audit.py
   status: active
   owner: platform-team
@@ -1193,6 +1209,14 @@ entries:
   date: '2026-08-13'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_finance_position_audit_partition_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-13'
+  wire_or_retire: file-consumed
+  reason: invoked as 'python3 -m unittest scripts.verify.<module>' inside make/runtime_ops.mk
+    (target verify.finance_position.audit_partition_guard); module-form invocation is a
+    file reference the coarse filename match cannot see
 - script: test_form_structure_authority_unification.py
   status: active
   owner: platform-team
@@ -1404,6 +1428,26 @@ entries:
   date: '2026-07-30'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_list_surface_evidence_binding_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-13'
+  wire_or_retire: file-consumed
+  reason: invoked as 'python3 -m unittest scripts.verify.<module>' inside make/frontend.mk
+    (target verify.frontend.list_surface_evidence_binding.unit); module-form invocation
+    is a file reference
+- script: test_data_space_policy.py
+  status: active
+  owner: platform-team
+  date: '2026-10-13'
+  wire_or_retire: file-consumed
+  reason: invoked as 'python3 -m unittest scripts.verify.<module>' inside make/dev_test.mk (target verify.data_space.policy.unit, prerequisite of verify.contract.architecture.suite); module-form invocation is a file reference the coarse filename match cannot see
+- script: test_local_clean_frontend_output.py
+  status: active
+  owner: platform-team
+  date: '2026-10-13'
+  wire_or_retire: file-consumed
+  reason: invoked as 'python3 -m unittest scripts.verify.<module>' inside make/dev_test.mk (target verify.local.clean.frontend_output.unit, prerequisite of verify.contract.architecture.suite); module-form invocation is a file reference the coarse filename match cannot see
 - script: test_local_dev_candidate_frontend.py
   status: active
   owner: platform-team
@@ -1450,6 +1494,12 @@ entries:
   wire_or_retire: file-consumed
   reason: invoked as 'PYTHONPATH=scripts/verify python3 -m unittest scripts.verify.<module>'
     inside make/dev_test.mk; module-form invocation is a file reference
+- script: test_menu_fact_monotonic.py
+  status: active
+  owner: platform-team
+  date: '2026-10-13'
+  wire_or_retire: file-consumed
+  reason: invoked as 'python3 -m unittest scripts.verify.<module>' inside make/dev_test.mk (target verify.product.menu.monotonic.unit, prerequisite of verify.contract.architecture.suite); module-form invocation is a file reference the coarse filename match cannot see
 - script: test_menu_governance_inventory.py
   status: orphan
   owner: platform-team
@@ -1490,6 +1540,12 @@ entries:
   owner: platform-team
   date: '2026-09-30'
   reason: targeted production approval state-machine execution and bypass regressions
+- script: test_payment_slice_data_authority.py
+  status: active
+  owner: platform-team
+  date: '2026-10-13'
+  wire_or_retire: file-consumed
+  reason: invoked as 'python3 -m unittest scripts.verify.<module>' inside make/dev_test.mk (target verify.payment_slice.data_authority.unit, prerequisite of verify.contract.architecture.suite); module-form invocation is a file reference the coarse filename match cannot see
 - script: test_playwright_vendor_coupling_guard.py
   status: active
   owner: platform-team
@@ -1502,6 +1558,12 @@ entries:
   date: '2026-08-12'
   wire_or_retire: file-consumed
   reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_product_native_menu_inventory.py
+  status: active
+  owner: platform-team
+  date: '2026-10-13'
+  wire_or_retire: file-consumed
+  reason: invoked as 'python3 -m unittest scripts.verify.<module>' inside make/dev_test.mk (target verify.product.menu.native_inventory.unit, prerequisite of verify.contract.architecture.suite); module-form invocation is a file reference the coarse filename match cannot see
 - script: test_product_view_capability_ledger.py
   status: active
   owner: platform-team

@@ -14,6 +14,11 @@ POSITION = (
     / "addons/smart_construction_core/models/projection/"
     "finance_project_counterparty_position.py"
 )
+SUMMARY = (
+    ROOT
+    / "addons/smart_construction_core/models/projection/"
+    "interfund_movement_project_summary.py"
+)
 
 
 def class_methods(path, class_name):
@@ -40,6 +45,7 @@ class TestUmP2InterfundRelationAggregationBoundaries(unittest.TestCase):
         )
         cls.fact_source = FACT.read_text(encoding="utf-8")
         cls.position_source = POSITION.read_text(encoding="utf-8")
+        cls.summary_source = SUMMARY.read_text(encoding="utf-8")
 
     def _method(self, name):
         return ast.get_source_segment(
@@ -85,6 +91,27 @@ class TestUmP2InterfundRelationAggregationBoundaries(unittest.TestCase):
         self.assertIn("THEN 'company'", self.position_source)
         self.assertIn("'internal' AS counterparty_type", self.position_source)
         self.assertNotIn("name_search(", self.position_source)
+
+    def test_summary_partitions_by_company_and_currency(self):
+        # Counterexample lock for the aggregation boundary.  Grouping by
+        # (project, movement type) and reporting MIN(company_id)/MIN(currency_id)
+        # summed different companies and different currencies under one arbitrary
+        # owner, so the declared partition must be part of the GROUP BY.
+        self.assertNotIn("MIN(pp.company_id)", self.summary_source)
+        self.assertNotIn("MIN(pp.currency_id)", self.summary_source)
+        self.assertIn(
+            "GROUP BY pp.project_id, pp.movement_type, pp.company_id, pp.currency_id",
+            self.summary_source,
+        )
+
+    def test_summary_drilldown_domain_carries_company_and_currency(self):
+        source, methods = class_methods(
+            SUMMARY,
+            "ScInterfundMovementProjectSummary",
+        )
+        segment = ast.get_source_segment(source, methods["_project_fact_domain"])
+        self.assertIn('("company_id", "=", self.company_id.id)', segment)
+        self.assertIn('("currency_id", "=", self.currency_id.id)', segment)
 
 
 if __name__ == "__main__":

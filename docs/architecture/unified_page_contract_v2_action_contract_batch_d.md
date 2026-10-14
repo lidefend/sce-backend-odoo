@@ -81,3 +81,20 @@ Revert:
 - `Makefile` action target changes
 
 No database rollback is required.
+
+### Action-bound advisory confirmation (2026-10-13)
+
+`actionRule.presentation` is the existing declared presentation carrier.
+`requires_confirmation: true` together with a non-empty `warning_message` declares
+a non-blocking advisory shown only when that exact action is invoked. It does not
+change allowed/enabled/disabled, risk classification, or field visibility. The
+backend binds runtime advisories by the same record model/id and object method;
+final hydration preserves the declaration. Missing or empty content for this
+confirmation is a contract defect, never permission to execute silently or invent
+a default message. Existing native safety confirmations and reason-entry flows
+retain their independent requirements. Cancel stops execution; continue still
+uses the original authorized action executor.
+
+付款申请的往来单位复核提醒属于提交动作：blocked 沿既有业务校验原文禁止提交；
+review_required 仅在提交交互时提醒并允许取消/继续，不变成禁止态。页面正文不再
+声明同一指导 alert 或旧 task/risk 指导锚点；业务状态事实与其他入口职责保留。

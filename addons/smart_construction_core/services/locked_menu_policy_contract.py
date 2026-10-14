@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 """Versioned construction menu policy contract shared by release paths.
 
-The repository JSON file is the source contract.  Production images carry the
-same bytes at a fixed path plus a versioned SHA-256 lock.  Runtime code never
-generates or downloads this contract.
+P1 product_menu_source.json owns the facts. Runtime reads only its shipped
+module projection and SHA-256 lock. CI verifies all compatibility projections
+against that source. Runtime never falls back to scripts or image snapshots.
 """
 
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 from typing import Iterable
@@ -17,7 +18,6 @@ from typing import Iterable
 BASELINE_FILE = "formal_business_product_menu_policy_v1.json"
 BASELINE_CHECKSUM_FILE = f"{BASELINE_FILE}.sha256"
 BASELINE_SCHEMA = "formal_business_product_menu_policy.v1"
-IMAGE_CONTRACT_ROOT = Path("/opt/sce-product/contracts")
 REQUIRED_PRODUCT_KEYS = ("construction.standard", "construction.preview")
 CONFIG_CENTER_GROUP_LABEL = "产品配置"
 LEGACY_CONFIG_GROUP_LABELS = {"配置中心", "基础设置", "系统设置", "业务配置"}
@@ -78,23 +78,9 @@ ROLE_CATALOG_GROUP_FIELD = "group_xmlids"
 # fallback binding, so the resolver never hard-codes a role order.
 ROLE_CATALOG_CAPABILITY_GROUP_FIELD = "capability_group_xmlids"
 
-# Versioned definitions for action-only targets that are not installed by the
-# module data set. They are created only inside the formal initialization
-# transaction and receive the stable XMLID above before a policy can use them.
-FORMAL_INITIALIZATION_ACTION_SPECS = {
-    "smart_construction_core.action_sc_company_user_roster_formal": {
-        "name": "公司人员名册",
-        "res_model": "res.users",
-        "domain": "[('share', '=', False)]",
-        "context": "{'create': False}",
-    },
-    "smart_construction_core.action_sc_company_document_archive": {
-        "name": "公司资料存档",
-        "res_model": "sc.document.admin.document",
-        "domain": "[('fact_type', '=', 'company_document_archive')]",
-        "context": "{'default_fact_type': 'company_document_archive'}",
-    },
-}
+# Compatibility marker for historical audit consumers. Action definitions live
+# only in native module XML; runtime synchronization must never fabricate them.
+FORMAL_INITIALIZATION_ACTION_SPECS = {}
 
 
 class LockedMenuPolicyContractError(RuntimeError):
@@ -144,17 +130,15 @@ def stable_menu_identity(group_label: str, menu: dict) -> tuple[str, str, str]:
 
 
 def _source_contract_root() -> Path:
-    # services -> smart_construction_core -> addons -> repository root
-    return Path(__file__).resolve().parents[3] / "scripts" / "verify" / "baselines"
+    # Runtime consumes the shipped P1 projection, never a verifier baseline or
+    # an independently copied image snapshot. The generation gate binds it to
+    # product_menu_source.json.
+    return Path(__file__).resolve().parents[1] / "data"
 
 
 def default_contract_paths() -> tuple[Path, Path]:
-    image_baseline = IMAGE_CONTRACT_ROOT / BASELINE_FILE
-    image_checksum = IMAGE_CONTRACT_ROOT / BASELINE_CHECKSUM_FILE
-    if image_baseline.is_file() or image_checksum.is_file():
-        return image_baseline, image_checksum
-    source_root = _source_contract_root()
-    return source_root / BASELINE_FILE, source_root / BASELINE_CHECKSUM_FILE
+    root = _source_contract_root()
+    return root / BASELINE_FILE, root / BASELINE_CHECKSUM_FILE
 
 
 def _expected_sha256(path: Path) -> str:
@@ -196,7 +180,8 @@ def _validate_product(product: dict, product_key: str) -> None:
                 raise LockedMenuPolicyContractError(
                     "LOCKED_MENU_BASELINE_NORMALIZATION_MISMATCH", f"{product_key} incomplete identity {identity!r}"
                 )
-            if menu.get("enabled") is not True or _text(menu.get("release_state")) != "released":
+            allowed_states = {"released", "preview"} if product.get("edition_key") == "preview" else {"released"}
+            if menu.get("enabled") is not True or _text(menu.get("release_state")) not in allowed_states:
                 raise LockedMenuPolicyContractError(
                     "LOCKED_MENU_BASELINE_INVALID", f"{product_key} non-released locked menu {identity!r}"
                 )
@@ -382,6 +367,20 @@ def load_locked_menu_policy_contract(
         raise LockedMenuPolicyContractError("LOCKED_MENU_BASELINE_MISSING", str(baseline)) from exc
     except OSError as exc:
         raise LockedMenuPolicyContractError("LOCKED_MENU_BASELINE_INVALID", str(exc)) from exc
+    if baseline_path is None:
+        # The default runtime path must match the unique product source, even
+        # if someone independently recomputes a projection's checksum.
+        source_module = Path(__file__).with_name("product_menu_source.py")
+        try:
+            spec = importlib.util.spec_from_file_location("p1_menu_source_runtime", source_module)
+            compiler = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(compiler)
+            canonical = compiler.project(compiler.load_source())[1]
+            expected_raw = (json.dumps(canonical, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            raise LockedMenuPolicyContractError("LOCKED_MENU_SOURCE_INVALID", str(exc)) from exc
+        if raw != expected_raw:
+            raise LockedMenuPolicyContractError("LOCKED_MENU_SOURCE_PROJECTION_MISMATCH", str(baseline))
     expected_sha256 = _expected_sha256(checksum)
     actual_sha256 = hashlib.sha256(raw).hexdigest()
     if actual_sha256 != expected_sha256:
@@ -430,7 +429,7 @@ def baseline_rows(contract: dict, product_key: str) -> list[tuple[str, str, str]
         stable_menu_identity(group.get("group_label") or group.get("label"), menu)
         for group in product.get("menu_groups") or []
         for menu in group.get("menus") or []
-        if isinstance(group, dict) and isinstance(menu, dict)
+        if isinstance(group, dict) and isinstance(menu, dict) and menu.get("release_state") == "released"
     ]
 
 

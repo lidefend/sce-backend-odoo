@@ -10,6 +10,7 @@ from typing import Any
 
 _logger = logging.getLogger(__name__)
 
+from .field_presentation_usage import assert_field_body_usage, statically_hidden
 from .action_semantics_vocabulary import (
     EXECUTORS as ACTION_SEMANTICS_EXECUTORS,
     KINDS as ACTION_SEMANTICS_KINDS,
@@ -485,14 +486,19 @@ def declared_container_columns(node: dict[str, Any]) -> int | None:
     if not owns_field_child:
         return None
     attrs = node.get("attributes") if isinstance(node.get("attributes"), dict) else {}
-    declared = (
-        _positive_int(attrs.get("col"), 0)
-        or _positive_int(node.get("cols"), 0)
-        or _positive_int(node.get("columns"), 0)
-        or _positive_int(attrs.get("columns"), 0)
-        or _positive_int(attrs.get("cols"), 0)
-    )
-    return declared or CONTAINER_GRID_COLUMNS_DEFAULT
+    declarations = []
+    for carrier, keys in ((node, ("columns", "cols", "col")), (attrs, ("columns", "cols", "col"))):
+        for key in keys:
+            if key not in carrier:
+                continue
+            value = carrier[key]
+            from .form_structure_authority import validated_field_grid_columns
+            value = validated_field_grid_columns(value, native_text=True)
+            declarations.append(value)
+    if len(set(declarations)) > 1:
+        raise ValueError("conflicting declared container columns")
+    return declarations[0] if declarations else CONTAINER_GRID_COLUMNS_DEFAULT
+
 
 
 def declare_container_columns(node: dict[str, Any]) -> bool:
@@ -537,6 +543,14 @@ def _finalize_layout_dsl(contract: dict[str, Any]) -> None:
             if not isinstance(node, dict):
                 raise ValueError(f"{path}[{index}] must be an object")
             node_path = f"{path}[{index}]"
+            attributes = _dict(node.get("attributes"))
+            style_tokens = set(" ".join(_text(value) for value in (
+                node.get("class"), node.get("className"), node.get("styleToken"),
+                attributes.get("class"), attributes.get("className"), attributes.get("contractStyleToken"),
+            )).split())
+            if "alert" in style_tokens or _text(attributes.get("role")).lower() == "alert":
+                from .form_configuration_compiler import FormConfigurationError
+                raise FormConfigurationError("NATIVE_FEEDBACK_INTERACTION_REQUIRED", node_path)
             container_id = _text(
                 node.get("containerId")
                 or node.get("widgetId")
@@ -1540,6 +1554,7 @@ def _field_rows(source: dict[str, Any], ui: dict[str, Any], *, view_type: str = 
                     row = row_by_name.get(name)
                     item = dict(row) if isinstance(row, dict) else {}
                     item.setdefault("name", name)
+                    assert_field_body_usage(item, name)
                     schema = schema_by_name.get(name)
                     if schema:
                         item.update(schema)
@@ -1552,6 +1567,7 @@ def _field_rows(source: dict[str, Any], ui: dict[str, Any], *, view_type: str = 
                     continue
                 item = dict(row)
                 name = _text(item.get("name") or item.get("field") or item.get("fieldCode"))
+                assert_field_body_usage(item, name)
                 schema = schema_by_name.get(name)
                 if schema:
                     item.update(schema)
@@ -1678,6 +1694,7 @@ def _view_column_schema_by_name(ui: dict[str, Any], view_type: str) -> dict[str,
 
 
 def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
+    assert_field_body_usage(field, str(field.get("name") or "field"), hidden=statically_hidden(field))
     field_name = _stable_id(field.get("name"), "field")
     native_locator = _text(field.get("native_locator"))
     occurrence_index = _positive_int(field.get("occurrence_index"), 0)
@@ -1758,6 +1775,9 @@ def _native_field_node(node: dict[str, Any], field: dict[str, Any], *, layout_ty
     field_source = deepcopy(field)
     field_info = _dict(node.get("fieldInfo") or node.get("field_info"))
     field_source.update({k: deepcopy(v) for k, v in field_info.items() if k not in {"label", "string"}})
+    field_source["sc_ui_usage"] = field.get("sc_ui_usage", "fact")
+    if statically_hidden(node):
+        field_source["invisible"] = True
     field_source["name"] = field_name
     for key in (
         "native_locator", "occurrence_index", "source_position", "modifiers", "relation_entry",
@@ -1809,6 +1829,9 @@ def _field_source_with_node_info(node: dict[str, Any], field: dict[str, Any], *,
     field_source = deepcopy(field) if isinstance(field, dict) else {}
     field_info = _dict(node.get("fieldInfo") or node.get("field_info"))
     field_source.update({k: deepcopy(v) for k, v in field_info.items() if k not in {"label", "string"}})
+    field_source["sc_ui_usage"] = field.get("sc_ui_usage", "fact")
+    if statically_hidden(node):
+        field_source["invisible"] = True
     field_modifiers = _dict(field_info.get("modifiers"))
     for key in ("readonly", "required", "invisible", "column_invisible"):
         if key in field_modifiers and key not in field_source:
@@ -1925,6 +1948,7 @@ def _normalize_native_layout_nodes(
             for key in ("readonly", "required", "invisible", "column_invisible"):
                 if key in field and key not in node:
                     node[key] = deepcopy(field.get(key))
+            assert_field_body_usage(field, node_path, hidden=statically_hidden(node))
             normalized = _native_field_node(node, field, layout_type=layout_type)
             if node_name:
                 subview = _dict((form_subviews or {}).get(node_name))
@@ -4023,6 +4047,11 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
             }
         if not _dict(current.get("refreshPolicy")) and _dict(row.get("refreshPolicy")):
             current["refreshPolicy"] = deepcopy(row.get("refreshPolicy"))
+        native_guidance = _dict(current.get("presentation")).get("action_guidance")
+        incoming_guidance = _dict(row.get("presentation")).get("action_guidance")
+        if native_guidance is not None and incoming_guidance is not None and native_guidance != incoming_guidance:
+            raise ValueError("NATIVE_ACTION_GUIDANCE_CONFLICT")
+        declared_guidance = native_guidance if native_guidance is not None else incoming_guidance
         if _action_presentation_priority(row) > _action_presentation_priority(current):
             current["label"] = _text(row.get("label"), _text(current.get("label")))
             if _dict(row.get("presentation")):
@@ -4035,6 +4064,8 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
             current["presentationPriority"] = _action_presentation_priority(row)
         elif not _dict(current.get("presentation")) and _dict(row.get("presentation")):
             current["presentation"] = deepcopy(row.get("presentation"))
+        if declared_guidance is not None:
+            current.setdefault("presentation", {})["action_guidance"] = deepcopy(declared_guidance)
     action_contract["actionRuleList"] = merged
     source_action_to_winner: dict[str, str] = {}
     source_key_to_identity: dict[str, str] = {}
@@ -4314,6 +4345,7 @@ def _tighten_workflow_action_denials(contract: dict[str, Any]) -> None:
         ) and (not target.get("method") or _text(target.get("method")) == method)
 
     denied = {}
+    advisories = {}
     for available in _list(workflow.get("availableActions")):
         if not isinstance(available, dict):
             continue
@@ -4321,7 +4353,13 @@ def _tighten_workflow_action_denials(contract: dict[str, Any]) -> None:
         explicit_deny = available.get("enabled") is False or available.get("allowed") is False or available.get("disabled") is True
         if method and explicit_deny and matches_record(available.get("target"), method):
             denied.setdefault(method, available)
-    if not denied:
+        presentation = _dict(available.get("presentation"))
+        if method and matches_record(available.get("target"), method) and presentation.get("requires_confirmation") is True:
+            message = _text(presentation.get("warning_message"))
+            if not message:
+                raise ValueError("ACTION_CONFIRMATION_MESSAGE_REQUIRED")
+            advisories.setdefault(method, []).append(message)
+    if not denied and not advisories:
         return
     status_contract = _dict(contract.get("statusContract"))
     statuses = _list(status_contract.get("buttonStatus"))
@@ -4331,6 +4369,12 @@ def _tighten_workflow_action_denials(contract: dict[str, Any]) -> None:
         if _text(_dict(rule.get("button")).get("type")).lower() != "object":
             continue
         method = _action_rule_declared_method(rule)
+        if method in advisories and matches_record(rule.get("target"), method):
+            presentation = dict(_dict(rule.get("presentation")))
+            messages = [presentation.get("warning_message"), *advisories[method]]
+            presentation.update(requires_confirmation=True,
+                                warning_message="\n".join(dict.fromkeys(message for message in messages if message)))
+            rule["presentation"] = presentation
         declaration = denied.get(method)
         if not declaration or not matches_record(rule.get("target"), method):
             continue
@@ -4348,12 +4392,21 @@ def _tighten_workflow_action_denials(contract: dict[str, Any]) -> None:
             matches = [status]
         reason = _text(declaration.get("reason_code") or declaration.get("reasonCode"), "WORKFLOW_ACTION_NOT_AVAILABLE")
         was_denied = rule.get("allowed") is False or rule.get("enabled") is False or rule.get("disabled") is True
-        if not was_denied or _text(rule.get("reasonCode")) in {"", "OK", "ACTION_NOT_ALLOWED"}:
+        if not was_denied or _text(rule.get("reasonCode")) in {"", "OK", "ACTION_NOT_ALLOWED", reason}:
             rule["reasonCode"] = reason
+            message = _text(declaration.get("blocked_message"))
+            if message:
+                rule["reasonMessage"] = message
+            else:
+                rule.pop("reasonMessage", None)
         rule.update({"businessAvailable": False, "allowed": False, "enabled": False, "disabled": True})
         for status in matches:
-            if status.get("disabled") is not True or _text(status.get("reasonCode")) in {"", "OK", "ACTION_NOT_ALLOWED"}:
+            if status.get("disabled") is not True or _text(status.get("reasonCode")) in {"", "OK", "ACTION_NOT_ALLOWED", _text(rule.get("reasonCode"))}:
                 status["reasonCode"] = rule.get("reasonCode") or reason
+                if rule.get("reasonMessage"):
+                    status["reasonMessage"] = rule["reasonMessage"]
+                else:
+                    status.pop("reasonMessage", None)
             status["disabled"] = True
     status_contract["buttonStatus"] = statuses
     contract["statusContract"] = status_contract

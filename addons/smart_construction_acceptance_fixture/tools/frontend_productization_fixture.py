@@ -14,6 +14,7 @@ from typing import Any, Dict
 
 
 MODULE = "smart_construction_acceptance_fixture"
+DATA_SPACE_TENANT_KEY = "frontend-productization-fixture"
 FRONTEND_ACCEPTANCE_DB = "sc_frontend_acceptance"
 DAILY_DEV_DB = "sc_demo"
 
@@ -170,10 +171,29 @@ def _upsert(env, model_name, xmlid_name, domain, values):
 
 def _company(env, suffix):
     name = "FE Company %s" % suffix
+    xmlid_name = "fe_company_%s" % suffix.lower()
+    company = env.ref("%s.%s" % (MODULE, xmlid_name), raise_if_not_found=False)
+    Registration = env["sc.tenant.company.registration"].sudo().with_context(active_test=False)
+    if company:
+        if company._name != "res.company":
+            raise RuntimeError("fixture company XMLID has wrong model")
+        registration = Registration.search([("company_id", "=", company.id)])
+        if (len(registration) != 1 or not registration.active
+                or registration.data_purpose != "test"
+                or registration.tenant_key != DATA_SPACE_TENANT_KEY):
+            raise RuntimeError("fixture company requires an active owned test space; use governed baseline reset")
+    else:
+        if env["res.company"].sudo().with_context(active_test=False).search_count([("name", "=", name)]):
+            raise RuntimeError("fixture refuses to adopt an unowned company")
+        with env.cr.savepoint():
+            registration = Registration._create_non_customer_space(
+                tenant_key=DATA_SPACE_TENANT_KEY, purpose="test", company_name=name,
+            )
+            _bind_xmlid(env, xmlid_name, registration.company_id)
     return _upsert(
         env,
         "res.company",
-        "fe_company_%s" % suffix.lower(),
+        xmlid_name,
         [("name", "=", name)],
         {
             "name": name,
@@ -184,7 +204,8 @@ def _company(env, suffix):
 
 
 def _user(env, login, name, company, companies, group_xmlids):
-    groups = [_ref(env, "base.group_user")]
+    groups = [_ref(env, "base.group_user"),
+              _ref(env, "smart_core.group_smart_core_non_customer_data_user")]
     groups.extend(_ref(env, xmlid) for xmlid in group_xmlids)
     return _upsert(
         env,
@@ -227,9 +248,35 @@ def _partner(env, suffix, company):
     )
 
 
+def _require_activity_company(env, company):
+    registration = env['sc.tenant.company.registration'].sudo().search([
+        ('company_id', '=', company.id), ('active', '=', True),
+        ('data_purpose', '=', 'test'), ('tenant_key', '=', DATA_SPACE_TENANT_KEY),
+    ])
+    if len(registration) != 1:
+        raise RuntimeError('Activity fixture requires its own registered test company')
+
+
+def _activity_journal(env, company):
+    _require_activity_company(env, company)
+    existing = env.ref(MODULE + '.fe_activity_journal', raise_if_not_found=False)
+    if existing and (existing._name != 'account.journal' or existing.sudo().company_id != company):
+        raise RuntimeError('Activity journal ownership mismatch; use governed baseline reset')
+    return _upsert(
+        env, 'account.journal', 'fe_activity_journal',
+        [('company_id', '=', company.id), ('code', '=', 'FEACT')],
+        {'name': 'FE Activity Journal', 'code': 'FEACT', 'type': 'general',
+         'company_id': company.id},
+    )
+
+
 def _activity_move(env, company, partner, journal):
+    _require_activity_company(env, company)
     if not journal or journal.company_id != company or journal.type != "general":
         raise RuntimeError("Activity fixture requires an existing governed general journal")
+    existing = env.ref(MODULE + '.fe_activity_journal_entry', raise_if_not_found=False)
+    if existing and (existing._name != 'account.move' or existing.sudo().company_id != company):
+        raise RuntimeError('Activity move ownership mismatch; use governed baseline reset')
     reference = "FE-ACTIVITY-JOURNAL-001"
     return _upsert(
         env,
@@ -249,31 +296,19 @@ def _activity_move(env, company, partner, journal):
 
 
 def _tax(env, suffix, company):
-    helper = env["construction.contract"].sudo().with_company(company)
-    group = helper._sc_contract_tax_group(company)
-    name = helper._sc_format_contract_tax_name(13.0)
-    return _upsert(
-        env,
-        "account.tax",
-        "fe_tax_%s" % suffix.lower(),
-        [
+    # Company registration owns the standard tax reference. Read it without
+    # adopting its XMLID or rewriting product master data as fixture data.
+    taxes = env["account.tax"].sudo().search([
             ("company_id", "=", company.id),
             ("type_tax_use", "=", "none"),
             ("amount_type", "=", "percent"),
             ("amount", "=", 13.0),
-        ],
-        {
-            "name": name,
-            "company_id": company.id,
-            "country_id": company.account_fiscal_country_id.id or _ref(env, "base.cn").id,
-            "tax_group_id": group.id,
-            "amount": 13.0,
-            "amount_type": "percent",
-            "type_tax_use": "none",
-            "price_include": False,
-            "active": True,
-        },
-    )
+            ("price_include", "=", False),
+            ("active", "=", True),
+    ])
+    if len(taxes) != 1:
+        raise RuntimeError("fixture requires one active native company contract tax at 13 percent")
+    return taxes
 
 
 def _project(env, suffix, company, manager, partner):
@@ -1171,12 +1206,8 @@ def ensure_fixture(env) -> Dict[str, Any]:
 
     company_a = _company(env, "A")
     company_b = _company(env, "B")
-    activity_journal = env["account.journal"].sudo().search(
-        [("type", "=", "general")], order="company_id,id", limit=1
-    )
-    if not activity_journal:
-        raise RuntimeError("Activity fixture requires an existing accounting company")
-    activity_company = activity_journal.company_id
+    activity_company = company_a
+    activity_journal = _activity_journal(env, activity_company)
 
     finance = _user(
         env,

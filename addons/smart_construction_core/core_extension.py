@@ -3,6 +3,7 @@ import logging
 from copy import deepcopy
 from typing import Any, Dict, List
 from odoo.tools.safe_eval import safe_eval
+from odoo.addons.smart_core.core.form_configuration_compiler import FormConfigurationError
 
 from odoo.addons.smart_construction_core.services import role_surface_contract as _role_surface_contract
 from odoo.addons.smart_construction_core.services import role_catalog_contract as _role_catalog_contract
@@ -1160,6 +1161,8 @@ def smart_core_form_business_actions(env, model_name, record_id, contract):
     del contract
     try:
         return build_financial_form_business_actions(env, model_name, record_id)
+    except FormConfigurationError:
+        raise
     except Exception:
         return None
 

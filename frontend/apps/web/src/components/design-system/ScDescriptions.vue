@@ -1,6 +1,6 @@
 <template>
   <TDesignDescriptions v-bind="{ ...semanticPrimitiveIdentity('ScDescriptions'), ...$attrs }" :title="title" :column="column" :bordered="bordered">
-    <TDesignDescriptionsItem v-for="item in items" :key="item.key" :label="item.label"><slot name="item" :item="item">{{ item.value }}</slot></TDesignDescriptionsItem>
+    <TDesignDescriptionsItem v-for="item in items" :key="item.key" ><template #label><slot name="label" :item="item">{{ item.label }}</slot></template><slot name="item" :item="item">{{ item.value }}</slot></TDesignDescriptionsItem>
     <slot v-if="!items.length" />
   </TDesignDescriptions>
 </template>

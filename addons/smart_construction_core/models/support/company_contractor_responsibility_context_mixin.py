@@ -25,18 +25,22 @@ class CompanyContractorResponsibilityContextMixin(models.AbstractModel):
     company_contractor_arrival_unprocessed_amount = fields.Float(
         string="到款可处理余额",
         compute="_compute_company_contractor_responsibility_context",
+        help='到款可处理余额可作为拨付、扣款、退回或核销约束',
     )
     company_contractor_arrival_over_processed_amount = fields.Float(
         string="到款超处理金额",
         compute="_compute_company_contractor_responsibility_context",
+        help='到款已超处理时，继续办理前需复核拨付、扣款或退回来源',
     )
     company_contractor_self_funding_balance = fields.Float(
         string="自筹未退余额",
         compute="_compute_company_contractor_responsibility_context",
+        help='存在自筹未退余额时，继续办理前需关注公司与承包人责任',
     )
     company_contractor_responsibility_notice = fields.Char(
         string="责任提示",
         compute="_compute_company_contractor_responsibility_context",
+        sc_ui_usage="interaction",
     )
 
     def _responsibility_context_domain(self):

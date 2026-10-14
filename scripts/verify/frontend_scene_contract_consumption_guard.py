@@ -33,12 +33,12 @@ REQUIRED = {
     # The stop primitive lives in one shared module so every consumer stops the
     # same way (mechanism: frontend judgement -> stop -> ask the contract).
     "frontend/apps/web/src/app/contract/contractGap.ts": (
-        "export class ContractGapError",
+        "export type ContractGapError",
         "export function requireDeclaredNumber(",
         "requiredDeclarationLayer",
     ),
     "frontend/apps/web/src/app/action_runtime/hierarchicalWorksheetDataSource.ts": (
-        "export { ContractGapError, isContractGapError } from '../contract/contractGap';",
+        "export { contractGapError, isContractGapError } from '../contract/contractGap';",
         "export function requireDeclaredPageSize(sheet: WorksheetSheetConfig): number",
         "requireDeclaredPageSize(sheet)",
     ),
@@ -53,6 +53,10 @@ FORBIDDEN = (
     "page_orchestration_v1",
     "allowSceneContractFallback",
     "hasV1",
+    # The gap stop primitive must stay closure-safe (type alias + factory). A
+    # module-level class/const in the collaboration import closure is rejected by
+    # frontend_scene_component_bridge_guard; keep it from silently coming back.
+    "export class ContractGapError",
     # Retired frontend fallbacks for a contract-declared page size.
     "WORKSHEET_FIRST_PAGE_LIMIT",
     "WORKSHEET_FIRST_PAGE_MIN",

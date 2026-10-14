@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
   <data>
 
@@ -168,8 +167,7 @@
                    record that was not migrated has none of them, so the section is
                    present only when there is something to read and never renders as
                    an empty titled group. -->
-              <group name="payroll_source_trace" data-sc-anchor="payroll_source_trace" string="历史来源"
-                     invisible="not legacy_document_no">
+              <group name="payroll_source_trace" data-sc-anchor="payroll_source_trace" string="历史来源" invisible="not legacy_document_no">
                 <field name="legacy_document_no" readonly="1"/>
                 <field name="legacy_document_state" readonly="1"/>
                 <field name="legacy_source_table" readonly="1"/>
@@ -200,9 +198,6 @@
                     <field name="state"/>
                   </tree>
                 </field>
-              </page>
-              <page string="办理提示" invisible="fact_type != 'salary_registration'">
-                <field name="processing_advisory" readonly="1" nolabel="1"/>
               </page>
             </notebook>
           </sheet>
@@ -343,7 +338,6 @@
             <notebook>
               <page string="发放说明"><field name="note" nolabel="1"/></page>
               <page string="附件"><field name="attachment_ids" widget="many2many_binary" nolabel="1"/></page>
-              <page string="办理提示"><field name="processing_advisory" readonly="1" nolabel="1"/></page>
             </notebook>
           </sheet>
           <chatter/>
@@ -360,36 +354,11 @@
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_manager')])]"/>
     </record>
 
-    <menuitem id="menu_sc_social_person_registration"
-              name="社保人员登记"
-              parent="smart_construction_core.menu_sc_hr_admin_center"
-              action="smart_construction_core.action_sc_social_person_registration"
-              sequence="30"
-              groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_business_config_admin"/>
-    <menuitem id="menu_sc_social_registration"
-              name="社保登记"
-              parent="smart_construction_core.menu_sc_hr_admin_center"
-              action="smart_construction_core.action_sc_social_registration"
-              sequence="40"
-              groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_business_config_admin"/>
-    <menuitem id="menu_sc_salary_registration"
-              name="项目管理人员工资登记"
-              parent="smart_construction_core.menu_sc_hr_admin_center"
-              action="smart_construction_core.action_sc_salary_registration"
-              sequence="45"
-              groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_business_config_admin"/>
-    <menuitem id="menu_sc_subsidy"
-              name="补助"
-              parent="smart_construction_core.menu_sc_hr_admin_center"
-              action="smart_construction_core.action_sc_subsidy"
-              sequence="50"
-              groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_business_config_admin"/>
-    <menuitem id="menu_sc_bonus"
-              name="奖金"
-              parent="smart_construction_core.menu_sc_hr_admin_center"
-              action="smart_construction_core.action_sc_bonus"
-              sequence="60"
-              groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_business_config_admin"/>
+    <menuitem id="menu_sc_social_person_registration" name="社保人员登记" parent="smart_construction_core.menu_sc_hr_admin_center" action="smart_construction_core.action_sc_social_person_registration" sequence="30" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_business_config_admin" />
+    <menuitem id="menu_sc_social_registration" name="社保登记" parent="smart_construction_core.menu_sc_hr_admin_center" action="smart_construction_core.action_sc_social_registration" sequence="40" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_business_config_admin" />
+    <menuitem id="menu_sc_salary_registration" name="项目管理人员工资登记" parent="smart_construction_core.menu_sc_hr_admin_center" action="smart_construction_core.action_sc_salary_registration" sequence="45" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_business_config_admin" />
+    <menuitem id="menu_sc_subsidy" name="补助" parent="smart_construction_core.menu_sc_hr_admin_center" action="smart_construction_core.action_sc_subsidy" sequence="50" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_business_config_admin" />
+    <menuitem id="menu_sc_bonus" name="奖金" parent="smart_construction_core.menu_sc_hr_admin_center" action="smart_construction_core.action_sc_bonus" sequence="60" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_business_config_admin" />
 
   </data>
 </odoo>

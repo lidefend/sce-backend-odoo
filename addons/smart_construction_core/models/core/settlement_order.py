@@ -25,13 +25,6 @@ class ScSettlementOrder(models.Model):
 
     _LIFECYCLE_CONTEXT_KEY = "sc_settlement_lifecycle_service"
     _LIFECYCLE_SERVICE_TOKEN = object()
-    _LIFECYCLE_TRANSITIONS = {
-        "draft": frozenset({"submit", "approve", "cancel"}),
-        "submit": frozenset({"draft", "approve", "cancel"}),
-        "approve": frozenset({"done", "cancel"}),
-        "done": frozenset(),
-        "cancel": frozenset(),
-    }
     _IMMUTABLE_FACT_STATES = frozenset({"approve", "done", "cancel"})
     _TERMINAL_ANNOTATION_FIELDS = frozenset({"note", "attachment_ids"})
 
@@ -824,11 +817,13 @@ class ScSettlementOrder(models.Model):
             raise AccessError(_("当前用户无权执行该结算生命周期动作。"))
 
     def _write_lifecycle(self, target_state, reject_reason=None):
-        if not isinstance(target_state, str) or target_state not in self._LIFECYCLE_TRANSITIONS:
+        # The declared ScStateMachine.SETTLEMENT_ORDER table is the only source;
+        # this model keeps no private copy of the edges.
+        transitions = ScStateMachine.transitions(ScStateMachine.SETTLEMENT_ORDER)
+        if not isinstance(target_state, str) or target_state not in transitions:
             raise AccessError(_("非法结算生命周期目标状态。"))
         invalid = self.filtered(
-            lambda rec: target_state
-            not in self._LIFECYCLE_TRANSITIONS.get(rec.state, frozenset())
+            lambda rec: target_state not in transitions.get(rec.state, frozenset())
         )
         if invalid:
             raise AccessError(_("结算生命周期状态迁移不合法。"))

@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[3]
 INVOICE = ROOT / "addons/smart_construction_core/models/core/invoice_registration.py"
 RECEIPT_LINE = ROOT / "addons/smart_construction_core/models/core/receipt_invoice_line.py"
 DEDUCTION = ROOT / "addons/smart_construction_core/models/core/tax_deduction_registration.py"
+LEDGER = ROOT / "addons/smart_construction_core/models/core/output_invoice_ledger.py"
 
 
 def model_methods(path, class_name):
@@ -37,6 +38,7 @@ class TestUmP2InvoiceRelationAggregationBoundaries(unittest.TestCase):
             RECEIPT_LINE, "ReceiptInvoiceLine"
         )
         cls.deduction_source = DEDUCTION.read_text(encoding="utf-8")
+        cls.ledger_source = LEDGER.read_text(encoding="utf-8")
 
     def _invoice_method(self, name):
         return ast.get_source_segment(
@@ -133,6 +135,32 @@ class TestUmP2InvoiceRelationAggregationBoundaries(unittest.TestCase):
             "order=",
         ):
             self.assertNotIn(token, combined)
+
+    def test_output_invoice_ledger_partitions_by_company_and_currency(self):
+        # Counterexample lock: the receipt-invoice dedup used to window on the
+        # invoice number alone, so two companies (or two currencies) that happen
+        # to print the same number were collapsed into a single ledger row and one
+        # company's invoice silently disappeared.  Every dedup window must carry
+        # the business owner and the currency, and the registration anti-join must
+        # not let another company's registration suppress a receipt line.
+        partitions = [
+            line.strip()
+            for line in self.ledger_source.splitlines()
+            if "PARTITION BY" in line
+        ]
+        self.assertTrue(partitions)
+        for line in partitions:
+            self.assertIn("pp.company_id", line)
+            self.assertIn("ril.currency_id", line)
+        self.assertIn(
+            "LEFT JOIN project_project pp ON pp.id = ril.project_id",
+            self.ledger_source,
+        )
+        self.assertIn(
+            "ir2.company_id = ril.invoice_company_id"
+            " OR ir2.company_id IS NULL OR ril.invoice_company_id IS NULL",
+            self.ledger_source,
+        )
 
 
 if __name__ == "__main__":

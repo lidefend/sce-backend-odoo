@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="view_sc_current_account_workspace_form" model="ir.ui.view">
         <field name="name">sc.current.account.workspace.form</field>
@@ -14,9 +13,6 @@
                     <button name="action_view_current_account" type="object" string="查看往来台账" class="btn-secondary" invisible="not project_id"/>
                 </header>
                 <sheet>
-                    <div class="alert alert-info" role="status">
-                        先记录办理上下文，再选择办理事项。金额、账户和明细在打开的正式单据中填写；沟通、备注与附件也在正式单据中登记。
-                    </div>
                     <group name="current_account_processing_context" data-sc-anchor="current_account_processing_context" string="办理上下文" col="2">
                         <field name="project_id"/>
                         <field name="partner_id"/>
@@ -25,9 +21,6 @@
                     <group name="current_account_processing_note" data-sc-anchor="current_account_processing_note" string="办理说明" col="1">
                         <field name="note" placeholder="可补充本次借款、还款或调拨的业务背景；金额、账户和附件在正式单据中填写。"/>
                     </group>
-                    <div class="alert alert-info" role="status" invisible="not processing_advisory">
-                        <field name="processing_advisory" readonly="1" nolabel="1"/>
-                    </div>
                 </sheet>
             </form>
         </field>

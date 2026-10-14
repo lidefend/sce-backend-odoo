@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!-- 项目台账记录页：概览身份区 + 完整项目资料维护区（唯一项目产品入口） -->
     <record id="view_project_overview_form" model="ir.ui.view">
@@ -26,8 +25,10 @@
                                     · 经营方式 <field name="operation_strategy" readonly="1" nolabel="1"/>
                                     · 经营性质 <field name="business_nature" readonly="1" nolabel="1"/>
                                 </div>
-                                <div class="text-muted">你是：项目负责人 <field name="user_id" readonly="1"/></div>
-                                <div class="text-muted">项目经理 <field name="manager_id" readonly="1"/></div>
+                                <div class="text-muted">你是：项目负责人 <field name="user_id" readonly="1" />
+                                </div>
+                                <div class="text-muted">项目经理 <field name="manager_id" readonly="1" />
+                                </div>
                                 <div class="small text-muted mt-1">
                                     业主 <field name="owner_id" readonly="1"/>
                                     · 类型 <field name="project_type_id" readonly="1"/>
@@ -37,22 +38,14 @@
                                 </div>
                                 <field name="location" readonly="1" invisible="1"/>
                             </div>
-                            <button type="action"
-                                    name="%(smart_construction_core.action_sc_project_manage)d"
-                                    string="项目设置"
-                                    class="btn btn-link"
-                                    groups="smart_construction_core.group_sc_cap_project_manager,smart_construction_core.group_sc_super_admin"/>
+                            <button type="action" name="%(smart_construction_core.action_sc_project_manage)d" string="项目设置" class="btn btn-link" groups="smart_construction_core.group_sc_cap_project_manager,smart_construction_core.group_sc_super_admin" />
                         </div>
-
                         <div class="sc-project-stage mb-3">
                             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                                <div class="sc-project-stage__label">当前阶段：<field name="lifecycle_state" readonly="1"/></div>
+                                <div class="sc-project-stage__label">当前阶段：<field name="lifecycle_state" readonly="1" />
+                                </div>
                                 <div class="d-flex flex-wrap gap-2">
-                                    <button name="%(smart_construction_core.action_sc_project_manage)d"
-                                            type="action"
-                                            string="去补齐资料"
-                                            class="btn btn-outline-primary"
-                                            invisible="lifecycle_state != 'draft' or (sc_stage_required_done == sc_stage_required_total)"/>
+                                    <button name="%(smart_construction_core.action_sc_project_manage)d" type="action" string="去补齐资料" class="btn btn-outline-primary" invisible="lifecycle_state != 'draft' or (sc_stage_required_done == sc_stage_required_total)" />
                                     <field name="sc_approval_state" readonly="1"/>
                 <field name="validation_status" invisible="1"/>
                 <field name="can_review" invisible="1"/>
@@ -60,17 +53,8 @@
                                     <button name="validate_tier" type="object" string="审批通过" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
                 <button name="reject_tier" type="object" string="审批驳回" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
                 <button name="action_sc_start" type="object" string="启动项目" invisible="lifecycle_state != 'draft' or sc_approval_state != 'approved'"/>
-                                    <button name="action_sc_submit"
-                                            type="object"
-                                            string="提交立项"
-                                            class="btn btn-primary"
-                                            groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager,smart_construction_core.group_sc_super_admin"
-                                            invisible="lifecycle_state != 'draft' or sc_approval_state != 'draft' or validation_status in ('waiting', 'pending', 'validated')"/>
-                                    <button name="action_view_stage_requirements"
-                                            type="object"
-                                            string="查看阶段要求"
-                                            class="btn btn-primary"
-                                            invisible="lifecycle_state == 'draft'"/>
+                                    <button name="action_sc_submit" type="object" string="提交立项" class="btn btn-primary" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager,smart_construction_core.group_sc_super_admin" invisible="lifecycle_state != 'draft' or sc_approval_state != 'draft' or validation_status in ('waiting', 'pending', 'validated')" />
+                                    <button name="action_view_stage_requirements" type="object" string="查看阶段要求" class="btn btn-primary" invisible="lifecycle_state == 'draft'" />
                                 </div>
                             </div>
                             <div class="sc-project-stage__desc text-muted mt-2" invisible="lifecycle_state != 'draft'">
@@ -102,12 +86,10 @@
                                 项目已归档，历史数据只读。
                             </div>
                         </div>
-
                         <div class="sc-project-next mb-4">
                             <div class="sc-project-next__title">你现在最该做的事</div>
                             <widget name="sc_next_actions" options="{'limit': 3}"/>
                         </div>
-
                         <div class="sc-project-cards">
                             <div class="sc-project-cards__title">项目当前状态（概览）</div>
                             <div class="row g-2">
@@ -121,10 +103,7 @@
                                             <div class="text-muted" invisible="sc_overview_contract_count == 0">
                                                 已有 <field name="sc_overview_contract_count" readonly="1" nolabel="1"/> 份合同
                                             </div>
-                                            <button type="action"
-                                                    name="%(smart_construction_core.action_construction_contract_my)d"
-                                                    string="查看合同"
-                                                    class="btn btn-link px-0"/>
+                                            <button type="action" name="%(smart_construction_core.action_construction_contract_my)d" string="查看合同" class="btn btn-link px-0" />
                                         </div>
                                     </div>
                                 </div>
@@ -138,10 +117,7 @@
                                             <div class="text-muted" invisible="sc_overview_cost_count == 0">
                                                 已录入 <field name="sc_overview_cost_count" readonly="1" nolabel="1"/> 条
                                             </div>
-                                            <button type="action"
-                                                    name="%(smart_construction_core.action_project_cost_ledger_my)d"
-                                                    string="查看成本"
-                                                    class="btn btn-link px-0"/>
+                                            <button type="action" name="%(smart_construction_core.action_project_cost_ledger_my)d" string="查看成本" class="btn btn-link px-0" />
                                         </div>
                                     </div>
                                 </div>
@@ -155,10 +131,7 @@
                                             <div class="text-muted" invisible="sc_overview_payment_pending_count != 0">
                                                 当前无待审批付款
                                             </div>
-                                            <button type="action"
-                                                    name="%(smart_construction_core.action_payment_request_my)d"
-                                                    string="查看财务"
-                                                    class="btn btn-link px-0"/>
+                                            <button type="action" name="%(smart_construction_core.action_payment_request_my)d" string="查看财务" class="btn btn-link px-0" />
                                         </div>
                                     </div>
                                 </div>
@@ -172,77 +145,43 @@
                                             <div class="text-muted" invisible="sc_overview_task_in_progress_count != 0">
                                                 当前无进行中任务
                                             </div>
-                                            <button type="object"
-                                                    name="action_view_my_tasks"
-                                                    string="查看任务"
-                                                    class="btn btn-link px-0"/>
+                                            <button type="object" name="action_view_my_tasks" string="查看任务" class="btn btn-link px-0" />
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
                     <!-- 项目资料维护区：承载原「项目信息编辑」入口的完整功能。 -->
                     <field name="message_needaction" invisible="1"/>
                     <field name="display_name" invisible="1"/>
                     <field name="active" invisible="1"/>
-                    <div class="alert alert-info" role="status" invisible="lifecycle_state != 'draft'">
-                        保存用于更新项目资料；“提交立项”用于推进项目状态并执行后端校验。
-                    </div>
-
-                    <group name="sc_project_information_basic" string="基本信息" col="4"
-                           data-sc-anchor="project-basic">
+                    <group name="sc_project_information_basic" string="基本信息" col="4" data-sc-anchor="project-basic">
                         <field name="name" string="项目名称"/>
-                        <field name="project_code" readonly="1" invisible="id == False"
-                               groups="smart_construction_core.group_sc_cap_project_read"/>
-                        <field name="partner_id" widget="res_partner_many2one"
-                               context="{'res_partner_search_mode': 'customer'}"
-                               options="{'always_reload': True}"/>
-                        <field name="project_type_id"
-                               groups="smart_construction_core.group_sc_cap_project_read"/>
-                        <field name="project_category_id" invisible="1"
-                               groups="smart_construction_core.group_sc_cap_project_read"/>
-                        <field name="operation_strategy"
-                               groups="smart_construction_core.group_sc_cap_project_read"/>
-                        <field name="location"
-                               groups="smart_construction_core.group_sc_cap_project_read"/>
-                        <field name="owner_contact"
-                               groups="smart_construction_core.group_sc_cap_project_read"/>
-                        <field name="contract_no"
-                               groups="smart_construction_core.group_sc_cap_project_read"/>
+                        <field name="project_code" readonly="1" invisible="id == False" groups="smart_construction_core.group_sc_cap_project_read" />
+                        <field name="partner_id" widget="res_partner_many2one" context="{'res_partner_search_mode': 'customer'}" options="{'always_reload': True}" />
+                        <field name="project_type_id" groups="smart_construction_core.group_sc_cap_project_read" />
+                        <field name="project_category_id" invisible="1" groups="smart_construction_core.group_sc_cap_project_read" />
+                        <field name="operation_strategy" groups="smart_construction_core.group_sc_cap_project_read" />
+                        <field name="location" groups="smart_construction_core.group_sc_cap_project_read" />
+                        <field name="owner_contact" groups="smart_construction_core.group_sc_cap_project_read" />
+                        <field name="contract_no" groups="smart_construction_core.group_sc_cap_project_read" />
                         <field name="company_id" readonly="1"/>
-                        <field name="phase_key" invisible="1"
-                               groups="smart_construction_core.group_sc_cap_project_read"/>
+                        <field name="phase_key" invisible="1" groups="smart_construction_core.group_sc_cap_project_read" />
                     </group>
-
-                    <group name="sc_project_information_plan" string="计划与责任" col="4"
-                           data-sc-anchor="project-plan-responsibility">
-                        <field name="initiation_date"
-                               groups="smart_construction_core.group_sc_cap_project_read"/>
-                        <field name="date_start" string="项目周期" widget="daterange"
-                               options="{&quot;end_date_field&quot;: &quot;date&quot;, &quot;always_range&quot;: &quot;1&quot;}"
-                               required="date_start or date"/>
+                    <group name="sc_project_information_plan" string="计划与责任" col="4" data-sc-anchor="project-plan-responsibility">
+                        <field name="initiation_date" groups="smart_construction_core.group_sc_cap_project_read" />
+                        <field name="date_start" string="项目周期" widget="daterange" options="{&quot;end_date_field&quot;: &quot;date&quot;, &quot;always_range&quot;: &quot;1&quot;}" required="date_start or date" />
                         <field name="date" invisible="1" required="date_start"/>
-                        <field name="start_date"
-                               groups="smart_construction_core.group_sc_cap_project_read"/>
-                        <field name="end_date"
-                               groups="smart_construction_core.group_sc_cap_project_read"/>
-                        <field name="user_id" string="项目负责人" widget="many2one_avatar_user"
-                               domain="[('share', '=', False)]" readonly="not active"
-                               options="{'no_quick_create': True}"/>
-                        <field name="manager_id"
-                               groups="smart_construction_core.group_sc_cap_project_read"/>
-                        <field name="cost_manager_id"
-                               groups="smart_construction_core.group_sc_cap_project_read"/>
-                        <field name="doc_manager_id"
-                               groups="smart_construction_core.group_sc_cap_project_read"/>
+                        <field name="start_date" groups="smart_construction_core.group_sc_cap_project_read" />
+                        <field name="end_date" groups="smart_construction_core.group_sc_cap_project_read" />
+                        <field name="user_id" string="项目负责人" widget="many2one_avatar_user" domain="[('share', '=', False)]" readonly="not active" options="{'no_quick_create': True}" />
+                        <field name="manager_id" groups="smart_construction_core.group_sc_cap_project_read" />
+                        <field name="cost_manager_id" groups="smart_construction_core.group_sc_cap_project_read" />
+                        <field name="doc_manager_id" groups="smart_construction_core.group_sc_cap_project_read" />
                     </group>
-
-                    <group name="sc_project_information_responsibility" string="责任矩阵" col="1"
-                           data-sc-anchor="project-responsibility-matrix">
-                        <field name="responsibility_ids" nolabel="1"
-                               groups="smart_construction_core.group_sc_cap_project_read">
+                    <group name="sc_project_information_responsibility" string="责任矩阵" col="1" data-sc-anchor="project-responsibility-matrix">
+                        <field name="responsibility_ids" nolabel="1" groups="smart_construction_core.group_sc_cap_project_read">
                             <tree editable="bottom">
                                 <field name="role_key"/>
                                 <field name="user_id"/>
@@ -250,32 +189,17 @@
                             </tree>
                         </field>
                     </group>
-
-                    <group name="sc_project_information_description" string="项目说明" col="1"
-                           data-sc-anchor="project-description"
-                           data-sc-navigation-role="subordinate">
-                        <field name="description" nolabel="1"
-                               options="{'resizable': false}"/>
+                    <group name="sc_project_information_description" string="项目说明" col="1" data-sc-anchor="project-description" data-sc-navigation-role="subordinate">
+                        <field name="description" nolabel="1" options="{'resizable': false}" />
                     </group>
-
-                    <group name="sc_project_information_collaboration" string="协作资料" col="4"
-                           data-sc-anchor="project-collaboration"
-                           data-sc-navigation-role="subordinate">
-                        <field name="tag_ids" widget="many2many_tags"
-                               options="{'color_field': 'color'}"/>
+                    <group name="sc_project_information_collaboration" string="协作资料" col="4" data-sc-anchor="project-collaboration" data-sc-navigation-role="subordinate">
+                        <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}" />
                         <field name="collaborator_ids"/>
                     </group>
-
-                    <group name="sc_project_information_trace" string="系统追溯" col="4"
-                           data-sc-anchor="project-system-trace"
-                           data-sc-navigation-role="subordinate"
-                           data-sc-collapsible="1"
-                           data-sc-collapsed-by-default="1">
+                    <group name="sc_project_information_trace" string="系统追溯" col="4" data-sc-anchor="project-system-trace" data-sc-navigation-role="subordinate" data-sc-collapsible="1" data-sc-collapsed-by-default="1">
                         <field name="analytic_account_id" readonly="1"/>
-                        <field name="source_created_by" readonly="1"
-                               groups="smart_construction_core.group_sc_cap_project_read"/>
-                        <field name="source_created_at" readonly="1"
-                               groups="smart_construction_core.group_sc_cap_project_read"/>
+                        <field name="source_created_by" readonly="1" groups="smart_construction_core.group_sc_cap_project_read" />
+                        <field name="source_created_at" readonly="1" groups="smart_construction_core.group_sc_cap_project_read" />
                     </group>
                 </sheet>
             </form>

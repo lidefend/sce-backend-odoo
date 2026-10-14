@@ -78,8 +78,17 @@ class ScInterfundMovementProjectSummary(models.Model):
 
     def _project_fact_domain(self):
         self.ensure_one()
+        # The drill-down must land on exactly the slice the summary row was
+        # aggregated from.  The fact view carries one company and one currency
+        # per movement, so a summary row is only reproducible when the domain
+        # pins the same company/currency partition; filtering by project alone
+        # would open every company's and every currency's rows under one total.
+        slice_domain = [
+            ("company_id", "=", self.company_id.id),
+            ("currency_id", "=", self.currency_id.id),
+        ]
         if not self.project_id:
-            return [
+            return slice_domain + [
                 ("source_project_id", "=", False),
                 ("target_project_id", "=", False),
                 ("project_id", "=", False),
@@ -92,8 +101,10 @@ class ScInterfundMovementProjectSummary(models.Model):
             ]
         )
         if self.movement_type:
-            return expression.AND([[("movement_type", "=", self.movement_type)], project_domain])
-        return project_domain
+            return expression.AND(
+                [slice_domain, [("movement_type", "=", self.movement_type)], project_domain]
+            )
+        return expression.AND([slice_domain, project_domain])
 
     def _fund_account_operation_domain(self):
         self.ensure_one()
@@ -263,8 +274,8 @@ class ScInterfundMovementProjectSummary(models.Model):
                     SELECT
                         pp.project_id,
                         pp.movement_type,
-                        MIN(pp.company_id) AS company_id,
-                        MIN(pp.currency_id) AS currency_id,
+                        pp.company_id,
+                        pp.currency_id,
                         COUNT(*)::integer AS source_line_count,
                         COUNT(*) FILTER (WHERE pp.classification_confidence = 'low')::integer AS low_confidence_count,
                         COALESCE(SUM(pp.inflow_amount), 0.0) AS inflow_amount,
@@ -278,10 +289,16 @@ class ScInterfundMovementProjectSummary(models.Model):
                         COALESCE(SUM(CASE WHEN pp.movement_type = 'project_to_contractor_borrow' THEN pp.outflow_amount ELSE 0 END), 0.0) AS contractor_borrow_out_amount,
                         COALESCE(SUM(CASE WHEN pp.movement_type = 'contractor_to_project_repay' THEN pp.inflow_amount ELSE 0 END), 0.0) AS contractor_repay_in_amount
                     FROM project_perspective pp
-                    GROUP BY pp.project_id, pp.movement_type
+                    GROUP BY pp.project_id, pp.movement_type, pp.company_id, pp.currency_id
                 )
                 SELECT
-                    ROW_NUMBER() OVER (ORDER BY g.project_id, g.movement_type)::integer AS id,
+                    ROW_NUMBER() OVER (
+                        ORDER BY
+                            g.project_id,
+                            g.movement_type,
+                            COALESCE(g.company_id, 0),
+                            COALESCE(g.currency_id, 0)
+                    )::integer AS id,
                     COALESCE(p.name->>'zh_CN', p.name->>'en_US', '项目') || ' / ' || g.movement_type AS display_name,
                     g.project_id,
                     g.company_id,

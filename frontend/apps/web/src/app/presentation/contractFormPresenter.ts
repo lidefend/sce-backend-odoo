@@ -1,4 +1,6 @@
+import { requireDeclaredLayoutColumns } from '../../components/template/layoutSpan';
 import { normalizeActionSemantics } from '@sc/schema';
+import { contractAuthLevelDeniesAccess, contractAuthLevelGrantsEdit, normalizeContractAuthLevel } from '../contract/contractAuthLevel';
 import {
   actionRequiresPersistedRecord,
   declaredVisibilityModifier,
@@ -181,9 +183,10 @@ function declaredZoneRole(container: ContractV2Container): CanonicalFormZoneRole
 // instead of keeping a second default of its own.  A container that owns no
 // field grid publishes no ``columns``; its single cell is structural, not a
 // business decision.
-function declaredContainerColumns(container: ContractV2Container): number {
-  const declared = Number(container.columns);
-  return Number.isInteger(declared) && declared >= 1 ? declared : 1;
+function declaredContainerColumns(container: ContractV2Container): number | undefined {
+  const ownsFieldGrid = container.children.some(child => child.containerType === 'field');
+  if (container.columns === undefined && !ownsFieldGrid) return undefined;
+  return requireDeclaredLayoutColumns(container.columns);
 }
 
 function relationModel(widget: ContractV2Widget): string {
@@ -622,6 +625,7 @@ function presentAction(
     enabled: allowed && enabled,
     reasonCode: text(stateDerivedStatus ? '' : status?.reasonCode || action.reasonCode) || declaredDenial
       || (!allowed || !enabled ? 'ACTION_NOT_ALLOWED' : ''),
+    reasonMessage: stateDerivedStatus ? undefined : text(status?.reasonCode ? status.reasonMessage : action.reasonMessage),
     visibleProfiles: profiles,
     safety: Object.freeze({ ...(action.actionSafety || {}) }),
     actionRef: action,
@@ -632,13 +636,15 @@ function presentAction(
     methodName: text(button.name || button.method),
     backendIdentity: action.backendIdentity,
   });
-  const settled = availability.kind === 'unmanaged' || (availability.kind === 'managed' && availability.enabled)
+  const settled = (!presented.enabled && !['', 'OK', 'ACTION_NOT_ALLOWED'].includes(presented.reasonCode)) || availability.kind === 'unmanaged' || (availability.kind === 'managed' && availability.enabled)
     ? presented
     : {
       ...presented,
       enabled: false,
       reasonCode: availability.reasonCode || 'WORKFLOW_ACTION_NOT_AVAILABLE',
+      reasonMessage: '',
     };
+  if (!settled.reasonMessage) delete settled.reasonMessage;
   // A declared record action cannot run before the record exists.  Presenting it
   // as enabled would promise an action no adapter can execute yet, so it stays
   // visible with an explicit reason and turns executable once the draft is saved.
@@ -668,7 +674,8 @@ export function presentContractV2Form(
   const globalStatus = snapshot.statusContract.globalStatus;
   const pageVisible = bool(globalStatus.pageVisible, true);
   const pageAuth = text(globalStatus.pageAuth);
-  const pageCanEdit = mode !== 'readonly' && ['edit', 'admin'].includes(pageAuth);
+  const pageAuthLevel = normalizeContractAuthLevel(pageAuth);
+  const pageCanEdit = mode !== 'readonly' && contractAuthLevelGrantsEdit(pageAuthLevel);
   const actionIdentityCounts = new Map<string, number>();
   const actionIdCounts = new Map<string, number>();
   snapshot.actionContract.actionRuleList.forEach((action) => {
@@ -709,7 +716,7 @@ export function presentContractV2Form(
   const nodes = snapshot.layoutContract.containerTree.map((container, index) => (
     presentNode(
       container, declaredZoneRole(container) ?? 'primary', index, store, contractValues, runtimeValues, mode, presentationMode, pageCanEdit,
-      pageVisible, pageAuth === 'none', false, actionsByIdentity, actionsByNativeOccurrence, authoritativeFieldLabels, structure,
+      pageVisible, contractAuthLevelDeniesAccess(pageAuthLevel), false, actionsByIdentity, actionsByNativeOccurrence, authoritativeFieldLabels, structure,
       snapshot.layoutContract.componentRegistry, snapshot.pageInfo.clientType,
     )
   ));

@@ -1,14 +1,22 @@
 # -*- coding: utf-8 -*-
 
+import logging
 from datetime import date, timedelta
 
 from odoo import api, models
+from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
 
 
 class ProjectDemoCockpitSeed(models.Model):
     _inherit = "project.project"
 
     _DEMO_COCKPIT_MARKER = "DEMO_COCKPIT_R2"
+    # ``payment.request._check_project_lifecycle`` refuses to submit or approve
+    # a payment on a 保修/关闭 project, so the showcase must not try to create
+    # such a fact there.
+    _DEMO_PAYMENT_BLOCKED_LIFECYCLES = ("warranty", "closed")
     _OFFICIAL_SAMPLE_PROFILES = {
         "展厅-智慧园区运营中心": {
             "profile": "execution",
@@ -244,37 +252,118 @@ class ProjectDemoCockpitSeed(models.Model):
 
     @api.model
     def _sc_demo_seed_payments(self, project, partner, payment_request_model):
+        """Seed the cockpit payment samples as product-legal facts.
+
+        The samples used to declare ``state`` at create time.  A document now
+        reaches a terminal state only through its own actions, so writing it
+        directly (and hiding the refusal in a bare ``except``) would silently
+        drop the whole showcase set.  Each sample is therefore created as a
+        draft and carried with the product's own flow: the 节点回款 samples are
+        submitted and approved, and the completed one continues through
+        收款登记 (``sc.receipt.income``) so an 已收款 fact stays real.  A
+        project whose lifecycle blocks payment submission gets no samples:
+        that is the product's rule, not a demo exception.
+        """
+        if project.lifecycle_state in self._DEMO_PAYMENT_BLOCKED_LIFECYCLES:
+            return
         marker = self._DEMO_COCKPIT_MARKER
+        contract_model = self.env["construction.contract"].sudo()
+        # 申请的收付方向必须与合同方向一致（产品 _check_contract_direction），
+        # 回款挂收入合同，付款挂支出合同。
+        contracts = {
+            contract_type: contract_model.search(
+                [
+                    ("project_id", "=", project.id),
+                    ("type", "=", contract_type),
+                    ("subject", "ilike", marker),
+                ],
+                limit=1,
+            )
+            for contract_type in ("out", "in")
+        }
         samples = [
             ("receive", "approved", 2_800_000.0, "节点回款A"),
             ("receive", "done", 1_650_000.0, "节点回款B"),
             ("pay", "draft", 1_200_000.0, "分包付款A"),
             ("pay", "draft", 860_000.0, "材料付款B"),
         ]
-        for req_type, state, amount, note_text in samples:
+        for req_type, target_state, amount, note_text in samples:
             req_name = f"{marker}-{project.id}-{note_text}"
-            exists = payment_request_model.search_count(
-                [
-                    ("project_id", "=", project.id),
-                    ("name", "=", req_name),
-                ]
+            contract = contracts["out" if req_type == "receive" else "in"]
+            request = payment_request_model.search(
+                [("project_id", "=", project.id), ("name", "=", req_name)], limit=1
             )
-            if exists:
-                continue
-            try:
-                payment_request_model.create(
+            if not request:
+                request = payment_request_model.create(
                     {
                         "name": req_name,
                         "project_id": project.id,
                         "partner_id": partner.id,
                         "type": req_type,
-                        "state": state,
+                        "contract_id": contract.id if contract else False,
                         "amount": amount,
                         "note": marker,
                     }
                 )
-            except Exception:
+            if target_state == "draft":
                 continue
+            self._sc_demo_advance_payment_request(request, contract, target_state, note_text)
+        return True
+
+    @api.model
+    def _sc_demo_advance_payment_request(self, request, contract, target_state, note_text):
+        """Carry one cockpit sample to its declared state with product actions."""
+        from odoo.addons.smart_construction_demo.tools.scenario_loader import (
+            _demo_drive_approval,
+        )
+
+        if request.state == "draft":
+            _demo_drive_approval(self.env, request)
+        request.invalidate_recordset()
+        if target_state == "approved":
+            if request.state not in ("approved", "done"):
+                raise UserError(
+                    "演示付款申请未能通过正式审批状态机：%s 停在 %s"
+                    % (request.name, request.state)
+                )
+            return request
+        if target_state != "done":
+            raise UserError("演示付款样本声明了未知目标状态：%s" % target_state)
+        if not contract:
+            raise UserError("演示收款样本缺少收入合同，无法办理收款登记：%s" % request.name)
+        # 场景 XML 在受治迁移载体上下文里执行，那个上下文会放宽 create()
+        # 的草稿/财务身份守卫。这里要的是“真实用户新建草稿收款登记”的语义，
+        # 所以清空收款载体令牌，让 create() 按普通产品路径落草稿并自行固化
+        # finance_identity_state=normalized，再交给正式动作推进。清令牌只会
+        # 让守卫变严，不会获得额外写权限。
+        receipt_model = self.env["sc.receipt.income"].sudo().with_context(
+            sc_receipt_fact_authority_token=None
+        )
+        receipt = receipt_model.search([("payment_request_id", "=", request.id)], limit=1)
+        if not receipt:
+            receipt = receipt_model.create(
+                {
+                    "payment_request_id": request.id,
+                    "project_id": request.project_id.id,
+                    "contract_id": contract.id,
+                    "partner_id": request.partner_id.id,
+                    "amount": request.amount,
+                    "note": f"{request.note}-{note_text}",
+                }
+            )
+        if receipt.state == "draft":
+            receipt.action_confirm()
+        if receipt.state == "confirmed":
+            finance_manager = self.env.ref(
+                "smart_construction_demo.user_sc_fin_mgr_01", raise_if_not_found=False
+            )
+            receipt.with_user(finance_manager).action_received()
+        request.invalidate_recordset()
+        if request.state != "done":
+            raise UserError(
+                "演示收款样本未回写为已完成：%s 停在 %s" % (request.name, request.state)
+            )
+        return request
 
     @api.model
     def _sc_demo_cleanup_payments(self, project):
@@ -341,5 +430,13 @@ class ProjectDemoCockpitSeed(models.Model):
         if target_lifecycle and getattr(project, "lifecycle_state", "") != target_lifecycle:
             try:
                 project.action_set_lifecycle_state(target_lifecycle)
-            except Exception:
-                pass
+            except Exception as exc:
+                # 产品守卫拒绝的生命周期目标不能被悄悄吞掉，否则演示项目会
+                # 静默停在错误阶段；记录可观察的告警而不是改成直接写状态。
+                _logger.warning(
+                    "demo cockpit: project %s stayed at %s, target %s refused: %s",
+                    project.display_name,
+                    project.lifecycle_state,
+                    target_lifecycle,
+                    exc,
+                )

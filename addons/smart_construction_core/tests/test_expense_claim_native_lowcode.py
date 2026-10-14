@@ -71,7 +71,7 @@ class TestExpenseClaimNativeLowcode(TransactionCase):
         "currency_id", "payment_state", "company_contractor_responsibility_state",
         "company_contractor_arrival_unprocessed_amount",
         "company_contractor_arrival_over_processed_amount",
-        "company_contractor_self_funding_balance", "company_contractor_responsibility_notice",
+        "company_contractor_self_funding_balance",
         "payee", "receipt_account_name", "payee_account", "payee_bank", "payment_account_name",
         "payer_account", "payer_bank", "payment_method", "note", "attachment_ids", "reject_reason",
         "return_reason", "legacy_source_model", "legacy_source_table", "legacy_record_id",
@@ -377,10 +377,15 @@ class TestExpenseClaimNativeLowcode(TransactionCase):
         ):
             data = self.contract(action_key, view_id)
             names = self.tree_field_names(data)
+            self.assertNotIn("company_contractor_responsibility_notice", names)
             duplicated = sorted({name for name in names if names.count(name) > 1})
             self.assertEqual(duplicated, [], (action_key, "each fact must render once"))
             missing = [name for name in declared if name not in names]
             self.assertEqual(missing, [], (action_key, "the retired body declared facts that no longer render"))
+            hidden_dependencies = ("payment_request_types", "submission_attachment_policy")
+            for name in hidden_dependencies:
+                node = self.field_node(data, name)
+                self.assertTrue((node.get("modifiers") or {}).get("invisible"), (action_key, name))
             unexpected = [name for name in names if name not in declared and name not in (
                 "can_review", "clearing_method", "financial_flow", "guarantee_project_name",
                 "guarantee_type", "is_returned", "company_contractor_responsibility_summary_id",
@@ -388,7 +393,8 @@ class TestExpenseClaimNativeLowcode(TransactionCase):
                 "company_contractor_arrival_unprocessed_amount",
                 "company_contractor_arrival_over_processed_amount",
                 "company_contractor_self_funding_balance",
-                "company_contractor_responsibility_notice", "payment_anchor_policy",
+                "payment_anchor_policy",
+                *hidden_dependencies,
             )]
             self.assertEqual(unexpected, [], (action_key, "the native body gained a fact the entry never presented"))
 

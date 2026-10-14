@@ -222,13 +222,11 @@ class StaticContractTests(unittest.TestCase):
         self.assertIn("id=sce-runtime-pip-cache", self.dockerfile)
     def test_empty_addon_directories_created(self):
         for path in ("/mnt/customer-addons", "/mnt/test-addons", "/mnt/source-addons"): self.assertIn(path, self.dockerfile)
-    def test_candidate_image_copies_versioned_locked_menu_contract(self):
-        for name in (
-            "formal_business_product_menu_policy_v1.json",
-            "formal_business_product_menu_policy_v1.json.sha256",
-        ):
-            self.assertIn(f"COPY scripts/verify/baselines/{name} /opt/sce-product/contracts/{name}", self.dockerfile)
-            self.assertTrue((ROOT / "scripts/verify/baselines" / name).is_file())
+    def test_candidate_image_ships_module_owned_menu_source(self):
+        self.assertIn("COPY addons/", self.dockerfile)
+        self.assertNotIn("COPY scripts/verify/baselines/formal_business_product_menu_policy", self.dockerfile)
+        for name in ("product_menu_source.json", "formal_business_product_menu_policy_v1.json", "formal_business_product_menu_policy_v1.json.sha256"):
+            self.assertTrue((ROOT / "addons/smart_construction_core/data" / name).is_file())
     def test_approved_tax_certificate_initialization_remains_formal_and_non_legacy(self):
         for token in (
             "TAX_CERTIFICATE_INITIALIZATION PASS",

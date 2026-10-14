@@ -31,6 +31,12 @@ from odoo.addons.smart_core.utils.backend_contract_boundaries import (
 
 _RELATION_SEARCH_DIALOG_HOT_CACHE = {}
 _RELATION_SEARCH_DIALOG_HOT_CACHE_MAX = 256
+
+# P0 声明：主从关系（one2many/many2many 明细集合）每页展示的记录数。
+# 此前由前端在 X2ManyRelationRenderer 里硬编码为 20，等于前端替声明层
+# 决定了「实际可见记录集合」这一业务事实。声明层在此给出该事实，前端只
+# 原样消费（缺失或非法即 ContractGapError 停机），不得再自造第二套参数来源。
+RELATION_ENTRY_PAGE_SIZE = 20
 from ...utils.misc import safe_eval
 from ...utils.view_utils import normalize_cols_safely
 
@@ -3768,6 +3774,9 @@ class PageAssembler:
                 # 前端只消费，不再自行选择 relation option 的取数条数。
                 "options_limit": 80,
                 "options_search_limit": 40,
+                # P0 声明：主从关系明细集合每页记录数。前端 X2ManyRelationRenderer
+                # 只按此值切片分页；缺失或非法即停机回声明层。
+                "page_size": RELATION_ENTRY_PAGE_SIZE,
                 "ui_labels": {
                     "search_more": _("搜索更多..."),
                     "quick_create": _("快速新建..."),

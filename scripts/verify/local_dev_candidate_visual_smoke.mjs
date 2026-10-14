@@ -1620,37 +1620,21 @@ try {
         });
       }
       let nativeActionPresentationEvidence = null;
-      if (target.exerciseNativeActionOverflow === true) {
-        const smartActions = page.locator('[data-semantic-component="NativeSmartAction"]:visible');
-        const overflow = page.locator('[data-semantic-component="NativeActionOverflowMenu"]:visible').first();
-        const trigger = overflow.locator('[aria-haspopup="menu"]');
-        const smartActionCount = await smartActions.count();
-        const overflowCount = await page.locator('[data-semantic-component="NativeActionOverflowMenu"]:visible').count();
-        if (smartActionCount < 1 || overflowCount < 1 || await trigger.count() !== 1) {
-          throw new Error(`${target.name}: governed native smart action overflow is missing`);
+      if (target.exerciseNativeActionGroup === true) {
+        const declaredKeys = target.expectedNativeActionKeys;
+        if (!Array.isArray(declaredKeys) || !declaredKeys.length || declaredKeys.some(key => typeof key !== 'string' || !key)) {
+          throw new Error(`${target.name}: complete visible native action identity declaration required`);
         }
-        const initialExpanded = await trigger.getAttribute('aria-expanded');
-        await trigger.click();
-        const menu = overflow.locator('[role="menu"]');
-        await menu.waitFor({ state: 'visible', timeout: 15000 });
-        const menuId = await menu.getAttribute('id');
-        const controls = await trigger.getAttribute('aria-controls');
-        const menuItemCount = await menu.locator('[role="menuitem"]').count();
-        await trigger.press('Escape');
-        await menu.waitFor({ state: 'hidden', timeout: 15000 });
-        const restoredExpanded = await trigger.getAttribute('aria-expanded');
-        const focusRestored = await trigger.evaluate((node) => node === document.activeElement);
-        nativeActionPresentationEvidence = {
-          smartActionCount, overflowCount, initialExpanded, menuId, controls, menuItemCount,
-          restoredExpanded, focusRestored,
-          pass: initialExpanded === 'false'
-            && Boolean(menuId)
-            && controls === menuId
-            && menuItemCount > 0
-            && restoredExpanded === 'false'
-            && focusRestored,
-        };
-        if (!nativeActionPresentationEvidence.pass) throw new Error(`${target.name}: native action disclosure semantics failed`);
+        const group = page.locator('.native-actions--smart:visible');
+        const renderedKeys = await group.locator('[data-action-key]:visible').evaluateAll(nodes => nodes.map(node => node.dataset.actionKey));
+        const geometry = await group.locator('[data-action-key]:visible').evaluateAll(nodes => nodes.map(node => {
+          const box = node.getBoundingClientRect();
+          return { key: node.dataset.actionKey, width: box.width, left: box.left, right: box.right,
+            fits: box.width > 0 && box.left >= 0 && box.right <= window.innerWidth + 1 };
+        }));
+        nativeActionPresentationEvidence = { declaredKeys, renderedKeys, geometry,
+          pass: JSON.stringify(declaredKeys) === JSON.stringify(renderedKeys) && geometry.every(item => item.fits) };
+        if (!nativeActionPresentationEvidence.pass) throw new Error(`${target.name}: declared native action set is not fully presented`);
       }
       let hierarchicalWorkspaceEvidence = null;
       if (target.exerciseHierarchicalWorkspace === true) {

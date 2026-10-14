@@ -21,7 +21,7 @@ candidate, so the ledger holds 58 aligned, 9 not-applicable and 0 needs-work ent
 - `collection.header-actions` and `collection.toolbar-surface`: one production list-surface header
   composes the leading operations/selection with the trailing query and the single column control
   across normal, batch and empty states. Evidence is
-  `.runtime/final-acceptance/list-surface-structure.json` (contract receipt accepted): 316/316 gated
+  `.runtime/final-acceptance/list-surface-all-7add8be3.json` (build 7add8be3, contract receipt accepted): 108/108 gated
   checks over 1440/1024/768/521/520/390 x normal/batch/empty, negative fixtures 5/5 detected with
   clean baselines, runtime errors 0, one direct formatting child, and the negative fixture
   `displaced_controls_outside_shared_header` (baseline ok, then detected) refusing controls that

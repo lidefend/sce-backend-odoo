@@ -174,14 +174,13 @@ def record_existing(summary_path: Path, plan_path: Path, *, run_dir: Path, ledge
     summary = load_json(summary_path)
     _require(summary.get('schema') == 'business_entry_matrix_browser.v1',
              f"{summary_path}: unexpected schema {summary.get('schema')!r}")
-    expected = environment['SC_ACCEPTANCE_TARGET_SHA']
-    _require(str(summary.get('target_sha') or '') == expected,
-             f"{summary_path}: target_sha {summary.get('target_sha')!r} != bound SC_ACCEPTANCE_TARGET_SHA {expected!r}")
+    expected = str(summary.get('target_sha') or '')
+    _require(bool(expected), 'observation target provenance is required')
     served = str(summary.get('served_revision') or '')
-    _require(not served or served == expected,
+    _require(bool(served) and served == expected,
              f"{summary_path}: served_revision {served!r} != bound target {expected!r}")
     observed_database = str(summary.get('database') or '')
-    _require(not database or not observed_database or observed_database == database,
+    _require(bool(database) and observed_database == database,
              f"{summary_path}: database {observed_database!r} != bound database {database!r}")
     keys = [str(key) for key in (summary.get('selection') or {}).get('keys') or []]
     _require(bool(keys), f"{summary_path}: the observation names no selected entry, so it cannot cover the surface")
@@ -317,6 +316,11 @@ def main(argv: list[str] | None = None) -> int:
         selection = load_json(selection_path)
         print(f"[business-entry-incremental] reusable={len(selection['reused'])} affected={len(selection['affected'])}")
 
+    selection['observation_binding'] = {
+        'identity': emitted['identity'],
+        'units': [{'id': unit['id'], 'fingerprint': unit['fingerprint']} for unit in emitted['units']],
+    }
+    selection_path.write_text(json.dumps(selection, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     execute = [str(key) for key in selection['execute']]
     if not execute:
         print('[business-entry-incremental] REUSE-FIRST nothing to execute; every declared entry is covered '

@@ -17,7 +17,7 @@ Scope:
 1. **Native structure first**: if native view already defines field/group/notebook/header/chatter/x2many/modifiers, frontend must not redefine it.
 2. **Backend interpretation first**: frontend must not parse XML or infer business semantics.
 3. **Generic renderer first**: prioritize shared renderers over page-level hardcoding.
-4. **Enhancement as extension**: risk/AI/next-action panels must be injected as extension blocks, not by mutating base renderers.
+4. **Explicit interaction authority**: native facts declare purpose, association and trigger for risk/AI/next-action guidance. A zone/block or task/risk role never authorizes permanent body tutorials or inference from readonly/nonempty fields. Native field help uses official interactive help; action risks use the declared action trigger. Field errors, operation results and contract-gap states retain their distinct sources.
 5. **Consistency first**: Odoo backend and custom frontend must keep consistent semantics, permission outcomes, and status meaning.
 
 ## 3. Four-Layer Page Model
@@ -106,3 +106,13 @@ Native Odoo views define the base page structure, backend provides unified seman
 ## Effective runtime structure (2026-09-16)
 
 Native views provide the complete default baseline, not the exclusive layout authoring source. The backend composes authorized industry defaults, customer preferences and administrator configuration, validates business and security constraints, and emits one effective tree shared by content, navigation and preview. Restrictions on rewriting native structure prohibit client-side reinterpretation and duplicate defaults, not legitimate low-code layout configuration. See `native_first_form_structure_authority_v1.md` for identity, conflict and lifecycle rules.
+
+## View, layout and authorization ownership (2026-10-13)
+
+The model base/default view, action-selected view and permission-projected runtime view are distinct stages. The action-selected view defines the entry baseline. P1/P2 defaults and authorized P3 configuration compose one final layout; roles authorize editing and operation but do not select templates, sections, ordering or widths. Permission clipping may hide content or restrict actions/editability without regrouping or recalculating remaining business spans. Effective readonly and edit modes must be compared separately.
+
+P0 declares the supported layout properties, legal values, stable node/occurrence identity and composition rules. Low-code configures authorized grouping, order, tabs, columns, spans and supported presentation options, never arbitrary DOM, CSS or executable code. The final contract includes effective structure and source/configuration provenance; frontend components only render it. Missing, illegal, conflicting or unsupported effective declarations fail closed. Only registered rendering/transport mechanism constants may be client-owned; absence never licenses product defaults or clamping. An adopter need not consume every capability, but active page requirements cannot be silently ignored.
+
+Equal field-grid tracks accept integer divisors of 24 (1,2,3,4,6,8,12,24). P0 resolves an omitted native column count to 2; explicit invalid declarations never fall back. A native field node and its same-occurrence widget use the same parent span. Only an explicitly declared field node whose outer host already consumes that span uses the registered singleton content mapping (columns=1/span=24) internally. Grouped fields retain their individual declared spans. This mapping does not depend on role or visible field count. Responsive folding validates the declaration before applying registered visual rules.
+
+Evidence must bind declaration, consumer and actual behavior, retain occurrence/parent/order/width identities and separate permissions. Schema or selector presence alone is not acceptance.

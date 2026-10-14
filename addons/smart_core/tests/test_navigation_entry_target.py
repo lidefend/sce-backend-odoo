@@ -164,6 +164,17 @@ class TestNavigationEntryTarget(unittest.TestCase):
             },
         )
 
+    def test_native_notification_defaults_and_invalid_declarations(self):
+        raw = {"type": "ir.actions.client", "tag": "display_notification", "params": {"message": "Declared result"}}
+        normalized = navigation_entry_target.normalize_odoo_action_result(None, raw)
+        self.assertEqual(normalized["params"], {"message": "Declared result", "title": "", "type": "warning", "sticky": False})
+        self.assertNotIn("entry_target", normalized)
+        self.assertEqual(raw["params"], {"message": "Declared result"})
+        for invalid in ({}, {"message": ""}, {"message": False}, {"message": "result", "type": "unknown"},
+                        {"message": "result", "sticky": 1}, {"message": "result", "title": []}):
+            with self.subTest(params=invalid), self.assertRaisesRegex(ValueError, "ACTION_NOTIFICATION_"):
+                navigation_entry_target.normalize_odoo_action_result(None, {**raw, "params": invalid})
+
     def test_client_action_next_is_wrapped_and_promoted_to_entry_target(self):
         action = navigation_entry_target.normalize_odoo_action_result(
             None,
@@ -540,6 +551,18 @@ class TestNavigationEntryTarget(unittest.TestCase):
         self.assertEqual(record_target["type"], "compatibility")
         self.assertEqual(record_target["record_entry"]["model"], "sc.payment.execution")
         self.assertEqual(record_target["record_entry"]["record_id"], 91)
+
+
+class TestNotificationExplicitEntryValidation(unittest.TestCase):
+    def test_explicit_entry_does_not_skip_notification_validation(self):
+        entry = {"type": "scene", "scene_key": "declared.scene", "route": "/s/declared.scene"}
+        for params in (None, {"message": ""}, {"message": "notice", "type": ["info"]}, {"message": "notice", "next": {"type": "arbitrary"}}):
+            with self.subTest(params=params), self.assertRaises(ValueError):
+                navigation_entry_target.normalize_odoo_action_result(object(), {"type": "ir.actions.client", "tag": "display_notification", "params": params, "entry_target": entry})
+        result = navigation_entry_target.normalize_odoo_action_result(object(), {"type": "ir.actions.client", "tag": "display_notification", "params": {"message": "Declared notice"}, "entry_target": entry})
+        self.assertEqual(result["params"]["type"], "warning")
+        self.assertFalse(result["params"]["sticky"])
+        self.assertEqual(result["entry_target"]["route"], "/s/declared.scene")
 
 
 if __name__ == "__main__":

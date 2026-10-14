@@ -7,6 +7,7 @@ from typing import Any
 
 from lxml import etree as ET
 
+from odoo.addons.smart_core.core.field_presentation_usage import assert_configuration_field_usage
 from odoo import api, fields, models
 from odoo.exceptions import AccessError, ValidationError
 from odoo.addons.smart_core.utils.backend_contract_boundaries import (
@@ -21,6 +22,9 @@ from odoo.addons.smart_core.core.view_contract_presence import (
     normalize_contract_view_type,
 )
 from odoo.addons.smart_core.core.contract_lifecycle import payload_sha256
+from odoo.addons.smart_core.core.form_structure_authority import (
+    role_form_structure_violations, assert_role_form_permissions_only, validated_field_grid_columns,
+)
 
 TEST_PLACEHOLDER_TOKENS = ("CODEX_", "codex_view_orch_surface")
 STALE_TRANSITION_FIELD_PREFIXES = (
@@ -429,11 +433,14 @@ class UIBusinessConfigContract(models.Model):
         normalized = self._normalize_view_orchestration_view_type(requested_view_type)
         rows = self._view_orchestration_rows(payload, normalized)
         reasons: list[dict[str, Any]] = []
+        for target in role_form_structure_violations(contract):
+            reasons.append({"reason_code": "CONFIG_ROLE_STRUCTURE_FORBIDDEN", "target": target})
         if model_name not in self.env:
             reasons.append({"reason_code": "runtime_model_unavailable", "model": model_name})
             model_fields = {}
         else:
             model_fields = self.env[model_name]._fields
+        assert_configuration_field_usage(payload.get("view_orchestration") or {}, model_fields)
         names = [row["name"] for row in rows]
         referenced_values: list[str] = []
 
@@ -568,7 +575,7 @@ class UIBusinessConfigContract(models.Model):
                 if target_obj and target_field and target_obj in object_fields_map and target_field not in object_fields_map[target_obj]:
                     raise ValidationError("规则动作引用不存在字段：%s.%s" % (target_obj, target_field))
 
-    @api.constrains("contract_json", "model", "view_type", "action_id", "view_id", "active", "status")
+    @api.constrains("contract_json", "model", "view_type", "action_id", "view_id", "role_key", "active", "status")
     def _check_published_runtime_contract(self):
         # A version-upgrade may seal an already-published legacy row while the
         # module graph that owns its runtime model is not loaded yet.  This
@@ -669,9 +676,11 @@ class UIBusinessConfigContract(models.Model):
                 if rows is None:
                     continue
                 if key == "columns" and view_type == "form":
-                    if isinstance(rows, int) and rows in {1, 2, 3}:
-                        continue
-                    raise ValidationError("view_orchestration.views.form.columns 必须是 1、2 或 3。")
+                    try:
+                        validated_field_grid_columns(rows)
+                    except ValueError as exc:
+                        raise ValidationError("view_orchestration.views.form.columns 必须可精确等分 24 单位网格。") from exc
+                    continue
                 if not isinstance(rows, list):
                     raise ValidationError("view_orchestration.views.%s.%s 必须是数组。" % (view_type, key))
                 if key in {"measures", "dimensions"}:
@@ -739,6 +748,7 @@ class UIBusinessConfigContract(models.Model):
                 model_name=model_name,
             )
             if not validation["valid"]:
+                assert_role_form_permissions_only(contract)
                 _logger.warning(
                     "RUNTIME_VIEW_CONTRACT_DIAGNOSTIC reason_code=contract_rejected contract_id=%s contract_name=%s model=%s action_id=%s view_id=%s view_type=%s reason_codes=%s",
                     int(contract.id or 0),
@@ -786,6 +796,7 @@ class UIBusinessConfigContract(models.Model):
                             model_name=model_name,
                         )
                         if not validation["valid"]:
+                            assert_role_form_permissions_only(preview_projection)
                             _logger.warning(
                                 "RUNTIME_VIEW_CONTRACT_DIAGNOSTIC reason_code=preview_contract_rejected model=%s action_id=%s view_id=%s view_type=%s reason_codes=%s",
                                 model_name,

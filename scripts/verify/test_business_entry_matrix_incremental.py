@@ -46,7 +46,7 @@ class EmitResultsStatusTests(unittest.TestCase):
     no proof and stays non-reusable.
     """
 
-    def _run(self, summary: dict) -> dict:
+    def _run_raw(self, summary: dict) -> subprocess.CompletedProcess:
         with tempfile.TemporaryDirectory() as tmp:
             tmpdir = Path(tmp)
             (tmpdir / "matrix.csv").write_text(_CSV, encoding="utf-8")
@@ -54,20 +54,45 @@ class EmitResultsStatusTests(unittest.TestCase):
                 json.dumps({"denied_role_candidates": [], "entries": {}, "defaults": {}}), encoding="utf-8"
             )
             (tmpdir / "closures.json").write_text(
-                json.dumps({"schema": "business_entry_negative_closures.v1", "candidates": {}}), encoding="utf-8"
+                json.dumps({
+                    "schema": "business_entry_negative_closures.v1",
+                    "base_url": "http://fixture.invalid", "database": "sc_demo",
+                    "acting": {"login": "wutao", "company_id": 1, "role_xmlids": ["base.group_user"]},
+                    "candidates": {},
+                }),
+                encoding="utf-8",
             )
-            (tmpdir / "summary.json").write_text(json.dumps(summary), encoding="utf-8")
+            bound = {**summary, "session_company_id": summary.get("session_company_id", 1)}
+            (tmpdir / "summary.json").write_text(json.dumps(bound), encoding="utf-8")
             (tmpdir / "plan.json").write_text(json.dumps({"affected": ["menu.a", "menu.b"]}), encoding="utf-8")
             out = tmpdir / "results.json"
             env = dict(os.environ)
             env.update(
                 {
+                    "SC_ACCEPTANCE_FRONTEND_URL": "http://fixture.invalid",
+                    "SC_ACCEPTANCE_DATABASE": "sc_demo",
                     "SC_ACCEPTANCE_TARGET_SHA": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
                     "SC_ENTRY_MATRIX_CSV": str(tmpdir / "matrix.csv"),
                     "SC_ENTRY_MATRIX_OVERLAY": str(tmpdir / "overlay.json"),
                     "SC_ENTRY_MATRIX_CLOSURES": str(tmpdir / "closures.json"),
+                    "ACCEPTANCE_LOGIN": "wutao",
                 }
             )
+            units_path = tmpdir / "units.json"
+            subprocess.run(["node", str(SCOPE_ADAPTER), "--emit-units", str(units_path)],
+                           cwd=REPO_ROOT, env=env, check=True, capture_output=True)
+            units = json.loads(units_path.read_text())
+            binding = {"identity": units["identity"], "units": units["units"]}
+            bound = {
+                "schema": "business_entry_matrix_browser.v1",
+                "base_url": "http://fixture.invalid", "database": "sc_demo", "login": "wutao",
+                "acting": {"login": "wutao", "company_id": 1, "role_xmlids": ["base.group_user"]},
+                "observation_binding": binding, **bound,
+            }
+            (tmpdir / "summary.json").write_text(json.dumps(bound), encoding="utf-8")
+            (tmpdir / "plan.json").write_text(json.dumps({
+                "affected": ["menu.a", "menu.b"], "observation_binding": binding,
+            }), encoding="utf-8")
             result = subprocess.run(
                 [
                     "node",
@@ -85,8 +110,13 @@ class EmitResultsStatusTests(unittest.TestCase):
                 text=True,
                 capture_output=True,
             )
-            self.assertEqual(result.returncode, 0, result.stderr)
-            return json.loads(out.read_text(encoding="utf-8"))
+            result.results_text = out.read_text(encoding="utf-8") if out.exists() else ""  # type: ignore[attr-defined]
+            return result
+
+    def _run(self, summary: dict) -> dict:
+        result = self._run_raw(summary)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return json.loads(result.results_text)  # type: ignore[attr-defined]
 
     def test_one_failing_entry_does_not_rewrite_its_siblings(self) -> None:
         document = self._run(
@@ -164,6 +194,31 @@ class EmitResultsStatusTests(unittest.TestCase):
         self.assertEqual(document["results"], {"menu.a": "checked", "menu.b": "checked"})
         self.assertTrue(document["surface_ok"])
 
+    def test_an_observation_from_another_company_is_refused(self) -> None:
+        """The recorded status must belong to the company reuse is bound to."""
+        result = self._run_raw(
+            {
+                "ok": True,
+                "session_company_id": 2,
+                "selection": {"keys": ["menu.a"]},
+                "entries": [{"entry": "menu.a"}],
+            }
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("company 2", result.stderr + result.stdout)
+
+    def test_an_observation_without_a_company_readback_is_refused(self) -> None:
+        result = self._run_raw(
+            {
+                "ok": True,
+                "session_company_id": None,
+                "selection": {"keys": ["menu.a"]},
+                "entries": [{"entry": "menu.a"}],
+            }
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("no acting-company readback", result.stderr + result.stdout)
+
 
 class PartialFoldPlanTests(unittest.TestCase):
     """Lock the fold decision for an interrupted observation.
@@ -210,22 +265,23 @@ class EmitUnitsIdentityTests(unittest.TestCase):
 
     BUNDLE = "c" * 64
 
-    def _emit(self, tmpdir: Path, env_extra: dict) -> dict:
+    def _emit_raw(self, tmpdir: Path, closures: dict, env_extra: dict) -> subprocess.CompletedProcess:
         (tmpdir / "matrix.csv").write_text(_CSV, encoding="utf-8")
         (tmpdir / "overlay.json").write_text(
             json.dumps({"denied_role_candidates": [], "entries": {}, "defaults": {}}), encoding="utf-8"
         )
-        (tmpdir / "closures.json").write_text(
-            json.dumps({"schema": "business_entry_negative_closures.v1", "candidates": {}}), encoding="utf-8"
-        )
+        (tmpdir / "closures.json").write_text(json.dumps({"base_url": "http://fixture.invalid", "database": "sc_demo", **closures}), encoding="utf-8")
         out = tmpdir / "units.json"
         env = dict(os.environ)
         env.update(
             {
+                "SC_ACCEPTANCE_FRONTEND_URL": "http://fixture.invalid",
+                "SC_ACCEPTANCE_DATABASE": "sc_demo",
                 "SC_ACCEPTANCE_TARGET_SHA": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
                 "SC_ENTRY_MATRIX_CSV": str(tmpdir / "matrix.csv"),
                 "SC_ENTRY_MATRIX_OVERLAY": str(tmpdir / "overlay.json"),
                 "SC_ENTRY_MATRIX_CLOSURES": str(tmpdir / "closures.json"),
+                "ACCEPTANCE_LOGIN": "wutao",
             }
         )
         for key in ("SC_ACCEPTANCE_FRONTEND_BUILD_SHA",):
@@ -235,31 +291,116 @@ class EmitUnitsIdentityTests(unittest.TestCase):
             ["node", str(SCOPE_ADAPTER), "--emit-units", str(out)],
             cwd=REPO_ROOT, env=env, check=False, text=True, capture_output=True,
         )
-        self.assertEqual(result.returncode, 0, result.stderr)
-        return json.loads(out.read_text(encoding="utf-8"))
+        result.units_text = out.read_text(encoding="utf-8") if out.exists() else ""  # type: ignore[attr-defined]
+        return result
 
-    def test_the_declared_identity_binds_the_served_artifact_fingerprint(self) -> None:
+    def _read_closures(self) -> dict:
+        return {
+            "schema": "business_entry_negative_closures.v1",
+            "acting": {"login": "wutao", "company_id": 1, "role_xmlids": ["base.group_user"]},
+            "candidates": {},
+        }
+
+    def _emit(self, tmpdir: Path, env_extra: dict) -> dict:
+        result = self._emit_raw(tmpdir, self._read_closures(), env_extra)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return json.loads(result.units_text)  # type: ignore[attr-defined]
+
+    def test_the_deployment_is_provenance_and_the_surface_binds_per_unit(self) -> None:
+        """The serving deploy is recorded, never a shared validity input.
+
+        Binding the deploying commit into the identity re-walked every entry on
+        every merge. It is provenance now; the served artifact binds each unit's
+        ``surface_inputs`` instead of the shared environment identity.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             document = self._emit(Path(tmp), {"SC_ACCEPTANCE_FRONTEND_BUILD_SHA": self.BUNDLE})
-        self.assertEqual(document["identity"]["frontend_build_sha256"], self.BUNDLE)
+        self.assertNotIn("frontend_build_sha256", document["identity"])
         self.assertNotIn("served_revision", document["identity"])
-        self.assertEqual(document["provenance"]["reuse_identity_key"], "frontend_build_sha256")
+        self.assertEqual(document["provenance"]["frontend_build_sha256"], self.BUNDLE)
         self.assertEqual(document["provenance"]["served_revision"],
                          "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
+        self.assertEqual(document["provenance"]["reuse_identity_key"], "frontend_build_sha256")
 
-    def test_a_runtime_without_a_fingerprint_degrades_to_the_deployment_revision(self) -> None:
+    def test_a_runtime_without_a_fingerprint_still_plans_from_the_artifact_degradation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             document = self._emit(Path(tmp), {})
         self.assertNotIn("frontend_build_sha256", document["identity"])
-        self.assertEqual(document["identity"]["served_revision"],
+        self.assertEqual(document["provenance"]["served_revision"],
                          "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
+        self.assertIsNone(document["provenance"]["frontend_build_sha256"])
         self.assertEqual(document["provenance"]["reuse_identity_key"], "served_revision")
 
-    def test_a_malformed_declared_fingerprint_degrades_instead_of_binding(self) -> None:
+    def test_a_malformed_declared_fingerprint_does_not_bind_the_artifact(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             document = self._emit(Path(tmp), {"SC_ACCEPTANCE_FRONTEND_BUILD_SHA": "not-a-fingerprint"})
         self.assertNotIn("frontend_build_sha256", document["identity"])
+        self.assertIsNone(document["provenance"]["frontend_build_sha256"])
         self.assertEqual(document["provenance"]["reuse_identity_key"], "served_revision")
+
+    def test_the_identity_binds_the_authoritative_acting_company(self) -> None:
+        """The acting company is a readback, not a shared candidate list.
+
+        Binding the declared candidate order into every entry made one
+        candidate change re-open all declared entries, and the entry never bound
+        the company the evidence was collected in at all. The company now comes
+        from the authoritative acting-principal observation, and the candidate
+        order is demoted to provenance.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            document = self._emit(Path(tmp), {"SC_ACCEPTANCE_FRONTEND_BUILD_SHA": self.BUNDLE})
+        self.assertEqual(document["identity"]["acting_company_id"], 1)
+        self.assertIn("acting_role_closure_sha256", document["identity"],
+                      "the acting account's own role closure must bind reuse")
+        self.assertNotIn("denied_role_candidates", document["identity"])
+        self.assertEqual(document["provenance"]["acting_company_id"], 1)
+        self.assertEqual(document["provenance"]["acting_login"], "wutao")
+
+    def test_a_snapshot_without_the_acting_readback_refuses_to_plan(self) -> None:
+        """Fail-closed: no authoritative company readback, no reuse decision."""
+        with tempfile.TemporaryDirectory() as tmp:
+            closures = {
+                "schema": "business_entry_negative_closures.v1",
+                "acting": {"login": "wutao"},
+                "candidates": {},
+            }
+            result = self._emit_raw(Path(tmp), closures, {})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("acting-company readback", result.stderr + result.stdout)
+
+    def test_a_snapshot_without_the_acting_role_closure_refuses_to_plan(self) -> None:
+        """Fail-closed: the acting account's own permissions must bind reuse.
+
+        The same login in the same company with a changed role closure reaches a
+        different record set, so a snapshot that never observed the closure
+        cannot support a reuse decision.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            closures = {
+                "schema": "business_entry_negative_closures.v1",
+                "acting": {"login": "wutao", "company_id": 1},
+                "candidates": {},
+            }
+            result = self._emit_raw(Path(tmp), closures, {})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("acting-principal role closure", result.stderr + result.stdout)
+
+    def test_a_snapshot_with_no_acting_block_refuses_to_plan(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            result = self._emit_raw(Path(tmp), {"schema": "business_entry_negative_closures.v1", "candidates": {}}, {})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("observed login (none)", result.stderr + result.stdout)
+
+    def test_a_snapshot_observing_another_login_refuses_to_plan(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            closures = {
+                "schema": "business_entry_negative_closures.v1",
+                "acting": {"login": "someone_else", "company_id": 1},
+                "candidates": {},
+            }
+            result = self._emit_raw(Path(tmp), closures, {})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("observed login someone_else", result.stderr + result.stdout)
 
 
 class ReuseBundleResolutionTests(unittest.TestCase):

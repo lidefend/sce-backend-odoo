@@ -15,6 +15,7 @@ class ScStateMachine:
     SETTLEMENT_ORDER = "sc.settlement.order"
     SETTLEMENT = "project.settlement"
     PAYMENT_REQUEST = "payment.request"
+    GENERAL_CONTRACT = "sc.general.contract"
 
     PROJECT_STATES = [
         ("draft", _("草稿")),
@@ -47,7 +48,10 @@ class ScStateMachine:
         "confirmed": {"running", "closed", "cancel"},
         "running": {"closed", "cancel"},
         "closed": set(),
-        "cancel": set(),
+        # Controlled reopen: a cancelled contract may return to draft. The
+        # product action map offers "reopen" only from 已取消, so this is the one
+        # reopen edge and the action must not invent another one.
+        "cancel": {"draft"},
     }
 
     SETTLEMENT_ORDER_STATES = [
@@ -58,8 +62,11 @@ class ScStateMachine:
         ("cancel", _("取消")),
     ]
     SETTLEMENT_ORDER_TRANSITIONS = {
-        "draft": {"submit", "cancel"},
-        "submit": {"approve", "cancel"},
+        # draft -> approve is the fast-track confirm the settlement actions
+        # perform directly; submit -> draft is the controlled send-back. Both
+        # were only ever declared in the model's private copy of this table.
+        "draft": {"submit", "approve", "cancel"},
+        "submit": {"draft", "approve", "cancel"},
         "approve": {"done", "cancel"},
         "done": set(),
         "cancel": set(),
@@ -75,6 +82,24 @@ class ScStateMachine:
         "draft": {"confirmed", "cancel"},
         "confirmed": {"done", "cancel"},
         "done": set(),
+        "cancel": set(),
+    }
+
+    GENERAL_CONTRACT_STATES = [
+        ("draft", _("草稿")),
+        ("confirmed", _("已确认")),
+        ("signed", _("已签署")),
+        ("legacy_confirmed", _("历史已确认")),
+        ("cancel", _("已取消")),
+    ]
+    GENERAL_CONTRACT_TRANSITIONS = {
+        # ``action_signed`` confirms a draft first and signs only a confirmed
+        # record, so a draft never jumps straight to signed; ``signed`` is a
+        # published terminal state and declares no edge at all.
+        "draft": {"confirmed", "cancel"},
+        "confirmed": {"signed", "cancel"},
+        "signed": set(),
+        "legacy_confirmed": set(),
         "cancel": set(),
     }
 
@@ -109,6 +134,7 @@ class ScStateMachine:
         SETTLEMENT_ORDER: (SETTLEMENT_ORDER_STATES, SETTLEMENT_ORDER_TRANSITIONS),
         SETTLEMENT: (SETTLEMENT_STATES, SETTLEMENT_TRANSITIONS),
         PAYMENT_REQUEST: (PAYMENT_REQUEST_STATES, PAYMENT_REQUEST_TRANSITIONS),
+        GENERAL_CONTRACT: (GENERAL_CONTRACT_STATES, GENERAL_CONTRACT_TRANSITIONS),
     }
 
     @classmethod
@@ -169,4 +195,6 @@ SETTLEMENT_STATES = ScStateMachine.SETTLEMENT_STATES
 SETTLEMENT_TRANSITIONS = ScStateMachine.SETTLEMENT_TRANSITIONS
 PAYMENT_REQUEST_STATES = ScStateMachine.PAYMENT_REQUEST_STATES
 PAYMENT_REQUEST_TRANSITIONS = ScStateMachine.PAYMENT_REQUEST_TRANSITIONS
+GENERAL_CONTRACT_STATES = ScStateMachine.GENERAL_CONTRACT_STATES
+GENERAL_CONTRACT_TRANSITIONS = ScStateMachine.GENERAL_CONTRACT_TRANSITIONS
 BOQ_SOURCE_TYPES = ScStateMachine.BOQ_SOURCE_TYPES

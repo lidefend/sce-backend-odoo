@@ -143,7 +143,7 @@ export async function runFormalFormLoop() {
     if (ok) assert.equal(response.body.ok, true, `${name}: ${JSON.stringify(response.body.error || response.body.message || response.body)}`);
     return response.body;
   }
-  const cs = (name, params = {}, ok = true) => intent(`ui.business_config.change_set.${name}`, { role_key: scope.role_key, ...params }, ok);
+  const cs = (name, params = {}, ok = true) => intent(`ui.business_config.change_set.${name}`, { role_key: scope.role_key, ...(name === 'stage' && params.config_type === 'form' ? { target_role_key: '' } : {}), ...params }, ok);
   const contract = async (surface = entry, extra = {}) => (await intent('ui.contract.v2', { op: 'model', model: surface.model, action_id: surface.action_id, menu_id: surface.menu_id, view_id: surface.view_id, view_type: 'form', render_profile: 'create', ...extra })).data;
   const url = (extra = {}) => `${base}/f/${entry.model}/new?${new URLSearchParams({ menu_id: String(entry.menu_id), action_id: String(entry.action_id), ...extra })}`;
   async function observe(name, expected, extra = {}) {

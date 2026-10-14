@@ -240,7 +240,7 @@ class ScOutputInvoiceAdjustment(models.Model):
 
     def action_confirm(self):
         for rec in self:
-            self.env["sc.approval.policy"]._assert_submission_approved(rec, ("approved",))
+            self.env["sc.approval.policy"].ensure_handling_ready(rec, ("approved",))
             rec._assert_original_snapshot_unchanged()
             rec._validate_red_flush_ready()
             generated = rec._create_red_flush_invoice_registration()

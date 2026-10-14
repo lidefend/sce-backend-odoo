@@ -1,3 +1,6 @@
+import type { NativeActionNotification } from '@sc/schema';
+import { decodeNativeNotificationParameters } from '../../app/contract/nativeActionNotification';
+
 export type ProfessionalRelationLifecycleContext = {
   nonce: string;
   fieldName: string;
@@ -9,6 +12,7 @@ export type ProfessionalRelationCreatedMessage = ProfessionalRelationLifecycleCo
   type: 'sc.relation_record_created.v1';
   id: number;
   label: string;
+  notification?: NativeActionNotification;
 };
 
 export type ProfessionalRelationCancelledMessage = ProfessionalRelationLifecycleContext & {
@@ -19,7 +23,7 @@ export type ProfessionalRelationLifecycleMessage = ProfessionalRelationCreatedMe
 
 export type ProfessionalRelationLifecycleEvent =
   | { kind: 'cancelled' }
-  | { kind: 'created'; result: { fieldName: string; relationModel: string; id: number; label: string } };
+  | { kind: 'created'; result: { fieldName: string; relationModel: string; id: number; label: string; notification?: NativeActionNotification } };
 
 export function resolveProfessionalRelationLifecycleContext(params: {
   query: Record<string, unknown>;
@@ -98,6 +102,7 @@ export function resolveProfessionalRelationLifecycleEvent(params: {
       relationModel: params.context.relationModel,
       id: Math.trunc(id),
       label: String(payload.label || '').trim() || `记录 ${Math.trunc(id)}`,
+      ...(payload.notification !== undefined ? { notification: decodeNativeNotificationParameters(payload.notification) } : {}),
     },
   };
 }

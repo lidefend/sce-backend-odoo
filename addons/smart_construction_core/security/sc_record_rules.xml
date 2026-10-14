@@ -230,7 +230,7 @@
         <record id="rule_sc_construction_contract_allowed_company_global" model="ir.rule">
             <field name="name">SC Contract - allowed companies</field>
             <field name="model_id" ref="model_construction_contract"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="global" eval="True"/>
         </record>
         <record id="rule_sc_construction_contract_income_allowed_company_global" model="ir.rule">
@@ -248,7 +248,7 @@
         <record id="rule_sc_contract_execution_position_allowed_company_global" model="ir.rule">
             <field name="name">SC Contract Execution Position - allowed companies</field>
             <field name="model_id" ref="model_sc_contract_execution_position"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="global" eval="True"/>
         </record>
 
@@ -504,7 +504,7 @@
         <record id="rule_sc_invoice_registration_company" model="ir.rule">
             <field name="name">SC Invoice Registration - allowed company</field>
             <field name="model_id" ref="model_sc_invoice_registration"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -559,7 +559,7 @@
         <record id="rule_sc_tax_deduction_registration_company" model="ir.rule">
             <field name="name">SC Tax Deduction Registration - allowed company</field>
             <field name="model_id" ref="model_sc_tax_deduction_registration"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -840,7 +840,7 @@
         <record id="rule_payment_ledger_company" model="ir.rule">
             <field name="name">Payment Ledger - frozen allowed company</field>
             <field name="model_id" ref="model_payment_ledger"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -884,7 +884,7 @@
         <record id="rule_payment_ledger_allocation_company" model="ir.rule">
             <field name="name">Payment Ledger Allocation - allowed company</field>
             <field name="model_id" ref="model_payment_ledger_allocation"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="False"/>
@@ -934,7 +934,7 @@
         <record id="rule_project_funding_baseline_company" model="ir.rule">
             <field name="name">Project Funding Baseline - allowed company</field>
             <field name="model_id" ref="model_project_funding_baseline"/>
-            <field name="domain_force">['&amp;', ('normalization_state', '!=', 'legacy_unresolved_identity'), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['&amp;', ('normalization_state', '!=', 'legacy_unresolved_identity'), ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -966,7 +966,7 @@
         <record id="rule_project_funding_baseline_line_company" model="ir.rule">
             <field name="name">Project Funding Baseline Line - allowed company</field>
             <field name="model_id" ref="model_project_funding_baseline_line"/>
-            <field name="domain_force">['&amp;', ('baseline_id.normalization_state', '!=', 'legacy_unresolved_identity'), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['&amp;', ('baseline_id.normalization_state', '!=', 'legacy_unresolved_identity'), ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -998,7 +998,7 @@
         <record id="rule_project_funding_actual_event_allocation_company" model="ir.rule">
             <field name="name">Fund Plan Actual Event Allocation - allowed company</field>
             <field name="model_id" ref="model_project_funding_actual_event_allocation"/>
-            <field name="domain_force">['&amp;', ('normalization_state', '!=', 'legacy_unresolved_relation'), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['&amp;', ('normalization_state', '!=', 'legacy_unresolved_relation'), ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -1823,7 +1823,7 @@
         <record id="rule_sc_internal_labor_price" model="ir.rule">
             <field name="name">SC Internal - sc.labor.price global or project member</field>
             <field name="model_id" ref="model_sc_labor_price"/>
-            <field name="domain_force">['|','|','|', ('project_id', '=', False), ('create_uid', '=', user.id), ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id', '=', False), '|', ('create_uid', '=', user.id), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -2017,7 +2017,7 @@
         <record id="rule_sc_internal_equipment_price" model="ir.rule">
             <field name="name">SC Internal - sc.equipment.price global or project member</field>
             <field name="model_id" ref="model_sc_equipment_price"/>
-            <field name="domain_force">['|','|','|', ('project_id', '=', False), ('create_uid', '=', user.id), ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id', '=', False), '|', ('create_uid', '=', user.id), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -2251,7 +2251,7 @@
         <record id="rule_sc_internal_subcontract_price" model="ir.rule">
             <field name="name">SC Internal - sc.subcontract.price global or project member</field>
             <field name="model_id" ref="model_sc_subcontract_price"/>
-            <field name="domain_force">['|','|','|', ('project_id', '=', False), ('create_uid', '=', user.id), ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id', '=', False), '|', ('create_uid', '=', user.id), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -2552,7 +2552,7 @@
         <record id="rule_sc_fund_account_operation_company" model="ir.rule">
             <field name="name">SC Fund Account Operation - allowed company</field>
             <field name="model_id" ref="model_sc_fund_account_operation"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -2598,7 +2598,7 @@
         <record id="rule_sc_financing_loan_company" model="ir.rule">
             <field name="name">SC Financing Loan - allowed company</field>
             <field name="model_id" ref="model_sc_financing_loan"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -2651,7 +2651,7 @@
         <record id="rule_sc_expense_claim_company" model="ir.rule">
             <field name="name">SC Expense Claim - allowed company</field>
             <field name="model_id" ref="model_sc_expense_claim"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="global" eval="True"/>
         </record>
 
@@ -2711,10 +2711,41 @@
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_project_manager'))]"/>
         </record>
 
+        <!-- =========================================================
+             AR/AP report family: company isolation via the project anchor
+             The physical provider (sc.ar.ap.project.summary) stores project and
+             partner dimensions but no company column, so a row's only verifiable
+             company anchor is its project (see projection_relation_lifecycle.py,
+             stage=company_ownership).  A row whose project resolves to no company
+             has unknown ownership and stays denied instead of being attributed
+             from a label or the current environment.
+        ========================================================== -->
+        <record id="rule_sc_ar_ap_project_summary_company" model="ir.rule">
+            <field name="name">AR/AP project summary - company isolation via project anchor</field>
+            <field name="model_id" ref="model_sc_ar_ap_project_summary"/>
+            <field name="domain_force">[('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
+            <field name="global" eval="True"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="rule_sc_ar_ap_company_summary_company" model="ir.rule">
+            <field name="name">AR/AP company summary - company isolation via project anchor</field>
+            <field name="model_id" ref="model_sc_ar_ap_company_summary"/>
+            <field name="domain_force">[('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
+            <field name="global" eval="True"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
         <record id="rule_sc_project_cost_ledger_company" model="ir.rule">
             <field name="name">SC Project Cost Ledger - allowed company</field>
             <field name="model_id" ref="model_project_cost_ledger"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -2827,7 +2858,7 @@
         <record id="rule_sc_tax_certificate_registration_allowed_company" model="ir.rule">
             <field name="name">SC Tax Certificate Registration - allowed company</field>
             <field name="model_id" ref="model_sc_tax_certificate_registration" />
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="global" eval="True" />
             <field name="perm_read" eval="True" />
             <field name="perm_write" eval="True" />
@@ -2874,7 +2905,7 @@
         <record id="rule_sc_historical_payment_fact_allowed_company" model="ir.rule">
             <field name="name">Historical payment fact - allowed company</field>
             <field name="model_id" ref="model_sc_historical_payment_fact"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -2987,7 +3018,7 @@
         <record id="rule_sc_boq_analysis_norm_allowed_company" model="ir.rule">
             <field name="name">BOQ analysis norm: allowed companies</field>
             <field name="model_id" ref="model_project_boq_analysis_norm_line"/>
-            <field name="domain_force">['|', ('analysis_id.project_id.company_id', '=', False), ('analysis_id.project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('analysis_id.project_id.company_id', '=', False), '&amp;', ('analysis_id.project_id.company_id', 'in', company_ids), ('analysis_id.project_id.company_id', 'in', user._sc_data_company_ids())]</field>
         </record>
         <record id="rule_sc_boq_analysis_resource_project_scope" model="ir.rule">
             <field name="name">BOQ analysis resource: project member scope</field>
@@ -3004,7 +3035,7 @@
         <record id="rule_sc_boq_analysis_resource_allowed_company" model="ir.rule">
             <field name="name">BOQ analysis resource: allowed companies</field>
             <field name="model_id" ref="model_project_boq_analysis_resource_line"/>
-            <field name="domain_force">['|', ('analysis_id.project_id.company_id', '=', False), ('analysis_id.project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('analysis_id.project_id.company_id', '=', False), '&amp;', ('analysis_id.project_id.company_id', 'in', company_ids), ('analysis_id.project_id.company_id', 'in', user._sc_data_company_ids())]</field>
         </record>
         <record id="rule_sc_boq_summary_component_project_scope" model="ir.rule">
             <field name="name">BOQ summary component: project member scope</field>
@@ -3078,42 +3109,42 @@
         <record id="rule_sc_tender_opportunity_company" model="ir.rule">
             <field name="name">Tender opportunity: allowed companies</field>
             <field name="model_id" ref="model_tender_opportunity"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
         </record>
         <record id="rule_sc_tender_document_company" model="ir.rule">
             <field name="name">Tender document: allowed companies</field>
             <field name="model_id" ref="model_tender_document"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
         </record>
         <record id="rule_sc_quality_acceptance_company" model="ir.rule">
             <field name="name">Quality acceptance: allowed companies</field>
             <field name="model_id" ref="model_sc_quality_acceptance"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
         </record>
         <record id="rule_sc_labor_worker_company" model="ir.rule">
             <field name="name">Labor worker: allowed companies</field>
             <field name="model_id" ref="model_sc_labor_worker"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
         </record>
         <record id="rule_sc_labor_deduction_company" model="ir.rule">
             <field name="name">Labor deduction: allowed companies</field>
             <field name="model_id" ref="model_sc_labor_deduction"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
         </record>
         <record id="rule_sc_site_variation_company" model="ir.rule">
             <field name="name">Site variation: allowed companies</field>
             <field name="model_id" ref="model_sc_site_variation"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
         </record>
         <record id="rule_sc_contract_change_company" model="ir.rule">
             <field name="name">Contract change: allowed companies</field>
             <field name="model_id" ref="model_sc_contract_change"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
         </record>
         <record id="rule_sc_material_supplier_return_company" model="ir.rule">
             <field name="name">Material supplier return: allowed companies</field>
             <field name="model_id" ref="model_sc_material_supplier_return"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
         </record>
         <record id="rule_sc_material_supplier_return_line_company" model="ir.rule">
             <field name="name">Material supplier return line: allowed companies</field>
@@ -3220,14 +3251,22 @@
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_super_admin'))]"/>
         </record>
         <record id="rule_sc_hr_payroll_document_company" model="ir.rule">
-            <field name="name">Payroll document: allowed companies</field>
+            <field name="name">Payroll document: registered purpose and allowed companies</field>
             <field name="model_id" ref="model_sc_hr_payroll_document"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
+            <field name="groups" eval="[(5, 0, 0)]"/>
         </record>
         <record id="rule_sc_hr_salary_payment_company" model="ir.rule">
-            <field name="name">Salary payment: allowed companies</field>
+            <field name="name">Salary payment: registered purpose and allowed companies</field>
             <field name="model_id" ref="model_sc_hr_salary_payment"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
+            <field name="groups" eval="[(5, 0, 0)]"/>
+        </record>
+        <record id="rule_sc_salary_summary_company" model="ir.rule">
+            <field name="name">Salary summary: registered purpose and allowed companies</field>
+            <field name="model_id" ref="model_sc_salary_summary"/>
+            <field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
+            <field name="groups" eval="[(5, 0, 0)]"/>
         </record>
         <record id="rule_ir_sequence_sc_product_configurable" model="ir.rule">
             <field name="name">行业配置管理员仅维护产品业务编码规则</field>
@@ -3257,12 +3296,17 @@
         </record>
         <record id="rule_sc_tax_filing_company" model="ir.rule">
             <field name="name">税务申报仅限允许公司</field><field name="model_id" ref="model_sc_tax_filing"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
         </record>
         <record id="rule_sc_labor_subcontract_report_company" model="ir.rule">
             <field name="name">劳务分包报表仅限允许公司</field><field name="model_id" ref="model_sc_labor_subcontract_report"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
         </record>
 
-    </data>
+        <!-- Global data-scope company ceilings are generated from
+             scripts/verify/data_scope_declarations.json into
+             security/sc_data_scope_ceiling_generated.xml; see
+             scripts/verify/sc_data_scope_ceiling_generate.py. -->
+
+</data>
 </odoo>

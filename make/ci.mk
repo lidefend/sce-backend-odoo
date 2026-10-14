@@ -360,7 +360,7 @@ verify.payment.approval_state_machine.unit: guard.prod.forbid
 	@python3 scripts/verify/test_payment_approval_state_machine.py
 
 .PHONY: verify.native_view.workflow_action_coverage
-verify.native_view.workflow_action_coverage: guard.prod.forbid
+verify.native_view.workflow_action_coverage: guard.prod.forbid verify.contract.form_structure.guidance_retirement.unit
 	@python3 -m py_compile scripts/verify/workflow_contract_profile_loader.py scripts/verify/native_view_workflow_action_coverage_guard.py
 	@python3 scripts/verify/native_view_workflow_action_coverage_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_workflow_contract_profile_loader.py
@@ -449,8 +449,61 @@ verify.workflow_action_semantics.guard: guard.prod.forbid
 	@python3 scripts/verify/workflow_action_semantics_completeness_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_workflow_action_semantics_completeness_guard.py
 
+# Workflow instance company ownership is a source-level fact: the instance
+# inherits the owning company from the business document, never from the workflow
+# definition or from the caller's environment.  It runs in-process so the rule
+# stays provable without the container-backed lane below.
+.PHONY: verify.workflow_instance.ownership_boundary
+verify.workflow_instance.ownership_boundary: guard.prod.forbid
+	@python3 -m py_compile addons/smart_construction_core/models/support/sc_workflow.py addons/smart_construction_core/tests/test_workflow_instance_ownership.py
+	@python3 addons/smart_construction_core/tests/test_workflow_instance_ownership.py
+
+# Company ownership of the P1 price libraries (sc.labor.price, sc.equipment.price,
+# sc.subcontract.price) is a source-level fact: the company is derived from the
+# owning project and the record rules scope the caller's allowed companies.  It
+# runs in-process so the boundary stays provable without a container-backed lane.
+.PHONY: verify.sc_price.company_ownership_boundary
+verify.sc_price.company_ownership_boundary: guard.prod.forbid
+	@python3 -m py_compile addons/smart_construction_core/models/core/labor_management.py addons/smart_construction_core/models/core/equipment_management.py addons/smart_construction_core/models/core/subcontract_management.py addons/smart_construction_core/tests/test_price_family_company_ownership.py
+	@python3 addons/smart_construction_core/tests/test_price_family_company_ownership.py
+
+# The global company-scope ceilings are derived, not hand-written: the generator
+# renders every enforced and deferred model from the same declaration the guard
+# reads, so one source owns isolation and a new ceiling is a declaration line.
+# `...ceiling.sync` is the regeneration entry a developer types after editing the
+# declaration; `...ceiling.check` proves the committed record set has not drifted.
+.PHONY: verify.sc_data_scope.ceiling.sync
+verify.sc_data_scope.ceiling.sync: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/sc_data_scope_ceiling_generate.py
+	@python3 scripts/verify/sc_data_scope_ceiling_generate.py
+
+.PHONY: verify.sc_data_scope.ceiling.check
+verify.sc_data_scope.ceiling.check: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/sc_data_scope_ceiling_generate.py scripts/verify/test_sc_data_scope_ceiling_generate.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_sc_data_scope_ceiling_generate.py
+	@python3 scripts/verify/sc_data_scope_ceiling_generate.py --check
+
+# Every declared P1 model carries its company-scope ceiling as one global
+# ir.rule, so no group union can widen it.  The declaration next to the guard
+# is the single source; an exemption must carry a reason, never an absence.
+.PHONY: verify.sc_data_scope.rule_coverage
+verify.sc_data_scope.rule_coverage: guard.prod.forbid verify.sc_data_scope.ceiling.check
+	@python3 -m py_compile scripts/verify/sc_data_scope_rule_coverage_guard.py scripts/verify/test_sc_data_scope_rule_coverage_guard.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_sc_data_scope_rule_coverage_guard.py
+	@python3 scripts/verify/sc_data_scope_rule_coverage_guard.py
+
+# The money fact of a product model has one source as well: which models default
+# a new record to the tenant standard currency, and every known caller-context
+# currency alignment, are declared in fact_source_declarations.json and verified
+# here so an inline currency fact can never drift undeclared.
+.PHONY: verify.fact_source.coverage
+verify.fact_source.coverage: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/fact_source_coverage_guard.py scripts/verify/test_fact_source_coverage_guard.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_fact_source_coverage_guard.py
+	@python3 scripts/verify/fact_source_coverage_guard.py
+
 .PHONY: verify.workflow_contract.backend
-verify.workflow_contract.backend: guard.prod.forbid audit.workflow_state.inventory verify.workflow_action_semantics.guard
+verify.workflow_contract.backend: guard.prod.forbid audit.workflow_state.inventory verify.workflow_action_semantics.guard verify.workflow_instance.ownership_boundary
 	@python3 -m py_compile addons/smart_core/core/action_semantics_vocabulary.py addons/smart_construction_core/models/support/workflow_contract_service.py addons/smart_construction_core/tests/test_workflow_contract_backend.py addons/smart_construction_core/tests/test_user_feedback_business_views.py scripts/audit/workflow_state_inventory.py scripts/verify/workflow_inventory_profile_method_guard.py scripts/verify/workflow_contract_custom_coverage_guard.py scripts/verify/workflow_action_semantics_completeness_guard.py
 	@python3 scripts/verify/workflow_inventory_profile_method_guard.py
 	@python3 scripts/verify/workflow_contract_custom_coverage_guard.py
@@ -793,7 +846,7 @@ refresh.contract_form_split_evidence: guard.prod.forbid
 ci.generated_evidence.preflight: guard.prod.forbid ci.generated_reports.guard verify.frontend.component_driver_takeover.unit verify.contract_form_split_evidence
 	@echo "[ci.generated_evidence.preflight] PASS all content-bound generated evidence is current"
 
-ci.delivery.freeze.prepare: guard.prod.forbid contract.semantic.registry.generate verify.frontend.contract_basis.enforce verify.agent.ledger.unit
+ci.delivery.freeze.prepare: guard.prod.forbid contract.semantic.registry.generate verify.frontend.contract_basis.enforce verify.agent.ledger.unit verify.frontend.list_surface_evidence_binding.unit verify.frontend.contract_consumption_verdicts.unit
 	@$(MAKE) --no-print-directory refresh.generated_reports
 	@$(MAKE) --no-print-directory refresh.frontend.component_driver_takeover.inventory
 	@$(MAKE) --no-print-directory refresh.contract_form_split_evidence
@@ -1060,7 +1113,20 @@ verify.contract.architecture.suite: \
 	verify.contract.collection_capability_projection.unit \
 	verify.contract.entry_equivalence.guard \
 	verify.contract.unbound_structural_form_contract.repair.unit \
-	verify.verification.lane_coverage
+	verify.verification.lane_coverage \
+	verify.frontend.list_surface_evidence_binding.unit \
+	verify.product.menu.monotonic.unit \
+	verify.product.menu.native_inventory.unit \
+	verify.local.clean.frontend_output.unit \
+	verify.payment_slice.data_authority.unit \
+	verify.data_space.policy.unit \
+	verify.database.strategy.guard \
+	verify.platform.database.governance.guard \
+	verify.data_space.provisioning.guard \
+	verify.local.dev.layout_authority.unit \
+	verify.sc_price.company_ownership_boundary \
+	verify.sc_data_scope.rule_coverage \
+	verify.fact_source.coverage
 	@python3 scripts/verify/static_suite_frontend_toolchain_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_static_suite_frontend_toolchain_guard.py
 	@python3 scripts/verify/contract_form_runtime_state_protocol_guard.py

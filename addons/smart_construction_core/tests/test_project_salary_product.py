@@ -38,6 +38,7 @@ class TestProjectSalaryProduct(TransactionCase):
         project = self.env["project.project"].create(
             {
                 "name": "项目薪资测试项目",
+                "company_id": self.env.company.id,
                 "user_id": project_user.id,
                 "operation_strategy": "direct",
             }

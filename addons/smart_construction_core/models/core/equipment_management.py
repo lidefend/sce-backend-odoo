@@ -365,17 +365,17 @@ class ScEquipmentUsage(models.Model):
     company_id = fields.Many2one(
         related="project_id.company_id", store=True, readonly=True, string="所属公司"
     )
-    request_id = fields.Many2one("sc.equipment.request", string="来源设备申请", index=True)
+    request_id = fields.Many2one("sc.equipment.request", string="来源设备申请", index=True, help='建议关联来源设备申请')
     usage_date = fields.Date(string="使用日期", required=True, default=fields.Date.context_today, index=True, tracking=True)
     equipment_name = fields.Char(string="设备名称", required=True, index=True, tracking=True)
-    equipment_code = fields.Char(string="设备编号", index=True)
-    specification = fields.Char(string="规格型号")
+    equipment_code = fields.Char(string="设备编号", index=True, help='建议补充设备编号')
+    specification = fields.Char(string="规格型号", help='建议补充规格型号')
     uom_text = fields.Char(string="计量单位", default="台时")
     usage_location = fields.Char(string="使用地点", required=True, index=True)
     operator_name = fields.Char(string="操作人员", required=True, index=True)
     usage_qty = fields.Float(string="使用台数", required=True, default=1)
     usage_hours = fields.Float(string="使用台时", required=True)
-    supplier_id = fields.Many2one("res.partner", string="供应单位", index=True)
+    supplier_id = fields.Many2one("res.partner", string="供应单位", index=True, help='建议补充供应单位')
     currency_id = fields.Many2one(
         "res.currency",
         string="币种",
@@ -404,9 +404,10 @@ class ScEquipmentUsage(models.Model):
         "usage_id",
         "attachment_id",
         string="附件",
+        help='建议上传台班依据',
     )
     note = fields.Text(string="使用说明")
-    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory")
+    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction")
     legacy_fact_model = fields.Char(string="来源通用模型", index=True)
     legacy_fact_id = fields.Integer(string="来源通用记录ID", index=True)
     legacy_fact_type = fields.Char(string="来源业务类型", index=True)
@@ -482,9 +483,9 @@ class ScEquipmentUsage(models.Model):
     def action_confirm(self):
         self._check_project_manager()
         for record in self:
+            self.env["sc.approval.policy"].ensure_handling_ready(record, ("approved",))
             if record.state != "approved":
                 raise UserError(_("只有已审批状态的设备使用登记可以确认。"))
-            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
             record._check_business_anchor()
         self._check_values()
         self._write_cost_source_state({"state": "confirmed"})
@@ -539,7 +540,7 @@ class ScEquipmentUsage(models.Model):
             if not record.attachment_ids:
                 suggestions.append("建议上传台班依据")
             record.processing_advisory = (
-                "；".join(suggestions) if suggestions else "当前台班资料已完善"
+                "；".join(suggestions) if suggestions else ""
             )
 
     def _equipment_cost_code(self):
@@ -738,10 +739,10 @@ class ScEquipmentSettlement(models.Model):
 
     def action_confirm(self):
         for record in self:
+            self.env["sc.approval.policy"].ensure_handling_ready(record, ("approved",))
             if record.state != "approved":
                 raise UserError(_("只有已审批状态的设备结算可以确认。"))
             record.line_ids._check_values()
-            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
             record._check_business_anchor()
         self._write_approval_state({"state": "confirmed"})
         return True
@@ -819,6 +820,7 @@ class ScEquipmentPrice(models.Model):
     _order = "effective_date desc, id desc"
 
     name = fields.Char(string="价格编号", required=True, default="新建", tracking=True)
+    company_id = fields.Many2one("res.company", related="project_id.company_id", store=True, readonly=True, index=True)
     project_id = fields.Many2one("project.project", string="适用项目", index=True, tracking=True)
     supplier_id = fields.Many2one("res.partner", string="供应单位", index=True)
     equipment_name = fields.Char(string="设备名称", required=True, index=True, tracking=True)

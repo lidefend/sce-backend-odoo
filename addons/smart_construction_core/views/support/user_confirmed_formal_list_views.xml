@@ -260,7 +260,6 @@
                 <field name="payee_unit_display" string="收款单位" />
                 <field name="payment_basis_type" string="付款依据" />
                 <field name="payee_account_completeness" string="账户完整度" />
-                <field name="legal_next_action_display" string="下一步" />
                 <field name="request_amount_display" string="申请付款金额" sum="申请付款金额合计" />
                 <field name="actual_payee_unit_display" string="实际收款单位" optional="hide" />
                 <field name="payer_unit_display" string="付款单位" optional="hide" />

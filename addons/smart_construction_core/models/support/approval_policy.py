@@ -417,6 +417,31 @@ class ScApprovalPolicy(models.Model):
         return True
 
     @api.model
+    def ensure_handling_ready(self, record, approved_states, submit_states=("draft",)):
+        """One-step handling gate for terminal business actions.
+
+        Handling a business document is one user action. When the business has
+        no approval rule and no approval instance exists, a draft document is
+        submitted inline, so the caller's single action can finish the job
+        instead of forcing 提交 -> 确认. Only the phases declared for direct
+        handling are submitted inline; a configured approval rule is refused
+        here, the completed-submission requirement below stays fail-closed, and
+        a document without a submit step keeps its previous behaviour and error
+        reporting.
+        """
+        record.ensure_one()
+        state_field = getattr(record, "_state_field", "state")
+        if not record.review_ids and getattr(record, state_field) in tuple(submit_states):
+            submit = getattr(record, "action_submit", None)
+            if submit is not None:
+                company = getattr(record, "company_id", False) or record.env.company
+                if self.is_approval_required(record._name, company=company):
+                    raise UserError(_("单据已启用审批，请先提交并完成审批，再执行后续办理。"))
+                submit()
+                record.invalidate_recordset()
+        return self._assert_submission_approved(record, approved_states)
+
+    @api.model
     def next_state_after_submit(self, model_name, submitted_state, approved_state, company=None):
         return submitted_state if self.is_approval_required(model_name, company=company) else approved_state
 

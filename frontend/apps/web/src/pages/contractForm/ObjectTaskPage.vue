@@ -64,16 +64,15 @@
       />
     </ScCard>
     <div
-      v-if="decisionMode && (blockedActionMessage || taskNodes.length || $slots.actions)"
+      v-if="decisionMode && (taskNodes.length || $slots.actions)"
       class="object-task-page__current-task"
       data-floorplan-region="current-task"
       data-form-feedback-scope="page"
     >
-      <ScInlineState v-if="blockedActionMessage || taskNodes.length" class="object-task-page__feedback" state="info" density="compact" :data-feedback-kind="blockedActionMessage ? 'current-action-blocker' : 'page-guidance'">
+      <ScInlineState v-if="taskNodes.length" class="object-task-page__feedback" state="info" density="compact" data-feedback-kind="page-guidance">
         <div class="object-task-page__current-task-copy">
-          <strong v-if="blockedActionMessage" class="object-task-page__blocked-action">{{ blockedActionMessage }}</strong>
           <CanonicalFormNodeRenderer
-            v-for="node in blockedActionMessage ? [] : taskNodes"
+            v-for="node in taskNodes"
             :key="node.nodeId"
             :node="node"
             :relation-adapter="relationAdapter"
@@ -413,7 +412,6 @@ const props = defineProps<{
   auditAuthorized?: boolean;
   collaborationTitle?: string;
   decisionMode?: boolean;
-  blockedActionMessage?: string;
 }>();
 const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange]; 'field-action': [payload: FormSectionFieldActionPayload] }>();
 const presentableRelationNodes = computed(() => props.relationNodes.filter((node) => (

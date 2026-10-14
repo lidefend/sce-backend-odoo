@@ -21,7 +21,8 @@ EXPECTED_CENTERS = (
     ("administration", 90, "行政中心"), ("product_configuration", 100, "产品配置"),
 )
 EXPECTED_CONTRACT_LEVEL_TWO = ("收入合同", "支出合同", "合同变更", "日常合同", "日常合同结算", "收入结算", "支出结算")
-ALLOWED_DELIVERY = {"RELEASED_FOUNDATION", "ADAPTATION_REQUIRED", "NEW_CAPABILITY_REQUIRED"}
+DELIVERY_RELEASE_STATE = {"RELEASED_FOUNDATION": "released", "PREVIEW_FOUNDATION": "preview"}
+ALLOWED_DELIVERY = {*DELIVERY_RELEASE_STATE, "ADAPTATION_REQUIRED", "NEW_CAPABILITY_REQUIRED"}
 
 
 def load_json(path: Path) -> dict:
@@ -57,6 +58,10 @@ def validate(contract: dict, baseline: dict, evolution_policy: dict | None = Non
             continue
         for item in level_two:
             children = item.get("children", [])
+            for leaf in children or [item]:
+                expected_state = DELIVERY_RELEASE_STATE.get(leaf.get("delivery"))
+                if expected_state and leaf.get("release_state") != expected_state:
+                    errors.append(f"delivery/release_state mismatch for menu {leaf.get('name')!r}: expected {expected_state}")
             if center.get("key") == "project":
                 if not children:
                     errors.append(f"project level-two menu {item.get('name')!r} must define its third-level pages")

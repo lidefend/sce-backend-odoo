@@ -15,19 +15,13 @@
              前端走"兼容/语义重排"路径（`fieldSemanticRoles` 把
              `intake_next_action_display` 从业务分组里抽到任务区）。
 
-             运行库只读探针（sc_dev_demo，SAVEPOINT g12_ab ＋ ROLLBACK）证明：
-             该入口**实际渲染**的容器树与字段集完全由原生视图 1503 决定
-             （12 个字段 / 3 个有标题业务组 ＋ 3 个无标题嵌套组），契约声明的
-             9 个无字段归属的章节标题与 25 个 `visible: false` 字段从未进入
-             渲染面。因此本批把入口自己的
-             业务章节身份（`current_task` / `intake_risk`）落到原生 arch 的
-             `data-sc-anchor` 分组上，并让原生视图复述契约声明过的字段标签
-             （`manager_id` = 项目负责人），然后把入口声明退成纯语义声明。
-
-             退役后（priority 800 > 镜像 77）该 action 的结构权威落到原生视图：
-             `form_structure_authority=native_authority` →
-             `layoutPolicy=container_tree_authority`、`mode=native_structured_form`，
-             兼容重排路径关闭，字段位置与可见性由原生视图持有。
+             历史 G12 探针确认入口实际结构来自原生视图而非空章节声明。
+             2026-10-13：退役原生创建面上的教学字段/指导组与常驻教程；
+             仅保留真实项目业务字段、必填规则、标签及 project_create_required /
+             project_create_optional 章节。两个非存储指导字段同步退役，
+             不再把“下一步如何操作”声明为业务事实。
+             入口继续使用 native_authority / container_tree_authority，
+             兼容重排关闭；权限只裁剪可见/可用/只读，不按角色另选布局。
 
              保留边界：`view_orchestration.context` 与原声明逐值相同；
              `title` 保留入口标题。回滚：`git revert`（纯声明，无数据迁移）。 -->
@@ -89,43 +83,11 @@
             <field name="model">tender.doc.purchase</field>
             <field name="view_type">form</field>
             <field name="priority">301</field>
-            <field name="company_id" eval="False"/>
-            <field name="active" eval="True"/>
-            <field name="status">published</field>
+            <field name="company_id" eval="False" />
+            <field name="active" eval="False" />
+            <field name="status">draft</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval="{
-                'view_orchestration': {
-                    'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},
-                    'views': {
-                        'form': {'composition_mode': 'entry_semantic_surface',
-                            'sections': [
-                                {'title': '申请信息'},
-                                {'title': '费用与缴费'},
-                                {'title': '收款信息'},
-                                {'title': '备注与来源'}
-                            ],
-                            'fields': [
-                                {'name': 'state', 'sequence': 10},
-                                {'name': 'bid_id', 'sequence': 20},
-                                {'name': 'project_id', 'sequence': 30, 'readonly': True},
-                                {'name': 'applicant_id', 'sequence': 40},
-                                {'name': 'apply_date', 'sequence': 50},
-                                {'name': 'amount', 'sequence': 60},
-                                {'name': 'payment_method', 'sequence': 70},
-                                {'name': 'invoice_no', 'sequence': 80},
-                                {'name': 'receipt_partner_id', 'sequence': 90},
-                                {'name': 'receipt_payee_name', 'sequence': 100},
-                                {'name': 'receipt_bank_name', 'sequence': 110},
-                                {'name': 'receipt_bank_account', 'sequence': 120},
-                                {'name': 'remark', 'sequence': 130},
-                                {'name': 'receipt_partner_name', 'sequence': 905, 'readonly': True},
-                                {'name': 'currency_id', 'sequence': 980, 'visible': False},
-                                {'name': 'attachment_ids', 'sequence': 981, 'visible': False},
-                            ]
-                        }
-                    }
-                }
-            }"/>
+            <field name="contract_json" eval="{'view_orchestration': {'views': {}}}" />
         </record>
 
         <record id="business_config_contract_sc_financing_loan_form_sections_v1" model="ui.business.config.contract">
@@ -379,4 +341,10 @@
             <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "结算材料租赁清单"}, {"title": "结算费用清单"}]}}}}'/>
         </record>
     </data>
+    <!-- Existing installations can retain historical ir.model.data noupdate;
+         record declarations alone do not retire those published versions. -->
+    <function model="ui.business.config.contract" name="write">
+        <value eval="[ref('smart_construction_core.business_config_contract_tender_doc_purchase_form_structure_v1')]"/>
+        <value eval="{'active': False, 'status': 'draft'}"/>
+    </function>
 </odoo>

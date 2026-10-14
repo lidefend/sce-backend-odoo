@@ -4,6 +4,7 @@ import sys
 import types
 import unittest
 from pathlib import Path
+from xml.etree import ElementTree
 
 
 def _load_lifecycle():
@@ -29,6 +30,7 @@ class _LifecycleCursor:
         row_count=12328,
         stage_validation=(12328, 0, 0, 0),
         invalid_project_count=0,
+        invalid_company_anchor_count=0,
         fail_insert=False,
     ):
         self.lifecycle = lifecycle
@@ -40,6 +42,7 @@ class _LifecycleCursor:
         self.row_count = row_count
         self.stage_validation = stage_validation
         self.invalid_project_count = invalid_project_count
+        self.invalid_company_anchor_count = invalid_company_anchor_count
         self.fail_insert = fail_insert
         self.last_result = None
         self.statements = []
@@ -63,6 +66,8 @@ class _LifecycleCursor:
             self.last_result = self.stage_validation
         elif 'LEFT JOIN project_project project' in normalized:
             self.last_result = (self.invalid_project_count,)
+        elif 'LEFT JOIN project_project company_anchor' in normalized:
+            self.last_result = (self.invalid_company_anchor_count,)
         elif normalized.startswith('CREATE TABLE "public"'):
             self.relkind = "r"
             self.signature = self.lifecycle.AR_AP_COLUMNS
@@ -238,6 +243,99 @@ class ArApProjectionRelationLifecycleTests(unittest.TestCase):
             self.lifecycle.refresh_ar_ap_project_summary(
                 cursor, "SELECT * FROM versioned_projection_source"
             )
+
+    def test_refresh_rejects_rows_without_a_company_anchor(self):
+        cursor = _LifecycleCursor(
+            self.lifecycle,
+            stage_validation=(5, 0, 0, 0),
+            invalid_company_anchor_count=1,
+        )
+
+        with self.assertRaisesRegex(RuntimeError, "stage=company_ownership"):
+            self.lifecycle.refresh_ar_ap_project_summary(
+                cursor, "SELECT * FROM versioned_projection_source"
+            )
+
+        statements = "\n".join(item[0] for item in cursor.statements)
+        self.assertNotIn("ON CONFLICT (id) DO UPDATE", statements)
+        self.assertEqual(cursor.row_count, 12328)
+
+    def test_refresh_checks_company_ownership_before_official_write(self):
+        cursor = _LifecycleCursor(
+            self.lifecycle,
+            stage_validation=(12328, 0, 0, 0),
+            invalid_company_anchor_count=0,
+        )
+
+        refreshed = self.lifecycle.refresh_ar_ap_project_summary(
+            cursor, "SELECT * FROM versioned_projection_source"
+        )
+
+        self.assertEqual(refreshed, 12328)
+        statements = [item[0] for item in cursor.statements]
+        anchor_idx = next(
+            index for index, sql in enumerate(statements) if "company_anchor" in sql
+        )
+        insert_idx = next(
+            index
+            for index, sql in enumerate(statements)
+            if sql.startswith('INSERT INTO "public"."sc_ar_ap_project_summary"')
+        )
+        self.assertLess(anchor_idx, insert_idx)
+
+
+class ArApProjectionAccessBoundaryTests(unittest.TestCase):
+    """The company anchor of these summaries is the project, so the access
+    boundary is declared once, as record-rule data, instead of being derived
+    per consumer.  Unknown ownership (no project, or a project without a
+    company) must stay denied rather than being attributed from a label or the
+    current environment."""
+
+    RULES = {
+        "rule_sc_ar_ap_project_summary_company": "model_sc_ar_ap_project_summary",
+        "rule_sc_ar_ap_company_summary_company": "model_sc_ar_ap_company_summary",
+    }
+    RULES_FILE = Path(__file__).resolve().parents[1] / "security" / "sc_record_rules.xml"
+
+    def setUp(self):
+        self.root = ElementTree.parse(self.RULES_FILE).getroot()
+
+    def _rule_fields(self, record_id):
+        for record in self.root.iter("record"):
+            if record.get("id") == record_id:
+                self.assertEqual(record.get("model"), "ir.rule")
+                return {field.get("name"): field for field in record.iter("field")}
+        self.fail("record rule %s is missing" % record_id)
+
+    def test_summaries_are_company_isolated_through_the_project_anchor(self):
+        for record_id, model_ref in self.RULES.items():
+            with self.subTest(rule=record_id):
+                fields = self._rule_fields(record_id)
+                self.assertEqual(fields["model_id"].get("ref"), model_ref)
+                self.assertEqual(fields["global"].get("eval"), "True")
+                domain = fields["domain_force"].text or ""
+                self.assertIn("project_id.company_id", domain)
+                self.assertIn("company_ids", domain)
+
+    def test_company_anchor_domain_is_exactly_the_project_company(self):
+        # Exact equality, not a substring check: a company-agnostic escape such
+        # as ('company_id', '=', False) would reopen the cross-company leak
+        # that the project anchor closes, so any loosening must fail here.
+        for record_id in self.RULES:
+            with self.subTest(rule=record_id):
+                domain = self._rule_fields(record_id)["domain_force"].text or ""
+                self.assertEqual(
+                    " ".join(domain.split()),
+                    "[('project_id.company_id', 'in', company_ids)]",
+                )
+
+    def test_summary_rules_grant_read_only(self):
+        for record_id in self.RULES:
+            with self.subTest(rule=record_id):
+                fields = self._rule_fields(record_id)
+                self.assertEqual(fields["perm_read"].get("eval"), "True")
+                for perm in ("perm_write", "perm_create", "perm_unlink"):
+                    self.assertEqual(fields[perm].get("eval"), "False")
 
 
 def _load_optional_projection():

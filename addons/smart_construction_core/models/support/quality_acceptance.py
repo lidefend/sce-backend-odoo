@@ -71,7 +71,7 @@ class ScQualityAcceptance(models.Model):
         required=True,
         tracking=True,
     )
-    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory")
+    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction")
 
     @api.depends(
         "acceptance_date",
@@ -101,7 +101,7 @@ class ScQualityAcceptance(models.Model):
             if record.result in ("conditional", "failed") and not record.rectification_deadline:
                 suggestions.append("建议设置整改期限")
             record.processing_advisory = (
-                "；".join(suggestions) if suggestions else "当前验收资料已完善"
+                "；".join(suggestions) if suggestions else ""
             )
 
     def _check_operator(self):
@@ -120,7 +120,7 @@ class ScQualityAcceptance(models.Model):
             raise UserError(_("确认验收必须选择验收结论，否则系统无法表达验收结果。"))
         self.write({"state": "confirmed"})
         suggestions = [
-            item for item in self.mapped("processing_advisory") if item != "当前验收资料已完善"
+            item for item in self.mapped("processing_advisory") if item
         ]
         if suggestions:
             return {

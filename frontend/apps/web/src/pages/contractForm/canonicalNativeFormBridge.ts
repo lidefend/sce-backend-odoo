@@ -6,8 +6,7 @@ import type {
   CanonicalFormRenderModel,
 } from '../../app/presentation/canonicalFormRenderModel';
 import type { FormSectionFieldSchema } from '../../components/template/formSection.types';
-import { readonlyFactIsPresentable } from '../../components/template/formSection.mapper';
-import { canonicalNodeHasContent, canonicalFieldToFormSection, type CanonicalRelationProjection } from './canonicalFormRenderer';
+import { canonicalFieldToFormSection, type CanonicalRelationProjection } from './canonicalFormRenderer';
 import {
   authoritativeNativeBusinessSections,
   workspaceSectionNavigationItems,
@@ -128,6 +127,7 @@ function fieldNode(
     name: field.fieldCode,
     string: sourceNode?.title || field.label,
     text: sourceNode?.text || '',
+    span: sourceNode ? sourceNode.span : field.span,
     cols: sourceNode?.columns,
     columns: sourceNode?.columns,
     visible: field.visible && (sourceNode?.visible ?? true),
@@ -167,7 +167,6 @@ export function buildCanonicalNativeFormBridge(
   relationProjection?: CanonicalRelationProjection,
   claimedStatusbarNodeIdentity = '',
   claimedStatusbarFieldCode = '',
-  hasFieldAction: (field: FormSectionFieldSchema) => boolean = () => false,
 ): CanonicalNativeFormBridge {
   const canonicalFieldsByCode = new Map<string, CanonicalFormField>();
   function indexCanonicalFields(node: CanonicalFormNode) {
@@ -178,22 +177,6 @@ export function buildCanonicalNativeFormBridge(
   }
   [...renderModel.zones.primary, ...renderModel.zones.subordinate].forEach(indexCanonicalFields);
   const resolveCanonicalField = (fieldCode: string) => canonicalFieldsByCode.get(fieldCode);
-  // Reuse the field component's omission rule before deriving either surface.
-  // Preserve relation widgets and notebook pages: they own their empty actions.
-  if (renderModel.identity.mode === 'readonly') {
-    const project = (node: CanonicalFormNode): CanonicalFormNode => {
-      const projected = { ...node, children: node.children.map(project), fields: node.fields.map((field) => {
-        const schema = canonicalFieldToFormSection(field, relationProjection, resolveCanonicalField);
-        const relation = ['one2many', 'many2many'].includes(field.fieldType);
-        return { ...field, visible: field.visible && (relation || readonlyFactIsPresentable(schema, hasFieldAction(schema))) };
-      }) };
-      if (['group', 'field'].includes(node.kind)) projected.visible = node.visible && canonicalNodeHasContent(projected);
-      return projected;
-    };
-    renderModel = { ...renderModel, zones: {
-      primary: renderModel.zones.primary.map(project), subordinate: renderModel.zones.subordinate.map(project),
-    } };
-  }
   const fieldSchemas = new WeakMap<CanonicalNativeLayoutNode, FormSectionFieldSchema>();
   const actionsByIdentity = new Map<string, CanonicalFormAction>();
   const headerActionIdentities = new Set(
@@ -309,7 +292,7 @@ export function buildCanonicalNativeFormBridge(
       const action = actionsByIdentity.get(actionIdentity(payload));
       return {
         disabled: !action?.enabled,
-        title: action?.reasonCode || '',
+        title: action?.reasonMessage || action?.reasonCode || '',
       };
     },
     nodeVisible(node) {

@@ -127,6 +127,8 @@ export function buildContractFormActions(params: {
           context_raw: target.context_raw,
         },
         visible: row.visible,
+        reasonCode: row.reasonCode,
+        reasonMessage: row.reasonMessage,
         allowed: row.allowed,
         enabled: row.enabled,
         disabled: row.disabled,
@@ -138,6 +140,7 @@ export function buildContractFormActions(params: {
             ? row.visible_profiles
           : ['create', 'edit', 'readonly'],
         presentation: row.presentation,
+        warning_message: parseMaybeJsonRecord(row.presentation).warning_message,
         action_safety: row.actionSafety ?? row.action_safety,
         refresh_policy: row.refreshPolicy ?? row.refresh_policy,
         entitlementEvaluated: row.entitlementEvaluated ?? row.entitlement_evaluated,
@@ -271,14 +274,14 @@ export function buildContractFormActions(params: {
       authorizationAllowed,
       requiresSavedRecord,
       hint: status.disabled === true
-        ? status.reasonCode || 'disabled_by_status_contract'
+        ? status.reasonMessage || status.reasonCode || 'disabled_by_status_contract'
         : needRecord && !params.recordId
           ? 'requires record id'
           : declaredDenial
-            ? declaredDenial
+            ? String(row.reasonMessage || row.reasonCode || declaredDenial)
             : contractAllowed
               ? String(row.warning_message || '').trim()
-              : String(row.blocked_message || row.reason || row.reason_code || '').trim(),
+              : String(row.reasonMessage || row.blocked_message || row.reason || row.reason_code || '').trim(),
       intent: String(row.intent || '').trim(),
       semantic: presentationSemantic,
       sourceWidgetId,

@@ -28,6 +28,15 @@
     <field name="category_id" ref="base.module_category_hidden"/>
   </record>
 
+  <!-- Dedicated demo/test identity, not an extra grant to customer data.
+       No business roles are implied; existing capabilities still authorize
+       operations. Native data rules apply the non-customer realm as a ceiling. -->
+  <record id="group_smart_core_non_customer_data_user" model="res.groups">
+    <field name="name">Demo / Test Data User</field>
+    <field name="category_id" ref="base.module_category_hidden"/>
+    <field name="implied_ids" eval="[(4, ref('group_smart_core_user'))]"/>
+  </record>
+
   <!-- Fresh databases need an explicit product-admin carrier for the built-in
        administrator. This is assignment, not a group implication: ordinary
        Odoo system users remain restricted until an authorized product group is

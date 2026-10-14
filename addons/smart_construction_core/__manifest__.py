@@ -48,6 +48,7 @@
         'security/sc_model_records.xml',
         'security/ir.model.access.csv',
         'security/sc_record_rules.xml',
+        'security/sc_data_scope_ceiling_generated.xml',
         'security/sc_scene_rules.xml',
         'data/sc_scene_seed.xml',
         'data/view_orchestration_contract_data.xml',
@@ -191,6 +192,7 @@
         'views/menu.xml',
         # Project form contracts reference the action and view declared above.
         'data/view_orchestration_contract_generated_data.xml',
+        'data/native_guidance_form_retirement.xml',
         'data/view_orchestration_form_section_contract_data.xml',
         'views/support/business_category_views.xml',
         'views/support/approval_policy_views.xml',

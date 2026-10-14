@@ -3,8 +3,8 @@ from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
 
 
-def _advisory_notification(title, advisories, completed_label):
-    suggestions = [item for item in advisories if item and item != completed_label]
+def _advisory_notification(title, advisories):
+    suggestions = [item for item in advisories if item]
     if not suggestions:
         return True
     return {
@@ -112,7 +112,7 @@ class ScSiteVariation(models.Model):
         required=True,
         tracking=True,
     )
-    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory")
+    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction")
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -157,7 +157,7 @@ class ScSiteVariation(models.Model):
             if not record.attachment_ids:
                 suggestions.append("建议上传现场依据")
             record.processing_advisory = (
-                "；".join(suggestions) if suggestions else "当前签证资料已完善"
+                "；".join(suggestions) if suggestions else ""
             )
 
     @api.constrains("variation_scope", "contract_id")
@@ -206,7 +206,6 @@ class ScSiteVariation(models.Model):
         return _advisory_notification(
             "签证已提交，建议继续完善资料",
             self.mapped("processing_advisory"),
-            "当前签证资料已完善",
         )
 
     def action_confirm(self):
@@ -218,7 +217,6 @@ class ScSiteVariation(models.Model):
         return _advisory_notification(
             "签证已确认，建议继续完善资料",
             self.mapped("processing_advisory"),
-            "当前签证资料已完善",
         )
 
     def action_reject(self):
@@ -326,7 +324,7 @@ class ScContractChange(models.Model):
         required=True,
         tracking=True,
     )
-    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory")
+    processing_advisory = fields.Char("办理建议", compute="_compute_processing_advisory", sc_ui_usage="interaction")
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -360,7 +358,7 @@ class ScContractChange(models.Model):
             if not record.attachment_ids:
                 suggestions.append("建议上传变更依据")
             record.processing_advisory = (
-                "；".join(suggestions) if suggestions else "当前合同变更资料已完善"
+                "；".join(suggestions) if suggestions else ""
             )
 
     def _sc_change_snapshot_fields(self):
@@ -398,7 +396,6 @@ class ScContractChange(models.Model):
         return _advisory_notification(
             "合同变更已提交，建议继续完善资料",
             self.mapped("processing_advisory"),
-            "当前合同变更资料已完善",
         )
 
     def action_effective(self):
@@ -410,7 +407,6 @@ class ScContractChange(models.Model):
         return _advisory_notification(
             "合同变更已生效，建议继续完善资料",
             self.mapped("processing_advisory"),
-            "当前合同变更资料已完善",
         )
 
     def action_reject(self):

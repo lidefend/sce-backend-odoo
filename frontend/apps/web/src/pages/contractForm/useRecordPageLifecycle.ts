@@ -425,6 +425,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       const reloadToken = activeReloadToken + 1;
       activeReloadToken = reloadToken;
       dependencies.clearRelationRuntime();
+      if (dependencies.submissionFeedback) dependencies.submissionFeedback.value = null;
       renderErrorMessage.value = '';
       Object.assign(loadError, { status: null, reason: '', trace: '' });
       recordMissing.value = false;

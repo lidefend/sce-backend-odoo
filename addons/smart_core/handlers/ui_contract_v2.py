@@ -89,7 +89,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-2026-10-13-drop-native-arch-class-from-presentation-facet"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-2026-10-14-declared-layout-columns-and-action-denial-guidance"
 
 
 # --- Declared form surfaces -------------------------------------------------
@@ -1064,6 +1064,17 @@ class UiContractV2Handler(BaseIntentHandler):
         hydrate_final_layout_modifier_status(contract_v2)
         _projection.apply_field_policies_to_v2_status(contract_v2, source_contract, tighten_only=True)
         hydrate_final_action_modifier_status(contract_v2)
+        from odoo.addons.smart_core.core.action_guidance import project_native_action_guidance
+        def read_action_fact(field_name):
+            from odoo.addons.smart_core.core.form_configuration_compiler import FormConfigurationError
+            fact_model = self.env[contract_v2["pageInfo"]["model"]]
+            field = fact_model._fields.get(field_name)
+            if field is None or field.type != "json" or not field.compute:
+                raise FormConfigurationError("NATIVE_ACTION_GUIDANCE_INVALID", field_name)
+            fact_model.check_field_access_rights("read", [field_name])
+            fact_id = contract_v2["dataContract"]["mainData"]["id"]
+            return fact_model.browse(fact_id).read([field_name])[0][field_name]
+        project_native_action_guidance(contract_v2, read_action_fact)
         modifier_status_at = time.monotonic()
         contract_v2 = trim_unified_page_contract_v2(
             contract_v2,

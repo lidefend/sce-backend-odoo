@@ -78,7 +78,7 @@ const router = useRouter();
 const authority = props.snapshot.formStructureContract!.sourceAuthority.governance_source;
 const scope = { model: props.snapshot.pageInfo.model, view_type: 'form', action_id: Number(authority.resolvedActionId),
   view_id: Number(authority.resolvedViewId), role_key: props.roleKey };
-const name = `view_orchestration:${scope.model}:form:action:${scope.action_id}:view:${scope.view_id}:role:${scope.role_key}`;
+const name = `view_orchestration:${scope.model}:form:action:${scope.action_id}:view:${scope.view_id}:role:`;
 const fields = boundNodes(props.snapshot.layoutContract.containerTree).filter(({ node }) => node.type === 'field');
 const fieldOptions = fields.map(({ node, parent }) => ({ value: node.nativeLocator!, label: `${node.label || node.name} · ${parent?.label || parent?.title || '表单'} · ${node.occurrenceIndex}` }));
 const visibilityOptions = [{ value: 'inherit', label: '保持原规则' }, { value: 'hide', label: '隐藏' }, { value: 'show', label: '显示（不放宽业务约束）' }];
@@ -155,7 +155,7 @@ async function readBaseline() {
   let nextPatches: BoundPatch[] = [];
   try {
     const existing = await intentRequest<{ definition_sha256: string; active: boolean; contract_json: { view_orchestration?: { views?: { form?: { node_patches?: BoundPatch[] } } } } }>({
-      intent: BUSINESS_CONFIG_INTENTS.contractGet, params: { ...scope, name, include_inactive: true },
+      intent: BUSINESS_CONFIG_INTENTS.contractGet, params: { ...scope, role_key: '', name, include_inactive: true },
     });
     nextDefinition = existing.definition_sha256;
     if (existing.active) {
@@ -195,7 +195,7 @@ async function save() { await run(async () => {
   if (!draft.value || ['published', 'discarded', 'superseded'].includes(draft.value.state)) {
     draft.value = await openBusinessConfigChangeSet({ role_key: scope.role_key, name: '表单设计配置', fresh: true });
   }
-  draft.value = await stageBusinessConfigChangeSetItem({ ...params(), ...scope, config_type: 'form', target_key: name, current_definition_hash: initialDefinition.value, current_payload_hash: restoredPayloadHash.value || undefined,
+  draft.value = await stageBusinessConfigChangeSetItem({ ...params(), ...scope, config_type: 'form', target_role_key: '', target_key: name, current_definition_hash: initialDefinition.value, current_payload_hash: restoredPayloadHash.value || undefined,
     draft_payload: { view_orchestration: { views: { form: { node_patches: patches.value } } } },
     diff_summary: { summary: '正式表单设计器：标签、顺序、分组和显隐' } });
   await router.replace({ query: { ...route.query, config_mode: BUSINESS_CONFIG_MODES.formFieldConfiguration, change_set_token: draft.value.token } });

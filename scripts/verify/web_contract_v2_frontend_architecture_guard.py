@@ -311,16 +311,24 @@ FORBIDDEN_FORM_LOCAL_SELECTOR_TOKENS: tuple[str, ...] = (
     "function v2SourceContextFromStore",
 )
 
+# The workflow contract must still be resolved from the Contract V2 store and
+# consumed by the record form. The 2026-10-13 batch retired the frontend
+# warning/evidence body surface: executable availability is joined into Contract
+# V2 action authority, so the presentation layer must not recompute it.
 REQUIRED_WORKFLOW_CONTRACT_PROJECTION_TOKENS: tuple[tuple[str, str], ...] = (
     ("app/contracts/v2/store.ts", "resolveContractV2WorkflowContract"),
-    ("pages/contractForm/useRecordActionPresentation.ts", "resolveWorkflowContractFromStore(v2ContractStore.value)"),
-    ("pages/contractForm/useRecordActionPresentation.ts", "normalizeWorkflowEvidenceGateRows"),
-    ("pages/ContractFormPage.vue", "workflowEvidenceGateRows"),
+    ("pages/ContractFormPage.vue", "resolveWorkflowContractFromStore(v2ContractStore.value)"),
     ("app/presentation/contractFormPresenter.ts", "const explicitAuthority = identityUnique"),
     ("pages/contractForm/contractActionPresentation.ts", "row.entitlementEvaluated !== true"),
     ("pages/contractForm/contractActionPresentation.ts", "resolveContractActionForNativeOccurrence"),
     ("pages/contractForm/useRecordActionPresentation.ts", "resolveNativeActionState"),
     ("pages/ContractFormPage.vue", "useRecordActionPresentation"),
+)
+
+FORBIDDEN_WORKFLOW_EVIDENCE_RECOMPUTE_TOKENS: tuple[tuple[str, str], ...] = (
+    ("pages/contractForm/useRecordActionPresentation.ts", "workflowEvidenceGateRows"),
+    ("pages/contractForm/useRecordActionPresentation.ts", "normalizeWorkflowEvidenceGateRows("),
+    ("pages/ContractFormPage.vue", "workflowEvidenceGateRows"),
 )
 
 REQUIRED_WORKFLOW_STATUSBAR_CONTRACT_TOKENS: tuple[tuple[Path, str], ...] = (
@@ -467,6 +475,13 @@ def validate_workflow_contract_projection() -> list[str]:
         text = read(WEB_ROOT / relative_path)
         if token not in text:
             errors.append(f"workflow contract projection missing token in {relative_path}: {token}")
+    for relative_path, token in FORBIDDEN_WORKFLOW_EVIDENCE_RECOMPUTE_TOKENS:
+        text = read(WEB_ROOT / relative_path)
+        if token in text:
+            errors.append(
+                f"workflow evidence gate must not be recomputed in the form presentation layer "
+                f"({relative_path}: {token}); consume the Contract V2 action authority instead"
+            )
     return errors
 
 

@@ -512,7 +512,7 @@ function snapshot(): ContractV2Snapshot {
         'sc.relation.table': { version: '1.0' },
       },
       containerTree: [{
-        containerId: 'section.identity', containerType: 'group', type: 'group', title: 'Identity', span: 24,
+        containerId: 'section.identity', containerType: 'group', type: 'group', title: 'Identity', span: 24, columns: 2,
         children: [{
           containerId: 'field.name', containerType: 'field', type: 'field', name: 'name', title: '', span: 12,
           label: 'Name', nolabel: true,
@@ -529,7 +529,7 @@ function snapshot(): ContractV2Snapshot {
             ownerContainerId: 'field.state',
           }],
         }, {
-          containerId: 'native.notebook', containerType: 'notebook', type: 'notebook', title: 'Related', span: 24,
+          containerId: 'native.notebook', containerType: 'notebook', type: 'notebook', title: 'Related', span: 24, columns: 1,
           zone: 'detail_zone',
           sourceAuthority: { projection_only: true, no_business_fact_authority: true },
           children: [{
@@ -1227,6 +1227,17 @@ assert.equal(
   'the projection-resolved container column authority must reach the canonical node',
 );
 
+for (const invalidColumns of [undefined, 0, 5, 7, 25]) {
+  const invalidGrid = snapshot();
+  (invalidGrid.layoutContract.containerTree[0] as Record<string, unknown>).columns = invalidColumns;
+  assert.throws(() => decodeContractV2Snapshot(invalidGrid), /columns/, 'missing or nonintegral grid tracks stop decoding');
+}
+for (const invalidColumns of [5, 25]) {
+  const invalidStructure = structuredClone(structurePresentationSnapshot);
+  (invalidStructure.formStructureContract as unknown as Record<string, unknown>).columns = invalidColumns;
+  assert.throws(() => decodeContractV2Snapshot(invalidStructure), /columns/, 'formal structure columns obey the same coordinate domain');
+}
+
 const declaredColumnsSnapshot = snapshot();
 declaredColumnsSnapshot.layoutContract.containerTree[0].columns = 4;
 assert.equal(
@@ -1663,6 +1674,20 @@ assert.equal(
   'WORKFLOW_BLOCKED',
   'the formal action denial reason must survive when status does not provide a more specific reason',
 );
+actionReasonSnapshot.actionContract.actionRuleList[0].reasonMessage = '先补齐办理依据';
+assert.equal(presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(actionReasonSnapshot)), 'edit').actionBar[0]?.reasonMessage, '先补齐办理依据');
+actionReasonSnapshot.statusContract.buttonStatus[0].reasonCode = 'ACL_DENIED';
+actionReasonSnapshot.statusContract.buttonStatus[0].reasonMessage = '当前角色不可办理';
+assert.equal(presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(actionReasonSnapshot)), 'edit').actionBar[0]?.reasonMessage, '当前角色不可办理');
+for (const value of [42, { message: 'wrong' }]) {
+  const invalid = snapshot();
+  (invalid.actionContract.actionRuleList[0] as Record<string, unknown>).reasonMessage = value;
+  assert.throws(() => decodeContractV2Snapshot(invalid));
+}
+const unpairedMessage = snapshot();
+unpairedMessage.statusContract.buttonStatus[0].reasonMessage = '没有对应拒绝代码';
+unpairedMessage.statusContract.buttonStatus[0].reasonCode = '';
+assert.throws(() => decodeContractV2Snapshot(unpairedMessage));
 assert.equal(JSON.stringify(source), before, 'presenter must not mutate normalized input');
 assert.equal(model.identity.sourceContractSha256, 'contract-sha');
 assert.deepEqual(
@@ -2295,7 +2320,7 @@ function addContextGroup(groupId: string, fieldCodes: string[]) {
     }],
   }));
   semanticContextSnapshot.layoutContract.containerTree.splice(-2, 0, {
-    containerId: groupId, containerType: 'group', type: 'group', title: groupId, span: 24,
+    containerId: groupId, containerType: 'group', type: 'group', title: groupId, span: 24, columns: 2,
     children, widgetList: [],
   });
   fieldCodes.forEach((fieldCode) => {
@@ -2545,7 +2570,7 @@ assert.deepEqual(
 
 const contextRailSnapshot = snapshot();
 contextRailSnapshot.layoutContract.containerTree.splice(1, 0, {
-  containerId: 'section.context', containerType: 'group', type: 'group', title: 'Context', span: 24,
+  containerId: 'section.context', containerType: 'group', type: 'group', title: 'Context', span: 24, columns: 1,
   children: [{
     containerId: 'field.reference', containerType: 'field', type: 'field', name: 'reference', title: '', span: 24,
     children: [], widgetList: [{
@@ -2683,19 +2708,34 @@ assert.deepEqual(
 );
 
 const productionNativeChildren = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
-delete productionNativeChildren.layoutContract.containerTree[0].span;
 const nativeChild = productionNativeChildren.layoutContract.containerTree[0].children[0] as Record<string, unknown>;
 nativeChild.widgetId = 'field.name';
 delete nativeChild.containerId;
 delete nativeChild.containerType;
 delete nativeChild.title;
-delete nativeChild.span;
 const normalizedNativeChild = decodeContractV2Snapshot(productionNativeChildren).layoutContract.containerTree[0].children[0];
-assert.equal(decodeContractV2Snapshot(productionNativeChildren).layoutContract.containerTree[0].span, 24);
 assert.equal(normalizedNativeChild.containerId, 'field.name');
 assert.equal(normalizedNativeChild.containerType, 'field');
 assert.equal(normalizedNativeChild.title, '', 'native identity must not become a visible title');
-assert.equal(normalizedNativeChild.span, 24);
+assert.equal(normalizedNativeChild.span, 12);
+
+// A layout node without a declared span is a declaration gap, not a full-row
+// default.  The decoder fails closed instead of fabricating ``24`` so the
+// missing declaration is visible and closed at the declaration layer.
+const spanlessRoot = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
+delete spanlessRoot.layoutContract.containerTree[0].span;
+assert.throws(
+  () => decodeContractV2Snapshot(spanlessRoot),
+  /containerTree\[0\]\.span must be an integer between 1 and 24/,
+  'a layout root without a declared span must stop',
+);
+const spanlessChild = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
+delete (spanlessChild.layoutContract.containerTree[0].children[0] as Record<string, unknown>).span;
+assert.throws(
+  () => decodeContractV2Snapshot(spanlessChild),
+  /containerTree\[0\]\.children\[0\]\.span must be an integer between 1 and 24/,
+  'a layout child without a declared span must stop',
+);
 
 const anonymousNativeContainer = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
 const anonymousGroup = anonymousNativeContainer.layoutContract.containerTree[0].children[0] as Record<string, unknown>;
@@ -3171,13 +3211,17 @@ assert.deepEqual(
   },
   'an authoritative action advisory must appear when the user starts that action',
 );
-assert.equal(
-  contractActionConfirmationPrompt({
-    key: 'action_submit', label: '提交审批', hint: '', requiresConfirmation: true,
+for (const hint of ['', '   ']) assert.throws(
+  () => contractActionConfirmationPrompt({
+    key: 'action_submit', label: '提交审批', hint, requiresConfirmation: true,
   } as never),
-  null,
-  'an action without an advisory must not manufacture an extra confirmation',
+  { name: 'ContractGapError' },
+  'declared confirmation without its message stops instead of silently executing',
 );
+assert.throws(() => contractActionConfirmationPrompt({
+  label: 'Danger', requiresConfirmation: true, hint: '',
+  actionSafety: { classification: 'danger', requiresConfirm: true, confirmMessage: 'Existing safety' },
+} as never), { name: 'ContractGapError' }, 'danger cannot hide a missing advisory declaration');
 const readonlySaveSnapshot = snapshot();
 readonlySaveSnapshot.actionContract.actionRuleList = [{
   ...readonlySaveSnapshot.actionContract.actionRuleList[0],
@@ -3226,6 +3270,23 @@ const runtimeActions = buildContractFormActions({
   v2ButtonStatus: { native_action_submit: mergedWinnerStatus },
   v2ActionRuleList: [mergedWinner],
 });
+const advisoryActions = buildContractFormActions({
+  model: 'x.document', recordId: 7, renderProfile: 'edit', sceneReadyActions: [],
+  v2ButtonStatus: { native_action_submit: mergedWinnerStatus },
+  v2ActionRuleList: [{ ...mergedWinner, presentation: { ...mergedWinner.presentation,
+    requires_confirmation: true, warning_message: '声明的复核提醒，可继续。' } }],
+});
+assert.equal(advisoryActions.length, 1);
+assert.deepEqual(contractActionConfirmationPrompt(advisoryActions[0]), {
+  actionLabel: advisoryActions[0].label, message: '声明的复核提醒，可继续。',
+}, 'formal presentation warning reaches the existing action confirmation unchanged');
+assert.equal(advisoryActions[0].enabled, runtimeActions[0].enabled, 'advisory cannot grant or deny action authority');
+const canonicalAdvisoryExecution = resolveCanonicalFormActionExecution(mergedWinner, advisoryActions);
+assert.equal(canonicalAdvisoryExecution.kind, 'contract-action');
+if (canonicalAdvisoryExecution.kind === 'contract-action') assert.deepEqual(
+  contractActionConfirmationPrompt(canonicalAdvisoryExecution.action),
+  contractActionConfirmationPrompt(advisoryActions[0]), 'canonical exact reference consumes the same advisory');
+
 assert.deepEqual(
   runtimeActions.map((action) => action.authorityActionId),
   ['action.product_submit'],
@@ -3449,8 +3510,8 @@ const attachmentPage = { ...notePage, nodeId: 'attachments', title: 'Attachments
 emptySectionModel.zones.primary = [sourceSection, { ...notePage, nodeId: 'tabs', kind: 'notebook', children: [notePage, attachmentPage] }];
 emptySectionModel.zones.subordinate = [];
 const emptySectionBridge = buildCanonicalNativeFormBridge(emptySectionModel);
-assert.equal(emptySectionBridge.nodeVisible(emptySectionBridge.primaryNodes[0]), false, 'empty readonly section body omitted');
-assert.equal(emptySectionBridge.sectionLinks.some((item) => item.label === 'Source facts'), false, 'empty section navigation omitted with body');
+assert.equal(emptySectionBridge.nodeVisible(emptySectionBridge.primaryNodes[0]), true, 'declared visible empty readonly section retained');
+assert.equal(emptySectionBridge.sectionLinks.some((item) => item.label === 'Source facts'), true, 'declared visible section navigation retained');
 assert.equal(emptySectionBridge.nodeVisible(emptySectionBridge.primaryNodes[1]), true, 'notebook retained');
 assert.equal(emptySectionBridge.primaryNodes[1].children?.length, 2, 'notes and attachments retained');
 assert.equal(sourceSection.visible, true, 'projection does not mutate authoritative model');
@@ -3462,16 +3523,20 @@ for (const value of ['SOURCE-001', 0, false]) {
   assert.equal(populated.sectionLinks.some((item) => item.label === 'Source facts'), true);
 }
 sourceField.value = null; sourceField.fieldType = 'char';
-const actionable = buildCanonicalNativeFormBridge(emptySectionModel, undefined, '', '', () => true);
+const actionable = buildCanonicalNativeFormBridge(emptySectionModel, undefined, '', '');
 assert.equal(actionable.nodeVisible(actionable.primaryNodes[0]), true, 'empty fact with authorized action retained');
 // Native XML emits child field nodes, not only fields attached to a group.
 sourceSection.fields = [];
 sourceSection.children = [{ ...sourceSection, nodeId: 'generic.source.field', kind: 'field', title: '', attributes: {}, fields: [sourceField], children: [] }];
+sourceField.visible = false;
+const hiddenSource = buildCanonicalNativeFormBridge(emptySectionModel);
+assert.equal(hiddenSource.nodeVisible(hiddenSource.primaryNodes[0].children![0]), false, 'upstream hidden occurrence is not revived');
+sourceField.visible = true;
 const childEmpty = buildCanonicalNativeFormBridge(emptySectionModel);
-assert.equal(childEmpty.nodeVisible(childEmpty.primaryNodes[0]), false, 'nested empty field hides its parent section');
-assert.equal(childEmpty.sectionLinks.some((item) => item.label === 'Source facts'), false);
+assert.equal(childEmpty.nodeVisible(childEmpty.primaryNodes[0]), true, 'nested visible empty field retains its parent section');
+assert.equal(childEmpty.sectionLinks.some((item) => item.label === 'Source facts'), true);
 sourceField.value = 'NATIVE-SOURCE';
-assert.equal(buildCanonicalNativeFormBridge(emptySectionModel).nodeVisible(childEmpty.primaryNodes[0]), false, 'visibility stays bound to the originating projection');
+assert.equal(buildCanonicalNativeFormBridge(emptySectionModel).nodeVisible(childEmpty.primaryNodes[0]), true, 'declared visibility does not depend on value changes');
 const childPopulated = buildCanonicalNativeFormBridge(emptySectionModel);
 assert.equal(childPopulated.nodeVisible(childPopulated.primaryNodes[0]), true, 'nested populated field retains its parent');
 assert.equal(childPopulated.sectionLinks.some((item) => item.label === 'Source facts'), true);

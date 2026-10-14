@@ -1,0 +1,28 @@
+decision:
+  id: DATA-AUTHORITY-20261013
+  status: owner_confirmed_implementation_in_progress
+  authority: docs/architecture/backend_contract_boundaries.md
+  database_authority: docs/governance/database_architecture_policy.md
+  current_run: .agent/runs/FE-CONTRACT-RUNTIME-02/run.json
+  dimensions:
+    - ownership_identity
+    - customer_demo_test_purpose
+    - company_industry_platform_sharing
+    - company_project_business_scope
+    - capability_acl_operation
+  invariants:
+    - use_native_tenant_company_registration_as_ownership_authority
+    - customer_and_non_customer_business_data_are_isolated_in_both_directions
+    - role_union_never_expands_the_data_purpose_ceiling
+    - shared_scope_does_not_grant_write_or_change_ownership
+    - company_false_is_not_a_public_reference_declaration
+    - current_company_or_project_selection_is_not_authorization
+    - details_attachments_and_derivatives_inherit_their_source_boundary
+    - public_product_references_are_explicit_and_never_inferred_from_customer_data
+    - cross_tenant_business_sharing_requires_governed_exchange_not_cross_database_orm
+    - unknown_or_mixed_ownership_fails_closed
+    - frontend_consumes_authorization_and_never_derives_it
+    - full_model_and_access_path_coverage_is_required_before_product_closeout
+    - full_registry_is_inspection_scope_not_a_rewrite_list
+    - reuse_native_acl_company_rules_and_parent_relations_before_adding_mechanisms
+    - do_not_duplicate_all_isolation_dimensions_on_every_model

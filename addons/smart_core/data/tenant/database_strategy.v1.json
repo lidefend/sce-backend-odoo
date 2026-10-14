@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "authority": "docs/governance/database_architecture_policy.md",
+  "boundary": "docs/architecture/platform_industry_initialization_and_database_strategy_v1.md",
+  "strategies": {
+    "database_per_customer_tenant": {
+      "summary": "One dedicated database per formal customer tenant; several res.company may still share that one tenant database.",
+      "dedicated_database_per_customer": true,
+      "allows_multiple_customers_in_one_business_database": false
+    },
+    "single_db_multi_company": {
+      "summary": "One database, several business companies separated by company scope plus data purpose.",
+      "dedicated_database_per_customer": false,
+      "allows_multiple_customers_in_one_business_database": false
+    }
+  },
+  "data_purposes": [
+    "customer",
+    "demo",
+    "test"
+  ],
+  "environment_roles": {
+    "platform_internal_demo": {
+      "strategy": "single_db_multi_company",
+      "data_purpose": "demo",
+      "bootstrap_company_carries_business_data": false,
+      "onboarded_company_required": true,
+      "main_company_onboarding_purpose": "demo",
+      "initialization_order": [
+        "platform_technical_baseline",
+        "platform_mechanisms",
+        "bootstrap_company_marker",
+        "database_strategy_declaration",
+        "data_space_onboarding",
+        "industry_initialization",
+        "customer_differentiation"
+      ]
+    },
+    "industry_acceptance": {
+      "strategy": "single_db_multi_company",
+      "data_purpose": "test",
+      "bootstrap_company_carries_business_data": false,
+      "onboarded_company_required": true,
+      "main_company_onboarding_purpose": "test",
+      "initialization_order": [
+        "platform_technical_baseline",
+        "platform_mechanisms",
+        "bootstrap_company_marker",
+        "database_strategy_declaration",
+        "data_space_onboarding",
+        "industry_initialization",
+        "customer_differentiation"
+      ]
+    },
+    "customer_production": {
+      "strategy": "database_per_customer_tenant",
+      "data_purpose": "customer",
+      "bootstrap_company_carries_business_data": false,
+      "onboarded_company_required": true,
+      "dedicated_database_per_customer": true,
+      "main_company_onboarding_purpose": null,
+      "initialization_order": [
+        "platform_technical_baseline",
+        "platform_mechanisms",
+        "bootstrap_company_marker",
+        "database_strategy_declaration",
+        "data_space_onboarding",
+        "industry_initialization",
+        "customer_differentiation"
+      ]
+    }
+  },
+  "invariants": [
+    "business_data_never_in_platform_bootstrap_company",
+    "onboarding_precedes_industry_initialization",
+    "one_formal_customer_owns_one_business_database",
+    "unregistered_company_ownership_fails_closed",
+    "strategy_is_declared_per_environment_role",
+    "environment_main_company_onboarding_is_role_scoped",
+    "database_isolation_never_replaces_record_permission",
+    "platform_database_management_never_grants_business_data_read",
+    "maintenance_access_requires_explicit_authorization_and_audit"
+  ],
+  "responsibility_layers": {
+    "platform_database_management": {
+      "owns": [
+        "database_role",
+        "tenant_ownership",
+        "provisioning",
+        "initialization_order",
+        "upgrade",
+        "backup_restore",
+        "suspension_retirement",
+        "database_audit"
+      ],
+      "must_not_own": [
+        "business_record_read",
+        "business_state_transition",
+        "company_project_scope"
+      ]
+    },
+    "company_data_space": {
+      "owns": [
+        "company_ownership",
+        "data_purpose",
+        "company_scope",
+        "project_scope",
+        "data_space_registration"
+      ],
+      "must_not_own": [
+        "business_state_transition",
+        "database_lifecycle"
+      ]
+    },
+    "business_model": {
+      "owns": [
+        "business_fact",
+        "state_transition",
+        "approval",
+        "operation_permission"
+      ],
+      "must_not_own": [
+        "database_lifecycle",
+        "company_ownership"
+      ]
+    },
+    "demo": {
+      "owns": [],
+      "consumes": [
+        "onboarded_data_space",
+        "formal_user_identity",
+        "formal_business_actions"
+      ],
+      "must_not_own": [
+        "database_lifecycle",
+        "company_ownership",
+        "guard_bypass",
+        "terminal_state_write"
+      ]
+    }
+  },
+  "database_lifecycle": {
+    "initial_state": "declared",
+    "terminal_states": [
+      "retired"
+    ],
+    "states": [
+      "declared",
+      "provisioned",
+      "active",
+      "suspended",
+      "retired"
+    ],
+    "transitions": {
+      "declared": [
+        "provisioned",
+        "retired"
+      ],
+      "provisioned": [
+        "active",
+        "retired"
+      ],
+      "active": [
+        "suspended",
+        "retired"
+      ],
+      "suspended": [
+        "active",
+        "retired"
+      ],
+      "retired": []
+    }
+  },
+  "maintenance_access": {
+    "requires_explicit_grant": true,
+    "requires_independent_approver": true,
+    "requires_audit": true,
+    "grants_business_data_scope": false,
+    "max_validity_hours": 24,
+    "capabilities": [
+      "backup",
+      "restore",
+      "upgrade",
+      "inspect",
+      "migrate"
+    ]
+  }
+}

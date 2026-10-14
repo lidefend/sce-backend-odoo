@@ -7,7 +7,7 @@ import {
   toDateInputValue,
   toDatetimeInputValue,
 } from './fieldUtils';
-import { isDeclaredLayoutSpan, layoutGridUnits } from '../../components/template/layoutSpan';
+import { isDeclaredLayoutSpan, requireDeclaredLayoutSpan } from '../../components/template/layoutSpan';
 import type { LayoutNode, LowCodeFieldSize } from './types';
 import {
   compareNativeModifierValue,
@@ -395,7 +395,6 @@ export type LegacyLayoutNodeInput = {
   containerStatus: Record<string, { visible?: boolean; disabled?: boolean }>;
   visibleFields: string[];
   fallbackFieldNames: string[];
-  isCreate: boolean;
   readonly: boolean;
   resolveFieldLabel: (name: string) => string;
   evaluatePolicy: (name: string, descriptor: FieldDescriptor) => FieldPolicyLike;
@@ -430,7 +429,6 @@ export type NativeFieldVisibilityInput = {
   statusField?: string;
   showHud: boolean;
   renderProfile: string;
-  isCreate: boolean;
   isNodeVisible: (node: NativeLayoutLikeNode) => boolean;
   resolveDescriptor: (name: string, node?: NativeLayoutLikeNode) => FieldDescriptor | undefined;
   resolveFieldLabel: (name: string) => string;
@@ -450,21 +448,6 @@ export type NativeLayoutNodeVisibilityInput = {
 };
 
 const CHILD_KEYS = ['children', 'pages', 'tabs', 'nodes', 'items'] as const;
-const CREATE_WORKFLOW_STATE_FIELD_NAMES = new Set([
-  'state',
-  'status',
-  'lifecycle_state',
-  'workflow_state',
-  'approval_state',
-  'tier_validation_state',
-  'validation_state',
-  'document_status',
-  'document_state',
-  'document_state_label',
-  'legacy_document_state',
-  'legacy_document_state_label',
-  'legacy_visible_document_state',
-]);
 
 export function nativeLayoutNodeType(node: NativeLayoutLikeNode) {
   return String(node?.type || (node as { containerType?: string })?.containerType || '').trim().toLowerCase();
@@ -578,6 +561,24 @@ export function collectNativeVisibleFieldOrder(
   return out;
 }
 
+export function resolveStatusFieldSuppression(input: {
+  hasNode: boolean;
+  nodeIdentity?: string;
+  statusbarNodeIdentity?: string;
+  statusbarField?: string;
+}): string {
+  const statusbarField = String(input.statusbarField || '').trim();
+  if (!statusbarField) return '';
+  const claim = String(input.statusbarNodeIdentity || '').trim();
+  const nodeIdentity = String(input.nodeIdentity || '').trim();
+  // Suppress the statusbar field in the body only when the body node IS the
+  // statusbar occurrence (same node identity), or when there is no node at all
+  // (legacy field-level lookup).  A different occurrence of the same field name
+  // is a distinct declared instance and must stay visible.
+  const claimed = Boolean(claim && nodeIdentity && claim === nodeIdentity);
+  return claimed || !input.hasNode ? statusbarField : '';
+}
+
 export function collectFormDataFieldNames(input: FormDataFieldNameInput): string[] {
   const names = new Set<string>();
   const fieldMap = input.fields || {};
@@ -667,26 +668,24 @@ export function nativeFieldPresentation(input: NativeFieldPresentationInput): Na
   // editor's default, so an unrecognised declaration fails closed instead of
   // silently becoming the ``normal`` width the editor would have picked.
   const facetSpan = declaredSize ? declaredFieldSizeSpan(declaredSize) : null;
+  // A projected contract node always declares ``span``.  The only remaining
+  // source without one is the low-code size facet (``field_size``) on the field
+  // configuration preview; the editor's own sizing only applies while the
+  // renderer is in its editable order mode.  Neither present means the
+  // declaration layer owes a span: stop instead of inventing full width.
   const span = hasDeclaredSpan
     ? Number(declaredSpan)
     : input.editable
       ? lowCodeFieldSizeUnits(input.effectiveFieldSize(name))
-      : facetSpan ?? layoutGridUnits();
+      : facetSpan ?? requireDeclaredLayoutSpan(declaredSpan, {
+          missing: `nativeField.${name || '<unnamed>'}.span`,
+          requiredDeclarationLayer: 'P0:smart_core:page_assembler:layout',
+        });
   return {
     label: nativeFieldLabel(input.node, input.descriptor, input.resolveFieldLabel),
     nodeClass,
     span,
   };
-}
-
-export function isCreateWorkflowStateField(name: string, label = '', isCreate = false) {
-  const normalized = String(name || '').trim();
-  const normalizedLabel = String(label || '').replace(/\s+/g, '').trim();
-  return isCreate && (
-    CREATE_WORKFLOW_STATE_FIELD_NAMES.has(normalized)
-    || normalizedLabel === '状态'
-    || normalizedLabel.endsWith('状态')
-  );
 }
 
 export function buildLegacyLayoutNodes(input: LegacyLayoutNodeInput): LayoutNode[] {
@@ -703,7 +702,6 @@ export function buildLegacyLayoutNodes(input: LegacyLayoutNodeInput): LayoutNode
     if (name === 'company_type') {
       label = '主体类型';
     }
-    if (isCreateWorkflowStateField(name, label, input.isCreate)) return;
     const containerStatus = input.containerStatus[name];
     if (containerStatus?.visible === false) return;
     const resolved = input.evaluatePolicy(name, descriptor);
@@ -849,11 +847,6 @@ export function isNativeFieldVisible(input: NativeFieldVisibilityInput) {
   if (state.invisible) return false;
   const descriptor = input.resolveDescriptor(normalized, input.node);
   if (!descriptor) return false;
-  if (isCreateWorkflowStateField(
-    normalized,
-    nativeFieldLabel(input.node || {}, descriptor, input.resolveFieldLabel),
-    input.isCreate,
-  )) return false;
   const resolved = input.evaluatePolicy(normalized, descriptor);
   if (resolved.visible) return true;
   // Native layout is already a backend-scoped form contract. Do not re-apply

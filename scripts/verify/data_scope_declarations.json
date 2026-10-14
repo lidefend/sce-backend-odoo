@@ -1,0 +1,1076 @@
+{
+  "version": 1,
+  "authority": "docs/governance/database_architecture_policy.md",
+  "decision": ".agent/decisions/data-authority-boundary.yaml",
+  "purpose": "Explicit company-scope decision for every product-module model that declares a company_id field. No absence-based exemption and no inferred coverage: each such model is enforced with a generated global company ceiling, deferred with an owned issue, exempt with a single named isolation dimension, transient (declared), or source_bounded by a named global ir.rule that the guard verifies.",
+  "enforced": [
+    {
+      "model": "construction.contract.section",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "construction.execution.scope",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "construction.location.breakdown",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "construction.wbs.plan",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "construction.work.breakdown",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "payment.request",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "project.boq.allocation",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "project.budget",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "project.budget.cost.alloc",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "project.cost.compare",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "project.cost.period",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "project.profit.compare",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "project.responsibility",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "project.settlement",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.approval.policy",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.approval.step",
+      "anchor": "policy_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.ar.ap.report.summary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.audit.log",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.business.category",
+      "anchor": "approval_policy_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.business.entity",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.check.standard",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.check.standard.item",
+      "anchor": "standard_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.company.contractor.responsibility.fact",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.company.contractor.responsibility.summary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.company.operation.summary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.comprehensive.cost.summary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.construction.diary",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.contract.event",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.contract.recon.summary",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.dashboard.cockpit.fact",
+      "anchor": "project_id.company_id",
+      "class": "root",
+      "unsetOwner": "unknown",
+      "reason": "the project is this fact model's only ownership path and it is optional, so an unset project is incomplete attribution rather than shared reference data; the written/projected fact must not become public"
+    },
+    {
+      "model": "sc.document.admin.document",
+      "anchor": "project_id.company_id",
+      "class": "root",
+      "unsetOwner": "unknown",
+      "reason": "the project is this fact model's only ownership path and it is optional, so an unset project is incomplete attribution rather than shared reference data; the written/projected fact must not become public"
+    },
+    {
+      "model": "sc.equipment.price",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.expense.contract.ledger",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.expense.reimbursement.summary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.finance.business.project.summary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.finance.counterparty.position.summary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.finance.project.capital.position",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.fund.account",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.fund.daily.summary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.hazard.source",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.income.contract.ledger",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.interfund.movement.project.summary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.invoice.category.summary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.labor.price",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.material.catalog",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.material.price",
+      "anchor": "material_catalog_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.material.rental.order",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.material.rental.plan",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.material.rental.settlement",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.material.settlement.purchase.scope",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.material.stock.summary",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.office.admin.document",
+      "anchor": "project_id.company_id",
+      "class": "root",
+      "unsetOwner": "unknown",
+      "reason": "the project is this fact model's only ownership path and it is optional, so an unset project is incomplete attribution rather than shared reference data; the written/projected fact must not become public"
+    },
+    {
+      "model": "sc.office.asset",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.operating.metrics.project",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.output.invoice.adjustment",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.output.invoice.ledger",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.p1.relationship.review.queue",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.p1.relationship.suggestion",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.pack.installation",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.payment.execution",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.plan",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.plan.report",
+      "anchor": "plan_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.plan.version",
+      "anchor": "plan_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.plan.warning.log",
+      "anchor": "plan_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.project.document",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.project.member.assignment",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.quality.issue",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.quality.recheck",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.quality.rectification",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.receipt.income",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.risk.item",
+      "anchor": "library_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.risk.library",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.safety.disclosure",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.safety.issue",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.safety.patrol.task",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.safety.plan",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.safety.recheck",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.safety.rectification",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.self.funding.registration",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.settlement.adjustment",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.settlement.order",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.site.photo.batch",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.subcontract.price",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.tenant.company.registration",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.tenant.payload.external.identity",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.treasury.reconciliation",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.user.profile.document",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.workbench.item",
+      "anchor": "project_id.company_id",
+      "class": "root",
+      "unsetOwner": "unknown",
+      "reason": "the project is this fact model's only ownership path and it is optional, so an unset project is incomplete attribution rather than shared reference data; the written/projected fact must not become public"
+    },
+    {
+      "model": "sc.workflow.def",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.workflow.instance",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "sc.workflow.node",
+      "anchor": "workflow_def_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "tender.bid",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "tender.doc.purchase",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "tender.doc.review",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "tender.guarantee",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "tender.opening",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "tender.survey",
+      "anchor": "project_id.company_id",
+      "class": "root"
+    },
+    {
+      "model": "ui.business.config.change.set",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "ui.business.config.contract",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "ui.business.config.mutation.audit",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "ui.form.field.policy",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "ui.menu.config.policy",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "ui.tenant.extension.field",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "ui.tenant.extension.value",
+      "anchor": "company_id",
+      "class": "root"
+    },
+    {
+      "model": "construction.contract.line",
+      "anchor": "project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "project.budget.boq.line",
+      "anchor": "project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "project.budget.line",
+      "anchor": "project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "project.settlement.line",
+      "anchor": "settlement_id.project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "sc.expense.claim.deduction.line",
+      "anchor": "claim_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "sc.material.rental.order.line",
+      "anchor": "order_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "sc.material.rental.plan.line",
+      "anchor": "project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "sc.material.rental.settlement.line",
+      "anchor": "settlement_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "sc.partner.business.fact.line",
+      "anchor": "project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "sc.plan.line",
+      "anchor": "contract_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "sc.receipt.invoice.line",
+      "anchor": "project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "tender.bid.line",
+      "anchor": "project_id.company_id",
+      "class": "detail"
+    },
+    {
+      "model": "tender.opening.competitor",
+      "anchor": "opening_id.project_id.company_id",
+      "class": "detail"
+    }
+  ],
+  "exempt": [
+    {
+      "model": "project.cost.code",
+      "dimension": "master_data",
+      "owner_module": "smart_construction_core",
+      "reason": "construction industry cost dictionary; global reference, no company ownership"
+    },
+    {
+      "model": "project.dictionary",
+      "dimension": "master_data",
+      "owner_module": "smart_construction_core",
+      "reason": "construction industry dictionary; global reference, no company ownership"
+    },
+    {
+      "model": "res.groups",
+      "dimension": "identity_registry",
+      "owner_module": "odoo_base",
+      "reason": "platform identity/authorization registry; company scope is not its ownership dimension"
+    },
+    {
+      "model": "res.partner.category",
+      "dimension": "master_data",
+      "owner_module": "odoo_base",
+      "reason": "master-data tag category; shared reference, not customer business data"
+    },
+    {
+      "model": "sc.approval.scope",
+      "dimension": "role_scope",
+      "owner_module": "smart_construction_core",
+      "reason": "approval scope is scoped by group_id/user_ids, not by company"
+    },
+    {
+      "model": "sc.capability",
+      "dimension": "role_scope",
+      "owner_module": "smart_construction_core",
+      "reason": "platform capability registry scoped by role_scope/capability_scope"
+    },
+    {
+      "model": "sc.capability.audit.log",
+      "dimension": "audit_trail",
+      "owner_module": "smart_construction_core",
+      "reason": "append-only capability create/update/import audit trail; the actor is not the record owner and the audited subject is scoped by role/capability scope, not company"
+    },
+    {
+      "model": "sc.capability.group",
+      "dimension": "role_scope",
+      "owner_module": "smart_construction_core",
+      "reason": "platform capability grouping, same dimension as sc.capability"
+    },
+    {
+      "model": "sc.dictionary",
+      "dimension": "scope_ref",
+      "owner_module": "smart_construction_core",
+      "reason": "runtime dictionary scoped by its own scope_type/scope_ref dimension, not by company"
+    },
+    {
+      "model": "sc.pack.registry",
+      "dimension": "delivery_orchestration",
+      "owner_module": "smart_construction_core",
+      "reason": "deployment-wide pack/package manifest (pack_id, channel, pack_type, vendor); identifies published packages, not company-owned business data, and declares no company dimension"
+    },
+    {
+      "model": "sc.product.policy",
+      "dimension": "platform_state",
+      "owner_module": "smart_core",
+      "reason": "platform product policy (P0/P3 editing surface), deployment-wide by design"
+    },
+    {
+      "model": "sc.project.capability.roadmap",
+      "dimension": "master_data",
+      "owner_module": "smart_construction_core",
+      "reason": "industry-standard capability roadmap; global definition data"
+    },
+    {
+      "model": "sc.project.next_action.rule",
+      "dimension": "master_data",
+      "owner_module": "smart_construction_core",
+      "reason": "industry-standard next-action rule set; global definition data"
+    },
+    {
+      "model": "sc.project.stage.requirement.item",
+      "dimension": "master_data",
+      "owner_module": "smart_construction_core",
+      "reason": "industry-standard stage requirement list; global definition data"
+    },
+    {
+      "model": "sc.scene",
+      "dimension": "delivery_orchestration",
+      "owner_module": "smart_construction_core",
+      "reason": "scene delivery/orchestration definition; source_authority_contract declares kind=scene_delivery_orchestration, delivery_only and no_business_fact_authority, so the record carries no company-owned business fact"
+    },
+    {
+      "model": "sc.scene.audit.log",
+      "dimension": "audit_trail",
+      "owner_module": "smart_construction_core",
+      "reason": "append-only scene publish/rollback audit trail; neither the actor nor the delivery-only subject is the record owner, so no company anchor exists"
+    },
+    {
+      "model": "sc.scene.tile",
+      "dimension": "delivery_orchestration",
+      "owner_module": "smart_construction_core",
+      "reason": "scene composition element scoped by scene_id"
+    },
+    {
+      "model": "sc.scene.validation",
+      "dimension": "delivery_orchestration",
+      "owner_module": "smart_construction_core",
+      "reason": "validation result owned by scene_id; sc.scene is delivery-only orchestration, so the record inherits a delivery boundary rather than a company boundary"
+    },
+    {
+      "model": "sc.scene.version",
+      "dimension": "delivery_orchestration",
+      "owner_module": "smart_construction_core",
+      "reason": "scene version snapshot scoped by scene_id"
+    },
+    {
+      "model": "sc.signup.throttle",
+      "dimension": "technical_state",
+      "owner_module": "smart_construction_core",
+      "reason": "platform anti-abuse throttle; deployment-wide technical state"
+    },
+    {
+      "model": "sc.supplier.type",
+      "dimension": "master_data",
+      "owner_module": "smart_construction_core",
+      "reason": "supplier type master data; shared reference, not customer business data"
+    },
+    {
+      "model": "app.menu.config",
+      "dimension": "technical_state",
+      "owner_module": "smart_core",
+      "reason": "generated application menu navigation cache keyed by company/model/scene; regenerated from menus and actions, not customer business data"
+    },
+    {
+      "model": "sc.contract.slo.observation",
+      "dimension": "technical_state",
+      "owner_module": "smart_core",
+      "reason": "contract SLO observability telemetry; operational measurement rows, not company-owned business facts"
+    },
+    {
+      "model": "sc.entitlement",
+      "dimension": "platform_state",
+      "owner_module": "smart_core",
+      "reason": "platform entitlement/plan state keyed by company for plan and limit resolution, read through the internal sudo service; not customer business data"
+    },
+    {
+      "model": "sc.idempotency.record",
+      "dimension": "technical_state",
+      "owner_module": "smart_core",
+      "reason": "write idempotency dedup record keyed by actor and company; technical replay protection, not business data"
+    },
+    {
+      "model": "sc.scene.company.channel",
+      "dimension": "delivery_orchestration",
+      "owner_module": "smart_construction_scene",
+      "reason": "per-company scene channel delivery configuration, admin-managed and admin-readable only; delivery orchestration, not business data"
+    },
+    {
+      "model": "sc.scene.governance.log",
+      "dimension": "audit_trail",
+      "owner_module": "smart_construction_scene",
+      "reason": "append-only scene governance trail written through the internal sudo service; the actor is not the record owner"
+    },
+    {
+      "model": "sc.subscription",
+      "dimension": "platform_state",
+      "owner_module": "smart_core",
+      "reason": "platform subscription state keyed by company for plan resolution, read through the internal sudo service; not customer business data"
+    },
+    {
+      "model": "sc.ui.base.contract.asset",
+      "dimension": "platform_state",
+      "owner_module": "smart_core",
+      "reason": "platform UI base-contract asset delivered per company; UI delivery state, not customer business data"
+    },
+    {
+      "model": "sc.usage.counter",
+      "dimension": "platform_state",
+      "owner_module": "smart_core",
+      "reason": "platform usage counter keyed by company for entitlement limits; technical metering state"
+    },
+    {
+      "model": "ui.dynamic.config",
+      "dimension": "technical_state",
+      "owner_module": "smart_core",
+      "reason": "UI dynamic configuration defaults scoped by company and optional user; presentation runtime configuration, not business data"
+    },
+    {
+      "model": "sc.scene.governance.wizard",
+      "dimension": "transient",
+      "owner_module": "smart_construction_scene",
+      "reason": "transient governance wizard; company is the operating context and the wizard model persists no row of its own"
+    },
+    {
+      "model": "ui.form.custom.field.wizard",
+      "dimension": "transient",
+      "owner_module": "smart_core",
+      "reason": "transient custom-field wizard; company is the operating context and the rows are not persisted"
+    }
+  ],
+  "policy": {
+    "isolation_dimensions": [
+      "ownership_identity",
+      "customer_demo_test_purpose",
+      "company_industry_platform_sharing",
+      "company_project_business_scope",
+      "capability_acl_operation"
+    ],
+    "reuse_first": "Reuse native ACL, existing industry record rules and parent-relation anchors before introducing a new mechanism; a model must not duplicate every isolation dimension.",
+    "coverage": "The coverage universe is every model defined by a product module in config/tenant/module_sets.v1.json that declares a company_id field. scripts/verify/sc_data_scope_rule_coverage_guard.py derives that universe from source and fails closed when a model has no ceiling, exemption, deferred decision or company-constraining rule.",
+    "unset_owner": "A relation anchor default keeps an unset anchor visible as shared reference data (Odoo global configuration, an optional policy or contract link). An entry that declares unsetOwner=unknown is rendered strict instead, because for that model the anchor is the only ownership path and leaving it unset is incomplete attribution, not shared data. unsetOwner requires a reason and is never inferred from absence."
+  },
+  "deferred": [
+    {
+      "issue": "DATA-SCOPE-CEILING-01",
+      "dimension": "company_project_business_scope",
+      "anchor": "company_id",
+      "owner_module": "smart_construction_core",
+      "reason": "P1 business models that expose a company_id column but carry only capability/project-scoped groups rules (domains such as (1,'=',1) or project-member predicates), so no group union is bounded by a company ceiling and a manager-level group can read other companies rows. Fix by deriving one global company ceiling from this declaration instead of hand-writing another near-duplicate ir.rule for each model.",
+      "models": [
+        "project.material.plan",
+        "project.risk",
+        "sc.attendance.checkin",
+        "sc.equipment.plan",
+        "sc.equipment.request",
+        "sc.equipment.settlement",
+        "sc.equipment.usage",
+        "sc.finance.business.fact",
+        "sc.finance.project.counterparty.position",
+        "sc.general.contract",
+        "sc.interfund.movement.fact",
+        "sc.labor.plan",
+        "sc.labor.request",
+        "sc.labor.settlement",
+        "sc.labor.usage",
+        "sc.material.acceptance",
+        "sc.material.inbound",
+        "sc.material.outbound",
+        "sc.material.purchase.request",
+        "sc.material.rfq",
+        "sc.material.settlement",
+        "sc.subcontract.plan",
+        "sc.subcontract.register",
+        "sc.subcontract.request",
+        "sc.subcontract.settlement",
+        "sc.treasury.ledger"
+      ]
+    }
+  ],
+  "source_bounded": [
+    {
+      "model": "construction.contract",
+      "anchor": "company_id",
+      "rule": "rule_sc_construction_contract_allowed_company_global",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_construction_contract_allowed_company_global, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "payment.ledger",
+      "anchor": "company_id",
+      "rule": "rule_payment_ledger_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_payment_ledger_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "payment.ledger.allocation",
+      "anchor": "company_id",
+      "rule": "rule_payment_ledger_allocation_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_payment_ledger_allocation_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "project.boq.analysis.norm.line",
+      "anchor": "analysis_id.project_id.company_id",
+      "rule": "rule_sc_boq_analysis_norm_allowed_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_boq_analysis_norm_allowed_company, whose domain is byte-identical to the generated ceiling; the generated record declared no additional fact, so it is removed and this single rule owns the company scope"
+    },
+    {
+      "model": "project.boq.analysis.resource.line",
+      "anchor": "analysis_id.project_id.company_id",
+      "rule": "rule_sc_boq_analysis_resource_allowed_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_boq_analysis_resource_allowed_company, whose domain is byte-identical to the generated ceiling; the generated record declared no additional fact, so it is removed and this single rule owns the company scope"
+    },
+    {
+      "model": "project.cost.ledger",
+      "anchor": "company_id",
+      "rule": "rule_sc_project_cost_ledger_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_project_cost_ledger_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "project.funding.actual.event.allocation",
+      "anchor": "company_id",
+      "rule": "rule_project_funding_actual_event_allocation_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_project_funding_actual_event_allocation_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "project.funding.baseline",
+      "anchor": "company_id",
+      "rule": "rule_project_funding_baseline_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_project_funding_baseline_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "project.funding.baseline.line",
+      "anchor": "company_id",
+      "rule": "rule_project_funding_baseline_line_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_project_funding_baseline_line_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.ar.ap.company.summary",
+      "anchor": "project_id.company_id",
+      "rule": "rule_sc_ar_ap_company_summary_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_ar_ap_company_summary_company, whose domain (project_id.company_id in company_ids) is strictly narrower than the generated ceiling (which also admitted project_id.company_id = False); AND-composition made the generated record redundant, so this single rule owns the company scope"
+    },
+    {
+      "model": "sc.ar.ap.project.summary",
+      "anchor": "project_id.company_id",
+      "rule": "rule_sc_ar_ap_project_summary_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_ar_ap_project_summary_company, whose domain (project_id.company_id in company_ids) is strictly narrower than the generated ceiling (which also admitted project_id.company_id = False); AND-composition made the generated record redundant, so this single rule owns the company scope"
+    },
+    {
+      "model": "sc.contract.change",
+      "anchor": "company_id",
+      "rule": "rule_sc_contract_change_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_contract_change_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.contract.execution.position",
+      "anchor": "company_id",
+      "rule": "rule_sc_contract_execution_position_allowed_company_global",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_contract_execution_position_allowed_company_global, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.expense.claim",
+      "anchor": "company_id",
+      "rule": "rule_sc_expense_claim_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_expense_claim_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.financing.loan",
+      "anchor": "company_id",
+      "rule": "rule_sc_financing_loan_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_financing_loan_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.fund.account.operation",
+      "anchor": "company_id",
+      "rule": "rule_sc_fund_account_operation_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_fund_account_operation_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.historical.payment.fact",
+      "anchor": "company_id",
+      "rule": "rule_sc_historical_payment_fact_allowed_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_historical_payment_fact_allowed_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.hr.payroll.document",
+      "anchor": "company_id",
+      "rule": "rule_sc_hr_payroll_document_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_hr_payroll_document_company, whose domain narrows the generated ceiling with user._sc_data_company_ids(); AND-composition made the generated record redundant, so this single rule owns the company scope"
+    },
+    {
+      "model": "sc.hr.salary.payment",
+      "anchor": "company_id",
+      "rule": "rule_sc_hr_salary_payment_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_hr_salary_payment_company, whose domain narrows the generated ceiling with user._sc_data_company_ids(); AND-composition made the generated record redundant, so this single rule owns the company scope"
+    },
+    {
+      "model": "sc.invoice.registration",
+      "anchor": "company_id",
+      "rule": "rule_sc_invoice_registration_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_invoice_registration_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.labor.deduction",
+      "anchor": "company_id",
+      "rule": "rule_sc_labor_deduction_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_labor_deduction_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.labor.subcontract.report",
+      "anchor": "company_id",
+      "rule": "rule_sc_labor_subcontract_report_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_labor_subcontract_report_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.labor.worker",
+      "anchor": "company_id",
+      "rule": "rule_sc_labor_worker_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_labor_worker_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.material.supplier.return",
+      "anchor": "company_id",
+      "rule": "rule_sc_material_supplier_return_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_material_supplier_return_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.quality.acceptance",
+      "anchor": "company_id",
+      "rule": "rule_sc_quality_acceptance_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_quality_acceptance_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.salary.summary",
+      "anchor": "company_id",
+      "rule": "rule_sc_salary_summary_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_salary_summary_company, whose domain narrows the generated ceiling with user._sc_data_company_ids(); AND-composition made the generated record redundant, so this single rule owns the company scope"
+    },
+    {
+      "model": "sc.site.variation",
+      "anchor": "company_id",
+      "rule": "rule_sc_site_variation_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_site_variation_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.tax.certificate.registration",
+      "anchor": "company_id",
+      "rule": "rule_sc_tax_certificate_registration_allowed_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_tax_certificate_registration_allowed_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.tax.deduction.registration",
+      "anchor": "company_id",
+      "rule": "rule_sc_tax_deduction_registration_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_tax_deduction_registration_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "sc.tax.filing",
+      "anchor": "company_id",
+      "rule": "rule_sc_tax_filing_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_tax_filing_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "tender.document",
+      "anchor": "company_id",
+      "rule": "rule_sc_tender_document_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_tender_document_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    },
+    {
+      "model": "tender.opportunity",
+      "anchor": "company_id",
+      "rule": "rule_sc_tender_opportunity_company",
+      "file": "addons/smart_construction_core/security/sc_record_rules.xml",
+      "reason": "bounded in source by the global ir.rule rule_sc_tender_opportunity_company, whose domain constrains company_id; generating a second ceiling would duplicate the same fact"
+    }
+  ]
+}

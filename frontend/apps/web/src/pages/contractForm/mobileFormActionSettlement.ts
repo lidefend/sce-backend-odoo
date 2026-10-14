@@ -1,6 +1,6 @@
 export type MobileFormActionAuthorityItem = Readonly<{
   key: string;
-  kind: 'back' | 'return' | 'draft' | 'business' | 'canonical' | 'config' | 'discard';
+  kind: 'back' | 'return' | 'draft' | 'business' | 'canonical' | 'config' | 'discard' | 'record';
   enabled: boolean;
 }>;
 
@@ -16,6 +16,7 @@ export function resolveMobileFormActionAuthority(input: {
   canonicalDirect: readonly ActionLike[];
   canonicalOverflow: readonly ActionLike[];
   config: readonly ActionLike[];
+  record?: readonly ActionLike[];
   showDiscard: boolean;
   busy: boolean;
 }) {
@@ -31,6 +32,7 @@ export function resolveMobileFormActionAuthority(input: {
   append(input.canonicalDirect, 'canonical');
   append(input.canonicalOverflow, 'canonical');
   append(input.config, 'config');
+  append(input.record || [], 'record');
   if (input.showDiscard) items.push({ key: 'discard:form.discard', kind: 'discard', enabled: !input.busy });
   const keys = items.map((item) => item.key);
   if (new Set(keys).size !== keys.length) throw new Error('MOBILE_FORM_ACTION_IDENTITY_DUPLICATE');

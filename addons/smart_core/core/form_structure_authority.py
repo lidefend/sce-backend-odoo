@@ -291,6 +291,60 @@ def structural_form_declarations(spec: dict) -> dict:
     return declarations
 
 
+def role_form_structure_violations(config) -> list[str]:
+    """Role scopes annotate permissions, never select presentation or membership.
+
+    Keep this stricter boundary separate from legacy structure ownership:
+    labels/widgets are presentation too, while targeted permission patches do
+    not own structure. Whole action lists are replacement carriers, not grants.
+    """
+    if not str(getattr(config, "role_key", "") or "").strip():
+        return []
+    payload = getattr(config, "contract_json", None)
+    if not isinstance(payload, dict):
+        return []  # General payload validation owns malformed envelopes.
+    views = (payload.get("view_orchestration") or {}).get("views") or {}
+    spec = views.get("form")
+    violations = []
+    if isinstance(payload.get("layout"), dict) and "form" in payload["layout"]:
+        violations.append("layout.form")
+    if spec is None:
+        return violations
+    prefix = "view_orchestration.views.form"
+    if not isinstance(spec, dict):
+        return violations + [prefix]
+    for key, value in spec.items():
+        target = prefix + "." + key
+        if key == "fields" and isinstance(value, list):
+            for index, row in enumerate(value):
+                if (not isinstance(row, dict)
+                        or set(row) - {"name", "field", "field_name", "visible", "readonly"}
+                        or not any(isinstance(row.get(k), str) and row[k].strip() for k in ("name", "field", "field_name"))
+                        or any(not isinstance(row[k], bool) for k in ("visible", "readonly") if k in row)):
+                    violations.append(target + "[%s]" % index)
+        elif key == "node_patches" and isinstance(value, list):
+            for index, patch in enumerate(value):
+                if (not isinstance(patch, dict) or set(patch) - {"target", "expected", "set"}
+                        or not isinstance(patch.get("target"), str) or not patch["target"].strip()
+                        or not isinstance(patch.get("expected"), dict)
+                        or set(patch["expected"]) != {"type", "name", "occurrence_index"}
+                        or not isinstance(patch.get("set"), dict)
+                        or set(patch["set"]) - {"visible", "readonly"}
+                        or any(not isinstance(v, bool) for v in patch["set"].values())):
+                    violations.append(target + "[%s]" % index)
+        else:
+            violations.append(target)
+    return violations
+
+
+def assert_role_form_permissions_only(config) -> None:
+    violations = role_form_structure_violations(config)
+    if violations:
+        from .form_configuration_compiler import FormConfigurationError
+        raise FormConfigurationError("CONFIG_ROLE_STRUCTURE_FORBIDDEN", violations[0],
+                                     configuration=str(getattr(config, "name", "") or ""))
+
+
 def diagnose_structure_ownership(configs, *, model: str, action_id=None, view_id=None) -> list[dict]:
     """Compare concrete structure keys; unrelated semantic overlays can coexist.
 
@@ -300,6 +354,7 @@ def diagnose_structure_ownership(configs, *, model: str, action_id=None, view_id
     declarations = []
     native_owners = []
     for config in configs:
+        assert_role_form_permissions_only(config)
         from .form_configuration_compiler import is_configured_surface
         # Legitimate higher-layer configuration is validated by the one-tree
         # compiler, not classified as a competing legacy default.
@@ -351,3 +406,12 @@ def authenticated_form_role_key(env) -> str:
     from ..identity.identity_resolver import IdentityResolver
     resolver = IdentityResolver(env)
     return str(resolver.resolve_role_code(resolver.user_group_xmlids(env.user)) or "").strip()
+
+
+def validated_field_grid_columns(value, *, native_text=False):
+    """Equal tracks must map exactly to integer positions in the 24-unit grid."""
+    if native_text and isinstance(value, str) and value.isdecimal():
+        value = int(value)
+    if type(value) is not int or value < 1 or value > 24 or 24 % value:
+        raise ValueError("columns must be an integer divisor of the 24-unit grid")
+    return value

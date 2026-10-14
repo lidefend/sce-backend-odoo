@@ -27,4 +27,6 @@ assert.deepEqual(resolveWorkflowStatusAuthority({ visible: false, field: '', cur
   visible: false, current: '', stateCount: 0, readonly: true,
 });
 assert.throws(() => resolveWorkflowStatusAuthority({ visible: true, field: 'state', current: '', states: [], reachedValues: [], readonly: true }), /STATUS_INCOMPLETE/);
-console.log('[professional_workflow_model_test] PASS cases=10');
+console.log('[professional_workflow_model_test] PASS cases=11');
+
+assert.equal(workflowDisabledReason({ ...action('approve', false, 'BLOCKED') as object, enabled: false, reasonMessage: '先补齐依据' } as never), '先补齐依据');

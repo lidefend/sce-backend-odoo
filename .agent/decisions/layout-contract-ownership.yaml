@@ -8,7 +8,7 @@ decision:
 
   owner_approval:
     status: confirmed
-    date: "2026-10-12"
+    date: "2026-10-13"
 
   decision:
 
@@ -20,6 +20,9 @@ decision:
     consumer_presentation_mapping_is_adopter_owned: true
     partial_consumption_by_a_component_system_is_legitimate: true
     contract_capability_is_never_reduced_to_fit_a_consumer: true
+    action_selected_view_is_the_entry_layout_baseline: true
+    role_permissions_are_not_layout_selection_authority: true
+    low_code_edits_authorized_logical_layout_not_page_implementation: true
 
   rules:
 
@@ -31,7 +34,23 @@ decision:
 
     - responsive_breakpoint_folding_spacing_and_orphan_row_fill_stay_adopter_owned
 
-    - a_consumer_default_applies_only_where_the_contract_declares_nothing
+    - missing_or_invalid_contract_layout_parameters_stop_consumption_without_defaults_or_clamping
+
+    - only_registered_visual_or_transport_mechanism_constants_may_be_adopter_owned
+
+    - model_base_view_action_selected_view_and_permission_projected_view_are_distinct_provenance_stages
+
+    - same_entry_view_record_company_configuration_version_and_effective_mode_share_template_sections_order_and_width_rules_across_roles
+
+    - permissions_may_restrict_field_and_action_visibility_access_and_readonly_but_never_select_another_layout
+
+    - role_scoped_configuration_selection_is_not_permission_clipping_and_does_not_authorize_role_specific_structure
+
+    - frontend_responsive_mapping_is_role_independent_and_cannot_reconstruct_business_layout_from_visible_field_counts
+
+    - permission_projection_must_not_expose_unauthorized_field_values_or_metadata_to_preserve_layout
+
+    - cross_role_evidence_keeps_field_occurrence_parent_order_and_span_and_reports_effective_mode_separately
 
     - declaring_more_capability_than_a_consumer_uses_is_not_a_defect
 
@@ -39,14 +58,44 @@ decision:
 
     - layout_facets_must_never_be_used_to_infer_or_invent_product_semantics
 
+    - low_code_capabilities_ranges_occurrence_identity_and_conflicts_are_platform_owned
+
+    - layout_edit_authorization_and_published_layout_scope_are_separate_dimensions
+
+    - backend_compiles_one_final_layout_from_authorized_defaults_and_configuration
+
+    - effective_layout_constraints_require_supported_mapping_and_cannot_be_silently_ignored
+
+    - node_span_is_relative_to_its_declared_parent_coordinate_system_and_projection_mapping_is_explicit
+
+    - low_code_cannot_inject_arbitrary_dom_css_code_or_expand_business_authorization
+
     - this_boundary_is_machine_checked_by_the_assembler_capability_floor_and_the_client_single_grid_guard
+
+  action_guidance_authority_20261013:
+    status: owner_confirmed_product_constraint_not_implementation_pass
+    fact_authority: native_model_field_view_action_metadata
+    business_decision: native_business_fact_and_guard_single_source
+    configuration: optional_limited_customer_override_not_required_for_product_defaults
+    product_defaults: P1_native_model_view_action_metadata_consumed_by_P0
+    payment_risk_policy: existing_native_advisory_soft_default_explicit_force_block_override
+    invariants: ACL_state_integrity_and_archived_objects_remain_hard
+    interaction_metadata: reference_same_fact_and_declare_trigger_placement_confirmation
+    prohibition: no_duplicate_blocked_conditions_in_xml_profile_config_and_frontend
 
   related:
 
     - .agent/decisions/contract-driven-runtime-authority.yaml
     - docs/architecture/native_view_reuse_frontend_spec_v1.md
+    - docs/architecture/backend_contract_boundaries.md
     - scripts/verify/unified_page_contract_v2_assembler_guard.py
     - scripts/verify/unified_page_contract_v2_client_guard.py
 
   status:
     active
+
+# 2026-10-13 owner extension: product facts own menu definitions; release
+# snapshots bind versions/deployments and cannot independently redefine menus.
+# Existing actor/company visible menus are monotonic during this migration.
+# Quick creation and menu configuration are included. Formal baseline requires
+# clean-install + upgrade + actual navigation evidence, not static counts alone.

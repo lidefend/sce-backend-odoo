@@ -3,6 +3,7 @@ import importlib.util
 import sys
 import types
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 
@@ -44,6 +45,64 @@ menu_service = _load_module(
 
 
 class TestDeliveryMenuEntryTarget(unittest.TestCase):
+    def test_native_platform_capability_grants_function_visibility_not_model_acl(self):
+        class DeniedModel:
+            def check_access_rights(self, operation, raise_exception=False):
+                return False
+        class Env:
+            user = types.SimpleNamespace(has_group=lambda key: key == "smart_core.group_smart_core_admin")
+            def __contains__(self, model):
+                return model == "business.record"
+            def __getitem__(self, model):
+                return DeniedModel()
+        service = menu_service.MenuService(Env())
+        self.assertTrue(service._policy_menu_user_authorized({"menu_xmlid": "test.capability"}, {}))
+        action = types.SimpleNamespace(active=True, _name="ir.actions.act_window", res_model="business.record")
+        for operation in ("read", "write", "create", "unlink"):
+            self.assertFalse(service._action_is_runtime_allowed(action, operation))
+
+    def test_admin_discovery_reads_native_authority_not_partial_delivery_projection(self):
+        env = object()
+        facts = types.SimpleNamespace(tree=[{"menu_id": 101, "menu_xmlid": "test.menu_101",
+                                            "name": "Authorized", "action_id": 201, "action_meta": {}}])
+        provider = types.SimpleNamespace(export_visible_menu_facts=lambda: facts)
+        service = menu_service.MenuService(env)
+        with patch.object(menu_service, "MenuFactService", return_value=provider) as factory:
+            native = service._authorization_native_nav(self._runtime_role_surface("system_admin"), [])
+        factory.assert_called_once_with(env)
+        self.assertEqual(service._native_authorized_menu_index(native)["ids"], {101})
+
+    def test_edition_membership_is_closed_despite_role_exposure(self):
+        service = menu_service.MenuService()
+        def row(number):
+            return {"menu_xmlid": f"test.menu_{number}", "menu_key": str(number), "label": str(number),
+                    "menu_id": number, "action_id": number + 100, "route": f"/a/{number+100}?menu_id={number}",
+                    "res_model": "project.project", "release_state": "released", "enabled": True}
+        native = [{"label": "项目中心", "children": [self._native_leaf(
+            label=str(n), menu_id=n, action_id=n+100, route=f"/a/{n+100}?menu_id={n}") for n in (101, 102)]}]
+        for role in ("employee", "system_admin", "business_config_admin"):
+            for declared, expected in (([101], {101}), ([101, 102], {101, 102}), ([], set()), ([101, 103], {101})):
+                with self.subTest(role=role, declared=declared):
+                    policy = {"menu_groups": [{"group_key": "project", "group_label": "项目中心", "menus": [row(n) for n in declared]}]}
+                    surface = self._runtime_role_surface(role, primary_menu_xmlids=["test.menu_101", "test.menu_102", "test.menu_103"])
+                    nav = service.build_nav(policy=policy, role_surface=surface, native_nav=native)
+                    self.assertEqual({menu for menu, action in service._walk_nav_action_refs(nav)}, expected)
+
+    def test_primary_route_membership_cannot_bypass_nav_but_admin_is_independent(self):
+        service = menu_service.MenuService()
+        first = {"menu_id": 101, "action_id": 201}
+        other = {"menu_id": 102, "action_id": 202}
+        buckets = {"primary_actions": [first, other], "role_home_actions": [other],
+                   "admin_actions": [other], "contextual_actions": [other], "denied_actions": [],
+                   "menu_containers": [{"menu_id": 102, "route_kind": "PRIMARY_NAV"},
+                                       {"menu_id": 102, "route_kind": "ADMIN_ROUTE"}]}
+        service._intersect_primary_authority_with_nav(buckets, [first])
+        self.assertEqual(buckets["primary_actions"], [first])
+        self.assertEqual(buckets["role_home_actions"], [])
+        self.assertEqual(buckets["admin_actions"], [other])
+        self.assertEqual(buckets["contextual_actions"], [other])
+        self.assertEqual(buckets["menu_containers"], [{"menu_id": 102, "route_kind": "ADMIN_ROUTE"}])
+
     def _register_acceptance_menu_labels(self):
         for label in ("用户核对菜单", "用户验收"):
             menu_service.register_customer_acceptance_group_label(label)
@@ -648,7 +707,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         self.assertEqual([group.get("label") for group in groups], ["产品配置"])
         self.assertEqual(groups[0]["children"][0]["label"], "客户")
 
-    def test_business_config_role_builds_policy_menu_without_native_fact_for_release_snapshot(self):
+    def test_business_config_role_does_not_grant_policy_menu_without_authorization(self):
         nav = menu_service.MenuService().build_nav(
             policy={
                 "menu_groups": [
@@ -673,8 +732,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         )
 
         groups = (nav[0].get("children") or []) if nav else []
-        self.assertEqual([group.get("label") for group in groups], ["基础资料"])
-        self.assertEqual(groups[0]["children"][0]["label"], "客户")
+        self.assertEqual(groups, [])
 
     def test_policy_menu_surface_is_filtered_by_native_authorized_menu_fact(self):
         nav = menu_service.MenuService().build_nav(
@@ -1122,7 +1180,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
                 ]
             },
             role_surface=self._runtime_role_surface(is_platform_admin=True),
-            native_nav=[],
+            native_nav=[self._native_leaf(menu_id=652, action_id=706, model="res.partner", route="/a/706?menu_id=652"), self._native_leaf(menu_id=709, action_id=715, model="sc.prepaid.tax", route="/a/715?menu_id=709")],
         )
 
         root_groups = nav[0].get("children") or []
@@ -1286,7 +1344,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
                 "discover_installed_capabilities": True,
                 "is_business_config_admin": True,
             },
-            native_nav=[],
+            native_nav=[self._native_leaf(menu_id=539, action_id=778, menu_xmlid="smart_construction_core.menu_sc_user_income", model="sc.receipt.income", route="/a/778?menu_id=539")],
         )
 
         finance = next(group for group in (nav[0].get("children") or []) if group.get("label") == "财务中心")

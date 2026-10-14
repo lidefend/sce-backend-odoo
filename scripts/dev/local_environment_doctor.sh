@@ -49,6 +49,23 @@ case "${profile}" in
 esac
 
 echo "[local.env.doctor] profile=${profile} project=${COMPOSE_PROJECT_NAME} db=${DB_NAME} dbfilter=${ODOO_DBFILTER}"
+# Inspect only the three names validated above. A stopped profile is not proof
+# that its data or credential authority has disappeared. Docker errors remain
+# errors rather than being reported as absent volumes.
+for volume in "${DB_DATA}" "${REDIS_DATA}" "${ODOO_DATA}"; do
+  found_volume="$(docker volume ls --filter "name=^${volume}$" --format '{{.Name}}')"
+  if [[ -z "${found_volume}" ]]; then
+    echo "[local.env.doctor] volume=${volume} exists=false"
+    continue
+  fi
+  [[ "${found_volume}" == "${volume}" ]] || {
+    echo "[local.env.doctor] DENY volume identity mismatch" >&2
+    exit 2
+  }
+  docker volume inspect --format '{{.Name}} project={{index .Labels "com.docker.compose.project"}} volume={{index .Labels "com.docker.compose.volume"}}' "${volume}"
+  echo "[local.env.doctor] volume=${volume} exists=true mount_users:"
+  docker ps -a --filter "volume=${volume}" --format '{{.ID}} {{.Names}} {{.Status}} project={{.Label "com.docker.compose.project"}}'
+done
 compose_dev ps -a
 echo "[local.env.doctor] bounded service logs follow; environment values are not printed"
 compose_dev logs --no-color --tail=120 db redis odoo nginx

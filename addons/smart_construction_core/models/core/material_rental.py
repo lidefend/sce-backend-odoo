@@ -328,9 +328,9 @@ class ScMaterialRentalOrder(models.Model):
 
     def action_activate(self):
         for record in self:
+            self.env["sc.approval.policy"].ensure_handling_ready(record, ("approved",))
             if record.state != "approved":
                 raise UserError(_("只有已审批租赁单可以启用。"))
-            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
             record._check_business_anchor()
             record._write_approval_state({"state": "active"})
         return True
@@ -585,9 +585,9 @@ class ScMaterialRentalSettlement(models.Model):
 
     def action_confirm(self):
         for record in self:
+            self.env["sc.approval.policy"].ensure_handling_ready(record, ("approved",))
             if record.state != "approved":
                 raise UserError(_("只有已审批租赁结算可以确认。"))
-            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
             record._check_business_anchor()
             record._write_approval_state({"state": "confirmed"})
         return True

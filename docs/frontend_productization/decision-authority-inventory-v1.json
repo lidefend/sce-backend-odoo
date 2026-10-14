@@ -345,7 +345,7 @@
       "literal": "/login",
       "path": "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
       "lines": [
-        524
+        525
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -359,7 +359,7 @@
       "literal": "access-denied",
       "path": "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
       "lines": [
-        528
+        529
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -612,7 +612,7 @@
       "literal": "allow",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1485
+        1491
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -625,7 +625,7 @@
       "literal": "coming_soon",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1485
+        1491
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -638,7 +638,7 @@
       "literal": "deny",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1485
+        1491
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -651,7 +651,7 @@
       "literal": "pending",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1485
+        1491
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",

@@ -63,15 +63,19 @@ class ScOutputInvoiceLedger(models.Model):
                     SELECT
                         ril.*,
                         NULLIF(TRIM(ril.invoice_no), '') AS normalized_invoice_no,
-                        COUNT(*) OVER (PARTITION BY NULLIF(TRIM(ril.invoice_no), '')) AS receipt_line_count,
+                        pp.company_id AS invoice_company_id,
+                        COUNT(*) OVER (
+                            PARTITION BY NULLIF(TRIM(ril.invoice_no), ''), pp.company_id, ril.currency_id
+                        ) AS receipt_line_count,
                         SUM(COALESCE(ril.current_receipt_amount, 0.0)) OVER (
-                            PARTITION BY NULLIF(TRIM(ril.invoice_no), '')
+                            PARTITION BY NULLIF(TRIM(ril.invoice_no), ''), pp.company_id, ril.currency_id
                         ) AS receipt_amount_sum,
                         ROW_NUMBER() OVER (
-                            PARTITION BY NULLIF(TRIM(ril.invoice_no), '')
+                            PARTITION BY NULLIF(TRIM(ril.invoice_no), ''), pp.company_id, ril.currency_id
                             ORDER BY ril.invoice_date DESC NULLS LAST, ril.id DESC
                         ) AS receipt_rank
                     FROM sc_receipt_invoice_line ril
+                    LEFT JOIN project_project pp ON pp.id = ril.project_id
                     WHERE ril.active
                       AND NULLIF(TRIM(ril.invoice_no), '') IS NOT NULL
                       AND TRIM(ril.invoice_no) <> '0'
@@ -127,6 +131,7 @@ class ScOutputInvoiceLedger(models.Model):
                     WHERE ir2.active
                       AND ir2.direction = 'output'
                       AND NULLIF(TRIM(ir2.invoice_no), '') = ril.normalized_invoice_no
+                      AND (ir2.company_id = ril.invoice_company_id OR ir2.company_id IS NULL OR ril.invoice_company_id IS NULL)
                       AND (ir2.project_id = ril.project_id OR ir2.project_id IS NULL OR ril.project_id IS NULL)
                       AND (ir2.partner_id = ril.partner_id OR ir2.partner_id IS NULL OR ril.partner_id IS NULL)
                   )

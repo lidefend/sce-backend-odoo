@@ -384,6 +384,11 @@ def _approve_payment(env, payment):
 
 
 def _ensure_payments(env, project, pay_contract, receive_contract, settlement):
+    # 产品的 payment.request._check_project_lifecycle 禁止在 保修/关闭 项目上
+    # 提交或审批付款申请（P0_PROJECT_TERMINAL_BLOCKED）。终态项目不再新增付款
+    # 事实：这里只跳过，不注入任何状态绕开守卫。
+    if project.lifecycle_state in ("warranty", "closed"):
+        return
     Payment = env["payment.request"].sudo()
     pay = Payment.search(
         [
@@ -497,10 +502,19 @@ def _ensure_contract(env, vals):
     contract = Contract.search(
         [("project_id", "=", vals["project_id"]), ("subject", "=", vals["subject"])], limit=1
     )
-    if contract:
-        contract.write(vals)
-    else:
-        contract = Contract.create(vals)
+    if not contract:
+        return Contract.create(vals)
+    # 合同状态只能由受控业务动作推进
+    # （CONTRACT_GUARD_DIRECT_STATE_WRITE），生效后经济身份字段同时冻结。
+    # 已存在合同因此只在草稿态对齐业务字段，状态交给 action_confirm()，
+    # 与结算单/发票快照的处理方式保持一致。
+    target_state = vals.get("state") or "draft"
+    if contract.state == "draft":
+        payload = {key: value for key, value in vals.items() if key != "state"}
+        if payload:
+            contract.write(payload)
+        if target_state != "draft":
+            contract.action_confirm()
     return contract
 
 

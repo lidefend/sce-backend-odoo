@@ -22,15 +22,48 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="ignore") if path.is_file() else ""
 
 
+def _install_odoo_stub() -> None:
+    """Stub just enough of the Odoo package tree to import the rows module.
+
+    The rows module consumes the single dictionary scope vocabulary from
+    ``smart_core.core.dictionary_scope_projection``; that leaf module is loaded
+    for real (it is pure Python) so this guard checks the real decision instead
+    of a re-declared copy.
+    """
+    if "odoo" in sys.modules:
+        return
+    odoo = types.ModuleType("odoo")
+    fields_module = types.SimpleNamespace(Datetime=types.SimpleNamespace(now=lambda: "2026-07-14 00:00:00"))
+    odoo.fields = fields_module
+    exceptions = types.ModuleType("odoo.exceptions")
+    exceptions.AccessError = type("AccessError", (Exception,), {})
+    sys.modules["odoo"] = odoo
+    sys.modules["odoo.exceptions"] = exceptions
+
+    projection_path = ROOT / "addons" / "smart_core" / "core" / "dictionary_scope_projection.py"
+    spec = importlib.util.spec_from_file_location(
+        "odoo.addons.smart_core.core.dictionary_scope_projection", projection_path
+    )
+    assert spec is not None and spec.loader is not None
+    projection = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = projection
+    spec.loader.exec_module(projection)
+
+    for package_name in (
+        "odoo.addons",
+        "odoo.addons.smart_core",
+        "odoo.addons.smart_core.core",
+    ):
+        package = types.ModuleType(package_name)
+        package.__path__ = []
+        sys.modules[package_name] = package
+    odoo.addons = sys.modules["odoo.addons"]
+    sys.modules["odoo.addons.smart_core"].core = sys.modules["odoo.addons.smart_core.core"]
+    sys.modules["odoo.addons.smart_core.core"].dictionary_scope_projection = projection
+
+
 def _load(path: Path, name: str):
-    if "odoo" not in sys.modules:
-        odoo = types.ModuleType("odoo")
-        fields_module = types.SimpleNamespace(Datetime=types.SimpleNamespace(now=lambda: "2026-07-14 00:00:00"))
-        odoo.fields = fields_module
-        exceptions = types.ModuleType("odoo.exceptions")
-        exceptions.AccessError = type("AccessError", (Exception,), {})
-        sys.modules["odoo"] = odoo
-        sys.modules["odoo.exceptions"] = exceptions
+    _install_odoo_stub()
     spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"unable to load {path}")
@@ -70,7 +103,17 @@ class _FakeModel:
 
 
 class _FakeEnv(dict):
-    pass
+    user = None
+
+
+class _FakeAuthorityUser:
+    """A principal whose company authority is the only delivery entitlement."""
+
+    def __init__(self, company_ids):
+        self._company_ids = list(company_ids)
+
+    def _sc_data_company_ids(self):
+        return list(self._company_ids)
 
 
 def main() -> int:
@@ -189,6 +232,37 @@ def main() -> int:
             errors.append("role entry rows must preserve role-scoped dictionary entries")
         if rows.build_home_block_contract_rows(env)[0].get("blocks") != ["home.block"]:
             errors.append("home block rows must preserve enabled global blocks")
+        # A company-level row is delivered for the caller's authorized company
+        # and withheld from everyone else; the bucket decision is not re-derived
+        # from a scope name here.
+        company_rows = [
+            {
+                "type": "role_entry",
+                "active": True,
+                "code": "company.menu",
+                "scope_type": "company",
+                "scope_ref": "7",
+                "value_json": {"entry_type": "menu"},
+                "sequence": 1,
+            },
+        ]
+        company_fields = {"code", "name", "value_json", "sequence", "scope_type", "scope_ref"}
+        unauthorized_env = _FakeEnv({"sc.dictionary": _FakeModel(company_fields, company_rows)})
+        if rows.build_role_entry_contract_rows(unauthorized_env):
+            errors.append("company-scoped rows must not be delivered without company authority")
+        authorized_env = _FakeEnv({"sc.dictionary": _FakeModel(company_fields, company_rows)})
+        authorized_env.user = _FakeAuthorityUser([7])
+        delivered_keys = [
+            entry.get("entry_key")
+            for group in rows.build_role_entry_contract_rows(authorized_env)
+            for entry in (group.get("entries") or [])
+        ]
+        if delivered_keys != ["company.menu"]:
+            errors.append("company-scoped rows must be delivered for the caller's authorized company")
+        foreign_env = _FakeEnv({"sc.dictionary": _FakeModel(company_fields, company_rows)})
+        foreign_env.user = _FakeAuthorityUser([999])
+        if rows.build_role_entry_contract_rows(foreign_env):
+            errors.append("company-scoped rows must never be delivered for another company")
         legacy_env = _FakeEnv({
             "sc.dictionary": _FakeModel(
                 {"code", "name", "sequence"},

@@ -7,6 +7,11 @@ from typing import Any, Dict, List
 from odoo import fields
 from odoo.exceptions import AccessError
 
+from odoo.addons.smart_core.core.dictionary_scope_projection import (
+    authorized_company_references,
+    scope_disposition,
+)
+
 _logger = logging.getLogger(__name__)
 
 def as_text(value: Any) -> str:
@@ -337,15 +342,12 @@ def build_role_entry_contract_rows(env) -> List[Dict[str, Any]]:
         fields=dictionary_fields(env),
         limit=200,
     )
+    authorized_companies, _authority = authorized_company_references(env)
     grouped: Dict[str, List[Dict[str, Any]]] = {}
     for row in rows:
         scope_type = as_text(row.get("scope_type")) or "global"
         scope_ref = as_text(row.get("scope_ref"))
-        role_code = ""
-        if scope_type == "role":
-            role_code = scope_ref
-        elif scope_type in {"global", "company"}:
-            role_code = "__global__"
+        role_code, _reason = scope_disposition(scope_type, scope_ref, authorized_companies)
         if not role_code:
             continue
 
@@ -401,15 +403,12 @@ def build_home_block_contract_rows(env) -> List[Dict[str, Any]]:
         fields=dictionary_fields(env),
         limit=200,
     )
+    authorized_companies, _authority = authorized_company_references(env)
     grouped: Dict[str, List[Dict[str, Any]]] = {}
     for row in rows:
         scope_type = as_text(row.get("scope_type")) or "global"
         scope_ref = as_text(row.get("scope_ref"))
-        role_code = ""
-        if scope_type == "role":
-            role_code = scope_ref
-        elif scope_type == "global":
-            role_code = "__global__"
+        role_code, _reason = scope_disposition(scope_type, scope_ref, authorized_companies)
         if not role_code:
             continue
 

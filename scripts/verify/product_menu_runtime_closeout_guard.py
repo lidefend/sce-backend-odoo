@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import sys
+import json
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -38,21 +39,10 @@ HIDDEN_XMLIDS = {
     "menu_sc_project_document_group_v2",
     "menu_sc_project_risk_group_v2",
     "menu_sc_project_closeout_group_v2",
-    "menu_sc_project_quick_create",
     "menu_sc_tender_prepare",
     "menu_sc_tender_registration",
-    "menu_sc_tender_registration_fee",
-    "menu_sc_tender_opening",
     "menu_sc_field_mobile_roadmap_v2",
     "menu_sc_bim_collaboration_roadmap_v2",
-    "menu_sc_schedule_delivery_group_v2",
-    "menu_sc_quality_delivery_group_v2",
-    "menu_sc_safety_delivery_group_v2",
-    "menu_sc_material_management_group",
-    "menu_sc_labor_management_group",
-    "menu_sc_equipment_management_group",
-    "menu_sc_material_rental_group",
-    "menu_sc_subcontract_management_group",
     "menu_sc_supply_collaboration_roadmap_v2",
     "menu_sc_construction_contract",
     "menu_sc_contract_performance_roadmap_v2",
@@ -108,24 +98,22 @@ def _hidden_overlay_values() -> set[str]:
 def validate() -> list[str]:
     errors: list[str] = []
     source = POLICY.read_text(encoding="utf-8")
-    policy_hidden = _constant_values(source, "LOCKED_TARGET_UNPUBLISHED_MENU_XMLIDS")
-    policy_contract = _constant_values(source, "FORMAL_CONTRACT_PRODUCT_MENU_XMLIDS")
-    policy_settlement = _constant_values(source, "FORMAL_SETTLEMENT_PRODUCT_MENU_XMLIDS")
+    product = json.loads((ADDON / "data/formal_business_product_menu_policy_v1.json").read_text(encoding="utf-8"))
+    published = {row["menu_xmlid"].split(".", 1)[-1] for profile in product["products"] for group in profile["menu_groups"] for row in group["menus"]}
+    policy_contract = published
+    policy_settlement = published
     overlay_hidden = _hidden_overlay_values()
     missing_overlay = HIDDEN_XMLIDS - overlay_hidden
-    missing_policy = HIDDEN_XMLIDS - policy_hidden
     if missing_overlay:
         errors.append("missing active=False overlays: " + ", ".join(sorted(missing_overlay)))
-    if missing_policy:
-        errors.append("policy can resurrect hidden menus: " + ", ".join(sorted(missing_policy)))
     missing_contract = RELEASED_CONTRACT_XMLIDS - policy_contract
     missing_settlement = RELEASED_SETTLEMENT_XMLIDS - policy_settlement
     if missing_contract:
         errors.append("config-only policy can hide released contract menus: " + ", ".join(sorted(missing_contract)))
     if missing_settlement:
         errors.append("config-only policy can hide released settlement menus: " + ", ".join(sorted(missing_settlement)))
-    if "menu_xmlid not in LOCKED_TARGET_UNPUBLISHED_MENU_XMLIDS" not in source:
-        errors.append("policy convergence must explicitly preserve locked-target unpublished menus")
+    if 'menu_rec.sudo().write({"active": True})' in source or "LOCKED_MENU_NATIVE_FACT_MISMATCH" not in source:
+        errors.append("policy projection must reject inactive native facts, never reactivate them")
     manifest = (ADDON / "__manifest__.py").read_text(encoding="utf-8")
     if "menu_legacy_direct_project_acceptance.xml" in manifest:
         errors.append("product module must not load the customer acceptance menu authority")

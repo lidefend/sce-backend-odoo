@@ -26,6 +26,30 @@ def _baseline() -> dict:
 
 
 class NativeViewActionCoverageGuardTest(unittest.TestCase):
+    def test_native_quality_action_emits_only_real_nonempty_advisories(self):
+        path = Path("addons/smart_construction_core/models/support/quality_acceptance.py")
+        tree = ast.parse(path.read_text())
+        owner = next(node for node in tree.body if isinstance(node, ast.ClassDef))
+        method = copy.deepcopy(next(node for node in owner.body if isinstance(node, ast.FunctionDef) and node.name == "action_confirm"))
+        method.decorator_list = []
+        namespace = {"UserError": RuntimeError, "_": lambda value: value}
+        exec(compile(ast.fix_missing_locations(ast.Module(body=[method], type_ignores=[])), str(path), "exec"), namespace)
+        class Record:
+            def __init__(self, advisory): self.advisory = advisory; self.state = "draft"
+            def _check_operator(self): pass
+            def filtered(self, predicate): return []
+            def write(self, values): self.state = values["state"]
+            def mapped(self, field): return [self.advisory]
+        for empty in (False, ""):
+            record = Record(empty)
+            self.assertIs(namespace["action_confirm"](record), True)
+            self.assertEqual(record.state, "confirmed")
+        record = Record("建议补充验收附件")
+        result = namespace["action_confirm"](record)
+        self.assertEqual(result["tag"], "display_notification")
+        self.assertEqual(result["params"]["message"], record.advisory)
+
+
     def _assert_material_state_projection(self, class_name, model, method_name):
         # Compare the real projection against the business method's state guard,
         # so changes to business authority cannot leave copied expectations green.
@@ -40,6 +64,43 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
             with self.subTest(model=model, method=method_name, state=state):
                 projected = self._general_contract_actions(state, model=model)
                 self.assertEqual(method_name in [a["method"] for a in projected], state in allowed)
+            handling_methods = {
+                profile.get("method_by_action", {}).get(key)
+                for key in (profile.get("direct_handling") or {}).get(state, [])
+            }
+            if method_name in handling_methods:
+                with self.subTest(model=model, method=method_name, state=state, approval="required"):
+                    # A configured approval rule keeps the submission step: the
+                    # one-step handling method must not be offered until the
+                    # document is approved.
+                    approved_only = self._general_contract_actions(state, model=model, approval_required=True)
+                    self.assertNotIn(method_name, [a["method"] for a in approved_only])
+
+    def test_direct_handling_replaces_submission_only_without_approval(self):
+        # Declared one-step handling must read as the submission step of a
+        # business without an approval rule, and must vanish the moment the
+        # business declares one.  Anything else silently changes the contract.
+        declared = {
+            model: profile["direct_handling"]
+            for model, profile in load_profiles().items()
+            if profile.get("direct_handling")
+        }
+        self.assertTrue(declared, "no direct handling declaration was found")
+        for model, direct_handling in declared.items():
+            profile = load_profiles()[model]
+            for state, keys in direct_handling.items():
+                self.assertIn(state, profile["state_actions"])
+                self.assertIn("submit", profile["state_actions"][state])
+                methods = {profile.get("method_by_action", {}).get(key) for key in keys}
+                self.assertNotIn(None, methods)
+                with self.subTest(model=model, state=state, approval="none"):
+                    rows = {a["method"] for a in self._general_contract_actions(state, model=model)}
+                    self.assertTrue(methods.issubset(rows))
+                    self.assertNotIn("action_submit", rows)
+                with self.subTest(model=model, state=state, approval="required"):
+                    rows = {a["method"] for a in self._general_contract_actions(state, model=model, approval_required=True)}
+                    self.assertTrue(methods.isdisjoint(rows))
+                    self.assertIn("action_submit", rows)
 
     def test_purchase_request_actions_follow_review_facts_and_business_sources(self):
         model = 'sc.material.purchase.request'
@@ -243,7 +304,94 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         self.assertNotIn("validate_tier", [row["method"] for row in available])
         self.assertEqual(namespace["_declared_actions"](service, {"method_by_action": {"undeclared": "action_guess"}}), [])
 
-    def _general_contract_actions(self, state, *, approval_phase="none", can_review=False, model="sc.general.contract", record_fields=None, evidence_gate=None):
+    def test_pay_entry_retires_conditional_body_guidance_and_old_anchors(self):
+        root = Path(__file__).resolve().parents[2]
+        views = ET.parse(root / "addons/smart_construction_core/views/core/payment_request_views.xml")
+        pay = views.find(".//record[@id='view_payment_request_pay_form']/field[@name='arch']")
+        base = views.find(".//record[@id='view_payment_request_form']/field[@name='arch']/form")
+        self.assertIsNotNone(base)
+        self.assertFalse([node for node in base.iter() if "alert" in node.get("class", "").split()])
+        for name in ("legal_next_action_display", "payment_blocking_reason_display", "settlement_compliance_message"):
+            self.assertIsNone(base.find(".//field[@name='%s']" % name))
+        self.assertFalse([node for node in pay.findall("xpath") if "alert" in node.get("expr", "")])
+        self.assertTrue(base.findall(".//field[@name='amount']"))
+        self.assertIn("action_guidance", base.find("header/button[@name='action_submit']").get("options", ""))
+        config = ET.parse(root / "addons/smart_construction_core/data/payment_request_form_productization_contract.xml")
+        carrier = config.find(".//record[@id='business_config_contract_payment_request_pay_productized_form_v1']/field[@name='contract_json']")
+        form = ast.literal_eval(carrier.get("eval"))["view_orchestration"]["views"]["form"]
+        self.assertTrue(form["semantic_anchors"])
+        self.assertFalse({"task", "risk"}.intersection(row["role"] for row in form["semantic_anchors"]))
+        # The shared base and sibling receipt retain their separate responsibilities.
+        self.assertIsNotNone(views.find(".//record[@id='view_payment_request_form']"))
+
+    def test_native_partner_decision_guard_and_payment_override_share_fact(self):
+        root = Path(__file__).resolve().parents[2]
+        partner_path = root / "addons/smart_construction_core/models/support/partner_business.py"
+        payment_path = root / "addons/smart_construction_core/models/core/payment_request.py"
+        names = {"_sc_transaction_guidance", "_sc_assert_transaction_eligible", "_native_submit_action_guidance", "_payment_advisory", "_payment_force_block_enabled"}
+        methods = []
+        for path in (partner_path, payment_path):
+            for node in ast.walk(ast.parse(path.read_text())):
+                if isinstance(node, ast.FunctionDef) and node.name in names:
+                    node.decorator_list = []
+                    methods.append(node)
+        class UserError(Exception):
+            pass
+        ns = {"UserError": UserError, "_": lambda text, **values: text % values if values else text}
+        exec(compile(ast.fix_missing_locations(ast.Module(body=methods, type_ignores=[])), "native-guidance", "exec"), ns)
+        for state, active in (("eligible", True), ("review_required", True), ("blocked", True), ("blocked", False)):
+            partner = SimpleNamespace(ensure_one=lambda: None, active=active, sc_transaction_eligibility=state,
+                                      sc_transaction_eligibility_reason="Native reason", display_name="Party")
+            partner._sc_transaction_guidance = lambda label=None: ns["_sc_transaction_guidance"](partner, label)
+            decision = partner._sc_transaction_guidance()
+            if state == "blocked":
+                with self.assertRaises(UserError):
+                    ns["_sc_assert_transaction_eligible"]([partner])
+            else:
+                self.assertTrue(ns["_sc_assert_transaction_eligible"]([partner]))
+            for force in (False, True):
+                record = SimpleNamespace(ensure_one=lambda: None, partner_id=partner, type="pay", _get_bool_param=lambda key, default=False: force)
+                record._payment_force_block_enabled = lambda code: ns["_payment_force_block_enabled"](record, code)
+                record._payment_advisory = lambda *args, **kwargs: ns["_payment_advisory"](record, *args, **kwargs)
+                fact = ns["_native_submit_action_guidance"](record)
+                expected_block = not active or (state != "eligible" and force)
+                self.assertEqual(fact["blocking"], expected_block)
+                self.assertEqual(fact["requires_confirmation"], active and state != "eligible" and not force)
+                self.assertEqual(fact["method"], "action_submit")
+                if state != "eligible":
+                    self.assertIn("Native reason", fact["message"])
+
+    def test_risk_exception_allowlist_and_ledger_policy_share_native_resolver(self):
+        import re
+        root = Path(__file__).resolve().parents[2]
+        paths = [root / "addons/smart_construction_core/models/core" / name for name in ("payment_request.py", "payment_ledger.py")]
+        names = {"_payment_advisory_from_exception", "_payment_force_block_enabled", "_payment_advisory", "_check_request_state"}
+        methods = [n for p in paths for n in ast.walk(ast.parse(p.read_text())) if isinstance(n, ast.FunctionDef) and n.name in names]
+        class UserError(Exception): pass
+        class AccessError(UserError): pass
+        class ValidationError(UserError): pass
+        ns = {"re": re, "UserError": UserError, "AccessError": AccessError, "ValidationError": ValidationError, "_": lambda value: value}
+        exec(compile(ast.fix_missing_locations(ast.Module(body=methods, type_ignores=[])), "payment-policy", "exec"), ns)
+        for global_force, code_force in ((False, False), (True, False), (False, True)):
+            record = SimpleNamespace(state="approved", payment_basis_type="standard_settlement", settlement_id=SimpleNamespace(state="draft"))
+            record._get_bool_param = lambda key, default=False: global_force if key == "sc.payment.force_block_all" else code_force
+            record._payment_force_block_enabled = lambda code: ns["_payment_force_block_enabled"](record, code)
+            record._payment_advisory = lambda *a, **kw: ns["_payment_advisory"](record, *a, **kw)
+            for code in ("P0_PAYMENT_OVER_BALANCE", "P0_MATERIAL_PAYMENT_OVER_BALANCE"):
+                result = ns["_payment_advisory_from_exception"](record, UserError("[SC_GUARD:%s] risk" % code))
+                self.assertEqual(result["force_block_enabled"], global_force or code_force)
+            ledger = SimpleNamespace(env=SimpleNamespace(context={"payment_soft_gate": True}))
+            if global_force or code_force:
+                with self.assertRaises(UserError): ns["_check_request_state"](ledger, record)
+            else:
+                ns["_check_request_state"](ledger, record)
+            ledger.env.context = {}
+            with self.assertRaises(UserError): ns["_check_request_state"](ledger, record)
+            for error in (AccessError("[SC_GUARD:P0_PAYMENT_OVER_BALANCE] denied"), ValidationError("invalid"), UserError("[SC_GUARD:UNKNOWN] unknown"), UserError("[SC_GUARD:P0_PAYMENT_FUNDING_BASELINE_INVALID] invariant"), RuntimeError("unexpected")):
+                with self.assertRaises(type(error)) as caught: ns["_payment_advisory_from_exception"](record, error)
+                self.assertIs(caught.exception, error)
+
+    def _general_contract_actions(self, state, *, approval_phase="none", can_review=False, model="sc.general.contract", record_fields=None, evidence_gate=None, approval_required=False):
         # Execute the shipped projection method, not a duplicate of its algorithm.
         tree = ast.parse(DEFAULT_SERVICE.read_text(encoding="utf-8"))
         method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "_available_actions")
@@ -256,7 +404,12 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
             return all(values.get(field) == value if operator == '=' else values.get(field) not in value
                        for field, operator, value in domain)
         record = SimpleNamespace(_name=model, id=23, can_review=can_review, filtered_domain=matches)
-        service = SimpleNamespace(ACTIONS=namespace["ACTIONS"])
+        # The projection reads one fact about the business to decide whether a
+        # submission step still exists: the active approval rule.
+        service = SimpleNamespace(
+            ACTIONS=namespace["ACTIONS"],
+            _handles_without_approval=lambda record, approval_phase: not approval_required,
+        )
         return namespace["_available_actions"](service, record, load_profiles()[record._name], state, "", approval_phase, evidence_gate or [])
 
     def test_general_contract_signing_binds_the_existing_business_method(self):
@@ -289,7 +442,7 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "action_signed")
         namespace = {"UserError": ValueError, "_": lambda text: text}
         exec(compile(ast.fix_missing_locations(ast.Module(body=[method], type_ignores=[])), str(path), "exec"), namespace)
-        record = SimpleNamespace(state=state, approval_calls=0)
+        record = SimpleNamespace(state=state, approval_calls=0, contexts=[])
         def confirm():
             record.approval_calls += 1
             if approval_completes:
@@ -297,8 +450,15 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         def check_anchor():
             if not anchor_valid:
                 raise ValueError("missing business anchor")
+        def with_context(**kwargs):
+            record.contexts.append(kwargs)
+            return record
+        def write(values):
+            record.__dict__.update(values)
         record.action_confirm = confirm
         record._check_business_anchor = check_anchor
+        record.with_context = with_context
+        record.write = write
         return record, lambda: namespace["action_signed"]([record])
 
     def test_signing_executes_the_existing_confirmation_before_draft_transition(self):
@@ -306,6 +466,7 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         execute()
         self.assertEqual(record.approval_calls, 1)
         self.assertEqual(record.state, "signed")
+        self.assertIn({"allow_transition": True}, record.contexts)
 
     def test_pending_approval_does_not_become_signed(self):
         record, execute = self._sign_record("draft", approval_completes=False)
@@ -338,7 +499,8 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         for state in ("draft", "submitted", "approved", "rejected", "confirmed", "cancel", "unknown"):
             actions = self._general_contract_actions(state, model="sc.output.invoice.adjustment")
             methods = {action["method"] for action in actions}
-            self.assertEqual("action_confirm" in methods, state == "approved")
+            # 无审批规则时，办理动作取代提交步骤，草稿即可一步确认。
+            self.assertEqual("action_confirm" in methods, state in ("draft", "approved"))
             self.assertEqual("action_cancel" in methods, state in ("draft", "rejected", "approved"))
             for action in actions:
                 if action["method"] == "action_confirm":
@@ -348,7 +510,8 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         for state in ("draft", "submitted", "approved", "rejected", "confirmed", "cancel", "unknown"):
             actions = self._general_contract_actions(state, model="tender.guarantee")
             methods = {action["method"] for action in actions}
-            self.assertEqual("action_confirm" in methods, state == "approved")
+            # 无审批规则时，确认入账取代提交步骤，草稿即可一步办理。
+            self.assertEqual("action_confirm" in methods, state in ("draft", "approved"))
             self.assertEqual("action_cancel" in methods, state in ("draft", "rejected"))
             self.assertEqual("action_reset_draft" in methods, state in ("cancel", "rejected"))
             for action in actions:
@@ -369,7 +532,8 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
             if resets:
                 self.assertEqual(resets[0]["action_semantics"]["purpose"], "reopen")
             archives = [a for a in actions if a["method"] == "action_archive"]
-            self.assertEqual(bool(archives), state == "approved")
+            # 无审批规则时，归档取代提交步骤，草稿即可一步归档。
+            self.assertEqual(bool(archives), state in ("draft", "approved"))
             if archives:
                 self.assertEqual(archives[0]["action_semantics"]["purpose"], "complete")
 
@@ -476,8 +640,9 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         self.assertEqual(safety['confirm_message'], message)
 
     def test_contract_event_uses_real_reviewer_actions_and_resubmission(self):
-        for state in ('draft', 'rejected'):
-            self.assertEqual({a['method'] for a in self._general_contract_actions(state, model='sc.contract.event')}, {'action_submit', 'action_cancel'})
+        # 无审批规则时草稿只有一步办理；驳回态仍保留重新提交。
+        self.assertEqual({a['method'] for a in self._general_contract_actions('draft', model='sc.contract.event')}, {'action_done', 'action_cancel'})
+        self.assertEqual({a['method'] for a in self._general_contract_actions('rejected', model='sc.contract.event')}, {'action_submit', 'action_cancel'})
         for can_review in (True, False):
             actions = self._general_contract_actions('submitted', model='sc.contract.event', approval_phase='pending', can_review=can_review)
             self.assertEqual({a['method'] for a in actions}, {'action_cancel', 'validate_tier', 'reject_tier'} if can_review else {'action_cancel'})

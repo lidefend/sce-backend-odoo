@@ -7,6 +7,7 @@ import logging
 import re
 import xml.etree.ElementTree as ET
 
+from odoo.addons.smart_core.core.field_presentation_usage import field_presentation_usage
 from odoo.exceptions import AccessError, UserError, ValidationError
 
 from ..core.base_handler import BaseIntentHandler
@@ -147,21 +148,15 @@ def _available_lowcode_model_fields(env, model: str) -> list[dict]:
     Model = env[model]
     technical_prefixes = ("__",)
     technical_names = {"id", "display_name", "create_uid", "create_date", "write_uid", "write_date", "__last_update"}
-    try:
-        fields_meta = Model.sudo().fields_get() if hasattr(Model, "sudo") else Model.fields_get()
-    except Exception:
-        fields_meta = {}
-    if not isinstance(fields_meta, dict) or not fields_meta:
-        fields_meta = {
-            name: {}
-            for name in sorted(getattr(Model, "_fields", {}) or {})
-        }
+    fields_meta = Model.fields_get()
     out = []
     for name in sorted(fields_meta):
         field_name = str(name or "").strip()
         if not field_name or field_name in technical_names or field_name.startswith(technical_prefixes):
             continue
         meta = fields_meta.get(name) if isinstance(fields_meta.get(name), dict) else {}
+        if field_presentation_usage(meta.get("sc_ui_usage")) == "interaction":
+            continue
         field_type = str(meta.get("type") or getattr((getattr(Model, "_fields", {}) or {}).get(name), "type", "") or "").strip()
         label = str(meta.get("string") or getattr((getattr(Model, "_fields", {}) or {}).get(name), "string", "") or field_name).strip()
         if not _is_lowcode_business_field_candidate(field_name, field_type, label):

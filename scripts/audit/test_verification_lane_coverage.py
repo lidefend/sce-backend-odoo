@@ -4,11 +4,14 @@ import json
 import subprocess
 import tempfile
 import unittest
+from datetime import date
 from pathlib import Path
 
 from scripts.audit.verification_lane_coverage import (
     DEFAULT_BASELINE,
+    execution_reference_text,
     DEFAULT_DISPOSITIONS,
+    IDENTITY_FREEZE_METRICS,
     ROOT,
     SELF_DATA_FILES,
     SCRIPT_DISPOSITION_VOCABULARY,
@@ -29,6 +32,8 @@ from scripts.audit.verification_lane_coverage import (
     measure,
     parse_make,
     read_dispositions,
+    read_review_policy,
+    registration_state,
     resolve_module_specifier,
 )
 
@@ -36,6 +41,27 @@ from scripts.audit.verification_lane_coverage import (
 # tests lock the two behaviours that make the metric trustworthy: the reference
 # test is token-exact (never a regex substring), and every dead name must be
 # registered or it fails the ratchet.
+
+
+class StructuredCheckReferenceTest(unittest.TestCase):
+    def test_metadata_only_does_not_reference_target(self):
+        text = "units = {'check': 'verify.example.unit', 'units': []}"
+        self.assertNotIn('verify.example.unit', execution_reference_text(text))
+
+    def test_same_file_real_calls_remain_references(self):
+        for call in ('make verify.example.unit', '$(MAKE) verify.example.unit',
+                     "subprocess.run(['make', 'verify.example.unit'])"):
+            with self.subTest(call=call):
+                text = "units = {'check': 'verify.example.unit'}; " + call
+                cleaned = execution_reference_text(text)
+                self.assertEqual(cleaned.count('verify.example.unit'), 1)
+                self.assertIn(call, cleaned)
+
+    def test_nonliteral_or_other_mapping_values_are_not_exempt(self):
+        for text in ("{'command': 'verify.example.unit'}", "{'check': run('verify.example.unit')}",
+                     "{'check': 'verify.example.unit' + suffix}"):
+            with self.subTest(text=text):
+                self.assertEqual(execution_reference_text(text), text)
 
 
 class JoinContinuationsTest(unittest.TestCase):
@@ -122,14 +148,23 @@ class CompareTest(unittest.TestCase):
             "unregistered_remote_only_scripts": [],
             "stale_local_only_exemptions": [],
             "stale_remote_only_exemptions": [],
+            "registrations_missing_owner": [],
+            "registrations_missing_basis": [],
+            "expired_registrations": [],
+            "unwired_gate_candidates": [],
         }
         result.update(overrides)
         return result
 
+    def _baseline(self, **overrides):
+        baseline = {"frozen_identities": {metric: [] for metric in IDENTITY_FREEZE_METRICS}}
+        baseline.update(overrides)
+        return baseline
+
     def test_growth_past_frozen_raw_count_fails(self) -> None:
         regressions = compare(
             self._result(targets_zero_reference=["a", "b"]),
-            {"max_targets_zero_reference": 1},
+            self._baseline(max_targets_zero_reference=1),
         )
         self.assertTrue(any("targets_zero_reference:" in r for r in regressions))
 
@@ -139,15 +174,204 @@ class CompareTest(unittest.TestCase):
                 targets_zero_reference=["a"],
                 targets_zero_reference_unregistered=["a"],
             ),
-            {"max_targets_zero_reference": 5, "max_targets_zero_reference_unregistered": 0},
+            self._baseline(
+                max_targets_zero_reference=5,
+                max_targets_zero_reference_unregistered=0,
+                frozen_identities={
+                    **{metric: [] for metric in IDENTITY_FREEZE_METRICS},
+                    "targets_zero_reference": ["a"],
+                },
+            ),
         )
-        self.assertEqual(regressions, ["targets_zero_reference_unregistered: 1 > frozen baseline 0"])
+        self.assertEqual(
+            regressions, ["targets_zero_reference_unregistered: 1 > frozen baseline 0"]
+        )
 
     def test_baseline_payload_pins_unregistered_and_stale_to_zero(self) -> None:
         payload = baseline_payload(self._result())
         self.assertEqual(payload["max_targets_zero_reference_unregistered"], 0)
         self.assertEqual(payload["max_scripts_unreferenced_unregistered"], 0)
         self.assertEqual(payload["max_stale_target_dispositions"], 0)
+
+    # -- counterexample: a quota cannot be replaced ------------------------
+    def test_count_neutral_replacement_fails(self) -> None:
+        """Delete dead item A, add dead item B; the count is unchanged.
+
+        A count-only ratchet passes here and silently trades one debt for
+        another. The frozen identity set makes the replacement visible.
+        """
+        regressions = compare(
+            self._result(targets_zero_reference=["B"]),
+            self._baseline(
+                max_targets_zero_reference=1,
+                frozen_identities={
+                    **{metric: [] for metric in IDENTITY_FREEZE_METRICS},
+                    "targets_zero_reference": ["A"],
+                },
+            ),
+        )
+        self.assertEqual(len(regressions), 1)
+        self.assertIn("outside the frozen identity set", regressions[0])
+
+    def test_identity_subset_shrink_is_allowed(self) -> None:
+        """Wiring a dead item removes it from the set; a subset is a pass."""
+        regressions = compare(
+            self._result(targets_zero_reference=["B"]),
+            self._baseline(
+                max_targets_zero_reference=2,
+                frozen_identities={
+                    **{metric: [] for metric in IDENTITY_FREEZE_METRICS},
+                    "targets_zero_reference": ["A", "B"],
+                },
+            ),
+        )
+        self.assertEqual(regressions, [])
+
+    def test_a_baseline_without_frozen_identities_fails(self) -> None:
+        """A count-only baseline is the hole; refuse to pass without identities."""
+        regressions = compare(
+            self._result(targets_zero_reference=["a"]),
+            {"max_targets_zero_reference": 5},
+        )
+        self.assertTrue(any("does not freeze item identities" in r for r in regressions))
+
+    # -- counterexample: a registration that cannot support a pass ----------
+    def test_expired_registration_fails(self) -> None:
+        regressions = compare(
+            self._result(expired_registrations=["exemption:scripts/x.sh"]),
+            self._baseline(),
+        )
+        self.assertEqual(len(regressions), 1)
+        self.assertIn("expired_registrations", regressions[0])
+
+    def test_registration_without_an_owner_fails(self) -> None:
+        regressions = compare(
+            self._result(registrations_missing_owner=["targets:a.b"]),
+            self._baseline(),
+        )
+        self.assertEqual(len(regressions), 1)
+        self.assertIn("registrations_missing_owner", regressions[0])
+
+    def test_registration_without_a_basis_fails(self) -> None:
+        regressions = compare(
+            self._result(registrations_missing_basis=["scripts:x.py"]),
+            self._baseline(),
+        )
+        self.assertEqual(len(regressions), 1)
+        self.assertIn("registrations_missing_basis", regressions[0])
+
+    def test_an_unwired_required_check_fails(self) -> None:
+        """A required check that exists only as a registration is not a pass."""
+        regressions = compare(
+            self._result(unwired_gate_candidates=["targets:unwired.gate.candidate"]),
+            self._baseline(),
+        )
+        self.assertEqual(len(regressions), 1)
+        self.assertIn("unwired_gate_candidates", regressions[0])
+
+    def test_baseline_payload_freezes_identities_and_drops_the_blanket_date(self) -> None:
+        payload = baseline_payload(
+            self._result(targets_zero_reference=["a", "b"], remote_only_scripts=["scripts/r.py"])
+        )
+        self.assertNotIn("review_by", payload)
+        self.assertTrue(payload["review_triggers"])
+        self.assertEqual(payload["frozen_identities"]["targets_zero_reference"], ["a", "b"])
+        self.assertEqual(payload["frozen_identities"]["remote_only_scripts"], ["scripts/r.py"])
+        self.assertEqual(payload["max_expired_registrations"], 0)
+        self.assertEqual(payload["max_registrations_missing_owner"], 0)
+        self.assertEqual(payload["max_registrations_missing_basis"], 0)
+        self.assertEqual(payload["max_unwired_gate_candidates"], 0)
+
+
+class RegistrationStateTest(unittest.TestCase):
+    """A registration only supports a pass while it is owned, based and live."""
+
+    def _policy(self):
+        return {"diagnostic_cli": {"trigger": "re-review at the next audit batch"}}
+
+    def test_a_fully_based_registration_is_clean(self) -> None:
+        state = registration_state(
+            {"targets": {"a.b": {"disposition": "diagnostic_cli", "owner": "t", "reason": "r"}},
+             "scripts": {}, "absent_assets": {}},
+            [],
+            self._policy(),
+            date(2026, 10, 13),
+        )
+        self.assertEqual(state["registrations_missing_owner"], [])
+        self.assertEqual(state["registrations_missing_basis"], [])
+        self.assertEqual(state["expired_registrations"], [])
+
+    def test_a_registration_without_an_owner_is_flagged(self) -> None:
+        state = registration_state(
+            {"targets": {"a.b": {"disposition": "diagnostic_cli", "owner": "", "reason": "r"}},
+             "scripts": {}, "absent_assets": {}},
+            [], self._policy(), date(2026, 10, 13),
+        )
+        self.assertEqual(state["registrations_missing_owner"], ["targets:a.b"])
+
+    def test_a_disposition_without_a_review_trigger_is_baseless(self) -> None:
+        state = registration_state(
+            {"targets": {"a.b": {"disposition": "made_up", "owner": "t", "reason": "r"}},
+             "scripts": {}, "absent_assets": {}},
+            [], self._policy(), date(2026, 10, 13),
+        )
+        self.assertEqual(state["registrations_missing_basis"], ["targets:a.b"])
+
+    def test_an_expired_entry_deadline_is_flagged(self) -> None:
+        state = registration_state(
+            {"targets": {"a.b": {"disposition": "diagnostic_cli", "owner": "t",
+                                 "reason": "r", "review_by": "2026-01-01"}},
+             "scripts": {}, "absent_assets": {}},
+            [], self._policy(), date(2026, 10, 13),
+        )
+        self.assertEqual(state["expired_registrations"], ["targets:a.b"])
+
+    def test_an_expired_class_deadline_is_flagged(self) -> None:
+        policy = {"diagnostic_cli": {"trigger": "x", "deadline": "2026-01-01"}}
+        state = registration_state(
+            {"targets": {"a.b": {"disposition": "diagnostic_cli", "owner": "t", "reason": "r"}},
+             "scripts": {}, "absent_assets": {}},
+            [], policy, date(2026, 10, 13),
+        )
+        self.assertEqual(state["expired_registrations"], ["targets:a.b"])
+
+    def test_a_future_deadline_is_not_expired(self) -> None:
+        policy = {"diagnostic_cli": {"trigger": "x", "deadline": "2027-06-30"}}
+        state = registration_state(
+            {"targets": {"a.b": {"disposition": "diagnostic_cli", "owner": "t", "reason": "r"}},
+             "scripts": {}, "absent_assets": {}},
+            [], policy, date(2026, 10, 13),
+        )
+        self.assertEqual(state["expired_registrations"], [])
+
+    def test_exemption_lane_owner_counts_as_the_owner(self) -> None:
+        state = registration_state(
+            {"targets": {}, "scripts": {}, "absent_assets": {}},
+            [{"script": "scripts/x.sh", "reason_code": "frontend_build_tooling",
+              "lane_owner": "local.quick", "reason": "r"}],
+            {"frontend_build_tooling": {"trigger": "x"}},
+            date(2026, 10, 13),
+        )
+        self.assertEqual(state["registrations_missing_owner"], [])
+
+    def test_a_gate_candidate_is_an_unwired_required_check(self) -> None:
+        state = registration_state(
+            {"targets": {"unwired.gate.candidate": {"disposition": "gate_candidate",
+                                                    "owner": "t", "reason": "r"}},
+             "scripts": {}, "absent_assets": {}},
+            [], {"gate_candidate": {"trigger": "x"}}, date(2026, 10, 13),
+        )
+        self.assertEqual(state["unwired_gate_candidates"], ["targets:unwired.gate.candidate"])
+
+    def test_an_exemption_without_a_reason_code_trigger_is_baseless(self) -> None:
+        state = registration_state(
+            {"targets": {}, "scripts": {}, "absent_assets": {}},
+            [{"script": "scripts/x.sh", "reason_code": "unknown_code",
+              "lane_owner": "local.quick", "reason": "r"}],
+            {"frontend_build_tooling": {"trigger": "x"}},
+            date(2026, 10, 13),
+        )
+        self.assertEqual(state["registrations_missing_basis"], ["exemption:scripts/x.sh"])
 
 
 class RepositoryInvariantTest(unittest.TestCase):
@@ -215,6 +439,70 @@ class RepositoryInvariantTest(unittest.TestCase):
         self.assertFalse(is_prose("make/ci.mk"))
         self.assertTrue(is_prose("docs/ops/iterations/example.md"))
         self.assertTrue(is_prose(".agent/runs/example/run.json"))
+
+    def test_committed_baseline_freezes_identities_and_has_no_blanket_date(self) -> None:
+        """The ratchet must freeze item identities, not only counts.
+
+        A baseline without ``frozen_identities`` is the count-neutral
+        replacement hole, and a single blanket ``review_by`` is not a review
+        trigger. Both are refused here so the committed baseline cannot regress
+        to that shape.
+        """
+        baseline = json.loads(DEFAULT_BASELINE.read_text(encoding="utf-8"))
+        self.assertNotIn("review_by", baseline)
+        self.assertTrue(baseline.get("review_triggers"))
+        frozen = baseline.get("frozen_identities")
+        self.assertIsInstance(frozen, dict)
+        for metric in IDENTITY_FREEZE_METRICS:
+            self.assertIn(metric, frozen)
+            self.assertGreater(len(frozen[metric]), 0)
+        self.assertEqual(baseline["max_expired_registrations"], 0)
+        self.assertEqual(baseline["max_registrations_missing_owner"], 0)
+        self.assertEqual(baseline["max_registrations_missing_basis"], 0)
+
+    def test_every_registration_has_a_review_trigger(self) -> None:
+        """A registration without a disposal basis may not support a pass.
+
+        The basis is: an owner, a reason, and a disposition / reason_code that
+        declares a review trigger. A registered on-demand tool is classified
+        here, so it is never misreported as a dead script - but the
+        classification must carry a trigger, not just a label.
+        """
+        result = measure(ROOT)
+        self.assertEqual(result["registrations_missing_owner"], [])
+        self.assertEqual(result["registrations_missing_basis"], [])
+        self.assertEqual(result["expired_registrations"], [])
+        self.assertEqual(result["unwired_gate_candidates"], [])
+
+    def test_registered_on_demand_tools_are_classified_not_deleted(self) -> None:
+        """Legitimate on-demand tools stay registered, with a live trigger."""
+        doc = json.loads(DEFAULT_DISPOSITIONS.read_text(encoding="utf-8"))
+        policy = read_review_policy(DEFAULT_DISPOSITIONS)
+        self.assertTrue(doc.get("scripts"))
+        for name, entry in doc["scripts"].items():
+            self.assertIn(entry["disposition"], SCRIPT_DISPOSITION_VOCABULARY, name)
+            self.assertTrue((policy.get(entry["disposition"]) or {}).get("trigger"), name)
+
+    def test_no_make_recipe_references_a_retired_script(self) -> None:
+        """Retirement may not leave a dangling reference.
+
+        A parked script that a recipe still types is the worst of both worlds:
+        the debt left the count but the broken call stayed. No make file may name
+        ``scripts/retired/**``, and the absent-asset register must stay fully
+        registered so no unrecorded dangling recipe path can hide either.
+        """
+        _targets, recipes, _prereqs, _phony = parse_make(ROOT)
+        offenders = sorted(
+            {
+                target
+                for target, lines in recipes.items()
+                for line in lines
+                if "scripts/retired/" in line
+            }
+        )
+        self.assertEqual(offenders, [])
+        result = measure(ROOT)
+        self.assertEqual(result["targets_missing_asset_unregistered"], [])
 
     def test_registries_are_tracked_so_measurement_matches_delivery(self) -> None:
         """The metric reads `git ls-files`; an untracked registry is a blind spot.
@@ -347,14 +635,19 @@ class RegisterScriptTest(unittest.TestCase):
             2,
         )
 
-    def test_missing_owner_or_review_date_is_rejected(self) -> None:
+    def test_missing_owner_is_rejected(self) -> None:
         self.assertEqual(
             cmd_register(ROOT, Path("/nonexistent/d.json"), "scripts/x.sh", "retain", "r", "", "2027-01-01"),
             2,
         )
+
+    def test_review_date_is_now_optional(self) -> None:
+        # The disposition's review_policy carries the trigger; a per-entry
+        # deadline is optional. With owner but no date the command still runs the
+        # dead-surface check, so a non-dead script fails on that (3), not (2).
         self.assertEqual(
             cmd_register(ROOT, Path("/nonexistent/d.json"), "scripts/x.sh", "retain", "r", "o", ""),
-            2,
+            3,
         )
 
 

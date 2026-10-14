@@ -40,7 +40,7 @@ DECLARED_CAPABILITY_COUNT_FIELD = "effective_capability_count_per_product"
 EXPECTED_ACCOUNTING_MENU_COUNT = 6
 
 
-def _contract_paths(payload: dict) -> set[tuple[str, ...]]:
+def _contract_paths(payload: dict, states=None) -> set[tuple[str, ...]]:
     paths: set[tuple[str, ...]] = set()
     centers = payload.get("centers") or []
     if [row.get("name") for row in centers] != EXPECTED_CENTERS:
@@ -54,11 +54,13 @@ def _contract_paths(payload: dict) -> set[tuple[str, ...]]:
                 if not children:
                     raise ValueError(f"project level-two menu has no level-three pages: {level_two_name}")
                 for child in children:
-                    paths.add((center_name, level_two_name, str(child.get("name") or "").strip()))
+                    if states is None or child.get("release_state") in states:
+                        paths.add((center_name, level_two_name, str(child.get("name") or "").strip()))
             else:
                 if children:
                     raise ValueError(f"non-project center illegally uses level three: {center_name}/{level_two_name}")
-                paths.add((center_name, level_two_name))
+                if states is None or level_two.get("release_state") in states:
+                    paths.add((center_name, level_two_name))
     return paths
 
 
@@ -87,21 +89,23 @@ def main() -> int:
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         errors.append(str(exc))
         contract_paths = set()
-    if len(contract_paths) != EXPECTED_FORMAL_MENU_COUNT:
+    if len(contract_paths) != baseline["policy_strategy"]["full_product_entry_count"]:
         errors.append(
             f"product contract must project exactly the locked declared count "
             f"({EXPECTED_FORMAL_MENU_COUNT}), got {len(contract_paths)}"
         )
     for product in baseline.get("products") or []:
+        expected_count = baseline["policy_strategy"]["menu_count_by_product"][product["product_key"]]
+        edition_paths = _contract_paths(json.loads(CONTRACT.read_text(encoding="utf-8")), product["included_release_states"])
         groups = product.get("menu_groups") or []
         if [row.get("group_label") for row in groups] != EXPECTED_CENTERS:
             errors.append(f"{product.get('product_key')} center order mismatch")
             continue
         rows = [menu for group in groups for menu in group.get("menus") or []]
         xmlids = [str(row.get("menu_xmlid") or "") for row in rows]
-        if len(rows) != EXPECTED_FORMAL_MENU_COUNT or len(set(xmlids)) != EXPECTED_FORMAL_MENU_COUNT:
+        if len(rows) != expected_count or len(set(xmlids)) != expected_count:
             errors.append(
-                f"{product.get('product_key')} must contain {EXPECTED_FORMAL_MENU_COUNT} unique menu identities"
+                f"{product.get('product_key')} must contain {expected_count} unique menu identities"
             )
         actual_contract_paths: set[tuple[str, ...]] = set()
         accounting_count = 0
@@ -116,11 +120,11 @@ def main() -> int:
                 if len(relative) != 2:
                     errors.append("accounting must remain a flat center-to-page menu")
             actual_contract_paths.add(relative)
-        if actual_contract_paths != contract_paths:
+        if actual_contract_paths != edition_paths:
             errors.append(
                 f"{product.get('product_key')} contract projection mismatch: "
-                f"missing={sorted(contract_paths - actual_contract_paths)} "
-                f"extra={sorted(actual_contract_paths - contract_paths)}"
+                f"missing={sorted(edition_paths - actual_contract_paths)} "
+                f"extra={sorted(actual_contract_paths - edition_paths)}"
             )
         if accounting_count != EXPECTED_ACCOUNTING_MENU_COUNT:
             errors.append(f"{product.get('product_key')} must retain six current accounting pages")

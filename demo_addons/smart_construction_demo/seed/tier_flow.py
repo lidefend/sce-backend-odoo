@@ -69,3 +69,23 @@ def approve_tier_chain(record, fallback_xmlid=DEFAULT_FALLBACK_REVIEWER):
                 % (_describe_review(review), record._name, record.display_name)
             )
     return record.validation_status == "validated"
+
+
+def ensure_project_initiation_approved(project):
+    """Carry a draft demo project through 立项 before any lifecycle change.
+
+    ``action_set_lifecycle_state()`` asserts that initiation approval already
+    passed, and ``sc_approval_state`` may only be written by the product's own
+    actions, so a seed that starts a project must submit it first:
+    ``action_sc_submit()`` completes initiation itself when no approval
+    template is configured, and otherwise opens the tier chain, which is
+    walked here.  Idempotent and never writes a state field directly.
+    """
+    if project.sc_approval_state != "draft":
+        return project.sc_approval_state
+    project.action_sc_submit()
+    project.invalidate_recordset()
+    if project.sc_approval_state == "draft" and project.review_ids:
+        approve_tier_chain(project)
+        project.invalidate_recordset()
+    return project.sc_approval_state

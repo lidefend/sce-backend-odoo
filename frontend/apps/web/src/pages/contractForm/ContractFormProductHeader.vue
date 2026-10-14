@@ -80,15 +80,24 @@
       </span>
       <span v-if="showDraftSave || showPrimaryFormAction || directActions.length || canonicalDirectActions.length" class="form-header-primary-actions">
         <ScButton v-if="showDraftSave" variant="ghost" size="small" :disabled="draftSaveDisabled" type="button" @click="$emit('save-draft')">{{ draftSaveLabel }}</ScButton>
-        <ScButton v-if="showPrimaryFormAction" data-product-primary-action v-bind="actionEvidenceAttributes(primaryAction)" variant="primary" size="small" :disabled="primaryFormActionDisabled" :title="primaryFormActionHint || undefined" type="button" @click="$emit('run-primary')">{{ submitLabel }}</ScButton>
-        <ScButton v-for="action in presentedDirectActions" :key="`hdr-${action.key}`" v-bind="actionEvidenceAttributes(action)" :data-product-primary-action="action.presentationTier === 'primary' || undefined" :variant="buttonVariant(action)" size="small" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</ScButton>
-        <ScButton v-for="action in canonicalPresentedDirectActions" :key="`canonical-hdr-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" :data-product-primary-action="action.tier === 'primary' || undefined" :variant="canonicalButtonVariant(action)" :loading="action.loading" size="small" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</ScButton>
+        <ScPopover v-if="showPrimaryFormAction" trigger="click" :disabled="!primaryFormActionDisabled || !primaryFormActionHint">
+          <template #trigger><span :tabindex="primaryFormActionDisabled && primaryFormActionHint ? 0 : undefined" :role="primaryFormActionDisabled && primaryFormActionHint ? 'button' : undefined" :aria-label="primaryFormActionDisabled ? primaryFormActionHint : undefined" :class="{ 'form-action-denial-trigger': primaryFormActionDisabled && primaryFormActionHint }" @keydown="activateReasonTrigger"><ScButton data-product-primary-action v-bind="actionEvidenceAttributes(primaryAction)" variant="primary" size="small" :disabled="primaryFormActionDisabled" :title="primaryFormActionHint || undefined" type="button" @click="!primaryFormActionDisabled && !busy && $emit('run-primary')">{{ submitLabel }}</ScButton></span></template>
+          {{ primaryFormActionHint }}
+        </ScPopover>
+        <ScPopover v-for="action in presentedDirectActions" :key="`hdr-${action.key}`" trigger="click" :disabled="!(!action.enabled ? action.hint : '')">
+          <template #trigger><span :tabindex="(!action.enabled ? action.hint : '') ? 0 : undefined" :role="(!action.enabled ? action.hint : '') ? 'button' : undefined" :aria-label="(!action.enabled ? action.hint : '') || undefined" :class="{ 'form-action-denial-trigger': Boolean(!action.enabled ? action.hint : '') }" @keydown="activateReasonTrigger"><ScButton v-bind="actionEvidenceAttributes(action)" :data-product-primary-action="action.presentationTier === 'primary' || undefined" :variant="buttonVariant(action)" size="small" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="!busy && action.enabled && $emit('run-action', action)">{{ action.label }}</ScButton></span></template>
+          {{ !action.enabled ? action.hint : '' }}
+        </ScPopover>
+        <ScPopover v-for="action in canonicalPresentedDirectActions" :key="`canonical-hdr-${action.key}`" trigger="click" :disabled="!(workflowDisabledReason(action))">
+          <template #trigger><span :tabindex="(workflowDisabledReason(action)) ? 0 : undefined" :role="(workflowDisabledReason(action)) ? 'button' : undefined" :aria-label="(workflowDisabledReason(action)) || undefined" :class="{ 'form-action-denial-trigger': Boolean(workflowDisabledReason(action)) }" @keydown="activateReasonTrigger"><ScButton v-bind="canonicalActionEvidenceAttributes(action)" :data-product-primary-action="action.tier === 'primary' || undefined" :variant="canonicalButtonVariant(action)" :loading="action.loading" size="small" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" @click="!busy && action.enabled && $emit('canonical-action', action)">{{ action.label }}</ScButton></span></template>
+          {{ workflowDisabledReason(action) }}
+        </ScPopover>
       </span>
       <ScDropdown v-if="headerOverflowItems.length && !isNarrowViewport" class="form-header-more-actions" :items="headerOverflowItems" @select="selectHeaderOverflow">
         <template #trigger><ScButton variant="ghost" size="small">更多操作</ScButton></template>
       </ScDropdown>
-      <span v-if="recordActions.length" class="form-header-record-actions" data-record-actions>
-        <ScButton v-for="action in recordActions" :key="`hdr-record-${action.key}`" class="form-header-record-action" :data-record-action="action.key" variant="danger" appearance="context-action" size="small" :disabled="busy || !action.enabled" :title="action.reason || undefined" type="button" @click="$emit('record-action', action.key)">{{ action.label }}</ScButton>
+      <span v-if="recordActions.length && !isNarrowViewport" class="form-header-record-actions" data-record-actions>
+        <ScButton v-for="action in recordActions" :key="`hdr-record-${action.key}`" class="form-header-record-action" :data-record-action="action.key" variant="danger" appearance="context-action" size="small" :disabled="busy || !action.enabled" :title="action.reason || undefined" type="button" @click="dispatchDropdownAction(`record:${action.key}`)">{{ action.label }}</ScButton>
       </span>
       <span v-if="configActions.length" class="form-header-action-separator" aria-hidden="true" />
       <ScButton v-for="action in configActions" :key="`hdr-config-${action.key}`" v-bind="actionEvidenceAttributes(action)" class="form-header-config-action" appearance="context-action" variant="ghost" size="small" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</ScButton>
@@ -107,6 +116,7 @@
 import { formClientCommands } from '@sc/schema';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import PageHeaderTemplate from '../../components/template/PageHeader.vue';
+import ScPopover from '../../components/design-system/ScPopover.vue';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScIcon from '../../components/design-system/ScIcon.vue';
 import ScDropdown, { type ScDropdownItem } from '../../components/design-system/ScDropdown.vue';
@@ -199,6 +209,7 @@ const mobileActionAuthority = computed(() => resolveMobileFormActionAuthority({
   canonicalDirect: mobileCanonicalDirectActions.value,
   canonicalOverflow: canonicalPresentedOverflowActions.value,
   config: props.configActions,
+  record: props.recordActions || [],
   showDiscard: props.showDiscard,
   busy: props.busy,
 }));
@@ -212,19 +223,19 @@ const headerOverflowModelActions = computed<ProductPageHeaderAction[]>(() => [
   ...canonicalPresentedOverflowActions.value.map((action) => ({ key: action.key, label: action.label, semantic: 'other' as const, enabled: action.enabled })),
 ]);
 const headerOverflowItems = computed<ScDropdownItem[]>(() => [
-  ...presentedOverflowActions.value.map((action) => ({ value: `business:${action.key}`, label: action.label, disabled: props.busy || !action.enabled })),
-  ...canonicalPresentedOverflowActions.value.map((action) => ({ value: `canonical:${action.key}`, label: action.label, disabled: props.busy || !action.enabled })),
+  ...presentedOverflowActions.value.map((action) => ({ value: `business:${action.key}`, label: action.label, reasonMessage: !action.enabled ? action.hint : '', disabled: props.busy || !action.enabled })),
+  ...canonicalPresentedOverflowActions.value.map((action) => ({ value: `canonical:${action.key}`, label: action.label, reasonMessage: workflowDisabledReason(action), disabled: props.busy || !action.enabled })),
 ]);
 const mobileActionItems = computed<ScDropdownItem[]>(() => [
   ...(mobileActionAuthority.value.keys.includes('back:form.back') ? [{ value: 'builtin:back', label: props.backLabel, disabled: props.busy }] : []),
   ...(props.showReturn ? [{ value: 'builtin:return', label: '返回工作台', disabled: props.busy }] : []),
   ...(props.showDraftSave ? [{ value: 'builtin:draft', label: props.draftSaveLabel, disabled: props.draftSaveDisabled }] : []),
-  ...mobilePresentedDirectActions.value.map((action) => ({ value: `business:${action.key}`, label: action.label, disabled: props.busy || !action.enabled })),
-  ...presentedOverflowActions.value.map((action) => ({ value: `business:${action.key}`, label: action.label, disabled: props.busy || !action.enabled })),
-  ...mobileCanonicalDirectActions.value.map((action) => ({ value: `canonical:${action.key}`, label: action.label, disabled: props.busy || !action.enabled })),
-  ...canonicalPresentedOverflowActions.value.map((action) => ({ value: `canonical:${action.key}`, label: action.label, disabled: props.busy || !action.enabled })),
-  ...props.configActions.map((action) => ({ value: `business:${action.key}`, label: action.label, disabled: props.busy || !action.enabled })),
-  ...(props.recordActions || []).map((action) => ({ value: `record:${action.key}`, label: action.label, disabled: props.busy || !action.enabled })),
+  ...mobilePresentedDirectActions.value.map((action) => ({ value: `business:${action.key}`, label: action.label, reasonMessage: !action.enabled ? action.hint : '', disabled: props.busy || !action.enabled })),
+  ...presentedOverflowActions.value.map((action) => ({ value: `business:${action.key}`, label: action.label, reasonMessage: !action.enabled ? action.hint : '', disabled: props.busy || !action.enabled })),
+  ...mobileCanonicalDirectActions.value.map((action) => ({ value: `canonical:${action.key}`, label: action.label, reasonMessage: workflowDisabledReason(action), disabled: props.busy || !action.enabled })),
+  ...canonicalPresentedOverflowActions.value.map((action) => ({ value: `canonical:${action.key}`, label: action.label, reasonMessage: workflowDisabledReason(action), disabled: props.busy || !action.enabled })),
+  ...props.configActions.map((action) => ({ value: `business:${action.key}`, label: action.label, reasonMessage: !action.enabled ? action.hint : '', disabled: props.busy || !action.enabled })),
+  ...(props.recordActions || []).map((action) => ({ value: `record:${action.key}`, label: action.label, reasonMessage: !action.enabled ? action.reason : '', disabled: props.busy || !action.enabled })),
   ...(props.showDiscard ? [{ value: 'builtin:discard', label: props.discardLabel, disabled: props.busy }] : []),
 ]);
 const headerExitAction = computed<ProductPageHeaderAction>(() => ({ key: props.backSemanticIdentity, label: props.backLabel, semantic: 'exit', enabled: !props.busy }));
@@ -261,6 +272,13 @@ function canonicalActionEvidenceAttributes(action: CanonicalFormAction) {
   };
 }
 
+function activateReasonTrigger(event: KeyboardEvent) {
+  if (event.currentTarget !== event.target) return;
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault(); (event.currentTarget as HTMLElement).click();
+  }
+}
+
 function selectHeaderOverflow(item: ScDropdownItem) {
   dispatchDropdownAction(String(item.value));
 }
@@ -275,10 +293,12 @@ function selectMobileAction(item: ScDropdownItem) {
 }
 
 function dispatchDropdownAction(value: string) {
-  const [kind, key] = value.split(':', 2);
+  const separator = value.indexOf(':');
+  const kind = value.slice(0, separator);
+  const key = value.slice(separator + 1);
   if (kind === 'record') {
     const recordAction = (props.recordActions || []).find((candidate) => candidate.key === key);
-    if (recordAction?.enabled) emit('record-action', recordAction.key);
+    if (!props.busy && recordAction?.enabled) emit('record-action', recordAction.key);
     return;
   }
   if (kind === 'canonical') {
@@ -394,4 +414,8 @@ function canonicalButtonVariant(action: CanonicalFormAction): 'primary' | 'ghost
   .form-header-primary-actions > .sc-btn:not([data-product-primary-action]) { display: none; }
   .form-header-mobile-actions { display: block; order: 2; margin-left: auto; }
 }
+</style>
+
+<style scoped>
+.form-action-denial-trigger :deep(button:disabled) { pointer-events: none; }
 </style>
