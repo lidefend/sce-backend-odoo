@@ -806,7 +806,8 @@
       "owner": "platform-team",
       "evidence": [
         "make:verify.local.dev.data_space_uncached_membership.orm :: data_space_uncached_membership"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "demo_gate",
