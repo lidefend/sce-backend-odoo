@@ -98,3 +98,22 @@
 - 主线集成：本棒后续完成（产品修复走受保护 PR）。
 - 版本发布：沿用上一棒（目标环境 = main `d2079888`）。
 - 产品交付：**未声明**。
+
+## 7. 交接
+
+| 项 | 值 |
+|---|---|
+| 候选分支 | `audit/target-env-role-acceptance-20261014` |
+| 候选 HEAD | `36bbf88cdf181bc0b8d6f15d5549cd204974e958` |
+| 基线 | `d2079888`（main，含 PR #654/#655/#656） |
+| PR | https://github.com/lidefend/sce-backend-odoo/pull/657（base `main`，远端门禁运行中） |
+| 目标环境 | daily `sc_demo`，部署面仍为 `d2079888`（未变） |
+| 未改动 | 目标库（复测 `registration_count`=0）、部署 checkout、任何业务数据 |
+
+下一精确步骤：
+
+1. 等 PR #657 在**该精确 HEAD 与基线**上远端门禁通过（新 HEAD 不继承旧结果）；
+2. 取得所有者裁定：`fe_activity_journal_entry` 公司归属漂移如何处置
+   （受管基线重置 / 按行受管修复）；
+3. 集成并重新发布 daily 后，重跑受管 fixture 入驻与分角色只读验收，
+   绑定允许/拒绝证据。未完成前不得声明批次验收或产品交付完成。

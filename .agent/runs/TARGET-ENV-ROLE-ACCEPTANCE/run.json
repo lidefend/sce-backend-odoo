@@ -120,5 +120,14 @@
     "target_env_fixture_carrier_drift: fe_activity_journal_entry (account.move id 8) carries company_id=1 (the real main company) while the fixture declares it under FE Company A, so ensure_fixture fails closed with 'Activity move ownership mismatch; use governed baseline reset'. The fixture's own answer for a conflicting owned business fact is a governed baseline reset; a per-row governed data repair is the alternative. This is an owner decision about demo-data strategy, not something this run may settle unilaterally.",
     "target_env_nav_89_vs_90_needs_deployment: the contracted business_config_admin surface is 90 entries (config/frontend/acceptance_environments_v1.json action_count_authority) and the deployed d2079888 serves 89 because the action-less role-home carrier was dropped by the authorization source. The repair is verified at the owning layer but cannot change the deployed reading until this branch is integrated and the daily runtime re-released."
   ],
-  "next_exact_step": "Land the two verified product repairs (addons/smart_core/delivery menu authorization source; addons/smart_construction_acceptance_fixture legacy carrier adoption) through the governed delivery chain, then obtain the owner decision on how sc_demo's conflicting feeder carrier is resolved (governed baseline reset versus a per-row governed repair). After integration and a daily re-release, re-run the governed fixture onboarding and the per-role readonly acceptance and bind the role allow/deny evidence."
+  "next_exact_step": "Wait for PR #657 remote gates on candidate 36bbf88c to complete on this exact head and base; a new head invalidates them. Then obtain the owner decision on how sc_demo's conflicting feeder carrier (fe_activity_journal_entry company_id=1 vs the fixture's declared FE Company A) is resolved: governed baseline reset versus a per-row governed repair. After integration and a daily re-release, re-run the governed fixture onboarding and the per-role readonly acceptance, and bind the role allow/deny evidence.",
+  "mainline_integration": {
+    "carrier": "github_pull_request",
+    "number": 657,
+    "url": "https://github.com/lidefend/sce-backend-odoo/pull/657",
+    "base": "main",
+    "candidate_head": "36bbf88cdf181bc0b8d6f15d5549cd204974e958",
+    "state_at_record": "open_mergeable_remote_checks_pending",
+    "note": "Remote gates had not completed when this was recorded; a pending or stale run is never merge qualification, and a later head must not inherit this candidate's results."
+  }
 }
