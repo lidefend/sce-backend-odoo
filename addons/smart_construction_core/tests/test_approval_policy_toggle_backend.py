@@ -72,3 +72,65 @@ class TestApprovalPolicyToggleBackend(TransactionCase):
                 self.assertEqual(explicit.create_uid, actor)
                 self.assertEqual(ordinary.create_uid, actor)
                 self.assertEqual(model.search_count(domain), before + 2)
+
+    def _one_step_handling_fixture(self, suffix):
+        company = self.env.company
+        project = self.env["project.project"].create({
+            "name": "One step handling project %s" % suffix, "company_id": company.id,
+        })
+        supplier = self.env["res.partner"].create({
+            "name": "One step handling supplier %s" % suffix, "supplier_rank": 1,
+        })
+        return company, project, supplier
+
+    def _rental_order(self, company, project, supplier, name):
+        return self.env["sc.material.rental.order"].create({
+            "name": name,
+            "company_id": company.id,
+            "project_id": project.id,
+            "supplier_id": supplier.id,
+            "line_ids": [(0, 0, {
+                "material_name": "钢管",
+                "qty": 10.0,
+                "rental_days": 5.0,
+                "daily_price": 12.0,
+            })],
+        })
+
+    def test_handling_gate_finishes_one_step_without_approval_rule(self):
+        """Handling a document is one user action unless an approval rule exists."""
+        service = self.env["sc.approval.policy"]
+        company, project, supplier = self._one_step_handling_fixture("off")
+        self.assertFalse(service.get_active_policy("sc.material.rental.order", company=company))
+        self.assertFalse(service.is_approval_required("sc.material.rental.order", company=company))
+        order = self._rental_order(company, project, supplier, "ONE-STEP-OFF")
+        self.assertEqual(order.state, "draft")
+        order.action_activate()
+        self.assertEqual(order.state, "active")
+        self.assertFalse(order.review_ids)
+        # The unapproved-state refusal below is unchanged: one step is allowed,
+        # a second handling of a finished document is not.
+        with self.assertRaises(UserError), self.cr.savepoint():
+            order.action_activate()
+        self.assertEqual(order.state, "active")
+
+    def test_handling_gate_keeps_submission_when_approval_rule_configured(self):
+        """A configured approval rule keeps fail-closed submission semantics."""
+        service = self.env["sc.approval.policy"]
+        company, project, supplier = self._one_step_handling_fixture("on")
+        service.create({
+            "name": "材料租赁单审批规则",
+            "code": "test.one.step.rental.order",
+            "target_model": "sc.material.rental.order",
+            "approval_required": True,
+            "mode": "single",
+            "company_id": company.id,
+            "active": True,
+        })
+        self.assertTrue(service.is_approval_required("sc.material.rental.order", company=company))
+        order = self._rental_order(company, project, supplier, "ONE-STEP-ON")
+        self.assertEqual(order.state, "draft")
+        with self.assertRaises(UserError), self.cr.savepoint():
+            order.action_activate()
+        self.assertEqual(order.state, "draft")
+        self.assertFalse(order.review_ids)

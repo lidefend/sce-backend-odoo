@@ -64,6 +64,43 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
             with self.subTest(model=model, method=method_name, state=state):
                 projected = self._general_contract_actions(state, model=model)
                 self.assertEqual(method_name in [a["method"] for a in projected], state in allowed)
+            handling_methods = {
+                profile.get("method_by_action", {}).get(key)
+                for key in (profile.get("direct_handling") or {}).get(state, [])
+            }
+            if method_name in handling_methods:
+                with self.subTest(model=model, method=method_name, state=state, approval="required"):
+                    # A configured approval rule keeps the submission step: the
+                    # one-step handling method must not be offered until the
+                    # document is approved.
+                    approved_only = self._general_contract_actions(state, model=model, approval_required=True)
+                    self.assertNotIn(method_name, [a["method"] for a in approved_only])
+
+    def test_direct_handling_replaces_submission_only_without_approval(self):
+        # Declared one-step handling must read as the submission step of a
+        # business without an approval rule, and must vanish the moment the
+        # business declares one.  Anything else silently changes the contract.
+        declared = {
+            model: profile["direct_handling"]
+            for model, profile in load_profiles().items()
+            if profile.get("direct_handling")
+        }
+        self.assertTrue(declared, "no direct handling declaration was found")
+        for model, direct_handling in declared.items():
+            profile = load_profiles()[model]
+            for state, keys in direct_handling.items():
+                self.assertIn(state, profile["state_actions"])
+                self.assertIn("submit", profile["state_actions"][state])
+                methods = {profile.get("method_by_action", {}).get(key) for key in keys}
+                self.assertNotIn(None, methods)
+                with self.subTest(model=model, state=state, approval="none"):
+                    rows = {a["method"] for a in self._general_contract_actions(state, model=model)}
+                    self.assertTrue(methods.issubset(rows))
+                    self.assertNotIn("action_submit", rows)
+                with self.subTest(model=model, state=state, approval="required"):
+                    rows = {a["method"] for a in self._general_contract_actions(state, model=model, approval_required=True)}
+                    self.assertTrue(methods.isdisjoint(rows))
+                    self.assertIn("action_submit", rows)
 
     def test_purchase_request_actions_follow_review_facts_and_business_sources(self):
         model = 'sc.material.purchase.request'
@@ -354,7 +391,7 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
                 with self.assertRaises(type(error)) as caught: ns["_payment_advisory_from_exception"](record, error)
                 self.assertIs(caught.exception, error)
 
-    def _general_contract_actions(self, state, *, approval_phase="none", can_review=False, model="sc.general.contract", record_fields=None, evidence_gate=None):
+    def _general_contract_actions(self, state, *, approval_phase="none", can_review=False, model="sc.general.contract", record_fields=None, evidence_gate=None, approval_required=False):
         # Execute the shipped projection method, not a duplicate of its algorithm.
         tree = ast.parse(DEFAULT_SERVICE.read_text(encoding="utf-8"))
         method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "_available_actions")
@@ -367,7 +404,12 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
             return all(values.get(field) == value if operator == '=' else values.get(field) not in value
                        for field, operator, value in domain)
         record = SimpleNamespace(_name=model, id=23, can_review=can_review, filtered_domain=matches)
-        service = SimpleNamespace(ACTIONS=namespace["ACTIONS"])
+        # The projection reads one fact about the business to decide whether a
+        # submission step still exists: the active approval rule.
+        service = SimpleNamespace(
+            ACTIONS=namespace["ACTIONS"],
+            _handles_without_approval=lambda record, approval_phase: not approval_required,
+        )
         return namespace["_available_actions"](service, record, load_profiles()[record._name], state, "", approval_phase, evidence_gate or [])
 
     def test_general_contract_signing_binds_the_existing_business_method(self):
@@ -457,7 +499,8 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         for state in ("draft", "submitted", "approved", "rejected", "confirmed", "cancel", "unknown"):
             actions = self._general_contract_actions(state, model="sc.output.invoice.adjustment")
             methods = {action["method"] for action in actions}
-            self.assertEqual("action_confirm" in methods, state == "approved")
+            # 无审批规则时，办理动作取代提交步骤，草稿即可一步确认。
+            self.assertEqual("action_confirm" in methods, state in ("draft", "approved"))
             self.assertEqual("action_cancel" in methods, state in ("draft", "rejected", "approved"))
             for action in actions:
                 if action["method"] == "action_confirm":
@@ -467,7 +510,8 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         for state in ("draft", "submitted", "approved", "rejected", "confirmed", "cancel", "unknown"):
             actions = self._general_contract_actions(state, model="tender.guarantee")
             methods = {action["method"] for action in actions}
-            self.assertEqual("action_confirm" in methods, state == "approved")
+            # 无审批规则时，确认入账取代提交步骤，草稿即可一步办理。
+            self.assertEqual("action_confirm" in methods, state in ("draft", "approved"))
             self.assertEqual("action_cancel" in methods, state in ("draft", "rejected"))
             self.assertEqual("action_reset_draft" in methods, state in ("cancel", "rejected"))
             for action in actions:
@@ -488,7 +532,8 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
             if resets:
                 self.assertEqual(resets[0]["action_semantics"]["purpose"], "reopen")
             archives = [a for a in actions if a["method"] == "action_archive"]
-            self.assertEqual(bool(archives), state == "approved")
+            # 无审批规则时，归档取代提交步骤，草稿即可一步归档。
+            self.assertEqual(bool(archives), state in ("draft", "approved"))
             if archives:
                 self.assertEqual(archives[0]["action_semantics"]["purpose"], "complete")
 
@@ -595,8 +640,9 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         self.assertEqual(safety['confirm_message'], message)
 
     def test_contract_event_uses_real_reviewer_actions_and_resubmission(self):
-        for state in ('draft', 'rejected'):
-            self.assertEqual({a['method'] for a in self._general_contract_actions(state, model='sc.contract.event')}, {'action_submit', 'action_cancel'})
+        # 无审批规则时草稿只有一步办理；驳回态仍保留重新提交。
+        self.assertEqual({a['method'] for a in self._general_contract_actions('draft', model='sc.contract.event')}, {'action_done', 'action_cancel'})
+        self.assertEqual({a['method'] for a in self._general_contract_actions('rejected', model='sc.contract.event')}, {'action_submit', 'action_cancel'})
         for can_review in (True, False):
             actions = self._general_contract_actions('submitted', model='sc.contract.event', approval_phase='pending', can_review=can_review)
             self.assertEqual({a['method'] for a in actions}, {'action_cancel', 'validate_tier', 'reject_tier'} if can_review else {'action_cancel'})

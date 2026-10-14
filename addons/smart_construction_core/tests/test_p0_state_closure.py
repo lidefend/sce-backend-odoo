@@ -1931,6 +1931,7 @@ class TestP0StateClosure(TransactionCase):
         self.assertEqual(settlement.state, "confirmed")
 
     def test_labor_usage_and_settlement_block_state_jump_or_late_cancel(self):
+        # 未配置审批规则时，终端办理动作从 draft 一步完成；本用例验证该路径下的终态与守卫。
         project = self._create_project("P0 Project Labor Flow Block", with_boq=True)
         contractor = self._create_partner("P0 Labor Contractor Block")
         usage = self.env["sc.labor.usage"].create(
@@ -1944,9 +1945,6 @@ class TestP0StateClosure(TransactionCase):
             }
         )
 
-        with self.assertRaises(UserError):
-            usage.action_confirm()
-        usage.action_submit()
         usage.action_confirm()
         with self.assertRaises(UserError):
             usage.action_cancel()
@@ -1972,9 +1970,6 @@ class TestP0StateClosure(TransactionCase):
                 ],
             }
         )
-        with self.assertRaises(UserError):
-            settlement.action_confirm()
-        settlement.action_submit()
         settlement.action_confirm()
         with self.assertRaises(UserError):
             settlement.action_cancel()
@@ -2031,6 +2026,7 @@ class TestP0StateClosure(TransactionCase):
         self.assertEqual(settlement.state, "confirmed")
 
     def test_equipment_usage_and_settlement_block_state_jump_or_late_cancel(self):
+        # 未配置审批规则时，终端办理动作从 draft 一步完成；本用例验证该路径下的终态与守卫。
         project = self._create_project("P0 Project Equipment Flow Block", with_boq=True)
         supplier = self._create_partner("P0 Equipment Supplier Block")
         usage = self.env["sc.equipment.usage"].create(
@@ -2045,9 +2041,6 @@ class TestP0StateClosure(TransactionCase):
             }
         )
 
-        with self.assertRaises(UserError):
-            usage.action_confirm()
-        usage.action_submit()
         usage.action_confirm()
         with self.assertRaises(UserError):
             usage.action_cancel()
@@ -2072,9 +2065,6 @@ class TestP0StateClosure(TransactionCase):
                 ],
             }
         )
-        with self.assertRaises(UserError):
-            settlement.action_confirm()
-        settlement.action_submit()
         settlement.action_confirm()
         with self.assertRaises(UserError):
             settlement.action_cancel()
@@ -3301,6 +3291,7 @@ class TestP0StateClosure(TransactionCase):
         self.assertEqual(settlement.state, "confirmed")
 
     def test_material_flow_blocks_invalid_state_jump_or_late_cancel(self):
+        # 未配置审批规则时，终端办理动作从 draft 一步完成；本用例验证该路径下的终态与守卫。
         project = self._create_project("P0 Material Block", with_boq=True)
         supplier = self._create_partner("P0 Material Block Supplier")
         product = self.env["product.product"].create(
@@ -3336,9 +3327,6 @@ class TestP0StateClosure(TransactionCase):
                 "line_ids": [(0, 0, {"product_id": product.id, "received_qty": 1.0})],
             }
         )
-        with self.assertRaises(ValidationError):
-            acceptance.action_accept()
-        acceptance.action_submit()
         acceptance.action_accept()
         with self.assertRaises(ValidationError):
             acceptance.action_cancel()
@@ -3346,9 +3334,6 @@ class TestP0StateClosure(TransactionCase):
         inbound = self.env["sc.material.inbound"].create(
             {"project_id": project.id, "line_ids": [(0, 0, line_vals)]}
         )
-        with self.assertRaises(ValidationError):
-            inbound.action_receive()
-        inbound.action_submit()
         inbound.action_receive()
         with self.assertRaises(ValidationError):
             inbound.action_cancel()
@@ -3356,9 +3341,6 @@ class TestP0StateClosure(TransactionCase):
         outbound = self.env["sc.material.outbound"].create(
             {"project_id": project.id, "line_ids": [(0, 0, line_vals)]}
         )
-        with self.assertRaises(ValidationError):
-            outbound.action_issue()
-        outbound.action_submit()
         outbound.action_issue()
         with self.assertRaises(ValidationError):
             outbound.action_cancel()
@@ -3381,9 +3363,6 @@ class TestP0StateClosure(TransactionCase):
                 ],
             }
         )
-        with self.assertRaises(ValidationError):
-            rfq.action_select()
-        rfq.action_submit()
         rfq.action_select()
         with self.assertRaises(ValidationError):
             rfq.action_cancel()
@@ -3405,12 +3384,82 @@ class TestP0StateClosure(TransactionCase):
                 ],
             }
         )
-        with self.assertRaises(ValidationError):
-            settlement.action_confirm()
-        settlement.action_submit()
         settlement.action_confirm()
         with self.assertRaises(ValidationError):
             settlement.action_cancel()
+
+    def test_direct_handling_refuses_when_approval_rule_configured(self):
+        """在册审批规则下，一步办理必须 fail-closed，不得绕过提交与审批。"""
+        service = self.env["sc.approval.policy"]
+        company = self.env.company
+        project = self._create_project("P0 Direct Handling Gate", with_boq=True)
+        supplier = self._create_partner("P0 Direct Handling Supplier")
+        product = self.env["product.product"].create(
+            {
+                "name": "P0 Direct Handling Product",
+                "type": "product",
+                "uom_id": self.uom_unit.id,
+                "uom_po_id": self.uom_unit.id,
+            }
+        )
+        usage = self.env["sc.labor.usage"].create(
+            {
+                "project_id": project.id,
+                "contractor_id": supplier.id,
+                "labor_team": "P0 Gate Team",
+                "work_content": "P0 gate work",
+                "worker_qty": 2.0,
+                "work_hours": 8.0,
+            }
+        )
+        acceptance = self.env["sc.material.acceptance"].create(
+            {
+                "project_id": project.id,
+                "supplier_id": supplier.id,
+                "line_ids": [(0, 0, {"product_id": product.id, "received_qty": 1.0})],
+            }
+        )
+        policies = service.create(
+            [
+                {
+                    "name": "P0 办理门禁-用工审批规则",
+                    "code": "test.p0.gate.labor.usage",
+                    "target_model": "sc.labor.usage",
+                    "approval_required": True,
+                    "mode": "single",
+                    "company_id": company.id,
+                },
+                {
+                    "name": "P0 办理门禁-验收审批规则",
+                    "code": "test.p0.gate.material.acceptance",
+                    "target_model": "sc.material.acceptance",
+                    "approval_required": True,
+                    "mode": "single",
+                    "company_id": company.id,
+                },
+            ]
+        )
+        self.assertTrue(service.is_approval_required("sc.labor.usage", company=company))
+        self.assertTrue(service.is_approval_required("sc.material.acceptance", company=company))
+        with self.assertRaises(UserError):
+            usage.action_confirm()
+        usage.invalidate_recordset()
+        self.assertEqual(usage.state, "draft")
+        with self.assertRaises(UserError):
+            acceptance.action_accept()
+        acceptance.invalidate_recordset()
+        self.assertEqual(acceptance.state, "draft")
+
+        # 停用审批规则后，同一终端动作一步完成。
+        policies.write({"active": False})
+        self.assertFalse(service.is_approval_required("sc.labor.usage", company=company))
+        self.assertFalse(service.is_approval_required("sc.material.acceptance", company=company))
+        usage.action_confirm()
+        usage.invalidate_recordset()
+        self.assertEqual(usage.state, "confirmed")
+        acceptance.action_accept()
+        acceptance.invalidate_recordset()
+        self.assertEqual(acceptance.state, "accepted")
 
     def test_payment_write_approved_requires_tier(self):
         project = self._create_project("P0 Project Tier", with_boq=True)
