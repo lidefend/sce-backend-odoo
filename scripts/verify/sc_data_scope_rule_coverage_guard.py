@@ -452,6 +452,30 @@ def check(root: Path, declarations_path: Path, module_sets_path: str = DEFAULT_M
                 )
         return scoped
 
+    unset_owner_values = {"shared", "unknown"}
+
+    def check_unset_owner(entry: dict, label: str) -> None:
+        """An unset-owner branch must be declared, never inferred.
+
+        The default is the shared-reference reading, so a model whose anchor is
+        its only optional ownership path has to state that explicitly instead of
+        passing a fail-open ceiling off as complete attribution.
+        """
+        value = entry.get("unsetOwner")
+        if value is None:
+            return
+        if value not in unset_owner_values:
+            failures.append(
+                f"{label}: unsetOwner must be one of {sorted(unset_owner_values)}, "
+                f"got {value!r}"
+            )
+            return
+        reason = (entry.get("reason") or "").strip()
+        if not reason:
+            failures.append(f"{label}: unsetOwner={value} requires a reason")
+        elif any(token in reason.lower() for token in PLACEHOLDER_REASONS):
+            failures.append(f"{label}: placeholder reason for unsetOwner={value}")
+
     for entry in enforced:
         model = entry["model"]
         anchor = entry["anchor"]
@@ -459,6 +483,7 @@ def check(root: Path, declarations_path: Path, module_sets_path: str = DEFAULT_M
             failures.append(f"duplicate enforced entry: {model}")
         seen.add(model)
         ceiling(model, anchor)
+        check_unset_owner(entry, model)
 
     exempt_models: set[str] = set()
     for entry in exempt:
@@ -506,6 +531,7 @@ def check(root: Path, declarations_path: Path, module_sets_path: str = DEFAULT_M
             failures.append(f"deferred {issue or '<no issue>'}: missing owning module")
         if not models:
             failures.append(f"deferred {issue or '<no issue>'}: empty model list")
+        check_unset_owner(group, f"deferred {issue or '<no issue>'}")
         for model in models:
             if model in deferred_models:
                 failures.append(f"{model}: listed in two deferred groups")

@@ -152,12 +152,16 @@
     {
       "model": "sc.dashboard.cockpit.fact",
       "anchor": "project_id.company_id",
-      "class": "root"
+      "class": "root",
+      "unsetOwner": "unknown",
+      "reason": "the project is this fact model's only ownership path and it is optional, so an unset project is incomplete attribution rather than shared reference data; the written/projected fact must not become public"
     },
     {
       "model": "sc.document.admin.document",
       "anchor": "project_id.company_id",
-      "class": "root"
+      "class": "root",
+      "unsetOwner": "unknown",
+      "reason": "the project is this fact model's only ownership path and it is optional, so an unset project is incomplete attribution rather than shared reference data; the written/projected fact must not become public"
     },
     {
       "model": "sc.equipment.price",
@@ -262,7 +266,9 @@
     {
       "model": "sc.office.admin.document",
       "anchor": "project_id.company_id",
-      "class": "root"
+      "class": "root",
+      "unsetOwner": "unknown",
+      "reason": "the project is this fact model's only ownership path and it is optional, so an unset project is incomplete attribution rather than shared reference data; the written/projected fact must not become public"
     },
     {
       "model": "sc.office.asset",
@@ -442,7 +448,9 @@
     {
       "model": "sc.workbench.item",
       "anchor": "project_id.company_id",
-      "class": "root"
+      "class": "root",
+      "unsetOwner": "unknown",
+      "reason": "the project is this fact model's only ownership path and it is optional, so an unset project is incomplete attribution rather than shared reference data; the written/projected fact must not become public"
     },
     {
       "model": "sc.workflow.def",
@@ -799,7 +807,8 @@
       "capability_acl_operation"
     ],
     "reuse_first": "Reuse native ACL, existing industry record rules and parent-relation anchors before introducing a new mechanism; a model must not duplicate every isolation dimension.",
-    "coverage": "The coverage universe is every model defined by a product module in config/tenant/module_sets.v1.json that declares a company_id field. scripts/verify/sc_data_scope_rule_coverage_guard.py derives that universe from source and fails closed when a model has no ceiling, exemption, deferred decision or company-constraining rule."
+    "coverage": "The coverage universe is every model defined by a product module in config/tenant/module_sets.v1.json that declares a company_id field. scripts/verify/sc_data_scope_rule_coverage_guard.py derives that universe from source and fails closed when a model has no ceiling, exemption, deferred decision or company-constraining rule.",
+    "unset_owner": "A relation anchor default keeps an unset anchor visible as shared reference data (Odoo global configuration, an optional policy or contract link). An entry that declares unsetOwner=unknown is rendered strict instead, because for that model the anchor is the only ownership path and leaving it unset is incomplete attribution, not shared data. unsetOwner requires a reason and is never inferred from absence."
   },
   "deferred": [
     {

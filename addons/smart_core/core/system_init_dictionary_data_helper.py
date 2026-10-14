@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Tuple
 
+from .dictionary_scope_projection import DELIVERED_SCOPES, projection_bucket
 from .source_authority import build_source_authority_contract
 
 SOURCE_KIND = "system_init_dictionary_data_projection"
@@ -21,7 +22,18 @@ def source_authority_contract() -> Dict[str, Any]:
     )
 
 
-def _fetch_role_entries(env) -> List[dict]:
+def count_undelivered_scope(undelivered: Dict[str, int], scope_type: str) -> None:
+    """Record a row whose scope has no delivery bucket, so it stays visible.
+
+    An undeliverable scope is never silently promoted to ``__global__``: the
+    startup contract carries the count so the gap is a declared fact instead of
+    a widening nobody can see.
+    """
+    key = scope_type or "unknown"
+    undelivered[key] = undelivered.get(key, 0) + 1
+
+
+def _fetch_role_entries(env, undelivered: Dict[str, int]) -> List[dict]:
     rows = env["sc.dictionary"].sudo().search_read(
         [("type", "=", "role_entry"), ("active", "=", True)],
         fields=["code", "name", "scope_type", "scope_ref", "value_json", "sequence"],
@@ -32,8 +44,9 @@ def _fetch_role_entries(env) -> List[dict]:
     for row in rows:
         scope_type = str(row.get("scope_type") or "").strip() or "global"
         scope_ref = str(row.get("scope_ref") or "").strip()
-        role_code = scope_ref if scope_type == "role" else "__global__"
-        if not role_code:
+        role_code = projection_bucket(scope_type, scope_ref)
+        if role_code is None:
+            count_undelivered_scope(undelivered, scope_type)
             continue
         value_json = row.get("value_json") if isinstance(row.get("value_json"), dict) else {}
         entry_key = (
@@ -61,7 +74,7 @@ def _fetch_role_entries(env) -> List[dict]:
     ]
 
 
-def _fetch_home_blocks(env) -> List[dict]:
+def _fetch_home_blocks(env, undelivered: Dict[str, int]) -> List[dict]:
     rows = env["sc.dictionary"].sudo().search_read(
         [("type", "=", "home_block"), ("active", "=", True)],
         fields=["code", "name", "scope_type", "scope_ref", "value_json", "sequence"],
@@ -72,8 +85,9 @@ def _fetch_home_blocks(env) -> List[dict]:
     for row in rows:
         scope_type = str(row.get("scope_type") or "").strip() or "global"
         scope_ref = str(row.get("scope_ref") or "").strip()
-        role_code = scope_ref if scope_type == "role" else "__global__"
-        if not role_code:
+        role_code = projection_bucket(scope_type, scope_ref)
+        if role_code is None:
+            count_undelivered_scope(undelivered, scope_type)
             continue
 
         value_json = row.get("value_json") if isinstance(row.get("value_json"), dict) else {}
@@ -108,15 +122,16 @@ def apply_dictionary_startup_data(env, data: Dict[str, Any]) -> Dict[str, Any]:
     if "sc.dictionary" not in env:
         return data
 
+    undelivered: Dict[str, int] = {}
     try:
-        role_entries = _fetch_role_entries(env)
+        role_entries = _fetch_role_entries(env, undelivered)
         if role_entries:
             data["role_entries"] = role_entries
     except Exception:
         pass
 
     try:
-        home_blocks = _fetch_home_blocks(env)
+        home_blocks = _fetch_home_blocks(env, undelivered)
         if home_blocks:
             data["home_blocks"] = home_blocks
     except Exception:
@@ -124,5 +139,7 @@ def apply_dictionary_startup_data(env, data: Dict[str, Any]) -> Dict[str, Any]:
 
     diagnostics = data.get("dictionary_data_meta") if isinstance(data.get("dictionary_data_meta"), dict) else {}
     diagnostics["source_authority"] = source_authority_contract()
+    diagnostics["delivered_scopes"] = list(DELIVERED_SCOPES)
+    diagnostics["undelivered_scope_counts"] = dict(sorted(undelivered.items()))
     data["dictionary_data_meta"] = diagnostics
     return data

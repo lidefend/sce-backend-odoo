@@ -36,13 +36,24 @@ HEADER = """<?xml version="1.0" encoding="UTF-8"?>
 
         <!-- =========================================================
              Generated from scripts/verify/data_scope_declarations.json.
-             Global rules: no group union can widen them, and the anchor is
-             the owning business relation, so company_id = False stays
-             visible. An ``enforced`` entry and every model of a ``deferred``
-             group are rendered here; a ``source_bounded`` entry is not, since
-             it already names an existing global rule in a security file. Do
-             not edit by hand; run
-             `make verify.sc_data_scope.ceiling.sync` to regenerate.
+             Global rules: no group union can widen them. The owning company set
+             is the intersection of the allowed-company selector ``company_ids``
+             and the purpose-scoped authority ``user._sc_data_company_ids()``
+             (``sc.tenant.company.registration``), so one ceiling covers both the
+             company and the data-purpose dimension.
+
+             An unset anchor stays visible as shared reference data by default
+             (``unsetOwner: shared``), which covers Odoo global configuration
+             (``company_id = False``). An entry that declares ``unsetOwner:
+             unknown`` renders a strict ceiling instead: a record without an
+             owning company must not become public just because its owner
+             relation is optional (the workbench/cockpit facts). The two forms
+             share one shape, only the unset-owner branch differs.
+
+             An ``enforced`` entry and every model of a ``deferred`` group are
+             rendered here; a ``source_bounded`` entry is not, since it already
+             names an existing global rule in a security file. Do not edit by
+             hand; run `make verify.sc_data_scope.ceiling.sync` to regenerate.
         ========================================================== -->
 """
 
@@ -51,26 +62,73 @@ FOOTER = """    </data>
 """
 
 
-def entries(declaration: dict) -> list[tuple[str, str]]:
-    """(model, anchor) pairs, deduplicated, in a stable order."""
-    pairs: dict[str, str] = {}
+UNSET_OWNERS = ("shared", "unknown")
+
+
+def entries(declaration: dict) -> list[tuple[str, str, str | None]]:
+    """(model, anchor, unset_owner) triples, deduplicated, in a stable order.
+
+    ``unset_owner`` is ``None`` when the entry does not declare one, which keeps
+    the rendered rule at the shared-reference default instead of inferring a
+    stricter reading than the declaration states.
+    """
+    pairs: dict[str, tuple[str, str | None]] = {}
     for entry in declaration.get("enforced") or []:
-        pairs[entry["model"]] = entry["anchor"]
+        pairs[entry["model"]] = (entry["anchor"], entry.get("unsetOwner"))
     for group in declaration.get("deferred") or []:
         for model in group.get("models") or []:
-            pairs.setdefault(model, group["anchor"])
-    return sorted(pairs.items())
+            pairs.setdefault(model, (group["anchor"], group.get("unsetOwner")))
+    return sorted((model, anchor, unset) for model, (anchor, unset) in pairs.items())
 
 
-def record_xml(model: str, anchor: str, owner_module: str) -> str:
+def ceiling_domain(anchor: str, unset_owner: str | None = None) -> str:
+    """The one company ceiling for a declared anchor.
+
+    Two facts are intersected, never inferred:
+
+    * ``company_ids`` is the principal's allowed-company selector;
+    * ``user._sc_data_company_ids()`` is the persisted data-purpose authority
+      (``sc.tenant.company.registration``): a demo/test principal and a
+      customer principal never share a company realm. The purpose dimension is
+      resolved once, in this method, instead of a second predicate per model.
+
+    ``unsetOwner`` decides only the unset-owner branch, because an unset anchor
+    is not one fact for every model:
+
+    * ``shared`` (default) - the anchor unset means shared reference data
+      (Odoo global configuration, a dictionary entry with no policy). The record
+      stays visible, and the purpose scope still bounds the records that do name
+      an owning company.
+    * ``unknown`` - the anchor is the model's only ownership path and it is
+      optional, so an unset anchor is incomplete attribution rather than shared
+      data. The ceiling is strict and never exposes it.
+
+    The branch is written with an explicit ``&`` because Odoo ANDs an implicit
+    trailing term onto the whole disjunction, which would silently drop the
+    ``= False`` pass-through instead of keeping it.
+    """
+    if unset_owner is not None and unset_owner not in UNSET_OWNERS:
+        raise SystemExit(
+            f"{anchor}: unsetOwner must be one of {UNSET_OWNERS}, got {unset_owner!r}"
+        )
+    allowed = f"('{anchor}', 'in', company_ids)"
+    purpose = f"('{anchor}', 'in', user._sc_data_company_ids())"
+    if unset_owner == "unknown":
+        return f"[{allowed}, {purpose}]"
+    return f"['|', ('{anchor}', '=', False), '&', {allowed}, {purpose}]"
+
+
+def record_xml(model: str, anchor: str, owner_module: str,
+               unset_owner: str | None = None) -> str:
     ident = model.replace(".", "_")
     ref = f"model_{ident}" if owner_module == OWNER_MODULE else f"{owner_module}.model_{ident}"
+    # The domain uses the prefix '&'; XML text must escape it.
+    domain = ceiling_domain(anchor, unset_owner).replace("&", "&amp;")
     return (
         f'        <record id="rule_sc_data_scope_{ident}" model="ir.rule">\n'
         f'            <field name="name">SC Data Scope - {model} by allowed companies</field>\n'
         f'            <field name="model_id" ref="{ref}"/>\n'
-        f"            <field name=\"domain_force\">['|', ('{anchor}', '=', False), "
-        f"('{anchor}', 'in', company_ids)]</field>\n"
+        f'            <field name="domain_force">{domain}</field>\n'
         f'            <field name="perm_read" eval="True"/>\n'
         f'            <field name="perm_write" eval="True"/>\n'
         f'            <field name="perm_create" eval="True"/>\n'
@@ -88,11 +146,11 @@ def render(root: Path, declaration: dict, module_sets: str = guard.DEFAULT_MODUL
             owner_of.setdefault(name, module)
 
     body = HEADER
-    for model, anchor in entries(declaration):
+    for model, anchor, unset_owner in entries(declaration):
         owner_module = owner_of.get(model)
         if owner_module is None:
             raise SystemExit(f"{model}: no product module defines this model")
-        body += record_xml(model, anchor, owner_module)
+        body += record_xml(model, anchor, owner_module, unset_owner)
     return body + "\n" + FOOTER
 
 

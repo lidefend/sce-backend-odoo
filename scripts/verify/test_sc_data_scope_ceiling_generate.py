@@ -64,12 +64,15 @@ class CeilingGeneratorTest(unittest.TestCase):
             {
                 "enforced": [{"model": "demo.company", "anchor": "company_id"}],
                 "deferred": [
-                    {"issue": "DEMO-1", "anchor": "project_id", "models": ["demo.company",
-                                                                          "demo.widget"]}
+                    {"issue": "DEMO-1", "anchor": "project_id", "unsetOwner": "unknown",
+                     "models": ["demo.company", "demo.widget"]}
                 ],
             }
         )
-        self.assertEqual([("demo.company", "company_id"), ("demo.widget", "project_id")], pairs)
+        self.assertEqual(
+            [("demo.company", "company_id", None), ("demo.widget", "project_id", "unknown")],
+            pairs,
+        )
 
     def test_cross_module_model_reference_is_prefixed(self) -> None:
         local = gen.record_xml("demo.company", "company_id", gen.OWNER_MODULE)
@@ -80,8 +83,64 @@ class CeilingGeneratorTest(unittest.TestCase):
     def test_rule_is_global_and_covers_the_anchor(self) -> None:
         xml = gen.record_xml("demo.company", "company_id", gen.OWNER_MODULE)
         self.assertNotIn('name="groups"', xml)
-        self.assertIn("['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]", xml)
+        # The unset-owner branch is an explicit '&' conjunct and the XML escapes it.
+        self.assertIn(
+            "['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), "
+            "('company_id', 'in', user._sc_data_company_ids())]",
+            xml,
+        )
         self.assertEqual(4, xml.count("eval=\"True\""))
+
+    def test_own_company_anchor_keeps_global_configuration_visible(self) -> None:
+        """An unset own company column is Odoo global configuration, so it stays
+        visible while the purpose scope still bounds the owned records."""
+        self.assertEqual(
+            "['|', ('company_id', '=', False), '&', ('company_id', 'in', company_ids), "
+            "('company_id', 'in', user._sc_data_company_ids())]",
+            gen.ceiling_domain("company_id"),
+        )
+
+    def test_unset_branch_needs_an_explicit_conjunct(self) -> None:
+        """A bare implicit AND would bind the purpose term to the whole
+        disjunction and silently drop the pass-through instead of keeping it."""
+        domain = gen.ceiling_domain("company_id")
+        self.assertIn("'&'", domain)
+        self.assertNotIn("('company_id', '=', False), ('company_id', 'in', company_ids),",
+                         domain)
+
+    def test_relation_anchor_default_keeps_shared_reference_visible(self) -> None:
+        """A relation anchor without a declared unset-owner reading stays at the
+        shared-reference default: an unset optional link is shared data."""
+        self.assertEqual(
+            "['|', ('project_id.company_id', '=', False), '&', "
+            "('project_id.company_id', 'in', company_ids), "
+            "('project_id.company_id', 'in', user._sc_data_company_ids())]",
+            gen.ceiling_domain("project_id.company_id"),
+        )
+
+    def test_declared_unknown_ownership_renders_a_strict_ceiling(self) -> None:
+        """A model whose only ownership path is optional declares that an unset
+        anchor is incomplete attribution, so the pass-through must disappear."""
+        domain = gen.ceiling_domain("project_id.company_id", "unknown")
+        self.assertNotIn("= False", domain)
+        self.assertEqual(
+            "[('project_id.company_id', 'in', company_ids), "
+            "('project_id.company_id', 'in', user._sc_data_company_ids())]",
+            domain,
+        )
+        xml = gen.record_xml("demo.owner", "project_id.company_id", gen.OWNER_MODULE, "unknown")
+        self.assertNotIn("= False", xml)
+
+    def test_unknown_unset_owner_value_is_rejected(self) -> None:
+        with self.assertRaises(SystemExit):
+            gen.ceiling_domain("company_id", "sometimes")
+
+    def test_purpose_authority_is_the_single_company_source(self) -> None:
+        """The data-purpose dimension is resolved by the principal method, not
+        by a second predicate declared per model."""
+        xml = gen.record_xml("demo.owner", "project_id.company_id", gen.OWNER_MODULE)
+        self.assertIn("user._sc_data_company_ids()", xml)
+        self.assertNotIn("data_purpose", xml)
 
     def test_model_without_an_owning_product_module_fails(self) -> None:
         with tempfile.TemporaryDirectory() as raw:

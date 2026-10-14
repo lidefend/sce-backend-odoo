@@ -4,18 +4,29 @@
 
         <!-- =========================================================
              Generated from scripts/verify/data_scope_declarations.json.
-             Global rules: no group union can widen them, and the anchor is
-             the owning business relation, so company_id = False stays
-             visible. An ``enforced`` entry and every model of a ``deferred``
-             group are rendered here; a ``source_bounded`` entry is not, since
-             it already names an existing global rule in a security file. Do
-             not edit by hand; run
-             `make verify.sc_data_scope.ceiling.sync` to regenerate.
+             Global rules: no group union can widen them. The owning company set
+             is the intersection of the allowed-company selector ``company_ids``
+             and the purpose-scoped authority ``user._sc_data_company_ids()``
+             (``sc.tenant.company.registration``), so one ceiling covers both the
+             company and the data-purpose dimension.
+
+             An unset anchor stays visible as shared reference data by default
+             (``unsetOwner: shared``), which covers Odoo global configuration
+             (``company_id = False``). An entry that declares ``unsetOwner:
+             unknown`` renders a strict ceiling instead: a record without an
+             owning company must not become public just because its owner
+             relation is optional (the workbench/cockpit facts). The two forms
+             share one shape, only the unset-owner branch differs.
+
+             An ``enforced`` entry and every model of a ``deferred`` group are
+             rendered here; a ``source_bounded`` entry is not, since it already
+             names an existing global rule in a security file. Do not edit by
+             hand; run `make verify.sc_data_scope.ceiling.sync` to regenerate.
         ========================================================== -->
         <record id="rule_sc_data_scope_construction_contract_line" model="ir.rule">
             <field name="name">SC Data Scope - construction.contract.line by allowed companies</field>
             <field name="model_id" ref="model_construction_contract_line"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -24,7 +35,7 @@
         <record id="rule_sc_data_scope_construction_contract_section" model="ir.rule">
             <field name="name">SC Data Scope - construction.contract.section by allowed companies</field>
             <field name="model_id" ref="model_construction_contract_section"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -33,7 +44,7 @@
         <record id="rule_sc_data_scope_construction_execution_scope" model="ir.rule">
             <field name="name">SC Data Scope - construction.execution.scope by allowed companies</field>
             <field name="model_id" ref="model_construction_execution_scope"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -42,7 +53,7 @@
         <record id="rule_sc_data_scope_construction_location_breakdown" model="ir.rule">
             <field name="name">SC Data Scope - construction.location.breakdown by allowed companies</field>
             <field name="model_id" ref="model_construction_location_breakdown"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -51,7 +62,7 @@
         <record id="rule_sc_data_scope_construction_wbs_plan" model="ir.rule">
             <field name="name">SC Data Scope - construction.wbs.plan by allowed companies</field>
             <field name="model_id" ref="model_construction_wbs_plan"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -60,7 +71,7 @@
         <record id="rule_sc_data_scope_construction_work_breakdown" model="ir.rule">
             <field name="name">SC Data Scope - construction.work.breakdown by allowed companies</field>
             <field name="model_id" ref="model_construction_work_breakdown"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -69,7 +80,7 @@
         <record id="rule_sc_data_scope_payment_request" model="ir.rule">
             <field name="name">SC Data Scope - payment.request by allowed companies</field>
             <field name="model_id" ref="model_payment_request"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -78,7 +89,7 @@
         <record id="rule_sc_data_scope_project_boq_allocation" model="ir.rule">
             <field name="name">SC Data Scope - project.boq.allocation by allowed companies</field>
             <field name="model_id" ref="model_project_boq_allocation"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -87,7 +98,7 @@
         <record id="rule_sc_data_scope_project_budget" model="ir.rule">
             <field name="name">SC Data Scope - project.budget by allowed companies</field>
             <field name="model_id" ref="model_project_budget"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -96,7 +107,7 @@
         <record id="rule_sc_data_scope_project_budget_boq_line" model="ir.rule">
             <field name="name">SC Data Scope - project.budget.boq.line by allowed companies</field>
             <field name="model_id" ref="model_project_budget_boq_line"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -105,7 +116,7 @@
         <record id="rule_sc_data_scope_project_budget_cost_alloc" model="ir.rule">
             <field name="name">SC Data Scope - project.budget.cost.alloc by allowed companies</field>
             <field name="model_id" ref="model_project_budget_cost_alloc"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -114,7 +125,7 @@
         <record id="rule_sc_data_scope_project_budget_line" model="ir.rule">
             <field name="name">SC Data Scope - project.budget.line by allowed companies</field>
             <field name="model_id" ref="model_project_budget_line"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -123,7 +134,7 @@
         <record id="rule_sc_data_scope_project_cost_compare" model="ir.rule">
             <field name="name">SC Data Scope - project.cost.compare by allowed companies</field>
             <field name="model_id" ref="model_project_cost_compare"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -132,7 +143,7 @@
         <record id="rule_sc_data_scope_project_cost_period" model="ir.rule">
             <field name="name">SC Data Scope - project.cost.period by allowed companies</field>
             <field name="model_id" ref="model_project_cost_period"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -141,7 +152,7 @@
         <record id="rule_sc_data_scope_project_material_plan" model="ir.rule">
             <field name="name">SC Data Scope - project.material.plan by allowed companies</field>
             <field name="model_id" ref="model_project_material_plan"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -150,7 +161,7 @@
         <record id="rule_sc_data_scope_project_profit_compare" model="ir.rule">
             <field name="name">SC Data Scope - project.profit.compare by allowed companies</field>
             <field name="model_id" ref="model_project_profit_compare"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -159,7 +170,7 @@
         <record id="rule_sc_data_scope_project_responsibility" model="ir.rule">
             <field name="name">SC Data Scope - project.responsibility by allowed companies</field>
             <field name="model_id" ref="model_project_responsibility"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -168,7 +179,7 @@
         <record id="rule_sc_data_scope_project_risk" model="ir.rule">
             <field name="name">SC Data Scope - project.risk by allowed companies</field>
             <field name="model_id" ref="model_project_risk"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -177,7 +188,7 @@
         <record id="rule_sc_data_scope_project_settlement" model="ir.rule">
             <field name="name">SC Data Scope - project.settlement by allowed companies</field>
             <field name="model_id" ref="model_project_settlement"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -186,7 +197,7 @@
         <record id="rule_sc_data_scope_project_settlement_line" model="ir.rule">
             <field name="name">SC Data Scope - project.settlement.line by allowed companies</field>
             <field name="model_id" ref="model_project_settlement_line"/>
-            <field name="domain_force">['|', ('settlement_id.project_id.company_id', '=', False), ('settlement_id.project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('settlement_id.project_id.company_id', '=', False), '&amp;', ('settlement_id.project_id.company_id', 'in', company_ids), ('settlement_id.project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -195,7 +206,7 @@
         <record id="rule_sc_data_scope_sc_approval_policy" model="ir.rule">
             <field name="name">SC Data Scope - sc.approval.policy by allowed companies</field>
             <field name="model_id" ref="model_sc_approval_policy"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -204,7 +215,7 @@
         <record id="rule_sc_data_scope_sc_approval_step" model="ir.rule">
             <field name="name">SC Data Scope - sc.approval.step by allowed companies</field>
             <field name="model_id" ref="model_sc_approval_step"/>
-            <field name="domain_force">['|', ('policy_id.company_id', '=', False), ('policy_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('policy_id.company_id', '=', False), '&amp;', ('policy_id.company_id', 'in', company_ids), ('policy_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -213,7 +224,7 @@
         <record id="rule_sc_data_scope_sc_ar_ap_report_summary" model="ir.rule">
             <field name="name">SC Data Scope - sc.ar.ap.report.summary by allowed companies</field>
             <field name="model_id" ref="model_sc_ar_ap_report_summary"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -222,7 +233,7 @@
         <record id="rule_sc_data_scope_sc_attendance_checkin" model="ir.rule">
             <field name="name">SC Data Scope - sc.attendance.checkin by allowed companies</field>
             <field name="model_id" ref="model_sc_attendance_checkin"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -231,7 +242,7 @@
         <record id="rule_sc_data_scope_sc_audit_log" model="ir.rule">
             <field name="name">SC Data Scope - sc.audit.log by allowed companies</field>
             <field name="model_id" ref="model_sc_audit_log"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -240,7 +251,7 @@
         <record id="rule_sc_data_scope_sc_business_category" model="ir.rule">
             <field name="name">SC Data Scope - sc.business.category by allowed companies</field>
             <field name="model_id" ref="model_sc_business_category"/>
-            <field name="domain_force">['|', ('approval_policy_id.company_id', '=', False), ('approval_policy_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('approval_policy_id.company_id', '=', False), '&amp;', ('approval_policy_id.company_id', 'in', company_ids), ('approval_policy_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -249,7 +260,7 @@
         <record id="rule_sc_data_scope_sc_business_entity" model="ir.rule">
             <field name="name">SC Data Scope - sc.business.entity by allowed companies</field>
             <field name="model_id" ref="model_sc_business_entity"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -258,7 +269,7 @@
         <record id="rule_sc_data_scope_sc_check_standard" model="ir.rule">
             <field name="name">SC Data Scope - sc.check.standard by allowed companies</field>
             <field name="model_id" ref="model_sc_check_standard"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -267,7 +278,7 @@
         <record id="rule_sc_data_scope_sc_check_standard_item" model="ir.rule">
             <field name="name">SC Data Scope - sc.check.standard.item by allowed companies</field>
             <field name="model_id" ref="model_sc_check_standard_item"/>
-            <field name="domain_force">['|', ('standard_id.company_id', '=', False), ('standard_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('standard_id.company_id', '=', False), '&amp;', ('standard_id.company_id', 'in', company_ids), ('standard_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -276,7 +287,7 @@
         <record id="rule_sc_data_scope_sc_company_contractor_responsibility_fact" model="ir.rule">
             <field name="name">SC Data Scope - sc.company.contractor.responsibility.fact by allowed companies</field>
             <field name="model_id" ref="model_sc_company_contractor_responsibility_fact"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -285,7 +296,7 @@
         <record id="rule_sc_data_scope_sc_company_contractor_responsibility_summary" model="ir.rule">
             <field name="name">SC Data Scope - sc.company.contractor.responsibility.summary by allowed companies</field>
             <field name="model_id" ref="model_sc_company_contractor_responsibility_summary"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -294,7 +305,7 @@
         <record id="rule_sc_data_scope_sc_company_operation_summary" model="ir.rule">
             <field name="name">SC Data Scope - sc.company.operation.summary by allowed companies</field>
             <field name="model_id" ref="model_sc_company_operation_summary"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -303,7 +314,7 @@
         <record id="rule_sc_data_scope_sc_comprehensive_cost_summary" model="ir.rule">
             <field name="name">SC Data Scope - sc.comprehensive.cost.summary by allowed companies</field>
             <field name="model_id" ref="model_sc_comprehensive_cost_summary"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -312,7 +323,7 @@
         <record id="rule_sc_data_scope_sc_construction_diary" model="ir.rule">
             <field name="name">SC Data Scope - sc.construction.diary by allowed companies</field>
             <field name="model_id" ref="model_sc_construction_diary"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -321,7 +332,7 @@
         <record id="rule_sc_data_scope_sc_contract_event" model="ir.rule">
             <field name="name">SC Data Scope - sc.contract.event by allowed companies</field>
             <field name="model_id" ref="model_sc_contract_event"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -330,7 +341,7 @@
         <record id="rule_sc_data_scope_sc_contract_recon_summary" model="ir.rule">
             <field name="name">SC Data Scope - sc.contract.recon.summary by allowed companies</field>
             <field name="model_id" ref="model_sc_contract_recon_summary"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -339,7 +350,7 @@
         <record id="rule_sc_data_scope_sc_dashboard_cockpit_fact" model="ir.rule">
             <field name="name">SC Data Scope - sc.dashboard.cockpit.fact by allowed companies</field>
             <field name="model_id" ref="model_sc_dashboard_cockpit_fact"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">[('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -348,7 +359,7 @@
         <record id="rule_sc_data_scope_sc_document_admin_document" model="ir.rule">
             <field name="name">SC Data Scope - sc.document.admin.document by allowed companies</field>
             <field name="model_id" ref="model_sc_document_admin_document"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">[('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -357,7 +368,7 @@
         <record id="rule_sc_data_scope_sc_equipment_plan" model="ir.rule">
             <field name="name">SC Data Scope - sc.equipment.plan by allowed companies</field>
             <field name="model_id" ref="model_sc_equipment_plan"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -366,7 +377,7 @@
         <record id="rule_sc_data_scope_sc_equipment_price" model="ir.rule">
             <field name="name">SC Data Scope - sc.equipment.price by allowed companies</field>
             <field name="model_id" ref="model_sc_equipment_price"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -375,7 +386,7 @@
         <record id="rule_sc_data_scope_sc_equipment_request" model="ir.rule">
             <field name="name">SC Data Scope - sc.equipment.request by allowed companies</field>
             <field name="model_id" ref="model_sc_equipment_request"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -384,7 +395,7 @@
         <record id="rule_sc_data_scope_sc_equipment_settlement" model="ir.rule">
             <field name="name">SC Data Scope - sc.equipment.settlement by allowed companies</field>
             <field name="model_id" ref="model_sc_equipment_settlement"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -393,7 +404,7 @@
         <record id="rule_sc_data_scope_sc_equipment_usage" model="ir.rule">
             <field name="name">SC Data Scope - sc.equipment.usage by allowed companies</field>
             <field name="model_id" ref="model_sc_equipment_usage"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -402,7 +413,7 @@
         <record id="rule_sc_data_scope_sc_expense_claim_deduction_line" model="ir.rule">
             <field name="name">SC Data Scope - sc.expense.claim.deduction.line by allowed companies</field>
             <field name="model_id" ref="model_sc_expense_claim_deduction_line"/>
-            <field name="domain_force">['|', ('claim_id.company_id', '=', False), ('claim_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('claim_id.company_id', '=', False), '&amp;', ('claim_id.company_id', 'in', company_ids), ('claim_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -411,7 +422,7 @@
         <record id="rule_sc_data_scope_sc_expense_contract_ledger" model="ir.rule">
             <field name="name">SC Data Scope - sc.expense.contract.ledger by allowed companies</field>
             <field name="model_id" ref="model_sc_expense_contract_ledger"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -420,7 +431,7 @@
         <record id="rule_sc_data_scope_sc_expense_reimbursement_summary" model="ir.rule">
             <field name="name">SC Data Scope - sc.expense.reimbursement.summary by allowed companies</field>
             <field name="model_id" ref="model_sc_expense_reimbursement_summary"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -429,7 +440,7 @@
         <record id="rule_sc_data_scope_sc_finance_business_fact" model="ir.rule">
             <field name="name">SC Data Scope - sc.finance.business.fact by allowed companies</field>
             <field name="model_id" ref="model_sc_finance_business_fact"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -438,7 +449,7 @@
         <record id="rule_sc_data_scope_sc_finance_business_project_summary" model="ir.rule">
             <field name="name">SC Data Scope - sc.finance.business.project.summary by allowed companies</field>
             <field name="model_id" ref="model_sc_finance_business_project_summary"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -447,7 +458,7 @@
         <record id="rule_sc_data_scope_sc_finance_counterparty_position_summary" model="ir.rule">
             <field name="name">SC Data Scope - sc.finance.counterparty.position.summary by allowed companies</field>
             <field name="model_id" ref="model_sc_finance_counterparty_position_summary"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -456,7 +467,7 @@
         <record id="rule_sc_data_scope_sc_finance_project_capital_position" model="ir.rule">
             <field name="name">SC Data Scope - sc.finance.project.capital.position by allowed companies</field>
             <field name="model_id" ref="model_sc_finance_project_capital_position"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -465,7 +476,7 @@
         <record id="rule_sc_data_scope_sc_finance_project_counterparty_position" model="ir.rule">
             <field name="name">SC Data Scope - sc.finance.project.counterparty.position by allowed companies</field>
             <field name="model_id" ref="model_sc_finance_project_counterparty_position"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -474,7 +485,7 @@
         <record id="rule_sc_data_scope_sc_fund_account" model="ir.rule">
             <field name="name">SC Data Scope - sc.fund.account by allowed companies</field>
             <field name="model_id" ref="model_sc_fund_account"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -483,7 +494,7 @@
         <record id="rule_sc_data_scope_sc_fund_daily_summary" model="ir.rule">
             <field name="name">SC Data Scope - sc.fund.daily.summary by allowed companies</field>
             <field name="model_id" ref="model_sc_fund_daily_summary"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -492,7 +503,7 @@
         <record id="rule_sc_data_scope_sc_general_contract" model="ir.rule">
             <field name="name">SC Data Scope - sc.general.contract by allowed companies</field>
             <field name="model_id" ref="model_sc_general_contract"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -501,7 +512,7 @@
         <record id="rule_sc_data_scope_sc_hazard_source" model="ir.rule">
             <field name="name">SC Data Scope - sc.hazard.source by allowed companies</field>
             <field name="model_id" ref="model_sc_hazard_source"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -510,7 +521,7 @@
         <record id="rule_sc_data_scope_sc_income_contract_ledger" model="ir.rule">
             <field name="name">SC Data Scope - sc.income.contract.ledger by allowed companies</field>
             <field name="model_id" ref="model_sc_income_contract_ledger"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -519,7 +530,7 @@
         <record id="rule_sc_data_scope_sc_interfund_movement_fact" model="ir.rule">
             <field name="name">SC Data Scope - sc.interfund.movement.fact by allowed companies</field>
             <field name="model_id" ref="model_sc_interfund_movement_fact"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -528,7 +539,7 @@
         <record id="rule_sc_data_scope_sc_interfund_movement_project_summary" model="ir.rule">
             <field name="name">SC Data Scope - sc.interfund.movement.project.summary by allowed companies</field>
             <field name="model_id" ref="model_sc_interfund_movement_project_summary"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -537,7 +548,7 @@
         <record id="rule_sc_data_scope_sc_invoice_category_summary" model="ir.rule">
             <field name="name">SC Data Scope - sc.invoice.category.summary by allowed companies</field>
             <field name="model_id" ref="model_sc_invoice_category_summary"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -546,7 +557,7 @@
         <record id="rule_sc_data_scope_sc_labor_plan" model="ir.rule">
             <field name="name">SC Data Scope - sc.labor.plan by allowed companies</field>
             <field name="model_id" ref="model_sc_labor_plan"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -555,7 +566,7 @@
         <record id="rule_sc_data_scope_sc_labor_price" model="ir.rule">
             <field name="name">SC Data Scope - sc.labor.price by allowed companies</field>
             <field name="model_id" ref="model_sc_labor_price"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -564,7 +575,7 @@
         <record id="rule_sc_data_scope_sc_labor_request" model="ir.rule">
             <field name="name">SC Data Scope - sc.labor.request by allowed companies</field>
             <field name="model_id" ref="model_sc_labor_request"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -573,7 +584,7 @@
         <record id="rule_sc_data_scope_sc_labor_settlement" model="ir.rule">
             <field name="name">SC Data Scope - sc.labor.settlement by allowed companies</field>
             <field name="model_id" ref="model_sc_labor_settlement"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -582,7 +593,7 @@
         <record id="rule_sc_data_scope_sc_labor_usage" model="ir.rule">
             <field name="name">SC Data Scope - sc.labor.usage by allowed companies</field>
             <field name="model_id" ref="model_sc_labor_usage"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -591,7 +602,7 @@
         <record id="rule_sc_data_scope_sc_material_acceptance" model="ir.rule">
             <field name="name">SC Data Scope - sc.material.acceptance by allowed companies</field>
             <field name="model_id" ref="model_sc_material_acceptance"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -600,7 +611,7 @@
         <record id="rule_sc_data_scope_sc_material_catalog" model="ir.rule">
             <field name="name">SC Data Scope - sc.material.catalog by allowed companies</field>
             <field name="model_id" ref="model_sc_material_catalog"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -609,7 +620,7 @@
         <record id="rule_sc_data_scope_sc_material_inbound" model="ir.rule">
             <field name="name">SC Data Scope - sc.material.inbound by allowed companies</field>
             <field name="model_id" ref="model_sc_material_inbound"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -618,7 +629,7 @@
         <record id="rule_sc_data_scope_sc_material_outbound" model="ir.rule">
             <field name="name">SC Data Scope - sc.material.outbound by allowed companies</field>
             <field name="model_id" ref="model_sc_material_outbound"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -627,7 +638,7 @@
         <record id="rule_sc_data_scope_sc_material_price" model="ir.rule">
             <field name="name">SC Data Scope - sc.material.price by allowed companies</field>
             <field name="model_id" ref="model_sc_material_price"/>
-            <field name="domain_force">['|', ('material_catalog_id.company_id', '=', False), ('material_catalog_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('material_catalog_id.company_id', '=', False), '&amp;', ('material_catalog_id.company_id', 'in', company_ids), ('material_catalog_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -636,7 +647,7 @@
         <record id="rule_sc_data_scope_sc_material_purchase_request" model="ir.rule">
             <field name="name">SC Data Scope - sc.material.purchase.request by allowed companies</field>
             <field name="model_id" ref="model_sc_material_purchase_request"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -645,7 +656,7 @@
         <record id="rule_sc_data_scope_sc_material_rental_order" model="ir.rule">
             <field name="name">SC Data Scope - sc.material.rental.order by allowed companies</field>
             <field name="model_id" ref="model_sc_material_rental_order"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -654,7 +665,7 @@
         <record id="rule_sc_data_scope_sc_material_rental_order_line" model="ir.rule">
             <field name="name">SC Data Scope - sc.material.rental.order.line by allowed companies</field>
             <field name="model_id" ref="model_sc_material_rental_order_line"/>
-            <field name="domain_force">['|', ('order_id.company_id', '=', False), ('order_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('order_id.company_id', '=', False), '&amp;', ('order_id.company_id', 'in', company_ids), ('order_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -663,7 +674,7 @@
         <record id="rule_sc_data_scope_sc_material_rental_plan" model="ir.rule">
             <field name="name">SC Data Scope - sc.material.rental.plan by allowed companies</field>
             <field name="model_id" ref="model_sc_material_rental_plan"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -672,7 +683,7 @@
         <record id="rule_sc_data_scope_sc_material_rental_plan_line" model="ir.rule">
             <field name="name">SC Data Scope - sc.material.rental.plan.line by allowed companies</field>
             <field name="model_id" ref="model_sc_material_rental_plan_line"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -681,7 +692,7 @@
         <record id="rule_sc_data_scope_sc_material_rental_settlement" model="ir.rule">
             <field name="name">SC Data Scope - sc.material.rental.settlement by allowed companies</field>
             <field name="model_id" ref="model_sc_material_rental_settlement"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -690,7 +701,7 @@
         <record id="rule_sc_data_scope_sc_material_rental_settlement_line" model="ir.rule">
             <field name="name">SC Data Scope - sc.material.rental.settlement.line by allowed companies</field>
             <field name="model_id" ref="model_sc_material_rental_settlement_line"/>
-            <field name="domain_force">['|', ('settlement_id.company_id', '=', False), ('settlement_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('settlement_id.company_id', '=', False), '&amp;', ('settlement_id.company_id', 'in', company_ids), ('settlement_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -699,7 +710,7 @@
         <record id="rule_sc_data_scope_sc_material_rfq" model="ir.rule">
             <field name="name">SC Data Scope - sc.material.rfq by allowed companies</field>
             <field name="model_id" ref="model_sc_material_rfq"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -708,7 +719,7 @@
         <record id="rule_sc_data_scope_sc_material_settlement" model="ir.rule">
             <field name="name">SC Data Scope - sc.material.settlement by allowed companies</field>
             <field name="model_id" ref="model_sc_material_settlement"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -717,7 +728,7 @@
         <record id="rule_sc_data_scope_sc_material_settlement_purchase_scope" model="ir.rule">
             <field name="name">SC Data Scope - sc.material.settlement.purchase.scope by allowed companies</field>
             <field name="model_id" ref="model_sc_material_settlement_purchase_scope"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -726,7 +737,7 @@
         <record id="rule_sc_data_scope_sc_material_stock_summary" model="ir.rule">
             <field name="name">SC Data Scope - sc.material.stock.summary by allowed companies</field>
             <field name="model_id" ref="model_sc_material_stock_summary"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -735,7 +746,7 @@
         <record id="rule_sc_data_scope_sc_office_admin_document" model="ir.rule">
             <field name="name">SC Data Scope - sc.office.admin.document by allowed companies</field>
             <field name="model_id" ref="model_sc_office_admin_document"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">[('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -744,7 +755,7 @@
         <record id="rule_sc_data_scope_sc_office_asset" model="ir.rule">
             <field name="name">SC Data Scope - sc.office.asset by allowed companies</field>
             <field name="model_id" ref="model_sc_office_asset"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -753,7 +764,7 @@
         <record id="rule_sc_data_scope_sc_operating_metrics_project" model="ir.rule">
             <field name="name">SC Data Scope - sc.operating.metrics.project by allowed companies</field>
             <field name="model_id" ref="model_sc_operating_metrics_project"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -762,7 +773,7 @@
         <record id="rule_sc_data_scope_sc_output_invoice_adjustment" model="ir.rule">
             <field name="name">SC Data Scope - sc.output.invoice.adjustment by allowed companies</field>
             <field name="model_id" ref="model_sc_output_invoice_adjustment"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -771,7 +782,7 @@
         <record id="rule_sc_data_scope_sc_output_invoice_ledger" model="ir.rule">
             <field name="name">SC Data Scope - sc.output.invoice.ledger by allowed companies</field>
             <field name="model_id" ref="model_sc_output_invoice_ledger"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -780,7 +791,7 @@
         <record id="rule_sc_data_scope_sc_p1_relationship_review_queue" model="ir.rule">
             <field name="name">SC Data Scope - sc.p1.relationship.review.queue by allowed companies</field>
             <field name="model_id" ref="model_sc_p1_relationship_review_queue"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -789,7 +800,7 @@
         <record id="rule_sc_data_scope_sc_p1_relationship_suggestion" model="ir.rule">
             <field name="name">SC Data Scope - sc.p1.relationship.suggestion by allowed companies</field>
             <field name="model_id" ref="model_sc_p1_relationship_suggestion"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -798,7 +809,7 @@
         <record id="rule_sc_data_scope_sc_pack_installation" model="ir.rule">
             <field name="name">SC Data Scope - sc.pack.installation by allowed companies</field>
             <field name="model_id" ref="model_sc_pack_installation"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -807,7 +818,7 @@
         <record id="rule_sc_data_scope_sc_partner_business_fact_line" model="ir.rule">
             <field name="name">SC Data Scope - sc.partner.business.fact.line by allowed companies</field>
             <field name="model_id" ref="model_sc_partner_business_fact_line"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -816,7 +827,7 @@
         <record id="rule_sc_data_scope_sc_payment_execution" model="ir.rule">
             <field name="name">SC Data Scope - sc.payment.execution by allowed companies</field>
             <field name="model_id" ref="model_sc_payment_execution"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -825,7 +836,7 @@
         <record id="rule_sc_data_scope_sc_plan" model="ir.rule">
             <field name="name">SC Data Scope - sc.plan by allowed companies</field>
             <field name="model_id" ref="model_sc_plan"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -834,7 +845,7 @@
         <record id="rule_sc_data_scope_sc_plan_line" model="ir.rule">
             <field name="name">SC Data Scope - sc.plan.line by allowed companies</field>
             <field name="model_id" ref="model_sc_plan_line"/>
-            <field name="domain_force">['|', ('contract_id.company_id', '=', False), ('contract_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('contract_id.company_id', '=', False), '&amp;', ('contract_id.company_id', 'in', company_ids), ('contract_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -843,7 +854,7 @@
         <record id="rule_sc_data_scope_sc_plan_report" model="ir.rule">
             <field name="name">SC Data Scope - sc.plan.report by allowed companies</field>
             <field name="model_id" ref="model_sc_plan_report"/>
-            <field name="domain_force">['|', ('plan_id.company_id', '=', False), ('plan_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('plan_id.company_id', '=', False), '&amp;', ('plan_id.company_id', 'in', company_ids), ('plan_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -852,7 +863,7 @@
         <record id="rule_sc_data_scope_sc_plan_version" model="ir.rule">
             <field name="name">SC Data Scope - sc.plan.version by allowed companies</field>
             <field name="model_id" ref="model_sc_plan_version"/>
-            <field name="domain_force">['|', ('plan_id.company_id', '=', False), ('plan_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('plan_id.company_id', '=', False), '&amp;', ('plan_id.company_id', 'in', company_ids), ('plan_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -861,7 +872,7 @@
         <record id="rule_sc_data_scope_sc_plan_warning_log" model="ir.rule">
             <field name="name">SC Data Scope - sc.plan.warning.log by allowed companies</field>
             <field name="model_id" ref="model_sc_plan_warning_log"/>
-            <field name="domain_force">['|', ('plan_id.company_id', '=', False), ('plan_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('plan_id.company_id', '=', False), '&amp;', ('plan_id.company_id', 'in', company_ids), ('plan_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -870,7 +881,7 @@
         <record id="rule_sc_data_scope_sc_project_document" model="ir.rule">
             <field name="name">SC Data Scope - sc.project.document by allowed companies</field>
             <field name="model_id" ref="model_sc_project_document"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -879,7 +890,7 @@
         <record id="rule_sc_data_scope_sc_project_member_assignment" model="ir.rule">
             <field name="name">SC Data Scope - sc.project.member.assignment by allowed companies</field>
             <field name="model_id" ref="model_sc_project_member_assignment"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -888,7 +899,7 @@
         <record id="rule_sc_data_scope_sc_quality_issue" model="ir.rule">
             <field name="name">SC Data Scope - sc.quality.issue by allowed companies</field>
             <field name="model_id" ref="model_sc_quality_issue"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -897,7 +908,7 @@
         <record id="rule_sc_data_scope_sc_quality_recheck" model="ir.rule">
             <field name="name">SC Data Scope - sc.quality.recheck by allowed companies</field>
             <field name="model_id" ref="model_sc_quality_recheck"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -906,7 +917,7 @@
         <record id="rule_sc_data_scope_sc_quality_rectification" model="ir.rule">
             <field name="name">SC Data Scope - sc.quality.rectification by allowed companies</field>
             <field name="model_id" ref="model_sc_quality_rectification"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -915,7 +926,7 @@
         <record id="rule_sc_data_scope_sc_receipt_income" model="ir.rule">
             <field name="name">SC Data Scope - sc.receipt.income by allowed companies</field>
             <field name="model_id" ref="model_sc_receipt_income"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -924,7 +935,7 @@
         <record id="rule_sc_data_scope_sc_receipt_invoice_line" model="ir.rule">
             <field name="name">SC Data Scope - sc.receipt.invoice.line by allowed companies</field>
             <field name="model_id" ref="model_sc_receipt_invoice_line"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -933,7 +944,7 @@
         <record id="rule_sc_data_scope_sc_risk_item" model="ir.rule">
             <field name="name">SC Data Scope - sc.risk.item by allowed companies</field>
             <field name="model_id" ref="model_sc_risk_item"/>
-            <field name="domain_force">['|', ('library_id.company_id', '=', False), ('library_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('library_id.company_id', '=', False), '&amp;', ('library_id.company_id', 'in', company_ids), ('library_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -942,7 +953,7 @@
         <record id="rule_sc_data_scope_sc_risk_library" model="ir.rule">
             <field name="name">SC Data Scope - sc.risk.library by allowed companies</field>
             <field name="model_id" ref="model_sc_risk_library"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -951,7 +962,7 @@
         <record id="rule_sc_data_scope_sc_safety_disclosure" model="ir.rule">
             <field name="name">SC Data Scope - sc.safety.disclosure by allowed companies</field>
             <field name="model_id" ref="model_sc_safety_disclosure"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -960,7 +971,7 @@
         <record id="rule_sc_data_scope_sc_safety_issue" model="ir.rule">
             <field name="name">SC Data Scope - sc.safety.issue by allowed companies</field>
             <field name="model_id" ref="model_sc_safety_issue"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -969,7 +980,7 @@
         <record id="rule_sc_data_scope_sc_safety_patrol_task" model="ir.rule">
             <field name="name">SC Data Scope - sc.safety.patrol.task by allowed companies</field>
             <field name="model_id" ref="model_sc_safety_patrol_task"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -978,7 +989,7 @@
         <record id="rule_sc_data_scope_sc_safety_plan" model="ir.rule">
             <field name="name">SC Data Scope - sc.safety.plan by allowed companies</field>
             <field name="model_id" ref="model_sc_safety_plan"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -987,7 +998,7 @@
         <record id="rule_sc_data_scope_sc_safety_recheck" model="ir.rule">
             <field name="name">SC Data Scope - sc.safety.recheck by allowed companies</field>
             <field name="model_id" ref="model_sc_safety_recheck"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -996,7 +1007,7 @@
         <record id="rule_sc_data_scope_sc_safety_rectification" model="ir.rule">
             <field name="name">SC Data Scope - sc.safety.rectification by allowed companies</field>
             <field name="model_id" ref="model_sc_safety_rectification"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1005,7 +1016,7 @@
         <record id="rule_sc_data_scope_sc_self_funding_registration" model="ir.rule">
             <field name="name">SC Data Scope - sc.self.funding.registration by allowed companies</field>
             <field name="model_id" ref="model_sc_self_funding_registration"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1014,7 +1025,7 @@
         <record id="rule_sc_data_scope_sc_settlement_adjustment" model="ir.rule">
             <field name="name">SC Data Scope - sc.settlement.adjustment by allowed companies</field>
             <field name="model_id" ref="model_sc_settlement_adjustment"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1023,7 +1034,7 @@
         <record id="rule_sc_data_scope_sc_settlement_order" model="ir.rule">
             <field name="name">SC Data Scope - sc.settlement.order by allowed companies</field>
             <field name="model_id" ref="model_sc_settlement_order"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1032,7 +1043,7 @@
         <record id="rule_sc_data_scope_sc_site_photo_batch" model="ir.rule">
             <field name="name">SC Data Scope - sc.site.photo.batch by allowed companies</field>
             <field name="model_id" ref="model_sc_site_photo_batch"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1041,7 +1052,7 @@
         <record id="rule_sc_data_scope_sc_subcontract_plan" model="ir.rule">
             <field name="name">SC Data Scope - sc.subcontract.plan by allowed companies</field>
             <field name="model_id" ref="model_sc_subcontract_plan"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1050,7 +1061,7 @@
         <record id="rule_sc_data_scope_sc_subcontract_price" model="ir.rule">
             <field name="name">SC Data Scope - sc.subcontract.price by allowed companies</field>
             <field name="model_id" ref="model_sc_subcontract_price"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1059,7 +1070,7 @@
         <record id="rule_sc_data_scope_sc_subcontract_register" model="ir.rule">
             <field name="name">SC Data Scope - sc.subcontract.register by allowed companies</field>
             <field name="model_id" ref="model_sc_subcontract_register"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1068,7 +1079,7 @@
         <record id="rule_sc_data_scope_sc_subcontract_request" model="ir.rule">
             <field name="name">SC Data Scope - sc.subcontract.request by allowed companies</field>
             <field name="model_id" ref="model_sc_subcontract_request"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1077,7 +1088,7 @@
         <record id="rule_sc_data_scope_sc_subcontract_settlement" model="ir.rule">
             <field name="name">SC Data Scope - sc.subcontract.settlement by allowed companies</field>
             <field name="model_id" ref="model_sc_subcontract_settlement"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1086,7 +1097,7 @@
         <record id="rule_sc_data_scope_sc_tenant_company_registration" model="ir.rule">
             <field name="name">SC Data Scope - sc.tenant.company.registration by allowed companies</field>
             <field name="model_id" ref="smart_core.model_sc_tenant_company_registration"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1095,7 +1106,7 @@
         <record id="rule_sc_data_scope_sc_tenant_payload_external_identity" model="ir.rule">
             <field name="name">SC Data Scope - sc.tenant.payload.external.identity by allowed companies</field>
             <field name="model_id" ref="smart_core.model_sc_tenant_payload_external_identity"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1104,7 +1115,7 @@
         <record id="rule_sc_data_scope_sc_treasury_ledger" model="ir.rule">
             <field name="name">SC Data Scope - sc.treasury.ledger by allowed companies</field>
             <field name="model_id" ref="model_sc_treasury_ledger"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1113,7 +1124,7 @@
         <record id="rule_sc_data_scope_sc_treasury_reconciliation" model="ir.rule">
             <field name="name">SC Data Scope - sc.treasury.reconciliation by allowed companies</field>
             <field name="model_id" ref="model_sc_treasury_reconciliation"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1122,7 +1133,7 @@
         <record id="rule_sc_data_scope_sc_user_profile_document" model="ir.rule">
             <field name="name">SC Data Scope - sc.user.profile.document by allowed companies</field>
             <field name="model_id" ref="model_sc_user_profile_document"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1131,7 +1142,7 @@
         <record id="rule_sc_data_scope_sc_workbench_item" model="ir.rule">
             <field name="name">SC Data Scope - sc.workbench.item by allowed companies</field>
             <field name="model_id" ref="model_sc_workbench_item"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">[('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1140,7 +1151,7 @@
         <record id="rule_sc_data_scope_sc_workflow_def" model="ir.rule">
             <field name="name">SC Data Scope - sc.workflow.def by allowed companies</field>
             <field name="model_id" ref="model_sc_workflow_def"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1149,7 +1160,7 @@
         <record id="rule_sc_data_scope_sc_workflow_instance" model="ir.rule">
             <field name="name">SC Data Scope - sc.workflow.instance by allowed companies</field>
             <field name="model_id" ref="model_sc_workflow_instance"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1158,7 +1169,7 @@
         <record id="rule_sc_data_scope_sc_workflow_node" model="ir.rule">
             <field name="name">SC Data Scope - sc.workflow.node by allowed companies</field>
             <field name="model_id" ref="model_sc_workflow_node"/>
-            <field name="domain_force">['|', ('workflow_def_id.company_id', '=', False), ('workflow_def_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('workflow_def_id.company_id', '=', False), '&amp;', ('workflow_def_id.company_id', 'in', company_ids), ('workflow_def_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1167,7 +1178,7 @@
         <record id="rule_sc_data_scope_tender_bid" model="ir.rule">
             <field name="name">SC Data Scope - tender.bid by allowed companies</field>
             <field name="model_id" ref="model_tender_bid"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1176,7 +1187,7 @@
         <record id="rule_sc_data_scope_tender_bid_line" model="ir.rule">
             <field name="name">SC Data Scope - tender.bid.line by allowed companies</field>
             <field name="model_id" ref="model_tender_bid_line"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1185,7 +1196,7 @@
         <record id="rule_sc_data_scope_tender_doc_purchase" model="ir.rule">
             <field name="name">SC Data Scope - tender.doc.purchase by allowed companies</field>
             <field name="model_id" ref="model_tender_doc_purchase"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1194,7 +1205,7 @@
         <record id="rule_sc_data_scope_tender_doc_review" model="ir.rule">
             <field name="name">SC Data Scope - tender.doc.review by allowed companies</field>
             <field name="model_id" ref="model_tender_doc_review"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1203,7 +1214,7 @@
         <record id="rule_sc_data_scope_tender_guarantee" model="ir.rule">
             <field name="name">SC Data Scope - tender.guarantee by allowed companies</field>
             <field name="model_id" ref="model_tender_guarantee"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1212,7 +1223,7 @@
         <record id="rule_sc_data_scope_tender_opening" model="ir.rule">
             <field name="name">SC Data Scope - tender.opening by allowed companies</field>
             <field name="model_id" ref="model_tender_opening"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1221,7 +1232,7 @@
         <record id="rule_sc_data_scope_tender_opening_competitor" model="ir.rule">
             <field name="name">SC Data Scope - tender.opening.competitor by allowed companies</field>
             <field name="model_id" ref="model_tender_opening_competitor"/>
-            <field name="domain_force">['|', ('opening_id.project_id.company_id', '=', False), ('opening_id.project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('opening_id.project_id.company_id', '=', False), '&amp;', ('opening_id.project_id.company_id', 'in', company_ids), ('opening_id.project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1230,7 +1241,7 @@
         <record id="rule_sc_data_scope_tender_survey" model="ir.rule">
             <field name="name">SC Data Scope - tender.survey by allowed companies</field>
             <field name="model_id" ref="model_tender_survey"/>
-            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), '&amp;', ('project_id.company_id', 'in', company_ids), ('project_id.company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1239,7 +1250,7 @@
         <record id="rule_sc_data_scope_ui_business_config_change_set" model="ir.rule">
             <field name="name">SC Data Scope - ui.business.config.change.set by allowed companies</field>
             <field name="model_id" ref="smart_core.model_ui_business_config_change_set"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1248,7 +1259,7 @@
         <record id="rule_sc_data_scope_ui_business_config_contract" model="ir.rule">
             <field name="name">SC Data Scope - ui.business.config.contract by allowed companies</field>
             <field name="model_id" ref="smart_core.model_ui_business_config_contract"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1257,7 +1268,7 @@
         <record id="rule_sc_data_scope_ui_business_config_mutation_audit" model="ir.rule">
             <field name="name">SC Data Scope - ui.business.config.mutation.audit by allowed companies</field>
             <field name="model_id" ref="smart_core.model_ui_business_config_mutation_audit"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1266,7 +1277,7 @@
         <record id="rule_sc_data_scope_ui_form_field_policy" model="ir.rule">
             <field name="name">SC Data Scope - ui.form.field.policy by allowed companies</field>
             <field name="model_id" ref="smart_core.model_ui_form_field_policy"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1275,7 +1286,7 @@
         <record id="rule_sc_data_scope_ui_menu_config_policy" model="ir.rule">
             <field name="name">SC Data Scope - ui.menu.config.policy by allowed companies</field>
             <field name="model_id" ref="smart_core.model_ui_menu_config_policy"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1284,7 +1295,7 @@
         <record id="rule_sc_data_scope_ui_tenant_extension_field" model="ir.rule">
             <field name="name">SC Data Scope - ui.tenant.extension.field by allowed companies</field>
             <field name="model_id" ref="smart_core.model_ui_tenant_extension_field"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1293,7 +1304,7 @@
         <record id="rule_sc_data_scope_ui_tenant_extension_value" model="ir.rule">
             <field name="name">SC Data Scope - ui.tenant.extension.value by allowed companies</field>
             <field name="model_id" ref="smart_core.model_ui_tenant_extension_value"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), '&amp;', ('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
