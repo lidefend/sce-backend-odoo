@@ -1,0 +1,58 @@
+schema_version: 1
+goal:
+  id: TARGET-ENV-ROLE-ACCEPTANCE
+  title: target_environment_role_company_permission_user_acceptance
+  status: active
+  formal_product_layer: P4
+  supporting_layer: P0
+  layer_target: daily_runtime_target_environment_role_permission_acceptance
+  module:
+    - scripts/verify
+    - scripts/ops/dev_acceptance_release_probe.py
+    - config/acceptance
+    - config/frontend
+    - artifacts
+    - docs/ops/iterations
+  baseline:
+    branch: audit/target-env-role-acceptance-20261014
+    full_sha: d20798885b45553b2a5d3d08dd99a9363ff74e55
+    source: post_deployment_target_environment_acceptance
+  objective: >-
+    在已完成版本发布的目标环境（daily sc_demo，服务版本/候选树/发布面均为 main
+    d2079888，快照 106/107）上，绑定真实代表角色（finance / pm / owner /
+    project_member / business_config_admin）的允许/拒绝证据：走查查询、办理、
+    关键写入与权限边界，以真实角色而非管理员身份覆盖安装回读不能证明的运行效果。
+    这是「版本发布完成」与「产品交付完成」之间的唯一缺口。
+  product_boundary:
+    standard_vs_user_specific: platform_delivery_acceptance_evidence
+    why_here: >-
+      目标环境验收是交付/运维层（P4）职责：它读取已部署产品面并按声明角色绑定
+      证据，不改变 P0/P1/P2 的任何业务语义、契约或数据。
+    why_not_elsewhere:
+      - no_product_semantics_change
+      - no_frontend_compensation
+      - no_contract_or_schema_change
+      - no_admin_as_a_substitute_for_a_real_role
+      - no_hand_assembled_compose_database_or_credential_command
+    blast_radius:
+      - target environment daily sc_demo acceptance evidence only
+      - no source tree change outside .agent and docs
+  constraints:
+    - governed_make_entrypoints_only
+    - read_only_acceptance_operations_only
+    - one_worktree_one_writer
+    - report_batch_mainline_deployment_and_user_delivery_status_separately
+    - do_not_claim_product_delivery_beyond_bound_evidence
+  next_exact_step: >-
+    Registered 2026-10-14. Run the governed target-environment read-only acceptance
+    lanes against the deployed main d2079888 on the daily runtime and bind the
+    per-role allow/deny evidence; record results in the run index and do not
+    declare 产品交付完成 beyond what the bound lanes actually prove.
+  completion:
+    scope: target_environment_role_permission_acceptance
+    overall_goal: in_progress
+    result_index: .agent/runs/TARGET-ENV-ROLE-ACCEPTANCE/run.json
+    local_batch_acceptance: not_started
+    mainline_integration: not_applicable
+    deployment: already_completed_by_prior_goal
+    target_user_delivery: in_progress
