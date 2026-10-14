@@ -13,8 +13,11 @@ guard reads source only (offline lane) and enforces two things:
   model does (deferred records the delivery order, never the isolation), so the
   rule set can be regenerated from the declaration and deleting it cannot hide;
   every ``source_bounded`` model names the existing global ir.rule (id and file)
-  that bounds it, and that named rule is verified instead of inferred; rule xml
-  ids stay unique across security files.
+  that bounds it, that named rule is verified instead of inferred, and it must
+  carry both isolation facts on the declared anchor - the allowed-company
+  selector *and* the purpose authority ``user._sc_data_company_ids()``, exactly
+  as the generated ceiling for an ``enforced`` model does; rule xml ids stay
+  unique across security files.
 * the declaration *covers* the product model surface exactly: every model
   defined by a product module (config/tenant/module_sets.v1.json) that declares a
   ``company_id`` field carries one explicit declaration - enforced, deferred,
@@ -371,19 +374,28 @@ def rules_for(by_ref: dict[str, list[dict]], model: str) -> list[dict]:
 def declared_source_rule(
     by_ref: dict[str, list[dict]], model: str, anchor: str, rule_id: str
 ) -> dict | None:
-    """The named source rule, when it is global and constrains ``anchor``.
+    """The named source rule, when it is global and carries both isolation facts.
 
     A model bounded by an existing native ir.rule must name that rule in the
     declaration. The guard then verifies the named rule rather than accepting any
     rule that happens to mention a company column, so a group-scoped rule can
     never stand in for a ceiling and the declaration stays the single source for
     *why* a model is bounded.
+
+    The named rule must also carry the purpose authority
+    ``user._sc_data_company_ids()`` on the same anchor as the company selector.
+    A company-only ceiling is not the same fact as the generated ceiling an
+    ``enforced`` model gets: it lets a customer principal read a demo/test
+    company's rows, which is exactly the data-purpose isolation hole that
+    "the named rule is verified instead of inferred" used to hide behind.
     """
+    purpose = f"('{anchor}', 'in', user._sc_data_company_ids())"
     for rule in rules_for(by_ref, model):
         if (
             rule["xmlid"] == rule_id
             and rule["global"]
             and f"('{anchor}'" in rule["domain"]
+            and purpose in rule["domain"]
         ):
             return rule
     return None
@@ -578,7 +590,7 @@ def check(root: Path, declarations_path: Path, module_sets_path: str = DEFAULT_M
         if not matched:
             failures.append(
                 f"{model}: source_bounded rule {rule_id} is missing, group-scoped or "
-                f"does not constrain {anchor}"
+                f"does not constrain {anchor} with user._sc_data_company_ids()"
             )
             continue
         if file_hint and file_hint != matched["file"]:

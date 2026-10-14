@@ -55,6 +55,15 @@ def write_case(tmp: Path, rules: list[dict], declarations: dict) -> tuple[Path, 
 
 GLOBAL_DOMAIN = "['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]"
 
+# The ceiling an ``enforced`` model receives from the generator intersects the
+# allowed-company selector with the purpose authority. A ``source_bounded`` model
+# must carry the same two facts in its named rule; a company-only domain is a
+# different (weaker) fact and must not stand in for it.
+SOURCE_BOUNDED_DOMAIN = (
+    "[('company_id', 'in', company_ids), "
+    "('company_id', 'in', user._sc_data_company_ids())]"
+)
+
 
 
 COMPANY_MODEL = """
@@ -134,6 +143,10 @@ def write_company_case(tmp: Path, rules: list[dict], declarations: dict,
 
 def company_rule(ref: str, ident: str = "c") -> dict:
     return {"ident": ident, "ref": ref, "domain": GLOBAL_DOMAIN}
+
+
+def source_bounded_rule(ref: str, ident: str = "c") -> dict:
+    return {"ident": ident, "ref": ref, "domain": SOURCE_BOUNDED_DOMAIN}
 
 
 WIZARD_EXEMPT = {
@@ -482,7 +495,7 @@ class DataScopeRuleCoverageGuardTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as raw:
             root, declarations = write_company_case(
                 Path(raw),
-                [company_rule("model_demo_company")],
+                [source_bounded_rule("model_demo_company")],
                 {
                     "enforced": [],
                     "exempt": [WIZARD_EXEMPT],
@@ -515,8 +528,9 @@ class DataScopeRuleCoverageGuardTest(unittest.TestCase):
                     {
                         "ident": "owner",
                         "ref": "model_demo_owner",
-                        "domain": "['|', ('project_id.company_id', '=', False), "
-                                  "('project_id.company_id', 'in', company_ids)]",
+                        "domain": "[('project_id.company_id', 'in', company_ids), "
+                                  "('project_id.company_id', "
+                                  "'in', user._sc_data_company_ids())]",
                     },
                 ],
                 {
@@ -621,11 +635,45 @@ class DataScopeRuleCoverageGuardTest(unittest.TestCase):
             self.assertEqual("failed", report["status"])
             self.assertTrue(any("is missing, group-scoped" in f for f in report["failures"]))
 
-    def test_source_bounded_wrong_file_fails(self) -> None:
+    def test_source_bounded_company_only_rule_fails(self) -> None:
+        """A company-only ceiling is not the data-purpose ceiling.
+
+        The generated ceiling an ``enforced`` model gets intersects the company
+        selector with ``user._sc_data_company_ids()``. A named source rule that
+        constrains only the company column would still let a customer principal
+        read a demo/test company's rows, so naming it must not pass.
+        """
         with tempfile.TemporaryDirectory() as raw:
             root, declarations = write_company_case(
                 Path(raw),
                 [company_rule("model_demo_company")],
+                {
+                    "enforced": [],
+                    "exempt": [WIZARD_EXEMPT],
+                    "source_bounded": [
+                        {
+                            "model": "demo.company",
+                            "anchor": "company_id",
+                            "rule": "rule_c",
+                            "file": "addons/demo_module/security/demo_rules.xml",
+                            "reason": "bounded by the named global company rule rule_c",
+                        }
+                    ],
+                },
+                {"product_modules": ["demo_module"]},
+            )
+            report = guard.check(root, declarations)
+            self.assertEqual("failed", report["status"])
+            self.assertTrue(
+                any("user._sc_data_company_ids()" in f for f in report["failures"]),
+                report["failures"],
+            )
+
+    def test_source_bounded_wrong_file_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root, declarations = write_company_case(
+                Path(raw),
+                [source_bounded_rule("model_demo_company")],
                 {
                     "enforced": [],
                     "exempt": [],
