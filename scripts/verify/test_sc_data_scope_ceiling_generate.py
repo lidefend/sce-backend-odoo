@@ -110,13 +110,37 @@ class CeilingGeneratorTest(unittest.TestCase):
 
     def test_relation_anchor_default_keeps_shared_reference_visible(self) -> None:
         """A relation anchor without a declared unset-owner reading stays at the
-        shared-reference default: an unset optional link is shared data."""
+        shared-reference default: an unset optional link is shared data.
+
+        The unset branch has to name the traversed relation itself: Odoo compiles
+        ``('project_id.company_id', '=', False)`` to ``project_id IN (SELECT id
+        FROM project_project WHERE company_id IS NULL)``, which is NULL for a
+        record whose ``project_id`` is NULL. A single ``= False`` term therefore
+        hid exactly the unattributed records the shared reading keeps visible.
+        """
         self.assertEqual(
-            "['|', ('project_id.company_id', '=', False), '&', "
+            "['|', '|', ('project_id', '=', False), "
+            "('project_id.company_id', '=', False), '&', "
             "('project_id.company_id', 'in', company_ids), "
             "('project_id.company_id', 'in', user._sc_data_company_ids())]",
             gen.ceiling_domain("project_id.company_id"),
         )
+
+    def test_traversal_unset_branch_is_the_union_of_parent_and_own_column(self) -> None:
+        """The unset reading covers both facts the declaration means."""
+        self.assertEqual(
+            ["('project_id', '=', False)", "('project_id.company_id', '=', False)"],
+            gen.unset_branch_terms("project_id.company_id"),
+        )
+        self.assertEqual(
+            ["('company_id', '=', False)"], gen.unset_branch_terms("company_id")
+        )
+
+    def test_traversal_unknown_stays_strict_without_an_unset_term(self) -> None:
+        """A declared unknown reading must not gain the union branch."""
+        domain = gen.ceiling_domain("project_id.company_id", "unknown")
+        self.assertNotIn("= False", domain)
+        self.assertNotIn("('project_id', '=', False)", domain)
 
     def test_declared_unknown_ownership_renders_a_strict_ceiling(self) -> None:
         """A model whose only ownership path is optional declares that an unset
