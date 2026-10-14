@@ -247,3 +247,41 @@ gate_page_count              == policy_released_menu_count + policy_preview_menu
 
 结论：**批次验收完成**；目标环境部署（候选 bundle 同步 + 服务版本对齐 + 发布面收敛）已完成。
 主线集成与产品交付分别以 PR #655 合并、目标环境真实角色/公司/权限用户验收为准，尚未声明。
+
+## 8. 主线集成与目标环境最终对齐
+
+### 8.1 受保护 PR 合并
+
+| 项 | 值 |
+|---|---|
+| PR | #655 `fix/fe-contract-runtime-02-runtime-view-compat` → `main` |
+| 候选头 | `6e60001ba94e7058029750f713514e6886c82099` |
+| 必需检查 | `frontend_release_gate` / `merge_policy_gate` / `public_guard` / `professional_quality_gate` 均 success（绑定该候选头） |
+| 合并前本地门 | `pr.merge.local_quick_gate` 证据未命中 → fail-closed 回退执行 `ci.local.quick`（8 分片全 PASS 并落证据） |
+| 合并方式 | squash，合并提交 `17d148ad7a647afc6c79301ac409ad0dbc1177ae` |
+
+> 状态：**主线集成完成**（合并提交已回读）。**合并不等于部署**，部署见 8.2。
+
+### 8.2 目标环境对齐 main（部署）
+
+| 步 | 入口 | 结果 |
+|---|---|---|
+| 1 | `make daily.runtime.main.bundle_sync` | PASS，`normalized_from_candidate=true`；目标树由 detached 候选 `8fff184a` + `refs/heads/main a2c39711` 归一为 `main 17d148ad` |
+| 2 | `make daily.runtime.source_revision.align` | PASS；`served.source_revision` `8fff184a` → `17d148ad`，`.env.dev.bak` 已留，restart 成功 |
+| 3 | `make daily.runtime.published_face.converge` | PASS；`upgrade_mode=reused`，`guard_status=PASS` |
+
+最终部署证据（main `17d148ad`）：
+
+| 产品 | snapshot_id | released | preview | gate | guard |
+|---|---|---|---|---|---|
+| `construction.standard` | 104 | 90 | 0 | 90 | PASS |
+| `construction.preview` | 105 | 90 | 39 | 129 | PASS |
+
+### 8.3 三态结论
+
+| 维度 | 结论 |
+|---|---|
+| 批次验收 | **完成**（L1 + 三条 L2 定向 + 目标环境收敛；五条记账 check 全部 reusable） |
+| 主线集成 | **完成**（PR #655 squash 合并 `17d148ad`，必需门 success） |
+| 版本发布/部署 | **完成**（目标环境 `sc_demo` 服务版本、候选树、发布面均为 main `17d148ad`） |
+| 产品交付 | **未声明**（目标环境真实角色/公司/权限用户验收仍待执行） |

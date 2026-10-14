@@ -244,13 +244,46 @@
         "status": "PASS",
         "evidence": ".runtime/final-acceptance/daily-deployed/published-face-converge.json",
         "note": "upgrade_mode=reused (smart_core tree b3058e0d…, smart_construction_core tree 5ee929a6…); snapshots standard id=102 released 90/preview 0/gate 90, preview id=103 released 90/preview 39/gate 129; guard_status=PASS"
+      },
+      {
+        "entry": "make daily.runtime.main.bundle_sync",
+        "status": "PASS",
+        "evidence": ".runtime/final-acceptance/daily-deployed/bundle-sync.json",
+        "note": "normalized_from_candidate=true; remote detached candidate 8fff184a + refs/heads/main a2c39711 -> main 17d148ad (PR #655 squash merge)"
+      },
+      {
+        "entry": "make daily.runtime.source_revision.align",
+        "status": "PASS",
+        "evidence": ".runtime/final-acceptance/daily-deployed/source-revision-align.json",
+        "note": "served.source_revision 8fff184a -> 17d148ad; env backup .env.dev.bak present; restart succeeded"
+      },
+      {
+        "entry": "make daily.runtime.published_face.converge",
+        "status": "PASS",
+        "evidence": ".runtime/final-acceptance/daily-deployed/published-face-converge.json",
+        "note": "final deployment evidence on main 17d148ad; upgrade_mode=reused; snapshots standard id=104 released 90/preview 0/gate 90, preview id=105 released 90/preview 39/gate 129; guard_status=PASS"
       }
     ],
     "status_boundary": {
       "batch_acceptance": "complete",
-      "deployment": "complete",
-      "mainline_integration": "pending PR #655 merge",
-      "product_delivery": "not_claimed"
+      "deployment": "complete (main 17d148ad)",
+      "mainline_integration": "complete (PR #655 squash-merged as 17d148ad)",
+      "product_delivery": "not_claimed (target-environment real-role/company/permission user acceptance still outstanding)"
+    },
+    "mainline_merge": {
+      "pr": 655,
+      "state": "MERGED",
+      "merge_method": "squash",
+      "merge_commit": "17d148ad7a647afc6c79301ac409ad0dbc1177ae",
+      "merged_at": "2026-10-14T10:49:14Z",
+      "branch_head": "6e60001ba94e7058029750f713514e6886c82099",
+      "required_gates": {
+        "frontend_release_gate": "success",
+        "merge_policy_gate": "success",
+        "public_guard": "success",
+        "professional_quality_gate": "success"
+      },
+      "local_quick": "ci.local.quick PASS on 6e60001b (8 shards) at pr.merge gate"
     }
   }
 }
