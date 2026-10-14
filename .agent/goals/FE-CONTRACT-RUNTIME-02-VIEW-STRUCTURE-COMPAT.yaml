@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: FE-CONTRACT-RUNTIME-02-VIEW-STRUCTURE-COMPAT
   title: runtime_view_structure_compat_and_deployment_blocker_closure
-  status: active
+  status: completed
   formal_product_layer: P1
   supporting_layer: P4
   layer_target: smart_construction_core_native_view_structure_and_product_view_contract_baseline
@@ -93,20 +93,25 @@ goal:
     - bookkeeping_rides_the_same_real_product_candidate
     - report_batch_mainline_deployment_status_separately
   next_exact_step: >-
-    Run the owning-layer offline checks (product_view_structure contract unit,
-    view structure baseline, contract structure lock), then the governed local
-    runtime module upgrade and gate.contract.view_structure to prove the resolved
-    tree equals the committed baseline again. Commit, then verify the candidate
-    on the target environment before protected GitHub mainline integration.
+    Closed 2026-10-14. The goal scope (native view structure compatibility plus
+    the post-merge deployment blocker) is delivered: RUNTIME-BOUNDARY-FIX-02/03/04
+    passed batch acceptance, PR #655 squash-merged to main as 17d148ad, and the
+    target sc_demo runtime converged to main 17d148ad. Outstanding work is a
+    different goal: target-environment real-role/company/permission user
+    acceptance (product delivery) and the independent-review residuals on
+    FE-CONTRACT-RUNTIME-02 consumption stop closure. Register a new goal/run for
+    those before any further product write; do not reopen this merged branch.
   completion:
     scope: runtime_view_structure_compat_and_deployment_blocker_closure
-    overall_goal: incomplete
+    overall_goal: complete
     result_index: .agent/runs/FE-CONTRACT-RUNTIME-02-VIEW-STRUCTURE-COMPAT/run.json
-    local_batch_acceptance: not_run
-    mainline_integration: not_run
-    deployment: not_run
-    target_user_delivery: not_run
+    local_batch_acceptance: complete
+    mainline_integration: complete
+    deployment: complete
+    target_user_delivery: not_run_out_of_scope
     limits: >-
       This goal restores one native view node to the authoritative baseline and
       re-enables the target-environment module upgrade. It is not a product page
       rewrite, not a target-user acceptance result, and not a base-image upgrade.
+      Target-environment real-role/company/permission user acceptance is a
+      separate goal and is not claimed here.
