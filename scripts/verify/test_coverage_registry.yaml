@@ -6,8 +6,8 @@ entries:
   owner: construction-product
   dispose: wire-pending
   reason: Acceptance-fixture data-space creation coverage added by FE-CONTRACT-RUNTIME-02 (P1/P4). The
-    acceptance-fixture lane selects other tags, not this one, so it never re-runs. Wire it to a
-    governed ORM entry or retire the tag before treating the creation boundary as covered.
+    acceptance-fixture lane selects other tags, not this one, so it never re-runs. Wire it to a governed
+    ORM entry or retire the tag before treating the creation boundary as covered.
   review_by: '2026-12-31'
 - group: acceptance_fixture_execution_freeze
   kind: odoo_tag
@@ -264,9 +264,9 @@ entries:
   status: unwired
   owner: platform-team
   dispose: wire-pending
-  reason: smart_core data-space registration boundary coverage added by FE-CONTRACT-RUNTIME-02 (P0
-    kernel). It asserts the persisted registration and tenant-space boundary, not whole-product data
-    rule acceptance. No governed ORM entry selects the tag yet; wire it or retire it.
+  reason: smart_core data-space registration boundary coverage added by FE-CONTRACT-RUNTIME-02 (P0 kernel).
+    It asserts the persisted registration and tenant-space boundary, not whole-product data rule acceptance.
+    No governed ORM entry selects the tag yet; wire it or retire it.
   review_by: '2026-12-31'
 - group: data_space_identity_enrollment
   kind: odoo_tag
@@ -274,9 +274,19 @@ entries:
   owner: platform-team
   dispose: class-selected
   gate: 'make:verify.local.dev.data_space_identity_enrollment.orm :: data_space_identity_enrollment test.safe'
-  reason: Onboarding owns the operator identity realm, not only the registration row; a space whose
-    operators were never enrolled is readable by nobody. Reachable only through a hand-invoked
-    make/test entry; no recurring workflow selects this group yet.
+  reason: Onboarding owns the operator identity realm, not only the registration row; a space whose operators
+    were never enrolled is readable by nobody. Reachable only through a hand-invoked make/test entry;
+    no recurring workflow selects this group yet.
+- group: data_space_uncached_membership
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-team
+  dispose: class-selected
+  gate: 'make:verify.local.dev.data_space_uncached_membership.orm :: data_space_uncached_membership'
+  reason: Pins the target-environment 403 root cause - the data-space ceiling resolved membership through
+    a tools.ormcache helper instead of the persisted relation, so an out-of-band grant or revocation was
+    invisible to a long-lived worker. Reachable only through a hand-invoked ORM entry; no recurring
+    workflow selects this group yet.
 - group: demo_gate
   kind: odoo_tag
   status: unwired
@@ -291,7 +301,8 @@ entries:
   owner: platform-team
   dispose: class-selected
   gate: 'make:verify.local.dev.dictionary_scope_delivery.orm :: dictionary_scope_delivery test.safe'
-  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group. Keep as an on-demand disposition until a scheduled or PR gate selects it.
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: e2e_fixed_journey
   kind: odoo_tag
   status: on-demand
@@ -596,9 +607,9 @@ entries:
   status: unwired
   owner: construction-product
   dispose: wire-pending
-  reason: Actual native XML payroll company rules read back from the smart_core security XML, added
-    by FE-CONTRACT-RUNTIME-02. Needs a governed ORM selection entry before it re-runs; the fixed-tag
-    ORM runner allowlist does not include it.
+  reason: Actual native XML payroll company rules read back from the smart_core security XML, added by
+    FE-CONTRACT-RUNTIME-02. Needs a governed ORM selection entry before it re-runs; the fixed-tag ORM
+    runner allowlist does not include it.
   review_by: '2026-12-31'
 - group: perm_runtime_uid
   kind: odoo_tag
@@ -614,7 +625,8 @@ entries:
   owner: platform-team
   dispose: class-selected
   gate: 'make:verify.local.dev.platform_database_governance.orm :: platform_database_governance test.safe'
-  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group. Keep as an on-demand disposition until a scheduled or PR gate selects it.
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: policy_document
   kind: odoo_tag
   status: unwired
@@ -844,8 +856,8 @@ entries:
   status: unwired
   owner: construction-product
   dispose: wire-pending
-  reason: Salary summary company-scope coverage added by FE-CONTRACT-RUNTIME-02. Needs a governed
-    ORM selection entry before it re-runs; recorded as known coverage debt until then.
+  reason: Salary summary company-scope coverage added by FE-CONTRACT-RUNTIME-02. Needs a governed ORM
+    selection entry before it re-runs; recorded as known coverage debt until then.
   review_by: '2026-12-31'
 - group: sc_approval_policy
   kind: odoo_tag
@@ -1109,8 +1121,10 @@ entries:
   status: on-demand
   owner: platform-team
   dispose: class-selected
-  gate: 'make:verify.local.dev.source_bounded_data_space_rules.orm :: source_bounded_data_space_rules test.safe'
-  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group. Keep as an on-demand disposition until a scheduled or PR gate selects it.
+  gate: 'make:verify.local.dev.source_bounded_data_space_rules.orm :: source_bounded_data_space_rules
+    test.safe'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: subcontract_cost_registration
   kind: odoo_tag
   status: unwired

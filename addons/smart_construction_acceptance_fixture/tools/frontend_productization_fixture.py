@@ -313,13 +313,42 @@ def _activity_journal(env, company):
     )
 
 
+def _reconcile_activity_move(env, move, company, journal):
+    """Re-home this fixture's own empty draft activity entry onto its declared owner.
+
+    An earlier fixture version materialised ``fe_activity_journal_entry`` inside
+    the platform company with that company's miscellaneous journal, so a reused
+    acceptance database keeps a fixture-owned row whose company and journal no
+    longer match the declaration. Like ``_reconcile_project_company``, the
+    builder converges its own row instead of relying on a database rebuild - but
+    only when the row provably carries no business fact: a draft, never posted
+    entry without journal items. Any other drift still fails closed, because
+    re-homing a booked entry would silently rewrite accounting history.
+    """
+    if move.company_id == company and move.journal_id == journal:
+        return move
+    if move.state != "draft" or move.posted_before or move.line_ids:
+        raise RuntimeError('Activity move ownership mismatch; use governed baseline reset')
+    move.write({
+        "company_id": company.id,
+        "journal_id": journal.id,
+        "currency_id": company.currency_id.id,
+        # The stale name came from the previous journal's sequence, so it is
+        # cleared here and re-derived from the declared journal when booked.
+        "name": "/",
+    })
+    return move
+
+
 def _activity_move(env, company, partner, journal):
     _require_activity_company(env, company)
     if not journal or journal.company_id != company or journal.type != "general":
         raise RuntimeError("Activity fixture requires an existing governed general journal")
     existing = env.ref(MODULE + '.fe_activity_journal_entry', raise_if_not_found=False)
-    if existing and (existing._name != 'account.move' or existing.sudo().company_id != company):
+    if existing and existing._name != 'account.move':
         raise RuntimeError('Activity move ownership mismatch; use governed baseline reset')
+    if existing:
+        existing = _reconcile_activity_move(env, existing.sudo(), company, journal)
     reference = "FE-ACTIVITY-JOURNAL-001"
     return _upsert(
         env,
