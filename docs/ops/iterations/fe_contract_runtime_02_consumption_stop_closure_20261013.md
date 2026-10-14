@@ -1435,3 +1435,49 @@ L2 定向 ORM 反例 1 test 0 failed（日志 `relationship_review_queue_project
   `make ci.delivery.freeze.prepare` 再次 **rc=0** 且无生成物差异。
 - 状态边界：仍只支撑**批次验收完成（源码 + 守卫 + 定向测试）**与**冻结准备通过**；
   精确 HEAD 的 `ci.local.quick` 重跑、推送、主线集成、部署、产品交付均未发生。
+
+## 平台/行业初始化理顺 + 数据空间接入权威 + bootstrap 禁载业务数据（2026-10-14）
+
+- 所有者裁定：平台初始化与行业初始化彻底理顺；单库多公司 / 每客户独立建库为**可选择策略**；
+  正式客户公司必须独立建库；`DEMO_IS_FIRST_ONBOARDED_COMPANY=true`（demo 是一等数据空间，
+  既不是技术件也不是 bootstrap 公司）；`BUSINESS_DATA_NEVER_IN_PLATFORM_BOOTSTRAP_COMPANY=true`。
+- 唯一初始化顺序：平台技术基线 → 平台机制 → bootstrap 公司标记 → 数据库策略声明 →
+  数据空间接入 → 行业初始化 → 客户差异化。违反顺序产生的业务数据即“归属未知业务数据”，
+  只能由受管迁移处理。
+- 本轮产出（P0 边界 + 守卫 + 单测，未新增字段）：
+  - 边界文档 `docs/architecture/platform_industry_initialization_and_database_strategy_v1.md`
+    （权威仍是 `docs/governance/database_architecture_policy.md`，本文件不复制政策）；
+  - 声明 `config/tenant/database_strategy.v1.json`（三角色 `platform_internal_demo` /
+    `industry_acceptance` / `customer_production`，两条策略，5 条不变量）；
+  - 接入权威 `addons/smart_core/security/data_space_provisioning.py`：
+    `strategy_for_purpose` / `validate_strategy_declaration` / `onboard_business_company`
+    （customer 用途在此**拒绝**，仍走受签 `smart_core.tenant_payload_import`）/
+    `assert_business_data_space_ready`（行业与 demo 初始化前置 fail-closed）/
+    `unregistered_business_companies`（未注册公司归属未知不放行）/
+    `bootstrap_company_business_data_violations`（探针模型由行业/ops 层传入，P0 不写行业语义）；
+  - 守卫 `scripts/verify/database_strategy_guard.py`、`scripts/verify/data_space_provisioning_guard.py`；
+  - 单测 `scripts/verify/test_database_strategy_guard.py`（11）、
+    `scripts/verify/test_data_space_provisioning.py`（16）；
+  - 挂载 `make/dev_test.mk` 新目标 `verify.database.strategy.guard`、
+    `verify.data_space.provisioning.guard`，并登记进 `make/ci.mk` 的
+    `verify.contract.architecture.suite` 静态套件。
+- 验证回执：`make verify.database.strategy.guard` rc=0（PASS + 11 tests）；
+  `make verify.data_space.provisioning.guard` rc=0（PASS + 16 tests）；
+  `make verify.guard.registry` AUDIT PASS（1449 scripts, 198/198 unwired dispositioned）；
+  `make verify.sc_data_scope.rule_coverage` rc=0（37 tests，universe=138，enforced=117，
+  deferred=26，exempt=33，source_bounded=32，uncovered=[]，generated rules=143）；
+  `make verify.agent.ledger.unit` rc=0。
+- 受管只读回读 `make local.dev.data_scope.ceiling.readiness` rc=0：已安装上限与提交源一致
+  （source 143 / installed 143 / mismatches=[]）；同一个回读同时给出环境事实：
+  `sc.tenant.company.registration` **0 行**，40 个内部账号解析到 **0** 家公司，
+  `payment.request` 141 / `sc.general.contract` 3 / `project.project` 72 **全部挂在
+  bootstrap 公司 id=1 `My Company`**，company 3 `Demo Secondary Company` 存在但未注册。
+  该事实直接违反 `business_data_never_in_platform_bootstrap_company`。
+- 回读脚本同时修了两处事实缺陷：多跳锚点（`settlement_id.project_id.company_id`）改为逐跳解析，
+  `project.settlement.line` / `tender.opening.competitor` 不再被误报 `anchor_is_not_a_relation`；
+  新增 bootstrap 公司业务行探针。
+- 本轮**未做环境写操作**：没有创建/注册公司，也没有把 company 1 的业务行改归属。
+  后续受管 P4 迁移（先接入 `purpose=demo` 公司，再改归属，再回读直到 bootstrap blocker 清零）
+  需所有者授权后才能执行；在完成前，浏览器验收无法观测 payment/contract 行。
+- 状态边界：本轮只支撑**批次验收完成（源码 + 守卫 + 定向测试 + 只读回读）**；
+  主线集成、版本发布、产品交付均未发生，交付链仍被上述环境 blocker 阻断。

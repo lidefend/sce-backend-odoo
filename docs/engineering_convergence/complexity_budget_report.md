@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4731`
+- Scanned files: `4739`
 - Files requiring split plan: `64`
 - Files above warning threshold: `120`
 
@@ -44,7 +44,7 @@ Generated from repository source files. This report is informational during the 
 | 2095 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2091 | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 2068 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
-| 2024 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 2029 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2001 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1977 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
@@ -100,7 +100,7 @@ Generated from repository source files. This report is informational during the 
 | 1332 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1320 | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1316 | Python source | `addons/smart_core/core/view_orchestrator.py` |
-| 1304 | XML data/view | `addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml` |
+| 1315 | XML data/view | `addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml` |
 | 1289 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1287 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1271 | Python source | `scripts/ops/retire_historical_branch_refs.py` |
@@ -238,7 +238,7 @@ Generated from repository source files. This report is informational during the 
 | 2095 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2091 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 2068 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
-| 2024 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 2029 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2001 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1977 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
@@ -285,7 +285,7 @@ Generated from repository source files. This report is informational during the 
 | 1332 | warning | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1320 | warning | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1316 | warning | Python source | `addons/smart_core/core/view_orchestrator.py` |
-| 1304 | warning | XML data/view | `addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml` |
+| 1315 | warning | XML data/view | `addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml` |
 
 ## Interpretation
 

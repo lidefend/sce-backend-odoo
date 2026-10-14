@@ -978,9 +978,10 @@
     "This run declares environment.kind=runtime, so the run evaluator marks every offline receipt stale ('runtime evidence requires authoritative environment readback'). Receipts are truthful but not reusable in-tool until that pre-existing declaration is reconciled.",
     "Corrected while closing data-scope batch 1: the earlier premise that the sc.business.fact.mixin family and the cockpit/workbench fact models have no company path was wrong - they carry project_id, so sc.dashboard.cockpit.fact, sc.workbench.item, sc.document.admin.document and sc.office.admin.document are now covered by a global company-scope ir.rule anchored on project_id.company_id (scripts/verify/data_scope_declarations.json). No schema change is required for isolation. What remains is governed activation readback (L3), not a schema change.",
     "verify.backend_business_fact.model_standard currently FAILs on documentation drift: docs/architecture/backend_business_model_audit_findings_v1.md records 372 model classes and 0 unclassified models while the measured values are 378 and 1. The target is a zero-reference lane entry (not reachable from any gate anchor), so it is not a blocker for this batch.",
-    "Audit follow-up: the committed company-ceiling set is now 143 rules after the generated-vs-manual review retired 7 redundant ceilings (enforced 124 -> 117, source_bounded 25 -> 32), while the last governed activation readback proved 125/125 installed, so the runtime readback is stale for the current set; the remaining newly declared ceilings are source-only until the next authorized `local.dev` activation."
+    "Audit follow-up: the committed company-ceiling set is 143 rules after the generated-vs-manual review retired 7 redundant ceilings (enforced 124 -> 117, source_bounded 25 -> 32). A fresh governed read-only readback on 2026-10-14 (`make local.dev.data_scope.ceiling.readiness`) proves source_rule_count=143 == installed_match_count=143 with mismatches=[], so the runtime ceiling is current and the earlier 125/125 activation is superseded rather than stale. What still blocks delivery is the data-space fact below (bootstrap company owns business rows), not the ceiling.",
+    "P4 DATA-SPACE-MIGRATION-01 (awaiting authorization): the local.dev demo database keeps all business rows under the platform bootstrap company (id=1) with sc.tenant.company.registration empty, violating business_data_never_in_platform_bootstrap_company; demo onboarding + row re-ownership is required before browser acceptance."
   ],
-  "next_exact_step": "Backend single-fact closure is complete and the delivery lane is now blocked only by its own frozen-candidate guards, all three closed: CD-20261013-LAYOUT-COLUMNS-FALLBACK retired (d963dee6), the assembler cache re-pinned (774dee1a), the workflow-action-coverage test stub synced (5cc400af), and this web_contract_v2_frontend_architecture_guard token list synced to the recorded frontend retirement (see web_architecture_guard_token_sync). All shard-6/7 targets that the fail-fast had masked now pass individually. NEXT, in order: (1) commit this fix + bookkeeping, run make ci.delivery.freeze.prepare once more and confirm no residual generated delta so the clean HEAD stays frozen; (2) run ONE exact-head make ci.local.quick on that frozen HEAD; (3) rewrite artifacts/pr_body.md and integrate through the protected GitHub PR (make pr.push -> make pr.create -> make pr.merge.prep -> make pr.merge EXPECTED_HEAD=<sha>), gitee mirror as backup only; (4) the governed L3 activation readback set is 143 rules (the earlier 150/125 readbacks are stale) and needs the authorized path make local.dev.snapshot -> make local.dev.upgrade MODULE=smart_construction_core -> make local.dev.data_scope.inventory. This batch is 批次验收完成 at source + guards level plus freeze-preparation pass, and is NOT yet pushed, mainline-integrated, deployed or user-accepted.",
+  "next_exact_step": "Platform/industry initialization boundary is declared, guarded and unit-tested (database_strategy.v1.json + data_space_provisioning.py + 2 guards + 27 tests, all wired into make/dev_test.mk and make/ci.mk; verify.guard.registry still PASS). NEXT, in order: (1) request owner authorization for the governed P4 demo data-space migration (onboard purpose=demo company, re-own bootstrap company 1 business rows, re-run make local.dev.data_scope.ceiling.readiness until the bootstrap blocker clears); (2) bind smart_construction_demo seeding to assert_business_data_space_ready(purpose='demo') and add the real-account positive/negative ORM test; (3) commit the backend fact-source + provisioning closure in layer-owned commits, then make ci.delivery.freeze.prepare, one exact-head make ci.local.quick, then make pr.push.",
   "acceptance_authority_layout": {
     "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
     "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",
@@ -2999,7 +3000,7 @@
     "status": "derived_fail_closed_activated_and_audited",
     "scope": "Product-module models (config/tenant/module_sets.v1.json) that declare a company_id field; the 744-model installed registry stays inspection scope.",
     "universe": 138,
-    "enforced_global_ceiling": 124,
+    "enforced_global_ceiling": 117,
     "declared_exempt": 33,
     "deferred": 26,
     "transient": 2,
@@ -3008,11 +3009,11 @@
     "method": "One authoritative ownership identity at the root with details inheriting; reuse native ACL, industry record rules and parent anchors instead of duplicating every isolation dimension onto every model. The enforced and deferred ceilings are generated from the declaration instead of hand-written per model.",
     "corrected_rationale": "Five scene/pack exemptions previously read 'needs an ownership anchor'. The source facts are a delivery-only orchestration object (sc.scene source_authority_contract: delivery_only, no_business_fact_authority), a deployment-wide pack manifest, and validation/audit rows owned by their subject.",
     "evidence": {
-      "verify.sc_data_scope.rule_coverage": "33 guard tests passed, uncovered=[], failures=[], universe=138, generated rules=150 (124 enforced + 26 deferred); the universe now follows company_field_models through _inherit-only extension classes and fails closed when such a class names its parent with an unresolvable expression",
-      "verify.sc_data_scope.ceiling.check": "7 generator tests passed; 150 generated rules match the declaration",
+      "verify.sc_data_scope.rule_coverage": "37 guard tests passed, uncovered=[], failures=[], universe=138, generated rules=143 (117 enforced + 26 deferred, global_rules_seen=187, source_bounded=32); the universe follows company_field_models through _inherit-only extension classes and fails closed when such a class names its parent with an unresolvable expression",
+      "verify.sc_data_scope.ceiling.check": "13 generator tests passed; 143 generated rules match the declaration",
       "verify.fact_source.coverage": "20 guard tests passed, failures=[] (12 standard-currency models, 37 caller-context models of 133 currency models, 6 declared currency write paths, 1 declared field override, company-currency authority verified)",
       "verify.contract.architecture.suite": "366 tests, exit=0, same suite marker set as the previous round (.runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/arch_suite_backend_fact_source_2.log); the two changed guards contribute 33 (scope) + 20 (fact source) tests.",
-      "local.dev.data_scope.inventory": "STALE for the current set: the last activation readback proved 125/125 installed (99 enforced + 26 deferred) and name-for-name equal to the then-generated set; the committed set is now 150, so the 25 newly declared ceilings are source-only until the next governed activation."
+      "local.dev.data_scope.ceiling.readiness": "governed read-only readback of the installed ceiling against the committed source: source_rule_count=143, installed_match_count=143, mismatches=[]. Same readback reports the environment facts now blocking delivery: the platform bootstrap company (id=1 'My Company') still owns business rows (payment.request 141, sc.general.contract 3, project.project 72), sc.tenant.company.registration has 0 rows, and 40 internal actors resolve 0 companies. Log: .runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/data_scope_ceiling_readiness_purpose_closure.log"
     },
     "gate": "make verify.sc_data_scope.rule.coverage, make verify.sc_data_scope.ceiling.check, make verify.fact_source.coverage and make verify.contract.architecture.suite all pass at this HEAD.",
     "generator": "scripts/verify/sc_data_scope_ceiling_generate.py renders all enforced and deferred models into addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml from the same declaration; verify.sc_data_scope.ceiling.check runs 7 generator tests and fails when the committed record set differs, so one declaration owns isolation and a new ceiling is a declaration line.",
@@ -3036,10 +3037,11 @@
       "per_model": "enforced 99/99 and deferred 26/26 models carry their \"SC Data Scope - <model> by allowed companies\" rule",
       "module_load": "upgrade log line: loading smart_construction_core/security/sc_data_scope_ceiling_generated.xml",
       "post_write_checks": "make local.dev.upgrade ran local.dev.verify_authority -> PASS; make local.dev.health -> PASS profile=persistent project=sc-local-dev db=sc_dev_demo",
-      "limits": "The readback proves the installed ceiling set is exactly the generated set by rule name per model (125/125, no missing, no extra). It does not independently re-assert installed groups/domain per rule; the source guard proves globality and anchor, and the loader consumed that file verbatim (0 rules existed before the upgrade, so there is no stale value to retain)."
+      "limits": "The readback proves the installed ceiling set is exactly the generated set by rule name per model (125/125, no missing, no extra). It does not independently re-assert installed groups/domain per rule; the source guard proves globality and anchor, and the loader consumed that file verbatim (0 rules existed before the upgrade, so there is no stale value to retain).",
+      "superseded_by": "2026-10-14 read-only readback: source 143 == installed 143, mismatches=[] (make local.dev.data_scope.ceiling.readiness, log .runtime/agent-runs/FE-CONTRACT-RUNTIME-02/logs/data_scope_ceiling_readiness_purpose_closure.log). The 125/125 activation below stays the record of the earlier authorized write; the numbers are historical, not the current installed set."
     },
-    "source_bounded_named_rule": 25,
-    "enforced_in_universe": 75,
+    "source_bounded_named_rule": 32,
+    "enforced_in_universe": 72,
     "exempt_in_universe": 12,
     "deferred_in_universe": 26,
     "unresolved_model_names": 0,
@@ -3048,7 +3050,9 @@
       "closure": "scripts/verify/sc_data_scope_rule_coverage_guard.py now resolves _name through a module constant table (model_name_constants/resolve_model_name) and fails closed on any declared _name it cannot resolve (unresolved_model_names). scripts/verify/fact_source_coverage_guard.py uses the same identity resolution, so the company and money universes cannot diverge on model identity.",
       "declared": "ui.menu.config.policy declared enforced (anchor company_id, class root) in scripts/verify/data_scope_declarations.json; the generator emits rule_sc_data_scope_ui_menu_config_policy with a cross-module ref smart_core.model_ui_menu_config_policy.",
       "negative_controls": "3 new guard tests: constant-named company model appears in the universe and fails when undeclared; declared constant-named model passes; unresolvable _name stops the run. 1 new money-fact test asserts a constant-named model is not silently exempt from the standard-currency declaration."
-    }
+    },
+    "readback_probe": "scripts/verify/local_dev_data_scope_ceiling_readiness.py (make local.dev.data_scope.ceiling.readiness) resolves multi-hop anchor chains (settlement_id.project_id.company_id) hop by hop, so detail models are no longer misreported as anchor_is_not_a_relation; it now also probes every business model held by a platform bootstrap company.",
+    "runtime_activation_status": "superseded_current_143_143_verified"
   },
   "deferred_data_scope_gaps": {
     "issue": "DATA-SCOPE-CEILING-01",
@@ -3057,8 +3061,8 @@
     "anchor": "company_id",
     "owner_module": "smart_construction_core",
     "detail": "Declared in scripts/verify/data_scope_declarations.json -> deferred. P1 business models exposing a company_id column that carry only capability/project-scoped groups rules, so a manager-level group can read other companies rows.",
-    "resolution": "Implemented as one derived ceiling (no per-model hand-written rules): scripts/verify/sc_data_scope_ceiling_generate.py renders all 125 enforced+deferred models from scripts/verify/data_scope_declarations.json into addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml, and verify.sc_data_scope.ceiling.check fails on drift.",
-    "not_a_substitute_for": "The 137-model coverage universe and the guard result, which stay authoritative.",
+    "resolution": "Implemented as one derived ceiling (no per-model hand-written rules): scripts/verify/sc_data_scope_ceiling_generate.py renders all 143 enforced+deferred models from scripts/verify/data_scope_declarations.json into addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml, and verify.sc_data_scope.ceiling.check fails on drift.",
+    "not_a_substitute_for": "The 138-model coverage universe and the guard result, which stay authoritative.",
     "implementation": {
       "generator": "scripts/verify/sc_data_scope_ceiling_generate.py",
       "record_set": "addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml",
@@ -3305,6 +3309,63 @@
       "same-shard siblings after the failure point: make verify.frontend.dev.incremental.unit -> 29 tests OK; make verify.frontend.lint.src -> rc=0 (0 errors, 65 warnings)",
       "make verify.guard.registry -> AUDIT PASS 1443 scripts",
       "make ci.delivery.freeze.prepare -> rc=0, no generated delta"
+    ]
+  },
+  "platform_initialization_strategy": {
+    "status": "declared_guarded_and_pending_environment_migration",
+    "owner_ruling_2026_10_14": [
+      "PLATFORM_INITIALIZATION_STRAIGHTENED=true",
+      "TENANT_DATABASE_STRATEGY_SELECTABLE=true",
+      "FORMAL_CUSTOMER_COMPANY_OWNS_DEDICATED_DATABASE=true",
+      "DEMO_IS_FIRST_ONBOARDED_COMPANY=true",
+      "BUSINESS_DATA_NEVER_IN_PLATFORM_BOOTSTRAP_COMPANY=true"
+    ],
+    "single_order": [
+      "platform_technical_baseline",
+      "platform_mechanisms",
+      "bootstrap_company_marker",
+      "database_strategy_declaration",
+      "data_space_onboarding",
+      "industry_initialization",
+      "customer_differentiation"
+    ],
+    "artifacts": {
+      "authority": "docs/governance/database_architecture_policy.md (unchanged; still the single database-architecture policy)",
+      "boundary_doc": "docs/architecture/platform_industry_initialization_and_database_strategy_v1.md",
+      "declaration": "config/tenant/database_strategy.v1.json (database_per_customer_tenant for customer_production, single_db_multi_company for platform_internal_demo/industry_acceptance, 5 invariants)",
+      "onboarding_entry": "addons/smart_core/security/data_space_provisioning.py (strategy_for_purpose/validate_strategy_declaration/onboard_business_company/assert_business_data_space_ready/unregistered_business_companies/bootstrap_company_business_data_violations; imports nothing from odoo)",
+      "guards": [
+        "scripts/verify/database_strategy_guard.py",
+        "scripts/verify/data_space_provisioning_guard.py"
+      ],
+      "tests": [
+        "scripts/verify/test_database_strategy_guard.py (11)",
+        "scripts/verify/test_data_space_provisioning.py (16)"
+      ]
+    },
+    "layer_declaration": {
+      "formal_product_layer": "P0 platform kernel product",
+      "layer_target": "smart_core (data space onboarding authority) + config/tenant declaration",
+      "standard_vs_user_specific": "platform mechanism; the demo/test/customer purposes stay declarative",
+      "why_here": "Onboarding order, strategy resolution and the bootstrap no-business-data invariant are platform mechanisms; industry rows are seeded by P1 modules after onboarding",
+      "why_not_elsewhere": "The industry/demo layer must not invent its own registration, and the frontend must not infer a data space from a database name",
+      "blast_radius": "config/tenant/database_strategy.v1.json, docs/architecture (new doc), scripts/verify (2 guards + 2 test files), make/dev_test.mk, make/ci.mk; no business model, ACL, route or contract touched"
+    },
+    "verification": {
+      "make verify.database.strategy.guard": "rc=0, DATABASE_STRATEGY_GUARD=PASS roles=customer_production,industry_acceptance,platform_internal_demo strategies=database_per_customer_tenant,single_db_multi_company; 11 unit tests OK",
+      "make verify.data_space.provisioning.guard": "rc=0, DATA_SPACE_PROVISIONING_GUARD=PASS roles=3 industry_hooks=addons/smart_construction_core/models/support/contract_center.py invariants=5; 16 unit tests OK",
+      "make verify.guard.registry": "rc=0 (1449 scripts, 198/198 unwired dispositioned) after wiring both new targets into make/dev_test.mk and make/ci.mk",
+      "make local.dev.data_scope.ceiling.readiness": "rc=0, read-only, status=blocked by the environment facts below (not by the ceiling: source 143 == installed 143)"
+    },
+    "environment_blocker": {
+      "finding": "the persistent local.dev demo database violates BUSINESS_DATA_NEVER_IN_PLATFORM_BOOTSTRAP_COMPANY: bootstrap company 1 'My Company' owns payment.request 141, sc.general.contract 3, project.project 72; sc.tenant.company.registration has 0 rows; company 3 'Demo Secondary Company' exists but is unregistered, so no actor resolves any company (40 internal actors -> 0 companies).",
+      "why_it_blocks": "with no registered business company, the purpose term hides every company realm (payment.request 141 -> 0 visible), so browser acceptance and the batch product review cannot observe payment/contract rows.",
+      "next_action_requires": "owner authorization for a governed P4 data-space migration: onboard this database's demo company through addons/smart_core/security/data_space_provisioning.py (purpose=demo), then re-own the company-1 business rows to it, then re-run the readback. Not performed in this round: no business write was attempted."
+    },
+    "not_done": [
+      "No environment write: no company created/registered and no business row re-owned.",
+      "smart_construction_demo still gates on database name + SC_ENVIRONMENT/SC_ALLOW_DEMO_DATA; binding its seeding to assert_business_data_space_ready(purpose='demo') is the next step after the migration.",
+      "No real-account positive/negative ORM test yet for a demo data space (requires the onboarded demo company)."
     ]
   }
 }
