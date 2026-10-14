@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4740`
+- Scanned files: `4741`
 - Files requiring split plan: `64`
 - Files above warning threshold: `120`
 
