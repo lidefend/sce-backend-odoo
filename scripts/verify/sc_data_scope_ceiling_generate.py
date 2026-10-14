@@ -29,6 +29,19 @@ ROOT = Path(__file__).resolve().parents[2]
 DECLARATIONS = ROOT / "scripts/verify/data_scope_declarations.json"
 OWNER_MODULE = "smart_construction_core"
 OUTPUT = ROOT / f"addons/{OWNER_MODULE}/security/sc_data_scope_ceiling_generated.xml"
+MODEL_OUTPUT = ROOT / f"addons/{OWNER_MODULE}/data/tenant/scoped_business_models.v1.json"
+
+#: The probe list the runtime ownership gate consumes. Every model this
+#: declaration bounds resolves its visibility through the registered data
+#: space, so this is exactly the set of models that silently goes empty when a
+#: company owns rows but was never onboarded. The gate ships the projection
+#: inside the module because the Odoo container mounts addons, not the repo
+#: root; ``--check`` keeps the two copies one fact.
+MODEL_SET_PURPOSE = (
+    "Models whose row visibility is bounded by this declaration (enforced, "
+    "deferred and source_bounded), and which therefore require a registered "
+    "data space as soon as they own rows."
+)
 
 HEADER = """<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
@@ -185,6 +198,32 @@ def render(root: Path, declaration: dict, module_sets: str = guard.DEFAULT_MODUL
     return body + "\n" + FOOTER
 
 
+def scoped_models(declaration: dict) -> list[str]:
+    """Every model this declaration bounds, in a stable order.
+
+    Rendered entries (``enforced`` + ``deferred``) receive the generated
+    ceiling; ``source_bounded`` entries carry their own named rule. Both rule
+    forms constrain the same two facts on the same anchor, so both make the
+    model's visibility depend on the registered data space and both belong in
+    the ownership probe list.
+    """
+    models = {model for model, _anchor, _unset in entries(declaration)}
+    for entry in declaration.get("source_bounded") or []:
+        models.add(entry["model"])
+    return sorted(models)
+
+
+def render_model_set(declaration: dict) -> str:
+    document = {
+        "version": 1,
+        "authority": "scripts/verify/data_scope_declarations.json",
+        "generated_by": "scripts/verify/sc_data_scope_ceiling_generate.py",
+        "purpose": MODEL_SET_PURPOSE,
+        "models": scoped_models(declaration),
+    }
+    return json.dumps(document, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+
+
 def display(path: Path, root: Path) -> str:
     """A readable path for the receipt, whether or not it sits under the root."""
     try:
@@ -198,6 +237,7 @@ def main() -> int:
     parser.add_argument("--root", default=str(ROOT))
     parser.add_argument("--declarations", default=str(DECLARATIONS))
     parser.add_argument("--output", default=None)
+    parser.add_argument("--model-output", default=None)
     parser.add_argument("--module-sets", default=guard.DEFAULT_MODULE_SETS)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
@@ -205,24 +245,39 @@ def main() -> int:
     root = Path(args.root)
     declaration = json.loads(Path(args.declarations).read_text(encoding="utf-8"))
     expected = render(root, declaration, args.module_sets)
+    expected_models = render_model_set(declaration)
     output = Path(args.output) if args.output else root / f"addons/{OWNER_MODULE}/security/sc_data_scope_ceiling_generated.xml"
+    model_output = (
+        Path(args.model_output) if args.model_output
+        else root / MODEL_OUTPUT.relative_to(ROOT)
+    )
 
     if args.check:
-        actual = output.read_text(encoding="utf-8") if output.is_file() else ""
-        if actual != expected:
+        drift = []
+        for path, rendered in ((output, expected), (model_output, expected_models)):
+            actual = path.read_text(encoding="utf-8") if path.is_file() else ""
+            if actual != rendered:
+                drift.append(display(path, root))
+        if drift:
             print(
-                f"FAIL {display(output, root)} differs from the declaration; "
-                "run make verify.sc_data_scope.ceiling.sync"
+                "FAIL %s differs from the declaration; "
+                "run make verify.sc_data_scope.ceiling.sync" % (", ".join(drift),)
             )
             return 1
-        print(f"SC_DATA_SCOPE_CEILING=connected rules={expected.count('model=\"ir.rule\"')}")
+        print(
+            "SC_DATA_SCOPE_CEILING=connected rules=%s scoped_models=%s"
+            % (expected.count('model="ir.rule"'), len(scoped_models(declaration)))
+        )
         return 0
 
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(expected, encoding="utf-8")
+    model_output.parent.mkdir(parents=True, exist_ok=True)
+    model_output.write_text(expected_models, encoding="utf-8")
     print(
         "SC_DATA_SCOPE_CEILING=written "
-        f"rules={expected.count('model=\"ir.rule\"')} path={display(output, root)}"
+        f"rules={expected.count('model=\"ir.rule\"')} path={display(output, root)} "
+        f"models={len(scoped_models(declaration))} model_path={display(model_output, root)}"
     )
     return 0
 

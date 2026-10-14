@@ -217,6 +217,20 @@ def declare_environment_role(env, role, declaration=None):
     return role
 
 
+def environment_role_data_purpose(env, declaration=None):
+    """The data purpose this database's declared environment role carries.
+
+    The role's own purpose is the fact onboarding reads, so no caller ever
+    passes a free-form purpose for an environment-owned company. An undeclared
+    role resolves to ``customer_production`` and therefore yields ``customer``,
+    which the maintenance onboarding entries refuse.
+    """
+    resolved = declaration if declaration is not None else load_declaration()
+    entry = (resolved.get("environment_roles") or {}).get(environment_role(env)) or {}
+    purpose = entry.get("data_purpose")
+    return purpose or None
+
+
 def main_company_onboarding_purpose(env, declaration=None):
     """Purpose the environment main company must be onboarded with, else None.
 
@@ -311,6 +325,53 @@ def unregistered_business_companies(env, company_ids):
     return [company_id for company_id in candidates if company_id not in registered]
 
 
+def business_data_company_ids(env, probe_models):
+    """Company ids that already own rows in the caller-supplied business models.
+
+    The probe list is owned by the industry/ops layer, never by this platform
+    module. A model without a ``company_id`` column carries no company
+    ownership and is skipped, so the answer is "which companies already own
+    business data", not "which models are installed".
+    """
+    owners = set()
+    for model_name in probe_models:
+        if model_name not in env:
+            continue
+        model = env[model_name]
+        if "company_id" not in getattr(model, "_fields", {}):
+            continue
+        groups = model.sudo()._read_group(
+            [("company_id", "!=", False)], ["company_id"], ["__count"],
+        )
+        owners.update(record.id for record, _count in groups)
+    return sorted(owners)
+
+
+def assert_business_data_ownership_registered(env, probe_models):
+    """Fail closed when existing rows belong to a company that is not onboarded.
+
+    This is the upgrade-time gate, and it is the one fact the pre-write gate
+    cannot cover: ``assert_business_data_space_ready`` only runs before *new*
+    initialization writes, so a database whose business rows predate the
+    data-space declaration upgrades silently. Every ownership decision then
+    resolves against an empty registration set and the product serves an empty
+    surface instead of refusing the transition. The remedy is a governed
+    onboarding step, never a widened scope here.
+
+    The platform bootstrap company is never registered, so rows it owns are
+    reported by this same gate: "unknown ownership" and "the technical carrier
+    carries business data" are the same fail-closed answer.
+    """
+    owners = business_data_company_ids(env, probe_models)
+    unregistered = unregistered_business_companies(env, owners)
+    if unregistered:
+        raise ValueError(
+            "DATA_SPACE_UNREGISTERED_BUSINESS_DATA_OWNER:%s"
+            % (",".join(str(company_id) for company_id in unregistered),)
+        )
+    return owners
+
+
 def bootstrap_company_business_data_violations(env, probe_models):
     """Report bootstrap-company rows for the caller-supplied business models.
 
@@ -396,4 +457,61 @@ def onboard_environment_main_company(env, *, tenant_key=None, declaration=None):
         purpose=purpose,
         company_id=company.id,
         environment_role=environment_role(env),
+    )
+
+
+def onboard_environment_business_company(env, *, tenant_key=None, declaration=None):
+    """Onboard the environment main company in the shape this database needs.
+
+    This database owns business rows before anyone declares its data space (for
+    example a demo database whose acceptance fixtures onboarded their own test
+    companies first). Two shapes then exist, and the database's own fact chooses
+    between them -- never the caller:
+
+    * the database owns no business registration yet: the environment main
+      company IS the first onboarded business company, so
+      :func:`onboard_environment_main_company` retires its carrier marker;
+    * the database already onboarded a business company: the environment main
+      company is an existing company adopted without relabelling, through the
+      same ``adopt_business_company`` entry the fixtures already use.
+
+    Only the ordering assumption differs; ownership, purpose and identity realm
+    come from the same declared strategy either way. The purpose is the declared
+    role's own data purpose, and it must be the one its strategy names, so a
+    customer production database resolves to ``customer`` and both shapes refuse
+    it -- a formal customer company keeps using the signed tenant payload import
+    lane. Adoption also refuses the platform bootstrap carrier, so a database
+    whose main company is still a pure carrier fails closed instead of putting
+    business data under it.
+    """
+    purpose = environment_role_data_purpose(env, declaration=declaration)
+    if not purpose:
+        raise ValueError(
+            "DATA_SPACE_ENVIRONMENT_ROLE_HAS_NO_DATA_PURPOSE:%s" % (environment_role(env),)
+        )
+    expected = assert_strategy_declared_for_purpose(purpose, declaration=declaration)
+    if expected["environment_role"] != environment_role(env):
+        raise ValueError(
+            "DATA_SPACE_ENVIRONMENT_ROLE_PURPOSE_MISMATCH:%s:%s"
+            % (environment_role(env), purpose)
+        )
+    if purpose == CUSTOMER_PURPOSE:
+        raise ValueError("DATA_SPACE_CUSTOMER_ONBOARDING_REQUIRES_SIGNED_IMPORT")
+    if not onboarded_registrations(env):
+        return onboard_environment_main_company(
+            env, tenant_key=tenant_key, declaration=declaration,
+        )
+    company = _company_model(env).sudo().browse(int(env.company.id)).exists()
+    if not company:
+        raise ValueError("DATA_SPACE_ENVIRONMENT_MAIN_COMPANY_UNRESOLVED")
+    if company.is_platform_bootstrap_company:
+        raise ValueError(
+            "DATA_SPACE_ENVIRONMENT_MAIN_COMPANY_IS_STILL_A_CARRIER:%s" % (company.id,)
+        )
+    return adopt_business_company(
+        env,
+        tenant_key=str(tenant_key or company.id),
+        purpose=purpose,
+        company_id=company.id,
+        declaration=declaration,
     )

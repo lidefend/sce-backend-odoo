@@ -318,3 +318,118 @@ DAILY_RUNTIME_PUBLISHED_FACE_UPGRADE_MODULES=smart_core,smart_construction_core
 - 批次验收：**未完成**（本地静态/生成器测试已过；安装态与部署态探针待复核）；
 - 主线集成：上一 PR 已合并（`ddd697c2`）；本批候选待发布合并；
 - 版本发布 / 产品交付：**未声明**。
+
+## 11. 遍历锚点修复的集成、发布与只读验收（2026-10-15，部署面 `91a220ab`）
+
+本章关闭第 10 章末尾「批次验收未完成」的口径，并落实 10.5 的发布前置。
+
+### 11.1 基线分叉与主线集成（PR #660）
+
+PR #659 以 squash 合入 main（`ddd697c2`），而本分支仍带着**同树不同历史**的旧提交 `48214f7a`，
+于是 `make pr.push` 的 `conflict_guard` 拒绝推送（exit 7：PR merge ref 无法构建、门禁会派发零检查）。
+
+受管入口 `make workspace.branch.sync-main` 按设计**拒绝已发布的远端同名分支**（“published history
+cannot be rewritten”），因此按守卫自身给出的恢复路径执行 `git merge origin/main`：两处冲突
+（本 run 台账 `.agent/runs/TARGET-ENV-ROLE-ACCEPTANCE/run.json` 与本章所在迭代记录）均取分支侧，
+因为 main 侧内容与本分支基线 `48214f7a` **逐字节一致**，取分支侧不丢任何 main 内容；
+合并结果树与合并前 HEAD 树用 `git write-tree` 比对**逐字节一致（零内容变化）**。
+
+- 合并提交：`91a220ab`；远端 fast-forward `48214f7a..91a220ab`；无 force push、未改写已发布历史。
+- 四项必需检查（`public_guard` / `merge_policy_gate` / `professional_quality_gate` /
+  `frontend_release_gate`）在 `91a220ab`（base `ddd697c2`）全部通过。
+- 合并为 squash 单亲提交 **`34a22c61`**，其树与 `91a220ab` 逐字节一致；合并不触发产品部署。
+
+合并门禁的一个操作要点（避免再次踩坑）：`make pr.merge` 要求**精确 HEAD** 的 `ci.local.quick`
+回执，缺失时 fail-closed 兜底。**在 `make` 命令行上传入 `PR=`/`EXPECTED_HEAD=` 会经 MAKEFLAGS
+传给子 make，分片会以 `MISS makefile injection or command overrides cannot sign coverage` 拒绝签署**，
+须先单独执行 `make ci.local.quick`（本次 8/8 分片通过，2m24s，回执写入
+`.git/codex/evidence/ci.local.quick/91a220ab76f3f581b4a233b2774979b2023205da.json`），
+再用 `make pr.merge` 复用该回执。
+
+### 11.2 目标环境重发布（显式模块升级）
+
+```
+make daily.runtime.candidate.release \
+  DAILY_CANDIDATE_EXPECTED_SHA=91a220ab76f3f581b4a233b2774979b2023205da \
+  DAILY_CANDIDATE_EXPECTED_OLD_SHA=48214f7ac7e27eac62137408fbd17c69878b53ad \
+  DAILY_RUNTIME_PUBLISHED_FACE_UPGRADE_MODULES=smart_core,smart_construction_core \
+  DAILY_RUNTIME_PUBLISHED_FACE_LOGIN=wutao
+```
+
+- `daily.runtime.candidate.bundle_sync` PASS：`deployment_mode=candidate`、`old_sha=48214f7a` →
+  `source_sha=91a220ab`、`origin_main_mutated=false`。
+- `daily.runtime.source_revision.align` PASS：`SC_SOURCE_REVISION=91a220ab`、容器已重启
+  （这正是上一轮 200 假象的来源：读到的是未重载 registry 的 worker）。
+- `daily.runtime.published_face.converge` PASS：`modules=[smart_core, smart_construction_core]`、
+  `module_tree_ids={smart_core: 0a1dcfb4…, smart_construction_core: e250945d…}`、
+  `module_upgrade_returncode=0`、`guard_status=PASS`。
+
+日志：`.runtime/final-acceptance/target-env-role/daily-release-91a220ab.log`、
+报告：`.runtime/final-acceptance/daily-deployed/published-face-converge.json`。
+
+### 11.3 部署面只读回读（规则与角色可见性）
+
+部署库 `sc_demo`，`ir.rule` 851（`smart_construction_core.rule_sc_data_scope_sc_business_category`，
+global、groups=[]）升级后（`write_date 2026-10-14 16:41:43.989043`）的域：
+
+```
+['|','|',('approval_policy_id','=',False),('approval_policy_id.company_id','=',False),
+      '&',('approval_policy_id.company_id','in',company_ids),
+          ('approval_policy_id.company_id','in',user._sc_data_company_ids())]
+```
+
+即声明语义「未归属 = 共享」已按并集表达。以 `fixture_role_finance`（uid 210，company 21/22）读取：
+
+|读数|结果|
+|---|---|
+|`sc.business.category` id 14|可读（名称「付款申请」，`approval_policy_id=False`，正是此前被静默隐藏的未归属行）|
+|同模型 `search_count`|47|
+
+### 11.4 只读验收探针（受管顺序：fixture → 记录身份 → 探针）
+
+| 步骤 | 入口 | 结果 |
+|---|---|---|
+| 1 | `make daily.runtime.lifecycle_fixture.prepare` | PASS（carrier `FE-LC` id 2022，`draft`，`reset=false`）|
+| 2 | `make daily.runtime.record_identity.resolve` | PASS（`served_revision=91a220ab`）|
+| 3 | `make verify.daily_dev.acceptance.readonly.probe` | **PASS** |
+
+探针事实（`.runtime/final-acceptance/target-env-role/readonly_probe_91a220ab.log`）：
+
+- `contract.request.http_status=200`（intent `ui.contract.v2`，`client_type=web_pc`，`delivery_profile=full`，
+  `render_profile=edit`，`action_id=780`，`menu_id=550`，`model=payment.request`，uid 210，company 21，
+  role_code `finance`），11 项声明检查全绿；
+- custody 落盘：`response_bytes=1049473`、`response_sha256=f1fe33f2…f016`、
+  `artifacts/backend/daily_dev_acceptance_probe.contract.json`；
+- 导航（`wutao` / `business_config_admin`）：`nav_leaf_count=90`、`nav_gate_kept_leaf_count=90`、
+  `nav_admitted_entry_count=90`、`nav_required_path_misses=[]`、`nav_forbidden_label_hits=[]`、
+  `nav_required_action_mismatches=[]` —— **90/90，0 miss**；
+- 运行身份：`served_sha=91a220ab`、`frontend_build_sha256=cf803d03…`（未变）。
+
+**记录身份漂移（非缺陷）**：同一稳定标识
+`smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a`（记录身份
+`FE-DELIVERY-HARDENING-001`）的数值行号由 36184 变为 **36186**；探针的
+`resolution_unique_target`（`identifier_resolved_pairs=1`、`distinct_claiming_identifiers=1`、
+`competing_identifiers=[]`）证明绑定的是“被服务的行”而非猜测的数据库 id —— 这正是本仓库
+禁止钉死数值 id 的原因。
+
+受管回执：`make agent.run.begin` → 复跑探针 → `make agent.run.record`
+（`.runtime/agent-runs/TARGET-ENV-ROLE-ACCEPTANCE/daily_readonly_acceptance_probe.json`，
+`test_count=11`、`status=passed`、log 指向上述探针日志）。
+注意顺序：`readback` 产物在 `begin` 之后会被探针重写，导致输入指纹变化而 fail-closed；
+应先复跑探针、再 `begin`、再 `record`。
+
+### 11.5 状态口径（本轮）
+
+- **批次验收：完成**（本批=遍历锚点语义修复：本地 L1/L2 生成器与守卫测试 + 部署面只读验收
+  `http 200` 与导航 90/90）；
+- **主线集成：完成**（PR #660 已合并，main = `34a22c61`）；
+- **版本发布：未完成**（仍为候选面 `product_version=1.0.0-rc.20`）；
+- **产品交付：未声明**（本批仅覆盖 `business_config_admin` 导航面与 finance 角色的一个契约身份）。
+
+待办（不在本批）：
+
+1. 13 条手写遍历锚点规则迁移进声明/注册体系并重新生成（独立 P1 批次，见 10.4）；
+2. 其余代表角色（pm / owner / project_member）的允许/拒绝证据，以及“按角色期望载体”
+   （`open_p4_probe_has_no_per_principal_expectation_carrier`）；
+3. 本轮的台账与文档 delta **不单独开 PR**：`pr.merge.local_quick_gate` 明确拒绝仅含
+   `.agent/` 与 `docs/` 的簿记候选，故随下一个产品候选一同提交。
