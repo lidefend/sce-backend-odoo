@@ -1106,8 +1106,8 @@ class ScMaterialAcceptance(models.Model):
     def action_accept(self):
         self._sc_require_material_manager(_("验收通过"))
         for record in self:
-            record._sc_require_state({"approved"}, _("验收通过"))
-            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
+            self.env["sc.approval.policy"].ensure_handling_ready(record, ("approved",))
+            record._sc_require_state({"draft", "approved"}, _("验收通过"))
             record.line_ids._check_quantities()
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
         self._sc_warn_system_defaults_on_action(_("验收通过"))
@@ -1124,8 +1124,8 @@ class ScMaterialAcceptance(models.Model):
     def action_reject(self):
         self._sc_require_material_manager(_("验收不通过"))
         for record in self:
-            record._sc_require_state({"approved"}, _("验收不通过"))
-            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
+            self.env["sc.approval.policy"].ensure_handling_ready(record, ("approved",))
+            record._sc_require_state({"draft", "approved"}, _("验收不通过"))
             if not record.rejection_reason:
                 raise ValidationError(_("验收不通过前必须填写不通过原因。"))
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
@@ -1665,8 +1665,8 @@ class ScMaterialInbound(models.Model):
     def action_receive(self):
         self._sc_require_material_manager(_("确认材料入库"))
         for record in self:
-            record._sc_require_state({"approved"}, _("确认材料入库"))
-            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
+            self.env["sc.approval.policy"].ensure_handling_ready(record, ("approved",))
+            record._sc_require_state({"draft", "approved"}, _("确认材料入库"))
             record.line_ids._check_qty()
             if record.acceptance_id and record.acceptance_id.state != "accepted":
                 raise ValidationError(_("只有验收通过的材料才能办理入库。"))
@@ -1999,8 +1999,8 @@ class ScMaterialOutbound(models.Model):
     def action_issue(self):
         self._sc_require_material_manager(_("确认材料出库"))
         for record in self:
-            record._sc_require_state({"approved"}, _("确认材料出库"))
-            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
+            self.env["sc.approval.policy"].ensure_handling_ready(record, ("approved",))
+            record._sc_require_state({"draft", "approved"}, _("确认材料出库"))
             record.line_ids._check_qty()
         return self._complete_issue()
 
@@ -2499,8 +2499,8 @@ class ScMaterialRfq(models.Model):
         self._sc_require_purchase_manager(_("选定材料报价"))
         selected_suppliers = {}
         for record in self:
-            record._sc_require_state({"approved"}, _("选定材料报价"))
-            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
+            self.env["sc.approval.policy"].ensure_handling_ready(record, ("approved",))
+            record._sc_require_state({"draft", "approved"}, _("选定材料报价"))
             record.line_ids._check_values()
             selected = record.line_ids.filtered("selected")
             if not selected:
@@ -3029,8 +3029,8 @@ class ScMaterialSettlement(models.Model):
     def action_confirm(self):
         self._sc_require_material_manager(_("确认材料结算"))
         for record in self:
-            record._sc_require_state({"approved"}, _("确认材料结算"))
-            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
+            self.env["sc.approval.policy"].ensure_handling_ready(record, ("approved",))
+            record._sc_require_state({"draft", "approved"}, _("确认材料结算"))
             record.line_ids._check_values()
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
         self._sc_warn_system_defaults_on_action(_("确认材料结算"))

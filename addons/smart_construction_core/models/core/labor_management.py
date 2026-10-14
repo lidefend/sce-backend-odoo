@@ -413,7 +413,7 @@ class ScAttendanceCheckin(models.Model):
 
     def action_confirm(self):
         for record in self:
-            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
+            self.env["sc.approval.policy"].ensure_handling_ready(record, ("approved",))
             if record.state != "approved":
                 raise UserError(_("只有已审批用工单可以确认。"))
             record._check_values()
@@ -597,7 +597,7 @@ class ScLaborUsage(models.Model):
     def action_confirm(self):
         self._check_project_manager()
         for record in self:
-            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
+            self.env["sc.approval.policy"].ensure_handling_ready(record, ("approved",))
             if record.state != "approved":
                 raise UserError(_("只有已审批用工单可以确认。"))
             record._check_values()
@@ -782,7 +782,7 @@ class ScLaborSettlement(models.Model):
 
     def action_confirm(self):
         for record in self:
-            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
+            self.env["sc.approval.policy"].ensure_handling_ready(record, ("approved",))
             if record.state != "approved":
                 raise UserError(_("只有已审批劳务结算可以确认。"))
             record._check_business_anchor()

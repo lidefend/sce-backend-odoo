@@ -1202,7 +1202,7 @@ class TenderGuarantee(models.Model):
 
     def action_confirm(self):
         for record in self:
-            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
+            self.env["sc.approval.policy"].ensure_handling_ready(record, ("approved",))
             record._check_submission_identity()
             record._write_finance_authority({"state": "confirmed"})
             record._ensure_treasury_ledger()

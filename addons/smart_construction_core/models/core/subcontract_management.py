@@ -1634,9 +1634,9 @@ class ScSubcontractSettlement(models.Model):
 
     def action_confirm(self):
         for record in self:
+            self.env["sc.approval.policy"].ensure_handling_ready(record, ("approved",))
             if record.state != "approved":
                 raise UserError(_("只有审批通过的分包结算可以确认。"))
-            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
             record._check_business_anchor()
             record.line_ids._check_values()
         self._write_approval_state({"state": "confirmed"})
