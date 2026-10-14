@@ -215,5 +215,42 @@
       "make verify.daily.runtime.published_face.converge PASS 24（记账 check published_face_converge_caliber）",
       "make daily.runtime.published_face.converge PASS sha=f12fc5fa products=construction.standard,construction.preview（目标环境实跑）"
     ]
+  },
+  "deployment": {
+    "candidate_sha": "8fff184a076480d020a5df20466a22dea5a50635",
+    "previous_candidate_sha": "45796be9793b653dd89f07583b0ce60f68904f5c",
+    "target": {
+      "ssh_host": "sc-root",
+      "remote_root": "/opt/projects/repos/sce-product-odoo",
+      "compose_project": "sc-backend-odoo-dev",
+      "database": "sc_demo",
+      "base_url": "http://127.0.0.1:18081"
+    },
+    "steps": [
+      {
+        "entry": "make daily.runtime.candidate.bundle_sync",
+        "status": "PASS",
+        "evidence": ".runtime/final-acceptance/daily-deployed/candidate-bundle-sync.json",
+        "note": "old=f12fc5fa new=8fff184a; evidence ref refs/daily-candidates/fix/fe-contract-runtime-02-runtime-view-compat; origin/main untouched"
+      },
+      {
+        "entry": "make daily.runtime.source_revision.align",
+        "status": "PASS",
+        "evidence": ".runtime/final-acceptance/daily-deployed/source-revision-align.json",
+        "note": "served.source_revision=8fff184a, frontend_build_sha256=cf803d03a08c…, env backup .env.dev.bak present, restart succeeded"
+      },
+      {
+        "entry": "make daily.runtime.published_face.converge",
+        "status": "PASS",
+        "evidence": ".runtime/final-acceptance/daily-deployed/published-face-converge.json",
+        "note": "upgrade_mode=reused (smart_core tree b3058e0d…, smart_construction_core tree 5ee929a6…); snapshots standard id=102 released 90/preview 0/gate 90, preview id=103 released 90/preview 39/gate 129; guard_status=PASS"
+      }
+    ],
+    "status_boundary": {
+      "batch_acceptance": "complete",
+      "deployment": "complete",
+      "mainline_integration": "pending PR #655 merge",
+      "product_delivery": "not_claimed"
+    }
   }
 }

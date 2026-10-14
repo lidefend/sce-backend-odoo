@@ -213,15 +213,26 @@ gate_page_count              == policy_released_menu_count + policy_preview_menu
 未声明的 preview、对不上的 preview 计数、不等于有效总量的 gate 仍 fail-closed；released 页仍严格等于策略声明。
 新增两条反例测试：合法 preview 口径被接受、gate 忽略声明 preview 被拒。
 
-### 7.4 目标环境收敛结果（实跑）
+### 7.4 目标环境收敛结果（实跑两次）
+
+第一次（候选树 `f12fc5fa`，本脚本尚为脏区）：
 
 | 产品 | snapshot_id | released | preview | gate | guard |
 |---|---|---|---|---|---|
 | `construction.standard` | 100 | 90 | 0 | 90 | PASS |
 | `construction.preview` | 101 | 90 | 39 | 129 | PASS |
 
-`upgrade_mode=run`（`smart_core` + `smart_construction_core` 均完成升级），
-`expected_sha = head = f12fc5fa77d68667be76c654fcfeffaaf1165866`，`guard_status=PASS`。
+`upgrade_mode=run`（`smart_core` + `smart_construction_core` 均完成升级）。
+
+第二次（把候选 bundle 与 served revision 同步到已提交的 `8fff184a`，两侧同一 SHA，作为最终部署证据）：
+
+| 产品 | snapshot_id | released | preview | gate | guard |
+|---|---|---|---|---|---|
+| `construction.standard` | 102 | 90 | 0 | 90 | PASS |
+| `construction.preview` | 103 | 90 | 39 | 129 | PASS |
+
+`upgrade_mode=reused`（`smart_core` tree `b3058e0d…`、`smart_construction_core` tree `5ee929a6…` 与上次收敛逐字相同），
+`expected_sha = head = 8fff184a076480d020a5df20466a22dea5a50635`，`guard_status=PASS`。
 
 ### 7.5 本棒最终验证分层
 
