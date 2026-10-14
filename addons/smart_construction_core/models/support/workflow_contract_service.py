@@ -636,6 +636,7 @@ class ScWorkflowContractService(models.AbstractModel):
             "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "approved": ["confirm_settlement", "cancel"], "cancel": ["reopen"]},
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
+            "direct_handling": {"draft": ["confirm_settlement"]},
             "method_by_action": {"confirm_settlement": "action_confirm", "submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "cancel": "action_cancel", "reopen": "action_reset_draft"},
         },
         **_in_progress_done_profiles((
@@ -728,6 +729,7 @@ class ScWorkflowContractService(models.AbstractModel):
                 "rejected": ["submit", "cancel"],
             },
             "approval_actions": ["approve", "reject"],
+            "direct_handling": {"draft": ["complete"]},
             "method_by_action": {
                 "submit": "action_submit",
                 "approve": "validate_tier",
@@ -912,6 +914,7 @@ class ScWorkflowContractService(models.AbstractModel):
             "field_editable_phases": ["approved"],
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
+            "direct_handling": {"draft": ["accept_result", "reject_result"]},
             "method_by_action": {
                 "submit": "action_submit",
                 "approve": "validate_tier",
@@ -929,6 +932,7 @@ class ScWorkflowContractService(models.AbstractModel):
             "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "approve", "reject", "cancel"], "approved": ["complete", "cancel"], "cancel": ["reopen"]},
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
+            "direct_handling": {"draft": ["complete"]},
             "method_by_action": {
                 "approve": "validate_tier",
                 "reject": "reject_tier",
@@ -944,6 +948,7 @@ class ScWorkflowContractService(models.AbstractModel):
             "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "issued": "done", "cancel": "cancelled"},
             "state_actions": {"draft": ["submit", "cancel"], "submitted": ["approve", "reject", "cancel"], "approved": ["complete", "cancel"], "cancel": ["reopen"]},
             "approval_actions": ["approve", "reject"],
+            "direct_handling": {"draft": ["complete"]},
             "method_by_action": {
                 "submit": "action_submit",
                 "approve": "validate_tier",
@@ -960,6 +965,7 @@ class ScWorkflowContractService(models.AbstractModel):
             "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "approved": ["activate", "cancel"], "active": ["return_rental", "cancel"], "returned": ["complete"]},
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
+            "direct_handling": {"draft": ["activate"]},
             "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "activate": "action_activate", "return_rental": "action_return", "complete": "action_settle", "cancel": "action_cancel"},
             "label_by_action": {"activate": "确认租赁", "return_rental": "确认退还", "complete": "完成结算"},
         },
@@ -969,6 +975,7 @@ class ScWorkflowContractService(models.AbstractModel):
             "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "approved": ["confirm_settlement", "cancel"], "confirmed": ["complete", "cancel"]},
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
+            "direct_handling": {"draft": ["confirm_settlement"]},
             "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "confirm_settlement": "action_confirm", "complete": "action_paid", "cancel": "action_cancel"},
             "label_by_action": {"confirm_settlement": "确认结算", "complete": "确认支付"},
         },
@@ -978,6 +985,7 @@ class ScWorkflowContractService(models.AbstractModel):
             "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "approved": ["complete", "cancel"], "cancel": ["reopen"]},
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
+            "direct_handling": {"draft": ["complete"]},
             "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "complete": "action_confirm", "cancel": "action_cancel", "reopen": "action_reset_draft"},
             "label_by_action": {"complete": "确认结算"},
         },
@@ -987,6 +995,7 @@ class ScWorkflowContractService(models.AbstractModel):
             "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "approved": ["complete", "cancel"], "cancel": ["reopen"]},
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
+            "direct_handling": {"draft": ["complete"]},
             "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "complete": "action_confirm", "cancel": "action_cancel", "reopen": "action_reset_draft"},
             "label_by_action": {"complete": "确认登记"},
         },
@@ -996,6 +1005,7 @@ class ScWorkflowContractService(models.AbstractModel):
             "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "approved": ["complete", "cancel"], "cancel": ["reopen"]},
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
+            "direct_handling": {"draft": ["complete"]},
             "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "complete": "action_confirm", "cancel": "action_cancel", "reopen": "action_reset_draft"},
             "label_by_action": {"complete": "确认结算"},
         },
@@ -1005,6 +1015,7 @@ class ScWorkflowContractService(models.AbstractModel):
             "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "approved": ["complete", "cancel"], "cancel": ["reopen"]},
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
+            "direct_handling": {"draft": ["complete"]},
             "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "complete": "action_confirm", "cancel": "action_cancel", "reopen": "action_reset_draft"},
             "label_by_action": {"complete": "确认考勤"},
         },
@@ -1014,6 +1025,7 @@ class ScWorkflowContractService(models.AbstractModel):
             "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "approved": ["complete", "cancel"], "cancel": ["reopen"]},
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
+            "direct_handling": {"draft": ["complete"]},
             "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "complete": "action_confirm", "cancel": "action_cancel", "reopen": "action_reset_draft"},
             "label_by_action": {"complete": "确认用工"},
         },
@@ -1023,6 +1035,7 @@ class ScWorkflowContractService(models.AbstractModel):
             "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "approved": ["complete", "cancel"], "cancel": ["reopen"]},
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
+            "direct_handling": {"draft": ["complete"]},
             "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "complete": "action_confirm", "cancel": "action_cancel", "reopen": "action_reset_draft"},
             "label_by_action": {"complete": "确认结算"},
         },
@@ -1033,6 +1046,7 @@ class ScWorkflowContractService(models.AbstractModel):
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
             "field_editable_phases": ["approved"],
+            "direct_handling": {"draft": ["complete"]},
             "method_by_action": {
                 "submit": "action_submit",
                 "approve": "validate_tier",
@@ -1049,6 +1063,7 @@ class ScWorkflowContractService(models.AbstractModel):
             "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit"], "approved": ["complete", "cancel"], "rejected": ["submit", "cancel"]},
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])], "cancel": [("validation_status", "not in", ["waiting", "pending"])]},
             "approval_actions": ["approve", "reject"],
+            "direct_handling": {"draft": ["complete"]},
             "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "complete": "action_confirm", "cancel": "action_cancel"},
             "label_by_action": {"complete": "确认红冲"},
         },
@@ -1058,6 +1073,7 @@ class ScWorkflowContractService(models.AbstractModel):
             "state_actions": {"draft": ["submit", "cancel"], "review": ["submit", "cancel"], "approved": ["complete", "cancel"], "done": ["reopen", "cancel"], "cancel": ["reopen"]},
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
+            "direct_handling": {"draft": ["complete"]},
             "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "complete": "action_archive", "cancel": "action_cancel", "reopen": "action_reset_to_draft"},
             "label_by_action": {"complete": "归档", "cancel": "作废"},
         },
@@ -1087,6 +1103,7 @@ class ScWorkflowContractService(models.AbstractModel):
             "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit"], "approved": ["complete"], "rejected": ["submit", "cancel", "reopen"], "cancel": ["reopen"]},
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
+            "direct_handling": {"draft": ["complete"]},
             "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "complete": "action_confirm", "reopen": "action_reset_draft", "cancel": "action_cancel"},
             "label_by_action": {"complete": "确认入账"},
         },
@@ -1326,9 +1343,28 @@ class ScWorkflowContractService(models.AbstractModel):
         return "editable"
 
     @api.model
+    def _handles_without_approval(self, record, approval_phase):
+        """Direct handling is offered only while nothing is waiting for approval.
+
+        One-step handling replaces the submission step of a business that has no
+        approval rule. A configured rule, a live/rejected instance or a missing
+        policy service keeps the two-step contract exactly as declared.
+        """
+        if approval_phase in ("waiting", "pending"):
+            return False
+        if "sc.approval.policy" not in self.env:
+            return False
+        company = getattr(record, "company_id", False) or self.env.company
+        return not self.env["sc.approval.policy"].is_approval_required(record._name, company=company)
+
     def _available_actions(self, record, profile, raw_state, business_phase, approval_phase, evidence_gate):
         del business_phase
         keys = list(profile.get("state_actions", {}).get(raw_state, []))
+        direct_handling = (profile.get("direct_handling") or {}).get(raw_state)
+        if direct_handling and self._handles_without_approval(record, approval_phase):
+            keys = [key for key in direct_handling if key not in keys] + [
+                key for key in keys if key != "submit"
+            ]
         if approval_phase in ("waiting", "pending"):
             for key in profile.get("approval_actions", []):
                 if key not in keys:
