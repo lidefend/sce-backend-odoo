@@ -142,6 +142,7 @@ verify.frontend.scene_entry_contract.unit: guard.prod.forbid
 verify.backend.navigation_delivery.unit: guard.prod.forbid
 	@python3 -m py_compile addons/smart_core/delivery/menu_service.py addons/smart_core/tests/test_delivery_menu_entry_target.py
 	@python3 addons/smart_core/tests/test_delivery_menu_entry_target.py
+	@python3 addons/smart_core/tests/test_menu_acl_carrier_authorization.py
 	@python3 addons/smart_core/tests/test_system_init_final_route_authority_static.py
 
 .PHONY: verify.frontend.navigation_shell.unit

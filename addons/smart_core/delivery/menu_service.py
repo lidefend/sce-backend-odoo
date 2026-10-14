@@ -186,9 +186,13 @@ class MenuService:
         # Capability discovery does not turn a delivered menu projection into
         # complete ACL evidence, including for system administrators.
         # The role policy must intersect the actual request user's Odoo menu
-        # visibility. app.menu.config is a delivery/config projection and can
+        # groups. app.menu.config is a delivery/config projection and can
         # legitimately be empty; it is not an authorization authority.
-        facts = MenuFactService(self.env).export_visible_menu_facts()
+        # Authorization therefore consumes the ACL-visible carriers, never
+        # Odoo's action-centric renderable set: a declared carrier with no
+        # action (a scene-entry page such as the role home) is authorized by
+        # its groups and must stay observable.
+        facts = MenuFactService(self.env).export_authorized_menu_facts()
         return self._menu_fact_tree_as_native(facts.tree)
 
     def build_contextual_routes(self, role_surface: dict | None) -> list[dict]:
