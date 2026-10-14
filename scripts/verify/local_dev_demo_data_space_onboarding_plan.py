@@ -62,8 +62,20 @@ try:
     ]
     candidates.sort(key=lambda item: (item['records'], item['company_id']))
 
+    # Who can see the target company afterwards matters as much as the rows:
+    # re-owning rows into a company that no actor has in allowed_company_ids
+    # would hide them, which is worse than the current unregistered state.
+    internal_users = env['res.users'].sudo().search(
+        [('active', '=', True), ('share', '=', False)], order='id')
+    company_coverage = {}
+    for user in internal_users:
+        for company_id in user.company_ids.ids:
+            company_coverage[company_id] = company_coverage.get(company_id, 0) + 1
+
     plan = {
         'database': env.cr.dbname,
+        'internal_user_count': len(internal_users),
+        'users_allowing_company': company_coverage,
         'registration_rows_total': len(registrations),
         'bootstrap_company_ids': sorted(company_id for company_id, entry in per_company.items()
                                          if entry.get('bootstrap')),

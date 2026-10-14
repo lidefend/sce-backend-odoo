@@ -1481,3 +1481,43 @@ L2 定向 ORM 反例 1 test 0 failed（日志 `relationship_review_queue_project
   需所有者授权后才能执行；在完成前，浏览器验收无法观测 payment/contract 行。
 - 状态边界：本轮只支撑**批次验收完成（源码 + 守卫 + 定向测试 + 只读回读）**；
   主线集成、版本发布、产品交付均未发生，交付链仍被上述环境 blocker 阻断。
+
+### 迁移范围更正：216 行 → 31,240 行（2026-10-14，授权后实测）
+
+所有者已授权受管 P4 迁移。执行前先做恢复点 `make local.dev.snapshot`
+（`artifacts/local-dev/snapshots/20261014T012104Z`），再以只读计划入口
+`make local.dev.demo.data_space.migrate`（未带确认 → 只读 + 回滚）实测真实写集：
+
+- 之前“216 行”来自四模型探针，**是错的**，已作废。真实范围：
+  - 数据上限集内 **81 个模型 / 31,240 行**，最大持有者
+    `ui.business.config.mutation.audit` 30,118、`sc.audit.log` 198、`payment.request` 141、
+    `sc.project.document` 129、`construction.work.breakdown` 88、`sc.expense.contract.ledger` 77、
+    `project.project` 72；
+  - 上限集之外还有 **61 个模型**挂 bootstrap 公司，含 `ir.attachment` 14,542、
+    `tier.definition` 6,298、`sc.ui.base.contract.asset` 3,740、`tier.review` 384、
+    `project.task` 155、`construction.contract` 121，以及
+    `account.*`（科目/日记账/税）、`stock.*`（仓库/库位/路线）、`purchase.*` 等核心表；
+  - 若走“换公司”方案还需改 56 个账号的公司成员关系与 58 个账号的默认公司。
+- 事实判断：`base.main_company`（id=1「My Company」）由
+  `addons/smart_core/data/platform_bootstrap_company.xml` 明确标记为 bootstrap，
+  但本地演示库的**几乎全部数据**都挂在它下面；`sc.tenant.company.registration` 为 0 行。
+  即：这不是少量“漂移行”，而是“整个演示库的归属事实与 bootstrap 标记语义冲突”。
+- 因此本轮**停在不写**，并给出待裁定的两条路线：
+  - **选项 1（标记/策略收口，0 行数据迁移）**：把 `base.main_company` 注册为本库 demo 数据空间
+    （`adopt_business_company`，1 行），并修正 demo 角色下的 bootstrap 标记语义
+    （bootstrap 标记的不变量约束 `customer_production`；`platform_internal_demo` 的主公司即首个已接入演示公司）。
+    代价：policy 级，但需同步 `platform_bootstrap_company.xml`、
+    `registration_scope_domain`、`smart_construction_seed` 税默认落点及相关测试。
+  - **选项 2（全量改归属）**：保留标记，接入独立公司（id=3）并把 31,240 + 61 模型的行迁过去。
+    代价：触及核心账务/库存/采购数据、1.45 万附件、6,298 条审批层级定义与 3 万条配置审计行；
+    需要分阶段方案 + 可重放迁移模块，不适合一次性脚本写入。
+- 本轮实际完成（可提交、可回滚）：
+  `_register_non_customer_space`（既有公司接入，拒绝 bootstrap 公司与已注册公司）+ 唯一维护主体校验收敛
+  （`_assert_non_customer_maintenance` / `_open_non_customer_registration`，去掉重复校验逻辑）、
+  `data_space_provisioning.adopt_business_company`、只读迁移计划工具与 Make 入口。
+- 验证回执：`make local.dev.test MODULE=smart_core TEST_TAGS=data_space_boundary`
+  **0 failed / 0 error，33 tests**（含新增 6 项接入边界用例：可接入、加入非客户数据域、
+  拒绝 bootstrap 公司、拒绝重复注册、拒绝 customer/非法用途、产品管理员 sudo 不可接入）；
+  `make verify.data_space.provisioning.guard` rc=0（18 tests + guard PASS）；
+  `make verify.data_space.policy.unit` rc=0（12 tests）。
+- 状态边界：仍是**批次验收完成**；主线集成/版本发布/产品交付未发生，且交付链等待上述路线裁定。

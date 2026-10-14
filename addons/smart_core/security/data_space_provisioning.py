@@ -220,6 +220,24 @@ def bootstrap_company_business_data_violations(env, probe_models):
     return violations
 
 
+def adopt_business_company(env, *, tenant_key, purpose, company_id, declaration=None):
+    """Onboard an existing non-bootstrap company as this database's data space.
+
+    Used when the environment already carries the business company (for example
+    a demo company created before the strategy was declared). The company is
+    never relabelled: the registration model refuses the platform bootstrap
+    company and refuses a company that already owns a registration.
+    """
+    if purpose == CUSTOMER_PURPOSE:
+        raise ValueError("DATA_SPACE_CUSTOMER_ONBOARDING_REQUIRES_SIGNED_IMPORT")
+    if purpose not in PROVISIONABLE_PURPOSES:
+        raise ValueError("DATA_SPACE_UNKNOWN_DATA_PURPOSE:%s" % (purpose,))
+    assert_strategy_declared_for_purpose(purpose, declaration=declaration)
+    return _registration_model(env)._register_non_customer_space(
+        tenant_key=tenant_key, purpose=purpose, company_id=company_id,
+    )
+
+
 def onboard_business_company(env, *, tenant_key, purpose, company_name, declaration=None):
     """Onboard this database's business company for demo/test purposes.
 

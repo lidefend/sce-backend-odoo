@@ -1115,6 +1115,15 @@ local.dev.data_scope.inventory: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_data_scope_inventory.py
 
+# Local-dev-only governed P4 migration (owner-authorized 2026-10-14):
+# onboard this database's demo data space and re-own the rows that the platform
+# bootstrap company must never hold. Without the confirmation it is read-only.
+.PHONY: local.dev.demo.data_space.migrate
+local.dev.demo.data_space.migrate: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  SC_CONFIRM_DATA_SPACE_MIGRATION="$${SC_CONFIRM_DATA_SPACE_MIGRATION:-}" \
+	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_demo_data_space_migration.py
+
 .PHONY: local.dev.demo.data_space.onboarding.plan
 local.dev.demo.data_space.onboarding.plan: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \

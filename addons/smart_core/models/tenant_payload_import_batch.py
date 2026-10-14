@@ -173,14 +173,8 @@ class ScTenantCompanyRegistration(models.Model):
                 SET revision = sc_data_space_serialization.revision + 1
             """, [tenant_key])
 
-    @api.model
-    def _create_non_customer_space(self, *, tenant_key, purpose, company_name):
-        """Maintenance-only creation; never relabel an existing company.
-
-        Private ORM entry, unavailable over RPC. A sudo product-admin
-        environment is explicitly insufficient. Fixtures use this entry and
-        keep the resulting registration as their immutable ownership anchor.
-        """
+    def _assert_non_customer_maintenance(self, *, purpose, tenant_key):
+        """One maintenance-principal rule for every non-customer onboarding entry."""
         try:
             validate_non_customer_creation(
                 uid=self.env.uid, superuser_id=SUPERUSER_ID, su=self.env.su,
@@ -190,6 +184,30 @@ class ScTenantCompanyRegistration(models.Model):
             raise AccessError(str(exc)) from exc
         except ValueError as exc:
             raise ValidationError(str(exc)) from exc
+
+    def _open_non_customer_registration(self, *, tenant_key, purpose, company_id):
+        """Bind an immutable ownership anchor to an already verified company."""
+        registration = super().create([{
+            "tenant_key": tenant_key.strip(),
+            "data_purpose": purpose,
+            "company_id": int(company_id),
+            "source_module": "smart_core",
+            "source_external_key": str(company_id),
+            "active": True,
+        }])
+        registration._after_tenant_company_registration()
+        self.env.registry.clear_cache()
+        return registration
+
+    @api.model
+    def _create_non_customer_space(self, *, tenant_key, purpose, company_name):
+        """Maintenance-only creation; never relabel an existing company.
+
+        Private ORM entry, unavailable over RPC. A sudo product-admin
+        environment is explicitly insufficient. Fixtures use this entry and
+        keep the resulting registration as their immutable ownership anchor.
+        """
+        self._assert_non_customer_maintenance(purpose=purpose, tenant_key=tenant_key)
         if not isinstance(company_name, str) or not company_name.strip():
             raise ValidationError("DATA_SPACE_COMPANY_NAME_REQUIRED")
         # Roll back the company too if registration or product defaults fail.
@@ -198,17 +216,28 @@ class ScTenantCompanyRegistration(models.Model):
                 "name": company_name.strip(),
                 "is_platform_bootstrap_company": False,
             })
-            registration = super().create([{
-                "tenant_key": tenant_key.strip(),
-                "data_purpose": purpose,
-                "company_id": company.id,
-                "source_module": "smart_core",
-                "source_external_key": str(company.id),
-                "active": True,
-            }])
-            registration._after_tenant_company_registration()
-            self.env.registry.clear_cache()
-            return registration
+            return self._open_non_customer_registration(
+                tenant_key=tenant_key, purpose=purpose, company_id=company.id)
+
+    @api.model
+    def _register_non_customer_space(self, *, tenant_key, purpose, company_id):
+        """Maintenance-only onboarding of an EXISTING non-bootstrap company.
+
+        Same maintenance principal and immutable anchor as creation, with the
+        guardrails that keep "reuse" from becoming "relabel": the platform
+        bootstrap company can never be registered, and a company that already
+        owns a registration is refused instead of being re-purposed.
+        """
+        self._assert_non_customer_maintenance(purpose=purpose, tenant_key=tenant_key)
+        company = self.env["res.company"].sudo().browse(int(company_id or 0)).exists()
+        if not company or company.is_platform_bootstrap_company:
+            raise ValidationError("DATA_SPACE_BUSINESS_COMPANY_REQUIRED")
+        if self.sudo().with_context(active_test=False).search_count(
+                [("company_id", "=", company.id)]):
+            raise ValidationError("DATA_SPACE_COMPANY_ALREADY_REGISTERED")
+        with self.env.cr.savepoint():
+            return self._open_non_customer_registration(
+                tenant_key=tenant_key, purpose=purpose, company_id=company.id)
 
     def _after_tenant_company_registration(self):
         """Extension point for product modules' neutral company defaults."""

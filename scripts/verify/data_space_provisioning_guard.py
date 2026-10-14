@@ -34,6 +34,7 @@ DECLARATION = REPO_ROOT / "config" / "tenant" / "database_strategy.v1.json"
 
 REQUIRED_ENTRYPOINTS = (
     "onboard_business_company",
+    "adopt_business_company",
     "assert_business_data_space_ready",
     "strategy_for_purpose",
     "validate_strategy_declaration",

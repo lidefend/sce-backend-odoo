@@ -99,6 +99,51 @@ class TestDataSpaceBoundary(TransactionCase):
             self.Registration._create_non_customer_space(
                 tenant_key='new-customer', purpose='customer', company_name='Rejected customer')
 
+    def test_existing_company_can_be_registered_without_relabel(self):
+        company = self.env['res.company'].create({'name': 'Data space unit adoptable'})
+        registration = self.Registration._register_non_customer_space(
+            tenant_key='data-space-unit-adopt', purpose='demo', company_id=company.id)
+        self.assertEqual(registration.company_id, company)
+        self.assertEqual(registration.data_purpose, 'demo')
+        self.assertEqual(company.name, 'Data space unit adoptable')
+        self.assertFalse(company.is_platform_bootstrap_company)
+
+    def test_adopted_company_joins_the_non_customer_realm(self):
+        company = self.env['res.company'].create({'name': 'Data space unit adoptable realm'})
+        self.Registration._register_non_customer_space(
+            tenant_key='data-space-unit-adopt-realm', purpose='demo', company_id=company.id)
+        self.admin.write({'company_ids': [Command.link(company.id)]})
+        self.assertIn(company.id, self.caller()._sc_data_company_ids())
+
+    def test_bootstrap_company_cannot_be_registered(self):
+        carrier = self.env['res.company'].create({
+            'name': 'Data space unit carrier', 'is_platform_bootstrap_company': True})
+        with self.assertRaisesRegex(ValidationError, 'DATA_SPACE_BUSINESS_COMPANY_REQUIRED'):
+            self.Registration._register_non_customer_space(
+                tenant_key='data-space-unit-carrier', purpose='demo', company_id=carrier.id)
+
+    def test_already_registered_company_is_refused(self):
+        with self.assertRaisesRegex(ValidationError, 'DATA_SPACE_COMPANY_ALREADY_REGISTERED'):
+            self.Registration._register_non_customer_space(
+                tenant_key='data-space-unit-adopt-again', purpose='demo',
+                company_id=self.demo.company_id.id)
+
+    def test_customer_purpose_cannot_be_registered_by_the_maintenance_entry(self):
+        company = self.env['res.company'].create({'name': 'Data space unit adoptable customer'})
+        for purpose in ('customer', '', None, 'unknown'):
+            with self.subTest(purpose=purpose), self.assertRaisesRegex(
+                    ValidationError, 'DATA_SPACE_NON_CUSTOMER_PURPOSE_REQUIRED'):
+                self.Registration._register_non_customer_space(
+                    tenant_key='data-space-unit-adopt-customer', purpose=purpose,
+                    company_id=company.id)
+
+    def test_product_admin_cannot_register_an_existing_company(self):
+        company = self.env['res.company'].create({'name': 'Data space unit adoptable admin'})
+        for su in (False, True):
+            with self.subTest(su=su), self.assertRaises(AccessError):
+                self.Registration.with_user(self.admin).sudo(su)._register_non_customer_space(
+                    tenant_key='forged-adopt', purpose='demo', company_id=company.id)
+
     def test_customer_identity_excludes_demo_and_test(self):
         self.admin.write({'groups_id': [Command.set([self.env.ref('base.group_user').id])]})
         self.assertEqual(self.caller()._sc_data_company_ids(), [self.customer_company.id])

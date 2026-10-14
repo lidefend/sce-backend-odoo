@@ -37,12 +37,14 @@ class _Registrations:
 
 
 class _Model:
-    def __init__(self, *, ids=(), count=0, created=None, field_names=()):
+    def __init__(self, *, ids=(), count=0, created=None, field_names=(), creates=False):
         self._ids = list(ids)
         self._count = count
         self._created = created if created is not None else []
         self._fields = {name: None for name in field_names}
         self.domains = []
+        self._creates = creates
+        self._registered = []
 
     def sudo(self):
         return self
@@ -58,6 +60,14 @@ class _Model:
     def _create_non_customer_space(self, **kwargs):
         self._created.append(kwargs)
         return {"tenant_key": kwargs["tenant_key"], "data_purpose": kwargs["purpose"]}
+
+    def _register_non_customer_space(self, **kwargs):
+        self._registered.append(kwargs)
+        return {"tenant_key": kwargs["tenant_key"], "data_purpose": kwargs["purpose"],
+                "company_id": kwargs["company_id"]}
+
+    def with_context(self, **kwargs):
+        return self
 
 
 class FakeEnv(dict):
@@ -139,6 +149,25 @@ class OnboardingEntryTest(unittest.TestCase):
         )
         self.assertEqual(result["data_purpose"], "demo")
         self.assertEqual(registration._created[0]["tenant_key"], "demo-platform")
+
+    def test_customer_cannot_be_adopted_through_the_maintenance_entry(self):
+        registration = _Model()
+        env = FakeEnv(registration=registration)
+        with self.assertRaises(ValueError) as ctx:
+            provisioning.adopt_business_company(
+                env, tenant_key="customer-a", purpose="customer", company_id=3,
+            )
+        self.assertIn("SIGNED_IMPORT", str(ctx.exception))
+        self.assertEqual(registration._created, [])
+
+    def test_existing_company_is_adopted_after_strategy_is_proven(self):
+        registration = _Model(creates=True)
+        env = FakeEnv(registration=registration)
+        result = provisioning.adopt_business_company(
+            env, tenant_key="local-dev-demo", purpose="demo", company_id=3,
+        )
+        self.assertEqual(result["company_id"], 3)
+        self.assertEqual(registration._registered[0]["company_id"], 3)
 
     def test_onboarding_stops_when_the_role_strategy_is_undeclared(self):
         registration = _Model()
