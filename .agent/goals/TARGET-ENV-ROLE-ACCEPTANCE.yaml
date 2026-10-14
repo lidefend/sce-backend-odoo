@@ -45,15 +45,27 @@ goal:
     - report_batch_mainline_deployment_and_user_delivery_status_separately
     - do_not_claim_product_delivery_beyond_bound_evidence
   next_exact_step: >-
-    Registered 2026-10-14. Run the governed target-environment read-only acceptance
-    lanes against the deployed main d2079888 on the daily runtime and bind the
-    per-role allow/deny evidence; record results in the run index and do not
-    declare 产品交付完成 beyond what the bound lanes actually prove.
+    Updated 2026-10-15. The traversal-anchor ceiling repair is integrated (PR #660 ->
+    main 34a22c61) and released to the daily runtime as candidate 91a220ab with an
+    explicit module upgrade (smart_core, smart_construction_core); the governed
+    fixture -> record-identity -> probe order re-read the deployed face: contract
+    http 200 with persisted custody and nav 90/90, 0 miss. Next, in dependency order:
+    (1) carry this round's ledger/doc delta with the next product candidate - the repo
+    refuses a bookkeeping-only candidate, so do not open a PR for them alone;
+    (2) migrate the 13 hand-written traversal-anchor ceilings in
+    addons/smart_construction_core/security/sc_record_rules.xml into the
+    declaration/registry system and regenerate them (separate P1 batch, never a
+    hand-patched rule set); (3) bind allow/deny evidence for the remaining
+    representative principals (pm / owner / project_member) plus the per-principal
+    expectation carrier; (4) only with a selected product version deployed and
+    upgraded may 版本发布完成 be reported, and 产品交付完成 only after agreed
+    accounts, roles, companies, key workflows and support are accepted - neither is
+    claimed now.
   completion:
     scope: target_environment_role_permission_acceptance
     overall_goal: in_progress
     result_index: .agent/runs/TARGET-ENV-ROLE-ACCEPTANCE/run.json
-    local_batch_acceptance: not_started
-    mainline_integration: not_applicable
-    deployment: already_completed_by_prior_goal
+    local_batch_acceptance: completed
+    mainline_integration: completed
+    deployment: completed
     target_user_delivery: in_progress

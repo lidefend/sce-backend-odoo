@@ -1149,6 +1149,16 @@ local.dev.data_scope.ceiling.readiness: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_data_scope_ceiling_readiness.py
 
+# Read-only readback of the upgrade-time business-data ownership gate: which
+# companies already own industry rows, and which of them were never onboarded.
+# The gate itself runs in the module's pre-migration, so this entry exists to
+# answer "would the next upgrade be refused, and for whom" before it is run.
+.PHONY: local.dev.business_data.ownership.readiness
+local.dev.business_data.ownership.readiness: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  SC_EXPECTED_DB="$${SC_EXPECTED_DB:-sc_dev_demo}" \
+	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/business_data_ownership_readiness.py
+
 # Registered verify alias for the run index: the real-principal lock on the
 # installed data-purpose ceiling behind every declared ``source_bounded`` model,
 # pinned to the fixed test tag so a run that collects zero tests cannot pass.
@@ -1156,6 +1166,23 @@ local.dev.data_scope.ceiling.readiness: guard.prod.forbid local.dev.ready
 verify.local.dev.source_bounded_data_space_rules.orm: guard.prod.forbid
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  MODULE=smart_construction_core TEST_TAGS="source_bounded_data_space_rules" local.dev.test
+
+# Registered verify alias for the run index: the upgrade-time business-data
+# ownership gate, on real companies and the real registration authority, pinned
+# to the fixed test tag so a run that collects zero tests cannot pass.
+.PHONY: verify.local.dev.business_data_ownership.orm
+verify.local.dev.business_data_ownership.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_construction_core TEST_TAGS="data_space_business_data_ownership" local.dev.test
+
+# Registered verify alias for the run index: the environment data-space
+# onboarding boundary (both onboarding shapes, the carrier refusal and the
+# customer-role refusal) on the real registration authority, pinned to the fixed
+# test tag so a run that collects zero tests cannot pass.
+.PHONY: verify.local.dev.data_space_boundary.orm
+verify.local.dev.data_space_boundary.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_core TEST_TAGS="data_space_boundary" local.dev.test
 
 # Registered verify alias for the run index: the per-principal delivery lock on
 # sc.dictionary startup scope (global/company/role), pinned to the fixed test tag

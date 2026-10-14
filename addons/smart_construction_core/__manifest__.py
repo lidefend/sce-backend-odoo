@@ -2,7 +2,7 @@
 # pyright: reportUnusedExpression=false
 {
     'name': 'Smart Construction Core',
-    'version': '17.0.0.170',
+    'version': '17.0.0.171',
     'summary': 'Core module for construction enterprise management (Architecture 2.0)',
     'author': 'Leedefend',
     'depends': [

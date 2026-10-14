@@ -173,6 +173,45 @@ class TestDataSpaceBoundary(TransactionCase):
                 tenant_key='data-space-unit-second', purpose='demo',
                 company_id=carrier.id, environment_role='platform_internal_demo')
 
+    def test_environment_onboarding_adopts_an_existing_main_company(self):
+        """A database that already owns a registration adopts its main company.
+
+        The environment main company cannot be "the first onboarded business
+        company" once an acceptance fixture space exists, so the entry that
+        retires a carrier marker would refuse a database nobody can fix. The
+        existing-company entry adopts it instead and never relabels it.
+        """
+        from odoo.addons.smart_core.security import data_space_provisioning as provisioning
+        provisioning.declare_environment_role(self.env, 'platform_internal_demo')
+        company = self.env['res.company'].create({'name': 'Data space unit environment main'})
+        env = self.env(user=self.env.user, context={'allowed_company_ids': [company.id]})
+        registration = provisioning.onboard_environment_business_company(
+            env, tenant_key='data-space-unit-environment-main')
+        self.assertEqual(registration.data_purpose, 'demo')
+        self.assertEqual(registration.company_id, company)
+        self.assertFalse(company.is_platform_bootstrap_company)
+        self.assertEqual(company.name, 'Data space unit environment main')
+
+    def test_environment_onboarding_refuses_a_carrier_main_company(self):
+        from odoo.addons.smart_core.security import data_space_provisioning as provisioning
+        provisioning.declare_environment_role(self.env, 'platform_internal_demo')
+        carrier = self.env['res.company'].create({
+            'name': 'Data space unit environment carrier',
+            'is_platform_bootstrap_company': True,
+        })
+        env = self.env(user=self.env.user, context={'allowed_company_ids': [carrier.id]})
+        with self.assertRaisesRegex(ValueError, 'IS_STILL_A_CARRIER'):
+            provisioning.onboard_environment_business_company(
+                env, tenant_key='data-space-unit-environment-carrier')
+        self.assertTrue(carrier.is_platform_bootstrap_company)
+
+    def test_environment_onboarding_never_onboards_a_customer_database(self):
+        from odoo.addons.smart_core.security import data_space_provisioning as provisioning
+        provisioning.declare_environment_role(self.env, 'customer_production')
+        with self.assertRaisesRegex(ValueError, 'SIGNED_IMPORT'):
+            provisioning.onboard_environment_business_company(
+                self.env, tenant_key='data-space-unit-environment-customer')
+
     def test_already_registered_company_is_refused(self):
         with self.assertRaisesRegex(ValidationError, 'DATA_SPACE_COMPANY_ALREADY_REGISTERED'):
             self.Registration._register_non_customer_space(

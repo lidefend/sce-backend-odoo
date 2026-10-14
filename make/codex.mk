@@ -805,6 +805,49 @@ daily.runtime.mail_sender.prepare: guard.prod.forbid verify.daily.runtime.mail_s
 		--base-url "$(DAILY_RUNTIME_MAIL_SENDER_BASE_URL)" \
 		--report "$(DAILY_RUNTIME_MAIL_SENDER_REPORT)"
 
+# The daily runtime carried 34,891 payment requests before any data space was
+# declared. Every company ceiling resolves row visibility through
+# `user._sc_data_company_ids()`, which reads the declared environment role and
+# `sc.tenant.company.registration`, so an undeclared role with no registration
+# made every business row invisible to every principal and the product served an
+# empty surface. This entry performs the governed onboarding the platform already
+# owns (declare the role, onboard the environment main company as the demo data
+# space through the shape this database needs, enroll its operators) through the
+# existing governed `make odoo.shell.exec`
+# entry. It never edits a business row; without the exact confirmation it is a
+# read-only plan, and `--plan` forces that mode.
+.PHONY: daily.runtime.data_space.onboard verify.daily.runtime.data_space.onboard
+DAILY_RUNTIME_DATA_SPACE_ROLE ?= platform_internal_demo
+DAILY_RUNTIME_DATA_SPACE_TENANT_KEY ?= sc-demo-main
+DAILY_RUNTIME_DATA_SPACE_REPORT ?= .runtime/final-acceptance/daily-deployed/data-space-onboard.json
+
+verify.daily.runtime.data_space.onboard: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_data_space_onboard.py scripts/ops/test_daily_runtime_data_space_onboard.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_data_space_onboard
+
+daily.runtime.data_space.onboard.plan: guard.prod.forbid verify.daily.runtime.data_space.onboard
+	@python3 scripts/ops/daily_runtime_data_space_onboard.py \
+		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
+		--database "$(DAILY_RUNTIME_DATABASE)" \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--role "$(DAILY_RUNTIME_DATA_SPACE_ROLE)" \
+		--tenant-key "$(DAILY_RUNTIME_DATA_SPACE_TENANT_KEY)" \
+		--base-url "$(DAILY_RUNTIME_MAIL_SENDER_BASE_URL)" \
+		--plan \
+		--report "$(DAILY_RUNTIME_DATA_SPACE_REPORT)"
+
+daily.runtime.data_space.onboard: guard.prod.forbid verify.daily.runtime.data_space.onboard
+	@test "$${CONFIRM_DAILY_RUNTIME_DATA_SPACE_ONBOARD:-}" = "ONBOARD_DAILY_RUNTIME_DEMO_DATA_SPACE" || { echo "exact daily runtime data-space onboarding confirmation is required" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_data_space_onboard.py \
+		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
+		--database "$(DAILY_RUNTIME_DATABASE)" \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--role "$(DAILY_RUNTIME_DATA_SPACE_ROLE)" \
+		--tenant-key "$(DAILY_RUNTIME_DATA_SPACE_TENANT_KEY)" \
+		--base-url "$(DAILY_RUNTIME_MAIL_SENDER_BASE_URL)" \
+		--report "$(DAILY_RUNTIME_DATA_SPACE_REPORT)"
+
+
 # The project-lifecycle browser acceptance walks a dedicated fixture carrier from
 # `draft` to its terminal `closed`. That carrier is a row of the existing
 # `daily_dev` acceptance fixture scope, so it is materialised through the same

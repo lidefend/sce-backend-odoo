@@ -40,9 +40,12 @@ class _Registrations:
 
 class _Model:
     def __init__(self, *, ids=(), count=0, created=None, field_names=(), creates=False,
-                 pending_enrollment=()):
+                 carrier=False,
+                 pending_enrollment=(), owners=None):
         self._ids = list(ids)
         self._count = count
+        self._carrier = bool(carrier)
+        self._owners = dict(owners or {})
         self._created = created if created is not None else []
         self._fields = {name: None for name in field_names}
         self.domains = []
@@ -77,6 +80,17 @@ class _Model:
         self.domains.append(domain)
         return self._count
 
+    def _read_group(self, domain, groupby=(), aggregates=(), **kwargs):
+        """Grouped company readback, standing in for the ORM aggregate.
+
+        ``owners`` is ``{company_id: row_count}``; the platform entry only needs
+        the group keys, but the count keeps the fake honest about the shape
+        ``_read_group`` returns (recordset, aggregate) tuples.
+        """
+        self.domains.append(domain)
+        return [(_Recordset(company_id), count)
+                for company_id, count in sorted(self._owners.items())]
+
     def _create_non_customer_space(self, **kwargs):
         self._created.append(kwargs)
         return {"tenant_key": kwargs["tenant_key"], "data_purpose": kwargs["purpose"]}
@@ -93,15 +107,16 @@ class _Model:
                 "environment_role": kwargs["environment_role"]}
 
     def browse(self, ids):
-        return _Recordset(ids)
+        return _Recordset(ids, carrier=self._carrier)
 
     def with_context(self, **kwargs):
         return self
 
 
 class _Recordset:
-    def __init__(self, ids):
+    def __init__(self, ids, carrier=False):
         self.id = int(ids)
+        self.is_platform_bootstrap_company = bool(carrier)
 
     def exists(self):
         return self
@@ -242,6 +257,85 @@ class OnboardingEntryTest(unittest.TestCase):
                 declaration=declaration,
             )
         self.assertEqual(registration._created, [])
+
+
+class EnvironmentOnboardingTest(unittest.TestCase):
+    """The environment main company onboarding picks its shape from the database.
+
+    A database that already onboarded a business company cannot retire a carrier
+    marker that was never there, and a database that owns none must not adopt a
+    carrier without retiring it. Both shapes read the purpose from the declared
+    role, so no caller can onboard a customer database.
+    """
+
+    def test_fresh_database_retires_the_carrier_marker(self):
+        registration = _Model()
+        env = FakeEnv(registration=registration, role="platform_internal_demo")
+        result = provisioning.onboard_environment_business_company(
+            env, tenant_key="sc-demo-main",
+        )
+        self.assertEqual(result["data_purpose"], "demo")
+        self.assertEqual(result["environment_role"], "platform_internal_demo")
+        self.assertEqual(registration._adopted[0]["tenant_key"], "sc-demo-main")
+        self.assertEqual(registration._registered, [])
+
+    def test_database_that_already_owns_a_registration_adopts_its_main_company(self):
+        registration = _Model(ids=[21, 22])
+        env = FakeEnv(registration=registration, role="platform_internal_demo")
+        result = provisioning.onboard_environment_business_company(
+            env, tenant_key="sc-demo-main",
+        )
+        self.assertEqual(result["data_purpose"], "demo")
+        self.assertEqual(result["company_id"], 1)
+        self.assertEqual(registration._registered[0]["tenant_key"], "sc-demo-main")
+        self.assertEqual(registration._registered[0]["company_id"], 1)
+        self.assertEqual(registration._adopted, [])
+
+    def test_acceptance_role_onboards_the_test_purpose(self):
+        registration = _Model(ids=[21])
+        env = FakeEnv(registration=registration, role="industry_acceptance")
+        result = provisioning.onboard_environment_business_company(
+            env, tenant_key="sc-acceptance-main",
+        )
+        self.assertEqual(result["data_purpose"], "test")
+        self.assertEqual(registration._registered[0]["purpose"], "test")
+
+    def test_customer_production_role_never_onboards_its_main_company(self):
+        for role in (None, "customer_production"):
+            with self.subTest(role=role):
+                registration = _Model()
+                env = FakeEnv(registration=registration, role=role)
+                with self.assertRaises(ValueError) as ctx:
+                    provisioning.onboard_environment_business_company(env, tenant_key="c")
+                self.assertIn("SIGNED_IMPORT", str(ctx.exception))
+                self.assertEqual(registration._adopted, [])
+                self.assertEqual(registration._registered, [])
+
+    def test_carrier_main_company_is_refused_when_a_registration_exists(self):
+        registration = _Model(ids=[21])
+        env = FakeEnv(registration=registration, role="platform_internal_demo",
+                      company=_Model(carrier=True))
+        with self.assertRaises(ValueError) as ctx:
+            provisioning.onboard_environment_business_company(env, tenant_key="sc-demo-main")
+        self.assertIn("IS_STILL_A_CARRIER", str(ctx.exception))
+        self.assertEqual(registration._registered, [])
+
+    def test_role_without_a_declared_strategy_is_refused(self):
+        declaration = provisioning.load_declaration()
+        declaration["environment_roles"].pop("platform_internal_demo")
+        registration = _Model()
+        env = FakeEnv(registration=registration, role="platform_internal_demo")
+        with self.assertRaises(ValueError):
+            provisioning.onboard_environment_business_company(
+                env, tenant_key="sc-demo-main", declaration=declaration,
+            )
+        self.assertEqual(registration._adopted, [])
+        self.assertEqual(registration._registered, [])
+
+    def test_undeclared_role_resolves_to_the_strictest_purpose(self):
+        env = FakeEnv(registration=_Model())
+        self.assertEqual(provisioning.environment_role(env), "customer_production")
+        self.assertEqual(provisioning.environment_role_data_purpose(env), "customer")
 
 
 class EnvironmentRoleTest(unittest.TestCase):
@@ -406,6 +500,44 @@ class ReadinessGateTest(unittest.TestCase):
         env = FakeEnv(registration=registration)
         self.assertEqual(provisioning.unregistered_business_companies(env, [7, 9]), [9])
         self.assertEqual(provisioning.unregistered_business_companies(env, []), [])
+
+    def test_business_data_owners_are_read_per_company_owned_model(self):
+        env = FakeEnv(models={
+            "payment.request": _Model(owners={7: 34891, 9: 2}, field_names=("company_id",)),
+            "no.company.field": _Model(owners={3: 1}, field_names=("name",)),
+        })
+        self.assertEqual(
+            provisioning.business_data_company_ids(
+                env, ("payment.request", "no.company.field", "not.installed")),
+            [7, 9],
+        )
+
+    def test_business_data_ownership_fails_closed_for_an_unregistered_owner(self):
+        env = FakeEnv(
+            registration=_Model(ids=[7]),
+            models={"payment.request": _Model(owners={7: 5, 9: 2}, field_names=("company_id",))},
+        )
+        with self.assertRaises(ValueError) as ctx:
+            provisioning.assert_business_data_ownership_registered(env, ("payment.request",))
+        self.assertIn("DATA_SPACE_UNREGISTERED_BUSINESS_DATA_OWNER:9", str(ctx.exception))
+
+    def test_business_data_ownership_passes_when_every_owner_is_onboarded(self):
+        env = FakeEnv(
+            registration=_Model(ids=[7]),
+            models={"payment.request": _Model(owners={7: 5}, field_names=("company_id",))},
+        )
+        self.assertEqual(
+            provisioning.assert_business_data_ownership_registered(env, ("payment.request",)),
+            [7],
+        )
+
+    def test_business_data_ownership_passes_before_any_row_exists(self):
+        env = FakeEnv(registration=_Model(ids=[]),
+                      models={"payment.request": _Model(field_names=("company_id",))})
+        self.assertEqual(
+            provisioning.assert_business_data_ownership_registered(env, ("payment.request",)),
+            [],
+        )
 
     def test_bootstrap_company_business_rows_are_reported(self):
         env = FakeEnv(

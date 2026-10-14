@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 164,
+    "odoo_tags": 165,
     "gated": 4,
-    "on_demand": 16,
-    "unwired": 144,
-    "odoo_tag_declarations": 373,
+    "on_demand": 18,
+    "unwired": 143,
+    "odoo_tag_declarations": 374,
     "gated_declarations": 89,
-    "uncovered_declarations": 284,
+    "uncovered_declarations": 285,
     "ci_unit_scripts": 14,
     "ci_unit_scripts_wired": 14,
     "ci_unit_scripts_unwired": 0
@@ -771,15 +771,31 @@
     },
     {
       "group": "data_space_boundary",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_core/tests/test_data_space_boundary.py"
       ],
       "owner": "platform-team",
-      "evidence": [],
-      "disposition": "wire-pending"
+      "evidence": [
+        "make:verify.local.dev.data_space_boundary.orm :: data_space_boundary"
+      ],
+      "disposition": "class-selected"
+    },
+    {
+      "group": "data_space_business_data_ownership",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_business_data_ownership_gate.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.local.dev.business_data_ownership.orm :: data_space_business_data_ownership"
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "data_space_identity_enrollment",

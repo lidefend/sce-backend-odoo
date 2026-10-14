@@ -43,12 +43,44 @@ REQUIRED_ENTRYPOINTS = (
     "declare_environment_role",
     "main_company_onboarding_purpose",
     "onboard_environment_main_company",
+    "environment_role_data_purpose",
+    "onboard_environment_business_company",
     "enroll_data_space_identities",
     "assert_data_space_identities_enrolled",
     "data_space_operators_pending_enrollment",
+    "business_data_company_ids",
+    "assert_business_data_ownership_registered",
+    "unregistered_business_companies",
+)
+#: The environment onboarding entry reads the purpose from the declared role and
+#: picks the shape from the database's own fact. Both halves must stay wired: a
+#: hard-coded purpose would let an operator onboard a customer database, and a
+#: missing adoption branch makes a database that already onboarded a business
+#: company (an acceptance fixture space, for example) un-onboardable.
+ENVIRONMENT_ONBOARDING_TOKENS = (
+    "environment_role_data_purpose",
+    "DATA_SPACE_ENVIRONMENT_ROLE_HAS_NO_DATA_PURPOSE",
+    "DATA_SPACE_ENVIRONMENT_ROLE_PURPOSE_MISMATCH",
+    "DATA_SPACE_ENVIRONMENT_MAIN_COMPANY_IS_STILL_A_CARRIER",
+    "onboard_environment_main_company",
+    "adopt_business_company",
 )
 INDUSTRY_HOOK_TOKEN = "_after_tenant_company_registration"
 PLATFORM_MODULE_PREFIXES = ("addons/smart_core/",)
+
+#: The upgrade-time gate. Onboarding was only proven before *new* writes, so a
+#: database whose business rows predate the data-space declaration upgraded
+#: silently and then served an empty product. The industry layer owns the probe
+#: list; the platform owns the meaning of an unregistered owner. Both halves
+#: must stay wired: a gate nobody calls is not a gate.
+OWNERSHIP_GATE_ENTRYPOINTS = (
+    "addons/smart_construction_core/services/business_data_ownership.py",
+)
+OWNERSHIP_GATE_CALL_TOKEN = "assert_existing_business_data_ownership"
+OWNERSHIP_GATE_FAILURE_TOKEN = "DATA_SPACE_UNREGISTERED_BUSINESS_DATA_OWNER"
+OWNERSHIP_PROBE_DECLARATION = (
+    "addons/smart_construction_core/data/tenant/scoped_business_models.v1.json"
+)
 
 #: Onboarding owns the operator identity realm, not just the registration row.
 #: The consumer lane must call the platform entry: a registration whose
@@ -87,6 +119,68 @@ def _industry_hook_owners():
     return owners
 
 
+def _ownership_gate_owners():
+    """Industry migrations that refuse a data-carrying upgrade with no owner."""
+    owners = []
+    for path in sorted((REPO_ROOT / "addons").glob("*/migrations/*/*.py")):
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        if OWNERSHIP_GATE_CALL_TOKEN not in text:
+            continue
+        relative = path.relative_to(REPO_ROOT).as_posix()
+        if relative.startswith(PLATFORM_MODULE_PREFIXES):
+            continue
+        owners.append(relative)
+    return owners
+
+
+def _ownership_gate_failures(provisioning):
+    failures = []
+    provisioning_text = PROVISIONING.read_text(encoding="utf-8")
+    if OWNERSHIP_GATE_FAILURE_TOKEN not in provisioning_text:
+        failures.append(
+            "ownership gate: the platform decision lost its fail-closed token %s"
+            % OWNERSHIP_GATE_FAILURE_TOKEN
+        )
+    for relative in OWNERSHIP_GATE_ENTRYPOINTS:
+        lane = REPO_ROOT / relative
+        if not lane.is_file():
+            failures.append("ownership gate: %s is missing" % relative)
+            continue
+        text = lane.read_text(encoding="utf-8")
+        for token in (OWNERSHIP_GATE_CALL_TOKEN, "probe_models"):
+            if token not in text:
+                failures.append("ownership gate: %s does not expose %s" % (relative, token))
+        if "smart_core" not in text:
+            failures.append(
+                "ownership gate: %s must delegate the decision to the platform entry" % relative
+            )
+    declaration = REPO_ROOT / OWNERSHIP_PROBE_DECLARATION
+    if not declaration.is_file():
+        failures.append(
+            "ownership gate: %s is missing, so the industry probe list cannot ride "
+            "inside the module that the container actually mounts"
+            % OWNERSHIP_PROBE_DECLARATION
+        )
+    else:
+        document = json.loads(declaration.read_text(encoding="utf-8"))
+        models = document.get("models")
+        if not isinstance(models, list) or not models:
+            failures.append("ownership gate: the probe declaration declares no model")
+        elif document.get("authority") != "scripts/verify/data_scope_declarations.json":
+            failures.append(
+                "ownership gate: the probe declaration must name the company-ceiling "
+                "declaration as its authority"
+            )
+    owners = _ownership_gate_owners()
+    if not owners:
+        failures.append(
+            "ownership gate: no non-platform migration calls %s, so a database whose "
+            "business rows predate the data-space declaration still upgrades silently "
+            "into an empty product" % OWNERSHIP_GATE_CALL_TOKEN
+        )
+    return failures, owners
+
+
 def check():
     failures = []
     if not PROVISIONING.is_file():
@@ -123,6 +217,44 @@ def check():
             failures.append(
                 "provisioning: customer onboarding refusal must name the signed import lane (%s)"
                 % (error,)
+            )
+
+    provisioning_text = PROVISIONING.read_text(encoding="utf-8")
+    entry_body = provisioning_text.split(
+        "def onboard_environment_business_company", 1
+    )[-1].split("\ndef ", 1)[0]
+    for token in ENVIRONMENT_ONBOARDING_TOKENS:
+        if token not in entry_body:
+            failures.append(
+                "provisioning: environment onboarding entry is missing %s" % (token,)
+            )
+
+    class _RoleParameter:
+        """Minimal stand-in so the guard can prove the refusal without a database."""
+
+        def __init__(self, role):
+            self._role = role
+
+        def sudo(self):
+            return self
+
+        def get_param(self, key, default=None):
+            return self._role
+
+    try:
+        provisioning.onboard_environment_business_company(
+            {"ir.config_parameter": _RoleParameter("customer_production")},
+            tenant_key="guard-probe-environment",
+        )
+        failures.append(
+            "provisioning: a customer production role must never onboard its environment "
+            "main company through the maintenance entry"
+        )
+    except ValueError as error:
+        if "SIGNED_IMPORT" not in str(error):
+            failures.append(
+                "provisioning: environment onboarding refusal must name the signed import "
+                "lane (%s)" % (error,)
             )
 
     declaration = provisioning.load_declaration()
@@ -173,11 +305,13 @@ def check():
                     "identity enrollment: %s does not consume %s, so its onboarded space "
                     "can exist with every operator outside the realm" % (relative, token)
                 )
-    return failures, owners
+    gate_failures, gate_owners = _ownership_gate_failures(provisioning)
+    failures.extend(gate_failures)
+    return failures, owners, gate_owners
 
 
 def main() -> int:
-    failures, owners = check()
+    failures, owners, gate_owners = check()
     if failures:
         print("DATA_SPACE_PROVISIONING_GUARD=FAIL")
         for failure in failures:
@@ -185,10 +319,12 @@ def main() -> int:
         return 1
     declaration = json.loads(DECLARATION.read_text(encoding="utf-8"))
     print(
-        "DATA_SPACE_PROVISIONING_GUARD=PASS roles=%s industry_hooks=%s invariants=%s"
+        "DATA_SPACE_PROVISIONING_GUARD=PASS roles=%s industry_hooks=%s "
+        "ownership_gate=%s invariants=%s"
         % (
             ",".join(sorted(declaration["environment_roles"])),
             ",".join(owners),
+            ",".join(gate_owners),
             len(declaration.get("invariants") or []),
         )
     )

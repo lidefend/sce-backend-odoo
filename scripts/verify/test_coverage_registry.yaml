@@ -261,13 +261,22 @@ entries:
   review_by: '2026-12-31'
 - group: data_space_boundary
   kind: odoo_tag
-  status: unwired
+  status: on-demand
   owner: platform-team
-  dispose: wire-pending
+  dispose: class-selected
+  gate: 'make:verify.local.dev.data_space_boundary.orm :: data_space_boundary'
   reason: smart_core data-space registration boundary coverage added by FE-CONTRACT-RUNTIME-02 (P0 kernel).
     It asserts the persisted registration and tenant-space boundary, not whole-product data rule acceptance.
-    No governed ORM entry selects the tag yet; wire it or retire it.
-  review_by: '2026-12-31'
+    Reachable through the governed ORM entry verify.local.dev.data_space_boundary.orm, which pins the fixed
+    test tag so a zero-collection run cannot pass; no recurring workflow selects it yet.
+- group: data_space_business_data_ownership
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.local.dev.business_data_ownership.orm :: data_space_business_data_ownership'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: data_space_identity_enrollment
   kind: odoo_tag
   status: on-demand
@@ -285,8 +294,8 @@ entries:
   gate: 'make:verify.local.dev.data_space_uncached_membership.orm :: data_space_uncached_membership'
   reason: Pins the target-environment 403 root cause - the data-space ceiling resolved membership through
     a tools.ormcache helper instead of the persisted relation, so an out-of-band grant or revocation was
-    invisible to a long-lived worker. Reachable only through a hand-invoked ORM entry; no recurring
-    workflow selects this group yet.
+    invisible to a long-lived worker. Reachable only through a hand-invoked ORM entry; no recurring workflow
+    selects this group yet.
 - group: demo_gate
   kind: odoo_tag
   status: unwired
