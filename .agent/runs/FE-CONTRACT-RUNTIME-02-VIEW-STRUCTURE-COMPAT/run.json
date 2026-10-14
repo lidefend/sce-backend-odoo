@@ -1,0 +1,142 @@
+{
+ "schema_version": 1,
+ "id": "FE-CONTRACT-RUNTIME-02-VIEW-STRUCTURE-COMPAT",
+ "branch": "fix/fe-contract-runtime-02-runtime-view-compat",
+ "status": "verification_pending",
+ "baseline_sha": "a2c3971179be350d9aea0d5718cf6b678cbea1e7",
+ "goal": ".agent/goals/FE-CONTRACT-RUNTIME-02-VIEW-STRUCTURE-COMPAT.yaml",
+ "record": "docs/ops/iterations/fe_contract_runtime_02_view_structure_compat_20261014.md",
+ "scope": [
+  ".agent/goals/FE-CONTRACT-RUNTIME-02-VIEW-STRUCTURE-COMPAT.yaml",
+  ".agent/active-runs.json",
+  ".agent/runs/FE-CONTRACT-RUNTIME-02-VIEW-STRUCTURE-COMPAT/",
+  ".agent/runs/FE-CONTRACT-RUNTIME-02/",
+  "addons/smart_construction_core/views/core/cost_domain_views.xml",
+  "contracts/generated/product_view_structure_contract.json",
+  "docs/ops/iterations/"
+ ],
+ "environment": {
+  "kind": "offline",
+  "authority": "Offline guards read the repository only. The runtime half of this run uses the existing governed local.dev.* entries (sc-local-dev / sc_dev_demo, ^sc_dev_demo$, LOCAL_DEV_ENV_FILE) for a module upgrade after a local.dev.snapshot recovery point, plus read-only contract.view_structure.export; target-environment reads and upgrades stay on the governed daily.runtime.* entries. No fixture reset, no business writes, no hand-assembled compose/database/credential command.",
+  "base_url": "http://127.0.0.1:18081",
+  "database": "sc_dev_demo"
+ },
+ "checks": {
+  "view_structure_guard_unit": {
+   "target": "verify.product_view_structure.contract.unit",
+   "inputs": [
+    "make/guards.mk",
+    "scripts/contract/product_view_structure_common.py",
+    "scripts/verify/product_view_structure_contract_guard.py",
+    "scripts/verify/test_product_view_structure_contract.py"
+   ],
+   "kind": "offline"
+  },
+  "structure_lock": {
+   "target": "verify.contract.structure_lock",
+   "inputs": [
+    "contracts/generated/contract_structure_fingerprint.json",
+    "scripts/ci/enforce_contract_structure_lock.py",
+    "scripts/ci/generate_contract_structure_fingerprint.py"
+   ],
+   "kind": "offline"
+  }
+ },
+ "blockers": [],
+ "next_exact_step": "Commit the view fix with its bookkeeping, push the branch and sync the candidate to the target (daily.runtime.candidate.bundle_sync), run daily.runtime.published_face.converge with upgrade modules smart_core+smart_construction_core to exercise the previously failing validation, then integrate through the protected PR and align the target to main.",
+ "diagnosis": {
+  "trigger": "make daily.runtime.published_face.converge at main a2c3971179 failed with MODULE_UPGRADE_FAILED / view_validation error for smart_construction_core view project.progress.entry.tree (cost_domain_views.xml line 562).",
+  "root_cause": "addons/base/rng/common.rng <rng:define name=\"field\"> on the target image (odoo17-odoo 17.0-20251222) omits <rng:optional><rng:attribute name=\"help\"/></rng:optional>; the local image (17.0-20260630) has it. tree_view.rng validates fields through that shared definition, so a help attribute on a tree column is accepted locally and rejected on the target.",
+  "evidence": [
+   "common.rng field-define help attribute count: local 4, target 3 (byte-level diff on the same define).",
+   "Whole-repository scan of RNG-validated view types (tree/list/search/kanban/pivot/graph/calendar/gantt/activity) at HEAD a2c39711 finds exactly one field with help: smart_construction_core/views/core/cost_domain_views.xml view_project_progress_entry_tree name=progress_rate.",
+   "The committed baseline contracts/generated/product_view_structure_contract.json stores that node as {\"attrs\":{\"name\":\"progress_rate\",\"type\":\"float\"},\"tag\":\"field\"} with value_sha256 a2084c5e4d1b86947e16f70bda1c79902e91248a0dbdaa89c3c1a95a12de2bde, i.e. without help; PR #654 added the attribute to the XML without regenerating the baseline, so the code silently drifted from its own contract."
+  ],
+  "fix": "Remove the help attribute from that single native list column so the resolved structure equals the authoritative committed baseline again. The tooltip is only a list-header tooltip; the python field label/documentation is untouched and no capability is removed. Revisit only if the owner chooses to upgrade the target base image so help is supported.",
+  "impact": "No other RNG-validated view node carries help, so no further view change is required for the target upgrade to pass."
+ },
+ "detected_defect_fix": {
+  "id": "RUNTIME-BOUNDARY-FIX-02",
+  "detection": "Found while converging the daily runtime published face; not a payment or semantic-registry capability extension.",
+  "scope": "smart_construction_core native view project.progress.entry tree column tooltip",
+  "side_effect_found": "PR #654 changed a view structure input without regenerating contracts/generated/product_view_structure_contract.json; the guard compares the committed manifest against a live export, so the drift is caught by gate.contract.view_structure.",
+  "not_expanded": "No scan widening, no other view edits, no base image change."
+ },
+ "runtime_observations": {
+  "local_dev_view_structure_gate": {
+   "purpose": "Prove the resolved tree read back from sc_dev_demo equals the committed baseline after a governed module upgrade.",
+   "entrypoints": [
+    "make local.dev.snapshot",
+    "make local.dev.upgrade MODULE=smart_construction_core",
+    "make gate.contract.view_structure"
+   ],
+   "status": "not_run",
+   "log": "/tmp/localdev_upgrade_viewfix.log",
+   "note": "make local.dev.upgrade aborted before reaching the view gate: the demo scenario seed smart_construction_demo/data/scenario/s60_project_cockpit/10_cockpit_business_facts.xml:3 raises AccessError under ir.rule (pre-existing lane, unrelated to this view change; no guard relaxed). Additionally this profile's base image cannot reproduce the target grammar rejection. Superseded by local_target_grammar_reproduction as the change-owning static evidence. Local dev environment left healthy: make local.dev.health PASS.",
+   "environment_left_healthy": true
+  },
+  "target_environment_published_face": {
+   "purpose": "Prove the module upgrade that previously failed on the target base succeeds at the candidate SHA and that the published face converges.",
+   "entrypoints": [
+    "make daily.runtime.candidate.bundle_sync",
+    "make verify.daily_dev.runtime_repo.clean",
+    "make daily.runtime.published_face.converge"
+   ],
+   "status": "not_run",
+   "log": null
+  }
+ },
+ "preexisting_red_lanes": {
+  "verify.contract.view_structure": {
+   "classification": "pre_existing_on_main_not_owned_by_this_change",
+   "evidence": "A clean detached worktree at main a2c39711 (0 dirty paths) fails this target with the same errors: formal menu coverage differs from policy, authority candidate fingerprint baseline_sha/scope_manifest_sha256/digest/branch mismatch, formal menu policy hash mismatch.",
+   "reason": "The target binds the current worktree fingerprint and the menu-policy hash to the identity recorded when the baseline was generated (branch feature/native-view-action-semantics-closure-v1, baseline_sha/git_head 01a29b14). It is a baseline-generation-lane integrity check, not a change-owning gate; PR #654 touched the menu policy afterwards, so it is red on main independent of this change.",
+   "action": "Not retried unchanged. The change-owning evidence is verify.product_view_structure.contract.unit plus the live gate.contract.view_structure candidate-vs-baseline comparison.",
+   "extra_cause": "Second independent cause found this round: PR #654 renamed a formal menu xmlid in the menu policy (menu_sc_product_project_edit_v1 -> menu_sc_project_project) without regenerating the tracked view-structure baseline, so the guard's own baseline self-validation fails on main. The tracked baseline is left unchanged."
+  },
+  "demo_scenario_seed_ir_rule": {
+   "classification": "pre_existing_on_main_not_owned_by_this_change",
+   "evidence": "make local.dev.upgrade MODULE=smart_construction_core on sc_dev_demo fails with AccessError (ir.rule) wrapped as ParseError at smart_construction_demo/data/scenario/s60_project_cockpit/10_cockpit_business_facts.xml:3, before any view-structure step. Log /tmp/localdev_upgrade_viewfix.log.",
+   "impact_on_this_batch": "None for the target: sc_demo has smart_construction_demo uninstalled (verified in ir_module_module), so the target upgrade path never loads demo scenario data.",
+   "action": "Not fixed here; would need data-scope/demo-alignment authority and its own batch."
+  }
+ },
+ "local_target_grammar_reproduction": {
+  "purpose": "Reproduce the target's view-structure rejection locally, using the target image's authoritative RelaxNG grammar, and prove the fix closes the whole class without deploying.",
+  "method": "Read-only pull of the target image RNG files (docker exec ... cat .../base/rng/*.rng on sc-root) plus an lxml RelaxNG validation run inside the local odoo17-odoo container. No database, no compose project, no target write.",
+  "grammars": {
+   "target": "odoo17-odoo:latest = 17.0-20251222 (field define has no 'help')",
+   "local": "odoo17-odoo:latest = 17.0-20260630 (field define has 'help')"
+  },
+  "single_node": {
+   "node": "smart_construction_core/views/core/cost_domain_views.xml :: view_project_progress_entry_tree",
+   "target_grammar_before": "INVALID (RELAXNG_ERR_EXTRACONTENT: Element tree has extra content: field)",
+   "target_grammar_after": "VALID",
+   "local_grammar_before": "VALID",
+   "local_grammar_after": "VALID",
+   "reading": "The local base image grammar is more permissive, which is why a local module upgrade could never surface this defect; local success is not target-compatibility evidence."
+  },
+  "repository_sweep": {
+   "roots": [
+    "addons",
+    "addons_external",
+    "demo_addons"
+   ],
+   "xml_files": 371,
+   "rng_validated_view_arches_checked": 432,
+   "view_types": [
+    "tree",
+    "search",
+    "graph",
+    "pivot",
+    "calendar",
+    "activity"
+   ],
+   "grammar": "target 17.0-20251222",
+   "invalid_before_fix": 1,
+   "invalid_after_fix": 0,
+   "note": "The one pre-fix failure is exactly the deployment node, with the same RelaxNG error class as the target upgrade failure."
+  },
+  "unparsable_orphan": "addons/smart_core/views/dashboard_views.xml is not well-formed but is referenced by no __manifest__.py data list, so Odoo never loads or validates it. Not touched."
+ }
+}
