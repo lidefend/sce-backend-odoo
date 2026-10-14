@@ -61,6 +61,14 @@ def _daily_lifecycle_driver(_env):
                 "carrier %s is not in the declared start state: %s=%s"
                 % (carrier.id, field_name, carrier[field_name])
             )
+    # A governed shell carrier writes fixture rows outside the request cycle, so
+    # no worker ever sees the write and signals the invalidation itself. Without
+    # this, a long-lived worker keeps the previous membership/registration answer
+    # until the next restart: the deployed daily runtime denied an enrolled
+    # operator exactly that way. Announce the invalidated caches once, after the
+    # fixture writes are committed.
+    _env.registry.clear_cache()
+    _env.registry.signal_changes()
     print("__EXE_LINE__" + _json.dumps({
         "database": _env.cr.dbname,
         "carrier_id": int(carrier.id),

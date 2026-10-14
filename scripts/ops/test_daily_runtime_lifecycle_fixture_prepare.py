@@ -59,10 +59,24 @@ class _Carrier:
         return self._state[key]
 
 
+class _Registry:
+    """Stub registry that records the cache-invalidation announcement."""
+
+    def __init__(self):
+        self.calls = []
+
+    def clear_cache(self, *names):
+        self.calls.append(("clear_cache", names or ("default",)))
+
+    def signal_changes(self):
+        self.calls.append(("signal_changes", ()))
+
+
 class _Env:
     def __init__(self, carrier):
         self._carrier = carrier
         self.cr = _Cr()
+        self.registry = _Registry()
 
     def ref(self, xmlid):
         assert xmlid == "smart_construction_acceptance_fixture.fe_project_lifecycle", xmlid
@@ -78,12 +92,14 @@ def run_driver(carrier_state, *, declared=None, with_env=True, reset=False):
         "LIFECYCLE_FIXTURE_START_STATE": dict(declared if declared is not None else START_STATE),
     }
     carrier = _Carrier(carrier_state)
+    environment = _Env(carrier)
     if with_env:
-        namespace["env"] = _Env(carrier)
+        namespace["env"] = environment
         namespace["ensure_fixture"] = lambda _env: {"lifecycle_carrier": {"reset": reset}}
     program = module.fixture_driver()
     with contextlib.redirect_stdout(captured), contextlib.redirect_stderr(io.StringIO()):
         exec(compile(program, "<driver>", "exec"), namespace)
+    run_driver.last_env = environment
     return captured.getvalue()
 
 
@@ -143,6 +159,15 @@ class DriverBehaviourTests(unittest.TestCase):
     def test_driver_fails_closed_when_carrier_left_the_start_state(self):
         with self.assertRaises(SystemExit):
             run_driver({"lifecycle_state": "closed", "sc_approval_state": "draft"})
+
+    def test_driver_announces_its_cache_invalidation(self):
+        # A shell carrier is an out-of-band writer: no worker signals for it, so
+        # the lane must announce the invalidated caches or a long-lived worker
+        # keeps denying an operator the fixture just authorized.
+        run_driver(START_STATE)
+        calls = run_driver.last_env.registry.calls
+        self.assertEqual([name for name, _ in calls], ["clear_cache", "signal_changes"])
+        self.assertEqual(calls[0][1], ("default",))
 
     def test_driver_consumes_the_declared_start_state(self):
         declared = {"lifecycle_state": "done", "sc_approval_state": "draft"}

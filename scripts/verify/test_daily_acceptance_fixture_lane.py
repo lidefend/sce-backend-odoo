@@ -26,10 +26,14 @@ from addons.smart_construction_acceptance_fixture.tools.frontend_productization_
     FIXTURE_SCOPES,
     FIXTURE_SCOPE_ENV,
     FRONTEND_ACCEPTANCE_DB,
+    _activity_move,
     _company,
     _guard_acceptance_scope,
+    _reconcile_activity_move,
     _resolve_existing_fixture_company,
 )
+
+FIXTURE_MODULE = "addons.smart_construction_acceptance_fixture.tools.frontend_productization_fixture"
 from scripts.ops.dev_acceptance_release_probe import (
     CONTRACT_PASSWORD_ENV,
     _contract_credential,
@@ -469,6 +473,99 @@ class TestLegacyFixtureCarrierAdoption(unittest.TestCase):
         with self.assertRaises(RuntimeError) as caught:
             _company(env, "A")
         self.assertIn("governed baseline reset", str(caught.exception))
+
+
+class _FakeMove(types.SimpleNamespace):
+    """account.move double that records its writes and mirrors them back."""
+
+    def __init__(self, **kwargs):
+        super().__init__(writes=[], **kwargs)
+
+    def sudo(self, *args, **kwargs):
+        return self
+
+    def write(self, values):
+        self.writes.append(values)
+        for key, value in values.items():
+            setattr(self, key, value)
+        return True
+
+
+class TestReusedDatabaseActivityCarrierReconciliation(unittest.TestCase):
+    """A reused acceptance database converges the fixture's own drifted entry.
+
+    The fixture's own account.move carrier was once materialised inside the
+    platform company with that company's miscellaneous journal. Re-running on
+    the reused database must repair its own row instead of demanding a database
+    rebuild - and must still refuse to touch an entry that carries any booking.
+    """
+
+    def _company(self):
+        return types.SimpleNamespace(id=21, currency_id=types.SimpleNamespace(id=1))
+
+    def _journal(self, company):
+        return types.SimpleNamespace(id=77, company_id=company, type="general")
+
+    def _drifted_move(self, **overrides):
+        values = {
+            "_name": "account.move",
+            "state": "draft",
+            "posted_before": False,
+            "line_ids": [],
+            "company_id": types.SimpleNamespace(id=1),
+            "journal_id": types.SimpleNamespace(id=3),
+        }
+        values.update(overrides)
+        return _FakeMove(**values)
+
+    def test_empty_draft_entry_is_re_homed_onto_the_declared_company(self):
+        company = self._company()
+        move = self._drifted_move()
+        result = _reconcile_activity_move(None, move, company, self._journal(company))
+        self.assertIs(result, move)
+        self.assertEqual(
+            move.writes,
+            [{"company_id": 21, "journal_id": 77, "currency_id": 1, "name": "/"}],
+        )
+
+    def test_booked_entry_drift_still_fails_closed(self):
+        company = self._company()
+        journal = self._journal(company)
+        for overrides in (
+            {"state": "posted"},
+            {"posted_before": True},
+            {"line_ids": [types.SimpleNamespace(id=1)]},
+        ):
+            with self.subTest(overrides=sorted(overrides)):
+                move = self._drifted_move(**overrides)
+                with self.assertRaises(RuntimeError) as caught:
+                    _reconcile_activity_move(None, move, company, journal)
+                self.assertIn("governed baseline reset", str(caught.exception))
+                self.assertEqual(move.writes, [])
+
+    def test_already_declared_entry_is_left_untouched(self):
+        company = self._company()
+        journal = self._journal(company)
+        move = self._drifted_move(company_id=company, journal_id=journal)
+        self.assertIs(_reconcile_activity_move(None, move, company, journal), move)
+        self.assertEqual(move.writes, [])
+
+    def test_entry_consumes_the_reconciled_record_instead_of_failing_early(self):
+        company = self._company()
+        journal = self._journal(company)
+        move = self._drifted_move()
+        env = _FakeEnv(
+            {
+                "sc.tenant.company.registration": _FakeModel(rows=[types.SimpleNamespace(id=1)]),
+                "ir.model.data": _FakeModel(),
+            },
+            {"smart_construction_acceptance_fixture.fe_activity_journal_entry": move},
+        )
+        sentinel = object()
+        with patch("%s._upsert" % FIXTURE_MODULE, return_value=sentinel) as upsert:
+            self.assertIs(_activity_move(env, company, types.SimpleNamespace(id=8990), journal), sentinel)
+        upsert.assert_called_once()
+        self.assertEqual(move.writes[0]["company_id"], 21)
 
 
 if __name__ == "__main__":
