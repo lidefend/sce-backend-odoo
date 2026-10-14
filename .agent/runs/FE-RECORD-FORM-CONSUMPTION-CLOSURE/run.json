@@ -39,6 +39,16 @@
         "make/frontend.mk"
       ]
     },
+    "decision_authority": {
+      "target": "verify.frontend.decision_authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/",
+        "docs/frontend_productization/decision-authority-inventory-v1.json",
+        "scripts/verify/frontend_decision_authority.py",
+        "make/frontend.mk"
+      ]
+    },
     "contract_form_save_failure_recovery": {
       "target": "verify.frontend.contract_form_save_failure_recovery.unit",
       "kind": "offline",
@@ -89,5 +99,5 @@
     "menu_sc_historical_payment_fact is the only one of the finance principal's 45 primary menus that does not render; recorded as a finding, out of this batch's scope.",
     "the fixture's payment-request workflow freeze writes state/validation_status through the ORM on fixture-owned disposable rows and the accompanying test asserts payment.request.create still rejects a direct non-draft create, so no product guard is bypassed; a governed initialization/migration carrier remains separately designed work."
   ],
-  "next_exact_step": "Local batch evidence is complete: the focus ranking fix and the money-normalisation-aware conflict assertion are in, all five declared checks have non-zero passing receipts (contract_error_business_ownership 100, contract_form_save_failure_recovery 34, j13_required_value_semantics 110, acceptance_fixture_freeze 3, core_record_form_journeys 3), and J12/J13/J14 report pass=true. Next: run make ci.delivery.freeze.prepare, commit the batch in Chinese without a co-author trailer, freeze the clean HEAD, run make ci.local.quick once on that exact HEAD, push the candidate and open the PR, then let the four required remote checks gate the protected merge."
+  "next_exact_step": "Batch evidence is complete and the remote frontend_release_gate red light is cleared locally: the decision-authority ledger line drift (533/537 for /login and access-denied in useRecordFormActions.ts) was re-exported and reviewed (only line numbers changed), and make verify.frontend.decision_authority.unit now PASSes 15 tests with all semantic_registry carriers in sync. Next: commit the ledger + iteration record in Chinese without a co-author trailer, freeze the clean HEAD, run make ci.local.quick once on that exact HEAD, push the candidate, wait for the four required remote checks on the new source commit, then merge through make pr.merge and read back PR state, merge commit and main."
 }

@@ -111,6 +111,21 @@ textarea/select/勾选）」排在「配置控件（按钮、仅 tabindex 的容
 （实测 `AssertionError: a currency picker button never receives the value error focus`，
 实际值 `currency-button`、期望值 `amount-input`）；打上优先级规则后通过。
 
+### 5.3 决策权威台账行号同步（远端门禁唯一红灯）
+
+`frontend_release_gate` 的 `verify.frontend.decision_authority.unit` 首次失败，报错为
+`committed decision-authority ledger is out of sync with the live scan`（15 例中 1 例失败）。
+
+只读复现与 diff：本提交在 `frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts`
+新增 8 行，使该文件里两个既有决策的命中行号从 `525/529` 漂移到 `533/537`
+（`R3_router_literal_destination` 的 `/login` 与 `access-denied`）。
+diff 仅这两处行号，`classification`、`reason`、`declaredClass`、`ownerLayer` 与
+`totalFindings=139 / distinctDecisions=99 / unclassified=0` 均未变化。
+
+处理：按守卫要求重新导出 `docs/frontend_productization/decision-authority-inventory-v1.json`
+并复核 diff（仅行号），随后 `make verify.frontend.decision_authority.unit` PASS 15 例，
+`semantic_registry` 三份生成载体 `--check` 亦保持同步。
+
 ## 6. 状态口径
 
 - 批次验收：进行中（本地五条检查通过，等待冻结点门禁与远端四项必需检查）。
