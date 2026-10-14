@@ -584,3 +584,74 @@ global、groups=[]）升级后（`write_date 2026-10-14 16:41:43.989043`）的�
 2. 其余代表角色（pm / owner / project_member）的允许/拒绝证据与「按角色期望载体」
    （`open_p4_probe_has_no_per_principal_expectation_carrier`）；
 3. 本轮台账与文档 delta 与产品候选 `46ce8e12` 同一 PR 提交（仓库拒绝纯簿记候选）。
+
+
+## 13. 主线集成与发布面归一化复核（2026-10-15）
+
+第 12 章的候选面验收完成后，本轮把该主题送入 main，并把每日运行面从「候选快照」归一化到
+「主线修订」，再在同一身份上重跑复核。本节记录该收口的真实事实与仍未声明的事项。
+
+### 13.1 主线集成（PR #661）
+
+- 候选 `dbbb4d84` 在 `make ci.local.quick` 于**精确 HEAD** 通过（8/8 分片，回执
+  `.git/codex/evidence/ci.local.quick/dbbb4d84c74472d15ea99f6412071ec2b6a42f0c.json`）后推送至 `origin`。
+- PR #661（base `main`）四项必需检查 `public_guard`、`merge_policy_gate`、
+  `professional_quality_gate`、`frontend_release_gate` 均在**该精确源提交**上、针对**该精确目标基线**
+  成功；随后经 `make pr.merge.prep PR=661` 回报 `merge_policy_gate` 状态，再由
+  `make pr.merge PR=661 EXPECTED_HEAD=dbbb4d84…` 以 squash + `--match-head-commit` 完成受保护合并。
+- 合并结果 `eae0c1c0` 为**单亲**提交（父 `34a22c61`），其树与候选头 `dbbb4d84`
+  **逐字节一致**（`git diff --stat dbbb4d84 eae0c1c0` 为空）。合并本身不触发产品部署。
+- 候选携带内容：数据空间主题提交 `ce3c9d24` + 零内容基线合并 `46ce8e12` + 本轮台账/迭代记录/
+  测试覆盖登记 delta（`64c85b18`、`06d2c56b`、`dbbb4d84`）。本轮**未**另开纯簿记候选。
+
+### 13.2 发布面归一化（候选 → 主线）
+
+此前每日运行面处于**分离头候选** `46ce8e12`。本轮按受管 main 模式入口依次执行：
+
+| 入口 | 结果 |
+|---|---|
+| `make daily.runtime.main.bundle_sync` | PASS，`normalized_from_candidate=true`，`old_sha=d2079888` → `source_sha=eae0c1c0`，`bundle_sha256=a20a8020…` |
+| `make daily.runtime.source_revision.align` | PASS，`served git_sha=source_revision=eae0c1c0`；`frontend_build_sha256=cf803d03…` **未变**（前端源未移动，绑定的是内容指纹） |
+| `make daily.runtime.published_face.converge` | PASS，`guard_status=PASS`、`module_upgrade_returncode=0`、`snapshot_version=daily-navigation-preview-eae0c1c00af9`、`locked_released_menu_count=90`、`gate_page_count=129`、`guard_user=wutao` |
+
+`eae0c1c0` 与 `46ce8e12` 的差集**仅**为台账、迭代记录、测试覆盖登记与受管脚本 docstring
+（产品模块与前端源零改动），因此归一化不改变已验收的产品行为，只把**服务身份**对齐到主线。
+
+### 13.3 归一化后的复核（同一服务身份）
+
+- 登记顺序执行：`daily.runtime.lifecycle_fixture.prepare`（`FIXTURE_RC=0`）→
+  `daily.runtime.record_identity.resolve`（`RESOLVE_RC=0`）→ `verify.daily_dev.acceptance.readonly.probe`
+  （`EXIT=0`，schema guard PASS）。
+  - `contract.request.http_status=200`（`payment.request`、`action 780`、`menu 550`、`record_id 36190`、
+    `fixture_role_finance` uid 210、company 21、`web_pc` / `full` / `edit`），11 项声明检查全绿；
+  - custody 落盘 `response_bytes=1049444`、`response_sha256=3e79c2b0…`；
+  - 导航：`nav_leaf_count=90`、`nav_gate_kept_leaf_count=90`、`nav_admitted_entry_count=90`、
+    `nav_required_path_misses=[]`、`nav_forbidden_label_hits=[]`、`nav_required_action_mismatches=[]`；
+  - 身份：`expected_sha=served_sha=eae0c1c0…`、`frontend_build_sha256=cf803d03…`。
+  - 日志：`.runtime/final-acceptance/target-env-role/readonly_probe_eae0c1c0.log`。
+  - 运行态回执已按受管顺序重录（`make agent.run.begin` → `make agent.run.record`，
+    `AGENT_TEST_COUNT=11`）。
+- 89 入口矩阵在 `served=eae0c1c0` 重跑：`ok=true`、`completeness=complete`、`problems=0`、
+  `console_errors=0`；状态分布 `empty=41 / ok=42 / true=1 / ready=4`，另 1 项为
+  `smart_construction_core.menu_sc_p1_expense_contract`（支出合同）的
+  `page.goto: Timeout 30000ms exceeded` 传输态超时。
+  - 按入口声明的单键重跑（`SC_ENTRY_MATRIX_KEYS=…`，独立输出目录）得到 `list_status=ready`、
+    `records_rendered=50`、`record_id=3827`，与 `46ce8e12` 轮**完全一致** → 判定为**瞬时传输超时，
+    非产品回归**。
+  - 证据：`artifacts/frontend-business-entry-matrix/daily-eae0c1c0-full/` 与
+    `.../daily-eae0c1c0-expense-contract/`。
+
+### 13.4 状态口径（截至本节）
+
+- **批次验收：完成**（数据空间开通边界：开通 PASS + 27 项 flip / 0 回归 + 探针 `http 200`、导航 90/90）；
+- **主线集成：完成**（PR #661 → `eae0c1c0`，单亲 squash，树与候选逐字节一致）；
+- **版本发布：未声明**（每日面为**预览面**，本轮把服务身份归一到主线修订并复核，
+  不等于选定版本的发布、升级与冒烟闭环）；
+- **产品交付：未声明**（仍未覆盖其余代表角色的允许/拒绝证据与跨角色业务闭环）。
+
+### 13.5 待办（仅登记，不在本批动手）
+
+1. 13 条手写遍历锚点全局 `ir.rule` 公司天花板迁入声明/注册体系后重新生成（独立 P1 批次）；
+2. 其余代表角色（pm / owner / project_member）允许/拒绝证据与按角色期望载体
+   （`open_p4_probe_has_no_per_principal_expectation_carrier`）；
+3. `local.dev.rebuild_demo` 场景加载失败（历史缺陷），仅在确有 demo 重建需求时处理。
