@@ -12,7 +12,6 @@
       <field name="worker_qty">24.0</field>
       <field name="work_hours">192.0</field>
       <field name="foreman_name">测试-班组长</field>
-      <field name="state">confirmed</field>
       <field name="note">S87 劳务用工样例</field>
     </record>
 
@@ -22,7 +21,6 @@
       <field name="contractor_id" ref="smart_construction_demo.sc_demo_partner_vendor_concrete"/>
       <field name="settlement_date">2025-07-05</field>
       <field name="currency_id" ref="base.CNY"/>
-      <field name="state">confirmed</field>
       <field name="note">S87 劳务结算样例</field>
     </record>
 
@@ -58,7 +56,6 @@
       <field name="supplier_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
       <field name="settlement_date">2025-07-06</field>
       <field name="currency_id" ref="base.CNY"/>
-      <field name="state">confirmed</field>
       <field name="note">S87 设备结算样例</field>
     </record>
 
@@ -130,7 +127,6 @@
       <field name="settlement_included">True</field>
       <field name="description">二次结构局部深化调整，增加构造柱和门洞加固。</field>
       <field name="basis">设计变更通知单 S87-DESIGN-001。</field>
-      <field name="state">approved</field>
     </record>
 
     <record id="sc_demo_contract_event_087_output_value" model="sc.contract.event">
@@ -150,7 +146,6 @@
       <field name="settlement_included">True</field>
       <field name="description">七月完成主体结构及二次结构阶段产值申报。</field>
       <field name="basis">月度形象进度确认单。</field>
-      <field name="state">done</field>
     </record>
 
   </data>

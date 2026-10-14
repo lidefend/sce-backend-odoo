@@ -3,6 +3,7 @@ from odoo import fields
 from odoo.exceptions import UserError
 
 from ..registry import SeedStep, register
+from ..tier_flow import ensure_project_initiation_approved
 
 
 PROJECT_INIT_CODE = "DEMO-PJ-INIT"
@@ -305,6 +306,8 @@ def _apply_lifecycle(project, target_state):
         return
     if project.lifecycle_state != "draft":
         return
+    # 与展厅项目一致：草稿项目必须先完成立项审批才能办理阶段动作。
+    ensure_project_initiation_approved(project)
     path_map = {
         "draft": [],
         "in_progress": ["in_progress"],

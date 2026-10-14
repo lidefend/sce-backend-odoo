@@ -21,6 +21,10 @@ WARN_PROJECT_CODES = {
     "DEMO-PJ-INIT",
     "DEMO-PJ-TENDER",
 }
+
+# 与 payment.request._check_project_lifecycle 一致：这些终态项目不允许再新增
+# 提交/审批中的付款申请，演示数据的自检必须遵循同一产品规则。
+TERMINAL_PROJECT_LIFECYCLES = ("warranty", "closed")
 ALL_DEMO_PROJECT_CODES = [
     "DEMO-PJ-INIT",
     "DEMO-PJ-TENDER",
@@ -228,10 +232,26 @@ def run(env):
             raise UserError(f"Stage project missing documents: {project.display_name}")
         if Settlement.search_count([("project_id", "=", project.id)]) < 1:
             raise UserError(f"Stage project missing settlement: {project.display_name}")
-        if Payment.search_count([("project_id", "=", project.id), ("type", "=", "pay")]) < 1:
-            raise UserError(f"Stage project missing payment: {project.display_name}")
-        if Payment.search_count([("project_id", "=", project.id), ("type", "=", "receive")]) < 1:
-            raise UserError(f"Stage project missing receive: {project.display_name}")
+        if project.lifecycle_state in TERMINAL_PROJECT_LIFECYCLES:
+            # 产品在保修/关闭项目上禁止提交或审批付款申请
+            # （payment.request._check_project_lifecycle → P0_PROJECT_TERMINAL_BLOCKED）。
+            # 演示项目与真实项目走同一状态机，终态样本因此只断言业务事实可办，
+            # 并反向断言没有卡在审批中的付款申请，而不是要求一份产品无法产生的付款事实。
+            in_flight = Payment.search_count(
+                [
+                    ("project_id", "=", project.id),
+                    ("state", "in", ("submit", "approve")),
+                ]
+            )
+            if in_flight:
+                raise UserError(
+                    f"Terminal project has in-flight payment: {project.display_name}"
+                )
+        else:
+            if Payment.search_count([("project_id", "=", project.id), ("type", "=", "pay")]) < 1:
+                raise UserError(f"Stage project missing payment: {project.display_name}")
+            if Payment.search_count([("project_id", "=", project.id), ("type", "=", "receive")]) < 1:
+                raise UserError(f"Stage project missing receive: {project.display_name}")
         settlement = Settlement.search([("project_id", "=", project.id)], limit=1)
         if not settlement.purchase_order_ids:
             raise UserError(f"Stage project missing purchase order: {project.display_name}")

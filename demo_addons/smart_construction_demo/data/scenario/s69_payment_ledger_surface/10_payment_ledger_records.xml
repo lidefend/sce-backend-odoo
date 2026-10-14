@@ -102,10 +102,12 @@
       <field name="amount">120000.0</field>
       <field name="currency_id" ref="base.CNY"/>
       <field name="date_request">2025-08-23</field>
-      <field name="state">approved</field>
-      <field name="validation_status">validated</field>
       <field name="note">S69 支付台账来源付款申请。</field>
     </record>
 
   </data>
+
+  <!-- 该付款申请以已审批的支出结算单为依据，终态只能由正式审批动作产生；
+       审批在 scenario_loader 的 _ensure_s69_settlement_lifecycle 把结算单送达到
+       已审批之后由 _ensure_s69_payment_request_approved 走四段审批完成。 -->
 </odoo>

@@ -3,7 +3,7 @@ from odoo import fields
 from odoo.exceptions import UserError
 
 from ..registry import SeedStep, register
-from ..tier_flow import approve_tier_chain
+from ..tier_flow import approve_tier_chain, ensure_project_initiation_approved
 
 
 SHOWROOM_PROJECTS = [
@@ -105,6 +105,9 @@ def _ensure_tasks(env, project, user, target):
 def _ensure_lifecycle(project, target_state):
     if project.lifecycle_state != "draft":
         return
+    # 启动项目的前置事实是立项已通过；种子只调用产品自己的提交动作，
+    # 未配置审批模板时该动作本身完成立项，配置了模板则走真实审批链。
+    ensure_project_initiation_approved(project)
     if target_state == "in_progress":
         project.action_set_lifecycle_state("in_progress")
     elif target_state == "paused":

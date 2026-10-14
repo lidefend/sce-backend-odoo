@@ -145,6 +145,22 @@ class TestDemoFundingBaselineLifecycle(unittest.TestCase):
             re.escape("action_activate()"),
         )
 
+    def test_cockpit_receipt_create_leaves_the_migration_carrier_authority(self):
+        """The cockpit sample is a new-system fact, not a migration fact.
+
+        Scenario XML runs under the governed-migration carrier context whose
+        ``sc_receipt_fact_authority_token`` switches ``create()`` away from the
+        draft/finance-identity guards, so a missing ``finance_identity_state``
+        becomes NULL and violates NOT NULL.  The cockpit seed must clear that
+        token before creating its receipt so the row goes through the ordinary
+        product path (draft + normalized identity).
+        """
+        source = (DEMO_ROOT / "models/project_demo_cockpit_seed.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('"sc.receipt.income"].sudo().with_context(', source)
+        self.assertIn("sc_receipt_fact_authority_token=None", source)
+
     def test_finance_fact_records_pin_identity_state(self):
         """Carrier-context side effect guard.
 

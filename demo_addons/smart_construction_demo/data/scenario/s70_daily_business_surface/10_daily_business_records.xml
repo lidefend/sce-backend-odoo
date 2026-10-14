@@ -1,5 +1,90 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
+  <!-- S70 付款执行在 create() 阶段即要求锚定"已审批的付款申请"，且该申请必须
+       具备合同/结算依据与完整收款账户。因此本场景先建立产品事实：
+       项目 001 资金承载 + 生效资金基线 + 支出合同依据 + 已审批付款申请，
+       再由 scenario_loader 的受控动作把付款执行推进到 confirmed。
+       基线激活与资金承载写入必须放在 noupdate="0" 块中（Odoo convert 的
+       <function> 在 mode != init 且处于 noupdate=1 块时会被静默跳过），
+       与 s69 的先例一致。 -->
+  <!-- 顺序受产品守卫约束：项目须先资金承载，才能建立资金基线；基线须先生效，
+       付款申请才能以 approved 落库（funding gate）。 -->
+  <data noupdate="0">
+    <function model="project.project" name="write">
+      <value model="project.project" eval="obj([ref('smart_construction_demo.sc_demo_project_001')]).ids"/>
+      <value eval="{'funding_enabled': True}"/>
+    </function>
+  </data>
+
+  <data noupdate="1">
+
+    <record id="sc_demo_funding_baseline_070_daily" model="project.funding.baseline">
+      <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
+      <field name="total_amount">5000000.0</field>
+      <field name="period_start">2025-01-01</field>
+      <field name="period_end">2026-12-31</field>
+    </record>
+
+    <record id="sc_demo_funding_baseline_070_daily_line_material" model="project.funding.baseline.line">
+      <field name="baseline_id" ref="smart_construction_demo.sc_demo_funding_baseline_070_daily"/>
+      <field name="sequence">10</field>
+      <field name="name">材料费</field>
+      <field name="planned_amount">5000000.0</field>
+    </record>
+
+  </data>
+
+  <data noupdate="0">
+    <function model="project.funding.baseline" name="sc_demo_activate">
+      <value model="project.funding.baseline" eval="obj([ref('smart_construction_demo.sc_demo_funding_baseline_070_daily')]).filtered(lambda b: b.state == 'draft').ids"/>
+    </function>
+  </data>
+
+  <data noupdate="1">
+
+    <record id="sc_demo_contract_in_070_material" model="construction.contract">
+      <field name="subject">S70 钢材采购支出合同</field>
+      <field name="type">in</field>
+      <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
+      <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
+      <field name="date_contract">2025-03-01</field>
+      <field name="amount_total">386000.0</field>
+      <field name="amount_final">386000.0</field>
+      <field name="currency_id" ref="base.CNY"/>
+    </record>
+
+    <record id="sc_demo_contract_in_070_material_line" model="construction.contract.line">
+      <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_in_070_material"/>
+      <field name="qty_contract">1.0</field>
+      <field name="price_contract">386000.0</field>
+      <field name="note">S70 钢材采购合同明细</field>
+    </record>
+
+    <record id="sc_demo_payment_request_070_material" model="payment.request">
+      <field name="name">S70-PAY-REQ-001</field>
+      <field name="type">pay</field>
+      <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
+      <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_in_070_material"/>
+      <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
+      <field name="amount">386000.0</field>
+      <field name="currency_id" ref="base.CNY"/>
+      <field name="date_request">2025-03-11</field>
+      <field name="payment_account_name">德阳某某钢材贸易有限公司（示例）</field>
+      <field name="payment_bank_name">示例银行德阳分行</field>
+      <field name="payment_account_no">DEMO-ACCOUNT-VENDOR-STEEL</field>
+      <field name="note">S70 付款执行来源付款申请。</field>
+    </record>
+  </data>
+
+  <!-- 付款执行要求其付款申请已审批。终态只能由正式审批动作产生，故在此按
+       noupdate="0" 的 <function>（convert 在 mode!=init 时会跳过 noupdate 块内
+       的函数，先例：s69/s70 的资金基线激活）用 demo 席位走完四段审批。 -->
+  <data noupdate="0">
+    <function model="payment.request" name="sc_demo_drive_approval">
+      <value model="payment.request" eval="obj([ref('smart_construction_demo.sc_demo_payment_request_070_material')]).ids"/>
+    </function>
+  </data>
+
   <data noupdate="1">
 
     <record id="sc_demo_material_catalog_070_steel" model="sc.material.catalog">
@@ -52,7 +137,6 @@
     <record id="sc_demo_receipt_income_070_progress" model="sc.receipt.income">
       <field name="name">S70-RI-001</field>
       <field name="source_kind">receipt_income</field>
-      <field name="state">confirmed</field>
       <field name="finance_identity_state">normalized</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
@@ -74,8 +158,9 @@
     <record id="sc_demo_payment_execution_070_material" model="sc.payment.execution">
       <field name="name">S70-PE-001</field>
       <field name="source_kind">actual_outflow</field>
-      <field name="state">confirmed</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
+      <field name="payment_request_id" ref="smart_construction_demo.sc_demo_payment_request_070_material"/>
+      <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_in_070_material"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
       <field name="date_payment">2025-03-12</field>
       <field name="document_no">S70-PAY-001</field>
@@ -90,11 +175,26 @@
       <field name="note">S70 付款执行样例</field>
     </record>
 
+    <!-- 资金台账由产品权威令牌保护、不可手工创建；场景装载携带 demo 受治理载体
+         上下文，因此按产品自身的载体机制提供这条标准资金事实，而非绕过守卫。 -->
+    <record id="sc_demo_treasury_ledger_070_daily" model="sc.treasury.ledger">
+      <field name="name">S70-TL-001</field>
+      <field name="date">2025-03-13</field>
+      <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
+      <field name="direction">out</field>
+      <field name="amount">386000.0</field>
+      <field name="currency_id" ref="base.CNY"/>
+      <field name="state">posted</field>
+      <field name="source_kind">daily_line</field>
+      <field name="normalization_state">normalized</field>
+      <field name="note">S70 资金日报台账样例。</field>
+    </record>
+
     <record id="sc_demo_treasury_reconciliation_070_daily" model="sc.treasury.reconciliation">
       <field name="name">S70-TR-001</field>
       <field name="source_kind">daily_line</field>
-      <field name="state">confirmed</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
+      <field name="treasury_ledger_id" ref="smart_construction_demo.sc_demo_treasury_ledger_070_daily"/>
       <field name="date_document">2025-03-13</field>
       <field name="document_no">S70-FUND-DAILY-001</field>
       <field name="account_name">项目基本户</field>
@@ -112,7 +212,6 @@
       <field name="name">S70-INV-001</field>
       <field name="source_kind">input_invoice_tax</field>
       <field name="direction">input</field>
-      <field name="state">registered</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
       <field name="document_no">S70-INVOICE-DOC-001</field>
@@ -159,7 +258,6 @@
 
     <record id="sc_demo_construction_diary_070_daily" model="sc.construction.diary">
       <field name="name">S70-DIARY-001</field>
-      <field name="state">confirmed</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="date_diary">2025-03-18 09:00:00</field>
       <field name="report_period_start">2025-03-18</field>

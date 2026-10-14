@@ -27,7 +27,6 @@
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="request_date">2025-04-01</field>
       <field name="required_date">2025-04-08</field>
-      <field name="state">approved</field>
       <field name="purpose">主体结构 A 区二层钢筋施工</field>
       <field name="note">S80 材料采购申请样例</field>
     </record>
@@ -51,7 +50,6 @@
       <field name="due_date">2025-04-05</field>
       <field name="contact_name">测试-材料员</field>
       <field name="selected_supplier_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
-      <field name="state">selected</field>
       <field name="note">S80 材料询价比价样例</field>
     </record>
 
@@ -79,7 +77,6 @@
       <field name="dest_location_id" ref="stock.stock_location_stock"/>
       <field name="acceptance_date">2025-04-08</field>
       <field name="acceptance_flow">supervisor</field>
-      <field name="state">accepted</field>
       <field name="note">S80 材料到场验收合格样例</field>
     </record>
 
@@ -104,7 +101,6 @@
       <field name="warehouse_id" ref="stock.warehouse0"/>
       <field name="dest_location_id" ref="stock.stock_location_stock"/>
       <field name="inbound_date">2025-04-08</field>
-      <field name="state">received</field>
       <field name="note">S80 材料入库登记样例</field>
     </record>
 
@@ -172,7 +168,6 @@
       <field name="report_cycle">weekly</field>
       <field name="planned_start">2025-04-01</field>
       <field name="planned_finish">2025-04-30</field>
-      <field name="state">in_progress</field>
       <field name="note">S80 计划执行面样例</field>
     </record>
 
@@ -183,12 +178,9 @@
       <field name="phase_name">A 区主体结构</field>
       <field name="planned_start">2025-04-08</field>
       <field name="planned_finish">2025-04-16</field>
-      <field name="actual_start">2025-04-08</field>
       <field name="completion_standard">隐蔽验收通过并形成照片留痕</field>
       <field name="deliverable_name">钢筋隐蔽验收记录</field>
       <field name="weight">35.0</field>
-      <field name="progress_rate">65.0</field>
-      <field name="state">in_progress</field>
     </record>
 
     <record id="sc_demo_plan_report_080_weekly" model="sc.plan.report">
@@ -201,7 +193,6 @@
       <field name="progress_rate">65.0</field>
       <field name="summary">钢筋绑扎完成约三分之二，材料供应满足进度。</field>
       <field name="risk_note">雨天可能影响后续浇筑准备。</field>
-      <field name="state">accepted</field>
     </record>
 
     <record id="sc_demo_quality_standard_080_structure" model="sc.check.standard">
@@ -269,7 +260,6 @@
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="plan_date">2025-04-01</field>
       <field name="approval_deadline">2025-04-04</field>
-      <field name="state">approved</field>
       <field name="description">塔吊交叉作业半径、防碰撞、指挥和停工条件控制方案。</field>
     </record>
 
@@ -280,7 +270,6 @@
       <field name="disclosure_date">2025-04-06</field>
       <field name="participant_note">塔吊司机、信号工、钢筋班组</field>
       <field name="content">明确吊装路线、指挥口令和临边隔离要求。</field>
-      <field name="state">approved</field>
     </record>
 
     <record id="sc_demo_risk_library_080_site" model="sc.risk.library">
@@ -370,7 +359,6 @@
       <field name="start_date">2025-04-08</field>
       <field name="end_date">2025-04-16</field>
       <field name="contractor_id" ref="smart_construction_demo.sc_demo_partner_vendor_concrete"/>
-      <field name="state">approved</field>
       <field name="note">S80 劳务计划样例</field>
     </record>
 
@@ -388,7 +376,6 @@
       <field name="request_date">2025-04-06</field>
       <field name="required_date">2025-04-08</field>
       <field name="contractor_id" ref="smart_construction_demo.sc_demo_partner_vendor_concrete"/>
-      <field name="state">approved</field>
       <field name="note">S80 劳务申请样例</field>
     </record>
 
@@ -409,7 +396,6 @@
       <field name="attendance_qty">30.0</field>
       <field name="work_hours">240.0</field>
       <field name="contractor_id" ref="smart_construction_demo.sc_demo_partner_vendor_concrete"/>
-      <field name="state">confirmed</field>
       <field name="note">S80 劳务考勤样例</field>
     </record>
 
@@ -421,7 +407,6 @@
       <field name="end_date">2025-04-16</field>
       <field name="usage_location">A 区主体结构</field>
       <field name="supplier_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
-      <field name="state">approved</field>
       <field name="note">S80 设备计划样例</field>
     </record>
 
@@ -443,7 +428,6 @@
       <field name="required_date">2025-04-08</field>
       <field name="usage_location">A 区主体结构</field>
       <field name="supplier_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
-      <field name="state">approved</field>
       <field name="note">S80 设备申请样例</field>
     </record>
 
@@ -469,7 +453,6 @@
       <field name="usage_qty">1.0</field>
       <field name="usage_hours">8.0</field>
       <field name="supplier_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
-      <field name="state">confirmed</field>
       <field name="note">S80 设备使用登记样例</field>
     </record>
 

@@ -28,12 +28,18 @@ def onboard_platform_data_space(env):
     seeding runs only after that company owns a registration instead of a
     technical-carrier marker. Re-runs are idempotent and the marketing/demo
     lane never manufactures its own registration.
+
+    Onboarding is not complete with the registration row: the demo's operating
+    identities must also be enrolled into the non-customer data realm, or the
+    data space exists and nobody can read it. Identity enrollment is therefore
+    part of this same idempotent act, never a per-user assembly in demo data.
     """
     from odoo.addons.smart_core.security import data_space_provisioning as provisioning
 
     provisioning.declare_environment_role(env, ENVIRONMENT_ROLE)
     if not provisioning.onboarded_registrations(env, purpose="demo"):
         provisioning.onboard_environment_main_company(env, tenant_key=DEMO_TENANT_KEY)
+    return provisioning.enroll_data_space_identities(env, purpose="demo")
 
 
 def guard_demo_data_space(env):
@@ -42,6 +48,7 @@ def guard_demo_data_space(env):
 
     onboard_platform_data_space(env)
     provisioning.assert_business_data_space_ready(env, purpose="demo")
+    provisioning.assert_data_space_identities_enrolled(env, purpose="demo")
     carriers = provisioning.bootstrap_company_ids(env)
     if carriers:
         raise RuntimeError(

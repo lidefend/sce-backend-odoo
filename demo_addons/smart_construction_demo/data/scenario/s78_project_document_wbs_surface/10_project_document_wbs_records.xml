@@ -62,7 +62,6 @@
       <field name="is_mandatory">True</field>
       <field name="responsible_id" ref="base.user_admin"/>
       <field name="company_id" ref="base.main_company"/>
-      <field name="state">review</field>
       <field name="note">S78 项目资料中心安全资料样例，关联 WBS 与任务。</field>
     </record>
 
@@ -79,7 +78,6 @@
       <field name="is_mandatory">True</field>
       <field name="responsible_id" ref="base.user_admin"/>
       <field name="company_id" ref="base.main_company"/>
-      <field name="state">done</field>
       <field name="note">S78 项目资料中心归档资料样例，带附件计数校验。</field>
     </record>
 

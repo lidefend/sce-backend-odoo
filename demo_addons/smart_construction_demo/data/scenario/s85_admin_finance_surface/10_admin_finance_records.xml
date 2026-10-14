@@ -31,7 +31,6 @@
       <field name="source_origin">manual</field>
       <field name="loan_type">loan_registration</field>
       <field name="direction">financing_in</field>
-      <field name="state">confirmed</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
       <field name="document_no">S85-FIN-DOC-001</field>
@@ -145,11 +144,11 @@
       <field name="business_date">2025-05-20</field>
       <field name="employee_user_id" ref="base.user_admin"/>
       <field name="employee_name">测试-项目经理A</field>
+      <field name="department_id" ref="smart_construction_demo.sc_demo_department_001"/>
       <field name="item_type">主体结构节点奖</field>
       <field name="amount">3500.0</field>
       <field name="occurrence_date">2025-05-20</field>
       <field name="currency_id" ref="base.CNY"/>
-      <field name="state">done</field>
       <field name="description">S85 奖金登记样例</field>
       <field name="result_note">节点奖登记完成。</field>
     </record>
@@ -163,7 +162,6 @@
       <field name="subcontract_scope">样板区精装修工程</field>
       <field name="subcontractor_id" ref="smart_construction_demo.sc_demo_partner_subcontract_085_fitout"/>
       <field name="currency_id" ref="base.CNY"/>
-      <field name="state">approved</field>
       <field name="note">S85 分包计划样例</field>
     </record>
 
@@ -188,7 +186,6 @@
       <field name="suggested_subcontractor_id" ref="smart_construction_demo.sc_demo_partner_subcontract_085_fitout"/>
       <field name="priority">urgent</field>
       <field name="currency_id" ref="base.CNY"/>
-      <field name="state">approved</field>
       <field name="request_reason">样板区开放节点前需完成精装修收口。</field>
     </record>
 
@@ -228,7 +225,6 @@
       <field name="subcontract_scope">样板区精装修工程</field>
       <field name="subcontractor_id" ref="smart_construction_demo.sc_demo_partner_subcontract_085_fitout"/>
       <field name="currency_id" ref="base.CNY"/>
-      <field name="state">active</field>
       <field name="management_note">进场前完成安全交底，样板先行。</field>
     </record>
 
@@ -247,7 +243,6 @@
       <field name="subcontractor_id" ref="smart_construction_demo.sc_demo_partner_subcontract_085_fitout"/>
       <field name="settlement_date">2025-06-25</field>
       <field name="currency_id" ref="base.CNY"/>
-      <field name="state">confirmed</field>
       <field name="note">S85 分包结算样例</field>
     </record>
 
