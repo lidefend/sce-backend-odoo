@@ -536,7 +536,7 @@
     },
     {
       "category": "other",
-      "digest": "bead88c3df301c28d11607e826a81cd6eeb99d5d4b4a4f7d1cc9fb9aedce304b",
+      "digest": "9e1edbd4f2ca71b1ac1add149368a7b94c00e9e453da0b75509af115db63c952",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScDescriptions.vue",
       "referenceNativeStyleSelectors": [],
@@ -590,7 +590,7 @@
     },
     {
       "category": "other",
-      "digest": "322b681c230ab7ecd21617e5e5aa196e8699dbc77e7741242ffaac828821246a",
+      "digest": "28ca95f6c49710a634fee3a918d8341b85b7bdab30e0aa8fed1fc3703fc72614",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScDropdown.vue",
       "referenceNativeStyleSelectors": [],
@@ -1858,7 +1858,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "d43401c7ba583ec02e5236d7d4fa8f92439b376889771a26192039791c3d99ef",
+      "digest": "e288fa9d956c5672b6e75cb7be29f4fa135a9ce9e06a00c7c4b597541dc22bb5",
       "nativeStyleSelectors": [],
       "path": "components/template/FormSection.vue",
       "referenceNativeStyleSelectors": [
@@ -1887,6 +1887,7 @@
         "ScIcon",
         "ScIconButton",
         "ScInput",
+        "ScPopover",
         "ScRadioGroup",
         "ScRelationField"
       ]
@@ -1906,7 +1907,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "258a58263e5d1e4190d8499c9dc73d562e75034dbbadd0699723215a526035e4",
+      "digest": "392d228f766d728c260be71a999c96c49b2765cba701aa5aec0538434b6248c9",
       "nativeStyleSelectors": [],
       "path": "components/template/NativeFormTreeRenderer.vue",
       "referenceNativeStyleSelectors": [],
@@ -1918,7 +1919,6 @@
         "ScButton",
         "ScIcon",
         "ScIconButton",
-        "ScInlineState",
         "ScInput",
         "ScTabs"
       ]
@@ -1963,7 +1963,7 @@
     },
     {
       "category": "relations-x2many",
-      "digest": "2dd13eb84d24621dd17e349ff883bc32effb2968ccdf65be8aeed9dd3be4a88a",
+      "digest": "37629eaef5585aaebcb84b450bf4dd11685f678ad768e4b131614ce7a2482fee",
       "nativeStyleSelectors": [],
       "path": "components/template/X2ManyRelationRenderer.vue",
       "referenceNativeStyleSelectors": [
@@ -2092,7 +2092,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "56d364f247b629190372845b108bc7dc07274f1c850f483fde742e2e1e25877c",
+      "digest": "c4e377511d76e6b0720e7050ccc6416b541733fcd952f87a49ce4b04912887bd",
       "nativeStyleSelectors": [],
       "path": "pages/ContractFormPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2149,7 +2149,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "f6cc9ce3a78c8c6a7586e3f642e304eef07563246a86f7368e65ee31dbabfb62",
+      "digest": "4a57ea10e5835c205cc040b8747c88b56b00354f1f960a9ec0ddf9f5f0760781",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/BoundFormSettingsPanel.vue",
       "referenceNativeStyleSelectors": [],
@@ -2183,7 +2183,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "55b318c1f8ed0c393a6be6c4c38a996f538bf0926c9432a5b150a00fe623c149",
+      "digest": "fa8a831679000d0b13e1daec8cdf8f03c0c8041e58baf4d6e68398a8e4a7f5c2",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/CanonicalFormNodeRenderer.vue",
       "referenceNativeStyleSelectors": [],
@@ -2205,7 +2205,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "9184c66209ce6f00b60c9ca412824d1a37caf47667f8202b6e23fc38bd201131",
+      "digest": "ed070b03a3ebbc04883825a88ef8b5327f6c25502adee6acbcbaaed7fec2e074",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormActionBlocks.vue",
       "referenceNativeStyleSelectors": [],
@@ -2217,7 +2217,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "a00b1b324b9c0a17c42b179752369d679c6f4140b31d5870ea9dce5c73420370",
+      "digest": "71037fc6da4e603234d6bdcef6704f51e03f4019e151db456b3228bba538d6a3",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormDriverHost.vue",
       "referenceNativeStyleSelectors": [
@@ -2253,7 +2253,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "4f45efbfe405b889ded6426d3fedef3b99fd3a42c0dd9adfbd6d0f5a706cf76e",
+      "digest": "0bc5b1f54120139a982a46a9755457b0dc49ba64f4f2e81399e5bd3929e8a90d",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormProductHeader.vue",
       "referenceNativeStyleSelectors": [],
@@ -2266,6 +2266,7 @@
         "ScDropdown",
         "ScDropdownItem",
         "ScIcon",
+        "ScPopover",
         "ScSelect",
         "ScStatusBadge"
       ]
@@ -2360,7 +2361,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "0c4edaa2be9d5bf7f0cc105dbff77d85771b02e7bc38ffb85eaa33c47de47ffc",
+      "digest": "35ac2ff9ab6a80f0618bc89d27e5df61bf328bd93cf917f694885e890fb262b8",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ObjectTaskPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -3000,7 +3001,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "6ccdc840e110cafd9b7c4aa9fbc0e930418faf0210e8ce8ac12e0baf72cd9c09",
+  "currentInputDigest": "d0df234b86f22d818b828a7f3c2e4a94e2a134091b99da13891fa2deea2fa439",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
@@ -3090,14 +3091,14 @@
     },
     {
       "browserAssertionMarker": "focusSequence",
-      "browserAssertionMarkerPresent": true,
+      "browserAssertionMarkerPresent": false,
       "browserEvidenceSource": "scripts/verify/frontend_native_form_action_presentation_browser.mjs",
       "browserFailureExitPresent": true,
       "browserTarget": "verify.frontend.native_form_action_presentation.browser",
       "browserTargetRecipeWired": true,
       "browserTargetWired": true,
       "key": "form.workspace-native-structure-density",
-      "status": "bound",
+      "status": "invalid",
       "unitTarget": "verify.frontend.native_form_action_presentation.unit",
       "unitTargetWired": true
     },
@@ -3116,14 +3117,14 @@
     },
     {
       "browserAssertionMarker": "allDisabledEscapeClosed",
-      "browserAssertionMarkerPresent": true,
+      "browserAssertionMarkerPresent": false,
       "browserEvidenceSource": "scripts/verify/frontend_native_form_action_presentation_browser.mjs",
       "browserFailureExitPresent": true,
       "browserTarget": "verify.frontend.native_form_action_presentation.browser",
       "browserTargetRecipeWired": true,
       "browserTargetWired": true,
       "key": "workflow.action-status-disabled-reason",
-      "status": "bound",
+      "status": "invalid",
       "unitTarget": "verify.frontend.professional_workflow.unit",
       "unitTargetWired": true
     },
@@ -3193,7 +3194,10 @@
       "unitTargetWired": true
     }
   ],
-  "invalidFormalVisualEvidenceBindings": [],
+  "invalidFormalVisualEvidenceBindings": [
+    "form.workspace-native-structure-density",
+    "workflow.action-status-disabled-reason"
+  ],
   "referenceInputDigest": "9065801740ce27219e7d0bb92998350fdd3b16e2948288c186d8798a353c74aa",
   "scAdapterWithNativeSelectorCandidates": [
     {
@@ -3251,7 +3255,7 @@
     "changedSourceCount": 208,
     "consumerPrimitiveVisualChromeCount": 0,
     "currentSourceCount": 226,
-    "invalidFormalVisualEvidenceBindingCount": 0,
+    "invalidFormalVisualEvidenceBindingCount": 2,
     "projectedAdapterCount": 18,
     "referenceSourceCount": 132,
     "scAdapterWithNativeSelectorCandidateCount": 3,
