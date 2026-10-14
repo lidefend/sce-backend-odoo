@@ -104,3 +104,72 @@
 
 > 显式声明的跳过层：`gate.contract.view_structure`（权威基线自身在 main 上红，见 §5.4.3）；
 > `local.clean.view_structure_gate`（同一守卫，同因）。
+
+## 6. RUNTIME-BOUNDARY-FIX-03 · 预览面发布快照口径修复
+
+### 6.1 触发事实
+
+视图修复让目标环境 `smart_construction_core` 升级成功（`construction.standard` 快照 id 97 生成），
+但同一次 `daily.runtime.published_face.converge` 在下一步失败：
+
+```
+LockedMenuPolicyContractError: LOCKED_MENU_SNAPSHOT_MISMATCH:
+construction.preview contains non-released snapshot page
+```
+
+### 6.2 根因
+
+PR #654 引入了新的锁定 P1 产品定义
+`addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json`，其
+`product_policy_profiles` / `delivery_rule` 明确声明：`construction.standard` = 已正式发布条目；
+`construction.preview` = 已发布 + 显式 `preview` 条目（实测 90 released + 39 preview）。
+但 `scripts/release/initialize_colocated_platform_snapshot.py` 冻结后的后置断言仍是「只允许 released」的
+`assert_snapshot_matches_locked_contract`，会把任何 preview 页判为不合法。
+
+运行期权威 `scripts/verify/production_menu_release_gate_guard.py`（决定入口能否打开的那道门）**早已**使用宽容口径
+`assert_snapshot_matches_policy_release_states`。因此不是声明错了，而是**初始化器滞后于已声明的交付规则**。
+
+### 6.3 修复
+
+```python
+- post_snapshot_match = assert_snapshot_matches_locked_contract(contract, product_key, pages)
++ post_snapshot_match = assert_snapshot_matches_policy_release_states(
++     contract, product_key, pages, policy.menu_groups,
++ )
+```
+
+- 口径：快照不得出现 `{released, preview}` 之外的页面；released 页严格等于锁定基线；preview 页严格等于策略声明的 preview 集合。
+- 未放宽：未声明的、hidden/retired 的页面仍然 fail-closed（`others` 与 preview 增/缺检查）。
+- 报告键：`snapshot_menu_count` 语义不变（= released 计数），新增 `snapshot_preview_page_count` /
+  `snapshot_effective_page_count`；`snapshot_normalized_sha256` 取 `released_normalized_sha256`。
+- 绑定测试 `scripts/release/test_production_colocated_release.py` 同步断言新后置门且必须收到 `policy.menu_groups`。
+
+### 6.4 验证分层
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `python3 -m py_compile scripts/release/initialize_colocated_platform_snapshot.py` | PASS |
+| L1 | 真实基线本地复算：`construction.standard` released=90/preview=0；`construction.preview` released=90/preview=39 | 声明口径 PASS；旧 released-only 门报 MISMATCH（符合预期） |
+| L2 定向（记账 check `published_face_snapshot_contract`） | `make verify.role_surface.landing.contract.unit` | PASS 33 |
+| L2 定向（记账 check `published_face_gate_parity`） | `make verify.product_menu_release_gate.contract.unit` | PASS 8 |
+| L2 诊断 | `python3 scripts/release/test_production_colocated_release.py` | PASS 27（诊断级，见 6.5） |
+| L1 入口 | `make ci.local.iteration` | PASS（四个 check 全部 reusable） |
+| L3 目标 | `daily.runtime.candidate.bundle_sync` → `source_revision.align` → `published_face.converge` | 见 §7 |
+
+### 6.5 声明：绑定测试的 owning target 在 main 上红（非本改动）
+
+唯一运行该绑定测试的已登记入口是 `verify.production.release_contract`。它在 main `a2c39711` 与 HEAD `45796be9`
+上都会失败，且与本次改动无关：
+
+```
+scripts/release/test_production_release_contract.py::test_admin_identity_tool_has_a_python310_ci_runtime_gate
+  requires 'needs: [professional_authorization, python310_runtime_compatibility]'
+  in .github/workflows/professional_quality_gate.yml
+```
+
+而该 workflow（最后一次变更是 PR #646，本分支未改动）里 `professional_quality_gate` 只有
+`needs: professional_authorization`；57 个用例中 56 个通过。这属于 CI workflow 定义与其契约测试之间的**既有主线红**，
+本棒不放宽、不修。
+
+因此本棒的记账 check 绑定到能通过、且真实覆盖共享契约函数与运行期权威口径的两个窄入口；
+绑定测试保留为**诊断观察**。为它补一个独立可登记的窄 verify 入口属于 P4 工具缺口，不阻塞本次部署修复。

@@ -9,6 +9,7 @@ goal:
   module:
     - addons/smart_construction_core/views/core/cost_domain_views.xml
     - contracts/generated/product_view_structure_contract.json
+    - scripts/release/initialize_colocated_platform_snapshot.py
     - scripts/verify
     - docs/ops/iterations
   baseline:
@@ -43,6 +44,30 @@ goal:
       - the single RNG-validated view node progress_rate in view_project_progress_entry_tree
       - product_view_structure baseline parity for project.progress.entry
       - daily runtime published-face converge on the target environment
+      - locked-menu release snapshot initialization for construction.standard and construction.preview
+      - the production colocated release contract binding test
+  second_defect:
+    id: RUNTIME-BOUNDARY-FIX-03
+    layer: P1 construction industry standard product
+    layer_target: smart_construction_core_locked_menu_release_initialization
+    summary: >-
+      Once the view fix let the smart_construction_core upgrade succeed on the
+      target, the published-face converge failed at construction.preview with
+      LOCKED_MENU_SNAPSHOT_MISMATCH. PR #654 declared the preview product as
+      "released plus explicitly preview entries" (90 released + 39 preview) but
+      left the frozen-snapshot post gate on the released-only assertion. The
+      initializer now compares the frozen snapshot on the declared caliber; the
+      release gate guard that decides whether an entry may be opened already
+      used that same assertion.
+    why_here: >-
+      The declared delivery rule is a LOCKED P1 product definition in
+      smart_construction_core, and this initializer is the mechanism that must
+      honor it in both the daily and production release lanes.
+    why_not_elsewhere:
+      - no_retraction_of_the_declared_preview_widening
+      - no_frontend_compensation
+      - no_lowering_of_the_released_assertion
+      - no_change_to_the_locked_baseline_file
   constraints:
     - governed_make_entrypoints_only
     - one_worktree_one_writer

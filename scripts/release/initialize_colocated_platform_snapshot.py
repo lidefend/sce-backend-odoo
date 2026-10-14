@@ -13,7 +13,7 @@ import os
 from odoo.addons.smart_core.delivery.edition_release_snapshot_service import EditionReleaseSnapshotService
 from odoo.addons.smart_construction_core.services.locked_menu_policy_contract import (
     assert_policy_matches_locked_contract,
-    assert_snapshot_matches_locked_contract,
+    assert_snapshot_matches_policy_release_states,
 )
 
 
@@ -83,10 +83,20 @@ def main():
                 raise RuntimeError("LOCKED_MENU_SNAPSHOT_SOURCE_POLICY_MISMATCH")
             snapshot_meta = snapshot.meta_json if isinstance(snapshot.meta_json, dict) else {}
             snapshot_draft = snapshot_meta.get("release_draft") if isinstance(snapshot_meta.get("release_draft"), dict) else {}
-            post_snapshot_match = assert_snapshot_matches_locked_contract(
+            # The locked P1 product definition owns the delivery rule: the
+            # released surface must equal the locked baseline exactly, and a
+            # product profile may additionally declare ``preview`` entries. The
+            # post-freeze gate therefore compares the frozen snapshot on that
+            # declared caliber - released pages equal to the baseline, preview
+            # pages equal to the policy's declared preview set, no other state -
+            # instead of retracting the declared preview widening. The release
+            # gate guard that decides whether an entry may be opened uses the
+            # same assertion, so initialization and runtime cannot disagree.
+            post_snapshot_match = assert_snapshot_matches_policy_release_states(
                 contract,
                 product_key,
                 snapshot_draft.get("pages"),
+                policy.menu_groups,
             )
     except Exception:
         env.cr.rollback()  # noqa: F821
@@ -103,9 +113,11 @@ def main():
         "policy_changed": bool(sync.get("changed")),
         "locked_baseline_sha256": _text(contract.get("sha256")),
         "policy_menu_count": int(pre_snapshot_match.get("menu_count") or 0),
-        "snapshot_menu_count": int(post_snapshot_match.get("menu_count") or 0),
+        "snapshot_menu_count": int(post_snapshot_match.get("released_count") or 0),
+        "snapshot_preview_page_count": int(post_snapshot_match.get("preview_count") or 0),
+        "snapshot_effective_page_count": int(post_snapshot_match.get("effective_count") or 0),
         "policy_normalized_sha256": _text(pre_snapshot_match.get("normalized_sha256")),
-        "snapshot_normalized_sha256": _text(post_snapshot_match.get("normalized_sha256")),
+        "snapshot_normalized_sha256": _text(post_snapshot_match.get("released_normalized_sha256")),
         "idempotent": True,
     }, sort_keys=True))
 

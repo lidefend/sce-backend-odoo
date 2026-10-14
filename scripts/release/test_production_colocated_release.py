@@ -46,10 +46,16 @@ class ColocatedReleaseStaticTests(unittest.TestCase):
         sync_at = body.index("synchronize_locked_formal_menu_policy")
         pre_gate_at = body.index("assert_policy_matches_locked_contract")
         freeze_at = body.index("freeze_release_surface")
-        post_gate_at = body.index("assert_snapshot_matches_locked_contract")
+        # The frozen snapshot is compared on the delivery caliber the locked P1
+        # product definition declares: released pages equal the locked baseline,
+        # declared preview pages equal the policy's preview set, nothing else.
+        # Reverting to the released-only gate would silently retract the
+        # declared preview widening and block the published face from converging.
+        post_gate_at = body.index("assert_snapshot_matches_policy_release_states")
         self.assertLess(sync_at, pre_gate_at)
         self.assertLess(pre_gate_at, freeze_at)
         self.assertLess(freeze_at, post_gate_at)
+        self.assertIn("policy.menu_groups", body[post_gate_at:])
         self.assertIn("env.cr.rollback()", self.snapshot)
 
     def test_formal_synchronization_has_no_catalog_fallback(self):
