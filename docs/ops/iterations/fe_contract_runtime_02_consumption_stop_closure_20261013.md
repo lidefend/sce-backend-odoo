@@ -1579,3 +1579,81 @@ L2 定向 ORM 反例 1 test 0 failed（日志 `relationship_review_queue_project
   `_ensure_*(env)` 步骤走正式动作达成终态（既有 `_ensure_s85_payroll_lifecycle` /
   `_ensure_s80_material_lifecycle` / `_ensure_s69_*` 即此模式）。属独立、可单独验收的
   产品结果，规模较大（约 15 个模型 / 10 个场景，部分需审批流），不并入本棒平台初始化批次。
+
+## 一步式办理收口：终态动作不再强制先提交（2026-10-14，所有者裁定）
+
+所有者裁定：
+
+> 对用户来说就是一个动作，不需要先提交再确认 —— 这是系统该完善的内容。
+
+### 问题事实
+
+终态业务动作（`action_confirm` / `action_accept` / `action_activate` / `action_done` /
+`action_archive` / `action_select` / `action_receive` / `action_issue` 及各类结算确认）在**没有审批
+规则**时仍要求先 `action_submit()`，用户被迫两步：先「提交」再「确认」。同一事实被误用的表现是
+demo 场景种子直接写终态、被 2026-10-01 create() 守卫拒绝（见上一节）。即：不是审批流拦人，而是办理
+闸门把「无审批」当成了「未审批」。
+
+### 机制（P0 平台内核，唯一闸门）
+
+新增 `sc.approval.policy.ensure_handling_ready(record, approved_states, submit_states=("draft",))`
+（`addons/smart_construction_core/models/support/approval_policy.py:419`）：
+
+- `record.review_ids` 为空且状态 ∈ `submit_states` → 查 `is_approval_required()`：
+  - 无审批规则：内联 `action_submit()` + `invalidate_recordset()`，调用方的**一个动作**直达终态；
+  - 有审批规则：`UserError`（fail-closed），单据保持 `draft`。
+- 仍委托 `_assert_submission_approved()`：审批实例未通过、状态不在 `approved_states` 一律拒绝。
+- 没有 `action_submit` 的模型：保持原行为与原有报错。
+
+**裁定：`submit_states` 只保留 `("draft",)`。** 曾试 `("draft","rejected")`，会让驳回态也能一步到
+终态，属状态机放宽回归（p0_state 3 条块级用例由 PASS 变 FAIL），故收紧为仅 `draft`；「驳回后重新
+提交」仍走原两步语义。
+
+### 调用点与投影声明
+
+- 18 个终态动作调用点（10 个模型文件）由 `_assert_submission_approved` 改为 `ensure_handling_ready`：
+  material_acceptance 6、labor_management 3、material_rental 2、equipment_management 2、
+  subcontract_management 1、output_invoice_adjustment 1、contract_event 1、document_center 1、tender 1。
+- 投影层 `workflow_contract_service` 新增 `_handles_without_approval()`（:1346），并在
+  `_available_actions()`（:1362）加入 direct handling 分支：**无审批规则**时用 `direct_handling`
+  声明的动作取代 `submit`；**有审批规则**时立即恢复 `submit` 并隐藏 direct handling。17 个 profile
+  声明 `direct_handling`：12 个 `{"draft": ["complete"]}`；`sc.material.acceptance` →
+  `["accept_result","reject_result"]`；`sc.material.rental.order` → `["activate"]`；
+  `sc.material.rental.settlement` / `sc.subcontract.settlement` → `["confirm_settlement"]`。
+- **不可回退**：`material_acceptance` 的 `_sc_require_state({"draft","approved"})` 放宽必须保留。覆盖
+  守卫以**模型源码的方法守卫**推导期望投影（投影 ⊆ 方法守卫），回退成 `{"approved"}` 会让守卫新增
+  2 个失败。
+
+### 验证回执（本棒）
+
+| 入口 | 结果 |
+|---|---|
+| `make verify.native_view.workflow_action_coverage` | rc=0（59 tests） |
+| `make verify.workflow_state_phase_coverage` | rc=0（17 tests） |
+| `make verify.workflow_action_semantics.guard` | rc=0（15 tests） |
+| `make local.dev.test MODULE=smart_construction_core TEST_TAGS=…`（6 条定向：p0_state ×4 + 门禁 ×2） | rc=0，0 failed / 0 error of 6（sc_dev_demo） |
+| `python3 scripts/verify/test_payment_approval_state_machine.py` | 3 error，与 stash 基线逐字一致（既有漂移） |
+| `python3 addons/smart_core/tests/test_workflow_contract_profile_registry.py` | rc=0（9 tests） |
+| `make verify.agent.ledger.unit` | rc=0（15 tests + PASS） |
+
+新增/改写用例：`test_handling_gate_finishes_one_step_without_approval_rule`、
+`test_handling_gate_keeps_submission_when_approval_rule_configured`、
+`test_direct_handling_refuses_when_approval_rule_configured`、
+`test_direct_handling_replaces_submission_only_without_approval`。日志：
+`.runtime/evidence-logs/onestep_targeted_*.log`。
+
+### 与 demo 场景漂移的关系
+
+一步式闸门消掉了对齐工作的一半前提：种子只需落 `draft`，**一个**受治动作即可到终态，不再需要显式
+`action_submit()`。剩余工作（约 30 条根因记录 / 约 15 个模型 / 10 个场景，改写 `scenario_loader` 的
+`_ensure_*` 钩子）仍属独立可验收结果 `DEMO-SCENARIO-PRODUCT-DRIFT-01`，**禁止**以放宽 2026-10-01
+create() 守卫的方式绕过。
+
+### 边界
+
+- 状态：**批次验收完成**（源码 + 守卫 + 定向 ORM 用例）；主线集成、版本发布、产品交付均未发生。
+- 既有失败（本棒不处理，已在 run 登记）：`verify.workflow_contract.backend` 红泳道（不在
+  `ci.local.quick.run` 前置清单内）、uc4 native-lowcode 视图漂移、`TestApprovalPolicyToggleBackend`
+  AccessError 漂移、p0_state 8 个既有 ERROR、`verify.contract.lint` 49 项、`res.users` 断言漂移、
+  L3/L4 container。
+- 未做：新页面、新组件、状态机 DSL、批量重构 `extractListProfile`。

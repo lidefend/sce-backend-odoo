@@ -979,6 +979,21 @@
         "scripts/verify/test_sc_data_scope_rule_coverage_guard.py",
         "make/ci.mk"
       ]
+    },
+    "one_step_handling_gate": {
+      "target": "verify.native_view.workflow_action_coverage",
+      "inputs": [
+        "addons/smart_construction_core/models/support/approval_policy.py",
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "addons/smart_construction_core/models/core/",
+        "addons/smart_construction_core/tests/test_approval_policy_toggle_backend.py",
+        "addons/smart_construction_core/tests/test_p0_state_closure.py",
+        "scripts/verify/native_view_workflow_action_coverage_guard.py",
+        "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
+        "scripts/verify/test_payment_approval_state_machine.py",
+        "make/ci.mk"
+      ],
+      "kind": "runtime"
     }
   },
   "blockers": [
@@ -998,9 +1013,12 @@
     "verify.backend_business_fact.model_standard currently FAILs on documentation drift: docs/architecture/backend_business_model_audit_findings_v1.md records 372 model classes and 0 unclassified models while the measured values are 378 and 1. The target is a zero-reference lane entry (not reachable from any gate anchor), so it is not a blocker for this batch.",
     "Audit follow-up: the committed company-ceiling set is 143 rules after the generated-vs-manual review retired 7 redundant ceilings (enforced 124 -> 117, source_bounded 25 -> 32). A fresh governed read-only readback on 2026-10-14 (`make local.dev.data_scope.ceiling.readiness`) proves source_rule_count=143 == installed_match_count=143 with mismatches=[], so the runtime ceiling is current and the earlier 125/125 activation is superseded rather than stale. What still blocks delivery is the data-space fact below (bootstrap company owns business rows), not the ceiling.",
     "CLOSED by the Option 1 ruling (2026-10-14, DEMO_IS_FIRST_ONBOARDED_COMPANY): the earlier P4 DATA-SPACE-MIGRATION-01 premise (base.main_company owns 31240 ceiling rows + 61 residual models) is resolved without re-ownership. The demo environment main company is the first onboarded business company, so onboarding retires its carrier marker and writes ONE registration row; no business row changes company. See platform_initialization_strategy.",
-    "OPEN (pre-existing main defect, not this batch): demo scenario seeds lag the 2026-10-01 guards that reject non-draft create(); make local.dev.rebuild_demo fails at the scenario stage with ~30 root records across ~10 scenarios. Tracked as DEMO-SCENARIO-PRODUCT-DRIFT-01 and detailed in run.json/demo_scenario_product_drift. Does not block platform initialization or demo onboarding (both verified on a clean rebuilt database)."
+    "OPEN (pre-existing main defect, not this batch): demo scenario seeds lag the 2026-10-01 guards that reject non-draft create(); make local.dev.rebuild_demo fails at the scenario stage with ~30 root records across ~10 scenarios. Tracked as DEMO-SCENARIO-PRODUCT-DRIFT-01 and detailed in run.json/demo_scenario_product_drift. Does not block platform initialization or demo onboarding (both verified on a clean rebuilt database).",
+    "PRE-EXISTING, not this batch: verify.workflow_contract.backend is a red lane (workflow_contract_custom_coverage_guard reads a re-collected document and Odoo's base action_archive inflates uncovered 16 -> 207). It is absent from the ci.local.quick.run prerequisite list, so it does not block freezing; it needs a lane-repair batch.",
+    "PRE-EXISTING, not this batch: the uc4 native-lowcode container lanes fail on view XML drift (processing_advisory field); the same failure reproduces on the stashed baseline and none of those lanes is wired to a required gate.",
+    "PRE-EXISTING, not this batch: TestApprovalPolicyToggleBackend.test_native_create_context_state_guard raises AccessError for sc.labor.plan / sc.material.rental.order (2 errors) both before and after this batch; the two new one-step tests in the same class pass. Also pre-existing and unchanged: 8 ERRORs in the p0_state suite (fix-set identical to the stashed baseline), and 3 residual errors in verify.payment.approval_state_machine.unit (registered history_probe_runbook, textually identical to baseline)."
   ],
-  "next_exact_step": "Platform/industry initialization is straightened, guarded and unit-tested on this branch: the declaration moved to addons/smart_core/data/tenant/database_strategy.v1.json, data_space_provisioning gained environment_role/onboard_environment_main_company, _adopt_environment_main_company (tenant_payload_import_batch.py) is the only entry allowed to retire the demo carrier marker, smart_construction_demo pre_init/seed consume it, and the 4 onboarding ORM cases are now self-provisioning. Verified: database.strategy.guard rc=0 (11), data_space.provisioning.guard rc=0 (28, invariants=6), local.dev.test data_space_boundary rc=0 (37, 0 failed/0 error), local.dev.data_space.onboard read-only end-to-end onboarding on a clean rebuilt database. NEXT: owner routing for DEMO-SCENARIO-PRODUCT-DRIFT-01 (align the demo scenario seeds to the product guards, ~30 records / ~15 models) either as the next batch on this branch or as its own worktree; then ci.delivery.freeze.prepare -> one exact-head ci.local.quick -> pr.push (GitHub mainline) -> required PR checks -> merge. Internal change is categorised: platform initialization + demo onboarding (this batch) vs demo scenario alignment (next).",
+  "next_exact_step": "One-step handling is implemented, projected and verified on this branch: sc.approval.policy.ensure_handling_ready (approval_policy.py:419) is the shared gate for 18 terminal business actions across 10 model files; 17 workflow profiles declare direct_handling for draft; workflow_contract_service._handles_without_approval (:1346) replaces the submit step in the offered action list only while no approval rule is active. Verified: verify.native_view.workflow_action_coverage rc=0 (59), verify.workflow_state_phase_coverage rc=0 (17), verify.workflow_action_semantics.guard rc=0 (15), and 6 targeted ORM cases rc=0 (0 failed / 0 error) on sc_dev_demo. NEXT: DEMO-SCENARIO-PRODUCT-DRIFT-01 owner routing - align the demo scenario seeds to the product guard (seed draft, then advance through the governed actions; the one-step gate means one terminal action now suffices and no explicit action_submit() step is needed) either as the next batch on this branch or as its own worktree; then ci.delivery.freeze.prepare -> one exact-head ci.local.quick -> pr.push (GitHub mainline) -> required PR checks -> merge. Internal change is categorised: platform initialization + demo onboarding (done) vs one-step handling (this batch) vs demo scenario alignment (next).",
   "acceptance_authority_layout": {
     "rule": "Same action/menu XMLIDs, view, record, company and edit profile share layout authority; role/ACL may alter authorized visibility/readonly/actions, never select a different layout authority.",
     "numeric_identity_note": "Historical action807 and current809 resolve the same action_payment_request_user_payment_apply/menu_sc_user_payment_apply; numeric id changes do not prove different entries.",
@@ -3426,6 +3444,39 @@
       "sc.output.invoice.adjustment (missing original_ledger_id; data not state)"
     ],
     "fix_direction": "seed XML into draft, then advance through the governed actions from the existing _ensure_*(env) hooks in demo_addons/smart_construction_demo/tools/scenario_loader.py (the same pattern as _ensure_s85_payroll_lifecycle / _ensure_s80_material_lifecycle / _ensure_s69_*).",
-    "owning_task": "DEMO-SCENARIO-PRODUCT-DRIFT-01 (independent, separately acceptable product result; ~15 models / 10 scenarios, some requiring approval workflows)"
+    "owning_task": "DEMO-SCENARIO-PRODUCT-DRIFT-01 (independent, separately acceptable product result; ~15 models / 10 scenarios, some requiring approval workflows)",
+    "alignment_premise_2026_10_14": "The one-step handling gate (see one_step_handling_closure, this batch) removes one of the two reasons the seeds were hard to align: a draft row now reaches its terminal state with a single governed action, so the loader hooks no longer need an explicit action_submit() before the terminal action. The remaining work is unchanged and still belongs to DEMO-SCENARIO-PRODUCT-DRIFT-01: author the scenario XML in draft and let the existing _ensure_*(env) hooks advance it; never relax the 2026-10-01 create() guard."
+  },
+  "one_step_handling_closure": {
+    "status": "batch_verified_pending_freeze",
+    "owner_directive": "对用户来说就是一个动作，不需要先提交再确认，这个系统该完善的内容",
+    "problem": "Terminal business actions (action_confirm / action_accept / action_activate / action_done / action_archive / action_select / action_receive / action_issue / action_confirm settlement) demanded a previous action_submit() even when the business had no approval rule, so the user was forced through 提交 -> 确认 as two actions. The same fact was misused by the demo scenario seeds, which wrote final states directly and were rejected by the 2026-10-01 create() guard.",
+    "layer": "P0 platform kernel: smart_construction_core shared approval/handling gate",
+    "mechanism": "addons/smart_construction_core/models/support/approval_policy.py:419 ensure_handling_ready(record, approved_states, submit_states=('draft',)): with no review_ids and the state inside submit_states it submits inline only when is_approval_required() is false; a configured rule raises UserError('单据已启用审批，请先提交并完成审批，再执行后续办理。') and the document stays draft (fail-closed). The final delegation to _assert_submission_approved is unchanged, so an unapproved or rejected instance can still never pass.",
+    "submit_states_ruling": "Default narrowed from ('draft','rejected') to ('draft',): the rejected phase is a re-submission path, not the owner's one-step scenario, and leaving it in widened the state machine and broke three p0_state block-state-jump cases (draft-only is the frozen semantics).",
+    "call_sites": 18,
+    "call_site_groups": {
+      "material_acceptance": 6,
+      "labor_management": 3,
+      "material_rental": 2,
+      "equipment_management": 2,
+      "subcontract_management": 1,
+      "output_invoice_adjustment": 1,
+      "contract_event": 1,
+      "document_center": 1,
+      "tender": 1
+    },
+    "projection_declaration": "workflow_contract_service._handles_without_approval (:1346) + _available_actions (:1362): with no active approval rule the declared direct_handling keys replace the submit step in the offered action list, and they disappear again as soon as a rule exists. 17 profiles declare direct_handling ({draft: [complete]} in 12, {draft: [accept_result, reject_result]} for sc.material.acceptance, {draft: [activate]} for sc.material.rental.order, {draft: [confirm_settlement]} for sc.material.rental.settlement and sc.subcontract.settlement).",
+    "invariant_note": "The {\"draft\", \"approved\"} relaxation of _sc_require_state in material_acceptance must be kept: the coverage guard derives the expected projection from the model source method guard, so a narrower state set makes the projection a non-subset and fails two guard cases.",
+    "verification": {
+      "verify.native_view.workflow_action_coverage": "rc=0 (59 tests)",
+      "verify.workflow_state_phase_coverage": "rc=0 (17 tests)",
+      "verify.workflow_action_semantics.guard": "rc=0 (15 tests)",
+      "local.dev.test 6 targeted ORM cases": "rc=0, 0 failed / 0 error of 6 against sc_dev_demo (TestP0StateClosure x4 + TestApprovalPolicyToggleBackend x2); log .runtime/evidence-logs/onestep_targeted_*.log",
+      "python3 scripts/verify/test_payment_approval_state_machine.py": "3 residual errors, textually identical to the stashed baseline (registered history_probe_runbook)",
+      "python3 addons/smart_core/tests/test_workflow_contract_profile_registry.py": "rc=0 (9 tests)",
+      "python3 addons/smart_construction_core/tests/test_approval_policy_configuration_handler.py": "rc=0 (9 tests)"
+    },
+    "scope_boundary": "Batch acceptance only. No mainline integration, no release, no product delivery."
   }
 }
