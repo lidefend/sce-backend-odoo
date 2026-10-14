@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: FE-RECORD-FORM-CONSUMPTION-CLOSURE
   title: core_record_form_journey_contract_consumption_closure
-  status: active
+  status: completed
   formal_product_layer: P0
   supporting_layer: P4
   layer_target: frontend_contract_consumption_and_acceptance_lane_wiring
@@ -44,9 +44,15 @@ goal:
     见 .agent/runs/FE-RECORD-FORM-CONSUMPTION-CLOSURE/run.json 的 next_exact_step。
   completion:
     scope: core_record_form_journey_contract_consumption_closure
-    overall_goal: in_progress
+    overall_goal: completed
     result_index: .agent/runs/FE-RECORD-FORM-CONSUMPTION-CLOSURE/run.json
-    local_batch_acceptance: in_progress
-    mainline_integration: not_started
+    local_batch_acceptance: completed
+    mainline_integration: completed
+    mainline_evidence:
+      pr: 663
+      head_sha: 95324373abb5c8ca32db90f5edae01eafb8d75e6
+      base_sha: 9c3851d323a7a0c639d3faab9548d98bcc99d873
+      merge_commit: 8653ac173d6bb54b08c9098eeea6a3c512e81f32
+      required_checks: public_guard, merge_policy_gate, professional_quality_gate, frontend_release_gate
     deployment: not_started
     target_user_delivery: not_started

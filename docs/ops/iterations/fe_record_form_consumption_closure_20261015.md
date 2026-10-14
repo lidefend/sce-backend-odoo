@@ -128,7 +128,16 @@ diff 仅这两处行号，`classification`、`reason`、`declaredClass`、`owner
 
 ## 6. 状态口径
 
-- 批次验收：进行中（本地五条检查通过，等待冻结点门禁与远端四项必需检查）。
-- 主线集成：未开始。
+- 批次验收：完成。本地检查与冻结点门禁均通过，均为非零计数。
+- 主线集成：完成。PR [#663](https://github.com/lidefend/sce-backend-odoo/pull/663) 以 squash 合并，
+  源提交 `95324373abb5c8ca32db90f5edae01eafb8d75e6`、目标基线 `9c3851d323a7a0c639d3faab9548d98bcc99d873`、
+  合并提交 `8653ac173d6bb54b08c9098eeea6a3c512e81f32`（2026-10-14T23:03:28Z）。四项必需检查
+  （`public_guard`、`merge_policy_gate`、`professional_quality_gate`、`frontend_release_gate`）在
+  该源提交上全部 pass，合并时目标基线未漂移。
 - 版本发布：未开始。
-- 产品交付：未开始，且本批不主张。
+- 产品交付：未开始，且本批不主张。合并不触发产品部署。
+
+本批遗留（属交付面，不在本批范围，未修复也未放宽守卫）：
+1. finance 角色面声明了结算中心/结算单，但 `construction.standard` 产品面没有该子树，
+   `system.init` route authority 记 `PRODUCT_ENTRY_NOT_VISIBLE`；旅程已改绑已交付的付款申请入口。
+2. `menu_sc_historical_payment_fact` 是 finance 45 个 primary 中唯一不可渲染项，记为 finding。

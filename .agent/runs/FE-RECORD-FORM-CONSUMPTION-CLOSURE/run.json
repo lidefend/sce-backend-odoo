@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "FE-RECORD-FORM-CONSUMPTION-CLOSURE",
   "branch": "fix/fe-record-form-consumption-closure-20261015",
-  "status": "active",
+  "status": "completed",
   "baseline_sha": "9c3851d323a7a0c639d3faab9548d98bcc99d873",
   "goal": ".agent/goals/FE-RECORD-FORM-CONSUMPTION-CLOSURE.yaml",
   "record": "docs/ops/iterations/fe_record_form_consumption_closure_20261015.md",
@@ -99,5 +99,20 @@
     "menu_sc_historical_payment_fact is the only one of the finance principal's 45 primary menus that does not render; recorded as a finding, out of this batch's scope.",
     "the fixture's payment-request workflow freeze writes state/validation_status through the ORM on fixture-owned disposable rows and the accompanying test asserts payment.request.create still rejects a direct non-draft create, so no product guard is bypassed; a governed initialization/migration carrier remains separately designed work."
   ],
-  "next_exact_step": "Batch evidence is complete and the remote frontend_release_gate red light is cleared locally: the decision-authority ledger line drift (533/537 for /login and access-denied in useRecordFormActions.ts) was re-exported and reviewed (only line numbers changed), and make verify.frontend.decision_authority.unit now PASSes 15 tests with all semantic_registry carriers in sync. Next: commit the ledger + iteration record in Chinese without a co-author trailer, freeze the clean HEAD, run make ci.local.quick once on that exact HEAD, push the candidate, wait for the four required remote checks on the new source commit, then merge through make pr.merge and read back PR state, merge commit and main."
+  "next_exact_step": "Batch and mainline are closed: PR #663 merged by squash into main at 8653ac173d6bb54b08c9098eeea6a3c512e81f32 on 2026-10-14T23:03:28Z, with all four required checks green on source commit 95324373abb5c8ca32db90f5edae01eafb8d75e6 and base main 9c3851d323a7a0c639d3faab9548d98bcc99d873. No further work is in scope for this goal. The next initiative is owner-decided: target-environment deployment and user acceptance are separate, not-started statuses, and the recorded findings (declared-but-undelivered settlement entry, menu_sc_historical_payment_fact) belong to the delivery face rather than this batch.",
+  "mainline_integration": {
+    "pr": 663,
+    "pr_url": "https://github.com/lidefend/sce-backend-odoo/pull/663",
+    "head_sha": "95324373abb5c8ca32db90f5edae01eafb8d75e6",
+    "base_sha": "9c3851d323a7a0c639d3faab9548d98bcc99d873",
+    "merge_commit": "8653ac173d6bb54b08c9098eeea6a3c512e81f32",
+    "merge_method": "squash",
+    "required_checks": {
+      "public_guard": "pass",
+      "merge_policy_gate": "pass",
+      "professional_quality_gate": "pass",
+      "frontend_release_gate": "pass"
+    },
+    "note": "合并不触发产品部署；版本发布与目标环境验收仍未开始。"
+  }
 }
