@@ -1115,6 +1115,11 @@ local.dev.data_scope.inventory: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_data_scope_inventory.py
 
+.PHONY: local.dev.demo.data_space.onboarding.plan
+local.dev.demo.data_space.onboarding.plan: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  bash scripts/ops/odoo_shell_exec.sh < scripts/verify/local_dev_demo_data_space_onboarding_plan.py
+
 .PHONY: local.dev.payroll.data_scope.readiness
 local.dev.payroll.data_scope.readiness: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
