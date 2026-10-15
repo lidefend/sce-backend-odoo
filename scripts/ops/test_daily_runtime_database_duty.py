@@ -455,6 +455,74 @@ class RemoteProgramTests(unittest.TestCase):
         self.assertIn("initialized", duty_entry.SERVICE_FACES)
         self.assertIn("cluster_only", duty_entry.SERVICE_FACES)
 
+    def test_the_carrier_waits_for_the_container_bootstrap_before_installing(self):
+        """The 2026-10-15 defect was two initializers in one fresh database.
+
+        The container installs ``base`` itself, so the declared set may only be
+        installed after that attempt is over. This pins the order, not just the
+        presence of a wait: a wait that runs after the install would still leave
+        the collision in place.
+        """
+        rendered = self.rendered()
+        self.assertIn('entry["bootstrap"] = await_base_bootstrap(duty)', rendered)
+        self.assertLess(
+            rendered.index('entry["stack"]["start"] = start_services(duty)'),
+            rendered.index('entry["bootstrap"] = await_base_bootstrap(duty)'),
+        )
+        self.assertLess(
+            rendered.index('entry["bootstrap"] = await_base_bootstrap(duty)'),
+            rendered.index('entry["initialize"] = install_modules(duty)'),
+        )
+        self.assertIn("await_base_bootstrap(duty)", rendered)
+        self.assertIn("def base_readback(duty)", rendered)
+        self.assertIn("def entrypoint_startup_facts(duty, container)", rendered)
+
+    def test_the_carrier_refuses_to_become_a_second_initializer(self):
+        rendered = self.rendered()
+        # Read the carrier's own text rather than one source line: the refusal is
+        # written as adjacent string literals and wraps.
+        self.assertIn("refusing to install", rendered)
+        self.assertIn("while the application's own bootstrap owns this database", rendered)
+        self.assertIn("refusing to start a second initializer in the same database", rendered)
+        self.assertIn('BASE_MODULE = "base"', rendered)
+
+    def test_the_startup_facts_judge_only_the_current_startup(self):
+        """A restart must not be read as a finished attempt.
+
+        ``docker logs`` keeps every startup of one container, so the carrier has
+        to scope its reading to the statements after the current entrypoint
+        render line; otherwise the retry would be refused as a second failure.
+        """
+        rendered = self.rendered()
+        self.assertIn("ENTRYPOINT_RENDER_MARKER", rendered)
+        self.assertIn("text.rfind(ENTRYPOINT_RENDER_MARKER)", rendered)
+
+    def test_the_bootstrap_plan_is_injected_once_from_the_shared_source(self):
+        rendered = self.rendered()
+        self.assertEqual(rendered.count("def base_bootstrap_plan("), 1)
+
+
+class BootstrapOrderTests(unittest.TestCase):
+    """The pure decision table behind the single-initializer wait."""
+
+    def setUp(self):
+        self.plan = duty_entry.base_bootstrap_plan
+
+    def test_installed_base_is_ready(self):
+        self.assertEqual(self.plan(True, False, 0), "ready")
+        self.assertEqual(self.plan(True, True, 1), "ready")
+
+    def test_an_in_flight_attempt_is_waited_for(self):
+        self.assertEqual(self.plan(False, False, 0), "wait")
+        self.assertEqual(self.plan(False, False, 1), "wait")
+
+    def test_a_finished_attempt_without_base_is_restarted_once(self):
+        self.assertEqual(self.plan(False, True, 0), "restart")
+
+    def test_a_second_finished_failure_is_reported_not_looped(self):
+        self.assertEqual(self.plan(False, True, 1), "give_up")
+        self.assertEqual(self.plan(False, True, 5), "give_up")
+
 
 class EvaluationTests(unittest.TestCase):
     def declaration(self):
@@ -1087,9 +1155,18 @@ class FakeSubprocess:
             self.command = command
             self.timeout = timeout
 
-    def __init__(self):
+    def __init__(self, base_installed=True, entrypoint_log=""):
         self.commands = []
         self.raises = []
+        #: A duty the entry is allowed to initialize is a duty whose own
+        #: container bootstrap has already installed ``base``: the entry waits
+        #: for that fact, so a fake that never reports it would model the
+        #: collision instead of the order.
+        self.base_installed = base_installed
+        #: What the container's own startup has written so far. An empty log is
+        #: an attempt still in flight; a log that reached the server line is a
+        #: finished attempt, which is the only state a restart may follow.
+        self.entrypoint_log = entrypoint_log
 
     def run(self, command, **kwargs):
         self.commands.append(list(command))
@@ -1099,6 +1176,13 @@ class FakeSubprocess:
                 raise self.TimeoutExpired(command, kwargs.get("timeout"))
         if list(command[:2]) == ["docker", "ps"]:
             return FakeResult(stdout="sc-platform-control-dev-odoo-1\n")
+        text = " ".join(str(item) for item in command)
+        if list(command[:2]) == ["docker", "logs"]:
+            return FakeResult(stdout=self.entrypoint_log)
+        if "to_regclass('public.ir_module_module')" in text:
+            return FakeResult(stdout="t\n" if self.base_installed else "f\n")
+        if "WHERE name = 'base'" in text:
+            return FakeResult(stdout="installed\n" if self.base_installed else "\n")
         return FakeResult()
 
 
@@ -1143,7 +1227,8 @@ class CarrierExecutionTests(unittest.TestCase):
             },
         }
 
-    def payload(self, duties, ops_root, *, mode="apply", phase="initialize"):
+    def payload(self, duties, ops_root, *, mode="apply", phase="initialize",
+                bootstrap_timeout=1800, bootstrap_poll=15):
         import hashlib
 
         return {
@@ -1158,13 +1243,17 @@ class CarrierExecutionTests(unittest.TestCase):
             "stack": {"compose_text": self.COMPOSE_TEXT},
             "env_template": "DB_NAME=@DB_NAME@\nLIST_DB=false\n",
             "data_destination": "/var/lib/postgresql/data",
+            "bootstrap_timeout": bootstrap_timeout,
+            "bootstrap_poll": bootstrap_poll,
             "duties": duties,
         }
 
-    def execute(self, fake, duties, *, mode="apply", phase="initialize"):
+    def execute(self, fake, duties, *, mode="apply", phase="initialize",
+                bootstrap_timeout=1800, bootstrap_poll=15):
         with tempfile.TemporaryDirectory() as ops_root:
             rendered = duty_entry.render_remote_program(
-                self.payload(duties, ops_root, mode=mode, phase=phase)
+                self.payload(duties, ops_root, mode=mode, phase=phase,
+                             bootstrap_timeout=bootstrap_timeout, bootstrap_poll=bootstrap_poll)
             )
             captured = io.StringIO()
             saved = sys.modules.get("subprocess")
@@ -1260,6 +1349,76 @@ class CarrierExecutionTests(unittest.TestCase):
             "partial write becomes an unrecorded one",
         )
         self.assertIsNotNone(settled["service"])
+
+    def test_the_entry_waits_for_the_container_bootstrap_before_installing(self):
+        """The wait is ordered, not merely present.
+
+        The 2026-10-15 host run started the application and installed into it
+        while the container's own entrypoint was still installing ``base`` in
+        the same fresh database; ``ir_actions`` was created twice and the duty
+        was left half built. What prevents that is the *order* below.
+        """
+        fake = FakeSubprocess()
+        self.execute(fake, [self.duty()])
+        readback = self.index_of(
+            fake, lambda c: "docker" == c[0] and "exec" in c
+            and "to_regclass('public.ir_module_module')" in " ".join(c)
+        )
+        install = self.index_of(
+            fake, lambda c: c[:2] == ["docker", "exec"] and "-i" in c and "odoo" in c
+        )
+        self.assertLess(
+            readback, install,
+            "the declared set may only be installed once the container's own base "
+            "bootstrap is over",
+        )
+
+    def test_an_unfinished_bootstrap_is_never_installed_into(self):
+        """A duty whose base install has not finished is not installed into.
+
+        Two guards are asserted here: the wait fails closed on its own bound,
+        and the installation refuses a database whose ``base`` is missing. The
+        two must not be the same guard, or a wait that timed out would still
+        hand the duty to the installer.
+        """
+        fake = FakeSubprocess(base_installed=False)
+        report = self.execute(fake, [self.duty()], bootstrap_timeout=0, bootstrap_poll=0)
+        settled = report["duties"][0]
+        self.assertFalse(
+            [c for c in fake.commands
+             if c[:2] == ["docker", "exec"] and "-i" in c and "odoo" in c],
+            "no second initializer may run while the first one owns the database",
+        )
+        self.assertIn("refusing to", json.dumps(settled, ensure_ascii=False))
+        self.assertFalse(settled["bootstrap"]["ready"])
+        self.assertIn("error", settled["bootstrap"])
+
+    def test_a_finished_failed_bootstrap_is_restarted_once(self):
+        """A finished failed attempt is retried once, and only once.
+
+        Restarting is safe exactly because the previous attempt is over; a
+        restart that interrupted a live attempt would be an interrupted
+        initialization, which is the hazard this wait exists to remove.
+        """
+        fake = FakeSubprocess(
+            base_installed=False,
+            entrypoint_log="[entrypoint] render odoo.conf: a -> b\n"
+                           "[entrypoint] start odoo\n",
+        )
+        report = self.execute(fake, [self.duty()], bootstrap_timeout=0, bootstrap_poll=0)
+        restarts = [c for c in fake.commands if c[:2] == ["docker", "restart"]]
+        self.assertEqual(len(restarts), 1)
+        self.assertEqual(report["duties"][0]["bootstrap"]["restarts"], 1)
+
+    def test_an_attempt_still_in_flight_is_never_restarted(self):
+        fake = FakeSubprocess(
+            base_installed=False,
+            entrypoint_log="[entrypoint] render odoo.conf: a -> b\n"
+                           "[entrypoint] bootstrap base (without demo)\n",
+        )
+        report = self.execute(fake, [self.duty()], bootstrap_timeout=0, bootstrap_poll=0)
+        self.assertFalse([c for c in fake.commands if c[:2] == ["docker", "restart"]])
+        self.assertEqual(report["duties"][0]["bootstrap"]["restarts"], 0)
 
     def test_a_failing_duty_does_not_hide_a_later_duty(self):
         fake = FakeSubprocess()

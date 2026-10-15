@@ -39,11 +39,13 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import inspect
 import json
 import re
 import shlex
 import subprocess
 import sys
+import textwrap
 from pathlib import Path
 
 
@@ -118,6 +120,11 @@ MODULE_NAME = re.compile(r"^[a-z][a-z0-9_]*$")
 #: candidate. Declaring the minimum set here is what makes that provable.
 CONTROL_MINIMUM_MODULE = "smart_core"
 INDUSTRY_MODULE_PREFIX = "smart_construction_"
+#: How long the entry waits for the application's own base bootstrap, and how
+#: often it re-reads the fact. Both are payload values so the wait can be
+#: exercised for real; the default is the value the host runs with.
+BASE_BOOTSTRAP_TIMEOUT = 1800
+BASE_BOOTSTRAP_POLL = 15
 
 
 class DutyError(RuntimeError):
@@ -552,6 +559,7 @@ import re
 import secrets
 import subprocess
 import sys
+import time
 
 MARKER = __MARKER__
 PAYLOAD = json.loads(__PAYLOAD_JSON__)
@@ -562,6 +570,12 @@ STACK = PAYLOAD["stack"]
 ENV_TEMPLATE = PAYLOAD["env_template"]
 DATA_DESTINATION = PAYLOAD["data_destination"]
 PSQL_READBACK = __PSQL_READBACK__
+BASE_MODULE = "base"
+#: Each entrypoint run opens with the render line, so the *current* startup's
+#: statements are whatever follows its last occurrence in the log.
+ENTRYPOINT_RENDER_MARKER = "[entrypoint] render odoo.conf"
+ENTRYPOINT_SERVER_MARKER = "[entrypoint] start odoo"
+ENTRYPOINT_BOOTSTRAP_FAILURE_MARKER = "base bootstrap returned non-zero"
 PLACEHOLDER = re.compile(r"@[A-Z0-9_]+@")
 SECRET_KEYS = (
     "DB_PASSWORD", "DB_MAINTENANCE_PASSWORD", "ADMIN_PASSWD", "JWT_SECRET",
@@ -573,6 +587,8 @@ ENV_READBACK_KEYS = (
     "LIST_DB",
 )
 INDUSTRY_MODULE_PREFIX = "smart_construction_"
+
+__BASE_BOOTSTRAP_PLAN__
 
 report = {"mode": MODE, "phase": PHASE, "writes": False, "duties": []}
 
@@ -916,6 +932,109 @@ def service_container(duty, service):
     return names[0] if len(names) == 1 else ""
 
 
+def base_readback(duty):
+    """Whether the duty's own cluster reports Odoo's ``base`` module installed.
+
+    Read through the cluster rather than the application, so the fact survives
+    an application that cannot start: a duty whose base install never finished
+    is exactly the duty whose application is unhealthy.
+    """
+    facts = {"module_table": False, "state": "", "installed": False, "error": ""}
+    container = duty["cluster"]["container"]
+    present = run(["docker", "exec", container, "psql",
+                   "-U", duty["cluster"]["maintenance_role"], "-d", duty["database"],
+                   *PSQL_READBACK, "--command",
+                   "SELECT to_regclass('public.ir_module_module') IS NOT NULL"])
+    if present.returncode:
+        facts["error"] = (present.stderr or present.stdout or "").strip()[:300]
+        return facts
+    if present.stdout.strip() != "t":
+        return facts
+    facts["module_table"] = True
+    query = run(["docker", "exec", container, "psql",
+                 "-U", duty["cluster"]["maintenance_role"], "-d", duty["database"],
+                 *PSQL_READBACK, "--command",
+                 "SELECT state FROM ir_module_module WHERE name = '%s' LIMIT 1" % (BASE_MODULE,)
+                 ])
+    if query.returncode:
+        facts["error"] = (query.stderr or query.stdout or "").strip()[:300]
+        return facts
+    facts["state"] = query.stdout.strip()
+    facts["installed"] = facts["state"] == "installed"
+    return facts
+
+
+def entrypoint_startup_facts(duty, container):
+    """What the application container's *current* startup has done so far.
+
+    ``docker logs`` keeps every startup of one container, so a bare search for
+    the server line would report a restart as already finished and turn a safe
+    retry into a give-up. Only the statements after the last entrypoint render
+    line belong to the startup being judged.
+    """
+    log = run(["docker", "logs", "--tail", "400", container])
+    text = (log.stdout or "") + (log.stderr or "")
+    marker = text.rfind(ENTRYPOINT_RENDER_MARKER)
+    if marker >= 0:
+        text = text[marker:]
+    return {"finished": ENTRYPOINT_SERVER_MARKER in text,
+            "attempt_failed": ENTRYPOINT_BOOTSTRAP_FAILURE_MARKER in text,
+            "error": "" if text.strip() else "the container log could not be read"}
+
+
+def await_base_bootstrap(duty, timeout=__BOOTSTRAP_TIMEOUT__, poll=__BOOTSTRAP_POLL__):
+    """Wait for one finished base bootstrap before installing anything.
+
+    A second initializer in the same fresh database is the 2026-10-15 defect
+    (two attempts on ``ir_actions``), so this waits for the container's own
+    attempt to be over and retries it at most once by restart, which is only
+    safe once the previous attempt has finished.
+    """
+    container = service_container(duty, "odoo")
+    facts = {"container": container, "attempts": [], "restarts": 0, "ready": False,
+             "timeout": timeout, "error": ""}
+    if not container:
+        facts["error"] = "the declared odoo service has no container; the duty stack is not up"
+        return facts
+    restarts = 0
+    deadline = time.time() + timeout
+    while True:
+        state = base_readback(duty)
+        if state["installed"]:
+            facts["ready"] = True
+            facts["state"] = state
+            return facts
+        started = entrypoint_startup_facts(duty, container)
+        decision = base_bootstrap_plan(state["installed"], started["finished"], restarts)
+        facts["attempts"].append({"base_state": state["state"],
+                                  "module_table": state["module_table"],
+                                  "entrypoint_finished": started["finished"],
+                                  "attempt_failed": started["attempt_failed"],
+                                  "decision": decision,
+                                  "error": state["error"] or started["error"]})
+        if decision == "give_up":
+            facts["error"] = ("the application's own base bootstrap finished without installing "
+                              "base; refusing to start a second initializer in the same database")
+            return facts
+        if decision == "restart":
+            restarted = run(["docker", "restart", container], timeout=300)
+            restarts += 1
+            facts["restarts"] = restarts
+            facts["restart"] = {"command": "docker restart %s" % container,
+                                "returncode": restarted.returncode}
+            if restarted.returncode:
+                facts["error"] = "the application container did not restart: %s" % (
+                    (restarted.stderr or restarted.stdout or "").strip()[:300],)
+                return facts
+            deadline = time.time() + timeout
+            continue
+        if time.time() >= deadline:
+            facts["error"] = ("base was still not installed after %ss; refusing to install while "
+                              "another initializer is in flight" % (timeout,))
+            return facts
+        time.sleep(poll)
+
+
 def install_modules(duty):
     """Install the declared module set into the duty, without demo data.
 
@@ -930,6 +1049,16 @@ def install_modules(duty):
     container = service_container(duty, "odoo")
     if not container:
         return {"error": "the declared odoo service is not running; start the duty stack first"}
+    base = base_readback(duty)
+    if not base["installed"]:
+        # Fail closed rather than become the second initializer: installing a
+        # module set into a database whose own base install is unfinished is
+        # how the 2026-10-15 duty was left half built, and a half built duty is
+        # reported by nothing except the missing module states read back below.
+        return {"container": container, "modules": modules, "base_state": base,
+                "error": "the duty's base module is not installed (state %r); refusing to install "
+                         "while the application's own bootstrap owns this database"
+                         % (base["state"],)}
     command = ["docker", "exec", container, "odoo",
                "-c", "/var/lib/odoo/odoo.conf", "-d", duty["database"],
                "-i", ",".join(modules),
@@ -1092,8 +1221,8 @@ def duty_entry(duty):
     wants_creation = duty["custody"]["role_compliance"] == "to_be_created"
     wants_initialization = duty["custody"].get("service_face") == "to_be_initialized"
     entry = {"duty": duty["duty"], "cluster": None, "custody": None, "stack": None,
-             "create": None, "privileges": None, "initialize": None, "route": None,
-             "service": None, "error": ""}
+             "create": None, "bootstrap": None, "privileges": None, "initialize": None,
+             "route": None, "service": None, "error": ""}
     if MODE == "apply" and PHASE in ("stack", "all"):
         if wants_creation:
             entry["stack"] = materialise_stack_files(duty)
@@ -1109,6 +1238,10 @@ def duty_entry(duty):
         else:
             entry["stack"] = materialise_stack_files(duty)
             entry["stack"]["start"] = start_services(duty)
+            # One initializer at a time: the container installs base itself, and
+            # this wait is what keeps the entry from installing the declared set
+            # while that attempt is still running.
+            entry["bootstrap"] = await_base_bootstrap(duty)
             entry["privileges"] = ensure_privileges(duty)
             entry["initialize"] = install_modules(duty)
             entry["route"] = start_route(duty)
@@ -1157,8 +1290,8 @@ def salvage_entry(duty, error):
     is unrecorded".
     """
     entry = {"duty": duty["duty"], "cluster": None, "custody": None, "stack": None,
-             "create": None, "privileges": None, "initialize": None, "route": None,
-             "service": None, "error": "%s: %s" % (type(error).__name__, error)}
+             "create": None, "bootstrap": None, "privileges": None, "initialize": None,
+             "route": None, "service": None, "error": "%s: %s" % (type(error).__name__, error)}
     try:
         entry["cluster"] = cluster_facts(duty["cluster"]["container"], duty)
         entry["service"] = service_facts(duty)
@@ -1179,6 +1312,41 @@ print(MARKER + json.dumps(report, ensure_ascii=False, sort_keys=True))
 '''
 
 
+def base_bootstrap_plan(base_installed, entrypoint_finished, restarts):
+    """How the entry reaches base installed with exactly one initializer.
+
+    The container is its own initializer: its entrypoint installs ``base`` and
+    only then execs the server. The entry may therefore never install into a
+    duty while that attempt is still in flight -- the 2026-10-15 defect was two
+    initializers colliding on ``ir_actions`` inside one fresh database, which
+    left the duty half built.
+
+    ``entrypoint_finished`` is read from *this* startup's own log, so it says
+    that an attempt is over rather than merely that one once happened. A
+    finished attempt that did not install base is retried once by restarting
+    the container, because a restart must never interrupt a live attempt; a
+    second finished failure is reported instead of looped.
+    """
+    if base_installed:
+        return "ready"
+    if not entrypoint_finished:
+        return "wait"
+    if restarts < 1:
+        return "restart"
+    return "give_up"
+
+
+def _bootstrap_wait(payload, key, default):
+    """The declared wait, with an explicit ``0`` kept as ``0``.
+
+    A test that exercises the bound must be able to ask for no waiting at all;
+    treating ``0`` as "unset" would silently restore the production wait and
+    make the bound untested.
+    """
+    value = payload.get(key)
+    return default if value is None else int(value)
+
+
 def render_remote_program(payload):
     """Render the reviewed remote carrier for one payload.
 
@@ -1191,6 +1359,13 @@ def render_remote_program(payload):
     """
     return REMOTE_PROGRAM.replace("__MARKER__", json.dumps(MARKER)).replace(
         "__PSQL_READBACK__", json.dumps(list(PSQL_READBACK)),
+    ).replace(
+        "__BASE_BOOTSTRAP_PLAN__", textwrap.dedent(inspect.getsource(base_bootstrap_plan)),
+    ).replace(
+        "__BOOTSTRAP_TIMEOUT__", str(_bootstrap_wait(payload, "bootstrap_timeout",
+                                                       BASE_BOOTSTRAP_TIMEOUT)),
+    ).replace(
+        "__BOOTSTRAP_POLL__", str(_bootstrap_wait(payload, "bootstrap_poll", BASE_BOOTSTRAP_POLL)),
     ).replace(
         "__PAYLOAD_JSON__",
         json.dumps(json.dumps(payload, ensure_ascii=False, sort_keys=True)),
@@ -1534,6 +1709,8 @@ def main(argv=None):
             "stack": {"compose_text": compose_text},
             "env_template": env_template_text,
             "data_destination": POSTGRES_DATA_DESTINATION,
+            "bootstrap_timeout": BASE_BOOTSTRAP_TIMEOUT,
+            "bootstrap_poll": BASE_BOOTSTRAP_POLL,
             "duties": selected,
         }
         result = remote_duties(options.ssh_host, payload)
