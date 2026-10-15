@@ -1654,3 +1654,21 @@ access for this duty: the lifecycle refuses to fabricate one
 
 `make ci.local.iteration`：`PASS change_state=dirty scope=unclassified_by_design coverage=L1_only`，
 `outside_scope=[]`。
+
+### 补充事实：审批记录本身目前没有生产创建入口
+
+在核对“所有者如何真正完成批准”时发现，`sc.platform.maintenance.access` 在本树中**只有模型内部的**
+`_request_access()` / `_approve_access()` 两个写入方法：
+
+- 没有 ops 入口、没有 handler、没有 intent、没有菜单、没有表单视图；
+- `addons/smart_core/security/ir.model.access.csv` 对
+  `sc.platform.database.registration` 与 `sc.platform.maintenance.access` 只给
+  `smart_core.group_smart_core_security_admin` / `smart_core.group_smart_core_admin` **只读**（1,0,0,0），
+  写入被刻意限制在受治理方法内。
+
+因此当前能产生审批记录的路径只有：受治理主体的运维 shell 提请求 + 独立的安全管理员身份批准。
+而 `smart_core.group_smart_core_security_admin` 目前 0 成员，连批准人都没有。
+
+**这不被静默“补一个入口”**：新增审批入口或写权限属于新的平台能力，超出所有者本轮“不要扩大范围”的裁定。
+必须先由所有者裁定“审批如何产生”（受治理入口，或明确限定范围的 P4 shell 程序 + 独立真实批准人），
+`provision` 才可能继续。
