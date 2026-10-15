@@ -60,6 +60,7 @@ def authorization(**overrides) -> dict:
         "requested_by": "platform_maintenance",
         "valid_from": "2026-10-15 00:00:00",
         "valid_until": "2026-10-16 00:00:00",
+        "authorized_operations": ["provision", "grant"],
     }
     record.update(overrides)
     return record
@@ -72,6 +73,7 @@ def check_authorization(record, **overrides):
         "identity_key": "smart_core.svc_tenant_payload_operator_baosheng",
         "subject_checksum": VALID_CHECKSUM,
         "now": "2026-10-15 12:00:00",
+        "action": "provision",
     }
     facts.update(overrides)
     return policy.validate_authorization(record, **facts)
@@ -339,6 +341,7 @@ class AuthorizationTest(unittest.TestCase):
                 identity_key="smart_core.svc_tenant_payload_operator_baosheng",
                 subject_checksum=VALID_CHECKSUM,
                 now="2026-10-15 12:00:00",
+                action="provision",
             )
 
     def test_a_fabricated_approver_is_a_stop(self):
@@ -379,6 +382,32 @@ class AuthorizationTest(unittest.TestCase):
                 policy.OperatorPolicyError, "AUTHORIZATION_ACCESS_ID_INVALID"
             ):
                 check_authorization(authorization(access_id=access_id))
+
+    def test_an_approval_must_name_the_operation_it_authorizes(self):
+        # The capability is not the grant: an access that names only the other
+        # operation must never be read as covering this one.
+        for granted, requested in ((["grant"], "provision"), (["provision"], "grant")):
+            with self.subTest(granted=granted, requested=requested), self.assertRaisesRegex(
+                policy.OperatorPolicyError, "AUTHORIZATION_OPERATION_NOT_COVERED"
+            ):
+                check_authorization(
+                    authorization(authorized_operations=granted), action=requested
+                )
+        check_authorization(authorization(authorized_operations=["grant", "provision"]))
+
+    def test_an_approval_without_an_operation_set_is_a_stop(self):
+        for operations in (None, [], "", "provision", [1], ["", None]):
+            with self.subTest(operations=operations), self.assertRaisesRegex(
+                policy.OperatorPolicyError, "AUTHORIZATION_OPERATIONS_MISSING"
+            ):
+                check_authorization(authorization(authorized_operations=operations))
+
+    def test_an_unnamed_operation_is_a_stop(self):
+        for action in ("", "   ", None):
+            with self.subTest(action=action), self.assertRaisesRegex(
+                policy.OperatorPolicyError, "AUTHORIZATION_ACTION_MISSING"
+            ):
+                check_authorization(authorization(), action=action)
 
 
 class AccountPlanTest(unittest.TestCase):

@@ -29,7 +29,7 @@ def _json_response(payload: dict[str, Any], status: int = 200):
 
 
 def _ok(data: Any, status: int = 200):
-    trace_id = get_trace_id()
+    trace_id = get_trace_id(request.httprequest.headers)
     return _json_response(
         {
             "ok": True,
@@ -44,7 +44,7 @@ def _ok(data: Any, status: int = 200):
 
 
 def _fail(code: str, message: str, *, details: dict[str, Any] | None = None, http_status: int = 400):
-    trace_id = get_trace_id()
+    trace_id = get_trace_id(request.httprequest.headers)
     return _json_response(
         {
             "ok": False,

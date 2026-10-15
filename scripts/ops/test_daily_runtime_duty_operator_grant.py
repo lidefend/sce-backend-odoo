@@ -77,6 +77,7 @@ APPROVAL = {
     "requested_by": "platform-maintenance",
     "valid_from": "2026-10-15 00:00:00",
     "valid_until": "2026-10-16 00:00:00",
+    "authorized_operations": ["provision", "grant"],
 }
 
 
@@ -495,13 +496,34 @@ class GuardTests(unittest.TestCase):
             "no approver": {"approved_by": ""},
             "a self approval": {"approved_by": APPROVAL["requested_by"]},
             "no identity": {"access_id": 0},
+            "no operation set": {"authorized_operations": None},
+            "an empty operation set": {"authorized_operations": []},
         }
         for name, override in cases.items():
             with self.subTest(case=name), self.assertRaises(ENTRY.OperatorGrantEntryError):
                 ENTRY.assert_approval(
-                    self._approval_read(dict(APPROVAL, **override)), duty, PAYLOAD_CHECKSUM
+                    self._approval_read(dict(APPROVAL, **override)),
+                    duty,
+                    PAYLOAD_CHECKSUM,
+                    "provision",
                 )
-        ENTRY.assert_approval(self._approval_read(APPROVAL), duty, PAYLOAD_CHECKSUM)
+        ENTRY.assert_approval(self._approval_read(APPROVAL), duty, PAYLOAD_CHECKSUM, "provision")
+        ENTRY.assert_approval(self._approval_read(APPROVAL), duty, PAYLOAD_CHECKSUM, "grant")
+
+    def test_an_approval_for_another_operation_does_not_cover_this_one(self):
+        # Approving the payload import must never read as approving the service
+        # identity creation, and the reverse is refused the same way.
+        duty = self._duty()
+        for granted, requested in ((["grant"], "provision"), (["provision"], "grant")):
+            with self.subTest(granted=granted, requested=requested), self.assertRaisesRegex(
+                ENTRY.OperatorGrantEntryError, "does not authorize the %s operation" % requested
+            ):
+                ENTRY.assert_approval(
+                    self._approval_read(dict(APPROVAL, authorized_operations=granted)),
+                    duty,
+                    PAYLOAD_CHECKSUM,
+                    requested,
+                )
 
     def test_an_approval_read_that_wrote_is_refused(self):
         duty = self._duty()
@@ -510,6 +532,7 @@ class GuardTests(unittest.TestCase):
                 {"mode": "read_only", "writes": 1, "approval": APPROVAL},
                 duty,
                 PAYLOAD_CHECKSUM,
+                "provision",
             )
 
     def test_a_provision_is_asserted_against_the_declaration(self):

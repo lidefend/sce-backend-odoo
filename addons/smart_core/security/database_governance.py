@@ -123,6 +123,12 @@ DATABASE_OPERATION_SOURCE_STATES = {
 DATABASE_OPERATIONS = tuple(sorted(DATABASE_OPERATION_TARGET_STATE))
 
 MAINTENANCE_ACCESS_CAPABILITIES = ("backup", "restore", "upgrade", "inspect", "migrate")
+#: Which maintenance operations a maintenance access may authorize.  These are
+#: the operation names the governed duty entries actually execute, so an
+#: authorization and its consumer read one vocabulary instead of two: an access
+#: that names only one of them cannot cover the other, and approving "the
+#: import" can never implicitly authorize creating a service identity.
+MAINTENANCE_ACCESS_OPERATIONS = ("provision", "grant")
 MAINTENANCE_ACCESS_MAX_VALIDITY_HOURS = 24
 #: The boundary anchor: holding an authorized maintenance access never widens
 #: the caller's business company scope. Kept as a decision function so the
@@ -180,6 +186,27 @@ def validate_maintenance_capability(capability):
     if capability not in MAINTENANCE_ACCESS_CAPABILITIES:
         raise ValueError("DATABASE_GOVERNANCE_UNKNOWN_MAINTENANCE_CAPABILITY:%s" % (capability,))
     return capability
+
+
+def validate_maintenance_operations(operations):
+    """Resolve one declared maintenance operation set, or fail closed.
+
+    A maintenance access authorizes an explicit operation set.  An empty set is
+    refused rather than read as "whatever the capability implies": the whole
+    point of naming the operations is that a capability like ``migrate`` may no
+    longer silently cover both creating a service identity and granting it.
+    """
+    values = operations if isinstance(operations, (list, tuple)) else None
+    if not values:
+        raise ValueError("DATABASE_GOVERNANCE_MAINTENANCE_OPERATIONS_REQUIRED")
+    resolved = []
+    for value in values:
+        name = value if isinstance(value, str) else None
+        if name not in MAINTENANCE_ACCESS_OPERATIONS:
+            raise ValueError("DATABASE_GOVERNANCE_UNKNOWN_MAINTENANCE_OPERATION:%s" % (value,))
+        if name not in resolved:
+            resolved.append(name)
+    return tuple(resolved)
 
 
 def validate_layer_responsibilities(layer, owned):
@@ -290,6 +317,10 @@ def validate_governance_declaration(declaration):
     if tuple(maintenance.get("capabilities") or ()) != MAINTENANCE_ACCESS_CAPABILITIES:
         failures.append(
             "maintenance_access: capabilities must be %s" % (list(MAINTENANCE_ACCESS_CAPABILITIES),)
+        )
+    if tuple(maintenance.get("operations") or ()) != MAINTENANCE_ACCESS_OPERATIONS:
+        failures.append(
+            "maintenance_access: operations must be %s" % (list(MAINTENANCE_ACCESS_OPERATIONS),)
         )
 
     invariants = set(declaration.get("invariants") or ())

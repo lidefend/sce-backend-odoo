@@ -155,7 +155,11 @@ if _action == "provision":
         authorization=json.loads(os.environ["SC_TENANT_PAYLOAD_OPERATOR_AUTHORIZATION"]),
     )
 elif _action == "grant":
-    _grant = _lifecycle.grant_import_scope(env, identity_xmlid=_identity_key)  # noqa: F821
+    _grant = _lifecycle.grant_import_scope(  # noqa: F821
+        env,
+        identity_xmlid=_identity_key,
+        authorization=json.loads(os.environ["SC_TENANT_PAYLOAD_OPERATOR_AUTHORIZATION"]),
+    )
     _result = {"before": _grant["before"], "after": _grant["after"]}
 elif _action == "revoke":
     _result = _lifecycle.revoke_import_scope(env, identity_xmlid=_identity_key)  # noqa: F821
@@ -496,7 +500,7 @@ def assert_readback(report: dict, duty: dict) -> None:
         _fail("the declared operator company scope drifted")
 
 
-def assert_approval(report: dict, duty: dict, expected_checksum: str) -> dict:
+def assert_approval(report: dict, duty: dict, expected_checksum: str, action: str) -> dict:
     """The approval is a read fact, and it must cover exactly this run."""
     if report.get("mode") != "read_only" or int(report.get("writes") or 0) != 0:
         _fail("the approval read did not declare itself read-only")
@@ -506,6 +510,16 @@ def assert_approval(report: dict, duty: dict, expected_checksum: str) -> dict:
             "the platform control database holds no approved, in-window maintenance "
             "access for this duty: the lifecycle refuses to fabricate one"
         )
+    operations = approval.get("authorized_operations")
+    if not isinstance(operations, list) or not all(
+        isinstance(operation, str) for operation in operations
+    ):
+        _fail("the maintenance access declares no operation set")
+    if action not in [operation for operation in operations if operation]:
+        # The capability is not the grant: an access that authorizes creating a
+        # service identity must never be read as also authorizing the grant, and
+        # the reverse is refused the same way.
+        _fail("the maintenance access does not authorize the %s operation" % action)
     if _text(approval.get("db_name")) != duty["database"]:
         _fail("the approved access covers another database")
     if _text(approval.get("tenant_key")) != duty["tenant_key"]:
@@ -653,7 +667,7 @@ def execute(
                 control_ops_root,
             )
         )
-        approval = assert_approval(approval_read, duty, approved_subject)
+        approval = assert_approval(approval_read, duty, approved_subject, action)
 
     entry_report: dict = {}
     if action in ("provision", "grant", "revoke"):

@@ -65,6 +65,7 @@ class TestTenantPayloadOperatorLifecycle(TransactionCase):
             "requested_by": "platform-maintenance",
             "valid_from": fields.Datetime.to_string(now - timedelta(hours=1)),
             "valid_until": fields.Datetime.to_string(now + timedelta(hours=1)),
+            "authorized_operations": ["provision", "grant"],
         }
         record.update(overrides)
         return record
@@ -278,7 +279,9 @@ class TestTenantPayloadOperatorLifecycle(TransactionCase):
     def test_grant_adds_only_the_narrow_importer_group(self):
         user = self.provisioned()
         before = set(user.groups_id.ids)
-        result = lifecycle.grant_import_scope(self.env, identity_xmlid=IDENTITY_KEY)
+        result = lifecycle.grant_import_scope(
+            self.env, identity_xmlid=IDENTITY_KEY, authorization=self.authorization()
+        )
         after = set(user.groups_id.ids)
         self.assertEqual(after - before, {self.importer.id})
         self.assertEqual(result["after"]["granted_group_xmlid"], policy.IMPORTER_GROUP_XMLID)
@@ -289,9 +292,13 @@ class TestTenantPayloadOperatorLifecycle(TransactionCase):
 
     def test_grant_is_idempotent_and_never_widens_the_account(self):
         user = self.provisioned()
-        lifecycle.grant_import_scope(self.env, identity_xmlid=IDENTITY_KEY)
+        lifecycle.grant_import_scope(
+            self.env, identity_xmlid=IDENTITY_KEY, authorization=self.authorization()
+        )
         groups_after_first = set(user.groups_id.ids)
-        after = lifecycle.grant_import_scope(self.env, identity_xmlid=IDENTITY_KEY)
+        after = lifecycle.grant_import_scope(
+            self.env, identity_xmlid=IDENTITY_KEY, authorization=self.authorization()
+        )
         self.assertFalse(after["after"]["changed"])
         self.assertEqual(after["after"]["writes"], 0)
         self.assertEqual(set(user.groups_id.ids), groups_after_first)
@@ -304,14 +311,43 @@ class TestTenantPayloadOperatorLifecycle(TransactionCase):
         with self.assertRaisesRegex(
             lifecycle.TenantPayloadOperatorError, "TPO_OPERATOR_HOLDS_FORBIDDEN_GROUP"
         ):
-            lifecycle.grant_import_scope(self.env, identity_xmlid=IDENTITY_KEY)
+            lifecycle.grant_import_scope(
+            self.env, identity_xmlid=IDENTITY_KEY, authorization=self.authorization()
+        )
         self.assertNotIn(self.importer.id, user.groups_id.ids)
 
     def test_grant_refuses_an_unprovisioned_or_missing_identity(self):
         with self.assertRaisesRegex(
             lifecycle.TenantPayloadOperatorError, "TPO_OPERATOR_NOT_PROVISIONED"
         ):
-            lifecycle.grant_import_scope(self.env, identity_xmlid=IDENTITY_KEY)
+            lifecycle.grant_import_scope(
+                self.env, identity_xmlid=IDENTITY_KEY, authorization=self.authorization()
+            )
+
+    def test_grant_refuses_an_approval_that_does_not_cover_the_grant(self):
+        """The capability is not the grant: naming only ``provision`` is a stop."""
+        user = self.provisioned()
+        with self.assertRaisesRegex(
+            policy.OperatorPolicyError, "AUTHORIZATION_OPERATION_NOT_COVERED:grant"
+        ):
+            lifecycle.grant_import_scope(
+                self.env,
+                identity_xmlid=IDENTITY_KEY,
+                authorization=self.authorization(authorized_operations=["provision"]),
+            )
+        self.assertNotIn(self.importer.id, user.groups_id.ids)
+
+    def test_grant_refuses_an_approval_without_an_operation_set(self):
+        user = self.provisioned()
+        with self.assertRaisesRegex(
+            policy.OperatorPolicyError, "AUTHORIZATION_OPERATIONS_MISSING"
+        ):
+            lifecycle.grant_import_scope(
+                self.env,
+                identity_xmlid=IDENTITY_KEY,
+                authorization=self.authorization(authorized_operations=None),
+            )
+        self.assertNotIn(self.importer.id, user.groups_id.ids)
 
     def test_provision_refuses_an_account_carrying_a_native_api_key(self):
         user = self.provisioned()
@@ -329,7 +365,9 @@ class TestTenantPayloadOperatorLifecycle(TransactionCase):
     # -- revocation --------------------------------------------------------
     def test_revoke_removes_only_the_grant_and_keeps_the_account(self):
         user = self.provisioned()
-        lifecycle.grant_import_scope(self.env, identity_xmlid=IDENTITY_KEY)
+        lifecycle.grant_import_scope(
+            self.env, identity_xmlid=IDENTITY_KEY, authorization=self.authorization()
+        )
         groups_before = set(user.groups_id.ids)
         result = lifecycle.revoke_import_scope(self.env, identity_xmlid=IDENTITY_KEY)
         groups_after = set(user.groups_id.ids)

@@ -206,6 +206,7 @@ def validate_authorization(
     identity_key: str,
     subject_checksum,
     now,
+    action: str,
 ) -> dict:
     """Refuse to act without an independent, in-window approval.
 
@@ -214,6 +215,10 @@ def validate_authorization(
     database, the operator, the permission scope, the subject digest and the
     validity window.  This function only *checks* those facts; it never
     derives them from the declaration and never invents a value.
+
+    ``action`` is the operation this caller is about to execute.  When it is
+    given, the approval must name it: a capability is not a grant, so an access
+    that authorizes one operation can never be read as authorizing another.
     """
     if not isinstance(authorization, dict):
         _fail("AUTHORIZATION_MISSING")
@@ -252,6 +257,19 @@ def validate_authorization(
     access_id = authorization.get("access_id")
     if not isinstance(access_id, int) or isinstance(access_id, bool) or access_id <= 0:
         _fail("AUTHORIZATION_ACCESS_ID_INVALID")
+    operations = authorization.get("authorized_operations")
+    if not isinstance(operations, list) or not all(
+        isinstance(item, str) for item in operations
+    ):
+        _fail("AUTHORIZATION_OPERATIONS_MISSING")
+    covered = [item for item in operations if item]
+    if not covered:
+        _fail("AUTHORIZATION_OPERATIONS_MISSING")
+    requested = _text(action)
+    if not requested:
+        _fail("AUTHORIZATION_ACTION_MISSING")
+    if requested not in covered:
+        _fail("AUTHORIZATION_OPERATION_NOT_COVERED:%s" % requested)
     return {
         "access_id": access_id,
         "db_name": expected["db_name"],
@@ -263,6 +281,7 @@ def validate_authorization(
         "requested_by": requested_by,
         "valid_from": valid_from,
         "valid_until": valid_until,
+        "authorized_operations": covered,
     }
 
 

@@ -2964,6 +2964,17 @@ verify.smart_core.tenant_payload_operator.orm: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  MODULE=smart_core TEST_TAGS=tenant_payload_operator test.safe
 
+# The maintenance authorization flow is a product capability, not a shell
+# substitute: the request, decision, revoke and readback entries are exercised
+# through the HTTP controller, and the service side must reject a self-approval,
+# a body that names its own approver and a principal without the control-plane
+# security role. Pinned to the fixed test tag so a run that collects zero tests
+# cannot pass.
+.PHONY: verify.smart_core.platform_maintenance_access.orm
+verify.smart_core.platform_maintenance_access.orm: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_core TEST_TAGS=platform_maintenance_access test.safe
+
 # Offline adapter and demo identity checks; these never authorize a database write.
 .PHONY: verify.platform.database.lifecycle.unit verify.demo.lifecycle.unit
 verify.platform.database.lifecycle.unit: guard.prod.forbid

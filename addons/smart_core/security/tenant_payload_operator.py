@@ -178,6 +178,7 @@ def provision(env, *, declaration: dict, authorization: dict) -> dict:
         identity_key=declared["identity_key"],
         subject_checksum=facts.get("subject_checksum"),
         now=fields.Datetime.to_string(fields.Datetime.now()),
+        action="provision",
     )
     if company != env.company:
         # A service identity may only ever be scoped to the tenant database's
@@ -275,9 +276,28 @@ def assert_import_operator(env, *, identity_xmlid: str) -> dict:
     return readback
 
 
-def grant_import_scope(env, *, identity_xmlid: str) -> dict:
-    """Add the single narrow importer grant, with the contract's assertions."""
+def grant_import_scope(env, *, identity_xmlid: str, authorization: dict) -> dict:
+    """Add the single narrow importer grant, with the contract's assertions.
+
+    The grant is a maintenance operation in its own right, so it carries its own
+    approval check: an access that authorized creating the identity is not read
+    here as also authorizing the permission grant.
+    """
     _assert_governed_principal(env)
+    facts = authorization if isinstance(authorization, dict) else {}
+    policy.validate_authorization(
+        authorization,
+        # The expectations come from the database being written, never from the
+        # approval payload that wants the permission.
+        db_name=env.cr.dbname,
+        tenant_key=str(
+            env["ir.config_parameter"].sudo().get_param("sc.tenant.bound_tenant_key", "") or ""
+        ),
+        identity_key=identity_xmlid,
+        subject_checksum=facts.get("subject_checksum"),
+        now=fields.Datetime.to_string(fields.Datetime.now()),
+        action="grant",
+    )
     before = assert_import_operator(env, identity_xmlid=identity_xmlid)
     importer = _xmlid_to_record(env, policy.IMPORTER_GROUP_XMLID)
     if not importer or importer._name != "res.groups":
