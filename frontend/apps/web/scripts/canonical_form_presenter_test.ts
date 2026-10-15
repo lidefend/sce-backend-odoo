@@ -903,6 +903,44 @@ assert.equal(
   '提交审批时生成',
   'canonical field projection must preserve authoritative readonly empty semantics',
 );
+// 主从关系明细集合的每页记录数是契约声明事实（relation_entry.page_size）。
+// canonical/task 形态与 native 形态必须消费同一个声明：有声明就原样透出，
+// 没有声明就保持未声明（渲染层据此停机回声明层），绝不补前端默认值。
+const declaredOne2manySchema = canonicalFieldToFormSection({
+  ...dateRangeStartField,
+  widgetId: 'field.outflow_line_ids',
+  fieldCode: 'outflow_line_ids',
+  fieldType: 'one2many',
+  widgetType: 'one2many',
+  value: [],
+  componentConfig: { fieldType: 'one2many', relation: 'payment.request.line' },
+  fieldDescriptor: {
+    name: 'outflow_line_ids',
+    type: 'one2many',
+    relation: 'payment.request.line',
+    relation_entry: { page_size: 20, options_limit: 80, options_search_limit: 40 },
+  },
+});
+assert.equal(
+  declaredOne2manySchema.one2manyPageSize,
+  20,
+  'the canonical renderer must project the declared one2many page size, not drop it',
+);
+const undeclaredOne2manySchema = canonicalFieldToFormSection({
+  ...dateRangeStartField,
+  widgetId: 'field.outflow_line_ids',
+  fieldCode: 'outflow_line_ids',
+  fieldType: 'one2many',
+  widgetType: 'one2many',
+  value: [],
+  componentConfig: { fieldType: 'one2many', relation: 'payment.request.line' },
+  fieldDescriptor: { name: 'outflow_line_ids', type: 'one2many', relation: 'payment.request.line' },
+});
+assert.equal(
+  undeclaredOne2manySchema.one2manyPageSize,
+  undefined,
+  'an undeclared one2many page size must stay undeclared so the renderer stops instead of defaulting',
+);
 const nativeDateRangeNode = {
   type: 'field', name: 'date_start', widget: 'date',
   componentConfig: {
