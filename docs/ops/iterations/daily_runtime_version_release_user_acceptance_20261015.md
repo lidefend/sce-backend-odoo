@@ -1540,3 +1540,117 @@ S3 观察（记录为后续项，不作为本批阻断）：
 
 复核执行体同时标明无法在本环境验证、只能推断的点：真机 `base.group_user` 传递闭包内容、
 审批停机的实际触发、撤销后凭据失效、demo 合同链端到端（L3/L4）。
+
+---
+
+## 2026-10-15（续）：统一入驻的登记解卡 —— 平台数据库登记受管入口
+
+### 交接时的唯一卡点
+
+`make daily.runtime.duty.operator_grant.remote_provision` 返回：
+
+```
+odoo.exceptions.ValidationError: DBGOV1_DATABASE_NOT_REGISTERED:sc_tenant_baosheng_dev
+```
+
+根因链：`provision()` → `_assert_governed_principal()` → `_assert_governance_principal()` →
+`_resolve_entry(db_name)`；而审批投影 `_approved_access_projection` 在**平台控制库**
+`sc_platform_control` 上执行 `_resolve_entry(sc_tenant_baosheng_dev)`，该库
+`sc.platform.database.registration` 为 **0 行**。
+
+也就是说：登记入口 `scripts/ops/platform_database_register.py` 早已存在且自带 fail-closed
+校验，但**缺少受治理的日常运行时绑定** —— 没有人把“控制面 / 目标 / 集群身份”解析出来，
+所以任何日常 duty 都无法进入平台登记。这是**平台登记缺失**，不是生命周期机制缺陷。
+
+### 本轮落地（P4 传输层，不新增任何身份或权限）
+
+新增 `scripts/ops/daily_runtime_duty_database_registration.py` 及其 31 项定向测试，并把
+不可变工具树白名单与 Make 受管入口补齐：
+
+| 事项 | 落实方式 |
+|---|---|
+| 目标库 / 用途 / 租户 / dbfilter | 全部取自 `config/ops/daily_runtime_database_duties.v1.json` 职责声明 |
+| 环境角色 / 数据库策略 | 取自平台自身词汇表 `addons/smart_core/security/data_space_provisioning.py`，从本入口自身不可变树加载 |
+| 生命周期状态词表 | 取自 `addons/smart_core/security/database_governance.py` |
+| 控制面 | 明确**不作为数据空间**登记，直接拒绝 |
+| 唯一写入路径 | 不可变的 `platform.database.register`，在控制职责自身渲染栈内执行；容器内以只读挂载 `/mnt/scripts` 加载，并回传源码摘要与本树比对，拒绝容器旧副本 |
+| 幂等 | 仅允许安全方向：完全一致复用且不写；身份不符即停机，登记身份永不被接管或改写 |
+| 只读性 | `readback` 独立进程执行并自证 `writes=0`，登记断言在全新事务中完成 |
+
+Make 入口：`verify.daily.duty.database_registration`（31 项）、
+`daily.runtime.duty.database_registration.remote_install/remote_readback/remote_register`。
+
+本轮还修掉一个真实顺序缺陷：`readback` 动作原先在证明“状态未移动”之前就对第二次读回做深度断言，
+导致状态漂移时抛出的是内容错误而非“状态被改变”。修在归属层，没有放宽断言。
+
+### 权威回读（写前 / 写 / 写后）
+
+| 阶段 | 事实 |
+|---|---|
+| 写前 | `sc.platform.database.registration` 0 行、`sc_platform_database_operation` 0 行、`sc.platform.maintenance.access` 0 行；readback 报 `registered=false, writes=0`；入口摘要 `8ad05369…` 与本树一致 |
+| 写入 | `operation_id=1`，entry `platform.database.register`，`execution_id=e6aa707444f34f6084484abc516ab1ec`，`status=passed`、`commit_state=committed`、`initial_state=declared`，除声明事实外不带任何环境 |
+| 写后 | `sc_tenant_baosheng_dev｜customer｜baosheng｜customer_production｜database_per_customer_tenant｜^sc_tenant_baosheng_dev$｜declared`，`grants_business_data_scope=false`，`maintenance_access_count=0`，审计恰好 1 条 `register`（`from_state` 空 → `to_state=declared`） |
+| 幂等 | 再次 `register` 报 `created=false`、`entry_report.reused=true`，审计仍是 1 条 → 复用路径确实不写 |
+
+写入量级：平台控制集群内 **1 行登记 + 1 行审计**，追加式。
+
+### 新的暂停点：比裁定预期更早，且更有理由
+
+登记解卡后 `provision` 的失败原因已换成**预期的审批缺口**：
+
+```
+BLOCKED the platform control database holds no approved, in-window maintenance
+access for this duty: the lifecycle refuses to fabricate one
+```
+
+关键事实：`APPROVAL_REQUIRED_ACTIONS = ("provision", "grant")`，且
+`tenant_payload_operator.provision()` 在**创建任何东西之前**就校验授权。
+因此暂停点在 `provision` 之前，而不是裁定预期的 `grant` 之前：
+
+> 服务身份不能先于它将承载的审批而存在。
+
+这**不是**要修的缺陷，机制不放松：伪造 `sc.platform.maintenance.access`、拿通用 `admin`
+当审批人、让 `provision` 跳过审批，三者都属于所有者明令禁止的“绕过守卫”。
+
+控制面现状（只读）：`res_users` 仅 `__system__`(停用) / `admin`(活跃、内部、即被禁止的通用管理员) /
+`default` / `public` / `portaltemplate`；`smart_core.group_smart_core_security_admin`（组 id 16）**0 成员**。
+→ 不存在可核验的独立审批主体。
+
+### 依赖审批的只读动作
+
+- `make daily.runtime.duty.operator_grant.remote_readback`**不需要审批**，已执行并留下审批前基线：
+  `operator=null`、`importer_group_member_count=0`、`bound_tenant_key=baosheng`、
+  已发布版次 `construction.standard / daily-navigation-standard-10bf72ef4bb0`、
+  `required_group_closure_xmlids` 与交接记录一致。
+- `make daily.runtime.duty.payload.remote_plan` 当前被拒（`TPV1_IMPORT_OPERATOR_IDENTITY_NOT_UNIQUE`，
+  实际条件是声明的 operator 身份未解析为活跃内部用户）。因此该计划**不是**“不依赖审批的只读计划”，
+  本轮不宣称它通过。
+
+### 待办（阻塞项，唯一）
+
+> **请所有者提供正式审批账号（或通过现有认证入口完成批准），并给出要绑定的授权依据。**
+
+审批记录须同时绑定：目标租户 + 数据库 `sc_tenant_baosheng_dev`、操作员身份
+`smart_core.svc_tenant_payload_operator_baosheng`、能力 `migrate`、载荷摘要
+`f1adc6fb17b516d42492fe42229df0cce65956ea113978a19243c0de57ec1ed4`、有效期；
+且审批人必须是**独立于请求人**、持有 `smart_core.group_smart_core_security_admin` 的主体。
+
+审批到位后：`remote_provision` → 回读新身份 → `remote_plan` → `remote_grant` →
+`remote_import` → `remote_verify` → 对账（12386 与 6322/29/6035、金额、来源关系、附件、归属、
+合法用户可见 / 越权不可见）→ `remote_revoke` → B 线独立复核 → 主线集成。
+
+### 状态边界
+
+**批次验收完成（登记传输层 + 登记事实）**；主线集成 / 版本发布 / 产品交付**均未完成**。
+
+### 结果索引登记
+
+新入口已登记为 `daily_duty_database_registration_tool → verify.daily.duty.database_registration`，
+并入本次结果索引；原始日志保留在 `.runtime/agent-runs/…/daily_duty_database_registration_tool.log`，
+回执哈希绑定原日志。该条目与既有的 `daily_duty_operator_grant_tool`、`daily_duty_recovery_tool`
+一样，因本 run 的环境类别是 `runtime` 而按设计读作 `stale`
+（`runtime evidence requires authoritative environment readback`）——
+这是**设计预期**，不是工具失败，也没有为让它读作 `reusable` 而放宽守卫。
+
+`make ci.local.iteration`：`PASS change_state=dirty scope=unclassified_by_design coverage=L1_only`，
+`outside_scope=[]`。
