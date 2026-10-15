@@ -31,7 +31,8 @@
     "CLOSED 2026-10-15 in this run: the platform-model registration for the daily profile now has a governed runtime binding -- scripts/ops/daily_runtime_duty_database_registration.py resolves every runtime fact from config/ops/daily_runtime_database_duties.v1.json and drives the immutable platform.database.register entry inside the control duty's own rendered stack. <customer-tenant-db> is registered (customer/<tenant_key>/customer_production/database_per_customer_tenant/^<customer-tenant-db>$ stage declared, one audited register operation, reuse path writes nothing), so DBGOV1_DATABASE_NOT_REGISTERED no longer blocks the operator lifecycle. Still open from the original finding: suspend/resume are not yet exercised for this duty and the demo duty still carries no registration of its own.",
     "The three declared Step B gaps stay preconditions for the first write to sc_odoo or sc_platform_core: the cluster reports data_checksums=off, no amcheck index verification has run, and neither database has a paired recovery point. sc_platform_control is a fresh cluster and inherited data_checksums=off; enabling checksums would need a rebuild, so the decision is recorded rather than assumed.",
     "Frozen exact-head Quick, final identity-bound review and required remote checks remain pending.",
-    "CLOSED 2026-10-16 in this run (was: the frozen candidate's Quick failed on verify.test.coverage.registry because the platform_maintenance_access and tenant_payload_operator tags had no registry disposition; the same two lines are in the preserved earlier Quick failure, so this was pre-existing and previously masked by the product-tree boundary violation). Both entries are now dispositioned against their real on-demand ORM gates, the tracked coverage snapshot is re-exported, and the gate passes. See coverage_registry_gap_20261016."
+    "CLOSED 2026-10-16 in this run (was: the frozen candidate's Quick failed on verify.test.coverage.registry because the platform_maintenance_access and tenant_payload_operator tags had no registry disposition; the same two lines are in the preserved earlier Quick failure, so this was pre-existing and previously masked by the product-tree boundary violation). Both entries are now dispositioned against their real on-demand ORM gates, the tracked coverage snapshot is re-exported, and the gate passes. See coverage_registry_gap_20261016.",
+    "CLOSED 2026-10-16 in this run (was: audit.verification.lane_coverage.check denied the frozen candidate because two make targets stayed registered as dead surface after the coverage registry named them). Both registrations were removed through the reasoned unregister path and the frozen baseline now holds. See coverage_registry_gap_20261016.follow_on."
   ],
   "branch": "fix/data-ownership-visibility-recovery-20261015",
   "checks": {
@@ -3341,6 +3342,13 @@
       "groups": "169 tag groups, 4 gated, 22 on-demand, 143 unwired"
     },
     "verification": "A per-group comparison against HEAD shows exactly two added entries and no changed existing entry, so the seeded file is not hiding an unnoticed disposition change.",
-    "retry_basis": "the gate input changed, so the failed Quick may be retried once at the new frozen head"
+    "retry_basis": "each retry follows a changed gate input: the coverage registry first, then the stale lane dispositions. Seven of eight Quick shards already passed at this head.",
+    "follow_on": {
+      "trigger": "Registering the two real gates made them referenced for the first time, so the verification-lane audit reported stale_target_dispositions: 2 > frozen baseline 0 -- two targets were still registered as dead surface after something named them.",
+      "remedy": "Unregistered both targets through the governed removal path, which requires an argued reason and refuses while the target is still zero-reference. The registry cannot be emptied to silence a finding.",
+      "result": "audit.verification.lane_coverage.check PASS: surface within the frozen baseline",
+      "verification": "A bucket-wise comparison against HEAD shows the two target entries removed and no other entry changed; the writer only relocated one entry into its sorted position.",
+      "quick_shard_evidence": "At the frozen head the Quick ran 8 shards: shards 1-7 recorded a pass and shard 0 failed only on this check, so no sibling failure is left undiscovered."
+    }
   }
 }

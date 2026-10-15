@@ -327,6 +327,11 @@
       "owner": "platform-team",
       "reason": "日常 duty 运维入口：refresh 只重渲染已服务的 duty 栈并按声明重建服务，以修掉容器读不到运行环境的那类缺陷；它必须在 duty 主机上以真实凭据串行执行，没有任何自动化 lane 能消费它，按 make 的公开入口由运行手册驱动。"
     },
+    "daily.runtime.database.duty.upgrade": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "日常 duty 运维入口：upgrade 只把已声明模块集从部署树重写到已服务的 duty（先捕获并经 pg_restore --list 验证恢复点，再以 -u 重写、重启并回读模块版本），不安装声明之外的任何模块；它必须在 duty 主机上以真实凭据串行执行，没有任何自动化 lane 能消费它，按 make 的公开入口由运行手册驱动。"
+    },
     "daily.runtime.duty.database_registration.remote_readback": {
       "disposition": "ops_runbook",
       "owner": "platform-team",
@@ -3787,16 +3792,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
-    "verify.smart_core.platform_maintenance_access.orm": {
-      "disposition": "local_diagnostic",
-      "owner": "platform-team",
-      "reason": "duty 家族的聚焦验证入口（本地单测/ORM），需要本地 duty 环境或数据库，未接入任何自动化 lane；由本轮运行记录手工调用并留证。"
-    },
-    "verify.smart_core.tenant_payload_operator.orm": {
-      "disposition": "local_diagnostic",
-      "owner": "platform-team",
-      "reason": "duty 家族的聚焦验证入口（本地单测/ORM），需要本地 duty 环境或数据库，未接入任何自动化 lane；由本轮运行记录手工调用并留证。"
-    },
     "verify.smart_core.tenant_payload_operator.policy": {
       "disposition": "local_diagnostic",
       "owner": "platform-team",
@@ -3926,11 +3921,6 @@
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/ops/iterations/config_center_entry_defect_20260916.md。登记待接线或退役，B3 按族处理。"
-    },
-    "daily.runtime.database.duty.upgrade": {
-      "disposition": "ops_runbook",
-      "owner": "platform-team",
-      "reason": "日常 duty 运维入口：upgrade 只把已声明模块集从部署树重写到已服务的 duty（先捕获并经 pg_restore --list 验证恢复点，再以 -u 重写、重启并回读模块版本），不安装声明之外的任何模块；它必须在 duty 主机上以真实凭据串行执行，没有任何自动化 lane 能消费它，按 make 的公开入口由运行手册驱动。"
     }
   },
   "scripts": {

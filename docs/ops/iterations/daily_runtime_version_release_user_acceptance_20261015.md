@@ -2397,3 +2397,15 @@ PR/定时工作流选中它们 —— 这正是 `on-demand` 的正确处置，�
 属于它的规范输出）。结果：`verify.test.coverage.registry` PASS（169 个 tag 组：4 gated / 22 on-demand / 143 unwired）。
 
 因为失败门禁的输入已经改变，冻结 HEAD 的 Quick 允许重跑**一次**。
+
+### 连带发现：登记真门禁让两条"死面"登记过期
+
+把这两条真实门禁写进覆盖登记后，它们**第一次**变成"被引用的 target"，于是核验 lane 审计立刻报
+`stale_target_dispositions: 2 > frozen baseline 0` —— 两条 target 仍被登记为"死面"。这正是该机制
+存在的意义：登记一旦不再成立就必须撤。
+
+处置走**受管的注销入口**（必须给出理由，且 target 仍为零引用时拒绝注销，避免把登记清空来消音）。
+按桶与 HEAD 比对：只移除那两条 target 登记，其余条目无改动（写入器只把一条挪到它的排序位置）。
+结果 `audit.verification.lane_coverage.check` PASS。
+
+同一冻结 HEAD 的 Quick 分 8 片运行：1–7 片记录通过，仅 0 片因该 check 失败 —— 因此没有尚未发现的同级失败。
