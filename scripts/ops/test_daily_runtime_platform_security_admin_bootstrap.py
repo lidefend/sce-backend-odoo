@@ -439,16 +439,54 @@ class MakeTargetTests(unittest.TestCase):
         ):
             self.assertIn(target, self.make)
 
-    def test_each_remote_entry_validates_name_and_evidence_before_connecting(self):
+    def rules(self):
+        """Every rule head of the makefile, with its header and indented body."""
+        rules = {}
+        head = None
+        for line in self.make.splitlines():
+            if re.match(r"^[A-Za-z0-9_.-]+:", line):
+                head = line.split(":", 1)[0].strip()
+                rules[head] = {"header": line, "body": ""}
+                continue
+            if head and (line.startswith("\t") or line.startswith("    ")):
+                rules[head]["body"] += line + "\n"
+        return rules
+
+    def test_every_remote_entry_delegates_its_grammar_to_one_guard(self):
         # A name or an evidence reference travels through the ssh payload as a
-        # shell argument.  Make expands this file before any recipe runs, so the
-        # apostrophe is the one character refused ahead of the connection; both
-        # remote entries carry the same guard, and their bounds are the entry's
-        # own bounds rather than a wider local copy.
-        self.assertEqual(self.make.count("it would break the ssh payload"), 4)
-        self.assertEqual(self.make.count("{2,80}$$'"), 2)
-        self.assertEqual(self.make.count("{10,200}$$'"), 2)
-        self.assertEqual(self.make.count("must be 2-80 characters"), 2)
+        # shell argument.  Make expands this file before any recipe runs, so a
+        # local copy of the entry's grammar is both a second authority and a
+        # payload risk.  The copy is gone: one guard asks the entry's own
+        # resolver, so a bound can no longer drift away from the authority it
+        # was meant to guard.
+        for duplicate in (
+            "it would break the ssh payload",
+            "{2,80}$$'",
+            "{10,200}$$'",
+            "must be 2-80 characters",
+        ):
+            self.assertNotIn(duplicate, self.make)
+
+        guard = self.rules()["daily.runtime.security_admin.payload_inputs"]["body"]
+        self.assertIn("resolve_request", guard)
+        self.assertIn("platform_security_admin_credential.py", guard)
+
+    def test_every_action_that_carries_the_declared_values_depends_on_the_guard(self):
+        carrying = {
+            head: rule
+            for head, rule in self.rules().items()
+            if '--login "$(DAILY_SECURITY_ADMIN_LOGIN)"' in rule["body"]
+        }
+        self.assertTrue(
+            carrying,
+            "the declared identity binding must still reach the remote entry",
+        )
+        for head, rule in carrying.items():
+            self.assertIn(
+                "daily.runtime.security_admin.payload_inputs",
+                rule["header"],
+                "%s must depend on the single payload guard" % (head,),
+            )
 
     def test_the_bootstrap_reuses_the_declared_identity_binding(self):
         self.assertIn("bootstrap --login \"$(DAILY_SECURITY_ADMIN_LOGIN)\"", self.make)

@@ -75,6 +75,8 @@ daily.candidate.continuity.remote_install: guard.prod.forbid
 		scripts/ops/daily_runtime_duty_database_registration.py \
 		scripts/ops/daily_runtime_platform_security_admin_bootstrap.py \
 		scripts/ops/platform_security_admin_bootstrap.py \
+		scripts/ops/daily_runtime_platform_security_admin_credential.py \
+		scripts/ops/platform_security_admin_credential.py \
 		scripts/ops/platform_database_register.py \
 		scripts/ops/platform_database_receipt.py \
 		addons/smart_core/security/data_space_provisioning.py \
@@ -353,55 +355,80 @@ daily.runtime.duty.database_registration.remote_register: daily.runtime.duty.dat
 # platform control duty, loads the immutable entry from the reviewed scripts
 # mount and reads the identity and the authorization ledger back in separate
 # processes, so a bootstrap that approved its own request, took over a shared
-# carrier or moved the ledger is refused. The login, the name and the evidence
-# are operator inputs; the confirmation value and the group identity come from
-# the entry itself.  Both operator inputs travel through the ssh payload as shell
-# arguments.  Make expands the context lines of this file before any recipe runs,
-# so the only character refused ahead of the ssh connection is the apostrophe,
-# which is checked on its own line; every other payload-breaking character is
-# refused by the entry's authoritative patterns, which it reads from argv rather
-# than from a shell.
+# carrier or moved the ledger is refused.
 DAILY_SECURITY_ADMIN_TOOL ?= $(DAILY_CONTINUITY_REMOTE_ROOT)/scripts/ops/daily_runtime_platform_security_admin_bootstrap.py
 DAILY_SECURITY_ADMIN_LOGIN ?=
 DAILY_SECURITY_ADMIN_NAME ?=
 DAILY_SECURITY_ADMIN_EVIDENCE ?=
 
-.PHONY: verify.platform.security_admin.bootstrap daily.runtime.platform.security_admin.bootstrap.remote_install daily.runtime.platform.security_admin.bootstrap.remote_readback daily.runtime.platform.security_admin.bootstrap.remote_bootstrap
+# The named approver exists without a stored credential by design, so no
+# principal can authenticate as it and the maintenance approval cannot be
+# exercised for real.  This step supplies that one fact and nothing else: it only
+# issues a credential for an identity that already carries exactly the
+# control-plane security-administrator closure, it refuses to take over an
+# account that already carries one, it approves nothing, and it asserts the
+# authorization ledger is exactly as it found it.  The credential is written to
+# the operator-only artefact mount -- never printed, never an argument -- and the
+# clear action retires it again.
+DAILY_SECURITY_ADMIN_CREDENTIAL_TOOL ?= $(DAILY_CONTINUITY_REMOTE_ROOT)/scripts/ops/daily_runtime_platform_security_admin_credential.py
+
+# The declared values reach the entry through the environment, never through the
+# text of a recipe.  Make expands a recipe line before any shell parses it, so a
+# value interpolated into `test -n "$(VALUE)"` could otherwise contribute a
+# command of its own; carrying it in the environment makes that impossible, and
+# the check below is then the entry's own grammar rather than a second copy of it
+# that can drift away from the authority it is meant to guard.
+export DAILY_SECURITY_ADMIN_LOGIN
+export DAILY_SECURITY_ADMIN_NAME
+export DAILY_SECURITY_ADMIN_EVIDENCE
+
+.PHONY: verify.platform.security_admin.bootstrap verify.platform.security_admin.credential daily.runtime.security_admin.payload_inputs daily.runtime.platform.security_admin.bootstrap.remote_install daily.runtime.platform.security_admin.bootstrap.remote_readback daily.runtime.platform.security_admin.bootstrap.remote_bootstrap daily.runtime.platform.security_admin.credential.remote_install daily.runtime.platform.security_admin.credential.remote_readback daily.runtime.platform.security_admin.credential.remote_issue daily.runtime.platform.security_admin.credential.remote_clear
 
 verify.platform.security_admin.bootstrap: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/platform_security_admin_bootstrap.py scripts/ops/test_platform_security_admin_bootstrap.py scripts/ops/daily_runtime_platform_security_admin_bootstrap.py scripts/ops/test_daily_runtime_platform_security_admin_bootstrap.py
 	@python3 -m unittest scripts.ops.test_platform_security_admin_bootstrap
 	@python3 -m unittest scripts.ops.test_daily_runtime_platform_security_admin_bootstrap
 
+verify.platform.security_admin.credential: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/platform_security_admin_credential.py scripts/ops/test_platform_security_admin_credential.py scripts/ops/daily_runtime_platform_security_admin_credential.py
+	@python3 -m unittest scripts.ops.test_platform_security_admin_credential
+
+# One declaration and one check for every action that carries these values to the
+# remote entry as shell arguments, so no action can be guarded more loosely than
+# another and no payload-breaking character is refused only in prose.
+daily.runtime.security_admin.payload_inputs: guard.prod.forbid
+	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
+	@[[ "$(DAILY_CANDIDATE_SSH_HOST)" =~ ^[A-Za-z0-9._-]+$$ ]] || { echo "invalid daily candidate SSH host" >&2; exit 2; }
+	@python3 -c 'import importlib.util, os, sys; sys.path.insert(0, os.getcwd()); spec = importlib.util.spec_from_file_location("platform_security_admin_credential", "scripts/ops/platform_security_admin_credential.py"); entry = importlib.util.module_from_spec(spec); spec.loader.exec_module(entry); request = entry.resolve_request({entry.LOGIN_ENV: os.environ.get("DAILY_SECURITY_ADMIN_LOGIN", ""), entry.NAME_ENV: os.environ.get("DAILY_SECURITY_ADMIN_NAME", ""), entry.EVIDENCE_ENV: os.environ.get("DAILY_SECURITY_ADMIN_EVIDENCE", ""), entry.OUTPUT_ENV: entry.DEFAULT_OUTPUT}, "readback"); print("[payload_inputs] login=%s name=%s evidence=%s" % (request["login"], request["name"], request["evidence"]))' || { echo "the declared approver inputs do not resolve against the entry's own grammar" >&2; exit 2; }
+
 daily.runtime.platform.security_admin.bootstrap.remote_install: daily.candidate.continuity.remote_install
 	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
 
-daily.runtime.platform.security_admin.bootstrap.remote_readback: daily.runtime.platform.security_admin.bootstrap.remote_install
-	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
-	@[[ "$(DAILY_SECURITY_ADMIN_LOGIN)" =~ ^[a-z][a-z0-9_.-]{2,62}$$ ]] || { echo "DAILY_SECURITY_ADMIN_LOGIN must be the declared administrator login" >&2; exit 2; }
-	@test -n "$(DAILY_SECURITY_ADMIN_NAME)" || { echo "DAILY_SECURITY_ADMIN_NAME is required" >&2; exit 2; }
-	@test -n "$(DAILY_SECURITY_ADMIN_EVIDENCE)" || { echo "DAILY_SECURITY_ADMIN_EVIDENCE is required" >&2; exit 2; }
-	@case "$(DAILY_SECURITY_ADMIN_NAME)" in *"'"*) echo "DAILY_SECURITY_ADMIN_NAME must not contain an apostrophe: it would break the ssh payload" >&2; exit 2;; esac
-	@name_pattern='^[^"`$$\\;|<>&()]{2,80}$$'; [[ "$(DAILY_SECURITY_ADMIN_NAME)" =~ $$name_pattern ]] || { echo "DAILY_SECURITY_ADMIN_NAME must be a plain name: no double quote, backtick, dollar sign, backslash or shell operator" >&2; exit 2; }
-	@name_length=$$(printf '%s' "$(DAILY_SECURITY_ADMIN_NAME)" | wc -m); test "$$name_length" -ge 2 && test "$$name_length" -le 80 || { echo "DAILY_SECURITY_ADMIN_NAME must be 2-80 characters" >&2; exit 2; }
-	@case "$(DAILY_SECURITY_ADMIN_EVIDENCE)" in *"'"*) echo "DAILY_SECURITY_ADMIN_EVIDENCE must not contain an apostrophe: it would break the ssh payload" >&2; exit 2;; esac
-	@evidence_pattern='^[^"`$$\\;|<>&()]{10,200}$$'; [[ "$(DAILY_SECURITY_ADMIN_EVIDENCE)" =~ $$evidence_pattern ]] || { echo "DAILY_SECURITY_ADMIN_EVIDENCE must cite the ruling without a double quote, backtick, dollar sign, backslash or shell operator" >&2; exit 2; }
+daily.runtime.platform.security_admin.bootstrap.remote_readback: daily.runtime.security_admin.payload_inputs daily.runtime.platform.security_admin.bootstrap.remote_install
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
 		'python3 "$(DAILY_SECURITY_ADMIN_TOOL)" readback --login "$(DAILY_SECURITY_ADMIN_LOGIN)" --name "$(DAILY_SECURITY_ADMIN_NAME)" --evidence "$(DAILY_SECURITY_ADMIN_EVIDENCE)"'
 
-daily.runtime.platform.security_admin.bootstrap.remote_bootstrap: daily.runtime.platform.security_admin.bootstrap.remote_install
-	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
-	@[[ "$(DAILY_SECURITY_ADMIN_LOGIN)" =~ ^[a-z][a-z0-9_.-]{2,62}$$ ]] || { echo "DAILY_SECURITY_ADMIN_LOGIN must be the declared administrator login" >&2; exit 2; }
-	@test -n "$(DAILY_SECURITY_ADMIN_NAME)" || { echo "DAILY_SECURITY_ADMIN_NAME is required" >&2; exit 2; }
-	@test -n "$(DAILY_SECURITY_ADMIN_EVIDENCE)" || { echo "DAILY_SECURITY_ADMIN_EVIDENCE is required" >&2; exit 2; }
-	@case "$(DAILY_SECURITY_ADMIN_NAME)" in *"'"*) echo "DAILY_SECURITY_ADMIN_NAME must not contain an apostrophe: it would break the ssh payload" >&2; exit 2;; esac
-	@name_pattern='^[^"`$$\\;|<>&()]{2,80}$$'; [[ "$(DAILY_SECURITY_ADMIN_NAME)" =~ $$name_pattern ]] || { echo "DAILY_SECURITY_ADMIN_NAME must be a plain name: no double quote, backtick, dollar sign, backslash or shell operator" >&2; exit 2; }
-	@name_length=$$(printf '%s' "$(DAILY_SECURITY_ADMIN_NAME)" | wc -m); test "$$name_length" -ge 2 && test "$$name_length" -le 80 || { echo "DAILY_SECURITY_ADMIN_NAME must be 2-80 characters" >&2; exit 2; }
-	@case "$(DAILY_SECURITY_ADMIN_EVIDENCE)" in *"'"*) echo "DAILY_SECURITY_ADMIN_EVIDENCE must not contain an apostrophe: it would break the ssh payload" >&2; exit 2;; esac
-	@evidence_pattern='^[^"`$$\\;|<>&()]{10,200}$$'; [[ "$(DAILY_SECURITY_ADMIN_EVIDENCE)" =~ $$evidence_pattern ]] || { echo "DAILY_SECURITY_ADMIN_EVIDENCE must cite the ruling without a double quote, backtick, dollar sign, backslash or shell operator" >&2; exit 2; }
+daily.runtime.platform.security_admin.bootstrap.remote_bootstrap: daily.runtime.security_admin.payload_inputs daily.runtime.platform.security_admin.bootstrap.remote_install
 	@test "$${SC_CONFIRM_PLATFORM_SECURITY_ADMIN_BOOTSTRAP:-}" = "BOOTSTRAP_DECLARED_PLATFORM_SECURITY_ADMIN" || { echo "exact platform security administrator bootstrap confirmation is required" >&2; exit 2; }
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
 		'SC_CONFIRM_PLATFORM_SECURITY_ADMIN_BOOTSTRAP=BOOTSTRAP_DECLARED_PLATFORM_SECURITY_ADMIN python3 "$(DAILY_SECURITY_ADMIN_TOOL)" bootstrap --login "$(DAILY_SECURITY_ADMIN_LOGIN)" --name "$(DAILY_SECURITY_ADMIN_NAME)" --evidence "$(DAILY_SECURITY_ADMIN_EVIDENCE)"'
+
+daily.runtime.platform.security_admin.credential.remote_install: daily.candidate.continuity.remote_install
+	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
+
+daily.runtime.platform.security_admin.credential.remote_readback: daily.runtime.security_admin.payload_inputs daily.runtime.platform.security_admin.credential.remote_install
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'python3 "$(DAILY_SECURITY_ADMIN_CREDENTIAL_TOOL)" readback --login "$(DAILY_SECURITY_ADMIN_LOGIN)" --name "$(DAILY_SECURITY_ADMIN_NAME)" --evidence "$(DAILY_SECURITY_ADMIN_EVIDENCE)"'
+
+daily.runtime.platform.security_admin.credential.remote_issue: daily.runtime.security_admin.payload_inputs daily.runtime.platform.security_admin.credential.remote_install
+	@test "$${SC_CONFIRM_PLATFORM_SECURITY_ADMIN_CREDENTIAL:-}" = "ISSUE_ONE_TIME_PLATFORM_SECURITY_ADMIN_CREDENTIAL" || { echo "exact platform security administrator credential issue confirmation is required" >&2; exit 2; }
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'SC_CONFIRM_PLATFORM_SECURITY_ADMIN_CREDENTIAL=ISSUE_ONE_TIME_PLATFORM_SECURITY_ADMIN_CREDENTIAL python3 "$(DAILY_SECURITY_ADMIN_CREDENTIAL_TOOL)" issue --login "$(DAILY_SECURITY_ADMIN_LOGIN)" --name "$(DAILY_SECURITY_ADMIN_NAME)" --evidence "$(DAILY_SECURITY_ADMIN_EVIDENCE)"'
+
+daily.runtime.platform.security_admin.credential.remote_clear: daily.runtime.security_admin.payload_inputs daily.runtime.platform.security_admin.credential.remote_install
+	@test "$${SC_CONFIRM_PLATFORM_SECURITY_ADMIN_CREDENTIAL:-}" = "CLEAR_PLATFORM_SECURITY_ADMIN_CREDENTIAL" || { echo "exact platform security administrator credential clear confirmation is required" >&2; exit 2; }
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'SC_CONFIRM_PLATFORM_SECURITY_ADMIN_CREDENTIAL=CLEAR_PLATFORM_SECURITY_ADMIN_CREDENTIAL python3 "$(DAILY_SECURITY_ADMIN_CREDENTIAL_TOOL)" clear --login "$(DAILY_SECURITY_ADMIN_LOGIN)" --name "$(DAILY_SECURITY_ADMIN_NAME)" --evidence "$(DAILY_SECURITY_ADMIN_EVIDENCE)"'
 
 daily.candidate.sentinel.remote_capture: daily.candidate.continuity.remote_install
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
