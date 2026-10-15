@@ -239,7 +239,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "duty 凭据采纳层已收口并提交（5e12f313）：L1 117 tests OK，受管 refresh 后三库 plan 全 PASS，demo 应用凭据经容器网络地址认证成功（from_source=true）。下一步先把本候选部署到日常服务器并收敛发布面，使本分支新增的维护授权路由可见；再签发 lidefend 的一次性安全管理员交互凭据，经产品 HTTP 入口以 lidefend 完成 request -> approve（必带 evidence_reference，capability=migrate，operator=smart_core.svc_tenant_payload_operator_baosheng，operations=[provision, grant]）；随后 provision 操作员 -> payload plan/grant/import -> verify -> 对账 12386/6322/29/6035 -> revoke -> clear。任何一步都不得以直接改模型、伪造批准、复用 admin 或放宽机制替代。",
+  "next_exact_step": "duty 模块升级阶段已收口并提交（f3ceb6cf）：L1 123 tests OK、lane coverage PASS。下一步按序：(1) 先把本候选部署到日常服务器并收敛发布面——make daily.runtime.candidate.bundle_sync（先推 origin，EXPECTED_OLD_SHA=2c06bc6e…）、make daily.runtime.source_revision.align、make daily.runtime.published_face.converge，使本分支新增的维护授权路由可达；(2) make daily.runtime.database.duty.upgrade（SELECTION=platform_control，DECLARATION_DIGEST=3ebb2e19…）把控制库 smart_core 升到 17.0.1.1.15 并回读 evidence_reference 列；(3) make daily.runtime.platform.security_admin.credential.remote_issue 为 lidefend 签发一次性安全管理员交互凭据；(4) 经产品 HTTP 入口以 lidefend 完成 request -> approve（必带 evidence_reference，capability=migrate，operator=smart_core.svc_tenant_payload_operator_baosheng，operations=[provision, grant]）；(5) provision 操作员 -> payload plan/grant/import -> verify -> 对账 12386/6322/29/6035 -> revoke -> clear。任何一步都不得以直接改模型、伪造批准、复用 admin 或放宽机制替代。",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "review_s2_closure_20261015": {
     "authority": "Independent B-line review of 5f5c4dae..4450e674 returned APPROVE_WITH_NOTES with one S2: the registration's control-database write had no test wiring, and the existing assertion pointed at the opposite target",
@@ -2835,5 +2835,27 @@
       "本轮只关闭凭据采纳层；维护授权执行链路（凭据签发 -> 以 lidefend 批准 -> operator provision -> plan/grant/import/verify -> revoke/clear）尚未开始。",
       "本轮不构成正式生产发布，也不使产品交付完成。"
     ]
+  },
+  "duty_module_upgrade_phase_20261016": {
+    "case": "维护授权链路在目标环境落地前需要受管入口把已服务 duty 的已声明模块集升到部署树版本：控制库 sc_platform_control 的 smart_core 停在 17.0.1.1.14（源码 17.0.1.1.15），sc_platform_maintenance_access 表因此缺 evidence_reference 列，而 refresh 明确只重渲染栈、不重写 schema，仓库内没有任何受管入口能做这件事。这不是便利缺口，是授权链路之后的真实阻塞。",
+    "delivered": {
+      "phase_owns_its_token": "PHASES 增加 upgrade，PHASE_CONFIRMATIONS 显式登记 (SC_CONFIRM_DAILY_RUNTIME_DUTY_UPGRADE, UPGRADE_DAILY_RUNTIME_DUTY_DECLARED_MODULES)；main() 对未列出阶段回退到创建令牌，不显式登记会让 upgrade 接受 PROVISION 令牌而被读成创建。",
+      "refusal_table": "upgrade_refusal：拒绝 to_be_created、service_face != initialized、集群未运行、base 未安装、无声明模块的 duty。",
+      "verified_recovery_point_first": "capture_duty_recovery_point 在该 duty 自己声明的 backup_namespace 下落 pg_dump -Fc --no-owner（0600）、算 sha256，并用自身集群的 pg_restore --list 验证可列；未验证成功即拒绝进入改写。",
+      "declared_set_only": "upgrade_declared_modules 只用 -u 升级声明模块集（不取命令参数，避免把 -u 变成偷偷安装）、--without-demo=all；成功后 docker restart + compose up -d --wait odoo 并回读模块状态，因为报告一次服务进程尚未加载的升级是主张而不是观察。",
+      "assertions": "evaluate/plan_verdict 新增 upgrade 断言 a_verified_recovery_point_precedes_the_upgrade / the_declared_module_upgrade_completed，只在 upgrade 阶段出现。",
+      "make_entry": "daily.runtime.database.duty.upgrade（guard.prod.forbid + verify.daily.runtime.database.duty，要求 upgrade 自有令牌 + DAILY_RUNTIME_DATABASE_DUTY_SELECTION + 已评审声明摘要，报告落 .runtime/final-acceptance/daily-deployed/database-duty-upgrade.json）。",
+      "ledger": "台账登记该零引用运维入口（dispositions: ops_runbook/platform-team + 基线身份集）；基线按守卫文档的 reviewed-batch 重写路径重测，仅 max_targets_zero_reference 785→786、recorded_targets_defined 2334→2335、recorded_targets_unreached_from_anchor 2165→2166，身份集只多这一项。"
+    },
+    "evidence": {
+      "commit": "f3ceb6cf",
+      "declaration_digest": "3ebb2e198cd0194305acc66bece957867c35deeb35051bbf06fc6e70fd88acc4（本轮未改声明，重算一致）",
+      "rendered_program": "render_remote_program 渲染可 compile、无残留 marker；upgrade_refusal / capture_duty_recovery_point / upgrade_declared_modules 各仅 1 处定义",
+      "make_dry_run": "make -n daily.runtime.database.duty.upgrade 展开到 --apply --phase upgrade，upgrade 令牌与声明摘要前置检查就位"
+    },
+    "verification": {
+      "L1": "make verify.verification.lane_coverage -> PASS（72 tests OK），仅上述三项计数按登记增长"
+    },
+    "boundary": "阶段实现与台账登记已提交，但尚未在目标环境实跑一次 upgrade；维护授权链路本身仍未开始。"
   }
 }

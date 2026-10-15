@@ -2028,3 +2028,40 @@ odoo 日志 `base already installed; skip bootstrap`。
 - 维护授权执行链路（签发凭据 → 以 `lidefend` 批准 → operator provision → plan/grant/import/verify → revoke/clear）尚未开始。
 
 **状态边界**：批次验收（duty 凭据采纳层）可声明；**主线集成、版本发布、产品交付均未完成。**
+
+## 2026-10-16 受管 duty 模块升级阶段（upgrade）
+
+### 现象与根因
+
+维护授权链路要在目标环境落地，需要先把控制库的模块升到部署树版本，但仓库内**没有任何受管入口**能做这件事：
+
+- 控制库 `sc_platform_control` 的 `smart_core` 停在 `17.0.1.1.14`，部署树源码为 `17.0.1.1.15`；
+- 因此 `sc_platform_maintenance_access` 表缺 `evidence_reference` 列，而维护授权要求批准时必须绑定证据引用；
+- 现有 `refresh` 明确**只重渲染栈、不重写 schema**（`make/codex.mk` 的注释与 `refresh_refusal` 都如此），`initialize` 只服务 `service_face=to_be_initialized` 的 duty。
+
+所以这是授权链路之后的真实阻塞，不是便利缺口。这一层不引入任何产品侧特判，也不改声明。
+
+### 交付
+
+| 关注点 | 实现 |
+|---|---|
+| 阶段与令牌 | `PHASES` 增加 `upgrade`；`PHASE_CONFIRMATIONS` 显式登记 `(SC_CONFIRM_DAILY_RUNTIME_DUTY_UPGRADE, UPGRADE_DAILY_RUNTIME_DUTY_DECLARED_MODULES)`。`main()` 对未列出阶段回退到创建令牌，不显式登记就会让 `upgrade` 接受 `PROVISION` 令牌而被读成创建 |
+| 拒绝表 | `upgrade_refusal`：拒绝 `to_be_created`、`service_face != initialized`、集群未运行、`base` 未安装、无声明模块的 duty |
+| 恢复点先于改写 | `capture_duty_recovery_point`：在该 duty **自己声明的** `storage.backup_namespace` 下落 `pg_dump -Fc --no-owner`（0600），算 `sha256`，并用**自身集群**的 `pg_restore --list` 验证可列；未验证成功即拒绝进入改写 |
+| 只改声明集合 | `upgrade_declared_modules`：只用 `-u` 升级声明模块集（不取命令参数，避免把 `-u` 变成偷偷安装）、`--without-demo=all`；成功后 `docker restart` + `compose up -d --wait odoo` 并回读模块状态——报告一次服务进程尚未加载的升级是主张，不是观察 |
+| 断言 | `evaluate` / `plan_verdict` 新增 `a_verified_recovery_point_precedes_the_upgrade`、`the_declared_module_upgrade_completed`，只在 `upgrade` 阶段出现 |
+| Make 入口 | `daily.runtime.database.duty.upgrade`（`guard.prod.forbid` + `verify.daily.runtime.database.duty`，要求 upgrade 自有令牌 + `SELECTION` + 已评审声明摘要） |
+| 台账登记 | 该零引用运维入口登记为 `ops_runbook` / `platform-team`；基线按守卫文档的 reviewed-batch 重写路径重测，**仅** `max_targets_zero_reference 785→786`、`recorded_targets_defined 2334→2335`、`recorded_targets_unreached_from_anchor 2165→2166`，身份集只多这一项 |
+
+### 验证（层级 / 命令 / 非零计数）
+
+| 层 | 命令 | 结果 |
+|---|---|---|
+| L1 | `make verify.daily.runtime.database.duty` | **123 tests OK**（原 117，+6：`upgrade_refusal` 全拒绝矩阵、upgrade 自有令牌、恢复点先于改写且经 `pg_restore --list` 验证、只 `-u` 声明集合、升级断言仅在 upgrade 阶段、`verdict()` 支持 `upgrade=`） |
+| L1 | `make verify.verification.lane_coverage` | **PASS**（72 tests OK），仅上述三项计数按登记增长 |
+
+`render_remote_program` 渲染可 `compile`、无残留 marker；`upgrade_refusal` / `capture_duty_recovery_point` / `upgrade_declared_modules` 各仅 1 处定义；`make -n daily.runtime.database.duty.upgrade` 展开到 `--apply --phase upgrade`。
+
+### 边界
+
+阶段实现与台账登记已提交（`f3ceb6cf`），但**尚未在目标环境实跑一次 upgrade**；维护授权链路本身仍未开始。
