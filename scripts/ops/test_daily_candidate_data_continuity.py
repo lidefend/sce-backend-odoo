@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 import stat
 import tempfile
 import unittest
@@ -313,10 +314,60 @@ class DutyIdentityTests(unittest.TestCase):
         source = (
             ROOT / "scripts/ops/daily_candidate_data_continuity.py"
         ).read_text()
-        self.assertIn("daily_runtime_database_duties.v1.json", source)
-        self.assertNotIn('"sc-backend-odoo-dev-db-1"', source)
-        self.assertNotIn("/data/backups/daily_candidate", source)
-        self.assertNotIn("FROM payment_request", source)
+        shared = (
+            ROOT / "scripts/ops/daily_runtime_duty_identity.py"
+        ).read_text()
+        # The tool holds no duty fact of its own: it resolves through the one
+        # shared resolver, and the declaration literal lives in exactly one
+        # module. A tool that re-declares the path would drift from it.
+        self.assertIn("daily_runtime_duty_identity", source)
+        self.assertNotIn("daily_runtime_database_duties.v1.json", source)
+        self.assertIn("daily_runtime_database_duties.v1.json", shared)
+        for name, text in (
+            ("tool", source),
+            ("shared identity module", shared),
+        ):
+            self.assertNotIn('"sc-backend-odoo-dev-db-1"', text, name)
+            self.assertNotIn("/data/backups/daily_candidate", text, name)
+            self.assertNotIn("FROM payment_request", text, name)
+
+    def test_shared_identity_module_hardcodes_no_duty(self):
+        # The declaration is the only owner of a duty's database, role, volume,
+        # compose project, filestore scope and backup namespace. A literal in
+        # the resolver would silently outrank the declaration.
+        #
+        # A bare lowercase token such as the legacy ``odoo`` database role is
+        # an infrastructure convention shared across profiles, not a duty
+        # identity, so it may legitimately appear as a constant. Everything
+        # that names a specific duty (database, filter, container, volumes,
+        # compose project, storage scopes, namespaced roles) must not.
+        shared = (
+            ROOT / "scripts/ops/daily_runtime_duty_identity.py"
+        ).read_text()
+        declaration = CONTINUITY._load_duties()
+        self.assertTrue(declaration)
+        fields = (
+            ("duty", "database"),
+            ("duty", "database_role"),
+            ("duty", "dbfilter"),
+            ("cluster", "container"),
+            ("cluster", "data_volume"),
+            ("cluster", "compose_project"),
+            ("storage", "odoo_data_volume"),
+            ("storage", "filestore_scope"),
+            ("storage", "backup_namespace"),
+        )
+        generic = re.compile(r"[a-z]+")
+        distinctive: set[str] = set()
+        for duty in declaration.values():
+            for section, key in fields:
+                source = duty if section == "duty" else (duty.get(section) or {})
+                value = source.get(key)
+                if isinstance(value, str) and value and not generic.fullmatch(value):
+                    distinctive.add(value)
+        self.assertTrue(distinctive)
+        for value in sorted(distinctive):
+            self.assertNotIn(value, shared, value)
 
     def test_duty_recovery_entries_run_the_tool_with_the_duty_contract(self):
         # The entry must execute the tool, not the contract JSON, and it must

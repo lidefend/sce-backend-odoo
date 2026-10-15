@@ -17,6 +17,7 @@ import secrets
 import shutil
 import stat
 import subprocess
+import sys
 import tempfile
 import time
 from datetime import datetime, timezone
@@ -24,14 +25,11 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import daily_runtime_duty_identity as duty_identity  # noqa: E402
+
 DEFAULT_CONTRACT = Path(__file__).with_name(
     "daily_candidate_data_continuity_contract_v1.json"
-)
-DUTY_DECLARATION = (
-    Path(__file__).resolve().parents[2]
-    / "config"
-    / "ops"
-    / "daily_runtime_database_duties.v1.json"
 )
 ARTIFACTS = ("database.dump", "filestore.tar.gz", "manifest.json")
 CHECKSUM_FILE = "SHA256SUMS"
@@ -40,11 +38,11 @@ DRILL_PREFIX = "sc-daily-continuity-drill-"
 CONFIRMATION = "BACKUP_DAILY_CANDIDATE_PAIRED_STATE"
 RESTORE_CONFIRMATION = "RESTORE_ISOLATED_COPY"
 DEFAULT_RESTORE_EVIDENCE = "/tmp/daily-candidate-continuity-restore.json"
-SAFE_IDENTIFIER = re.compile(r"[a-z][a-z0-9_]*")
-FILESTORE_ROOT = "/var/lib/odoo/filestore"
-DATABASE_MOUNT = "/var/lib/postgresql/data"
-ODOO_DATA_MOUNT = "/var/lib/odoo"
-DRILL_ROLE = "odoo"
+SAFE_IDENTIFIER = duty_identity.SAFE_IDENTIFIER
+FILESTORE_ROOT = duty_identity.FILESTORE_ROOT
+DATABASE_MOUNT = duty_identity.DATABASE_MOUNT
+ODOO_DATA_MOUNT = duty_identity.ODOO_DATA_MOUNT
+DRILL_ROLE = duty_identity.DRILL_ROLE
 
 
 class ContinuityError(RuntimeError):
@@ -56,71 +54,19 @@ def _utc() -> str:
 
 
 def _load_duties() -> dict:
-    """Read the single authority for which database each duty owns."""
+    """Read the shared authority for which database each duty owns."""
     try:
-        payload = json.loads(DUTY_DECLARATION.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
-        raise ContinuityError("duty declaration is missing or invalid") from exc
-    declared = payload.get("duties")
-    if not isinstance(declared, list) or not declared:
-        raise ContinuityError("duty declaration carries no duties")
-    table = {}
-    for entry in declared:
-        name = entry.get("duty") if isinstance(entry, dict) else None
-        if not isinstance(name, str) or not name:
-            raise ContinuityError("duty entry without a name")
-        if name in table:
-            raise ContinuityError(f"duplicate duty declaration: {name}")
-        table[name] = entry
-    return table
+        return duty_identity.load_duties()
+    except duty_identity.DutyIdentityError as exc:
+        raise ContinuityError(str(exc)) from exc
 
 
 def _duty_identity(duty: dict) -> dict:
-    """Resolve runtime identity from the duty declaration, never from a contract.
-
-    A contract may not restate which database, role, cluster, volumes, storage
-    scope or backup namespace a duty owns: those facts have exactly one owner,
-    ``config/ops/daily_runtime_database_duties.v1.json``.
-    """
-
-    def required(mapping: dict, key: str, source: str) -> str:
-        value = mapping.get(key)
-        if not isinstance(value, str) or not value:
-            raise ContinuityError(f"duty declaration lacks {source}.{key}")
-        return value
-
-    cluster = duty.get("cluster")
-    storage = duty.get("storage")
-    if not isinstance(cluster, dict) or not isinstance(storage, dict):
-        raise ContinuityError("duty declaration lacks cluster or storage")
-    compose_project = required(cluster, "compose_project", "cluster")
-    if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", compose_project):
-        raise ContinuityError("duty compose project is not a safe identifier")
-    identity = {
-        "duty": duty["duty"],
-        "environment_id": required(duty, "environment_id", "duty"),
-        "tenant_key": duty.get("tenant_key") or "",
-        "data_purpose": required(duty, "data_purpose", "duty"),
-        "database": required(duty, "database", "duty"),
-        "database_role": required(duty, "database_role", "duty"),
-        "dbfilter": required(duty, "dbfilter", "duty"),
-        "compose_project": compose_project,
-        "database_container": required(cluster, "container", "cluster"),
-        "odoo_container": f"{compose_project}-odoo-1",
-        "database_volume": required(cluster, "data_volume", "cluster"),
-        "odoo_data_volume": required(storage, "odoo_data_volume", "storage"),
-        "filestore_scope": required(storage, "filestore_scope", "storage"),
-        "backup_root": required(storage, "backup_namespace", "storage"),
-        "filestore_root": FILESTORE_ROOT,
-    }
-    for key in ("database", "database_role", "database_volume", "odoo_data_volume"):
-        if not SAFE_IDENTIFIER.fullmatch(identity[key]):
-            raise ContinuityError(f"duty declaration {key} is not a safe identifier")
-    if identity["filestore_scope"] != identity["database"]:
-        raise ContinuityError("duty filestore scope no longer matches its database")
-    if identity["dbfilter"] != f"^{identity['database']}$":
-        raise ContinuityError("duty filter no longer selects exactly its database")
-    return identity
+    """Resolve runtime identity through the one shared resolver."""
+    try:
+        return duty_identity.duty_identity(duty)
+    except duty_identity.DutyIdentityError as exc:
+        raise ContinuityError(str(exc)) from exc
 
 
 def _load_contract(path: Path) -> dict:
