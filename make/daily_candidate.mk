@@ -70,6 +70,9 @@ daily.candidate.continuity.remote_install: guard.prod.forbid
 		scripts/ops/daily_candidate_data_continuity.py \
 		scripts/ops/daily_runtime_duty_identity.py \
 		scripts/ops/daily_runtime_duty_payload.py \
+		scripts/ops/daily_runtime_duty_edition_release.py \
+		scripts/release/configure_colocated_platform_core.py \
+		scripts/release/initialize_colocated_platform_snapshot.py \
 		scripts/tenant_payload/odoo_action.py \
 		scripts/ops/daily_candidate_data_continuity_contract_v1.json \
 		scripts/ops/daily_runtime_tenant_recovery_contract_v1.json \
@@ -202,6 +205,44 @@ daily.runtime.duty.payload.remote_verify: daily.runtime.duty.payload.remote_inst
 	@[[ "$(DAILY_DUTY_PAYLOAD_CHECKSUM)" =~ ^[0-9a-f]{64}$$ ]] || { echo "DAILY_DUTY_PAYLOAD_CHECKSUM must be the approved payload checksum" >&2; exit 2; }
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
 		'python3 "$(DAILY_DUTY_PAYLOAD_TOOL)" verify --duty "$(DAILY_DUTY_PAYLOAD_DUTY)" --payload-id "$(DAILY_DUTY_PAYLOAD_ID)" --approved-checksum "$(DAILY_DUTY_PAYLOAD_CHECKSUM)" --evidence "$(DAILY_DUTY_PAYLOAD_EVIDENCE)"'
+
+# The released edition a runtime serves is owned by the platform delivery
+# service, and the only governed entry that published the daily product edition
+# was bound to the demo database -- so a customer development tenant could not
+# register the edition it runs, could not be issued the narrow import grant, and
+# could not start its own versioned migration. This entry resolves its whole
+# identity (database, role, stack, containers, volumes, version prefix and the
+# editions it may publish) from `config/ops/daily_runtime_database_duties.v1.json`,
+# drives the existing governed release scripts inside the duty's own rendered
+# definition, and reads the released identity back in a separate process.
+# `platform_release_db` names the database that *carries* the effective release
+# snapshot, which is why a tenant duty binds it to itself; the platform control
+# duty declares no edition and is refused.
+DAILY_DUTY_EDITION_TOOL ?= $(DAILY_CONTINUITY_REMOTE_ROOT)/scripts/ops/daily_runtime_duty_edition_release.py
+DAILY_DUTY_EDITION_DUTY ?= customer_tenant_dev
+DAILY_DUTY_EDITION_PRODUCT_KEY ?= construction.standard
+DAILY_DUTY_EDITION_EVIDENCE ?=
+
+.PHONY: verify.daily.duty.edition_release daily.runtime.duty.edition_release.remote_install daily.runtime.duty.edition_release.remote_readback daily.runtime.duty.edition_release.remote_publish
+
+verify.daily.duty.edition_release: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_duty_edition_release.py scripts/ops/test_daily_runtime_duty_edition_release.py
+	@python3 scripts/ops/test_daily_runtime_duty_edition_release.py
+
+daily.runtime.duty.edition_release.remote_install: daily.candidate.continuity.remote_install
+	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
+
+daily.runtime.duty.edition_release.remote_readback: daily.runtime.duty.edition_release.remote_install
+	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'python3 "$(DAILY_DUTY_EDITION_TOOL)" readback --duty "$(DAILY_DUTY_EDITION_DUTY)" --evidence "$(DAILY_DUTY_EDITION_EVIDENCE)"'
+
+daily.runtime.duty.edition_release.remote_publish: daily.runtime.duty.edition_release.remote_install
+	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
+	@[[ "$(DAILY_DUTY_EDITION_PRODUCT_KEY)" =~ ^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$$ ]] || { echo "invalid daily duty edition product key" >&2; exit 2; }
+	@test "$${CONFIRM_DAILY_DUTY_EDITION_RELEASE:-}" = "RELEASE_DECLARED_EDITION_INTO_DAILY_DUTY" || { echo "exact daily duty edition release confirmation is required" >&2; exit 2; }
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'CONFIRM_DAILY_DUTY_EDITION_RELEASE=RELEASE_DECLARED_EDITION_INTO_DAILY_DUTY python3 "$(DAILY_DUTY_EDITION_TOOL)" publish --duty "$(DAILY_DUTY_EDITION_DUTY)" --product-key "$(DAILY_DUTY_EDITION_PRODUCT_KEY)" --evidence "$(DAILY_DUTY_EDITION_EVIDENCE)"'
 
 daily.candidate.sentinel.remote_capture: daily.candidate.continuity.remote_install
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \

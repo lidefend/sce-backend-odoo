@@ -124,7 +124,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "Steps A, B and C are closed (the leftover-stack retirement was re-checked live at HEAD 413ee7ce: retire plan PLAN with failing_guards [] and routing inventory PASS), and the customer duty's paired recovery point exists. Step D proper is gated by one mechanism gap: no governed entry can publish the released construction.standard edition snapshot into a declared duty database, so sc_tenant_baosheng_dev cannot register the edition it runs and the narrow import operator cannot be granted. Next, in order: (1) generalize the daily product-edition snapshot entry so it resolves its identity from config/ops/daily_runtime_database_duties.v1.json instead of the hard-coded sc_demo, publish the edition into customer_tenant_dev, then grant the narrow operator through make tenant.payload.operator.grant; (2) run the signed payload into sc_tenant_baosheng_dev through make daily.runtime.duty.payload.remote_plan, then remote_import and remote_verify, reading counts (expected 12386 = 6322/29/6035), amounts, source relations and attachments back afterwards; (3) Step E unified onboarding and isolation verification; (4) Step F product acceptance over the affected set only.",
+  "next_exact_step": "Steps A, B, C and now D-1/D-2 are closed: smart_core.platform_release_db is confirmed to mean the carrier of the effective release snapshot of the runtime on that server (not a platform publication authority), and the edition-release entry now resolves its identity from config/ops/daily_runtime_database_duties.v1.json as a declaration-driven entry while the demo path stays compatible. Next, in order: (3) install the new tool bundle on the daily server with make daily.runtime.duty.edition_release.remote_install, read the customer duty back with ...remote_readback (expect an empty carrier and 0 snapshots), then publish the declared construction.standard with CONFIRM_DAILY_DUTY_EDITION_RELEASE=RELEASE_DECLARED_EDITION_INTO_DAILY_DUTY and read back exactly one released active snapshot with the source version; (4) issue the narrow import operator grant through the existing tenant-payload operator entry against the remote duty (a remote-duty wrapper of scripts/tenant_payload/provision_operator.py still has to be added); the APPROVED_BY field must bind a verifiable real subject with its authorization basis - if a named account must approve, stop at that step and wait for the owner; (5) run make daily.runtime.duty.payload.remote_plan, then remote_import and remote_verify; (6) reconcile counts (12386 = 6322/29/6035), amounts, source relations, attachments and ownership, and verify legal users see the data while unauthorized subjects do not; (7) independent review, then normal mainline integration. Revoke the temporary authorization after import and never delete source data or clean migration results by uninstalling the user module.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "schema_version": 1,
   "scope": [
@@ -271,7 +271,9 @@
     "scripts/ops/test_daily_candidate_data_continuity.py",
     "scripts/ops/daily_runtime_duty_identity.py",
     "scripts/ops/daily_runtime_duty_payload.py",
-    "scripts/ops/test_daily_runtime_duty_payload.py"
+    "scripts/ops/test_daily_runtime_duty_payload.py",
+    "scripts/ops/daily_runtime_duty_edition_release.py",
+    "scripts/ops/test_daily_runtime_duty_edition_release.py"
   ],
   "status": "active",
   "step_d_customer_recovery_point_20261015": {
@@ -2228,5 +2230,31 @@
       ]
     },
     "validation_order": "L1 scope/syntax; exact nonzero L2; governed affected L3/L4 only once prerequisites pass"
+  },
+  "step_d_edition_release_entry_20261015": {
+    "case": "Owner order 2026-10-15: change the edition-release entry to resolve by registered duty and complete the standard edition release, the narrow grant and the signed-payload import into sc_tenant_baosheng_dev. Boundary one: confirm what smart_core.platform_release_db really means before binding it; boundary two: never fill the owner in as APPROVED_BY and never fabricate a formal approver identity.",
+    "platform_release_db_meaning": {
+      "verdict": "carrier of the effective release snapshot of the runtime that runs on that server; NOT a platform-wide publication authority",
+      "evidence": "configure_colocated_platform_core.py enforces PLATFORM_RELEASE_DB_MUST_MATCH_CURRENT; initialize_colocated_platform_snapshot.py requires PLATFORM_RELEASE_DB == current database and publishes only through EditionReleaseSnapshotService; production_acceptance_clone_runtime.py::rebind_platform_release_database rebinds a restored clone to itself",
+      "live_readback": "sc_demo platform_release_db=sc_demo with released+active construction.standard:daily-navigation-standard-10bf72ef4bb0 and construction.preview:daily-navigation-preview-10bf72ef4bb0; sc_tenant_baosheng_dev platform_release_db=<none> and 0 snapshot rows; sc_platform_control holds no parameter and no snapshot",
+      "consequence": "binding the carrier to a customer duty database is the precedent meaning; the control plane must never carry it, and holding an effective snapshot locally is not a platform publication right"
+    },
+    "registered_target": {
+      "database": "sc_tenant_baosheng_dev",
+      "duty": "customer_tenant_dev",
+      "tenant_key": "baosheng",
+      "edition": "construction.standard only, version_prefix daily-navigation, expected version daily-navigation-standard-<SC_SOURCE_REVISION first 12>; construction.preview is never widened automatically",
+      "code_version": "branch fix/data-ownership-visibility-recovery-20261015, baseline main/origin/main 10bf72ef"
+    },
+    "delivered": {
+      "entry": "scripts/ops/daily_runtime_duty_edition_release.py (actions readback, publish)",
+      "identity": "every identity comes from config/ops/daily_runtime_database_duties.v1.json; the tool contains no duty database, container or volume literal, enforced by test",
+      "refusals": "undeclared duty, unsafe name, data_purpose=platform_control, missing edition block, carrier other than effective_release_snapshot, empty or illegal allowed_product_keys, illegal version_prefix",
+      "publish_path": "docker compose run --rm --no-deps -T inside the duty's own rendered definition without --user, mounting the immutable tool tree scripts/release as :ro and feeding configure_colocated_platform_core.py then initialize_colocated_platform_snapshot.py on stdin, so the snapshot row is still written by the existing platform delivery service",
+      "demo_compatibility": "the original demo path release.daily_product_navigation.snapshot in make/dev.mk is left untouched",
+      "make_targets": "make verify.daily.duty.edition_release; make daily.runtime.duty.edition_release.remote_install; ...remote_readback; ...remote_publish (CONFIRM_DAILY_DUTY_EDITION_RELEASE=RELEASE_DECLARED_EDITION_INTO_DAILY_DUTY)",
+      "unit": "make verify.daily.duty.edition_release - 45 tests OK; make verify.daily.duty.payload - 25 tests OK; make daily.candidate.continuity.test - 28 tests OK"
+    },
+    "normal_protection": "the two refusal results (no valid edition, no import authorization) are correct fail-closed behaviour and must not be removed by weakening product validation; what gets added is the governed onboarding flow"
   }
 }

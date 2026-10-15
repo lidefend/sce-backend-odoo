@@ -1273,3 +1273,76 @@ existing platform delivery service, never a direct insert. Nothing was published
 or imported in this step.
 
 **This is 批次验收完成 for the Step D entry slice. It is not 主线集成完成, 版本发布完成 or 产品交付完成.**
+
+---
+
+## Step D-1/D-2 — `platform_release_db` 语义核对与版次发布入口声明驱动化
+
+### 顺序 1：`platform_release_db` 真实语义（只读核实，不改产品校验）
+
+先看先例，再看活体读回，两边一致：
+
+| 依据 | 证据 | 结论 |
+|---|---|---|
+| `scripts/release/configure_colocated_platform_core.py` | `PLATFORM_RELEASE_DB_MUST_MATCH_CURRENT` / `EXISTING_PLATFORM_RELEASE_DB_CONFLICT` | 参数必须等于**当前库** |
+| `scripts/release/initialize_colocated_platform_snapshot.py` | 前置要求 `PLATFORM_RELEASE_DB` == 当前库，且经 `EditionReleaseSnapshotService` 发布，从不直接插表 | 记录由平台交付服务写，入口不越权 |
+| `scripts/ops/production_acceptance_clone_runtime.py::rebind_platform_release_database` | 把隔离恢复克隆重绑到**自己** | 参数指向“承载生效快照的库” |
+
+活体读回（本会话只读复核）：
+
+```
+sc_demo                     : platform_release_db=sc_demo, bound_tenant_key=baosheng,
+                              released+active = construction.standard:daily-navigation-standard-10bf72ef4bb0,
+                                                construction.preview:daily-navigation-preview-10bf72ef4bb0
+sc_tenant_baosheng_dev      : platform_release_db=<none>, bound_tenant_key=baosheng, 快照 0 条,
+                              sc_product_policy = platform.standard / platform.preview / construction.standard / construction.preview,
+                              sce_customer_baosheng installed
+sc_platform_control         : platform_release_db 无, 快照 0 条
+```
+
+**判定：`platform_release_db` 是“租户本地版次快照载体”，不是平台发布权威。** 因此把它绑定到客户
+开发库是符合先例语义的；控制面不持有版次，也不得承载。**租户持有自己库里的生效快照，不等于租户取得
+平台发布权**——入口只允许 duty 自己声明的版次，且只写本库。
+
+本轮登记（顺序 1 要求的目标身份与影响集合）：
+
+| 项 | 值 |
+|---|---|
+| 目标库 | `sc_tenant_baosheng_dev`（职责 `customer_tenant_dev`） |
+| 租户 | `baosheng`（`sc.tenant.bound_tenant_key` = `baosheng`） |
+| 版次 | 仅 `construction.standard`，`version_prefix=daily-navigation`，期望版本 `daily-navigation-standard-<SC_SOURCE_REVISION 前12位>`；`construction.preview` **不自动扩** |
+| 代码版本 | 分支 `fix/data-ownership-visibility-recovery-20261015`，基线 `main/origin/main = 10bf72ef`；产物源 `SC_SOURCE_REVISION` 由职责 env 提供 |
+| 影响集合 | `config/ops/daily_runtime_database_duties.v1.json`、`make/daily_candidate.mk`、`scripts/ops/daily_runtime_duty_payload.py`（纯重命名复用）、新增 `scripts/ops/daily_runtime_duty_edition_release.py` 与其测试 |
+
+### 顺序 2：入口改为声明驱动
+
+新增 `scripts/ops/daily_runtime_duty_edition_release.py`（动作 `readback` / `publish`）：
+
+* 身份**全部**来自 `config/ops/daily_runtime_database_duties.v1.json`；工具内不含任何 duty 数据库/容器/
+  卷字面量（有测试强制）。
+* 拒绝：未声明 duty、不安全名、`data_purpose=platform_control`、无 `edition` 块、carrier 非
+  `effective_release_snapshot`、空/非法 `allowed_product_keys`、非法 `version_prefix`。
+* 只允许 duty 自己声明的版次（客户库仅 `construction.standard`）。
+* 发布在 duty 自身渲染定义里 `docker compose run --rm --no-deps -T`（不加 `--user`），把不可变工具树的
+  `scripts/release/` 以 `:ro` 挂载，stdin 喂 `configure_colocated_platform_core.py` →
+  `initialize_colocated_platform_snapshot.py`，由**既有** `EditionReleaseSnapshotService` 落记录。
+* `readback` 独立进程执行，自证 `writes: 0`；校验 database 一致、carrier 不指向别库、tenant 绑定不指向
+  别租户、两份既有 JSON 收据必须 PASS 且绑定本 duty。
+* Demo 原路径 `release.daily_product_navigation.snapshot`（`make/dev.mk`）保持不变。
+
+配置侧：`demo` 与 `customer_tenant_dev` 各加 `edition` 块；顶层加 `edition_release_note`（写明载体语义
+判定与“租户无平台发布权”）及指向本文件的 `edition_release_note_authority`。
+
+唯一拒绝结果（无有效版次、无导入授权）**是正常保护**，不修改产品校验去消除它。
+
+### 定向验证（非零，迭代阶段）
+
+| 入口 | 结果 |
+|---|---|
+| `make verify.daily.duty.edition_release` | 45 tests, OK |
+| `make verify.daily.duty.payload` | 25 tests, OK |
+| `make daily.candidate.continuity.test` | 28 tests, OK |
+| `make ci.local.iteration` | `PASS`（dirty, L1 only） |
+| `make agent.run.resume` | `resolved`, `outside_scope []` |
+
+**这是 批次验收完成（顺序 1/2 切片），不是主线集成完成 / 版本发布完成 / 产品交付完成。**

@@ -90,10 +90,12 @@ def _fail(message: str) -> None:
     raise PayloadEntryError(message)
 
 
-def _run(command: list[str], *, stdin=None, cwd: str | None = None) -> str:
+def run(command: list[str], *, stdin=None, input: str | None = None, cwd: str | None = None) -> str:
+    """Run one governed helper command and stop on a non-zero exit."""
     completed = subprocess.run(
         command,
         stdin=stdin,
+        input=input,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -272,7 +274,7 @@ def _stage_payload(payload_root: Path, duty: dict, approved_checksum: str) -> di
     staging.mkdir(mode=0o700)
     try:
         _copy_tree(payload_root, staging)
-        _run(
+        run(
             ["sha256sum", "-c", "--strict", "checksums.sha256"],
             cwd=str(staging),
         )
@@ -342,7 +344,7 @@ def inspect_odoo_container(duty: dict, values: dict) -> dict:
     """Read the duty application's own identity back before touching it."""
     name = duty["odoo_container"]
     try:
-        record = json.loads(_run(["docker", "inspect", name]))[0]
+        record = json.loads(run(["docker", "inspect", name]))[0]
     except (IndexError, json.JSONDecodeError) as exc:
         _fail("duty application %s cannot be inspected: %s" % (name, exc))
     if record.get("State", {}).get("Running") is not True:
@@ -439,8 +441,9 @@ def maintenance_command(
     ]
 
 
-def _psql(duty: dict, sql: str) -> str:
-    return _run(
+def psql(duty: dict, sql: str) -> str:
+    """Read one scalar back from the duty's own cluster (public reuse point)."""
+    return run(
         [
             "docker", "exec", duty["database_container"],
             "psql", "-X", "-U", duty["database_role"], "-d", duty["database"],
@@ -479,7 +482,7 @@ def protected_counts(duty: dict) -> dict:
         ("import_batches", "sc_tenant_payload_import_batch"),
         ("historical_payment_facts", "sc_historical_payment_fact"),
     ):
-        value = _psql(
+        value = psql(
             duty,
             "select coalesce((select count(*) from %s),0);" % table,
         )
@@ -548,7 +551,7 @@ def execute(
         staged_key=staged_key["path"],
     )
     with action_script.open("r", encoding="utf-8") as source:
-        output = _run(command, stdin=source, cwd=str(ops_root))
+        output = run(command, stdin=source, cwd=str(ops_root))
     reports = [row for row in output.splitlines() if row.strip().startswith("{")]
     if not reports:
         _fail("the payload action emitted no audit report")

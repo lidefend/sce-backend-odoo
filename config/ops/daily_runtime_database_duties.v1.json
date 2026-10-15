@@ -87,6 +87,14 @@
       "environment_id": "daily-dev-demo",
       "tenant_key": "sc-demo-main",
       "data_purpose": "demo",
+      "edition": {
+        "carrier": "effective_release_snapshot",
+        "allowed_product_keys": [
+          "construction.standard",
+          "construction.preview"
+        ],
+        "version_prefix": "daily-navigation"
+      },
       "cluster": {
         "container": "sc-backend-odoo-dev-db-1",
         "compose_project": "sc-backend-odoo-dev",
@@ -159,6 +167,13 @@
       "environment_id": "daily-dev-baosheng",
       "tenant_key": "baosheng",
       "data_purpose": "customer",
+      "edition": {
+        "carrier": "effective_release_snapshot",
+        "allowed_product_keys": [
+          "construction.standard"
+        ],
+        "version_prefix": "daily-navigation"
+      },
       "cluster": {
         "container": "sc-tenant-baosheng-dev-db-1",
         "compose_project": "sc-tenant-baosheng-dev",
@@ -232,6 +247,8 @@
   ],
   "platform_admin_database": "sc_platform_control",
   "platform_admin_database_note": "Single authority for the platform-admin binding. Every duty entry reads the deployed frontend build environment back from frontend_build_env_file and refuses when it names another database, so the declaration, the deployed runtime and the repository guards cannot drift into two dialects.",
+  "edition_release_note": "Verified meaning of smart_core.platform_release_db on this server: it names the database that *carries* the effective release snapshot of the runtime that runs there, not a platform-wide publication authority. The production acceptance clone runtime rebinds a restored copy to itself, and the daily platform-control duty holds neither the parameter nor any snapshot row, so a duty that declares edition.carrier=effective_release_snapshot may publish a declared edition into itself while holding no platform publication right. Each duty may only publish its own edition.allowed_product_keys, and preview is never widened automatically. The platform-control duty declares no edition and is refused by the entry.",
+  "edition_release_note_authority": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "frontend_build_env_file": "/opt/projects/repos/sce-product-odoo/.env.dev",
   "ops_root": "/opt/projects/secure/daily-runtime-duties"
 }
