@@ -72,6 +72,11 @@ daily.candidate.continuity.remote_install: guard.prod.forbid
 		scripts/ops/daily_runtime_duty_payload.py \
 		scripts/ops/daily_runtime_duty_edition_release.py \
 		scripts/ops/daily_runtime_duty_operator_grant.py \
+		scripts/ops/daily_runtime_duty_database_registration.py \
+		scripts/ops/platform_database_register.py \
+		scripts/ops/platform_database_receipt.py \
+		addons/smart_core/security/data_space_provisioning.py \
+		addons/smart_core/security/database_governance.py \
 		addons/smart_core/security/tenant_payload_operator_policy.py \
 		addons/smart_core/security/tenant_payload_operator.py \
 		scripts/release/configure_colocated_platform_core.py \
@@ -300,6 +305,44 @@ daily.runtime.duty.operator_grant.remote_revoke: daily.runtime.duty.operator_gra
 	@test "$${CONFIRM_DAILY_DUTY_OPERATOR_REVOKE:-}" = "REVOKE_TEMPORARY_DAILY_DUTY_IMPORT_OPERATOR_GRANT" || { echo "exact daily duty operator revoke confirmation is required" >&2; exit 2; }
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
 		'CONFIRM_DAILY_DUTY_OPERATOR_REVOKE=REVOKE_TEMPORARY_DAILY_DUTY_IMPORT_OPERATOR_GRANT python3 "$(DAILY_DUTY_OPERATOR_TOOL)" revoke --duty "$(DAILY_DUTY_OPERATOR_DUTY)" --evidence "$(DAILY_DUTY_OPERATOR_EVIDENCE)"'
+
+# The platform registry is the single fact for which database serves which
+# purpose and tenant, and the unified onboarding mechanism is its only writer.
+# This entry is the daily-duty transport for that fact: it resolves the target
+# from `config/ops/daily_runtime_database_duties.v1.json`, drives the immutable
+# `platform.database.register` entry inside the platform control duty's own
+# rendered stack, and reads the registration back in a separate process. The
+# environment role and the strategy come from the platform's own vocabulary, so
+# this transport declares no identity of its own and the control plane is never
+# registered as a data space. Registering is idempotent in the safe direction
+# only: an existing row that matches the declaration is reused, while one that
+# names another identity is a stop -- a registration identity is never taken
+# over or rewritten. `readback` writes nothing and is safe before any write.
+DAILY_DUTY_REGISTRATION_TOOL ?= $(DAILY_CONTINUITY_REMOTE_ROOT)/scripts/ops/daily_runtime_duty_database_registration.py
+DAILY_DUTY_REGISTRATION_DUTY ?= customer_tenant_dev
+DAILY_DUTY_REGISTRATION_REASON ?=
+DAILY_DUTY_REGISTRATION_EVIDENCE ?=
+
+.PHONY: verify.daily.duty.database_registration daily.runtime.duty.database_registration.remote_install daily.runtime.duty.database_registration.remote_readback daily.runtime.duty.database_registration.remote_register
+
+verify.daily.duty.database_registration: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_duty_database_registration.py scripts/ops/test_daily_runtime_duty_database_registration.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_duty_database_registration
+
+daily.runtime.duty.database_registration.remote_install: daily.candidate.continuity.remote_install
+	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
+
+daily.runtime.duty.database_registration.remote_readback: daily.runtime.duty.database_registration.remote_install
+	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'python3 "$(DAILY_DUTY_REGISTRATION_TOOL)" readback --duty "$(DAILY_DUTY_REGISTRATION_DUTY)" --evidence "$(DAILY_DUTY_REGISTRATION_EVIDENCE)"'
+
+daily.runtime.duty.database_registration.remote_register: daily.runtime.duty.database_registration.remote_install
+	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
+	@reason_pattern='^[A-Za-z0-9][A-Za-z0-9 .,;:_-]{9,199}$$'; [[ "$(DAILY_DUTY_REGISTRATION_REASON)" =~ $$reason_pattern ]] || { echo "DAILY_DUTY_REGISTRATION_REASON must state why this database is registered (10-200 characters, one printable line)" >&2; exit 2; }
+	@test "$${CONFIRM_DAILY_DUTY_DATABASE_REGISTRATION:-}" = "REGISTER_DECLARED_DAILY_DUTY_IN_PLATFORM_REGISTRY" || { echo "exact daily duty database registration confirmation is required" >&2; exit 2; }
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'CONFIRM_DAILY_DUTY_DATABASE_REGISTRATION=REGISTER_DECLARED_DAILY_DUTY_IN_PLATFORM_REGISTRY python3 "$(DAILY_DUTY_REGISTRATION_TOOL)" register --duty "$(DAILY_DUTY_REGISTRATION_DUTY)" --reason "$(DAILY_DUTY_REGISTRATION_REASON)" --evidence "$(DAILY_DUTY_REGISTRATION_EVIDENCE)"'
 
 daily.candidate.sentinel.remote_capture: daily.candidate.continuity.remote_install
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
