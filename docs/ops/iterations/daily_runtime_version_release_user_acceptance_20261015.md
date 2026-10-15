@@ -1880,3 +1880,60 @@ P4 shell 程序 + 独立真实批准人。**在这两项落实前，不再触发
 **状态边界**：本条为**批次代码与定向/静态验证完成**（B 线复核已返回并对 S2/S3 处置完成，见上）；
 批次验收、主线集成、版本发布、产品交付**均未完成**。本轮改动已提交：`8f26ffd7`（维护授权入口）、
 `9b6324c0`（安全管理员 bootstrap）、`eacd5441`（登记）；复核处置为后续提交。
+
+---
+
+## S3 收口与首次实跑（2026-10-16，`e75d3713` / `5ddb3596`）
+
+### S3 全部在责任层关闭
+
+| 编号 | 处置 |
+|---|---|
+| S3-1 | `readback` 从模块常量 `ALLOWED_GROUP_XMLIDS` 解析种子，不再内联重复；常量被生产代码消费，种子与报告的闭包不会漂移 |
+| S3-2 | `make/daily_candidate.mk` 的姓名/证据长度上界改为入口自身的上界（2-80 / 10-200），本地可以放行的值不再宽于入口；Make 目标单测断言收窄后的模式 |
+| S3-3 | 注释不再声称守卫先于所有插值：Make 会先展开本文件，只有撇号在 ssh 连接前拦截，其余破坏字符一律由入口从 argv 权威拒绝 |
+| S3-4 | 控制器只在异常以受治理码发声时把 `PermissionError` 按拒绝回答（400 + 治理码），其余按服务器错误（500）且不回显内部文本；补 400/500 两条传输用例 |
+| S3-5 | 两条反例在冻结树重跑并逐字节还原（`sha256sum -c`）：删闭包拒绝 → `test_a_readback_of_a_widened_identity_is_refused` 1 failed of 31；静默丢弃无 xmlid 组 → `test_a_group_without_an_external_id_is_still_a_membership` 1 failed of 31 |
+| S3-6 | 入口随 `allowed_group_closure_ids` 一并报告 `allowed_group_closure_labels`；传输器拒绝"只有 ids 没有成员"的闭包并在回执中带出两者；首次真实回读的闭包为 `base.group_user`、`base.group_no_one`、`smart_core.group_smart_core_user`、`smart_core.group_smart_core_security_admin`，不含行业或客户业务角色 |
+
+### 首次实跑发现的真实缺陷（`5ddb3596`）
+
+第一次真实驱动该入口时，`readback` 分支**从未把声明的 login/name/evidence 送入一次性容器**，
+读回报告的 `declared_login` 为空，与声明不符，于是**一次诚实读取被拒绝**
+（`the identity read covers another login than the declared one`）。机制此前只被 hermetic 单测覆盖，
+没有任何一层端到端验证过。
+
+处置：新增只承载声明的 `readback_environment(entry, request)`；确认值、输出路径与执行号留在写路径。
+补两条单测（readback 环境必须声明身份；丢失声明的 readback 被拒绝），反例为把该环境改成空
+（`test_the_readback_environment_declares_the_identity_it_asserts` 1 failed of 43）。
+
+### 已执行的部署与 bootstrap
+
+| 步骤 | 命令 | 结果 |
+|---|---|---|
+| 部署一 | `make daily.runtime.candidate.bundle_sync` | PASS，`5f5c4dae → e75d3713`，`origin_main_mutated=false` |
+| 部署二 | 同上 | PASS，`e75d3713 → 5ddb3596` |
+| 回读 | `...security_admin.bootstrap.remote_readback` | ok、writes 0：`lidefend` 不存在，安全管理员成员 0，维护账本 0 行；闭包如上 |
+| bootstrap | `...remote_bootstrap`（含声明确认值） | ok：`lidefend` uid 6，active、非 share、组恰为闭包内四个，闭包外为空，`is_security_admin=true`，`has_stored_password=false`，writes 1 |
+
+**部署事实**：日常产品树 `/opt/projects/repos/sce-product-odoo` 当时落后分支 9 个提交，
+首次回读因此以 `ModuleNotFoundError` 失败——duty stack 挂载的是**产品树**（`SC_PRODUCT_ROOT/scripts → /mnt/scripts`），
+不是不可变工具树；候选必须先部署，入口才可被驱动。
+
+### 新的唯一暂停点：审批人凭据
+
+批准维护申请需要一个能通过**产品入口**认证的 `lidefend` 主体，但：
+
+1. bootstrap 按既定语义**不存密码**，账号没有交互凭据；
+2. 平台控制容器**未设置 `ENV ∈ {dev,test,local}`**，dev/test 的 `session.bootstrap` 引导通道在该容器上关闭；
+3. 运行中的控制面 Odoo 仍服务 `SC_SOURCE_REVISION=10bf72ef`，本分支新增的决策路由尚未挂载。
+
+两项待所有者裁定（不得用直接改模型、伪造批准、复用 `admin` 或放宽机制替代）：
+
+- **A**：新增一条受管的一次性交互凭据（由声明的受管步骤签发、经产品 HTTP 入口使用、用后清除），
+  并执行发布面收敛以挂载新控制器；
+- **B**：由所有者本人以其交互登录完成批准。
+
+**状态边界**：S3 批次与首次实跑（回读 + bootstrap）已完成并留证；**批准、operator provision、
+载荷 plan/grant/import、对账、撤权、复核与主线集成仍未开始**。批次验收、主线集成、版本发布、
+产品交付**均未完成**。

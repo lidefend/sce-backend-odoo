@@ -23,8 +23,9 @@
   },
   "baseline_sha": "10bf72ef4bb060556bd2844598b58f9806392d34",
   "blockers": [
+    "BLOCKING (approval execution, mechanism complete): the maintenance access for sc_tenant_baosheng_dev cannot be requested and approved until an authenticated principal for the named approver lidefend can reach the product entry. The security administrator now exists and is verified, but has no stored password by design; the control container runs without ENV in {dev,test,local} so the dev/test session.bootstrap intent is off; and the serving control Odoo process still serves 10bf72ef, so the decision routes added in 8f26ffd7 are not mounted. The owner has ruled that a one-off shell must not stand in for the approval product capability, so this is an owner decision about issuing the approver credential, not a mechanism gap: option A is a governed one-time interactive credential used over the HTTP entry and cleared afterwards, option B is the owner's own interactive login.",
+    "The daily runtime published face still runs SC_SOURCE_REVISION=10bf72ef and mounts the product tree at /opt/projects/repos/sce-product-odoo; the candidate tree is deployed at 5ddb3596 but the serving process has not been converged, so no HTTP route added on this branch is reachable yet.",
     "Step D proper cannot start yet: sc_tenant_baosheng_dev has no released construction.standard edition snapshot (read-only readback: 0 rows) and no operator in smart_core.group_smart_core_tenant_payload_importer (group res_id 19, admin not a member), while the only governed daily snapshot entry (release.daily_product_navigation.snapshot) is hard-coded to sc_demo. The tenant duty therefore cannot register the edition it runs, provision_operator.py cannot issue the narrow import grant, and the tenant's own versioned migration cannot begin. The fix belongs to P4 ops tooling that reuses the duty declaration; the snapshot record itself must stay owned by the existing platform delivery service.",
-    "BLOCKING 2026-10-15, mechanism closed 2026-10-16, approval still outstanding: the customer duty's narrow import operator cannot be provisioned, planned, granted, imported or verified without an approved, in-window maintenance access read from sc_platform_control. The P0 entry now exists (request/approve/reject/revoke/expire over sc.platform.maintenance.access, decider verified server-side, operation set required) and so does the governed security-administrator bootstrap, and the owner named lidefend as the approving subject. What remains is execution, not mechanism: bootstrap lidefend as the security administrator on the control duty, read it back, then request and approve an access bound to capability migrate, operator smart_core.svc_tenant_payload_operator_baosheng, payload digest f1adc6fb17b516d42492fe42229df0cce65956ea113978a19243c0de57ec1ed4 and operations [provision, grant]. It must not be resolved by fabricating an approval, reusing admin, self-approving, or relaxing the mechanism.",
     "The customer duty is now a served, initialized face (sc_tenant_baosheng_dev, role sc_tenant_baosheng_dev_app, exact filter ^sc_tenant_baosheng_dev$, route 18090, own cluster and volume, product line plus sce_customer_baosheng installed from the delivered read-only tree bfbc736) and its paired recovery point exists (backup set sc_tenant_baosheng_dev-20261015T095006Z-653a3119 under /data/backups/daily-tenant-baosheng-dev, validated, restored in isolation and independently checksum-readback). Initialization is not migration: no historical data has moved, and Step D proper still has to run the customer module's own versioned migration (historical_payment_migration_policy.expected_records=12386) with the payload validated and planned first, never defaulting ownership and never copying UAT data.",
     "sc_demo mixes the customer tenant volume with demo/test purposes, so 'the demo database' is not yet a pure demo database; the destination of the company-1 volume is unresolved, and the demo duty is still declared with the shared-bootstrap-role gap and has no dedicated application role.",
     "CLOSED 2026-10-15 in this run: the platform-model registration for the daily profile now has a governed runtime binding -- scripts/ops/daily_runtime_duty_database_registration.py resolves every runtime fact from config/ops/daily_runtime_database_duties.v1.json and drives the immutable platform.database.register entry inside the control duty's own rendered stack. sc_tenant_baosheng_dev is registered (customer/baosheng/customer_production/database_per_customer_tenant/^sc_tenant_baosheng_dev$ stage declared, one audited register operation, reuse path writes nothing), so DBGOV1_DATABASE_NOT_REGISTERED no longer blocks the operator lifecycle. Still open from the original finding: suspend/resume are not yet exercised for this duty and the demo duty still carries no registration of its own.",
@@ -204,7 +205,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "The maintenance-authorization mechanism is delivered and verified at the entry layer (verify.smart_core.platform_maintenance_access.orm 12/12, verify.local.dev.platform_database_governance.orm 24/24, verify.smart_core.tenant_payload_operator.orm 20/20, verify.platform.security_admin.bootstrap 31+41=72, verify.daily.duty.operator_grant 39+39=78, and the controller boundary guards PASS), the B-line review's two S2 items and four S3 items are closed, and counter-examples prove the new guards fire. Next exact step is the approval-bound execution, which needs no further owner input because the owner named lidefend: (1) make daily.runtime.platform.security_admin.bootstrap.remote_readback - the control duty must report no security administrator yet; (2) make daily.runtime.platform.security_admin.bootstrap.remote_bootstrap with SC_CONFIRM_PLATFORM_SECURITY_ADMIN_BOOTSTRAP=BOOTSTRAP_DECLARED_PLATFORM_SECURITY_ADMIN, PLATFORM_SECURITY_ADMIN_LOGIN=lidefend and a real name/evidence reference, then read the identity back; (3) create the maintenance request for sc_tenant_baosheng_dev/capability migrate/operator smart_core.svc_tenant_payload_operator_baosheng/digest f1adc6fb17b516d42492fe42229df0cce65956ea113978a19243c0de57ec1ed4/operations [provision, grant] and approve it as lidefend through the entry or the governed shell; (4) make daily.runtime.duty.operator_grant.remote_provision with CONFIRM_DAILY_DUTY_OPERATOR_PROVISION=PROVISION_DECLARED_PAYLOAD_IMPORT_OPERATOR_IN_DAILY_DUTY and DAILY_DUTY_OPERATOR_SUBJECT_CHECKSUM=f1adc6fb17b516d42492fe42229df0cce65956ea113978a19243c0de57ec1ed4, read the created identity back, then daily.runtime.duty.payload.remote_plan, remote_grant, remote_import (CONFIRM_DAILY_DUTY_PAYLOAD_IMPORT=IMPORT_SIGNED_PAYLOAD_INTO_DAILY_DUTY) and remote_verify; (5) reconcile 12386 against 6322/29/6035 with amounts, source relations, attachments and ownership; (6) remote_revoke, B-line re-review of the affected layers, then normal mainline integration. Never delete source data and never clean migration results by uninstalling the user module. Batch acceptance, mainline integration, version release and product delivery remain separate and open.",
+  "next_exact_step": "S3 closure is complete at 5ddb3596 (74 + 14 tests green, controller/frontend guards PASS, two counter-examples re-proven at the frozen tree), the daily candidate is deployed (bundle sync PASS to 5ddb3596), the control duty readback reported no security administrator and no maintenance rows, and lidefend was bootstrapped as the security administrator (uid 6, closure inside the allowed set, no stored password, ledger unchanged, no approval). The next exact step cannot be taken without an owner decision, because approving the maintenance access requires an authenticated principal for lidefend through the product entry, the account deliberately has no stored password, the control container has no ENV in {dev,test,local} so the dev/test session.bootstrap intent is disabled, and the serving control Odoo process still runs 10bf72ef so the new decision routes are not mounted. Two options were prepared: (A) a new governed one-time interactive credential for the named approver, issued through a declared step, used over the product HTTP entry and cleared afterwards, plus the published-face convergence that mounts the new controller; or (B) leave the approval to the owner's own interactive login. Neither may be replaced by a direct model write, a fabricated approval, reusing admin, or relaxing the mechanism.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "review_s2_closure_20261015": {
     "authority": "Independent B-line review of 5f5c4dae..4450e674 returned APPROVE_WITH_NOTES with one S2: the registration's control-database write had no test wiring, and the existing assertion pointed at the opposite target",
@@ -2606,5 +2607,78 @@
     "evidence": "make verify.platform.security_admin.bootstrap -> 31+41=72 OK; make verify.smart_core.platform_maintenance_access.orm -> 0 failed, 0 error(s) of 12 tests; make verify.daily.duty.operator_grant -> 39+39=78 OK; make verify.smart_core.tenant_payload_operator.policy -> 39 OK; make verify.controller.boundary.guard -> PASS; the Make-side character guard was replayed against 12 name values and 6 evidence values (Chinese accepted, every payload-breaking character refused).",
     "logs": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-review-s2-20261016/",
     "status": "both S2 items closed in the owning layer; four S3 items closed; four S3 items registered with reasons; nothing claimed beyond what was run"
+  },
+  "review_s3_closure_part2_20261016": {
+    "authority": "B-line independent review of 9214f51c..eacd5441 returned APPROVE with six S3 observations; the owner has no further architecture ruling and this pass closes them in the owning layer at e75d3713 and 5ddb3596",
+    "closed": {
+      "S3_2_bounds_aligned": "make/daily_candidate.mk now states the entry's own bounds for the security-administrator name (2-80) and evidence (10-200) instead of a wider local copy, so a value the entry would refuse can no longer pass the local guard; the Make-target unit test asserts the narrower patterns.",
+      "S3_3_coverage_restated": "The comment no longer claims the guards precede every interpolation. Make expands this file before any recipe runs, so the apostrophe check is the only one that fires ahead of the ssh connection and every other payload-breaking character is refused by the entry from argv.",
+      "S3_4_permission_error_narrowed": "The controller maps PermissionError to a governed refusal (400 with the governed code) only when the exception speaks in a governed code; any other PermissionError is answered as a server error (500) and the internal text is not echoed. Two transport cases were added for the 400 and the 500 path: verify.smart_core.platform_maintenance_access.orm now reports 14 tests, 0 failed, 0 error.",
+      "S3_5_counter_examples_refrozen": "Both counter-examples were re-run against the frozen tree e75d3713 and reverted byte-for-byte (sha256sum -c on before.sha256). Removing the widened-identity refusal fails test_a_readback_of_a_widened_identity_is_refused (1 failed of 31); making the group-label lookup drop groups without an external id fails test_a_group_without_an_external_id_is_still_a_membership (1 failed of 31).",
+      "S3_6_closure_published": "The entry now reports allowed_group_closure_labels beside allowed_group_closure_ids, the transport refuses a closure that travels without its memberships and publishes both in the readback receipt, and the first real control-plane read showed the closure as base.group_user, base.group_no_one, smart_core.group_smart_core_user, smart_core.group_smart_core_security_admin -- no industry or customer business role.",
+      "S3_1_constant_consumed": "readback now resolves its seeds from ALLOWED_GROUP_XMLIDS instead of repeating the two groups inline, so the declared constant is consumed by production code and the seeds cannot drift from the reported closure."
+    },
+    "defect_found_by_first_real_run": {
+      "defect": "The transport's read path never sent the declared login/name/evidence into the one-off container, so the readback reported an empty declared_login and refused an honest read with 'the identity read covers another login than the declared one'. No layer had proven the transport end to end before, and the mechanism had only ever been exercised by hermetic unit tests.",
+      "fix": "readback_environment(entry, request) now carries exactly the declaration the read path asserts; the confirmation, the output path and the execution id stay on the write path. Two unit tests were added: the readback environment must declare the identity, and a readback that lost the declaration is refused.",
+      "counter_example": "Returning an empty readback environment fails test_the_readback_environment_declares_the_identity_it_asserts (1 failed of 43); the file was restored byte-for-byte afterwards.",
+      "commit": "5ddb3596"
+    },
+    "files": "addons/smart_core/controllers/platform_maintenance_access_controller.py, addons/smart_core/tests/test_platform_maintenance_access_http.py, scripts/ops/platform_security_admin_bootstrap.py, scripts/ops/daily_runtime_platform_security_admin_bootstrap.py, scripts/ops/test_daily_runtime_platform_security_admin_bootstrap.py, make/daily_candidate.mk",
+    "evidence": "make verify.platform.security_admin.bootstrap -> 31+43=74 OK; make verify.smart_core.platform_maintenance_access.orm -> 0 failed, 0 error(s) of 14 tests; make verify.controller.boundary.guard -> PASS; make verify.frontend.contract_basis.unit -> 15 OK, guard PASS, open_defects=0",
+    "logs": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-review-s3-20261016/",
+    "status": "all six S3 observations closed in the owning layer; one real transport defect found and fixed; two counter-examples re-proven at the frozen tree; nothing claimed beyond what was run"
+  },
+  "maintenance_access_execution_20261016": {
+    "authority": "Owner named lidefend the approving subject and authorized execution without further account input; batch acceptance, mainline integration, version release and product delivery stay separate.",
+    "deployment": {
+      "entry": "make daily.runtime.candidate.bundle_sync with a verified bundle",
+      "first": {
+        "source_sha": "e75d3713c54af3ff1a4a1898e55abe8f98243dc0",
+        "old_sha": "5f5c4daeea8537eb44f7031dba47b06781d5d546",
+        "status": "PASS",
+        "bundle_sha256": "3e55e1889bb8c7510425b33b9d1b0e9da81bcef1143b22d646f93075a77f94be",
+        "origin_main_mutated": false
+      },
+      "second": {
+        "source_sha": "5ddb35967ef39ab624b6e03ee85a181be9a01bb8",
+        "old_sha": "e75d3713c54af3ff1a4a1898e55abe8f98243dc0",
+        "status": "PASS",
+        "bundle_sha256": "a28c6eca643639fe700768e8705e2a48a75e29ad21c923a310aa243508631e2d",
+        "origin_main_mutated": false
+      },
+      "fact": "The daily product tree at /opt/projects/repos/sce-product-odoo was nine commits behind the branch, so the first readback failed with ModuleNotFoundError: the P0 entry did not exist where the duty stack mounts it (SC_PRODUCT_ROOT/scripts -> /mnt/scripts). The mount is the reviewed product tree, not the immutable tool tree; a candidate must be deployed before the entry can be driven."
+    },
+    "readback_before": {
+      "entry": "make daily.runtime.platform.security_admin.bootstrap.remote_readback DAILY_SECURITY_ADMIN_LOGIN=lidefend",
+      "result": "ok, writes 0; lidefend absent; security_admin_member_count 0; maintenance_access_rows 0",
+      "allowed_group_closure": {
+        "ids": [
+          1,
+          7,
+          12,
+          16
+        ],
+        "labels": [
+          "base.group_user",
+          "base.group_no_one",
+          "smart_core.group_smart_core_user",
+          "smart_core.group_smart_core_security_admin"
+        ]
+      }
+    },
+    "bootstrap": {
+      "entry": "make daily.runtime.platform.security_admin.bootstrap.remote_bootstrap with SC_CONFIRM_PLATFORM_SECURITY_ADMIN_BOOTSTRAP=BOOTSTRAP_DECLARED_PLATFORM_SECURITY_ADMIN",
+      "result": "ok; created lidefend uid 6, active, non-share, company 1, groups exactly base.group_user + base.group_no_one + smart_core.group_smart_core_user + smart_core.group_smart_core_security_admin, groups_outside_allowed_closure [], is_security_admin true, has_stored_password false, writes 1, execution_id a947da6cf0814ae7b277a94f0389f79c",
+      "invariants": "security_admin_member_count 0 -> 1; maintenance_access_rows 0 -> 0 (the bootstrap did not approve anything); a separate read confirmed the identity after creation and the closure stayed inside the allowed set",
+      "tool_sha": "5ddb35967ef39ab624b6e03ee85a181be9a01bb8"
+    },
+    "next_blocker": "Approving the maintenance access needs an authenticated principal for lidefend through the product entry. The bootstrap deliberately creates the account with no stored password, and the platform control container runs without ENV in {dev,test,local} so the dev/test session.bootstrap intent is disabled there; the control Odoo process is also still serving the old code (SC_SOURCE_REVISION=10bf72ef), so the new decision routes are not mounted yet. Issuing the approver credential is a new governed capability and must be decided by the owner before it is written, because the owner ruled that a one-off shell must not stand in for the approval product capability.",
+    "not_done": [
+      "the approval itself, and therefore the operator provision, payload plan/grant/import, reconciliation, revoke and re-review",
+      "the daily runtime published-face convergence that would mount the new controller in the serving process",
+      "an end-to-end proof that the deployment chain works; only the readback and bootstrap halves have been driven for real"
+    ],
+    "status": "bootstrap executed and verified on the control duty; approval execution blocked on approver-credential issuance, which needs an owner decision"
   }
 }
