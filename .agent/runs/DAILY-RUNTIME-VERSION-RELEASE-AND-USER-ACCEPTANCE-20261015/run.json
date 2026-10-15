@@ -190,6 +190,39 @@
       ],
       "kind": "offline",
       "target": "verify.platform.security_admin.bootstrap"
+    },
+    "platform_security_admin_credential": {
+      "inputs": [
+        "scripts/ops/platform_security_admin_credential.py",
+        "scripts/ops/daily_runtime_platform_security_admin_credential.py",
+        "scripts/ops/test_platform_security_admin_credential.py",
+        "make/daily_candidate.mk"
+      ],
+      "kind": "offline",
+      "target": "verify.platform.security_admin.credential"
+    },
+    "verification_lane_coverage": {
+      "inputs": [
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/test_verification_lane_coverage.py",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_exemptions.json",
+        "make/guards.mk"
+      ],
+      "kind": "offline",
+      "target": "verify.verification.lane_coverage"
+    },
+    "daily_runtime_database_duty": {
+      "inputs": [
+        "config/ops/daily_runtime_duty_stack.yml",
+        "config/ops/daily_runtime_duty_stack.env",
+        "scripts/ops/daily_runtime_database_duty.py",
+        "scripts/ops/test_daily_runtime_database_duty.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline",
+      "target": "verify.daily.runtime.database.duty"
     }
   },
   "environment": {
@@ -205,7 +238,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "Ruling item 2's missing fact is now bound: the maintenance authorization record carries an immutable evidence reference (governed vocabulary, request-time declaration, reported in the audit readback and the query projection), verified by make verify.smart_core.platform_maintenance_access.orm (15 tests) and make verify.local.dev.platform_database_governance.orm (26 tests) with two counter-examples re-proven and the tree restored byte-for-byte. Items 1, 3 and 4 were already closed at 5ddb3596. The next exact step still cannot be taken without an owner decision, because approving the maintenance access requires an authenticated principal for the named approver lidefend through the product entry: the account deliberately has no stored password, the control container runs without ENV in {dev,test,local} so the dev/test session.bootstrap intent is disabled there, and the serving control Odoo process still runs 10bf72ef so the decision routes are not mounted. Option A is a governed one-time interactive credential issued through a declared step, used over the product HTTP entry and cleared afterwards, plus the published-face convergence that mounts the controller; option B is the owner's own interactive login. Neither may be replaced by a direct model write, a fabricated approval, reusing admin, or relaxing the mechanism.",
+  "next_exact_step": "Ledger is reconciled (scope, checks and narrative cover 79cca68b, 3c481455, 117a14ff and 323b5376) and the maintenance-access ORM receipt is re-bound to the current candidate (15 tests, 0 failed, log maintenance-access-evidence-20261016/L2-orm-clean-head.log). Next: deploy this candidate to the daily server (candidate bundle sync -> source revision align), run the governed refresh for the declared duty selection so the control container actually reads ENV/SC_ENVIRONMENT, converge the published face, and then exercise the maintenance approval through the product entry with lidefend as the authenticated approver. The chain is issue credential -> request -> approve -> provision operator -> plan -> grant -> import -> verify -> revoke -> clear; no step may be replaced by a direct model write, a fabricated approval, reusing admin, or relaxing the mechanism.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "review_s2_closure_20261015": {
     "authority": "Independent B-line review of 5f5c4dae..4450e674 returned APPROVE_WITH_NOTES with one S2: the registration's control-database write had no test wiring, and the existing assertion pointed at the opposite target",
@@ -387,7 +420,14 @@
     "scripts/ops/daily_runtime_platform_security_admin_bootstrap.py",
     "scripts/ops/platform_security_admin_bootstrap.py",
     "scripts/ops/test_daily_runtime_platform_security_admin_bootstrap.py",
-    "scripts/ops/test_platform_security_admin_bootstrap.py"
+    "scripts/ops/test_platform_security_admin_bootstrap.py",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_coverage.py",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/audit/test_verification_lane_coverage.py",
+    "scripts/ops/daily_runtime_platform_security_admin_credential.py",
+    "scripts/ops/platform_security_admin_credential.py",
+    "scripts/ops/test_platform_security_admin_credential.py"
   ],
   "status": "active",
   "step_d_customer_recovery_point_20261015": {
@@ -2717,6 +2757,53 @@
       "recorded": "make agent.run.begin/record AGENT_CHECK=platform_maintenance_access_entry recorded a 15-test receipt bound to this clean HEAD, log .runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-evidence-20261016/L2-targeted-clean-head.log.",
       "evaluation": "The P4 index still reports the check as stale: a kind=runtime check must declare a readback artifact, and no governed local-dev environment readback artifact exists. .runtime/localdev-readback.json has no producer in make/ or scripts/ and dates from 2026-10-09, so binding it would be evidence mis-binding rather than a readback. The receipt is real; the index cannot call it reusable until a governed entry produces that artifact.",
       "registered_not_blocking": "P4 gap, registered and not blocking: this batch's L2 evidence is the non-zero suite output, and the same section of the iteration record cites it. A governed local-dev identity readback artifact would let the local runtime layer be registered as reusable instead of merely attested."
+    }
+  },
+  "maintenance_credential_entry_20261016": {
+    "case": "Owner ruling of 2026-10-16 names lidefend as the maintenance approver and requires the P0 approval flow to be usable through the product entry. The named account deliberately carries no stored password, so no principal could ever reach the entry to approve. This layer adds only the credential: it creates no account, grants no group, adopts no existing credential and approves nothing.",
+    "delivered": {
+      "entry": "scripts/ops/platform_security_admin_credential.py issues or clears a one-time credential for an account that already carries the control-plane security-admin closure, and asserts the authorization ledger row count is unchanged across the run -- a step that could move the ledger would be an approval wearing a credential's clothes. The credential is written only to the operator-only mount (0600, never stdout, never argv).",
+      "carrier": "scripts/ops/daily_runtime_platform_security_admin_credential.py is the host-side carrier; it reuses the duty identity/payload binding and the read-only /mnt/scripts mount, and scrubs only textual credential fields while keeping has_stored_password and token_version as audit facts.",
+      "make_entries": "make/daily_candidate.mk adds install/readback/issue/clear, and folds the login/name/evidence grammar shared by bootstrap and credential into the single guard daily.runtime.security_admin.payload_inputs, so four hand-copied regexes and length caps can no longer drift from the authority they guard.",
+      "boundary": "public_guard evidence for the branch: no credential value, token or password appears in any tracked file."
+    },
+    "verification": {
+      "L1": "make verify.platform.security_admin.credential -> 43 tests OK",
+      "L1_peer": "make verify.platform.security_admin.bootstrap -> 75 tests OK",
+      "falsification": "the credential entry refuses to adopt an already issued credential and the pre/post authorization ledger count assertion was falsified once and restored byte-for-byte; the log is .runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-credential-20261016/falsify-credential.log",
+      "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-credential-20261016/final.sha256"
+    },
+    "known_limits": "The credential authenticates the account; it is not an approval, and the approval still has to be requested and approved through the product entry with the mechanism's own independence, validity-window and target checks enforced server-side."
+  },
+  "verification_lane_target_retirement_20261016": {
+    "case": "The lane-coverage audit had no way to retire a registered verification target that nothing references any more, so dead targets kept the ledger honest only by accident. This layer adds the retirement entry and registers the historic ops surfaces that are genuinely still reachable.",
+    "delivered": {
+      "retirement_entry": "scripts/audit/verification_lane_coverage.py gains --unregister-target, so a zero-reference target can be retired as a recorded decision instead of being deleted by hand.",
+      "registering": "24 zero-reference targets whose owning entries still exist are registered as reachable; a stale registration is retired through the new entry; the baseline moves 761 -> 784."
+    },
+    "verification": {
+      "L1": "make verify.verification.lane_coverage PASS, 72 tests OK",
+      "L1_peer": "make audit.verification.lane_coverage.check PASS"
+    },
+    "follow_up_323b5376": {
+      "case": "The new make daily.runtime.database.duty.refresh is zero-reference surface by nature: it needs real credentials on the duty host and no automated lane can consume it, so it cannot be wired away. It is registered through the tool's own reviewed path rather than left to fail the ratchet.",
+      "delivered": "dispositions registers daily.runtime.database.duty.refresh as ops_runbook with the same owner and the same disposition as its plan/apply/initialize siblings; the frozen baseline is deliberately rewritten 784 -> 785 (recorded_targets_defined 2333 -> 2334, unreached_from_anchor 2164 -> 2165) and the identity set is refrozen, so a count-neutral replacement still fails.",
+      "verification": "make verify.verification.lane_coverage PASS (PASS line plus 72 tests OK); this receipt replaces one earlier record whose attached log had actually shown the DENY, so no receipt now contradicts its own log.",
+      "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/verification-lane-retirement-20261016/L1-lane-coverage-clean-head.log"
+    }
+  },
+  "duty_stack_runtime_environment_forwarding_20261016": {
+    "case": "Every /api/* route on the daily control plane answered 500 before dispatch while the declaration, the rendered env file, the custody facts and the module states all agreed. The root cause was not a missing env rendering: the remote env file does carry ENV=dev and SC_ENVIRONMENT=dev, but config/ops/daily_runtime_duty_stack.yml never forwarded either key into the odoo container. render_odoo_conf.py may only drop an unavailable optional addon root when ENV says the runtime is not production, so the container kept an addons_path entry for /mnt/test-addons, which that duty does not mount, and Odoo raised FileNotFoundError while building its static-file map.",
+    "delivered": {
+      "stack": "config/ops/daily_runtime_duty_stack.yml forwards ENV and SC_ENVIRONMENT into the odoo service, with the incident recorded next to the two lines.",
+      "reverse_check": "validate_stack_surface now also fails closed when the duty env template declares a key that neither the compose file hands to a container nor the host entry reads back -- the check that would have caught this omission before it shipped.",
+      "refresh_phase": "a new refresh phase with its own confirmation token re-renders the reviewed stack into a duty that already serves and recreates exactly its declared services; it creates no cluster object and installs no module, and it refuses every duty that is to_be_created, not yet initialized, or whose cluster cannot be observed.",
+      "superseded_stacks": "prune_superseded_stack_files removes the rendered stack names the reviewed definition replaced, because every consumer resolves the stack by shape and refuses to proceed when more than one is present.",
+      "readback": "application_config_facts reads the container's ENV/SC_ENVIRONMENT and classifies every addons_path entry as present or missing, and two assertions now fail the verdict for a serving duty that cannot see the declared runtime environment or that serves an unmounted addon root."
+    },
+    "verification": {
+      "L1": "make verify.daily.runtime.database.duty -> 101 tests OK (was 96), including the new counter-examples for the forwarded environment, the reverse surface check, the pruned superseded stack, the refresh refusal matrix and the blind/half-blind container readback",
+      "not_run": "the deployed refresh itself is the next step; no duty container has been re-rendered yet in this layer"
     }
   }
 }
