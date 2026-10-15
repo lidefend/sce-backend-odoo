@@ -121,7 +121,9 @@
     "scripts/ops/daily_runtime_three_database_closure.py",
     "scripts/ops/test_daily_runtime_three_database_closure.py",
     "scripts/ops/daily_runtime_tenant_topology_inventory.py",
-    "scripts/ops/test_daily_runtime_tenant_topology_inventory.py"
+    "scripts/ops/test_daily_runtime_tenant_topology_inventory.py",
+    "scripts/ops/daily_runtime_routing_inventory.py",
+    "scripts/ops/test_daily_runtime_routing_inventory.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -191,13 +193,15 @@
     }
   },
   "blockers": [
-    "No recovery point has been taken and verified for the databases and filestore that the three-database closure will touch.",
-    "The customer development database has no confirmed target identity (role, exact filter, filestore, tenant key); it must not be presumed.",
-    "sc_demo mixes the customer tenant volume with demo/test purposes, so 'the demo database' is not yet a pure demo database.",
+    "A second live postmaster owns the same cluster data volume: sc-backend-odoo-dev-db-1 and sc-backend-odoo-prod-db-1 both mount sc_dev_db_data. Two writers on one cluster directory contradict the isolation the three-database closure must prove; resolving it needs an owner decision on which stack is authoritative plus a governed stop entry.",
+    "The customer development database has no confirmed target identity yet (database name, role, exact filter, filestore, tenant key); it must not be presumed. The customer module declares tenant_key=baosheng and company_provisioning=payload_create_and_register.",
+    "sc_demo mixes the customer tenant volume with demo/test purposes, so 'the demo database' is not yet a pure demo database; the destination of the company-1 volume is unresolved.",
     "The only login role is the superuser/createdb role 'odoo'; per-database tenant roles and credentials do not exist yet, and new credential authority requires separately authorized P4 work.",
+    "sc_platform_core is not a working control plane: older smart_core revision and no tenant registry table, and no Odoo instance serves it (routing inventory: unserved databases sc_odoo, sc_platform_core).",
+    "The governed platform-database lifecycle adapter still lacks its runtime binding (scripts/ops/platform_database_lifecycle_apply.py states this explicitly), so there is no governed entry that creates the missing database yet.",
     "Frozen exact-head Quick, final identity-bound review and required remote checks remain pending."
   ],
-  "next_exact_step": "Align with the user-module executor on customer source mapping and versioned migration, then prepare and verify a recovery point for the affected databases and filestore, then bind the three duties (platform control, demo, customer development) with exact role/filter/filestore identity before the first database write.",
+  "next_exact_step": "Bind the three duties' exact identities (role, exact database filter, filestore, tenant key) and build the governed provisioning entry the closure needs, then create only the missing customer development database; resolve the duplicate-postmaster decision with the owner first. Verification evidence at this stage identity: routing inventory FAIL on one_live_postmaster_per_cluster_data_volume only.",
   "takeover_20261015": {
     "head": "e12e75eaa5bdcfe5b01dfe14b89cb201fac60023",
     "dirty_paths": [
@@ -1431,6 +1435,145 @@
         ]
       },
       "next": "Prepare the recovery point, then bind the platform control, demo and customer development duties before any database write."
-    }
+    },
+    "authorization_supersession": "Owner authorization 2026-10-15 (daily server three-database closure) supersedes the earlier blanket 'no new database / profile / credential authority' note for this server and this scope only. The scope is: bring the daily development server to three duties with separated responsibility (platform control, demo, one customer development business database), unify the onboarding mechanism across demo and customer tenants, and complete product acceptance. Not a formal production release. Every other prohibition stays in force: assuming a database name proves its contents or duty; copying or cleaning sc_demo into the customer database; granting the demo or platform-control database cross-model write authority to reach a terminal state; filling an empty company_id during migration; bypassing a business action or approval to reach a target state. Exact target identity, recovery conditions and governed entries are established before the first write, and a database is still written only after that.",
+    "step_one_routing_inventory_20261015": {
+      "layer": "P4 governed read-only inventory",
+      "why": "The identity inventory answers the cluster question and the tenant topology inventory answers the tenant question. Neither answers the routing question, and policy sections 6 and 7 make a tenant environment a whole lifecycle unit that forbids proving isolation by renaming a container or moving a port.",
+      "entry": "make daily.runtime.routing.inventory (read-only; --report writes a local file only)",
+      "unit_entry": "make verify.daily.runtime.routing.inventory",
+      "tests": 11,
+      "report": ".runtime/final-acceptance/daily-deployed/routing-inventory.json",
+      "assertions": [
+        "cluster_databases_observed",
+        "application_instance_declares_a_database",
+        "application_instance_filter_is_exact",
+        "single_serving_instance_per_database",
+        "published_host_port_unique",
+        "one_live_postmaster_per_cluster_data_volume",
+        "instance_data_volume_distinct",
+        "inventory_is_read_only"
+      ],
+      "observed_instances": 6,
+      "observed_serving_instances": {
+        "sc_demo": [
+          "sc-backend-odoo-dev-odoo-1"
+        ],
+        "sc_tenant_baosheng_uat_core035_20260727142732_46a327": [
+          "sc-core035-mvp-daily-20260727142732-46a327-odoo-1"
+        ],
+        "sc_release_rehearsal": [
+          "sc-release-rehearsal-ingress"
+        ],
+        "sc_user_data_rehearsal": [
+          "sc-user-data-rehearsal-odoo-1"
+        ]
+      },
+      "unserved_cluster_databases": [
+        "sc_odoo",
+        "sc_platform_core"
+      ],
+      "result": "FAIL at this stage identity: one real assertion fails; see routing_finding",
+      "tool_defect_fixed_during_build": "Docker lists one published-port binding per address family, so the same container port on the same host port appeared twice and produced a false duplicate-port collision. The tool now deduplicates the (container port, host port) pair per container; a regression test pins it.",
+      "routing_finding": {
+        "severity": "S1 (data-integrity and isolation)",
+        "fact": "Two running containers own the same PostgreSQL data volume: sc-backend-odoo-dev-db-1 and sc-backend-odoo-prod-db-1 both mount the Docker volume sc_dev_db_data at /var/lib/postgresql/data. Both answer queries, both read the same postmaster.pid (mtime 2026-09-24T08:28:55Z, pid 1) and both report the same pg_control_system() system_identifier 7597381856873586726, so two live postmasters have the same cluster directory open.",
+        "impact": "Two writers on one cluster directory is a corruption hazard, and it makes 'which instance owns this environment' unprovable, which contradicts the isolation the three-database closure must demonstrate.",
+        "origin": "The second stack belongs to a different checkout, /opt/projects/repos/sce-backend-odoo (commit 3b2820179, locally modified), whose compose project name is sc-backend-odoo-prod and whose DB_DATA resolves to the same volume. Its odoo and nginx containers are in Created state and were never started; only db and redis run.",
+        "not_resolved_here": "Retiring or restarting that stack is an environment change outside the authorized three-database scope and outside any governed make entry, so it is recorded, not executed. It needs an owner decision on which stack is authoritative plus a governed stop entry.",
+        "evidence": ".runtime/final-acceptance/daily-deployed/routing-inventory.json"
+      }
+    },
+    "step_one_user_module_alignment_20261015": {
+      "layer": "P1/P2 boundary alignment (read-only)",
+      "repository": "/home/lidefend/workspace/sce-customer-baosheng-odoo",
+      "branch": "fix/native-form-preference-upgrade",
+      "head": "bfbc736",
+      "worktree": "clean",
+      "modules": [
+        "sce_customer_baosheng",
+        "sce_customer_baosheng_core035_mvp",
+        "sce_customer_baosheng_history_attachments",
+        "sce_customer_baosheng_legacy",
+        "smart_construction_custom"
+      ],
+      "declared_identity": {
+        "tenant_key": "baosheng",
+        "customer_key": "baosheng",
+        "module_key": "sce_customer_baosheng",
+        "module_version": "17.0.2.8.0",
+        "install_mode": "customer_database_only",
+        "company_keys": [],
+        "payload_company_keys": [
+          "main"
+        ],
+        "company_provisioning": "payload_create_and_register",
+        "uninstall_policy": "fail_closed",
+        "payload_required": true,
+        "payload_manifest_version": "tenant_payload_v1",
+        "product_bundle": "smart_construction_bundle",
+        "product_version_range": "17.0.0 <= v < 18.0.0",
+        "supported_source_versions": [
+          "authorized-odoo17-snapshot-v1",
+          "authorized-legacy-normalized-v1"
+        ]
+      },
+      "versioned_migration_owned_by_user_module": true,
+      "migration_lanes_present": [
+        "addons/sce_customer_baosheng/migrations/17.0.2.0.0,17.0.2.3.0,17.0.2.8.0",
+        "addons/sce_customer_baosheng_legacy/migrations/17.0.2.0.0 .. 17.0.3.1.8",
+        "addons/sce_customer_baosheng_history_attachments/migrations/17.0.1.1.0"
+      ],
+      "product_side_boundary": "The product repository owns the customer-onboarding boundary only: smart_core.tenant_payload_import and addons/smart_core/utils/tenant_payload_import_service.py resolve every resource's company through an explicit declaration (global_identity | company_identity | company_via_relationship | company_relationship) and fail closed with TPV1_COMPANY_SCOPE_MISSING / TPV1_COMPANY_SCOPE_UNAUTHORIZED when it is absent. addons/smart_core/security/data_space_provisioning.py states the same rule: it never implements the customer onboarding lane, because a formal customer company is onboarded only through the signed payload import boundary.",
+      "user_module_ownership": "Customer source mapping (external_key_mapping, model_import_order), versioned migration and legacy-data repair stay in the user module repository.",
+      "product_repo_commitment": "The product repository will not add a parallel customer-specific backfill, migration or source-mapping lane. Empty-ownership repair for customer rows is expressed by the user module's own versioned migration.",
+      "shared_facts": {
+        "purpose_strategy": {
+          "demo": "single_db_multi_company",
+          "test": "single_db_multi_company",
+          "customer": "database_per_customer_tenant"
+        },
+        "purpose_environment_role": {
+          "demo": "platform_internal_demo",
+          "test": "industry_acceptance",
+          "customer": "customer_production"
+        },
+        "strategy_declaration_path": "data/tenant/database_strategy.v1.json",
+        "strategy_declaration_present_in_product_checkout": false
+      }
+    },
+    "step_one_recovery_point_20261015": {
+      "layer": "L1 recovery point",
+      "scope": "sc_demo, the single business-volume carrier and the only database holding irreversible customer-entered rows",
+      "paired_backup": {
+        "entry": "make daily.candidate.continuity.remote_backup DAILY_CANDIDATE_SSH_HOST=sc-root",
+        "confirmation": "BACKUP_DAILY_CANDIDATE_PAIRED_STATE",
+        "backup_set_id": "sc_demo-20261015T062043Z-849c0c54",
+        "directory": "/data/backups/daily_candidate/sc_demo-20261015T062043Z-849c0c54",
+        "paired_backup_pass": true,
+        "artifacts": [
+          "database.dump",
+          "filestore.tar.gz",
+          "manifest.json",
+          "SHA256SUMS"
+        ],
+        "previous_recovery_point": "/data/backups/daily_candidate/sc_demo-20261015T052557Z-2f6ac372"
+      },
+      "isolated_restore_drill": {
+        "entry": "make daily.candidate.continuity.remote_restore_drill DAILY_CANDIDATE_SSH_HOST=sc-root",
+        "confirmation": "RESTORE_ISOLATED_COPY",
+        "result": {
+          "isolated_restore_pass": true,
+          "database_restore_pass": true,
+          "filestore_restore_pass": true,
+          "sentinel_comparison_pass": true,
+          "temporary_resources_removed": true,
+          "network_egress": "internal_only",
+          "duration_seconds": 292
+        }
+      },
+      "uncovered": "The governed continuity contract is bound to sc_demo alone. sc_platform_core and the not-yet-created customer development database have no paired recovery point; the control database carries no business rows and is reproducible from source, and the customer database does not exist, so neither is a pre-write data-loss risk today. Covering those duties is a precondition for the first write to them and requires a governed extension, not an ad-hoc dump."
+    },
+    "stage_identity_20261015b": "HEAD 639be2029e9d5aa5e9d55e95947dc2e88a5b3ed7 plus the recorded dirty scope (make/codex.mk modified; scripts/ops/daily_runtime_routing_inventory.py and its test untracked)"
   }
 }

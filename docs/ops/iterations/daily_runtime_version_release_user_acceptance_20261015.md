@@ -365,3 +365,81 @@ integration, daily deployment, full mechanism acceptance and product acceptance 
 delivery conclusion is claimed. Next: align with the user-module executor on customer source mapping and
 versioned migration, then prepare and verify a recovery point for the affected databases and filestore, then bind
 the three duties with exact role/filter/filestore identity before the first database write.
+
+### Step 1 mechanism: routing and cluster-ownership inventory
+
+The tenant topology entry answers what each database carries, but it cannot prove that a database is served by
+exactly one application instance, that each instance filters to exactly one database, or that two live
+postmasters are not writing the same cluster directory. A new governed read-only entry,
+`make daily.runtime.routing.inventory`, answers that from container metadata and the cluster catalog only. Its
+unit entry is `make verify.daily.runtime.routing.inventory` (11 tests, OK). The entry never writes a business
+row; `--report` writes only a local file.
+
+Eight assertions run mechanically: `cluster_databases_observed`, `application_instance_declares_a_database`,
+`application_instance_filter_is_exact`, `single_serving_instance_per_database`, `published_host_port_unique`,
+`one_live_postmaster_per_cluster_data_volume`, `instance_data_volume_distinct`, and `inventory_is_read_only`.
+
+A tool defect was corrected while building it: Docker lists one published port twice when a service binds both
+IPv4 and IPv6 on the same host port, which the first cut mis-flagged as a duplicate. The check now dedupes by
+(container port, host port) and carries a regression test for that shape.
+
+### Step 1 router observation (HEAD 10bf72ef, read-only)
+
+Six instances are observed. Four of them serve a database with an exact filter:
+`sc_demo` <- `sc-backend-odoo-dev-odoo-1`, `sc_tenant_baosheng_uat_core035_20260727142732_46a327` <-
+`sc-core035-mvp-daily-20260727142732-46a327-odoo-1`, `sc_release_rehearsal` <- `sc-release-rehearsal-ingress`,
+and `sc_user_data_rehearsal` <- `sc-user-data-rehearsal-odoo-1`. Every application instance declares a database
+and every declared filter is exact, so `instances_without_exact_filter` is empty. The duty gap is on the other
+side: `sc_odoo` and `sc_platform_core` have no serving instance at all.
+
+The run FAILS on exactly one assertion: `one_live_postmaster_per_cluster_data_volume`.
+`sc-backend-odoo-dev-db-1` and `sc-backend-odoo-prod-db-1` both run and both mount the same Docker volume
+`sc_dev_db_data` at `/var/lib/postgresql/data`. They report the same `postmaster.pid` (pid 1, mtime
+2026-09-24T08:28:55Z) and the same `pg_control_system()` system identifier `7597381856873586726`, and both can
+query the same catalog (`postgres`, `sc_demo`, `sc_odoo`, `sc_platform_core`). The second postmaster comes from
+another checkout under `/opt/projects/repos/sce-backend-odoo` (compose project `sc-backend-odoo-prod`, local
+modified `docker-compose.yml`); only its `db` and `redis` services run.
+
+This is a real defect, not a tool artifact, and the assertion is kept at FAIL. Resolving it is an environment
+mutation (which stack is authoritative, and a governed stop entry for the other), which this batch's
+authorization does not cover and no governed entry provides. It is recorded as a blocker rather than papered
+over or fixed by weakening the assertion.
+
+### Step 1 recovery point (L1)
+
+A paired backup of the affected database and filestore was taken through the governed continuity entry
+(`backup_set_id = sc_demo-20261015T062043Z-849c0c54`, `paired_backup_pass: true`). An isolated restore drill
+restored that set into temporary resources and compared sentinels:
+`isolated_restore_pass`, `database_restore_pass`, `filestore_restore_pass` and `sentinel_comparison_pass` are
+all true, temporary resources were removed, and egress stayed internal. The continuity contract binds `sc_demo`
+only; `sc_platform_core` (no business rows, rebuildable from source) and the not-yet-created customer database
+have no paired recovery point. Because neither is written yet, this is not a pre-write data-loss risk, but the
+governed contract must be extended before the first write to either.
+
+### Step 1 user-module alignment (read-only)
+
+The customer repository `sce-customer-baosheng-odoo` is clean at `bfbc736`. Its manifest declares
+`tenant_key=baosheng`, `module_version=17.0.2.8.0`, `install_mode=customer_database_only`,
+`company_provisioning=payload_create_and_register`, `payload_required=true` and
+`uninstall_policy=fail_closed`, with versioned migrations already present. On the product side,
+`smart_core.tenant_payload_import` resolves company scope from four declaration paths and fails closed with
+`TPV1_COMPANY_SCOPE_MISSING` when none applies; `data_space_provisioning` explicitly does not implement a
+customer onboarding channel. The customer source mapping, versioned migration and new-data import repair
+therefore belong to the user module, and this repository must not grow a parallel customer-specific backfill.
+
+### Authorization coverage
+
+The owner widened this batch to build and verify three duty-separated databases on the daily development
+server, without a formal production release. The earlier blanket note that no database, profile or credential
+may be created is superseded for this server only. The concrete target identity, recovery conditions and
+governed entries still have to be established first, and demo and control duties must not gain cross-model
+writes to reach a terminal state.
+
+### Status
+
+Mechanism acceptance for step 1 (identity, tenant topology and routing) is complete at this stage identity.
+The routing entry reports one genuine FAIL: a duplicate postmaster on the shared cluster volume. Code
+integration, daily deployment, full mechanism acceptance and product acceptance all remain open, and no delivery
+conclusion is claimed. Next: resolve the duplicate-postmaster decision with the owner, then bind role, exact
+filter, filestore and tenant key for the three duties and build the governed provisioning entry the closure
+needs before creating only the missing customer development database.

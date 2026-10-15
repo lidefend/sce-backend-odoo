@@ -892,6 +892,32 @@ daily.runtime.tenant.topology.inventory: guard.prod.forbid verify.daily.runtime.
 		--report "$(DAILY_RUNTIME_TENANT_TOPOLOGY_REPORT)"
 
 
+# The identity inventory answers the cluster question and the tenant topology
+# inventory answers the tenant question. This entry answers the routing question:
+# which running Odoo instance serves which database, with which exact filter,
+# which published host port and which data volume, and how many live postmasters
+# own one cluster data directory. The policy makes a tenant environment a whole
+# lifecycle unit and forbids proving isolation by renaming a container or moving
+# a port, so the role binding needs the routing fact too. Read-only; `--report`
+# only writes a local file.
+.PHONY: verify.daily.runtime.routing.inventory daily.runtime.routing.inventory
+DAILY_RUNTIME_ROUTING_REPORT ?= .runtime/final-acceptance/daily-deployed/routing-inventory.json
+DAILY_RUNTIME_ROUTING_CLUSTER_CONTAINER ?= sc-backend-odoo-dev-db-1
+
+verify.daily.runtime.routing.inventory: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_routing_inventory.py scripts/ops/test_daily_runtime_routing_inventory.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_routing_inventory
+
+daily.runtime.routing.inventory: guard.prod.forbid verify.daily.runtime.routing.inventory
+	@test -n "$(DAILY_RUNTIME_EXPECTED_SHA)" || { echo "DAILY_RUNTIME_EXPECTED_SHA must be the deployed runtime source revision" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_routing_inventory.py \
+		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
+		--database "$(DAILY_RUNTIME_DATABASE)" \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--cluster-container "$(DAILY_RUNTIME_ROUTING_CLUSTER_CONTAINER)" \
+		--report "$(DAILY_RUNTIME_ROUTING_REPORT)"
+
+
 # Every declared model is bounded by `user._sc_data_company_ids()`, which reads
 # the declared environment role and `sc.tenant.company.registration`. A business
 # row whose owning company was never registered, or whose model declares that an
