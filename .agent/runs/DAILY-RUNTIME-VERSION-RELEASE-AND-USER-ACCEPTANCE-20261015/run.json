@@ -163,7 +163,7 @@
     "Frozen exact-head Quick, final identity-bound review and required remote checks remain pending.",
     "Daily target deployment and complete user product acceptance remain pending; local demo sample read is not full product delivery."
   ],
-  "next_exact_step": "Freeze reviewed clean candidate after final generated refresh, then exact-head Quick once; no deployment or user acceptance claim.",
+  "next_exact_step": "Commit reviewed two-line test wiring correction and run exact-head Quick; final receipts in ignored evidence, no runtime replay.",
   "takeover_20261015": {
     "head": "e12e75eaa5bdcfe5b01dfe14b89cb201fac60023",
     "dirty_paths": [
@@ -1128,7 +1128,29 @@
         "review": "scene_boundary_review PASS: deleted bodies and registration close identified bypass; parser-only assertion is not whole-registry runtime proof"
       },
       "final_prepare_log": "/tmp/sce-closure-final-freeze-prepare.log",
-      "demo_commit": "e39628d4"
+      "demo_commit": "e39628d4",
+      "quick_0606a0e5": {
+        "status": "failed",
+        "command": "make ci.local.quick",
+        "log": "/tmp/sce-closure-exact-head-quick.log",
+        "owner": "P4 Make target script identity not recognized by guard registry",
+        "failure": "Two unittest dotted-module arguments not recognized as Make wiring; zero receipt issued",
+        "recovery_change": "Same unittest runner and same two tests, arguments changed to explicit scripts/verify/*.py paths",
+        "independent_remaining_checks": "/tmp/sce-closure-independent-final-gates.log passed all four previously unscheduled targets; no sibling blocker",
+        "impact": "Only test entry spelling and metadata changed. Original source, physical runtime and Demo evidence unchanged. New clean HEAD needs exact-head Quick; old successful fragments not a new receipt.",
+        "recovery_tests": {
+          "status": "passed",
+          "command": "make verify.guard.registry verify.platform.database.lifecycle.unit verify.platform.database.rehearsal.unit",
+          "tests": 60,
+          "log": "/tmp/sce-closure-wire-fix-tests.log"
+        },
+        "freeze_prepare": {
+          "status": "passed",
+          "log": "/tmp/sce-closure-wire-fix-freeze.log",
+          "generated_changes": "none"
+        },
+        "B_review": "concurrency_review: equivalent unittest input, bounded P4 fix endorsed"
+      }
     }
   }
 }

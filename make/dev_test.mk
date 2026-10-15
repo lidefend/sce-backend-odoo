@@ -2952,7 +2952,7 @@ verify.platform.database.governance.guard: guard.prod.forbid
 # Offline adapter and demo identity checks; these never authorize a database write.
 .PHONY: verify.platform.database.lifecycle.unit verify.demo.lifecycle.unit
 verify.platform.database.lifecycle.unit: guard.prod.forbid
-	@python3 -m unittest scripts.verify.test_platform_database_lifecycle_entry
+	@python3 -m unittest scripts/verify/test_platform_database_lifecycle_entry.py
 
 verify.demo.lifecycle.unit: guard.prod.forbid
 	@python3 demo_addons/smart_construction_demo/tests/test_demo_funding_baseline_lifecycle.py
@@ -2965,4 +2965,4 @@ verify.demo.supplemental.unit: guard.prod.forbid
 
 .PHONY: verify.platform.database.rehearsal.unit
 verify.platform.database.rehearsal.unit: guard.prod.forbid
-	@python3 -m unittest scripts.verify.test_platform_database_rehearsal
+	@python3 -m unittest scripts/verify/test_platform_database_rehearsal.py
