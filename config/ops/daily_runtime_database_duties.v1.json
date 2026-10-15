@@ -1,0 +1,196 @@
+{
+  "schema": "daily.runtime.database_duties.v1",
+  "authority": "docs/governance/database_architecture_policy.md",
+  "owner_ruling": "2026-10-15 daily development server three-database build; no formal production release and no production topology change",
+  "host": "sc-root",
+  "naming": {
+    "database": "^(sc_platform_control|sc_demo|sc_tenant_[a-z0-9]+_dev)$",
+    "database_role": "^[a-z0-9_]+_app$",
+    "database_role_must_be_database_name_suffixed": "_app",
+    "compose_project": "^sc-[a-z0-9-]+$",
+    "database_maintenance_role": "^(sc_platform_control_maintenance|sc_tenant_[a-z0-9]+_dev_maintenance|odoo)$"
+  },
+  "duties": [
+    {
+      "duty": "platform_control",
+      "database": "sc_platform_control",
+      "database_role": "sc_platform_control_app",
+      "dbfilter": "^sc_platform_control$",
+      "environment_id": "daily-dev-platform-control",
+      "tenant_key": "",
+      "data_purpose": "platform_control",
+      "cluster": {
+        "container": "sc-platform-control-dev-db-1",
+        "compose_project": "sc-platform-control-dev",
+        "data_volume": "sc_platform_control_db_data",
+        "maintenance_role": "sc_platform_control_maintenance",
+        "system_identifier": ""
+      },
+      "custody": {
+        "database_present": false,
+        "database_role_present": false,
+        "role_compliance": "to_be_created"
+      },
+      "storage": {
+        "compose_project": "sc-platform-control-dev",
+        "odoo_data_volume": "sc_platform_control_odoo_data",
+        "redis_data_volume": "sc_platform_control_redis_data",
+        "filestore_scope": "sc_platform_control",
+        "session_namespace": "sc_platform_control",
+        "backup_namespace": "/data/backups/daily-platform-control"
+      },
+      "routing": {
+        "nginx_host_port": 18082,
+        "odoo_loopback_port": 18083,
+        "list_db": false
+      },
+      "section_11": {
+        "TARGET_DATABASE_ROLE": "platform_control",
+        "TARGET_TENANT_ID": null,
+        "TARGET_ENVIRONMENT_ID": "daily-dev-platform-control",
+        "IS_PLATFORM_CONTROL_DATABASE": true,
+        "IS_INDUSTRY_CATALOG_DATABASE": false,
+        "IS_CUSTOMER_TENANT_DATABASE": false,
+        "IS_ISOLATED_REHEARSAL_DATABASE": false,
+        "CUSTOMER_BUSINESS_DATA_ALLOWED": false,
+        "FIXTURE_ALLOWED": false,
+        "EXACT_DATABASE_FILTER_CONFIRMED": true,
+        "FILESTORE_IDENTITY_CONFIRMED": true
+      },
+      "stack": {
+        "compose_file": "config/ops/daily_runtime_duty_stack.yml",
+        "env_template": "config/ops/daily_runtime_duty_stack.env",
+        "runtime_env": "dev",
+        "odoo_image": "odoo17-odoo:latest",
+        "postgres_image": "postgres:15",
+        "product_root": "/opt/projects/repos/sce-product-odoo",
+        "frontend_dist_dir": "/opt/projects/repos/sce-product-odoo/frontend/apps/web/dist-dev",
+        "demo_addons_root": "/opt/projects/runtime-addons-empty",
+        "customer_addons_root": "/opt/projects/runtime-addons-empty"
+      }
+    },
+    {
+      "duty": "demo",
+      "database": "sc_demo",
+      "database_role": "odoo",
+      "dbfilter": "^sc_demo$",
+      "environment_id": "daily-dev-demo",
+      "tenant_key": "sc-demo-main",
+      "data_purpose": "demo",
+      "cluster": {
+        "container": "sc-backend-odoo-dev-db-1",
+        "compose_project": "sc-backend-odoo-dev",
+        "data_volume": "sc_dev_db_data",
+        "maintenance_role": "odoo",
+        "system_identifier": "7597381856873586726"
+      },
+      "custody": {
+        "database_present": true,
+        "database_role_present": true,
+        "role_compliance": "declared_gap",
+        "gap_kind": "shared_bootstrap_role",
+        "gap_reason": "The daily demo duty still connects as the cluster superuser role 'odoo', which is a createdb/superuser role. Policy section 6 requires an independent role per tenant environment; the dedicated demo application role is a separate authorized change because it rewrites the live dev stack credentials.",
+        "gap_owner_task": "DAILY-RUNTIME-DEMO-APP-ROLE-01"
+      },
+      "storage": {
+        "compose_project": "sc-backend-odoo-dev",
+        "odoo_data_volume": "sc_dev_odoo_data",
+        "redis_data_volume": "sc_dev_redis_data",
+        "filestore_scope": "sc_demo",
+        "session_namespace": "sc_demo",
+        "backup_namespace": "/data/backups/daily_candidate"
+      },
+      "routing": {
+        "nginx_host_port": 18081,
+        "odoo_loopback_port": 8070,
+        "list_db": false
+      },
+      "section_11": {
+        "TARGET_DATABASE_ROLE": "customer_tenant",
+        "TARGET_TENANT_ID": "sc-demo-main",
+        "TARGET_ENVIRONMENT_ID": "daily-dev-demo",
+        "IS_PLATFORM_CONTROL_DATABASE": false,
+        "IS_INDUSTRY_CATALOG_DATABASE": false,
+        "IS_CUSTOMER_TENANT_DATABASE": false,
+        "IS_ISOLATED_REHEARSAL_DATABASE": false,
+        "CUSTOMER_BUSINESS_DATA_ALLOWED": false,
+        "FIXTURE_ALLOWED": true,
+        "EXACT_DATABASE_FILTER_CONFIRMED": true,
+        "FILESTORE_IDENTITY_CONFIRMED": true
+      },
+      "stack": {
+        "compose_file": "config/ops/daily_runtime_duty_stack.yml",
+        "env_template": "config/ops/daily_runtime_duty_stack.env",
+        "runtime_env": "dev",
+        "odoo_image": "odoo17-odoo:latest",
+        "postgres_image": "postgres:15",
+        "product_root": "/opt/projects/repos/sce-product-odoo",
+        "frontend_dist_dir": "/opt/projects/repos/sce-product-odoo/frontend/apps/web/dist-dev",
+        "demo_addons_root": "/opt/projects/repos/sce-product-odoo/demo_addons",
+        "customer_addons_root": "/opt/projects/customer-addons-dev/native-preferences-4fb25858288b2aad"
+      }
+    },
+    {
+      "duty": "customer_tenant_dev",
+      "database": "sc_tenant_baosheng_dev",
+      "database_role": "sc_tenant_baosheng_dev_app",
+      "dbfilter": "^sc_tenant_baosheng_dev$",
+      "environment_id": "daily-dev-baosheng",
+      "tenant_key": "baosheng",
+      "data_purpose": "customer",
+      "cluster": {
+        "container": "sc-tenant-baosheng-dev-db-1",
+        "compose_project": "sc-tenant-baosheng-dev",
+        "data_volume": "sc_tenant_baosheng_dev_db_data",
+        "maintenance_role": "sc_tenant_baosheng_dev_maintenance",
+        "system_identifier": ""
+      },
+      "custody": {
+        "database_present": false,
+        "database_role_present": false,
+        "role_compliance": "to_be_created"
+      },
+      "storage": {
+        "compose_project": "sc-tenant-baosheng-dev",
+        "odoo_data_volume": "sc_tenant_baosheng_dev_odoo_data",
+        "redis_data_volume": "sc_tenant_baosheng_dev_redis_data",
+        "filestore_scope": "sc_tenant_baosheng_dev",
+        "session_namespace": "sc_tenant_baosheng_dev",
+        "backup_namespace": "/data/backups/daily-tenant-baosheng-dev"
+      },
+      "routing": {
+        "nginx_host_port": 18090,
+        "odoo_loopback_port": 18091,
+        "list_db": false
+      },
+      "section_11": {
+        "TARGET_DATABASE_ROLE": "customer_tenant",
+        "TARGET_TENANT_ID": "baosheng",
+        "TARGET_ENVIRONMENT_ID": "daily-dev-baosheng",
+        "IS_PLATFORM_CONTROL_DATABASE": false,
+        "IS_INDUSTRY_CATALOG_DATABASE": false,
+        "IS_CUSTOMER_TENANT_DATABASE": true,
+        "IS_ISOLATED_REHEARSAL_DATABASE": false,
+        "CUSTOMER_BUSINESS_DATA_ALLOWED": true,
+        "FIXTURE_ALLOWED": false,
+        "EXACT_DATABASE_FILTER_CONFIRMED": true,
+        "FILESTORE_IDENTITY_CONFIRMED": true
+      },
+      "stack": {
+        "compose_file": "config/ops/daily_runtime_duty_stack.yml",
+        "env_template": "config/ops/daily_runtime_duty_stack.env",
+        "runtime_env": "dev",
+        "odoo_image": "odoo17-odoo:latest",
+        "postgres_image": "postgres:15",
+        "product_root": "/opt/projects/repos/sce-product-odoo",
+        "frontend_dist_dir": "/opt/projects/repos/sce-product-odoo/frontend/apps/web/dist-dev",
+        "demo_addons_root": "/opt/projects/runtime-addons-empty",
+        "customer_addons_root": "/opt/projects/runtime-addons-empty"
+      }
+    }
+  ],
+  "platform_admin_database": "sc_platform_control",
+  "platform_admin_database_note": "Single authority for the platform-admin binding. Every duty entry reads the deployed frontend build environment back from frontend_build_env_file and refuses when it names another database, so the declaration, the deployed runtime and the repository guards cannot drift into two dialects.",
+  "frontend_build_env_file": "/opt/projects/repos/sce-product-odoo/.env.dev",
+  "ops_root": "/opt/projects/secure/daily-runtime-duties"
+}

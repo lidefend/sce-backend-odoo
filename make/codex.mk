@@ -963,6 +963,54 @@ daily.runtime.legacy_stack.retire.apply: guard.prod.forbid verify.daily.runtime.
 		--report "$(DAILY_RUNTIME_LEGACY_RETIRE_APPLY_REPORT)"
 
 
+# The owner ruling of 2026-10-15 makes every daily database a declared duty: a
+# role, a tenant, an environment, a storage namespace and one exact route, with
+# "one data directory, one writer" as a fail-closed property rather than a
+# convention. This entry is the ops-tool half of that rule. It renders the
+# reviewed duty stack definition, creates the application role plus its database
+# inside the duty's own cluster, and proves the custody facts from the cluster
+# catalog. It never registers a lifecycle state (the platform model owns
+# registration) and never installs or upgrades a module. A duty whose declaration
+# still says "to be created" is the only shape this entry may mutate: an existing
+# duty is observed, never re-rendered or restarted. The plan is read-only and
+# writes one local file; apply additionally needs the confirmation token and the
+# digest of the reviewed declaration, so an unreviewed edit cannot provision.
+.PHONY: verify.daily.runtime.database.duty daily.runtime.database.duty.plan daily.runtime.database.duty.apply
+DAILY_RUNTIME_DATABASE_DUTY_DECLARATION ?= config/ops/daily_runtime_database_duties.v1.json
+DAILY_RUNTIME_DATABASE_DUTY_PLAN_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-plan.json
+DAILY_RUNTIME_DATABASE_DUTY_APPLY_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-apply.json
+DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST ?=
+DAILY_RUNTIME_DATABASE_DUTY_SELECTION ?=
+DAILY_RUNTIME_DATABASE_DUTY_PHASE ?= all
+DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG ?= $(if $(DAILY_RUNTIME_EXPECTED_SHA),--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)")
+DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS ?= $(foreach duty,$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION),--duty "$(duty)")
+
+verify.daily.runtime.database.duty: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_database_duty.py scripts/ops/test_daily_runtime_database_duty.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_database_duty
+
+daily.runtime.database.duty.plan: guard.prod.forbid verify.daily.runtime.database.duty
+	@python3 scripts/ops/daily_runtime_database_duty.py \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--declaration "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION)" \
+		$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS) \
+		$(DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG) \
+		--report "$(DAILY_RUNTIME_DATABASE_DUTY_PLAN_REPORT)"
+
+daily.runtime.database.duty.apply: guard.prod.forbid verify.daily.runtime.database.duty
+	@test "$${SC_CONFIRM_DAILY_RUNTIME_DATABASE_DUTY:-}" = "PROVISION_DAILY_RUNTIME_DATABASE_DUTY" || { echo "SC_CONFIRM_DAILY_RUNTIME_DATABASE_DUTY=PROVISION_DAILY_RUNTIME_DATABASE_DUTY is required" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST must be the digest of the reviewed declaration" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_database_duty.py \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--declaration "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION)" \
+		$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS) \
+		$(DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG) \
+		--apply \
+		--phase "$(DAILY_RUNTIME_DATABASE_DUTY_PHASE)" \
+		--expect-declaration-digest "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" \
+		--report "$(DAILY_RUNTIME_DATABASE_DUTY_APPLY_REPORT)"
+
+
 # Every declared model is bounded by `user._sc_data_company_ids()`, which reads
 # the declared environment role and `sc.tenant.company.registration`. A business
 # row whose owning company was never registered, or whose model declares that an

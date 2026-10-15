@@ -4,6 +4,8 @@ Goal: `DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015`
 Run: `.agent/runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/run.json`
 Branch: `release/daily-runtime-version-release-20261015`
 Baseline: `ba7577c212b81468491942e972ea28bd64345ebd`（PR #664 合并后的 `main == origin/main`）
+Rebind: 2026-10-15 所有者接管后，本 run 沿用同一记录与证据索引改绑到 `fix/data-ownership-visibility-recovery-20261015`，
+基线更新为 `10bf72ef4bb060556bd2844598b58f9806392d34`；下面各章节以出现时的实际 HEAD 标注，不复用旧 HEAD 的结论。
 
 ## Objective
 
@@ -698,3 +700,125 @@ the already-covered duty, with the declared gaps carried into Step C.
 PASS，阻断数据库写入的门已解除（仅对已覆盖恢复点的职责）。三库身份登记与建设（Step C）尚未开始——其
 前置是 `platform_database_lifecycle_apply.py` 的受管运行时绑定与每库政策第 11 节判定表。本批次仍不构成
 主线集成完成或产品交付完成。
+
+## Step C — three-database identity registration and build
+
+### The owner ruling this step executes
+
+The owner ruled that the daily development server separates three duties: a platform control database, the demo
+database and one customer development business database, with the same onboarding mechanism for demo and
+customer tenants. The owner explicitly selected a **new** `sc_platform_control` rather than reusing
+`sc_platform_core`, named the customer development database `sc_tenant_baosheng_dev`, and required
+`VITE_PLATFORM_ADMIN_DB`, the acceptance declarations and the guards to consume the new binding **in one
+change** — never as two dialects. The UAT database stays independent and the ruling grants no authority to copy
+its data. No formal production release is authorized here; ADR-001 and the production single-database topology
+stay in force.
+
+### The duty declaration is the authority, and a missing value is a stop
+
+`config/ops/daily_runtime_database_duties.v1.json` declares one duty per line: a role, a database, an exact
+anchored filter, an environment, a compose project, a data volume, a storage namespace and one route, plus the
+policy section 11 determination table that must exist before the first write. `scripts/ops/daily_runtime_duty_stack.yml`
+renders one stack shape for all three duties, and
+`scripts/ops/daily_runtime_database_duty.py` (Make: `verify.daily.runtime.database.duty`,
+`daily.runtime.database.duty.plan`, `daily.runtime.database.duty.apply`) is the only entry that may create one.
+
+The design keeps two properties from the 2026-10-15 incident from being reintroduced:
+
+- the cluster bootstrap role and the application role are **different identities** (`POSTGRES_USER` is the
+  maintenance role; Odoo connects as the separate application role), because a cluster whose bootstrap superuser
+  is also the application role can never satisfy policy section 6;
+- every duty names its own volumes, so one data directory has exactly one writer and two postmasters can never
+  mount the same PGDATA.
+
+Every rendered environment value is read back and compared with the declaration, and a missing value is a
+fail-closed stop rather than a fallback: a silent fallback is exactly how one database ends up served by another
+duty's environment. A duty declared `to_be_created` is the only shape the entry may mutate; an existing duty is
+observed and never re-rendered or restarted.
+
+### Step C-1 — `sc_platform_control` created
+
+| Fact | Observed |
+|---|---|
+| compose project / container | `sc-platform-control-dev` / `sc-platform-control-dev-db-1` |
+| data volume | `sc_platform_control_db_data` (`/var/lib/docker/volumes/sc_platform_control_db_data/_data`) |
+| cluster system identifier | `7696799124996268070` |
+| application role | `sc_platform_control_app` — LOGIN, NOSUPERUSER, NOCREATEDB, NOCREATEROLE |
+| database | `sc_platform_control`, owner `sc_platform_control_app`, UTF8 from `template0` |
+| privileges | `REVOKE CONNECT ... FROM PUBLIC`; CONNECT granted only to the application role |
+| stored settings | `ODOO_DBFILTER=^sc_platform_control$`, `LIST_DB=false`, `NGINX_PORT=18082`, `ODOO_PORT=18083` |
+
+Receipt: `.runtime/final-acceptance/daily-deployed/database-duty-apply-platform_control.json`
+(declaration digest `c4afe125…`, apply plan digest `51ffaea3…`, compose `1a5ca02d…`). An out-of-band read-only
+probe — not the entry's own report — re-read the container labels, mount, `datacl` (`PUBLIC` holds TEMP but not
+CONNECT), `pg_roles` attributes and the application role's ability to connect, and agreed on every point.
+
+Only the `db` service of this duty stack was started (by design). `sc_platform_control` is **not** initialized:
+it carries no module and no tenant registry, and no Odoo instance serves it, so it cannot serve the
+platform-admin entry yet.
+
+### Step C-2 — `sc_tenant_baosheng_dev` created
+
+| Fact | Observed |
+|---|---|
+| compose project / container | `sc-tenant-baosheng-dev` / `sc-tenant-baosheng-dev-db-1` |
+| data volume | `sc_tenant_baosheng_dev_db_data` |
+| cluster system identifier | `7696799327921901606` |
+| application role | `sc_tenant_baosheng_dev_app` — LOGIN, NOSUPERUSER, NOCREATEDB, NOCREATEROLE |
+| database | `sc_tenant_baosheng_dev`, owner `sc_tenant_baosheng_dev_app` |
+| privileges | `REVOKE CONNECT ... FROM PUBLIC`; CONNECT granted only to the application role |
+| stored settings | `ODOO_DBFILTER=^sc_tenant_baosheng_dev$`, `LIST_DB=false`, `NGINX_PORT=18090`, `ODOO_PORT=18091` |
+| storage namespace | filestore `sc_tenant_baosheng_dev`, session `sc_tenant_baosheng_dev`, backup `/data/backups/daily-tenant-baosheng-dev` |
+
+Receipt: `.runtime/final-acceptance/daily-deployed/database-duty-apply-customer_tenant_dev.json`
+(apply plan digest `a6bd0df2…`). The existing UAT database was not read, renamed or copied: this duty was
+created empty and its customer addon root is still the empty runtime addon root, so no customer module is
+installed here yet.
+
+`make daily.runtime.routing.inventory` was re-run after both clusters were added and still passes host-wide:
+`one_live_postmaster_per_cluster_data_volume`, `instance_data_volume_distinct`,
+`single_serving_instance_per_database`, `published_host_port_unique` and `retired_stack_is_not_running` are all
+true across 6 instances, and `sc_odoo` / `sc_platform_core` remain the declared unserved databases.
+
+### Step C-3 (partial) — the platform-admin binding is now checked, and the drift is reported not hidden
+
+`VITE_PLATFORM_ADMIN_DB` is a frontend **build-time** value: the duty nginx, the Odoo process and the browser
+never read it. Rendering it into a duty env file would have created a decorative second copy of the platform-admin
+authority that can silently disagree with the bundle users actually load. The entry therefore reads the file the
+frontend build consumed (`frontend_build_env_file`, `/opt/projects/repos/sce-product-odoo/.env.dev`) and reports it
+as a **deployment-wide** fact, judged by its own verdict
+`frontend_build_env_names_the_declared_platform_admin_database`. It is deliberately *not* a per-duty assertion, so
+a duty created exactly as declared is never reported as a failed creation because an explicitly sequenced switch
+is still pending.
+
+The real state is therefore visible rather than smoothed over: the duty plan is **FAIL** with every duty showing
+**zero failed assertions**, and the single failing item is
+
+```
+declared: sc_platform_control
+observed: sc_platform_core   (/opt/projects/repos/sce-product-odoo/.env.dev)
+```
+
+The switch has deliberately **not** been executed, and no two dialects exist today: the host build input and
+`scripts/verify/daily_dev_acceptance_env_guard.py` both still read `sc_platform_core`, so repository and host
+agree, and the disagreement is between the ruled target and the current declaration — reported as a FAIL.
+
+Two reasons the switch waits:
+
+1. It must move the build input, the acceptance declaration and the guards **in one change**, and only the
+   governed frontend build entry rebuilds the served bundle. Flipping the input while the served artifact still
+   inlines the old value would recreate exactly the two-dialect state the owner forbade.
+2. `sc_platform_control` carries no module yet, so it cannot serve the platform-admin entry; the bundle rebuild
+   is what actually moves that entry, and it should move onto a control plane that can answer.
+
+### Status
+
+批次状态：Step A（遗留栈受管退役）、Step B（幸存集群数据健康与恢复验证）与 Step C 的三库身份登记与建设
+已完成到「职责已按声明建成并留证」的程度：`sc_platform_control` 与 `sc_tenant_baosheng_dev` 各自拥有独立
+集群、独立数据卷、独立应用角色、精确 filter、独立路由与存储命名空间，且都通过受管 plan/apply 回执加一次
+带外只读复核确认。`demo` 职责仍按声明的 gap（共享 bootstrap 角色）如实描述，duty 入口不会渲染或重启它。
+
+仍未关闭：控制面尚未初始化（`sc_platform_control` 无模块、无租户登记、无服务实例）；平台管理面权威绑定
+仍需「一次改动」切换到 `sc_platform_control` 并重建已服务的打包产物，切换前 duty plan 会如实 FAIL 在
+这一项上；三库均未做生命周期登记；用户业务库尚未安装产品线与用户模块、尚未执行受管迁移。本批次仍不
+构成主线集成完成、版本发布完成或产品交付完成。
