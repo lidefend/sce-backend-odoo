@@ -24,6 +24,7 @@ from scripts.audit.verification_lane_coverage import (
     cmd_register,
     cmd_register_batch,
     cmd_unregister_script,
+    cmd_unregister_target,
     is_prose,
     missing_asset_state,
     compare,
@@ -826,6 +827,56 @@ class UnregisterScriptTest(unittest.TestCase):
         doc = json.loads(dispositions.read_text(encoding="utf-8"))
         self.assertIn("scripts/dead.sh", doc["scripts"])
 
+
+
+class UnregisterTargetTest(unittest.TestCase):
+    """The target half of the registry has its own removal path, with the same rules."""
+
+    def test_missing_reason_is_rejected(self) -> None:
+        self.assertEqual(
+            cmd_unregister_target(ROOT, Path("/nonexistent/d.json"), "dead.target", "  "), 2
+        )
+
+    def test_a_still_zero_reference_target_cannot_be_unregistered(self) -> None:
+        # Removing the record of a genuinely dead target would delete a true
+        # statement, so the command refuses (exit 3) and writes nothing.
+        root = _temp_repo_with_one_dead_target()
+        dispositions = root / "d.json"
+        dispositions.write_text(
+            json.dumps({"schema_version": "v1", "targets": {
+                "dead.target": {"disposition": "diagnostic_cli", "owner": "o",
+                                "reason": "r"}}, "scripts": {}}),
+            encoding="utf-8",
+        )
+        self.assertEqual(
+            cmd_unregister_target(root, dispositions, "dead.target", "no longer true"), 3
+        )
+        doc = json.loads(dispositions.read_text(encoding="utf-8"))
+        self.assertIn("dead.target", doc["targets"])
+
+    def test_a_target_something_else_now_names_is_removed(self) -> None:
+        # The defect this locks: the registry could register a target but never
+        # retire the record, so a target that later became referenced left a
+        # stale entry that failed --check with no governed way to clear it.
+        root = _temp_repo_with_one_dead_target()
+        (root / "consumer.py").write_text("TARGET = \"dead.target\"\n", encoding="utf-8")
+        subprocess.run(["git", "add", "-A"], cwd=root, check=True)
+        subprocess.run(
+            ["git", "-c", "user.email=a@b", "-c", "user.name=t", "commit", "-qm", "y"],
+            cwd=root, check=True,
+        )
+        dispositions = root / "d.json"
+        dispositions.write_text(
+            json.dumps({"schema_version": "v1", "targets": {
+                "dead.target": {"disposition": "diagnostic_cli", "owner": "o",
+                                "reason": "r"}}, "scripts": {}}),
+            encoding="utf-8",
+        )
+        self.assertEqual(
+            cmd_unregister_target(root, dispositions, "dead.target", "now named elsewhere"), 0
+        )
+        doc = json.loads(dispositions.read_text(encoding="utf-8"))
+        self.assertNotIn("dead.target", doc["targets"])
 
 
 if __name__ == "__main__":

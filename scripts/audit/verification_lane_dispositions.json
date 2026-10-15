@@ -307,6 +307,86 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/ops/daily_candidate_data_sentinel_runbook_v1.md。登记待接线或退役，B3 按族处理。"
     },
+    "daily.runtime.database.duty.apply": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "日常 duty 运维入口：需要在 duty 主机上以真实凭据串行执行（远程安装/计划/执行/回读），没有任何自动化通道可以消费它，按 make 的公开入口由运行手册驱动。"
+    },
+    "daily.runtime.database.duty.initialize": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "日常 duty 运维入口：需要在 duty 主机上以真实凭据串行执行（远程安装/计划/执行/回读），没有任何自动化通道可以消费它，按 make 的公开入口由运行手册驱动。"
+    },
+    "daily.runtime.database.duty.plan": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "日常 duty 运维入口：需要在 duty 主机上以真实凭据串行执行（远程安装/计划/执行/回读），没有任何自动化通道可以消费它，按 make 的公开入口由运行手册驱动。"
+    },
+    "daily.runtime.duty.database_registration.remote_readback": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "日常 duty 运维入口：需要在 duty 主机上以真实凭据串行执行（远程安装/计划/执行/回读），没有任何自动化通道可以消费它，按 make 的公开入口由运行手册驱动。"
+    },
+    "daily.runtime.duty.database_registration.remote_register": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "日常 duty 运维入口：需要在 duty 主机上以真实凭据串行执行（远程安装/计划/执行/回读），没有任何自动化通道可以消费它，按 make 的公开入口由运行手册驱动。"
+    },
+    "daily.runtime.duty.operator_grant.remote_grant": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "日常 duty 运维入口：需要在 duty 主机上以真实凭据串行执行（远程安装/计划/执行/回读），没有任何自动化通道可以消费它，按 make 的公开入口由运行手册驱动。"
+    },
+    "daily.runtime.duty.operator_grant.remote_provision": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "日常 duty 运维入口：需要在 duty 主机上以真实凭据串行执行（远程安装/计划/执行/回读），没有任何自动化通道可以消费它，按 make 的公开入口由运行手册驱动。"
+    },
+    "daily.runtime.duty.operator_grant.remote_readback": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "日常 duty 运维入口：需要在 duty 主机上以真实凭据串行执行（远程安装/计划/执行/回读），没有任何自动化通道可以消费它，按 make 的公开入口由运行手册驱动。"
+    },
+    "daily.runtime.duty.operator_grant.remote_revoke": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "日常 duty 运维入口：需要在 duty 主机上以真实凭据串行执行（远程安装/计划/执行/回读），没有任何自动化通道可以消费它，按 make 的公开入口由运行手册驱动。"
+    },
+    "daily.runtime.duty.payload.remote_import": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "日常 duty 运维入口：需要在 duty 主机上以真实凭据串行执行（远程安装/计划/执行/回读），没有任何自动化通道可以消费它，按 make 的公开入口由运行手册驱动。"
+    },
+    "daily.runtime.duty.payload.remote_plan": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "日常 duty 运维入口：需要在 duty 主机上以真实凭据串行执行（远程安装/计划/执行/回读），没有任何自动化通道可以消费它，按 make 的公开入口由运行手册驱动。"
+    },
+    "daily.runtime.duty.payload.remote_verify": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "日常 duty 运维入口：需要在 duty 主机上以真实凭据串行执行（远程安装/计划/执行/回读），没有任何自动化通道可以消费它，按 make 的公开入口由运行手册驱动。"
+    },
+    "daily.runtime.legacy_stack.retire.apply": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "遗留 db/redis 栈的受管退役入口（plan/apply），只在日常服务器上经确认后执行，无自动化通道消费。"
+    },
+    "daily.runtime.legacy_stack.retire.plan": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "遗留 db/redis 栈的受管退役入口（plan/apply），只在日常服务器上经确认后执行，无自动化通道消费。"
+    },
+    "daily.runtime.tenant.addons.deliver": {
+      "disposition": "tenant_runbook",
+      "owner": "platform-team",
+      "reason": "客户租户用户模块的安装/交付入口，按租户逐个执行，属租户运行手册而非自动化 lane。"
+    },
+    "daily.runtime.tenant.addons.plan": {
+      "disposition": "tenant_runbook",
+      "owner": "platform-team",
+      "reason": "客户租户用户模块的安装/交付入口，按租户逐个执行，属租户运行手册而非自动化 lane。"
+    },
     "db.branch": {
       "disposition": "ops_runbook",
       "owner": "platform-team",
@@ -1907,11 +1987,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/ops/tenant_payload_v1_spec.md。登记待接线或退役，B3 按族处理。"
     },
-    "tenant.payload.operator.grant": {
-      "disposition": "tenant_runbook",
-      "owner": "platform-team",
-      "reason": "租户负载安装/恢复/演练运行手册。"
-    },
     "tenant.payload.plan": {
       "disposition": "tenant_runbook",
       "owner": "platform-team",
@@ -2276,6 +2351,31 @@
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/product/formal_field_stabilization_plan_v1.md。登记待接线或退役，B3 按族处理。"
+    },
+    "verify.daily.duty.database_registration": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "duty 家族的聚焦验证入口（本地单测/ORM），需要本地 duty 环境或数据库，未接入任何自动化 lane；由本轮运行记录手工调用并留证。"
+    },
+    "verify.daily.duty.edition_release": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "duty 家族的聚焦验证入口（本地单测/ORM），需要本地 duty 环境或数据库，未接入任何自动化 lane；由本轮运行记录手工调用并留证。"
+    },
+    "verify.daily.duty.operator_grant": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "duty 家族的聚焦验证入口（本地单测/ORM），需要本地 duty 环境或数据库，未接入任何自动化 lane；由本轮运行记录手工调用并留证。"
+    },
+    "verify.daily.duty.payload": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "duty 家族的聚焦验证入口（本地单测/ORM），需要本地 duty 环境或数据库，未接入任何自动化 lane；由本轮运行记录手工调用并留证。"
+    },
+    "verify.daily.duty.recovery": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "duty 家族的聚焦验证入口（本地单测/ORM），需要本地 duty 环境或数据库，未接入任何自动化 lane；由本轮运行记录手工调用并留证。"
     },
     "verify.daily_dev.acceptance_fixture.unit": {
       "disposition": "history_probe_runbook",
@@ -3682,6 +3782,21 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
+    "verify.smart_core.platform_maintenance_access.orm": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "duty 家族的聚焦验证入口（本地单测/ORM），需要本地 duty 环境或数据库，未接入任何自动化 lane；由本轮运行记录手工调用并留证。"
+    },
+    "verify.smart_core.tenant_payload_operator.orm": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "duty 家族的聚焦验证入口（本地单测/ORM），需要本地 duty 环境或数据库，未接入任何自动化 lane；由本轮运行记录手工调用并留证。"
+    },
+    "verify.smart_core.tenant_payload_operator.policy": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "duty 家族的聚焦验证入口（本地单测/ORM），需要本地 duty 环境或数据库，未接入任何自动化 lane；由本轮运行记录手工调用并留证。"
+    },
     "verify.sprint.week1.audit.report": {
       "disposition": "candidate",
       "owner": "platform-team",
@@ -4345,6 +4460,7 @@
         "scripts/ops/daily_candidate_clone_upgrade_contract_v1.js",
         "scripts/ops/daily_candidate_data_continuity_contract_v1.js",
         "scripts/ops/daily_candidate_data_sentinel_contract_v1.js",
+        "scripts/ops/daily_runtime_tenant_recovery_contract_v1.js",
         "scripts/ops/production_acceptance_contract_v1.js",
         "scripts/ops/production_acceptance_package_v1.sh"
       ],

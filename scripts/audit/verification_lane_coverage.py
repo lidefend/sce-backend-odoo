@@ -1491,6 +1491,43 @@ def cmd_unregister_script(root: Path, dispositions_path: Path, script: str, reas
     return 0
 
 
+def cmd_unregister_target(
+    root: Path, dispositions_path: Path, target: str, reason: str
+) -> int:
+    """Remove a target registration that has stopped being true.
+
+    The mirror of :func:`cmd_unregister_script` for the target half, which had
+    no removal path: a target could be registered but never retired from the
+    registry.  A registration says "this make target is dead surface with an
+    owner"; once something else names the target the statement is false, and
+    ``--check`` fails on the stale entry.  The removal is argued too - it needs
+    a reason and refuses while the target is still zero-reference, so the
+    registry cannot be emptied to silence a real finding.
+    """
+    if not _require_reason(reason):
+        return 2
+    result = measure(root, DEFAULT_EXEMPTIONS, dispositions_path)
+    dead = set(result["targets_zero_reference"])
+    if target in dead:
+        print(f"[verification-lane-coverage] refusing: '{target}' is still zero-reference; "
+              "wire it or retire it, do not unregister a true statement")
+        return 3
+    doc = {"schema_version": "verification-lane-dispositions/v1", "targets": {}, "scripts": {}}
+    if dispositions_path.exists():
+        doc = json.loads(dispositions_path.read_text(encoding="utf-8"))
+    targets = doc.setdefault("targets", {})
+    if target not in targets:
+        print(f"[verification-lane-coverage] '{target}' is not registered")
+        return 3
+    del targets[target]
+    doc["targets"] = dict(sorted(targets.items()))
+    dispositions_path.write_text(
+        json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    print(f"[verification-lane-coverage] unregistered: {target} (reason recorded: {reason.strip()})")
+    return 0
+
+
 def cmd_register(
     root: Path,
     dispositions_path: Path,
@@ -1659,6 +1696,11 @@ def main(argv=None) -> int:
         help="ISO date by which the registered disposition must be revisited",
     )
     parser.add_argument(
+        "--unregister-target",
+        metavar="TARGET",
+        help="remove a target registration whose target is no longer dead surface",
+    )
+    parser.add_argument(
         "--unregister-script",
         metavar="SCRIPT",
         help="remove a script registration that a wiring change made stale",
@@ -1686,6 +1728,10 @@ def main(argv=None) -> int:
 
     root = Path(args.root).resolve()
 
+    if args.unregister_target:
+        return cmd_unregister_target(
+            root, Path(args.dispositions), args.unregister_target, args.reason
+        )
     if args.unregister_script:
         return cmd_unregister_script(
             root, Path(args.dispositions), args.unregister_script, args.reason
