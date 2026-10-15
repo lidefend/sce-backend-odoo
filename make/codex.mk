@@ -1040,6 +1040,41 @@ daily.runtime.database.duty.initialize: guard.prod.forbid verify.daily.runtime.d
 		--report "$(DAILY_RUNTIME_DATABASE_DUTY_INITIALIZE_REPORT)"
 
 
+# The daily runtime serves a customer tenant duty from a *customer* addons tree
+# (P2 content owned by the customer delivery repository), so that tree has to
+# reach the governed daily namespace before any install can be reviewed. This
+# entry delivers one exact customer commit into `/opt/sce/tenant-addons/daily`
+# read-only and content-addressed, and proves the delivered tree equals the
+# archive that was sent. The read-only plan is the default; only `--apply` writes.
+.PHONY: verify.daily.runtime.tenant.addons daily.runtime.tenant.addons.plan daily.runtime.tenant.addons.deliver
+DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY ?=
+DAILY_RUNTIME_TENANT_SHA ?=
+DAILY_RUNTIME_TENANT_ADDONS_REPORT ?= .runtime/final-acceptance/daily-deployed/tenant-addons-delivery.json
+
+verify.daily.runtime.tenant.addons: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_tenant_addons_deliver.py scripts/ops/test_daily_runtime_tenant_addons_deliver.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_tenant_addons_deliver
+
+daily.runtime.tenant.addons.plan: guard.prod.forbid verify.daily.runtime.tenant.addons
+	@test -n "$(DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY)" || { echo "DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY is required" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_TENANT_SHA)" || { echo "DAILY_RUNTIME_TENANT_SHA must be the reviewed exact customer commit" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_tenant_addons_deliver.py \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--customer-repository "$(DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY)" \
+		--tenant-sha "$(DAILY_RUNTIME_TENANT_SHA)" \
+		--report "$(DAILY_RUNTIME_TENANT_ADDONS_REPORT)"
+
+daily.runtime.tenant.addons.deliver: guard.prod.forbid verify.daily.runtime.tenant.addons
+	@test -n "$(DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY)" || { echo "DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY is required" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_TENANT_SHA)" || { echo "DAILY_RUNTIME_TENANT_SHA must be the reviewed exact customer commit" >&2; exit 2; }
+	@test "$${SC_CONFIRM_DAILY_RUNTIME_TENANT_ADDONS:-}" = "DELIVER_EXACT_DAILY_RUNTIME_TENANT_ADDONS" || { echo "SC_CONFIRM_DAILY_RUNTIME_TENANT_ADDONS=DELIVER_EXACT_DAILY_RUNTIME_TENANT_ADDONS is required" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_tenant_addons_deliver.py \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--customer-repository "$(DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY)" \
+		--tenant-sha "$(DAILY_RUNTIME_TENANT_SHA)" \
+		--apply \
+		--report "$(DAILY_RUNTIME_TENANT_ADDONS_REPORT)"
+
 # Every declared model is bounded by `user._sc_data_company_ids()`, which reads
 # the declared environment role and `sc.tenant.company.registration`. A business
 # row whose owning company was never registered, or whose model declares that an

@@ -958,3 +958,75 @@ development duty carries no product line, no user module and no migration; `sc_d
 customer tenant volume with demo/test purposes; the three Step B gaps remain preconditions for the
 first write to `sc_odoo` or `sc_platform_core`. **This is 批次验收完成 for the control-plane slice. It is
 not 主线集成完成, 版本发布完成 or 产品交付完成.**
+
+## Step D — delivering the customer module tree, and the gap that made it necessary
+
+### The gap Step C left standing
+
+`config/ops/daily_runtime_database_duties.v1.json` declares a `customer_addons_root` for the customer
+tenant duty, and the whole repository carried **no governed entry that could put a customer tree on the
+daily host**. The tree is P2 content owned by the customer delivery repository, so populating it from
+`/opt/projects/repos/sce-product-odoo` would make the product repo the owner of customer content. Step
+C-5 therefore wrote the duty back as `cluster_only` *on purpose*: a served face needs a reviewed
+module source, and no reviewed source existed.
+
+### The entry
+
+`scripts/ops/daily_runtime_tenant_addons_deliver.py` delivers **one exact customer commit's** `addons/`
+tree into `/opt/sce/tenant-addons/daily/<commit>`. It is the daily sibling of the already-registered
+`/opt/sce/tenant-addons/acceptance` namespace and keeps the same shape: one directory per exact
+commit, carrying a `TENANT_SHA` marker, read-only.
+
+Three properties are fail-closed rather than best-effort:
+
+- **Exact source.** The source must be one commit of a *clean* worktree. A branch name, a dirty tree or
+  an unreadable commit is a stop, because "what we installed" has to survive as an identity that can be
+  rebuilt later.
+- **Write-once, content-addressed.** A destination that already carries the same marker and content is
+  an idempotent no-op (`writes: 0`); a destination with a different identity is a stop, never an
+  overwrite, so a released tree cannot be silently replaced under a duty already serving from it.
+- **One digest implementation.** The tree digest computed inside the destination must equal the digest
+  of the archive that was sent, and both sides run the *same* reviewed implementation
+  (`TREE_DIGEST_SOURCE`), so "the host has the reviewed tree" is a measurement, not an assumption. It
+  ignores `__pycache__`, `*.pyc` and the `TENANT_SHA` marker itself.
+
+`make/codex.mk` carries three entries: `verify.daily.runtime.tenant.addons` (py_compile + unit tests),
+`daily.runtime.tenant.addons.plan` (read-only) and `daily.runtime.tenant.addons.deliver` (`--apply`,
+guarded by `SC_CONFIRM_DAILY_RUNTIME_TENANT_ADDONS=DELIVER_EXACT_DAILY_RUNTIME_TENANT_ADDONS`).
+
+### The delivery
+
+```
+SC_CONFIRM_DAILY_RUNTIME_TENANT_ADDONS=DELIVER_EXACT_DAILY_RUNTIME_TENANT_ADDONS \
+make daily.runtime.tenant.addons.deliver \
+  DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY=/home/lidefend/workspace/sce-customer-baosheng-odoo \
+  DAILY_RUNTIME_TENANT_SHA=bfbc736c51d987777b50c465261ece1d8d22f008
+```
+
+```
+PASS  mode=apply
+path    /opt/sce/tenant-addons/daily/bfbc736c51d987777b50c465261ece1d8d22f008
+digest  e0a3210da88ea49b1af16d6c037081289a97a39f7fb602d67192c25bf67dd7a6
+modules sce_customer_baosheng
+        sce_customer_baosheng_core035_mvp
+        sce_customer_baosheng_history_attachments
+        sce_customer_baosheng_legacy
+```
+
+A read-only `plan` against the same commit now reports `PASS` with the same digest and the same four
+modules, and the destination's writable-path set is empty. The `plan` run against `40b67f99…` earlier
+was a report-layer readback of a *different* tree and never wrote anything.
+
+Unit verification: `make verify.daily.runtime.tenant.addons` — **21 tests OK** (source validation,
+archive module set, digest ignore/change, the remote program reusing the same digest implementation,
+six verdict counter-examples, and the command layer).
+
+### What this does **not** close
+
+The delivered tree is a **source identity only**. The customer duty is still `cluster_only`: no product
+line, no customer user module and no governed migration have run. `sc_demo` still mixes the customer
+tenant volume with demo/test purposes, no duty has a platform-model lifecycle registration, and the
+Step B gaps remain preconditions for the first write to `sc_odoo` or `sc_platform_core`.
+
+**This is 批次验收完成 for the tenant-addons delivery slice. It is not 主线集成完成, 版本发布完成 or
+产品交付完成.**

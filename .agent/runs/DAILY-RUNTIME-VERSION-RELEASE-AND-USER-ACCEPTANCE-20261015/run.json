@@ -23,7 +23,7 @@
   },
   "baseline_sha": "10bf72ef4bb060556bd2844598b58f9806392d34",
   "blockers": [
-    "The customer development duty exists (sc_tenant_baosheng_dev with role sc_tenant_baosheng_dev_app, exact filter ^sc_tenant_baosheng_dev$, route 18090, own cluster and volume) and its declaration deliberately carries a cluster_only face, but the product line and the customer user module are not installed and no governed migration has run. Existing UAT stays separate and its data is not authorized for copy; the source mapping and the versioned migration belong to the customer module.",
+    "The customer development duty exists (sc_tenant_baosheng_dev with role sc_tenant_baosheng_dev_app, exact filter ^sc_tenant_baosheng_dev$, route 18090, own cluster and volume) and its reviewed customer addons tree is now delivered read-only to /opt/sce/tenant-addons/daily/bfbc736c51d987777b50c465261ece1d8d22f008, but its declaration still carries a cluster_only face: the product line, the customer user module and the governed migration have not run. Existing UAT stays separate and its data is not authorized for copy; the source mapping and the versioned migration belong to the customer module.",
     "sc_demo mixes the customer tenant volume with demo/test purposes, so 'the demo database' is not yet a pure demo database; the destination of the company-1 volume is unresolved, and the demo duty is still declared with the shared-bootstrap-role gap and has no dedicated application role.",
     "No duty has a platform-model lifecycle registration yet: the platform model owns registration and the platform-database lifecycle adapter still lacks a governed runtime binding for the daily profile, so no governed entry can register, suspend or resume a daily database. The duty declaration in config/ops/daily_runtime_database_duties.v1.json is the ops-side authority, not the platform-side registration.",
     "The three declared Step B gaps stay preconditions for the first write to sc_odoo or sc_platform_core: the cluster reports data_checksums=off, no amcheck index verification has run, and neither database has a paired recovery point. sc_platform_control is a fresh cluster and inherited data_checksums=off; enabling checksums would need a rebuild, so the decision is recorded rather than assumed.",
@@ -99,7 +99,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "Steps A, B and the three-database build of C are closed. The legacy two-writer stack is retired with a refusal guard, the surviving dev cluster passed the data-health and recovery verification, both ruled duties exist as governed clusters with their own role, database, exact filter, route and storage namespace, and the platform control plane is now initialized and served (sc_platform_control, kernel smart_core only, role sc_platform_control_app, route 18082): phase initialize reported initialize.returncode=0, route.returncode=0, declared_services_are_running, declared_modules_are_installed, no_undeclared_service_is_running and platform_control_face_carries_no_industry_module all passing, and application_role_can_create_in_its_public_schema=true after the entry was fixed to state the application's public-schema access explicitly instead of relying on the PostgreSQL 15 pg_database_owner mechanism this cluster does not grant. The platform-admin authority switched in one change: VITE_PLATFORM_ADMIN_DB in the served build input, scripts/verify/daily_dev_acceptance_env_guard.py, scripts/dev/local_sample_env_prepare.sh and the topology inventory now name sc_platform_control, the governed frontend build rewrote and verified that build input and proved the built bundle actually bakes the declared database (platform_admin_baked=true), and the read-only duty plan now reports status PASS with every duty and the deployment-wide binding passing. Next, in order: (1) register the duties through the governed platform-database lifecycle adapter once it has its daily runtime binding; (2) Step D, the user module migration into sc_tenant_baosheng_dev from the customer repository, which owns the source mapping and the versioned migration, and which needs the tenant duty's served face (odoo service plus the declared product-line module set) to exist before an install can be proven; (3) Step E unified onboarding plus isolation verification; (4) Step F product acceptance.",
+  "next_exact_step": "Steps A, B, C and the Step D tenant-addons delivery are closed. The legacy two-writer stack is retired with a refusal guard, the surviving dev cluster passed data-health and recovery verification, both ruled duties exist as governed clusters (sc_platform_control served on 18082 with role sc_platform_control_app and kernel smart_core only; sc_tenant_baosheng_dev on 18090 with role sc_tenant_baosheng_dev_app, exact filter ^sc_tenant_baosheng_dev$, own cluster and volume), the platform-admin authority now names sc_platform_control end to end, the read-only duty plan reports PASS for every duty and the deployment-wide binding, and the reviewed customer commit bfbc736c51d987777b50c465261ece1d8d22f008 is delivered read-only to /opt/sce/tenant-addons/daily/bfbc736c51d987777b50c465261ece1d8d22f008 (digest e0a3210da88ea49b1af16d6c037081289a97a39f7fb602d67192c25bf67dd7a6, four modules, writable_paths empty) through the new governed entry. Next, in order: (1) move customer_tenant_dev.custody.service_face from cluster_only to a served face that declares the product-line module set and this exact customer_addons_root, then run the governed duty initialize for that duty only; (2) Step D proper, the user module migration into sc_tenant_baosheng_dev driven by the customer module's own source mapping and versioned migration, with the payload first validated and planned (source payload v10 full historical attachments, historical_payment_migration_policy.expected_records=12386), never defaulting ownership and never copying UAT data; (3) Step E unified onboarding plus isolation verification; (4) Step F product acceptance, recomputing only the affected set.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "schema_version": 1,
   "scope": [
@@ -199,6 +199,7 @@
     "scripts/ops/daily_runtime_frontend_build_align.py",
     "scripts/ops/daily_runtime_legacy_stack_retire.py",
     "scripts/ops/daily_runtime_routing_inventory.py",
+    "scripts/ops/daily_runtime_tenant_addons_deliver.py",
     "scripts/ops/daily_runtime_tenant_topology_inventory.py",
     "scripts/ops/daily_runtime_three_database_closure.py",
     "scripts/ops/dev_acceptance_release_probe.py",
@@ -215,6 +216,7 @@
     "scripts/ops/test_daily_runtime_frontend_build_align.py",
     "scripts/ops/test_daily_runtime_legacy_stack_retire.py",
     "scripts/ops/test_daily_runtime_routing_inventory.py",
+    "scripts/ops/test_daily_runtime_tenant_addons_deliver.py",
     "scripts/ops/test_daily_runtime_tenant_topology_inventory.py",
     "scripts/ops/test_daily_runtime_three_database_closure.py",
     "scripts/ops/test_safe_worktree_cleanup.py",
@@ -2017,5 +2019,28 @@
       "routing": "make daily.runtime.routing.inventory - status PASS, failed_assertions [], 7 instances, one live postmaster per cluster data volume"
     },
     "not_a_pass": "The initialize receipt's overall status is FAIL only because the deployment-wide binding was still on the old database at that moment; that binding was switched and proven afterwards, and the plan now reports PASS. Nothing about the control plane itself failed."
+  },
+  "step_four_customer_module_delivery_20261015": {
+    "case": "The customer duty declaration pointed at a customer addons root, and no governed entry could populate it, so 'install the user module' had no reviewed source.",
+    "gap": "config/ops/daily_runtime_database_duties.v1.json declares customer_addons_root for the customer tenant duty, yet the whole repository carried no entry that delivers a customer tree to the daily host. That tree is P2 content owned by the customer delivery repository, so the product repository must not be its source.",
+    "fix": "New governed entry scripts/ops/daily_runtime_tenant_addons_deliver.py delivers one exact customer commit's addons/ tree to /opt/sce/tenant-addons/daily/<commit>, content-addressed and write-once. --apply requires a clean source worktree and one exact commit; a same-identity destination is an idempotent no-op (writes:0) and a different identity is a stop, never an overwrite. One shared tree_digest implementation runs on both the local archive check and the remote readback. make/codex.mk carries verify.daily.runtime.tenant.addons, daily.runtime.tenant.addons.plan (read-only) and daily.runtime.tenant.addons.deliver, with confirmation token DELIVER_EXACT_DAILY_RUNTIME_TENANT_ADDONS in SC_CONFIRM_DAILY_RUNTIME_TENANT_ADDONS.",
+    "delivered": {
+      "customer_repository": "/home/lidefend/workspace/sce-customer-baosheng-odoo",
+      "tenant_sha": "bfbc736c51d987777b50c465261ece1d8d22f008",
+      "destination": "/opt/sce/tenant-addons/daily/bfbc736c51d987777b50c465261ece1d8d22f008",
+      "digest": "e0a3210da88ea49b1af16d6c037081289a97a39f7fb602d67192c25bf67dd7a6",
+      "modules": [
+        "sce_customer_baosheng",
+        "sce_customer_baosheng_core035_mvp",
+        "sce_customer_baosheng_history_attachments",
+        "sce_customer_baosheng_legacy"
+      ],
+      "writable_paths": []
+    },
+    "verification": {
+      "unit": "make verify.daily.runtime.tenant.addons - 21 tests OK",
+      "plan": "make daily.runtime.tenant.addons.plan (bfbc736) - PASS, mode=report, digest e0a3210d..., four modules, destination read-only"
+    },
+    "not_a_pass": "The delivered tree is a source identity only. The customer duty is still cluster_only: no product line, no customer user module and no governed migration have run. This is 批次验收完成 for the tenant-addons delivery slice, not for Step D."
   }
 }
