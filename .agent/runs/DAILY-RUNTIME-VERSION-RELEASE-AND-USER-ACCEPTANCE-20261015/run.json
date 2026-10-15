@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "branch": "release/daily-runtime-version-release-20261015",
+  "branch": "fix/data-ownership-visibility-recovery-20261015",
   "status": "active",
-  "baseline_sha": "ba7577c212b81468491942e972ea28bd64345ebd",
+  "baseline_sha": "10bf72ef4bb060556bd2844598b58f9806392d34",
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "scope": [
@@ -97,7 +97,31 @@
     "docs/ops/codex_execution_allowlist.md",
     "docs/engineering_convergence/split_plan_queue.md",
     "scripts/ops/archive_worktree_delivery_evidence.py",
-    "scripts/ops/test_safe_worktree_cleanup.py"
+    "scripts/ops/test_safe_worktree_cleanup.py",
+    "make/codex.mk",
+    "scripts/ops/daily_runtime_data_ownership_probe.py",
+    "scripts/ops/test_daily_runtime_data_ownership_probe.py",
+    "scripts/ops/daily_runtime_data_ownership_repair_plan.py",
+    "scripts/ops/test_daily_runtime_data_ownership_repair_plan.py",
+    "scripts/verify/data_scope_declarations.json",
+    "scripts/verify/sc_data_scope_ceiling_generate.py",
+    "scripts/verify/test_sc_data_scope_ceiling_generate.py",
+    "scripts/verify/sc_data_scope_rule_coverage_guard.py",
+    "scripts/verify/test_sc_data_scope_rule_coverage_guard.py",
+    "addons/smart_construction_core/services/business_data_ownership.py",
+    "addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml",
+    "addons/smart_construction_core/security/sc_record_rules.xml",
+    "addons/smart_construction_core/data/tenant/scoped_business_models.v1.json",
+    "addons/smart_construction_core/migrations/",
+    "docs/ops/iterations/",
+    "docs/ops/user_data_production_boundary_v1.md",
+    "docs/governance/database_architecture_policy.md",
+    "scripts/ops/daily_runtime_database_identity_inventory.py",
+    "scripts/ops/test_daily_runtime_database_identity_inventory.py",
+    "scripts/ops/daily_runtime_three_database_closure.py",
+    "scripts/ops/test_daily_runtime_three_database_closure.py",
+    "scripts/ops/daily_runtime_tenant_topology_inventory.py",
+    "scripts/ops/test_daily_runtime_tenant_topology_inventory.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -167,10 +191,13 @@
     }
   },
   "blockers": [
-    "Frozen exact-head Quick, final identity-bound review and required remote checks remain pending.",
-    "Daily target deployment and complete user product acceptance remain pending; local demo sample read is not full product delivery."
+    "No recovery point has been taken and verified for the databases and filestore that the three-database closure will touch.",
+    "The customer development database has no confirmed target identity (role, exact filter, filestore, tenant key); it must not be presumed.",
+    "sc_demo mixes the customer tenant volume with demo/test purposes, so 'the demo database' is not yet a pure demo database.",
+    "The only login role is the superuser/createdb role 'odoo'; per-database tenant roles and credentials do not exist yet, and new credential authority requires separately authorized P4 work.",
+    "Frozen exact-head Quick, final identity-bound review and required remote checks remain pending."
   ],
-  "next_exact_step": "Commit bounded archive adapter, run final exact-head Quick, archive nonvisual evidence and publish GitHub PR via Make; no runtime replay.",
+  "next_exact_step": "Align with the user-module executor on customer source mapping and versioned migration, then prepare and verify a recovery point for the affected databases and filestore, then bind the three duties (platform control, demo, customer development) with exact role/filter/filestore identity before the first database write.",
   "takeover_20261015": {
     "head": "e12e75eaa5bdcfe5b01dfe14b89cb201fac60023",
     "dirty_paths": [
@@ -191,7 +218,7 @@
     "single_writer": "root; B read-only review",
     "validation_order": "L1 scope/syntax; exact nonzero L2; governed affected L3/L4 only once prerequisites pass",
     "existing_changes": "Preserve and inspect in-place; not frozen; no blanket reset",
-    "scope_limit": "No new database/profile/credentials or frontend semantics; no publication with known blockers",
+    "scope_limit": "No frontend semantics. The earlier 'no new database/profile/credentials' limit is superseded for the daily development server only by the owner's 2026-10-15 three-database authorization: build the platform control / demo / one customer development database duties there, reusing existing databases and governed entries. No formal production release this round; production databases, ports and volumes remain out of scope.",
     "audit_readback_slice": {
       "owner": "P0 platform_database_registry",
       "reason": "readback produced before audit insert and last_operation update; from_state context lost",
@@ -494,6 +521,44 @@
         "log": "/tmp/sce-s70-receipt-chain.log",
         "recovery": "Replaced incorrect outgoing-payment treasury assumption with dedicated 1200000 receipt request, actual approval/received action and native receipt treasury backlink. Prior S10 request unchanged.",
         "prior_failure": "/tmp/sce-closure-s70_daily_business_surface.log"
+      },
+      {
+        "layer": "L2",
+        "command": "make verify.daily.runtime.data_ownership.probe",
+        "status": "passed",
+        "tests": 18,
+        "identity": "HEAD 10bf72ef plus the recorded dirty scope",
+        "coverage": "Ownership measurement unit tests, including the new anchor-decomposition, dotted-leaf translation and archived-only buckets, and a regression for the principal-measurement shadowing defect."
+      },
+      {
+        "layer": "L2",
+        "command": "make verify.daily.runtime.database.identity.inventory",
+        "status": "passed",
+        "tests": 12,
+        "coverage": "Cluster identity inventory unit tests."
+      },
+      {
+        "layer": "L2",
+        "command": "make verify.daily.runtime.tenant.topology.inventory",
+        "status": "passed",
+        "tests": 13,
+        "coverage": "Tenant topology unit tests: duty-separation invariants, unregistered owning company, two volume carriers, industry revision drift and read-only."
+      },
+      {
+        "layer": "L3",
+        "command": "make daily.runtime.data_ownership.probe DAILY_RUNTIME_EXPECTED_SHA=10bf72ef4bb060556bd2844598b58f9806392d34",
+        "status": "passed",
+        "read_only": true,
+        "report": ".runtime/final-acceptance/daily-deployed/data-ownership-probe.json",
+        "coverage": "175/175 declared models scanned on sc_demo; 10/10 assertions; unset_owner_rows 76521 (active universe 76112), visibility_loss 50284, shared_visible 26237, not-measured 0."
+      },
+      {
+        "layer": "L3",
+        "command": "make daily.runtime.tenant.topology.inventory DAILY_RUNTIME_EXPECTED_SHA=10bf72ef4bb060556bd2844598b58f9806392d34",
+        "status": "passed",
+        "read_only": true,
+        "report": ".runtime/final-acceptance/daily-deployed/tenant-topology-inventory.json",
+        "coverage": "Three databases reachable; sc_demo is the single business volume carrier (60715 rows); sc_platform_core is kernel-only; every owning company registered; industry revision aligned."
       }
     ],
     "independent_reviews": {
@@ -1210,6 +1275,162 @@
         "status": "passed",
         "log": "/tmp/sce-integration-archive-freeze.log"
       }
+    },
+    "rebind": {
+      "from_branch": "release/daily-runtime-version-release-20261015",
+      "to_branch": "fix/data-ownership-visibility-recovery-20261015",
+      "authority": "owner instruction 2026-10-15: continue the same run and evidence index for historical data ownership and visibility recovery",
+      "baseline_sha": "10bf72ef4bb060556bd2844598b58f9806392d34"
+    },
+    "data_ownership_recovery": {
+      "layer": "P0 ownership mechanism + P1 industry ownership semantics + P4 inventory/repair orchestration",
+      "authority": "owner rulings 2026-10-15: the 50,284 empty-ownership rows are unresolved historical attribution, neither proven-hidden nor auto-assigned to the current company; the user module must follow the product and the data must be repaired; administrators may not bypass row rules to read customer business data",
+      "scope_of_this_round": "read-only observation, per-model ownership semantic ruling, a read-only ownership plan, and the governed repair entry; no business-row write until the plan binds an exact target, basis set and rollback",
+      "not_authorized_here": [
+        "laxer record rules or an owner-default that marks unresolved rows public",
+        "bulk assignment of every empty owner to the current environment company",
+        "reading customer business rows through administrator or superuser bypass",
+        "new environment, database, port, volume or credential authority"
+      ],
+      "no_tenant_target": "No customer tenant database has a confirmed target identity; only read-only registry/deployment inspection is allowed until one is confirmed"
+    },
+    "no_tenant_target": "Resolved for the daily server, not for production: the customer tenant volume currently lives inside sc_demo (company 1, 48,496 owned rows plus 12,194 unowned payment.ledger rows) while that company's registration declares data_purpose='demo'. No production customer tenant target identity exists and none may be presumed.",
+    "three_database_closure": {
+      "authority": "Owner ruling 2026-10-15: on the daily development server, separate the duties of the platform control database, the demo database and one customer development business database, unify the onboarding mechanism across demo and customer tenants, and complete product acceptance. Not a formal production release.",
+      "duties": {
+        "platform_control": "tenant registry, routing, authorization and lifecycle; must not store customer business content",
+        "demo": "reuse the existing sc_demo where it is qualified; every row must carry an explicit demo identity",
+        "customer_development": "one database for this user-module customer tenant: product line plus user module, structure aligned, governed migration"
+      },
+      "resolved_targets": {
+        "observed_databases": [
+          "sc_demo",
+          "sc_odoo",
+          "sc_platform_core",
+          "postgres"
+        ],
+        "platform_control_candidate": "sc_platform_core (kernel-only: 64 modules, smart_core 17.0.1.0, no tenant registry, no business rows)",
+        "demo_candidate": "sc_demo (81 modules; carries the customer module and company 1 '四川保盛建设集团有限公司' registered as purpose='demo')",
+        "leftover_candidate": "sc_odoo (11 modules, no product line, no registration, one bootstrap company)",
+        "customer_development": "unbound; must be created through the governed provisioning entry once the customer tenant identity, role and filter are confirmed"
+      },
+      "observed_mixing_findings": [
+        "sc_demo carries the customer tenant volume (company 1: payment.request 34,897, construction.contract 12,672, project.project 927) while that company's registration declares data_purpose='demo'; the name is not evidence of a pure demo database.",
+        "payment.ledger 12,194 rows are owned by no company at all, so they are invisible to every principal.",
+        "sc_platform_core already exists but is not a functioning control plane: older smart_core revision, no sc.tenant.company.registration table.",
+        "the only login role is 'odoo' with superuser and createdb; per-database tenant roles and credentials do not exist yet."
+      ],
+      "sequence": [
+        "L0 identity: probe and database identity inventory (done) plus tenant topology inventory (done)",
+        "L1 recovery point: back up the affected databases and filestore and verify restorability before any write",
+        "L2 provision: create only the missing database, through the governed provisioning entry, with its own role, filter and filestore identity",
+        "L3 unified onboarding: demo and customer tenants share registration, install, routing, authorization, upgrade and lifecycle; differences only through explicit declarations",
+        "L4 user-module migration: handle the upgrade-guard precondition first, then install/upgrade; reconcile counts, amounts, source relations and attachments; never default-fill company; never bypass a business action",
+        "L5 isolation acceptance: connection, routing, session, attachment and business-permission isolation; platform control must not carry customer business read access",
+        "L6 product closure: verify the contract first, then verify the frontend consumes the same instance; re-verify the affected set (menus, forms, payment, contract, project)",
+        "L7 independent review under the same deployment identity, reporting code integration, daily deployment, mechanism acceptance and product acceptance separately"
+      ],
+      "mechanism_invariants": [
+        "a kernel-only database must carry no business rows",
+        "every company that owns business rows must appear in that database's tenant registry with an explicit purpose",
+        "the business volume must have exactly one carrier database",
+        "a shared product line must not be at two revisions across the duties"
+      ],
+      "not_authorized_here": [
+        "assuming a database name proves its contents or its duty",
+        "copying or cleaning sc_demo into the customer database",
+        "granting the demo or platform-control database cross-model write authority to reach a terminal state",
+        "filling an empty company_id during migration",
+        "bypassing a business action or an approval step to reach a target state",
+        "a formal production release, production database, port or volume change"
+      ],
+      "evidence": {
+        "data_ownership_probe": ".runtime/final-acceptance/daily-deployed/data-ownership-probe.json",
+        "database_identity_inventory": ".runtime/final-acceptance/daily-deployed/database-identity-inventory.json",
+        "tenant_topology_inventory": ".runtime/final-acceptance/daily-deployed/tenant-topology-inventory.json",
+        "entries": [
+          "make daily.runtime.data_ownership.probe",
+          "make daily.runtime.database.identity.inventory",
+          "make daily.runtime.tenant.topology.inventory"
+        ]
+      }
+    },
+    "step_one_facts_20261015": {
+      "stage_identity": "HEAD 10bf72ef4bb060556bd2844598b58f9806392d34 with the workspace changes listed in changed_paths; no commit yet",
+      "provenance_split": {
+        "live_account_query": [
+          "175-model ownership scan through the governed odoo.shell.exec carrier on sc_demo",
+          "per-principal effective visibility (search_count under with_user for the three most privileged ordinary internal users)",
+          "cluster catalog, role attributes and configured filestore paths",
+          "per-database module registry, company and tenant registration identity, per-company row counts"
+        ],
+        "repository_source": [
+          "scripts/verify/data_scope_declarations.json as the single declaration source",
+          "the generated ceiling and handwritten rule XML in this checkout"
+        ]
+      },
+      "data_ownership_probe": {
+        "status": "PASS",
+        "assertions": 10,
+        "unset_owner_rows": 76521,
+        "unset_owner_rows_active_universe": 76112,
+        "visibility_loss_rows": 50284,
+        "shared_visible_rows": 26237,
+        "rows_not_measured_against_a_principal": 0,
+        "visibility_loss_by_model": {
+          "payment.ledger": 12194,
+          "payment.ledger.allocation": 12194,
+          "sc.hr.payroll.document": 10960,
+          "sc.document.admin.document": 9274,
+          "sc.dashboard.cockpit.fact": 3750,
+          "sc.office.admin.document": 1912
+        },
+        "shared_visible_by_model": {
+          "sc.treasury.ledger": 18347,
+          "tender.guarantee": 7439,
+          "ui.business.config.contract": 334,
+          "sc.receipt.income": 57,
+          "sc.business.category": 47,
+          "sc.p1.relationship.review.queue": 10,
+          "sc.audit.log": 3
+        },
+        "mechanism_finding": "The probe previously measured the declared anchor with a single (anchor,'=',False) leaf. Odoo translates that leaf to a predicate on the joined segment, so a dotted anchor dropped every row whose head relation is empty even though the installed ceiling rule carries an explicit (head,'=',False) branch. The measurement now decomposes the anchor into head-missing plus joined-owner-null, reconciles that against the raw left-join scan, and records the dotted-leaf translation as a checked fact. The corrected totals reproduce the owner's ruling figures exactly (50,284 / 26,237 / 76,521)."
+      },
+      "database_identity_inventory": {
+        "status": "PASS",
+        "databases": [
+          "postgres",
+          "sc_demo",
+          "sc_odoo",
+          "sc_platform_core"
+        ],
+        "login_roles": [
+          "odoo"
+        ],
+        "superuser_or_createdb_roles": [
+          "odoo"
+        ],
+        "dbfilter": "^sc_demo$",
+        "filestore_namespace_per_database": true
+      },
+      "tenant_topology_inventory": {
+        "status": "PASS",
+        "reachable_databases": [
+          "sc_demo",
+          "sc_odoo",
+          "sc_platform_core"
+        ],
+        "business_volume_carriers": [
+          {
+            "database": "sc_demo",
+            "rows": 60715
+          }
+        ],
+        "platform_only_databases": [
+          "sc_platform_core"
+        ]
+      },
+      "next": "Prepare the recovery point, then bind the platform control, demo and customer development duties before any database write."
     }
   }
 }

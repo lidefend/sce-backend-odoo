@@ -848,6 +848,75 @@ daily.runtime.data_space.onboard: guard.prod.forbid verify.daily.runtime.data_sp
 		--report "$(DAILY_RUNTIME_DATA_SPACE_REPORT)"
 
 
+.PHONY: verify.daily.runtime.database.identity.inventory daily.runtime.database.identity.inventory
+DAILY_RUNTIME_DATABASE_IDENTITY_REPORT ?= .runtime/final-acceptance/daily-deployed/database-identity-inventory.json
+
+verify.daily.runtime.database.identity.inventory: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_database_identity_inventory.py scripts/ops/test_daily_runtime_database_identity_inventory.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_database_identity_inventory
+
+daily.runtime.database.identity.inventory: guard.prod.forbid verify.daily.runtime.database.identity.inventory
+	@test -n "$(DAILY_RUNTIME_EXPECTED_SHA)" || { echo "DAILY_RUNTIME_EXPECTED_SHA must be the deployed runtime source revision" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_database_identity_inventory.py \
+		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
+		--database "$(DAILY_RUNTIME_DATABASE)" \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--report "$(DAILY_RUNTIME_DATABASE_IDENTITY_REPORT)"
+
+
+# The identity inventory answers the cluster question. The tenant topology
+# inventory answers the tenant question: which registration (and declared
+# data purpose) exists in each database, which product-line revision each
+# database has installed, and how many business rows each model carries per
+# owning company -- including rows no company owns. A database *name* is not
+# evidence about what it carries, so this is what the section 11 role binding
+# reads before a database task may write. It also checks two invariants that
+# must hold whatever the operator binds: a kernel-only database carries no
+# business rows, and every company that owns rows is registered with an explicit
+# purpose. Read-only; `--report` only writes a local file.
+.PHONY: verify.daily.runtime.tenant.topology.inventory daily.runtime.tenant.topology.inventory
+DAILY_RUNTIME_TENANT_TOPOLOGY_REPORT ?= .runtime/final-acceptance/daily-deployed/tenant-topology-inventory.json
+DAILY_RUNTIME_TOPOLOGY_DATABASES ?= sc_demo,sc_odoo,sc_platform_core
+
+verify.daily.runtime.tenant.topology.inventory: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_tenant_topology_inventory.py scripts/ops/test_daily_runtime_tenant_topology_inventory.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_tenant_topology_inventory
+
+daily.runtime.tenant.topology.inventory: guard.prod.forbid verify.daily.runtime.tenant.topology.inventory
+	@test -n "$(DAILY_RUNTIME_EXPECTED_SHA)" || { echo "DAILY_RUNTIME_EXPECTED_SHA must be the deployed runtime source revision" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_tenant_topology_inventory.py \
+		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
+		--database "$(DAILY_RUNTIME_DATABASE)" \
+		--databases "$(DAILY_RUNTIME_TOPOLOGY_DATABASES)" \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--report "$(DAILY_RUNTIME_TENANT_TOPOLOGY_REPORT)"
+
+
+# Every declared model is bounded by `user._sc_data_company_ids()`, which reads
+# the declared environment role and `sc.tenant.company.registration`. A business
+# row whose owning company was never registered, or whose model declares that an
+# owner is mandatory, is therefore invisible to *every* principal — including
+# administrators. This entry records that fact read-only through the same
+# governed remote carrier: it scans every declared model, records which rules are
+# actually installed, and asserts the observation against this checkout's
+# declarations. It never writes a business row; `--report` only writes a local
+# file. A zero exit code is not the verdict; the report's `assertions` block is.
+.PHONY: verify.daily.runtime.data_ownership.probe daily.runtime.data_ownership.probe
+DAILY_RUNTIME_DATA_OWNERSHIP_REPORT ?= .runtime/final-acceptance/daily-deployed/data-ownership-probe.json
+
+verify.daily.runtime.data_ownership.probe: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_data_ownership_probe.py scripts/ops/test_daily_runtime_data_ownership_probe.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_data_ownership_probe
+
+daily.runtime.data_ownership.probe: guard.prod.forbid verify.daily.runtime.data_ownership.probe
+	@test -n "$(DAILY_RUNTIME_EXPECTED_SHA)" || { echo "DAILY_RUNTIME_EXPECTED_SHA must be the deployed runtime source revision" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_data_ownership_probe.py \
+		--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)" \
+		--database "$(DAILY_RUNTIME_DATABASE)" \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--report "$(DAILY_RUNTIME_DATA_OWNERSHIP_REPORT)"
+
+
 # The project-lifecycle browser acceptance walks a dedicated fixture carrier from
 # `draft` to its terminal `closed`. That carrier is a row of the existing
 # `daily_dev` acceptance fixture scope, so it is materialised through the same

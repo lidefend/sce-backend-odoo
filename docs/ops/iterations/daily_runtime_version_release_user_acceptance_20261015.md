@@ -295,3 +295,73 @@ Original commands, JSON paths, failure classification and continuation reuse are
 Governed cleanup passed; read-only project-label inventories found no remaining containers, volumes or network. Original evidence remains readable outside removed volumes; private authority is not exported. This closes the isolated physical lifecycle blocker, not real tenant application installation, mainline integration, daily deployment or complete user product acceptance. Candidate remains dirty at e12e75eaa5bdcfe5b01dfe14b89cb201fac60023 pending finalization.
 
 Final source review found three legacy experimental steps still reachable via explicit selection/all, despite exclusion from demo_full. Retired payment_ledger_p1 (SQL approval/private ledger creation), phase2_payment_request_demo and phase2_settlement_order_demo (sudo business creation/arbitrary project fallback), including their source bodies and registration. Formal S69 and demo_full remain unchanged. Focused supplemental tests 30/30 and L1 passed; run records affected keys and original logs. Existing formal-chain runtime evidence is reused, while source inventories are regenerated after deletion. No claim that every historical optional seed or full-profile repeated replay has been accepted.
+
+## Three-database closure on the daily development server — stage identity and step 1
+
+Owner ruling 2026-10-15 extends the goal: on the daily development server, close the duties of the platform
+control database, the demo database and one customer development business database, unify the onboarding
+mechanism across demo and customer tenants, and complete product acceptance. This is not a formal production
+release. The earlier blanket "no new database/profile/credentials" note is superseded for this server only; the
+concrete target identity, recovery conditions and governed entries still have to be established first. The
+authoritative record is run.takeover_20261015.three_database_closure.
+
+### Step 1 mechanism: tenant topology, not just database identity
+
+The database identity inventory answered the cluster question (which databases exist, which role owns them,
+which filestore namespace each resolves to). It deliberately says nothing about what each database carries, and a
+name is not evidence. A new governed read-only entry,
+`make daily.runtime.tenant.topology.inventory`, now answers the tenant question from the runtime itself: per
+database it reads the module registry, the companies, the tenant registrations with their declared
+`data_purpose`, and the per-company row counts for the declared business model set — including rows no company
+owns. It never writes a business row; `--report` writes only a local file.
+
+Two invariants are checked mechanically because they must hold whatever the operator later binds: a database that
+installs the platform kernel without the industry product line must carry no business rows, and every company that
+owns rows must appear in that database's tenant registry with an explicit purpose.
+
+### Step 1 observation (HEAD 10bf72ef, read-only)
+
+- Cluster: `postgres`, `sc_demo`, `sc_odoo`, `sc_platform_core`. The only login role is `odoo`, and it carries both
+  superuser and createdb. Each database resolves to its own filestore namespace. `dbfilter=^sc_demo$`,
+  `list_db=false`.
+- `sc_demo`: 81 installed modules, including `smart_core` 17.0.1.1.14, `smart_construction_core` 17.0.0.171,
+  `smart_construction_custom` 17.0.2.0.0 and the customer module `sce_customer_baosheng` 17.0.2.8.0. Companies:
+  1 四川保盛建设集团有限公司, 2 Demo Secondary Company, 21 FE Company A, 22 FE Company B. Registrations declare
+  company 1 as `demo` and companies 21/22 as `test`.
+- `sc_platform_core`: 64 modules, `smart_core` 17.0.1.0 only, no `sc.tenant.company.registration` table, no
+  business rows. It exists but is not yet a functioning control plane.
+- `sc_odoo`: 11 modules, no product line, no registration, one bootstrap company.
+- Business volume lives in exactly one database. `sc_demo` carries 60,715 rows across the declared set
+  (`payment.request` 34,897 + `construction.contract` 12,672 + `project.project` 927 owned by company 1, 25 rows
+  by companies 21/22, and 12,194 `payment.ledger` rows owned by no company at all).
+
+The decisive fact is a mixing finding, not a naming one: the customer company's real business volume lives inside
+`sc_demo` while that company's registration declares `data_purpose='demo'`. "The demo database" is therefore not
+yet a pure demo database, and the customer development duty has no bound target. Both are recorded as blockers
+rather than resolved by assumption.
+
+### Step 1 correction in the ownership probe (mechanism, not numbers)
+
+The ownership probe previously measured the declared anchor with a single `(anchor, '=', False)` leaf. Odoo
+translates that leaf into a predicate on the joined segment, so for a dotted anchor such as
+`project_id.company_id` every row whose head relation is empty was silently dropped — even though the installed
+ceiling rule carries an explicit `(project_id, '=', False)` branch and therefore treats that row as an unset
+owner. The operative measurement now decomposes the anchor into head-missing plus joined-owner-null, reconciles
+that sum against the raw left-join scan per model, and records the dotted-leaf translation as a checked fact so a
+future engine change is reported rather than absorbed. Per-principal effective visibility uses the same
+two-part set.
+
+The corrected read-only probe reports 10/10 assertions PASS and reproduces the owner's ruling figures exactly:
+`unset_owner_rows` 76,521 (of which 76,112 are in the active universe), `visibility_loss_rows` 50,284,
+`shared_visible_rows` 26,237, and zero rows carried as "not measured against a principal". The visibility loss is
+`payment.ledger` 12,194, `payment.ledger.allocation` 12,194, `sc.hr.payroll.document` 10,960,
+`sc.document.admin.document` 9,274, `sc.dashboard.cockpit.fact` 3,750 and `sc.office.admin.document` 1,912.
+These stay classified as unresolved historical attribution: not proven-hidden, and not auto-assigned.
+
+### Status
+
+Mechanism acceptance for step 1 (identity and tenant topology) is complete at this stage identity. Code
+integration, daily deployment, full mechanism acceptance and product acceptance are all still open, and no
+delivery conclusion is claimed. Next: align with the user-module executor on customer source mapping and
+versioned migration, then prepare and verify a recovery point for the affected databases and filestore, then bind
+the three duties with exact role/filter/filestore identity before the first database write.
