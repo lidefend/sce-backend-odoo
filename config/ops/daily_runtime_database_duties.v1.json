@@ -170,8 +170,7 @@
         "database_present": true,
         "database_role_present": true,
         "role_compliance": "compliant",
-        "service_face": "cluster_only",
-        "service_face_reason": "This duty exists as its own cluster only; the product line and the customer user module are installed into it by the customer module's own governed migration step, not by the duty entry."
+        "service_face": "to_be_initialized"
       },
       "storage": {
         "compose_project": "sc-tenant-baosheng-dev",
@@ -208,11 +207,26 @@
         "product_root": "/opt/projects/repos/sce-product-odoo",
         "frontend_dist_dir": "/opt/projects/repos/sce-product-odoo/frontend/apps/web/dist-dev",
         "demo_addons_root": "/opt/projects/runtime-addons-empty",
-        "customer_addons_root": "/opt/projects/runtime-addons-empty",
+        "customer_addons_root": "/opt/sce/tenant-addons/daily/bfbc736c51d987777b50c465261ece1d8d22f008",
         "services": [
-          "db"
+          "db",
+          "redis",
+          "odoo",
+          "nginx"
         ],
-        "modules": []
+        "modules": [
+          "sc_norm_engine",
+          "smart_construction_bootstrap",
+          "smart_core",
+          "smart_scene",
+          "smart_construction_core",
+          "smart_construction_portal",
+          "smart_construction_scene",
+          "smart_license_core",
+          "smart_construction_bundle",
+          "smart_construction_seed",
+          "sce_customer_baosheng"
+        ]
       }
     }
   ],

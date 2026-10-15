@@ -67,6 +67,25 @@ def prospective(declaration, name):
     return out
 
 
+def as_cluster_only(declaration, name, reason="reshaped into a cluster-only face for this test"):
+    """One declared duty reshaped into a cluster-only face.
+
+    The cluster-only rules must stay proven without depending on which duty the
+    shipped declaration currently points at that face: once the customer duty
+    moves on to a served face, a test that read the face off the file would stop
+    testing the rule and start testing the file. A declaration that is ahead of
+    its receipt is exactly what the write-back exists to prevent, so a test asks
+    for the shape it wants.
+    """
+    out = copy.deepcopy(declaration)
+    row = picked(out, name)
+    row["custody"]["service_face"] = "cluster_only"
+    row["custody"]["service_face_reason"] = reason
+    row["stack"]["services"] = ["db"]
+    row["stack"]["modules"] = []
+    return out
+
+
 class DeclarationTests(unittest.TestCase):
     def test_shipped_declaration_is_valid(self):
         declaration = shipped()
@@ -250,7 +269,7 @@ class DeclarationTests(unittest.TestCase):
         )
 
     def test_a_cluster_only_face_declares_exactly_its_cluster(self):
-        declaration = shipped()
+        declaration = as_cluster_only(shipped(), "customer_tenant_dev")
         row = picked(declaration, "customer_tenant_dev")
         self.assertEqual(row["custody"]["service_face"], "cluster_only")
         row["stack"]["services"] = ["db", "odoo"]
@@ -258,7 +277,7 @@ class DeclarationTests(unittest.TestCase):
         self.assertTrue(any("cluster_only face declares exactly" in r for r in failures), failures)
 
     def test_a_cluster_only_face_must_say_why(self):
-        declaration = shipped()
+        declaration = as_cluster_only(shipped(), "customer_tenant_dev")
         picked(declaration, "customer_tenant_dev")["custody"].pop("service_face_reason", None)
         failures = duty_entry.validate_declaration(declaration)
         self.assertTrue(any("service_face_reason" in row for row in failures), failures)
@@ -718,7 +737,8 @@ class ServiceFaceTests(unittest.TestCase):
         self.assertFalse(verdict["platform_control_face_carries_no_industry_module"])
 
     def test_a_cluster_only_duty_that_runs_an_application_is_refused(self):
-        row = picked(self.declaration(), "customer_tenant_dev")
+        row = picked(as_cluster_only(self.declaration(), "customer_tenant_dev"),
+                     "customer_tenant_dev")
         self.assertTrue(self.verdict(row)["cluster_only_face_declares_only_the_cluster"])
         verdict = self.verdict(row, face_overrides={"running_services": ["db", "odoo"]})
         self.assertFalse(verdict["cluster_only_face_declares_only_the_cluster"])
@@ -792,7 +812,8 @@ class ServiceFaceTests(unittest.TestCase):
 
     def test_a_cluster_only_face_is_not_asked_for_an_application_schema(self):
         declaration = self.declaration()
-        duty = picked(declaration, "customer_tenant_dev")
+        duty = picked(as_cluster_only(declaration, "customer_tenant_dev"),
+                      "customer_tenant_dev")
         observation = self.observe(duty)
         observation["custody"]["public_schema_create"] = False
         verdict = {row["id"]: row["passed"] for row in duty_entry.evaluate(
