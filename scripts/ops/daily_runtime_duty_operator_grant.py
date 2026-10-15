@@ -518,6 +518,12 @@ def assert_approval(report: dict, duty: dict, expected_checksum: str) -> dict:
         _fail("the maintenance access is not approved")
     if not _text(approval.get("approved_by")):
         _fail("the maintenance access records no approver identity")
+    if _text(approval.get("requested_by")) == _text(approval.get("approved_by")):
+        # The entry keeps its own copy of the independence rule: the platform
+        # policy already refuses a self-approval, and this entry must not rely
+        # on that single check to keep an approval it asked for from covering
+        # its own run.
+        _fail("the maintenance access approver is its own requester")
     if int(approval.get("access_id") or 0) <= 0:
         _fail("the maintenance access has no usable identity")
     bound = _text(approval.get("subject_checksum"))

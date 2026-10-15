@@ -493,6 +493,7 @@ class GuardTests(unittest.TestCase):
             "another subject": {"subject_checksum": "d" * 64},
             "not approved": {"state": "requested"},
             "no approver": {"approved_by": ""},
+            "a self approval": {"approved_by": APPROVAL["requested_by"]},
             "no identity": {"access_id": 0},
         }
         for name, override in cases.items():
