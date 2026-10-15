@@ -217,6 +217,21 @@ def entry_environment(entry, request: dict, execution_id: str) -> list[str]:
     ]
 
 
+def readback_environment(entry, request: dict) -> list[str]:
+    """The declared inputs the read path asserts, and nothing that writes.
+
+    The readback asserts that the identity in the environment is the declared
+    one, so the declaration has to travel with it.  The confirmation, the output
+    path and the execution id belong to the write path and are deliberately not
+    sent here.
+    """
+    return [
+        "-e", "%s=%s" % (entry.LOGIN_ENV, request["login"]),
+        "-e", "%s=%s" % (entry.NAME_ENV, request["name"]),
+        "-e", "%s=%s" % (entry.EVIDENCE_ENV, request["evidence"]),
+    ]
+
+
 def one_off_command(duty: dict, base: list[str], extra_env: list[str]) -> list[str]:
     return base + [
         "run", "--rm", "--no-deps", "-T",
@@ -404,7 +419,13 @@ def execute(
     tool_sha = tool_identity(root)
 
     before = assert_readback(
-        readback_report(run_script(one_off_command(duty, base, []), readback_script(entry), ops_root)),
+        readback_report(
+            run_script(
+                one_off_command(duty, base, readback_environment(entry, request)),
+                readback_script(entry),
+                ops_root,
+            )
+        ),
         entry,
         request,
         duty,
@@ -441,7 +462,13 @@ def execute(
     )
     result = assert_entry_result(envelope, entry, request, entry_digest, before)
     after = assert_readback(
-        readback_report(run_script(one_off_command(duty, base, []), readback_script(entry), ops_root)),
+        readback_report(
+            run_script(
+                one_off_command(duty, base, readback_environment(entry, request)),
+                readback_script(entry),
+                ops_root,
+            )
+        ),
         entry,
         request,
         duty,

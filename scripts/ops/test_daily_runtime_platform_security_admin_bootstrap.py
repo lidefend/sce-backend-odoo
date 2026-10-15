@@ -228,6 +228,26 @@ class MountAndTemplateTests(unittest.TestCase):
         self.assertNotIn("APPROVED_BY", joined)
         self.assertNotIn("PASSWORD", joined.upper())
 
+    def test_the_readback_environment_declares_the_identity_it_asserts(self):
+        # The read path asserts the environment holds the declared identity, so
+        # the declaration has to travel with it.  Sending nothing made the read
+        # report an empty login and refuse an honest readback, which is how the
+        # first real run of this entry failed.
+        module = entry_module()
+        environment = ENTRY.readback_environment(module, request())
+        joined = "\n".join(environment)
+        self.assertIn("%s=%s" % (module.LOGIN_ENV, LOGIN), joined)
+        self.assertIn("%s=%s" % (module.NAME_ENV, NAME), joined)
+        self.assertIn("%s=%s" % (module.EVIDENCE_ENV, EVIDENCE), joined)
+        self.assertNotIn(module.CONFIRM_ENV, joined)
+        self.assertNotIn(module.OUTPUT_ENV, joined)
+
+    def test_a_readback_that_lost_the_declaration_is_refused(self):
+        with self.assertRaisesRegex(ENTRY.BootstrapTransportError, "another login"):
+            ENTRY.assert_readback(
+                readback(declared_login=""), entry_module(), request(), control()
+            )
+
 
 class ReadbackAssertionTests(unittest.TestCase):
     def test_a_readback_for_another_database_is_refused(self):
