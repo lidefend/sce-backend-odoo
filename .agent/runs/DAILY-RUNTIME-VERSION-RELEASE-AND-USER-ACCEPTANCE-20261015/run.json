@@ -601,20 +601,20 @@
         "decision_role_gate": {
           "broke": "entry role gate disabled",
           "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-entry-20261016/falsify-role-gate.log",
-          "observed": "4 failed of 12 tests (exactly the four entry-layer role cases; the model layer still refused the writes)"
+          "observed": "4 failed of 15 tests (exactly the four entry-layer role cases; the model layer still refused the writes)"
         },
-        "restored": "the controller was restored byte-identical and the entry returned to 0 failed / 0 error of 12 tests",
+        "restored": "each injection was reverted byte-for-byte (sha256sum -c) and the entry returned to 0 failed / 0 error of 15 tests",
         "server_owned_field": {
           "broke": "state removed from FORBIDDEN_BODY_FIELDS",
           "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-entry-20261016/falsify-server-owned-field.log",
-          "observed": "2 failed of 12 tests"
+          "observed": "2 failed of 15 tests"
         },
         "trace_projection": {
           "broke": "get_trace_id() without headers",
           "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-entry-20261016/falsify-trace.log",
-          "observed": "0 failed, 14 error(s) of 12 tests"
+          "observed": "0 failed, 20 error(s) of 15 tests"
         },
-        "counting_basis": "each line is a revision-bound observation measured against the entry set as it stood (12 cases). The module now carries 15 cases after e75d3713/a52ba6d3, so 14/4/2 are not ratios on the current set and must not be cited as the current guard strength. Every line is a real triggered failure, not an inference."
+        "counting_basis": "all three injections were re-run at c572ffd5 against the entry set as it now stands (15 cases); the earlier values (14 errors / 4 failed / 2 failed of 12 tests) were bound to the 12-case revision and have been replaced, not annotated. Log: .runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-decay-20261016/falsify-refresh-20261016.log"
       }
     }
   },
