@@ -2108,3 +2108,23 @@ odoo 日志 `base already installed; skip bootstrap`。
 ### 边界
 
 这是**边界治理发现的基线缺陷修复**，不是 payment/runtime 业务能力扩展。签发凭据不等于批准：授权台账在签发前后行数断言不变，入口本身也断言 `approves_maintenance_access is False`。
+
+### 追加修复：clear 无法到达“无凭据”状态
+
+真实驱动 `remote_clear` 时暴露第二个缺陷：`res.users.write({"password": False})` 抛
+`TypeError: secret must be unicode or bytes, not bool`。
+
+| 事实 | 值 |
+|---|---|
+| 语义 | `res.users.password` 是 compute + inverse：无论写什么，inverse 都会 `ctx.hash()` 后落库 |
+| 后果 | `False` 在哈希库内直接炸；写 `''`（Odoo 自身账号删除路径的写法）会存下**空口令的哈希**，列仍非空，读回仍是 `has_stored_password=true` |
+| 单元测试 | 假 `_User.write` 只记录不校验，所以 43/48 全绿也从未证明 clear 能生效 |
+
+修复：新增 `_clear_stored_credential()`，用 `UPDATE res_users SET password = NULL` 把列恢复成**创建时的状态**，
+`invalidate_recordset(["password"])` 使 ORM 不再从旧哈希作答；`token_version` 是普通存储字段，仍走 ORM 在同一事务内递增。
+
+反例：假环境现在按真实语义拒绝非字符串口令（回归到 ORM clear 即失败），并模型化“写 `''` 之后列的哈希仍非空”。
+
+| 层 | 命令 | 结果 |
+|---|---|---|
+| L1 | `make verify.platform.security_admin.credential` | **50 tests OK**（原 48，+2：clear 经 SQL 到达无凭据态且不动凭据文件、被弃用的 ORM 写法确实不可用） |

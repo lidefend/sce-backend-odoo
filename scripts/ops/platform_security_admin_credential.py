@@ -23,7 +23,11 @@ This step supplies that fact and nothing else.  It is deliberately narrow:
   the authorization ledger is exactly as it found it;
 * ``clear`` takes the credential back, returning the identity to the
   no-stored-password state the bootstrap asserts, and it retires any token the
-  issued credential could have minted by advancing the account's token version;
+  issued credential could have minted by advancing the account's token version.
+  The ORM cannot express that state -- its inverse hashes whatever value it is
+  handed, so Odoo's own account deletion, which writes ``''``, leaves the hash of
+  the empty password behind -- so the column is returned to the state creation
+  left it in, through the same database fact the readback reads;
 * the credential is written by this step to a governed operator-only file
   outside the git tree.  It is never an argv, never a printed line and never
   part of a readback, so it cannot leak through a command line or a log;
@@ -314,6 +318,24 @@ def _run_issue(env, environ, receipt):
     })
 
 
+def _clear_stored_credential(env, user, uid):
+    """Return the credential column to the state creation left it in.
+
+    ``res.users.write`` has no "unset" value: the ``password`` inverse hashes
+    whatever it is handed, so ``{'password': False}`` raises inside the hashing
+    library and ``{'password': ''}`` -- what Odoo's own account deletion writes --
+    stores the hash of the empty password and still reads back as a stored
+    credential.  The column is therefore cleared through the same database fact
+    the readback reads, and the ORM cache is invalidated so no later read can
+    answer from the stale hash.  ``token_version`` is an ordinary stored field
+    and is advanced through the ORM, in the same transaction, so every token the
+    retired credential could have minted dies with it.
+    """
+    env.cr.execute("UPDATE res_users SET password = NULL WHERE id = %s", (uid,))
+    user.invalidate_recordset(["password"])
+    user.write({"token_version": int(user.token_version or 0) + 1})
+
+
 def _run_clear(env, environ, receipt):
     request = resolve_request(environ, "clear")
     registry = env["sc.platform.database.registration"]
@@ -330,7 +352,7 @@ def _run_clear(env, environ, receipt):
     writes = 0
     if stored_before:
         # Retire the credential and every token it could have minted.
-        user.write({"password": False, "token_version": int(user.token_version or 0) + 1})
+        _clear_stored_credential(env, user, identity["uid"])
         env.cr.flush()
         writes = 1
 

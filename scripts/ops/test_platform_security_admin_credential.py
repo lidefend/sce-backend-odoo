@@ -390,6 +390,9 @@ class _User:
     def write(self, values):
         self._env.write(values)
 
+    def invalidate_recordset(self, fields=None):
+        self._env.invalidated.append(list(fields or []))
+
 
 class _UserSet:
     def __init__(self, env, users):
@@ -487,12 +490,26 @@ class _Seed:
 
 
 class _Cursor:
+    """The credential column, as the two statements the entry issues touch it.
+
+    The read is the one the readback uses, and the write is the only way to
+    reach the no-credential state: an ORM ``write`` cannot express it, which is
+    exactly why the entry issues SQL.  A model that answered one and not the
+    other would let this suite certify a clear that never happened.
+    """
+
     def __init__(self, env):
         self.env = env
         self.dbname = env.dbname
         self._row = ("",)
+        self.executed = []
 
     def execute(self, sql, params=None):
+        self.executed.append(" ".join(str(sql).split()))
+        if str(sql).strip().upper().startswith("UPDATE"):
+            if not self.env.writes_do_not_stick:
+                self.env.password = False
+            return
         self._row = ("x" if self.env.password else "",)
 
     def fetchone(self):
@@ -527,6 +544,7 @@ class _FakeEnv:
         ]
         self.implied = {2: [], 16: [2]}
         self.writes = []
+        self.invalidated = []
         self.commits = 0
         self.flushed = 0
         self.writes_do_not_stick = False
@@ -558,9 +576,19 @@ class _FakeEnv:
         return False
 
     def write(self, values):
+        # ``res.users.write`` hashes whatever ``password`` it is handed: a bool
+        # or a None dies inside the hashing library, exactly as it did in the
+        # real runtime.  The fake refuses it for the same reason, so a regression
+        # to the ORM clear cannot pass this suite by being merely recorded.
+        if "password" in values and not isinstance(values["password"], str):
+            raise TypeError(
+                "secret must be unicode or bytes, not %s" % type(values["password"]).__name__
+            )
         self.writes.append(dict(values))
         if "password" in values and not self.writes_do_not_stick:
-            self.password = bool(values["password"])
+            # Any accepted value lands as a hash, empty string included: the
+            # column is non-empty afterwards, which is what the fact reads.
+            self.password = True
         if self.ledger_moves_on_write:
             self.access_rows += 1
         if self.membership_moves_on_write:
@@ -724,8 +752,36 @@ class RunFlowTests(unittest.TestCase):
         self.assertEqual(result["writes"], 1)
         self.assertFalse(os.path.exists(self.credential))
         self.assertIs(result["credential_file_removed"], True)
-        self.assertEqual(env.writes[0]["password"], False)
         self.assertEqual(env.writes[0]["token_version"], 4)
+        self.assertNotIn("password", env.writes[0])
+        self.assertIs(env.password, False)
+        self.assertIn(list(["password"]), env.invalidated)
+
+    def test_clear_reaches_the_no_credential_state_the_orm_cannot_express(self):
+        """A stored hash is not retired by writing one more hash.
+
+        Odoo's own account deletion writes ``''``, which stores the hash of the
+        empty password and still reads back as a stored credential.  The clear
+        has to leave the column as creation left it, so the state the bootstrap
+        asserts is reachable at all.
+        """
+        env = _FakeEnv(password=True)
+        ENTRY.run(env, self.flow_environ("clear"), "clear")
+        entry_sql = [row for row in env.cr.executed if row.upper().startswith("UPDATE")]
+        self.assertEqual(len(entry_sql), 1)
+        self.assertIn("password = NULL", entry_sql[0])
+        self.assertEqual(env.writes, [{"token_version": 4}])
+
+    def test_the_orm_clear_the_entry_no_longer_uses_would_not_work(self):
+        """The fake refuses it the way the hashing library refused it in production."""
+        env = _FakeEnv(password=True)
+        with self.assertRaisesRegex(TypeError, "secret must be unicode or bytes"):
+            env.write({"password": False})
+        # A hash of the empty password would survive as a stored credential, so
+        # the ORM form is not a narrower spelling of the same clear either.
+        env.write({"password": ""})
+        self.assertIs(env.password, True)
+        self.assertEqual(env.cr.executed, [])
 
     def test_clear_of_an_account_without_a_credential_writes_nothing(self):
         env = _FakeEnv()
