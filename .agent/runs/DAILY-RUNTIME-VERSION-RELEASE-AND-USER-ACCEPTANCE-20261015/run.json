@@ -215,6 +215,7 @@
     },
     "daily_runtime_database_duty": {
       "inputs": [
+        "config/ops/daily_runtime_database_duties.v1.json",
         "config/ops/daily_runtime_duty_stack.yml",
         "config/ops/daily_runtime_duty_stack.env",
         "scripts/ops/daily_runtime_database_duty.py",
@@ -238,7 +239,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "Ledger is reconciled (scope, checks and narrative cover 79cca68b, 3c481455, 117a14ff and 323b5376) and the maintenance-access ORM receipt is re-bound to the current candidate (15 tests, 0 failed, log maintenance-access-evidence-20261016/L2-orm-clean-head.log). Next: deploy this candidate to the daily server (candidate bundle sync -> source revision align), run the governed refresh for the declared duty selection so the control container actually reads ENV/SC_ENVIRONMENT, converge the published face, and then exercise the maintenance approval through the product entry with lidefend as the authenticated approver. The chain is issue credential -> request -> approve -> provision operator -> plan -> grant -> import -> verify -> revoke -> clear; no step may be replaced by a direct model write, a fabricated approval, reusing admin, or relaxing the mechanism.",
+  "next_exact_step": "duty 凭据采纳层已收口并提交（5e12f313）：L1 117 tests OK，受管 refresh 后三库 plan 全 PASS，demo 应用凭据经容器网络地址认证成功（from_source=true）。下一步先把本候选部署到日常服务器并收敛发布面，使本分支新增的维护授权路由可见；再签发 lidefend 的一次性安全管理员交互凭据，经产品 HTTP 入口以 lidefend 完成 request -> approve（必带 evidence_reference，capability=migrate，operator=smart_core.svc_tenant_payload_operator_baosheng，operations=[provision, grant]）；随后 provision 操作员 -> payload plan/grant/import -> verify -> 对账 12386/6322/29/6035 -> revoke -> clear。任何一步都不得以直接改模型、伪造批准、复用 admin 或放宽机制替代。",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "review_s2_closure_20261015": {
     "authority": "Independent B-line review of 5f5c4dae..4450e674 returned APPROVE_WITH_NOTES with one S2: the registration's control-database write had no test wiring, and the existing assertion pointed at the opposite target",
@@ -2805,5 +2806,34 @@
       "L1": "make verify.daily.runtime.database.duty -> 101 tests OK (was 96), including the new counter-examples for the forwarded environment, the reverse surface check, the pruned superseded stack, the refresh refusal matrix and the blind/half-blind container readback",
       "not_run": "the deployed refresh itself is the next step; no duty container has been re-rendered yet in this layer"
     }
+  },
+  "duty_demo_credential_adoption_20261016": {
+    "case": "第二次三库 plan 回读暴露了一个跨层的真实缺陷：demo duty 的 nginx/db 容器 running，odoo 容器 restarting，日志 FATAL: password authentication failed for user \"odoo\"，而 duty 声明、渲染出的 env 文件、custody 事实与模块状态全部一致。根因不是栈定义写错，而是这个 duty 接管的是它并未创建的集群：sc_demo 与其 odoo 角色早于 duty 存在，口令留在 sc_dev_db_data 卷内、无法从集群回读；duty 于是为该角色新渲染了第二个口令，应用便以自身数据库拒绝的密码反复重启。探针还有一层陷阱：pg_hba 对 local/127.0.0.1 是 trust，容器内直连任何口令都 AUTH_OK，只有走容器网络地址才能验真。",
+    "delivered": {
+      "credential_source_declaration": "config/ops/daily_runtime_database_duties.v1.json 的 demo 新增 credential_source（env_file=/opt/projects/repos/sce-product-odoo/.env.dev、key=DB_PASSWORD、reason、owning_task=DAILY-RUNTIME-DEMO-APP-ROLE-01）。这正是声明已登记为 frontend_build_env_file 的同一台日常 dev 环境文件，采纳既有凭据而不是再渲染一个既有角色永不会接受的口令。platform_control / customer_tenant_dev 未新增任何配置，未新增模型特判。",
+      "adoption_is_the_only_legal_shape": "validate_declaration 新增 _validate_credential_source：shared_bootstrap_role 的 duty 必须声明 credential_source，to_be_created 的 duty 禁止声明；env_file 必须是绝对文件路径且落在 duty 命名空间与本仓库 checkout 之外；key 必须属于 duty 秘密材料；reason/owning_task 必填；拒绝未知键。",
+      "one_credential_one_resolver": "新增 credential_source(duty) 与 declared_application_credentials(duty) 作为单一解析点，采纳的凭据同时用于凭据交付与 plan 认证探针；duty_credentials 采纳时把 adopt 的 DB_PASSWORD 同步写入 DB_PASSWORD 与 DB_MAINTENANCE_PASSWORD，materialise_stack_files 回执新增 credential_adopted_from / credential_adopted_key。",
+      "authentication_is_its_own_fact": "新增 container_network_address 与 application_credential_facts：经容器网络地址以采纳口令执行 psql SELECT 1，口令只走进程环境（-e PGPASSWORD）、不进 argv。plan 新增断言 declared_application_credential_authenticates_the_cluster，把「栈已渲染」与「应用能否认证」拆成两个事实——2026-10-16 那次失败恰好是所有其它回读都健康、只有认证被隐藏。"
+    },
+    "evidence": {
+      "dir": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/duty-credential-adoption-20261016/",
+      "plan_before": "plan-adoption.json -> status FAIL；demo failed_assertions=[declared_services_are_running, application_container_reads_the_declared_runtime_environment]",
+      "managed_refresh": "apply-refresh-demo.json -> status PASS, applied true, phase refresh, SELECTION=demo",
+      "plan_after": "plan-after-refresh.json -> status PASS，三库 failed_assertions 全空，deployment_binding PASS",
+      "declaration_digest": "3ebb2e198cd0194305acc66bece957867c35deeb35051bbf06fc6e70fd88acc4（原 59612c3e…）",
+      "credential_readback": "application_credential: demo authenticated true / from_source true / source /opt/projects/repos/sce-product-odoo/.env.dev；platform_control 与 customer_tenant_dev 亦 authenticated true（source 为各自 duty 命名空间内的 env 文件）",
+      "runtime_readback": "只读 curl：18081/web/login 200、/api/ops/tenants 403（产品 JSON，非 500）；18082/api/ops/maintenance/access 403 PERMISSION_DENIED（路由可用）；odoo 日志 base already installed; skip bootstrap"
+    },
+    "verification": {
+      "L1": "make verify.daily.runtime.database.duty -> 117 tests OK（原 100，+17：DeclarationTests 8、ServiceFaceTests 1、ApplicationCredentialTests 7、ProbeSubprocess 1），0 failed",
+      "L3": "受管 refresh（SC_CONFIRM_DAILY_RUNTIME_DUTY_REFRESH + SELECTION=demo + DECLARATION_DIGEST=3ebb2e19…）-> demo PASS；容器重建后 ENV=dev/SC_ENVIRONMENT=dev/DB_USER=odoo，DB_PASSWORD 已对齐，odoo/db/nginx 全 healthy",
+      "L2": "修复后只读 plan（三库全选）-> 三库全 PASS，declaration_failures=[]",
+      "probe_note": "容器内 local/127.0.0.1 为 trust，探针必须走容器网络地址（demo=192.168.32.2）才构成认证事实"
+    },
+    "known_limits": [
+      "demo 仍是 shared_bootstrap_role，为其建立独立应用角色会改写 live dev 凭据，属 DAILY-RUNTIME-DEMO-APP-ROLE-01，需独立授权，本轮不做。",
+      "本轮只关闭凭据采纳层；维护授权执行链路（凭据签发 -> 以 lidefend 批准 -> operator provision -> plan/grant/import/verify -> revoke/clear）尚未开始。",
+      "本轮不构成正式生产发布，也不使产品交付完成。"
+    ]
   }
 }

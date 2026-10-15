@@ -1978,3 +1978,53 @@ P4 shell 程序 + 独立真实批准人。**在这两项落实前，不再触发
 **边界**：本节只关闭裁决第 2 项的缺口，不改状态机语义、不改批准独立性、不新增入口。
 **唯一暂停点不变**：批准执行仍需所有者裁定审批人凭据路径（A/B）。批次验收、主线集成、版本发布、
 产品交付均未完成。
+
+## 2026-10-16：duty 凭据采纳层收口（demo 应用重启死循环，`5e12f313`）
+
+本次是第一次三库 plan 之后的第二次回读暴露的真实缺陷。**它不是栈定义写错，而是这个 duty 接管了一个它并未创建的集群。**
+
+### 现象与根因
+
+| 事实 | 值 |
+|---|---|
+| nginx / db 容器 | `running` |
+| odoo 容器 | `restarting`，日志 `FATAL: password authentication failed for user "odoo"` |
+| duty 声明、渲染 env、custody、模块状态 | 全部一致 |
+
+`sc_demo` 与其 `odoo` 角色早于本 duty 存在：角色口令留在 `sc_dev_db_data` 卷内，无法从集群回读。
+duty 于是为该角色**新渲染了第二个口令**，应用便以自身数据库拒绝的密码反复重启——其余所有回读仍然报健康。
+
+探针另有一层陷阱：`pg_hba` 对 `local`/`127.0.0.1` 是 `trust`，容器内直连**任何口令都会 AUTH_OK**，
+只有走容器网络地址（demo = `192.168.32.2`）才构成认证事实。
+
+### 交付（P4，`config/ops` + `scripts/ops`）
+
+| 层 | 改动 |
+|---|---|
+| 声明 | demo 新增 `credential_source`（`env_file=/opt/projects/repos/sce-product-odoo/.env.dev`、`key=DB_PASSWORD`、`reason`、`owning_task=DAILY-RUNTIME-DEMO-APP-ROLE-01`）；这正是声明已登记为 `frontend_build_env_file` 的同一台日常 dev 环境文件。platform_control / customer_tenant_dev 未新增配置，未新增模型特判 |
+| 校验 | `_validate_credential_source`：`shared_bootstrap_role` 必须声明 `credential_source`，`to_be_created` 禁止声明；`env_file` 必须是绝对文件路径且落在 duty 命名空间与本仓库 checkout 之外；`key` 必须属 duty 秘密材料；`reason`/`owning_task` 必填；拒绝未知键 |
+| 单一解析点 | `credential_source()` / `declared_application_credentials()`：采纳的凭据同时用于凭据交付与 plan 探针；`duty_credentials` 采纳时同步写 `DB_PASSWORD` 与 `DB_MAINTENANCE_PASSWORD`；回执新增 `credential_adopted_from` / `credential_adopted_key` |
+| 认证即独立事实 | `container_network_address()` + `application_credential_facts()`：经容器网络地址以采纳口令 `psql SELECT 1`，口令只走进程环境（`-e PGPASSWORD`）、不进 argv；plan 新增断言 `declared_application_credential_authenticates_the_cluster` |
+
+### 验证（层级 / 命令 / 非零计数）
+
+| 层 | 命令 | 结果 |
+|---|---|---|
+| L1 | `make verify.daily.runtime.database.duty` | **117 tests OK**（原 100，+17），0 failed |
+| L2（修复前） | `daily.runtime.database.duty.plan` | demo **FAIL**：`declared_services_are_running`、`application_container_reads_the_declared_runtime_environment` |
+| L3 | 受管 refresh（`SELECTION=demo` + `DECLARATION_DIGEST=3ebb2e19…`） | demo **PASS**；容器重建后 `ENV=dev`/`SC_ENVIRONMENT=dev`/`DB_USER=odoo`，`DB_PASSWORD` 已对齐，odoo/db/nginx 全 **healthy** |
+| L2（修复后） | 同上（三库全选） | **三库全 PASS**，`declaration_failures=[]`，deployment_binding PASS |
+
+凭据回读（plan 报告内）：三库 `authenticated: true`；demo `from_source: true`，`source=/opt/projects/repos/sce-product-odoo/.env.dev`。
+运行时只读回读：`18081/web/login → 200`；`/api/ops/tenants → 403`（产品 JSON，非 500）；`18082/api/ops/maintenance/access → 403 PERMISSION_DENIED`（路由可用）；
+odoo 日志 `base already installed; skip bootstrap`。
+
+证据目录：`.runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/duty-credential-adoption-20261016/`
+（`plan-adoption.json` / `apply-refresh-demo.json` / `plan-after-refresh.json`）。
+
+### 登记但不属本轮
+
+- `DAILY-RUNTIME-DEMO-APP-ROLE-01`：demo 仍是 `shared_bootstrap_role`，为它建立独立应用角色会改写 live dev 凭据，需独立授权。
+- 维护授权执行链路（签发凭据 → 以 `lidefend` 批准 → operator provision → plan/grant/import/verify → revoke/clear）尚未开始。
+
+**状态边界**：批次验收（duty 凭据采纳层）可声明；**主线集成、版本发布、产品交付均未完成。**
