@@ -1112,3 +1112,98 @@ and the Step E/F isolation and product acceptance remain open.
 
 **This is 批次验收完成 for the customer duty initialization slice. It is not 主线集成完成, 版本发布完成 or
 产品交付完成.**
+
+## Step D precondition — the customer duty's paired recovery point
+
+### Why this had to come before the migration
+
+The owner ruled that `sc_tenant_baosheng_dev` may not take its first business-data write without a paired
+recovery point. The existing data-continuity tool could not provide one: it hard-coded `sc_demo`, its
+containers, its volume, its filestore root and its backup root, so the only database it could ever
+capture was the demo.
+
+Taking that point by hand-assembling a `pg_dump` plus a `tar` of the filestore was not acceptable:
+a recovery point that nothing validates, binds or can restore is not a recovery point, and the repository
+rule is that runtime identity has exactly one owner and one governed entry per write.
+
+### The tool now resolves identity from the duty declaration
+
+`scripts/ops/daily_candidate_data_continuity.py` no longer contains any database name, container name,
+volume name, role name or backup path. Every runtime identity comes from
+`config/ops/daily_runtime_database_duties.v1.json` — the same single authority the duty plan already
+consumes:
+
+```
+database, database_role, dbfilter, compose_project,
+database_container, odoo_container, database_volume, odoo_data_volume,
+filestore_scope, backup_root(backup_namespace), environment_id, tenant_key
+```
+
+The contract may only carry assertion configuration. If it restates an identity the declaration owns and
+the two disagree, the load fails with `identity mismatch: <field>` rather than choosing a winner. Table
+and column names for the relationship sentinel are declared too (`relation_sample`), replacing the
+hard-coded `payment_request.project_id/contract_id`, and live reads now use the duty's application role
+(`sc_tenant_baosheng_dev_app`) while the isolated drill uses the drill's own role.
+
+`scripts/ops/daily_runtime_tenant_recovery_contract_v1.json` is the customer duty's contract, and four
+governed entries carry it end to end:
+
+```
+make daily.runtime.duty.recovery.remote_baseline
+make daily.runtime.duty.recovery.remote_backup           CONFIRM_DAILY_CANDIDATE_BACKUP=BACKUP_DAILY_CANDIDATE_PAIRED_STATE
+make daily.runtime.duty.recovery.remote_validate         DAILY_DUTY_RECOVERY_BACKUP_DIR=<dir>
+make daily.runtime.duty.recovery.remote_restore_drill    DAILY_DUTY_RECOVERY_BACKUP_DIR=<dir> CONFIRM_DAILY_CANDIDATE_RESTORE_DRILL=RESTORE_ISOLATED_COPY
+```
+
+Confirmations are read from the environment, `--backup-dir` must match the duty's directory pattern, and
+the remote tool tree is installed from one immutable commit — so the entries refuse a dirty worktree.
+
+### A binding defect was found and fixed before the capture
+
+The new entries named `DAILY_DUTY_RECOVERY_TOOL` as the contract JSON and never passed `--contract`.
+That is two defects in one line: `python3 <contract>.json` cannot run at all, and the tool's default
+contract is the **demo** one — so the moment someone corrected the program name, the entry would have
+silently captured `sc_demo` while reporting success for the customer duty. The variable now names the
+tool, `DAILY_DUTY_RECOVERY_CONTRACT_PATH` names the duty contract, all four entries pass `--contract`
+explicitly, and a guard asserts both facts so the binding cannot drift again.
+
+### The capture, in order
+
+```
+baseline        database_writes=0        database_uuid 30c898b8-c877-11f1-a7d9-4e1f45d0ec9d
+                filestore 384 files      content digest 32ccfc95…
+                res_company=1 res_users=5 project_project=0 construction_contract=0
+                payment_request=0 ir_attachment=461 ir_module_module=677
+
+backup          paired_backup_pass=true  /data/backups/daily-tenant-baosheng-dev/sc_tenant_baosheng_dev-20261015T095006Z-653a3119
+
+validate        backup_status=complete   pair_stable_during_capture=true
+                database=pg_restore_list_passed   filestore=tar_list_passed
+                database.dump    1d4a6dd8dd099ac0e4deb997f35bf1f0c44cd11140cdb152fb634e26b1cdad1c
+                filestore.tar.gz 2830d83d658b21eca57e27142a1d30e89112f9995ebf153c0d474b8ceb0239b5
+
+restore-drill   isolated_restore_pass   database_restore_pass   filestore_restore_pass
+                sentinel_comparison_pass temporary_resources_removed=true   29s   network_egress=internal_only
+```
+
+Independent read-only readback on the daily host, not the entry's own report:
+
+```
+sha256sum -c SHA256SUMS  -> database.dump OK, filestore.tar.gz OK, manifest.json OK
+drill residue after the run: 0 containers and 0 volumes matching daily-continuity-drill
+backup directory 0700 root:root, every artifact 0600 root:root
+```
+
+`payment_request_relation_sample_digest = d41d8cd98f00b204e9800998ecf8427e` is the MD5 of an empty
+string: the customer database has no `payment_request` rows yet. The relationship sentinel is legitimately
+empty and only `restore-drill` compares it, so the drill still proves the restore matched.
+
+### What this does **not** close
+
+A recovery point is a precondition, not migration. No historical data has moved into
+`sc_tenant_baosheng_dev`; the customer module's own versioned migration
+(`historical_payment_migration_policy.expected_records=12386`) has not run; Step E isolation verification
+and Step F product acceptance are still open.
+
+**This is 批次验收完成 for the customer duty recovery-point slice. It is not 主线集成完成, 版本发布完成 or
+产品交付完成.**

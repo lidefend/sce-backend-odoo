@@ -23,7 +23,7 @@
   },
   "baseline_sha": "10bf72ef4bb060556bd2844598b58f9806392d34",
   "blockers": [
-    "The customer duty is now a served, initialized face (sc_tenant_baosheng_dev, role sc_tenant_baosheng_dev_app, exact filter ^sc_tenant_baosheng_dev$, route 18090, own cluster and volume, product line plus sce_customer_baosheng installed from the delivered read-only tree bfbc736). Initialization is not migration: no historical data has moved, and Step D proper still has to run the customer module's own versioned migration (historical_payment_migration_policy.expected_records=12386) with the payload validated and planned first, never defaulting ownership and never copying UAT data. sc_tenant_baosheng_dev has no paired recovery point, so that is a precondition for its first business-data write, not an assumption.",
+    "The customer duty is now a served, initialized face (sc_tenant_baosheng_dev, role sc_tenant_baosheng_dev_app, exact filter ^sc_tenant_baosheng_dev$, route 18090, own cluster and volume, product line plus sce_customer_baosheng installed from the delivered read-only tree bfbc736) and its paired recovery point exists (backup set sc_tenant_baosheng_dev-20261015T095006Z-653a3119 under /data/backups/daily-tenant-baosheng-dev, validated, restored in isolation and independently checksum-readback). Initialization is not migration: no historical data has moved, and Step D proper still has to run the customer module's own versioned migration (historical_payment_migration_policy.expected_records=12386) with the payload validated and planned first, never defaulting ownership and never copying UAT data.",
     "sc_demo mixes the customer tenant volume with demo/test purposes, so 'the demo database' is not yet a pure demo database; the destination of the company-1 volume is unresolved, and the demo duty is still declared with the shared-bootstrap-role gap and has no dedicated application role.",
     "No duty has a platform-model lifecycle registration yet: the platform model owns registration and the platform-database lifecycle adapter still lacks a governed runtime binding for the daily profile, so no governed entry can register, suspend or resume a daily database. The duty declaration in config/ops/daily_runtime_database_duties.v1.json is the ops-side authority, not the platform-side registration.",
     "The three declared Step B gaps stay preconditions for the first write to sc_odoo or sc_platform_core: the cluster reports data_checksums=off, no amcheck index verification has run, and neither database has a paired recovery point. sc_platform_control is a fresh cluster and inherited data_checksums=off; enabling checksums would need a rebuild, so the decision is recorded rather than assumed.",
@@ -48,6 +48,18 @@
       ],
       "kind": "runtime",
       "target": "verify.daily_dev.runtime_repo.clean"
+    },
+    "daily_duty_recovery_tool": {
+      "inputs": [
+        "scripts/ops/daily_candidate_data_continuity.py",
+        "scripts/ops/daily_candidate_data_continuity_contract_v1.json",
+        "scripts/ops/daily_runtime_tenant_recovery_contract_v1.json",
+        "config/ops/daily_runtime_database_duties.v1.json",
+        "scripts/ops/test_daily_candidate_data_continuity.py",
+        "make/daily_candidate.mk"
+      ],
+      "kind": "offline",
+      "target": "verify.daily.duty.recovery"
     },
     "daily_frontend_build": {
       "inputs": [
@@ -84,18 +96,6 @@
       ],
       "kind": "offline",
       "target": "verify.daily.runtime.source_revision.align"
-    },
-    "daily_duty_recovery_tool": {
-      "target": "verify.daily.duty.recovery",
-      "kind": "offline",
-      "inputs": [
-        "scripts/ops/daily_candidate_data_continuity.py",
-        "scripts/ops/daily_candidate_data_continuity_contract_v1.json",
-        "scripts/ops/daily_runtime_tenant_recovery_contract_v1.json",
-        "config/ops/daily_runtime_database_duties.v1.json",
-        "scripts/ops/test_daily_candidate_data_continuity.py",
-        "make/daily_candidate.mk"
-      ]
     }
   },
   "environment": {
@@ -111,7 +111,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "Steps A, B, C and the customer duty initialization of D are closed: the legacy two-writer stack is retired with a refusal guard, the surviving dev cluster passed data-health and recovery verification, all three ruled duties exist as governed clusters and report PLan PASS in the initialized face, and the customer duty's initialization defect (two initializers in one fresh database) is fixed, tested and verified by independent readback. Next, in order: (1) take the paired recovery point for sc_tenant_baosheng_dev (recovery is a precondition for its first business-data write) and record it; (2) Step D proper, the user module migration into sc_tenant_baosheng_dev driven by the customer module's own source mapping and versioned migration, with the payload first validated and planned (source payload v10 full historical attachments, historical_payment_migration_policy.expected_records=12386), never defaulting ownership, never copying UAT data, and reading the counts back after the run; (3) Step E unified onboarding plus isolation verification (platform control must not read customer business, demo and customer data must not see each other); (4) Step F product acceptance, recomputing only the affected set.",
+  "next_exact_step": "Steps A, B, C and the customer duty initialization of D are closed, and the customer duty's paired recovery point now exists and has been verified. Next, in order: (1) Step D proper, the user module migration into sc_tenant_baosheng_dev driven by the customer module's own source mapping and versioned migration, with the payload first validated and planned (source payload v10 full historical attachments, historical_payment_migration_policy.expected_records=12386), never defaulting ownership, never copying UAT data, and reading counts, amounts, source relations and attachments back after the run; (2) Step E unified onboarding plus isolation verification (platform control must not read customer business, demo and customer data must not see each other, database connections, routing, sessions and attachments all checked); (3) Step F product acceptance, recomputing only the affected set.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "schema_version": 1,
   "scope": [
@@ -258,6 +258,48 @@
     "scripts/ops/test_daily_candidate_data_continuity.py"
   ],
   "status": "active",
+  "step_d_customer_recovery_point_20261015": {
+    "case": "The customer duty sc_tenant_baosheng_dev is a served, initialized face, and the owner ruled that its first business-data write requires a paired recovery point. The data-continuity tool hard-coded sc_demo, so no governed entry could take one for a customer duty.",
+    "delivered": {
+      "artifacts": [
+        "database.dump",
+        "filestore.tar.gz",
+        "manifest.json",
+        "SHA256SUMS"
+      ],
+      "backup_directory": "/data/backups/daily-tenant-baosheng-dev/sc_tenant_baosheng_dev-20261015T095006Z-653a3119",
+      "backup_root": "/data/backups/daily-tenant-baosheng-dev",
+      "backup_set_id": "sc_tenant_baosheng_dev-20261015T095006Z-653a3119",
+      "checksums": {
+        "database.dump": "1d4a6dd8dd099ac0e4deb997f35bf1f0c44cd11140cdb152fb634e26b1cdad1c",
+        "filestore.tar.gz": "2830d83d658b21eca57e27142a1d30e89112f9995ebf153c0d474b8ceb0239b5",
+        "manifest.json": "1a6528fa3bdaf9b573f2dc22ffcc3a4c87cb6080b57f5e3d3137f8f534b505ad"
+      },
+      "database": "sc_tenant_baosheng_dev",
+      "database_role": "sc_tenant_baosheng_dev_app",
+      "database_uuid": "30c898b8-c877-11f1-a7d9-4e1f45d0ec9d",
+      "local_evidence": [
+        ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/duty-recovery/baseline.json",
+        ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/duty-recovery/backup.json",
+        ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/duty-recovery/validate.json",
+        ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/duty-recovery/restore.json"
+      ],
+      "permissions": "backup directory 0700 root:root, every artifact 0600 root:root",
+      "source_revision": "10bf72ef4bb060556bd2844598b58f9806392d34",
+      "tool_revision": "abb9ffe2804f57fec3d9c1ff1ef1365f28943d12"
+    },
+    "fix": "scripts/ops/daily_candidate_data_continuity.py now resolves every runtime identity (database, application role, dbfilter, compose project, both containers, both data volumes, filestore scope, backup namespace, environment and tenant keys) from config/ops/daily_runtime_database_duties.v1.json; a contract may only carry assertion configuration and any restatement of that identity must agree or the load is refused. Live reads use the duty application role, the isolated drill uses the drill's own role, and the relationship sentinel comes from a declared relation_sample instead of hard-coded payment_request columns. New scripts/ops/daily_runtime_tenant_recovery_contract_v1.json plus four governed entries (daily.runtime.duty.recovery.remote_{baseline,backup,validate,restore_drill}) capture, validate and restore one duty's point; the remote tool tree is installed from one immutable commit, so the entries refuse a dirty worktree. A binding defect found in this session was fixed first: the new entries named the contract JSON as the program and never passed --contract, which would have executed the JSON and, once corrected to a program name, silently captured sc_demo.",
+    "not_a_pass": "This is a recovery-point precondition, not migration. No historical data has moved into sc_tenant_baosheng_dev, the customer module's own versioned migration (historical_payment_migration_policy.expected_records=12386) has not run, and Step D proper, Step E isolation verification and Step F product acceptance remain open.",
+    "verification": {
+      "backup": "make daily.runtime.duty.recovery.remote_backup - PASS, paired_backup_pass=true, directory sc_tenant_baosheng_dev-20261015T095006Z-653a3119",
+      "baseline": "make daily.runtime.duty.recovery.remote_baseline - PASS, database_writes=0, database_uuid 30c898b8..., filestore 384 files / 1033071 bytes, content digest 32ccfc95..., table_counts res_company=1 res_users=5 project_project=0 construction_contract=0 payment_request=0 ir_attachment=461 ir_module_module=677",
+      "empty_relation_sample": "payment_request_relation_sample_digest d41d8cd98f00b204e9800998ecf8427e is the MD5 of an empty string: the customer database has no payment_request rows yet, so the relationship sentinel is legitimately empty and only validate (not restore-drill) compares it",
+      "independent_readback": "sha256sum -c SHA256SUMS on the daily host recomputed database.dump, filestore.tar.gz and manifest.json as OK against the receipt checksums; drill residue after the run is 0 containers and 0 volumes matching daily-continuity-drill",
+      "restore_drill": "make daily.runtime.duty.recovery.remote_restore_drill - PASS, isolated_restore_pass/database_restore_pass/filestore_restore_pass/sentinel_comparison_pass all true, temporary_resources_removed=true, network_egress=internal_only, 29s",
+      "unit": "make verify.daily.duty.recovery - 26 tests OK (12 duty-identity guards plus the new entry-binding guard)",
+      "validate": "make daily.runtime.duty.recovery.remote_validate - PASS, backup_status=complete, pair_stable_during_capture=true, structure_validation database=pg_restore_list_passed filestore=tar_list_passed, database_bytes=11244989"
+    }
+  },
   "step_four_customer_module_delivery_20261015": {
     "case": "The customer duty declaration pointed at a customer addons root, and no governed entry could populate it, so 'install the user module' had no reviewed source.",
     "delivered": {
