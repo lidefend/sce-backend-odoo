@@ -318,6 +318,35 @@ class DutyIdentityTests(unittest.TestCase):
         self.assertNotIn("/data/backups/daily_candidate", source)
         self.assertNotIn("FROM payment_request", source)
 
+    def test_duty_recovery_entries_run_the_tool_with_the_duty_contract(self):
+        # The entry must execute the tool, not the contract JSON, and it must
+        # name the duty contract explicitly: the tool defaults to the demo
+        # contract, so an omitted --contract would quietly capture the wrong
+        # database.
+        make = (ROOT / "make/daily_candidate.mk").read_text()
+        self.assertIn(
+            "DAILY_DUTY_RECOVERY_TOOL ?= "
+            "$(DAILY_CONTINUITY_REMOTE_ROOT)/scripts/ops/"
+            "daily_candidate_data_continuity.py",
+            make,
+        )
+        self.assertIn(
+            "DAILY_DUTY_RECOVERY_CONTRACT_PATH ?= "
+            "$(DAILY_CONTINUITY_REMOTE_ROOT)/$(DAILY_DUTY_RECOVERY_CONTRACT)",
+            make,
+        )
+        for target in (
+            "daily.runtime.duty.recovery.remote_baseline:",
+            "daily.runtime.duty.recovery.remote_backup:",
+            "daily.runtime.duty.recovery.remote_validate:",
+            "daily.runtime.duty.recovery.remote_restore_drill:",
+        ):
+            body = make.split(target, 1)[1].split("\n\n", 1)[0]
+            self.assertIn('"$(DAILY_DUTY_RECOVERY_TOOL)"', body, target)
+            self.assertIn(
+                '--contract "$(DAILY_DUTY_RECOVERY_CONTRACT_PATH)"', body, target
+            )
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
