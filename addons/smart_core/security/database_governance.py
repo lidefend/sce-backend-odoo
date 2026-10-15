@@ -130,6 +130,15 @@ MAINTENANCE_ACCESS_CAPABILITIES = ("backup", "restore", "upgrade", "inspect", "m
 #: import" can never implicitly authorize creating a service identity.
 MAINTENANCE_ACCESS_OPERATIONS = ("provision", "grant")
 MAINTENANCE_ACCESS_MAX_VALIDITY_HOURS = 24
+#: A maintenance authorization has to cite the authority it rests on, so one
+#: ledger row answers "who allowed this, and under which decision" without a
+#: second lookup.  The bounds and the refused characters are deliberately the
+#: same vocabulary the identity bootstrap's ``--evidence`` argument already
+#: uses: both name the same thing, a reference to the owner's decision, and two
+#: dialects of it would let one entry accept a reference the other refuses.
+MAINTENANCE_ACCESS_EVIDENCE_MIN_LENGTH = 10
+MAINTENANCE_ACCESS_EVIDENCE_MAX_LENGTH = 200
+MAINTENANCE_ACCESS_EVIDENCE_FORBIDDEN_CHARACTERS = '"`$\\;|<>&()'
 #: The boundary anchor: holding an authorized maintenance access never widens
 #: the caller's business company scope. Kept as a decision function so the
 #: runtime consumer and the fail-closed test read the same single fact.
@@ -207,6 +216,40 @@ def validate_maintenance_operations(operations):
         if name not in resolved:
             resolved.append(name)
     return tuple(resolved)
+
+
+def validate_maintenance_evidence(evidence):
+    """Resolve one declared evidence reference, or fail closed.
+
+    The reference is what binds an authorization to the decision it rests on,
+    so an authorization that cites nothing is refused instead of recorded with
+    an empty field: "no evidence" and "evidence nobody can read" would
+    otherwise be the same row, and an approver would be signing off on a claim
+    that carries no authority.  The refused characters are the transport
+    characters that would break the ssh payload carrying the request, and
+    control characters are refused so one reference stays one printable line.
+    """
+    text = evidence.strip() if isinstance(evidence, str) else ""
+    if not text:
+        raise ValueError("DATABASE_GOVERNANCE_MAINTENANCE_EVIDENCE_REQUIRED")
+    if any(
+        character in text
+        for character in MAINTENANCE_ACCESS_EVIDENCE_FORBIDDEN_CHARACTERS
+    ) or any(character < " " or character == "\x7f" for character in text):
+        raise ValueError("DATABASE_GOVERNANCE_MAINTENANCE_EVIDENCE_INVALID_CHARACTERS")
+    if not (
+        MAINTENANCE_ACCESS_EVIDENCE_MIN_LENGTH
+        <= len(text)
+        <= MAINTENANCE_ACCESS_EVIDENCE_MAX_LENGTH
+    ):
+        raise ValueError(
+            "DATABASE_GOVERNANCE_MAINTENANCE_EVIDENCE_OUT_OF_RANGE:%s:%s"
+            % (
+                MAINTENANCE_ACCESS_EVIDENCE_MIN_LENGTH,
+                MAINTENANCE_ACCESS_EVIDENCE_MAX_LENGTH,
+            )
+        )
+    return text
 
 
 def validate_layer_responsibilities(layer, owned):

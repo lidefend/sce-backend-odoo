@@ -10,6 +10,8 @@ HTTP entry and assert the guarantees the ruling names:
   an approver or a state is refused rather than silently ignored;
 * a request authorizes nothing before an independent security administrator
   approves it;
+* a request that cites no authority is refused, because the approval would
+  otherwise sign off on a claim that names nothing;
 * the ledger is not readable by an unrelated principal.
 
 The state machine itself (target binding, validity window, append-only audit,
@@ -28,6 +30,7 @@ from odoo.tests.common import HttpCase, tagged
 
 SECRET = "platform-maintenance-access-test-signing-secret-2026-10-16-64bytes"
 PASSWORD_PREFIX = "MaintenanceAccess"
+EVIDENCE = "owner ruling 2026-10-16 authorizes the maintenance window"
 
 
 @tagged("post_install", "-at_install", "platform_maintenance_access")
@@ -166,6 +169,7 @@ class TestPlatformMaintenanceAccessHttp(HttpCase):
             "db_name": self.database_name,
             "capability": "migrate",
             "reason": "HTTP entry acceptance for the maintenance authorization flow",
+            "evidence_reference": EVIDENCE,
             "operator_identity_key": "smart_core.svc_tenant_payload_operator_http",
             "subject_checksum": "a" * 64,
             "authorized_operations": ["provision", "grant"],
@@ -195,6 +199,7 @@ class TestPlatformMaintenanceAccessHttp(HttpCase):
         self.assertEqual(access["requested_by"], self.requester_login)
         self.assertEqual(access["approved_by"], "")
         self.assertEqual(access["authorized_operations"], ["provision", "grant"])
+        self.assertEqual(access["evidence_reference"], EVIDENCE)
         self.assertEqual(opened["data"]["principal_login"], self.requester_login)
         # A request is not an authorization: nothing may consume it yet.
         self.assertIsNone(self._approved_covering_access())
@@ -222,6 +227,7 @@ class TestPlatformMaintenanceAccessHttp(HttpCase):
         self.assertEqual(covering["access_id"], access["access_id"])
         self.assertEqual(covering["requested_by"], self.requester_login)
         self.assertEqual(covering["approved_by"], self.decider_login)
+        self.assertEqual(covering["evidence_reference"], EVIDENCE)
         self.assertFalse(covering["grants_business_data_scope"])
 
     def test_the_envelope_projects_the_request_trace_identity(self):
@@ -316,6 +322,25 @@ class TestPlatformMaintenanceAccessHttp(HttpCase):
                 refused = self._request(requester, authorized_operations=operations)
                 self.assertFalse(refused.get("ok"), refused)
                 self.assertEqual(refused["error"]["code"], code)
+
+    def test_a_request_must_cite_the_authority_it_rests_on(self):
+        requester = self._login(self.requester_login)
+        for evidence, code in (
+            (None, "DATABASE_GOVERNANCE_MAINTENANCE_EVIDENCE_REQUIRED"),
+            ("", "DATABASE_GOVERNANCE_MAINTENANCE_EVIDENCE_REQUIRED"),
+            ("too short", "DATABASE_GOVERNANCE_MAINTENANCE_EVIDENCE_OUT_OF_RANGE"),
+            (
+                'owner ruling "2026-10-16" authorizes it',
+                "DATABASE_GOVERNANCE_MAINTENANCE_EVIDENCE_INVALID_CHARACTERS",
+            ),
+        ):
+            with self.subTest(evidence=evidence):
+                refused = self._request(requester, evidence_reference=evidence)
+                self.assertFalse(refused.get("ok"), refused)
+                self.assertEqual(refused["error"]["code"], code)
+        # A refusal is a refusal: no request row exists to be approved later.
+        self.assertFalse(self.ledger.search_count([("capability", "=", "migrate")]))
+        self.assertIsNone(self._approved_covering_access())
 
     def test_rejection_is_decided_by_the_independent_identity(self):
         requester = self._login(self.requester_login)

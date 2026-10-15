@@ -1937,3 +1937,44 @@ P4 shell 程序 + 独立真实批准人。**在这两项落实前，不再触发
 **状态边界**：S3 批次与首次实跑（回读 + bootstrap）已完成并留证；**批准、operator provision、
 载荷 plan/grant/import、对账、撤权、复核与主线集成仍未开始**。批次验收、主线集成、版本发布、
 产品交付**均未完成**。
+
+## 2026-10-16：裁决第 2 项的真实未完成点（证据引用绑定）
+
+复核所有者裁定“授权记录至少绑定请求人、独立批准人、目标租户与数据库、操作集合、有效期、原因及证据引用”
+时发现：前六项已绑定，**第七项（证据引用）并不存在**。记录里没有任何字段承载“本次授权依据哪一条决定”，
+于是一次批准的语义只能靠外部叙述，账本单独一行读不出它凭何成立。这是裁决第 2 项的真实缺口，
+不是新能力扩展。
+
+### 交付（P0，`smart_core`）
+
+| 层 | 改动 |
+|---|---|
+| 治理词汇 | `security/database_governance.py` 新增证据引用词汇与 `validate_maintenance_evidence()`：非空、10–200 字符、单行、拒绝会打断 ssh 载荷的字符（与身份 bootstrap 的 `--evidence` 同一套约束，避免两套方言） |
+| 模型 | `sc.platform.maintenance.access` 新增 `evidence_reference`（请求时声明，之后只读）；写入、`_write_state` 读回、查询投影三处都携带它 |
+| 入口 | 产品入口 `/api/ops/maintenance/access/request` 转递 `evidence_reference` |
+| 常量归并 | `models/platform_database_registry.py` 原本重复声明 `SECURITY_ADMIN_GROUP` 字面量（同一 addon 内第二份），改为从 `security/platform_admin.py` 单一来源导入。属边界卫生修复，不新增能力、不改变行为 |
+
+### 验证（层级 / 命令 / 非零计数）
+
+前置：新列需要一次受管升级 `make local.dev.upgrade MODULE=smart_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_core`
+（PASS；未升级时用例如实报 `column "evidence_reference" ... does not exist`）。
+
+| 层 | 命令 | 结果 |
+|---|---|---|
+| L2 (HTTP) | `make verify.smart_core.platform_maintenance_access.orm` | **0 failed, 0 error of 15 tests**（原 14，+1） |
+| L2 (ORM) | `make verify.local.dev.platform_database_governance.orm` | **0 failed, 0 error of 26 tests**（原 24，+2） |
+| L1 | `make verify.controller.boundary.guard` | PASS |
+| L1 | `make verify.platform.database.governance.guard` | PASS，17 tests OK |
+
+### 反例验证（注入缺陷 → 必须失败 → 逐字节还原）
+
+| 注入 | 结果 |
+|---|---|
+| 去掉 `_create_access_request` 里的证据校验 | `test_a_maintenance_request_must_cite_the_authority_it_rests_on` 5 个 subtest FAIL |
+| 入口不再转递 `evidence_reference`（传空串） | HTTP 套件 10 处 FAIL |
+
+两轮注入后均以 `sha256sum -c before.sha256` 逐字节还原（5 个文件全部 OK）。
+
+**边界**：本节只关闭裁决第 2 项的缺口，不改状态机语义、不改批准独立性、不新增入口。
+**唯一暂停点不变**：批准执行仍需所有者裁定审批人凭据路径（A/B）。批次验收、主线集成、版本发布、
+产品交付均未完成。

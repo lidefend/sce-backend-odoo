@@ -241,6 +241,12 @@ class TestPlatformDatabaseGovernance(TransactionCase):
     # ------------------------------------------------------------------
     # maintenance access: explicit + independent + audited, never a data grant
     # ------------------------------------------------------------------
+    #: One declared authority reference, reused by the cases below.  It is an
+    #: input fact like the operator identity and the subject digest: a request
+    #: that cites nothing cannot be approved, because the approver would be
+    #: signing off on a claim that names no authority.
+    EVIDENCE = "owner ruling 2026-10-16 authorizes this maintenance window"
+
     def _activated_database(self, db_name):
         self.Registry._register_database(
             db_name=db_name, environment_role="platform_internal_demo", data_purpose="demo"
@@ -251,7 +257,11 @@ class TestPlatformDatabaseGovernance(TransactionCase):
     def test_maintenance_access_needs_an_independent_approver(self):
         self._activated_database(self.db_name)
         requested = self.Access._request_access(
-            self.db_name, "backup", "pre-upgrade snapshot", requester_id=self.platform_admin.id
+            self.db_name,
+            "backup",
+            "pre-upgrade snapshot",
+            requester_id=self.platform_admin.id,
+            evidence_reference=self.EVIDENCE,
         )
         self.assertEqual(requested["state"], "requested")
         with self.assertRaises(AccessError):
@@ -270,7 +280,11 @@ class TestPlatformDatabaseGovernance(TransactionCase):
     def test_maintenance_access_is_scoped_and_time_bounded(self):
         self._activated_database(self.db_name)
         opened = self.Access._request_access(
-            self.db_name, "restore", "restore rehearsal", requester_id=self.platform_admin.id
+            self.db_name,
+            "restore",
+            "restore rehearsal",
+            requester_id=self.platform_admin.id,
+            evidence_reference=self.EVIDENCE,
         )
         self.Access.with_user(self.security_admin)._approve_access(opened["access_id"])
         self.assertTrue(self.Access._assert_access_authorized(self.db_name, "restore"))
@@ -281,11 +295,19 @@ class TestPlatformDatabaseGovernance(TransactionCase):
             self.Access._assert_access_authorized("sc_db_gov_unregistered", "restore")
         with self.assertRaises(ValidationError):
             self.Access._request_access(
-                self.db_name, "not_a_capability", "nope", requester_id=self.platform_admin.id
+                self.db_name,
+                "not_a_capability",
+                "nope",
+                requester_id=self.platform_admin.id,
+                evidence_reference=self.EVIDENCE,
             )
         with self.assertRaises(ValidationError):
             self.Access._request_access(
-                self.db_name, "backup", "   ", requester_id=self.platform_admin.id
+                self.db_name,
+                "backup",
+                "   ",
+                requester_id=self.platform_admin.id,
+                evidence_reference=self.EVIDENCE,
             )
 
         self.Access.with_user(self.security_admin)._revoke_access(
@@ -297,7 +319,11 @@ class TestPlatformDatabaseGovernance(TransactionCase):
     def test_expired_maintenance_access_does_not_authorize(self):
         self._activated_database(self.db_name)
         opened = self.Access._request_access(
-            self.db_name, "inspect", "diagnose", requester_id=self.platform_admin.id
+            self.db_name,
+            "inspect",
+            "diagnose",
+            requester_id=self.platform_admin.id,
+            evidence_reference=self.EVIDENCE,
         )
         self.Access.with_user(self.security_admin)._approve_access(opened["access_id"])
         access = self.Access.sudo().browse(opened["access_id"])
@@ -313,7 +339,11 @@ class TestPlatformDatabaseGovernance(TransactionCase):
         self.assertNotIn(self.customer_company.id, before)
 
         opened = self.Access._request_access(
-            self.db_name, "backup", "nightly backup", requester_id=self.platform_admin.id
+            self.db_name,
+            "backup",
+            "nightly backup",
+            requester_id=self.platform_admin.id,
+            evidence_reference=self.EVIDENCE,
         )
         self.Access.with_user(self.security_admin)._approve_access(opened["access_id"])
         access = self.Access.sudo().browse(opened["access_id"])
@@ -339,6 +369,7 @@ class TestPlatformDatabaseGovernance(TransactionCase):
             "db_name": self.db_name,
             "capability": "migrate",
             "reason": "signed payload import for one customer duty",
+            "evidence_reference": self.EVIDENCE,
             "operator_identity_key": "smart_core.svc_tenant_payload_operator_unit",
             "subject_checksum": "c" * 64,
             "authorized_operations": ["provision", "grant"],
@@ -353,6 +384,7 @@ class TestPlatformDatabaseGovernance(TransactionCase):
         opened = self._migrate_request()
         self.assertEqual(opened["state"], "requested")
         self.assertEqual(opened["authorized_operations"], ["provision", "grant"])
+        self.assertEqual(opened["evidence_reference"], self.EVIDENCE)
         self.assertEqual(opened["valid_until"], "")
         # The requester is the verified principal, and no decider exists yet.
         record = self.Access.sudo().browse(opened["access_id"])
@@ -406,6 +438,55 @@ class TestPlatformDatabaseGovernance(TransactionCase):
         opened = self._migrate_request(authorized_operations=["provision"])
         self.assertEqual(opened["authorized_operations"], ["provision"])
 
+    def test_a_maintenance_request_must_cite_the_authority_it_rests_on(self):
+        self._activated_database(self.db_name)
+        for evidence, message in (
+            (None, "DATABASE_GOVERNANCE_MAINTENANCE_EVIDENCE_REQUIRED"),
+            ("", "DATABASE_GOVERNANCE_MAINTENANCE_EVIDENCE_REQUIRED"),
+            ("   ", "DATABASE_GOVERNANCE_MAINTENANCE_EVIDENCE_REQUIRED"),
+            ("too short", "DATABASE_GOVERNANCE_MAINTENANCE_EVIDENCE_OUT_OF_RANGE"),
+            ("x" * 201, "DATABASE_GOVERNANCE_MAINTENANCE_EVIDENCE_OUT_OF_RANGE"),
+            (
+                'owner ruling "2026-10-16" authorizes it',
+                "DATABASE_GOVERNANCE_MAINTENANCE_EVIDENCE_INVALID_CHARACTERS",
+            ),
+            (
+                "owner ruling 2026-10-16\nsecond line",
+                "DATABASE_GOVERNANCE_MAINTENANCE_EVIDENCE_INVALID_CHARACTERS",
+            ),
+        ):
+            with self.subTest(evidence=evidence), self.assertRaisesRegex(
+                ValidationError, message
+            ):
+                self._migrate_request(evidence_reference=evidence)
+        # The refusals are refusals: no request row was opened for any of them.
+        self.assertFalse(self.Access.sudo().search_count([("capability", "=", "migrate")]))
+
+    def test_the_evidence_reference_is_bound_to_the_row_and_its_audit(self):
+        self._activated_database(self.db_name)
+        opened = self._migrate_request()
+        record = self.Access.sudo().browse(opened["access_id"])
+        self.assertEqual(record.evidence_reference, self.EVIDENCE)
+        request_audit = self.Operation.sudo().search([("operation", "=", "maintenance_request")])
+        self.assertEqual(len(request_audit), 1)
+        self.assertEqual(request_audit.result["evidence_reference"], self.EVIDENCE)
+
+        self.Access.with_user(self.security_admin).approve_access(opened["access_id"])
+        covering = self.Access._approved_access_projection(
+            db_name=self.db_name, capability="migrate"
+        )
+        self.assertEqual(covering["evidence_reference"], self.EVIDENCE)
+        approve_audit = self.Operation.sudo().search([("operation", "=", "maintenance_approve")])
+        self.assertEqual(len(approve_audit), 1)
+        self.assertEqual(approve_audit.result["evidence_reference"], self.EVIDENCE)
+
+        # The reference is one of the facts the approver signed off on, so it is
+        # not rewritable afterwards: the state machine is the only writer.
+        with self.assertRaises(UserError):
+            record.write({"evidence_reference": "a different authority entirely"})
+        record.invalidate_recordset()
+        self.assertEqual(record.evidence_reference, self.EVIDENCE)
+
     def test_a_retired_identity_can_never_file_a_request(self):
         self._activated_database(self.db_name)
         retired = self.env["res.users"].create({
@@ -425,6 +506,7 @@ class TestPlatformDatabaseGovernance(TransactionCase):
                 "backup",
                 "filed by an account that no longer exists",
                 requester_id=retired.id,
+                evidence_reference=self.EVIDENCE,
             )
 
     def test_the_target_database_is_bound_and_never_replaced(self):

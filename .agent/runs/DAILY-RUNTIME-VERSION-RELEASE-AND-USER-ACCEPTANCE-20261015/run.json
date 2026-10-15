@@ -205,7 +205,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "S3 closure is complete at 5ddb3596 (74 + 14 tests green, controller/frontend guards PASS, two counter-examples re-proven at the frozen tree), the daily candidate is deployed (bundle sync PASS to 5ddb3596), the control duty readback reported no security administrator and no maintenance rows, and lidefend was bootstrapped as the security administrator (uid 6, closure inside the allowed set, no stored password, ledger unchanged, no approval). The next exact step cannot be taken without an owner decision, because approving the maintenance access requires an authenticated principal for lidefend through the product entry, the account deliberately has no stored password, the control container has no ENV in {dev,test,local} so the dev/test session.bootstrap intent is disabled, and the serving control Odoo process still runs 10bf72ef so the new decision routes are not mounted. Two options were prepared: (A) a new governed one-time interactive credential for the named approver, issued through a declared step, used over the product HTTP entry and cleared afterwards, plus the published-face convergence that mounts the new controller; or (B) leave the approval to the owner's own interactive login. Neither may be replaced by a direct model write, a fabricated approval, reusing admin, or relaxing the mechanism.",
+  "next_exact_step": "Ruling item 2's missing fact is now bound: the maintenance authorization record carries an immutable evidence reference (governed vocabulary, request-time declaration, reported in the audit readback and the query projection), verified by make verify.smart_core.platform_maintenance_access.orm (15 tests) and make verify.local.dev.platform_database_governance.orm (26 tests) with two counter-examples re-proven and the tree restored byte-for-byte. Items 1, 3 and 4 were already closed at 5ddb3596. The next exact step still cannot be taken without an owner decision, because approving the maintenance access requires an authenticated principal for the named approver lidefend through the product entry: the account deliberately has no stored password, the control container runs without ENV in {dev,test,local} so the dev/test session.bootstrap intent is disabled there, and the serving control Odoo process still runs 10bf72ef so the decision routes are not mounted. Option A is a governed one-time interactive credential issued through a declared step, used over the product HTTP entry and cleared afterwards, plus the published-face convergence that mounts the controller; option B is the owner's own interactive login. Neither may be replaced by a direct model write, a fabricated approval, reusing admin, or relaxing the mechanism.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "review_s2_closure_20261015": {
     "authority": "Independent B-line review of 5f5c4dae..4450e674 returned APPROVE_WITH_NOTES with one S2: the registration's control-database write had no test wiring, and the existing assertion pointed at the opposite target",
@@ -377,7 +377,17 @@
     "addons/smart_core/tests/test_tenant_payload_operator_lifecycle.py",
     "scripts/verify/test_tenant_payload_operator_policy.py",
     "scripts/ops/daily_runtime_duty_database_registration.py",
-    "scripts/ops/test_daily_runtime_duty_database_registration.py"
+    "scripts/ops/test_daily_runtime_duty_database_registration.py",
+    "addons/smart_core/controllers/__init__.py",
+    "addons/smart_core/controllers/platform_maintenance_access_controller.py",
+    "addons/smart_core/controllers/platform_ops_controller.py",
+    "addons/smart_core/data/tenant/database_strategy.v1.json",
+    "addons/smart_core/security/database_governance.py",
+    "addons/smart_core/tests/test_platform_maintenance_access_http.py",
+    "scripts/ops/daily_runtime_platform_security_admin_bootstrap.py",
+    "scripts/ops/platform_security_admin_bootstrap.py",
+    "scripts/ops/test_daily_runtime_platform_security_admin_bootstrap.py",
+    "scripts/ops/test_platform_security_admin_bootstrap.py"
   ],
   "status": "active",
   "step_d_customer_recovery_point_20261015": {
@@ -2680,5 +2690,33 @@
       "an end-to-end proof that the deployment chain works; only the readback and bootstrap halves have been driven for real"
     ],
     "status": "bootstrap executed and verified on the control duty; approval execution blocked on approver-credential issuance, which needs an owner decision"
+  },
+  "maintenance_access_evidence_binding_20261016": {
+    "case": "Owner ruling item 2 requires the authorization record to bind requester, independent approver, target tenant and database, operation set, validity window, reason and an evidence reference. Six of the seven were bound; the evidence reference did not exist. This section closes that specific gap and nothing else: no state-machine change, no new entry, no change to approval independence.",
+    "delivered": {
+      "vocabulary": "addons/smart_core/security/database_governance.py owns the evidence vocabulary and validate_maintenance_evidence(): non-empty, 10-200 characters, one printable line, refusing the transport characters that would break the ssh payload. The bounds and the refused characters are deliberately the same ones the identity bootstrap's --evidence argument already uses, so one reference cannot be accepted by one entry and refused by the other.",
+      "model": "sc.platform.maintenance.access carries evidence_reference (declared at request time, never writable afterwards) and reports it in the write readback, the state readback and the query projection, so one ledger row answers which authority the access rests on.",
+      "entry": "POST /api/ops/maintenance/access/request forwards evidence_reference; a request that cites nothing, or cites something outside the vocabulary, is refused with the governed code and opens no row.",
+      "constant_reuse": "addons/smart_core/models/platform_database_registry.py re-declared the SECURITY_ADMIN_GROUP literal already owned by security/platform_admin.py in the same addon; it now imports that single source. Boundary hygiene found by the same audit, not a new capability and not a behaviour change."
+    },
+    "verification": {
+      "L2_http": "make verify.smart_core.platform_maintenance_access.orm -> 0 failed, 0 error of 15 tests (was 14)",
+      "L2_orm": "make verify.local.dev.platform_database_governance.orm -> 0 failed, 0 error of 26 tests (was 24)",
+      "L1": "make verify.controller.boundary.guard PASS; make verify.platform.database.governance.guard PASS, 17 tests OK",
+      "prerequisite": "the new column needs one governed upgrade: make local.dev.upgrade MODULE=smart_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_core (PASS). Before it, the suites report the honest schema error 'column evidence_reference of relation sc_platform_maintenance_access does not exist'.",
+      "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-evidence-20261016/L2-targeted.log"
+    },
+    "counter_examples": {
+      "guard_removed": "Removing the evidence validation from _create_access_request fails 5 subtests of test_a_maintenance_request_must_cite_the_authority_it_rests_on (log falsify-1-evidence-guard.log).",
+      "transport_dropped": "Passing an empty evidence from the controller instead of the body field fails 10 cases of the HTTP suite (log falsify-2-evidence-transport.log).",
+      "restore": "Both injections were reverted byte-for-byte and verified with sha256sum -c before.sha256 (5 files OK)."
+    },
+    "scope": "Files: addons/smart_core/security/database_governance.py, addons/smart_core/models/platform_database_registry.py, addons/smart_core/controllers/platform_maintenance_access_controller.py, addons/smart_core/tests/test_platform_database_governance_orm.py, addons/smart_core/tests/test_platform_maintenance_access_http.py.",
+    "still_open": "The single pause is unchanged: approving the maintenance access needs an authenticated principal for the named approver lidefend, and that is an owner decision (A: a governed one-time interactive credential plus the published-face convergence that mounts the controller; B: the owner's own interactive login). Batch acceptance, mainline integration, version release and product delivery all remain incomplete.",
+    "index_receipt_finding": {
+      "recorded": "make agent.run.begin/record AGENT_CHECK=platform_maintenance_access_entry recorded a 15-test receipt bound to this clean HEAD, log .runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-evidence-20261016/L2-targeted-clean-head.log.",
+      "evaluation": "The P4 index still reports the check as stale: a kind=runtime check must declare a readback artifact, and no governed local-dev environment readback artifact exists. .runtime/localdev-readback.json has no producer in make/ or scripts/ and dates from 2026-10-09, so binding it would be evidence mis-binding rather than a readback. The receipt is real; the index cannot call it reusable until a governed entry produces that artifact.",
+      "registered_not_blocking": "P4 gap, registered and not blocking: this batch's L2 evidence is the non-zero suite output, and the same section of the iteration record cites it. A governed local-dev identity readback artifact would let the local runtime layer be registered as reusable instead of merely attested."
+    }
   }
 }

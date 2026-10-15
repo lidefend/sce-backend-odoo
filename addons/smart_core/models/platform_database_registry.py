@@ -39,14 +39,14 @@ from odoo.addons.smart_core.security.database_governance import (
     resolve_operation_target_state,
     validate_database_governance_principal,
     validate_maintenance_capability,
+    validate_maintenance_evidence,
     validate_maintenance_operations,
 )
 from odoo.addons.smart_core.security.platform_admin import (
+    SECURITY_ADMIN_GROUP,
     user_is_platform_admin,
     user_is_security_admin,
 )
-
-SECURITY_ADMIN_GROUP = "smart_core.group_smart_core_security_admin"
 
 
 class ScPlatformDatabaseRegistration(models.Model):
@@ -296,6 +296,15 @@ class ScPlatformMaintenanceAccess(models.Model):
         readonly=True,
     )
     reason = fields.Char(required=True, readonly=True)
+    # The authority the request rests on.  It is declared by the requester and
+    # is immutable afterwards, because it is one of the facts the approver
+    # signs off on: an authorization whose evidence could be rewritten after
+    # approval would let the approval mean something else than what was read.
+    evidence_reference = fields.Char(
+        required=True,
+        readonly=True,
+        help="Reference to the authorization this maintenance access rests on.",
+    )
     requested_by = fields.Many2one("res.users", required=True, readonly=True)
     approved_by = fields.Many2one("res.users", readonly=True)
     state = fields.Selection(
@@ -358,6 +367,7 @@ class ScPlatformMaintenanceAccess(models.Model):
             "tenant_key": record.registration_id.tenant_key or "",
             "capability": record.capability,
             "reason": record.reason,
+            "evidence_reference": record.evidence_reference or "",
             # Who asked and who decided are part of the decision's own
             # readback, not a separate lookup: an auditor reads one row and sees
             # the independence the state machine asserted.
@@ -402,6 +412,7 @@ class ScPlatformMaintenanceAccess(models.Model):
         capability,
         reason,
         requester_id,
+        evidence_reference="",
         operator_identity_key="",
         subject_checksum="",
         operations=None,
@@ -421,6 +432,10 @@ class ScPlatformMaintenanceAccess(models.Model):
         text = str(reason or "").strip()
         if not text:
             raise ValidationError("DBGOV1_MAINTENANCE_REASON_REQUIRED")
+        try:
+            evidence = validate_maintenance_evidence(evidence_reference)
+        except ValueError as error:
+            raise ValidationError(str(error)) from error
         operator_identity = str(operator_identity_key or "").strip()
         checksum = str(subject_checksum or "").strip()
         requester = self.env["res.users"].sudo().browse(int(requester_id or 0)).exists()
@@ -452,6 +467,7 @@ class ScPlatformMaintenanceAccess(models.Model):
             "registration_id": registration.id,
             "capability": capability,
             "reason": text,
+            "evidence_reference": evidence,
             "operator_identity_key": operator_identity,
             "subject_checksum": checksum,
             "authorized_operations": declared_operations,
@@ -466,6 +482,7 @@ class ScPlatformMaintenanceAccess(models.Model):
         db_name,
         capability,
         reason,
+        evidence_reference="",
         operator_identity_key="",
         subject_checksum="",
         operations=None,
@@ -486,6 +503,7 @@ class ScPlatformMaintenanceAccess(models.Model):
             capability=capability,
             reason=reason,
             requester_id=requester_id or self.env.uid,
+            evidence_reference=evidence_reference,
             operator_identity_key=operator_identity_key,
             subject_checksum=subject_checksum,
             operations=operations,
@@ -604,6 +622,7 @@ class ScPlatformMaintenanceAccess(models.Model):
         db_name,
         capability,
         reason,
+        evidence_reference="",
         operator_identity_key="",
         subject_checksum="",
         authorized_operations=None,
@@ -622,6 +641,7 @@ class ScPlatformMaintenanceAccess(models.Model):
             capability=capability,
             reason=reason,
             requester_id=self.env.user.id,
+            evidence_reference=evidence_reference,
             operator_identity_key=operator_identity_key,
             subject_checksum=subject_checksum,
             operations=authorized_operations,
@@ -671,6 +691,7 @@ class ScPlatformMaintenanceAccess(models.Model):
             "capability": record.capability,
             "state": record.state,
             "reason": record.reason,
+            "evidence_reference": record.evidence_reference or "",
             "operator_identity_key": record.operator_identity_key or "",
             "subject_checksum": record.subject_checksum or "",
             "authorized_operations": list(record.authorized_operations or []),

@@ -215,6 +215,7 @@ class PlatformMaintenanceAccessController(http.Controller):
                 body.get("db_name"),
                 body.get("capability"),
                 body.get("reason"),
+                body.get("evidence_reference"),
                 body.get("operator_identity_key") or "",
                 body.get("subject_checksum") or "",
                 body.get("authorized_operations"),
