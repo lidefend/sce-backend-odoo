@@ -883,6 +883,10 @@ daily.runtime.database.identity.inventory: guard.prod.forbid verify.daily.runtim
 .PHONY: verify.daily.runtime.tenant.topology.inventory daily.runtime.tenant.topology.inventory
 DAILY_RUNTIME_TENANT_TOPOLOGY_REPORT ?= .runtime/final-acceptance/daily-deployed/tenant-topology-inventory.json
 DAILY_RUNTIME_TOPOLOGY_DATABASES ?= sc_demo,sc_odoo,sc_platform_core,sc_platform_control
+# The tenant's own customer addon, when the tenant declares one. Absent means the
+# database installs the product line only; the module name itself is never
+# carried by this tree.
+DAILY_RUNTIME_TOPOLOGY_CUSTOMER_MODULE ?=
 
 verify.daily.runtime.tenant.topology.inventory: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/daily_runtime_tenant_topology_inventory.py scripts/ops/test_daily_runtime_tenant_topology_inventory.py
@@ -895,6 +899,7 @@ daily.runtime.tenant.topology.inventory: guard.prod.forbid verify.daily.runtime.
 		--database "$(DAILY_RUNTIME_DATABASE)" \
 		--databases "$(DAILY_RUNTIME_TOPOLOGY_DATABASES)" \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		$(if $(DAILY_RUNTIME_TOPOLOGY_CUSTOMER_MODULE),--customer-module "$(DAILY_RUNTIME_TOPOLOGY_CUSTOMER_MODULE)") \
 		--report "$(DAILY_RUNTIME_TENANT_TOPOLOGY_REPORT)"
 
 
@@ -981,7 +986,7 @@ daily.runtime.legacy_stack.retire.apply: guard.prod.forbid verify.daily.runtime.
 # duty is observed, never re-rendered or restarted. The plan is read-only and
 # writes one local file; apply additionally needs the confirmation token and the
 # digest of the reviewed declaration, so an unreviewed edit cannot provision.
-.PHONY: verify.daily.runtime.database.duty daily.runtime.database.duty.plan daily.runtime.database.duty.apply
+.PHONY: verify.daily.runtime.database.duty verify.daily.runtime.duty.identity.unit daily.runtime.database.duty.plan daily.runtime.database.duty.apply
 DAILY_RUNTIME_DATABASE_DUTY_DECLARATION ?= config/ops/daily_runtime_database_duties.v1.json
 DAILY_RUNTIME_DATABASE_DUTY_PLAN_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-plan.json
 DAILY_RUNTIME_DATABASE_DUTY_APPLY_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-apply.json
@@ -994,7 +999,17 @@ DAILY_RUNTIME_DATABASE_DUTY_PHASE ?= all
 DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG ?= $(if $(DAILY_RUNTIME_EXPECTED_SHA),--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)")
 DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS ?= $(foreach duty,$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION),--duty "$(duty)")
 
-verify.daily.runtime.database.duty: guard.prod.forbid
+# The resolver's own refusals and the customer-binding write path. The product
+# tree may not carry a customer identity, so the concrete binding lives 0600
+# under ops_root, and both the merge and the write have to be proven without a
+# host. This target is the non-zero check the frontend_dev_incremental mapping
+# routes those files to, so an in-place edit of the declaration or the resolver
+# stops in the inner loop instead of at the frozen candidate.
+verify.daily.runtime.duty.identity.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_duty_identity.py scripts/ops/daily_runtime_database_duty.py scripts/ops/test_daily_runtime_duty_identity.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_duty_identity
+
+verify.daily.runtime.database.duty: guard.prod.forbid verify.daily.runtime.duty.identity.unit
 	@python3 -m py_compile scripts/ops/daily_runtime_database_duty.py scripts/ops/test_daily_runtime_database_duty.py
 	@python3 -m unittest scripts.ops.test_daily_runtime_database_duty
 
@@ -1099,6 +1114,11 @@ daily.runtime.database.duty.upgrade: guard.prod.forbid verify.daily.runtime.data
 .PHONY: verify.daily.runtime.tenant.addons daily.runtime.tenant.addons.plan daily.runtime.tenant.addons.deliver
 DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY ?=
 DAILY_RUNTIME_TENANT_SHA ?=
+# The modules the reviewed customer commit must carry, space separated. The
+# product tree ships no customer module name: naming one here would deliver that
+# tenant's identity to every tenant that reads the tree, so the operator names
+# the modules and the entry refuses an empty list.
+DAILY_RUNTIME_TENANT_MODULES ?=
 DAILY_RUNTIME_TENANT_ADDONS_REPORT ?= .runtime/final-acceptance/daily-deployed/tenant-addons-delivery.json
 
 verify.daily.runtime.tenant.addons: guard.prod.forbid
@@ -1108,20 +1128,24 @@ verify.daily.runtime.tenant.addons: guard.prod.forbid
 daily.runtime.tenant.addons.plan: guard.prod.forbid verify.daily.runtime.tenant.addons
 	@test -n "$(DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY)" || { echo "DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY is required" >&2; exit 2; }
 	@test -n "$(DAILY_RUNTIME_TENANT_SHA)" || { echo "DAILY_RUNTIME_TENANT_SHA must be the reviewed exact customer commit" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_TENANT_MODULES)" || { echo "DAILY_RUNTIME_TENANT_MODULES must name the modules the reviewed commit carries" >&2; exit 2; }
 	@python3 scripts/ops/daily_runtime_tenant_addons_deliver.py \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--customer-repository "$(DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY)" \
 		--tenant-sha "$(DAILY_RUNTIME_TENANT_SHA)" \
+		$(foreach module,$(DAILY_RUNTIME_TENANT_MODULES),--require-module "$(module)") \
 		--report "$(DAILY_RUNTIME_TENANT_ADDONS_REPORT)"
 
 daily.runtime.tenant.addons.deliver: guard.prod.forbid verify.daily.runtime.tenant.addons
 	@test -n "$(DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY)" || { echo "DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY is required" >&2; exit 2; }
 	@test -n "$(DAILY_RUNTIME_TENANT_SHA)" || { echo "DAILY_RUNTIME_TENANT_SHA must be the reviewed exact customer commit" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_TENANT_MODULES)" || { echo "DAILY_RUNTIME_TENANT_MODULES must name the modules the reviewed commit carries" >&2; exit 2; }
 	@test "$${SC_CONFIRM_DAILY_RUNTIME_TENANT_ADDONS:-}" = "DELIVER_EXACT_DAILY_RUNTIME_TENANT_ADDONS" || { echo "SC_CONFIRM_DAILY_RUNTIME_TENANT_ADDONS=DELIVER_EXACT_DAILY_RUNTIME_TENANT_ADDONS is required" >&2; exit 2; }
 	@python3 scripts/ops/daily_runtime_tenant_addons_deliver.py \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--customer-repository "$(DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY)" \
 		--tenant-sha "$(DAILY_RUNTIME_TENANT_SHA)" \
+		$(foreach module,$(DAILY_RUNTIME_TENANT_MODULES),--require-module "$(module)") \
 		--apply \
 		--report "$(DAILY_RUNTIME_TENANT_ADDONS_REPORT)"
 

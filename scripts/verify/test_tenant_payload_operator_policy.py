@@ -35,9 +35,9 @@ VALID_CHECKSUM = "a" * 64
 def declaration(**overrides) -> dict:
     block = {
         "carrier": "unified_onboarding_service_identity",
-        "identity_key": "smart_core.svc_tenant_payload_operator_baosheng",
-        "login": "svc-tenant-payload-operator-baosheng",
-        "name": "Tenant payload operator (baosheng, dev)",
+        "identity_key": "smart_core.svc_tenant_payload_operator_sample",
+        "login": "svc-tenant-payload-operator-sample",
+        "name": "Tenant payload operator (sample, dev)",
         "company_xmlid": "base.main_company",
         "authorization_basis": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
         "expected_account_groups": list(policy.REQUIRED_ACCOUNT_GROUPS),
@@ -51,9 +51,9 @@ def declaration(**overrides) -> dict:
 def authorization(**overrides) -> dict:
     record = {
         "access_id": 7,
-        "db_name": "sc_tenant_baosheng_dev",
-        "tenant_key": "baosheng",
-        "operator_identity_key": "smart_core.svc_tenant_payload_operator_baosheng",
+        "db_name": "sc_tenant_sample_dev",
+        "tenant_key": "sample",
+        "operator_identity_key": "smart_core.svc_tenant_payload_operator_sample",
         "capability": policy.IMPORT_CAPABILITY,
         "state": "approved",
         "approved_by": "owner",
@@ -68,9 +68,9 @@ def authorization(**overrides) -> dict:
 
 def check_authorization(record, **overrides):
     facts = {
-        "db_name": "sc_tenant_baosheng_dev",
-        "tenant_key": "baosheng",
-        "identity_key": "smart_core.svc_tenant_payload_operator_baosheng",
+        "db_name": "sc_tenant_sample_dev",
+        "tenant_key": "sample",
+        "identity_key": "smart_core.svc_tenant_payload_operator_sample",
         "subject_checksum": VALID_CHECKSUM,
         "now": "2026-10-15 12:00:00",
         "action": "provision",
@@ -99,7 +99,7 @@ class PurityTest(unittest.TestCase):
 class DeclarationTest(unittest.TestCase):
     def test_a_declared_service_identity_resolves(self):
         resolved = policy.validate_declaration(declaration())
-        self.assertEqual(resolved["identity_key"], "smart_core.svc_tenant_payload_operator_baosheng")
+        self.assertEqual(resolved["identity_key"], "smart_core.svc_tenant_payload_operator_sample")
         self.assertEqual(resolved["expected_account_groups"], ["base.group_user"])
         self.assertEqual(resolved["grantable_group_xmlids"], [policy.IMPORTER_GROUP_XMLID])
 
@@ -200,15 +200,15 @@ class DeclarationTest(unittest.TestCase):
 class IdentityTest(unittest.TestCase):
     def setUp(self):
         self.declared = {
-            "identity_key": "smart_core.svc_tenant_payload_operator_baosheng",
-            "login": "svc-tenant-payload-operator-baosheng",
+            "identity_key": "smart_core.svc_tenant_payload_operator_sample",
+            "login": "svc-tenant-payload-operator-sample",
             "company_ids": [1],
             "expected_account_groups": ["base.group_user"],
             "forbidden_account_groups": list(policy.FORBIDDEN_ACCOUNT_GROUPS),
         }
         self.existing = {
-            "xmlid": "smart_core.svc_tenant_payload_operator_baosheng",
-            "login": "svc-tenant-payload-operator-baosheng",
+            "xmlid": "smart_core.svc_tenant_payload_operator_sample",
+            "login": "svc-tenant-payload-operator-sample",
             "active": True,
             "share": False,
             "has_stored_password": False,
@@ -337,8 +337,8 @@ class AuthorizationTest(unittest.TestCase):
             policy.validate_authorization(
                 authorization(),
                 db_name="",
-                tenant_key="baosheng",
-                identity_key="smart_core.svc_tenant_payload_operator_baosheng",
+                tenant_key="sample",
+                identity_key="smart_core.svc_tenant_payload_operator_sample",
                 subject_checksum=VALID_CHECKSUM,
                 now="2026-10-15 12:00:00",
                 action="provision",
@@ -431,7 +431,7 @@ class AccountPlanTest(unittest.TestCase):
                 policy.plan_account_creation(declared=declared, company_ids=company_ids)
 
     def test_a_plan_without_a_declaration_is_a_stop(self):
-        for declared in ({}, {"login": "svc-tenant-payload-operator-baosheng"}, {"identity_key": "smart_core.a"}):
+        for declared in ({}, {"login": "svc-tenant-payload-operator-sample"}, {"identity_key": "smart_core.a"}):
             with self.subTest(declared=declared), self.assertRaises(policy.OperatorPolicyError):
                 policy.plan_account_creation(declared=declared, company_ids=[1])
 

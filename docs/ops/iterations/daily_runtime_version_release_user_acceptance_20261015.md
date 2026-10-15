@@ -7,6 +7,28 @@ Baseline: `ba7577c212b81468491942e972ea28bd64345ebd`（PR #664 合并后的 `mai
 Rebind: 2026-10-15 所有者接管后，本 run 沿用同一记录与证据索引改绑到 `fix/data-ownership-visibility-recovery-20261015`，
 基线更新为 `10bf72ef4bb060556bd2844598b58f9806392d34`；下面各章节以出现时的实际 HEAD 标注，不复用旧 HEAD 的结论。
 
+## 身份书写口径（2026-10-16 补记）
+
+本记录及其 run 写于 2026-10-16 之前，正文当时写的是被服务客户的具体数据库名、应用角色、
+compose 项目与容器、数据卷、存储与备份命名空间、客户仓库、客户模块名、租户 key 及法律主体名。
+
+按产品仓库边界规则（`verify.tenant.product_payload_boundary`），这些具体身份不得留在会随产品交付给
+每个客户的树里，因此本次只做**书写口径替换**：具体值改写为 `<...>` 占位引用。**当时的结论、失败、
+时间、计数与证据一律未改写**，也因此这份记录现在**不能**被读成"当时就已经写成通用占位符"。
+
+原文（含具体值）原样保存在受控外部证据区：
+
+`.runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/product-boundary-identity-relocation-20261016/original-records/`
+
+`identity-bearing-files.tsv` 列明受影响文件与当时内容，`SHA256SUMS` 可校验原文件。
+
+占位符对照：`<customer-tenant-db>` 为职责 `customer_tenant_dev` 的数据库；`<customer-tenant-app-role>`、
+`<customer-tenant-compose-project>`、`<customer-tenant-db-container>` / `<customer-tenant-odoo-container>`、
+`<customer-tenant-data-volume>`、`<customer-tenant-backup-namespace>`、`<customer-tenant-backup-set>`、
+`<customer-tenant-uat-db>` 同名前缀以此类推；`<customer-module>` 为其客户模块，`<tenant_key>` 为其租户 key，
+`<customer-repository>` 为其客户仓库，`<customer-payload-id>` 为其载荷 id，`<customer-legal-entity>` 为其法律主体。
+具体值的权威来源是职责声明与 `ops_root` 下的受管实例文档，不是本文。
+
 ## Objective
 
 1. 把目标 daily runtime（`sc-root:/opt/projects/repos/sce-product-odoo`，`ENV=dev`，
@@ -327,8 +349,8 @@ owns rows must appear in that database's tenant registry with an explicit purpos
   superuser and createdb. Each database resolves to its own filestore namespace. `dbfilter=^sc_demo$`,
   `list_db=false`.
 - `sc_demo`: 81 installed modules, including `smart_core` 17.0.1.1.14, `smart_construction_core` 17.0.0.171,
-  `smart_construction_custom` 17.0.2.0.0 and the customer module `sce_customer_baosheng` 17.0.2.8.0. Companies:
-  1 四川保盛建设集团有限公司, 2 Demo Secondary Company, 21 FE Company A, 22 FE Company B. Registrations declare
+  `smart_construction_custom` 17.0.2.0.0 and the customer module `<customer-module>` 17.0.2.8.0. Companies:
+  1 <customer-legal-entity>, 2 Demo Secondary Company, 21 FE Company A, 22 FE Company B. Registrations declare
   company 1 as `demo` and companies 21/22 as `test`.
 - `sc_platform_core`: 64 modules, `smart_core` 17.0.1.0 only, no `sc.tenant.company.registration` table, no
   business rows. It exists but is not yet a functioning control plane.
@@ -388,7 +410,7 @@ IPv4 and IPv6 on the same host port, which the first cut mis-flagged as a duplic
 ### Step 1 router observation (HEAD 10bf72ef, read-only)
 
 Six instances are observed. Four of them serve a database with an exact filter:
-`sc_demo` <- `sc-backend-odoo-dev-odoo-1`, `sc_tenant_baosheng_uat_core035_20260727142732_46a327` <-
+`sc_demo` <- `sc-backend-odoo-dev-odoo-1`, `<customer-tenant-uat-db>` <-
 `sc-core035-mvp-daily-20260727142732-46a327-odoo-1`, `sc_release_rehearsal` <- `sc-release-rehearsal-ingress`,
 and `sc_user_data_rehearsal` <- `sc-user-data-rehearsal-odoo-1`. Every application instance declares a database
 and every declared filter is exact, so `instances_without_exact_filter` is empty. The duty gap is on the other
@@ -420,8 +442,8 @@ governed contract must be extended before the first write to either.
 
 ### Step 1 user-module alignment (read-only)
 
-The customer repository `sce-customer-baosheng-odoo` is clean at `bfbc736`. Its manifest declares
-`tenant_key=baosheng`, `module_version=17.0.2.8.0`, `install_mode=customer_database_only`,
+The customer repository `<customer-repository>` is clean at `bfbc736`. Its manifest declares
+`tenant_key=<tenant_key>`, `module_version=17.0.2.8.0`, `install_mode=customer_database_only`,
 `company_provisioning=payload_create_and_register`, `payload_required=true` and
 `uninstall_policy=fail_closed`, with versioned migrations already present. On the product side,
 `smart_core.tenant_payload_import` resolves company scope from four declaration paths and fails closed with
@@ -469,10 +491,10 @@ Duty bindings as observed:
 - Demo duty: `sc_demo` served by `sc-backend-odoo-dev-odoo-1` with exact filter `^sc_demo$`; the governed
   onboarding plan declares role `platform_internal_demo`, `tenant_key sc-demo-main` and registered companies
   1 (demo) / 21 / 22 (test). It also carries the customer tenant volume, so the duty is not yet pure.
-- Customer development duty: unbound. A baosheng tenant database does exist
-  (`sc_tenant_baosheng_uat_core035_20260727142732_46a327`) but on a **separate cluster**
+- Customer development duty: unbound. A <tenant_key> tenant database does exist
+  (`<customer-tenant-uat-db>`) but on a **separate cluster**
   (`system_identifier 7667092793767399462`) served by its own stack, at older revisions (`smart_core`
-  17.0.1.1.1, `sce_customer_baosheng` 17.0.2.3.0, no registration table). Policy section 7 requires
+  17.0.1.1.1, `<customer-module>` 17.0.2.3.0, no registration table). Policy section 7 requires
   dev/uat/prod separation, so that UAT database cannot be the customer development environment; a new one
   has to be created.
 - Unbound leftovers: `sc_odoo` and `sc_platform_core` have no serving instance, and the only login role is
@@ -531,9 +553,9 @@ passing tests cannot cover a runtime risk. The three previously open decisions a
    declarations and the guards must move to the new authoritative binding **in one change**, never as two
    drifting dialects.
 2. **Customer development environment identity** (registered as a pending build, not created):
-   tenant `baosheng`, environment `dev`, database `sc_tenant_baosheng_dev`, application role
-   `sc_tenant_baosheng_dev_app` (independent credential, no cluster management rights), exact filter
-   `^sc_tenant_baosheng_dev$` with database enumeration off, compose project `sc-tenant-baosheng-dev`, and a
+   tenant `<tenant_key>`, environment `dev`, database `<customer-tenant-db>`, application role
+   `<customer-tenant-app-role>` (independent credential, no cluster management rights), exact filter
+   `^<customer-tenant-db>$` with database enumeration off, compose project `<customer-tenant-compose-project>`, and a
    dedicated filestore/session/backup namespace. The existing UAT database stays independent: it must not be
    renamed into the development database, and the ruling grants **no authority to copy its data**.
 3. **Legacy db/redis retirement is approved, the plain `docker stop` approach is not.** Immediate and fast
@@ -708,7 +730,7 @@ PASS，阻断数据库写入的门已解除（仅对已覆盖恢复点的职责�
 The owner ruled that the daily development server separates three duties: a platform control database, the demo
 database and one customer development business database, with the same onboarding mechanism for demo and
 customer tenants. The owner explicitly selected a **new** `sc_platform_control` rather than reusing
-`sc_platform_core`, named the customer development database `sc_tenant_baosheng_dev`, and required
+`sc_platform_core`, named the customer development database `<customer-tenant-db>`, and required
 `VITE_PLATFORM_ADMIN_DB`, the acceptance declarations and the guards to consume the new binding **in one
 change** — never as two dialects. The UAT database stays independent and the ruling grants no authority to copy
 its data. No formal production release is authorized here; ADR-001 and the production single-database topology
@@ -757,18 +779,18 @@ Only the `db` service of this duty stack was started (by design). `sc_platform_c
 it carries no module and no tenant registry, and no Odoo instance serves it, so it cannot serve the
 platform-admin entry yet.
 
-### Step C-2 — `sc_tenant_baosheng_dev` created
+### Step C-2 — `<customer-tenant-db>` created
 
 | Fact | Observed |
 |---|---|
-| compose project / container | `sc-tenant-baosheng-dev` / `sc-tenant-baosheng-dev-db-1` |
-| data volume | `sc_tenant_baosheng_dev_db_data` |
+| compose project / container | `<customer-tenant-compose-project>` / `<customer-tenant-db-container>` |
+| data volume | `<customer-tenant-data-volume>` |
 | cluster system identifier | `7696799327921901606` |
-| application role | `sc_tenant_baosheng_dev_app` — LOGIN, NOSUPERUSER, NOCREATEDB, NOCREATEROLE |
-| database | `sc_tenant_baosheng_dev`, owner `sc_tenant_baosheng_dev_app` |
+| application role | `<customer-tenant-app-role>` — LOGIN, NOSUPERUSER, NOCREATEDB, NOCREATEROLE |
+| database | `<customer-tenant-db>`, owner `<customer-tenant-app-role>` |
 | privileges | `REVOKE CONNECT ... FROM PUBLIC`; CONNECT granted only to the application role |
-| stored settings | `ODOO_DBFILTER=^sc_tenant_baosheng_dev$`, `LIST_DB=false`, `NGINX_PORT=18090`, `ODOO_PORT=18091` |
-| storage namespace | filestore `sc_tenant_baosheng_dev`, session `sc_tenant_baosheng_dev`, backup `/data/backups/daily-tenant-baosheng-dev` |
+| stored settings | `ODOO_DBFILTER=^<customer-tenant-db>$`, `LIST_DB=false`, `NGINX_PORT=18090`, `ODOO_PORT=18091` |
+| storage namespace | filestore `<customer-tenant-db>`, session `<customer-tenant-db>`, backup `<customer-tenant-backup-namespace>` |
 
 Receipt: `.runtime/final-acceptance/daily-deployed/database-duty-apply-customer_tenant_dev.json`
 (apply plan digest `a6bd0df2…`). The existing UAT database was not read, renamed or copied: this duty was
@@ -814,7 +836,7 @@ Two reasons the switch waits:
 ### Status
 
 批次状态：Step A（遗留栈受管退役）、Step B（幸存集群数据健康与恢复验证）与 Step C 的三库身份登记与建设
-已完成到「职责已按声明建成并留证」的程度：`sc_platform_control` 与 `sc_tenant_baosheng_dev` 各自拥有独立
+已完成到「职责已按声明建成并留证」的程度：`sc_platform_control` 与 `<customer-tenant-db>` 各自拥有独立
 集群、独立数据卷、独立应用角色、精确 filter、独立路由与存储命名空间，且都通过受管 plan/apply 回执加一次
 带外只读复核确认。`demo` 职责仍按声明的 gap（共享 bootstrap 角色）如实描述，duty 入口不会渲染或重启它。
 
@@ -999,7 +1021,7 @@ guarded by `SC_CONFIRM_DAILY_RUNTIME_TENANT_ADDONS=DELIVER_EXACT_DAILY_RUNTIME_T
 ```
 SC_CONFIRM_DAILY_RUNTIME_TENANT_ADDONS=DELIVER_EXACT_DAILY_RUNTIME_TENANT_ADDONS \
 make daily.runtime.tenant.addons.deliver \
-  DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY=/home/lidefend/workspace/sce-customer-baosheng-odoo \
+  DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY=/home/lidefend/workspace/<customer-repository> \
   DAILY_RUNTIME_TENANT_SHA=bfbc736c51d987777b50c465261ece1d8d22f008
 ```
 
@@ -1007,10 +1029,10 @@ make daily.runtime.tenant.addons.deliver \
 PASS  mode=apply
 path    /opt/sce/tenant-addons/daily/bfbc736c51d987777b50c465261ece1d8d22f008
 digest  e0a3210da88ea49b1af16d6c037081289a97a39f7fb602d67192c25bf67dd7a6
-modules sce_customer_baosheng
-        sce_customer_baosheng_core035_mvp
-        sce_customer_baosheng_history_attachments
-        sce_customer_baosheng_legacy
+modules <customer-module>
+        <customer-module>_core035_mvp
+        <customer-module>_history_attachments
+        <customer-module>_legacy
 ```
 
 A read-only `plan` against the same commit now reports `PASS` with the same digest and the same four
@@ -1076,7 +1098,7 @@ never restarted, one restart only, and no install without `base`).
 
 ```
 bootstrap.attempts[0]  base_state=uninstalled  entrypoint_finished=true  attempt_failed=true  -> restart
-docker restart sc-tenant-baosheng-dev-odoo-1                                          returncode 0
+docker restart <customer-tenant-odoo-container>                                          returncode 0
 bootstrap.attempts[1]  entrypoint_finished=false                                      -> wait
 bootstrap.ready          true                state=installed
 initialize               returncode 0        modules installed, registry loaded in 117.220s
@@ -1093,7 +1115,7 @@ Independent read-only readback (not the entry's own report):
 ```
 base_state=installed   declared_installed=11/11   public relations=5455   types=1748
 ir_ui_menu=724         res_users=5   res_company=1
-ir_config_parameter sc.tenant.bound_tenant_key = baosheng     (the client post_init hook ran)
+ir_config_parameter sc.tenant.bound_tenant_key = <tenant_key>     (the client post_init hook ran)
 containers: nginx/odoo/redis/db all running (healthy)         curl :18090/web/login -> 200
 odoo log: 0 ERROR/CRITICAL lines in the last 300
 second entrypoint run: "base already installed; skip bootstrap"   (the fix, end to end)
@@ -1117,7 +1139,7 @@ and the Step E/F isolation and product acceptance remain open.
 
 ### Why this had to come before the migration
 
-The owner ruled that `sc_tenant_baosheng_dev` may not take its first business-data write without a paired
+The owner ruled that `<customer-tenant-db>` may not take its first business-data write without a paired
 recovery point. The existing data-continuity tool could not provide one: it hard-coded `sc_demo`, its
 containers, its volume, its filestore root and its backup root, so the only database it could ever
 capture was the demo.
@@ -1143,7 +1165,7 @@ The contract may only carry assertion configuration. If it restates an identity 
 the two disagree, the load fails with `identity mismatch: <field>` rather than choosing a winner. Table
 and column names for the relationship sentinel are declared too (`relation_sample`), replacing the
 hard-coded `payment_request.project_id/contract_id`, and live reads now use the duty's application role
-(`sc_tenant_baosheng_dev_app`) while the isolated drill uses the drill's own role.
+(`<customer-tenant-app-role>`) while the isolated drill uses the drill's own role.
 
 `scripts/ops/daily_runtime_tenant_recovery_contract_v1.json` is the customer duty's contract, and four
 governed entries carry it end to end:
@@ -1175,7 +1197,7 @@ baseline        database_writes=0        database_uuid 30c898b8-c877-11f1-a7d9-4
                 res_company=1 res_users=5 project_project=0 construction_contract=0
                 payment_request=0 ir_attachment=461 ir_module_module=677
 
-backup          paired_backup_pass=true  /data/backups/daily-tenant-baosheng-dev/sc_tenant_baosheng_dev-20261015T095006Z-653a3119
+backup          paired_backup_pass=true  <customer-tenant-backup-namespace>/<customer-tenant-backup-set>
 
 validate        backup_status=complete   pair_stable_during_capture=true
                 database=pg_restore_list_passed   filestore=tar_list_passed
@@ -1201,7 +1223,7 @@ empty and only `restore-drill` compares it, so the drill still proves the restor
 ### What this does **not** close
 
 A recovery point is a precondition, not migration. No historical data has moved into
-`sc_tenant_baosheng_dev`; the customer module's own versioned migration
+`<customer-tenant-db>`; the customer module's own versioned migration
 (`historical_payment_migration_policy.expected_records=12386`) has not run; Step E isolation verification
 and Step F product acceptance are still open.
 
@@ -1291,12 +1313,12 @@ or imported in this step.
 活体读回（本会话只读复核）：
 
 ```
-sc_demo                     : platform_release_db=sc_demo, bound_tenant_key=baosheng,
+sc_demo                     : platform_release_db=sc_demo, bound_tenant_key=<tenant_key>,
                               released+active = construction.standard:daily-navigation-standard-10bf72ef4bb0,
                                                 construction.preview:daily-navigation-preview-10bf72ef4bb0
-sc_tenant_baosheng_dev      : platform_release_db=<none>, bound_tenant_key=baosheng, 快照 0 条,
+<customer-tenant-db>      : platform_release_db=<none>, bound_tenant_key=<tenant_key>, 快照 0 条,
                               sc_product_policy = platform.standard / platform.preview / construction.standard / construction.preview,
-                              sce_customer_baosheng installed
+                              <customer-module> installed
 sc_platform_control         : platform_release_db 无, 快照 0 条
 ```
 
@@ -1308,8 +1330,8 @@ sc_platform_control         : platform_release_db 无, 快照 0 条
 
 | 项 | 值 |
 |---|---|
-| 目标库 | `sc_tenant_baosheng_dev`（职责 `customer_tenant_dev`） |
-| 租户 | `baosheng`（`sc.tenant.bound_tenant_key` = `baosheng`） |
+| 目标库 | `<customer-tenant-db>`（职责 `customer_tenant_dev`） |
+| 租户 | `<tenant_key>`（`sc.tenant.bound_tenant_key` = `<tenant_key>`） |
 | 版次 | 仅 `construction.standard`，`version_prefix=daily-navigation`，期望版本 `daily-navigation-standard-<SC_SOURCE_REVISION 前12位>`；`construction.preview` **不自动扩** |
 | 代码版本 | 分支 `fix/data-ownership-visibility-recovery-20261015`，基线 `main/origin/main = 10bf72ef`；产物源 `SC_SOURCE_REVISION` 由职责 env 提供 |
 | 影响集合 | `config/ops/daily_runtime_database_duties.v1.json`、`make/daily_candidate.mk`、`scripts/ops/daily_runtime_duty_payload.py`（纯重命名复用）、新增 `scripts/ops/daily_runtime_duty_edition_release.py` 与其测试 |
@@ -1353,14 +1375,14 @@ sc_platform_control         : platform_release_db 无, 快照 0 条
 `PRODUCT_KEY=construction.standard`）：
 
 ```
-platform_parameter : PASS   value = sc_tenant_baosheng_dev
+platform_parameter : PASS   value = <customer-tenant-db>
 snapshot           : PASS   snapshot_id = 1
                             version = daily-navigation-standard-10bf72ef4bb0
                             policy_menu_count = 90 = snapshot_menu_count
 preview_page_count : 0      未自动扩 construction.preview
 ```
 
-权威回读：carrier = `sc_tenant_baosheng_dev`，恰 1 条 released+active 的 `construction.standard`。
+权威回读：carrier = `<customer-tenant-db>`，恰 1 条 released+active 的 `construction.standard`。
 
 重试幂等已验证：第二次发布两份收据均为 `changed:false` / `idempotent:true`，
 `release_state_digest` 前后一致（`a6fcaacd5df619ce…`）。
@@ -1392,7 +1414,7 @@ preview_page_count : 0      未自动扩 construction.preview
 `BLOCKED: duty customer_tenant_dev declares no payload_operator block`。这正是测试断言的行为，属于
 **正常保护**——不修改产品校验去消除它。
 
-**只读实测事实**（`sc_tenant_baosheng_dev`）：
+**只读实测事实**（`<customer-tenant-db>`）：
 
 ```
 res_users : 1 __system__(inactive) / 2 admin(active,internal) / 3 default(inactive)
@@ -1406,7 +1428,7 @@ importer  : smart_core.group_smart_core_tenant_payload_importer (id 19) 成员 =
 **两个待所有者给定的输入（其余准备工作已就绪）**：
 
 1. 专用操作员身份的**承载层**：由平台按声明在启用载荷接口的库上生成，
-   还是由客户模块 `sce_customer_baosheng`（客户仓库工作区）声明租户服务账号。
+   还是由客户模块 `<customer-module>`（客户仓库工作区）声明租户服务账号。
 2. `APPROVED_BY` 必须绑定**可核验的真实审批主体及授权依据**；所有者已明确禁止填所有者本人或伪造审批人。
 
 ### 定向验证（非零，迭代阶段）
@@ -1458,9 +1480,9 @@ importer  : smart_core.group_smart_core_tenant_payload_importer (id 19) 成员 =
 ```yaml
 carrier: unified_onboarding_service_identity
 identity_type: external_xmlid
-identity_key: smart_core.svc_tenant_payload_operator_baosheng
-login: svc-tenant-payload-operator-baosheng
-tenant_key: baosheng
+identity_key: smart_core.svc_tenant_payload_operator_<tenant_key>
+login: svc-tenant-payload-operator-<tenant_key>
+tenant_key: <tenant_key>
 company_xmlid: base.main_company
 import_capability: migrate
 grant_scope_version: 3
@@ -1550,12 +1572,12 @@ S3 观察（记录为后续项，不作为本批阻断）：
 `make daily.runtime.duty.operator_grant.remote_provision` 返回：
 
 ```
-odoo.exceptions.ValidationError: DBGOV1_DATABASE_NOT_REGISTERED:sc_tenant_baosheng_dev
+odoo.exceptions.ValidationError: DBGOV1_DATABASE_NOT_REGISTERED:<customer-tenant-db>
 ```
 
 根因链：`provision()` → `_assert_governed_principal()` → `_assert_governance_principal()` →
 `_resolve_entry(db_name)`；而审批投影 `_approved_access_projection` 在**平台控制库**
-`sc_platform_control` 上执行 `_resolve_entry(sc_tenant_baosheng_dev)`，该库
+`sc_platform_control` 上执行 `_resolve_entry(<customer-tenant-db>)`，该库
 `sc.platform.database.registration` 为 **0 行**。
 
 也就是说：登记入口 `scripts/ops/platform_database_register.py` 早已存在且自带 fail-closed
@@ -1589,7 +1611,7 @@ Make 入口：`verify.daily.duty.database_registration`（31 项）、
 |---|---|
 | 写前 | `sc.platform.database.registration` 0 行、`sc_platform_database_operation` 0 行、`sc.platform.maintenance.access` 0 行；readback 报 `registered=false, writes=0`；入口摘要 `8ad05369…` 与本树一致 |
 | 写入 | `operation_id=1`，entry `platform.database.register`，`execution_id=e6aa707444f34f6084484abc516ab1ec`，`status=passed`、`commit_state=committed`、`initial_state=declared`，除声明事实外不带任何环境 |
-| 写后 | `sc_tenant_baosheng_dev｜customer｜baosheng｜customer_production｜database_per_customer_tenant｜^sc_tenant_baosheng_dev$｜declared`，`grants_business_data_scope=false`，`maintenance_access_count=0`，审计恰好 1 条 `register`（`from_state` 空 → `to_state=declared`） |
+| 写后 | `<customer-tenant-db>｜customer｜<tenant_key>｜customer_production｜database_per_customer_tenant｜^<customer-tenant-db>$｜declared`，`grants_business_data_scope=false`，`maintenance_access_count=0`，审计恰好 1 条 `register`（`from_state` 空 → `to_state=declared`） |
 | 幂等 | 再次 `register` 报 `created=false`、`entry_report.reused=true`，审计仍是 1 条 → 复用路径确实不写 |
 
 写入量级：平台控制集群内 **1 行登记 + 1 行审计**，追加式。
@@ -1619,7 +1641,7 @@ access for this duty: the lifecycle refuses to fabricate one
 ### 依赖审批的只读动作
 
 - `make daily.runtime.duty.operator_grant.remote_readback`**不需要审批**，已执行并留下审批前基线：
-  `operator=null`、`importer_group_member_count=0`、`bound_tenant_key=baosheng`、
+  `operator=null`、`importer_group_member_count=0`、`bound_tenant_key=<tenant_key>`、
   已发布版次 `construction.standard / daily-navigation-standard-10bf72ef4bb0`、
   `required_group_closure_xmlids` 与交接记录一致。
 - `make daily.runtime.duty.payload.remote_plan` 当前被拒（`TPV1_IMPORT_OPERATOR_IDENTITY_NOT_UNIQUE`，
@@ -1630,8 +1652,8 @@ access for this duty: the lifecycle refuses to fabricate one
 
 > **请所有者提供正式审批账号（或通过现有认证入口完成批准），并给出要绑定的授权依据。**
 
-审批记录须同时绑定：目标租户 + 数据库 `sc_tenant_baosheng_dev`、操作员身份
-`smart_core.svc_tenant_payload_operator_baosheng`、能力 `migrate`、载荷摘要
+审批记录须同时绑定：目标租户 + 数据库 `<customer-tenant-db>`、操作员身份
+`smart_core.svc_tenant_payload_operator_<tenant_key>`、能力 `migrate`、载荷摘要
 `f1adc6fb17b516d42492fe42229df0cce65956ea113978a19243c0de57ec1ed4`、有效期；
 且审批人必须是**独立于请求人**、持有 `smart_core.group_smart_core_security_admin` 的主体。
 
@@ -1702,7 +1724,7 @@ B 线只读复核 `5f5c4dae..4450e674` 结论 `APPROVE_WITH_NOTES`，其中一�
 
 | 注入 | 结果 |
 |---|---|
-| `:491` 的 `control` 改成 `duty` | 接线层用例 FAILED（`-d` 变成 `sc_tenant_baosheng_dev`） |
+| `:491` 的 `control` 改成 `duty` | 接线层用例 FAILED（`-d` 变成 `<customer-tenant-db>`） |
 | 删除 `after != before and not created` | 移动反例 FAILED（未抛错） |
 
 ### 证据
@@ -1879,7 +1901,7 @@ P4 shell 程序 + 独立真实批准人。**在这两项落实前，不再触发
 2. `...remote_bootstrap`，`SC_CONFIRM_PLATFORM_SECURITY_ADMIN_BOOTSTRAP=BOOTSTRAP_DECLARED_PLATFORM_SECURITY_ADMIN`、
    `PLATFORM_SECURITY_ADMIN_LOGIN=lidefend` + 真实姓名/证据引用，然后回读身份
    （安全管理员恰好一次、无存储密码、**闭包外的组为空**、维护账本行数不变）；
-3. 以平台管理员创建维护申请（`capability=migrate`、operator `smart_core.svc_tenant_payload_operator_baosheng`、
+3. 以平台管理员创建维护申请（`capability=migrate`、operator `smart_core.svc_tenant_payload_operator_<tenant_key>`、
    摘要 `f1adc6fb…1ed4`、operations `[provision, grant]`），由 `lidefend` 通过入口批准；
 4. `remote_provision` → 回读 → `remote_plan` → `remote_grant` → `remote_import` → `remote_verify`
    → 对账（12386 / 6322／29／6035，金额、来源关系、附件、归属）→ `remote_revoke` → B 线独立复核 → 主线集成。
@@ -2145,7 +2167,7 @@ odoo 日志 `base already installed; skip bootstrap`。
 
 | 阶段 | 入口 | 结果 |
 |---|---|---|
-| 申请 | `POST /api/ops/maintenance/access/request`（`admin`，平台管理员） | PASS：`access_id=1`、`state=requested`、`requested_by=admin`、`approved_by` 空、`capability=migrate`、`db=sc_tenant_baosheng_dev`、`authorized_operations=[provision, grant]`、`operator=smart_core.svc_tenant_payload_operator_baosheng`、`subject_checksum=f1adc6fb…` |
+| 申请 | `POST /api/ops/maintenance/access/request`（`admin`，平台管理员） | PASS：`access_id=1`、`state=requested`、`requested_by=admin`、`approved_by` 空、`capability=migrate`、`db=<customer-tenant-db>`、`authorized_operations=[provision, grant]`、`operator=smart_core.svc_tenant_payload_operator_<tenant_key>`、`subject_checksum=f1adc6fb…` |
 | 审批 | `POST /api/ops/maintenance/access/approve`（`lidefend`，安全管理员） | PASS：`state=approved`、`approved_by=lidefend`、窗口 `2026-10-15 20:43:20 → 2026-10-16 08:43:20`（UTC，即北京时间 08:43:20 到期） |
 | 查询 | `GET /api/ops/maintenance/access` | 200、`count=1`、`state=approved` |
 
@@ -2195,7 +2217,7 @@ odoo 日志 `base already installed; skip bootstrap`。
 
 | 声明 | 入口 | 结果 |
 |---|---|---|
-| 生效版次 | `make daily.runtime.duty.edition_release.remote_publish` | **PASS**：`snapshot_id=2`、`version=daily-navigation-standard-b80841059b19`、`state=released`、旧快照转 `superseded`、`snapshot_effective_page_count=90`、`policy_menu_count=90`；`smart_core.platform_release_db` 仍为 `sc_tenant_baosheng_dev`（租户持有生效快照，未取得平台发布权） |
+| 生效版次 | `make daily.runtime.duty.edition_release.remote_publish` | **PASS**：`snapshot_id=2`、`version=daily-navigation-standard-b80841059b19`、`state=released`、旧快照转 `superseded`、`snapshot_effective_page_count=90`、`policy_menu_count=90`；`smart_core.platform_release_db` 仍为 `<customer-tenant-db>`（租户持有生效快照，未取得平台发布权） |
 | 操作员身份 | `…operator_grant.remote_provision` | **PASS 且幂等**：`created=false`、`writes=0`、`approval_access_id=1`、uid 6、无口令、无原生 API Key、非 data operator |
 | 窄授权 | `…operator_grant.remote_grant` | **PASS**：仅新增 `smart_core.group_smart_core_tenant_payload_importer`，`membership 5→6`、`writes=1`、`importer_implied_xmlids=[]` |
 
@@ -2209,9 +2231,9 @@ odoo 日志 `base already installed; skip bootstrap`。
 
 | 权威 | 事实 |
 |---|---|
-| 载荷 | `baosheng-rc01-full-historical-attachments-20260811-v10`，`customer_module_version=17.0.2.7.0`，`source_version=authorized-odoo17-snapshot-v1`，`payload_checksum=f1adc6fb…` |
-| 已交付客户模块 | `/opt/sce/tenant-addons/daily/bfbc736c…/sce_customer_baosheng`，`__manifest__.py` 与 `customer_module_manifest.json` 均为 **17.0.2.8.0** |
-| 已安装模块记录 | `sc_tenant_baosheng_dev` 内 `ir_module_module.sce_customer_baosheng` = `installed` / **17.0.2.8.0** |
+| 载荷 | `<customer-payload-id>`，`customer_module_version=17.0.2.7.0`，`source_version=authorized-odoo17-snapshot-v1`，`payload_checksum=f1adc6fb…` |
+| 已交付客户模块 | `/opt/sce/tenant-addons/daily/bfbc736c…/<customer-module>`，`__manifest__.py` 与 `customer_module_manifest.json` 均为 **17.0.2.8.0** |
+| 已安装模块记录 | `<customer-tenant-db>` 内 `ir_module_module.<customer-module>` = `installed` / **17.0.2.8.0** |
 | 适配器来源 | `customer_delivery_config.py:39` 把 `customer_module_version` 从模块自身 `customer_module_manifest.json` 投影出来，所以适配器声明与模块版本**构造上一致** |
 | 其它载荷 | 载荷库内其余载荷均声明 17.0.2.6.0 / 17.0.2.7.0；**没有任何载荷声明 17.0.2.8.0**；已交付树只有 `40b67f99`（17.0.2.6.0）与 `bfbc736c`（17.0.2.8.0） |
 

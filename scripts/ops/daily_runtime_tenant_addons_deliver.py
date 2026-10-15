@@ -52,7 +52,6 @@ MARKER = "DAILY_RUNTIME_TENANT_ADDONS="
 REMOTE_ROOT = "/opt/sce/tenant-addons/daily"
 CONFIRMATION = "DELIVER_EXACT_DAILY_RUNTIME_TENANT_ADDONS"
 CONFIRM_ENV = "SC_CONFIRM_DAILY_RUNTIME_TENANT_ADDONS"
-DEFAULT_CUSTOMER_MODULE = "sce_customer_baosheng"
 SUBTREE = "addons"
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
@@ -307,7 +306,13 @@ def main(argv=None):
         source = source_facts(options.customer_repository, options.tenant_sha)
         if options.apply and not source["clean"]:
             raise DeliverError("customer worktree is not clean; an exact commit is required")
-        required = sorted(set(options.require_module or [DEFAULT_CUSTOMER_MODULE]))
+        # The caller names the modules the reviewed commit must carry. This
+        # entry ships in the product tree, so it must not hold one customer's
+        # module name as a default: doing so would deliver that identity to
+        # every tenant that reads the tree.
+        required = sorted(set(options.require_module))
+        if not required:
+            raise DeliverError("at least one --require-module is required")
         malformed = [item for item in required if not MODULE_NAME.fullmatch(str(item))]
         if malformed:
             raise DeliverError("invalid required module name: %s" % (",".join(malformed),))

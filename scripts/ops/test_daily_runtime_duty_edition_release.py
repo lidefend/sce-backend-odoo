@@ -20,7 +20,35 @@ assert SPEC and SPEC.loader
 ENTRY = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(ENTRY)
 
+SUPPORT_SPEC = importlib.util.spec_from_file_location(
+    "duty_identity_test_support",
+    ROOT / "scripts/ops/duty_identity_test_support.py",
+)
+assert SUPPORT_SPEC and SUPPORT_SPEC.loader
+SUPPORT = importlib.util.module_from_spec(SUPPORT_SPEC)
+SUPPORT_SPEC.loader.exec_module(SUPPORT)
+
 DECLARATION = ROOT / "config/ops/daily_runtime_database_duties.v1.json"
+
+
+def setUpModule():
+    """Resolve the tracked template against the synthetic customer binding."""
+    override = SUPPORT.synthetic_instances_override()
+    override.start()
+    unittest.addModuleCleanup(override.stop)
+
+
+def governed_declaration() -> dict:
+    """The tracked declaration with its managed customer binding merged in.
+
+    The result is self-contained: the ``managed_duty_instances`` pointer is
+    dropped, so a test that writes it to a temporary path reads back one
+    complete declaration instead of reaching for the governed directory again.
+    """
+    payload = ENTRY.duty_identity.load_declaration(DECLARATION)
+    payload = json.loads(json.dumps(payload, ensure_ascii=False))
+    payload.pop("managed_duty_instances", None)
+    return payload
 CUSTOMER_DUTY = "customer_tenant_dev"
 DEMO_DUTY = "demo"
 PLATFORM_DUTY = "platform_control"
@@ -31,7 +59,7 @@ STACK = "duty-stack-1a5ca02d60da.yml"
 
 
 def _declaration(**overrides) -> dict:
-    payload = json.loads(DECLARATION.read_text(encoding="utf-8"))
+    payload = governed_declaration()
     duties = {entry["duty"]: entry for entry in payload["duties"]}
     for name, change in overrides.items():
         target = duties[name]
@@ -45,9 +73,9 @@ def _declaration(**overrides) -> dict:
 class DutyResolutionTests(unittest.TestCase):
     def test_a_declared_customer_duty_is_accepted(self):
         duty = ENTRY.resolve_release_duty(CUSTOMER_DUTY)
-        self.assertEqual(duty["database"], "sc_tenant_baosheng_dev")
-        self.assertEqual(duty["database_role"], "sc_tenant_baosheng_dev_app")
-        self.assertEqual(duty["tenant_key"], "baosheng")
+        self.assertEqual(duty["database"], "sc_tenant_sample_dev")
+        self.assertEqual(duty["database_role"], "sc_tenant_sample_dev_app")
+        self.assertEqual(duty["tenant_key"], "sample")
         self.assertEqual(duty["data_purpose"], "customer")
         self.assertEqual(duty["edition"]["allowed_product_keys"], [STANDARD])
         self.assertEqual(duty["edition"]["version_prefix"], "daily-navigation")
@@ -147,7 +175,7 @@ class DutyResolutionTests(unittest.TestCase):
 
     def test_entry_hardcodes_no_duty_identity(self):
         source = (ROOT / "scripts/ops/daily_runtime_duty_edition_release.py").read_text()
-        duties = json.loads(DECLARATION.read_text())["duties"]
+        duties = governed_declaration()["duties"]
         for duty in duties:
             for key in ("database", "database_role", "dbfilter"):
                 value = duty[key]
@@ -212,7 +240,7 @@ class ReleaseStateTests(unittest.TestCase):
             ENTRY.duty_runtime,
             "psql",
             side_effect=[
-                "sc.tenant.bound_tenant_key=baosheng\nsmart_core.platform_release_db=sc_tenant_baosheng_dev\n",
+                "sc.tenant.bound_tenant_key=sample\nsmart_core.platform_release_db=sc_tenant_sample_dev\n",
                 "7|construction.standard|v1|released|t|t\n",
             ],
         ):
@@ -373,7 +401,7 @@ class ReadbackAssertionTests(unittest.TestCase):
             "writes": 0,
             "database": self.duty["database"],
             "platform_release_db": self.duty["database"],
-            "bound_tenant_key": "baosheng",
+            "bound_tenant_key": "sample",
             "snapshot_count": 1,
             "released_active": [
                 {"product_key": STANDARD, "version": "daily-navigation-standard-10bf72ef4bb0"}
@@ -493,9 +521,9 @@ class EntryTests(unittest.TestCase):
         report = {
             "mode": "read_only",
             "writes": 0,
-            "database": "sc_tenant_baosheng_dev",
+            "database": "sc_tenant_sample_dev",
             "platform_release_db": "",
-            "bound_tenant_key": "baosheng",
+            "bound_tenant_key": "sample",
             "snapshot_count": 0,
             "released_active": [],
         }
@@ -512,7 +540,7 @@ class EntryTests(unittest.TestCase):
                         CUSTOMER_DUTY, action="readback", tool_root=tool_root
                     )
         self.assertEqual(evidence["action"], "readback")
-        self.assertEqual(evidence["database"], "sc_tenant_baosheng_dev")
+        self.assertEqual(evidence["database"], "sc_tenant_sample_dev")
         self.assertEqual(evidence["product_key"], "")
         self.assertEqual(
             evidence["release_state_digest_before"], evidence["release_state_digest_after"]
@@ -520,13 +548,13 @@ class EntryTests(unittest.TestCase):
 
     def test_readback_is_refused_when_the_duty_changed(self):
         first = {"parameters": [], "snapshots": []}
-        second = {"parameters": ["smart_core.platform_release_db=sc_tenant_baosheng_dev"], "snapshots": []}
+        second = {"parameters": ["smart_core.platform_release_db=sc_tenant_sample_dev"], "snapshots": []}
         report = {
             "mode": "read_only",
             "writes": 0,
-            "database": "sc_tenant_baosheng_dev",
+            "database": "sc_tenant_sample_dev",
             "platform_release_db": "",
-            "bound_tenant_key": "baosheng",
+            "bound_tenant_key": "sample",
             "released_active": [],
         }
         output = "%s%s\n" % (ENTRY.READBACK_MARKER, json.dumps(report))
@@ -545,17 +573,17 @@ class EntryTests(unittest.TestCase):
         before = {"parameters": [], "snapshots": []}
         after = {
             "parameters": [
-                "sc.tenant.bound_tenant_key=baosheng",
-                "smart_core.platform_release_db=sc_tenant_baosheng_dev",
+                "sc.tenant.bound_tenant_key=sample",
+                "smart_core.platform_release_db=sc_tenant_sample_dev",
             ],
             "snapshots": ["12|construction.standard|daily-navigation-standard-10bf72ef4bb0|released|t|t"],
         }
         configure = json.dumps(
             {
                 "status": "PASS",
-                "database": "sc_tenant_baosheng_dev",
+                "database": "sc_tenant_sample_dev",
                 "parameter": ENTRY.PARAMETER,
-                "value": "sc_tenant_baosheng_dev",
+                "value": "sc_tenant_sample_dev",
                 "changed": True,
             },
             sort_keys=True,
@@ -563,7 +591,7 @@ class EntryTests(unittest.TestCase):
         snapshot = json.dumps(
             {
                 "status": "PASS",
-                "database": "sc_tenant_baosheng_dev",
+                "database": "sc_tenant_sample_dev",
                 "product_key": STANDARD,
                 "version": "daily-navigation-standard-10bf72ef4bb0",
                 "snapshot_id": 12,
@@ -573,9 +601,9 @@ class EntryTests(unittest.TestCase):
         report = {
             "mode": "read_only",
             "writes": 0,
-            "database": "sc_tenant_baosheng_dev",
-            "platform_release_db": "sc_tenant_baosheng_dev",
-            "bound_tenant_key": "baosheng",
+            "database": "sc_tenant_sample_dev",
+            "platform_release_db": "sc_tenant_sample_dev",
+            "bound_tenant_key": "sample",
             "snapshot_count": 1,
             "released_active": [
                 {"product_key": STANDARD, "version": "daily-navigation-standard-10bf72ef4bb0"}
@@ -665,7 +693,7 @@ class MakeTargetTests(unittest.TestCase):
             self.assertIn('python3 "$(DAILY_DUTY_EDITION_TOOL)"', body, target)
             self.assertIn('--duty "$(DAILY_DUTY_EDITION_DUTY)"', body, target)
             # The recipe may not carry a database or container name of its own.
-            self.assertNotIn("sc_tenant_baosheng_dev", body, target)
+            self.assertNotIn("sc_tenant_sample_dev", body, target)
             self.assertNotIn("sc_demo", body, target)
 
     def test_publish_requires_the_exact_confirmation_on_the_entry(self):

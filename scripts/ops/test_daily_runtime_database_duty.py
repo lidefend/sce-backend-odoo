@@ -30,6 +30,7 @@ from pathlib import Path
 from unittest import mock
 
 from scripts.ops import daily_runtime_database_duty as duty_entry
+from scripts.ops import duty_identity_test_support as duty_support
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -38,8 +39,22 @@ ENV_TEMPLATE = ROOT / "config/ops/daily_runtime_duty_stack.env"
 COMPOSE_FILE = ROOT / "config/ops/daily_runtime_duty_stack.yml"
 
 
+def setUpModule():
+    """Resolve the tracked template against the synthetic customer binding."""
+    override = duty_support.synthetic_instances_override()
+    override.start()
+    unittest.addModuleCleanup(override.stop)
+
+
 def shipped():
-    return json.loads(DECLARATION.read_text(encoding="utf-8"))
+    """The declaration exactly as the entry loads it, customer binding merged in.
+
+    It is returned whole, including the ``managed_duty_instances`` pointer, so
+    the digest a test compares against is the digest of the very object the
+    entry reviewed rather than a lookalike built by the test.
+    """
+    payload = duty_entry.duty_identity.load_declaration(DECLARATION)
+    return json.loads(json.dumps(payload, ensure_ascii=False))
 
 
 def picked(declaration, name):
@@ -1012,9 +1027,9 @@ class EvaluationTests(unittest.TestCase):
         row["custody"].pop("gap_owner_task", None)
         row["custody"].pop("gap_kind", None)
         cluster = {"present": True, "running": True, "system_identifier": "", "error": "",
-                   "data_volume_owner": "sc_tenant_baosheng_dev_db_data",
-                   "project": "sc-tenant-baosheng-dev", "config_files": ""}
-        custody = {"database_present": True, "database_owner": "sc_tenant_baosheng_dev_app",
+                   "data_volume_owner": "sc_tenant_sample_dev_db_data",
+                   "project": "sc-tenant-sample-dev", "config_files": ""}
+        custody = {"database_present": True, "database_owner": "sc_tenant_sample_dev_app",
                    "allow_connections": True, "role_present": True, "role_superuser": True,
                    "role_createdb": False, "role_createrole": False, "role_canlogin": True,
                    "public_connects": False, "public_schema_create": True, "database_role_connects": True, "error": ""}
@@ -1594,7 +1609,7 @@ class CarrierExecutionTests(unittest.TestCase):
     def duty(self, name="platform_control", face="to_be_initialized"):
         return {
             "duty": name,
-            "database": "sc_platform_control" if name == "platform_control" else "sc_tenant_baosheng_dev",
+            "database": "sc_platform_control" if name == "platform_control" else "sc_tenant_sample_dev",
             "database_role": "sc_platform_control_app",
             "dbfilter": "^sc_platform_control$",
             "custody": {"database_present": True, "database_role_present": True,

@@ -24,15 +24,15 @@ def payload(**overrides):
         "current_database": "sc_demo",
         "databases": [
             {"name": "sc_demo", "owner": "sc_app", "encoding": "UTF8"},
-            {"name": "sc_tenant_baosheng_dev", "owner": "sc_baosheng", "encoding": "UTF8"},
+            {"name": "sc_tenant_sample_dev", "owner": "sc_sample", "encoding": "UTF8"},
         ],
         "roles": [
             {"name": "sc_app", "can_login": True, "superuser": False, "createdb": False},
-            {"name": "sc_baosheng", "can_login": True, "superuser": False, "createdb": False},
+            {"name": "sc_sample", "can_login": True, "superuser": False, "createdb": False},
         ],
         "filestores": {
             "sc_demo": "/var/lib/odoo/filestore/sc_demo",
-            "sc_tenant_baosheng_dev": "/var/lib/odoo/filestore/sc_tenant_baosheng_dev",
+            "sc_tenant_sample_dev": "/var/lib/odoo/filestore/sc_tenant_sample_dev",
         },
         "data_dir": "/var/lib/odoo",
         "dbfilter": "^sc_demo$",
@@ -48,7 +48,7 @@ def payload(**overrides):
 class PreflightTests(unittest.TestCase):
     def test_accepts_declared_input_shapes(self):
         self.assertTrue(module.FULL_SHA.fullmatch(SHA))
-        self.assertTrue(module.DATABASE_NAME.fullmatch("sc_tenant_baosheng_dev"))
+        self.assertTrue(module.DATABASE_NAME.fullmatch("sc_tenant_sample_dev"))
         self.assertTrue(module.SSH_HOST.fullmatch("sc-root"))
 
     def test_rejects_unsafe_shapes(self):
@@ -74,14 +74,14 @@ class VerdictTests(unittest.TestCase):
         self.assertIn("observed_database_present", failed)
 
     def test_declared_database_passes(self):
-        verdict = module.evaluate("sc_tenant_baosheng_dev", payload())
+        verdict = module.evaluate("sc_tenant_sample_dev", payload())
         self.assertTrue(verdict["passed"])
         self.assertEqual(verdict["database_count"], 2)
 
     def test_shared_filestore_is_reported(self):
         shared = payload(filestores={
             "sc_demo": "/var/lib/odoo/filestore/shared",
-            "sc_tenant_baosheng_dev": "/var/lib/odoo/filestore/shared",
+            "sc_tenant_sample_dev": "/var/lib/odoo/filestore/shared",
         })
         verdict = module.evaluate("sc_demo", shared)
         failed = {row["id"] for row in verdict["assertions"] if not row["passed"]}
@@ -90,7 +90,7 @@ class VerdictTests(unittest.TestCase):
     def test_filestore_error_is_not_treated_as_shared(self):
         errored = payload(filestores={
             "sc_demo": "error:AccessError",
-            "sc_tenant_baosheng_dev": "error:AccessError",
+            "sc_tenant_sample_dev": "error:AccessError",
         })
         verdict = module.evaluate("sc_demo", errored)
         self.assertTrue(verdict["passed"])

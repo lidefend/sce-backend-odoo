@@ -55,14 +55,17 @@ SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
 DATABASE_NAME = re.compile(r"^[A-Za-z0-9_]+$")
 KERNEL_MODULE = "smart_core"
 INDUSTRY_MODULE = "smart_construction_core"
-CUSTOMER_MODULE = "sce_customer_baosheng"
+#: The product line every tenant faces, in the order the report lists it. The
+#: customer addon of one tenant is *not* part of the product line: the caller
+#: names it, because a product tree that shipped one customer's module name would
+#: be delivering that customer's identity to every other tenant.
 PRODUCT_MODULES = (
     KERNEL_MODULE,
     INDUSTRY_MODULE,
     "smart_construction_custom",
     "smart_construction_demo",
-    CUSTOMER_MODULE,
 )
+MODULE_NAME = re.compile(r"^[a-z][a-z0-9_]*$")
 BUSINESS_MODELS = (
     ("payment.request", "company_id"),
     ("payment.ledger", "company_id"),
@@ -240,13 +243,31 @@ def parse_databases(value):
     return names
 
 
-def inventory(expected_sha, database, ssh_host, databases):
+def product_modules(customer_module=""):
+    """The declared product line, plus the caller-named customer addon."""
+    modules = list(PRODUCT_MODULES)
+    if customer_module:
+        modules.append(customer_module)
+    return modules
+
+
+def inventory(expected_sha, database, ssh_host, databases, *, customer_module=""):
+    """Read the tenant topology of the declared databases.
+
+    ``customer_module`` is the tenant's own customer addon, named by the caller.
+    The product line is the same for every tenant, so the module list this entry
+    reports is the product line plus, only when the caller names it, that one
+    customer addon. An unnamed customer addon is reported as undeclared rather
+    than inherited from a fixed name in the product tree.
+    """
     if not FULL_SHA.fullmatch(expected_sha or ""):
         raise InventoryError("expected SHA must be a full lowercase commit identity")
     if not DATABASE_NAME.fullmatch(database or ""):
         raise InventoryError("database must be a plain database name")
     if not SSH_HOST.fullmatch(ssh_host or ""):
         raise InventoryError("SSH host must be a configured host alias")
+    if customer_module and not MODULE_NAME.fullmatch(customer_module):
+        raise InventoryError(f"invalid customer module name: {customer_module!r}")
     if not (ROOT / ".git").exists():
         raise InventoryError("must run from the governed repository")
 
@@ -262,7 +283,7 @@ def inventory(expected_sha, database, ssh_host, databases):
     program = (
         PROGRAM_TEMPLATE
         .replace("__DATABASES__", json.dumps(list(databases)))
-        .replace("__PRODUCT_MODULES__", json.dumps(list(PRODUCT_MODULES)))
+        .replace("__PRODUCT_MODULES__", json.dumps(product_modules(customer_module)))
         .replace("__BUSINESS_MODELS__", json.dumps([list(row) for row in BUSINESS_MODELS]))
         .replace("__REGISTRATION_MODULE__", json.dumps(REGISTRATION_MODEL))
     ).encode("utf-8")
@@ -406,12 +427,18 @@ def main():
     parser.add_argument("--databases", default=",".join(DEFAULT_DATABASES))
     parser.add_argument("--ssh-host", required=True)
     parser.add_argument("--report", required=True)
+    parser.add_argument(
+        "--customer-module",
+        default="",
+        help="the tenant's own customer addon; omitted when the tenant declares none",
+    )
     options = parser.parse_args()
 
     try:
         databases = parse_databases(options.databases)
         payload, remote_head = inventory(
-            options.expected_sha, options.database, options.ssh_host, databases
+            options.expected_sha, options.database, options.ssh_host, databases,
+            customer_module=options.customer_module,
         )
         verdict = evaluate(databases, payload)
     except InventoryError as error:
@@ -425,6 +452,7 @@ def main():
         "ssh_host": options.ssh_host,
         "opened_database": options.database,
         "declared_databases": list(databases),
+        "declared_customer_module": options.customer_module,
         "writes": False,
         "provenance": {
             "live_account_query": [

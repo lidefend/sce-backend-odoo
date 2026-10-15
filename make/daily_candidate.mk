@@ -143,7 +143,10 @@ DAILY_DUTY_RECOVERY_CONTRACT ?= scripts/ops/daily_runtime_tenant_recovery_contra
 DAILY_DUTY_RECOVERY_BACKUP_DIR ?=
 DAILY_DUTY_RECOVERY_TOOL ?= $(DAILY_CONTINUITY_REMOTE_ROOT)/scripts/ops/daily_candidate_data_continuity.py
 DAILY_DUTY_RECOVERY_CONTRACT_PATH ?= $(DAILY_CONTINUITY_REMOTE_ROOT)/$(DAILY_DUTY_RECOVERY_CONTRACT)
-DAILY_DUTY_RECOVERY_DIR_PATTERN ?= ^/data/backups/daily-tenant-baosheng-dev/sc_tenant_baosheng_dev-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$$
+# The recovery directory pattern is the selected duty's own. The product tree
+# ships no customer namespace here: the concrete pattern is the declared duty's
+# backup namespace plus its database, and the operator supplies the exact value.
+DAILY_DUTY_RECOVERY_DIR_PATTERN ?=
 
 verify.daily.duty.recovery: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/daily_candidate_data_continuity.py scripts/ops/test_daily_candidate_data_continuity.py
@@ -160,12 +163,14 @@ daily.runtime.duty.recovery.remote_backup: daily.candidate.continuity.remote_ins
 
 daily.runtime.duty.recovery.remote_validate: daily.candidate.continuity.remote_install
 	@test -n "$(DAILY_DUTY_RECOVERY_BACKUP_DIR)" || { echo "DAILY_DUTY_RECOVERY_BACKUP_DIR is required" >&2; exit 2; }
+	@test -n "$(DAILY_DUTY_RECOVERY_DIR_PATTERN)" || { echo "DAILY_DUTY_RECOVERY_DIR_PATTERN must be the selected duty's recovery directory pattern" >&2; exit 2; }
 	@[[ "$(DAILY_DUTY_RECOVERY_BACKUP_DIR)" =~ $(DAILY_DUTY_RECOVERY_DIR_PATTERN) ]] || { echo "invalid duty recovery backup directory" >&2; exit 2; }
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
 		'DAILY_CONTINUITY_EVIDENCE=/tmp/daily-duty-recovery-validate.json python3 "$(DAILY_DUTY_RECOVERY_TOOL)" validate --contract "$(DAILY_DUTY_RECOVERY_CONTRACT_PATH)" --backup-dir "$(DAILY_DUTY_RECOVERY_BACKUP_DIR)"'
 
 daily.runtime.duty.recovery.remote_restore_drill: daily.candidate.continuity.remote_install
 	@test -n "$(DAILY_DUTY_RECOVERY_BACKUP_DIR)" || { echo "DAILY_DUTY_RECOVERY_BACKUP_DIR is required" >&2; exit 2; }
+	@test -n "$(DAILY_DUTY_RECOVERY_DIR_PATTERN)" || { echo "DAILY_DUTY_RECOVERY_DIR_PATTERN must be the selected duty's recovery directory pattern" >&2; exit 2; }
 	@[[ "$(DAILY_DUTY_RECOVERY_BACKUP_DIR)" =~ $(DAILY_DUTY_RECOVERY_DIR_PATTERN) ]] || { echo "invalid duty recovery backup directory" >&2; exit 2; }
 	@test "$${CONFIRM_DAILY_CANDIDATE_RESTORE_DRILL:-}" = "RESTORE_ISOLATED_COPY" || { echo "exact isolated restore confirmation is required" >&2; exit 2; }
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \

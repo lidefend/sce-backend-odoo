@@ -58,7 +58,7 @@ def delivery(**overrides: object) -> dict:
         "tenant_sha": SHA,
         "digest": DIGEST,
         "files": 4,
-        "modules": ["sce_customer_baosheng"],
+        "modules": ["sce_customer_sample"],
         "missing_modules": [],
         "writable_paths": [],
         "error": "",
@@ -73,8 +73,8 @@ def payload_of(**overrides: object) -> dict:
         "tenant_sha": SHA,
         "expected_digest": DIGEST,
         "expected_files": 4,
-        "modules": ["sce_customer_baosheng"],
-        "require_modules": ["sce_customer_baosheng"],
+        "modules": ["sce_customer_sample"],
+        "require_modules": ["sce_customer_sample"],
     }
     value.update(overrides)
     return value
@@ -207,11 +207,11 @@ class VerdictTest(unittest.TestCase):
         self.assertFalse(rows["destination_carries_the_reviewed_commit_marker"])
 
     def test_a_missing_required_module_fails_closed(self) -> None:
-        rows = verdict(self.source, delivery(missing_modules=["sce_customer_baosheng"]), self.payload)
+        rows = verdict(self.source, delivery(missing_modules=["sce_customer_sample"]), self.payload)
         self.assertFalse(rows["every_required_module_is_present_in_the_destination"])
 
     def test_an_extra_delivered_module_fails_closed(self) -> None:
-        rows = verdict(self.source, delivery(modules=["sce_customer_baosheng", "smuggled"]), self.payload)
+        rows = verdict(self.source, delivery(modules=["sce_customer_sample", "smuggled"]), self.payload)
         self.assertFalse(rows["delivered_module_set_is_exactly_the_archived_one"])
 
     def test_a_writable_destination_fails_closed(self) -> None:
@@ -223,7 +223,7 @@ class CommandTest(unittest.TestCase):
     def test_a_report_touches_only_the_read_only_remote_call(self) -> None:
         with tempfile.TemporaryDirectory() as workspace:
             root = Path(workspace)
-            head = build_repository(root, {"sce_customer_baosheng": "{}\n"})
+            head = build_repository(root, {"sce_customer_sample": "{}\n"})
             report = root / "report.json"
             calls: list[list[str]] = []
 
@@ -235,7 +235,7 @@ class CommandTest(unittest.TestCase):
             remote = deliver.MARKER + json.dumps(delivery(
                 tenant_sha=head,
                 digest=deliver.local_tree_digest(archive)["digest"],
-                modules=["sce_customer_baosheng"],
+                modules=["sce_customer_sample"],
             ))
             with mock.patch.object(deliver, "ssh", side_effect=lambda host, text, input_bytes=None: (
                 calls.append([text]),
@@ -243,7 +243,8 @@ class CommandTest(unittest.TestCase):
             )[1]):
                 code = deliver.main([
                     "--ssh-host", "sc-root", "--customer-repository", str(root),
-                    "--tenant-sha", head, "--report", str(report),
+                    "--tenant-sha", head, "--require-module", "sce_customer_sample",
+                    "--report", str(report),
                 ])
             self.assertEqual(code, 0)
             self.assertEqual(json.loads(report.read_text())["status"], "PASS")
@@ -253,25 +254,27 @@ class CommandTest(unittest.TestCase):
     def test_an_apply_without_the_confirmation_stops_before_the_host(self) -> None:
         with tempfile.TemporaryDirectory() as workspace:
             root = Path(workspace)
-            head = build_repository(root, {"sce_customer_baosheng": "{}\n"})
+            head = build_repository(root, {"sce_customer_sample": "{}\n"})
             with mock.patch.object(deliver, "ssh", side_effect=AssertionError("the host was contacted")), \
                  mock.patch.dict(os.environ, {deliver.CONFIRM_ENV: ""}, clear=False):
                 code = deliver.main([
                     "--ssh-host", "sc-root", "--customer-repository", str(root),
-                    "--tenant-sha", head, "--apply", "--report", str(root / "r.json"),
+                    "--tenant-sha", head, "--require-module", "sce_customer_sample",
+                    "--apply", "--report", str(root / "r.json"),
                 ])
             self.assertEqual(code, 2)
 
     def test_an_apply_from_a_dirty_worktree_stops_before_the_host(self) -> None:
         with tempfile.TemporaryDirectory() as workspace:
             root = Path(workspace)
-            head = build_repository(root, {"sce_customer_baosheng": "{}\n"})
-            (root / "addons" / "sce_customer_baosheng" / "models.py").write_text("y = 1\n")
+            head = build_repository(root, {"sce_customer_sample": "{}\n"})
+            (root / "addons" / "sce_customer_sample" / "models.py").write_text("y = 1\n")
             with mock.patch.object(deliver, "ssh", side_effect=AssertionError("the host was contacted")), \
                  mock.patch.dict(os.environ, CONFIRM, clear=False):
                 code = deliver.main([
                     "--ssh-host", "sc-root", "--customer-repository", str(root),
-                    "--tenant-sha", head, "--apply", "--report", str(root / "r.json"),
+                    "--tenant-sha", head, "--require-module", "sce_customer_sample",
+                    "--apply", "--report", str(root / "r.json"),
                 ])
             self.assertEqual(code, 2)
 
@@ -281,6 +284,26 @@ class CommandTest(unittest.TestCase):
             head = build_repository(root, {"other_module": "{}\n"})
             with mock.patch.object(deliver, "ssh", side_effect=AssertionError("the host was contacted")), \
                  mock.patch.dict(os.environ, CONFIRM, clear=False):
+                code = deliver.main([
+                    "--ssh-host", "sc-root", "--customer-repository", str(root),
+                    "--tenant-sha", head, "--require-module", "sce_customer_sample",
+                    "--apply", "--report", str(root / "r.json"),
+                ])
+            self.assertEqual(code, 2)
+
+    def test_the_entry_never_defaults_a_customer_module(self) -> None:
+        """The tree ships to every customer, so it may not name one of them.
+
+        A caller that names no module would otherwise get whatever module the
+        entry happened to hard-code, which is how one customer's identity ends
+        up delivered to all of them.
+        """
+        with tempfile.TemporaryDirectory() as workspace:
+            root = Path(workspace)
+            head = build_repository(root, {"sce_customer_sample": "{}\n"})
+            with mock.patch.object(
+                deliver, "ssh", side_effect=AssertionError("the host was contacted")
+            ), mock.patch.dict(os.environ, CONFIRM, clear=False):
                 code = deliver.main([
                     "--ssh-host", "sc-root", "--customer-repository", str(root),
                     "--tenant-sha", head, "--apply", "--report", str(root / "r.json"),

@@ -51,6 +51,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import daily_runtime_duty_identity as duty_identity  # noqa: E402
+
 REMOTE_TMP = "/tmp/sc-daily-database-duty.py"
 MARKER = "DAILY_RUNTIME_DATABASE_DUTY="
 DEFAULT_DECLARATION = "config/ops/daily_runtime_database_duties.v1.json"
@@ -186,6 +189,42 @@ def load_declaration(path):
     if not isinstance(declaration.get("duties"), list) or not declaration["duties"]:
         raise DutyError("DAILY_DUTY_DECLARATION_EMPTY")
     return declaration
+
+
+def load_managed_declaration(path, ssh_host):
+    """Read the template and its managed binding exactly once, or stop.
+
+    The tracked declaration names the generic duties and the shape of a customer
+    duty; the concrete binding lives under ``ops_root`` outside the git checkout,
+    so this entry reads that document through ssh and merges it here.  One read
+    yields both the merged declaration and the description the payload carries,
+    so the revision that was validated is the revision that is materialised: a
+    second read could return a different one.
+
+    ``SC_DAILY_RUNTIME_DUTY_INSTANCES`` names an explicit staged path for the
+    first materialisation.  It is an override, never a fallback.
+    """
+    declaration = load_declaration(path)
+    try:
+        document = duty_identity.read_instances_document(
+            declaration, instances_reader=duty_identity.ssh_instances_reader(ssh_host)
+        )
+        merged = duty_identity.merge_instances(declaration, document["duties"])
+    except duty_identity.DutyIdentityError as error:
+        raise DutyError("DAILY_DUTY_MANAGED_INSTANCES_REFUSED:%s" % (error,)) from error
+    return merged, document
+
+
+def managed_instances_readback(document):
+    """Describe the managed document this entry is about to carry to the host."""
+    return {
+        "file": document["file"],
+        "path": document["path"],
+        "read_from": document["read_from"],
+        "source": document["source"],
+        "sha256": document["sha256"],
+        "duties": [duty.get("duty") for duty in document["duties"]],
+    }
 
 
 def declaration_digest(declaration):
@@ -829,6 +868,63 @@ def ensure_ops_root():
     if not os.path.isdir(OPS_ROOT):
         os.makedirs(OPS_ROOT, mode=0o700, exist_ok=True)
     os.chmod(OPS_ROOT, 0o700)
+
+
+def materialise_managed_instances():
+    """Write the reviewed customer binding into the governed directory.
+
+    The concrete binding of a customer duty is the one fact the product tree may
+    not carry, so it lives here -- outside the git checkout, 0600, owned by the
+    governed directory.  An apply writes the exact bytes the entry validated, keeps
+    the previous revision beside it, replaces the file atomically and reads the
+    digest back, so "the host holds the reviewed binding" is a measurement.  A
+    plan writes nothing and reports only what it observed.  Repeating an apply
+    over the same revision rewrites nothing.
+    """
+    declared = PAYLOAD.get("managed_instances") or {}
+    path = str(declared.get("path") or "")
+    text = declared.get("text") or ""
+    expected = str(declared.get("sha256") or "")
+    entry = {
+        "file": str(declared.get("file") or ""),
+        "path": path,
+        "expected_sha256": expected,
+        "previous_sha256": "",
+        "observed_sha256": "",
+        "wrote": False,
+        "error": "",
+    }
+    if not path or not expected or not text:
+        entry["error"] = "the entry carries no managed duty binding to materialise"
+        return entry
+    if os.path.exists(path):
+        with open(path, "rb") as stream:
+            entry["previous_sha256"] = hashlib.sha256(stream.read()).hexdigest()
+    if MODE != "apply":
+        entry["observed_sha256"] = entry["previous_sha256"]
+        return entry
+    if entry["previous_sha256"] == expected:
+        entry["observed_sha256"] = expected
+        return entry
+    ensure_ops_root()
+    if entry["previous_sha256"]:
+        with open(path, "rb") as stream:
+            previous = stream.read()
+        with open(path + ".previous", "wb") as stream:
+            stream.write(previous)
+        os.chmod(path + ".previous", 0o600)
+    staged = path + ".incomplete"
+    with open(staged, "w", encoding="utf-8") as stream:
+        stream.write(text)
+    os.chmod(staged, 0o600)
+    os.replace(staged, path)
+    with open(path, "rb") as stream:
+        entry["observed_sha256"] = hashlib.sha256(stream.read()).hexdigest()
+    entry["wrote"] = True
+    if entry["observed_sha256"] != expected:
+        entry["error"] = ("the managed duty binding on disk is not the reviewed revision: "
+                          "%s" % (entry["observed_sha256"],))
+    return entry
 
 
 def frontend_build_facts():
@@ -1751,6 +1847,7 @@ for duty in PAYLOAD["duties"]:
         report["duties"].append(salvage_entry(duty, error))
 
 report["frontend_build"] = frontend_build_facts()
+report["managed_instances"] = materialise_managed_instances()
 report["writes"] = MODE == "apply"
 print(MARKER + json.dumps(report, ensure_ascii=False, sort_keys=True))
 '''
@@ -2240,7 +2337,8 @@ def main(argv=None):
             raise DutyError("SSH host must be a configured host alias")
         if options.expected_sha and not FULL_SHA.fullmatch(options.expected_sha):
             raise DutyError("expected SHA must be a full lowercase commit identity")
-        declaration = load_declaration(options.declaration)
+        declaration, document = load_managed_declaration(options.declaration, options.ssh_host)
+        managed = managed_instances_readback(document)
         selected = declared_duties(declaration, options.duty)
         if options.apply:
             confirm_env, confirm_value = PHASE_CONFIRMATIONS.get(
@@ -2296,8 +2394,17 @@ def main(argv=None):
             "bootstrap_timeout": BASE_BOOTSTRAP_TIMEOUT,
             "bootstrap_poll": BASE_BOOTSTRAP_POLL,
             "duties": selected,
+            "managed_instances": dict(managed, text=document["text"]),
         }
         result = remote_duties(options.ssh_host, payload)
+        materialised = result.get("managed_instances") or {}
+        if materialised.get("error"):
+            raise DutyError("DAILY_DUTY_MANAGED_INSTANCES:%s" % (materialised["error"],))
+        if options.apply and materialised.get("observed_sha256") != document["sha256"]:
+            raise DutyError(
+                "DAILY_DUTY_MANAGED_INSTANCES_READBACK:the reviewed binding %s is not on the "
+                "host as %s" % (document["sha256"], materialised.get("observed_sha256") or "<absent>")
+            )
         observations = {row["duty"]: row for row in result.get("duties") or []}
         failures, rows = plan_verdict(
             declaration, selected, observations,
@@ -2334,6 +2441,7 @@ def main(argv=None):
         "platform_admin_database": payload["platform_admin_database"],
         "frontend_build_env_file": payload["frontend_build_env_file"],
         "frontend_build": result.get("frontend_build") or {},
+        "managed_instances": dict(managed, observed=materialised),
         "deployment_binding": binding,
         "phase": payload["phase"],
         "applied": bool(options.apply),

@@ -32,11 +32,39 @@ assert SPEC and SPEC.loader
 ENTRY = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(ENTRY)
 
+SUPPORT_SPEC = importlib.util.spec_from_file_location(
+    "duty_identity_test_support",
+    ROOT / "scripts/ops/duty_identity_test_support.py",
+)
+assert SUPPORT_SPEC and SUPPORT_SPEC.loader
+SUPPORT = importlib.util.module_from_spec(SUPPORT_SPEC)
+SUPPORT_SPEC.loader.exec_module(SUPPORT)
+
 DECLARATION = ROOT / "config/ops/daily_runtime_database_duties.v1.json"
+
+
+def setUpModule():
+    """Resolve the tracked template against the synthetic customer binding."""
+    override = SUPPORT.synthetic_instances_override()
+    override.start()
+    unittest.addModuleCleanup(override.stop)
+
+
+def governed_declaration() -> dict:
+    """The tracked declaration with its managed customer binding merged in.
+
+    The result is self-contained: the ``managed_duty_instances`` pointer is
+    dropped, so a test that writes it to a temporary path reads back one
+    complete declaration instead of reaching for the governed directory again.
+    """
+    payload = ENTRY.duty_identity.load_declaration(DECLARATION)
+    payload = json.loads(json.dumps(payload, ensure_ascii=False))
+    payload.pop("managed_duty_instances", None)
+    return payload
 CUSTOMER_DUTY = "customer_tenant_dev"
 CONTROL_DATABASE = "sc_platform_control"
-CUSTOMER_DATABASE = "sc_tenant_baosheng_dev"
-REASON_TEXT = "owner ruling 2026-10-15 unified onboarding register baosheng dev tenant"
+CUSTOMER_DATABASE = "sc_tenant_sample_dev"
+REASON_TEXT = "owner ruling 2026-10-15 unified onboarding register sample dev tenant"
 CONFIRM = "REGISTER_DECLARED_DAILY_DUTY_IN_PLATFORM_REGISTRY"
 
 REGISTRATION = {
@@ -45,7 +73,7 @@ REGISTRATION = {
     "environment_role": "customer_production",
     "strategy": "database_per_customer_tenant",
     "data_purpose": "customer",
-    "tenant_key": "baosheng",
+    "tenant_key": "sample",
     "lifecycle_state": "declared",
     "last_operation": "register",
     "operation_count": 1,
@@ -104,7 +132,7 @@ def entry_source_sha256() -> str:
 class FixtureDeclaration:
     """A declaration with a real ops root and an immutable tool tree."""
 
-    def __init__(self, *, purpose="customer", tenant_key="baosheng", database=CUSTOMER_DATABASE):
+    def __init__(self, *, purpose="customer", tenant_key="sample", database=CUSTOMER_DATABASE):
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)
         ops_root = self.root / "ops"
@@ -113,7 +141,7 @@ class FixtureDeclaration:
             "services:\n  odoo:\n    volumes:\n      - %s\n" % ENTRY.STACK_SCRIPTS_MOUNT,
             encoding="utf-8",
         )
-        declaration = json.loads(DECLARATION.read_text(encoding="utf-8"))
+        declaration = governed_declaration()
         declaration["ops_root"] = str(ops_root)
         for duty in declaration["duties"]:
             if duty["duty"] == CUSTOMER_DUTY:
@@ -156,7 +184,7 @@ class DeclarationTests(unittest.TestCase):
         duty = ENTRY.resolve_registration_target(CUSTOMER_DUTY)
         self.assertEqual(duty["database"], CUSTOMER_DATABASE)
         self.assertEqual(duty["data_purpose"], "customer")
-        self.assertEqual(duty["tenant_key"], "baosheng")
+        self.assertEqual(duty["tenant_key"], "sample")
         # The role and the strategy are the platform's own vocabulary, not this
         # entry's opinion.
         provisioning = ENTRY.provisioning_policy()
@@ -193,7 +221,7 @@ class DeclarationTests(unittest.TestCase):
         source = (
             ROOT / "scripts/ops/daily_runtime_duty_database_registration.py"
         ).read_text()
-        duties = json.loads(DECLARATION.read_text())["duties"]
+        duties = governed_declaration()["duties"]
         for duty in duties:
             for key in ("database", "database_role", "dbfilter"):
                 value = duty[key]
@@ -304,7 +332,7 @@ class ScriptTests(unittest.TestCase):
             "SC_CONFIRM_PLATFORM_DATABASE_REGISTRY=REGISTER_GOVERNED_PLATFORM_DATABASE",
             "PLATFORM_DATABASE_REGISTER_ENVIRONMENT_ROLE=customer_production",
             "PLATFORM_DATABASE_REGISTER_DATA_PURPOSE=customer",
-            "PLATFORM_DATABASE_REGISTER_TENANT_KEY=baosheng",
+            "PLATFORM_DATABASE_REGISTER_TENANT_KEY=sample",
             "PLATFORM_DATABASE_REGISTER_DBFILTER=^%s$" % CUSTOMER_DATABASE,
             "PLATFORM_DATABASE_REGISTER_REASON=%s" % REASON_TEXT,
         ):

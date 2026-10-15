@@ -24,6 +24,26 @@ SPEC.loader.exec_module(ENTRY)
 DECLARATION = ROOT / "config/ops/daily_runtime_database_duties.v1.json"
 CUSTOMER_DUTY = "customer_tenant_dev"
 DEMO_DUTY = "demo"
+# The governed binding of a customer duty lives outside the git checkout, so this
+# module resolves the tracked template against the synthetic fixture through the
+# one explicit override the resolver supports. No production path reads it.
+SYNTHETIC_INSTANCES = ROOT / "scripts/ops/synthetic_duty_instances.sample.json"
+_SYNTHETIC_OVERRIDE = mock.patch.dict(
+    os.environ, {"SC_DAILY_RUNTIME_DUTY_INSTANCES": str(SYNTHETIC_INSTANCES)}
+)
+
+
+def setUpModule():
+    _SYNTHETIC_OVERRIDE.start()
+
+
+def tearDownModule():
+    _SYNTHETIC_OVERRIDE.stop()
+
+
+def governed_duties() -> list[dict]:
+    """The duties the tracked template resolves to, with its managed binding merged."""
+    return ENTRY.duty_identity.load_declaration(DECLARATION)["duties"]
 
 
 def write_checksums(root: Path, entries: dict[str, bytes]) -> str:
@@ -41,13 +61,13 @@ def write_checksums(root: Path, entries: dict[str, bytes]) -> str:
     return hashlib.sha256(checksums).hexdigest()
 
 
-def payload_manifest(checksum: str, tenant_key: str = "baosheng") -> dict:
+def payload_manifest(checksum: str, tenant_key: str = "sample") -> dict:
     return {
         "schema_version": "tenant_payload_v1",
-        "payload_id": "baosheng-rc01-test",
+        "payload_id": "sample-rc01-test",
         "tenant_key": tenant_key,
         "payload_checksum": checksum,
-        "customer_module": "sce_customer_baosheng",
+        "customer_module": "sce_customer_sample",
         "customer_module_version": "17.0.2.7.0",
         "created_at_utc": "2026-08-11T01:28:57Z",
     }
@@ -56,9 +76,9 @@ def payload_manifest(checksum: str, tenant_key: str = "baosheng") -> dict:
 class DutyResolutionTests(unittest.TestCase):
     def test_a_customer_duty_is_required(self):
         duty = ENTRY.resolve_duty(CUSTOMER_DUTY)
-        self.assertEqual(duty["database"], "sc_tenant_baosheng_dev")
-        self.assertEqual(duty["database_role"], "sc_tenant_baosheng_dev_app")
-        self.assertEqual(duty["tenant_key"], "baosheng")
+        self.assertEqual(duty["database"], "sc_tenant_sample_dev")
+        self.assertEqual(duty["database_role"], "sc_tenant_sample_dev_app")
+        self.assertEqual(duty["tenant_key"], "sample")
         self.assertEqual(duty["data_purpose"], "customer")
 
     def test_non_customer_duties_may_not_receive_a_payload(self):
@@ -73,7 +93,7 @@ class DutyResolutionTests(unittest.TestCase):
 
     def test_entry_hardcodes_no_duty_identity(self):
         source = (ROOT / "scripts/ops/daily_runtime_duty_payload.py").read_text()
-        duties = json.loads(DECLARATION.read_text())["duties"]
+        duties = governed_duties()
         for duty in duties:
             for key in ("database", "database_role", "dbfilter"):
                 value = duty[key]
@@ -100,11 +120,11 @@ class DutyEnvironmentTests(unittest.TestCase):
     def _env(self, **overrides):
         values = {
             "DUTY_NAME": ENTRY.resolve_duty(CUSTOMER_DUTY)["duty"],
-            "COMPOSE_PROJECT_NAME": "sc-tenant-baosheng-dev",
-            "DB_NAME": "sc_tenant_baosheng_dev",
-            "DB_USER": "sc_tenant_baosheng_dev_app",
-            "DB_DATA": "sc_tenant_baosheng_dev_db_data",
-            "ODOO_DATA": "sc_tenant_baosheng_dev_odoo_data",
+            "COMPOSE_PROJECT_NAME": "sc-tenant-sample-dev",
+            "DB_NAME": "sc_tenant_sample_dev",
+            "DB_USER": "sc_tenant_sample_dev_app",
+            "DB_DATA": "sc_tenant_sample_dev_db_data",
+            "ODOO_DATA": "sc_tenant_sample_dev_odoo_data",
             "ODOO_IMAGE": "odoo17-odoo:latest",
         }
         values.update(overrides)
@@ -120,7 +140,7 @@ class DutyEnvironmentTests(unittest.TestCase):
             )
             with mock.patch.object(ENTRY, "assert_private_file"):
                 values = ENTRY.read_duty_env(path, duty)
-        self.assertEqual(values["DB_NAME"], "sc_tenant_baosheng_dev")
+        self.assertEqual(values["DB_NAME"], "sc_tenant_sample_dev")
 
     def test_an_environment_naming_another_database_is_refused(self):
         duty = ENTRY.resolve_duty(CUSTOMER_DUTY)
@@ -147,7 +167,7 @@ class DutyEnvironmentTests(unittest.TestCase):
         duty = ENTRY.resolve_duty(CUSTOMER_DUTY)
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "customer_tenant_dev.env"
-            path.write_text("DB_NAME=sc_tenant_baosheng_dev\n", encoding="utf-8")
+            path.write_text("DB_NAME=sc_tenant_sample_dev\n", encoding="utf-8")
             os.chmod(path, 0o644)
             with self.assertRaisesRegex(ENTRY.PayloadEntryError, "0600"):
                 ENTRY.read_duty_env(path, duty)
@@ -182,14 +202,14 @@ class PayloadIdentityTests(unittest.TestCase):
             (root / "manifest.json").write_text(
                 json.dumps(payload_manifest(approved))
             )
-            manifest = ENTRY.load_manifest(root, "baosheng", approved)
-            self.assertEqual(manifest["customer_module"], "sce_customer_baosheng")
+            manifest = ENTRY.load_manifest(root, "sample", approved)
+            self.assertEqual(manifest["customer_module"], "sce_customer_sample")
             with self.assertRaisesRegex(ENTRY.PayloadEntryError, "tenant"):
                 ENTRY.load_manifest(root, "other", approved)
             with self.assertRaisesRegex(ENTRY.PayloadEntryError, "approved checksum"):
-                ENTRY.load_manifest(root, "baosheng", "0" * 64)
+                ENTRY.load_manifest(root, "sample", "0" * 64)
             with self.assertRaises(ENTRY.PayloadEntryError):
-                ENTRY.load_manifest(root, "baosheng", "not-a-checksum")
+                ENTRY.load_manifest(root, "sample", "not-a-checksum")
 
 
 class PayloadStagingTests(unittest.TestCase):
@@ -352,7 +372,7 @@ class ActionGuardTests(unittest.TestCase):
             ENTRY.execute(
                 CUSTOMER_DUTY,
                 action="drop",
-                payload_id="baosheng-rc01-test",
+                payload_id="sample-rc01-test",
                 approved_checksum="a" * 64,
                 chunk_size=100,
             )
@@ -372,12 +392,14 @@ class ActionGuardTests(unittest.TestCase):
             ENTRY, "_stage_payload", return_value={"root": Path("/tmp/s"), "reused": False, "files": 0, "checksums_sha256": ""}
         ), mock.patch.object(
             ENTRY, "_stage_public_key", return_value={"path": Path("/tmp/sk"), "sha256": ""}
-        ), mock.patch.dict(os.environ, {}, clear=True):
+        ), mock.patch.dict(
+            os.environ, {"SC_DAILY_RUNTIME_DUTY_INSTANCES": str(SYNTHETIC_INSTANCES)}, clear=True
+        ):
             with self.assertRaisesRegex(ENTRY.PayloadEntryError, "CONFIRM_DAILY_DUTY"):
                 ENTRY.execute(
                     CUSTOMER_DUTY,
                     action="import",
-                    payload_id="baosheng-rc01-test",
+                    payload_id="sample-rc01-test",
                     approved_checksum="a" * 64,
                     chunk_size=100,
                 )
@@ -397,13 +419,15 @@ class ActionGuardTests(unittest.TestCase):
             ENTRY, "_stage_payload", return_value={"root": Path("/tmp/s"), "reused": False, "files": 0, "checksums_sha256": ""}
         ), mock.patch.object(
             ENTRY, "_stage_public_key", return_value={"path": Path("/tmp/sk"), "sha256": ""}
-        ), mock.patch.dict(os.environ, {}, clear=True):
+        ), mock.patch.dict(
+            os.environ, {"SC_DAILY_RUNTIME_DUTY_INSTANCES": str(SYNTHETIC_INSTANCES)}, clear=True
+        ):
             # It fails later, on the tool root, and never on a confirmation.
             with self.assertRaises(ENTRY.PayloadEntryError) as caught:
                 ENTRY.execute(
                     CUSTOMER_DUTY,
                     action="plan",
-                    payload_id="baosheng-rc01-test",
+                    payload_id="sample-rc01-test",
                     approved_checksum="a" * 64,
                     chunk_size=100,
                     tool_root=Path("/nonexistent-tool-root"),
@@ -414,13 +438,13 @@ class ActionGuardTests(unittest.TestCase):
 def _duty() -> dict:
     return {
         "duty": CUSTOMER_DUTY,
-        "database": "sc_tenant_baosheng_dev",
-        "database_role": "sc_tenant_baosheng_dev_app",
-        "compose_project": "sc-tenant-baosheng-dev",
-        "odoo_container": "sc-tenant-baosheng-dev-odoo-1",
-        "tenant_key": "baosheng",
+        "database": "sc_tenant_sample_dev",
+        "database_role": "sc_tenant_sample_dev_app",
+        "compose_project": "sc-tenant-sample-dev",
+        "odoo_container": "sc-tenant-sample-dev-odoo-1",
+        "tenant_key": "sample",
         "data_purpose": "customer",
-        "environment_id": "daily-dev-baosheng",
+        "environment_id": "daily-dev-sample",
     }
 
 

@@ -24,6 +24,21 @@ SPEC.loader.exec_module(CONTINUITY)
 CONTRACT_PATH = (
     ROOT / "scripts/ops/daily_candidate_data_continuity_contract_v1.json"
 )
+# The governed binding of a customer duty lives outside the git checkout, so this
+# module resolves the tracked template against the synthetic fixture through the
+# one explicit override the resolver supports. No production path reads it.
+SYNTHETIC_INSTANCES = ROOT / "scripts/ops/synthetic_duty_instances.sample.json"
+_SYNTHETIC_OVERRIDE = mock.patch.dict(
+    os.environ, {"SC_DAILY_RUNTIME_DUTY_INSTANCES": str(SYNTHETIC_INSTANCES)}
+)
+
+
+def setUpModule():
+    _SYNTHETIC_OVERRIDE.start()
+
+
+def tearDownModule():
+    _SYNTHETIC_OVERRIDE.stop()
 
 
 class ContractTests(unittest.TestCase):
@@ -191,20 +206,20 @@ class DutyIdentityTests(unittest.TestCase):
     def test_tenant_duty_identity_comes_from_the_declaration(self):
         contract = CONTINUITY._load_contract(TENANT_CONTRACT_PATH)
         self.assertEqual(contract["duty"], "customer_tenant_dev")
-        self.assertEqual(contract["database"], "sc_tenant_baosheng_dev")
+        self.assertEqual(contract["database"], "sc_tenant_sample_dev")
         self.assertEqual(
-            contract["database_role"], "sc_tenant_baosheng_dev_app"
+            contract["database_role"], "sc_tenant_sample_dev_app"
         )
         self.assertEqual(
-            contract["database_container"], "sc-tenant-baosheng-dev-db-1"
+            contract["database_container"], "sc-tenant-sample-dev-db-1"
         )
         self.assertEqual(
-            contract["odoo_container"], "sc-tenant-baosheng-dev-odoo-1"
+            contract["odoo_container"], "sc-tenant-sample-dev-odoo-1"
         )
         self.assertEqual(
-            contract["backup_root"], "/data/backups/daily-tenant-baosheng-dev"
+            contract["backup_root"], "/data/backups/daily-tenant-sample-dev"
         )
-        self.assertEqual(contract["filestore_scope"], "sc_tenant_baosheng_dev")
+        self.assertEqual(contract["filestore_scope"], "sc_tenant_sample_dev")
         self.assertEqual(
             contract["source_repository"], "/opt/projects/repos/sce-product-odoo"
         )
@@ -255,7 +270,7 @@ class DutyIdentityTests(unittest.TestCase):
         tenant = CONTINUITY._load_contract(TENANT_CONTRACT_PATH)
         self.assertTrue(
             tenant["backup_id"].fullmatch(
-                "sc_tenant_baosheng_dev-20261015T000000Z-deadbeef"
+                "sc_tenant_sample_dev-20261015T000000Z-deadbeef"
             )
         )
         self.assertIsNone(
@@ -264,7 +279,7 @@ class DutyIdentityTests(unittest.TestCase):
         demo = CONTINUITY._load_contract(CONTRACT_PATH)
         self.assertIsNone(
             demo["backup_id"].fullmatch(
-                "sc_tenant_baosheng_dev-20261015T000000Z-deadbeef"
+                "sc_tenant_sample_dev-20261015T000000Z-deadbeef"
             )
         )
 
@@ -300,7 +315,7 @@ class DutyIdentityTests(unittest.TestCase):
             CONTINUITY._psql(contract, "SELECT 1;")
         argv = run.call_args.args[0]
         self.assertEqual(argv[:3], ["docker", "exec", contract["database_container"]])
-        self.assertIn("sc_tenant_baosheng_dev_app", argv)
+        self.assertIn("sc_tenant_sample_dev_app", argv)
 
     def test_isolated_drill_uses_the_drill_own_role(self):
         contract = CONTINUITY._load_contract(TENANT_CONTRACT_PATH)
@@ -309,7 +324,7 @@ class DutyIdentityTests(unittest.TestCase):
         argv = run.call_args.args[0]
         self.assertEqual(argv[:3], ["docker", "exec", "drill"])
         self.assertIn("odoo", argv)
-        self.assertNotIn("sc_tenant_baosheng_dev_app", argv)
+        self.assertNotIn("sc_tenant_sample_dev_app", argv)
 
     def test_declaration_is_the_only_identity_source_in_the_tool(self):
         source = (

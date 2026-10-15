@@ -4,8 +4,6 @@
   "task_id": "DAILY-RUNTIME-TENANT-RECOVERY-01",
   "environment_class": "DAILY_RUNTIME_TENANT_ENVIRONMENT",
   "data_authority": "CUSTOMER_TENANT",
-  "database_role": "sc_tenant_baosheng_dev_app",
-  "backup_id_prefix": "sc_tenant_baosheng_dev",
   "source_repository": "/opt/projects/repos/sce-product-odoo",
   "sentinel_tables": [
     "res_company",
@@ -39,5 +37,7 @@
     "demo_data_write_allowed": false,
     "database_recreate_required": false,
     "filestore_recreate_required": false
-  }
+  },
+  "identity_source": "config/ops/daily_runtime_database_duties.v1.json",
+  "identity_note": "Runtime identity (database, application role, cluster, volumes, filestore scope, backup namespace, backup id prefix) is resolved from the duty declaration. Any concrete value restated here is an assertion and a mismatch is a stop; the concrete customer binding itself lives in the managed duty-instance document, not in this product tree."
 }

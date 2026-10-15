@@ -149,11 +149,13 @@ truth for "which database is this".
 
 The tenant contract is
 `scripts/ops/daily_runtime_tenant_recovery_contract_v1.json`, bound to duty
-`customer_tenant_dev` (`sc_tenant_baosheng_dev`, application role
-`sc_tenant_baosheng_dev_app`, backup namespace
-`/data/backups/daily-tenant-baosheng-dev`). This entry is remote-only: the duty
-storage namespaces exist on the daily server, not in the local iteration
-profile.
+`customer_tenant_dev`. The concrete database, application role, compose project,
+routing and backup namespace of that duty come from the duty declaration
+(`config/ops/daily_runtime_database_duties.v1.json` plus the managed instance
+document under its `ops_root`) and are never restated here: this runbook ships
+with the product, and a duty binding belongs to the environment that is being
+served. This entry is remote-only: the duty storage namespaces exist on the
+daily server, not in the local iteration profile.
 
 ```bash
 make daily.runtime.duty.recovery.remote_baseline \
@@ -165,11 +167,11 @@ make daily.runtime.duty.recovery.remote_backup \
 
 make daily.runtime.duty.recovery.remote_validate \
   DAILY_CANDIDATE_SSH_HOST=sc-root \
-  DAILY_DUTY_RECOVERY_BACKUP_DIR=/data/backups/daily-tenant-baosheng-dev/sc_tenant_baosheng_dev-<stamp>-<hex>
+  DAILY_DUTY_RECOVERY_BACKUP_DIR=<the duty backup namespace>/<backup set id, as read back from the baseline step>
 
 make daily.runtime.duty.recovery.remote_restore_drill \
   DAILY_CANDIDATE_SSH_HOST=sc-root \
-  DAILY_DUTY_RECOVERY_BACKUP_DIR=/data/backups/daily-tenant-baosheng-dev/sc_tenant_baosheng_dev-<stamp>-<hex> \
+  DAILY_DUTY_RECOVERY_BACKUP_DIR=<the duty backup namespace>/<backup set id, as read back from the baseline step> \
   CONFIRM_DAILY_CANDIDATE_RESTORE_DRILL=RESTORE_ISOLATED_COPY
 ```
 

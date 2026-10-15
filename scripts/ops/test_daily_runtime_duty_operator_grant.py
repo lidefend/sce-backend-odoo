@@ -30,17 +30,45 @@ assert SPEC and SPEC.loader
 ENTRY = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(ENTRY)
 
+SUPPORT_SPEC = importlib.util.spec_from_file_location(
+    "duty_identity_test_support",
+    ROOT / "scripts/ops/duty_identity_test_support.py",
+)
+assert SUPPORT_SPEC and SUPPORT_SPEC.loader
+SUPPORT = importlib.util.module_from_spec(SUPPORT_SPEC)
+SUPPORT_SPEC.loader.exec_module(SUPPORT)
+
 DECLARATION = ROOT / "config/ops/daily_runtime_database_duties.v1.json"
+
+
+def setUpModule():
+    """Resolve the tracked template against the synthetic customer binding."""
+    override = SUPPORT.synthetic_instances_override()
+    override.start()
+    unittest.addModuleCleanup(override.stop)
+
+
+def governed_declaration() -> dict:
+    """The tracked declaration with its managed customer binding merged in.
+
+    The result is self-contained: the ``managed_duty_instances`` pointer is
+    dropped, so a test that writes it to a temporary path reads back one
+    complete declaration instead of reaching for the governed directory again.
+    """
+    payload = ENTRY.duty_identity.load_declaration(DECLARATION)
+    payload = json.loads(json.dumps(payload, ensure_ascii=False))
+    payload.pop("managed_duty_instances", None)
+    return payload
 CUSTOMER_DUTY = "customer_tenant_dev"
 DEMO_DUTY = "demo"
-OPERATOR_IDENTITY = "smart_core.svc_tenant_payload_operator_baosheng"
-OPERATOR_LOGIN = "svc-tenant-payload-operator-baosheng"
+OPERATOR_IDENTITY = "smart_core.svc_tenant_payload_operator_sample"
+OPERATOR_LOGIN = "svc-tenant-payload-operator-sample"
 PAYLOAD_CHECKSUM = "c" * 64
 
 OPERATOR_STATE = {
     "id": 12,
     "login": OPERATOR_LOGIN,
-    "name": "Tenant payload operator (baosheng, dev)",
+    "name": "Tenant payload operator (sample, dev)",
     "active": True,
     "share": False,
     "company_ids": [1],
@@ -58,8 +86,8 @@ REQUIRED_CLOSURE = ["base.group_user", "base.group_no_one"]
 READBACK = {
     "mode": "read_only",
     "writes": 0,
-    "database": "sc_tenant_baosheng_dev",
-    "bound_tenant_key": "baosheng",
+    "database": "sc_tenant_sample_dev",
+    "bound_tenant_key": "sample",
     "identity_key": OPERATOR_IDENTITY,
     "importer_group_member_count": 0,
     "importer_implied_xmlids": [],
@@ -72,8 +100,8 @@ UNPROVISIONED = dict(READBACK, operator=None)
 
 APPROVAL = {
     "access_id": 7,
-    "db_name": "sc_tenant_baosheng_dev",
-    "tenant_key": "baosheng",
+    "db_name": "sc_tenant_sample_dev",
+    "tenant_key": "sample",
     "capability": "migrate",
     "state": "approved",
     "operator_identity_key": OPERATOR_IDENTITY,
@@ -92,14 +120,14 @@ def operator_block(**overrides) -> dict:
         "identity_type": "external_xmlid",
         "identity_key": OPERATOR_IDENTITY,
         "login": OPERATOR_LOGIN,
-        "name": "Tenant payload operator (baosheng, dev)",
+        "name": "Tenant payload operator (sample, dev)",
         "company_xmlid": "base.main_company",
-        "tenant_key": "baosheng",
+        "tenant_key": "sample",
         "authorization_basis": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
         "expected_account_groups": ["base.group_user"],
         "forbidden_account_groups": list(ENTRY.operator_policy().FORBIDDEN_ACCOUNT_GROUPS),
         "import_capability": ENTRY.operator_policy().IMPORT_CAPABILITY,
-        "customer_modules": ["sce_customer_baosheng"],
+        "customer_modules": ["sce_customer_sample"],
         "contract": {
             "direct_grant_targets": [ENTRY.IMPORTER_GROUP],
             "transitive_implied_closure": [],
@@ -129,15 +157,15 @@ class FixtureDeclaration:
         ops_root.mkdir(parents=True, exist_ok=True)
         for duty_name in (CUSTOMER_DUTY, ENTRY.PLATFORM_CONTROL_DUTY):
             (ops_root / ("%s.env" % duty_name)).write_text(
-                "DUTY_NAME=%s\nCOMPOSE_PROJECT_NAME=sc-tenant-baosheng-dev\n"
-                "DB_NAME=sc_tenant_baosheng_dev\nDB_USER=sc_tenant_baosheng_dev_app\n"
-                "DB_DATA=sc_tenant_baosheng_dev_db_data\n"
-                "ODOO_DATA=sc_tenant_baosheng_dev_odoo_data\n"
+                "DUTY_NAME=%s\nCOMPOSE_PROJECT_NAME=sc-tenant-sample-dev\n"
+                "DB_NAME=sc_tenant_sample_dev\nDB_USER=sc_tenant_sample_dev_app\n"
+                "DB_DATA=sc_tenant_sample_dev_db_data\n"
+                "ODOO_DATA=sc_tenant_sample_dev_odoo_data\n"
                 "ODOO_IMAGE=odoo17-odoo:latest\nSC_SOURCE_REVISION=%s\n"
                 % (duty_name, "a" * 40),
                 encoding="utf-8",
             )
-        declaration = json.loads(DECLARATION.read_text(encoding="utf-8"))
+        declaration = governed_declaration()
         declaration["ops_root"] = str(ops_root)
         for duty in declaration["duties"]:
             if duty["duty"] == CUSTOMER_DUTY:
@@ -183,7 +211,7 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual(operator["expected_undeclared_group_additions"], [])
         self.assertEqual(operator["grant_scope_version"], ENTRY.GRANT_SCOPE_VERSION)
         self.assertEqual(operator["expected_company_scope"], 1)
-        self.assertEqual(operator["customer_modules"], ["sce_customer_baosheng"])
+        self.assertEqual(operator["customer_modules"], ["sce_customer_sample"])
         self.assertNotIn(ENTRY.DATA_OPERATOR_GROUP, operator["direct_grant_targets"])
 
     def test_a_duty_that_declares_no_operator_block_is_a_stop(self):
@@ -218,7 +246,7 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual(operator["company_xmlid"], "base.main_company")
         self.assertEqual(operator["direct_grant_targets"], [ENTRY.IMPORTER_GROUP])
         self.assertEqual(operator["expected_company_scope"], 1)
-        self.assertEqual(operator["customer_modules"], ["sce_customer_baosheng"])
+        self.assertEqual(operator["customer_modules"], ["sce_customer_sample"])
 
     def test_the_carrier_must_be_the_unified_onboarding_mechanism(self):
         for carrier in ("", "narrow_import_grant", "customer_module"):
@@ -286,7 +314,7 @@ class DeclarationTests(unittest.TestCase):
 
     def test_entry_hardcodes_no_duty_identity_or_operator(self):
         source = (ROOT / "scripts/ops/daily_runtime_duty_operator_grant.py").read_text()
-        duties = json.loads(DECLARATION.read_text())["duties"]
+        duties = governed_declaration()["duties"]
         for duty in duties:
             for key in ("database", "database_role", "dbfilter"):
                 value = duty[key]
