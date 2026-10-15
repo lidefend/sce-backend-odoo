@@ -174,6 +174,50 @@
         ],
         "version_prefix": "daily-navigation"
       },
+      "payload_operator": {
+        "carrier": "unified_onboarding_service_identity",
+        "identity_type": "external_xmlid",
+        "identity_key": "smart_core.svc_tenant_payload_operator_baosheng",
+        "login": "svc-tenant-payload-operator-baosheng",
+        "name": "Tenant payload operator (baosheng, dev)",
+        "company_xmlid": "base.main_company",
+        "tenant_key": "baosheng",
+        "authorization_basis": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
+        "expected_account_groups": [
+          "base.group_user"
+        ],
+        "forbidden_account_groups": [
+          "base.group_system",
+          "base.group_erp_manager",
+          "base.group_allow_export",
+          "smart_core.group_smart_core_admin",
+          "smart_core.group_smart_core_security_admin",
+          "smart_core.group_smart_core_business_config_admin",
+          "smart_core.group_smart_core_data_operator"
+        ],
+        "import_capability": "migrate",
+        "customer_modules": [
+          "sce_customer_baosheng"
+        ],
+        "contract": {
+          "direct_grant_targets": [
+            "smart_core.group_smart_core_tenant_payload_importer"
+          ],
+          "transitive_implied_closure": [],
+          "required_existing_groups": [
+            "base.group_user"
+          ],
+          "expected_direct_grant_additions": [
+            "smart_core.group_smart_core_tenant_payload_importer"
+          ],
+          "expected_effective_group_additions": [
+            "smart_core.group_smart_core_tenant_payload_importer"
+          ],
+          "expected_undeclared_group_additions": [],
+          "grant_scope_version": 3,
+          "expected_company_scope": 1
+        }
+      },
       "cluster": {
         "container": "sc-tenant-baosheng-dev-db-1",
         "compose_project": "sc-tenant-baosheng-dev",

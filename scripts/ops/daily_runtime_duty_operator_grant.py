@@ -1,34 +1,39 @@
 #!/usr/bin/env python3
-"""Issue the narrow tenant-payload import grant on a declared daily duty.
+"""Run the declared payload-import operator lifecycle on a daily duty.
 
-A signed payload may only enter a customer duty through an operator that the
-product itself recognises: the importer group exists in ``smart_core`` and the
-governed entry that grants it (``scripts/tenant_payload/provision_operator.py``)
-already exists and already refuses to widen its own contract.  What the daily
-development server lacked was the *transport*: the only invocations of that
-entry were the local compose face (which passes the superseded v1 environment)
-and the production release set (which reads a locked production release file),
-so a daily customer duty could not be issued the grant at all.
+Owner ruling (2026-10-15): the *unified onboarding mechanism* owns the import
+operator's account lifecycle and the customer module must not create platform
+operators.  The platform product therefore owns the mechanism (the account
+lifecycle service in ``smart_core``), the duty declaration carries the tenant
+difference, and this ops entry only *executes* and *reads back*: it presents
+the declared facts to the duty's own definition, in the duty's own rendered
+stack, as the duty's own application user.
 
-This entry is the daily-duty transport.  It resolves every runtime fact
-(database, role, container, volumes, compose project, stack, environment) from
-``config/ops/daily_runtime_database_duties.v1.json`` through the shared
-identity module, and it resolves the operator contract -- including *which*
-identity is authorised -- from the duty's own ``payload_operator`` declaration.
-Two properties are deliberate and must not be "corrected" to make a check pass:
+Every runtime fact (database, role, container, volumes, compose project,
+stack, environment) is resolved from
+``config/ops/daily_runtime_database_duties.v1.json``; the operator contract --
+including *which* identity is authorised, which company it serves and which
+narrow group it may hold -- is resolved from the duty's own ``payload_operator``
+declaration and validated by the platform's own policy module, so this entry
+cannot drift from the mechanism it drives.
+
+Four properties are deliberate and must not be "corrected" to make a check
+pass:
 
 * this entry carries no operator identity of its own.  Binding a generic
   administrator by default would put the narrow grant on the widest account in
   the database, so an undeclared or unusable identity is a stop, never a
   fallback;
-* the approver is an explicit input.  The product records it as an audit
-  fingerprint (``approval_fingerprint``), so this entry refuses an empty or
-  guessed approver rather than fabricating a formal approval identity; the
-  authorisation basis is recorded in the declaration.
+* the approval is read from the platform control duty as a fact, never taken
+  from a command-line string and never inferred from the declaration: the
+  declaration is written by the side that benefits from it.  No approved,
+  in-window maintenance access means no provision and no grant;
+* the approval must be bound to the exact subject this run will import, so an
+  approval for another payload cannot authorise this one;
+* revocation is its own action: the temporary permission is removed when the
+  import is done, and the account, its external id and the audit association
+  stay behind.
 
-The grant is the *only* write this entry performs, and it is issued inside the
-duty's own rendered definition by the duty's own application user, so the
-process that writes the membership is the process that already owns the data.
 ``readback`` runs as a separate process and proves it wrote nothing.
 """
 
@@ -36,6 +41,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -52,90 +58,123 @@ import daily_runtime_duty_payload as duty_runtime  # noqa: E402
 
 MARKER = "DAILY_DUTY_OPERATOR_GRANT="
 READBACK_MARKER = "DAILY_DUTY_OPERATOR_READBACK="
-ACTIONS = ("readback", "grant")
+APPROVAL_MARKER = "DAILY_DUTY_OPERATOR_APPROVAL="
+LIFECYCLE_MARKER = "DAILY_DUTY_OPERATOR_LIFECYCLE="
+
+ACTIONS = ("readback", "provision", "grant", "revoke")
 CONFIRMATIONS = {
+    "provision": (
+        "CONFIRM_DAILY_DUTY_OPERATOR_PROVISION",
+        "PROVISION_DECLARED_PAYLOAD_IMPORT_OPERATOR_IN_DAILY_DUTY",
+    ),
     "grant": (
         "CONFIRM_DAILY_DUTY_OPERATOR_GRANT",
         "GRANT_NARROW_PAYLOAD_IMPORT_OPERATOR_IN_DAILY_DUTY",
-    )
+    ),
+    "revoke": (
+        "CONFIRM_DAILY_DUTY_OPERATOR_REVOKE",
+        "REVOKE_TEMPORARY_DAILY_DUTY_IMPORT_OPERATOR_GRANT",
+    ),
 }
+#: The actions that move a permission and therefore need an approved access.
+APPROVAL_REQUIRED_ACTIONS = ("provision", "grant")
 CUSTOMER_PURPOSE = "customer"
-OPERATOR_CARRIER = "narrow_import_grant"
+OPERATOR_CARRIER = "unified_onboarding_service_identity"
+PLATFORM_CONTROL_DUTY = "platform_control"
 GRANT_SCOPE_VERSION = 3
+POLICY_SOURCE = "addons/smart_core/security/tenant_payload_operator_policy.py"
 SAFE_DUTY_NAME = re.compile(r"^[a-z][a-z0-9_]*$")
 XMLID = re.compile(r"^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$")
 MODULE_NAME = re.compile(r"^[a-z][a-z0-9_]*$")
+CHECKSUM = re.compile(r"^[0-9a-f]{64}$")
 
 IMPORTER_GROUP = "smart_core.group_smart_core_tenant_payload_importer"
 DATA_OPERATOR_GROUP = "smart_core.group_smart_core_data_operator"
 INTERNAL_USER_GROUP = "base.group_user"
 
-PROVISION_SCRIPT = "scripts/tenant_payload/provision_operator.py"
 APPLICATION_ENTRY = duty_runtime.APPLICATION_ENTRY
 ODOO_CONF = duty_runtime.ODOO_CONF
 
-# The readback script proves it wrote nothing and reports the facts the grant
-# depends on: the operator identity itself, the importer group's implied
-# closure, the tenant binding and the released edition the duty serves.
+_POLICY = None
+
+# The readback reuses the platform's own reading of the operator instead of
+# re-deriving the same facts here, and only adds the duty-level facts the grant
+# depends on: the tenant binding, the released edition and the import history.
 READBACK_SCRIPT = """
 import json
 
+from odoo.addons.smart_core.security import tenant_payload_operator as _lifecycle  # noqa: F821
+
 _params = env["ir.config_parameter"].sudo()  # noqa: F821
-_importer = env.ref("%(importer)s", raise_if_not_found=False)  # noqa: F821
-_data_operator = env.ref("%(data_operator)s", raise_if_not_found=False)  # noqa: F821
 _batch = env["sc.tenant.payload.import.batch"].sudo()  # noqa: F821
 _snapshot = env["sc.edition.release.snapshot"].sudo()  # noqa: F821
 
-
-def _xmlids(group_ids):
-    if not group_ids:
-        return []
-    rows = env["ir.model.data"].sudo().search(  # noqa: F821
-        [("model", "=", "res.groups"), ("res_id", "in", sorted(group_ids))]
-    )
-    return sorted(row.module + "." + row.name for row in rows)
-
-
 _identity_key = "__DAILY_DUTY_OPERATOR_IDENTITY_KEY__"
-_operator = env.ref(_identity_key, raise_if_not_found=False)  # noqa: F821
-_report = {
-    "mode": "read_only",
-    "writes": 0,
-    "database": env.cr.dbname,  # noqa: F821
-    "bound_tenant_key": str(_params.get_param("sc.tenant.bound_tenant_key", "") or ""),
-    "identity_key": _identity_key,
-    "importer_group_id": _importer.id if _importer else 0,
-    "importer_group_member_count": len(_importer.users) if _importer else 0,
-    "importer_implied_xmlids": _xmlids(_importer.implied_ids.ids) if _importer else [],
-    "data_operator_group_id": _data_operator.id if _data_operator else 0,
-    "released_editions": _snapshot.search_read(
-        [("state", "=", "released"), ("is_active", "=", True), ("active", "=", True)],
-        ["product_key", "version"],
-        order="product_key, id",
-    ),
-    "import_batch_count": _batch.search_count([]),
-    "operator": None,
-}
-if _operator:
-    _report["operator"] = {
-        "id": _operator.id,
-        "login": _operator.login,
-        "active": bool(_operator.active),
-        "company_count": len(_operator.company_ids),
-        "company_ids": sorted(_operator.company_ids.ids),
-        "group_xmlids": _xmlids(_operator.groups_id.ids),
-        "is_importer": bool(_importer and _importer.id in _operator.groups_id.ids),
-        "is_data_operator": bool(
-            _data_operator and _data_operator.id in _operator.groups_id.ids
-        ),
-    }
+_report = _lifecycle.read_operator(env, identity_xmlid=_identity_key)  # noqa: F821
+_report["bound_tenant_key"] = str(_params.get_param("sc.tenant.bound_tenant_key", "") or "")
+_report["released_editions"] = _snapshot.search_read(
+    [("state", "=", "released"), ("is_active", "=", True), ("active", "=", True)],
+    ["product_key", "version"],
+    order="product_key, id",
+)
+_report["import_batch_count"] = _batch.search_count([])
 print("%(marker)s" + json.dumps(_report, ensure_ascii=False, sort_keys=True, default=str))
-""" % {
-    "marker": READBACK_MARKER,
-    "importer": IMPORTER_GROUP,
-    "data_operator": DATA_OPERATOR_GROUP,
-}
+""" % {"marker": READBACK_MARKER}
+
+# The approval is read where the platform is the authority over the fact: the
+# platform control database. This script only reads.
+APPROVAL_SCRIPT = """
+import json
+
+_access = env["sc.platform.maintenance.access"].sudo()  # noqa: F821
+_projection = _access._approved_access_projection(
+    db_name="__DAILY_DUTY_DATABASE__", capability="__DAILY_DUTY_CAPABILITY__"
+)
+print("%(marker)s" + json.dumps(
+    {"mode": "read_only", "writes": 0, "approval": _projection},
+    ensure_ascii=False,
+    sort_keys=True,
+    default=str,
+))
+""" % {"marker": APPROVAL_MARKER}
+
+# One entry for the three lifecycle writes. The decisions live in the platform
+# mechanism; this script only presents the declared facts and the read approval.
+LIFECYCLE_SCRIPT = """
+import json
+import os
+
+from odoo.addons.smart_core.security import tenant_payload_operator as _lifecycle  # noqa: F821
+
+_action = os.environ["SC_TENANT_PAYLOAD_OPERATOR_ACTION"]
+_identity_key = "__DAILY_DUTY_OPERATOR_IDENTITY_KEY__"
+if _action == "provision":
+    _result = _lifecycle.provision(  # noqa: F821
+        env,
+        declaration=json.loads(os.environ["SC_TENANT_PAYLOAD_OPERATOR_DECLARATION"]),
+        authorization=json.loads(os.environ["SC_TENANT_PAYLOAD_OPERATOR_AUTHORIZATION"]),
+    )
+elif _action == "grant":
+    _grant = _lifecycle.grant_import_scope(env, identity_xmlid=_identity_key)  # noqa: F821
+    _result = {"before": _grant["before"], "after": _grant["after"]}
+elif _action == "revoke":
+    _result = _lifecycle.revoke_import_scope(env, identity_xmlid=_identity_key)  # noqa: F821
+else:
+    raise SystemExit("SC_TENANT_PAYLOAD_OPERATOR_ACTION is not a lifecycle action")
+_report = dict(_result)
+# A membership change reports the state before and after; the database it ran
+# against is the same fact the readback reports.
+_report.setdefault("database", (_report.get("after") or {}).get("database", ""))
+_report["schema_version"] = "tenant_payload_operator_lifecycle.v1"
+_report["action"] = _action
+_report["identity_key"] = _identity_key
+env.cr.commit()  # noqa: F821
+print("%(marker)s" + json.dumps(_report, ensure_ascii=False, sort_keys=True, default=str))
+""" % {"marker": LIFECYCLE_MARKER}
+
 IDENTITY_KEY_TOKEN = "__DAILY_DUTY_OPERATOR_IDENTITY_KEY__"
+DATABASE_TOKEN = "__DAILY_DUTY_DATABASE__"
+CAPABILITY_TOKEN = "__DAILY_DUTY_CAPABILITY__"
 
 
 class OperatorGrantEntryError(RuntimeError):
@@ -174,8 +213,33 @@ def _modules(operator: dict) -> list[str]:
     return list(values)
 
 
+def operator_policy(root: Path | None = None):
+    """Load the platform's own operator policy; it is the single source.
+
+    The lifecycle rules are owned by ``smart_core``, so this entry validates the
+    declaration with that module rather than restating the rules. The source is
+    read from this entry's own root, which is the same immutable tree the
+    deployment installs.
+    """
+    global _POLICY
+    if _POLICY is not None:
+        return _POLICY
+    source = (root or ROOT) / POLICY_SOURCE
+    if not source.is_file():
+        _fail("the immutable platform operator policy is unavailable")
+    spec = importlib.util.spec_from_file_location(
+        "daily_runtime_duty_operator_policy", source
+    )
+    if spec is None or spec.loader is None:
+        _fail("the immutable platform operator policy cannot be loaded")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    _POLICY = module
+    return module
+
+
 def resolve_grant_duty(duty_name: str, declaration: Path | None = None) -> dict:
-    """Resolve a customer duty and its declared narrow operator contract."""
+    """Resolve a customer duty and its declared operator contract."""
     if not SAFE_DUTY_NAME.fullmatch(duty_name or ""):
         _fail("duty name is not a safe identifier")
     try:
@@ -196,18 +260,23 @@ def resolve_grant_duty(duty_name: str, declaration: Path | None = None) -> dict:
         _fail("duty %s declares no payload_operator block" % duty_name)
     if _text(operator.get("carrier")) != OPERATOR_CARRIER:
         _fail(
-            "duty %s does not declare that its payload operator carries the "
-            "narrow import grant" % duty_name
+            "duty %s does not declare that its payload operator is carried by the "
+            "unified onboarding mechanism" % duty_name
         )
+    policy = operator_policy()
+    try:
+        account = policy.validate_declaration(operator)
+    except policy.OperatorPolicyError as exc:
+        _fail("duty %s declares an unusable payload operator: %s" % (duty_name, exc))
     identity_type = _text(operator.get("identity_type"))
-    identity_key = _text(operator.get("identity_key"))
+    identity_key = account["identity_key"]
     if identity_type != "external_xmlid" or not XMLID.fullmatch(identity_key):
         _fail(
             "duty %s does not declare a usable payload operator identity" % duty_name
         )
     if _text(operator.get("tenant_key")) != duty["tenant_key"]:
         _fail("the payload operator declaration names another tenant")
-    if not _text(operator.get("authorization_basis")):
+    if not _text(account.get("authorization_basis")):
         _fail("the payload operator declaration carries no authorization basis")
 
     contract = operator.get("contract")
@@ -244,11 +313,19 @@ def resolve_grant_duty(duty_name: str, declaration: Path | None = None) -> dict:
         _fail("the payload operator contract declares another scope version")
     if not isinstance(company_scope, int) or isinstance(company_scope, bool) or company_scope < 1:
         _fail("the payload operator contract declares no positive company scope")
+    if list(account["expected_account_groups"]) != [INTERNAL_USER_GROUP]:
+        _fail("the declared account group ceiling is not the narrow one")
 
     duty["payload_operator"] = {
+        "carrier": account["carrier"],
         "identity_type": identity_type,
         "identity_key": identity_key,
-        "authorization_basis": _text(operator.get("authorization_basis")),
+        "login": account["login"],
+        "name": account["name"],
+        "company_xmlid": account["company_xmlid"],
+        "authorization_basis": account["authorization_basis"],
+        "import_capability": account["import_capability"],
+        "declaration": account,
         "customer_modules": _modules(operator),
         "direct_grant_targets": direct,
         "transitive_implied_closure": closure,
@@ -262,35 +339,51 @@ def resolve_grant_duty(duty_name: str, declaration: Path | None = None) -> dict:
     return duty
 
 
-def grant_environment(duty: dict, approved_by: str) -> list[str]:
-    """The narrow grant contract, exactly as the product entry requires it."""
+def subject_checksum(value: str) -> str:
+    """The payload digest this run intends to import, as an explicit input."""
+    text = _text(value)
+    if not CHECKSUM.fullmatch(text):
+        _fail(
+            "the run must name the payload digest the approval is bound to "
+            "(64 lowercase hex characters)"
+        )
+    return text
+
+
+def approval_script(duty: dict, capability: str) -> str:
+    if DATABASE_TOKEN not in APPROVAL_SCRIPT or CAPABILITY_TOKEN not in APPROVAL_SCRIPT:
+        _fail("the approval read template lost its binding placeholders")
+    return APPROVAL_SCRIPT.replace(DATABASE_TOKEN, duty["database"]).replace(
+        CAPABILITY_TOKEN, capability
+    )
+
+
+def lifecycle_environment(duty: dict, action: str, authorization: dict | None) -> list[str]:
     operator = duty["payload_operator"]
-    return [
-        "-e", "SC_TENANT_PAYLOAD_OPERATOR_IDENTITY_TYPE=%s" % operator["identity_type"],
+    environment = [
+        "-e", "SC_TENANT_PAYLOAD_OPERATOR_ACTION=%s" % action,
         "-e", "SC_TENANT_PAYLOAD_OPERATOR_IDENTITY_KEY=%s" % operator["identity_key"],
-        "-e", "SC_TENANT_PAYLOAD_TENANT_KEY=%s" % duty["tenant_key"],
-        "-e", "SC_PRODUCTION_CUSTOMER_MODULES=%s" % ",".join(operator["customer_modules"]),
-        "-e", "SC_TENANT_PAYLOAD_DIRECT_GRANT_TARGETS=%s"
-        % json.dumps(operator["direct_grant_targets"], separators=(",", ":")),
-        "-e", "SC_TENANT_PAYLOAD_TRANSITIVE_IMPLIED_CLOSURE=%s"
-        % json.dumps(operator["transitive_implied_closure"], separators=(",", ":")),
-        "-e", "SC_TENANT_PAYLOAD_REQUIRED_EXISTING_GROUPS=%s"
-        % json.dumps(operator["required_existing_groups"], separators=(",", ":")),
-        "-e", "SC_TENANT_PAYLOAD_EXPECTED_DIRECT_ADDITIONS=%s"
-        % json.dumps(operator["expected_direct_grant_additions"], separators=(",", ":")),
-        "-e", "SC_TENANT_PAYLOAD_EXPECTED_EFFECTIVE_ADDITIONS=%s"
-        % json.dumps(operator["expected_effective_group_additions"], separators=(",", ":")),
-        "-e", "SC_TENANT_PAYLOAD_EXPECTED_UNDECLARED_ADDITIONS=%s"
-        % json.dumps(operator["expected_undeclared_group_additions"], separators=(",", ":")),
-        "-e", "SC_TENANT_PAYLOAD_EXPECTED_COMPANY_SCOPE=%d" % operator["expected_company_scope"],
-        "-e", "SC_TENANT_PAYLOAD_GRANT_SCOPE_VERSION=%d" % operator["grant_scope_version"],
         "-e", "SC_TENANT_PAYLOAD_DB_ALLOWLIST=%s" % duty["database"],
-        "-e", "SC_TENANT_PAYLOAD_APPROVED_BY=%s" % approved_by,
     ]
+    if action in APPROVAL_REQUIRED_ACTIONS:
+        if not isinstance(authorization, dict):
+            _fail("the %s action requires an approved maintenance access" % action)
+        environment += [
+            "-e",
+            "SC_TENANT_PAYLOAD_OPERATOR_AUTHORIZATION=%s"
+            % json.dumps(authorization, sort_keys=True, separators=(",", ":")),
+        ]
+    if action == "provision":
+        environment += [
+            "-e",
+            "SC_TENANT_PAYLOAD_OPERATOR_DECLARATION=%s"
+            % json.dumps(operator["declaration"], sort_keys=True, separators=(",", ":")),
+        ]
+    return environment
 
 
-def grant_command(duty: dict, base: list[str], extra_env: list[str]) -> list[str]:
-    """A one-off run of the duty's own definition that issues the grant."""
+def lifecycle_command(duty: dict, base: list[str], extra_env: list[str]) -> list[str]:
+    """A one-off run of the duty's own definition that performs one lifecycle step."""
     return base + [
         "run", "--rm", "--no-deps", "-T",
         "--label", "sc.daily-duty-operator-grant=true",
@@ -304,7 +397,7 @@ def grant_command(duty: dict, base: list[str], extra_env: list[str]) -> list[str
 
 
 def readback_command(duty: dict, base: list[str]) -> list[str]:
-    return grant_command(duty, base, [])
+    return lifecycle_command(duty, base, [])
 
 
 def readback_script(duty: dict) -> str:
@@ -315,6 +408,13 @@ def readback_script(duty: dict) -> str:
     if IDENTITY_KEY_TOKEN not in READBACK_SCRIPT:
         _fail("the operator readback template lost its identity placeholder")
     return READBACK_SCRIPT.replace(IDENTITY_KEY_TOKEN, identity_key)
+
+
+def lifecycle_script(duty: dict) -> str:
+    identity_key = duty["payload_operator"]["identity_key"]
+    if IDENTITY_KEY_TOKEN not in LIFECYCLE_SCRIPT:
+        _fail("the operator lifecycle template lost its identity placeholder")
+    return LIFECYCLE_SCRIPT.replace(IDENTITY_KEY_TOKEN, identity_key)
 
 
 def run_script(command: list[str], script: str, ops_root: Path) -> str:
@@ -329,39 +429,30 @@ def run_script(command: list[str], script: str, ops_root: Path) -> str:
             _fail(str(exc))
 
 
-def readback_report(output: str) -> dict:
+def _marked_report(output: str, marker: str, what: str) -> dict:
     for line in reversed(output.splitlines()):
         row = line.strip()
-        if row.startswith(READBACK_MARKER):
+        if row.startswith(marker):
             try:
-                report = json.loads(row[len(READBACK_MARKER):])
+                report = json.loads(row[len(marker):])
             except json.JSONDecodeError as exc:
-                _fail("the operator readback report is not JSON: %s" % exc)
+                _fail("the %s report is not JSON: %s" % (what, exc))
             if isinstance(report, dict):
                 return report
-            _fail("the operator readback report is not an object")
-    _fail("the operator readback emitted no report")
+            _fail("the %s report is not an object" % what)
+    _fail("the %s emitted no report" % what)
 
 
-def grant_report(output: str) -> dict:
-    found = []
-    for line in output.splitlines():
-        row = line.strip()
-        if not row.startswith("{") or not row.endswith("}"):
-            continue
-        try:
-            parsed = json.loads(row)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(parsed, dict) and parsed.get("schema_version"):
-            found.append(parsed)
-    if not found:
-        _fail("the governed operator entry emitted no audit report")
-    report = found[-1]
-    if report.get("status") != "PASS":
-        reason = report.get("status_reason") or report.get("rule") or report.get("status")
-        _fail("the governed operator entry did not pass: %s" % reason)
-    return report
+def readback_report(output: str) -> dict:
+    return _marked_report(output, READBACK_MARKER, "operator readback")
+
+
+def approval_report(output: str) -> dict:
+    return _marked_report(output, APPROVAL_MARKER, "maintenance approval read")
+
+
+def lifecycle_report(output: str) -> dict:
+    return _marked_report(output, LIFECYCLE_MARKER, "operator lifecycle")
 
 
 def assert_readback(report: dict, duty: dict) -> None:
@@ -380,63 +471,111 @@ def assert_readback(report: dict, duty: dict) -> None:
         _fail("the operator readback resolved another identity")
     if report.get("importer_implied_xmlids"):
         _fail("the narrow importer group has grown an implied closure")
-    if int(report.get("importer_group_id") or 0) <= 0:
-        _fail("the narrow importer group is not present on this duty")
-
-
-def assert_grant(report: dict, duty: dict, before: dict, after: dict) -> None:
-    """The grant must be the only change, and it must be the declared one."""
-    operator = duty["payload_operator"]
-    if report.get("database") != duty["database"]:
-        _fail("the governed operator entry ran against another database")
-    if _text(report.get("operator_identity_type")) != operator["identity_type"]:
-        _fail("the governed operator entry reported another operator identity type")
-    if _text(report.get("operator_identity_key")) != operator["identity_key"]:
-        _fail("the governed operator entry reported another operator identity")
-    for report_key, declared_key in (
-        ("direct_grant_targets", "direct_grant_targets"),
-        ("transitive_implied_closure", "transitive_implied_closure"),
-        ("required_existing_groups", "required_existing_groups"),
-        ("undeclared_group_additions", "expected_undeclared_group_additions"),
-    ):
-        if report.get(report_key) != operator[declared_key]:
-            _fail("the governed operator entry reported another %s" % report_key)
-    changed = report.get("changed")
-    effective = report.get("effective_group_additions") or []
-    if changed is True:
-        if effective != list(operator["expected_effective_group_additions"]):
-            _fail("the governed operator entry reported an undeclared effective addition")
-    elif changed is False:
-        if effective:
-            _fail("the governed operator entry reported additions it did not make")
-    else:
-        _fail("the governed operator entry did not report whether it changed anything")
-    if report.get("data_operator_added") is not False:
-        _fail("the governed operator entry touched the general data operator group")
-    if int(report.get("company_scope_count") or 0) != operator["expected_company_scope"]:
-        _fail("the governed operator entry reported another company scope")
-
-    operator_state = after.get("operator") or {}
-    if not operator_state:
-        _fail("the granted operator identity is missing after the grant")
-    if operator_state.get("is_importer") is not True:
-        _fail("the declared operator is not a member of the narrow importer group")
-    if operator_state.get("is_data_operator") is not False:
-        _fail("the declared operator is a member of the general data operator group")
-    if operator_state.get("active") is not True:
-        _fail("the declared operator identity is not active")
-    if int(operator_state.get("company_count") or 0) != operator["expected_company_scope"]:
+    if int(report.get("importer_group_member_count") or 0) < 0:
+        _fail("the operator readback reported an impossible membership count")
+    operator = report.get("operator")
+    if operator is None:
+        return
+    if not isinstance(operator, dict):
+        _fail("the operator readback reported an unusable operator")
+    if _text(operator.get("login")) != duty["payload_operator"]["login"]:
+        _fail("the operator readback resolved another login")
+    if operator.get("active") is not True or bool(operator.get("share")):
+        _fail("the declared operator is not an active internal account")
+    if operator.get("has_stored_password"):
+        _fail("the declared operator holds an interactive credential")
+    if operator.get("has_native_api_keys"):
+        _fail("the declared operator holds an unmanaged API key")
+    if operator.get("is_data_operator"):
+        _fail("the declared operator holds the general data operator group")
+    groups = set(operator.get("group_xmlids") or ())
+    allowed = {INTERNAL_USER_GROUP, IMPORTER_GROUP}
+    if groups - allowed:
+        _fail("the declared operator holds groups the declaration does not allow")
+    if len(operator.get("company_ids") or ()) != duty["payload_operator"]["expected_company_scope"]:
         _fail("the declared operator company scope drifted")
 
-    before_groups = set((before.get("operator") or {}).get("group_xmlids") or [])
-    after_groups = set(operator_state.get("group_xmlids") or [])
-    if before_groups - after_groups:
-        _fail("the grant removed a group the operator already held")
-    added = after_groups - before_groups
-    if added != set(operator["expected_effective_group_additions"]):
-        _fail("the grant added groups the declaration did not name")
-    if DATA_OPERATOR_GROUP in added:
-        _fail("the grant added the general data operator group")
+
+def assert_approval(report: dict, duty: dict, expected_checksum: str) -> dict:
+    """The approval is a read fact, and it must cover exactly this run."""
+    if report.get("mode") != "read_only" or int(report.get("writes") or 0) != 0:
+        _fail("the approval read did not declare itself read-only")
+    approval = report.get("approval")
+    if not isinstance(approval, dict) or not approval:
+        _fail(
+            "the platform control database holds no approved, in-window maintenance "
+            "access for this duty: the lifecycle refuses to fabricate one"
+        )
+    if _text(approval.get("db_name")) != duty["database"]:
+        _fail("the approved access covers another database")
+    if _text(approval.get("tenant_key")) != duty["tenant_key"]:
+        _fail("the approved access covers another tenant")
+    if _text(approval.get("operator_identity_key")) != duty["payload_operator"]["identity_key"]:
+        _fail("the approved access names another operator identity")
+    if _text(approval.get("capability")) != duty["payload_operator"]["import_capability"]:
+        _fail("the approved access covers another capability")
+    if _text(approval.get("state")) != "approved":
+        _fail("the maintenance access is not approved")
+    if not _text(approval.get("approved_by")):
+        _fail("the maintenance access records no approver identity")
+    if int(approval.get("access_id") or 0) <= 0:
+        _fail("the maintenance access has no usable identity")
+    bound = _text(approval.get("subject_checksum"))
+    if bound != expected_checksum:
+        # An approval for another payload must never authorise this one.
+        _fail("the approved access is bound to another subject than this run")
+    return approval
+
+
+def assert_lifecycle(report: dict, duty: dict, action: str, before: dict) -> None:
+    """The lifecycle step must be the declared one, and only that one."""
+    operator = duty["payload_operator"]
+    if report.get("action") != action:
+        _fail("the operator lifecycle reported another action")
+    if _text(report.get("identity_key")) != operator["identity_key"]:
+        _fail("the operator lifecycle ran on another identity")
+    if report.get("database") != duty["database"]:
+        _fail("the operator lifecycle ran against another database")
+    state = report.get("operator") if action in ("provision", "revoke") else report.get("after", {}).get("operator")
+    state = state or {}
+    if not state:
+        _fail("the operator lifecycle reported no operator state")
+    if _text(state.get("login")) != operator["login"]:
+        _fail("the operator lifecycle resolved another login")
+    if state.get("active") is not True or bool(state.get("share")):
+        _fail("the operator lifecycle left an unusable principal")
+    if state.get("has_stored_password") or state.get("has_native_api_keys"):
+        _fail("the operator lifecycle left an interactive or unmanaged credential")
+    if state.get("is_data_operator"):
+        _fail("the operator lifecycle touched the general data operator group")
+    if action == "provision":
+        if not isinstance(report.get("created"), bool):
+            _fail("the operator provisioning did not report whether it created the account")
+        if report.get("plan", {}).get("grantable_group_xmlids") != [IMPORTER_GROUP]:
+            _fail("the operator provisioning planned a wider grant than declared")
+        if state.get("is_importer") and not report.get("created"):
+            _fail("the operator provisioning found an unrelated membership")
+    if action == "grant":
+        if report.get("after", {}).get("changed") not in (True, False):
+            _fail("the operator grant did not report whether it changed anything")
+        if state.get("is_importer") is not True:
+            _fail("the declared operator is not a member of the narrow importer group")
+        before_groups = set(
+            ((before.get("operator") or {}).get("group_xmlids")) or []
+        )
+        after_groups = set(state.get("group_xmlids") or [])
+        if before_groups - after_groups:
+            _fail("the grant removed a group the operator already held")
+        added = after_groups - before_groups
+        if added != set(operator["expected_effective_group_additions"]):
+            _fail("the grant added groups the declaration did not name")
+    if action == "revoke":
+        if report.get("changed") not in (True, False):
+            _fail("the operator revocation did not report whether it changed anything")
+        if state.get("is_importer"):
+            _fail("the temporary import permission is still held after revocation")
+        if not report.get("operator"):
+            _fail("the revocation removed the account instead of the permission")
 
 
 def tool_identity(root: Path) -> str:
@@ -453,12 +592,12 @@ def execute(
     duty_name: str,
     *,
     action: str,
-    approved_by: str = "",
+    subject: str = "",
     declaration: Path | None = None,
     tool_root: Path | None = None,
 ) -> dict:
     if action not in ACTIONS:
-        _fail("unsupported operator grant action: %s" % action)
+        _fail("unsupported operator lifecycle action: %s" % action)
     duty = resolve_grant_duty(duty_name, declaration)
     ops_root = Path(duty_identity.load_declaration(declaration).get("ops_root") or "")
     if not ops_root.is_absolute():
@@ -470,49 +609,71 @@ def execute(
     base = duty_runtime.compose_base(duty, ops_root, env_path, stack)
 
     root = tool_root or ROOT
-    provision_script = root / PROVISION_SCRIPT
-    if not provision_script.is_file():
-        _fail("the immutable tenant payload operator entry is unavailable")
+    # Loading the policy proves the immutable tree carries the mechanism this
+    # entry is about to drive.
+    operator_policy(root)
     tool_sha = tool_identity(root)
 
-    approver = ""
-    if action == "grant":
+    confirmation = ""
+    approved_subject = ""
+    if action in CONFIRMATIONS:
         variable, expected = CONFIRMATIONS[action]
         if os.environ.get(variable) != expected:
             _fail("%s must be set to the exact confirmation value" % variable)
-        approver = _text(approved_by)
-        if not approver:
-            _fail(
-                "the grant requires the real approving subject that authorises it; "
-                "this entry never fabricates an approver"
-            )
+        confirmation = expected
+    if action in APPROVAL_REQUIRED_ACTIONS:
+        approved_subject = subject_checksum(subject)
 
     before = readback_report(
         run_script(readback_command(duty, base), readback_script(duty), ops_root)
     )
     assert_readback(before, duty)
 
+    approval: dict | None = None
+    approval_read: dict = {}
+    if action in APPROVAL_REQUIRED_ACTIONS:
+        control = duty_identity.resolve(PLATFORM_CONTROL_DUTY, declaration)
+        control_ops_root = ops_root
+        control_env_path = control_ops_root / ("%s.env" % control["duty"])
+        control_values = duty_runtime.read_duty_env(control_env_path, control)
+        control_stack = duty_runtime.stack_compose_path(control_ops_root)
+        control_base = duty_runtime.compose_base(
+            control, control_ops_root, control_env_path, control_stack
+        )
+        approval_read = approval_report(
+            run_script(
+                readback_command(control, control_base),
+                approval_script(duty, duty["payload_operator"]["import_capability"]),
+                control_ops_root,
+            )
+        )
+        approval = assert_approval(approval_read, duty, approved_subject)
+
     entry_report: dict = {}
-    if action == "grant":
+    if action in ("provision", "grant", "revoke"):
         output = run_script(
-            grant_command(duty, base, grant_environment(duty, approver)),
-            provision_script.read_text(encoding="utf-8"),
+            lifecycle_command(
+                duty, base, lifecycle_environment(duty, action, approval)
+            ),
+            lifecycle_script(duty),
             ops_root,
         )
-        entry_report = grant_report(output)
-
-    after = readback_report(
-        run_script(readback_command(duty, base), readback_script(duty), ops_root)
-    )
-    assert_readback(after, duty)
-
-    if action == "grant":
-        assert_grant(entry_report, duty, before, after)
-    elif before != after:
-        _fail("the operator readback changed the duty's operator state")
+        entry_report = lifecycle_report(output)
+        assert_lifecycle(entry_report, duty, action, before)
+        after = readback_report(
+            run_script(readback_command(duty, base), readback_script(duty), ops_root)
+        )
+        assert_readback(after, duty)
+    else:
+        after = readback_report(
+            run_script(readback_command(duty, base), readback_script(duty), ops_root)
+        )
+        assert_readback(after, duty)
+        if before != after:
+            _fail("the operator readback changed the duty's operator state")
 
     return {
-        "schema_version": "daily_runtime_duty_operator_grant.v1",
+        "schema_version": "daily_runtime_duty_operator_lifecycle.v1",
         "action": action,
         "duty": duty["duty"],
         "database": duty["database"],
@@ -522,9 +683,17 @@ def execute(
         "data_purpose": duty["data_purpose"],
         "operator_identity_type": duty["payload_operator"]["identity_type"],
         "operator_identity_key": duty["payload_operator"]["identity_key"],
+        "operator_login": duty["payload_operator"]["login"],
+        "operator_company_xmlid": duty["payload_operator"]["company_xmlid"],
         "authorization_basis": duty["payload_operator"]["authorization_basis"],
-        "approved_by_fingerprint": (
-            hashlib.sha256(approver.encode("utf-8")).hexdigest()[:12] if approver else ""
+        "confirmed": confirmation,
+        "approved_subject_checksum": approved_subject,
+        "approval_access_id": (approval or {}).get("access_id", 0),
+        "approval_approved_by_fingerprint": (
+            hashlib.sha256(_text((approval or {}).get("approved_by")).encode("utf-8"))
+            .hexdigest()[:12]
+            if (approval or {}).get("approved_by")
+            else ""
         ),
         "declared_direct_grant_targets": duty["payload_operator"]["direct_grant_targets"],
         "declared_customer_modules": duty["payload_operator"]["customer_modules"],
@@ -532,13 +701,10 @@ def execute(
         "application": application,
         "stack_compose": str(stack),
         "duty_environment": str(env_path),
-        "provision_entry_sha256": hashlib.sha256(
-            provision_script.read_bytes()
-        ).hexdigest(),
-        "tool_sha": tool_sha,
         "entry_report": entry_report,
         "operator_state_before": before,
         "operator_state_after": after,
+        "tool_sha": tool_sha,
     }
 
 
@@ -546,7 +712,7 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("action", choices=list(ACTIONS))
     parser.add_argument("--duty", required=True)
-    parser.add_argument("--approved-by", default="")
+    parser.add_argument("--subject-checksum", default="")
     parser.add_argument("--declaration", default="")
     parser.add_argument("--evidence", default="")
     args = parser.parse_args(argv)
@@ -554,7 +720,7 @@ def main(argv=None) -> int:
         evidence = execute(
             args.duty,
             action=args.action,
-            approved_by=args.approved_by,
+            subject=args.subject_checksum,
             declaration=Path(args.declaration) if args.declaration else None,
         )
     except (

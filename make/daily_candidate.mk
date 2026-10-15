@@ -72,6 +72,8 @@ daily.candidate.continuity.remote_install: guard.prod.forbid
 		scripts/ops/daily_runtime_duty_payload.py \
 		scripts/ops/daily_runtime_duty_edition_release.py \
 		scripts/ops/daily_runtime_duty_operator_grant.py \
+		addons/smart_core/security/tenant_payload_operator_policy.py \
+		addons/smart_core/security/tenant_payload_operator.py \
 		scripts/release/configure_colocated_platform_core.py \
 		scripts/release/initialize_colocated_platform_snapshot.py \
 		scripts/tenant_payload/odoo_action.py \
@@ -246,25 +248,29 @@ daily.runtime.duty.edition_release.remote_publish: daily.runtime.duty.edition_re
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
 		'CONFIRM_DAILY_DUTY_EDITION_RELEASE=RELEASE_DECLARED_EDITION_INTO_DAILY_DUTY python3 "$(DAILY_DUTY_EDITION_TOOL)" publish --duty "$(DAILY_DUTY_EDITION_DUTY)" --product-key "$(DAILY_DUTY_EDITION_PRODUCT_KEY)" --evidence "$(DAILY_DUTY_EDITION_EVIDENCE)"'
 
-# The narrow payload import grant is the product's only import authorisation,
-# and its only governed invocations were the local compose face (which passes the
-# superseded v1 environment) and the locked production release set. This entry is
-# the daily-duty transport: it resolves the duty and the operator contract from
-# `config/ops/daily_runtime_database_duties.v1.json` and drives the existing
-# `scripts/tenant_payload/provision_operator.py` inside the duty's own rendered
-# definition. It carries no operator identity of its own -- a duty that has not
-# declared one stops instead of defaulting to the widest account in the database
-# -- and it refuses an empty approver rather than fabricating a formal approval
-# identity. `readback` runs as a separate process and proves it wrote nothing.
+# The narrow payload import operator is carried by the unified onboarding
+# mechanism: the platform owns the account lifecycle (provision/grant/revoke)
+# and the customer module must not create platform operators. This entry is the
+# daily-duty transport -- it resolves the duty and the operator contract from
+# `config/ops/daily_runtime_database_duties.v1.json` and drives the platform
+# mechanism inside the duty's own rendered definition. It carries no operator
+# identity of its own (a duty that has not declared one stops instead of
+# defaulting to the widest account in the database) and it invents no approval:
+# `provision` and `grant` require an approved access read back from the platform
+# control database, and the approver is never supplied on the command line.
+# `readback` runs as a separate process and proves it wrote nothing.
 DAILY_DUTY_OPERATOR_TOOL ?= $(DAILY_CONTINUITY_REMOTE_ROOT)/scripts/ops/daily_runtime_duty_operator_grant.py
 DAILY_DUTY_OPERATOR_DUTY ?= customer_tenant_dev
-DAILY_DUTY_OPERATOR_APPROVED_BY ?=
+DAILY_DUTY_OPERATOR_SUBJECT_CHECKSUM ?=
 DAILY_DUTY_OPERATOR_EVIDENCE ?=
+DAILY_DUTY_OPERATOR_POLICY := addons/smart_core/security/tenant_payload_operator_policy.py
+DAILY_DUTY_OPERATOR_LIFECYCLE := addons/smart_core/security/tenant_payload_operator.py
 
-.PHONY: verify.daily.duty.operator_grant daily.runtime.duty.operator_grant.remote_install daily.runtime.duty.operator_grant.remote_readback daily.runtime.duty.operator_grant.remote_grant
+.PHONY: verify.daily.duty.operator_grant daily.runtime.duty.operator_grant.remote_install daily.runtime.duty.operator_grant.remote_readback daily.runtime.duty.operator_grant.remote_provision daily.runtime.duty.operator_grant.remote_grant daily.runtime.duty.operator_grant.remote_revoke
 
 verify.daily.duty.operator_grant: guard.prod.forbid
-	@python3 -m py_compile scripts/ops/daily_runtime_duty_operator_grant.py scripts/ops/test_daily_runtime_duty_operator_grant.py
+	@python3 -m py_compile scripts/ops/daily_runtime_duty_operator_grant.py scripts/ops/test_daily_runtime_duty_operator_grant.py $(DAILY_DUTY_OPERATOR_POLICY) $(DAILY_DUTY_OPERATOR_LIFECYCLE) scripts/verify/test_tenant_payload_operator_policy.py
+	@python3 -m unittest scripts.verify.test_tenant_payload_operator_policy
 	@python3 scripts/ops/test_daily_runtime_duty_operator_grant.py
 
 daily.runtime.duty.operator_grant.remote_install: daily.candidate.continuity.remote_install
@@ -275,12 +281,25 @@ daily.runtime.duty.operator_grant.remote_readback: daily.runtime.duty.operator_g
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
 		'python3 "$(DAILY_DUTY_OPERATOR_TOOL)" readback --duty "$(DAILY_DUTY_OPERATOR_DUTY)" --evidence "$(DAILY_DUTY_OPERATOR_EVIDENCE)"'
 
+daily.runtime.duty.operator_grant.remote_provision: daily.runtime.duty.operator_grant.remote_install
+	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
+	@[[ "$(DAILY_DUTY_OPERATOR_SUBJECT_CHECKSUM)" =~ ^[0-9a-f]{64}$$ ]] || { echo "DAILY_DUTY_OPERATOR_SUBJECT_CHECKSUM must be the payload digest the approval binds" >&2; exit 2; }
+	@test "$${CONFIRM_DAILY_DUTY_OPERATOR_PROVISION:-}" = "PROVISION_DECLARED_PAYLOAD_IMPORT_OPERATOR_IN_DAILY_DUTY" || { echo "exact daily duty operator provision confirmation is required" >&2; exit 2; }
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'CONFIRM_DAILY_DUTY_OPERATOR_PROVISION=PROVISION_DECLARED_PAYLOAD_IMPORT_OPERATOR_IN_DAILY_DUTY python3 "$(DAILY_DUTY_OPERATOR_TOOL)" provision --duty "$(DAILY_DUTY_OPERATOR_DUTY)" --subject-checksum "$(DAILY_DUTY_OPERATOR_SUBJECT_CHECKSUM)" --evidence "$(DAILY_DUTY_OPERATOR_EVIDENCE)"'
+
 daily.runtime.duty.operator_grant.remote_grant: daily.runtime.duty.operator_grant.remote_install
 	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
-	@test -n "$(DAILY_DUTY_OPERATOR_APPROVED_BY)" || { echo "DAILY_DUTY_OPERATOR_APPROVED_BY is required" >&2; exit 2; }
+	@[[ "$(DAILY_DUTY_OPERATOR_SUBJECT_CHECKSUM)" =~ ^[0-9a-f]{64}$$ ]] || { echo "DAILY_DUTY_OPERATOR_SUBJECT_CHECKSUM must be the payload digest the approval binds" >&2; exit 2; }
 	@test "$${CONFIRM_DAILY_DUTY_OPERATOR_GRANT:-}" = "GRANT_NARROW_PAYLOAD_IMPORT_OPERATOR_IN_DAILY_DUTY" || { echo "exact daily duty operator grant confirmation is required" >&2; exit 2; }
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
-		'CONFIRM_DAILY_DUTY_OPERATOR_GRANT=GRANT_NARROW_PAYLOAD_IMPORT_OPERATOR_IN_DAILY_DUTY python3 "$(DAILY_DUTY_OPERATOR_TOOL)" grant --duty "$(DAILY_DUTY_OPERATOR_DUTY)" --approved-by "$(DAILY_DUTY_OPERATOR_APPROVED_BY)" --evidence "$(DAILY_DUTY_OPERATOR_EVIDENCE)"'
+		'CONFIRM_DAILY_DUTY_OPERATOR_GRANT=GRANT_NARROW_PAYLOAD_IMPORT_OPERATOR_IN_DAILY_DUTY python3 "$(DAILY_DUTY_OPERATOR_TOOL)" grant --duty "$(DAILY_DUTY_OPERATOR_DUTY)" --subject-checksum "$(DAILY_DUTY_OPERATOR_SUBJECT_CHECKSUM)" --evidence "$(DAILY_DUTY_OPERATOR_EVIDENCE)"'
+
+daily.runtime.duty.operator_grant.remote_revoke: daily.runtime.duty.operator_grant.remote_install
+	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
+	@test "$${CONFIRM_DAILY_DUTY_OPERATOR_REVOKE:-}" = "REVOKE_TEMPORARY_DAILY_DUTY_IMPORT_OPERATOR_GRANT" || { echo "exact daily duty operator revoke confirmation is required" >&2; exit 2; }
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'CONFIRM_DAILY_DUTY_OPERATOR_REVOKE=REVOKE_TEMPORARY_DAILY_DUTY_IMPORT_OPERATOR_GRANT python3 "$(DAILY_DUTY_OPERATOR_TOOL)" revoke --duty "$(DAILY_DUTY_OPERATOR_DUTY)" --evidence "$(DAILY_DUTY_OPERATOR_EVIDENCE)"'
 
 daily.candidate.sentinel.remote_capture: daily.candidate.continuity.remote_install
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \

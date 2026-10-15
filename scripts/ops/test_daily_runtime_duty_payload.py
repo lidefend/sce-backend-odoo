@@ -335,10 +335,13 @@ class MaintenanceCommandTests(unittest.TestCase):
 
     def test_an_undeclared_operator_is_a_stop_without_a_fallback(self):
         duty = ENTRY.resolve_duty(CUSTOMER_DUTY)
+        # The real declaration declares its operator; a duty that has not is
+        # the case this entry must refuse rather than resolve to an admin.
+        undeclared = {key: value for key, value in duty.items() if key != "payload_operator"}
         with self.assertRaisesRegex(
             ENTRY.PayloadEntryError, "never falls back to a generic administrator"
         ):
-            ENTRY.operator_identity_key(duty)
+            ENTRY.operator_identity_key(undeclared)
         with self.assertRaisesRegex(ENTRY.PayloadEntryError, "no usable"):
             ENTRY.operator_identity_key(dict(duty, payload_operator={"identity_key": ""}))
 
