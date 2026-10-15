@@ -22,6 +22,7 @@ declared in ``data/tenant/database_strategy.v1.json`` and resolved by
 
 from __future__ import annotations
 
+import re
 from datetime import timedelta
 
 from odoo import SUPERUSER_ID, api, fields, models
@@ -306,6 +307,16 @@ class ScPlatformMaintenanceAccess(models.Model):
     )
     valid_from = fields.Datetime(readonly=True)
     valid_until = fields.Datetime(readonly=True)
+    # A maintenance capability that moves business data must name *which*
+    # mechanism identity performs it and *which* subject it is allowed to
+    # carry.  Both are facts the approver signs off on, so they are set at
+    # request time and are never writable afterwards.
+    operator_identity_key = fields.Char(
+        readonly=True, help="Declared external id of the mechanism identity that executes the capability."
+    )
+    subject_checksum = fields.Char(
+        readonly=True, help="Digest of the subject the approved capability may carry."
+    )
     grants_business_data_scope = fields.Boolean(
         compute="_compute_grants_business_data_scope", readonly=True
     )
@@ -328,6 +339,8 @@ class ScPlatformMaintenanceAccess(models.Model):
             "access_id": record.id,
             "db_name": record.registration_id.db_name,
             "capability": record.capability,
+            "operator_identity_key": record.operator_identity_key or "",
+            "subject_checksum": record.subject_checksum or "",
             "state": record.state,
             "valid_until": fields.Datetime.to_string(record.valid_until)
             if record.valid_until
@@ -353,7 +366,7 @@ class ScPlatformMaintenanceAccess(models.Model):
         self.env["sc.platform.database.registration"]._assert_governance_principal()
 
     @api.model
-    def _request_access(self, db_name, capability, reason):
+    def _request_access(self, db_name, capability, reason, operator_identity_key="", subject_checksum=""):
         """Open a maintenance authorization request; never self-approving."""
         self._assert_governance_principal()
         try:
@@ -363,12 +376,25 @@ class ScPlatformMaintenanceAccess(models.Model):
         text = str(reason or "").strip()
         if not text:
             raise ValidationError("DBGOV1_MAINTENANCE_REASON_REQUIRED")
+        operator_identity = str(operator_identity_key or "").strip()
+        checksum = str(subject_checksum or "").strip()
+        if capability == "migrate":
+            # A data-moving capability without a named operator and a bound
+            # subject digest would authorize "someone, with something".
+            if not operator_identity:
+                raise ValidationError("DBGOV1_MAINTENANCE_OPERATOR_REQUIRED")
+            if not re.fullmatch(r"[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*", operator_identity):
+                raise ValidationError("DBGOV1_MAINTENANCE_OPERATOR_INVALID")
+            if not re.fullmatch(r"[0-9a-f]{64}", checksum):
+                raise ValidationError("DBGOV1_MAINTENANCE_SUBJECT_CHECKSUM_INVALID")
         registration = self.env["sc.platform.database.registration"]._resolve_entry(db_name)
         record = self.sudo().with_context(sc_platform_database_managed=True).create([{
             "name": "MA-%s-%s" % (registration.db_name, capability),
             "registration_id": registration.id,
             "capability": capability,
             "reason": text,
+            "operator_identity_key": operator_identity,
+            "subject_checksum": checksum,
             "requested_by": self.env.uid,
             "state": "requested",
         }])
@@ -436,6 +462,36 @@ class ScPlatformMaintenanceAccess(models.Model):
             ("valid_from", "<=", now),
             ("valid_until", ">=", now),
         ], limit=1)
+
+    @api.model
+    def _approved_access_projection(self, *, db_name, capability):
+        """Read-only projection of the covering approved maintenance access.
+
+        The projection is what an executor may rely on: it names the approver,
+        the requester, the bound operator identity, the bound subject digest and
+        the validity window, so a caller can bind an approval to its own run
+        instead of inventing one. It reads and never writes.
+        """
+        record = self._active_access(db_name, capability)
+        if not record:
+            return None
+        return {
+            "access_id": record.id,
+            "db_name": record.registration_id.db_name,
+            "tenant_key": record.registration_id.tenant_key or "",
+            "capability": record.capability,
+            "state": record.state,
+            "operator_identity_key": record.operator_identity_key or "",
+            "subject_checksum": record.subject_checksum or "",
+            "approved_by": record.approved_by.login or "",
+            "requested_by": record.requested_by.login or "",
+            "valid_from": fields.Datetime.to_string(record.valid_from)
+            if record.valid_from
+            else "",
+            "valid_until": fields.Datetime.to_string(record.valid_until)
+            if record.valid_until
+            else "",
+        }
 
     @api.model
     def _assert_access_authorized(self, db_name, capability):
