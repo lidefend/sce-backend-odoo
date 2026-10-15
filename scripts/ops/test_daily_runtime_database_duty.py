@@ -22,6 +22,7 @@ import copy
 import io
 import json
 import os
+import sys
 import tempfile
 import types
 import unittest
@@ -229,6 +230,78 @@ class DeclarationTests(unittest.TestCase):
         failures = duty_entry.validate_declaration(declaration)
         self.assertTrue(any("not authorized to build a production environment" in f for f in failures))
 
+    def test_a_platform_control_face_must_install_the_kernel(self):
+        declaration = shipped()
+        picked(declaration, "platform_control")["stack"]["modules"] = []
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(
+            any("must declare %s" % (duty_entry.CONTROL_MINIMUM_MODULE,) in row for row in failures),
+            failures,
+        )
+
+    def test_a_platform_control_face_may_not_install_the_industry_line(self):
+        declaration = shipped()
+        picked(declaration, "platform_control")["stack"]["modules"] = [
+            "smart_core", "smart_construction_core",
+        ]
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(
+            any("industry product line" in row for row in failures), failures
+        )
+
+    def test_a_cluster_only_face_declares_exactly_its_cluster(self):
+        declaration = shipped()
+        row = picked(declaration, "customer_tenant_dev")
+        self.assertEqual(row["custody"]["service_face"], "cluster_only")
+        row["stack"]["services"] = ["db", "odoo"]
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(any("cluster_only face declares exactly" in r for r in failures), failures)
+
+    def test_a_cluster_only_face_must_say_why(self):
+        declaration = shipped()
+        picked(declaration, "customer_tenant_dev")["custody"].pop("service_face_reason", None)
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(any("service_face_reason" in row for row in failures), failures)
+
+    def test_a_served_face_must_declare_the_application_service(self):
+        declaration = shipped()
+        picked(declaration, "platform_control")["stack"]["services"] = ["db", "redis"]
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(any("must declare the odoo service" in row for row in failures), failures)
+
+    def test_a_served_face_needs_its_database_declared_present(self):
+        declaration = shipped()
+        picked(declaration, "platform_control")["custody"]["database_present"] = False
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(
+            any("needs its database present first" in row for row in failures), failures
+        )
+
+    def test_every_duty_declares_the_cluster_and_only_known_services(self):
+        declaration = shipped()
+        picked(declaration, "demo")["stack"]["services"] = ["db", "worker"]
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(any("undeclared services" in row for row in failures), failures)
+
+        declaration = shipped()
+        picked(declaration, "demo")["stack"]["services"] = ["redis"]
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(any("must include the duty cluster" in row for row in failures), failures)
+
+    def test_a_missing_module_list_is_not_an_empty_module_list(self):
+        declaration = shipped()
+        picked(declaration, "customer_tenant_dev")["stack"].pop("modules")
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(any("missing modules" in row for row in failures), failures)
+        # An intentionally empty list is a decision, and stays valid.
+        self.assertEqual(duty_entry.validate_declaration(shipped()), [])
+
+    def test_a_module_name_must_be_a_module_name(self):
+        declaration = shipped()
+        picked(declaration, "platform_control")["stack"]["modules"] = ["Smart-Core"]
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(any("invalid modules" in row for row in failures), failures)
+
     def test_a_duty_with_a_recorded_cluster_identity_is_never_still_to_be_created(self):
         # Once a duty exists its observed custody is written back into the
         # declaration. A declaration that still says ``to_be_created`` while the
@@ -345,6 +418,24 @@ class RemoteProgramTests(unittest.TestCase):
             "PSQL_READBACK = %s" % (json.dumps(list(duty_entry.PSQL_READBACK)),), self.rendered()
         )
 
+    def test_the_carrier_refuses_to_initialize_an_undeclared_face(self):
+        rendered = self.rendered()
+        self.assertIn("does not say service_face=to_be_initialized", rendered)
+        self.assertIn("never brings up or installs into a duty nobody declared", rendered)
+
+    def test_the_carrier_installs_the_declared_set_without_demo_data(self):
+        rendered = self.rendered()
+        self.assertIn("--without-demo=all", rendered)
+        self.assertIn('"-i", ",".join(modules)', rendered)
+        self.assertIn("--stop-after-init", rendered)
+        self.assertIn('duty["stack"]["modules"]', rendered)
+
+    def test_initialize_is_a_declared_phase_and_face(self):
+        self.assertIn("initialize", duty_entry.PHASES)
+        self.assertIn("to_be_initialized", duty_entry.SERVICE_FACES)
+        self.assertIn("initialized", duty_entry.SERVICE_FACES)
+        self.assertIn("cluster_only", duty_entry.SERVICE_FACES)
+
 
 class EvaluationTests(unittest.TestCase):
     def declaration(self):
@@ -356,7 +447,7 @@ class EvaluationTests(unittest.TestCase):
         custody = {"database_present": False, "database_owner": "", "allow_connections": None,
                    "role_present": False, "role_superuser": None, "role_createdb": None,
                    "role_createrole": None, "role_canlogin": None, "public_connects": None,
-                   "database_role_connects": None, "error": "cluster container is not running"}
+                   "public_schema_create": None, "database_role_connects": None, "error": "cluster container is not running"}
         observation = {"duty": duty["duty"], "cluster": cluster, "custody": custody,
                        "stack": None, "create": None}
         observation.update(overrides)
@@ -379,7 +470,7 @@ class EvaluationTests(unittest.TestCase):
             "custody": {"database_present": True, "database_owner": "sc_platform_control_app",
                         "allow_connections": True, "role_present": True, "role_superuser": False,
                         "role_createdb": False, "role_createrole": False, "role_canlogin": True,
-                        "public_connects": False, "database_role_connects": True, "error": ""},
+                        "public_connects": False, "public_schema_create": True, "database_role_connects": True, "error": ""},
         }
 
     def test_a_created_duty_passes_the_apply_phase(self):
@@ -476,7 +567,7 @@ class EvaluationTests(unittest.TestCase):
         custody = {"database_present": False, "database_owner": "", "allow_connections": True,
                    "role_present": False, "role_superuser": None, "role_createdb": None,
                    "role_createrole": None, "role_canlogin": None, "public_connects": None,
-                   "database_role_connects": None, "error": ""}
+                   "public_schema_create": None, "database_role_connects": None, "error": ""}
         verdict = {a["id"]: a["passed"] for a in duty_entry.evaluate(
             row, {"duty": row["duty"], "cluster": cluster, "custody": custody,
                   "stack": stack},
@@ -512,7 +603,7 @@ class EvaluationTests(unittest.TestCase):
         custody = {"database_present": True, "database_owner": "sc_tenant_baosheng_dev_app",
                    "allow_connections": True, "role_present": True, "role_superuser": True,
                    "role_createdb": False, "role_createrole": False, "role_canlogin": True,
-                   "public_connects": False, "database_role_connects": True, "error": ""}
+                   "public_connects": False, "public_schema_create": True, "database_role_connects": True, "error": ""}
         verdict = {a["id"]: a["passed"] for a in duty_entry.evaluate(
             row, {"duty": row["duty"], "cluster": cluster, "custody": custody, "stack": None},
             declaration)}
@@ -533,7 +624,7 @@ class EvaluationTests(unittest.TestCase):
         custody = {"database_present": True, "database_owner": "odoo", "allow_connections": True,
                    "role_present": True, "role_superuser": False, "role_createdb": False,
                    "role_createrole": False, "role_canlogin": True, "public_connects": True,
-                   "database_role_connects": True, "error": ""}
+                   "public_schema_create": True, "database_role_connects": True, "error": ""}
         verdict = {a["id"]: a["passed"] for a in duty_entry.evaluate(
             picked(declaration, "demo"),
             {"duty": "demo", "cluster": cluster, "custody": custody, "stack": None}, declaration)}
@@ -549,12 +640,164 @@ class EvaluationTests(unittest.TestCase):
         custody = {"database_present": True, "database_owner": "sc_platform_control_app",
                    "allow_connections": False, "role_present": False, "role_superuser": None,
                    "role_createdb": None, "role_createrole": None, "role_canlogin": None,
-                   "public_connects": None, "database_role_connects": None, "error": ""}
+                   "public_connects": None, "public_schema_create": None, "database_role_connects": None, "error": ""}
         verdict = {a["id"]: a["passed"] for a in duty_entry.evaluate(
             picked(declaration, "platform_control"),
             {"duty": "platform_control", "cluster": cluster, "custody": custody, "stack": None},
             declaration)}
         self.assertFalse(verdict["database_accepts_the_declared_duty"])
+
+
+class ServiceFaceTests(unittest.TestCase):
+    """The declared service face must be provable, not assumed.
+
+    ``service_face`` is what keeps a stopped application from reading as a
+    finished build, and what keeps the entry from bringing up an application
+    nobody declared.
+    """
+
+    def declaration(self):
+        return shipped()
+
+    def observe(self, duty, face_overrides=None, **overrides):
+        service = service_matching(duty)
+        if face_overrides:
+            service.update(face_overrides)
+        cluster = {"present": True, "running": True, "system_identifier": "",
+                   "data_volume_owner": duty["cluster"]["data_volume"],
+                   "project": duty["cluster"]["compose_project"], "config_files": "", "error": ""}
+        custody = {"database_present": True, "database_owner": duty["database_role"],
+                   "allow_connections": True, "role_present": True, "role_superuser": False,
+                   "role_createdb": False, "role_createrole": False, "role_canlogin": True,
+                   "public_connects": False, "public_schema_create": True, "database_role_connects": True, "error": ""}
+        observation = {"duty": duty["duty"], "cluster": cluster, "custody": custody,
+                       "stack": None, "service": service}
+        observation.update(overrides)
+        return observation
+
+    def verdict(self, duty, *, phase="plan", initialize=False, **kwargs):
+        assertions = duty_entry.evaluate(
+            duty, self.observe(duty, **kwargs), self.declaration(),
+            phase=phase, initialize=initialize,
+        )
+        return {row["id"]: row["passed"] for row in assertions}
+
+    def initialized(self, declaration, name):
+        row = copy.deepcopy(picked(declaration, name))
+        row["custody"]["service_face"] = "initialized"
+        return row
+
+    def test_a_served_duty_must_show_its_services_running(self):
+        row = self.initialized(self.declaration(), "platform_control")
+        verdict = self.verdict(row)
+        self.assertTrue(verdict["declared_services_are_running"])
+        self.assertTrue(verdict["declared_modules_are_installed"])
+        self.assertTrue(verdict["no_undeclared_service_is_running"])
+
+        verdict = self.verdict(row, face_overrides={"running_services": ["db"]})
+        self.assertFalse(verdict["declared_services_are_running"])
+        self.assertTrue(verdict["no_undeclared_service_is_running"])
+
+    def test_a_served_duty_must_show_its_declared_modules_installed(self):
+        row = self.initialized(self.declaration(), "platform_control")
+        verdict = self.verdict(row, face_overrides={"module_states": {}})
+        self.assertFalse(verdict["declared_modules_are_installed"])
+
+    def test_an_undeclared_service_on_a_served_duty_is_refused(self):
+        row = self.initialized(self.declaration(), "platform_control")
+        verdict = self.verdict(row, face_overrides={
+            "running_services": sorted(set(row["stack"]["services"]) | {"worker"}),
+        })
+        self.assertFalse(verdict["no_undeclared_service_is_running"])
+
+    def test_a_control_plane_that_installed_the_industry_line_is_refused(self):
+        row = self.initialized(self.declaration(), "platform_control")
+        verdict = self.verdict(row, face_overrides={
+            "installed_industry_modules": ["smart_construction_core"],
+        })
+        self.assertFalse(verdict["platform_control_face_carries_no_industry_module"])
+
+    def test_a_cluster_only_duty_that_runs_an_application_is_refused(self):
+        row = picked(self.declaration(), "customer_tenant_dev")
+        self.assertTrue(self.verdict(row)["cluster_only_face_declares_only_the_cluster"])
+        verdict = self.verdict(row, face_overrides={"running_services": ["db", "odoo"]})
+        self.assertFalse(verdict["cluster_only_face_declares_only_the_cluster"])
+
+    def test_a_declaration_that_is_already_initialized_fails_the_read_only_plan(self):
+        """The write-back is the only thing that makes an initialized face a declaration.
+
+        The shipped duty has been written back, so the stale shape is rebuilt
+        here on purpose: a declaration that still says ``to_be_initialized``
+        while the world is already initialized must fail the read-only plan, or
+        the next initialize would bring up a face that is already up.
+        """
+        row = picked(self.declaration(), "platform_control")
+        self.assertEqual(row["custody"]["service_face"], "initialized")
+        stale = copy.deepcopy(row)
+        stale["custody"]["service_face"] = "to_be_initialized"
+        self.assertTrue(
+            self.verdict(stale)["service_face_is_not_initialized_before_the_write_back"]
+        )
+        assertions = duty_entry.evaluate(
+            stale, self.observe(row), self.declaration(), phase="plan"
+        )
+        verdict = {item["id"]: item["passed"] for item in assertions}
+        self.assertFalse(verdict["service_face_is_not_initialized_before_the_write_back"])
+
+    def test_the_initialize_phase_is_judged_against_the_target_face(self):
+        row = picked(self.declaration(), "platform_control")
+        stale = copy.deepcopy(row)
+        stale["custody"]["service_face"] = "to_be_initialized"
+        target = service_matching(self.initialized(self.declaration(), "platform_control"))
+
+        # A read-only plan of the same world would be a stale declaration...
+        plan = {item["id"]: item["passed"] for item in duty_entry.evaluate(
+            stale, self.observe(stale, face_overrides=target), self.declaration(), phase="plan",
+        )}
+        self.assertIn("service_face_is_not_initialized_before_the_write_back", plan)
+
+        # ...but as the target of the initialize run it is the expected shape.
+        initialized = {item["id"]: item["passed"] for item in duty_entry.evaluate(
+            stale, self.observe(stale, face_overrides=target), self.declaration(),
+            phase="apply", initialize=True,
+        )}
+        self.assertTrue(initialized["declared_services_are_running"])
+        self.assertTrue(initialized["declared_modules_are_installed"])
+        self.assertNotIn("service_face_is_not_initialized_before_the_write_back", initialized)
+
+    def test_an_initialize_run_does_not_excuse_a_missing_face(self):
+        row = picked(self.declaration(), "platform_control")
+        verdict = {item["id"]: item["passed"] for item in duty_entry.evaluate(
+            row, self.observe(row, face_overrides={"running_services": ["db"], "module_states": {}}),
+            self.declaration(), phase="apply", initialize=True,
+        )}
+        self.assertFalse(verdict["declared_services_are_running"])
+        self.assertFalse(verdict["declared_modules_are_installed"])
+
+    def test_an_application_face_that_cannot_create_its_own_schema_fails_closed(self):
+        """The defect that the first host run of ``--phase initialize`` exposed.
+
+        The duty's database was present, owned by the declared role, connectable
+        and least-privilege -- and its application could still not create a table
+        in ``public``. Every other custody fact said "healthy", so the entry must
+        carry the one fact that distinguishes "created" from "usable".
+        """
+        declaration = self.declaration()
+        duty = picked(declaration, "platform_control")
+        observation = self.observe(duty)
+        observation["custody"]["public_schema_create"] = False
+        verdict = {row["id"]: row["passed"] for row in duty_entry.evaluate(
+            duty, observation, declaration)}
+        self.assertFalse(verdict["application_role_can_create_in_its_public_schema"])
+
+    def test_a_cluster_only_face_is_not_asked_for_an_application_schema(self):
+        declaration = self.declaration()
+        duty = picked(declaration, "customer_tenant_dev")
+        observation = self.observe(duty)
+        observation["custody"]["public_schema_create"] = False
+        verdict = {row["id"]: row["passed"] for row in duty_entry.evaluate(
+            duty, observation, declaration)}
+        self.assertNotIn("application_role_can_create_in_its_public_schema", verdict)
 
 
 def build_fact(declaration, **overrides):
@@ -613,6 +856,38 @@ class DeploymentBindingTests(unittest.TestCase):
         self.assertFalse(duty_entry.deployment_binding(declaration, None)["passed"])
 
 
+def service_matching(row):
+    """The service face an observation must show for one declared duty.
+
+    A duty that declares an application must show its services running and its
+    declared minimum module set installed; a duty that declares only its cluster
+    must show exactly that; a duty that declares itself not yet initialized must
+    still look uninitialized, because that is the shape the write-back replaces.
+    """
+    face = row["custody"].get("service_face")
+    services = list(row["stack"]["services"])
+    if face == "initialized":
+        running = services
+        modules = {name: "installed" for name in row["stack"]["modules"]}
+    elif face == "to_be_initialized":
+        running = [name for name in services if name == "db"]
+        modules = {}
+    else:
+        running = ["db"]
+        modules = {}
+    industry = sorted(
+        name for name in modules if str(name).startswith(duty_entry.INDUSTRY_MODULE_PREFIX)
+    )
+    return {
+        "project": row["cluster"]["compose_project"],
+        "running_services": sorted(running),
+        "containers": {name: {"name": name, "state": "running"} for name in running},
+        "module_states": modules,
+        "installed_industry_modules": industry,
+        "error": "",
+    }
+
+
 def observation_matching(declaration):
     """An observation that agrees with every declared duty.
 
@@ -628,7 +903,7 @@ def observation_matching(declaration):
                 "database_present": False, "database_owner": "", "allow_connections": None,
                 "role_present": False, "role_superuser": None, "role_createdb": None,
                 "role_createrole": None, "role_canlogin": None, "public_connects": None,
-                "database_role_connects": None, "error": "",
+                "public_schema_create": None, "database_role_connects": None, "error": "",
             }
         elif compliance == "declared_gap":
             # The one declaration that describes a real, still-open gap: the
@@ -637,14 +912,15 @@ def observation_matching(declaration):
                 "database_present": True, "database_owner": row["database_role"],
                 "allow_connections": True, "role_present": True, "role_superuser": True,
                 "role_createdb": True, "role_createrole": False, "role_canlogin": True,
-                "public_connects": None, "database_role_connects": None, "error": "",
+                "public_connects": None, "public_schema_create": True, "database_role_connects": None,
+                "error": "",
             }
         else:
             custody = {
                 "database_present": True, "database_owner": row["database_role"],
                 "allow_connections": True, "role_present": True, "role_superuser": False,
                 "role_createdb": False, "role_createrole": False, "role_canlogin": True,
-                "public_connects": False, "database_role_connects": True, "error": "",
+                "public_connects": False, "public_schema_create": True, "database_role_connects": True, "error": "",
             }
         rows.append({
             "duty": row["duty"],
@@ -656,6 +932,7 @@ def observation_matching(declaration):
             },
             "custody": custody,
             "stack": None,
+            "service": service_matching(row),
         })
     return {
         "duties": rows,
@@ -765,6 +1042,212 @@ class EntryGuardTests(unittest.TestCase):
         )
         self.assertEqual(code, 2)
         self.assertIn("commit identity", output)
+
+class FakeResult:
+    """The shape of one finished command inside the rendered carrier."""
+
+    def __init__(self, stdout="", stderr="", returncode=0):
+        self.stdout = stdout
+        self.stderr = stderr
+        self.returncode = returncode
+
+
+class FakeSubprocess:
+    """Stands in for the ``subprocess`` module inside the rendered carrier.
+
+    The carrier only reaches a host through ``subprocess.run``, so replacing
+    that one module is enough to execute the *real* rendered program in-process
+    and observe the command order it chooses.
+    """
+
+    class TimeoutExpired(Exception):
+        def __init__(self, command, timeout):
+            super().__init__("command timed out after %s seconds" % (timeout,))
+            self.command = command
+            self.timeout = timeout
+
+    def __init__(self):
+        self.commands = []
+        self.raises = []
+
+    def run(self, command, **kwargs):
+        self.commands.append(list(command))
+        for index, predicate in enumerate(self.raises):
+            if predicate(list(command)):
+                del self.raises[index]
+                raise self.TimeoutExpired(command, kwargs.get("timeout"))
+        if list(command[:2]) == ["docker", "ps"]:
+            return FakeResult(stdout="sc-platform-control-dev-odoo-1\n")
+        return FakeResult()
+
+
+class CarrierExecutionTests(unittest.TestCase):
+    """The carrier is executed, not only read, for the order it must respect.
+
+    The first host run of this entry failed here: the entry waited for the
+    application's health *before* installing into it, and a duty's route can
+    only become healthy once its database carries the declared module set, so
+    the wait could never succeed and the failure arrived as an unhandled
+    ``TimeoutExpired`` that lost every duty's readback. Both halves are pinned
+    below against the real rendered program.
+    """
+
+    COMPOSE_TEXT = "services:\n  db:\n    image: postgres:15\n"
+
+    def duty(self, name="platform_control", face="to_be_initialized"):
+        return {
+            "duty": name,
+            "database": "sc_platform_control" if name == "platform_control" else "sc_tenant_baosheng_dev",
+            "database_role": "sc_platform_control_app",
+            "dbfilter": "^sc_platform_control$",
+            "custody": {"database_present": True, "database_role_present": True,
+                        "role_compliance": "compliant", "service_face": face},
+            "cluster": {"container": "sc-platform-control-dev-db-1",
+                        "compose_project": "sc-platform-control-dev",
+                        "data_volume": "sc_platform_control_db_data",
+                        "maintenance_role": "sc_platform_control_maintenance"},
+            "storage": {"redis_data_volume": "sc_platform_control_redis_data",
+                        "odoo_data_volume": "sc_platform_control_odoo_data"},
+            "routing": {"odoo_loopback_port": 18083, "nginx_host_port": 18082},
+            "stack": {
+                "services": ["db", "redis", "odoo", "nginx"],
+                "modules": ["smart_core"],
+                "runtime_env": "dev",
+                "product_root": "/opt/projects/repos/sce-product-odoo",
+                "postgres_image": "postgres:15",
+                "odoo_image": "odoo17-odoo:latest",
+                "frontend_dist_dir": "/opt/projects/repos/sce-product-odoo/frontend/apps/web/dist-dev",
+                "demo_addons_root": "/opt/projects/runtime-addons-empty",
+                "customer_addons_root": "/opt/projects/runtime-addons-empty",
+            },
+        }
+
+    def payload(self, duties, ops_root, *, mode="apply", phase="initialize"):
+        import hashlib
+
+        return {
+            "mode": mode,
+            "phase": phase,
+            "product_root": "/opt/projects/repos/sce-product-odoo",
+            "ops_root": ops_root,
+            "platform_admin_database": "sc_platform_control",
+            "frontend_build_env_file": os.path.join(ops_root, "absent-build.env"),
+            "source_revision": "a" * 40,
+            "compose_sha256": hashlib.sha256(self.COMPOSE_TEXT.encode("utf-8")).hexdigest(),
+            "stack": {"compose_text": self.COMPOSE_TEXT},
+            "env_template": "DB_NAME=@DB_NAME@\nLIST_DB=false\n",
+            "data_destination": "/var/lib/postgresql/data",
+            "duties": duties,
+        }
+
+    def execute(self, fake, duties, *, mode="apply", phase="initialize"):
+        with tempfile.TemporaryDirectory() as ops_root:
+            rendered = duty_entry.render_remote_program(
+                self.payload(duties, ops_root, mode=mode, phase=phase)
+            )
+            captured = io.StringIO()
+            saved = sys.modules.get("subprocess")
+            sys.modules["subprocess"] = fake
+            try:
+                with contextlib.redirect_stdout(captured):
+                    exec(compile(rendered, "<remote-carrier>", "exec"), {"__name__": "__carrier__"})
+            finally:
+                if saved is None:
+                    sys.modules.pop("subprocess", None)
+                else:
+                    sys.modules["subprocess"] = saved
+        return json.loads(captured.getvalue().split(duty_entry.MARKER, 1)[1])
+
+    def index_of(self, fake, predicate):
+        for index, command in enumerate(fake.commands):
+            if predicate(command):
+                return index
+        raise AssertionError("no command matched: %s" % (fake.commands,))
+
+    def ups(self, fake):
+        return [c for c in fake.commands if "up" in c and c[:2] == ["docker", "compose"]]
+
+    def test_the_cluster_is_waited_for_and_the_application_is_not(self):
+        fake = FakeSubprocess()
+        self.execute(fake, [self.duty()])
+        cluster = [c for c in self.ups(fake) if c[-2:] == ["db", "redis"]]
+        application = [c for c in self.ups(fake) if c[-2:] == ["-d", "odoo"]]
+        self.assertEqual(len(cluster), 1)
+        self.assertEqual(len(application), 1)
+        self.assertIn("--wait", cluster[0])
+        self.assertNotIn(
+            "--wait", application[0],
+            "the application's health is a consequence of the declared module set; "
+            "waiting for it before installing into the duty can never succeed",
+        )
+        # The health of the application is waited for *after* it holds the
+        # declared modules, which is the only moment that health is reachable.
+        install = self.index_of(
+            fake, lambda c: c[:2] == ["docker", "exec"] and "-i" in c and "odoo" in c
+        )
+        confirm = self.index_of(fake, lambda c: c[-2:] == ["--wait", "odoo"])
+        self.assertLess(install, confirm)
+
+    def test_the_route_is_started_only_after_the_declared_modules_are_installed(self):
+        fake = FakeSubprocess()
+        self.execute(fake, [self.duty()])
+        install = self.index_of(
+            fake, lambda c: c[:2] == ["docker", "exec"] and "-i" in c and "odoo" in c
+        )
+        route = self.index_of(fake, lambda c: "up" in c and c[-1] == "nginx")
+        self.assertLess(
+            install, route,
+            "a route that waits for the application's health must come after the "
+            "installation that makes that health reachable",
+        )
+        self.assertIn("--wait", fake.commands[route])
+        self.assertIn("smart_core", fake.commands[install])
+
+    def test_the_application_is_granted_its_own_schema_before_installation(self):
+        """Owning a database is not the same as being able to initialize it.
+
+        The first host run of this entry created a database whose owner was then
+        refused ``CREATE TABLE public.…``, and the entry reported it as a healthy
+        duty because nothing in the readback looked at the schema. The grant is
+        therefore issued for the duty's own database, before the installation
+        that needs it.
+        """
+        fake = FakeSubprocess()
+        self.execute(fake, [self.duty()])
+        grants = [c for c in fake.commands
+                  if c[:2] == ["docker", "exec"] and "GRANT USAGE, CREATE ON SCHEMA public" in " ".join(c)]
+        self.assertEqual(len(grants), 1)
+        grant = grants[0]
+        self.assertIn("sc_platform_control_app", " ".join(grant))
+        self.assertEqual(grant[grant.index("-d") + 1], "sc_platform_control")
+        install = self.index_of(
+            fake, lambda c: c[:2] == ["docker", "exec"] and "-i" in c and "odoo" in c
+        )
+        self.assertLess(fake.commands.index(grant), install)
+
+    def test_a_duty_that_raises_is_reported_with_its_readback(self):
+        fake = FakeSubprocess()
+        fake.raises.append(lambda command: "up" in command)
+        report = self.execute(fake, [self.duty()])
+        self.assertTrue(report["writes"])
+        self.assertEqual(len(report["duties"]), 1)
+        settled = report["duties"][0]
+        self.assertIn("TimeoutExpired", settled["error"])
+        self.assertIsNotNone(
+            settled["cluster"],
+            "a duty that raised must still report the facts observed after it, or a "
+            "partial write becomes an unrecorded one",
+        )
+        self.assertIsNotNone(settled["service"])
+
+    def test_a_failing_duty_does_not_hide_a_later_duty(self):
+        fake = FakeSubprocess()
+        fake.raises.append(lambda command: "up" in command)
+        report = self.execute(fake, [self.duty(), self.duty(name="customer_tenant_dev")])
+        self.assertEqual([row["duty"] for row in report["duties"]],
+                         ["platform_control", "customer_tenant_dev"])
+        self.assertIn("TimeoutExpired", report["duties"][0]["error"])
+        self.assertEqual(report["duties"][1]["error"], "")
 
 
 if __name__ == "__main__":

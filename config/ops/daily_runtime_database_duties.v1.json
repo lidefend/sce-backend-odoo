@@ -29,7 +29,8 @@
       "custody": {
         "database_present": true,
         "database_role_present": true,
-        "role_compliance": "compliant"
+        "role_compliance": "compliant",
+        "service_face": "initialized"
       },
       "storage": {
         "compose_project": "sc-platform-control-dev",
@@ -66,7 +67,16 @@
         "product_root": "/opt/projects/repos/sce-product-odoo",
         "frontend_dist_dir": "/opt/projects/repos/sce-product-odoo/frontend/apps/web/dist-dev",
         "demo_addons_root": "/opt/projects/runtime-addons-empty",
-        "customer_addons_root": "/opt/projects/runtime-addons-empty"
+        "customer_addons_root": "/opt/projects/runtime-addons-empty",
+        "services": [
+          "db",
+          "redis",
+          "odoo",
+          "nginx"
+        ],
+        "modules": [
+          "smart_core"
+        ]
       }
     },
     {
@@ -90,7 +100,8 @@
         "role_compliance": "declared_gap",
         "gap_kind": "shared_bootstrap_role",
         "gap_reason": "The daily demo duty still connects as the cluster superuser role 'odoo', which is a createdb/superuser role. Policy section 6 requires an independent role per tenant environment; the dedicated demo application role is a separate authorized change because it rewrites the live dev stack credentials.",
-        "gap_owner_task": "DAILY-RUNTIME-DEMO-APP-ROLE-01"
+        "gap_owner_task": "DAILY-RUNTIME-DEMO-APP-ROLE-01",
+        "service_face": "initialized"
       },
       "storage": {
         "compose_project": "sc-backend-odoo-dev",
@@ -127,7 +138,17 @@
         "product_root": "/opt/projects/repos/sce-product-odoo",
         "frontend_dist_dir": "/opt/projects/repos/sce-product-odoo/frontend/apps/web/dist-dev",
         "demo_addons_root": "/opt/projects/repos/sce-product-odoo/demo_addons",
-        "customer_addons_root": "/opt/projects/customer-addons-dev/native-preferences-4fb25858288b2aad"
+        "customer_addons_root": "/opt/projects/customer-addons-dev/native-preferences-4fb25858288b2aad",
+        "services": [
+          "db",
+          "redis",
+          "odoo",
+          "nginx"
+        ],
+        "modules": [
+          "smart_core",
+          "smart_construction_core"
+        ]
       }
     },
     {
@@ -148,7 +169,9 @@
       "custody": {
         "database_present": true,
         "database_role_present": true,
-        "role_compliance": "compliant"
+        "role_compliance": "compliant",
+        "service_face": "cluster_only",
+        "service_face_reason": "This duty exists as its own cluster only; the product line and the customer user module are installed into it by the customer module's own governed migration step, not by the duty entry."
       },
       "storage": {
         "compose_project": "sc-tenant-baosheng-dev",
@@ -185,7 +208,11 @@
         "product_root": "/opt/projects/repos/sce-product-odoo",
         "frontend_dist_dir": "/opt/projects/repos/sce-product-odoo/frontend/apps/web/dist-dev",
         "demo_addons_root": "/opt/projects/runtime-addons-empty",
-        "customer_addons_root": "/opt/projects/runtime-addons-empty"
+        "customer_addons_root": "/opt/projects/runtime-addons-empty",
+        "services": [
+          "db"
+        ],
+        "modules": []
       }
     }
   ],

@@ -57,7 +57,7 @@ def main() -> int:
         "ACCEPTANCE_NAV_REQUIRED_PATHS": ",".join(policy["navigation_policy"]["required_paths"]),
         "ACCEPTANCE_PROBE_OUTPUT": "artifacts/backend/dev_acceptance_release_probe.json",
         "FRONTEND_DIST_DIR": "./frontend/apps/web/dist-dev",
-        "VITE_PLATFORM_ADMIN_DB": "sc_platform_core",
+        "VITE_PLATFORM_ADMIN_DB": "sc_platform_control",
     }
     for key, wanted in expected.items():
         actual = os.getenv(key, "").strip()

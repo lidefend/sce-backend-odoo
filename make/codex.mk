@@ -763,6 +763,11 @@ DAILY_RUNTIME_FRONTEND_BUILD_DATABASE ?= sc_demo
 DAILY_RUNTIME_FRONTEND_BUILD_BASE_URL ?= http://127.0.0.1:18081
 DAILY_RUNTIME_FRONTEND_BUILD_RECEIPT ?= .runtime/final-acceptance/daily-deployed/frontend-build.json
 DAILY_RUNTIME_FRONTEND_BUILD_REPORT ?= $(DAILY_RUNTIME_FRONTEND_BUILD_RECEIPT)
+# The platform-admin database is a governance fact, so the build input is derived
+# from the same duty declaration the duty entry validates instead of being typed
+# a second time here: two hand-maintained copies of the authority the
+# platform-admin entry mounts would be two dialects of the same fact.
+DAILY_RUNTIME_FRONTEND_BUILD_PLATFORM_ADMIN_DB ?= $(shell python3 -c 'import json; print(json.load(open("config/ops/daily_runtime_database_duties.v1.json"))["platform_admin_database"])')
 
 verify.daily.runtime.frontend.build: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/daily_runtime_frontend_build_align.py scripts/ops/test_daily_runtime_frontend_build_align.py
@@ -777,6 +782,7 @@ daily.runtime.frontend.build: guard.prod.forbid verify.daily.runtime.frontend.bu
 		--env-file "$(DAILY_RUNTIME_ENV_FILE)" \
 		--database "$(DAILY_RUNTIME_FRONTEND_BUILD_DATABASE)" \
 		--base-url "$(DAILY_RUNTIME_FRONTEND_BUILD_BASE_URL)" \
+		--platform-admin-database "$(DAILY_RUNTIME_FRONTEND_BUILD_PLATFORM_ADMIN_DB)" \
 		--receipt "$(DAILY_RUNTIME_FRONTEND_BUILD_RECEIPT)" \
 		--report "$(DAILY_RUNTIME_FRONTEND_BUILD_REPORT)"
 
@@ -876,7 +882,7 @@ daily.runtime.database.identity.inventory: guard.prod.forbid verify.daily.runtim
 # purpose. Read-only; `--report` only writes a local file.
 .PHONY: verify.daily.runtime.tenant.topology.inventory daily.runtime.tenant.topology.inventory
 DAILY_RUNTIME_TENANT_TOPOLOGY_REPORT ?= .runtime/final-acceptance/daily-deployed/tenant-topology-inventory.json
-DAILY_RUNTIME_TOPOLOGY_DATABASES ?= sc_demo,sc_odoo,sc_platform_core
+DAILY_RUNTIME_TOPOLOGY_DATABASES ?= sc_demo,sc_odoo,sc_platform_core,sc_platform_control
 
 verify.daily.runtime.tenant.topology.inventory: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/daily_runtime_tenant_topology_inventory.py scripts/ops/test_daily_runtime_tenant_topology_inventory.py
@@ -979,6 +985,7 @@ daily.runtime.legacy_stack.retire.apply: guard.prod.forbid verify.daily.runtime.
 DAILY_RUNTIME_DATABASE_DUTY_DECLARATION ?= config/ops/daily_runtime_database_duties.v1.json
 DAILY_RUNTIME_DATABASE_DUTY_PLAN_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-plan.json
 DAILY_RUNTIME_DATABASE_DUTY_APPLY_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-apply.json
+DAILY_RUNTIME_DATABASE_DUTY_INITIALIZE_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-initialize.json
 DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST ?=
 DAILY_RUNTIME_DATABASE_DUTY_SELECTION ?=
 DAILY_RUNTIME_DATABASE_DUTY_PHASE ?= all
@@ -1009,6 +1016,28 @@ daily.runtime.database.duty.apply: guard.prod.forbid verify.daily.runtime.databa
 		--phase "$(DAILY_RUNTIME_DATABASE_DUTY_PHASE)" \
 		--expect-declaration-digest "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" \
 		--report "$(DAILY_RUNTIME_DATABASE_DUTY_APPLY_REPORT)"
+
+# The application face of an existing duty is a separate mutation from creating
+# its cluster: it brings up exactly the services the duty declares and installs
+# exactly the module set the duty declares, with demo data always off. It is the
+# only phase allowed to touch a duty that already exists, and only when the
+# declaration still says ``service_face=to_be_initialized`` -- the declaration
+# the owner ruling requires instead of an ops tool choosing a module set. The
+# control-plane minimum is therefore a governance decision recorded in
+# `config/ops/daily_runtime_database_duties.v1.json`, not an argument here.
+.PHONY: daily.runtime.database.duty.initialize
+daily.runtime.database.duty.initialize: guard.prod.forbid verify.daily.runtime.database.duty
+	@test "$${SC_CONFIRM_DAILY_RUNTIME_DATABASE_DUTY:-}" = "PROVISION_DAILY_RUNTIME_DATABASE_DUTY" || { echo "SC_CONFIRM_DAILY_RUNTIME_DATABASE_DUTY=PROVISION_DAILY_RUNTIME_DATABASE_DUTY is required" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST must be the digest of the reviewed declaration" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_database_duty.py \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--declaration "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION)" \
+		$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS) \
+		$(DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG) \
+		--apply \
+		--phase initialize \
+		--expect-declaration-digest "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" \
+		--report "$(DAILY_RUNTIME_DATABASE_DUTY_INITIALIZE_REPORT)"
 
 
 # Every declared model is bounded by `user._sc_data_company_ids()`, which reads

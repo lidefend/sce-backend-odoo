@@ -55,7 +55,9 @@ SCHEMA = "daily.runtime.database_duties.v1"
 CONFIRMATION = "PROVISION_DAILY_RUNTIME_DATABASE_DUTY"
 CONFIRM_ENV = "SC_CONFIRM_DAILY_RUNTIME_DATABASE_DUTY"
 POSTGRES_DATA_DESTINATION = "/var/lib/postgresql/data"
-PHASES = ("plan", "stack", "database", "all")
+#: ``initialize`` brings up the declared services and installs the declared
+#: module set; it is the only phase that may touch a duty that already exists.
+PHASES = ("plan", "stack", "database", "initialize", "all")
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
 #: Every value the declaration must supply before a duty stack can be rendered.
@@ -64,6 +66,7 @@ SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
 STACK_KEYS = (
     "compose_file", "env_template", "runtime_env", "odoo_image", "postgres_image",
     "product_root", "frontend_dist_dir", "demo_addons_root", "customer_addons_root",
+    "services", "modules",
 )
 #: Secret material generated once per duty and kept only on the governed host.
 SECRET_KEYS = (
@@ -98,6 +101,23 @@ SECTION_11_KEYS = (
 )
 DATABASE_ROLES = ("platform_control", "industry_catalog", "customer_tenant", "isolated_rehearsal")
 CUSTODY_COMPLIANCE = ("compliant", "declared_gap", "to_be_created")
+#: The services one duty stack may declare.
+SERVICE_NAMES = ("db", "redis", "odoo", "nginx")
+#: The face the declaration says a duty's stack is meant to expose.
+#:
+#: ``cluster_only`` means the duty owns its cluster and nothing else, and the
+#: application face belongs to a later governed step; ``to_be_initialized`` is
+#: the only face ``--phase initialize`` may mutate; ``initialized`` is what the
+#: observed facts are written back as. A duty that is served must say so, or the
+#: plan would have no way to tell "not built yet" from "silently stopped".
+SERVICE_FACES = ("to_be_initialized", "initialized", "cluster_only")
+MODULE_NAME = re.compile(r"^[a-z][a-z0-9_]*$")
+#: The platform control plane installs the kernel and never the industry product
+#: line: policy section 2 keeps customer and industry content out of it, and the
+#: tenant topology inventory already reads a kernel-only database as the control
+#: candidate. Declaring the minimum set here is what makes that provable.
+CONTROL_MINIMUM_MODULE = "smart_core"
+INDUSTRY_MODULE_PREFIX = "smart_construction_"
 
 
 class DutyError(RuntimeError):
@@ -268,6 +288,7 @@ def validate_declaration(declaration):
                 failures.append("duty %s: routing.%s must be a port number" % (name, key))
 
         failures.extend(_validate_section_11(name, duty))
+        failures.extend(_validate_service_face(name, duty))
         failures.extend(_validate_scope(name, duty, compliance))
 
         for key, value in (
@@ -321,7 +342,15 @@ def validate_stack_surface(compose_text, env_template):
 def _validate_stack(name, duty, stack, naming, ops_root):
     """The duty stack is a declaration, so an incomplete one never renders."""
     failures = []
-    missing = [key for key in STACK_KEYS if not str(stack.get(key) or "").strip()]
+    # A missing key is a stop, but an intentionally empty list is not missing:
+    # "this duty installs no module" and "this duty forgot to say" must not
+    # collapse into the same shape, or an omission would read as a decision.
+    missing = []
+    for key in STACK_KEYS:
+        if key not in stack:
+            missing.append(key)
+        elif not isinstance(stack[key], list) and not str(stack[key] or "").strip():
+            missing.append(key)
     if missing:
         failures.append("duty %s: stack is incomplete, missing %s" % (name, ",".join(missing)))
         return failures
@@ -340,6 +369,89 @@ def _validate_stack(name, duty, stack, naming, ops_root):
         failures.append("duty %s: stack.frontend_dist_dir must live under stack.product_root" % (name,))
     if stack["runtime_env"] not in ("dev", "test"):
         failures.append("duty %s: stack.runtime_env must be a non-production runtime env" % (name,))
+    services = stack.get("services")
+    if not isinstance(services, list) or not services:
+        failures.append("duty %s: stack.services must be a non-empty list of service names" % (name,))
+    else:
+        unknown = [item for item in services if item not in SERVICE_NAMES]
+        if unknown:
+            failures.append(
+                "duty %s: stack.services names undeclared services %s" % (name, ",".join(map(str, unknown)))
+            )
+        if len(set(map(str, services))) != len(services):
+            failures.append("duty %s: stack.services must be unique" % (name,))
+        if "db" not in services:
+            failures.append("duty %s: stack.services must include the duty cluster 'db'" % (name,))
+    modules = stack.get("modules")
+    if not isinstance(modules, list):
+        failures.append("duty %s: stack.modules must be a list of module names" % (name,))
+    else:
+        malformed = [item for item in modules if not MODULE_NAME.fullmatch(str(item))]
+        if malformed:
+            failures.append(
+                "duty %s: stack.modules names invalid modules %s" % (name, ",".join(map(str, malformed)))
+            )
+        if len(set(map(str, modules))) != len(modules):
+            failures.append("duty %s: stack.modules must be unique" % (name,))
+    return failures
+
+
+def _validate_service_face(name, duty):
+    """The declared service face must be a shape this entry can prove.
+
+    ``service_face`` is not a rendering preference: it is the difference between
+    "this duty is not built yet", "this duty is served exactly as declared" and
+    "this duty deliberately owns only its cluster". Leaving it out would let a
+    stopped application read as a finished build, and would let the entry bring
+    up an application nobody declared.
+    """
+    failures = []
+    custody = duty.get("custody") or {}
+    stack = duty.get("stack") or {}
+    face = custody.get("service_face")
+    services = stack.get("services") if isinstance(stack.get("services"), list) else []
+    modules = stack.get("modules") if isinstance(stack.get("modules"), list) else []
+    reason = str(custody.get("service_face_reason") or "").strip()
+    if face not in SERVICE_FACES:
+        failures.append(
+            "duty %s: custody.service_face must be one of %s" % (name, ",".join(SERVICE_FACES))
+        )
+        return failures
+    if face == "cluster_only":
+        if services != ["db"] or modules:
+            failures.append(
+                "duty %s: a cluster_only face declares exactly ['db'] and no module; the "
+                "application face belongs to its own governed step" % (name,)
+            )
+        if not reason:
+            failures.append(
+                "duty %s: a cluster_only face must say why in service_face_reason" % (name,)
+            )
+    else:
+        if "odoo" not in services:
+            failures.append("duty %s: a %s face must declare the odoo service" % (name, face))
+        if reason:
+            failures.append(
+                "duty %s: service_face_reason describes a cluster_only face and is not declared here"
+                % (name,)
+            )
+        if face in ("to_be_initialized", "initialized") and not custody.get("database_present"):
+            failures.append(
+                "duty %s: a %s face needs its database present first, otherwise the declaration "
+                "promises a face its cluster cannot carry" % (name, face)
+            )
+    if duty.get("data_purpose") == "platform_control" and face != "cluster_only":
+        if CONTROL_MINIMUM_MODULE not in modules:
+            failures.append(
+                "duty %s: the platform control face installs the kernel, so stack.modules must "
+                "declare %s" % (name, CONTROL_MINIMUM_MODULE)
+            )
+        industry = [item for item in modules if str(item).startswith(INDUSTRY_MODULE_PREFIX)]
+        if industry:
+            failures.append(
+                "duty %s: the platform control face may not install the industry product line (%s)"
+                % (name, ",".join(map(str, industry)))
+            )
     return failures
 
 
@@ -460,11 +572,13 @@ ENV_READBACK_KEYS = (
     "DB_DATA", "REDIS_DATA", "ODOO_DATA", "ODOO_DBFILTER", "ODOO_PORT", "NGINX_PORT",
     "LIST_DB",
 )
+INDUSTRY_MODULE_PREFIX = "smart_construction_"
 
 report = {"mode": MODE, "phase": PHASE, "writes": False, "duties": []}
 
 
 def run(command, **kwargs):
+    kwargs.setdefault("timeout", 300)
     return subprocess.run(command, capture_output=True, text=True, check=False, **kwargs)
 
 
@@ -509,7 +623,8 @@ def database_facts(container, duty):
     facts = {"database_present": False, "database_owner": "", "allow_connections": None,
              "role_present": False, "role_superuser": None, "role_createdb": None,
              "role_createrole": None, "role_canlogin": None, "public_connects": None,
-             "database_role_connects": None, "error": ""}
+             "database_role_connects": None, "public_schema_create": None,
+             "public_schema_create_error": "", "error": ""}
     name = duty["database"]
     role = duty["database_role"]
     maintenance_role = duty["cluster"]["maintenance_role"]
@@ -545,6 +660,22 @@ def database_facts(container, duty):
         "database_role_connects": None if role_connects == "" else role_connects == "true",
     })
     facts["database_present"] = bool(owner) or allow != ""
+    if facts["database_present"] and facts.get("allow_connections") and facts.get("role_present"):
+        # ``public`` belongs to a database, not to the cluster, so this fact only
+        # exists while connected to the duty's own database. A database whose
+        # owner cannot create inside its own schema cannot be initialized at
+        # all, and nothing else in the custody readback would say so: the same
+        # readback reports such a database as present, connectable and owned by
+        # the declared role.
+        schema = run(["docker", "exec", container, "psql", "-U", maintenance_role,
+                      "-d", name, *PSQL_READBACK, "--command",
+                      "SELECT has_schema_privilege(%s, 'public', 'CREATE')::text"
+                      % ("'" + role.replace("'", "''") + "'",)])
+        if schema.returncode:
+            facts["public_schema_create_error"] = (schema.stderr or schema.stdout or "").strip()[:300]
+        else:
+            observed = (schema.stdout.strip().splitlines() or [""])[0].strip()
+            facts["public_schema_create"] = None if observed == "" else observed == "true"
     return facts
 
 
@@ -716,17 +847,195 @@ def read_text(path):
         return stream.read()
 
 
-def start_cluster(duty):
-    command = [
+def compose_base(duty):
+    return [
         "docker", "compose",
         "-f", stack_compose_path(),
         "--project-name", duty["cluster"]["compose_project"],
         "--env-file", os.path.join(OPS_ROOT, duty["duty"] + ".env"),
-        "up", "-d", "--wait", "db",
     ]
+
+
+def start_cluster(duty):
+    command = compose_base(duty) + ["up", "-d", "--wait", "db"]
     result = run(command, cwd=OPS_ROOT)
     return {"command": " ".join(command), "returncode": result.returncode,
             "error": (result.stderr or result.stdout or "").strip()[:600]}
+
+
+def start_services(duty):
+    """Bring up this duty's declared services in the order its own facts allow.
+
+    ``odoo``'s health means "the route answers", and a duty's route can only
+    answer once its database carries the declared module set. Waiting for the
+    application's health *before* installing into it therefore waits for a
+    consequence of a step that has not run yet: the first boot of an
+    uninitialized duty stays unhealthy on purpose. The cluster services are
+    waited for, the application is only started, and the services above it are
+    started after the declared modules exist.
+    """
+    declared = [str(item) for item in duty["stack"]["services"]]
+    waited = [name for name in declared if name in ("db", "redis")]
+    started = [name for name in declared if name not in ("db", "redis", "nginx")]
+    steps = []
+    for stage, names, wait in (("cluster", waited, True), ("application", started, False)):
+        if not names:
+            continue
+        command = compose_base(duty) + ["up", "-d"] + (["--wait"] if wait else []) + names
+        result = run(command, cwd=OPS_ROOT, timeout=900)
+        steps.append({"stage": stage, "command": " ".join(command), "services": names,
+                      "returncode": result.returncode,
+                      "error": (result.stderr or result.stdout or "").strip()[-600:]})
+    return {"declared": declared, "steps": steps}
+
+
+def start_route(duty):
+    """Bring up the declared services that sit above the application.
+
+    Those services are declared to wait for the application's health, and that
+    health is only true once the duty is initialized, so this runs after the
+    declared module set is installed rather than before it.
+    """
+    route = [str(item) for item in duty["stack"]["services"] if item not in ("db", "redis", "odoo")]
+    if not route:
+        return {"skipped": "the declaration has no service above the application"}
+    command = compose_base(duty) + ["up", "-d", "--wait", *route]
+    result = run(command, cwd=OPS_ROOT, timeout=900)
+    return {"command": " ".join(command), "services": route,
+            "returncode": result.returncode,
+            "error": (result.stderr or result.stdout or "").strip()[-600:]}
+
+
+def service_container(duty, service):
+    """The one container of this duty's project that carries ``service``."""
+    listing = run(["docker", "ps", "-a", "--filter",
+                   "label=com.docker.compose.project=%s" % duty["cluster"]["compose_project"],
+                   "--filter", "label=com.docker.compose.service=%s" % service,
+                   "--format", "{{.Names}}"])
+    names = [line.strip() for line in (listing.stdout or "").splitlines() if line.strip()]
+    return names[0] if len(names) == 1 else ""
+
+
+def install_modules(duty):
+    """Install the declared module set into the duty, without demo data.
+
+    The declared set is a *minimum* the entry must prove present, not a claim
+    that nothing else may be installed: a kernel-only duty is enforced by the
+    separate "no industry module" fact, and a business duty legitimately carries
+    more than the modules an ops entry names.
+    """
+    modules = list(duty["stack"]["modules"])
+    if not modules:
+        return {"skipped": "the declaration installs no module on this duty"}
+    container = service_container(duty, "odoo")
+    if not container:
+        return {"error": "the declared odoo service is not running; start the duty stack first"}
+    command = ["docker", "exec", container, "odoo",
+               "-c", "/var/lib/odoo/odoo.conf", "-d", duty["database"],
+               "-i", ",".join(modules),
+               "--without-demo=all", "--stop-after-init", "--no-http",
+               "--workers=0", "--max-cron-threads=0", "--logfile=/dev/stdout"]
+    result = run(command, cwd=OPS_ROOT, timeout=3600)
+    entry = {"container": container, "modules": modules, "returncode": result.returncode,
+             "tail": ((result.stdout or "") + (result.stderr or "")).strip()[-1200:]}
+    if result.returncode == 0:
+        # The serving process holds its own registry, so it is restarted before
+        # the module facts are read back: reporting an installed module from a
+        # process that has not loaded it would be a claim, not an observation.
+        restart = run(["docker", "restart", container], cwd=OPS_ROOT, timeout=300)
+        entry["restart"] = {"command": "docker restart %s" % container,
+                            "returncode": restart.returncode}
+        waited = run(compose_base(duty) + ["up", "-d", "--wait", "odoo"], cwd=OPS_ROOT, timeout=900)
+        entry["wait"] = {"returncode": waited.returncode,
+                         "error": (waited.stderr or waited.stdout or "").strip()[-400:]}
+    return entry
+
+
+def module_facts(duty):
+    """The declared modules' state, read from the duty's own cluster catalog.
+
+    Read through the cluster rather than the application so the fact survives a
+    stopped application, and read the industry modules unconditionally so a
+    kernel-only duty cannot pass by having never installed anything at all.
+    """
+    facts = {"module_states": {}, "installed_industry_modules": [], "error": ""}
+    container = duty["cluster"]["container"]
+    declared = [str(item) for item in duty["stack"]["modules"]]
+    present = run(["docker", "exec", container, "psql",
+                   "-U", duty["cluster"]["maintenance_role"], "-d", duty["database"],
+                   *PSQL_READBACK, "--command",
+                   "SELECT to_regclass('public.ir_module_module') IS NOT NULL"])
+    if present.returncode:
+        facts["error"] = (present.stderr or present.stdout or "").strip()[:300]
+        return facts
+    if present.stdout.strip() != "t":
+        return facts
+    quoted = ",".join("'" + item.replace("'", "''") + "'" for item in declared) or "NULL"
+    statement = (
+        "SELECT name, state FROM ir_module_module WHERE name IN (%s) OR name LIKE '%s%%'"
+        % (quoted, INDUSTRY_MODULE_PREFIX)
+    )
+    query = run(["docker", "exec", container, "psql",
+                 "-U", duty["cluster"]["maintenance_role"], "-d", duty["database"],
+                 *PSQL_READBACK, "--command", statement])
+    if query.returncode:
+        facts["error"] = (query.stderr or query.stdout or "").strip()[:300]
+        return facts
+    for line in (query.stdout or "").splitlines():
+        name, _, state = line.partition("|")
+        name = name.strip()
+        if name in declared:
+            facts["module_states"][name] = state.strip()
+        if name.startswith(INDUSTRY_MODULE_PREFIX) and state.strip() == "installed":
+            facts["installed_industry_modules"].append(name)
+    facts["installed_industry_modules"].sort()
+    return facts
+
+
+def service_facts(duty):
+    """Which of this duty's own compose services are running, by project label."""
+    facts = {"project": duty["cluster"]["compose_project"], "running_services": [],
+             "containers": {}, "module_states": {}, "installed_industry_modules": [],
+             "error": ""}
+    listing = run(["docker", "ps", "-a", "--filter",
+                   "label=com.docker.compose.project=%s" % facts["project"],
+                   "--format", "{{.Names}}|{{.Label \"com.docker.compose.service\"}}|{{.State}}"])
+    if listing.returncode:
+        facts["error"] = (listing.stderr or listing.stdout or "").strip()[:300]
+        return facts
+    for line in (listing.stdout or "").splitlines():
+        parts = line.split("|")
+        if len(parts) != 3:
+            continue
+        name, service, state = parts
+        facts["containers"][service] = {"name": name, "state": state}
+        if state == "running" and service not in facts["running_services"]:
+            facts["running_services"].append(service)
+    facts["running_services"].sort()
+    facts.update(module_facts(duty))
+    return facts
+
+
+def privilege_statements(duty):
+    """The declared application's access to its own database, as one list.
+
+    Owning a database is not the same as being able to initialize it. Since
+    PostgreSQL 15 the ``public`` schema is owned by ``pg_database_owner``, and
+    on this cluster that implicit privilege does not reach the application role
+    -- measured, not assumed: the declared owner of ``sc_platform_control`` was
+    refused ``CREATE TABLE public.…``. The entry therefore states the access
+    explicitly instead of relying on a mechanism it cannot observe, exactly as
+    it already states CONNECT explicitly.
+    """
+    name = duty["database"]
+    role = duty["database_role"]
+    quoted_role = '"' + role.replace('"', '""') + '"'
+    quoted_name = '"' + name.replace('"', '""') + '"'
+    return [
+        (name, "REVOKE CONNECT ON DATABASE %s FROM PUBLIC" % (quoted_name,)),
+        (name, "GRANT CONNECT ON DATABASE %s TO %s" % (quoted_name, quoted_role)),
+        (name, "GRANT USAGE, CREATE ON SCHEMA public TO %s" % (quoted_role,)),
+    ]
 
 
 def create_database(container, duty, password):
@@ -736,27 +1045,55 @@ def create_database(container, duty, password):
     quoted_role = '"' + role.replace('"', '""') + '"'
     quoted_name = '"' + name.replace('"', '""') + '"'
     statements = [
-        "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '%s') THEN"
-        " EXECUTE format('CREATE ROLE %%I LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT PASSWORD %%L', '%s', '%s');"
-        " END IF; END $$;" % (role, role, password.replace("'", "''")),
-        "CREATE DATABASE %s OWNER %s ENCODING 'UTF8' TEMPLATE template0" % (quoted_name, quoted_role),
-        "REVOKE CONNECT ON DATABASE %s FROM PUBLIC" % (quoted_name,),
-        "GRANT CONNECT ON DATABASE %s TO %s" % (quoted_name, quoted_role),
-    ]
+        ("postgres",
+         "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '%s') THEN"
+         " EXECUTE format('CREATE ROLE %%I LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT PASSWORD %%L', '%s', '%s');"
+         " END IF; END $$;" % (role, role, password.replace("'", "''"))),
+        ("postgres",
+         "CREATE DATABASE %s OWNER %s ENCODING 'UTF8' TEMPLATE template0" % (quoted_name, quoted_role)),
+    ] + privilege_statements(duty)
     steps = []
-    for statement in statements:
+    for database, statement in statements:
         result = run(["docker", "exec", "-i", container, "psql", "-U", maintenance_role,
-                      "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-Atc", statement])
-        steps.append({"statement": statement.split(" ")[0], "returncode": result.returncode,
+                      "-d", database, "-v", "ON_ERROR_STOP=1", "-Atc", statement])
+        steps.append({"statement": statement.split(" ")[0], "database": database,
+                      "returncode": result.returncode,
                       "error": (result.stderr or "").strip()[:200]})
         if result.returncode:
             return steps
     return steps
 
 
-for duty in PAYLOAD["duties"]:
+def ensure_privileges(duty):
+    """Re-assert the declared access before an application is asked to work.
+
+    The statements are additive and idempotent, and they are re-asserted here
+    because initialization is the first moment the duty's application has to
+    succeed: a duty created before this statement existed must still reach the
+    custody its declaration describes, and the alternative -- weakening the
+    plan's assertion instead -- would hide the defect rather than close it.
+    """
+    container = duty["cluster"]["container"]
+    steps = []
+    for database, statement in privilege_statements(duty):
+        result = run(["docker", "exec", "-i", container, "psql", "-U",
+                      duty["cluster"]["maintenance_role"], "-d", database,
+                      "-v", "ON_ERROR_STOP=1", "-Atc", statement])
+        steps.append({"statement": statement.split(" ")[0], "database": database,
+                      "returncode": result.returncode,
+                      "error": (result.stderr or "").strip()[:200]})
+        if result.returncode:
+            break
+    return {"steps": steps}
+
+
+def duty_entry(duty):
+    """Observe one duty, mutating it only in the phase that declares a mutation."""
     wants_creation = duty["custody"]["role_compliance"] == "to_be_created"
-    entry = {"duty": duty["duty"], "cluster": None, "custody": None, "stack": None, "create": None}
+    wants_initialization = duty["custody"].get("service_face") == "to_be_initialized"
+    entry = {"duty": duty["duty"], "cluster": None, "custody": None, "stack": None,
+             "create": None, "privileges": None, "initialize": None, "route": None,
+             "service": None, "error": ""}
     if MODE == "apply" and PHASE in ("stack", "all"):
         if wants_creation:
             entry["stack"] = materialise_stack_files(duty)
@@ -764,6 +1101,17 @@ for duty in PAYLOAD["duties"]:
         else:
             entry["stack"] = {"skipped": "custody is not to_be_created; an existing duty stack is "
                                          "never restarted or re-rendered by this entry"}
+    if MODE == "apply" and PHASE == "initialize":
+        if not wants_initialization:
+            entry["initialize"] = {
+                "error": "the declaration does not say service_face=to_be_initialized; this entry "
+                         "never brings up or installs into a duty nobody declared as uninitialized"}
+        else:
+            entry["stack"] = materialise_stack_files(duty)
+            entry["stack"]["start"] = start_services(duty)
+            entry["privileges"] = ensure_privileges(duty)
+            entry["initialize"] = install_modules(duty)
+            entry["route"] = start_route(duty)
     entry["cluster"] = cluster_facts(duty["cluster"]["container"], duty)
     if entry["cluster"].get("present") and entry["cluster"].get("running"):
         entry["custody"] = database_facts(duty["cluster"]["container"], duty)
@@ -796,7 +1144,34 @@ for duty in PAYLOAD["duties"]:
             else:
                 entry["create"] = {"steps": create_database(duty["cluster"]["container"], duty, password)}
                 entry["custody"] = database_facts(duty["cluster"]["container"], duty)
-    report["duties"].append(entry)
+    entry["service"] = service_facts(duty)
+    return entry
+
+
+def salvage_entry(duty, error):
+    """Read a failed duty back instead of losing the whole payload to a traceback.
+
+    An entry that raised is not an entry that did nothing: the mutation may have
+    partly happened. Reporting the failure together with the facts observed
+    after it is what keeps "the outcome is unknown" from becoming "the outcome
+    is unrecorded".
+    """
+    entry = {"duty": duty["duty"], "cluster": None, "custody": None, "stack": None,
+             "create": None, "privileges": None, "initialize": None, "route": None,
+             "service": None, "error": "%s: %s" % (type(error).__name__, error)}
+    try:
+        entry["cluster"] = cluster_facts(duty["cluster"]["container"], duty)
+        entry["service"] = service_facts(duty)
+    except Exception as readback:
+        entry["readback_error"] = "%s: %s" % (type(readback).__name__, readback)
+    return entry
+
+
+for duty in PAYLOAD["duties"]:
+    try:
+        report["duties"].append(duty_entry(duty))
+    except Exception as error:
+        report["duties"].append(salvage_entry(duty, error))
 
 report["frontend_build"] = frontend_build_facts()
 report["writes"] = MODE == "apply"
@@ -842,7 +1217,7 @@ def remote_duties(ssh_host, payload, *, remote_head=None):
 # ----------------------------------------------------------------------
 # evaluation
 # ----------------------------------------------------------------------
-def evaluate(duty, observation, declaration, *, phase="plan"):
+def evaluate(duty, observation, declaration, *, phase="plan", initialize=False):
     """Return the per-duty assertions that decide the verdict.
 
     The two phases ask different questions about the same observation. A plan
@@ -971,6 +1346,56 @@ def evaluate(duty, observation, declaration, *, phase="plan"):
     add("database_accepts_the_declared_duty",
         custody.get("allow_connections") is True,
         {"allow_connections": custody.get("allow_connections")})
+
+    # The service face is the second half of "this duty is what it says it is":
+    # a duty that declares an application must show the declared services running
+    # and the declared minimum module set installed, and a duty that declares
+    # only its cluster must not smuggle in an application nobody declared.
+    declared_face = str(declared_custody.get("service_face") or "")
+    service = observation.get("service") or {}
+    running_services = sorted(str(item) for item in (service.get("running_services") or []))
+    module_states = service.get("module_states") or {}
+    declared_services = [str(item) for item in duty["stack"]["services"]]
+    declared_modules = [str(item) for item in duty["stack"]["modules"]]
+    initialization_expected = declared_face == "to_be_initialized" and phase == "apply" and initialize
+    missing_services = [name for name in declared_services if name not in running_services]
+    missing_modules = [name for name in declared_modules if module_states.get(name) != "installed"]
+    face_reached = not missing_services and not missing_modules
+    if declared_face == "initialized" or initialization_expected:
+        add("declared_services_are_running", not missing_services,
+            {"declared": declared_services, "running": running_services,
+             "missing": missing_services})
+        add("declared_modules_are_installed", not missing_modules,
+            {"declared": declared_modules, "observed": module_states,
+             "missing": missing_modules})
+        add("no_undeclared_service_is_running",
+            set(running_services) <= set(declared_services),
+            {"declared": declared_services, "running": running_services})
+    elif declared_face == "cluster_only":
+        add("cluster_only_face_declares_only_the_cluster", running_services == ["db"],
+            {"declared": declared_services, "running": running_services})
+    else:
+        # ``to_be_initialized`` read-only: the world must still look
+        # uninitialized, or the declaration is stale in the direction that
+        # matters -- the next initialize would bring up a face that is already
+        # up, on a declaration nobody had written back.
+        add("service_face_is_not_initialized_before_the_write_back", not face_reached,
+            {"declared_face": declared_face, "running": running_services,
+             "module_states": module_states})
+    if declared_face in ("to_be_initialized", "initialized"):
+        # Fail closed *before* anything is installed: a duty that declares an
+        # application but whose application role cannot create in its own
+        # ``public`` schema is a duty no initialization can finish, and the rest
+        # of the custody readback reports it as perfectly healthy.
+        add("application_role_can_create_in_its_public_schema",
+            custody.get("public_schema_create") is True,
+            {"database": duty["database"], "role": duty["database_role"],
+             "public_schema_create": custody.get("public_schema_create"),
+             "error": custody.get("public_schema_create_error", "")})
+    if duty.get("data_purpose") == "platform_control" and declared_face != "cluster_only":
+        industry = list(service.get("installed_industry_modules") or [])
+        add("platform_control_face_carries_no_industry_module", not industry,
+            {"installed_industry_modules": industry})
     return assertions
 
 
@@ -999,12 +1424,12 @@ def deployment_binding(declaration, frontend_build):
     }
 
 
-def plan_verdict(declaration, selected, observations, *, phase="plan"):
+def plan_verdict(declaration, selected, observations, *, phase="plan", initialize=False):
     failures = validate_declaration(declaration)
     rows = []
     for duty in selected:
         observation = observations.get(duty["duty"]) or {}
-        assertions = evaluate(duty, observation, declaration, phase=phase)
+        assertions = evaluate(duty, observation, declaration, phase=phase, initialize=initialize)
         rows.append({
             "duty": duty["duty"],
             "database": duty["database"],
@@ -1114,7 +1539,9 @@ def main(argv=None):
         result = remote_duties(options.ssh_host, payload)
         observations = {row["duty"]: row for row in result.get("duties") or []}
         failures, rows = plan_verdict(
-            declaration, selected, observations, phase="apply" if options.apply else "plan"
+            declaration, selected, observations,
+            phase="apply" if options.apply else "plan",
+            initialize=bool(options.apply) and options.phase == "initialize",
         )
     except DutyError as error:
         print("[daily.runtime.database.duty] BLOCKED %s" % (error,), file=sys.stderr)

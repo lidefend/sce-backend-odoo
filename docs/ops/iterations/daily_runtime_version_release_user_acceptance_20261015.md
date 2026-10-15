@@ -875,3 +875,86 @@ build input, the acceptance declaration and the guards in one change and is sequ
 control plane can serve — which needs a governed entry that starts a duty's `odoo`/`redis`/`nginx`
 services and installs **its declared** control-plane minimum module set. That module set is a
 product/governance decision, so it gets declared rather than improvised by an ops tool.
+
+### Step C-5 — the control plane is initialized, and the platform-admin authority moves with it
+
+Step C-4 left exactly one failing item on purpose: the deployment-wide platform-admin binding. It
+could not be switched before the control plane could answer, and the control plane could not answer
+before a governed entry could bring up its application face and install its declared module set. That
+entry now exists as `make daily.runtime.database.duty.initialize` (`--phase initialize`), and it is the
+only phase allowed to touch a duty that already exists.
+
+Two real defects were found by running it, and both are the kind that report a partial write as no
+write at all:
+
+**A — the entry waited for a consequence of the step that had not run yet.** It brought up
+`db redis odoo nginx` in one `up -d --wait`. The application's health means "the route answers", and an
+uninitialized duty's route cannot answer, so the wait could never be satisfied: the initialization was
+being used as its own precondition. The first host run timed out at 300s and the payload was lost to an
+uncaught `TimeoutExpired`. The entry now starts the declared services in the order their own facts
+allow (cluster waited for, application started, declared modules installed, route last) and reads a
+duty that raised back instead of dropping it, so one failing duty cannot hide a later one.
+
+**B — the duty owned its database and still could not initialize it.** The application role owned
+`sc_platform_control` and was refused `CREATE TABLE public.…`. On this PostgreSQL 15 cluster `public`
+is owned by `pg_database_owner`, and `has_schema_privilege(sc_platform_control_app,'public','CREATE')`
+measured **false**; every other custody fact reported the duty as healthy. The entry now states the
+application's access explicitly instead of relying on a mechanism it cannot observe, re-asserts it
+before installing, reads the privilege back for the duty's own database, and **fails closed** on
+`application_role_can_create_in_its_public_schema` for any served face.
+
+Result of the governed initialize:
+
+```
+phase                 initialize
+duty                  platform_control   failed_assertions: []
+initialize.returncode 0
+route.returncode      0
+modules               smart_core -> installed
+running services      db, nginx, odoo, redis
+installed industry    []            (platform_control_face_carries_no_industry_module)
+public_schema_create  true
+```
+
+The overall receipt status is `FAIL` **only** because the deployment-wide binding was still on the old
+database at that instant. That binding was then switched in one change — the served build input, the
+acceptance guard, the sample-env prepare and the topology inventory all now name `sc_platform_control`
+— and the governed frontend build was extended so it cannot lie about it: it derives the declared
+database from the same duty declaration, writes that build input **before** the build (afterwards would
+leave the new authority declared while the old bundle is served), reads back that the built artifact
+actually **bakes** it, and rolls the declaration back if the build or the readback fails.
+
+```
+make daily.runtime.frontend.build
+  platform_admin_written  true
+  platform_admin_baked    true
+  fingerprint             23e9f516c4f415428075eec70ddc457ebb7193dc8aff63a26d103a3df73bad22
+  entry_asset             index-CBpDOhLc.js
+
+make daily.runtime.database.duty.plan
+  status                  PASS
+  declaration_digest      52ac5ad164594e4d4231c715e4cbcfa76dce953670b3fce31851dbcd91d7c2ab
+  platform_control        failed_assertions: []
+  demo                    failed_assertions: []
+  customer_tenant_dev     failed_assertions: []
+  binding                 sc_platform_control observed == declared
+
+make daily.runtime.routing.inventory
+  status PASS   failed_assertions []   instances 7
+```
+
+The declaration write-back that followed records the observed face, not a guess:
+`platform_control.custody.service_face` is now `initialized`, while `customer_tenant_dev` stays
+deliberately `cluster_only` with a reason — its product line and user module belong to the customer
+module's own governed migration, not to this entry.
+
+Test count `82 -> 84` for the duty entry and `10 -> 21` for the frontend build entry, all green. The
+two new duty tests assert the one thing the old readback could not see: a served face whose application
+cannot create in its own `public` schema fails closed, and a cluster-only face is never asked for one.
+
+Not closed by this step: no duty has a platform-model lifecycle registration yet (the platform model
+owns registration and the lifecycle adapter still lacks a daily runtime binding); the customer
+development duty carries no product line, no user module and no migration; `sc_demo` still mixes the
+customer tenant volume with demo/test purposes; the three Step B gaps remain preconditions for the
+first write to `sc_odoo` or `sc_platform_core`. **This is 批次验收完成 for the control-plane slice. It is
+not 主线集成完成, 版本发布完成 or 产品交付完成.**

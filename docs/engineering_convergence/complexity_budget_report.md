@@ -5,7 +5,7 @@ Generated from repository source files. This report is informational during the 
 ## Summary
 
 - Scanned files: `4779`
-- Files requiring split plan: `64`
+- Files requiring split plan: `65`
 - Files above warning threshold: `123`
 
 ## Split Plan Required
@@ -64,6 +64,7 @@ Generated from repository source files. This report is informational during the 
 | 1693 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1656 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1650 | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
+| 1622 | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1616 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1609 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
@@ -108,6 +109,7 @@ Generated from repository source files. This report is informational during the 
 | 1271 | Python source | `scripts/ops/retire_historical_branch_refs.py` |
 | 1263 | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
 | 1262 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
+| 1254 | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 1249 | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
 | 1222 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
@@ -115,7 +117,6 @@ Generated from repository source files. This report is informational during the 
 | 1217 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1207 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
-| 1195 | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
 | 1179 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1169 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
@@ -262,6 +263,7 @@ Generated from repository source files. This report is informational during the 
 | 1656 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1650 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1650 | split_plan_required | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
+| 1622 | split_plan_required | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1616 | split_plan_required | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1609 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
@@ -288,7 +290,6 @@ Generated from repository source files. This report is informational during the 
 | 1337 | warning | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1332 | warning | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1324 | split_plan_required | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
-| 1320 | warning | XML data/view | `addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml` |
 
 ## Interpretation
 

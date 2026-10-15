@@ -108,7 +108,7 @@ disagreement still fails the probe.
 The frontend build output must stay `FRONTEND_DIST_DIR=./frontend/apps/web/dist-dev`,
 and `VITE_ODOO_DB`, `VITE_APP_ENV`, `VITE_BUILD_MODE`, and
 `VITE_BUILD_OUT_DIR` must not be overridden. `VITE_PLATFORM_ADMIN_DB` must stay
-`sc_platform_core`, and `VITE_API_BASE_URL`, `VITE_API_PROXY_TARGET`,
+`sc_platform_control`, and `VITE_API_BASE_URL`, `VITE_API_PROXY_TARGET`,
 `VITE_ODOO_DB_LOCKED`, `VITE_DELIVERY_MODE`, `VITE_FEATURE_FLAGS`,
 `VITE_LITE_CONTRACT_PILOT`, `VITE_LITE_CONTRACT_ROLLOUT`, and `VITE_TENANT`
 must stay unset. Wrong DB, tier, served URL, evidence
