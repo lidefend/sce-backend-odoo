@@ -109,6 +109,32 @@
       ],
       "kind": "offline",
       "target": "verify.daily.runtime.source_revision.align"
+    },
+    "daily_duty_edition_release_tool": {
+      "inputs": [
+        "scripts/ops/daily_runtime_duty_edition_release.py",
+        "scripts/ops/test_daily_runtime_duty_edition_release.py",
+        "scripts/ops/daily_runtime_duty_identity.py",
+        "scripts/release/initialize_colocated_platform_snapshot.py",
+        "scripts/release/configure_colocated_platform_core.py",
+        "config/ops/daily_runtime_database_duties.v1.json",
+        "make/daily_candidate.mk"
+      ],
+      "kind": "offline",
+      "target": "verify.daily.duty.edition_release"
+    },
+    "daily_duty_operator_grant_tool": {
+      "inputs": [
+        "scripts/ops/daily_runtime_duty_operator_grant.py",
+        "scripts/ops/test_daily_runtime_duty_operator_grant.py",
+        "scripts/ops/daily_runtime_duty_identity.py",
+        "scripts/ops/daily_runtime_duty_payload.py",
+        "scripts/tenant_payload/provision_operator.py",
+        "config/ops/daily_runtime_database_duties.v1.json",
+        "make/daily_candidate.mk"
+      ],
+      "kind": "offline",
+      "target": "verify.daily.duty.operator_grant"
     }
   },
   "environment": {
@@ -2297,6 +2323,7 @@
       "make daily.candidate.continuity.test": "28 tests, OK (reused, inputs unchanged)",
       "make ci.local.iteration": "PASS after the two new files were registered in this run's scope (outside_scope now empty)",
       "not_a_pass": "these are iteration-stage L1/L2 results; no browser acceptance, no mainline integration and no delivery has happened for this slice"
-    }
+    },
+    "check_registration_note": "Two offline checks were registered for the new entries (daily_duty_edition_release_tool -> verify.daily.duty.edition_release, daily_duty_operator_grant_tool -> verify.daily.duty.operator_grant) with their real inputs, and the operator-grant check was begun and recorded with its original log. Both report 'stale' with reason 'runtime evidence requires authoritative environment readback' because this run's environment kind is 'runtime'; that is the same design-expected behaviour as the pre-existing daily_duty_payload_tool and daily_duty_recovery_tool entries and is not a failure of the tool. The guard is not weakened to make the status read 'reusable'."
   }
 }
