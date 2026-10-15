@@ -5,10 +5,7 @@ from . import step_project_owner_demo_pm  # noqa: F401
 from . import step_demo_pm_landing  # noqa: F401
 from . import step_demo_users  # noqa: F401
 from . import step_phase2_contract_demo  # noqa: F401
-from . import step_phase2_settlement_order_demo  # noqa: F401
-from . import step_phase2_payment_request_demo  # noqa: F401
 from . import step_payment_request_floorplan_demo  # noqa: F401
-from . import step_payment_ledger_p1  # noqa: F401
 from . import step_boq_sample  # noqa: F401
 from . import step_metrics_smoke  # noqa: F401
 from . import step_company_currency  # noqa: F401
@@ -24,4 +21,5 @@ from . import step_40_contracts_demo  # noqa: F401
 from . import step_50_boq_wbs_demo  # noqa: F401
 from . import step_60_attachments_demo  # noqa: F401
 from . import step_z_demo_full_my_work  # noqa: F401
+from . import step_80_finalize_stages_demo  # noqa: F401
 from . import step_90_verify_demo  # noqa: F401

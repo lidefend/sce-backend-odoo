@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "project": "sc-platform-db-rehearsal",
+  "control_database": "sc_platform_control_rehearsal",
+  "target_database": "sc_tenant_lifecycle_rehearsal",
+  "control_role": "sc_rehearsal_control",
+  "target_role": "sc_rehearsal_target",
+  "maintenance_role": "sc_rehearsal_maintenance",
+  "tenant": "lifecycle-rehearsal-only",
+  "target_environment_role": "industry_acceptance",
+  "target_data_purpose": "test",
+  "volumes": ["sc_platform_db_rehearsal_pg", "sc_platform_db_rehearsal_control", "sc_platform_db_rehearsal_target"],
+  "modules": ["smart_core"],
+  "customer_business_data_allowed": false,
+  "host_ports": []
+}

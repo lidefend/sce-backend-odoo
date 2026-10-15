@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4760`
+- Scanned files: `4767`
 - Files requiring split plan: `64`
 - Files above warning threshold: `121`
 
@@ -72,7 +72,7 @@ Generated from repository source files. This report is informational during the 
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1521 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1513 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
-| 1308 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
+| 1324 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 690 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
@@ -97,24 +97,24 @@ Generated from repository source files. This report is informational during the 
 | 1389 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1374 | Python source | `addons/smart_construction_core/tests/test_p1_funding_authority.py` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
+| 1337 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1332 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1320 | XML data/view | `addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml` |
 | 1320 | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1316 | Python source | `addons/smart_core/core/view_orchestrator.py` |
+| 1306 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1289 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1287 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1271 | Python source | `scripts/ops/retire_historical_branch_refs.py` |
 | 1263 | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
 | 1262 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
 | 1249 | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
-| 1244 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1222 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1218 | Python source | `scripts/verify/fact_source_coverage_guard.py` |
 | 1217 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1207 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
-| 1196 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
 | 1179 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1169 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
@@ -137,7 +137,7 @@ Generated from repository source files. This report is informational during the 
 | 1093 | Python source | `scripts/verify/test_fact_source_coverage_guard.py` |
 | 1080 | Python source | `scripts/verify/test_frontend_product_page_header_guard.py` |
 | 1077 | Python source | `addons/smart_construction_core/models/support/approval_policy.py` |
-| 1048 | Python source | `scripts/verify/test_local_development_lifecycle.py` |
+| 1067 | Python source | `scripts/verify/test_local_development_lifecycle.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
 | 1038 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
 | 1033 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
@@ -283,10 +283,10 @@ Generated from repository source files. This report is informational during the 
 | 1389 | warning | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1374 | warning | Python source | `addons/smart_construction_core/tests/test_p1_funding_authority.py` |
 | 1339 | warning | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
+| 1337 | warning | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1332 | warning | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
+| 1324 | split_plan_required | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1320 | warning | XML data/view | `addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml` |
-| 1320 | warning | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
-| 1316 | warning | Python source | `addons/smart_core/core/view_orchestrator.py` |
 
 ## Interpretation
 

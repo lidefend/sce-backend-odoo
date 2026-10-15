@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import fields
+from odoo import api, fields
 from odoo.exceptions import UserError
 
 from ..registry import SeedStep, register
@@ -42,6 +42,21 @@ def _verify_full_product_principal(env):
         raise UserError("wutao must be an active internal user.")
     if not full_group or full_group not in users.groups_id:
         raise UserError("wutao must carry the business-full permission aggregate.")
+
+
+    from odoo.addons.smart_core.security import data_space_provisioning as provisioning
+    provisioning.assert_data_space_identities_enrolled(env, purpose="demo")
+    payment = env.ref("smart_construction_demo.payment_request_floorplan_demo_record")
+    for login in ("wutao", "demo_full"):
+        principal = env["res.users"].sudo().search([("login", "=", login)])
+        if len(principal) != 1:
+            raise UserError("Demo principal must resolve uniquely: " + login)
+        acting = api.Environment(env.cr, principal.id, dict(
+            env.context, allowed_company_ids=[payment.company_id.id]), su=False)
+        for model, record_id in (("payment.request", payment.id),
+                                 ("project.project", payment.project_id.id)):
+            if not acting[model].search_count([("id", "=", record_id)]):
+                raise UserError("Demo principal cannot read declared sample: %s/%s" % (login, model))
 
 
 def _verify_payment_request_floorplan_fixture(env):
@@ -240,7 +255,7 @@ def run(env):
             in_flight = Payment.search_count(
                 [
                     ("project_id", "=", project.id),
-                    ("state", "in", ("submit", "approve")),
+                    ("state", "in", ("submit", "approve", "approved")),
                 ]
             )
             if in_flight:

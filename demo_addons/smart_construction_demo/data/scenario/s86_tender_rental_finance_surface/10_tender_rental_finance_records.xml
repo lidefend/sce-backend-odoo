@@ -49,7 +49,6 @@
       <field name="currency_id" ref="base.CNY"/>
       <field name="amount">260000.0</field>
       <field name="operation_reason">六月工资监管户资金调拨</field>
-      <field name="state">done</field>
       <field name="note">S86 资金调拨样例</field>
     </record>
 
@@ -66,7 +65,6 @@
       <field name="account_balance">2120000.0</field>
       <field name="bank_balance">2120000.0</field>
       <field name="operation_reason">项目资金日报</field>
-      <field name="state">confirmed</field>
       <field name="note">S86 资金日报操作单样例</field>
     </record>
 
@@ -79,7 +77,6 @@
       <field name="bid_amount">3260000.0</field>
       <field name="deadline">2025-06-10 09:00:00</field>
       <field name="open_date">2025-06-12 02:00:00</field>
-      <field name="state">won</field>
       <field name="legacy_note">S86 投标全流程样例</field>
     </record>
 

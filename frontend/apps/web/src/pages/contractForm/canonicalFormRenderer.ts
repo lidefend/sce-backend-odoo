@@ -13,6 +13,10 @@ import {
   MANY2ONE_OPEN_RECORD_OPTION,
   MANY2ONE_SEARCH_MORE_OPTION,
 } from './types';
+// 主从关系（one2many）每页记录数是契约声明事实（relation_entry.page_size）。
+// canonical/task 形态与 native 形态共用同一声明投影：只原样透出声明值，
+// 缺失或非法由渲染层停机回声明层，前端不补任何默认值。
+import { relationEntry } from './relationDescriptor';
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
@@ -206,6 +210,7 @@ export function canonicalFieldToFormSection(
       ? runtimeRelationOptions
       : selectionOptions(config.options || config.relationOptions || config.relation_options),
     ...many2oneCapabilities,
+    one2manyPageSize: type === 'one2many' ? relationEntry(descriptor)?.pageSize : undefined,
     descriptor,
     fileName: text(config.fileName || config.file_name),
   };

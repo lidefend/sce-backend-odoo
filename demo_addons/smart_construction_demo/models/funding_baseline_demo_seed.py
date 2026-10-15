@@ -19,6 +19,11 @@ class ProjectFundingBaselineDemoSeed(models.Model):
         Idempotent: non-draft records are skipped, so repeated loads and
         upgrades never re-trigger the activation chain.
         """
+        from ..hooks import assert_demo_seed_principal, guard_demo_scope
+        from ..tools.scenario_loader import _demo_action_record
+
+        assert_demo_seed_principal(self.env)
+        guard_demo_scope(self.env)
         for record in self:
             if record.state == "draft":
-                record.sudo().action_activate()
+                _demo_action_record(self.env, record, "action_activate").action_activate()

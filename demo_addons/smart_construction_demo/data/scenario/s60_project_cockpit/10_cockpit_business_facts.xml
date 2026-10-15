@@ -10,7 +10,6 @@
         <field name="bid_amount">1280000</field>
         <field name="deadline">2026-04-20 10:00:00</field>
         <field name="open_date">2026-04-20 14:00:00</field>
-        <field name="state">submitted</field>
     </record>
 
     <record id="sc_demo_wbs_060_unit_001" model="construction.work.breakdown">

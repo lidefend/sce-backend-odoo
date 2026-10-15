@@ -37,6 +37,7 @@ FIXTURE_MODULE = "addons.smart_construction_acceptance_fixture.tools.frontend_pr
 from scripts.ops.dev_acceptance_release_probe import (
     CONTRACT_PASSWORD_ENV,
     _contract_credential,
+    published_face_checks,
     validate_acceptance_declaration,
 )
 
@@ -566,6 +567,47 @@ class TestReusedDatabaseActivityCarrierReconciliation(unittest.TestCase):
             self.assertIs(_activity_move(env, company, types.SimpleNamespace(id=8990), journal), sentinel)
         upsert.assert_called_once()
         self.assertEqual(move.writes[0]["company_id"], 21)
+
+
+
+class PublishedFaceIdentityTests(unittest.TestCase):
+    """The served published leaves must equal the declared acceptance surface.
+
+    A released leaf that nobody registered, or a delivery carrier that was
+    silently swapped for another leaf, keeps the total count; identity must
+    therefore be compared, and the released population must equal the
+    acceptance rows plus the declared carriers.
+    """
+
+    SCENE = "smart_construction_core.menu_sc_workspace_home"
+
+    @staticmethod
+    def _leaf(xmlid, action_id=0):
+        return {"menu_xmlid": xmlid, "child_count": 0, "action_id": action_id}
+
+    def test_declared_carrier_matches_the_served_surface(self) -> None:
+        rows = [self._leaf("t.menu_a", 780), self._leaf(self.SCENE, 0)]
+        errors, checks = published_face_checks(rows, 2, {self.SCENE}, 1)
+        self.assertEqual(errors, [])
+        self.assertEqual(checks["nav_non_action_entries"], [self.SCENE])
+        self.assertEqual(checks["nav_published_universe_expected"], 2)
+
+    def test_swapped_carrier_fails_even_though_the_leaf_count_matches(self) -> None:
+        rows = [self._leaf("t.menu_a", 780), self._leaf("t.menu_other_scene", 0)]
+        errors, _checks = published_face_checks(rows, 2, {self.SCENE}, 1)
+        self.assertIn("nav_non_action_entry_drift", errors)
+        self.assertNotIn("nav_published_universe_drift", errors)
+
+    def test_undeclared_published_leaf_fails_closed(self) -> None:
+        rows = [self._leaf("t.menu_a", 780), self._leaf(self.SCENE, 0)]
+        errors, _checks = published_face_checks(rows, 2, set(), 1)
+        self.assertIn("nav_non_action_entry_drift", errors)
+
+    def test_published_growth_beyond_the_acceptance_rows_fails_closed(self) -> None:
+        rows = [self._leaf("t.menu_a", 780), self._leaf(self.SCENE, 0), self._leaf("t.menu_new", 781)]
+        errors, _checks = published_face_checks(rows, 3, {self.SCENE}, 1)
+        self.assertIn("nav_published_universe_drift", errors)
+
 
 
 if __name__ == "__main__":

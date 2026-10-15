@@ -44,7 +44,6 @@
       <field name="currency_id" ref="base.CNY"/>
       <field name="amount">360000.0</field>
       <field name="date_settle">2025-08-27</field>
-      <field name="state">confirmed</field>
     </record>
 
     <record id="sc_demo_project_settlement_line_073_material" model="project.settlement.line">
@@ -64,7 +63,6 @@
     <record id="sc_demo_project_risk_action_073_cost" model="project.risk.action">
       <field name="name">S73 成本超预算风险处置</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_073_risk"/>
-      <field name="state">claimed</field>
       <field name="risk_level">critical</field>
       <field name="owner_id" ref="base.user_admin"/>
       <field name="note">成本实际发生和承诺成本均超过预算，需冻结新增支出并复核结算口径。</field>
@@ -74,7 +72,6 @@
     <record id="sc_demo_project_risk_action_073_schedule" model="project.risk.action">
       <field name="name">S73 进度严重滞后风险升级</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_073_risk"/>
-      <field name="state">escalated</field>
       <field name="risk_level">high</field>
       <field name="owner_id" ref="base.user_admin"/>
       <field name="note">实际进度较计划进度落后 22 个百分点，需重排关键路径。</field>

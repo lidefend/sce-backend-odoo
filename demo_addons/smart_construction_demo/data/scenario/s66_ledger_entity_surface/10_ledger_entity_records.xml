@@ -55,7 +55,6 @@
     <record id="sc_demo_general_contract_066_income" model="sc.general.contract">
       <field name="name">S66-GC-IN-001</field>
       <field name="source_origin">manual</field>
-      <field name="state">signed</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
       <field name="partner_name_text">四川智慧建设业主有限公司（示例）</field>
@@ -80,7 +79,6 @@
     <record id="sc_demo_general_contract_066_expense" model="sc.general.contract">
       <field name="name">S66-GC-EX-001</field>
       <field name="source_origin">manual</field>
-      <field name="state">signed</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
       <field name="partner_name_text">德阳某某钢材有限公司（示例）</field>

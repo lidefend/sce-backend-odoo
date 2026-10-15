@@ -88,7 +88,6 @@
     <record id="sc_demo_general_contract_087_service" model="sc.general.contract">
       <field name="name">S87-GC-001</field>
       <field name="source_origin">manual</field>
-      <field name="state">signed</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_vendor_concrete"/>
       <field name="partner_name_text">德阳某某商砼有限公司（示例）</field>

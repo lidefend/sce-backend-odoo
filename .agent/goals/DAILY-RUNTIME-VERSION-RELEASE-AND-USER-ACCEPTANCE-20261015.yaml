@@ -1,0 +1,59 @@
+schema_version: 1
+goal:
+  id: DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015
+  title: daily_runtime_version_release_and_user_acceptance
+  status: active
+  formal_product_layer: P4
+  layer_target: daily_development_runtime_release_and_user_acceptance
+  module:
+    - .agent
+    - docs/ops/iterations
+    - make
+    - scripts/ops
+    - scripts/verify
+  objective: >-
+    发布一次版本到目标 daily runtime，并完成用户视角验收。发布：把 daily runtime
+    (sc-root:/opt/projects/repos/sce-product-odoo, ENV=dev, DB sc_demo, 自定义前端)
+    从当前 eae0c1c0 沿受管 main 车道精确推进到当前主线 ba7577c2，重建服务端前端、
+    对齐服务端 source_revision、收敛发布面并从 /api/runtime-version 回读。验收：
+    以真实用户身份对已部署版本执行 89 项正式业务入口矩阵（入口职责、权限边界、
+    关键写入），并抽验付款申请写入闭环。不弱化任何 ACL/字段权限/断言，不新建
+    环境或凭据授权，不改产品语义。
+  baseline:
+    branch: release/daily-runtime-version-release-20261015
+    full_sha: ba7577c212b81468491942e972ea28bd64345ebd
+    source: clean_main_and_origin_main_after_pr_664
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_runtime_release_and_acceptance_tool
+    why_here: >-
+      把确切主线部署到 daily runtime 并以真实用户验收属 P4 交付/运维验收层，
+      不承载任何产品语义。
+    why_not_elsewhere:
+      - no_p0_platform_kernel_change
+      - no_p1_construction_industry_semantic_change
+      - no_p2_customer_preference_or_data_baseline_change
+      - no_p3_runtime_lowcode_configuration_change
+      - no_database_schema_or_migration_change
+    blast_radius:
+      - sc-root daily runtime repository and its served frontend bundle
+      - sc_demo user acceptance data on the daily runtime
+      - the wutao acceptance principal
+      - one run and the goal metadata plus one iteration record
+  batches:
+    - id: R
+      title: release_exact_mainline_to_daily_runtime
+      status: active
+      evidence: []
+    - id: U
+      title: user_perspective_acceptance_on_deployed_version
+      status: planned
+      evidence: []
+  constraints:
+    - reuse_existing_governed_make_entries_only_no_handbuilt_compose
+    - reuse_unchanged_evidence_before_rerunning
+    - zero_test_or_unknown_result_is_not_a_pass
+    - separate_batch_vs_mainline_vs_deployment_vs_product_delivery_status
+    - no_acl_or_permission_relaxation_no_new_credential_authority
+  next_exact_step: >-
+    Run the daily runtime preflight (verify.daily_dev.runtime_repo.clean) and then
+    advance the runtime from eae0c1c0 to ba7577c2 through daily.runtime.main.bundle_sync.

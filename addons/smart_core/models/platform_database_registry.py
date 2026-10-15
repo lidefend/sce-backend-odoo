@@ -106,16 +106,20 @@ class ScPlatformDatabaseRegistration(models.Model):
             "grants_business_data_scope": maintenance_access_grants_business_data_scope(),
         }
 
-    def _write_readback(self, operation):
+    def _write_readback(self, operation, *, reason="", execution_id=""):
         self.ensure_one()
-        readback = self.readback()
         self.with_context(sc_platform_database_readback=True).write(
             {
                 "last_operation": operation,
                 "last_operation_at": fields.Datetime.now(),
-                "last_readback": readback,
             }
         )
+        readback = self.readback()
+        # The registration row is locked by the lifecycle entry; include the
+        # audit being appended in this same transaction in its result snapshot.
+        readback["operation_count"] += 1
+        if reason or execution_id:
+            readback["operation_request"] = {"reason": str(reason), "execution_id": str(execution_id)}
         self.env["sc.platform.database.operation"].sudo().create(
             [{
                 "registration_id": self.id,
@@ -126,6 +130,7 @@ class ScPlatformDatabaseRegistration(models.Model):
                 "result": readback,
             }]
         )
+        self.with_context(sc_platform_database_readback=True).write({"last_readback": readback})
         return readback
 
     # ------------------------------------------------------------------
@@ -169,7 +174,7 @@ class ScPlatformDatabaseRegistration(models.Model):
 
     @api.model
     def _register_database(
-        self, *, db_name, environment_role, data_purpose, tenant_key="", dbfilter=""
+        self, *, db_name, environment_role, data_purpose, tenant_key="", dbfilter="", reason="", execution_id=""
     ):
         """Register one governed database in its declared initial lifecycle state."""
         self._assert_governance_principal()
@@ -193,25 +198,31 @@ class ScPlatformDatabaseRegistration(models.Model):
             "registered_by": self.env.uid,
             "registered_at": fields.Datetime.now(),
         }])
-        return record._write_readback("register")
+        return record._write_readback("register", reason=reason, execution_id=execution_id)
 
     @api.model
-    def _apply_operation(self, db_name, operation):
+    def _apply_operation(self, db_name, operation, *, reason="", execution_id=""):
         """The only writer of the database lifecycle; fail closed on any other."""
         self._assert_governance_principal()
         record = self.sudo().search([("db_name", "=", str(db_name or "").strip())], limit=1)
         if not record:
             raise ValidationError("DBGOV1_DATABASE_NOT_REGISTERED:%s" % (db_name,))
+        self.env.cr.execute(
+            "SELECT id FROM sc_platform_database_registration WHERE id = %s FOR UPDATE NOWAIT",
+            (record.id,),
+        )
+        record.invalidate_recordset()
         current = record.lifecycle_state
         try:
             target = resolve_operation_target_state(current, operation)
         except ValueError as error:
             raise ValidationError(str(error)) from error
-        record.sudo().with_context(
+        record = record.sudo().with_context(
             sc_platform_database_managed=True, sc_platform_database_from_state=current
-        ).write({"lifecycle_state": target})
+        )
+        record.write({"lifecycle_state": target})
         record.invalidate_recordset(["lifecycle_state"])
-        return record._write_readback(operation)
+        return record._write_readback(operation, reason=reason, execution_id=execution_id)
 
     @api.model
     def _resolve_entry(self, db_name):

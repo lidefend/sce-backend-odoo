@@ -1,0 +1,55 @@
+services:
+  db:
+    image: ${REHEARSAL_POSTGRES_IMAGE:?}
+    pull_policy: never
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: sc_rehearsal_maintenance
+      POSTGRES_PASSWORD: ${REHEARSAL_MAINTENANCE_PASSWORD:?}
+    volumes:
+      - pg:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U sc_rehearsal_maintenance -d postgres"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  control:
+    image: ${REHEARSAL_ODOO_IMAGE:?}
+    pull_policy: never
+    # Disposable privileged operations carrier, no Docker socket or host ports.
+    user: "0:0"
+    entrypoint: []
+    read_only: true
+    tmpfs: [/tmp]
+    environment:
+      PYTHONPATH: /workspace
+      PLATFORM_DATABASE_MAINTENANCE_CONFIG: /authority/maintenance.json
+      HOME: /tmp
+    volumes:
+      - ./scripts:/workspace/scripts:ro
+      - ./addons/smart_core:/workspace/addons/smart_core:ro
+      - ./addons/smart_scene:/workspace/addons/smart_scene:ro
+      - ./config/platform_database_rehearsal.json:/workspace/config/platform_database_rehearsal.json:ro
+      - ./.runtime/platform-database-rehearsal/authority:/authority:ro
+      - ./.runtime/platform-database-rehearsal/evidence:/evidence
+      - control:/var/lib/odoo
+    working_dir: /workspace
+  target_namespace:
+    image: ${REHEARSAL_ODOO_IMAGE:?}
+    pull_policy: never
+    user: "0:0"
+    entrypoint: []
+    read_only: true
+    volumes:
+      - target:/var/lib/odoo
+    command: [python3, -c, "from pathlib import Path; Path('/var/lib/odoo/filestore/sc_tenant_lifecycle_rehearsal').mkdir(parents=True, exist_ok=True)"]
+volumes:
+  pg:
+    name: sc_platform_db_rehearsal_pg
+  control:
+    name: sc_platform_db_rehearsal_control
+  target:
+    name: sc_platform_db_rehearsal_target
+networks:
+  default:
+    internal: true

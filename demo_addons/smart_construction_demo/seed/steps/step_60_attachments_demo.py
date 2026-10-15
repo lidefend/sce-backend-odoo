@@ -6,6 +6,7 @@ from odoo.exceptions import UserError
 
 from ..registry import SeedStep, register
 from ..tier_flow import approve_tier_chain
+from ...tools.scenario_loader import _demo_action_record, _demo_project_members
 
 
 PROJECT_EXEC_CODE = "DEMO-PJ-EXEC"
@@ -45,7 +46,7 @@ def _get_or_create_dict(env, dict_type, name):
 
 
 def _create_attachment(env, name, content, mimetype="text/plain"):
-    Attachment = env["ir.attachment"].sudo()
+    Attachment = env["ir.attachment"]
     data = base64.b64encode(content.encode("utf-8"))
     return Attachment.create(
         {
@@ -102,7 +103,7 @@ def run(env):
     doc_type = _get_or_create_dict(env, "doc_type", "技术资料")
     doc_subtype = _get_or_create_dict(env, "doc_subtype", "合同附件")
 
-    ScDoc = env["sc.project.document"].sudo()
+    ScDoc = _demo_action_record(env, env["sc.project.document"], "action_submit")
 
     documents = [
         {
@@ -145,12 +146,12 @@ def run(env):
     ]
 
     for project in projects:
+        _demo_project_members(env, project, ("smart_construction_demo.user_sc_project_user",))
         for doc in documents:
             name = f"{doc['name']} · {project.project_code}"
             existing = ScDoc.search(
                 [("project_id", "=", project.id), ("name", "=", name)], limit=1
             )
-            attachment = _create_attachment(env, f"{name}.txt", doc["content"])
             vals = {
                 "name": name,
                 "project_id": project.id,
@@ -158,8 +159,10 @@ def run(env):
                 "doc_subtype_id": doc_subtype.id,
                 "date_doc": doc["date_doc"],
                 "is_mandatory": doc["is_mandatory"],
-                "attachment_ids": [(6, 0, [attachment.id])],
             }
+            if not existing or existing.state == "draft":
+                attachment = _create_attachment(ScDoc.env, f"{name}.txt", doc["content"])
+                vals["attachment_ids"] = [(6, 0, [attachment.id])]
             if existing:
                 # 已归档/已作废的资料受保护，只有草稿可以改写内容字段。
                 if existing.state == "draft":

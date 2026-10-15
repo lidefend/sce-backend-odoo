@@ -25,6 +25,9 @@ if [[ -n "${SC_CUSTOMER_ADDONS_ROOT:-}" ]]; then
 fi
 
 compose_dev run --rm -T \
+  -e SC_ENVIRONMENT \
+  -e SC_ALLOW_DEMO_DATA \
+  -e SC_DEMO_USER_PASSWORD \
   -e SC_SEED_ENABLED \
   -e SC_SEED_PROFILE \
   -e SC_SEED_STEPS \

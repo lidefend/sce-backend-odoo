@@ -2,13 +2,14 @@
 from odoo import fields
 
 from ..registry import SeedStep, register
+from ..business_roles import business_model, project_actor, prepare_project, write_if_changed
 
 
 PROJECT_EXEC_CODE = "DEMO-PJ-EXEC"
 
 
 def _projects(env):
-    Project = env["project.project"].sudo()
+    Project = business_model(env, "project.project")
     records = Project.search(
         [
             "|", "|", "|",
@@ -22,8 +23,7 @@ def _projects(env):
 
 
 def _ensure_wbs(env, project, code, name, role, parent=None):
-    Model = env["construction.work.breakdown"].sudo()
-    plan = env["construction.wbs.plan"].sudo()._ensure_initial_plan(project)
+    Model = business_model(env, "construction.work.breakdown")
     record = Model.search(
         [("project_id", "=", project.id), ("code", "=", code)], limit=1
     )
@@ -32,18 +32,17 @@ def _ensure_wbs(env, project, code, name, role, parent=None):
         "code": code,
         "name": name,
         "level_type": role,
-        "plan_id": plan.id,
         "parent_id": parent.id if parent else False,
         "source_type": "manual",
     }
     if record:
-        record.write(values)
+        write_if_changed(record, values)
         return record
     return Model.create(values)
 
 
 def _ensure_cost_plan(env, project):
-    Version = env["project.boq.version"].sudo()
+    Version = business_model(env, "project.boq.version")
     version = Version.search(
         [("project_id", "=", project.id), ("state", "=", "published")],
         order="published_at desc, id desc",
@@ -51,7 +50,7 @@ def _ensure_cost_plan(env, project):
     )
     if not version:
         return
-    Plan = env["project.cost.plan"].sudo()
+    Plan = business_model(env, "project.cost.plan")
     plan = Plan.search(
         [("project_id", "=", project.id), ("version_code", "=", "DEMO-TARGET-V1")],
         limit=1,
@@ -63,44 +62,17 @@ def _ensure_cost_plan(env, project):
                 "project_id": project.id,
                 "boq_version_id": version.id,
                 "version_code": "DEMO-TARGET-V1",
-                "note": "人工、材料、机械、管理费和税费的产品 Demo 基线。",
+                "note": "由已发布清单的手工单项材料分析生成的 Demo 成本基线。",
             }
         )
     if not plan.line_ids:
-        source = version.line_ids.filtered(lambda row: row.line_type == "item")[:1]
-        if not source:
-            return
-        env["project.cost.plan.line"].sudo().with_context(
-            skip_cost_tree_sync=True
-        ).create(
-            [
-                {
-                    "plan_id": plan.id,
-                    "boq_line_id": source.id,
-                    "cost_type": cost_type,
-                    "name": label,
-                    "unit_raw": source.uom_id.name,
-                    "boq_quantity": source.quantity,
-                    "budget_unit_consumption": 1.0,
-                    "budget_unit_price": unit_price,
-                    "target_unit_consumption": 1.0,
-                    "target_unit_price": unit_price * 0.98,
-                    "adjustment_ratio": 100.0,
-                }
-                for cost_type, label, unit_price in (
-                    ("labor", "Demo 人工费", 20.0),
-                    ("material", "Demo 材料费", 65.0),
-                    ("machine", "Demo 机械费", 15.0),
-                    ("overhead", "Demo 管理费", 8.0),
-                    ("tax", "Demo 税金", 9.0),
-                )
-            ]
-        )
-        plan._rebuild_cost_tree()
+        plan.action_generate_from_boq()
+    if not plan.line_ids or any(not line.analysis_id for line in plan.line_ids):
+        raise ValueError("Demo cost plan must retain its real analysis source")
 
 
 def _ensure_location(env, project, code):
-    Model = env["construction.location.breakdown"].sudo()
+    Model = business_model(env, "construction.location.breakdown")
     record = Model.search(
         [("project_id", "=", project.id), ("code", "=", code)], limit=1
     )
@@ -117,7 +89,7 @@ def _ensure_location(env, project, code):
 
 
 def _ensure_section(env, project, code):
-    Model = env["construction.contract.section"].sudo()
+    Model = business_model(env, "construction.contract.section")
     record = Model.search(
         [("project_id", "=", project.id), ("code", "=", code)], limit=1
     )
@@ -129,7 +101,7 @@ def _ensure_section(env, project, code):
 
 
 def _ensure_scope(env, project, wbs, location, section):
-    Model = env["construction.execution.scope"].sudo()
+    Model = business_model(env, "construction.execution.scope")
     domain = [
         ("project_id", "=", project.id),
         ("wbs_id", "=", wbs.id),
@@ -149,9 +121,10 @@ def _ensure_scope(env, project, wbs, location, section):
 
 
 def run(env):
-    Allocation = env["project.boq.allocation"].sudo()
-    Boq = env["project.boq.line"].sudo()
+    Allocation = business_model(env, "project.boq.allocation")
+    Boq = business_model(env, "project.boq.line")
     for project in _projects(env):
+        prepare_project(env, project)
         prefix = project.project_code or f"SHOW-{project.id}"
         phase = _ensure_wbs(env, project, f"{prefix}-WBS", "示范实施阶段", "phase")
         account = _ensure_wbs(

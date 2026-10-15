@@ -1,74 +1,39 @@
 # -*- coding: utf-8 -*-
-"""Shared helpers to drive multi-level tier validation chains in demo seeds.
-
-Multi-level linear approval chains fire the tier server action callback
-after every approved level (``action_on_tier_approved`` no-ops mid-chain),
-and each level's review is scoped to its own reviewer group with
-``approve_sequence`` enforcement.  A single fixed reviewer that only sits
-on the last level can never satisfy the sequence guard and approves
-nothing, so seeds must pick the acting reviewer per pending review.
-"""
-
-from odoo.exceptions import UserError
-
-DEFAULT_FALLBACK_REVIEWER = "smart_construction_demo.user_sc_settlement_manager_cap"
+"""Demo seed approvals share the scenario driver's declared business seats."""
 
 
-def pick_tier_actor(record, review, fallback_xmlid=DEFAULT_FALLBACK_REVIEWER):
-    """Pick a demo reviewer able to act on the given pending tier review."""
-    candidates = review.sudo().reviewer_ids
-    if not candidates and review.sudo().reviewer_group_id:
-        candidates = review.sudo().reviewer_group_id.sudo().users
-    if candidates:
-        return candidates[0]
-    return record.env.ref(fallback_xmlid)
+def approve_tier_chain(record):
+    """Consume actual pending reviews; no arbitrary reviewer or fallback seat."""
+    from ..tools.scenario_loader import _demo_finish_reviews
 
-
-def _review_signature(pending):
-    return tuple(sorted((r.sequence, r.id, r.status) for r in pending))
-
-
-def _describe_review(review):
-    group = review.sudo().reviewer_group_id
-    group_name = group.name if group else "-"
-    member_count = len(review.sudo().reviewer_ids)
-    return "sequence=%s group=%s members=%s" % (review.sequence, group_name, member_count)
-
-
-def approve_tier_chain(record, fallback_xmlid=DEFAULT_FALLBACK_REVIEWER):
-    """Approve every pending tier review with a per-review actor.
-
-    Returns True when the record reached ``validation_status == "validated"``.
-    Raises UserError when a full pass makes no progress: OCA's
-    ``validate_tier`` silently no-ops for a user outside the review's
-    reviewer set (e.g. an empty reviewer group falls back to a reviewer
-    that cannot act), which would otherwise leave the record stuck in
-    draft with no diagnostic.
-    """
     record.invalidate_recordset()
-    for _index in range(max(1, len(record.review_ids))):
-        pending = record.review_ids.filtered(
-            lambda r: r.status in ("pending", "waiting")
-        )
-        if not pending:
-            break
-        before = _review_signature(pending)
-        review = min(pending, key=lambda r: (r.sequence, r.id))
-        actor = pick_tier_actor(record, review, fallback_xmlid)
-        record.with_user(actor).validate_tier()
-        record.invalidate_recordset()
-        if record.validation_status == "validated":
-            break
-        after_pending = record.review_ids.filtered(
-            lambda r: r.status in ("pending", "waiting")
-        )
-        if _review_signature(after_pending) == before:
-            raise UserError(
-                "演示审批链推进失败：评审 %s（模型 %s，记录 %s）无人可批。"
-                "请检查该级评审组的成员配置。"
-                % (_describe_review(review), record._name, record.display_name)
-            )
+    _demo_finish_reviews(record.env, record)
     return record.validation_status == "validated"
+
+
+def advance_settlement(settlement, *, complete=False, submitter_xmlid="smart_construction_demo.user_sc_settlement_user_cap"):
+    """Submit and optionally finish through declared, non-superuser seats."""
+    from odoo.exceptions import UserError
+    from ..tools.scenario_loader import _demo_action_record
+
+    if settlement.state == "draft":
+        _demo_action_record(
+            settlement.env, settlement, "action_submit",
+            submitter_xmlid,
+        ).action_submit()
+        settlement.invalidate_recordset()
+    if settlement.state == "submit":
+        approve_tier_chain(settlement)
+    if complete and settlement.state == "approve":
+        _demo_action_record(
+            settlement.env, settlement, "action_done",
+            "smart_construction_demo.user_sc_settlement_manager_cap",
+        ).action_done()
+        settlement.invalidate_recordset()
+    expected = ("done",) if complete else ("approve", "done")
+    if settlement.state not in expected:
+        raise UserError("Demo 结算单未能通过正式角色与审批状态机。")
+    return settlement
 
 
 def ensure_project_initiation_approved(project):
@@ -81,9 +46,12 @@ def ensure_project_initiation_approved(project):
     template is configured, and otherwise opens the tier chain, which is
     walked here.  Idempotent and never writes a state field directly.
     """
+    from .business_roles import project_actor
+    project = project_actor(project)
     if project.sc_approval_state != "draft":
         return project.sc_approval_state
-    project.action_sc_submit()
+    if not project.review_ids or project.validation_status == "rejected":
+        project.action_sc_submit()
     project.invalidate_recordset()
     if project.sc_approval_state == "draft" and project.review_ids:
         approve_tier_chain(project)

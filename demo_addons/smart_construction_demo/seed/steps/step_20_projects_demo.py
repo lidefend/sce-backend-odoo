@@ -3,7 +3,9 @@ from odoo import fields
 from odoo.exceptions import UserError
 
 from ..registry import SeedStep, register
+from ..business_roles import business_model, project_actor, prepare_project, write_if_changed, ensure_manual_boq_analysis
 from ..tier_flow import ensure_project_initiation_approved
+from ...tools.scenario_loader import _demo_action_record
 
 
 PROJECT_INIT_CODE = "DEMO-PJ-INIT"
@@ -42,7 +44,7 @@ def _get_dictionary(env, xmlid, domain):
 
 
 def _get_showroom_projects(env):
-    Project = env["project.project"].sudo()
+    Project = business_model(env, "project.project")
     domain = [
         "|",
         "|",
@@ -54,11 +56,11 @@ def _get_showroom_projects(env):
 
 
 def _ensure_project(env, code, vals, owned_xmlid=None):
-    Project = env["project.project"].sudo()
+    Project = business_model(env, "project.project")
     # All generated business facts require an explicit project company; never
     # rely on the current user's company as an implicit data default.
     vals = dict(vals)
-    vals.setdefault("company_id", env.company.id)
+    vals.setdefault("company_id", env.ref("base.main_company").id)
     project = Project.search([("project_code", "=", code)], limit=1)
     owned_project = (
         env.ref(owned_xmlid, raise_if_not_found=False) if owned_xmlid else False
@@ -68,6 +70,8 @@ def _ensure_project(env, code, vals, owned_xmlid=None):
     if not project:
         project = Project.search([("name", "=", vals["name"])], limit=1)
     if project:
+        if project.company_id != env.ref("base.main_company"):
+            raise UserError("Demo project company differs from its declared company")
         if (
             project.project_code
             and project.project_code != code
@@ -89,11 +93,12 @@ def _ensure_project(env, code, vals, owned_xmlid=None):
         vals["lifecycle_state"] = "draft"
         vals["project_code"] = code
         project = Project.create(vals)
+    prepare_project(env, project)
     return project
 
 
 def _ensure_wbs(env, project, code, name, level_type, parent=None):
-    Work = env["construction.work.breakdown"].sudo()
+    Work = business_model(env, "construction.work.breakdown")
     domain = [("project_id", "=", project.id), ("code", "=", code), ("level_type", "=", level_type)]
     node = Work.search(domain, limit=1)
     vals = {
@@ -104,14 +109,14 @@ def _ensure_wbs(env, project, code, name, level_type, parent=None):
         "parent_id": parent.id if parent else False,
     }
     if node:
-        node.write(vals)
+        write_if_changed(node, vals)
     else:
         node = Work.create(vals)
     return node
 
 
 def _ensure_boq(env, project, code_prefix, uom_unit):
-    Version = env["project.boq.version"].sudo()
+    Version = business_model(env, "project.boq.version")
     version = Version.search(
         [
             ("project_id", "=", project.id),
@@ -129,7 +134,7 @@ def _ensure_boq(env, project, code_prefix, uom_unit):
                 "source_type": "contract",
             }
         )
-    Boq = env["project.boq.line"].sudo()
+    Boq = business_model(env, "project.boq.line")
     header = Boq.search(
         [("project_id", "=", project.id), ("code", "=", f"{code_prefix}-G")], limit=1
     )
@@ -176,7 +181,8 @@ def _ensure_boq(env, project, code_prefix, uom_unit):
     if existing:
         existing.write(leaf_vals)
     else:
-        Boq.create(leaf_vals)
+        existing = Boq.create(leaf_vals)
+    ensure_manual_boq_analysis(env, existing, 3200.0)
     if version.state == "draft":
         version.action_validate()
     if version.state == "validated":
@@ -184,7 +190,7 @@ def _ensure_boq(env, project, code_prefix, uom_unit):
 
 
 def _ensure_budget(env, project, uom_unit, work_node):
-    Budget = env["project.budget"].sudo()
+    Budget = business_model(env, "project.budget")
     budget = Budget.search(
         [("project_id", "=", project.id), ("version", "=", "DEMO-V1")], limit=1
     )
@@ -210,7 +216,7 @@ def _ensure_budget(env, project, uom_unit, work_node):
             }
         )
 
-    BudgetLine = env["project.budget.boq.line"].sudo()
+    BudgetLine = business_model(env, "project.budget.boq.line")
     line_vals = {
         "budget_id": budget.id,
         "sequence": 10,
@@ -233,8 +239,8 @@ def _ensure_budget(env, project, uom_unit, work_node):
 
 def _ensure_cost_progress(env, project, cost_material, cost_sub, uom_unit, work_node):
     today = fields.Date.context_today(env.user)
-    CostLedger = env["project.cost.ledger"].sudo()
-    Progress = env["project.progress.entry"].sudo()
+    CostLedger = business_model(env, "project.cost.ledger")
+    Progress = business_model(env, "project.progress.entry")
 
     has_ledger = CostLedger.search_count([("project_id", "=", project.id)]) > 0
     has_progress = Progress.search_count([("project_id", "=", project.id)]) > 0
@@ -302,24 +308,37 @@ def _ensure_cost_progress(env, project, cost_material, cost_sub, uom_unit, work_
 
 
 def _apply_lifecycle(project, target_state):
+    project = _demo_action_record(
+        project.env, project, "action_set_lifecycle_state",
+        "smart_construction_demo.user_demo_project_manager",
+    )
     if project.lifecycle_state == target_state:
         return
-    if project.lifecycle_state != "draft":
-        return
-    # 与展厅项目一致：草稿项目必须先完成立项审批才能办理阶段动作。
-    ensure_project_initiation_approved(project)
     path_map = {
-        "draft": [],
-        "in_progress": ["in_progress"],
-        "paused": ["paused"],
-        "closing": ["in_progress", "closing"],
-        "done": ["in_progress", "done"],
-        "warranty": ["in_progress", "done", "warranty"],
-        "closed": ["in_progress", "closed"],
+        "draft": ["draft"],
+        "in_progress": ["draft", "in_progress"],
+        "paused": ["draft", "in_progress", "paused"],
+        "closing": ["draft", "in_progress", "closing"],
+        "done": ["draft", "in_progress", "done"],
+        "warranty": ["draft", "in_progress", "done", "warranty"],
+        "closed": ["draft", "in_progress", "closed"],
     }
-    for state in path_map.get(target_state, []):
-        if project.lifecycle_state != state:
-            project.action_set_lifecycle_state(state)
+    path = path_map.get(target_state)
+    if not path or project.lifecycle_state not in path:
+        raise UserError("Demo stage cannot be reached without reopening: %s -> %s" % (
+            project.lifecycle_state, target_state))
+    if project.lifecycle_state == "draft":
+        ensure_project_initiation_approved(project)
+    for state in path[path.index(project.lifecycle_state) + 1:]:
+        project.action_set_lifecycle_state(state)
+    if project.lifecycle_state != target_state:
+        raise UserError("Demo stage action did not reach declared target: %s" % target_state)
+
+
+def declared_stage(project):
+    """Sample target identity stays stable while its business facts are prepared."""
+    targets = {code: state for code, _name, state, _phase in STAGE_PROJECTS}
+    return targets.get(project.project_code, project.lifecycle_state)
 
 
 def run(env):
@@ -412,7 +431,7 @@ def run(env):
     sub = _ensure_wbs(env, exec_project, "WBS-001-01", "桥梁结构控制账户", "control_account", root)
     leaf = _ensure_wbs(env, exec_project, "WBS-001-01-01", "桩基施工工作包", "work_package", sub)
 
-    Budget = env["project.budget"].sudo()
+    Budget = business_model(env, "project.budget")
     budget = Budget.search(
         [("project_id", "=", exec_project.id), ("version", "=", "DEMO-V1")], limit=1
     )
@@ -443,7 +462,7 @@ def run(env):
     uom_unit = env.ref("uom.product_uom_unit", raise_if_not_found=False)
     if not uom_unit:
         uom_unit = env["uom.uom"].sudo().search([], limit=1)
-    BudgetLine = env["project.budget.boq.line"].sudo()
+    BudgetLine = business_model(env, "project.budget.boq.line")
     line_vals = [
         {
             "budget_id": budget.id,
@@ -521,7 +540,7 @@ def run(env):
         "subcontract",
     )
 
-    CostLedger = env["project.cost.ledger"].sudo()
+    CostLedger = business_model(env, "project.cost.ledger")
     ledger_vals = [
         {
             "project_id": exec_project.id,
@@ -560,7 +579,7 @@ def run(env):
         elif not existing:
             CostLedger.create(vals)
 
-    Progress = env["project.progress.entry"].sudo()
+    Progress = business_model(env, "project.progress.entry")
     progress_vals = {
         "project_id": exec_project.id,
         "wbs_id": leaf.id,
@@ -608,11 +627,14 @@ def run(env):
         _ensure_boq(env, project, code, uom_unit)
         _ensure_budget(env, project, uom_unit, stage_root)
         _ensure_cost_progress(env, project, cost_material, cost_sub, uom_unit, stage_root)
-        _apply_lifecycle(project, state)
+        if state != "draft" and project.lifecycle_state == "draft":
+            _apply_lifecycle(project, "in_progress")
 
     showroom_projects = _get_showroom_projects(env)
-    Boq = env["project.boq.line"].sudo()
+    Boq = business_model(env, "project.boq.line")
     for project in showroom_projects:
+        prepare_project(env, project)
+        project = project_actor(project)
         if Boq.search_count([("project_id", "=", project.id)]) == 0:
             code_prefix = str(project.project_code or f"DEMO-{project.id}").strip()
             _ensure_boq(env, project, code_prefix, uom_unit)

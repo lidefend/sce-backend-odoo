@@ -849,6 +849,23 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         upgrade = make_text.split("local.dev.upgrade:", 1)[1].split("\n\n", 1)[0]
         self.assertIn("mod.upgrade", upgrade)
         self.assertIn("local.dev.verify_authority", upgrade)
+        self.assertIn("local.dev.demo_credentials.prepare", upgrade)
+        self.assertIn("SC_ENVIRONMENT=demo SC_ALLOW_DEMO_DATA=1", upgrade)
+        for entry in ("local.dev.demo.load", "local.dev.demo.seed"):
+            wrapper = make_text.split(entry + ":", 1)[1].split("\n\n", 1)[0]
+            self.assertIn("local.dev.ready local.dev.demo_credentials.prepare", wrapper)
+            self.assertIn("$(LOCAL_ENV_ISOLATE)", wrapper)
+            self.assertIn('ENV_FILE="$(LOCAL_DEV_ENV_FILE)"', wrapper)
+        test_wrapper = make_text.split("local.dev.test:", 1)[1].split("\n\n", 1)[0]
+        self.assertIn("local.dev.demo_credentials.prepare", test_wrapper)
+        self.assertIn("SC_ENVIRONMENT=demo SC_ALLOW_DEMO_DATA=1", test_wrapper)
+        test_adapter = (ROOT / "scripts/test/test_safe.sh").read_text()
+        for variable in ("SC_ENVIRONMENT", "SC_ALLOW_DEMO_DATA", "SC_DEMO_USER_PASSWORD"):
+            self.assertIn("-e " + variable, test_adapter)
+        self.assertNotIn("SC_ENVIRONMENT=demo", test_adapter)
+        upgrade_adapter = (ROOT / "scripts/mod/upgrade.sh").read_text()
+        for variable in ("SC_ENVIRONMENT", "SC_ALLOW_DEMO_DATA", "SC_DEMO_USER_PASSWORD"):
+            self.assertIn("-e " + variable, upgrade_adapter)
         verify_authority = make_text.split(
             "local.dev.verify_authority:", 1
         )[1].split("\n\n", 1)[0]
@@ -941,8 +958,9 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         self.assertIn("local_dev_demo_authority_verify.sh", load_full)
         self.assertLess(
             load_full.index("local_dev_demo_authority_verify.sh"),
-            load_full.index("scripts/demo/load_all.sh"),
+            load_full.index("scripts/demo/load_release.sh"),
         )
+        self.assertNotIn("scripts/demo/load_all.sh", load_full)
         authority_verify = (
             ROOT / "scripts/dev/local_dev_demo_authority_verify.sh"
         ).read_text(encoding="utf-8")
@@ -1023,7 +1041,8 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
             ROOT / "demo_addons/smart_construction_demo/tools/scenario_loader.py"
         ).read_text(encoding="utf-8")
         self.assertNotIn("allow_payment_ledger_create", scenario_loader)
-        self.assertIn("._ensure_payment_ledger(", scenario_loader)
+        self.assertNotIn("._ensure_payment_ledger(", scenario_loader)
+        self.assertNotIn("._write_lifecycle(", scenario_loader)
 
         project_seed = (
             ROOT

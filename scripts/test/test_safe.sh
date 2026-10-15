@@ -26,6 +26,7 @@ fi
 compose ${COMPOSE_FILES} run ${RUN_RM} -T "${RUN_NAME[@]}" \
   -v "${DOCS_MOUNT_HOST}:${DOCS_MOUNT_CONT}:ro" \
   -v "${CONFIG_MOUNT_HOST}:${CONFIG_MOUNT_CONT}:ro" \
+  -e SC_ENVIRONMENT -e SC_ALLOW_DEMO_DATA -e SC_DEMO_USER_PASSWORD \
   --entrypoint bash odoo -lc "
     pip3 install -q -r ${CONFIG_MOUNT_CONT}/requirements-test.txt
     exec /usr/bin/odoo \

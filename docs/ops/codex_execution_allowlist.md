@@ -534,6 +534,14 @@ make workspace.evidence.archive \
 冒充所需证据。归档 receipt 必须位于
 工作树之外，并通过 `CLEAN_WORKTREE_EVIDENCE_RECEIPT` 传给清理入口。
 
+非可视集成证据可复用同一 `make workspace.evidence.archive` 入口，显式使用
+`schemaVersion=2`、`purpose=nonvisual-integration` 和非空 `nonvisualReason`。
+该类型必须包含 summary、identity、review 和 artifact；前三类仍绑定当前 HEAD，
+artifact 仅接受非空 JSON 对象，并逐项声明原始文件 SHA256 和 provenance（来源及复用依据）。
+归档在执行前重核候选与清单，在复制后逐项比较规划时摘要、源文件和副本；漂移拒绝。
+这只表示集成证据已保存，不代表功能验收通过，不可替代可视验收，且 schemaVersion 2 receipt
+明确不具备工作树删除授权；原 schemaVersion 1 的四类证据及清理门禁保持不变。
+
 目标必须是主仓库同级且以 `<repository-name>-` 开头的新目录；目标分支必须符合
 自治写入分支规则且尚不存在；基线必须是本地或 `origin` 分支可达的既有提交。
 
@@ -981,3 +989,31 @@ Do not remove tracked files or traverse .git. Single-writer governance remains r
 - 当前 P4 专题允许增量完善现有 controller/planner、模板和 Make 接线，不安装服务、不新建运行环境。
 
 - `make agent.run.begin AGENT_CHECK=<id>`：仅在既有 `.runtime/agent-runs/` 记录执行前依赖；record 比较前后身份与输入，漂移拒绝。
+
+## 已授权隔离数据库生命周期演练入口（2026-10-15）
+
+所有者已批准本次独立 P4 演练环境。以下入口是可执行授权，不是验收通过声明。唯一身份由
+`config/platform_database_rehearsal.json` 声明：项目 `sc-platform-db-rehearsal`，独立控制库
+`sc_platform_control_rehearsal` 和空目标库 `sc_tenant_lifecycle_rehearsal`，独立角色、三个固定卷，
+无宿主端口。禁止替换为日常、Demo 或客户库；禁止导出 authority 私密目录。
+
+- `make platform.database.rehearsal.prepare`：准备该专用环境的私有凭据与精确配置；未知旧卷拒绝。
+- `make platform.database.rehearsal.preflight`：只读核验声明、凭据权限、镜像、卷和网络身份。
+- `make platform.database.rehearsal.exercise`：仅对该空目标执行 register → provision → activate → suspend → resume，以及故障补偿演练；不含 retire/abandon。
+- `make platform.database.rehearsal.continue`：仅在审计/回执证明已有 register/provision/activate 前缀后续跑。
+- `make platform.database.rehearsal.readback`：核对实际集群、原生审计、请求绑定及双向凭据隔离。
+- `make platform.database.rehearsal.export`：只使原始非秘密 evidence JSON 可读，不导出凭据。
+- `make platform.database.rehearsal.recover`：核验真实审计状态后恢复该目标连接准入；不恢复已终止事务，不自动重放未知提交。
+- `make platform.database.rehearsal.cleanup`：精确预检后删除该演练项目及其三个卷，保留原始证据与私有身份。
+
+以下为纯离线检查，不授权数据库写入：
+
+- `make verify.platform.database.lifecycle.unit`
+- `make verify.platform.database.rehearsal.unit`
+- `make verify.demo.lifecycle.unit`
+- `make verify.demo.supplemental.unit`
+
+上述环境清理后，保留的集群身份禁止无声复用到新集群；下一次新建演练须重新明确生命周期，
+不得把本次授权解释成通用客户租户开通。两个固定 Demo ORM 入口
+`make verify.local.dev.demo_action_roles.orm` 与 `make verify.local.dev.demo_loaded_chains.orm`
+复用既有 local.dev 身份、模块及固定测试 tag，按需执行，不能作为远端 CI 已覆盖的声明。

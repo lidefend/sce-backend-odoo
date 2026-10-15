@@ -7,88 +7,11 @@ from typing import Dict, List
 from odoo.tools import convert
 from odoo.tools.misc import file_path
 
-from ..hooks import apply_demo_user_passwords, guard_demo_scope
-
-
-def _demo_carrier_context(env) -> dict:
-    """Governed-migration-carrier context for scenario XML loads.
-
-    The demo release seed provisions terminal-state facts (approved
-    settlements, confirmed payments, issued material documents, ...).
-    Product hardening reserves those state transitions for service flows
-    behind authority sentinels ("受治理迁移载体" boundaries). The release
-    seed — git-versioned, PR-reviewed, loaded through audited scripts — is
-    such a governed carrier, so scenario XML loads run with the owning
-    modules' own tokens. Sentinels are imported from their defining
-    modules (never re-declared here) so refactors stay in lockstep; the
-    same cross-module sentinel import pattern already exists in
-    smart_construction_core (payment_ledger imports funding_baseline's
-    allocation token).
-    """
-    from odoo.addons.smart_construction_core.models.core import (
-        equipment_management,
-        expense_claim,
-        funding_baseline,
-        payment_execution,
-        payment_ledger,
-        payment_ledger_allocation,
-        payment_request,
-        receipt_income,
-        self_funding_registration,
-        tax_deduction_registration,
-    )
-    from odoo.addons.smart_construction_core.models.projection import treasury_ledger
-    from odoo.addons.smart_construction_core.models.support import tender
-
-    settlement_model = env["sc.settlement.order"]
-    cost_ledger_model = env["project.cost.ledger"]
-    return {
-        "sc_expense_fact_authority_token": (
-            expense_claim._EXPENSE_FACT_AUTHORITY_TOKEN
-        ),
-        "_sc_funding_baseline_token": funding_baseline._FUNDING_BASELINE_TOKEN,
-        "_sc_funding_allocation_token": funding_baseline._FUNDING_ALLOCATION_TOKEN,
-        equipment_management._COST_SOURCE_STATE_CONTEXT_KEY: (
-            equipment_management._COST_SOURCE_STATE_TOKEN
-        ),
-        "_sc_payment_execution_batch_ready_token": (
-            payment_execution._PAYMENT_EXECUTION_BATCH_READY_TOKEN
-        ),
-        "sc_payment_ledger_authority_token": (
-            payment_ledger._PAYMENT_LEDGER_AUTHORITY_TOKEN
-        ),
-        "sc_payment_ledger_allocation_authority_token": (
-            payment_ledger_allocation._PAYMENT_LEDGER_ALLOCATION_AUTHORITY_TOKEN
-        ),
-        "_sc_funding_baseline_binding_token": (
-            payment_request._FUNDING_BINDING_TOKEN
-        ),
-        "_sc_terminal_cash_source_claim_token": (
-            payment_request._TERMINAL_CASH_SOURCE_CLAIM_TOKEN
-        ),
-        "sc_receipt_fact_authority_token": (
-            receipt_income._RECEIPT_FACT_AUTHORITY_TOKEN
-        ),
-        "sc_self_funding_authority_token": (
-            self_funding_registration._SELF_FUNDING_AUTHORITY_TOKEN
-        ),
-        settlement_model._LIFECYCLE_CONTEXT_KEY: (
-            settlement_model._LIFECYCLE_SERVICE_TOKEN
-        ),
-        "sc_tax_fact_authority_token": (
-            tax_deduction_registration._TAX_FACT_AUTHORITY_TOKEN
-        ),
-        "sc_treasury_authority_token": treasury_ledger._TREASURY_AUTHORITY_TOKEN,
-        "sc_tender_guarantee_authority_token": (
-            tender._TENDER_GUARANTEE_AUTHORITY_TOKEN
-        ),
-        cost_ledger_model._GENERATED_CONTEXT_KEY: (
-            cost_ledger_model._GENERATED_SERVICE_TOKEN
-        ),
-    }
+from ..hooks import apply_demo_user_passwords, guard_demo_scope, guard_demo_data_space
 
 
 BASE_SEED_FILES: List[str] = [
+    "data/demo/sc_demo_users.xml",
     "data/base/00_dictionary.xml",
     "data/base/dictionary_demo.xml",
     "data/base/cost_demo.xml",
@@ -319,16 +242,13 @@ RELEASE_SCENARIOS: List[str] = [
     "s60_project_cockpit",
     "s65_cost_budget_funding_surface",
     "s66_ledger_entity_surface",
-    "s67_scene_pack_surface",
     "s68_cockpit_workbench_surface",
     "s69_payment_ledger_surface",
     "s70_daily_business_surface",
-    "s71_governance_audit_surface",
     "s72_project_governance_surface",
     "s73_risk_settlement_surface",
     "s74_partner_supplier_surface",
     "s75_summary_projection_surface",
-    "s76_workflow_compat_surface",
     "s77_data_dictionary_surface",
     "s78_project_document_wbs_surface",
     "s79_execution_structure_surface",
@@ -404,11 +324,33 @@ _DEMO_LIFECYCLE_BEYOND_TARGET = {
 
 # (scenario, xmlid-without-module) -> intended terminal state.
 _DEMO_LIFECYCLE_TARGETS = {
+    "s73_risk_settlement_surface": {
+        "sc_demo_project_settlement_073_risk": "confirmed",
+        "sc_demo_project_risk_action_073_cost": "claimed",
+        "sc_demo_project_risk_action_073_schedule": "escalated",
+    },
+    "s68_cockpit_workbench_surface": {
+        "sc_demo_dashboard_fact_068_fund": "in_progress",
+        "sc_demo_dashboard_fact_068_cost": "done",
+        "sc_demo_workbench_item_068_todo": "in_progress",
+        "sc_demo_workbench_item_068_recent": "done",
+    },
+    "s60_project_cockpit": {
+        "sc_demo_tender_060_001": "submitted",
+    },
+    "s66_ledger_entity_surface": {
+        "sc_demo_general_contract_066_income": "signed",
+        "sc_demo_general_contract_066_expense": "signed",
+    },
+    "s65_cost_budget_funding_surface": {
+        "sc_demo_material_outbound_065_rebar": "issued",
+    },
     "s70_daily_business_surface": {
-        "sc_demo_receipt_income_070_progress": "confirmed",
-        "sc_demo_payment_execution_070_material": "confirmed",
+        "sc_demo_receipt_income_070_progress": "received",
+        "sc_demo_payment_execution_070_material": "paid",
         "sc_demo_treasury_reconciliation_070_daily": "confirmed",
         "sc_demo_invoice_registration_070_input": "registered",
+        "sc_demo_tax_deduction_070_input": "deducted",
         "sc_demo_construction_diary_070_daily": "confirmed",
     },
     "s78_project_document_wbs_surface": {
@@ -416,10 +358,16 @@ _DEMO_LIFECYCLE_TARGETS = {
         "sc_demo_document_078_quality_archive": "done",
     },
     "s80_execution_management_surface": {
+        "sc_demo_quality_issue_080_rebar": "closed",
+        "sc_demo_hazard_source_080_lifting": "controlled",
+        "sc_demo_safety_issue_080_guardrail": "closed",
+        "sc_demo_safety_patrol_080_weekly": "done",
         "sc_demo_material_purchase_request_080_steel": "approved",
         "sc_demo_material_rfq_080_steel": "selected",
         "sc_demo_material_acceptance_080_steel": "accepted",
         "sc_demo_material_inbound_080_steel": "received",
+        "sc_demo_material_outbound_080_steel": "issued",
+        "sc_demo_material_settlement_080_steel": "confirmed",
         "sc_demo_plan_080_master": "in_progress",
         "sc_demo_plan_line_080_rebar": "in_progress",
         "sc_demo_plan_report_080_weekly": "accepted",
@@ -433,6 +381,10 @@ _DEMO_LIFECYCLE_TARGETS = {
         "sc_demo_equipment_usage_080_crane": "confirmed",
     },
     "s85_admin_finance_surface": {
+        "sc_demo_document_admin_085_certificate": "done",
+        "sc_demo_document_admin_085_borrow": "done",
+        "sc_demo_office_admin_085_leave": "done",
+        "sc_demo_office_admin_085_seal": "done",
         "sc_demo_financing_loan_085_bank": "confirmed",
         "sc_demo_hr_payroll_085_salary": "done",
         "sc_demo_hr_payroll_085_bonus": "done",
@@ -442,6 +394,9 @@ _DEMO_LIFECYCLE_TARGETS = {
         "sc_demo_subcontract_settlement_085_fitout": "confirmed",
     },
     "s86_tender_rental_finance_surface": {
+        "sc_demo_tender_bid_086_complex": "won",
+        "sc_demo_fund_operation_086_transfer": "done",
+        "sc_demo_fund_operation_086_daily": "confirmed",
         "sc_demo_tender_doc_purchase_086": "approved",
         "sc_demo_expense_claim_086_deposit_pay": "done",
         "sc_demo_expense_claim_086_deposit_refund": "done",
@@ -453,6 +408,7 @@ _DEMO_LIFECYCLE_TARGETS = {
         "sc_demo_settlement_adjustment_086_deduction": "confirmed",
     },
     "s87_resource_contract_surface": {
+        "sc_demo_general_contract_087_service": "signed",
         "sc_demo_labor_usage_087_masonry": "confirmed",
         "sc_demo_labor_settlement_087_masonry": "confirmed",
         "sc_demo_equipment_settlement_087_pump": "confirmed",
@@ -463,6 +419,10 @@ _DEMO_LIFECYCLE_TARGETS = {
         "sc_demo_invoice_registration_088_output": "registered",
     },
     "s89_quality_safety_surface": {
+        "sc_demo_quality_issue_089_rebar": "closed",
+        "sc_demo_hazard_source_089_high_support": "controlled",
+        "sc_demo_safety_issue_089_high_support": "closed",
+        "sc_demo_safety_patrol_task_089_high_support": "done",
         "sc_demo_safety_plan_089_dangerous": "approved",
         "sc_demo_safety_disclosure_089_dangerous": "approved",
     },
@@ -473,7 +433,10 @@ _DEMO_LIFECYCLE_TARGETS = {
 # approval inline (one-step handling), so the chain is just the submit.
 _DEMO_LIFECYCLE_CHAINS = {
     ("sc.receipt.income", "confirmed"): ("action_confirm",),
+    ("sc.receipt.income", "received"): ("action_confirm", "action_received"),
     ("sc.payment.execution", "confirmed"): ("action_confirm",),
+    ("sc.payment.execution", "paid"): ("action_confirm", "action_paid"),
+    ("sc.tax.deduction.registration", "deducted"): ("action_confirm", "action_deduct"),
     ("sc.treasury.reconciliation", "confirmed"): ("action_confirm",),
     ("sc.invoice.registration", "registered"): ("action_confirm", "action_register"),
     ("sc.construction.diary", "confirmed"): ("action_confirm",),
@@ -483,6 +446,8 @@ _DEMO_LIFECYCLE_CHAINS = {
     ("sc.material.rfq", "selected"): ("action_submit", "action_select"),
     ("sc.material.acceptance", "accepted"): ("action_submit", "action_accept"),
     ("sc.material.inbound", "received"): ("action_submit", "action_receive"),
+    ("sc.material.outbound", "issued"): ("action_issue",),
+    ("sc.material.settlement", "confirmed"): ("action_confirm",),
     ("sc.plan", "in_progress"): ("action_confirm", "action_start"),
     ("sc.plan.report", "accepted"): ("action_submit",),
     ("sc.safety.plan", "approved"): ("action_submit",),
@@ -505,11 +470,38 @@ _DEMO_LIFECYCLE_CHAINS = {
     ("sc.material.rental.order", "settled"): ("action_submit", "action_activate", "action_return", "action_settle"),
     ("sc.material.rental.settlement", "confirmed"): ("action_submit", "action_confirm"),
     ("sc.settlement.adjustment", "confirmed"): ("action_confirm",),
-    ("sc.labor.usage", "confirmed"): ("action_confirm",),
+    ("sc.labor.usage", "confirmed"): ("action_submit", "action_confirm"),
     ("sc.labor.settlement", "confirmed"): ("action_submit", "action_confirm"),
     ("sc.equipment.settlement", "confirmed"): ("action_submit", "action_confirm"),
     ("sc.contract.event", "approved"): ("action_submit",),
     ("sc.contract.event", "done"): ("action_submit", "action_done"),
+    ('sc.general.contract', 'signed'): ('action_confirm', 'action_signed'),
+    ('sc.quality.issue', 'submitted'): ('action_submit',),
+    ('sc.hazard.source', 'controlled'): ('action_report', 'action_control'),
+    ('sc.safety.issue', 'submitted'): ('action_submit',),
+    ('sc.safety.patrol.task', 'done'): ('action_plan', 'action_done'),
+    ('sc.document.admin.document', 'done'): ('action_submit', 'action_done'),
+    ('sc.office.admin.document', 'done'): ('action_submit', 'action_done'),
+    ('sc.fund.account.operation', 'done'): ('action_confirm', 'action_done'),
+    ('sc.fund.account.operation', 'confirmed'): ('action_confirm',),
+    ('tender.bid', 'submitted'): ('action_to_submitted',),
+    ('tender.bid', 'won'): ('action_to_submitted', 'action_mark_won'),
+    ('project.settlement', 'confirmed'): ('action_confirm',),
+    ('project.risk.action', 'claimed'): ('action_claim',),
+    ('project.risk.action', 'escalated'): ('action_escalate',),
+    ('sc.dashboard.cockpit.fact', 'in_progress'): ('action_submit',),
+    ('sc.dashboard.cockpit.fact', 'done'): ('action_submit', 'action_done'),
+    ('sc.workbench.item', 'in_progress'): ('action_submit',),
+    ('sc.workbench.item', 'done'): ('action_submit', 'action_done'),
+}
+
+# These terminal states are produced by role-bound XML orchestration, not by
+# a generic state action. Missing closure must fail rather than fabricate it.
+_DEMO_LIFECYCLE_XML_ACTIONS = {
+    "sc_demo_quality_issue_080_rebar": "sc_demo_close_issue",
+    "sc_demo_safety_issue_080_guardrail": "sc_demo_close_issue",
+    "sc_demo_quality_issue_089_rebar": "sc_demo_close_issue",
+    "sc_demo_safety_issue_089_high_support": "sc_demo_close_issue",
 }
 
 # Records whose execution facts belong to a governed write API rather than an
@@ -523,12 +515,14 @@ _DEMO_LIFECYCLE_FACT_WRITES = {
     },
 }
 
-# Records whose approval-bearing steps must be carried out by the configured
-# reviewer role instead of the system loader. The user is a member of the
-# approval group of the record's policy (sc.expense.claim -> finance manager).
+# Record-specific operational seats: project salary and company bonus have
+# different native permission requirements. Pending approval seats are resolved
+# separately from the actual review instance, never from these overrides.
 _DEMO_LIFECYCLE_REVIEWER = {
-    "sc_demo_expense_claim_086_deposit_pay": "smart_construction_demo.user_sc_finance_mgr_test",
-    "sc_demo_expense_claim_086_deposit_refund": "smart_construction_demo.user_sc_finance_mgr_test",
+    ("sc_demo_hr_payroll_085_salary", "action_submit"): "smart_construction_demo.user_sc_project_user",
+    ("sc_demo_hr_payroll_085_salary", "action_done"): "smart_construction_demo.user_sc_project_manager_cap",
+    ("sc_demo_hr_payroll_085_bonus", "action_submit"): "smart_construction_demo.user_demo_role_project_a_member",
+    ("sc_demo_hr_payroll_085_bonus", "action_done"): "smart_construction_demo.user_sc_business_config_demo",
 }
 
 # Approval tier seat map: reviewer group -> the demo account that owns that
@@ -538,6 +532,10 @@ _DEMO_LIFECYCLE_REVIEWER = {
 # seat once means the generic driver below can walk any chain for any model, so
 # a scenario that adds an approval-bearing document needs no tier-specific code.
 _DEMO_APPROVAL_ACTORS = {
+    "smart_construction_core.group_sc_role_operation_user": "smart_construction_demo.user_sc_operation_demo",
+    "smart_construction_core.group_sc_cap_cost_manager": "smart_construction_demo.user_sc_cost_manager_cap",
+    "smart_construction_core.group_sc_role_contract_admin": "smart_construction_demo.user_sc_contract_01",
+    "smart_construction_core.group_sc_cap_contract_manager": "smart_construction_demo.user_sc_contract_manager_cap",
     "smart_construction_core.group_sc_role_finance_user":
         "smart_construction_demo.user_sc_fin_01",
     "smart_construction_core.group_sc_cap_project_manager":
@@ -546,6 +544,13 @@ _DEMO_APPROVAL_ACTORS = {
         "smart_construction_demo.user_sc_fin_mgr_01",
     "smart_construction_core.group_sc_role_executive":
         "smart_construction_demo.user_demo_role_executive",
+    "smart_construction_core.group_sc_cap_settlement_manager": "smart_construction_demo.user_sc_settlement_manager_cap",
+    "smart_construction_core.group_sc_role_settlement_user": "smart_construction_demo.user_sc_settlement_user_cap",
+    "smart_construction_core.group_sc_cap_material_manager": "smart_construction_demo.user_sc_material_mgr_01",
+    "smart_construction_core.group_sc_cap_purchase_manager": "smart_construction_demo.user_sc_purchase_manager_cap",
+    "smart_construction_core.group_sc_role_project_user": "smart_construction_demo.user_sc_project_user",
+    "smart_construction_core.group_sc_cap_project_user": "smart_construction_demo.user_sc_project_user",
+    "smart_construction_core.group_sc_cap_business_config_admin": "smart_construction_demo.user_sc_business_config_demo",
 }
 
 # The project-side operator who raises the payment/receipt request. It holds the
@@ -585,17 +590,43 @@ def _demo_project_members(env, project, user_xmlids) -> None:
         project.message_subscribe(partner_ids=missing.ids)
 
 
-def _demo_scope_record_actors_to_project(env, record) -> None:
-    """Subscribe the record-rule-scoped demo seats to the record's project.
+def _prepare_scenario_organization(env, scenario):
+    """Install declared demo membership before business execution starts.
 
-    ``payment.request`` scopes the 业务发起 and 财务经办 seats to
-    ``project_id.user_id`` or project followers, so the seeded requester could
-    not submit its own request until it followed the project. Only a
-    subscription is written; no ACL or record rule is touched, and an
-    already-visible record keeps the submitter able to read exactly what the
-    product's own rule allows. Idempotent.
+    Approval execution never changes its own visibility or membership.
+    The declared projects include only their required operational seats.
     """
-    _demo_project_members(env, record.project_id, _DEMO_PAYMENT_SCOPED_SEATS)
+    project_xmlid = {
+        "s73_risk_settlement_surface": "sc_demo_project_073_risk",
+        "s65_cost_budget_funding_surface": "sc_demo_project_065_cost_funding",
+        "s69_payment_ledger_surface": "sc_demo_project_069_payment_ledger",
+        "s70_daily_business_surface": "sc_demo_project_001",
+        "s86_tender_rental_finance_surface": "sc_demo_project_001",
+        "s80_execution_management_surface": "sc_demo_project_001",
+    }.get(scenario)
+    if project_xmlid:
+        project = env.ref("smart_construction_demo." + project_xmlid)
+        seats = {
+            "s69_payment_ledger_surface": _DEMO_PAYMENT_SCOPED_SEATS + (
+                "smart_construction_demo.user_sc_settlement_user_cap",
+                "smart_construction_demo.user_sc_project_user",
+                "smart_construction_demo.user_sc_purchase_manager_cap",
+                "smart_construction_demo.user_demo_project_manager",
+                "smart_construction_demo.user_sc_cost_manager_cap",
+                "smart_construction_demo.user_sc_settlement_manager_cap",
+                "smart_construction_demo.user_sc_fin_mgr_01",
+                "smart_construction_demo.user_demo_role_executive",
+            ),
+            "s80_execution_management_surface": ("smart_construction_demo.user_sc_material_01",),
+            "s86_tender_rental_finance_surface": _DEMO_PAYMENT_SCOPED_SEATS + (
+                "smart_construction_demo.user_sc_rental_payment_checker_demo",
+                "smart_construction_demo.user_sc_project_user",
+                "smart_construction_demo.user_sc_material_01",
+            ),
+            "s65_cost_budget_funding_surface": ("smart_construction_demo.user_sc_cost_user_cap",),
+            "s73_risk_settlement_surface": ("smart_construction_demo.user_sc_project_user", "smart_construction_demo.user_sc_fin_01"),
+        }.get(scenario, _DEMO_PAYMENT_SCOPED_SEATS)
+        _demo_project_members(env, project, seats)
 
 
 def _demo_drive_approval(env, record, submitter_xmlid: str | None = None):
@@ -609,13 +640,17 @@ def _demo_drive_approval(env, record, submitter_xmlid: str | None = None):
     already approved (or beyond) is returned untouched.
     """
     record = record.sudo()
-    _demo_scope_record_actors_to_project(env, record)
-    if record.state == "draft":
-        submitter = env.ref(submitter_xmlid or _DEMO_DOCUMENT_SUBMITTER, raise_if_not_found=False)
-        record.with_user(submitter).action_submit()
+    if record.state in ("draft", "rejected"):
+        _demo_action_record(env, record, "action_submit", submitter_xmlid or _DEMO_DOCUMENT_SUBMITTER).action_submit()
         record.invalidate_recordset()
+    _demo_finish_reviews(env, record)
+    return record
+
+
+def _demo_finish_reviews(env, record):
+    """Consume the actual pending review instance using its declared seat."""
     rounds = 0
-    while record.state in ("submit", "approve") and record.validation_status in ("waiting", "pending"):
+    while "validation_status" in record._fields and record.validation_status in ("waiting", "pending"):
         rounds += 1
         if rounds > 20:
             raise ValueError("demo approval: %s did not converge" % record)
@@ -632,12 +667,120 @@ def _demo_drive_approval(env, record, submitter_xmlid: str | None = None):
                 "demo approval: no demo seat declared for reviewer group %s (%s)"
                 % (group_xmlid, record)
             )
-        seat = env.ref(seat_xmlid, raise_if_not_found=False)
-        if not seat:
-            raise ValueError("demo approval: declared seat %s is missing" % seat_xmlid)
-        record.with_user(seat).action_approval_decision()
+        action = "action_approval_decision" if record._name == "payment.request" else "validate_tier"
+        acting = _demo_action_record(env, record, action, seat_xmlid)
+        if not acting.can_review:
+            raise ValueError("demo approval: declared seat cannot review %s" % seat_xmlid)
+        getattr(acting, action)()
         record.invalidate_recordset()
-    return record
+
+# Operational seats belong to the demo, not product authorization. The product
+# still checks every action. Unreviewed seats fail closed rather than using uid1.
+_DEMO_LIFECYCLE_ACTION_ACTORS = {
+    ("sc.material.purchase.request", "action_submit"): "user_sc_material_01",
+    ("sc.material.rfq", "action_submit"): "user_sc_purchase_01",
+    ("sc.material.rfq", "action_select"): "user_sc_material_mgr_01",
+    ("sc.material.acceptance", "action_submit"): "user_sc_material_01",
+    ("sc.material.acceptance", "action_accept"): "user_sc_material_mgr_01",
+    ("sc.material.inbound", "action_submit"): "user_sc_material_01",
+    ("sc.material.inbound", "action_receive"): "user_sc_material_mgr_01",
+    ("sc.material.outbound", "action_issue"): "user_sc_material_mgr_01",
+    ("sc.material.settlement", "action_confirm"): "user_sc_material_mgr_01",
+    ("sc.labor.usage", "action_submit"): "user_demo_project_manager",
+    ("sc.labor.usage", "action_confirm"): "user_demo_project_manager",
+    ("sc.equipment.usage", "action_confirm"): "user_demo_project_manager",
+    ("sc.subcontract.register", "action_register"): "user_demo_project_manager",
+    ("sc.receipt.income", "action_confirm"): "user_sc_fin_01",
+    ("sc.receipt.income", "action_received"): "user_sc_fin_mgr_01",
+    ("sc.payment.execution", "action_confirm"): "user_sc_fin_01",
+    ("sc.payment.execution", "action_paid"): "user_sc_fin_mgr_01",
+    ("sc.tax.deduction.registration", "action_confirm"): "user_sc_fin_01",
+    ("sc.tax.deduction.registration", "action_deduct"): "user_sc_fin_mgr_01",
+    ("sc.treasury.reconciliation", "write"): "user_sc_fin_01",
+    ("sc.treasury.reconciliation", "action_confirm"): "user_sc_fin_01",
+    ("sc.invoice.registration", "action_confirm"): "user_sc_fin_01",
+    ("sc.financing.loan", "action_confirm"): "user_sc_fin_01",
+    ("sc.invoice.registration", "action_register"): "user_sc_fin_mgr_01",
+    ("sc.expense.claim", "action_submit"): "user_sc_fin_01",
+    ("sc.expense.claim", "action_approve"): "user_sc_fin_mgr_01",
+    ("sc.expense.claim", "action_done"): "user_sc_fin_mgr_01",
+    ("sc.plan", "action_confirm"): "user_sc_project_user",
+    ("sc.plan", "action_start"): "user_sc_project_user",
+    ("sc.plan.line", "write"): "user_sc_project_user",
+    ("sc.project.document", "action_submit"): "user_sc_project_user",
+    ("sc.project.document", "action_archive"): "user_sc_project_user",
+    ("sc.construction.diary", "action_confirm"): "user_sc_project_user",
+    ("sc.plan.report", "action_submit"): "user_sc_project_user",
+    ("sc.safety.plan", "action_submit"): "user_sc_project_user",
+    ("sc.safety.disclosure", "action_submit"): "user_sc_project_user",
+    ("sc.labor.plan", "action_submit"): "user_sc_project_user",
+    ("sc.labor.request", "action_submit"): "user_sc_project_user",
+    ("sc.equipment.plan", "action_submit"): "user_sc_project_user",
+    ("sc.equipment.request", "action_submit"): "user_sc_project_user",
+    ("sc.subcontract.plan", "action_submit"): "user_sc_project_user",
+    ("sc.subcontract.request", "action_submit"): "user_sc_project_user",
+    ("tender.doc.purchase", "action_submit"): "user_sc_project_user",
+    ("sc.attendance.checkin", "action_submit"): "user_sc_project_user",
+    ("sc.attendance.checkin", "action_confirm"): "user_sc_project_user",
+    ("sc.labor.settlement", "action_submit"): "user_sc_project_user",
+    ("sc.labor.settlement", "action_confirm"): "user_sc_project_user",
+    ("sc.equipment.settlement", "action_submit"): "user_sc_project_user",
+    ("sc.equipment.settlement", "action_confirm"): "user_sc_project_user",
+    ("sc.subcontract.settlement", "action_confirm"): "user_sc_project_user",
+    ("sc.material.rental.plan", "action_submit"): "user_sc_material_01",
+    ("sc.material.rental.order", "action_submit"): "user_sc_material_01",
+    ("sc.material.rental.order", "action_activate"): "user_sc_material_01",
+    ("sc.material.rental.order", "action_return"): "user_sc_material_01",
+    ("sc.material.rental.order", "action_settle"): "user_sc_material_01",
+    ("sc.material.rental.settlement", "action_submit"): "user_sc_material_01",
+    ("sc.material.rental.settlement", "action_confirm"): "user_sc_material_01",
+    ("sc.material.rental.settlement", "action_paid"): "user_sc_rental_payment_checker_demo",
+    ("sc.contract.event", "action_submit"): "user_sc_contract_user_cap",
+    ("sc.contract.event", "action_done"): "user_sc_contract_user_cap",
+    ("sc.settlement.adjustment", "action_confirm"): "user_sc_settlement_user_cap",
+    ("project.funding.baseline", "action_activate"): "user_sc_fin_mgr_01",
+    ("tender.guarantee", "action_confirm"): "user_sc_project_user",
+    ("sc.expense.claim", "write"): "user_sc_fin_01",
+    ('sc.general.contract', 'action_confirm'): 'user_sc_contract_user_cap',
+    ('sc.general.contract', 'action_signed'): 'user_sc_contract_user_cap',
+    ('sc.quality.issue', 'action_submit'): 'user_sc_project_user',
+    ('sc.safety.issue', 'action_submit'): 'user_sc_project_user',
+    ('sc.hazard.source', 'action_report'): 'user_sc_project_user',
+    ('sc.hazard.source', 'action_control'): 'user_sc_project_user',
+    ('sc.safety.patrol.task', 'action_plan'): 'user_sc_project_user',
+    ('sc.safety.patrol.task', 'action_done'): 'user_sc_project_user',
+    ('sc.document.admin.document', 'action_submit'): 'user_sc_business_config_demo',
+    ('sc.document.admin.document', 'action_done'): 'user_sc_business_config_demo',
+    ('sc.office.admin.document', 'action_submit'): 'user_sc_business_config_demo',
+    ('sc.office.admin.document', 'action_done'): 'user_sc_business_config_demo',
+    ('sc.fund.account.operation', 'action_confirm'): 'user_sc_fin_01',
+    ('sc.fund.account.operation', 'action_done'): 'user_sc_fin_01',
+    ('tender.bid', 'action_to_submitted'): 'user_sc_project_user',
+    ('tender.bid', 'action_mark_won'): 'user_sc_project_user',
+    ('project.settlement', 'action_confirm'): 'user_sc_fin_01',
+    ('project.risk.action', 'action_claim'): 'user_sc_project_user',
+    ('project.risk.action', 'action_escalate'): 'user_sc_project_user',
+    ('sc.dashboard.cockpit.fact', 'action_submit'): 'user_sc_project_user',
+    ('sc.dashboard.cockpit.fact', 'action_done'): 'user_sc_project_user',
+    ('sc.workbench.item', 'action_submit'): 'user_sc_project_user',
+    ('sc.workbench.item', 'action_done'): 'user_sc_project_user',
+    ('tender.bid', 'write'): 'user_sc_project_user',
+}
+
+
+def _demo_action_record(env, record, action, actor_xmlid=None):
+    if not actor_xmlid:
+        seat = _DEMO_LIFECYCLE_ACTION_ACTORS.get((record._name, action))
+        if not seat:
+            raise ValueError("demo actor declaration missing: %s.%s" % (record._name, action))
+        actor_xmlid = "smart_construction_demo." + seat
+    actor = env.ref(actor_xmlid, raise_if_not_found=False)
+    if not actor or not actor.active or actor.id == 1:
+        raise ValueError("demo requires an active non-superuser seat: %s" % actor_xmlid)
+    acting = record.with_user(actor).sudo(False)
+    if acting.env.su:
+        raise ValueError("demo business action cannot run with superuser authority")
+    return acting
 
 
 def _advance_scenario_lifecycle(env, scenario: str) -> None:
@@ -655,21 +798,20 @@ def _advance_scenario_lifecycle(env, scenario: str) -> None:
     for xmlid, target in targets.items():
         record = env.ref(f"{module}.{xmlid}", raise_if_not_found=False)
         if not record:
-            continue
-        reviewer_xmlid = _DEMO_LIFECYCLE_REVIEWER.get(xmlid)
-        actor = env.ref(reviewer_xmlid, raise_if_not_found=False) if reviewer_xmlid else None
-        record = record.sudo()
-        if actor:
-            record = record.with_user(actor)
+            raise ValueError("demo lifecycle declared record missing: %s" % xmlid)
         state_field = getattr(record, "_state_field", "state")
         current_state = record[state_field]
         if current_state == target or current_state in _DEMO_LIFECYCLE_BEYOND_TARGET.get(
             (record._name, target), ()
         ):
             continue
+        if xmlid in _DEMO_LIFECYCLE_XML_ACTIONS:
+            raise ValueError("Demo XML business chain did not reach declared terminal: " + xmlid)
+        if xmlid == "sc_demo_treasury_reconciliation_070_daily":
+            _link_s70_generated_treasury_ledger(env, record)
         fact_values = _DEMO_LIFECYCLE_FACT_WRITES.get(xmlid)
         if fact_values is not None:
-            record.write(fact_values)
+            _demo_action_record(env, record, "write", _DEMO_LIFECYCLE_REVIEWER.get((xmlid, "write"))).write(fact_values)
             record.invalidate_recordset()
         else:
             chain = _DEMO_LIFECYCLE_CHAINS.get((record._name, target))
@@ -680,13 +822,53 @@ def _advance_scenario_lifecycle(env, scenario: str) -> None:
             for method_name in chain:
                 if record[state_field] == target:
                     break
-                getattr(record, method_name)()
+                acting = _demo_action_record(env, record, method_name, _DEMO_LIFECYCLE_REVIEWER.get((xmlid, method_name)))
+                getattr(acting, method_name)()
                 record.invalidate_recordset()
+                _demo_finish_reviews(env, record)
         if record[state_field] != target:
             raise ValueError(
                 "demo lifecycle: %s stayed at %s, expected %s after %s"
                 % (xmlid, record[state_field], target, chain if fact_values is None else "fact write")
             )
+
+
+def _link_s70_generated_treasury_ledger(env, reconciliation):
+    """Link the native receipt result; outgoing payments own payment.ledger."""
+    actor = env.ref("smart_construction_demo.user_sc_fin_mgr_01")
+    receipt = env.ref("smart_construction_demo.sc_demo_receipt_income_070_progress").with_user(actor).sudo(False)
+    ledgers = receipt.treasury_ledger_id
+    if (receipt.state != "received" or len(ledgers) != 1 or ledgers.state != "posted"
+            or ledgers.payment_request_id != receipt.payment_request_id or ledgers.direction != "in"):
+        raise ValueError("S70 requires its native posted receipt treasury result")
+    _bind_generated_demo_xmlid(env, "sc_demo_treasury_ledger_070_daily", ledgers)
+    if reconciliation.treasury_ledger_id != ledgers:
+        _demo_action_record(env, reconciliation, "write").write({"treasury_ledger_id": ledgers.id})
+
+
+def _bind_generated_demo_xmlid(env, name, record):
+    """Bind fixture metadata to a real result; never replace a conflicting fact."""
+    record.ensure_one()
+    existing = env.ref("smart_construction_demo." + name, raise_if_not_found=False)
+    if existing:
+        if existing._name != record._name or existing.id != record.id:
+            raise ValueError("demo generated identity conflicts with existing seed: %s" % name)
+        return
+    env["ir.model.data"].sudo().create({
+        "module": "smart_construction_demo", "name": name,
+        "model": record._name, "res_id": record.id, "noupdate": True,
+    })
+
+
+def _bind_s65_generated_cost(env):
+    source = env.ref("smart_construction_demo.sc_demo_material_outbound_065_rebar")
+    actor = env.ref("smart_construction_demo.user_sc_cost_user_cap")
+    ledger = env["project.cost.ledger"].with_user(actor).sudo(False).search([
+        ("source_model", "=", source._name), ("source_id", "=", source.id),
+    ])
+    if len(ledger) != 1:
+        raise ValueError("S65 requires exactly one cost result from its real material issue")
+    _bind_generated_demo_xmlid(env, "sc_demo_cost_ledger_065_rebar", ledger)
 
 
 def load_scenario(
@@ -725,9 +907,11 @@ def load_scenario(
     files = registry[scenario]["files"]
     files = _filter_files(files, step)
 
+    if scenario in ("s70_daily_business_surface", "s86_tender_rental_finance_surface"):
+        _prepare_scenario_organization(env, scenario)
+
     # idref is used by Odoo converter to resolve xmlids in-file
     idref = {}
-    carrier_env = env["base"].with_context(**_demo_carrier_context(env)).env
 
     for relpath in files:
         abspath = file_path(f"{module}/{relpath}")
@@ -735,7 +919,7 @@ def load_scenario(
         # convert_file will parse XML and create/update records.
         # mode='update' makes this idempotent-friendly for repeated loads.
         convert.convert_file(
-            carrier_env,
+            env,
             module,
             abspath,
             idref,
@@ -744,23 +928,25 @@ def load_scenario(
             kind="data",
         )
 
+    _prepare_scenario_organization(env, scenario)
     if scenario == "s00_min_path":
         _ensure_s00_boq_visibility(env)
     if scenario == "s65_cost_budget_funding_surface":
         _ensure_funding_baseline(env, "sc_demo_funding_baseline_065")
     if scenario == "s69_payment_ledger_surface":
+        _ensure_funding_baseline(env, "sc_demo_funding_baseline_069_payment")
         _ensure_s69_settlement_lifecycle(env)
         _ensure_s69_payment_request_approved(env)
         _ensure_s69_payment_ledger(env)
-        _ensure_funding_baseline(env, "sc_demo_funding_baseline_069_payment")
     if scenario == "s78_project_document_wbs_surface":
         _ensure_s78_project_document_wbs(env)
-    if scenario == "s80_execution_management_surface":
-        _ensure_s80_material_lifecycle(env)
     if scenario == "s86_tender_rental_finance_surface":
+        _prepare_s86_award_source(env)
         _ensure_s86_tender_guarantee_lifecycle(env)
         _ensure_s86_deposit_payment_anchor(env)
     _advance_scenario_lifecycle(env, scenario)
+    if scenario == "s65_cost_budget_funding_surface":
+        _bind_s65_generated_cost(env)
     if scenario == "s86_tender_rental_finance_surface":
         # 租赁结算必须先是 confirmed 才能作为付款依据，因此付款链只能在通用
         # 办理链把结算送达到 confirmed 之后运行。
@@ -780,11 +966,10 @@ def load_base_seed(env, mode: str = "update") -> None:
     guard_demo_scope(env)
     module = "smart_construction_demo"
     idref = {}
-    carrier_env = env["base"].with_context(**_demo_carrier_context(env)).env
     for relpath in BASE_SEED_FILES:
         abspath = file_path(f"{module}/{relpath}")
         convert.convert_file(
-            carrier_env,
+            env,
             module,
             abspath,
             idref,
@@ -792,7 +977,42 @@ def load_base_seed(env, mode: str = "update") -> None:
             noupdate=False,
             kind="data",
         )
+    # Seat XML can introduce identities or replace their group membership.
+    # Enroll them before any following scenario performs business actions.
+    guard_demo_data_space(env)
     env.cr.commit()
+
+
+def _import_demo_boq(env, project):
+    """Consume the native upload/preflight/import workflow as the cost user."""
+    import base64
+    import hashlib
+
+    raw = Path(file_path("smart_construction_demo/data/scenario/s00_min_path/contract_boq.csv")).read_bytes()
+    actor = env.ref("smart_construction_demo.user_sc_cost_01")
+    if actor.id == 1 or not actor.active:
+        raise ValueError("demo BOQ import requires its active cost operator")
+    Version = env["project.boq.version"].with_user(actor).sudo(False)
+    versions = Version.search([
+        ("project_id", "=", project.id), ("source_type", "=", "contract"),
+        ("code", "=", "DEMO-CONTRACT-V1"),
+    ])
+    if not versions:
+        wizard = env["project.boq.import.wizard"].with_user(actor).sudo(False).create({
+            "project_id": project.id, "source_type": "contract", "version_code": "DEMO-CONTRACT-V1",
+            "file": base64.b64encode(raw), "filename": "contract_boq.csv",
+        })
+        wizard.action_preflight()
+        action = wizard.action_import()
+        versions = Version.browse(action["res_id"]).exists()
+    if len(versions) != 1:
+        raise ValueError("demo BOQ version identity is ambiguous")
+    batch = env["project.boq.import.batch"].with_user(actor).sudo(False).search([
+        ("project_id", "=", project.id), ("version_id", "=", versions.id),
+    ])
+    if len(batch) != 1 or batch.file_digest != hashlib.sha256(raw).hexdigest() or batch.state != "imported":
+        raise ValueError("demo BOQ existing result does not match the real import file")
+    return versions, batch
 
 
 def _ensure_s00_boq_visibility(env) -> None:
@@ -841,9 +1061,8 @@ def _ensure_funding_baseline(env, xmlid: str) -> None:
     )
     if not baseline:
         return
-    baseline = baseline.sudo()
     if baseline.state == "draft":
-        baseline.action_activate()
+        _demo_action_record(env, baseline, "action_activate").action_activate()
 
 
 def _ensure_s69_payment_request_approved(env) -> None:
@@ -866,8 +1085,7 @@ def _ensure_s69_settlement_lifecycle(env) -> None:
     """Advance the S69 settlement through the controlled lifecycle.
 
     The settlement XML creates a draft header (its detail line must load
-    while the parent is mutable); approval then goes through the lifecycle
-    service write so the approved fact stays governed.
+    while the parent is mutable); approval then goes through public submission and the actual review seats.
     Idempotent: skips settlements already approved or beyond.
     """
     settlement = env.ref(
@@ -876,26 +1094,49 @@ def _ensure_s69_settlement_lifecycle(env) -> None:
     )
     if not settlement:
         return
-    settlement = settlement.sudo()
+    from ..seed.steps.step_40_contracts_demo import _ensure_purchase_order
+    author = _demo_action_record(
+        env, settlement, "action_submit", "smart_construction_demo.user_sc_settlement_user_cap"
+    )
+    _ensure_purchase_order(
+        env, author, product=env.ref("smart_construction_demo.sc_demo_product_069_steel_batch")
+    )
     if settlement.state == "draft":
-        settlement._write_lifecycle("approve")
+        _demo_action_record(
+            env, settlement, "action_submit",
+            "smart_construction_demo.user_sc_settlement_user_cap",
+        ).action_submit()
+    _demo_finish_reviews(env, settlement)
+    settlement.invalidate_recordset()
+    if settlement.state not in ("approve", "done"):
+        raise ValueError("demo settlement approval incomplete: %s" % settlement.state)
+
+
+def _prepare_s86_award_source(env):
+    bid = env.ref("smart_construction_demo.sc_demo_tender_bid_086_complex")
+    if bid.award_confirmed_at:
+        return
+    opening = env.ref("smart_construction_demo.sc_demo_tender_opening_086")
+    _demo_action_record(env, bid, "write").write({
+        "award_opening_id": opening.id,
+        "award_source_kind": "award_notice",
+        "award_source_reference": "S86-DEMO-AWARD-NOTICE-001",
+    })
 
 
 def _ensure_s86_tender_guarantee_lifecycle(env) -> None:
-    """Advance S86 tender guarantees through the controlled confirm action.
-
-    tender.guarantee create() is an absolute guard (no direct ``confirmed``
-    terminal state), so the XML loads drafts and the confirm runs through
-    action_confirm(), which also seeds the treasury ledger entries.
-    Idempotent: skips records already confirmed.
-    """
+    """Submit and review before native confirmation produces the treasury fact."""
     for xmlid in (
         "smart_construction_demo.sc_demo_tender_guarantee_086_out",
         "smart_construction_demo.sc_demo_tender_guarantee_086_return",
     ):
-        guarantee = env.ref(xmlid, raise_if_not_found=False)
-        if guarantee and guarantee.state == "draft":
-            guarantee.sudo().action_confirm()
+        guarantee = env.ref(xmlid)
+        if guarantee.state != "confirmed":
+            _demo_drive_approval(env, guarantee,
+                                 "smart_construction_demo.user_sc_project_user")
+            _demo_action_record(env, guarantee, "action_confirm").action_confirm()
+        if guarantee.state != "confirmed" or not guarantee.treasury_ledger_id:
+            raise ValueError("Demo guarantee did not produce its native treasury fact")
 
 
 # Xmlid pairs whose evidence attachment must be joined to the claim. The
@@ -920,7 +1161,7 @@ def _demo_link_attachments(env) -> None:
         if not claim or not attachment:
             continue
         if attachment not in claim.attachment_ids:
-            claim.sudo().write({"attachment_ids": [(4, attachment.id)]})
+            _demo_action_record(env, claim, "write").write({"attachment_ids": [(4, attachment.id)]})
 
 
 def _ensure_s86_deposit_payment_anchor(env) -> None:
@@ -930,8 +1171,8 @@ def _ensure_s86_deposit_payment_anchor(env) -> None:
     payment/receipt request as its cash source, and a payment request is a
     four-tier approval document (财务经办确认 -> 项目负责人审核 -> 财务审核 ->
     管理层终审). The seed declares drafts only and the generic approval driver
-    walks every tier with the demo seat that owns it, wiring the project
-    membership the record rules require on the way. Idempotent.
+    walks every tier with the demo seat that owns it. Project membership is
+    prepared separately before the business chain starts. Idempotent.
     """
     module = "smart_construction_demo"
     _demo_link_attachments(env)
@@ -1068,7 +1309,7 @@ def _ensure_s86_rental_settlement_payment(env) -> None:
 
     settlement.invalidate_recordset()
     if settlement.state == "confirmed":
-        settlement.action_paid()
+        _demo_action_record(env, settlement, "action_paid").action_paid()
         settlement.invalidate_recordset()
     if settlement.state != "paid":
         raise ValueError(
@@ -1076,45 +1317,44 @@ def _ensure_s86_rental_settlement_payment(env) -> None:
         )
 
 
-def _ensure_s80_material_lifecycle(env) -> None:
-    """Advance S80 material outbound/settlement through controlled lifecycle.
-
-    Both parents' detail-line create() guards are absolute (no carrier token
-    bypass): lines may only load while the parent is mutable, so the XML
-    creates drafts and the terminal states are reached through the governed
-    cost-source state writes afterwards.
-    Idempotent: skips records already at or beyond the target state.
-    """
-    outbound = env.ref(
-        "smart_construction_demo.sc_demo_material_outbound_080_steel",
-        raise_if_not_found=False,
-    )
-    if outbound and outbound.state == "draft":
-        outbound.sudo()._write_cost_source_state({"state": "issued"})
-    settlement = env.ref(
-        "smart_construction_demo.sc_demo_material_settlement_080_steel",
-        raise_if_not_found=False,
-    )
-    if settlement and settlement.state == "draft":
-        settlement.sudo()._write_cost_source_state({"state": "confirmed"})
-
-
 def _ensure_s69_payment_ledger(env) -> None:
-    """Create the S69 ledger through the payment-request service boundary."""
-    module = "smart_construction_demo"
-    request = env.ref(f"{module}.sc_demo_payment_request_069_pay", raise_if_not_found=False)
-    if not request:
-        return
-    Ledger = env["payment.ledger"].sudo()
-    ledger = Ledger.search([("payment_request_id", "=", request.id)], limit=1)
-    if ledger:
-        return
-    request.sudo().with_context(payment_soft_gate=True)._ensure_payment_ledger(
-        amount=120000.0,
-        paid_at="2025-08-24 10:00:00",
-        ref="S69-PAY-LEDGER-001",
-        note="S69 支付台账样例。",
-    )
+    """Post S69 through the same payment registration used by finance users."""
+    request = env.ref("smart_construction_demo.sc_demo_payment_request_069_pay")
+    creator = env.ref("smart_construction_demo.user_sc_fin_mgr_01")
+    Execution = env["sc.payment.execution"].with_user(creator).sudo(False)
+    execution = Execution.search([("payment_request_id", "=", request.id)])
+    if len(execution) > 1:
+        raise ValueError("demo payment execution identity is ambiguous")
+    if not execution:
+        execution = Execution.create({
+            "payment_request_id": request.id,
+            "project_id": request.project_id.id,
+            "partner_id": request.partner_id.id,
+            "contract_id": request.contract_id.id,
+            "source_kind": "actual_outflow",
+            "payment_method": "银行转账",
+            "date_payment": "2025-08-24",
+            "document_no": "S69-PAY-LEDGER-001",
+            "planned_amount": request.amount,
+            "paid_amount": request.amount,
+            "invoice_amount": request.amount,
+            "currency_id": request.currency_id.id,
+            "receipt_account_name": request.payment_account_name,
+            "receipt_bank_name": request.payment_bank_name,
+            "receipt_account_no": request.payment_account_no,
+            "handler_name": "Demo-财务经办",
+            "note": "S69 支付台账样例。",
+        })
+    if execution.state == "draft":
+        _demo_action_record(env, execution, "action_confirm").action_confirm()
+    _demo_finish_reviews(env, execution)
+    if execution.state == "confirmed":
+        _demo_action_record(
+            env, execution, "action_paid", "smart_construction_demo.user_sc_fin_mgr_01"
+        ).action_paid()
+    execution.invalidate_recordset()
+    if execution.state != "paid":
+        raise ValueError("demo payment registration incomplete: %s" % execution.state)
 
 
 def _ensure_s78_project_document_wbs(env) -> None:

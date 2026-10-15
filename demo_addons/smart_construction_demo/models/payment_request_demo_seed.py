@@ -25,5 +25,9 @@ class PaymentRequestDemoSeed(models.Model):
             _demo_drive_approval,
         )
 
+        from ..hooks import assert_demo_seed_principal, guard_demo_scope
+
+        assert_demo_seed_principal(self.env)
+        guard_demo_scope(self.env)
         for record in self:
             _demo_drive_approval(record.env, record)

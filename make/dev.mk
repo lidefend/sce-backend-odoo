@@ -132,20 +132,20 @@ local.dev.logs: guard.prod.forbid
 local.dev.ps: guard.prod.forbid
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ps
 
-local.dev.test: guard.prod.forbid local.dev.ready
+local.dev.test: guard.prod.forbid local.dev.ready local.dev.demo_credentials.prepare
 	@test -n "$(MODULE)" || (echo "MODULE is required" >&2; exit 2)
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
-	  MODULE="$(MODULE)" TEST_TAGS="$(TEST_TAGS)" test.safe
+	  SC_ENVIRONMENT=demo SC_ALLOW_DEMO_DATA=1 MODULE="$(MODULE)" TEST_TAGS="$(TEST_TAGS)" test.safe
 
 .PHONY: local.dev.form_lowcode.browser
 local.dev.form_lowcode.browser: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/verify/local_dev_form_lowcode_browser.sh
 
-local.dev.upgrade: guard.prod.forbid local.dev.ready
+local.dev.upgrade: guard.prod.forbid local.dev.ready local.dev.demo_credentials.prepare
 	@test -n "$(MODULE)" || (echo "MODULE is required" >&2; exit 2)
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
-	  MODULE="$(MODULE)" mod.upgrade
+	  SC_ENVIRONMENT=demo SC_ALLOW_DEMO_DATA=1 MODULE="$(MODULE)" mod.upgrade
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory local.dev.verify_authority
 
 local.dev.verify_authority: guard.prod.forbid local.dev.ready
@@ -157,6 +157,18 @@ local.dev.sync_demo: guard.prod.forbid local.dev.ready local.dev.demo_credential
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" demo.load.full
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" up
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory local.dev.verify_demo
+
+.PHONY: local.dev.demo.load local.dev.demo.seed
+local.dev.demo.load: guard.prod.forbid local.dev.ready local.dev.demo_credentials.prepare
+	@test -n "$(SCENARIO)" || (echo "SCENARIO is required" >&2; exit 2)
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  SCENARIO="$(SCENARIO)" demo.load
+
+local.dev.demo.seed: guard.prod.forbid local.dev.ready local.dev.demo_credentials.prepare
+	@test -n "$(STEPS)" || (echo "STEPS is required" >&2; exit 2)
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_ENVIRONMENT=demo SC_ALLOW_DEMO_DATA=1 STEPS="$(STEPS)" \
+	  bash scripts/demo/run_seed.sh
 
 local.dev.reset_payment_request_fixture: guard.prod.forbid local.dev.ready local.dev.demo_credentials.prepare
 	@$(LOCAL_ENV_ISOLATE) $(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
@@ -1221,3 +1233,18 @@ verify.local.dev.data_space_identity_enrollment.orm: guard.prod.forbid
 verify.local.dev.data_space_uncached_membership.orm: guard.prod.forbid
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  MODULE=smart_core TEST_TAGS="data_space_uncached_membership" local.dev.test
+
+# Owner-authorized independent control/target rehearsal. Never uses local.dev DBs.
+.PHONY: platform.database.rehearsal.prepare platform.database.rehearsal.preflight platform.database.rehearsal.exercise platform.database.rehearsal.continue platform.database.rehearsal.export platform.database.rehearsal.readback platform.database.rehearsal.recover platform.database.rehearsal.cleanup
+platform.database.rehearsal.prepare platform.database.rehearsal.preflight platform.database.rehearsal.exercise platform.database.rehearsal.continue platform.database.rehearsal.export platform.database.rehearsal.readback platform.database.rehearsal.recover platform.database.rehearsal.cleanup: guard.prod.forbid
+	@python3 scripts/ops/platform_database_rehearsal.py $(lastword $(subst ., ,$@))
+
+.PHONY: verify.local.dev.demo_action_roles.orm
+verify.local.dev.demo_action_roles.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_construction_demo TEST_TAGS="demo_action_roles" local.dev.test
+
+.PHONY: verify.local.dev.demo_loaded_chains.orm
+verify.local.dev.demo_loaded_chains.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_construction_demo TEST_TAGS="demo_loaded_chains" local.dev.test

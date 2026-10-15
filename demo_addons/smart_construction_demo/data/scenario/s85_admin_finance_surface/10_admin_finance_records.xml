@@ -58,7 +58,6 @@
       <field name="issue_authority">四川省住房和城乡建设厅</field>
       <field name="issue_date">2025-01-01</field>
       <field name="valid_until">2028-01-01</field>
-      <field name="state">done</field>
       <field name="description">S85 资料证照登记样例</field>
       <field name="result_note">证照已归档，可在资料证照菜单直接查看。</field>
     </record>
@@ -75,12 +74,12 @@
       <field name="borrow_date">2025-05-08</field>
       <field name="expected_return_date">2025-05-15</field>
       <field name="actual_return_date">2025-05-14</field>
-      <field name="state">done</field>
       <field name="description">S85 资料借阅样例</field>
       <field name="result_note">已按期归还。</field>
     </record>
 
     <record id="sc_demo_office_admin_085_leave" model="sc.office.admin.document">
+      <field name="department_id" ref="smart_construction_demo.sc_demo_department_001"/>
       <field name="name">S85 项目经理调休审批</field>
       <field name="fact_type">leave_request</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
@@ -91,12 +90,12 @@
       <field name="start_datetime">2025-05-12 01:00:00</field>
       <field name="end_datetime">2025-05-12 10:00:00</field>
       <field name="duration_days">1.0</field>
-      <field name="state">done</field>
       <field name="description">S85 人事行政请假样例</field>
       <field name="result_note">调休审批完成。</field>
     </record>
 
     <record id="sc_demo_office_admin_085_seal" model="sc.office.admin.document">
+      <field name="department_id" ref="smart_construction_demo.sc_demo_department_001"/>
       <field name="name">S85 项目章使用审批</field>
       <field name="fact_type">seal_use</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
@@ -107,7 +106,6 @@
       <field name="use_purpose">提交阶段性进度确认资料</field>
       <field name="use_date">2025-05-10</field>
       <field name="return_date">2025-05-10</field>
-      <field name="state">done</field>
       <field name="description">S85 印章审批样例</field>
       <field name="result_note">项目章已归还。</field>
     </record>
@@ -116,7 +114,7 @@
       <field name="name">S85 项目管理人员工资登记</field>
       <field name="fact_type">salary_registration</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
-      <field name="requester_id" ref="base.user_admin"/>
+      <field name="requester_id" ref="smart_construction_demo.user_sc_project_user"/>
       <field name="handler_id" ref="base.user_admin"/>
       <field name="business_date">2025-05-15</field>
       <field name="employee_user_id" ref="base.user_admin"/>
@@ -139,7 +137,7 @@
       <field name="name">S85 节点奖登记</field>
       <field name="fact_type">bonus</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
-      <field name="requester_id" ref="base.user_admin"/>
+      <field name="requester_id" ref="smart_construction_demo.user_demo_role_project_a_member"/>
       <field name="handler_id" ref="base.user_admin"/>
       <field name="business_date">2025-05-20</field>
       <field name="employee_user_id" ref="base.user_admin"/>

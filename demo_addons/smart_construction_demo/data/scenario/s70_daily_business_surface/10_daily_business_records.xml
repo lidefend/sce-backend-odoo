@@ -60,6 +60,15 @@
       <field name="note">S70 钢材采购合同明细</field>
     </record>
 
+    <record id="sc_demo_receipt_request_070_progress" model="payment.request">
+      <field name="type">receive</field>
+      <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
+      <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_out_010"/>
+      <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
+      <field name="amount">1200000.0</field>
+      <field name="date_request">2025-03-10</field>
+    </record>
+
     <record id="sc_demo_payment_request_070_material" model="payment.request">
       <field name="name">S70-PAY-REQ-001</field>
       <field name="type">pay</field>
@@ -81,7 +90,7 @@
        的函数，先例：s69/s70 的资金基线激活）用 demo 席位走完四段审批。 -->
   <data noupdate="0">
     <function model="payment.request" name="sc_demo_drive_approval">
-      <value model="payment.request" eval="obj([ref('smart_construction_demo.sc_demo_payment_request_070_material')]).ids"/>
+      <value model="payment.request" eval="obj([ref('smart_construction_demo.sc_demo_payment_request_070_material'), ref('smart_construction_demo.sc_demo_receipt_request_070_progress')]).ids"/>
     </function>
   </data>
 
@@ -117,8 +126,6 @@
       <field name="name">S70-EXP-001</field>
       <field name="claim_type">expense</field>
       <field name="state">draft</field>
-      <!-- 载体上下文携带 expense 事实权威 token 时，create() 不再回填默认
-           finance_identity_state（None 会触发 NOT NULL），须由载体显式提供。 -->
       <field name="finance_identity_state">normalized</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_vendor_concrete"/>
@@ -141,7 +148,7 @@
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
       <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_out_010"/>
-      <field name="payment_request_id" ref="smart_construction_demo.sc_demo_pay_req_010_001"/>
+      <field name="payment_request_id" ref="smart_construction_demo.sc_demo_receipt_request_070_progress"/>
       <field name="date_receipt">2025-03-10</field>
       <field name="document_no">S70-RECEIPT-001</field>
       <field name="receipt_type">工程进度款</field>
@@ -175,26 +182,11 @@
       <field name="note">S70 付款执行样例</field>
     </record>
 
-    <!-- 资金台账由产品权威令牌保护、不可手工创建；场景装载携带 demo 受治理载体
-         上下文，因此按产品自身的载体机制提供这条标准资金事实，而非绕过守卫。 -->
-    <record id="sc_demo_treasury_ledger_070_daily" model="sc.treasury.ledger">
-      <field name="name">S70-TL-001</field>
-      <field name="date">2025-03-13</field>
-      <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
-      <field name="direction">out</field>
-      <field name="amount">386000.0</field>
-      <field name="currency_id" ref="base.CNY"/>
-      <field name="state">posted</field>
-      <field name="source_kind">daily_line</field>
-      <field name="normalization_state">normalized</field>
-      <field name="note">S70 资金日报台账样例。</field>
-    </record>
-
+    <!-- 资金流水由正式付款登记产生，loader 在确认对账前关联实际流水。 -->
     <record id="sc_demo_treasury_reconciliation_070_daily" model="sc.treasury.reconciliation">
       <field name="name">S70-TR-001</field>
       <field name="source_kind">daily_line</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
-      <field name="treasury_ledger_id" ref="smart_construction_demo.sc_demo_treasury_ledger_070_daily"/>
       <field name="date_document">2025-03-13</field>
       <field name="document_no">S70-FUND-DAILY-001</field>
       <field name="account_name">项目基本户</field>
@@ -235,7 +227,6 @@
 
     <record id="sc_demo_tax_deduction_070_input" model="sc.tax.deduction.registration">
       <field name="name">S70-TAX-001</field>
-      <field name="state">deducted</field>
       <field name="finance_identity_state">normalized</field>
       <field name="document_no">S70-TAX-DOC-001</field>
       <field name="document_date">2025-03-16</field>

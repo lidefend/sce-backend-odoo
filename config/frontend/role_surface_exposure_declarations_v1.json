@@ -350,5 +350,16 @@
   "capability_reachable_by_no_role": [],
   "capability_reachable_by_no_role_reason": "（owner decision B，2026-10-07）原登记的 3 个产品配置入口（数据权限 menu_sc_product_data_permission_v1 / 系统参数 menu_sc_product_system_parameter_v1 / 编码规则 menu_sc_product_numbering_rule_v1）已按「可配置属产品功能」把 group_sc_cap_business_config_admin 加入其菜单/动作声明组与 ACL，业务配置管理员角色（group_sc_role_business_admin）闭包可达并交付；正式 4 个业务角色的发布面仍刻意不含这些管理面入口，故本项为空。",
   "authority_pending_entries": {},
-  "authority_pending_reason": "（2026-10-07）原登记的 3 个 account 原生入口（日记账分录 / 日记账项目 / 会计科目表）的 role_authority 与 action_xmlid 已按契约实例 contracts/generated/product_view_structure_contract.json 的 resolved_view_action 与日常运行态菜单链解析并写回 docs/product/frontend_business_entry_acceptance_v1.csv；不再有待解析入口（authority_pending_entries 为空）。"
+  "authority_pending_reason": "（2026-10-07）原登记的 3 个 account 原生入口（日记账分录 / 日记账项目 / 会计科目表）的 role_authority 与 action_xmlid 已按契约实例 contracts/generated/product_view_structure_contract.json 的 resolved_view_action 与日常运行态菜单链解析并写回 docs/product/frontend_business_entry_acceptance_v1.csv；不再有待解析入口（authority_pending_entries 为空）。",
+  "non_action_delivery_entries": {
+    "smart_construction_core.menu_sc_workspace_home": {
+      "scene_key": "workspace.home",
+      "route": "/s/workspace.home",
+      "entry_target_type": "scene",
+      "delivery_bucket": "released_product_policy",
+      "reason": "（2026-10-15）发布面 standard 的 90 个叶子中，角色首页由 scene 交付（entry_target.type=scene，无 action），矩阵按 action_xmlid 寻址入口，因此它无法进入 89 项可执行入口 CSV；它是已发布的产品交付载体而非缺口，必须在验收口径中显式登记，避免发布面与验收宇宙静默分叉。",
+      "evidence": "scripts/verify/baselines/formal_business_product_menu_policy_v1.json#policy_strategy.menu_count_by_product.construction.standard=90；docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md（daily ba7577c2 只读探针 nav_leaf_count=90 / nav_action_count=89 / nav_gate_kept_leaf_count=90 / nav_required_path_misses=[]）"
+    }
+  },
+  "non_action_delivery_reason": "（2026-10-15）发布面叶子并非全部可由 action 寻址：无 action 的 scene 交付入口必须在此登记，且登记数（1）加验收宇宙（89）必须等于产品契约声明的发布面（90），否则 role_surface_exposure_declaration_guard 失败。"
 }
