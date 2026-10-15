@@ -139,6 +139,93 @@ class DeclarationTests(unittest.TestCase):
         failures = duty_entry.validate_declaration(declaration)
         self.assertTrue(any("a declared gap needs gap_owner_task" in f for f in failures))
 
+    def test_a_duty_that_keeps_the_bootstrap_role_must_adopt_its_credential(self):
+        """An existing role cannot be handed a generated secret.
+
+        The 2026-10-16 demo refresh rendered a fresh application secret for the
+        ``odoo`` role already living inside ``sc_dev_db_data``. The role kept the
+        password it was created with, the application was recreated with the
+        rendered one, and the only visible symptom was an application that
+        restarted forever while every other duty reported healthy. A declaration
+        that says "the bootstrap role is still the application role" therefore
+        has to say where that role's credential comes from.
+        """
+        declaration = shipped()
+        picked(declaration, "demo").pop("credential_source")
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(any("can only adopt its credential" in f for f in failures), failures)
+
+    def test_the_shipped_demo_duty_adopts_the_declared_environment_credential(self):
+        source = picked(shipped(), "demo")["credential_source"]
+        self.assertEqual(source["env_file"], shipped()["frontend_build_env_file"])
+        self.assertEqual(source["key"], "DB_PASSWORD")
+        self.assertEqual(source["owning_task"], "DAILY-RUNTIME-DEMO-APP-ROLE-01")
+
+    def test_an_adopted_credential_source_needs_a_reason_and_an_owner(self):
+        declaration = shipped()
+        source = picked(declaration, "demo")["credential_source"]
+        source["owning_task"] = ""
+        source["reason"] = ""
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(any("credential_source needs reason" in f for f in failures), failures)
+        self.assertTrue(any("credential_source needs owning_task" in f for f in failures), failures)
+
+    def test_an_adopted_credential_source_must_be_one_absolute_file(self):
+        declaration = shipped()
+        source = picked(declaration, "demo")["credential_source"]
+        source["env_file"] = "relative/.env.dev"
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(any("must be one absolute file path" in f for f in failures), failures)
+
+    def test_an_adopted_credential_may_not_be_written_by_a_duty_or_this_checkout(self):
+        """The adopted credential must not be one this entry can render away.
+
+        A source inside the duty namespace would be rewritten by the next duty
+        render, and a source inside this checkout would let a branch change what
+        the running duty authenticates with.
+        """
+        declaration = shipped()
+        source = picked(declaration, "demo")["credential_source"]
+        source["env_file"] = os.path.join(str(duty_entry.ROOT), "ops", "duty.env")
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(any("outside this repository checkout" in f for f in failures), failures)
+        source["env_file"] = os.path.join(declaration["ops_root"], "demo.env")
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(
+            any("outside the governed duty namespace" in f for f in failures), failures
+        )
+
+    def test_an_adopted_credential_key_must_be_duty_secret_material(self):
+        declaration = shipped()
+        source = picked(declaration, "demo")["credential_source"]
+        source["key"] = "DB_NAME"
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(any("is not duty secret material" in f for f in failures), failures)
+        source["key"] = ""
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(any("credential_source.key is required" in f for f in failures), failures)
+
+    def test_an_adopted_credential_source_names_only_declared_keys(self):
+        declaration = shipped()
+        picked(declaration, "demo")["credential_source"]["password"] = "x"
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(any("names unknown keys password" in f for f in failures), failures)
+
+    def test_a_duty_that_creates_its_own_role_owns_its_own_credential(self):
+        """Creating a role and adopting one are different situations.
+
+        A ``to_be_created`` duty creates its role with the credential it renders,
+        so adopting one would make an object this entry owns depend on a foreign
+        file. The refusal keeps adoption from becoming a general escape hatch.
+        """
+        declaration = prospective(shipped(), "platform_control")
+        picked(declaration, "platform_control")["credential_source"] = {
+            "env_file": "/opt/projects/repos/sce-product-odoo/.env.dev",
+            "key": "DB_PASSWORD", "reason": "x", "owning_task": "y",
+        }
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(any("owns the credential it creates" in f for f in failures), failures)
+
     def test_two_duties_may_not_share_one_data_volume(self):
         declaration = shipped()
         picked(declaration, "customer_tenant_dev")["cluster"]["data_volume"] = "sc_dev_db_data"
@@ -933,6 +1020,32 @@ class ServiceFaceTests(unittest.TestCase):
         })
         self.assertFalse(verdict["platform_control_face_carries_no_industry_module"])
 
+    def test_a_role_that_already_exists_cannot_be_served_by_another_secret(self):
+        """The designated credential is a checked fact, not an assumption.
+
+        The 2026-10-16 demo refresh recreated the application with a freshly
+        rendered password while the ``odoo`` role inside ``sc_dev_db_data`` kept
+        the one it was created with: every service but the application reported
+        healthy, and the only symptom was an application that restarted forever.
+        Reading the designated credential back makes that disagreement a failed
+        assertion instead of an incident.
+        """
+        accepted = {"designated": True, "authenticated": True, "role": "odoo",
+                    "database": "sc_demo", "source": "/opt/projects/repos/sce-product-odoo/.env.dev",
+                    "from_source": True, "error": ""}
+        verdict = self.verdict(self.initialized(self.declaration(), "demo"),
+                              application_credential=accepted)
+        self.assertTrue(verdict["declared_application_credential_authenticates_the_cluster"])
+
+        rejected = dict(accepted, authenticated=False,
+                        error='FATAL:  password authentication failed for user "odoo"')
+        verdict = self.verdict(self.initialized(self.declaration(), "demo"),
+                              application_credential=rejected)
+        self.assertFalse(verdict["declared_application_credential_authenticates_the_cluster"])
+
+        unobserved = self.verdict(self.initialized(self.declaration(), "demo"))
+        self.assertNotIn("declared_application_credential_authenticates_the_cluster", unobserved)
+
     def test_a_cluster_only_duty_that_runs_an_application_is_refused(self):
         row = picked(as_cluster_only(self.declaration(), "customer_tenant_dev"),
                      "customer_tenant_dev")
@@ -1557,6 +1670,268 @@ class CarrierExecutionTests(unittest.TestCase):
                          ["platform_control", "customer_tenant_dev"])
         self.assertIn("TimeoutExpired", report["duties"][0]["error"])
         self.assertEqual(report["duties"][1]["error"], "")
+
+
+class ProbeSubprocess:
+    """Stands in for ``subprocess`` for the application credential probe."""
+
+    def __init__(self, *, address="192.168.32.9", accepts=True):
+        self.commands = []
+        self.environments = []
+        self.address = address
+        self.accepts = accepts
+
+    def run(self, command, **kwargs):
+        self.commands.append([str(item) for item in command])
+        self.environments.append(dict(kwargs.get("env") or {}))
+        if list(command[:2]) == ["docker", "inspect"] and "--format" in command:
+            return FakeResult(stdout=self.address + " \n")
+        if self.accepts:
+            return FakeResult(stdout="1\n")
+        return FakeResult(
+            stdout="",
+            stderr='psql: error: connection to server failed: FATAL:  password authentication failed for user "odoo"',
+            returncode=2,
+        )
+
+
+class ApplicationCredentialTests(unittest.TestCase):
+    """A duty that adopts a cluster must adopt that cluster's credential.
+
+    The 2026-10-16 demo refresh recreated the application against a freshly
+    rendered secret while the ``odoo`` role inside ``sc_dev_db_data`` kept the
+    password it was created with. Every service but the application reported
+    healthy, so the disagreement had to be found by reading the application's
+    log. These tests pin both halves of the fix: the credential the declaration
+    designates is probed over the network path the application itself uses, and
+    the rendered duty environment is converged onto that designation.
+    """
+
+    COMPOSE_TEXT = "services:\n  db:\n    image: postgres:15\n"
+    ENV_TEMPLATE = (
+        "DB_NAME=@DB_NAME@\n"
+        "DB_USER=@DB_USER@\n"
+        "DB_PASSWORD=@DB_PASSWORD@\n"
+        "DB_MAINTENANCE_USER=@DB_MAINTENANCE_USER@\n"
+        "DB_MAINTENANCE_PASSWORD=@DB_MAINTENANCE_PASSWORD@\n"
+        "ADMIN_PASSWD=@ADMIN_PASSWD@\n"
+        "JWT_SECRET=@JWT_SECRET@\n"
+        "SC_BOOTSTRAP_SECRET=@SC_BOOTSTRAP_SECRET@\n"
+        "LIST_DB=false\n"
+    )
+    ADOPTED = "a" * 64
+
+    def duty(self, source_env_file):
+        return {
+            "duty": "demo",
+            "database": "sc_demo",
+            "database_role": "odoo",
+            "dbfilter": "^sc_demo$",
+            "cluster": {"container": "sc-backend-odoo-dev-db-1",
+                        "compose_project": "sc-backend-odoo-dev",
+                        "data_volume": "sc_dev_db_data",
+                        "maintenance_role": "odoo"},
+            "storage": {"redis_data_volume": "sc_dev_redis_data",
+                        "odoo_data_volume": "sc_dev_odoo_data"},
+            "routing": {"odoo_loopback_port": 8070, "nginx_host_port": 18081},
+            "stack": {"compose_file": "config/ops/daily_runtime_duty_stack.yml",
+                      "env_template": "config/ops/daily_runtime_duty_stack.env",
+                      "runtime_env": "dev", "odoo_image": "odoo17-odoo:latest",
+                      "postgres_image": "postgres:15",
+                      "product_root": "/opt/projects/repos/sce-product-odoo",
+                      "frontend_dist_dir": "/opt/projects/repos/sce-product-odoo/frontend/apps/web/dist-dev",
+                      "demo_addons_root": "/opt/projects/runtime-addons-empty",
+                      "customer_addons_root": "/opt/projects/runtime-addons-empty",
+                      "services": ["db", "redis", "odoo", "nginx"],
+                      "modules": ["smart_construction_core"]},
+            "credential_source": {"env_file": source_env_file, "key": "DB_PASSWORD",
+                                  "reason": "the cluster predates this duty",
+                                  "owning_task": "DAILY-RUNTIME-DEMO-APP-ROLE-01"},
+        }
+
+    def carrier(self, callback, fake=None):
+        with tempfile.TemporaryDirectory() as ops_root:
+            import hashlib
+
+            payload = {
+                "mode": "plan", "phase": "plan",
+                "product_root": "/opt/projects/repos/sce-product-odoo",
+                "ops_root": ops_root,
+                "platform_admin_database": "sc_platform_control",
+                "frontend_build_env_file": os.path.join(ops_root, "absent-build.env"),
+                "source_revision": "a" * 40,
+                "compose_sha256": hashlib.sha256(self.COMPOSE_TEXT.encode("utf-8")).hexdigest(),
+                "stack": {"compose_text": self.COMPOSE_TEXT},
+                "env_template": self.ENV_TEMPLATE,
+                "data_destination": "/var/lib/postgresql/data",
+                "duties": [],
+            }
+            rendered = duty_entry.render_remote_program(payload)
+            namespace = {"__name__": "__carrier__"}
+            if fake is None:
+                with contextlib.redirect_stdout(io.StringIO()):
+                    exec(compile(rendered, "<remote-carrier>", "exec"), namespace)
+                return callback(namespace, ops_root)
+            saved = sys.modules.get("subprocess")
+            sys.modules["subprocess"] = fake
+            try:
+                # The carrier binds ``subprocess`` at import time, so the stand-in
+                # has to be installed *before* the rendered program is executed.
+                with contextlib.redirect_stdout(io.StringIO()):
+                    exec(compile(rendered, "<remote-carrier>", "exec"), namespace)
+                return callback(namespace, ops_root)
+            finally:
+                if saved is None:
+                    sys.modules.pop("subprocess", None)
+                else:
+                    sys.modules["subprocess"] = saved
+
+    def source_file(self, root, password):
+        path = os.path.join(root, "environment.env")
+        with open(path, "w") as stream:
+            stream.write("DB_PASSWORD=%s\nOTHER=value\n" % (password,))
+        return path
+
+    def test_the_probe_leaves_the_container_and_comes_back_over_the_network(self):
+        """A probe that stays inside the database proves nothing.
+
+        ``pg_hba`` grants ``trust`` on the local socket and on ``127.0.0.1``, so
+        a probe that connects there succeeds with *any* password -- which is
+        exactly the false pass this test was written after. The probe has to
+        reach the cluster's own network address, and the secret must travel in
+        the process environment rather than in an argument vector every account
+        on the host can read.
+        """
+        with tempfile.TemporaryDirectory() as root:
+            source = self.source_file(root, self.ADOPTED)
+            fake = ProbeSubprocess()
+
+            def run(namespace, _ops_root):
+                return namespace["application_credential_facts"](self.duty(source))
+
+            facts = self.carrier(run, fake)
+        self.assertTrue(facts["designated"])
+        self.assertTrue(facts["from_source"])
+        self.assertTrue(facts["authenticated"], facts)
+        self.assertEqual(facts["source"], source)
+        probe = fake.commands[-1]
+        self.assertEqual(probe[:3], ["docker", "exec", "-e"])
+        self.assertIn("PGPASSWORD", probe)
+        self.assertIn("192.168.32.9", probe)
+        self.assertNotIn("/var/lib/postgresql/data", probe)
+        self.assertFalse(
+            [item for item in probe if item in ("127.0.0.1", "localhost", "::1")],
+            "the probe must not connect where pg_hba grants trust",
+        )
+        self.assertNotIn(self.ADOPTED, " ".join(probe))
+        self.assertEqual(fake.environments[-1].get("PGPASSWORD"), self.ADOPTED)
+
+    def test_a_rejected_designated_credential_is_reported_not_defaulted(self):
+        with tempfile.TemporaryDirectory() as root:
+            source = self.source_file(root, self.ADOPTED)
+            fake = ProbeSubprocess(accepts=False)
+
+            def run(namespace, _ops_root):
+                return namespace["application_credential_facts"](self.duty(source))
+
+            facts = self.carrier(run, fake)
+        self.assertTrue(facts["designated"])
+        self.assertFalse(facts["authenticated"])
+        self.assertIn("password authentication failed", facts["error"])
+
+    def test_a_source_without_the_declared_key_fails_closed(self):
+        with tempfile.TemporaryDirectory() as root:
+            source = os.path.join(root, "environment.env")
+            with open(source, "w") as stream:
+                stream.write("SOMETHING_ELSE=value\n")
+            fake = ProbeSubprocess()
+
+            def run(namespace, _ops_root):
+                return namespace["application_credential_facts"](self.duty(source))
+
+            facts = self.carrier(run, fake)
+        self.assertFalse(facts["designated"])
+        self.assertIsNone(facts["authenticated"])
+        self.assertIn("carries no DB_PASSWORD", facts["error"])
+        self.assertEqual(fake.commands, [], "an unresolved credential must not be probed")
+
+    def test_a_cluster_without_a_network_address_is_not_probed(self):
+        with tempfile.TemporaryDirectory() as root:
+            source = self.source_file(root, self.ADOPTED)
+            fake = ProbeSubprocess(address="")
+
+            def run(namespace, _ops_root):
+                return namespace["application_credential_facts"](self.duty(source))
+
+            facts = self.carrier(run, fake)
+        self.assertTrue(facts["designated"])
+        self.assertIsNone(facts["authenticated"])
+        self.assertIn("has no network address", facts["error"])
+
+    def test_the_rendered_environment_is_converged_onto_the_designated_credential(self):
+        """The rendered duty environment must equal what the role already accepts.
+
+        A rendered file that disagrees with the declaration's designated source
+        is the defect this entry existed to prevent, so it is rewritten: the
+        authority for a cluster this duty did not create is the file the
+        declaration names, not whatever secret an earlier render generated.
+        """
+        with tempfile.TemporaryDirectory() as root:
+            source = self.source_file(root, self.ADOPTED)
+            duty = self.duty(source)
+
+            def run(namespace, ops_root):
+                stale = os.path.join(ops_root, "demo.env")
+                with open(stale, "w") as stream:
+                    stream.write("DB_PASSWORD=%s\nDB_MAINTENANCE_PASSWORD=%s\n"
+                                 % ("b" * 64, "c" * 64))
+                os.chmod(stale, 0o600)
+                facts = namespace["materialise_stack_files"](duty)
+                return (facts, dict(namespace["read_env_file"](stale)),
+                        os.stat(stale).st_mode & 0o777)
+
+            facts, rendered, mode = self.carrier(run)
+        self.assertTrue(facts["credentials_created"])
+        self.assertEqual(rendered["DB_PASSWORD"], self.ADOPTED)
+        self.assertEqual(rendered["DB_MAINTENANCE_PASSWORD"], self.ADOPTED)
+        self.assertNotIn("b" * 64, json.dumps(rendered))
+        self.assertNotIn("c" * 64, json.dumps(rendered))
+        self.assertEqual(facts["credential_adopted_from"], source)
+        self.assertEqual(facts["credentials_mode"], "0o600")
+        self.assertEqual(mode, 0o600)
+
+    def test_a_duty_that_creates_its_own_role_still_generates_its_own_secret(self):
+        """Adoption is not a general escape hatch: no source, no adoption."""
+        with tempfile.TemporaryDirectory() as root:
+            duty = self.duty(os.path.join(root, "absent.env"))
+            duty.pop("credential_source")
+            duty["cluster"]["maintenance_role"] = "sc_demo_maintenance"
+
+            def run(namespace, ops_root):
+                values, path, created = namespace["duty_credentials"](duty)
+                return values, os.stat(path).st_mode & 0o777
+
+            values, mode = self.carrier(run)
+        self.assertTrue(values["DB_PASSWORD"])
+        self.assertEqual(len(values["DB_PASSWORD"]), 64)
+        self.assertNotEqual(values["DB_PASSWORD"], values["DB_MAINTENANCE_PASSWORD"])
+        self.assertEqual(mode, 0o600)
+
+    def test_one_role_has_one_password(self):
+        """The declared gap is one login, so two duty keys cannot disagree."""
+        with tempfile.TemporaryDirectory() as root:
+            duty = self.duty(os.path.join(root, "absent.env"))
+            duty.pop("credential_source")
+
+            def run(namespace, ops_root):
+                stale = os.path.join(ops_root, "demo.env")
+                with open(stale, "w") as stream:
+                    stream.write("DB_PASSWORD=%s\nDB_MAINTENANCE_PASSWORD=%s\n"
+                                 % ("d" * 64, "e" * 64))
+                return namespace["duty_credentials"](duty)[0]
+
+            values = self.carrier(run)
+        self.assertEqual(values["DB_PASSWORD"], values["DB_MAINTENANCE_PASSWORD"])
 
 
 if __name__ == "__main__":

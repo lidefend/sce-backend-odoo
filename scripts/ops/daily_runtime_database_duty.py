@@ -90,6 +90,14 @@ SECRET_KEYS = (
     "DB_PASSWORD", "DB_MAINTENANCE_PASSWORD", "ADMIN_PASSWD", "JWT_SECRET",
     "SC_BOOTSTRAP_SECRET",
 )
+#: A duty that adopts a cluster it did not create cannot mint its own
+#: application credential: the role already exists inside the cluster's data
+#: volume and its password is not recoverable from the cluster. Such a duty
+#: names the file that owns that credential instead, and the entry adopts the
+#: declared key from it rather than generating a second secret the existing
+#: role would never accept.
+CREDENTIAL_SOURCE_KEYS = ("env_file", "key", "reason", "owning_task")
+DEFAULT_CREDENTIAL_SOURCE_KEY = "DB_PASSWORD"
 #: The duty env keys whose readback proves the rendered file describes *this*
 #: duty; a mismatch means the file on the host is not the reviewed declaration.
 ENV_READBACK_KEYS = (
@@ -318,6 +326,7 @@ def validate_declaration(declaration):
         failures.extend(_validate_section_11(name, duty))
         failures.extend(_validate_service_face(name, duty))
         failures.extend(_validate_scope(name, duty, compliance))
+        failures.extend(_validate_credential_source(name, duty, ops_root))
 
         for key, value in (
             ("duty", name), ("database", database), ("database_role", role),
@@ -546,6 +555,77 @@ def _validate_scope(name, duty, compliance):
         # Creating an empty customer database is authorized; loading customer
         # data into it belongs to the user module, not to this entry.
         pass
+    return failures
+
+
+def _validate_credential_source(name, duty, ops_root):
+    """A duty that adopts an existing cluster must name who owns its credential.
+
+    The 2026-10-16 demo failure was not a wrong stack definition: the declaration
+    named a cluster that already existed, and the entry minted a *fresh*
+    application secret for the role already living inside that cluster's data
+    volume. The rendered environment then asked the application to authenticate
+    with a password its own database rejects, and every readback but the
+    application reported the duty healthy. Two rules make that shape
+    unreachable: an existing shared-bootstrap role can only be adopted, and an
+    adopted credential is named by the declaration rather than generated.
+    """
+    failures = []
+    custody = duty.get("custody") or {}
+    shared_bootstrap = (
+        custody.get("role_compliance") == "declared_gap"
+        and custody.get("gap_kind") == "shared_bootstrap_role"
+    )
+    source = duty.get("credential_source")
+    if source is None:
+        if shared_bootstrap:
+            failures.append(
+                "duty %s: an application role that is still the cluster bootstrap role already "
+                "exists inside the data volume, so this entry can only adopt its credential; "
+                "declare credential_source instead of letting a generated secret be rendered"
+                % (name,)
+            )
+        return failures
+    if custody.get("role_compliance") == "to_be_created":
+        failures.append(
+            "duty %s: a duty that is still to be created owns the credential it creates; "
+            "credential_source only describes a cluster that already exists" % (name,)
+        )
+    if not isinstance(source, dict):
+        failures.append("duty %s: credential_source must be an object" % (name,))
+        return failures
+    unknown = sorted(set(source) - set(CREDENTIAL_SOURCE_KEYS))
+    if unknown:
+        failures.append(
+            "duty %s: credential_source names unknown keys %s" % (name, ",".join(unknown))
+        )
+    env_file = str(source.get("env_file") or "")
+    if not env_file.startswith("/") or env_file.endswith("/"):
+        failures.append(
+            "duty %s: credential_source.env_file must be one absolute file path" % (name,)
+        )
+    else:
+        resolved = os.path.normpath(env_file)
+        for boundary, label in (
+            (os.path.normpath(str(ops_root)), "the governed duty namespace"),
+            (str(ROOT), "this repository checkout"),
+        ):
+            if resolved == boundary or resolved.startswith(boundary + os.sep):
+                failures.append(
+                    "duty %s: credential_source.env_file must live outside %s, so the credential "
+                    "this duty adopts is not one a duty render or this checkout writes"
+                    % (name, label)
+                )
+    key = str(source.get("key") or "")
+    if not key:
+        failures.append("duty %s: credential_source.key is required" % (name,))
+    elif key not in SECRET_KEYS:
+        failures.append(
+            "duty %s: credential_source.key %s is not duty secret material" % (name, key)
+        )
+    for field in ("reason", "owning_task"):
+        if not str(source.get(field) or "").strip():
+            failures.append("duty %s: credential_source needs %s" % (name, field))
     return failures
 
 
@@ -791,16 +871,84 @@ def credentials_path(duty):
     return os.path.join(OPS_ROOT, duty["duty"] + ".env")
 
 
+def credential_source(duty):
+    """The declared owner of an adopted application credential, if any."""
+    source = duty.get("credential_source")
+    if not isinstance(source, dict) or not source:
+        return {}
+    return {
+        "env_file": str(source.get("env_file") or ""),
+        "key": str(source.get("key") or DEFAULT_CREDENTIAL_SOURCE_KEY),
+        "reason": str(source.get("reason") or ""),
+        "owning_task": str(source.get("owning_task") or ""),
+    }
+
+
+def declared_application_credentials(duty):
+    """The application credential the declaration designates, and where it came from.
+
+    One resolution point for "which password will this duty's application
+    authenticate with": a duty that adopts a cluster it did not create names the
+    file that owns that cluster's existing role credential, and both the
+    credential readback and the plan-time authentication probe resolve the same
+    value through here. Rendering a *second* secret for a role that already
+    exists inside a data volume is what recreated the demo application against a
+    password its own database rejects (2026-10-16): every service reported
+    healthy while the application restarted forever.
+    """
+    source = credential_source(duty)
+    if source:
+        values = read_env_file(source["env_file"])
+        password = values.get(source["key"], "")
+        resolved = {"source": source["env_file"], "source_key": source["key"],
+                    "from_source": True, "error": ""}
+        if not password:
+            resolved["error"] = (
+                "the declared credential source %s carries no %s"
+                % (source["env_file"], source["key"])
+            )
+        resolved["DB_PASSWORD"] = password
+        resolved["DB_MAINTENANCE_PASSWORD"] = password
+        return resolved
+    path = credentials_path(duty)
+    values = read_env_file(path)
+    password = values.get("DB_PASSWORD", "")
+    maintenance = values.get("DB_MAINTENANCE_PASSWORD", "") or password
+    if duty["cluster"]["maintenance_role"] == duty["database_role"]:
+        # The only accepted declared gap is "the bootstrap role is still the
+        # application role", and one role has one password: two duty keys can
+        # never carry different values for the same login.
+        maintenance = password
+    return {"source": path, "source_key": "DB_PASSWORD", "from_source": False,
+            "error": "", "DB_PASSWORD": password, "DB_MAINTENANCE_PASSWORD": maintenance}
+
+
 def duty_credentials(duty):
     """Read or create the governed identity and secret material of one duty."""
     ensure_ops_root()
     path = credentials_path(duty)
     values = read_env_file(path)
     created = False
+    source = credential_source(duty)
+    if source:
+        adopted = declared_application_credentials(duty)
+        if adopted.get("error"):
+            raise RuntimeError("DAILY_DUTY_CREDENTIAL_SOURCE:%s" % (adopted["error"],))
+        for key in ("DB_PASSWORD", "DB_MAINTENANCE_PASSWORD"):
+            if values.get(key) != adopted[key]:
+                # The declared source is the authority for a cluster this duty
+                # did not create. A duty environment that disagrees with it is
+                # the 2026-10-16 shape, so it is converged rather than kept.
+                values[key] = adopted[key]
+                created = True
     for key in SECRET_KEYS:
         if not values.get(key):
             values[key] = secrets.token_hex(32)
             created = True
+    if duty["cluster"]["maintenance_role"] == duty["database_role"] and (
+            values.get("DB_MAINTENANCE_PASSWORD") != values.get("DB_PASSWORD")):
+        values["DB_MAINTENANCE_PASSWORD"] = values["DB_PASSWORD"]
+        created = True
     for key, value in (("DB_NAME", duty["database"]),
                        ("DB_USER", duty["database_role"]),
                        ("DB_MAINTENANCE_USER", duty["cluster"]["maintenance_role"])):
@@ -879,6 +1027,7 @@ def materialise_stack_files(duty):
     if read_text(env_path) != rendered:
         write_file(env_path, rendered)
     observed = read_env_file(env_path)
+    source = credential_source(duty)
     return {
         "compose_path": compose_path,
         "compose_sha256": digest,
@@ -887,6 +1036,8 @@ def materialise_stack_files(duty):
         "env_sha256": hashlib.sha256(read_text(env_path).encode("utf-8")).hexdigest(),
         "credentials_path": credential_path,
         "credentials_created": created,
+        "credential_adopted_from": source.get("env_file", ""),
+        "credential_adopted_key": source.get("key", ""),
         "credentials_mode": oct(os.stat(credential_path).st_mode & 0o777),
         "env_mode": oct(os.stat(env_path).st_mode & 0o777),
         "env_keys": {key: observed.get(key, "") for key in ENV_READBACK_KEYS},
@@ -1010,6 +1161,62 @@ def application_config_facts(duty):
         facts["addons_path"].append(path)
         if marker == "missing":
             facts["missing_addons_roots"].append(path)
+    return facts
+
+
+def container_network_address(container):
+    """The cluster address the application itself connects to.
+
+    The probe has to leave the container and come back in over the network the
+    application uses: ``pg_hba`` grants ``trust`` on the local socket and on
+    ``127.0.0.1``, so a probe that stays inside the database container succeeds
+    with *any* password and proves nothing about the credential the application
+    is rendered with.
+    """
+    result = run(["docker", "inspect", "--format",
+                  "{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}", container])
+    if result.returncode:
+        return ""
+    addresses = [item for item in (result.stdout or "").split() if item]
+    return addresses[0] if addresses else ""
+
+
+def application_credential_facts(duty):
+    """Whether the credential the declaration designates reaches the cluster.
+
+    A duty that adopts a cluster it did not create cannot mint its own
+    application credential: the role already exists inside the data volume, its
+    password is only recoverable from the file the declaration names, and a
+    generated replacement is not "a new secret" -- it is an application that can
+    never connect. Probing the designated credential over the application's own
+    network path turns that from a restart loop discovered after a refresh into
+    a plan-time fact.
+    """
+    facts = {"designated": False, "authenticated": None, "role": duty["database_role"],
+             "database": duty["database"], "source": "", "from_source": False, "error": ""}
+    designated = declared_application_credentials(duty)
+    facts["source"] = designated.get("source", "")
+    facts["from_source"] = bool(designated.get("from_source"))
+    password = designated.get("DB_PASSWORD", "")
+    if not password:
+        facts["error"] = designated.get("error") or (
+            "the declaration designates no application credential")
+        return facts
+    facts["designated"] = True
+    container = duty["cluster"]["container"]
+    address = container_network_address(container)
+    if not address:
+        facts["error"] = "the declared cluster container has no network address"
+        return facts
+    probe = run(
+        ["docker", "exec", "-e", "PGPASSWORD", container,
+         "psql", "--no-align", "--tuples-only", "-U", duty["database_role"],
+         "-h", address, "-d", duty["database"], "--command", "SELECT 1"],
+        env=dict(os.environ, PGPASSWORD=password),
+    )
+    facts["authenticated"] = probe.returncode == 0 and (probe.stdout or "").strip() == "1"
+    if not facts["authenticated"]:
+        facts["error"] = (probe.stderr or probe.stdout or "").strip()[:300]
     return facts
 
 
@@ -1304,7 +1511,7 @@ def duty_entry(duty):
     entry = {"duty": duty["duty"], "cluster": None, "custody": None, "stack": None,
              "create": None, "bootstrap": None, "privileges": None, "initialize": None,
              "refresh": None, "route": None, "service": None, "application_config": None,
-             "error": ""}
+             "application_credential": None, "error": ""}
     if MODE == "apply" and PHASE in ("stack", "all"):
         if wants_creation:
             entry["stack"] = materialise_stack_files(duty)
@@ -1380,6 +1587,10 @@ def duty_entry(duty):
     entry["service"] = service_facts(duty)
     if "odoo" in [str(item) for item in duty["stack"]["services"]]:
         entry["application_config"] = application_config_facts(duty)
+    if (entry["cluster"].get("present") and entry["cluster"].get("running")
+            and entry["custody"].get("database_present")
+            and entry["custody"].get("role_present")):
+        entry["application_credential"] = application_credential_facts(duty)
     return entry
 
 
@@ -1394,12 +1605,13 @@ def salvage_entry(duty, error):
     entry = {"duty": duty["duty"], "cluster": None, "custody": None, "stack": None,
              "create": None, "bootstrap": None, "privileges": None, "initialize": None,
              "refresh": None, "route": None, "service": None, "application_config": None,
-             "error": "%s: %s" % (type(error).__name__, error)}
+             "application_credential": None, "error": "%s: %s" % (type(error).__name__, error)}
     try:
         entry["cluster"] = cluster_facts(duty["cluster"]["container"], duty)
         entry["service"] = service_facts(duty)
         if "odoo" in [str(item) for item in duty["stack"]["services"]]:
             entry["application_config"] = application_config_facts(duty)
+        entry["application_credential"] = application_credential_facts(duty)
     except Exception as readback:
         entry["readback_error"] = "%s: %s" % (type(readback).__name__, readback)
     return entry
@@ -1723,6 +1935,21 @@ def evaluate(duty, observation, declaration, *, phase="plan", initialize=False):
             {"database": duty["database"], "role": duty["database_role"],
              "public_schema_create": custody.get("public_schema_create"),
              "error": custody.get("public_schema_create_error", "")})
+    designated = observation.get("application_credential") or {}
+    if designated and custody.get("database_present") and custody.get("role_present"):
+        # A duty whose application role already exists inside the cluster can
+        # only be served by the credential that role already accepts. The
+        # 2026-10-16 demo refresh rendered a second secret, recreated the
+        # application, and left it restarting against a database that rejected
+        # it while every other assertion still passed. Reading the designated
+        # credential back over the application's own network path is what makes
+        # "the stack is rendered" and "the application can authenticate" two
+        # separate facts instead of one assumption.
+        add("declared_application_credential_authenticates_the_cluster",
+            designated.get("authenticated") is True,
+            {"database": designated.get("database"), "role": designated.get("role"),
+             "source": designated.get("source"), "from_declared_source": designated.get("from_source"),
+             "error": designated.get("error", "")})
     application = observation.get("application_config") or {}
     declared_runtime_env = str(duty["stack"]["runtime_env"])
     if "odoo" in declared_services and application.get("container"):

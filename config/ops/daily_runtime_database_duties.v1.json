@@ -111,6 +111,12 @@
         "gap_owner_task": "DAILY-RUNTIME-DEMO-APP-ROLE-01",
         "service_face": "initialized"
       },
+      "credential_source": {
+        "env_file": "/opt/projects/repos/sce-product-odoo/.env.dev",
+        "key": "DB_PASSWORD",
+        "reason": "The sc_demo cluster and its 'odoo' role predate this duty: the role lives inside the sc_dev_db_data volume, its password cannot be read back from the cluster, and the daily dev environment file that this declaration already names as frontend_build_env_file owns that credential. The duty therefore adopts the existing credential instead of rendering a second secret the existing role would never accept, which is the 2026-10-16 shape in which every service reported healthy while the application restarted against a database that rejected its password. Rotating this role to a duty-owned secret is the dedicated application-role change and is not performed here.",
+        "owning_task": "DAILY-RUNTIME-DEMO-APP-ROLE-01"
+      },
       "storage": {
         "compose_project": "sc-backend-odoo-dev",
         "odoo_data_volume": "sc_dev_odoo_data",
