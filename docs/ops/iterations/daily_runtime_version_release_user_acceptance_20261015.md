@@ -1672,3 +1672,82 @@ access for this duty: the lifecycle refuses to fabricate one
 **这不被静默“补一个入口”**：新增审批入口或写权限属于新的平台能力，超出所有者本轮“不要扩大范围”的裁定。
 必须先由所有者裁定“审批如何产生”（受治理入口，或明确限定范围的 P4 shell 程序 + 独立真实批准人），
 `provision` 才可能继续。
+
+## 独立复核 S2 收口（2026-10-15）
+
+B 线只读复核 `5f5c4dae..4450e674` 结论 `APPROVE_WITH_NOTES`，其中一条 **S2 必须先修**：
+
+登记的「控制库写入」没有测试接线，且既有断言指向相反目标。生产在
+`scripts/ops/daily_runtime_duty_database_registration.py:491` 用
+`register_command(control, base, …)`，而用例
+`test_the_register_command_carries_only_declared_facts` 传的是 `duty`
+并断言 `-d == duty["database"]`。把生产的 `control` 误写成 `duty` 时 31 项测试
+仍全绿，会把登记写进客户库、且是从客户库内部去写。
+
+### 修复（只动本入口与其定向测试）
+
+- **反例下移到接线层**：新增用例捕获 `execute()` 真正交给 `run_script` 的三条命令，
+  断言三次 shell 的 `-d` 都是 `CONTROL_DATABASE`，且唯一写入声明的
+  `PLATFORM_DATABASE_REGISTER_DB` 是 `CUSTOMER_DATABASE`、绝不是控制库。
+  形状用例改传 `control`，保留「shell 库 ≠ 声明库」的双半不变量。
+- **消除双重事实**：register 脚本模板改为绑定 `REGISTER_ENTRY_MODULE`
+  （`%(module)s`），原先被复核指出的死常量不再空转，模板与声明也不可能再漂移。
+- **分支顺序对齐**：register 分支现在**先证明未写入路径没有移动状态，再解释结果**，
+  与 readback 分支的既有纪律一致。
+- **替换名不副实的用例**：`test_a_half_written_registration_is_refused`
+  原先含空转 `wraps` 补丁且与另一个用例重复，改为真正的
+  「未写入却移动即拒绝」反例。
+
+### 反例验证（临时注入缺陷 → 确认失败 → 还原）
+
+| 注入 | 结果 |
+|---|---|
+| `:491` 的 `control` 改成 `duty` | 接线层用例 FAILED（`-d` 变成 `sc_tenant_baosheng_dev`） |
+| 删除 `after != before and not created` | 移动反例 FAILED（未抛错） |
+
+### 证据
+
+- `make verify.daily.duty.database_registration` → **33 项 OK**（原 31 项 + 2 项接线/绑定用例，1 项改写）。
+- `make ci.local.iteration` → `PASS change_state=dirty coverage=L1_only`。
+- 修复提交 `932adae9`。
+
+### 仍未关闭（S3，已登记、不阻断）
+
+`grants_business_data_scope is not False` 恒真守卫；`mode/writes` 为同模板常量
+（真正自证只读的是 before/after 比较）；`tool_identity` fail-open；复用路径会把
+非 `declared` 状态也报成 `reused`；栈挂载断言只是字面量包含；Make 的 reason 仍经 shell 展开。
+离线复核无法核验的运行时事实、`${SC_PRODUCT_ROOT}` 实际展开、容器内脚本是否等于本树摘要、
+ssh 写性，仍需在运行时受管回读中体现。
+
+---
+
+## 待办：请所有者提供正式审批账号（当前暂停点）
+
+本轮所有者裁定（选择 A）已授权统一受管入驻机制创建专用导入服务账号，并明确
+`APPROVED_BY` 不能是 AI 助手、不能由新建服务账号自批、不能拿任意 `admin` 顶替。
+但**审批事实本身目前没有生产创建入口**，且没有任何可核验的独立批准主体：
+
+- `sc.platform.maintenance.access` 只有模型内部 `_request_access()` / `_approve_access()`；
+- 无 ops 入口、无 handler、无 intent、无菜单、无表单视图，ACL 对两个模型只给安全管理员只读；
+- `smart_core.group_smart_core_security_admin` 当前 **0 成员**；
+- 控制面唯一活跃内部用户是被所有者禁止作为审批人的通用 `admin`。
+
+因此 `provision` 在**创建任何东西之前**就被拒绝（不是 `grant` 之前），机制不放松：
+
+```
+BLOCKED the platform control database holds no approved, in-window maintenance
+access for this duty: the lifecycle refuses to fabricate one
+```
+
+**请所有者二选一：**
+
+1. 提供一个**可核验的正式审批账号**（须独立于请求人、持 `smart_core.group_smart_core_security_admin`），
+   并说明本轮授权如何绑定为该审批的依据；或
+2. 通过**现有认证入口**完成批准。
+
+同时需裁定「审批如何产生」：新建受治理入口（新平台能力），还是明确限定范围的
+P4 shell 程序 + 独立真实批准人。**在这两项落实前，不再触发任何写路径。**
+
+获批后按既定顺序继续：
+`remote_provision` → 回读新身份 → `remote_plan` → `remote_grant` →
+`remote_import` → `remote_verify` → 对账 → `remote_revoke` → B 线独立复核 → 主线集成。
