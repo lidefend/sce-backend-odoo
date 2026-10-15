@@ -1,0 +1,43 @@
+{
+  "schema_version": "daily_runtime_tenant_recovery.v1",
+  "duty": "customer_tenant_dev",
+  "task_id": "DAILY-RUNTIME-TENANT-RECOVERY-01",
+  "environment_class": "DAILY_RUNTIME_TENANT_ENVIRONMENT",
+  "data_authority": "CUSTOMER_TENANT",
+  "database_role": "sc_tenant_baosheng_dev_app",
+  "backup_id_prefix": "sc_tenant_baosheng_dev",
+  "source_repository": "/opt/projects/repos/sce-product-odoo",
+  "sentinel_tables": [
+    "res_company",
+    "res_users",
+    "project_project",
+    "construction_contract",
+    "payment_request",
+    "ir_attachment",
+    "ir_module_module"
+  ],
+  "sample_tables": [
+    "project_project",
+    "construction_contract",
+    "payment_request",
+    "ir_attachment"
+  ],
+  "relation_sample": {
+    "table": "payment_request",
+    "columns": [
+      "project_id",
+      "contract_id"
+    ],
+    "limit": 100
+  },
+  "upgrade_contract": {
+    "database_migration_declared": true,
+    "versioned_migration_required": true,
+    "clone_rehearsal_required": true,
+    "paired_backup_required": true,
+    "fixture_write_allowed": false,
+    "demo_data_write_allowed": false,
+    "database_recreate_required": false,
+    "filestore_recreate_required": false
+  }
+}

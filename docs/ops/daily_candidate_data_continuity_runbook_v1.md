@@ -131,3 +131,53 @@ database UUID, aggregate count floors, selected technical sample IDs and
 relations, attachment readability, existing active-user state, company/role
 boundaries, and orphan statistics. Do not demand a globally static database
 while users and background jobs remain active.
+
+## Duty-scoped recovery points (`daily.runtime.duty.recovery.*`)
+
+A duty is one database with exactly one owner: the platform control plane, the
+demo, or one customer development tenant. Each duty needs its own paired
+recovery point before its first business-data write.
+
+Identity for these entries has exactly one owner:
+`config/ops/daily_runtime_database_duties.v1.json`. The tool derives the
+compose project, containers, volumes, application role, filestore scope,
+backup namespace and exact database filter from that declaration, and a duty
+contract may only carry assertion configuration (sentinel tables, sample
+tables, relationship sample, backup-id prefix, task id). A contract that
+restates a conflicting identity is refused, so there is no second source of
+truth for "which database is this".
+
+The tenant contract is
+`scripts/ops/daily_runtime_tenant_recovery_contract_v1.json`, bound to duty
+`customer_tenant_dev` (`sc_tenant_baosheng_dev`, application role
+`sc_tenant_baosheng_dev_app`, backup namespace
+`/data/backups/daily-tenant-baosheng-dev`). This entry is remote-only: the duty
+storage namespaces exist on the daily server, not in the local iteration
+profile.
+
+```bash
+make daily.runtime.duty.recovery.remote_baseline \
+  DAILY_CANDIDATE_SSH_HOST=sc-root
+
+make daily.runtime.duty.recovery.remote_backup \
+  DAILY_CANDIDATE_SSH_HOST=sc-root \
+  CONFIRM_DAILY_CANDIDATE_BACKUP=BACKUP_DAILY_CANDIDATE_PAIRED_STATE
+
+make daily.runtime.duty.recovery.remote_validate \
+  DAILY_CANDIDATE_SSH_HOST=sc-root \
+  DAILY_DUTY_RECOVERY_BACKUP_DIR=/data/backups/daily-tenant-baosheng-dev/sc_tenant_baosheng_dev-<stamp>-<hex>
+
+make daily.runtime.duty.recovery.remote_restore_drill \
+  DAILY_CANDIDATE_SSH_HOST=sc-root \
+  DAILY_DUTY_RECOVERY_BACKUP_DIR=/data/backups/daily-tenant-baosheng-dev/sc_tenant_baosheng_dev-<stamp>-<hex> \
+  CONFIRM_DAILY_CANDIDATE_RESTORE_DRILL=RESTORE_ISOLATED_COPY
+```
+
+The remote tool tree is installed from one immutable commit, so these targets
+refuse a dirty worktree; commit the reviewed tool revision first. The
+confirmation tokens are read from the environment, never from stdin. The drill
+runs in `sc-daily-continuity-drill-*` temporary resources labeled
+`sc.daily-continuity=true`, uses the drill instance's own role, and never
+writes to the live duty cluster. This runbook authorizes no write to the live
+duty database: capture, validate and drill stay separate steps with their own
+exact inputs.

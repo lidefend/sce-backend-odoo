@@ -69,6 +69,8 @@ daily.candidate.continuity.remote_install: guard.prod.forbid
 	@git archive --format=tar "$(DAILY_CONTINUITY_TOOL_SHA)" \
 		scripts/ops/daily_candidate_data_continuity.py \
 		scripts/ops/daily_candidate_data_continuity_contract_v1.json \
+		scripts/ops/daily_runtime_tenant_recovery_contract_v1.json \
+		config/ops/daily_runtime_database_duties.v1.json \
 		scripts/ops/daily_candidate_data_sentinel.py \
 		scripts/ops/daily_candidate_data_sentinel_contract_v1.json \
 		scripts/ops/daily_candidate_clone_upgrade_rehearsal.py \
@@ -104,6 +106,50 @@ daily.candidate.continuity.remote_closeout: daily.candidate.continuity.remote_in
 	@[[ "$(DAILY_CONTINUITY_BACKUP_DIR)" =~ ^/data/backups/daily_candidate/sc_demo-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$$ ]] || { echo "invalid daily candidate backup directory" >&2; exit 2; }
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
 		'python3 "$(DAILY_CONTINUITY_REMOTE_ROOT)/scripts/ops/daily_candidate_data_continuity.py" closeout --backup-dir "$(DAILY_CONTINUITY_BACKUP_DIR)"'
+
+# A duty is a database with exactly one owner: the platform control plane, the
+# demo, or one customer development tenant. Each duty therefore needs its own
+# paired recovery point before its first business-data write, and that point has
+# to be captured, validated and restored through one governed entry instead of an
+# ad-hoc pg_dump. The tool resolves every runtime identity (cluster, containers,
+# volumes, application role, filestore scope, backup namespace) from
+# `config/ops/daily_runtime_database_duties.v1.json`; the contract may only carry
+# assertion configuration, and any restatement of identity must agree with the
+# declaration. `--backup-dir` and confirmations use exact values, and the remote
+# tool tree is installed from one immutable commit, so the entry refuses a dirty
+# worktree. These targets are remote-only: the duty storage namespaces exist on
+# the daily server, not in the local iteration profile.
+.PHONY: verify.daily.duty.recovery daily.runtime.duty.recovery.remote_baseline daily.runtime.duty.recovery.remote_backup daily.runtime.duty.recovery.remote_validate daily.runtime.duty.recovery.remote_restore_drill
+DAILY_DUTY_RECOVERY_CONTRACT ?= scripts/ops/daily_runtime_tenant_recovery_contract_v1.json
+DAILY_DUTY_RECOVERY_BACKUP_DIR ?=
+DAILY_DUTY_RECOVERY_TOOL ?= $(DAILY_CONTINUITY_REMOTE_ROOT)/$(DAILY_DUTY_RECOVERY_CONTRACT)
+DAILY_DUTY_RECOVERY_DIR_PATTERN ?= ^/data/backups/daily-tenant-baosheng-dev/sc_tenant_baosheng_dev-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$$
+
+verify.daily.duty.recovery: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_candidate_data_continuity.py scripts/ops/test_daily_candidate_data_continuity.py
+	@python3 scripts/ops/test_daily_candidate_data_continuity.py
+
+daily.runtime.duty.recovery.remote_baseline: daily.candidate.continuity.remote_install
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'DAILY_CONTINUITY_EVIDENCE=/tmp/daily-duty-recovery-baseline.json python3 "$(DAILY_DUTY_RECOVERY_TOOL)" baseline'
+
+daily.runtime.duty.recovery.remote_backup: daily.candidate.continuity.remote_install
+	@test "$${CONFIRM_DAILY_CANDIDATE_BACKUP:-}" = "BACKUP_DAILY_CANDIDATE_PAIRED_STATE" || { echo "exact duty backup confirmation is required" >&2; exit 2; }
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'CONFIRM_DAILY_CANDIDATE_BACKUP=BACKUP_DAILY_CANDIDATE_PAIRED_STATE DAILY_CONTINUITY_EVIDENCE=/tmp/daily-duty-recovery-backup.json python3 "$(DAILY_DUTY_RECOVERY_TOOL)" backup'
+
+daily.runtime.duty.recovery.remote_validate: daily.candidate.continuity.remote_install
+	@test -n "$(DAILY_DUTY_RECOVERY_BACKUP_DIR)" || { echo "DAILY_DUTY_RECOVERY_BACKUP_DIR is required" >&2; exit 2; }
+	@[[ "$(DAILY_DUTY_RECOVERY_BACKUP_DIR)" =~ $(DAILY_DUTY_RECOVERY_DIR_PATTERN) ]] || { echo "invalid duty recovery backup directory" >&2; exit 2; }
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'DAILY_CONTINUITY_EVIDENCE=/tmp/daily-duty-recovery-validate.json python3 "$(DAILY_DUTY_RECOVERY_TOOL)" validate --backup-dir "$(DAILY_DUTY_RECOVERY_BACKUP_DIR)"'
+
+daily.runtime.duty.recovery.remote_restore_drill: daily.candidate.continuity.remote_install
+	@test -n "$(DAILY_DUTY_RECOVERY_BACKUP_DIR)" || { echo "DAILY_DUTY_RECOVERY_BACKUP_DIR is required" >&2; exit 2; }
+	@[[ "$(DAILY_DUTY_RECOVERY_BACKUP_DIR)" =~ $(DAILY_DUTY_RECOVERY_DIR_PATTERN) ]] || { echo "invalid duty recovery backup directory" >&2; exit 2; }
+	@test "$${CONFIRM_DAILY_CANDIDATE_RESTORE_DRILL:-}" = "RESTORE_ISOLATED_COPY" || { echo "exact isolated restore confirmation is required" >&2; exit 2; }
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'CONFIRM_DAILY_CANDIDATE_RESTORE_DRILL=RESTORE_ISOLATED_COPY DAILY_CONTINUITY_EVIDENCE=/tmp/daily-duty-recovery-restore.json python3 "$(DAILY_DUTY_RECOVERY_TOOL)" restore-drill --backup-dir "$(DAILY_DUTY_RECOVERY_BACKUP_DIR)"'
 
 daily.candidate.sentinel.remote_capture: daily.candidate.continuity.remote_install
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
