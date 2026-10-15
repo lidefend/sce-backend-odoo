@@ -2258,7 +2258,20 @@ S3-2（独立性规则补"（模型层）"限定）**本轮关闭**；S3-3（闭
 取一行可能误拒）、S3-5（私有 `_request_access(requester_id=…)`）、S3-6（非数字入参 500 应为 400）
 **登记待办**，理由逐条写入 `run.json` 的 `review_s2_closure_round3_20261016.S3_disposition`。
 
-### 七、阶段口径
+### 七、本轮收尾（窗口 A/B、操作员回读、凭据清理）
+
+| 项 | 事实 | 证据 |
+|---|---|---|
+| 窗口 A/B | 同一产品创建的行 `access_id=3`（1 小时窗口）：窗口内 05:13:24 `remote_provision` PASS（exit 0、writes 0、消费该行）；窗口外 06:11:22 同主体被拒，且拒绝时该行**仍为 `approved`** | `control-provision.log`、`out-of-window-20261016.log` |
+| 过期清扫 | 06:11:32 `POST /api/ops/maintenance/access/expire` → `count=1 expired=[(3,'expired')]`；台账 `['revoked','rejected','expired','revoked','revoked']` | 同上 |
+| 操作员回读 | 受管 `remote_readback`：`writes=0`、`is_importer=false`、importer 成员数 0、无隐含闭包；持有组仅 `base.group_user` 的内部用户闭包；`has_stored_password=false`、无原生 API Key、非 data operator；生效版次仍为 `snapshot_id=2` | `readback-post-revoke.log` |
+| 一次性审批凭据清理 | 受管 `credential.clear`：`writes=1`、`has_stored_password` true→false、凭据文件 `present=false` 且已移除；`group_ids` 与安全管理员身份不变（uid 6）、`groups_outside_allowed_closure=[]`；台账 5 行**保留**（撤销的是"能力"，不是"审计"） | `credential-clear.log` |
+| 运行身份与权限边界 | `/opt/projects/secure/daily-runtime-duties/`：目录 `drwx------ root ci`，四个文件均 `-rw------- root root`；平台控制库凭据目录已空（`credentials/` 无文件） | 只读 `ls -la` 输出 |
+
+**边界**：清理之后**没有**可用的一次性审批凭据，因此本轮不可能再发生新的批准。这是意图内的状态：
+载荷已过期、进口无法进行，临时能力必须收回，而责任记录（账号、组、台账行）全部保留。
+
+### 八、阶段口径
 
 可声明：**批次验收**（授权链路与下游两条声明的产品能力已按受影响集合验证）。
 **未完成**：主线集成、版本发布、产品交付。载荷未入库，因此客户开发租户的数据对账（12386 / 6322 / 29 / 6035）与业务闭环验收尚未开始。

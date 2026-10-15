@@ -2778,7 +2778,23 @@
       "falsification": "the credential entry refuses to adopt an already issued credential and the pre/post authorization ledger count assertion was falsified once and restored byte-for-byte; the log is .runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-credential-20261016/falsify-credential.log",
       "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-credential-20261016/final.sha256"
     },
-    "known_limits": "The credential authenticates the account; it is not an approval, and the approval still has to be requested and approved through the product entry with the mechanism's own independence, validity-window and target checks enforced server-side."
+    "known_limits": "The credential authenticates the account; it is not an approval, and the approval still has to be requested and approved through the product entry with the mechanism's own independence, validity-window and target checks enforced server-side.",
+    "round_closure_20261016": {
+      "operator_readback_after_revoke": {
+        "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-decay-20261016/readback-post-revoke.log",
+        "fact": "make daily.runtime.duty.operator_grant.remote_readback -> mode read_only, writes 0, is_importer false, importer_group_member_count 0, importer_implied_xmlids [] , group_xmlids = the base.group_user internal-user closure only, has_stored_password false, has_native_api_keys false, is_data_operator false, active internal account, released edition snapshot_id 2 (daily-navigation-standard-b80841059b19)"
+      },
+      "credential_clear": {
+        "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-decay-20261016/credential-clear.log",
+        "fact": "make daily.runtime.platform.security_admin.credential.remote_clear -> writes 1, status passed; has_stored_password true->false; credential_file_present false and credential_file_removed true; identity group_ids unchanged (1,7,12,16) with is_security_admin true and groups_outside_allowed_closure []; maintenance_access_rows 5, so the audit trail is kept while the temporary capability is withdrawn",
+        "consequence": "no one-time approver credential exists after this write, so no further approval can be issued in this round. That is the intended state: the import cannot run against a stale payload, so the temporary capability must be withdrawn and only the responsibility record kept."
+      },
+      "runtime_identity_permissions": {
+        "fact": "/opt/projects/secure/daily-runtime-duties/ is drwx------ root ci with four files at -rw------- root root; the platform control credentials directory holds no file after the clear",
+        "read_only": true
+      }
+    },
+    "stage_status": "batch acceptance for the maintenance-authorization mechanism plus the two downstream declarations; mainline integration, version release and product delivery remain open. The payload cannot be imported while its declared customer_module_version (17.0.2.7.0) differs from the delivered and installed module (17.0.2.8.0)."
   },
   "verification_lane_target_retirement_20261016": {
     "case": "The lane-coverage audit had no way to retire a registered verification target that nothing references any more, so dead targets kept the ledger honest only by accident. This layer adds the retirement entry and registers the historic ops surfaces that are genuinely still reachable.",
