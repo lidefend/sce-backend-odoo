@@ -69,6 +69,8 @@ daily.candidate.continuity.remote_install: guard.prod.forbid
 	@git archive --format=tar "$(DAILY_CONTINUITY_TOOL_SHA)" \
 		scripts/ops/daily_candidate_data_continuity.py \
 		scripts/ops/daily_runtime_duty_identity.py \
+		scripts/ops/daily_runtime_duty_payload.py \
+		scripts/tenant_payload/odoo_action.py \
 		scripts/ops/daily_candidate_data_continuity_contract_v1.json \
 		scripts/ops/daily_runtime_tenant_recovery_contract_v1.json \
 		config/ops/daily_runtime_database_duties.v1.json \
@@ -152,6 +154,54 @@ daily.runtime.duty.recovery.remote_restore_drill: daily.candidate.continuity.rem
 	@test "$${CONFIRM_DAILY_CANDIDATE_RESTORE_DRILL:-}" = "RESTORE_ISOLATED_COPY" || { echo "exact isolated restore confirmation is required" >&2; exit 2; }
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
 		'CONFIRM_DAILY_CANDIDATE_RESTORE_DRILL=RESTORE_ISOLATED_COPY DAILY_CONTINUITY_EVIDENCE=/tmp/daily-duty-recovery-restore.json python3 "$(DAILY_DUTY_RECOVERY_TOOL)" restore-drill --contract "$(DAILY_DUTY_RECOVERY_CONTRACT_PATH)" --backup-dir "$(DAILY_DUTY_RECOVERY_BACKUP_DIR)"'
+
+
+# A signed historical payload may only enter a duty database through that duty's
+# own rendered definition, as that duty's own application user, with the payload
+# and its verification key exposed as verified read-only copies. This entry adds
+# no privilege of its own: the operator authorization is still the product's
+# narrow importer group granted by `tenant.payload.operator.grant`, ownership is
+# never defaulted here, and only a duty declared `customer` may receive one.
+# `plan` additionally proves it wrote nothing, so planning is safe on a duty that
+# already holds real business data.
+DAILY_DUTY_PAYLOAD_TOOL ?= $(DAILY_CONTINUITY_REMOTE_ROOT)/scripts/ops/daily_runtime_duty_payload.py
+DAILY_DUTY_PAYLOAD_DUTY ?= customer_tenant_dev
+DAILY_DUTY_PAYLOAD_ID ?=
+DAILY_DUTY_PAYLOAD_CHECKSUM ?=
+DAILY_DUTY_PAYLOAD_EVIDENCE ?=
+DAILY_DUTY_PAYLOAD_CHUNK_SIZE ?= 100
+
+.PHONY: verify.daily.duty.payload daily.runtime.duty.payload.remote_install daily.runtime.duty.payload.remote_plan daily.runtime.duty.payload.remote_import daily.runtime.duty.payload.remote_verify
+
+verify.daily.duty.payload: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_duty_payload.py scripts/ops/test_daily_runtime_duty_payload.py
+	@python3 scripts/ops/test_daily_runtime_duty_payload.py
+
+daily.runtime.duty.payload.remote_install: daily.candidate.continuity.remote_install
+	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
+
+daily.runtime.duty.payload.remote_plan: daily.runtime.duty.payload.remote_install
+	@test -n "$(DAILY_DUTY_PAYLOAD_ID)" || { echo "DAILY_DUTY_PAYLOAD_ID is required" >&2; exit 2; }
+	@[[ "$(DAILY_DUTY_PAYLOAD_ID)" =~ ^[a-z0-9][a-z0-9._-]{2,127}$$ ]] || { echo "invalid daily duty payload id" >&2; exit 2; }
+	@[[ "$(DAILY_DUTY_PAYLOAD_CHECKSUM)" =~ ^[0-9a-f]{64}$$ ]] || { echo "DAILY_DUTY_PAYLOAD_CHECKSUM must be the approved payload checksum" >&2; exit 2; }
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'python3 "$(DAILY_DUTY_PAYLOAD_TOOL)" plan --duty "$(DAILY_DUTY_PAYLOAD_DUTY)" --payload-id "$(DAILY_DUTY_PAYLOAD_ID)" --approved-checksum "$(DAILY_DUTY_PAYLOAD_CHECKSUM)" --evidence "$(DAILY_DUTY_PAYLOAD_EVIDENCE)"'
+
+daily.runtime.duty.payload.remote_import: daily.runtime.duty.payload.remote_install
+	@test -n "$(DAILY_DUTY_PAYLOAD_ID)" || { echo "DAILY_DUTY_PAYLOAD_ID is required" >&2; exit 2; }
+	@[[ "$(DAILY_DUTY_PAYLOAD_ID)" =~ ^[a-z0-9][a-z0-9._-]{2,127}$$ ]] || { echo "invalid daily duty payload id" >&2; exit 2; }
+	@[[ "$(DAILY_DUTY_PAYLOAD_CHECKSUM)" =~ ^[0-9a-f]{64}$$ ]] || { echo "DAILY_DUTY_PAYLOAD_CHECKSUM must be the approved payload checksum" >&2; exit 2; }
+	@[[ "$(DAILY_DUTY_PAYLOAD_CHUNK_SIZE)" =~ ^[1-9][0-9]*$$ ]] || { echo "invalid daily duty payload chunk size" >&2; exit 2; }
+	@test "$${CONFIRM_DAILY_DUTY_PAYLOAD_IMPORT:-}" = "IMPORT_SIGNED_PAYLOAD_INTO_DAILY_DUTY" || { echo "exact daily duty payload import confirmation is required" >&2; exit 2; }
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'CONFIRM_DAILY_DUTY_PAYLOAD_IMPORT=IMPORT_SIGNED_PAYLOAD_INTO_DAILY_DUTY python3 "$(DAILY_DUTY_PAYLOAD_TOOL)" import --duty "$(DAILY_DUTY_PAYLOAD_DUTY)" --payload-id "$(DAILY_DUTY_PAYLOAD_ID)" --approved-checksum "$(DAILY_DUTY_PAYLOAD_CHECKSUM)" --chunk-size "$(DAILY_DUTY_PAYLOAD_CHUNK_SIZE)" --evidence "$(DAILY_DUTY_PAYLOAD_EVIDENCE)"'
+
+daily.runtime.duty.payload.remote_verify: daily.runtime.duty.payload.remote_install
+	@test -n "$(DAILY_DUTY_PAYLOAD_ID)" || { echo "DAILY_DUTY_PAYLOAD_ID is required" >&2; exit 2; }
+	@[[ "$(DAILY_DUTY_PAYLOAD_ID)" =~ ^[a-z0-9][a-z0-9._-]{2,127}$$ ]] || { echo "invalid daily duty payload id" >&2; exit 2; }
+	@[[ "$(DAILY_DUTY_PAYLOAD_CHECKSUM)" =~ ^[0-9a-f]{64}$$ ]] || { echo "DAILY_DUTY_PAYLOAD_CHECKSUM must be the approved payload checksum" >&2; exit 2; }
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'python3 "$(DAILY_DUTY_PAYLOAD_TOOL)" verify --duty "$(DAILY_DUTY_PAYLOAD_DUTY)" --payload-id "$(DAILY_DUTY_PAYLOAD_ID)" --approved-checksum "$(DAILY_DUTY_PAYLOAD_CHECKSUM)" --evidence "$(DAILY_DUTY_PAYLOAD_EVIDENCE)"'
 
 daily.candidate.sentinel.remote_capture: daily.candidate.continuity.remote_install
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \

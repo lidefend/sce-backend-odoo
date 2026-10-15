@@ -1207,3 +1207,69 @@ and Step F product acceptance are still open.
 
 **This is 批次验收完成 for the customer duty recovery-point slice. It is not 主线集成完成, 版本发布完成 or
 产品交付完成.**
+
+## Step D entry: the duty payload runner, and the live re-check the owner ruling asks for
+
+The owner ruling of 2026-10-15 puts the shared-PGDATA disposal **before** the three-database build and
+requires the disposal to rest on runtime facts rather than on passing tests. Both halves were re-checked
+read-only at HEAD `413ee7ce` instead of being taken from the earlier record:
+
+| Check | Result |
+|---|---|
+| `make verify.daily.runtime.legacy_stack.retire` | 20 tests, OK (nonzero) |
+| `make verify.daily.runtime.routing.inventory` | 17 tests, OK (nonzero) |
+| `make daily.runtime.legacy_stack.retire.plan` | `PLAN`, `failing_guards []`, digest `534c710a27c034…` — only the four idempotent `remove_automatic_restart_path` steps remain |
+| `make daily.runtime.routing.inventory DAILY_RUNTIME_EXPECTED_SHA=10bf72ef…` | `PASS`, 0 failed assertions, `remote_head 10bf72ef…`, `sc_odoo` and `sc_platform_core` still unserved |
+
+So the disposal still holds: one postmaster owns each cluster data directory, the retired stack is not
+running and cannot come back on its own. These are iteration-stage observations, not a frozen candidate.
+
+### The entry Step D needs
+
+`scripts/ops/daily_runtime_duty_payload.py` runs one signed payload action (`plan`, `import`, `verify`)
+inside a declared duty's **own** rendered definition, as that duty's own application user, so the filestore
+it writes stays owned by the identity the live application runs as. It is the daily-runtime counterpart of
+the already-committed `scripts/ops/production_acceptance_payload_runtime.py` and reuses the product's own
+`scripts/tenant_payload/odoo_action.py`, so it adds no privilege:
+
+* the operator authorization is still the narrow `smart_core.group_smart_core_tenant_payload_importer` group;
+* the maintenance capability is the same same-process proof the production acceptance runner already uses,
+  not a data-level permission;
+* only a duty declared `data_purpose=customer` may receive a payload, and ownership is never defaulted;
+* the remote bundle is the existing immutable `daily.candidate.continuity.remote_install` tree — the entry
+  and the action script were added to that one list, and the guard that derives every shipped module from
+  the shipped tools' own imports now covers both.
+
+`plan` additionally proves it wrote nothing: `database_write_count=0`, `filestore_write_count=0`, and the
+database digest and protected business counts identical before and after.
+
+`make verify.daily.duty.payload` — 25 tests, OK (nonzero).
+
+### What actually blocks Step D, read back live
+
+Two facts were re-read read-only from the customer duty cluster rather than trusted from an earlier note:
+
+```
+sc_edition_release_snapshot released+active construction.standard = 0
+sc_tenant_payload_import_batch = 0
+importer group res_id 19, admin in group = 0, admin active = 1
+```
+
+Consequences, in the product's own words:
+
+* `provision_operator.py` refuses with `TPV1_PLATFORM_SNAPSHOT_CONTRACT_MISMATCH` until exactly one released
+  `construction.standard` snapshot exists **in that database**;
+* `odoo_action.py` refuses with `TPV1_IMPORT_OPERATOR_AUTHORIZATION_MISSING` until the operator is in the
+  narrow importer group.
+
+And the mechanism gap behind it: the only governed entry that publishes the daily product-edition snapshot
+is `release.daily_product_navigation.snapshot`, and it is hard-coded to `DB_NAME=sc_demo`. A tenant duty
+therefore cannot register the released edition it runs, the narrow operator grant cannot be issued, and the
+tenant's own versioned migration cannot start.
+
+The fix belongs to P4 ops tooling that resolves its identity from
+`config/ops/daily_runtime_database_duties.v1.json`; the snapshot record itself must stay owned by the
+existing platform delivery service, never a direct insert. Nothing was published, granted, staged, planned
+or imported in this step.
+
+**This is 批次验收完成 for the Step D entry slice. It is not 主线集成完成, 版本发布完成 or 产品交付完成.**

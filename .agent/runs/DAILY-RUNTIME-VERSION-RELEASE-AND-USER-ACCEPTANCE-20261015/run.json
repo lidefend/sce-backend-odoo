@@ -23,6 +23,7 @@
   },
   "baseline_sha": "10bf72ef4bb060556bd2844598b58f9806392d34",
   "blockers": [
+    "Step D proper cannot start yet: sc_tenant_baosheng_dev has no released construction.standard edition snapshot (read-only readback: 0 rows) and no operator in smart_core.group_smart_core_tenant_payload_importer (group res_id 19, admin not a member), while the only governed daily snapshot entry (release.daily_product_navigation.snapshot) is hard-coded to sc_demo. The tenant duty therefore cannot register the edition it runs, provision_operator.py cannot issue the narrow import grant, and the tenant's own versioned migration cannot begin. The fix belongs to P4 ops tooling that reuses the duty declaration; the snapshot record itself must stay owned by the existing platform delivery service.",
     "The customer duty is now a served, initialized face (sc_tenant_baosheng_dev, role sc_tenant_baosheng_dev_app, exact filter ^sc_tenant_baosheng_dev$, route 18090, own cluster and volume, product line plus sce_customer_baosheng installed from the delivered read-only tree bfbc736) and its paired recovery point exists (backup set sc_tenant_baosheng_dev-20261015T095006Z-653a3119 under /data/backups/daily-tenant-baosheng-dev, validated, restored in isolation and independently checksum-readback). Initialization is not migration: no historical data has moved, and Step D proper still has to run the customer module's own versioned migration (historical_payment_migration_policy.expected_records=12386) with the payload validated and planned first, never defaulting ownership and never copying UAT data.",
     "sc_demo mixes the customer tenant volume with demo/test purposes, so 'the demo database' is not yet a pure demo database; the destination of the company-1 volume is unresolved, and the demo duty is still declared with the shared-bootstrap-role gap and has no dedicated application role.",
     "No duty has a platform-model lifecycle registration yet: the platform model owns registration and the platform-database lifecycle adapter still lacks a governed runtime binding for the daily profile, so no governed entry can register, suspend or resume a daily database. The duty declaration in config/ops/daily_runtime_database_duties.v1.json is the ops-side authority, not the platform-side registration.",
@@ -48,6 +49,18 @@
       ],
       "kind": "runtime",
       "target": "verify.daily_dev.runtime_repo.clean"
+    },
+    "daily_duty_payload_tool": {
+      "inputs": [
+        "scripts/ops/daily_runtime_duty_payload.py",
+        "scripts/ops/test_daily_runtime_duty_payload.py",
+        "scripts/ops/daily_runtime_duty_identity.py",
+        "scripts/tenant_payload/odoo_action.py",
+        "config/ops/daily_runtime_database_duties.v1.json",
+        "make/daily_candidate.mk"
+      ],
+      "kind": "offline",
+      "target": "verify.daily.duty.payload"
     },
     "daily_duty_recovery_tool": {
       "inputs": [
@@ -111,7 +124,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "Steps A, B, C and the customer duty initialization of D are closed, and the customer duty's paired recovery point now exists and has been verified. Next, in order: (1) Step D proper, the user module migration into sc_tenant_baosheng_dev driven by the customer module's own source mapping and versioned migration, with the payload first validated and planned (source payload v10 full historical attachments, historical_payment_migration_policy.expected_records=12386), never defaulting ownership, never copying UAT data, and reading counts, amounts, source relations and attachments back after the run; (2) Step E unified onboarding plus isolation verification (platform control must not read customer business, demo and customer data must not see each other, database connections, routing, sessions and attachments all checked); (3) Step F product acceptance, recomputing only the affected set.",
+  "next_exact_step": "Steps A, B and C are closed (the leftover-stack retirement was re-checked live at HEAD 413ee7ce: retire plan PLAN with failing_guards [] and routing inventory PASS), and the customer duty's paired recovery point exists. Step D proper is gated by one mechanism gap: no governed entry can publish the released construction.standard edition snapshot into a declared duty database, so sc_tenant_baosheng_dev cannot register the edition it runs and the narrow import operator cannot be granted. Next, in order: (1) generalize the daily product-edition snapshot entry so it resolves its identity from config/ops/daily_runtime_database_duties.v1.json instead of the hard-coded sc_demo, publish the edition into customer_tenant_dev, then grant the narrow operator through make tenant.payload.operator.grant; (2) run the signed payload into sc_tenant_baosheng_dev through make daily.runtime.duty.payload.remote_plan, then remote_import and remote_verify, reading counts (expected 12386 = 6322/29/6035), amounts, source relations and attachments back afterwards; (3) Step E unified onboarding and isolation verification; (4) Step F product acceptance over the affected set only.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "schema_version": 1,
   "scope": [
@@ -255,7 +268,10 @@
     "scripts/ops/daily_candidate_data_continuity.py",
     "scripts/ops/daily_candidate_data_continuity_contract_v1.json",
     "scripts/ops/daily_runtime_tenant_recovery_contract_v1.json",
-    "scripts/ops/test_daily_candidate_data_continuity.py"
+    "scripts/ops/test_daily_candidate_data_continuity.py",
+    "scripts/ops/daily_runtime_duty_identity.py",
+    "scripts/ops/daily_runtime_duty_payload.py",
+    "scripts/ops/test_daily_runtime_duty_payload.py"
   ],
   "status": "active",
   "step_d_customer_recovery_point_20261015": {
@@ -298,6 +314,42 @@
       "restore_drill": "make daily.runtime.duty.recovery.remote_restore_drill - PASS, isolated_restore_pass/database_restore_pass/filestore_restore_pass/sentinel_comparison_pass all true, temporary_resources_removed=true, network_egress=internal_only, 29s",
       "unit": "make verify.daily.duty.recovery - 26 tests OK (12 duty-identity guards plus the new entry-binding guard)",
       "validate": "make daily.runtime.duty.recovery.remote_validate - PASS, backup_status=complete, pair_stable_during_capture=true, structure_validation database=pg_restore_list_passed filestore=tar_list_passed, database_bytes=11244989"
+    }
+  },
+  "step_d_duty_payload_entry_20261015": {
+    "case": "Step D proper has to move the customer module's own versioned migration into sc_tenant_baosheng_dev through the signed payload, and that needs a governed entry that runs inside the duty's own rendered definition as that duty's own application user. The local-profile entry (make tenant.payload.plan/import/verify, driven by run_odoo_action.sh) targets the local compose profile, so the remote duty would otherwise have to be driven by hand-assembled commands.",
+    "delivered": {
+      "entry": "scripts/ops/daily_runtime_duty_payload.py",
+      "make_targets": [
+        "make daily.runtime.duty.payload.remote_plan",
+        "make daily.runtime.duty.payload.remote_import (CONFIRM_DAILY_DUTY_PAYLOAD_IMPORT=IMPORT_SIGNED_PAYLOAD_INTO_DAILY_DUTY)",
+        "make daily.runtime.duty.payload.remote_verify"
+      ],
+      "plan_safety": "plan also asserts database_write_count=0 and filestore_write_count=0 and that the database digest and the protected business counts are identical before and after",
+      "protocol_reuse": "the entry feeds the product's own scripts/tenant_payload/odoo_action.py inside the duty and grants nothing itself: operator authorization stays the narrow smart_core.group_smart_core_tenant_payload_importer group, the maintenance capability is the same same-process proof scripts/ops/production_acceptance_payload_runtime.py already uses, only a duty declared data_purpose=customer may receive a payload, and ownership is never defaulted",
+      "reuse": "the remote bundle is the existing immutable daily.candidate.continuity.remote_install tree; the entry and the product action script it feeds were added to that one list, and the guard that derives every shipped module from the shipped tools' own imports covers both",
+      "unit": "make verify.daily.duty.payload - 25 tests OK (nonzero)"
+    },
+    "owner_order_reconfirmed_live": {
+      "authority": "Owner ruling 2026-10-15: dispose of the shared-PGDATA two-instance risk before continuing the three-database build; existing passing tests cannot cover a runtime risk",
+      "legacy_retire_plan": "make daily.runtime.legacy_stack.retire.plan - status PLAN, failing_guards [], plan_digest 534c710a27c034c0b7c7ee64410af8ea48a270d05aa2e718250f301cfb57358a, only the four idempotent remove_automatic_restart_path steps remain",
+      "note": "read-only observations at HEAD 413ee7ce, not a frozen candidate",
+      "routing_inventory": "make daily.runtime.routing.inventory DAILY_RUNTIME_EXPECTED_SHA=10bf72ef - status PASS, failed_assertions [], 8 instances, remote_head 10bf72ef, sc_odoo and sc_platform_core still unserved",
+      "unit_recheck": "make verify.daily.runtime.legacy_stack.retire 20 tests OK; make verify.daily.runtime.routing.inventory 17 tests OK"
+    },
+    "owning_layer_gap": {
+      "gap": "the only governed entry that publishes the daily product-edition snapshot is release.daily_product_navigation.snapshot and it is hard-coded to DB_NAME=sc_demo",
+      "not_done_here": "no edition snapshot was published, no operator group was granted, and no payload was staged, planned or imported into sc_tenant_baosheng_dev",
+      "owning_layer": "P4 ops tooling that resolves identity from config/ops/daily_runtime_database_duties.v1.json; the snapshot record itself stays owned by the existing platform delivery service, never a direct insert",
+      "why_this_blocks": "a tenant duty therefore cannot register the released edition it runs, and the narrow operator grant (which requires that snapshot) cannot be issued, so the tenant's own versioned migration cannot start"
+    },
+    "step_d_prerequisites_confirmed_absent_live": {
+      "consequence": [
+        "provision_operator.py refuses with TPV1_PLATFORM_SNAPSHOT_CONTRACT_MISMATCH until exactly one released construction.standard snapshot exists in sc_tenant_baosheng_dev",
+        "odoo_action.py refuses with TPV1_IMPORT_OPERATOR_AUTHORIZATION_MISSING until the operator is in the narrow importer group, so no payload action can run yet"
+      ],
+      "method": "read-only psql on the customer duty cluster; no write",
+      "observed": "sc_edition_release_snapshot released+active construction.standard = 0; sc_tenant_payload_import_batch = 0; importer group res_id 19, admin in group = 0, admin active = 1"
     }
   },
   "step_four_customer_module_delivery_20261015": {
