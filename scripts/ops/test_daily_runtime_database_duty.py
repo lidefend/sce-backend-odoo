@@ -48,6 +48,24 @@ def picked(declaration, name):
     raise AssertionError(name)
 
 
+def prospective(declaration, name):
+    """One declared duty, still *not yet created*.
+
+    The creation path must stay proven after the shipped declaration has been
+    written back with the observed custody facts, so these tests ask for a duty
+    that is still ``to_be_created`` instead of assuming the shipped file stays
+    frozen in that state. A declaration that is ahead of its receipt is exactly
+    what the write-back exists to prevent, and the pre-write shape is a decision
+    input, not a property of the shipped file.
+    """
+    out = copy.deepcopy(declaration)
+    row = picked(out, name)
+    row["custody"] = {"database_present": False, "database_role_present": False,
+                      "role_compliance": "to_be_created"}
+    row["cluster"]["system_identifier"] = ""
+    return out
+
+
 class DeclarationTests(unittest.TestCase):
     def test_shipped_declaration_is_valid(self):
         declaration = shipped()
@@ -211,6 +229,25 @@ class DeclarationTests(unittest.TestCase):
         failures = duty_entry.validate_declaration(declaration)
         self.assertTrue(any("not authorized to build a production environment" in f for f in failures))
 
+    def test_a_duty_with_a_recorded_cluster_identity_is_never_still_to_be_created(self):
+        # Once a duty exists its observed custody is written back into the
+        # declaration. A declaration that still says ``to_be_created`` while the
+        # cluster identity is already recorded is stale in the dangerous
+        # direction: the next ``--apply`` would try to create a duty that is
+        # already serving, and the read-only plan would report the world as
+        # disagreeing with a declaration nobody updated.
+        for row in shipped()["duties"]:
+            if row["cluster"].get("system_identifier"):
+                self.assertNotEqual(
+                    row["custody"]["role_compliance"], "to_be_created", row["duty"]
+                )
+
+    def test_a_compliant_duty_declares_its_custody_as_present(self):
+        for row in shipped()["duties"]:
+            if row["custody"]["role_compliance"] == "compliant":
+                self.assertTrue(row["custody"]["database_present"], row["duty"])
+                self.assertTrue(row["custody"]["database_role_present"], row["duty"])
+
     def test_shipped_stack_surface_resolves(self):
         failures, _ = duty_entry.validate_stack_surface(
             COMPOSE_FILE.read_text(encoding="utf-8"), ENV_TEMPLATE.read_text(encoding="utf-8")
@@ -346,7 +383,7 @@ class EvaluationTests(unittest.TestCase):
         }
 
     def test_a_created_duty_passes_the_apply_phase(self):
-        declaration = self.declaration()
+        declaration = prospective(self.declaration(), "platform_control")
         verdict = self.verdict(declaration, "platform_control", phase="apply", **self.created())
         self.assertTrue(verdict["created_database_is_present"])
         self.assertTrue(verdict["created_role_is_present"])
@@ -357,33 +394,33 @@ class EvaluationTests(unittest.TestCase):
         self.assertTrue(verdict["database_accepts_the_declared_duty"])
 
     def test_the_same_observation_fails_the_plan_phase_as_a_stale_declaration(self):
-        declaration = self.declaration()
+        declaration = prospective(self.declaration(), "platform_control")
         verdict = self.verdict(declaration, "platform_control", **self.created())
         self.assertFalse(verdict["custody_database_presence_matches_declaration"])
         self.assertFalse(verdict["custody_role_presence_matches_declaration"])
 
     def test_a_created_duty_that_is_not_least_privilege_fails_the_apply_phase(self):
-        declaration = self.declaration()
+        declaration = prospective(self.declaration(), "platform_control")
         observation = self.created()
         observation["custody"]["role_superuser"] = True
         verdict = self.verdict(declaration, "platform_control", phase="apply", **observation)
         self.assertFalse(verdict["application_role_is_least_privilege"])
 
     def test_a_created_duty_whose_database_still_denies_connections_fails(self):
-        declaration = self.declaration()
+        declaration = prospective(self.declaration(), "platform_control")
         observation = self.created()
         observation["custody"]["allow_connections"] = False
         verdict = self.verdict(declaration, "platform_control", phase="apply", **observation)
         self.assertFalse(verdict["database_accepts_the_declared_duty"])
 
     def test_a_missing_cluster_matches_a_to_be_created_declaration(self):
-        declaration = self.declaration()
+        declaration = prospective(self.declaration(), "platform_control")
         verdict = self.verdict(declaration, "platform_control")
         self.assertTrue(verdict["cluster_container_state_matches_declaration"])
         self.assertTrue(verdict["custody_absent_as_declared"])
 
     def test_an_unexpectedly_present_cluster_fails(self):
-        declaration = self.declaration()
+        declaration = prospective(self.declaration(), "platform_control")
         cluster = {"present": True, "running": True, "system_identifier": "",
                    "data_volume_owner": "sc_platform_control_db_data",
                    "project": "sc-platform-control-dev", "config_files": "", "error": ""}
@@ -402,7 +439,7 @@ class EvaluationTests(unittest.TestCase):
         declaration = self.declaration()
         verdict = self.verdict(declaration, "demo", stack={"skipped": "not to-be-created"})
         self.assertNotIn("stack_definition_is_the_reviewed_one", verdict)
-        row = picked(declaration, "platform_control")
+        row = picked(prospective(declaration, "platform_control"), "platform_control")
         assertions = duty_entry.evaluate(
             row, self.observe(row, stack={"skipped": "not to-be-created"}), declaration
         )
@@ -410,7 +447,7 @@ class EvaluationTests(unittest.TestCase):
         self.assertFalse(identifiers["stack_definition_is_the_reviewed_one"])
 
     def test_a_rendered_stack_must_match_the_declaration(self):
-        declaration = self.declaration()
+        declaration = prospective(self.declaration(), "platform_control")
         row = picked(declaration, "platform_control")
         stack = {
             "skipped": None, "compose_path": "/ops/duty-stack-abc.yml",
@@ -584,7 +621,31 @@ def observation_matching(declaration):
     """
     rows = []
     for row in declaration["duties"]:
-        wants_creation = row["custody"]["role_compliance"] == "to_be_created"
+        compliance = row["custody"]["role_compliance"]
+        wants_creation = compliance == "to_be_created"
+        if wants_creation:
+            custody = {
+                "database_present": False, "database_owner": "", "allow_connections": None,
+                "role_present": False, "role_superuser": None, "role_createdb": None,
+                "role_createrole": None, "role_canlogin": None, "public_connects": None,
+                "database_role_connects": None, "error": "",
+            }
+        elif compliance == "declared_gap":
+            # The one declaration that describes a real, still-open gap: the
+            # shared bootstrap role is a superuser that can create databases.
+            custody = {
+                "database_present": True, "database_owner": row["database_role"],
+                "allow_connections": True, "role_present": True, "role_superuser": True,
+                "role_createdb": True, "role_createrole": False, "role_canlogin": True,
+                "public_connects": None, "database_role_connects": None, "error": "",
+            }
+        else:
+            custody = {
+                "database_present": True, "database_owner": row["database_role"],
+                "allow_connections": True, "role_present": True, "role_superuser": False,
+                "role_createdb": False, "role_createrole": False, "role_canlogin": True,
+                "public_connects": False, "database_role_connects": True, "error": "",
+            }
         rows.append({
             "duty": row["duty"],
             "cluster": {
@@ -593,17 +654,7 @@ def observation_matching(declaration):
                 "data_volume_owner": row["cluster"]["data_volume"],
                 "project": row["cluster"]["compose_project"], "config_files": "",
             },
-            "custody": ({
-                "database_present": False, "database_owner": "", "allow_connections": None,
-                "role_present": False, "role_superuser": None, "role_createdb": None,
-                "role_createrole": None, "role_canlogin": None, "public_connects": None,
-                "database_role_connects": None, "error": "",
-            } if wants_creation else {
-                "database_present": True, "database_owner": row["database_role"],
-                "allow_connections": True, "role_present": True, "role_superuser": True,
-                "role_createdb": True, "role_createrole": False, "role_canlogin": True,
-                "public_connects": None, "database_role_connects": None, "error": "",
-            }),
+            "custody": custody,
             "stack": None,
         })
     return {

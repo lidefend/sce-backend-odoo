@@ -24,12 +24,12 @@
         "compose_project": "sc-platform-control-dev",
         "data_volume": "sc_platform_control_db_data",
         "maintenance_role": "sc_platform_control_maintenance",
-        "system_identifier": ""
+        "system_identifier": "7696799124996268070"
       },
       "custody": {
-        "database_present": false,
-        "database_role_present": false,
-        "role_compliance": "to_be_created"
+        "database_present": true,
+        "database_role_present": true,
+        "role_compliance": "compliant"
       },
       "storage": {
         "compose_project": "sc-platform-control-dev",
@@ -143,12 +143,12 @@
         "compose_project": "sc-tenant-baosheng-dev",
         "data_volume": "sc_tenant_baosheng_dev_db_data",
         "maintenance_role": "sc_tenant_baosheng_dev_maintenance",
-        "system_identifier": ""
+        "system_identifier": "7696799327921901606"
       },
       "custody": {
-        "database_present": false,
-        "database_role_present": false,
-        "role_compliance": "to_be_created"
+        "database_present": true,
+        "database_role_present": true,
+        "role_compliance": "compliant"
       },
       "storage": {
         "compose_project": "sc-tenant-baosheng-dev",

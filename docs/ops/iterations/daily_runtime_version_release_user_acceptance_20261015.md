@@ -822,3 +822,56 @@ Two reasons the switch waits:
 仍需「一次改动」切换到 `sc_platform_control` 并重建已服务的打包产物，切换前 duty plan 会如实 FAIL 在
 这一项上；三库均未做生命周期登记；用户业务库尚未安装产品线与用户模块、尚未执行受管迁移。本批次仍不
 构成主线集成完成、版本发布完成或产品交付完成。
+
+### Step C-4 — the created duties are written back into the declaration
+
+The declaration is the authority this entry judges the world against, so a duty that now exists must
+say so. Right after the two duties were created the declaration still carried
+`custody.role_compliance=to_be_created` with `database_present=false`, which the entry itself
+describes as a shape that is legitimate *only until the observed facts are written back*. Left
+unwritten it is stale in the dangerous direction: the next `--apply` would try to create a duty that
+is already serving, and the read-only plan would report the world as disagreeing with a declaration
+nobody had updated.
+
+The values written back are the apply receipts' own observations, not values re-queried or invented:
+
+| Duty | `role_compliance` | `database_present` | `database_role_present` | `cluster.system_identifier` |
+|---|---|---|---|---|
+| `platform_control` | `compliant` | true | true | `7696799124996268070` |
+| `customer_tenant_dev` | `compliant` | true | true | `7696799327921901606` |
+| `demo` | `declared_gap` (unchanged) | true | true | `7597381856873586726` |
+
+The `demo` duty is deliberately left as a declared gap: the shared bootstrap role really is still a
+superuser that can create databases, and the entry's `declared_gap_is_still_open` assertion fails if
+that stops being true.
+
+This exposed a test defect worth naming: eight decision-layer tests and the `observation_matching`
+helper read the shipped declaration and assumed it still contained a `to_be_created` duty, so the
+write-back broke them for the wrong reason — they were testing the shipped file's transient state
+rather than the creation path. They now ask for that state explicitly through `prospective()`, and
+`observation_matching()` models all three declared shapes. No assertion was weakened or removed.
+Two invariants were added instead:
+
+* a duty whose cluster identity is already recorded may not still be declared `to_be_created`;
+* a `compliant` duty must declare its database and its role present.
+
+Test count `55 -> 57`, all green.
+
+Re-running the read-only plan against the host now reports exactly one failing item:
+
+```
+status: FAIL
+platform_control     failed_assertions: []   declared_custody: compliant
+demo                 failed_assertions: []   declared_custody: declared_gap
+customer_tenant_dev  failed_assertions: []   declared_custody: compliant
+declared: sc_platform_control
+observed: sc_platform_core   (/opt/projects/repos/sce-product-odoo/.env.dev)
+```
+
+This is a `FAIL` on purpose and is not smoothed over. The platform-admin binding is deliberately not
+switched yet: `sc_platform_control` still carries no module, no tenant registry and no served Odoo
+instance, so the served bundle would name a control plane that cannot answer. The switch moves the
+build input, the acceptance declaration and the guards in one change and is sequenced after the
+control plane can serve — which needs a governed entry that starts a duty's `odoo`/`redis`/`nginx`
+services and installs **its declared** control-plane minimum module set. That module set is a
+product/governance decision, so it gets declared rather than improvised by an ops tool.

@@ -558,6 +558,7 @@
       "P0": "database lifecycle model remains operation/permission authority",
       "P4": "demo loader and governed operation adapters reuse existing environments; cannot bypass product actions"
     },
+    "next_exact_step": "Steps A, B and Step C's duty build are closed except for two sequenced items. The declaration has been written back with the observed custody of both created duties, so the read-only plan now fails on exactly one item: the deployment-wide platform-admin binding. Next, in order: (1) initialize the platform control plane so sc_platform_control can serve the platform-admin entry - this needs a governed entry that starts the duty's odoo/redis/nginx services and installs the declared control-plane minimum module set; that module set is a product/governance decision and must be declared, not improvised by an ops tool; (2) then move VITE_PLATFORM_ADMIN_DB, scripts/verify/daily_dev_acceptance_env_guard.py, scripts/dev/local_sample_env_prepare.sh, make/codex.mk DAILY_RUNTIME_TOPOLOGY_DATABASES and the repository .env.dev onto sc_platform_control in one change, rebuild the served bundle with the governed frontend build entry, and re-run the duty plan to PASS; (3) register the duties through the governed platform-database lifecycle adapter once it has its runtime binding; (4) Step D, the user module migration into sc_tenant_baosheng_dev from the customer repository, which owns the source mapping and the versioned migration, after the product line is installed there; (5) Step E unified onboarding plus isolation verification; (6) Step F product acceptance. The three declared Step B gaps (data_checksums=off, no amcheck index verification, and no paired recovery point for sc_odoo/sc_platform_core) stay preconditions for the first write to those two databases.",
     "no_tenant_target": "Resolved for the daily server, not for production: the customer tenant volume currently lives inside sc_demo (company 1, 48,496 owned rows plus 12,194 unowned payment.ledger rows) while that company's registration declares data_purpose='demo'. No production customer tenant target identity exists and none may be presumed.",
     "owner_ruling_20261015": {
       "authority": "Owner ruling 2026-10-15, verbatim order given to the executor: dispose of the shared-PGDATA two-instance risk first, then continue the three-database build. Existing passing tests cannot cover this runtime risk.",
@@ -1230,6 +1231,22 @@
         "log": "/tmp/sc/routing.txt",
         "note": "re-proved after two clusters were added: one_live_postmaster_per_cluster_data_volume, instance_data_volume_distinct, single_serving_instance_per_database, published_host_port_unique and retired_stack_is_not_running all true; 6 instances; sc_odoo and sc_platform_core still unserved",
         "status": "passed"
+      },
+      {
+        "command": "make verify.daily.runtime.database.duty",
+        "environment": "local, offline (unit layer)",
+        "layer": "L2",
+        "log": "make target output; 57 tests",
+        "note": "non-zero and green after the declaration write-back and the test-fixture repair",
+        "status": "passed"
+      },
+      {
+        "command": "make daily.runtime.database.duty.plan DAILY_RUNTIME_EXPECTED_SHA=10bf72ef...",
+        "environment": "sc-root, read-only",
+        "layer": "L3",
+        "log": ".runtime/final-acceptance/daily-deployed/database-duty-plan.json",
+        "note": "all three duties show failed_assertions == []; the only failing item remains the deferred platform-admin build binding (observed sc_platform_core, declared sc_platform_control)",
+        "status": "passed"
       }
     ],
     "risk": "high: database lifecycle effects; no runtime cutoff until exact governed target, rollback and tests are satisfied",
@@ -1600,6 +1617,35 @@
         "the user module owns the source mapping, the versioned migration and the structured data alignment; that is Step D and it happens in the customer repository"
       ],
       "verdict": "PASS for the declared custody facts: the duty exists exactly as declared and no assertion failed."
+    },
+    "step_three_declaration_write_back_20261015": {
+      "case": "the declaration is the authority, so a created duty must be written back into it",
+      "finding": "After the two duties were created the declaration still said custody.role_compliance=to_be_created with database_present=false. The entry's own design says the declaration legitimately keeps that shape only until the observed facts are written back, and judging a freshly created duty against its own pre-write declaration would report a successful creation as a failure. Left unwritten, a re-run of the read-only plan would fail on cluster_container_state_matches_declaration for both created duties, and the next --apply would try to create a duty that is already serving.",
+      "layer": "P4 governed declaration maintenance (no runtime mutation)",
+      "test_defect_found_and_fixed": "Eight decision-layer tests and the observation_matching helper read the shipped declaration and assumed it still contained a to_be_created duty, so the write-back broke them for the wrong reason. They now ask for that state explicitly through prospective(), and observation_matching() models all three declared shapes (to_be_created, declared_gap, compliant). No assertion was weakened or removed; two invariants were added: a duty whose cluster identity is recorded may not still be declared to_be_created, and a compliant duty must declare its database and role present. 55 -> 57 tests.",
+      "verification": {
+        "declaration_digest_after_write_back": "b7b3d9a32a16",
+        "not_a_pass": "the deployment-wide platform-admin binding is still FAIL; the switch stays sequenced after the control plane can serve the entry",
+        "plan": "make daily.runtime.database.duty.plan (read-only) reports status FAIL with every duty showing failed_assertions == []; declared_custody is now compliant/declared_gap/compliant and the single failing item is the deliberately deferred frontend_build_env_names_the_declared_platform_admin_database binding",
+        "plan_digest": "83d7f4e8f742ed375af034d8f27c08221545bb29f6c3a9c956fc9061eb57fbb1",
+        "unit": "make verify.daily.runtime.database.duty: 57 tests, 0 failures"
+      },
+      "written_back": {
+        "customer_tenant_dev": {
+          "cluster.system_identifier": "7696799327921901606",
+          "database_present": true,
+          "database_role_present": true,
+          "role_compliance": "compliant"
+        },
+        "demo": "unchanged: still declared_gap (the shared bootstrap role is a real, still-open gap)",
+        "platform_control": {
+          "cluster.system_identifier": "7696799124996268070",
+          "database_present": true,
+          "database_role_present": true,
+          "role_compliance": "compliant"
+        },
+        "source_of_the_values": "the apply receipts' own observation, not a re-queried or invented value"
+      }
     },
     "step_three_deployment_binding_20261015": {
       "case": "VITE_PLATFORM_ADMIN_DB is a frontend *build-time* value",
