@@ -64,6 +64,7 @@ def readback(**overrides):
         "maintenance_access_rows": 0,
         "approves_maintenance_access": False,
         "allowed_group_closure_ids": [2, 14, 16],
+        "allowed_group_closure_labels": ["base.group_user", "base.group_partner_manager", "smart_core.group_smart_core_security_admin"],
         "allowed_group_closure_complete": True,
         "exists": False,
         "identity": None,
@@ -420,11 +421,14 @@ class MakeTargetTests(unittest.TestCase):
 
     def test_each_remote_entry_validates_name_and_evidence_before_connecting(self):
         # A name or an evidence reference travels through the ssh payload as a
-        # shell argument, so both remote entries refuse the characters that
-        # would break out of it before the connection is made.
+        # shell argument.  Make expands this file before any recipe runs, so the
+        # apostrophe is the one character refused ahead of the connection; both
+        # remote entries carry the same guard, and their bounds are the entry's
+        # own bounds rather than a wider local copy.
         self.assertEqual(self.make.count("it would break the ssh payload"), 4)
-        self.assertEqual(self.make.count("{2,200}$$'"), 2)
-        self.assertEqual(self.make.count("{10,400}$$'"), 2)
+        self.assertEqual(self.make.count("{2,80}$$'"), 2)
+        self.assertEqual(self.make.count("{10,200}$$'"), 2)
+        self.assertEqual(self.make.count("must be 2-80 characters"), 2)
 
     def test_the_bootstrap_reuses_the_declared_identity_binding(self):
         self.assertIn("bootstrap --login \"$(DAILY_SECURITY_ADMIN_LOGIN)\"", self.make)

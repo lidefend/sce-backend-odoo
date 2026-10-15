@@ -20,6 +20,7 @@ expiry sweep) is proven at the ORM layer
 import json
 import os
 import uuid
+from unittest import mock
 
 from odoo import SUPERUSER_ID, api, fields
 from odoo.modules.registry import Registry
@@ -149,6 +150,16 @@ class TestPlatformMaintenanceAccessHttp(HttpCase):
         return self._json_response(
             self.url_open(path, data=json.dumps(payload or {}), headers=headers)
         )
+
+    def _call_raw(self, path, token=None, payload=None, *, method="POST"):
+        headers = {"Content-Type": "application/json"}
+        if token:
+            headers["Authorization"] = "Bearer %s" % token
+        if method == "GET":
+            response = self.url_open(path, headers=headers)
+        else:
+            response = self.url_open(path, data=json.dumps(payload or {}), headers=headers)
+        return response.status_code, self._json_response(response)
 
     def _request(self, token, **overrides):
         body = {
@@ -391,3 +402,34 @@ class TestPlatformMaintenanceAccessHttp(HttpCase):
         self.assertFalse(replay.get("ok"), replay)
         self.assertIn("NOT_REQUESTED", replay["error"]["message"])
         self.assertEqual(self.ledger.browse(access_id).state, "approved")
+
+    def test_a_governed_permission_refusal_answers_with_its_code(self):
+        """A governor raising PermissionError must stay machine-readable."""
+        requester = self._login(self.requester_login)
+        model = type(self.env["sc.platform.maintenance.access"].sudo())
+        with mock.patch.object(
+            model,
+            "request_access",
+            side_effect=PermissionError("MAINTENANCE_ACCESS_WINDOW_CLOSED: the window elapsed"),
+        ):
+            status, payload = self._call_raw(
+                "/api/ops/maintenance/access/request", requester, {}
+            )
+        self.assertEqual(status, 400, payload)
+        self.assertEqual(payload["error"]["code"], "MAINTENANCE_ACCESS_WINDOW_CLOSED")
+
+    def test_a_server_permission_error_is_not_reported_as_a_refusal(self):
+        """A PermissionError that is not a governed refusal is a server error."""
+        requester = self._login(self.requester_login)
+        model = type(self.env["sc.platform.maintenance.access"].sudo())
+        with mock.patch.object(
+            model,
+            "request_access",
+            side_effect=PermissionError("permission denied for relation sc_platform_maintenance_access"),
+        ):
+            status, payload = self._call_raw(
+                "/api/ops/maintenance/access/request", requester, {}
+            )
+        self.assertEqual(status, 500, payload)
+        self.assertEqual(payload["error"]["code"], "SERVER_ERROR")
+        self.assertEqual(payload["error"]["message"], "Internal server error")

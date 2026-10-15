@@ -174,11 +174,20 @@ def _dispatch(handler: Callable[[dict, dict], dict], *, decider: bool):
         return _ok({**data, **_principal_facts(principal)})
     except AccessDenied as exc:
         return _fail("PERMISSION_DENIED", str(exc), http_status=403)
-    except (AccessError, PermissionError, ValidationError, UserError) as exc:
+    except (AccessError, ValidationError, UserError) as exc:
         # A governance refusal must answer with a governance code, whatever
-        # layer raised it.  ``PermissionError`` is the standard-library form a
-        # governor may raise, so it is a refusal here and not a server error.
+        # layer raised it.
         return _fail(_refusal_code(exc), str(exc), http_status=400)
+    except PermissionError as exc:
+        # ``PermissionError`` is the standard-library form a governor may raise,
+        # but it is also what an unrelated layer may raise for a defect.  Only a
+        # refusal that speaks in a governed code is answered as a refusal; any
+        # other one is a server error and is reported like one, without echoing
+        # the internal text.
+        code = _refusal_code(exc)
+        if code == "MAINTENANCE_ACCESS_REFUSED":
+            return _fail("SERVER_ERROR", "Internal server error", http_status=500)
+        return _fail(code, str(exc), http_status=400)
     except Exception:  # noqa: BLE001 - the boundary reports, never guesses
         # The boundary never echoes internal exception text to a client: the
         # message could carry database, path or identity detail, and a caller

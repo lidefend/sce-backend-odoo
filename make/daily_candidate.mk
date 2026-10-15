@@ -356,9 +356,11 @@ daily.runtime.duty.database_registration.remote_register: daily.runtime.duty.dat
 # carrier or moved the ledger is refused. The login, the name and the evidence
 # are operator inputs; the confirmation value and the group identity come from
 # the entry itself.  Both operator inputs travel through the ssh payload as shell
-# arguments, so the characters that would break out of that argument are refused
-# before the connection is made; the entry refuses them again with its own
-# authoritative patterns, which it reads from argv rather than from a shell.
+# arguments.  Make expands the context lines of this file before any recipe runs,
+# so the only character refused ahead of the ssh connection is the apostrophe,
+# which is checked on its own line; every other payload-breaking character is
+# refused by the entry's authoritative patterns, which it reads from argv rather
+# than from a shell.
 DAILY_SECURITY_ADMIN_TOOL ?= $(DAILY_CONTINUITY_REMOTE_ROOT)/scripts/ops/daily_runtime_platform_security_admin_bootstrap.py
 DAILY_SECURITY_ADMIN_LOGIN ?=
 DAILY_SECURITY_ADMIN_NAME ?=
@@ -380,10 +382,10 @@ daily.runtime.platform.security_admin.bootstrap.remote_readback: daily.runtime.p
 	@test -n "$(DAILY_SECURITY_ADMIN_NAME)" || { echo "DAILY_SECURITY_ADMIN_NAME is required" >&2; exit 2; }
 	@test -n "$(DAILY_SECURITY_ADMIN_EVIDENCE)" || { echo "DAILY_SECURITY_ADMIN_EVIDENCE is required" >&2; exit 2; }
 	@case "$(DAILY_SECURITY_ADMIN_NAME)" in *"'"*) echo "DAILY_SECURITY_ADMIN_NAME must not contain an apostrophe: it would break the ssh payload" >&2; exit 2;; esac
-	@name_pattern='^[^"`$$\\;|<>&()]{2,200}$$'; [[ "$(DAILY_SECURITY_ADMIN_NAME)" =~ $$name_pattern ]] || { echo "DAILY_SECURITY_ADMIN_NAME must be a plain name: no double quote, backtick, dollar sign, backslash or shell operator" >&2; exit 2; }
-	@name_length=$$(printf '%s' "$(DAILY_SECURITY_ADMIN_NAME)" | wc -m); test "$$name_length" -ge 2 && test "$$name_length" -le 200 || { echo "DAILY_SECURITY_ADMIN_NAME must be 2-200 characters" >&2; exit 2; }
+	@name_pattern='^[^"`$$\\;|<>&()]{2,80}$$'; [[ "$(DAILY_SECURITY_ADMIN_NAME)" =~ $$name_pattern ]] || { echo "DAILY_SECURITY_ADMIN_NAME must be a plain name: no double quote, backtick, dollar sign, backslash or shell operator" >&2; exit 2; }
+	@name_length=$$(printf '%s' "$(DAILY_SECURITY_ADMIN_NAME)" | wc -m); test "$$name_length" -ge 2 && test "$$name_length" -le 80 || { echo "DAILY_SECURITY_ADMIN_NAME must be 2-80 characters" >&2; exit 2; }
 	@case "$(DAILY_SECURITY_ADMIN_EVIDENCE)" in *"'"*) echo "DAILY_SECURITY_ADMIN_EVIDENCE must not contain an apostrophe: it would break the ssh payload" >&2; exit 2;; esac
-	@evidence_pattern='^[^"`$$\\;|<>&()]{10,400}$$'; [[ "$(DAILY_SECURITY_ADMIN_EVIDENCE)" =~ $$evidence_pattern ]] || { echo "DAILY_SECURITY_ADMIN_EVIDENCE must cite the ruling without a double quote, backtick, dollar sign, backslash or shell operator" >&2; exit 2; }
+	@evidence_pattern='^[^"`$$\\;|<>&()]{10,200}$$'; [[ "$(DAILY_SECURITY_ADMIN_EVIDENCE)" =~ $$evidence_pattern ]] || { echo "DAILY_SECURITY_ADMIN_EVIDENCE must cite the ruling without a double quote, backtick, dollar sign, backslash or shell operator" >&2; exit 2; }
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
 		'python3 "$(DAILY_SECURITY_ADMIN_TOOL)" readback --login "$(DAILY_SECURITY_ADMIN_LOGIN)" --name "$(DAILY_SECURITY_ADMIN_NAME)" --evidence "$(DAILY_SECURITY_ADMIN_EVIDENCE)"'
 
@@ -393,10 +395,10 @@ daily.runtime.platform.security_admin.bootstrap.remote_bootstrap: daily.runtime.
 	@test -n "$(DAILY_SECURITY_ADMIN_NAME)" || { echo "DAILY_SECURITY_ADMIN_NAME is required" >&2; exit 2; }
 	@test -n "$(DAILY_SECURITY_ADMIN_EVIDENCE)" || { echo "DAILY_SECURITY_ADMIN_EVIDENCE is required" >&2; exit 2; }
 	@case "$(DAILY_SECURITY_ADMIN_NAME)" in *"'"*) echo "DAILY_SECURITY_ADMIN_NAME must not contain an apostrophe: it would break the ssh payload" >&2; exit 2;; esac
-	@name_pattern='^[^"`$$\\;|<>&()]{2,200}$$'; [[ "$(DAILY_SECURITY_ADMIN_NAME)" =~ $$name_pattern ]] || { echo "DAILY_SECURITY_ADMIN_NAME must be a plain name: no double quote, backtick, dollar sign, backslash or shell operator" >&2; exit 2; }
-	@name_length=$$(printf '%s' "$(DAILY_SECURITY_ADMIN_NAME)" | wc -m); test "$$name_length" -ge 2 && test "$$name_length" -le 200 || { echo "DAILY_SECURITY_ADMIN_NAME must be 2-200 characters" >&2; exit 2; }
+	@name_pattern='^[^"`$$\\;|<>&()]{2,80}$$'; [[ "$(DAILY_SECURITY_ADMIN_NAME)" =~ $$name_pattern ]] || { echo "DAILY_SECURITY_ADMIN_NAME must be a plain name: no double quote, backtick, dollar sign, backslash or shell operator" >&2; exit 2; }
+	@name_length=$$(printf '%s' "$(DAILY_SECURITY_ADMIN_NAME)" | wc -m); test "$$name_length" -ge 2 && test "$$name_length" -le 80 || { echo "DAILY_SECURITY_ADMIN_NAME must be 2-80 characters" >&2; exit 2; }
 	@case "$(DAILY_SECURITY_ADMIN_EVIDENCE)" in *"'"*) echo "DAILY_SECURITY_ADMIN_EVIDENCE must not contain an apostrophe: it would break the ssh payload" >&2; exit 2;; esac
-	@evidence_pattern='^[^"`$$\\;|<>&()]{10,400}$$'; [[ "$(DAILY_SECURITY_ADMIN_EVIDENCE)" =~ $$evidence_pattern ]] || { echo "DAILY_SECURITY_ADMIN_EVIDENCE must cite the ruling without a double quote, backtick, dollar sign, backslash or shell operator" >&2; exit 2; }
+	@evidence_pattern='^[^"`$$\\;|<>&()]{10,200}$$'; [[ "$(DAILY_SECURITY_ADMIN_EVIDENCE)" =~ $$evidence_pattern ]] || { echo "DAILY_SECURITY_ADMIN_EVIDENCE must cite the ruling without a double quote, backtick, dollar sign, backslash or shell operator" >&2; exit 2; }
 	@test "$${SC_CONFIRM_PLATFORM_SECURITY_ADMIN_BOOTSTRAP:-}" = "BOOTSTRAP_DECLARED_PLATFORM_SECURITY_ADMIN" || { echo "exact platform security administrator bootstrap confirmation is required" >&2; exit 2; }
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
 		'SC_CONFIRM_PLATFORM_SECURITY_ADMIN_BOOTSTRAP=BOOTSTRAP_DECLARED_PLATFORM_SECURITY_ADMIN python3 "$(DAILY_SECURITY_ADMIN_TOOL)" bootstrap --login "$(DAILY_SECURITY_ADMIN_LOGIN)" --name "$(DAILY_SECURITY_ADMIN_NAME)" --evidence "$(DAILY_SECURITY_ADMIN_EVIDENCE)"'

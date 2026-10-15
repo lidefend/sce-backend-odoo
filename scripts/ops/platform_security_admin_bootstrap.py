@@ -194,8 +194,12 @@ def readback(env, request):
     )
     Access = env["sc.platform.maintenance.access"].sudo()
     group = env.ref(SECURITY_ADMIN_GROUP_XMLID, raise_if_not_found=False)
-    internal = env.ref(INTERNAL_USER_GROUP_XMLID, raise_if_not_found=False)
-    allowed_ids = _allowed_group_closure_ids(env, (internal, group))
+    # The declared closure is consumed from the module constant rather than
+    # repeated here, so the seeded groups and the reported closure cannot drift.
+    seeds = tuple(
+        env.ref(xmlid, raise_if_not_found=False) for xmlid in ALLOWED_GROUP_XMLIDS
+    )
+    allowed_ids = _allowed_group_closure_ids(env, seeds)
     report = {
         "mode": "read_only",
         "writes": 0,
@@ -213,6 +217,9 @@ def readback(env, request):
         "maintenance_access_rows": Access.search_count([]),
         "approves_maintenance_access": False,
         "allowed_group_closure_ids": sorted(allowed_ids),
+        # The labels travel with the ids so a reader can check the closure holds
+        # no business role without re-resolving the groups in this environment.
+        "allowed_group_closure_labels": _group_labels(env, allowed_ids),
         "allowed_group_closure_complete": bool(allowed_ids),
         "exists": bool(user),
     }

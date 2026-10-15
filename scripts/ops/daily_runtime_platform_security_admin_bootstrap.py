@@ -278,6 +278,12 @@ def assert_readback(report: dict, entry, request: dict, control: dict) -> dict:
         entry._assert_readable(report, request)
     except entry.BootstrapError as exc:
         _fail(str(exc))
+    closure_ids = report.get("allowed_group_closure_ids")
+    if not isinstance(closure_ids, list) or not closure_ids:
+        _fail("the environment did not declare the approver group closure")
+    closure_labels = report.get("allowed_group_closure_labels")
+    if not isinstance(closure_labels, list) or len(closure_labels) != len(closure_ids):
+        _fail("the approver group closure travelled without its memberships")
     rows = int(report.get("maintenance_access_rows") or 0)
     if rows < 0:
         _fail("the authorization ledger reported an impossible size")
@@ -417,6 +423,11 @@ def execute(
             "exist": before.get("exists"),
             "security_admin_member_count": before.get("security_admin_member_count"),
             "maintenance_access_rows": before.get("maintenance_access_rows"),
+            # The closure is reported with its labels so the operator can check
+            # it holds no business role in this environment, which cannot be
+            # decided offline.
+            "allowed_group_closure_ids": before.get("allowed_group_closure_ids"),
+            "allowed_group_closure_labels": before.get("allowed_group_closure_labels"),
             "readback": before,
         }
 
