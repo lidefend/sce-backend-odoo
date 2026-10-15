@@ -95,7 +95,9 @@
     "scripts/verify/test_test_coverage_registry_audit.py",
     "scripts/verify/test_coverage_registry.yaml",
     "docs/ops/codex_execution_allowlist.md",
-    "docs/engineering_convergence/split_plan_queue.md"
+    "docs/engineering_convergence/split_plan_queue.md",
+    "scripts/ops/archive_worktree_delivery_evidence.py",
+    "scripts/ops/test_safe_worktree_cleanup.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -168,7 +170,7 @@
     "Frozen exact-head Quick, final identity-bound review and required remote checks remain pending.",
     "Daily target deployment and complete user product acceptance remain pending; local demo sample read is not full product delivery."
   ],
-  "next_exact_step": "Prepare generated reports after reviewed P4 coverage/entry-authority fixes; commit/refreeze; exact-head Quick. Reuse unchanged product/runtime evidence.",
+  "next_exact_step": "Commit bounded archive adapter, run final exact-head Quick, archive nonvisual evidence and publish GitHub PR via Make; no runtime replay.",
   "takeover_20261015": {
     "head": "e12e75eaa5bdcfe5b01dfe14b89cb201fac60023",
     "dirty_paths": [
@@ -1177,6 +1179,36 @@
           "log": "/tmp/sce-closure-coverage-final-freeze.log",
           "generated_changes": "Coverage groups and one-line source length updates only"
         }
+      }
+    },
+    "integration_archive": {
+      "layer": "P4",
+      "target": "existing workspace.evidence.archive",
+      "reason": "Integration evidence is audit/JSON/Quick; existing v1 archive requires screenshot even for nonvisual evidence. Explicit v2 nonvisual integration purpose, no weakening of v1 or cleanup authority.",
+      "affected_inputs": [
+        "archive_worktree_delivery_evidence.py",
+        "test_safe_worktree_cleanup.py",
+        "execution allowlist docs"
+      ],
+      "reuse": "Product/Demo/physical runtime unchanged; old 55eadc35 Quick remains historical, new exact-head required after tool change.",
+      "checks": {
+        "L1": {
+          "command": "make ci.local.iteration",
+          "status": "passed",
+          "log": "/tmp/sce-integration-archive-iteration.log"
+        },
+        "L2": {
+          "command": "make verify.workspace.worktree.guard",
+          "status": "passed",
+          "tests": 149,
+          "log": "/tmp/sce-integration-archive-final-tests.log"
+        }
+      },
+      "limits": "v2 is nonvisual integration archive only, never visual acceptance or worktree deletion authority; original JSON provenance and exact digests retained",
+      "review": "concurrency_review source PASS; nine new cases preserve v1, bind provenance, reject drift and cleanup misuse",
+      "freeze_prepare": {
+        "status": "passed",
+        "log": "/tmp/sce-integration-archive-freeze.log"
       }
     }
   }

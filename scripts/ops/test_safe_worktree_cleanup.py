@@ -1192,5 +1192,115 @@ class SupersededRetirementTest(SafeWorktreeCleanupTest):
         self.assertIn("cannot be combined with a superseded retirement", result.stderr)
 
 
+
+class NonvisualIntegrationArchiveTest(unittest.TestCase):
+    def setUp(self):
+        import archive_worktree_delivery_evidence as evidence
+        self.evidence = evidence
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name) / "repo"
+        self.root.mkdir()
+        git(self.root, "init", "-b", "main")
+        git(self.root, "config", "user.email", "test@example.invalid")
+        git(self.root, "config", "user.name", "Test")
+        git(self.root, "commit", "--allow-empty", "-m", "initial")
+        self.head = git(self.root, "rev-parse", "HEAD")
+        self.destination = Path(self.temp.name) / "archives"
+        rows = []
+        for role in ("summary", "identity", "review"):
+            (self.root / (role + ".json")).write_text(json.dumps({"candidateHead": self.head}))
+            rows.append({"role": role, "path": role + ".json"})
+        self.artifact = self.root / "audit.json"
+        self.artifact.write_text(json.dumps({"state": "active", "audit_id": 5}))
+        rows.append({"role": "artifact", "path": "audit.json",
+                     "sha256": evidence.sha256(self.artifact),
+                     "provenance": "Original isolated rehearsal readback; unchanged inputs"})
+        self.manifest = self.root / "manifest.json"
+        self.payload = {"schemaVersion": 2, "purpose": evidence.INTEGRATION_PURPOSE,
+                        "nonvisualReason": "Database lifecycle has JSON evidence, no visual assertion",
+                        "candidateHead": self.head, "topic": "database-integration", "files": rows}
+
+    def plan(self):
+        self.manifest.write_text(json.dumps(self.payload))
+        return self.evidence.load_plan(self.root, self.manifest, self.destination)
+
+    def test_archive_rereads_original_json_and_is_not_cleanup_authority(self):
+        receipt = self.evidence.archive(self.plan(), apply=True, confirmation=self.evidence.CONFIRMATION)
+        result = json.loads(receipt.read_text())
+        self.assertEqual(result["schemaVersion"], 2)
+        self.assertEqual(result["purpose"], "nonvisual-integration")
+        self.assertEqual(result["nonvisualReason"], self.payload["nonvisualReason"])
+        for row in result["files"]:
+            self.assertEqual(self.evidence.sha256(Path(row["archivePath"])), row["sha256"])
+        from types import SimpleNamespace
+        with self.assertRaisesRegex(cleanup.CleanupError, "schemaVersion 1"):
+            cleanup.verify_evidence_receipt(SimpleNamespace(path=self.root, head=self.head), receipt)
+
+    def test_v1_still_requires_real_screenshot(self):
+        self.payload["schemaVersion"] = 1
+        with self.assertRaisesRegex(self.evidence.ArchiveError, "missing required roles: screenshot"):
+            self.plan()
+
+    def test_v1_visual_archive_still_validates_and_copies_image(self):
+        self.payload["schemaVersion"] = 1
+        self.payload.pop("purpose")
+        image = self.root / "screen.png"
+        image.write_bytes(base64.b64decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="))
+        self.payload["files"][-1] = {"role": "screenshot", "path": "screen.png"}
+        receipt = self.evidence.archive(self.plan(), apply=True, confirmation=self.evidence.CONFIRMATION)
+        self.assertEqual(json.loads(receipt.read_text())["schemaVersion"], 1)
+        image.write_text("not an image")
+        with self.assertRaisesRegex(self.evidence.ArchiveError, "invalid image content"):
+            self.plan()
+
+    def test_manifest_drift_after_plan_is_rejected(self):
+        plan = self.plan()
+        self.manifest.write_text("{}")
+        with self.assertRaisesRegex(self.evidence.ArchiveError, "candidate or manifest changed"):
+            self.evidence.archive(plan, apply=True, confirmation=self.evidence.CONFIRMATION)
+
+    def test_nonvisual_requires_explicit_purpose_and_reason(self):
+        for key in ("purpose", "nonvisualReason"):
+            with self.subTest(key=key):
+                value = self.payload.pop(key)
+                with self.assertRaises(self.evidence.ArchiveError):
+                    self.plan()
+                self.payload[key] = value
+
+    def test_original_artifact_requires_hash_and_provenance(self):
+        row = self.payload["files"][-1]
+        for key in ("sha256", "provenance"):
+            with self.subTest(key=key):
+                value = row.pop(key)
+                with self.assertRaises(self.evidence.ArchiveError):
+                    self.plan()
+                row[key] = value
+
+    def test_rejects_invalid_json_and_symlink(self):
+        self.artifact.write_text("invalid")
+        self.payload["files"][-1]["sha256"] = self.evidence.sha256(self.artifact)
+        with self.assertRaisesRegex(self.evidence.ArchiveError, "readable JSON"):
+            self.plan()
+        self.artifact.unlink()
+        self.artifact.symlink_to(self.root / "summary.json")
+        with self.assertRaisesRegex(self.evidence.ArchiveError, "missing or unsafe"):
+            self.plan()
+
+    def test_content_drift_after_plan_is_rejected_and_partial_archive_removed(self):
+        plan = self.plan()
+        self.artifact.write_text(json.dumps({"state": "suspended"}))
+        with self.assertRaisesRegex(self.evidence.ArchiveError, "archive verification failed"):
+            self.evidence.archive(plan, apply=True, confirmation=self.evidence.CONFIRMATION)
+        self.assertFalse(plan["destination"].exists())
+
+    def test_head_or_manifest_drift_after_plan_is_rejected(self):
+        plan = self.plan()
+        git(self.root, "commit", "--allow-empty", "-m", "drift")
+        with self.assertRaisesRegex(self.evidence.ArchiveError, "candidate or manifest changed"):
+            self.evidence.archive(plan, apply=True, confirmation=self.evidence.CONFIRMATION)
+
+
 if __name__ == "__main__":
     unittest.main()

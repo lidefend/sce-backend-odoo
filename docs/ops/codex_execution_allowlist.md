@@ -534,6 +534,14 @@ make workspace.evidence.archive \
 冒充所需证据。归档 receipt 必须位于
 工作树之外，并通过 `CLEAN_WORKTREE_EVIDENCE_RECEIPT` 传给清理入口。
 
+非可视集成证据可复用同一 `make workspace.evidence.archive` 入口，显式使用
+`schemaVersion=2`、`purpose=nonvisual-integration` 和非空 `nonvisualReason`。
+该类型必须包含 summary、identity、review 和 artifact；前三类仍绑定当前 HEAD，
+artifact 仅接受非空 JSON 对象，并逐项声明原始文件 SHA256 和 provenance（来源及复用依据）。
+归档在执行前重核候选与清单，在复制后逐项比较规划时摘要、源文件和副本；漂移拒绝。
+这只表示集成证据已保存，不代表功能验收通过，不可替代可视验收，且 schemaVersion 2 receipt
+明确不具备工作树删除授权；原 schemaVersion 1 的四类证据及清理门禁保持不变。
+
 目标必须是主仓库同级且以 `<repository-name>-` 开头的新目录；目标分支必须符合
 自治写入分支规则且尚不存在；基线必须是本地或 `origin` 分支可达的既有提交。
 

@@ -102,6 +102,7 @@ Generated from repository source files. This report is informational during the 
 | 1320 | XML data/view | `addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml` |
 | 1320 | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1316 | Python source | `addons/smart_core/core/view_orchestrator.py` |
+| 1306 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1289 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1287 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1271 | Python source | `scripts/ops/retire_historical_branch_refs.py` |
@@ -114,7 +115,6 @@ Generated from repository source files. This report is informational during the 
 | 1217 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1207 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
-| 1196 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
 | 1179 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1169 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |

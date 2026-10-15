@@ -15,6 +15,8 @@ from pathlib import Path
 
 CONFIRMATION = "ARCHIVE_DELIVERY_EVIDENCE"
 REQUIRED_ROLES = {"summary", "identity", "screenshot", "review"}
+INTEGRATION_PURPOSE = "nonvisual-integration"
+INTEGRATION_ROLES = {"summary", "identity", "artifact", "review"}
 TEXT_ROLE_SUFFIXES = {
     "summary": {".json", ".md"},
     "identity": {".json"},
@@ -87,8 +89,15 @@ def load_plan(worktree: Path, manifest_path: Path, archive_root: Path) -> dict:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise ArchiveError(f"cannot read evidence manifest: {exc}") from exc
-    if manifest.get("schemaVersion") != 1:
-        raise ArchiveError("evidence manifest schemaVersion must be 1")
+    version = manifest.get("schemaVersion")
+    if version == 1:
+        required_roles = REQUIRED_ROLES
+    elif (version == 2 and manifest.get("purpose") == INTEGRATION_PURPOSE
+          and isinstance(manifest.get("nonvisualReason"), str)
+          and manifest["nonvisualReason"].strip()):
+        required_roles = INTEGRATION_ROLES
+    else:
+        raise ArchiveError("unsupported evidence schema/purpose or missing nonvisualReason")
     topic = manifest.get("topic")
     if not isinstance(topic, str) or not topic or any(ch not in "abcdefghijklmnopqrstuvwxyz0123456789-_" for ch in topic):
         raise ArchiveError("manifest topic must use lowercase letters, digits, hyphens or underscores")
@@ -99,32 +108,49 @@ def load_plan(worktree: Path, manifest_path: Path, archive_root: Path) -> dict:
     if not isinstance(rows, list) or not rows:
         raise ArchiveError("manifest files must be a non-empty list")
     roles = {row.get("role") for row in rows if isinstance(row, dict)}
-    missing = sorted(REQUIRED_ROLES - roles)
+    missing = sorted(required_roles - roles)
     if missing:
         raise ArchiveError("manifest missing required roles: " + ", ".join(missing))
 
     sources = []
     seen = set()
     for row in rows:
-        if not isinstance(row, dict) or row.get("role") not in REQUIRED_ROLES:
+        if not isinstance(row, dict) or row.get("role") not in required_roles:
             raise ArchiveError("every evidence file needs a supported role")
         relative = Path(str(row.get("path") or ""))
         if relative.is_absolute() or not relative.parts or ".." in relative.parts:
             raise ArchiveError(f"evidence path must be worktree-relative: {relative}")
-        source = (worktree / relative).resolve()
-        if worktree not in source.parents or not source.is_file() or source.is_symlink():
+        unresolved = worktree / relative
+        source = unresolved.resolve()
+        if (worktree not in source.parents or not source.is_file()
+                or any(path.is_symlink() for path in (unresolved, *unresolved.parents))):
             raise ArchiveError(f"evidence file is missing or unsafe: {relative}")
         if source.stat().st_size <= 0:
             raise ArchiveError(f"evidence file is empty: {relative}")
-        validate_evidence_file(row["role"], source, head)
+        digest = sha256(source)
+        if row["role"] == "artifact":
+            if row.get("sha256") != digest or not isinstance(row.get("provenance"), str) or not row["provenance"].strip():
+                raise ArchiveError("artifact requires exact sha256 and provenance")
+            try:
+                payload = json.loads(source.read_text(encoding="utf-8"))
+            except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+                raise ArchiveError("artifact must be readable JSON") from exc
+            if source.suffix.lower() != ".json" or not isinstance(payload, dict) or not payload:
+                raise ArchiveError("artifact must be a nonempty JSON object")
+        else:
+            validate_evidence_file(row["role"], source, head)
         if relative.as_posix() in seen:
             raise ArchiveError(f"duplicate evidence path: {relative}")
         seen.add(relative.as_posix())
-        sources.append({"role": row["role"], "relative": relative, "source": source})
+        sources.append({"role": row["role"], "relative": relative, "source": source,
+                        "sha256": digest, "provenance": row.get("provenance")})
 
     destination = archive_root / date.today().isoformat().replace("-", "") / topic / head
     return {
         "worktree": worktree,
+        "schemaVersion": version,
+        "purpose": manifest.get("purpose"),
+        "nonvisualReason": manifest.get("nonvisualReason"),
         "head": head,
         "topic": topic,
         "manifest": manifest_path,
@@ -140,6 +166,9 @@ def archive(plan: dict, *, apply: bool, confirmation: str) -> Path:
         return receipt_path
     if confirmation != CONFIRMATION:
         raise ArchiveError(f"apply requires --confirm {CONFIRMATION}")
+    if (git(plan["worktree"], "rev-parse", "HEAD") != plan["head"]
+            or sha256(plan["manifest"]) != plan["manifestSha256"]):
+        raise ArchiveError("candidate or manifest changed after planning")
     if plan["destination"].exists():
         raise ArchiveError(f"archive destination already exists: {plan['destination']}")
     plan["destination"].mkdir(parents=True)
@@ -151,7 +180,7 @@ def archive(plan: dict, *, apply: bool, confirmation: str) -> Path:
             shutil.copy2(row["source"], target)
             source_sha = sha256(row["source"])
             archived_sha = sha256(target)
-            if archived_sha != source_sha or target.stat().st_size <= 0:
+            if archived_sha != source_sha or source_sha != row["sha256"] or target.stat().st_size <= 0:
                 raise ArchiveError(f"archive verification failed: {row['relative']}")
             archived.append({
                 "role": row["role"],
@@ -159,9 +188,12 @@ def archive(plan: dict, *, apply: bool, confirmation: str) -> Path:
                 "archivePath": str(target.resolve()),
                 "sha256": archived_sha,
                 "size": target.stat().st_size,
+                "provenance": row["provenance"],
             })
         receipt = {
-            "schemaVersion": 1,
+            "schemaVersion": plan["schemaVersion"],
+            "purpose": plan["purpose"],
+            "nonvisualReason": plan["nonvisualReason"],
             "status": "verified",
             "archivedAt": datetime.now(timezone.utc).isoformat(),
             "topic": plan["topic"],
