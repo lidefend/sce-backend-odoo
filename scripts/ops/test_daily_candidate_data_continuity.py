@@ -178,5 +178,146 @@ class RestoreIsolationTests(unittest.TestCase):
                 CONTINUITY.closeout(contract, Path("/not-used"))
 
 
+TENANT_CONTRACT_PATH = (
+    ROOT / "scripts/ops/daily_runtime_tenant_recovery_contract_v1.json"
+)
+
+
+class DutyIdentityTests(unittest.TestCase):
+    """Runtime identity has exactly one owner: the duty declaration."""
+
+    def test_tenant_duty_identity_comes_from_the_declaration(self):
+        contract = CONTINUITY._load_contract(TENANT_CONTRACT_PATH)
+        self.assertEqual(contract["duty"], "customer_tenant_dev")
+        self.assertEqual(contract["database"], "sc_tenant_baosheng_dev")
+        self.assertEqual(
+            contract["database_role"], "sc_tenant_baosheng_dev_app"
+        )
+        self.assertEqual(
+            contract["database_container"], "sc-tenant-baosheng-dev-db-1"
+        )
+        self.assertEqual(
+            contract["odoo_container"], "sc-tenant-baosheng-dev-odoo-1"
+        )
+        self.assertEqual(
+            contract["backup_root"], "/data/backups/daily-tenant-baosheng-dev"
+        )
+        self.assertEqual(contract["filestore_scope"], "sc_tenant_baosheng_dev")
+        self.assertEqual(
+            contract["source_repository"], "/opt/projects/repos/sce-product-odoo"
+        )
+
+    def test_undeclared_duty_is_rejected(self):
+        payload = json.loads(TENANT_CONTRACT_PATH.read_text())
+        payload["duty"] = "customer_tenant_prod"
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "contract.json"
+            path.write_text(json.dumps(payload))
+            with self.assertRaisesRegex(CONTINUITY.ContinuityError, "undeclared duty"):
+                CONTINUITY._load_contract(path)
+
+    def test_contract_may_not_restate_another_duty_role(self):
+        payload = json.loads(TENANT_CONTRACT_PATH.read_text())
+        payload["database_role"] = "odoo"
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "contract.json"
+            path.write_text(json.dumps(payload))
+            with self.assertRaisesRegex(
+                CONTINUITY.ContinuityError, "identity mismatch: database_role"
+            ):
+                CONTINUITY._load_contract(path)
+
+    def test_contract_may_not_restate_another_duty_database(self):
+        payload = json.loads(TENANT_CONTRACT_PATH.read_text())
+        payload["database"] = "sc_tenant_other_dev"
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "contract.json"
+            path.write_text(json.dumps(payload))
+            with self.assertRaisesRegex(
+                CONTINUITY.ContinuityError, "identity mismatch: database"
+            ):
+                CONTINUITY._load_contract(path)
+
+    def test_contract_may_not_restate_another_backup_root(self):
+        payload = json.loads(TENANT_CONTRACT_PATH.read_text())
+        payload["backup_root"] = "/data/backups/daily_candidate"
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "contract.json"
+            path.write_text(json.dumps(payload))
+            with self.assertRaisesRegex(
+                CONTINUITY.ContinuityError, "identity mismatch: backup_root"
+            ):
+                CONTINUITY._load_contract(path)
+
+    def test_backup_identifier_is_bound_to_the_contract_prefix(self):
+        tenant = CONTINUITY._load_contract(TENANT_CONTRACT_PATH)
+        self.assertTrue(
+            tenant["backup_id"].fullmatch(
+                "sc_tenant_baosheng_dev-20261015T000000Z-deadbeef"
+            )
+        )
+        self.assertIsNone(
+            tenant["backup_id"].fullmatch("sc_demo-20261015T000000Z-deadbeef")
+        )
+        demo = CONTINUITY._load_contract(CONTRACT_PATH)
+        self.assertIsNone(
+            demo["backup_id"].fullmatch(
+                "sc_tenant_baosheng_dev-20261015T000000Z-deadbeef"
+            )
+        )
+
+    def test_relationship_sample_is_declared_per_duty(self):
+        contract = CONTINUITY._load_contract(TENANT_CONTRACT_PATH)
+        key, sql = CONTINUITY._relation_sample_sql(contract)
+        self.assertEqual(key, "payment_request_relation_sample_digest")
+        self.assertIn("FROM payment_request ORDER BY id LIMIT 100", sql)
+        self.assertIn("COALESCE(project_id::text, '')", sql)
+        self.assertIn("COALESCE(contract_id::text, '')", sql)
+
+    def test_relationship_sample_cannot_inject_sql(self):
+        contract = CONTINUITY._load_contract(TENANT_CONTRACT_PATH)
+        contract = dict(contract)
+        contract["relation_sample"] = {
+            "table": "payment_request; DROP TABLE res_users",
+            "columns": ["project_id"],
+            "limit": 100,
+        }
+        with self.assertRaisesRegex(CONTINUITY.ContinuityError, "sample table"):
+            CONTINUITY._relation_sample_sql(contract)
+
+    def test_missing_relationship_sample_is_rejected(self):
+        contract = CONTINUITY._load_contract(TENANT_CONTRACT_PATH)
+        contract = dict(contract)
+        contract.pop("relation_sample")
+        with self.assertRaisesRegex(CONTINUITY.ContinuityError, "relationship sample"):
+            CONTINUITY._relation_sample_sql(contract)
+
+    def test_live_reads_use_the_duty_application_role(self):
+        contract = CONTINUITY._load_contract(TENANT_CONTRACT_PATH)
+        with mock.patch.object(CONTINUITY, "_run", return_value=b"1") as run:
+            CONTINUITY._psql(contract, "SELECT 1;")
+        argv = run.call_args.args[0]
+        self.assertEqual(argv[:3], ["docker", "exec", contract["database_container"]])
+        self.assertIn("sc_tenant_baosheng_dev_app", argv)
+
+    def test_isolated_drill_uses_the_drill_own_role(self):
+        contract = CONTINUITY._load_contract(TENANT_CONTRACT_PATH)
+        with mock.patch.object(CONTINUITY, "_run", return_value=b"1") as run:
+            CONTINUITY._psql(contract, "SELECT 1;", container="drill", role="odoo")
+        argv = run.call_args.args[0]
+        self.assertEqual(argv[:3], ["docker", "exec", "drill"])
+        self.assertIn("odoo", argv)
+        self.assertNotIn("sc_tenant_baosheng_dev_app", argv)
+
+    def test_declaration_is_the_only_identity_source_in_the_tool(self):
+        source = (
+            ROOT / "scripts/ops/daily_candidate_data_continuity.py"
+        ).read_text()
+        self.assertIn("daily_runtime_database_duties.v1.json", source)
+        self.assertNotIn('"sc-backend-odoo-dev-db-1"', source)
+        self.assertNotIn("/data/backups/daily_candidate", source)
+        self.assertNotIn("FROM payment_request", source)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

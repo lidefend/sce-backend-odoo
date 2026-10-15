@@ -84,6 +84,18 @@
       ],
       "kind": "offline",
       "target": "verify.daily.runtime.source_revision.align"
+    },
+    "daily_duty_recovery_tool": {
+      "target": "verify.daily.duty.recovery",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/daily_candidate_data_continuity.py",
+        "scripts/ops/daily_candidate_data_continuity_contract_v1.json",
+        "scripts/ops/daily_runtime_tenant_recovery_contract_v1.json",
+        "config/ops/daily_runtime_database_duties.v1.json",
+        "scripts/ops/test_daily_candidate_data_continuity.py",
+        "make/daily_candidate.mk"
+      ]
     }
   },
   "environment": {
@@ -237,7 +249,13 @@
     "scripts/verify/test_role_surface_exposure_declaration_guard.py",
     "scripts/verify/test_sc_data_scope_ceiling_generate.py",
     "scripts/verify/test_sc_data_scope_rule_coverage_guard.py",
-    "scripts/verify/test_test_coverage_registry_audit.py"
+    "scripts/verify/test_test_coverage_registry_audit.py",
+    "docs/ops/daily_candidate_data_continuity_runbook_v1.md",
+    "make/daily_candidate.mk",
+    "scripts/ops/daily_candidate_data_continuity.py",
+    "scripts/ops/daily_candidate_data_continuity_contract_v1.json",
+    "scripts/ops/daily_runtime_tenant_recovery_contract_v1.json",
+    "scripts/ops/test_daily_candidate_data_continuity.py"
   ],
   "status": "active",
   "step_four_customer_module_delivery_20261015": {
