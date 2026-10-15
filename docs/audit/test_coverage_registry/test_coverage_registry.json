@@ -1355,7 +1355,8 @@
       "owner": "platform-team",
       "evidence": [
         "make:verify.smart_core.platform_maintenance_access.orm :: platform_maintenance_access test.safe"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "policy_document",
@@ -2082,7 +2083,8 @@
       "owner": "platform-team",
       "evidence": [
         "make:verify.smart_core.tenant_payload_operator.orm :: tenant_payload_operator test.safe"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "tender_award_fact",

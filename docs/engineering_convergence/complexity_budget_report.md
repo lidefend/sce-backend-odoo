@@ -74,7 +74,7 @@ Generated from repository source files. This report is informational during the 
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1521 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1513 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
-| 1324 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
+| 1338 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 690 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
@@ -290,8 +290,8 @@ Generated from repository source files. This report is informational during the 
 | 1389 | warning | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1374 | warning | Python source | `addons/smart_construction_core/tests/test_p1_funding_authority.py` |
 | 1339 | warning | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
+| 1338 | split_plan_required | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1337 | warning | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
-| 1332 | warning | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 
 ## Interpretation
 

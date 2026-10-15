@@ -2377,3 +2377,23 @@ S3-2（独立性规则补"（模型层）"限定）**本轮关闭**；S3-3（闭
 **未完成**：主线集成、版本发布、产品交付。载荷仍未入库：声明 `customer_module_version` 与已安装版本不一致
 （`TPV1_CUSTOMER_ADAPTER_INCOMPATIBLE`），须由用户模块重新出包、签名、重批，产品仓库不放宽；
 客户开发租户的数据对账（12386 / 6322 / 29 / 6035）与业务闭环验收尚未开始。
+
+## 2026-10-16：冻结候选上的**既存**阻塞 —— 测试覆盖登记缺口
+
+本次冻结 HEAD 的第一次 Quick 失败在 `verify.test.coverage.registry`：两个已声明的 Odoo tag 没有登记处置。
+关键事实是 —— **保留的上一轮失败日志（`quick-failure-af7bb718.log`）里是同样两行**，所以这不是本批引入，
+而是被当时的产品树边界违规**掩盖**的既存阻塞。
+
+| tag | 声明处 | 处置 | 实际入口 |
+|---|---|---|---|
+| `platform_maintenance_access` | `addons/smart_core/tests/test_platform_maintenance_access_http.py` | `class-selected` | `make verify.smart_core.platform_maintenance_access.orm :: platform_maintenance_access test.safe` |
+| `tenant_payload_operator` | `addons/smart_core/tests/test_tenant_payload_operator_lifecycle.py` | `class-selected` | `make verify.smart_core.tenant_payload_operator.orm :: tenant_payload_operator test.safe` |
+
+两个门禁都真实存在并**钉死 tag**（零收集不能通过），但它们需要活着的 `local.dev` 运行时，因此没有
+PR/定时工作流选中它们 —— 这正是 `on-demand` 的正确处置，不是"已覆盖"。
+
+处置：用受管的登记写入器补两条 `class-selected` 条目，重新导出受追踪的覆盖快照，再跑门禁。
+按条目与 HEAD 逐组比对，本次**只新增两条、没有任何既有条目的处置被改动**（写入器把文件重排与重折行，
+属于它的规范输出）。结果：`verify.test.coverage.registry` PASS（169 个 tag 组：4 gated / 22 on-demand / 143 unwired）。
+
+因为失败门禁的输入已经改变，冻结 HEAD 的 Quick 允许重跑**一次**。

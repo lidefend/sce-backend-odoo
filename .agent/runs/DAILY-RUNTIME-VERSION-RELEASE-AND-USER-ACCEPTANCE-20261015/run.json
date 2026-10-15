@@ -30,7 +30,8 @@
     "sc_demo mixes the customer tenant volume with demo/test purposes, so 'the demo database' is not yet a pure demo database; the destination of the company-1 volume is unresolved, and the demo duty is still declared with the shared-bootstrap-role gap and has no dedicated application role.",
     "CLOSED 2026-10-15 in this run: the platform-model registration for the daily profile now has a governed runtime binding -- scripts/ops/daily_runtime_duty_database_registration.py resolves every runtime fact from config/ops/daily_runtime_database_duties.v1.json and drives the immutable platform.database.register entry inside the control duty's own rendered stack. <customer-tenant-db> is registered (customer/<tenant_key>/customer_production/database_per_customer_tenant/^<customer-tenant-db>$ stage declared, one audited register operation, reuse path writes nothing), so DBGOV1_DATABASE_NOT_REGISTERED no longer blocks the operator lifecycle. Still open from the original finding: suspend/resume are not yet exercised for this duty and the demo duty still carries no registration of its own.",
     "The three declared Step B gaps stay preconditions for the first write to sc_odoo or sc_platform_core: the cluster reports data_checksums=off, no amcheck index verification has run, and neither database has a paired recovery point. sc_platform_control is a fresh cluster and inherited data_checksums=off; enabling checksums would need a rebuild, so the decision is recorded rather than assumed.",
-    "Frozen exact-head Quick, final identity-bound review and required remote checks remain pending."
+    "Frozen exact-head Quick, final identity-bound review and required remote checks remain pending.",
+    "CLOSED 2026-10-16 in this run (was: the frozen candidate's Quick failed on verify.test.coverage.registry because the platform_maintenance_access and tenant_payload_operator tags had no registry disposition; the same two lines are in the preserved earlier Quick failure, so this was pre-existing and previously masked by the product-tree boundary violation). Both entries are now dispositioned against their real on-demand ORM gates, the tracked coverage snapshot is re-exported, and the gate passes. See coverage_registry_gap_20261016."
   ],
   "branch": "fix/data-ownership-visibility-recovery-20261015",
   "checks": {
@@ -242,6 +243,34 @@
       ],
       "kind": "offline",
       "target": "verify.daily.runtime.database.duty"
+    },
+    "product_payload_boundary": {
+      "kind": "offline",
+      "target": "verify.tenant.product_payload_boundary",
+      "inputs": [
+        "scripts/verify/tenant_product_payload_boundary_guard.py",
+        "scripts/verify/test_tenant_product_payload_boundary_guard.py",
+        "scripts/verify/product_customer_runtime_decoupling_guard.py",
+        "config/ops/daily_runtime_database_duties.v1.json",
+        "scripts/ops/daily_runtime_duty_identity.py",
+        "scripts/ops/daily_runtime_tenant_topology_inventory.py",
+        "scripts/ops/daily_runtime_tenant_addons_deliver.py",
+        "scripts/ops/daily_runtime_tenant_recovery_contract_v1.json",
+        "scripts/ops/duty_identity_test_support.py",
+        "scripts/ops/synthetic_duty_instances.sample.json",
+        "make/codex.mk"
+      ]
+    },
+    "test_coverage_registry": {
+      "kind": "offline",
+      "target": "verify.test.coverage.registry",
+      "inputs": [
+        "scripts/verify/test_coverage_registry_audit.py",
+        "scripts/verify/test_test_coverage_registry_audit.py",
+        "scripts/verify/test_coverage_registry.yaml",
+        "docs/audit/test_coverage_registry/test_coverage_registry.json",
+        "make/guards.mk"
+      ]
     }
   },
   "environment": {
@@ -257,7 +286,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "(1) run the remaining real-runtime refusals on the one-hour fixture row already approved on the daily control duty (window 2026-10-15 21:04:14 -> 22:04:14 UTC): read the ledger, revoke the superseded approved row, prove the covering projection is then empty because the only approved row is out of window, prove the governed ops entry refuses, expire the elapsed row, and read the ledger back; (2) commit the iteration record and this run update; (3) revoke the temporary narrow import grant on the customer duty, because the import it was issued for cannot run and the approval window closes at 08:43:20 CST; (4) clear the one-time approver credential; (5) hand the payload staleness to the user-module delivery (re-emit at 17.0.2.8.0, re-sign, re-approve) and do not widen the adapter; (6) independent review, then mainline. No step may be replaced by writing the model directly, fabricating an approval, reusing admin or relaxing a mechanism.",
+  "next_exact_step": "(1) re-run the one Quick for the new frozen head, because the coverage-registry gate was the only failure and its input changed; (2) B-line read-only independent review of this batch (boundary relocation, managed materialisation, host-side readback, registry seeding); (3) push to GitHub and let the remote gates decide merge readiness; (4) hand the payload staleness to the user-module delivery (re-emit at the installed version, re-sign, re-approve) and do not widen the adapter; (5) after that, the customer development tenant's data reconciliation and business acceptance. No step may be replaced by writing the model directly, fabricating an approval, reusing admin or relaxing a mechanism.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "review_s2_closure_20261015": {
     "authority": "Independent B-line review of 5f5c4dae..4450e674 returned APPROVE_WITH_NOTES with one S2: the registration's control-database write had no test wiring, and the existing assertion pointed at the opposite target",
@@ -3287,5 +3316,31 @@
       ],
       "why": "The customer side of this boundary was last found at the frozen candidate, after the whole batch had been reviewed; the mapping now stops an in-place edit of the declaration or the resolver in the inner loop."
     }
+  },
+  "coverage_registry_gap_20261016": {
+    "trigger": "The first Quick of the frozen candidate failed on verify.test.coverage.registry: two declared Odoo tags had no disposition in the registry. The preserved log of the earlier failed Quick contains the identical two lines, so it is an existing blocker on this branch that the earlier boundary violation had been masking.",
+    "groups": [
+      {
+        "group": "platform_maintenance_access",
+        "declared_by": "addons/smart_core/tests/test_platform_maintenance_access_http.py",
+        "dispose": "class-selected",
+        "gate": "make:verify.smart_core.platform_maintenance_access.orm :: platform_maintenance_access test.safe",
+        "why": "the gate exists and pins the tag, but it needs a live local.dev runtime, so no recurring PR or scheduled workflow selects it"
+      },
+      {
+        "group": "tenant_payload_operator",
+        "declared_by": "addons/smart_core/tests/test_tenant_payload_operator_lifecycle.py",
+        "dispose": "class-selected",
+        "gate": "make:verify.smart_core.tenant_payload_operator.orm :: tenant_payload_operator test.safe",
+        "why": "same live-runtime requirement, so it stays an on-demand disposition until a recurring workflow selects it"
+      }
+    ],
+    "remedy": "Seeded the two missing registry entries through the governed writer, re-exported the tracked coverage snapshot, and re-ran the gate. No existing entry changed semantically; the writer re-sorted and re-wrapped the file.",
+    "result": {
+      "verify.test.coverage.registry": "PASS: all declared groups are gated or dispositioned",
+      "groups": "169 tag groups, 4 gated, 22 on-demand, 143 unwired"
+    },
+    "verification": "A per-group comparison against HEAD shows exactly two added entries and no changed existing entry, so the seeded file is not hiding an unnoticed disposition change.",
+    "retry_basis": "the gate input changed, so the failed Quick may be retried once at the new frozen head"
   }
 }
