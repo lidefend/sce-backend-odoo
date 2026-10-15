@@ -306,6 +306,18 @@ class SshReaderTests(unittest.TestCase):
 
 
 class ResolveTests(unittest.TestCase):
+    """Every case here injects the reader, so the shell must not select the source.
+
+    The override names a source; a developer shell that happens to export it must
+    not decide which document these cases resolve, or a run of this suite would
+    depend on the operator's environment instead of the assertion.
+    """
+
+    def setUp(self):
+        environ = mock.patch.dict(os.environ, {}, clear=True)
+        environ.start()
+        self.addCleanup(environ.stop)
+
     def test_resolve_returns_the_declared_identity(self):
         text = instances_document()
         declaration = _write(tracked_template())
