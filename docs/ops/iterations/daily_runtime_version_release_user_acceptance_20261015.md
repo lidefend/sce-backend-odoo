@@ -1420,3 +1420,91 @@ importer  : smart_core.group_smart_core_tenant_payload_importer (id 19) 成员 =
 | `make ci.local.iteration` | `PASS`（两个新文件已登记进 run scope，`outside_scope` 为空） |
 
 **这是 批次验收完成（顺序 1/2/3 + 顺序 4 准备切片），不是主线集成完成 / 版本发布完成 / 产品交付完成。**
+
+## Step D 顺序 4 定案：选择 A——由统一受管入驻机制创建专用导入服务账号
+
+所有者裁定：**导入操作员的身份由统一受管入驻机制创建，用户模块不承担平台操作员的创建。**
+这条同时否掉了前两个待定输入中的第 (1) 项，并把第 (2) 项收窄为“审批主体必须是可核验的真实主体”。
+
+### 固定的执行要求（本轮据此实现）
+
+- **P0** 负责通用账号生命周期与授权机制，**职责声明**承载租户差异，**P4** 负责执行与回读。
+- 使用**独立服务身份**：无管理员组，限定目标租户与公司，只赋予既有导入机制所需权限。
+- 凭据走**现有受管方式**生成与保管，不进入源码、报告或对话，**不默认开放交互式登录**。
+- 创建必须**幂等**；遇到同名但身份不匹配的账号必须**拒绝接管**。
+- 导入完成后**撤销临时导入权限**、使临时凭据或会话失效；**保留账号及其审计关联**，不删除责任记录。
+- `APPROVED_BY` 必须绑定**已验证的真实所有者或正式审批主体**；不得由新建服务账号自批，也不得把任意
+  `admin` 当作审批人。所有者本轮授权可作为**审批依据**，但不能代替审批主体身份。
+
+### 已交付（P0 机制）
+
+| 交付物 | 职责 |
+|---|---|
+| `addons/smart_core/security/tenant_payload_operator_policy.py` | 纯决策层，不 import odoo：拒绝无管理员组、拒绝接管、拒绝伪造审批 |
+| `addons/smart_core/security/tenant_payload_operator.py` | ORM 层：`provision` / `grant_import_scope` / `revoke_import_scope` / `read_operator` / `assert_import_operator` / `_group_closure_xmlids` |
+| `addons/smart_core/tests/test_tenant_payload_operator_lifecycle.py` | 落库效果与非接管反例 |
+| `scripts/verify/test_tenant_payload_operator_policy.py` | 纯层反例 |
+| `addons/smart_core/models/platform_database_registry.py` | 维护授权绑定 `operator_identity_key` + `subject_checksum`，并新增只读投影 `_approved_access_projection` |
+| `make verify.smart_core.tenant_payload_operator.policy` / `.orm` | 定向 L2 / L3 入口 |
+
+身份判定不再靠“字段名对得上”，而是**组闭包**：候选必须持有必需组，只能持有声明闭包内的组
+（`groups | trans_implied_ids`），出现任何未声明的组（例如 `base.group_partner_manager`）即**拒绝接管**；
+凭据事实取 `has_stored_password`；缺少 `tenant_key` 绑定是 fail-closed 停机。
+
+### 已交付（声明 + 入口）
+
+`config/ops/daily_runtime_database_duties.v1.json` 的 `customer_tenant_dev` 现在声明 `payload_operator`：
+
+```yaml
+carrier: unified_onboarding_service_identity
+identity_type: external_xmlid
+identity_key: smart_core.svc_tenant_payload_operator_baosheng
+login: svc-tenant-payload-operator-baosheng
+tenant_key: baosheng
+company_xmlid: base.main_company
+import_capability: migrate
+grant_scope_version: 3
+```
+
+入口 `scripts/ops/daily_runtime_duty_operator_grant.py` 从声明解析身份，**不再接受 `--approved-by`**；
+它把本次运行绑定到平台控制库的 `sc.platform.maintenance.access`（`operator_identity_key` + `subject_checksum`，
+经 `_approved_access_projection` 只读取出），**没有覆盖本次运行的批准记录就停机**，因此不会伪造审批人。
+
+### 审批身份核查（只读，结论：当前不可核验）
+
+只读探测平台控制库 `sc_platform_control`：
+
+```
+res_users          : 1 __system__(inactive) / 2 admin(active) / 3 default(inactive) / 4 public / 5 portaltemplate
+group_smart_core_security_admin : 0 成员
+sc_platform_maintenance_access  : 0 行
+```
+
+`_approve_access()` 要求审批人持有 `smart_core.group_smart_core_security_admin` 且**不是请求人**；
+当前平台控制库**没有可核验的独立审批主体**，而唯一活跃的内部用户正是所有者禁止用作审批人的通用 `admin`。
+
+→ 因此 `grant` 步骤在任何写入之前**暂停**，待办：
+
+> **请所有者提供正式审批账号（或通过现有认证入口完成批准），并给出要绑定的授权依据。**
+
+审批记录须同时绑定：目标租户、数据库、操作员身份、权限范围、载荷摘要、有效期。
+
+### 顺序 4 之前可以推进的部分（不依赖审批）
+
+1. 提交分层候选 → `make daily.runtime.candidate.bundle_sync` 把候选投递到日常运行面；
+2. `make daily.runtime.duty.operator_grant.remote_readback`（只读，不得写入）；
+3. `make daily.runtime.duty.operator_grant.remote_provision` + 回读（受管创建）；
+4. `make daily.runtime.duty.payload.remote_plan`（只读计划）。
+
+### 定向验证（非零，迭代阶段）
+
+| 入口 | 结果 |
+|---|---|
+| `make verify.smart_core.tenant_payload_operator.policy` | 36 tests, OK |
+| `make verify.smart_core.tenant_payload_operator.orm` | 18 tests, 0 failed / 0 error |
+| `make verify.daily.duty.operator_grant` | 38 tests, OK |
+| `make verify.daily.duty.payload` | 26 tests, OK |
+| `make verify.demo.lifecycle.unit` | 30 + 5 + 30 tests, OK（demo 声明与动作座位链的结构校验） |
+| `make ci.local.iteration` | `PASS`，`outside_scope` 为空 |
+
+**这是 批次验收完成（选择 A 的机制与声明切片），不是主线集成完成 / 版本发布完成 / 产品交付完成。**

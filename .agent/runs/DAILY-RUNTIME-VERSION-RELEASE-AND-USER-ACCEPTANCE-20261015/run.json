@@ -50,6 +50,32 @@
       "kind": "runtime",
       "target": "verify.daily_dev.runtime_repo.clean"
     },
+    "daily_duty_edition_release_tool": {
+      "inputs": [
+        "scripts/ops/daily_runtime_duty_edition_release.py",
+        "scripts/ops/test_daily_runtime_duty_edition_release.py",
+        "scripts/ops/daily_runtime_duty_identity.py",
+        "scripts/release/initialize_colocated_platform_snapshot.py",
+        "scripts/release/configure_colocated_platform_core.py",
+        "config/ops/daily_runtime_database_duties.v1.json",
+        "make/daily_candidate.mk"
+      ],
+      "kind": "offline",
+      "target": "verify.daily.duty.edition_release"
+    },
+    "daily_duty_operator_grant_tool": {
+      "inputs": [
+        "scripts/ops/daily_runtime_duty_operator_grant.py",
+        "scripts/ops/test_daily_runtime_duty_operator_grant.py",
+        "scripts/ops/daily_runtime_duty_identity.py",
+        "scripts/ops/daily_runtime_duty_payload.py",
+        "scripts/tenant_payload/provision_operator.py",
+        "config/ops/daily_runtime_database_duties.v1.json",
+        "make/daily_candidate.mk"
+      ],
+      "kind": "offline",
+      "target": "verify.daily.duty.operator_grant"
+    },
     "daily_duty_payload_tool": {
       "inputs": [
         "scripts/ops/daily_runtime_duty_payload.py",
@@ -109,32 +135,6 @@
       ],
       "kind": "offline",
       "target": "verify.daily.runtime.source_revision.align"
-    },
-    "daily_duty_edition_release_tool": {
-      "inputs": [
-        "scripts/ops/daily_runtime_duty_edition_release.py",
-        "scripts/ops/test_daily_runtime_duty_edition_release.py",
-        "scripts/ops/daily_runtime_duty_identity.py",
-        "scripts/release/initialize_colocated_platform_snapshot.py",
-        "scripts/release/configure_colocated_platform_core.py",
-        "config/ops/daily_runtime_database_duties.v1.json",
-        "make/daily_candidate.mk"
-      ],
-      "kind": "offline",
-      "target": "verify.daily.duty.edition_release"
-    },
-    "daily_duty_operator_grant_tool": {
-      "inputs": [
-        "scripts/ops/daily_runtime_duty_operator_grant.py",
-        "scripts/ops/test_daily_runtime_duty_operator_grant.py",
-        "scripts/ops/daily_runtime_duty_identity.py",
-        "scripts/ops/daily_runtime_duty_payload.py",
-        "scripts/tenant_payload/provision_operator.py",
-        "config/ops/daily_runtime_database_duties.v1.json",
-        "make/daily_candidate.mk"
-      ],
-      "kind": "offline",
-      "target": "verify.daily.duty.operator_grant"
     }
   },
   "environment": {
@@ -150,7 +150,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "Step D-1/D-2/D-3 are closed: platform_release_db is confirmed to be the carrier of the runtime's effective release snapshot (not a platform publication authority), the edition-release entry is declaration-driven and the customer duty sc_tenant_baosheng_dev now holds exactly one released active construction.standard snapshot (daily-navigation-standard-10bf72ef4bb0, 90 menus, preview not expanded, retry proven idempotent). The narrow import-operator entry is built and fail-closed: it refuses to run until the customer_tenant_dev duty declares a payload_operator block, and it refuses an empty approver rather than fabricating one. Two inputs are owner-only and are the only thing blocking Step 4: (a) which carrier owns the dedicated import operator identity - a declaration-driven platform tenant payload operator, or a service account declared by the customer module sce_customer_baosheng in the customer repository worktree; and (b) which verifiable real approving subject and authorization basis the grant must bind as APPROVED_BY, since the owner forbade using the owner account or fabricating an approver. Once both are given: add the payload_operator block to config/ops/daily_runtime_database_duties.v1.json, then run make daily.runtime.duty.operator_grant.remote_install, ...remote_readback and ...remote_grant with DAILY_DUTY_OPERATOR_APPROVED_BY set to that real subject. Then Step 5: make daily.runtime.duty.payload.remote_plan, remote_import (CONFIRM_DAILY_DUTY_PAYLOAD_IMPORT=IMPORT_SIGNED_PAYLOAD_INTO_DAILY_DUTY) and remote_verify. Then Step 6: reconcile 12386 against 6322/29/6035 plus amounts, source relations, attachments and ownership, and verify legal users see the data while unauthorised subjects do not. Then Step 7: B-line independent review, then normal mainline integration. Revoke the temporary authorization after import; never delete source data and never clean migration results by uninstalling the user module.",
+  "next_exact_step": "Choice A is delivered in the tree end to end. The platform owns the operator lifecycle (addons/smart_core/security/tenant_payload_operator_policy.py pure decisions; addons/smart_core/security/tenant_payload_operator.py ORM provision/grant/revoke/read; the ORM lifecycle tests and the pure policy tests), the approval binding lives in the platform control plane (sc.platform.maintenance.access.operator_identity_key + subject_checksum, read by _approved_access_projection), and the customer_tenant_dev duty now declares the dedicated import operator. Next exact steps and their order: (1) commit the layered candidate and deploy it to the daily runtime with make daily.runtime.candidate.bundle_sync using DAILY_CANDIDATE_EXPECTED_OLD_SHA=10bf72ef4bb060556bd2844598b58f9806392d34 and CONFIRM_DAILY_CANDIDATE_BUNDLE_SYNC=SYNC_EXACT_DAILY_CANDIDATE_SHA_WITH_BUNDLE; (2) make daily.runtime.duty.operator_grant.remote_readback (read-only, must not write); (3) make daily.runtime.duty.operator_grant.remote_provision with CONFIRM_DAILY_DUTY_OPERATOR_PROVISION=PROVISION_DECLARED_PAYLOAD_IMPORT_OPERATOR_IN_DAILY_DUTY and DAILY_DUTY_OPERATOR_SUBJECT_CHECKSUM=f1adc6fb17b516d42492fe42229df0cce65956ea113978a19243c0de57ec1ed4, then readback the created identity; (4) make daily.runtime.duty.payload.remote_plan (read-only planning). Then STOP before grant: the platform control database has no verifiable independent approving subject (sc.platform.maintenance.access is empty and the only active internal user is the shared admin the owner forbade as approver), so the grant waits on the owner naming a formal approving account or approving through the existing authentication entry. Once that approval is bound: remote_grant, then daily.runtime.duty.payload.remote_import (CONFIRM_DAILY_DUTY_PAYLOAD_IMPORT=IMPORT_SIGNED_PAYLOAD_INTO_DAILY_DUTY) and remote_verify; then Step 6 reconciliation of 12386 against 6322/29/6035 plus amounts, source relations, attachments and ownership with legal users seeing the data and unauthorised subjects not; then Step 7 B-line independent review and normal mainline integration. Revoke the temporary authorization after import; never delete source data and never clean migration results by uninstalling the user module.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "schema_version": 1,
   "scope": [
@@ -301,7 +301,13 @@
     "scripts/ops/daily_runtime_duty_edition_release.py",
     "scripts/ops/test_daily_runtime_duty_edition_release.py",
     "scripts/ops/daily_runtime_duty_operator_grant.py",
-    "scripts/ops/test_daily_runtime_duty_operator_grant.py"
+    "scripts/ops/test_daily_runtime_duty_operator_grant.py",
+    "addons/smart_core/__manifest__.py",
+    "addons/smart_core/security/tenant_payload_operator.py",
+    "addons/smart_core/security/tenant_payload_operator_policy.py",
+    "addons/smart_core/tests/__init__.py",
+    "addons/smart_core/tests/test_tenant_payload_operator_lifecycle.py",
+    "scripts/verify/test_tenant_payload_operator_policy.py"
   ],
   "status": "active",
   "step_d_customer_recovery_point_20261015": {
@@ -380,6 +386,86 @@
       ],
       "method": "read-only psql on the customer duty cluster; no write",
       "observed": "sc_edition_release_snapshot released+active construction.standard = 0; sc_tenant_payload_import_batch = 0; importer group res_id 19, admin in group = 0, admin active = 1"
+    }
+  },
+  "step_d_edition_release_entry_20261015": {
+    "case": "Owner order 2026-10-15: change the edition-release entry to resolve by registered duty and complete the standard edition release, the narrow grant and the signed-payload import into sc_tenant_baosheng_dev. Boundary one: confirm what smart_core.platform_release_db really means before binding it; boundary two: never fill the owner in as APPROVED_BY and never fabricate a formal approver identity.",
+    "delivered": {
+      "demo_compatibility": "the original demo path release.daily_product_navigation.snapshot in make/dev.mk is left untouched",
+      "entry": "scripts/ops/daily_runtime_duty_edition_release.py (actions readback, publish)",
+      "identity": "every identity comes from config/ops/daily_runtime_database_duties.v1.json; the tool contains no duty database, container or volume literal, enforced by test",
+      "make_targets": "make verify.daily.duty.edition_release; make daily.runtime.duty.edition_release.remote_install; ...remote_readback; ...remote_publish (CONFIRM_DAILY_DUTY_EDITION_RELEASE=RELEASE_DECLARED_EDITION_INTO_DAILY_DUTY)",
+      "publish_path": "docker compose run --rm --no-deps -T inside the duty's own rendered definition without --user, mounting the immutable tool tree scripts/release as :ro and feeding configure_colocated_platform_core.py then initialize_colocated_platform_snapshot.py on stdin, so the snapshot row is still written by the existing platform delivery service",
+      "refusals": "undeclared duty, unsafe name, data_purpose=platform_control, missing edition block, carrier other than effective_release_snapshot, empty or illegal allowed_product_keys, illegal version_prefix",
+      "unit": "make verify.daily.duty.edition_release - 45 tests OK; make verify.daily.duty.payload - 25 tests OK; make daily.candidate.continuity.test - 28 tests OK"
+    },
+    "normal_protection": "the two refusal results (no valid edition, no import authorization) are correct fail-closed behaviour and must not be removed by weakening product validation; what gets added is the governed onboarding flow",
+    "platform_release_db_meaning": {
+      "consequence": "binding the carrier to a customer duty database is the precedent meaning; the control plane must never carry it, and holding an effective snapshot locally is not a platform publication right",
+      "evidence": "configure_colocated_platform_core.py enforces PLATFORM_RELEASE_DB_MUST_MATCH_CURRENT; initialize_colocated_platform_snapshot.py requires PLATFORM_RELEASE_DB == current database and publishes only through EditionReleaseSnapshotService; production_acceptance_clone_runtime.py::rebind_platform_release_database rebinds a restored clone to itself",
+      "live_readback": "sc_demo platform_release_db=sc_demo with released+active construction.standard:daily-navigation-standard-10bf72ef4bb0 and construction.preview:daily-navigation-preview-10bf72ef4bb0; sc_tenant_baosheng_dev platform_release_db=<none> and 0 snapshot rows; sc_platform_control holds no parameter and no snapshot",
+      "verdict": "carrier of the effective release snapshot of the runtime that runs on that server; NOT a platform-wide publication authority"
+    },
+    "registered_target": {
+      "code_version": "branch fix/data-ownership-visibility-recovery-20261015, baseline main/origin/main 10bf72ef",
+      "database": "sc_tenant_baosheng_dev",
+      "duty": "customer_tenant_dev",
+      "edition": "construction.standard only, version_prefix daily-navigation, expected version daily-navigation-standard-<SC_SOURCE_REVISION first 12>; construction.preview is never widened automatically",
+      "tenant_key": "baosheng"
+    }
+  },
+  "step_d_narrow_import_operator_grant_20261015": {
+    "case": "The customer duty needs a narrow signed-payload import operator, and the daily payload entry hard-coded base.user_admin as that operator identity. The owner ruled that the entry must authorise a dedicated import operator through the existing tenant-payload operator entry, with a real authorization basis, minimal privilege, exact tenant scope and revocability, and must not by default add the importer group to the generic admin. The identity therefore belongs in the duty declaration as the single owner of the fact, and the entry must stop when the declaration is absent.",
+    "check_registration_note": "Two offline checks were registered for the new entries (daily_duty_edition_release_tool -> verify.daily.duty.edition_release, daily_duty_operator_grant_tool -> verify.daily.duty.operator_grant) with their real inputs, and the operator-grant check was begun and recorded with its original log. Both report 'stale' with reason 'runtime evidence requires authoritative environment readback' because this run's environment kind is 'runtime'; that is the same design-expected behaviour as the pre-existing daily_duty_payload_tool and daily_duty_recovery_tool entries and is not a failure of the tool. The guard is not weakened to make the status read 'reusable'.",
+    "delivered": {
+      "artifacts": [
+        "scripts/ops/daily_runtime_duty_operator_grant.py",
+        "scripts/ops/test_daily_runtime_duty_operator_grant.py"
+      ],
+      "behaviour": "daily_runtime_duty_payload.py no longer carries an operator literal; the operator identity comes from the duty declaration through operator_identity_key() and an undeclared identity stops the run instead of falling back. The new grant entry only accepts a duty with data_purpose=customer, a tenant_key, and a payload_operator block declaring carrier=narrow_import_grant, identity_type=external_xmlid, a well-formed identity_key, a matching tenant_key, a non-empty authorization_basis and the customer_modules/contract block; contract enforces direct_grant_targets==[importer], an empty transitive closure, required_existing_groups==[base.group_user], the exact expected direct/effective additions, no undeclared additions, grant_scope_version=3 and expected_company_scope>=1, and refuses smart_core.group_smart_core_data_operator in any set. The remote grant runs inside the duty's own rendered definition (docker compose run --rm --no-deps -T, no --user) with scripts/tenant_payload/provision_operator.py on stdin, reads the scope back before and after, and refuses an empty approver instead of inventing one.",
+      "behaviour_20261015": "The account identity is now a declaration fact, not an entry literal: scripts/ops/daily_runtime_duty_operator_grant.py resolves carrier/identity_type/identity_key/login/tenant_key/company from the duty's payload_operator block and fails closed when it is absent. The entry no longer accepts an --approved-by argument; it binds the run to the platform control plane's approved maintenance access (operator_identity_key + subject_checksum read by _approved_access_projection) and refuses when no covering approval exists, so an approver is never fabricated. The ORM lane treats the group closure (groups plus trans_implied_ids) as the identity: a candidate must hold the required group, may hold only groups inside the declared implied closure, and any undeclared group (e.g. base.group_partner_manager) refuses takeover; has_stored_password is the credential fact and an undeclared group or a missing tenant_key binding is a refused stop.",
+      "make_targets": [
+        "verify.daily.duty.operator_grant",
+        "daily.runtime.duty.operator_grant.remote_install",
+        "daily.runtime.duty.operator_grant.remote_readback",
+        "daily.runtime.duty.operator_grant.remote_grant"
+      ],
+      "mechanism_added": [
+        "addons/smart_core/security/tenant_payload_operator_policy.py (pure decision layer, no odoo import)",
+        "addons/smart_core/security/tenant_payload_operator.py (provision/grant_import_scope/revoke_import_scope/read_operator/assert_import_operator/_group_closure_xmlids)",
+        "addons/smart_core/tests/test_tenant_payload_operator_lifecycle.py",
+        "scripts/verify/test_tenant_payload_operator_policy.py",
+        "addons/smart_core/models/platform_database_registry.py (maintenance access binds operator_identity_key + subject_checksum; _approved_access_projection)",
+        "make verify.smart_core.tenant_payload_operator.policy",
+        "make verify.smart_core.tenant_payload_operator.orm"
+      ],
+      "modified": [
+        "scripts/ops/daily_runtime_duty_payload.py",
+        "scripts/ops/test_daily_runtime_duty_payload.py",
+        "make/daily_candidate.mk"
+      ]
+    },
+    "fail_closed_state": "config/ops/daily_runtime_database_duties.v1.json now declares the payload_operator block for customer_tenant_dev (carrier=unified_onboarding_service_identity, identity_type=external_xmlid, identity_key=smart_core.svc_tenant_payload_operator_baosheng, login=svc-tenant-payload-operator-baosheng, tenant_key=baosheng, company_xmlid=base.main_company, grant_scope_version=3), and validate_declaration passes. The entry still refuses (a) a duty with no payload_operator block, (b) an identity that does not match the declared closure, and (c) any run without a covering approval; those refusals are the protection the tests assert and the product validation is not weakened.",
+    "live_facts_read_only": {
+      "conclusion": "the tenant database has no dedicated non-admin internal user, so the generic admin is the only currently resolvable external_xmlid and it is exactly the identity the owner ruled out by default",
+      "database": "sc_tenant_baosheng_dev",
+      "importer_group": "smart_core.group_smart_core_tenant_payload_importer (id 19) has 0 members",
+      "res_users": "1 __system__ (inactive, base.user_root); 2 admin (active internal, base.user_admin); 3 default (inactive, base.default_user); 4 public (shared, base.public_user); 5 portaltemplate (shared, base.template_portal_user_id)"
+    },
+    "open_20261015": [
+      "APPROVED_BY: the platform control database sc_platform_control has no verifiable independent approving subject yet. Read-only probe: sc.platform.maintenance.access has 0 rows; _approve_access requires an approver holding smart_core.group_smart_core_security_admin who is not the requester, and group_smart_core_security_admin currently has 0 members; the only active internal user is the shared admin, which the owner forbade as the approver. Pending owner input: name the formal approving account, or approve through the existing authentication entry, plus the authorization basis to bind. The grant step stops before any write until that exists."
+    ],
+    "owner_choice_20261015": "Owner chose A: the unified managed onboarding mechanism creates the dedicated import service account; the user module does not create platform operators. Fixed constraints recorded verbatim in the iteration doc: P0 owns the generic account lifecycle and authorization mechanism, the duty declaration carries the tenant difference, P4 executes and readbacks; independent service identity with no administrator group, limited to the target tenant and company; credentials through the existing managed path only, never in source, reports or the conversation, and no interactive login by default; creation must be idempotent and must refuse to take over a same-named account whose identity does not match; after import the temporary import privilege is revoked and the temporary credential/session invalidated, while the account and its audit link stay.",
+    "verification": {
+      "make daily.candidate.continuity.test": "28 tests, OK (reused, inputs unchanged)",
+      "make verify.daily.duty.edition_release": "46 tests, OK (reused, inputs unchanged)",
+      "make verify.daily.duty.operator_grant": "38 tests, OK (L2 tool + declaration resolver)",
+      "make verify.daily.duty.payload": "26 tests, OK (L2)",
+      "make verify.daily.duty.recovery": "28 tests, OK (reused, inputs unchanged)",
+      "make verify.demo.lifecycle.unit": "30+5+30 tests, OK (L2, demo action-seat chain declarations)",
+      "make verify.smart_core.tenant_payload_operator.orm": "18 tests, OK (L3 governed local.dev ORM lane)",
+      "make verify.smart_core.tenant_payload_operator.policy": "36 tests, OK (L2 pure decision layer)",
+      "not_a_pass": "iteration-stage L1/L2/L3 results only; no browser acceptance, no mainline integration, no deployment and no delivery has happened for this slice"
     }
   },
   "step_four_customer_module_delivery_20261015": {
@@ -2258,72 +2344,5 @@
       ]
     },
     "validation_order": "L1 scope/syntax; exact nonzero L2; governed affected L3/L4 only once prerequisites pass"
-  },
-  "step_d_edition_release_entry_20261015": {
-    "case": "Owner order 2026-10-15: change the edition-release entry to resolve by registered duty and complete the standard edition release, the narrow grant and the signed-payload import into sc_tenant_baosheng_dev. Boundary one: confirm what smart_core.platform_release_db really means before binding it; boundary two: never fill the owner in as APPROVED_BY and never fabricate a formal approver identity.",
-    "platform_release_db_meaning": {
-      "verdict": "carrier of the effective release snapshot of the runtime that runs on that server; NOT a platform-wide publication authority",
-      "evidence": "configure_colocated_platform_core.py enforces PLATFORM_RELEASE_DB_MUST_MATCH_CURRENT; initialize_colocated_platform_snapshot.py requires PLATFORM_RELEASE_DB == current database and publishes only through EditionReleaseSnapshotService; production_acceptance_clone_runtime.py::rebind_platform_release_database rebinds a restored clone to itself",
-      "live_readback": "sc_demo platform_release_db=sc_demo with released+active construction.standard:daily-navigation-standard-10bf72ef4bb0 and construction.preview:daily-navigation-preview-10bf72ef4bb0; sc_tenant_baosheng_dev platform_release_db=<none> and 0 snapshot rows; sc_platform_control holds no parameter and no snapshot",
-      "consequence": "binding the carrier to a customer duty database is the precedent meaning; the control plane must never carry it, and holding an effective snapshot locally is not a platform publication right"
-    },
-    "registered_target": {
-      "database": "sc_tenant_baosheng_dev",
-      "duty": "customer_tenant_dev",
-      "tenant_key": "baosheng",
-      "edition": "construction.standard only, version_prefix daily-navigation, expected version daily-navigation-standard-<SC_SOURCE_REVISION first 12>; construction.preview is never widened automatically",
-      "code_version": "branch fix/data-ownership-visibility-recovery-20261015, baseline main/origin/main 10bf72ef"
-    },
-    "delivered": {
-      "entry": "scripts/ops/daily_runtime_duty_edition_release.py (actions readback, publish)",
-      "identity": "every identity comes from config/ops/daily_runtime_database_duties.v1.json; the tool contains no duty database, container or volume literal, enforced by test",
-      "refusals": "undeclared duty, unsafe name, data_purpose=platform_control, missing edition block, carrier other than effective_release_snapshot, empty or illegal allowed_product_keys, illegal version_prefix",
-      "publish_path": "docker compose run --rm --no-deps -T inside the duty's own rendered definition without --user, mounting the immutable tool tree scripts/release as :ro and feeding configure_colocated_platform_core.py then initialize_colocated_platform_snapshot.py on stdin, so the snapshot row is still written by the existing platform delivery service",
-      "demo_compatibility": "the original demo path release.daily_product_navigation.snapshot in make/dev.mk is left untouched",
-      "make_targets": "make verify.daily.duty.edition_release; make daily.runtime.duty.edition_release.remote_install; ...remote_readback; ...remote_publish (CONFIRM_DAILY_DUTY_EDITION_RELEASE=RELEASE_DECLARED_EDITION_INTO_DAILY_DUTY)",
-      "unit": "make verify.daily.duty.edition_release - 45 tests OK; make verify.daily.duty.payload - 25 tests OK; make daily.candidate.continuity.test - 28 tests OK"
-    },
-    "normal_protection": "the two refusal results (no valid edition, no import authorization) are correct fail-closed behaviour and must not be removed by weakening product validation; what gets added is the governed onboarding flow"
-  },
-  "step_d_narrow_import_operator_grant_20261015": {
-    "case": "The customer duty needs a narrow signed-payload import operator, and the daily payload entry hard-coded base.user_admin as that operator identity. The owner ruled that the entry must authorise a dedicated import operator through the existing tenant-payload operator entry, with a real authorization basis, minimal privilege, exact tenant scope and revocability, and must not by default add the importer group to the generic admin. The identity therefore belongs in the duty declaration as the single owner of the fact, and the entry must stop when the declaration is absent.",
-    "delivered": {
-      "artifacts": [
-        "scripts/ops/daily_runtime_duty_operator_grant.py",
-        "scripts/ops/test_daily_runtime_duty_operator_grant.py"
-      ],
-      "modified": [
-        "scripts/ops/daily_runtime_duty_payload.py",
-        "scripts/ops/test_daily_runtime_duty_payload.py",
-        "make/daily_candidate.mk"
-      ],
-      "make_targets": [
-        "verify.daily.duty.operator_grant",
-        "daily.runtime.duty.operator_grant.remote_install",
-        "daily.runtime.duty.operator_grant.remote_readback",
-        "daily.runtime.duty.operator_grant.remote_grant"
-      ],
-      "behaviour": "daily_runtime_duty_payload.py no longer carries an operator literal; the operator identity comes from the duty declaration through operator_identity_key() and an undeclared identity stops the run instead of falling back. The new grant entry only accepts a duty with data_purpose=customer, a tenant_key, and a payload_operator block declaring carrier=narrow_import_grant, identity_type=external_xmlid, a well-formed identity_key, a matching tenant_key, a non-empty authorization_basis and the customer_modules/contract block; contract enforces direct_grant_targets==[importer], an empty transitive closure, required_existing_groups==[base.group_user], the exact expected direct/effective additions, no undeclared additions, grant_scope_version=3 and expected_company_scope>=1, and refuses smart_core.group_smart_core_data_operator in any set. The remote grant runs inside the duty's own rendered definition (docker compose run --rm --no-deps -T, no --user) with scripts/tenant_payload/provision_operator.py on stdin, reads the scope back before and after, and refuses an empty approver instead of inventing one."
-    },
-    "live_facts_read_only": {
-      "database": "sc_tenant_baosheng_dev",
-      "res_users": "1 __system__ (inactive, base.user_root); 2 admin (active internal, base.user_admin); 3 default (inactive, base.default_user); 4 public (shared, base.public_user); 5 portaltemplate (shared, base.template_portal_user_id)",
-      "importer_group": "smart_core.group_smart_core_tenant_payload_importer (id 19) has 0 members",
-      "conclusion": "the tenant database has no dedicated non-admin internal user, so the generic admin is the only currently resolvable external_xmlid and it is exactly the identity the owner ruled out by default"
-    },
-    "fail_closed_state": "config/ops/daily_runtime_database_duties.v1.json still declares no payload_operator block for customer_tenant_dev, so the grant entry readback returns BLOCKED with 'duty customer_tenant_dev declares no payload_operator block'. That refusal is a normal protection and is what the added test asserts; the product validation is not weakened to remove it.",
-    "open": [
-      "the carrier of the dedicated operator identity is undecided: either the platform declares a declaration-driven tenant payload operator for a database where the payload interface is enabled, or the customer module sce_customer_baosheng owns a tenant service account. The second needs the customer repository worktree, so the choice must be made before the block is written.",
-      "APPROVED_BY must bind a verifiable real approving subject with its authorization basis. The owner explicitly forbade using the owner as that value or fabricating an approver, so the actual grant step stops and waits for that subject."
-    ],
-    "verification": {
-      "make verify.daily.duty.operator_grant": "19 tests, OK",
-      "make verify.daily.duty.payload": "26 tests, OK",
-      "make verify.daily.duty.edition_release": "46 tests, OK (reused, inputs unchanged)",
-      "make daily.candidate.continuity.test": "28 tests, OK (reused, inputs unchanged)",
-      "make ci.local.iteration": "PASS after the two new files were registered in this run's scope (outside_scope now empty)",
-      "not_a_pass": "these are iteration-stage L1/L2 results; no browser acceptance, no mainline integration and no delivery has happened for this slice"
-    },
-    "check_registration_note": "Two offline checks were registered for the new entries (daily_duty_edition_release_tool -> verify.daily.duty.edition_release, daily_duty_operator_grant_tool -> verify.daily.duty.operator_grant) with their real inputs, and the operator-grant check was begun and recorded with its original log. Both report 'stale' with reason 'runtime evidence requires authoritative environment readback' because this run's environment kind is 'runtime'; that is the same design-expected behaviour as the pre-existing daily_duty_payload_tool and daily_duty_recovery_tool entries and is not a failure of the tool. The guard is not weakened to make the status read 'reusable'."
   }
 }
