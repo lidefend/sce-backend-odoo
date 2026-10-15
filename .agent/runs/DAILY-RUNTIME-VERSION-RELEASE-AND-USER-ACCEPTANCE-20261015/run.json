@@ -446,6 +446,31 @@
       ]
     },
     "fail_closed_state": "config/ops/daily_runtime_database_duties.v1.json now declares the payload_operator block for customer_tenant_dev (carrier=unified_onboarding_service_identity, identity_type=external_xmlid, identity_key=smart_core.svc_tenant_payload_operator_baosheng, login=svc-tenant-payload-operator-baosheng, tenant_key=baosheng, company_xmlid=base.main_company, grant_scope_version=3), and validate_declaration passes. The entry still refuses (a) a duty with no payload_operator block, (b) an identity that does not match the declared closure, and (c) any run without a covering approval; those refusals are the protection the tests assert and the product validation is not weakened.",
+    "independent_review_20261015": {
+      "S1": "无",
+      "S2": "无",
+      "S3_notes_open": [
+        "tenant_payload_operator_policy.py:235 只校验 subject_checksum 格式、不与载荷等值比较（绑定等值由入口 daily_runtime_duty_operator_grant.py:525 与载荷运行器承担）",
+        "platform_database_registry.py:454 _active_access 用 limit=1 且无显式 order；多条同时段 approved 记录时选择不确定（只会 fail-closed，不减安全）",
+        "daily_runtime_duty_operator_grant.py:518 assert_approval 自身未单独复核 requested_by != approved_by（由策略层承担）",
+        "审批人权限只校验“审批时刻”，后续不再回读其是否仍持 SECURITY_ADMIN_GROUP",
+        "本次候选内没有临时凭据/会话失效的可验证实现（账号无密码、无 apikey），需运行时证据确认"
+      ],
+      "confirmed_correct": [
+        "组闭包为严格白名单 required ⊆ groups ⊆ required∪implied，非“不在禁止列表即通过”（tenant_payload_operator_policy.py:191）",
+        "空审批/异 operator/异摘要/非 approved/超窗/非正 access_id 全部拒绝；入口不再接受 --approved-by",
+        "审批主体被机制性限制为独立 security-admin 且非请求人；运行路径真实生效（provision 第 169 行调用 policy.validate_authorization，其 requested_by != approved_by 检查在线上路径上）",
+        "创建无管理员组、无密码（usable_password=False / no_reset_password=True）、单公司、幂等、拒绝接管",
+        "撤销只回收 importer 组并保留账号与审计关联；无删除 res.users / ir.model.data / 来源数据的路径",
+        "声明契约字段与策略常量一致，无漂移",
+        "demo 不再直写终态、不用 sudo/uid1 或私有 token；动作链与真实审批座位一致",
+        "P0/P1/P2/P4 分层落实，policy 纯层零 odoo 依赖"
+      ],
+      "not_a_pass": "这是静态只读复核，不是运行时验收；真机行为（组闭包内容、审批停机实际触发、撤销后凭据失效、demo 合同链端到端）仍需运行时证据",
+      "reviewer": "独立 B 线只读执行体（未修改文件、未写库、未触达远端、未执行 make 目标）",
+      "scope": "85dbd5a7 / c01e121e / deccb08f，基线 HEAD fa13aada",
+      "verdict": "APPROVE_WITH_NOTES"
+    },
     "live_facts_read_only": {
       "conclusion": "the tenant database has no dedicated non-admin internal user, so the generic admin is the only currently resolvable external_xmlid and it is exactly the identity the owner ruled out by default",
       "database": "sc_tenant_baosheng_dev",

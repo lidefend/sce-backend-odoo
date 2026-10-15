@@ -1508,3 +1508,35 @@ sc_platform_maintenance_access  : 0 行
 | `make ci.local.iteration` | `PASS`，`outside_scope` 为空 |
 
 **这是 批次验收完成（选择 A 的机制与声明切片），不是主线集成完成 / 版本发布完成 / 产品交付完成。**
+
+### 独立复核（只读 B 线，2026-10-15）
+
+复核对象：`85dbd5a7` / `c01e121e` / `deccb08f`，基线 HEAD `fa13aada`。复核执行体只做只读
+`git`/`sed`/`grep`，未修改文件、未写库、未触达远端、未执行任何 `make` 目标。
+
+**判定：`APPROVE_WITH_NOTES`——无 S1 阻断、无 S2 需修。**
+
+已确认正确（摘要）：
+
+- 组闭包是严格白名单 `required ⊆ groups ⊆ required∪implied`，不是“不在禁止列表即通过”。
+- 无审批不停机路径；空审批人、异 operator、异摘要、非 approved、超窗、非正 `access_id` 全部拒绝；
+  入口已删除 `--approved-by`。
+- 审批主体被机制性限制为独立 `security-admin` 且非请求人；该检查在**真实运行路径**上生效
+  （`provision()` 调用 `policy.validate_authorization`，其中的 `requested_by != approved_by` 生效）。
+- 创建无管理员组、无密码、单公司、幂等、拒绝接管；撤销只回收 importer 组并保留账号与审计关联。
+- 声明契约字段与策略常量一致，无漂移；demo 不再直写终态、不用 `sudo/uid1` 或私有 token。
+- 分层落实：机制在 P0 `smart_core`（纯策略层零 `odoo` 依赖），租户差异在职责声明，执行/回读在 P4。
+
+S3 观察（记录为后续项，不作为本批阻断）：
+
+1. `tenant_payload_operator_policy.py:235` 只校验 `subject_checksum` 格式，不与载荷等值比较；
+   等值绑定由入口与载荷运行器承担。
+2. `platform_database_registry.py:454` `_active_access` 用 `limit=1` 且无显式 `order`；
+   多条同时段已批准记录时选择不确定（只会 fail-closed，不减安全）。
+3. `daily_runtime_duty_operator_grant.py:518` `assert_approval` 自身未单独复核
+   `requested_by != approved_by`（由策略层承担）。
+4. 审批人权限只校验“审批时刻”，后续不再回读其是否仍持 `SECURITY_ADMIN_GROUP`。
+5. 本候选内没有临时凭据/会话失效的可验证实现（账号无密码、无 apikey），需运行时证据确认。
+
+复核执行体同时标明无法在本环境验证、只能推断的点：真机 `base.group_user` 传递闭包内容、
+审批停机的实际触发、撤销后凭据失效、demo 合同链端到端（L3/L4）。
