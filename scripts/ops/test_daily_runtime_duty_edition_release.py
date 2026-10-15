@@ -220,6 +220,29 @@ class ReleaseStateTests(unittest.TestCase):
         self.assertEqual(len(state["parameters"]), 2)
         self.assertEqual(state["snapshots"], ["7|construction.standard|v1|released|t|t"])
 
+    def test_the_snapshot_sql_uses_the_physical_table_not_the_model_name(self):
+        # The ORM model sc.edition.release.snapshot is only addressable through
+        # env[...]; raw SQL must use sc_edition_release_snapshot, or PostgreSQL
+        # refuses the statement with "improper qualified name".
+        seen = []
+
+        def _capture(_duty, sql):
+            seen.append(sql)
+            return ""
+
+        with mock.patch.object(ENTRY.duty_runtime, "psql", side_effect=_capture):
+            ENTRY.release_state(self.duty)
+            ENTRY.released_active(self.duty)
+        self.assertEqual(len(seen), 3)
+        # The first statement reads ir_config_parameter; the other two read the
+        # snapshot rows and must name the physical table.
+        for sql in seen:
+            self.assertNotIn(ENTRY.SNAPSHOT_MODEL, sql)
+        for sql in seen[1:]:
+            self.assertIn(ENTRY.SNAPSHOT_TABLE, sql)
+        self.assertEqual(ENTRY.SNAPSHOT_TABLE, "sc_edition_release_snapshot")
+        self.assertNotEqual(ENTRY.SNAPSHOT_TABLE, ENTRY.SNAPSHOT_MODEL)
+
     def test_released_active_parses_product_and_version(self):
         with mock.patch.object(
             ENTRY.duty_runtime,

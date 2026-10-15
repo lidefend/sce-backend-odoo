@@ -76,7 +76,10 @@ SOURCE_REVISION = re.compile(r"^[0-9a-f]{40}$")
 
 PARAMETER = "smart_core.platform_release_db"
 TENANT_PARAMETER = "sc.tenant.bound_tenant_key"
+# The ORM model and its physical table are different names: the dotted model
+# name is only valid through env[...], never in raw SQL.
 SNAPSHOT_MODEL = "sc.edition.release.snapshot"
+SNAPSHOT_TABLE = "sc_edition_release_snapshot"
 SNAPSHOT_APPLY_ACK = "I_ACKNOWLEDGE_COLOCATED_PLATFORM_SNAPSHOT_INITIALIZATION"
 CONFIG_APPLY_ACK = "I_ACKNOWLEDGE_COLOCATED_PLATFORM_CONFIGURATION"
 
@@ -103,7 +106,7 @@ _report = {
     "database": env.cr.dbname,  # noqa: F821
     "platform_release_db": str(_params.get_param("smart_core.platform_release_db", "") or ""),
     "bound_tenant_key": str(_params.get_param("sc.tenant.bound_tenant_key", "") or ""),
-    "snapshot_model": "sc.edition.release.snapshot",
+    "snapshot_model": "%(model)s",
     "snapshot_count": _snapshot.with_context(active_test=False).search_count([]),
     "released_active": _snapshot.search_read(
         [("state", "=", "released"), ("is_active", "=", True), ("active", "=", True)],
@@ -112,7 +115,7 @@ _report = {
     ),
 }
 print("%(marker)s" + json.dumps(_report, ensure_ascii=False, sort_keys=True, default=str))
-""" % {"marker": READBACK_MARKER}
+""" % {"marker": READBACK_MARKER, "model": SNAPSHOT_MODEL}
 
 # The publish entry drives the two existing governed release scripts in one
 # process, in the order the platform itself uses: the colocated platform
@@ -224,7 +227,7 @@ def release_state(duty: dict) -> dict:
     snapshots = duty_runtime.psql(
         duty,
         "select id || '|' || product_key || '|' || version || '|' || state "
-        "|| '|' || is_active || '|' || active from %s order by id;" % SNAPSHOT_MODEL,
+        "|| '|' || is_active || '|' || active from %s order by id;" % SNAPSHOT_TABLE,
     )
     return {
         "parameters": [row for row in parameters.splitlines() if row.strip()],
@@ -238,7 +241,7 @@ def released_active(duty: dict) -> list[dict]:
         duty,
         "select product_key || '|' || version from %s "
         "where state = 'released' and is_active and active order by product_key, id;"
-        % SNAPSHOT_MODEL,
+        % SNAPSHOT_TABLE,
     )
     entries = []
     for row in rows.splitlines():
