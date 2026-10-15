@@ -543,7 +543,7 @@ class RemoteProgramTests(unittest.TestCase):
         rendered = self.rendered()
         for marker in ("__MARKER__", "__PSQL_READBACK__", "__PAYLOAD_JSON__",
                        "__BASE_BOOTSTRAP_PLAN__", "__REFRESH_REFUSAL__",
-                       "__PRUNE_SUPERSEDED_STACKS__"):
+                       "__UPGRADE_REFUSAL__", "__PRUNE_SUPERSEDED_STACKS__"):
             self.assertNotIn(marker, rendered)
 
     def test_superseded_rendered_stacks_are_pruned(self):
@@ -595,6 +595,91 @@ class RemoteProgramTests(unittest.TestCase):
 
         self.assertIn("cluster is not running",
                       duty_entry.refresh_refusal(serving, cluster_running=False))
+
+    def test_upgrade_refuses_every_duty_that_is_not_already_serving(self):
+        """An upgrade rewrites a schema, so it is the narrowest phase of all.
+
+        A refresh recreates containers; an upgrade runs the declared module
+        set's migrations against a database in place. Everything a refresh
+        refuses is therefore refused here too, and a duty whose own bootstrap
+        never finished installing ``base`` is refused as well: migrating a
+        half-built database is how a duty becomes unreadable by everything,
+        including the entry that broke it.
+        """
+        serving = {"custody": {"role_compliance": "compliant", "service_face": "initialized"},
+                   "stack": {"modules": ["smart_core"]}}
+        self.assertEqual(
+            duty_entry.upgrade_refusal(serving, cluster_running=True, base_installed=True), "")
+
+        to_be_created = {"custody": {"role_compliance": "to_be_created",
+                                     "service_face": "initialized"},
+                         "stack": {"modules": ["smart_core"]}}
+        self.assertIn("to be created", duty_entry.upgrade_refusal(
+            to_be_created, cluster_running=True, base_installed=True))
+
+        uninitialized = {"custody": {"role_compliance": "compliant",
+                                     "service_face": "to_be_initialized"},
+                         "stack": {"modules": ["smart_core"]}}
+        self.assertIn("initialize phase", duty_entry.upgrade_refusal(
+            uninitialized, cluster_running=True, base_installed=True))
+
+        cluster_only = {"custody": {"role_compliance": "compliant",
+                                    "service_face": "cluster_only"},
+                        "stack": {"modules": ["smart_core"]}}
+        self.assertIn("initialize phase", duty_entry.upgrade_refusal(
+            cluster_only, cluster_running=True, base_installed=True))
+
+        self.assertIn("cluster is not running", duty_entry.upgrade_refusal(
+            serving, cluster_running=False, base_installed=True))
+        self.assertIn("base module is not installed", duty_entry.upgrade_refusal(
+            serving, cluster_running=True, base_installed=False))
+
+        no_modules = {"custody": {"role_compliance": "compliant",
+                                  "service_face": "initialized"}, "stack": {"modules": []}}
+        self.assertIn("names no module", duty_entry.upgrade_refusal(
+            no_modules, cluster_running=True, base_installed=True))
+
+    def test_the_upgrade_phase_names_its_own_confirmation(self):
+        """A phase that rewrites a schema may not inherit the provision token.
+
+        ``main`` falls back to the creation token for any phase a table does not
+        name, so an unlisted phase would accept
+        ``PROVISION_DAILY_RUNTIME_DATABASE_DUTY`` and read as a provision while
+        running migrations.
+        """
+        confirm_env, confirm_value = duty_entry.PHASE_CONFIRMATIONS["upgrade"]
+        self.assertEqual(confirm_env, "SC_CONFIRM_DAILY_RUNTIME_DUTY_UPGRADE")
+        self.assertEqual(confirm_value, "UPGRADE_DAILY_RUNTIME_DUTY_DECLARED_MODULES")
+        self.assertNotEqual((confirm_env, confirm_value),
+                            (duty_entry.CONFIRM_ENV, duty_entry.CONFIRMATION))
+        self.assertNotEqual((confirm_env, confirm_value),
+                            duty_entry.PHASE_CONFIRMATIONS["refresh"])
+        self.assertIn("upgrade", duty_entry.PHASES)
+
+    def test_the_carrier_captures_a_verified_point_before_it_rewrites_the_schema(self):
+        """The point has to exist *and* be verified before the write starts.
+
+        A dump nobody listed is an assumption; the ordering is what keeps the
+        entry from rewriting a duty it could not return to.
+        """
+        rendered = self.rendered()
+        self.assertIn('entry["recovery_point"] = capture_duty_recovery_point(duty)', rendered)
+        self.assertLess(
+            rendered.index('entry["recovery_point"] = capture_duty_recovery_point(duty)'),
+            rendered.index('entry["upgrade"] = upgrade_declared_modules(duty)'),
+        )
+        self.assertIn("pg_restore", rendered)
+        self.assertIn("--list", rendered)
+        self.assertIn("not captured and verified", rendered)
+
+    def test_the_carrier_upgrades_only_the_declared_module_set(self):
+        rendered = self.rendered()
+        self.assertIn('"-u", ",".join(modules)', rendered)
+        carrier = rendered.split("def upgrade_declared_modules(", 1)[1].split("def duty_entry(", 1)[0]
+        self.assertIn("--stop-after-init", carrier)
+        self.assertIn("--without-demo=all", carrier)
+        self.assertNotIn('"-i", ",".join(modules)', carrier)
+        self.assertIn('duty["stack"]["modules"]', carrier)
 
     def test_a_payload_with_booleans_and_newlines_round_trips(self):
         rendered = self.rendered()
@@ -717,12 +802,77 @@ class EvaluationTests(unittest.TestCase):
         observation.update(overrides)
         return observation
 
-    def verdict(self, declaration, name, phase="plan", **overrides):
+    def verdict(self, declaration, name, phase="plan", upgrade=False, **overrides):
         duty = picked(declaration, name)
         assertions = duty_entry.evaluate(
-            duty, self.observe(duty, **overrides), declaration, phase=phase
+            duty, self.observe(duty, **overrides), declaration, phase=phase, upgrade=upgrade
         )
         return {row["id"]: row["passed"] for row in assertions}
+
+    def upgraded(self):
+        """A serving duty observed just after the carrier rewrote its schema."""
+        return {
+            "cluster": {"present": True, "running": True, "system_identifier": "7696799124996268070",
+                        "data_volume_owner": "sc_platform_control_db_data",
+                        "project": "sc-platform-control-dev", "config_files": "/opt/x/duty-stack.yml",
+                        "error": ""},
+            "custody": {"database_present": True, "database_owner": "sc_platform_control_app",
+                        "allow_connections": True, "role_present": True, "role_superuser": False,
+                        "role_createdb": False, "role_createrole": False, "role_canlogin": True,
+                        "public_connects": False, "public_schema_create": True,
+                        "database_role_connects": True, "error": ""},
+            "service": {"project": "sc-platform-control-dev",
+                        "running_services": ["db", "redis", "odoo", "nginx"],
+                        "containers": {}, "module_states": {"smart_core": "installed"},
+                        "installed_industry_modules": [], "error": ""},
+            "recovery_point": {"namespace": "/data/backups/daily-platform-control",
+                               "directory": "/data/backups/daily-platform-control/"
+                                            "sc_platform_control-20261016T000000Z-abcd1234",
+                               "path": "/data/backups/daily-platform-control/"
+                                       "sc_platform_control-20261016T000000Z-abcd1234/database.dump",
+                               "database": "sc_platform_control", "bytes": 4096, "returncode": 0,
+                               "verified": True, "sha256": "c" * 64, "restore_entries": 42,
+                               "error": ""},
+            "upgrade": {"container": "sc-platform-control-dev-odoo-1", "modules": ["smart_core"],
+                        "returncode": 0, "upgraded": True,
+                        "module_states": {"smart_core": "installed"}, "tail": ""},
+        }
+
+    def test_an_upgrade_is_only_reportable_with_a_verified_point_and_a_loaded_set(self):
+        declaration = self.declaration()
+        row = picked(declaration, "platform_control")
+        observation = self.observe(row, **self.upgraded())
+        verdict = {a["id"]: a["passed"] for a in duty_entry.evaluate(
+            row, observation, declaration, phase="apply", upgrade=True)}
+        self.assertTrue(verdict["a_verified_recovery_point_precedes_the_upgrade"])
+        self.assertTrue(verdict["the_declared_module_upgrade_completed"])
+
+        observation["recovery_point"]["verified"] = False
+        observation["recovery_point"]["error"] = "the captured artifact does not list"
+        verdict = {a["id"]: a["passed"] for a in duty_entry.evaluate(
+            row, observation, declaration, phase="apply", upgrade=True)}
+        self.assertFalse(verdict["a_verified_recovery_point_precedes_the_upgrade"])
+
+        observation = self.observe(row, **self.upgraded())
+        observation["upgrade"] = {"error": "the pre-upgrade recovery point was not captured",
+                                  "upgraded": False, "returncode": 1, "modules": ["smart_core"]}
+        verdict = {a["id"]: a["passed"] for a in duty_entry.evaluate(
+            row, observation, declaration, phase="apply", upgrade=True)}
+        self.assertFalse(verdict["the_declared_module_upgrade_completed"])
+
+        observation = self.observe(row, **self.upgraded())
+        observation["upgrade"]["module_states"] = {"smart_core": "to upgrade"}
+        verdict = {a["id"]: a["passed"] for a in duty_entry.evaluate(
+            row, observation, declaration, phase="apply", upgrade=True)}
+        self.assertFalse(verdict["the_declared_module_upgrade_completed"])
+
+    def test_the_upgrade_assertions_stay_out_of_every_other_phase(self):
+        declaration = self.declaration()
+        row = picked(declaration, "platform_control")
+        verdict = {a["id"]: a["passed"] for a in duty_entry.evaluate(
+            row, self.observe(row, **self.upgraded()), declaration, phase="apply")}
+        self.assertNotIn("a_verified_recovery_point_precedes_the_upgrade", verdict)
+        self.assertNotIn("the_declared_module_upgrade_completed", verdict)
 
     def created(self):
         """A duty the entry has just created, observed as it really is."""

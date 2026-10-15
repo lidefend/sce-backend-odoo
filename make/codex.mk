@@ -987,6 +987,7 @@ DAILY_RUNTIME_DATABASE_DUTY_PLAN_REPORT ?= .runtime/final-acceptance/daily-deplo
 DAILY_RUNTIME_DATABASE_DUTY_APPLY_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-apply.json
 DAILY_RUNTIME_DATABASE_DUTY_INITIALIZE_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-initialize.json
 DAILY_RUNTIME_DATABASE_DUTY_REFRESH_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-refresh.json
+DAILY_RUNTIME_DATABASE_DUTY_UPGRADE_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-upgrade.json
 DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST ?=
 DAILY_RUNTIME_DATABASE_DUTY_SELECTION ?=
 DAILY_RUNTIME_DATABASE_DUTY_PHASE ?= all
@@ -1063,6 +1064,30 @@ daily.runtime.database.duty.refresh: guard.prod.forbid verify.daily.runtime.data
 		--phase refresh \
 		--expect-declaration-digest "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" \
 		--report "$(DAILY_RUNTIME_DATABASE_DUTY_REFRESH_REPORT)"
+
+
+# An upgrade rewrites the declared module set of a duty that already serves from
+# the deployed source tree, which makes it the only phase that runs the declared
+# modules' migrations -- so it names its own token instead of inheriting the
+# refresh one and reading as a re-render. It takes no module argument of its own:
+# the set comes from the reviewed declaration, the same set ``initialize``
+# installs. Before it writes, the entry captures and *verifies* a pre-upgrade
+# recovery point inside the duty's own declared backup namespace, and it refuses
+# a duty whose bootstrap never finished installing ``base``.
+.PHONY: daily.runtime.database.duty.upgrade
+daily.runtime.database.duty.upgrade: guard.prod.forbid verify.daily.runtime.database.duty
+	@test "$${SC_CONFIRM_DAILY_RUNTIME_DUTY_UPGRADE:-}" = "UPGRADE_DAILY_RUNTIME_DUTY_DECLARED_MODULES" || { echo "SC_CONFIRM_DAILY_RUNTIME_DUTY_UPGRADE=UPGRADE_DAILY_RUNTIME_DUTY_DECLARED_MODULES is required" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_SELECTION must name the duties to upgrade" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST must be the digest of the reviewed declaration" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_database_duty.py \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--declaration "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION)" \
+		$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS) \
+		$(DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG) \
+		--apply \
+		--phase upgrade \
+		--expect-declaration-digest "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" \
+		--report "$(DAILY_RUNTIME_DATABASE_DUTY_UPGRADE_REPORT)"
 
 
 # The daily runtime serves a customer tenant duty from a *customer* addons tree

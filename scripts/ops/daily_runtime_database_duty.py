@@ -63,8 +63,15 @@ CONFIRM_ENV = "SC_CONFIRM_DAILY_RUNTIME_DATABASE_DUTY"
 #: the creation one and reading as a provision.
 REFRESH_CONFIRMATION = "REFRESH_DAILY_RUNTIME_DUTY_STACK_AND_APPLICATION"
 REFRESH_CONFIRM_ENV = "SC_CONFIRM_DAILY_RUNTIME_DUTY_REFRESH"
+#: A refresh only recreates containers. Rewriting a serving duty's schema from
+#: the deployed source tree is a different decision with a different blast
+#: radius -- it is the only phase that runs the declared module set's
+#: migrations -- so it names its own token instead of reusing the refresh one.
+UPGRADE_CONFIRMATION = "UPGRADE_DAILY_RUNTIME_DUTY_DECLARED_MODULES"
+UPGRADE_CONFIRM_ENV = "SC_CONFIRM_DAILY_RUNTIME_DUTY_UPGRADE"
 PHASE_CONFIRMATIONS = {
     "refresh": (REFRESH_CONFIRM_ENV, REFRESH_CONFIRMATION),
+    "upgrade": (UPGRADE_CONFIRM_ENV, UPGRADE_CONFIRMATION),
 }
 POSTGRES_DATA_DESTINATION = "/var/lib/postgresql/data"
 #: ``initialize`` brings up the declared services and installs the declared
@@ -73,8 +80,11 @@ POSTGRES_DATA_DESTINATION = "/var/lib/postgresql/data"
 #: already serving: it re-renders the reviewed stack and recreates the declared
 #: services so the running container reads the environment the reviewed
 #: definition declares. It never creates a cluster object and never installs a
-#: module.
-PHASES = ("plan", "stack", "database", "initialize", "refresh", "all")
+#: module. ``upgrade`` is narrower still: it rewrites the declared module set of
+#: an already serving duty from the deployed source tree, after capturing and
+#: verifying a pre-upgrade recovery point, and installs nothing that the
+#: declaration does not already name.
+PHASES = ("plan", "stack", "database", "initialize", "refresh", "upgrade", "all")
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
 #: Every value the declaration must supply before a duty stack can be rendered.
@@ -704,6 +714,7 @@ INDUSTRY_MODULE_PREFIX = "smart_construction_"
 
 __BASE_BOOTSTRAP_PLAN__
 __REFRESH_REFUSAL__
+__UPGRADE_REFUSAL__
 __PRUNE_SUPERSEDED_STACKS__
 
 report = {"mode": MODE, "phase": PHASE, "writes": False, "duties": []}
@@ -1504,13 +1515,108 @@ def ensure_privileges(duty):
     return {"steps": steps}
 
 
+def capture_duty_recovery_point(duty):
+    """Capture and *verify* a pre-upgrade point inside the duty's own namespace.
+
+    An upgrade rewrites the duty's schema from the deployed source tree, so the
+    entry may not start that write without a point it could return to -- and the
+    point has to be verified rather than assumed. The dump is written into the
+    duty's declared backup namespace, hashed, and then listed through the duty's
+    own cluster with ``pg_restore --list`` so a truncated or unreadable artifact
+    is reported here instead of discovered during a restore.
+    """
+    namespace = str((duty.get("storage") or {}).get("backup_namespace") or "").rstrip("/")
+    if not namespace.startswith("/") or namespace == "/":
+        return {"error": "the duty declares no absolute backup namespace"}
+    container = duty["cluster"]["container"]
+    database = duty["database"]
+    role = duty["cluster"]["maintenance_role"]
+    try:
+        os.makedirs(namespace, mode=0o700, exist_ok=True)
+    except OSError as error:
+        return {"error": "the declared backup namespace is not writable: %s" % (error,)}
+    identifier = "%s-%s-%s" % (
+        database, time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()), secrets.token_hex(4))
+    directory = os.path.join(namespace, identifier)
+    if os.path.exists(directory):
+        return {"error": "the intended recovery-point directory already exists"}
+    os.makedirs(directory, mode=0o700)
+    path = os.path.join(directory, "database.dump")
+    dump = subprocess.run(
+        ["docker", "exec", container, "pg_dump", "-U", role, "-Fc", "--no-owner", database],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False, timeout=3600,
+    )
+    entry = {"namespace": namespace, "directory": directory, "path": path,
+             "database": database, "bytes": len(dump.stdout or b""),
+             "returncode": dump.returncode, "verified": False,
+             "error": (dump.stderr or b"").decode(errors="replace").strip()[:300]}
+    if dump.returncode or not dump.stdout:
+        entry["error"] = entry["error"] or "pg_dump produced no artifact"
+        return entry
+    with open(path, "wb") as stream:
+        stream.write(dump.stdout)
+    os.chmod(path, 0o600)
+    entry["sha256"] = hashlib.sha256(dump.stdout).hexdigest()
+    listing = subprocess.run(
+        ["docker", "exec", "-i", container, "pg_restore", "--list"],
+        input=dump.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+        timeout=900,
+    )
+    entries = [
+        line for line in (listing.stdout or b"").decode(errors="replace").splitlines()
+        if line.strip() and not line.startswith(";")
+    ]
+    entry["restore_entries"] = len(entries)
+    entry["verified"] = listing.returncode == 0 and bool(entries)
+    if not entry["verified"]:
+        entry["error"] = (listing.stderr or b"").decode(errors="replace").strip()[:300] or (
+            "the captured artifact does not list as a restorable archive")
+    return entry
+
+
+def upgrade_declared_modules(duty):
+    """Upgrade exactly the module set the declaration names, then read it back.
+
+    ``-u`` on a name that is not installed would install it, so the entry takes
+    no module argument of its own: the set comes from the reviewed declaration,
+    which is the same set ``--phase initialize`` installs and the plan asserts is
+    present. The serving process holds its own registry, so it is restarted
+    before the module versions are read back -- reporting an upgrade from a
+    process that has not loaded it would be a claim, not an observation.
+    """
+    modules = [str(item) for item in duty["stack"]["modules"]]
+    if not modules:
+        return {"error": "the declaration names no module to upgrade on this duty"}
+    container = service_container(duty, "odoo")
+    if not container:
+        return {"error": "the declared odoo service is not running; start the duty stack first"}
+    command = ["docker", "exec", container, "odoo",
+               "-c", "/var/lib/odoo/odoo.conf", "-d", duty["database"],
+               "-u", ",".join(modules), "--without-demo=all", "--stop-after-init",
+               "--no-http", "--workers=0", "--max-cron-threads=0", "--logfile=/dev/stdout"]
+    result = run(command, timeout=3600)
+    entry = {"container": container, "modules": modules, "returncode": result.returncode,
+             "upgraded": result.returncode == 0,
+             "tail": ((result.stdout or "") + (result.stderr or "")).strip()[-1200:]}
+    if result.returncode == 0:
+        restart = run(["docker", "restart", container], timeout=300)
+        entry["restart"] = {"command": "docker restart %s" % container,
+                            "returncode": restart.returncode}
+        waited = run(compose_base(duty) + ["up", "-d", "--wait", "odoo"], timeout=900)
+        entry["wait"] = {"returncode": waited.returncode,
+                         "error": (waited.stderr or waited.stdout or "").strip()[-400:]}
+        entry["module_states"] = module_facts(duty).get("module_states", {})
+    return entry
+
+
 def duty_entry(duty):
     """Observe one duty, mutating it only in the phase that declares a mutation."""
     wants_creation = duty["custody"]["role_compliance"] == "to_be_created"
     wants_initialization = duty["custody"].get("service_face") == "to_be_initialized"
     entry = {"duty": duty["duty"], "cluster": None, "custody": None, "stack": None,
              "create": None, "bootstrap": None, "privileges": None, "initialize": None,
-             "refresh": None, "route": None, "service": None, "application_config": None,
+             "refresh": None, "upgrade": None, "recovery_point": None, "route": None,
+             "service": None, "application_config": None,
              "application_credential": None, "error": ""}
     if MODE == "apply" and PHASE in ("stack", "all"):
         if wants_creation:
@@ -1584,6 +1690,26 @@ def duty_entry(duty):
             entry["route"] = start_route(duty)
             entry["refresh"] = {"stack_sha256": entry["stack"]["compose_sha256"],
                                 "services": [str(item) for item in duty["stack"]["services"]]}
+    if MODE == "apply" and PHASE == "upgrade":
+        # An upgrade is the only phase that rewrites a serving duty's schema
+        # from the deployed source tree, so it is guarded twice: the refusal
+        # table decides whether this duty may be rewritten at all, and a
+        # verified recovery point has to exist before the rewrite starts.
+        reason = upgrade_refusal(
+            duty,
+            cluster_running=bool(entry["cluster"].get("present") and entry["cluster"].get("running")),
+            base_installed=bool(base_readback(duty).get("installed")),
+        )
+        if reason:
+            entry["upgrade"] = {"error": reason}
+        else:
+            entry["recovery_point"] = capture_duty_recovery_point(duty)
+            if entry["recovery_point"].get("error") or not entry["recovery_point"].get("verified"):
+                entry["upgrade"] = {
+                    "error": "the pre-upgrade recovery point was not captured and verified: %s"
+                             % (entry["recovery_point"].get("error") or "unverified",)}
+            else:
+                entry["upgrade"] = upgrade_declared_modules(duty)
     entry["service"] = service_facts(duty)
     if "odoo" in [str(item) for item in duty["stack"]["services"]]:
         entry["application_config"] = application_config_facts(duty)
@@ -1604,7 +1730,8 @@ def salvage_entry(duty, error):
     """
     entry = {"duty": duty["duty"], "cluster": None, "custody": None, "stack": None,
              "create": None, "bootstrap": None, "privileges": None, "initialize": None,
-             "refresh": None, "route": None, "service": None, "application_config": None,
+             "refresh": None, "upgrade": None, "recovery_point": None, "route": None,
+             "service": None, "application_config": None,
              "application_credential": None, "error": "%s: %s" % (type(error).__name__, error)}
     try:
         entry["cluster"] = cluster_facts(duty["cluster"]["container"], duty)
@@ -1678,6 +1805,34 @@ def refresh_refusal(duty, *, cluster_running):
     return ""
 
 
+def upgrade_refusal(duty, *, cluster_running, base_installed):
+    """Why ``--phase upgrade`` must not touch this duty, or an empty string.
+
+    ``upgrade`` rewrites the declared module set of a duty that already serves
+    from the deployed source tree. That is a schema write, not a re-render, so it
+    refuses everything a refresh refuses and additionally refuses a duty whose
+    own bootstrap never finished installing ``base``: running migrations against
+    a half-built database is how a duty becomes unreadable by everything,
+    including the entry that broke it.
+    """
+    if duty["custody"].get("role_compliance") == "to_be_created":
+        return ("the declaration still says the duty is to be created; create it through the "
+                "stack phase first")
+    declared_face = str(duty["custody"].get("service_face") or "")
+    if declared_face != "initialized":
+        return ("the declaration says service_face=%r; upgrade only rewrites a duty that already "
+                "serves, and the initialize phase owns the uninitialized face" % (declared_face,))
+    if not cluster_running:
+        return ("the duty cluster is not running; refusing to upgrade a duty whose cluster cannot "
+                "be observed")
+    if not base_installed:
+        return ("the duty's own base module is not installed; refusing to run migrations against "
+                "a database whose bootstrap never finished")
+    if not [str(item) for item in duty["stack"]["modules"]]:
+        return "the declaration names no module to upgrade on this duty"
+    return ""
+
+
 def prune_superseded_stack_files(ops_root, current_path):
     """Delete rendered duty stacks the reviewed definition has replaced.
 
@@ -1727,6 +1882,8 @@ def render_remote_program(payload):
     ).replace(
         "__REFRESH_REFUSAL__", textwrap.dedent(inspect.getsource(refresh_refusal)),
     ).replace(
+        "__UPGRADE_REFUSAL__", textwrap.dedent(inspect.getsource(upgrade_refusal)),
+    ).replace(
         "__PRUNE_SUPERSEDED_STACKS__",
         textwrap.dedent(inspect.getsource(prune_superseded_stack_files)),
     ).replace(
@@ -1760,7 +1917,7 @@ def remote_duties(ssh_host, payload, *, remote_head=None):
 # ----------------------------------------------------------------------
 # evaluation
 # ----------------------------------------------------------------------
-def evaluate(duty, observation, declaration, *, phase="plan", initialize=False):
+def evaluate(duty, observation, declaration, *, phase="plan", initialize=False, upgrade=False):
     """Return the per-duty assertions that decide the verdict.
 
     The two phases ask different questions about the same observation. A plan
@@ -1950,6 +2107,27 @@ def evaluate(duty, observation, declaration, *, phase="plan", initialize=False):
             {"database": designated.get("database"), "role": designated.get("role"),
              "source": designated.get("source"), "from_declared_source": designated.get("from_source"),
              "error": designated.get("error", "")})
+    if upgrade:
+        # ``upgrade`` is the only phase that rewrites a serving duty's schema
+        # from the deployed tree. Two facts have to hold for that rewrite to be
+        # reportable as done: a verified point to return to existed first, and
+        # the declared module set is present in the registry the serving process
+        # actually loaded after the restart.
+        point = observation.get("recovery_point") or {}
+        rewritten = observation.get("upgrade") or {}
+        add("a_verified_recovery_point_precedes_the_upgrade",
+            bool(point.get("path")) and point.get("verified") is True,
+            {"path": point.get("path"), "sha256": point.get("sha256"),
+             "bytes": point.get("bytes"), "restore_entries": point.get("restore_entries"),
+             "error": point.get("error", "")})
+        declared_upgrade_modules = [str(item) for item in duty["stack"]["modules"]]
+        observed_upgrade_modules = rewritten.get("module_states") or {}
+        add("the_declared_module_upgrade_completed",
+            rewritten.get("upgraded") is True
+            and not [name for name in declared_upgrade_modules
+                     if observed_upgrade_modules.get(name) != "installed"],
+            {"modules": rewritten.get("modules"), "returncode": rewritten.get("returncode"),
+             "observed": observed_upgrade_modules, "error": rewritten.get("error", "")})
     application = observation.get("application_config") or {}
     declared_runtime_env = str(duty["stack"]["runtime_env"])
     if "odoo" in declared_services and application.get("container"):
@@ -2001,12 +2179,14 @@ def deployment_binding(declaration, frontend_build):
     }
 
 
-def plan_verdict(declaration, selected, observations, *, phase="plan", initialize=False):
+def plan_verdict(declaration, selected, observations, *, phase="plan", initialize=False,
+                 upgrade=False):
     failures = validate_declaration(declaration)
     rows = []
     for duty in selected:
         observation = observations.get(duty["duty"]) or {}
-        assertions = evaluate(duty, observation, declaration, phase=phase, initialize=initialize)
+        assertions = evaluate(duty, observation, declaration, phase=phase, initialize=initialize,
+                              upgrade=upgrade)
         rows.append({
             "duty": duty["duty"],
             "database": duty["database"],
@@ -2123,6 +2303,7 @@ def main(argv=None):
             declaration, selected, observations,
             phase="apply" if options.apply else "plan",
             initialize=bool(options.apply) and options.phase == "initialize",
+            upgrade=bool(options.apply) and options.phase == "upgrade",
         )
     except DutyError as error:
         print("[daily.runtime.database.duty] BLOCKED %s" % (error,), file=sys.stderr)
