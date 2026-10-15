@@ -2297,3 +2297,83 @@ S3-2（独立性规则补"（模型层）"限定）**本轮关闭**；S3-3（闭
 
 可声明：**批次验收**（授权链路与下游两条声明的产品能力已按受影响集合验证）。
 **未完成**：主线集成、版本发布、产品交付。载荷未入库，因此客户开发租户的数据对账（12386 / 6322 / 29 / 6035）与业务闭环验收尚未开始。
+
+## 2026-10-16：客户身份迁出产品树 + 受管物化（Contract Runtime 边界修复）
+
+触发：冻结候选上 `verify.tenant.product_payload_boundary` 失败 —— 产品树里出现了**固定客户身份**
+（数据库、应用角色、compose 项目、数据卷、存储/备份命名空间、租户 key、客户模块名、法律主体名）。
+所有者裁定：把具体绑定迁进 `ops_root` 下**已有的** per-duty 受管目录，产品树只保留通用协议、职责名、
+结构与校验；不新增环境、不新增第二套凭据权威、不豁免守卫。这条失败归类为**产品仓库边界违规**，
+不是测试误报。
+
+### 一、书写与来源的分离
+
+| 层 | 现在承载什么 |
+|---|---|
+| 产品树 `config/ops/daily_runtime_database_duties.v1.json` | 只留 `platform_control` / `demo` 两个通用职责、`naming`、`managed_duty_instances` 指针与 `ops_root` |
+| 受管目录 `ops_root`（git 之外，0600） | 具体职责实例文档 `daily_runtime_duty_instances.v1.json`：`customer_tenant_dev` 的完整绑定 |
+| 解析器 `scripts/ops/daily_runtime_duty_identity.py` | 模板 + 受管实例合并；缺值、非法值、占位符残留、身份自相矛盾一律拒绝 |
+
+占位符只能出现在模板里；运行时缺值、非法值或身份不匹配必须拒绝，**不允许**拿占位符直接拼去执行。
+客户模块名也不再由产品树给默认值：`--require-module`、`--customer-module` 由调用方给出，空即拒。
+原文（含具体值）保存在受控外部证据区，`SHA256SUMS` 于 2026-10-16 复核一致。
+
+### 二、早期检查映射
+
+客户侧这个边界上一次是**在冻结候选上**才发现的。`scripts/verify/frontend_dev_incremental.py` 现在把
+声明文件、解析器、职责入口与边界守卫的改动直接路由到 `verify.tenant.product_payload_boundary` 与
+`verify.daily.runtime.duty.identity.unit`，就地改动在**内循环**即被拦住。
+
+### 三、受管物化（首次写入）
+
+| 步骤 | 事实 |
+|---|---|
+| `daily.runtime.database.duty.plan` | `source=override`（staged 副本），`write=false`，`sha256=e5d1fa05…`，`declaration_digest=7103947e…`，三个职责列表全部 PASS |
+| `daily.runtime.database.duty.apply`（`--phase database` + 确认 token + 已审阅摘要） | `write=true`，`expected==observed==e5d1fa05…`，`previous` 为空；主机侧 `-rw------- root root` |
+| 幂等重跑（不带 override） | `source=managed`，`write=false`，未生成 `.previous`，摘要不变 |
+| 治理路径回读（不带 override） | `source=managed`，`read_from` 为 `ops_root` 文档，`observed==sha256`；**不再需要**开发机环境变量 |
+| 身份等价性 | 保留的原声明（内联客户块）与新解析结果：`platform_control` / `demo` / `customer_tenant_dev` 逐字段 `IDENTITY_EQUAL`（staged 与 host 两个来源各一次） |
+
+**没有动**：数据库（未建、未重建、未重置）、账号与凭据（未建、未重置、未轮换）、导入（未重放、
+载荷未写）、容器（未重渲染/重启/重初始化/刷新/升级）、模块（未安装/升级）。`--phase database`
+是既有职责的最窄 apply：三个职责的创建步骤都报 skipped，唯一写入就是受管绑定。
+
+### 四、真实消费接线（宿主侧只读回读）
+
+已部署在宿主上的**第二个**消费者 `daily_runtime_duty_edition_release.py readback`（`tool_sha=81bb9783`）
+从归档声明 + `ops_root` 受管文档解析出 `customer_tenant_dev`：`data_purpose=customer`、数据库与应用角色
+与声明的环境身份一致、`edition_carrier=effective_release_snapshot`、允许产品面 `construction.standard`；
+`readback_report.mode=read_only`、`writes=0`，且 `release_state_digest` **前 == 后**。
+这证明“身份从受管目录解析”走的是真实调用链，而不是本树里的解析器孤证。
+
+同一步还修掉一个**测试自持性缺陷**：`ResolveTests` 自注入 reader，却没有屏蔽开发机 shell 里为首次物化
+导出的 `SC_DAILY_RUNTIME_DUTY_INSTANCES`，于是用例断言随环境变化。修复沿用本文件既有约定
+（`EntryWiringTests` / `BindingRefusalTests` 已如此），**行为不变**：受管目录仍是默认来源，覆盖仍是显式来源。
+
+### 五、待推送历史核查
+
+| 口径 | 实测（2026-10-16） |
+|---|---|
+| 待推送提交 `origin/main..HEAD` | 62 个，其中 **29** 个提交触及客户身份 token |
+| 已发布 `origin/main` | **17** 个提交触及同一 token |
+| HEAD 工作树 | 仅 4 个**负向策略承载**文件（守卫与其测试、解耦守卫与其测试）——守卫本身已认定合法 |
+
+结论：守卫强制的是**工作树/HEAD 干净**（`git ls-files --cached --others --exclude-standard`）；
+历史仍带该标识，因此发布边界**不得**被描述为“历史也干净”。若某次发布边界要求历史同样无客户身份，
+使用既有受管候选重建流程生成干净候选，私有恢复证据保留在外部证据区；不改写已发布历史。
+
+### 六、定向验证与阶段口径
+
+| 检查 | 结果 |
+|---|---|
+| `verify.daily.runtime.duty.identity.unit` | 34 通过（**无** ambient override 与**带** override 各一次） |
+| `verify.daily.runtime.database.duty` | 123 通过 |
+| 9 套件组装（ops/verify 消费方） | 405 通过（在导出 override 的环境下运行） |
+| `verify.tenant.product_payload_boundary` | PASS：`FIXED_CUSTOMER_IDENTIFIERS=0`、`CUSTOMER_PAYLOAD_FILES=0`、`files=8341` |
+| `verify.frontend.dev.incremental.unit` | 30 通过 |
+| `daily.runtime.tenant.topology.inventory` 单测 | 13 通过 |
+
+可声明：**批次验收**（声明解析边界 + 本批受影响文件的守卫 + 受管物化与只读回读）。
+**未完成**：主线集成、版本发布、产品交付。载荷仍未入库：声明 `customer_module_version` 与已安装版本不一致
+（`TPV1_CUSTOMER_ADAPTER_INCOMPATIBLE`），须由用户模块重新出包、签名、重批，产品仓库不放宽；
+客户开发租户的数据对账（12386 / 6322 / 29 / 6035）与业务闭环验收尚未开始。

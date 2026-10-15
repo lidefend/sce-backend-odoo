@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4803`
+- Scanned files: `4805`
 - Files requiring split plan: `66`
 - Files above warning threshold: `124`
 
@@ -35,16 +35,16 @@ Generated from repository source files. This report is informational during the 
 | 2810 | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 2675 | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2584 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
+| 2492 | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 2454 | Python source | `addons/smart_core/handlers/system_init.py` |
-| 2384 | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 2340 | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2245 | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
 | 2205 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2186 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2120 | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
+| 2103 | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 2095 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2091 | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
-| 2088 | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 2068 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2029 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2001 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
@@ -179,6 +179,7 @@ Generated from repository source files. This report is informational during the 
 | 845 | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
 | 843 | Python source | `scripts/verify/contract_evidence_guard.py` |
 | 843 | Python source | `scripts/verify/test_scene_r3_action_target_scene_resolution.py` |
+| 841 | Python source | `scripts/ops/test_daily_runtime_duty_operator_grant.py` |
 | 841 | Python source | `scripts/verify/test_sc_data_scope_rule_coverage_guard.py` |
 | 838 | Python source | `scripts/verify/guard_registry_audit.py` |
 | 837 | TypeScript source | `frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` |
@@ -188,7 +189,6 @@ Generated from repository source files. This report is informational during the 
 | 823 | Python source | `addons/smart_core/handlers/ui_contract.py` |
 | 819 | Python source | `scripts/verify/workflow_action_semantics_completeness_guard.py` |
 | 814 | Python source | `scripts/ops/daily_runtime_legacy_stack_retire.py` |
-| 813 | Python source | `scripts/ops/test_daily_runtime_duty_operator_grant.py` |
 | 810 | Python source | `addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py` |
 | 807 | Python source | `addons/smart_construction_core/models/core/material_rental.py` |
 | 802 | TypeScript source | `frontend/apps/web/src/api/businessConfig.ts` |
@@ -235,16 +235,16 @@ Generated from repository source files. This report is informational during the 
 | 2810 | split_plan_required | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 2675 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2584 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
+| 2492 | split_plan_required | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 2454 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
-| 2384 | split_plan_required | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 2340 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2245 | split_plan_required | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
 | 2205 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2186 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2120 | split_plan_required | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
+| 2103 | split_plan_required | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 2095 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2091 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
-| 2088 | split_plan_required | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 2068 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2029 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2001 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |

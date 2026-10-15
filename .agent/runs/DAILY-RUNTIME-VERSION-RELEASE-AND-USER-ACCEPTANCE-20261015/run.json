@@ -3069,7 +3069,8 @@
         "identity-bearing-files.tsv",
         "SHA256SUMS"
       ],
-      "sha256sums_verified": true
+      "sha256sums_verified": true,
+      "integrity": "sha256sum -c SHA256SUMS verified on 2026-10-16; the four preserved raw records are unchanged."
     },
     "managed_binding": {
       "dir": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/product-boundary-identity-relocation-20261016/managed",
@@ -3091,19 +3092,92 @@
         "published_origin_main_commits_touching_identity_tokens": 16
       },
       "guard_scope": "tenant_product_payload_boundary_guard reads git ls-files --cached --others --exclude-standard, so the enforced boundary is the working tree/HEAD; repository_clean_history_policy.v1.json does not scan customer identity.",
-      "decision": "Rewriting published history is not authorised and the same identifier is already in published origin/main, so the accepted requirement stays a clean HEAD. The governed candidate rebuild path exists and is not required by the enforced boundary. Recorded, not silently ignored."
+      "decision": "Rewriting published history is not authorised and the same identifier is already in published origin/main, so the accepted requirement stays a clean HEAD. The governed candidate rebuild path exists and is not required by the enforced boundary. Recorded, not silently ignored.",
+      "measured_20261016": {
+        "pending_commits_origin_main_to_head": 62,
+        "pending_commits_touching_a_customer_identity_token": 29,
+        "published_origin_main_commits_touching_a_token": 17,
+        "head_files_touching_a_token": [
+          "scripts/verify/tenant_product_payload_boundary_guard.py",
+          "scripts/verify/test_tenant_product_payload_boundary_guard.py",
+          "scripts/verify/product_customer_runtime_decoupling_guard.py",
+          "scripts/verify/test_product_customer_runtime_decoupling_guard.py"
+        ],
+        "method": "git log -S<token> over the pending range and over origin/main; git grep over HEAD",
+        "note": "the four HEAD files are the negative-policy carriers of the token list, which the guard already treats as legitimate"
+      },
+      "consequence": "A clean HEAD is the enforced boundary. Historical commits still carry the identifier, so the release boundary must not be described as history-clean; if it ever must be, the governed candidate rebuild path generates a fresh candidate and the raw evidence is preserved privately."
     },
     "managed_materialisation_20261016": {
-      "status": "pending",
-      "why": "The instance document does not exist under ops_root yet, so this entry has not run against the host.",
-      "plan": "plan (read-only) -> apply with --phase database -> read the file back on the host.",
-      "phase_reason": "--phase database is the narrowest apply for an existing duty: none of the three duties is to_be_created, so the creation step reports skipped and the only write is the managed binding. No duty is re-rendered, restarted, re-initialised, refreshed or upgraded, and no database, account or credential is touched."
+      "status": "materialised",
+      "why": "The instance document did not exist under ops_root, so the first materialisation carried the reviewed bytes to the host, and the governed read then replaced the override.",
+      "plan": {
+        "entry": "daily.runtime.database.duty.plan",
+        "source": "override",
+        "read_from": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/product-boundary-identity-relocation-20261016/managed/daily_runtime_duty_instances.v1.json",
+        "sha256": "e5d1fa0533aa96440c25ca45cf967c80644f12eba064fc668a4d416cc2de940f",
+        "observed_sha256": "",
+        "wrote": false,
+        "declaration_digest": "7103947eb771ded352a10e7f4b92f265222dcdc0bc52408b99e79638e93509f4",
+        "duties": [
+          "platform_control",
+          "demo",
+          "customer_tenant_dev"
+        ]
+      },
+      "apply": {
+        "entry": "daily.runtime.database.duty.apply",
+        "phase": "database",
+        "confirmation": "exact token plus the reviewed declaration digest",
+        "expected_sha256": "e5d1fa0533aa96440c25ca45cf967c80644f12eba064fc668a4d416cc2de940f",
+        "observed_sha256": "e5d1fa0533aa96440c25ca45cf967c80644f12eba064fc668a4d416cc2de940f",
+        "previous_sha256": "",
+        "wrote": true,
+        "host_mode": "0600 root:root"
+      },
+      "idempotent_apply": {
+        "entry": "daily.runtime.database.duty.apply",
+        "source": "managed",
+        "wrote": false,
+        "previous_sha256": "e5d1fa0533aa96440c25ca45cf967c80644f12eba064fc668a4d416cc2de940f",
+        "previous_file_created": false,
+        "note": "a repeat of the same revision is a no-op, so a re-run cannot rewrite the binding"
+      },
+      "governed_readback": {
+        "entry": "daily.runtime.database.duty.plan",
+        "override_exported": false,
+        "source": "managed",
+        "read_from": "the managed duty-instance document under the declaration ops_root",
+        "sha256": "e5d1fa0533aa96440c25ca45cf967c80644f12eba064fc668a4d416cc2de940f",
+        "observed_sha256": "e5d1fa0533aa96440c25ca45cf967c80644f12eba064fc668a4d416cc2de940f",
+        "note": "the governed document now resolves the customer duty with no override in the environment"
+      },
+      "identity_equivalence": {
+        "tool": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/product-boundary-identity-relocation-20261016/identity_equivalence.py",
+        "before": "the preserved tracked declaration that carried the customer block inline",
+        "against_staged": "IDENTITY_EQUAL for platform_control, demo and customer_tenant_dev",
+        "against_host": "IDENTITY_EQUAL for platform_control, demo and customer_tenant_dev",
+        "note": "only the way the identity is written changed; the resolved target is unchanged"
+      },
+      "not_touched": [
+        "no database was created, recreated or reset",
+        "no account or credential was created, reset or rotated",
+        "no import was replayed and no payload was written",
+        "no container was re-rendered, restarted, re-initialised, refreshed or upgraded",
+        "no module was installed or upgraded"
+      ],
+      "phase_reason": "--phase database is the narrowest apply for an existing duty: all three duties report their creation step as skipped, so the only write is the managed binding."
     },
     "targeted_verification_20261016": {
       "identity_unit": {
         "target": "verify.daily.runtime.duty.identity.unit",
         "tests": 34,
-        "status": "passed"
+        "status": "passed",
+        "env_conditions": [
+          "run with no ambient override",
+          "run with SC_DAILY_RUNTIME_DUTY_INSTANCES exported to the staged document"
+        ],
+        "note": "Both conditions return 34 passed. The first attempt failed one case because ResolveTests injected its own reader while the exported override still selected the source."
       },
       "duty_unit": {
         "target": "verify.daily.runtime.database.duty",
@@ -3128,7 +3202,7 @@
         "status": "passed"
       },
       "assembly": {
-        "modules": 9,
+        "modules": 10,
         "tests": 405,
         "status": "passed",
         "command_wrapper": "python3 -m unittest",
@@ -3143,7 +3217,8 @@
           "scripts.ops.test_daily_runtime_duty_payload",
           "scripts.ops.test_daily_runtime_tenant_addons_deliver",
           "scripts.verify.test_tenant_payload_operator_policy"
-        ]
+        ],
+        "note": "Run with the override exported, so the assembly covers the operator environment that produced the original failure."
       },
       "topology_unit": {
         "tests": 13,
@@ -3164,7 +3239,34 @@
         "instances document schema and empty duty list",
         "write path 0600 / previous revision / atomic replace / digest readback / same-revision no-op",
         "entry readback refusal when the host does not hold the reviewed revision"
-      ]
+      ],
+      "hermeticity_fix_20261016": {
+        "finding": "ResolveTests injects instances_reader but did not shield itself from the exported override, so a suite run inherited the operator's staged document and one assertion depended on the environment instead of the code.",
+        "owner": "P4 test hygiene, same boundary: a pure resolution case must name its own source",
+        "remedy": "ResolveTests.setUp now clears the environment, matching the convention EntryWiringTests and BindingRefusalTests already used for the same reason.",
+        "behaviour_change": "none: the managed directory stays the default source and the override stays an explicit source",
+        "commit": "81bb9783727edfb6eb8344e95304494c3531da9f"
+      },
+      "host_consumer_readback": {
+        "entry": "daily.runtime.duty.edition_release.remote_readback",
+        "host": "daily development server, governed ssh host",
+        "tool_sha": "81bb9783727edfb6eb8344e95304494c3531da9f",
+        "why": "A second, already-deployed consumer resolving the customer duty proves the relocation works through the real call wiring, not only through this tree's resolver.",
+        "resolved": {
+          "duty": "customer_tenant_dev",
+          "data_purpose": "customer",
+          "database_and_role": "resolved from the managed document, matched the declared environment identity",
+          "edition_carrier": "effective_release_snapshot",
+          "declared_allowed_product_keys": [
+            "construction.standard"
+          ]
+        },
+        "read_only": "readback_report.mode=read_only, writes=0",
+        "target_unchanged": "release_state_digest before == after",
+        "raw_evidence": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/product-boundary-identity-relocation-20261016/managed/edition_release_readback.log",
+        "raw_evidence_sha256": "af8f47ef295f26b8e938938fc3b6957b5377cc47d793bc3c0d81b5b75ec152d7",
+        "value_policy": "the raw log stays in git-ignored evidence; this record carries duty names and digests only"
+      }
     },
     "early_check_mapping_20261016": {
       "router": "scripts/verify/frontend_dev_incremental.py",
