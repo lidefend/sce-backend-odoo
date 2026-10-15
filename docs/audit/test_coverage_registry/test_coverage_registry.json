@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 167,
+    "odoo_tags": 169,
     "gated": 4,
-    "on_demand": 20,
+    "on_demand": 22,
     "unwired": 143,
-    "odoo_tag_declarations": 376,
+    "odoo_tag_declarations": 379,
     "gated_declarations": 89,
-    "uncovered_declarations": 287,
+    "uncovered_declarations": 290,
     "ci_unit_scripts": 14,
     "ci_unit_scripts_wired": 14,
     "ci_unit_scripts_unwired": 0
@@ -145,7 +145,7 @@
       "group": "smart_core",
       "status": "unwired",
       "kind": "odoo_tag",
-      "declarations": 20,
+      "declarations": 21,
       "files": [
         "addons/smart_core/tests/test_action_dispatcher_server_mapping.py",
         "addons/smart_core/tests/test_api_data_mutation_failure_atomicity_orm.py",
@@ -164,6 +164,7 @@
         "addons/smart_core/tests/test_scene_runtime_contract_chain.py",
         "addons/smart_core/tests/test_smart_core_model_init_table_recovery.py",
         "addons/smart_core/tests/test_tenant_extension_storage.py",
+        "addons/smart_core/tests/test_tenant_payload_operator_lifecycle.py",
         "addons/smart_core/tests/test_user_activation.py"
       ],
       "owner": "platform-team",
@@ -1344,6 +1345,19 @@
       "disposition": "class-selected"
     },
     {
+      "group": "platform_maintenance_access",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_platform_maintenance_access_http.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make:verify.smart_core.platform_maintenance_access.orm :: platform_maintenance_access test.safe"
+      ]
+    },
+    {
       "group": "policy_document",
       "status": "unwired",
       "kind": "odoo_tag",
@@ -2056,6 +2070,19 @@
       "owner": "platform-team",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "tenant_payload_operator",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_tenant_payload_operator_lifecycle.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make:verify.smart_core.tenant_payload_operator.orm :: tenant_payload_operator test.safe"
+      ]
     },
     {
       "group": "tender_award_fact",
