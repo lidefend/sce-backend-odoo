@@ -10,8 +10,10 @@ from scripts.verify.role_surface_exposure_declaration_guard import (
     group_closure,
     load_entry_universe,
     load_group_graph,
+    load_published_face_entry_count,
     load_role_policy,
     validate,
+    validate_published_face,
 )
 
 
@@ -143,6 +145,67 @@ class RoleSurfaceExposureDeclarationGuardTest(unittest.TestCase):
         graph = load_group_graph()
         closures = {group: group_closure(group, graph) for group in graph}
         self.assertEqual(validate(declarations, policy, entries, pending, closures), [])
+
+
+class PublishedFaceBalanceTest(unittest.TestCase):
+    """The acceptance universe must account for every published leaf.
+
+    The matrix addresses entries through ``action_xmlid``, so a published leaf
+    that delivers a scene route instead of an action can never appear there.
+    The released population therefore equals the acceptance rows plus the
+    declared non-action carriers, and a released leaf that is neither fails
+    closed. Leaf identity is decided by the runtime probe, which compares the
+    observed non-action leaves with this same declaration.
+    """
+
+    @staticmethod
+    def _carrier(**overrides):
+        row = {
+            "scene_key": "workspace.home",
+            "route": "/s/workspace.home",
+            "reason": "declared scene carrier",
+            "evidence": "product contract",
+        }
+        row.update(overrides)
+        return row
+
+    def test_declared_carrier_balances_the_published_face(self):
+        universe = {"t.menu_a", "t.menu_b"}
+        declarations = {"non_action_delivery_entries": {"t.menu_scene": self._carrier()}}
+        self.assertEqual(validate_published_face(declarations, universe, 3), [])
+
+    def test_undeclared_carrier_fails_even_though_the_rows_are_unchanged(self):
+        universe = {"t.menu_a", "t.menu_b"}
+        errors = validate_published_face({"non_action_delivery_entries": {}}, universe, 3)
+        self.assertTrue(any("published face entry count drift" in row for row in errors))
+
+    def test_published_growth_without_a_declaration_fails_closed(self):
+        universe = {"t.menu_a", "t.menu_b"}
+        declarations = {"non_action_delivery_entries": {"t.menu_scene": self._carrier()}}
+        errors = validate_published_face(declarations, universe, 4)
+        self.assertTrue(any("published face entry count drift" in row for row in errors))
+        self.assertFalse(validate_published_face(declarations, universe | {"t.menu_c"}, 4))
+
+    def test_carrier_must_not_overlap_the_acceptance_universe(self):
+        universe = {"t.menu_a", "t.menu_scene"}
+        declarations = {"non_action_delivery_entries": {"t.menu_scene": self._carrier()}}
+        errors = validate_published_face(declarations, universe, 2)
+        self.assertTrue(any("overlaps the acceptance universe" in row for row in errors))
+
+    def test_carrier_requires_scene_route_reason_and_evidence(self):
+        universe = {"t.menu_a", "t.menu_b"}
+        declarations = {"non_action_delivery_entries": {"t.menu_scene": {"scene_key": "workspace.home"}}}
+        errors = validate_published_face(declarations, universe, 3)
+        for field in ("route", "reason", "evidence"):
+            self.assertTrue(any(f"is missing {field}" in row for row in errors))
+
+    def test_repository_declaration_balances_the_contract(self):
+        declarations = json.loads(Path(DECLARATIONS_PATH).read_text(encoding="utf-8"))
+        entries, _pending = load_entry_universe()
+        universe = {entry["menu"] for entry in entries}
+        published = load_published_face_entry_count()
+        self.assertEqual(validate_published_face(declarations, universe, published), [])
+        self.assertGreater(len(declarations.get("non_action_delivery_entries") or {}), 0)
 
 
 if __name__ == "__main__":

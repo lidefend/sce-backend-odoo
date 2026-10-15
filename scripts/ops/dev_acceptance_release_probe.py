@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import importlib.util
 import json
@@ -24,6 +25,12 @@ DEFAULT_ARTIFACT = ROOT / "artifacts" / "backend" / "dev_acceptance_release_prob
 DEFAULT_CONTRACT_DECLARATION = ROOT / "config" / "acceptance" / "backend_contract_instance_v1.json"
 DEFAULT_SCHEMA_ASSET = ROOT / "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json"
 CONTRACT_LIFECYCLE_PATH = ROOT / "addons/smart_core/core/contract_lifecycle.py"
+# The published surface is the acceptance authority: every released leaf is
+# either an action-bearing business entry (the acceptance CSV) or a declared
+# non-action delivery carrier. Both sides are read here so a released leaf that
+# nobody registered cannot keep the leaf count and pass silently.
+ROLE_SURFACE_DECLARATIONS_PATH = ROOT / "config" / "frontend" / "role_surface_exposure_declarations_v1.json"
+ACCEPTANCE_UNIVERSE_CSV_PATH = ROOT / "docs" / "product" / "frontend_business_entry_acceptance_v1.csv"
 CONTRACT_RESOLUTION_SCHEMA = "acceptance.record_identity_resolution.v1"
 CONTRACT_RECEIPT_SCHEMA = "acceptance.backend_contract_receipt.v1"
 CONTRACT_PASSWORD_ENV = "ACCEPTANCE_CONTRACT_PASSWORD"
@@ -263,10 +270,44 @@ def _walk_nav(nodes: Any, path: tuple[str, ...] = ()) -> list[dict[str, Any]]:
                 "label": label,
                 "action_id": _node_action_id(node),
                 "child_count": len(children),
+                "menu_xmlid": str(
+                    (node.get("meta") or {}).get("menu_xmlid") or ""
+                ).strip()
+                if isinstance(node.get("meta"), dict)
+                else "",
             }
         )
         rows.extend(_walk_nav(children, current))
     return rows
+
+
+def load_declared_non_action_entries(path: Path = ROLE_SURFACE_DECLARATIONS_PATH) -> set[str] | None:
+    """Declared published leaves that deliver a scene route instead of an action.
+
+    The acceptance matrix addresses entries through ``action_xmlid``, so a
+    scene-only leaf can never appear in it. The probe must still prove that the
+    difference between published leaves and action-bearing leaves is exactly the
+    declared set: a carrier that is swapped for another keeps the leaf count and
+    would otherwise pass unnoticed. ``None`` means the declaration is
+    unavailable, so the check is not applicable to this profile.
+    """
+    try:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    declared = payload.get("non_action_delivery_entries") if isinstance(payload, dict) else None
+    if not isinstance(declared, dict):
+        return None
+    return {str(key).strip() for key in declared if str(key).strip()}
+
+
+def load_acceptance_universe_size(path: Path = ACCEPTANCE_UNIVERSE_CSV_PATH) -> int | None:
+    """Count the acceptance entries the matrix can address (the CSV rows)."""
+    try:
+        with Path(path).open(encoding="utf-8", newline="") as handle:
+            return sum(1 for row in csv.DictReader(handle) if str(row.get("menu_xmlid") or "").strip())
+    except OSError:
+        return None
 
 
 def _int_env(value: str) -> int | None:
@@ -300,6 +341,43 @@ def _parse_required_actions(value: str) -> dict[str, int]:
     return out
 
 
+def published_face_checks(
+    nav_rows: list[dict[str, Any]],
+    leaf_count: int,
+    declared_non_action_entries: set[str],
+    expected_action_entry_count: int | None,
+) -> tuple[list[str], dict[str, Any]]:
+    """Compare the served published leaves with the declared acceptance surface.
+
+    Leaf identity matters, not only the total: a delivery carrier swapped for a
+    different leaf keeps the leaf count, so the observed non-action leaves are
+    compared with the declaration itself. The released population must also
+    equal the acceptance rows plus the declared carriers, otherwise a published
+    leaf exists that no acceptance entry accounts for.
+    """
+    observed = {
+        str(row.get("menu_xmlid") or "").strip()
+        for row in nav_rows
+        if row.get("child_count") == 0 and not row.get("action_id")
+    }
+    observed.discard("")
+    declared = {str(item).strip() for item in declared_non_action_entries if str(item).strip()}
+    checks: dict[str, Any] = {
+        "nav_non_action_entries": sorted(observed),
+        "nav_non_action_entries_declared": sorted(declared),
+    }
+    errors: list[str] = []
+    if observed != declared:
+        errors.append("nav_non_action_entry_drift")
+    if expected_action_entry_count is not None:
+        expected_leaf_count = expected_action_entry_count + len(declared)
+        checks["nav_published_universe_expected"] = expected_leaf_count
+        checks["nav_acceptance_universe_size"] = expected_action_entry_count
+        if leaf_count != expected_leaf_count:
+            errors.append("nav_published_universe_drift")
+    return errors, checks
+
+
 def probe_login(
     base_url: str,
     db_name: str,
@@ -311,6 +389,8 @@ def probe_login(
     nav_required_paths: list[str] | None = None,
     nav_required_actions: dict[str, int] | None = None,
     expected_role_code: str | None = None,
+    declared_non_action_entries: set[str] | None = None,
+    expected_action_entry_count: int | None = None,
 ) -> dict[str, Any]:
     if not login or not password:
         return {"enabled": False}
@@ -423,6 +503,17 @@ def probe_login(
         result["checks"]["nav_forbidden_label_hits"] = forbidden_hits[:50]
         result["checks"]["nav_required_path_misses"] = required_path_misses
         result["checks"]["nav_required_action_mismatches"] = required_action_mismatches
+        # Published-leaf identity: a released leaf is either an action-bearing
+        # acceptance entry or a declared non-action delivery carrier.
+        if declared_non_action_entries is not None:
+            face_errors, face_checks = published_face_checks(
+                nav_rows,
+                nav_leaf_count,
+                declared_non_action_entries,
+                expected_action_entry_count,
+            )
+            result["checks"].update(face_checks)
+            errors.extend(face_errors)
         result["checks"]["nav_paths_sample"] = [row["path"] for row in nav_rows[:80]]
         if not result["checks"]["role_code"]:
             errors.append("role_code_missing")
@@ -1181,6 +1272,8 @@ def main() -> int:
             nav_required_paths=_split_csv(args.nav_required_paths),
             nav_required_actions=_parse_required_actions(args.nav_required_actions),
             expected_role_code=args.nav_principal_role.strip() or None,
+            declared_non_action_entries=load_declared_non_action_entries(),
+            expected_action_entry_count=load_acceptance_universe_size(),
         ) if runtime_identity.get("status") == "PASS" else {"enabled": bool(args.login), "status": "NOT_RUN", "reason": "runtime_identity_not_verified"},
     }
     if not args.contract_declaration:

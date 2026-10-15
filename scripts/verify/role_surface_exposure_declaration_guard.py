@@ -34,6 +34,12 @@ ROOT = Path(__file__).resolve().parents[2]
 POLICY_PATH = ROOT / "addons/smart_construction_core/core_extension_policy_maps.py"
 UNIVERSE_PATH = ROOT / "docs/product/frontend_business_entry_acceptance_v1.csv"
 DECLARATIONS_PATH = ROOT / "config/frontend/role_surface_exposure_declarations_v1.json"
+# The published entry population for the standard product is a locked product
+# fact. The acceptance universe must account for every published leaf, so the
+# count is read from that contract instead of being pinned here.
+PRODUCT_POLICY_PATH = ROOT / "scripts/verify/baselines/formal_business_product_menu_policy_v1.json"
+STANDARD_PRODUCT_KEY = "construction.standard"
+NON_ACTION_ENTRY_REQUIRED_FIELDS = ("scene_key", "route", "reason", "evidence")
 GROUP_SOURCE_PATHS = (
     ROOT / "addons/smart_construction_core/security/sc_role_groups.xml",
     ROOT / "addons/smart_construction_core/security/sc_capability_groups.xml",
@@ -122,6 +128,74 @@ def load_entry_universe(path=UNIVERSE_PATH) -> tuple[list[dict], dict[str, str]]
                 }
             )
     return entries, pending
+
+
+def load_published_face_entry_count(
+    path=PRODUCT_POLICY_PATH, product_key: str = STANDARD_PRODUCT_KEY
+) -> int:
+    """Resolve the contracted released entry population for the standard product.
+
+    The acceptance matrix addresses entries through ``action_xmlid``, so a
+    published leaf that delivers a scene route instead of a business action can
+    never appear there. That leaf is still part of the released surface: the
+    product contract owns the count, and the acceptance side must declare the
+    difference explicitly instead of silently measuring a smaller universe.
+    """
+    try:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"published product contract unreadable: {path} ({exc})") from exc
+    strategy = payload.get("policy_strategy") if isinstance(payload, dict) else None
+    by_product = strategy.get("menu_count_by_product") if isinstance(strategy, dict) else None
+    count = by_product.get(product_key) if isinstance(by_product, dict) else None
+    if not isinstance(count, int) or isinstance(count, bool) or count <= 0:
+        raise ValueError(f"published entry count for {product_key} is unavailable")
+    effective = strategy.get("effective_menu_count_per_product")
+    if isinstance(effective, int) and not isinstance(effective, bool) and effective != count:
+        raise ValueError(
+            f"published contract disagrees with itself: effective={effective} {product_key}={count}"
+        )
+    return count
+
+
+def validate_published_face(
+    declarations: dict, universe: set[str], published_entry_count: int
+) -> list[str]:
+    """Lock the released entry population against the acceptance universe.
+
+    Every published leaf is either an action-bearing business entry (present in
+    the acceptance CSV) or a declared non-action delivery carrier (a scene entry
+    that owns a route but no action). A published leaf that is neither is an
+    uncovered entry and fails closed, even when the acceptance row count is
+    unchanged.
+    """
+    errors: list[str] = []
+    declared = declarations.get("non_action_delivery_entries")
+    if declared is None:
+        declared = {}
+    if not isinstance(declared, dict):
+        return ["non_action_delivery_entries must be an object"]
+    for menu, row in declared.items():
+        key = str(menu).strip()
+        if not key:
+            errors.append("non_action_delivery_entries keys must be non-empty menu xmlids")
+            continue
+        if key in universe:
+            errors.append(f"non_action_delivery_entries overlaps the acceptance universe={key}")
+        if not isinstance(row, dict):
+            errors.append(f"non_action_delivery_entries[{key}] must be an object")
+            continue
+        for field in NON_ACTION_ENTRY_REQUIRED_FIELDS:
+            if not str(row.get(field) or "").strip():
+                errors.append(f"non_action_delivery_entries[{key}] is missing {field}")
+    expected = len(universe) + len(declared)
+    if expected != published_entry_count:
+        errors.append(
+            "published face entry count drift "
+            f"published={published_entry_count} acceptance_universe={len(universe)} "
+            f"declared_non_action={len(declared)} expected={expected}"
+        )
+    return errors
 
 
 def reachable_entries(principals, closures: dict[str, set[str]], entries) -> set[str]:
@@ -291,6 +365,13 @@ def main() -> int:
     graph = load_group_graph()
     closures = {group: group_closure(group, graph) for group in graph}
     errors = validate(declarations, policy, entries, pending, closures)
+    universe = {entry["menu"] for entry in entries}
+    try:
+        published_entry_count = load_published_face_entry_count()
+    except ValueError as exc:
+        errors.append(f"published face entry count unresolvable: {exc}")
+    else:
+        errors.extend(validate_published_face(declarations, universe, published_entry_count))
     if errors:
         print("[role_surface_exposure_declaration_guard] FAIL")
         for error in errors:
@@ -305,6 +386,8 @@ def main() -> int:
         f"roles={len(declarations.get('roles') or {})} "
         f"excluded={len(declarations.get('excluded_roles') or {})} "
         f"universe={len(entries)} pending={len(pending)} "
+        f"published={published_entry_count} "
+        f"declared_non_action={len(declarations.get('non_action_delivery_entries') or {})} "
         f"narrowed={narrowed} no_role={len(declarations.get('capability_reachable_by_no_role') or [])}"
     )
     return 0
