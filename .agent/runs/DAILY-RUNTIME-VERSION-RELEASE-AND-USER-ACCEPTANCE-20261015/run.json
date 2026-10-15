@@ -2930,10 +2930,11 @@
     "repeat_execution": "400 DBGOV1_MAINTENANCE_ACCESS_NOT_REQUESTED:approved when the approver approved an already-approved row; the ledger row was unchanged before and after.",
     "audit_not_forgeable": "a decision body naming approved_by and state is refused with 400 (above), and the requester itself cannot decide: 403. The decided identity and the state are never taken from a request body, and the ledger's requested_by/approved_by were unchanged across every refused call.",
     "target_substitution": "the governed ops entry (make daily.runtime.duty.operator_grant.remote_provision) was driven with a subject checksum other than the approved one: BLOCKED with 'the approved access is bound to another subject than this run'. The tool reads the approval and asserts every binding before it runs the lifecycle command, so the refusal happens before any write.",
-    "expiry_and_revocation": "revocation was driven on the live product rows and then on the governed operator lifecycle, and the validity window was driven as an A/B on one single product-created row with the minimum one-hour window (access_id 3): the same governed entry, with the same bound subject, passes while that row's window is open and must refuse once it has elapsed. See maintenance_access_decay_probe_20261016.",
+    "expiry_and_revocation": "all four facts were driven on the real runtime, not on fixtures written into the table: (a) revocation on live product rows (access_id 2 and 1 while their windows were still open) and then on the governed operator lifecycle; (b) the window A/B on one product-created row (access_id 3, the minimum one-hour window): the same governed entry with the same bound subject PASSED while the window was open (05:13:24 CST, consumed as approval_access_id 3, writes 0) and was REFUSED once it elapsed (06:11:22 CST), while the row still read approved; (c) the elapsed row was then retired by the audited expire sweep (count=1, expired=[(3,'expired')]); (d) the ledger read back as ['revoked','rejected','expired','revoked','revoked']. See maintenance_access_decay_probe_20261016 and out-of-window-20261016.log.",
     "evidence": {
       "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-decay-20261016/decay-flow.log",
-      "probe": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-decay-20261016/probe.py"
+      "probe": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-decay-20261016/probe.py",
+      "out_of_window_log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-decay-20261016/out-of-window-20261016.log"
     }
   },
   "maintenance_access_decay_probe_20261016": {
@@ -2946,17 +2947,20 @@
     "window_ab": {
       "row": "access_id 3, requested by admin, approved by lidefend, authorized_operations [provision, grant], capability migrate, db_name sc_tenant_baosheng_dev, subject_checksum f1adc6fb..., window 2026-10-15 21:10:56 -> 22:10:56 UTC (i.e. 2026-10-16 06:10:56 CST).",
       "in_window_control": "PASS observed 2026-10-16 05:13:24 CST (2026-10-15 21:13:24 UTC): make daily.runtime.duty.operator_grant.remote_provision ran while this row's window was open and consumed it -- exit 0, created=false, writes=0, approval_access_id=3, operator id 6, tool_sha 3aac7395b7ff4f195ffcdbed363c7e60da6f5b09 (log: control-provision.log).",
-      "out_of_window": "PENDING: the same entry, with the same subject, is run once the window has elapsed; it must refuse at the approval gate, and the row must still read state approved at that moment, so the window -- not a revocation -- is what stopped covering the run.",
-      "expire_sweep": "PENDING: POST /api/ops/maintenance/access/expire must then move that still-approved row to expired."
+      "out_of_window": "PASS (refusal observed) 2026-10-16 06:11:22 CST (2026-10-15 22:11:22 UTC), one minute after the window elapsed: the same governed entry with the same subject answered BLOCKED -- 'the platform control database holds no approved, in-window maintenance access for this duty: the lifecycle refuses to fabricate one' -- exit 2, and the row still read state=approved at that moment (step 1 of the same log), so the window, not a revocation, is what removed the covering authorization.",
+      "expire_sweep": "PASS observed 2026-10-16 06:11:32 CST: POST /api/ops/maintenance/access/expire answered 200 with count=1 and expired=[(3,'expired')], and the readback ledger then reported states ['revoked','rejected','expired','revoked','revoked'] -- the still-approved row was retired by an audited sweep, not edited in place.",
+      "identity_note": "the in-window control ran at tool_sha 3aac7395b7ff4f195ffcdbed363c7e60da6f5b09 and the out-of-window refusal at 70a89a03271cb6201a1f7ccbc9e843828953216f. The only change between the two is the grant guard's idempotency branch, which is not on the approval gate; both runs used the same subject, database, capability and operation set.",
+      "status": "CLOSED: the window A/B is complete on one product-created row, in window and out of window, and the elapsed row was then retired by the audited sweep."
     },
     "probe_revision": {
       "path": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-decay-20261016/probe.py",
-      "sha256": "9c3e9c7f0ae049e929a1fa7a3ebf685327ee0dc5ca05e858ca0bc6c16a5f7ab6"
+      "sha256": "470e94fdd5df075c50ad3f414421a6758d4e07102fbeec371e79edc356992945"
     },
     "evidence": {
-      "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-decay-20261016/decay-flow.log"
+      "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-decay-20261016/decay-flow.log",
+      "out_of_window_log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-decay-20261016/out-of-window-20261016.log"
     },
-    "status": "IN PROGRESS: revocation observed on real rows; the window A/B is scheduled against a one-hour row and cannot be observed before its window elapses."
+    "status": "CLOSED: revocation observed on real rows; the window A/B observed in window (PASS) and out of window (refusal at the approval gate, with the row still approved at that moment); the elapsed row was then retired by POST /api/ops/maintenance/access/expire."
   },
   "downstream_execution_20261016": {
     "case": "The three declarations that blocked Step D proper (no released construction.standard edition on the customer duty, no registered operator, no narrow import grant) were driven through their governed daily entries after the approval existed.",

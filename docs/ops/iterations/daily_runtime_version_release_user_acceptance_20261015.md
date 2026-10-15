@@ -2164,6 +2164,9 @@ odoo 日志 `base already installed; skip bootstrap`。
 | 审计不可伪造 | 命名裁决人的请求体被拒；申请人本人无法裁决；台账 `requested_by` / `approved_by` 在所有被拒调用前后均未变化 |
 | 目标替换 | 受管入口 `make daily.runtime.duty.operator_grant.remote_provision` 用**非批准摘要**驱动 → `BLOCKED: the approved access is bound to another subject than this run`；入口先读授权并断言全部绑定，再执行生命周期命令，因此拒绝发生在任何写入之前 |
 | 证据引用词典 | 证据引用含被禁传输字符 → `400 DATABASE_GOVERNANCE_MAINTENANCE_EVIDENCE_INVALID_CHARACTERS`，台账仍为 1 行，拒绝即零写入 |
+| 窗口过期（窗口外） | 06:11:20 回读台账：`access_id=3` 仍为 **`approved`**（证明是**窗口**而不是撤销使它失去覆盖）→ 06:11:22 受管入口同主体重跑 → `BLOCKED: the platform control database holds no approved, in-window maintenance access for this duty: the lifecycle refuses to fabricate one`（exit 2，**写入前**拒绝） |
+| 窗口内对照（A 侧） | 05:13:24 同一受管入口在同一行窗口内运行 → `exit=0`、`created=false`、`writes=0`、`approval_access_id=3`；与上面的窗口外拒绝构成同一行上的 A/B |
+| 过期清理 | 06:11:32 `POST /api/ops/maintenance/access/expire` → `200 count=1 expired=[(3,'expired')]`；台账回读 `['revoked','rejected','expired','revoked','revoked']`——过期行由**受审清扫**迁移，不是就地改写 |
 
 **诚实限制**：HTTP 层无法单独观测“独立性”规则——当前唯一平台管理员 `admin` 不持有安全管理员组，
 因此在角色检查处就被拒，到不了 `DBGOV1_MAINTENANCE_APPROVER_MUST_BE_INDEPENDENT`。
@@ -2171,7 +2174,10 @@ odoo 日志 `base already installed; skip bootstrap`。
 
 证据：`.runtime/agent-runs/…/maintenance-access-approval-20261016/approval-flow.log`
 （sha256 `3ad626ffcb314ad893b3e71831598a08cd2ae9a5f9b3f72761305e5d818b5a2b`）、
-`.runtime/agent-runs/…/maintenance-access-decay-20261016/decay-flow.log`。
+`.runtime/agent-runs/…/maintenance-access-decay-20261016/decay-flow.log`、
+窗口 A/B 与清扫：`.runtime/agent-runs/…/maintenance-access-decay-20261016/out-of-window-20261016.log`
+（窗口内对照侧见同目录 `control-provision.log`，`tool_sha=3aac7395…`；窗口外侧 `head=70a89a03…`，
+两者之间唯一改动是 grant 守卫的幂等分支，不在审批闸门上）。
 
 ### 三、操作员消费方缺陷修复（提交 `d92d75e8`）
 
@@ -2246,7 +2252,8 @@ odoo 日志 `base already installed; skip bootstrap`。
 | 用例 | 新增 `test_a_grant_already_in_place_adds_nothing`：幂等重跑必须接受；`changed=false` 但集合变宽必须拒绝 |
 | 验证 | `make verify.daily.duty.operator_grant` → **81 项 OK**（第二模块 42） |
 
-**S3 处置**：S3-1（`window_ab.in_window_control` 已由 `PENDING` 改为实测通过并附日志）、
+**S3 处置**：S3-1（`window_ab` 的三个阶段已全部由实测取代：窗口内对照 PASS、窗口外在被拒时该行**仍为 `approved`**、
+过期行由受审清扫迁到 `expired`）、
 S3-2（独立性规则补"（模型层）"限定）**本轮关闭**；S3-3（闭包自描述上限）、S3-4（`_active_access`
 取一行可能误拒）、S3-5（私有 `_request_access(requester_id=…)`）、S3-6（非数字入参 500 应为 400）
 **登记待办**，理由逐条写入 `run.json` 的 `review_s2_closure_round3_20261016.S3_disposition`。
