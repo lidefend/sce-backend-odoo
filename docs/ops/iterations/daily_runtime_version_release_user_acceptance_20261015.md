@@ -1792,14 +1792,16 @@ P4 shell 程序 + 独立真实批准人。**在这两项落实前，不再触发
 
 | 层 | 命令 | 结果 | 日志 |
 |---|---|---|---|
-| L2 入口 | `make verify.smart_core.platform_maintenance_access.orm` | **12 项 0 failed / 0 error** | `.runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-entry-20261016/L2-http-entry.log` |
-| L2 模型 | `make verify.local.dev.platform_database_governance.orm` | **24 项 0 failed / 0 error** | 同上 `L2-governance-orm.log` |
-| L2 关系链 | `make verify.smart_core.tenant_payload_operator.orm` | **20 项 0 failed / 0 error** | 同上 `L2-operator-lifecycle-orm.log` |
+| L2 入口 | `make verify.smart_core.platform_maintenance_access.orm` | **15 项 0 failed / 0 error** | `.runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-decay-20261016/L2-rerun-20261016.log`（**重跑**：本表先前记的 12 项出自 01:17 的 `L2-http-entry.log`，而该测试文件在 `e75d3713` / `a52ba6d3` 又新增 3 个用例，旧日志只是过期，不是计数写错） |
+| L2 模型 | `make verify.local.dev.platform_database_governance.orm` | **26 项 0 failed / 0 error** | 同上 `L2-rerun-20261016.log`（**重跑**：先前 24 项同样早于 `a52ba6d3` 新增的 2 个用例） |
+| L2 关系链 | `make verify.smart_core.tenant_payload_operator.orm` | **20 项 0 failed / 0 error** | 同上 `L2-rerun-20261016.log`（用例集合未变，重跑的计数与旧日志一致） |
 | L1 静态 | `verify.platform.security_admin.bootstrap` / `verify.daily.duty.operator_grant` / `verify.daily.duty.database_registration` / `verify.daily.duty.recovery` / `verify.daily.duty.payload` / `verify.platform.database.governance.guard` / `verify.smart_core.tenant_payload_operator.policy` | 见下（S3-1 更正） | 同上 + `.../maintenance-access-review-s2-20261016/` |
 | L1 控制器 | `make verify.controller.boundary.guard` | PASS（delegate / allowlist / route / report / baseline 全部随新路由 PASS） | — |
 
-覆盖点：批准前**确实零写入**（`_approved_access_projection` 为 `None`）、批准后投影覆盖、
-非法决策字段拒绝、无角色拒绝、自批拒绝（`INDEPENDENT`）、无关主体不可读账本、未认证拒绝、
+覆盖点（下列各项由 `make verify.smart_core.platform_maintenance_access.orm` 覆盖；其中"独立性"
+只能在**模型层**被观测到——HTTP 层到不了那条规则，因为当前唯一平台管理员 `admin` 不持有安全管理员组，
+在角色闸门处即被拒）：批准前**确实零写入**（`_approved_access_projection` 为 `None`）、批准后投影覆盖、
+非法决策字段拒绝、无角色拒绝、自批拒绝（`INDEPENDENT`，模型层）、无关主体不可读账本、未认证拒绝、
 `migrate` 必须声明操作集合、拒绝/撤销由独立身份做出、过期清理由安全管理员独占且幂等、
 已决策记录不可重复决策、`X-Trace-Id` 回显。
 
@@ -1812,20 +1814,24 @@ P4 shell 程序 + 独立真实批准人。**在这两项落实前，不再触发
 | 从 `FORBIDDEN_BODY_FIELDS` 删除 `state` | `**2 failed** of 12` |
 
 三次注入后均还原，控制器与备份**逐字节一致**，入口回到 12/12 全绿。
+**计数口径**：这三行是**按注入当时的 12 用例集合**测得的版本绑定观测；该入口此后扩到 15 个用例
+（`e75d3713` / `a52ba6d3`），所以 14/4/2 不是当前用例集合上的比例，也不能被当作当前集合的守卫强度。
+守卫不空转这一点不变：每一行都是真实触发的失败，不是推断。
 
 ### 计数口径更正（S3-1）
 
 记录曾写 `verify.platform.security_admin.bootstrap = 34`、`verify.daily.duty.operator_grant = 39`，
 取的是**单个脚本的数**，不是目标自身输出的合计。按目标真实输出更正：
 
-| 目标 | 目标自身输出 | 合计 |
-|---|---|---|
-| `verify.platform.security_admin.bootstrap` | `test_platform_security_admin_bootstrap` 31 项 + `test_daily_runtime_platform_security_admin_bootstrap` 41 项 | **72 项 OK** |
-| `verify.daily.duty.operator_grant` | `verify/test_tenant_payload_operator_policy.py` 39 项 + `test_daily_runtime_duty_operator_grant.py` 39 项 | **78 项 OK** |
-| `verify.smart_core.tenant_payload_operator.policy` | 单模块 | **39 项 OK** |
-| `verify.controller.boundary.guard` | route / allowlist / delegate / report / baseline | **PASS** |
+| 目标 | 目标自身输出 | 合计 | 来源日志 |
+|---|---|---|---|
+| `verify.platform.security_admin.bootstrap` | `test_platform_security_admin_bootstrap` 31 项 + `test_daily_runtime_platform_security_admin_bootstrap` **44** 项 | **75 项 OK** | `.../maintenance-access-decay-20261016/required-tests-counts-20261016.log`（44，非 41） |
+| `verify.daily.duty.operator_grant` | `scripts/verify/test_tenant_payload_operator_policy.py` 39 项 + `scripts/ops/test_daily_runtime_duty_operator_grant.py` **42** 项 | **81 项 OK** | 同上 `required-tests-counts-20261016.log`（第二模块 41→42：本批新增幂等用例） |
+| `verify.smart_core.tenant_payload_operator.policy` | 单模块 | **39 项 OK** | `required-tests-counts-20261016.log` |
+| `verify.controller.boundary.guard` | route / allowlist / delegate / report / baseline | **PASS** | — |
 
-非零性不受影响；受影响的只是记录精确度。
+非零性不受影响；受影响的只是记录精确度。表中两处先前低估（72 / 78）都是同一类错误：
+**取子脚本的数当目标合计**，或**在子模块新增用例后没有重取**。
 
 ### B 线独立复核与处置（复核 HEAD `eacd5441`）
 
@@ -2175,7 +2181,7 @@ odoo 日志 `base already installed; skip bootstrap`。
 | 根因 | 回读把 `required_group_closure_xmlids`（声明组的平台自身传递闭包）作为事实发布，消费方却用两元素硬白名单 `{base.group_user, importer}` 比对账号的**有效**组集合。`res.users.groups_id` 存的是有效集合（直接组 ∪ 隐含闭包），机制自己刚创建的账号永远无法满足该白名单 |
 | 后果 | `provision` 在写事务内已提交身份，随后后置断言失败 → 报 `BLOCKED` 却已写入；且账号一旦存在，之后所有动作（含只读 `readback`）都在 before 断言处失败 → **入口永久死锁** |
 | 修复 | 改为按已发布闭包判定：`{base.group_user} ∪ {声明 importer 组} ∪ 已发布闭包 ∪ 声明组`；未发布闭包时**拒绝**而非放宽；并补正向断言（声明要求的组必须实际持有） |
-| 验证 | `make verify.daily.duty.operator_grant` → **41 tests OK**（原 39，+2） |
+| 验证 | `make verify.daily.duty.operator_grant` → **81 项 OK**（`test_tenant_payload_operator_policy` 39 + `test_daily_runtime_duty_operator_grant` 42；该子模块在 `d92d75e8` 由 39 增到 41，本批再 +1 个幂等用例，见 S2-2） |
 | 反例 | 改回两元素白名单 → 3 failures + 3 errors；恢复后 `sha256sum -c before.sha256` OK |
 
 ### 四、下游三条声明（授权之后）
@@ -2217,7 +2223,34 @@ odoo 日志 `base already installed; skip bootstrap`。
 2. `schemas/tenant_delivery/customer_payload_manifest.schema.json` 声明 `additionalProperties: false`，
    但生产载荷携带该 schema 之外的键，而运行时校验器只强制具名键、不拒绝未知键——**已发布 schema 与执行中的 schema 已漂移**。
 
-### 六、阶段口径
+### 六、本轮复核处置（S2-1 / S2-2 / S3）
+
+复核对象：`3aac7395` 加本工作区改动。结论：**无 S1**；两条 S2（需修）、六条 S3（观察）。
+
+**S2-1：证据计数低于源码 —— 修法是重跑，不是改数字。**
+
+| 项 | 事实 | 处置 |
+|---|---|---|
+| 过期原因 | 三个 L2 结果出自 01:17 的日志，而 `test_platform_maintenance_access_http.py` / `test_platform_database_governance_orm.py` 在 `e75d3713`、`a52ba6d3` 又各加了用例（+3 / +2）。**过期的是证据，不是写错的数字** | 三个 L2 目标在**同一候选**上重跑：`L2-rerun-20261016.log` → 入口 15、模型 26、关系链 20，逐项 `0 failed / 0 error` |
+| 口径错误 | `bootstrap` 记 `31+41=72`（实为 `31+44=75`）、`operator_grant` 记 `39+39=78`（实为第二模块 41，含本批 +1 幂等用例后为 42 → **81**）。两处都是**拿子脚本的数当目标合计**或没随子模块增长重取 | 按目标自身输出重取：`required-tests-counts-20261016.log`；本文件计数表与 `run.json` 同步 |
+| 附带影响 | 反例表的三行（`14 error(s) of 12` / `4 failed of 12` / `2 failed of 12`）是**按当时 12 用例集合**测得的版本绑定观测 | 已就地加注：数值不再是当前集合的比例，但每行都是真实触发的失败，守卫不空转的结论不变 |
+
+**S2-2：操作员 grant 幂等缺陷 —— 守卫自相矛盾。**
+
+| 项 | 事实 |
+|---|---|
+| 根因 | `assert_lifecycle` 用**声明**去比一次**幂等重跑**的结果：账号已持 importer 组时生命周期回 `changed=false`、`added=∅`，被判"加了声明未命名的组"→ 机制把自己锁死（真实账号上观测到）|
+| 自相矛盾 | 同一段守卫先接受 `changed=false`，随后又要求 `added` 必须非空 |
+| 修复 | 按报告的 `changed` 分支：`changed=true` 才与声明比对（越界仍拒绝）；`changed=false` 只要求**有效集合没有增长** |
+| 用例 | 新增 `test_a_grant_already_in_place_adds_nothing`：幂等重跑必须接受；`changed=false` 但集合变宽必须拒绝 |
+| 验证 | `make verify.daily.duty.operator_grant` → **81 项 OK**（第二模块 42） |
+
+**S3 处置**：S3-1（`window_ab.in_window_control` 已由 `PENDING` 改为实测通过并附日志）、
+S3-2（独立性规则补"（模型层）"限定）**本轮关闭**；S3-3（闭包自描述上限）、S3-4（`_active_access`
+取一行可能误拒）、S3-5（私有 `_request_access(requester_id=…)`）、S3-6（非数字入参 500 应为 400）
+**登记待办**，理由逐条写入 `run.json` 的 `review_s2_closure_round3_20261016.S3_disposition`。
+
+### 七、阶段口径
 
 可声明：**批次验收**（授权链路与下游两条声明的产品能力已按受影响集合验证）。
 **未完成**：主线集成、版本发布、产品交付。载荷未入库，因此客户开发租户的数据对账（12386 / 6322 / 29 / 6035）与业务闭环验收尚未开始。

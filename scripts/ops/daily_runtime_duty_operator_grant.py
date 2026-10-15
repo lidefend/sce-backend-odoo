@@ -603,8 +603,17 @@ def assert_lifecycle(report: dict, duty: dict, action: str, before: dict) -> Non
         if before_groups - after_groups:
             _fail("the grant removed a group the operator already held")
         added = after_groups - before_groups
-        if added != set(operator["expected_effective_group_additions"]):
-            _fail("the grant added groups the declaration did not name")
+        # A re-run of the same grant legitimately adds nothing: the declared
+        # additions were consumed by the first run, so comparing an unchanged
+        # re-run against the declaration would refuse an idempotent call. The
+        # declaration still owns the bound -- it is the ceiling for a changing
+        # run, and an unchanged run must not have grown the effective set at
+        # all.
+        if report["after"]["changed"]:
+            if added != set(operator["expected_effective_group_additions"]):
+                _fail("the grant added groups the declaration did not name")
+        elif added:
+            _fail("the grant reported no change and yet added groups")
     if action == "revoke":
         if report.get("changed") not in (True, False):
             _fail("the operator revocation did not report whether it changed anything")

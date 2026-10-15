@@ -562,37 +562,40 @@
         "status": "passed",
         "tests": {
           "verify.daily.duty.database_registration": 33,
-          "verify.daily.duty.operator_grant": 78,
+          "verify.daily.duty.operator_grant": 81,
           "verify.daily.duty.payload": 26,
           "verify.daily.duty.recovery": 28,
           "verify.platform.database.governance.guard": 17,
-          "verify.platform.security_admin.bootstrap": 72,
+          "verify.platform.security_admin.bootstrap": 75,
           "verify.smart_core.tenant_payload_operator.policy": 39
         },
-        "counting_basis": "Each entry's own total, summed over every unittest module the entry runs: verify.platform.security_admin.bootstrap 31+41=72 (S3-1 corrected an earlier 34 that reported one script only), verify.daily.duty.operator_grant 39+39=78 (earlier 39)."
+        "counting_basis": "Each entry's own total over every module it runs, re-taken at 3aac7395 plus this workspace change: verify.platform.security_admin.bootstrap 31+44=75 (the second module grew 41->44; an earlier record said 31+41=72); verify.daily.duty.operator_grant 39+42=81 (the second module grew 39->41 at d92d75e8 and 41->42 with the idempotency case added here; an earlier record said 39+39=78).",
+        "source_log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-decay-20261016/required-tests-counts-20261016.log"
       },
       "L2_entry": {
         "covers": "request authorizes nothing until approved; the ledger projection covers the capability only after an independent security admin approves; forbidden decision fields refused; role gate; self-approval refused (INDEPENDENT); outsider cannot read the ledger; unauthenticated refusal; migrate must name the operation set; reject/revoke decided by the independent identity; expiry sweep restricted to the security admin and idempotent; a decided request is not decidable again; the envelope echoes the request trace id.",
         "errors": 0,
         "failed": 0,
-        "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-entry-20261016/L2-http-entry.log",
+        "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-decay-20261016/L2-rerun-20261016.log",
         "target": "make verify.smart_core.platform_maintenance_access.orm",
-        "tests": 12
+        "tests": 15,
+        "note": "re-run on 3aac7395 plus this workspace change: the module gained 3 cases at e75d3713/a52ba6d3 after the 01:17 log, so the recorded 12 was a stale log rather than a miscount; 0 failed, 0 error(s) of 15 tests"
       },
       "L2_model": {
         "errors": 0,
         "failed": 0,
-        "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-entry-20261016/L2-governance-orm.log",
-        "note": "rerun because the state readback gained reason/requested_by/approved_by/valid_from",
+        "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-decay-20261016/L2-rerun-20261016.log",
+        "note": "re-run for the same reason (2 cases added at a52ba6d3 after the 01:17 log); 0 failed, 0 error(s) of 26 tests",
         "target": "make verify.local.dev.platform_database_governance.orm",
-        "tests": 24
+        "tests": 26
       },
       "L2_operator_lifecycle": {
         "errors": 0,
         "failed": 0,
-        "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-entry-20261016/L2-operator-lifecycle-orm.log",
+        "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-decay-20261016/L2-rerun-20261016.log",
         "target": "make verify.smart_core.tenant_payload_operator.orm",
-        "tests": 20
+        "tests": 20,
+        "note": "re-run on the same candidate so all three L2 results share one identity; the case set is unchanged and the count is unchanged (0 failed, 0 error(s) of 20 tests)"
       },
       "falsification": {
         "decision_role_gate": {
@@ -610,7 +613,8 @@
           "broke": "get_trace_id() without headers",
           "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-entry-20261016/falsify-trace.log",
           "observed": "0 failed, 14 error(s) of 12 tests"
-        }
+        },
+        "counting_basis": "each line is a revision-bound observation measured against the entry set as it stood (12 cases). The module now carries 15 cases after e75d3713/a52ba6d3, so 14/4/2 are not ratios on the current set and must not be cited as the current guard strength. Every line is a real triggered failure, not an inference."
       }
     }
   },
@@ -2639,7 +2643,7 @@
       "files": "scripts/ops/platform_security_admin_bootstrap.py, scripts/ops/test_platform_security_admin_bootstrap.py"
     },
     "s3_closed": {
-      "S3-1_counting": "Entry totals corrected to 72 and 78 (see step_d_maintenance_access_entry_20261016.verification.L1_static).",
+      "S3-1_counting": "Entry totals corrected to 75 (31+44) and 81 (39+42) with required-tests-counts-20261016.log as the source; the two earlier values (72 / 78) took a sub-script count as the target total and were not re-taken after the modules grew.",
       "S3-2_doc_status": "The iteration record no longer says the round is uncommitted; it names 8f26ffd7/9b6324c0/eacd5441.",
       "S3-5_error_hygiene": "The controller's 500 branch no longer echoes internal exception text, and PermissionError is mapped to a governed refusal (400 with the governed code) instead of a server error.",
       "S3-7_payload_characters": "The entry has an authoritative NAME pattern and a widened EVIDENCE pattern (Chinese allowed; double quote, apostrophe, backtick, dollar, backslash, ;|<>&() and control characters refused), and both remote Make entries refuse those characters before the ssh connection is made.",
@@ -2941,7 +2945,7 @@
     },
     "window_ab": {
       "row": "access_id 3, requested by admin, approved by lidefend, authorized_operations [provision, grant], capability migrate, db_name sc_tenant_baosheng_dev, subject_checksum f1adc6fb..., window 2026-10-15 21:10:56 -> 22:10:56 UTC (i.e. 2026-10-16 06:10:56 CST).",
-      "in_window_control": "PENDING: the governed entry is run while the window is open; it must PASS and must report this row as the authorization it consumed.",
+      "in_window_control": "PASS observed 2026-10-16 05:13:24 CST (2026-10-15 21:13:24 UTC): make daily.runtime.duty.operator_grant.remote_provision ran while this row's window was open and consumed it -- exit 0, created=false, writes=0, approval_access_id=3, operator id 6, tool_sha 3aac7395b7ff4f195ffcdbed363c7e60da6f5b09 (log: control-provision.log).",
       "out_of_window": "PENDING: the same entry, with the same subject, is run once the window has elapsed; it must refuse at the approval gate, and the row must still read state approved at that moment, so the window -- not a revocation -- is what stopped covering the run.",
       "expire_sweep": "PENDING: POST /api/ops/maintenance/access/expire must then move that still-approved row to expired."
     },
@@ -2997,5 +3001,23 @@
       "schemas/tenant_delivery/customer_payload_manifest.schema.json declares additionalProperties false, yet the production manifest carries keys outside that schema and the runtime validator accepts them because validate_manifest enforces named fields without rejecting unknown ones; the published schema and the enforced schema have drifted apart"
     ],
     "status": "diagnosed and registered; owned outside this repository"
+  },
+  "review_s2_closure_round3_20261016": {
+    "authority": "B-line independent (read-only) review of 3aac7395 plus this workspace change: no S1; two S2 to fix; six S3 observations; nothing was widened to make a check pass.",
+    "S2-1_evidence_counts": "The iteration record and run.json carried evidence counts lower than the current source: the L2 entry row said 12 and the L2 model row said 24, while the test modules gained 3 and 2 cases at e75d3713/a52ba6d3 after the 01:17 logs; the counting table said bootstrap 31+41=72 and operator_grant 39+39=78 while the targets actually report 31+44=75 and 39+42=81.",
+    "S2-1_disposition": "The three L2 targets were re-run on one candidate (L2-rerun-20261016.log -> 15 / 26 / 20 tests, 0 failed, 0 error each) because the stale result was the evidence, not the number; the two L1 targets were re-taken at their own totals (required-tests-counts-20261016.log -> 75 / 81). The record, the counting table and this run were corrected, and the falsification rows are now explicitly marked as bound to the 12-case revision.",
+    "S2-2_operator_grant_idempotency": "The grant guard compared an idempotent re-run against the declaration: with the account already holding the importer group the lifecycle answers changed=false with added=empty, and the guard refused it as 'the grant added groups the declaration did not name', so the mechanism locked itself out of a re-run (observed on the real account). The same guard accepted changed=false and then required a non-empty addition.",
+    "S2-2_disposition": "The guard now branches on the reported change: only a changing run is compared against the declared additions, and an unchanged run is required merely not to have grown the effective set. New case test_a_grant_already_in_place_adds_nothing covers both the accepted idempotent re-run and the refused unchanged-but-widened answer; verify.daily.duty.operator_grant reports 42 tests OK.",
+    "S3_disposition": {
+      "S3-1": "closed: window_ab.in_window_control is no longer PENDING; it records the observed in-window PASS and the log it came from.",
+      "S3-2": "closed in the record: the independence rule is now qualified as a model-layer check, because the only platform administrator does not hold the security-admin group and is refused earlier at the role gate.",
+      "S3-3": "registered: assert_readback compares against the closure the readback itself published, so the host cannot independently re-derive it; the ceiling is the published closure plus the declaration, and a missing closure is refused rather than widened.",
+      "S3-4": "registered: _active_access reads one row with _order id desc, so overlapping approved rows could pick the wrong one and cause a false refusal (never a false grant); to be closed after the chain is verified.",
+      "S3-5": "registered: _request_access(requester_id=...) is reachable only from the model and the ORM tests; the product entry always uses self.env.user.id.",
+      "S3-6": "registered: non-numeric validity_hours/access_id reach int() and answer 500 instead of 400; error hygiene, not an authorization gap."
+    },
+    "evidence": "L2-rerun-20261016.log (15 / 26 / 20, 0 failed, 0 error), required-tests-counts-20261016.log (75 / 81), verify.daily.duty.operator_grant 42 tests OK including the new idempotency case.",
+    "logs": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-decay-20261016/",
+    "status": "both S2 items closed in the owning layer; four S3 items registered with reasons; two S3 items closed; no claim beyond what was run."
   }
 }

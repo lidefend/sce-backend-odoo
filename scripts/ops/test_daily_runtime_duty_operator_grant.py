@@ -636,6 +636,33 @@ class GuardTests(unittest.TestCase):
         with self.assertRaisesRegex(ENTRY.OperatorGrantEntryError, "removed a group"):
             ENTRY.assert_lifecycle(removed, duty, "grant", READBACK)
 
+    def test_a_grant_already_in_place_adds_nothing(self):
+        duty = self._duty()
+        already = json.loads(json.dumps(READBACK))
+        already["operator"]["group_xmlids"] = list(REQUIRED_CLOSURE) + [ENTRY.IMPORTER_GROUP]
+        already["operator"]["is_importer"] = True
+        entry_report = {
+            "schema_version": "tenant_payload_operator_lifecycle.v1",
+            "action": "grant",
+            "identity_key": OPERATOR_IDENTITY,
+            "database": duty["database"],
+            "before": already,
+            "after": dict(json.loads(json.dumps(already)), mode="grant", writes=1, changed=False),
+        }
+        # The declaration's additions were consumed by the first run, so a
+        # re-run that changes nothing is not a widening and must not be refused
+        # against a declaration that still names those additions.
+        ENTRY.assert_lifecycle(entry_report, duty, "grant", already)
+
+        grew = json.loads(json.dumps(entry_report))
+        grew["after"]["operator"]["group_xmlids"] = [
+            *REQUIRED_CLOSURE,
+            ENTRY.IMPORTER_GROUP,
+            "smart_core.group_smart_core_admin",
+        ]
+        with self.assertRaisesRegex(ENTRY.OperatorGrantEntryError, "no change and yet added"):
+            ENTRY.assert_lifecycle(grew, duty, "grant", already)
+
     def test_a_grant_that_touched_the_data_operator_group_is_refused(self):
         duty = self._duty()
         after = json.loads(json.dumps(READBACK))
