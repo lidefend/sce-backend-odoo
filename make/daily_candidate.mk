@@ -73,6 +73,8 @@ daily.candidate.continuity.remote_install: guard.prod.forbid
 		scripts/ops/daily_runtime_duty_edition_release.py \
 		scripts/ops/daily_runtime_duty_operator_grant.py \
 		scripts/ops/daily_runtime_duty_database_registration.py \
+		scripts/ops/daily_runtime_platform_security_admin_bootstrap.py \
+		scripts/ops/platform_security_admin_bootstrap.py \
 		scripts/ops/platform_database_register.py \
 		scripts/ops/platform_database_receipt.py \
 		addons/smart_core/security/data_space_provisioning.py \
@@ -343,6 +345,48 @@ daily.runtime.duty.database_registration.remote_register: daily.runtime.duty.dat
 	@test "$${CONFIRM_DAILY_DUTY_DATABASE_REGISTRATION:-}" = "REGISTER_DECLARED_DAILY_DUTY_IN_PLATFORM_REGISTRY" || { echo "exact daily duty database registration confirmation is required" >&2; exit 2; }
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
 		'CONFIRM_DAILY_DUTY_DATABASE_REGISTRATION=REGISTER_DECLARED_DAILY_DUTY_IN_PLATFORM_REGISTRY python3 "$(DAILY_DUTY_REGISTRATION_TOOL)" register --duty "$(DAILY_DUTY_REGISTRATION_DUTY)" --reason "$(DAILY_DUTY_REGISTRATION_REASON)" --evidence "$(DAILY_DUTY_REGISTRATION_EVIDENCE)"'
+
+# The independent approving identity is a platform mechanism: the maintenance
+# authorization flow must be approved by a real, named security administrator,
+# and establishing that identity is its own governed bootstrap step rather than
+# a side effect of a maintenance request. This entry binds it to the declared
+# platform control duty, loads the immutable entry from the reviewed scripts
+# mount and reads the identity and the authorization ledger back in separate
+# processes, so a bootstrap that approved its own request, took over a shared
+# carrier or moved the ledger is refused. The login, the name and the evidence
+# are operator inputs; the confirmation value and the group identity come from
+# the entry itself.
+DAILY_SECURITY_ADMIN_TOOL ?= $(DAILY_CONTINUITY_REMOTE_ROOT)/scripts/ops/daily_runtime_platform_security_admin_bootstrap.py
+DAILY_SECURITY_ADMIN_LOGIN ?=
+DAILY_SECURITY_ADMIN_NAME ?=
+DAILY_SECURITY_ADMIN_EVIDENCE ?=
+
+.PHONY: verify.platform.security_admin.bootstrap daily.runtime.platform.security_admin.bootstrap.remote_install daily.runtime.platform.security_admin.bootstrap.remote_readback daily.runtime.platform.security_admin.bootstrap.remote_bootstrap
+
+verify.platform.security_admin.bootstrap: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/platform_security_admin_bootstrap.py scripts/ops/test_platform_security_admin_bootstrap.py scripts/ops/daily_runtime_platform_security_admin_bootstrap.py scripts/ops/test_daily_runtime_platform_security_admin_bootstrap.py
+	@python3 -m unittest scripts.ops.test_platform_security_admin_bootstrap
+	@python3 -m unittest scripts.ops.test_daily_runtime_platform_security_admin_bootstrap
+
+daily.runtime.platform.security_admin.bootstrap.remote_install: daily.candidate.continuity.remote_install
+	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
+
+daily.runtime.platform.security_admin.bootstrap.remote_readback: daily.runtime.platform.security_admin.bootstrap.remote_install
+	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
+	@[[ "$(DAILY_SECURITY_ADMIN_LOGIN)" =~ ^[a-z][a-z0-9_.-]{2,62}$$ ]] || { echo "DAILY_SECURITY_ADMIN_LOGIN must be the declared administrator login" >&2; exit 2; }
+	@test -n "$(DAILY_SECURITY_ADMIN_NAME)" || { echo "DAILY_SECURITY_ADMIN_NAME is required" >&2; exit 2; }
+	@test -n "$(DAILY_SECURITY_ADMIN_EVIDENCE)" || { echo "DAILY_SECURITY_ADMIN_EVIDENCE is required" >&2; exit 2; }
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'python3 "$(DAILY_SECURITY_ADMIN_TOOL)" readback --login "$(DAILY_SECURITY_ADMIN_LOGIN)" --name "$(DAILY_SECURITY_ADMIN_NAME)" --evidence "$(DAILY_SECURITY_ADMIN_EVIDENCE)"'
+
+daily.runtime.platform.security_admin.bootstrap.remote_bootstrap: daily.runtime.platform.security_admin.bootstrap.remote_install
+	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
+	@[[ "$(DAILY_SECURITY_ADMIN_LOGIN)" =~ ^[a-z][a-z0-9_.-]{2,62}$$ ]] || { echo "DAILY_SECURITY_ADMIN_LOGIN must be the declared administrator login" >&2; exit 2; }
+	@test -n "$(DAILY_SECURITY_ADMIN_NAME)" || { echo "DAILY_SECURITY_ADMIN_NAME is required" >&2; exit 2; }
+	@test -n "$(DAILY_SECURITY_ADMIN_EVIDENCE)" || { echo "DAILY_SECURITY_ADMIN_EVIDENCE is required" >&2; exit 2; }
+	@test "$${SC_CONFIRM_PLATFORM_SECURITY_ADMIN_BOOTSTRAP:-}" = "BOOTSTRAP_DECLARED_PLATFORM_SECURITY_ADMIN" || { echo "exact platform security administrator bootstrap confirmation is required" >&2; exit 2; }
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'SC_CONFIRM_PLATFORM_SECURITY_ADMIN_BOOTSTRAP=BOOTSTRAP_DECLARED_PLATFORM_SECURITY_ADMIN python3 "$(DAILY_SECURITY_ADMIN_TOOL)" bootstrap --login "$(DAILY_SECURITY_ADMIN_LOGIN)" --name "$(DAILY_SECURITY_ADMIN_NAME)" --evidence "$(DAILY_SECURITY_ADMIN_EVIDENCE)"'
 
 daily.candidate.sentinel.remote_capture: daily.candidate.continuity.remote_install
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
