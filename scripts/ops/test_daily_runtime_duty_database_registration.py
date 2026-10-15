@@ -257,6 +257,18 @@ class ScriptTests(unittest.TestCase):
         self.assertIn("scripts.ops.platform_database_register", script)
         self.assertNotIn(ENTRY.MOUNT_TOKEN, script)
 
+    def test_the_register_script_loads_the_module_the_entry_declares(self):
+        """The template carries the placeholder and the constant is its only
+        source, so the loaded module and the declared module cannot drift."""
+        source = (
+            ROOT / "scripts/ops/daily_runtime_duty_database_registration.py"
+        ).read_text()
+        self.assertIn('importlib.import_module("%(module)s")', source)
+        self.assertIn(
+            'importlib.import_module("%s")' % ENTRY.REGISTER_ENTRY_MODULE,
+            ENTRY.REGISTER_SCRIPT,
+        )
+
     def test_the_reviewed_stack_must_expose_the_scripts_mount(self):
         fixture = FixtureDeclaration()
         self.addCleanup(fixture.close)
@@ -266,22 +278,30 @@ class ScriptTests(unittest.TestCase):
         with self.assertRaisesRegex(ENTRY.RegistrationEntryError, "does not mount"):
             ENTRY.assert_scripts_mount(missing)
 
-    def test_the_register_command_carries_only_declared_facts(self):
+    def test_the_register_command_shells_in_control_and_declares_the_duty(self):
+        """The register shell runs in the control plane; the fact it declares is
+        the duty's database.  Swapping the two would write the registration into
+        the tenant database, so both halves are asserted against each other."""
         fixture = FixtureDeclaration()
         self.addCleanup(fixture.close)
         duty = self._duty(fixture)
+        control = fixture.control_duty()
         command = ENTRY.register_command(
-            duty,
-            ["docker", "compose", "--project-name", duty["compose_project"]],
+            control,
+            ["docker", "compose", "--project-name", control["compose_project"]],
             ENTRY.register_environment(duty, ENTRY.register_entry(), REASON_TEXT),
         )
-        self.assertEqual(command[command.index("-d") + 1], duty["database"])
+        self.assertEqual(command[command.index("-d") + 1], CONTROL_DATABASE)
+        self.assertEqual(command[command.index("-d") + 1], control["database"])
+        self.assertNotEqual(control["database"], duty["database"])
+        # The one write targets the declared duty, never the control plane.
+        self.assertIn("PLATFORM_DATABASE_REGISTER_DB=%s" % CUSTOMER_DATABASE, command)
+        self.assertNotIn("PLATFORM_DATABASE_REGISTER_DB=%s" % CONTROL_DATABASE, command)
         self.assertEqual(command[command.index("--entrypoint") + 1], ENTRY.duty_runtime.APPLICATION_ENTRY)
         self.assertIn("--no-deps", command)
         self.assertIn("--rm", command)
         for expected in (
             "SC_CONFIRM_PLATFORM_DATABASE_REGISTRY=REGISTER_GOVERNED_PLATFORM_DATABASE",
-            "PLATFORM_DATABASE_REGISTER_DB=%s" % CUSTOMER_DATABASE,
             "PLATFORM_DATABASE_REGISTER_ENVIRONMENT_ROLE=customer_production",
             "PLATFORM_DATABASE_REGISTER_DATA_PURPOSE=customer",
             "PLATFORM_DATABASE_REGISTER_TENANT_KEY=baosheng",
@@ -404,18 +424,28 @@ class GuardTests(unittest.TestCase):
         self.assertIs(evidence["created"], False)
         self.assertEqual(runner.call_count, 2)  # readback before and after only
 
-    def test_a_half_written_registration_is_refused(self):
-        """A row that exists before the write is a refusal, not a second write."""
+    def test_a_registry_that_moved_without_a_write_is_refused(self):
+        """A reuse path that did not write must leave the registry unmoved.
+
+        The moved row still satisfies every declared fact, so only the
+        before/after comparison can catch it: this is the counter-example for
+        the stability check that guards the no-write path.
+        """
         fixture = FixtureDeclaration()
         self.addCleanup(fixture.close)
-        marker = ENTRY.READBACK_MARKER + json.dumps(READBACK)
+        before = ENTRY.READBACK_MARKER + json.dumps(READBACK)
+        moved = json.loads(json.dumps(READBACK))
+        moved["registration"]["operation_count"] = 2
+        self.assertNotEqual(moved, READBACK)
+        after = ENTRY.READBACK_MARKER + json.dumps(moved)
         with mock.patch.dict(
             os.environ, {"CONFIRM_DAILY_DUTY_DATABASE_REGISTRATION": CONFIRM}, clear=True
-        ), mock.patch.object(ENTRY, "run_script", side_effect=[marker, marker]), mock.patch.object(
-            ENTRY, "assert_readback", wraps=ENTRY.assert_readback
-        ):
-            evidence = self._execute(fixture, "register", reason=REASON_TEXT)
-        self.assertEqual(evidence["entry_report"]["reused"], True)
+        ), mock.patch.object(ENTRY, "run_script", side_effect=[before, after]) as runner:
+            with self.assertRaisesRegex(
+                ENTRY.RegistrationEntryError, "although this run refused to write"
+            ):
+                self._execute(fixture, "register", reason=REASON_TEXT)
+        self.assertEqual(runner.call_count, 2)  # the entry was never invoked
 
     def test_a_registration_is_asserted_against_the_entry_and_the_declaration(self):
         fixture = FixtureDeclaration()
@@ -435,6 +465,41 @@ class GuardTests(unittest.TestCase):
         self.assertIs(evidence["created"], True)
         self.assertEqual(evidence["environment_role"], "customer_production")
         self.assertEqual(evidence["registration_after"]["registration"]["db_name"], CUSTOMER_DATABASE)
+
+    def test_the_register_action_shells_in_control_and_declares_the_duty(self):
+        """The command the action really runs must shell in the control database
+        while declaring the duty's database.  Swapping those two would register
+        the tenant database from inside itself, so both halves are asserted
+        against the commands the run actually carried."""
+        fixture = FixtureDeclaration()
+        self.addCleanup(fixture.close)
+        entry_output = ENTRY.ENTRY_MARKER + json.dumps(
+            {"source_sha256": entry_source_sha256(), "result": ENTRY_RESULT}
+        )
+        outputs = [
+            ENTRY.READBACK_MARKER + json.dumps(ABSENT),
+            entry_output,
+            ENTRY.READBACK_MARKER + json.dumps(READBACK),
+        ]
+        commands: list[list[str]] = []
+
+        def _record(command, script, ops_root):
+            commands.append(list(command))
+            return outputs[len(commands) - 1]
+
+        with mock.patch.dict(
+            os.environ, {"CONFIRM_DAILY_DUTY_DATABASE_REGISTRATION": CONFIRM}, clear=True
+        ), mock.patch.object(ENTRY, "run_script", side_effect=_record):
+            evidence = self._execute(fixture, "register", reason=REASON_TEXT)
+        self.assertIs(evidence["created"], True)
+        self.assertEqual(len(commands), 3)  # readback, register, readback
+        self.assertEqual(
+            [command[command.index("-d") + 1] for command in commands],
+            [CONTROL_DATABASE] * 3,
+        )
+        register = commands[1]
+        self.assertIn("PLATFORM_DATABASE_REGISTER_DB=%s" % CUSTOMER_DATABASE, register)
+        self.assertNotIn("PLATFORM_DATABASE_REGISTER_DB=%s" % CONTROL_DATABASE, register)
 
     def test_a_registration_that_landed_another_identity_is_refused(self):
         fixture = FixtureDeclaration()

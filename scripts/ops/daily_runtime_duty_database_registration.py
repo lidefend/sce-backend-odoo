@@ -121,7 +121,7 @@ import os
 import sys
 
 sys.path.insert(0, "__DAILY_DUTY_PRODUCT_SCRIPTS_PARENT__")
-_entry = importlib.import_module("scripts.ops.platform_database_register")
+_entry = importlib.import_module("%(module)s")
 with open(_entry.__file__, "rb") as _source_file:
     _digest = hashlib.sha256(_source_file.read()).hexdigest()
 _result = _entry.run(env, os.environ)  # noqa: F821
@@ -131,7 +131,7 @@ print("%(marker)s" + json.dumps(
     sort_keys=True,
     default=str,
 ))
-""" % {"marker": ENTRY_MARKER}
+""" % {"marker": ENTRY_MARKER, "module": REGISTER_ENTRY_MODULE}
 
 _MODULES: dict[str, object] = {}
 
@@ -503,9 +503,12 @@ def execute(
         run_script(readback_command(control, base), readback_script(duty), ops_root)
     )
     if action == "register":
-        assert_readback(after, duty, control, registered=True)
+        # A registration that did not write must leave the registry exactly as
+        # it found it; a registry that moved is a stop, not a new fact to read.
+        # Only then is the resulting registration interpreted.
         if after != before and not created:
             _fail("the registry changed although this run refused to write")
+        assert_readback(after, duty, control, registered=True)
     else:
         # A read-only action proves it stayed read-only before anything else is
         # believed about the second read: a registry that moved between the two
