@@ -26,6 +26,26 @@ def item(group: str, status: str, kind: str = "odoo_tag", declarations: int = 1)
 
 
 class TaggedDeclarationParsingTest(unittest.TestCase):
+    def test_standard_exclusion_preserves_real_demo_groups(self):
+        import tempfile
+        from pathlib import Path
+        from unittest.mock import patch
+        from scripts.verify import test_coverage_registry_audit as audit
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "addons/demo/tests/test_roles.py"
+            source.parent.mkdir(parents=True)
+            source.write_text('@tagged("-standard", "demo_loaded_chains")\n'
+                              'class TestLoaded(TransactionCase): pass\n'
+                              '@tagged("demo_action_roles")\n'
+                              'class TestRoles(TransactionCase): pass\n')
+            with patch.object(audit, "ROOT", root), patch.object(audit, "ADDON_ROOTS", ["addons"]):
+                groups = audit.collect_tag_declarations()
+            self.assertEqual(set(groups), {"demo_loaded_chains", "demo_action_roles"})
+            self.assertEqual(groups["demo_loaded_chains"]["classes"], {"TestLoaded"})
+            self.assertEqual(groups["demo_action_roles"]["classes"], {"TestRoles"})
+            self.assertEqual(groups["demo_loaded_chains"]["files"], {"addons/demo/tests/test_roles.py"})
+
     def test_single_line_decorator_binds_class(self) -> None:
         text = (
             '@tagged("post_install", "-at_install", "uc4_native_lowcode")\n'

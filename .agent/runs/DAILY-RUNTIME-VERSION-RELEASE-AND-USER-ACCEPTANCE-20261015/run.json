@@ -90,7 +90,12 @@
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/test_inventory.csv",
     "docs/engineering_convergence/test_inventory_summary.md",
-    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "scripts/verify/test_coverage_registry_audit.py",
+    "scripts/verify/test_test_coverage_registry_audit.py",
+    "scripts/verify/test_coverage_registry.yaml",
+    "docs/ops/codex_execution_allowlist.md",
+    "docs/engineering_convergence/split_plan_queue.md"
   ],
   "environment": {
     "kind": "runtime",
@@ -163,7 +168,7 @@
     "Frozen exact-head Quick, final identity-bound review and required remote checks remain pending.",
     "Daily target deployment and complete user product acceptance remain pending; local demo sample read is not full product delivery."
   ],
-  "next_exact_step": "Commit reviewed two-line test wiring correction and run exact-head Quick; final receipts in ignored evidence, no runtime replay.",
+  "next_exact_step": "Prepare generated reports after reviewed P4 coverage/entry-authority fixes; commit/refreeze; exact-head Quick. Reuse unchanged product/runtime evidence.",
   "takeover_20261015": {
     "head": "e12e75eaa5bdcfe5b01dfe14b89cb201fac60023",
     "dirty_paths": [
@@ -1150,6 +1155,28 @@
           "generated_changes": "none"
         },
         "B_review": "concurrency_review: equivalent unittest input, bounded P4 fix endorsed"
+      },
+      "quick_2f20664e": {
+        "status": "failed",
+        "log": "/tmp/sce-closure-final-quick.log",
+        "owner": "P4 test coverage registration",
+        "failure": "Two newly added real Demo test tags lacked governed selection registration; scanner misclassified -standard exclusion as group.",
+        "fix_plan": "Fixed local.dev aliases and truthful on-demand registration; exclude standard control marker with collection test; run owning architecture suite before next freeze",
+        "scope": "P4 only; runtime and product inputs unchanged; no DB replay authorized or needed",
+        "owning_suite_followup": "Coverage registry passed after snapshot export; lane coverage found twelve owner-approved new Make entrypoints absent from binding execution allowlist. Register exact authority and limits there, not a raw debt-baseline increase.",
+        "recovery": {
+          "status": "passed",
+          "command": "make verify.contract.architecture.suite",
+          "log": "/tmp/sce-closure-registered-owning-suite.log",
+          "test_coverage_unit_count": 18,
+          "review": "concurrency_review PASS; allowlist wording limited to five actual lifecycle actions",
+          "baseline": "No threshold increase, no false CI registration; actual manual authority registered"
+        },
+        "final_prepare": {
+          "status": "passed",
+          "log": "/tmp/sce-closure-coverage-final-freeze.log",
+          "generated_changes": "Coverage groups and one-line source length updates only"
+        }
       }
     }
   }

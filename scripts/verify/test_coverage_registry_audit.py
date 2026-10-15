@@ -86,6 +86,7 @@ DISPOSITIONS = ("class-selected", "wire-pending", "retire-pending", "known-gap")
 
 STANDARD_TAGS = {
     "standard",
+    "-standard",
     "at_install",
     "post_install",
     "-at_install",

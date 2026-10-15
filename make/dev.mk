@@ -1238,3 +1238,13 @@ verify.local.dev.data_space_uncached_membership.orm: guard.prod.forbid
 .PHONY: platform.database.rehearsal.prepare platform.database.rehearsal.preflight platform.database.rehearsal.exercise platform.database.rehearsal.continue platform.database.rehearsal.export platform.database.rehearsal.readback platform.database.rehearsal.recover platform.database.rehearsal.cleanup
 platform.database.rehearsal.prepare platform.database.rehearsal.preflight platform.database.rehearsal.exercise platform.database.rehearsal.continue platform.database.rehearsal.export platform.database.rehearsal.readback platform.database.rehearsal.recover platform.database.rehearsal.cleanup: guard.prod.forbid
 	@python3 scripts/ops/platform_database_rehearsal.py $(lastword $(subst ., ,$@))
+
+.PHONY: verify.local.dev.demo_action_roles.orm
+verify.local.dev.demo_action_roles.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_construction_demo TEST_TAGS="demo_action_roles" local.dev.test
+
+.PHONY: verify.local.dev.demo_loaded_chains.orm
+verify.local.dev.demo_loaded_chains.orm: guard.prod.forbid
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_construction_demo TEST_TAGS="demo_loaded_chains" local.dev.test

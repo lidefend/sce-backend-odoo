@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 168,
+    "odoo_tags": 167,
     "gated": 4,
-    "on_demand": 18,
-    "unwired": 146,
-    "odoo_tag_declarations": 377,
+    "on_demand": 20,
+    "unwired": 143,
+    "odoo_tag_declarations": 376,
     "gated_declarations": 89,
-    "uncovered_declarations": 288,
+    "uncovered_declarations": 287,
     "ci_unit_scripts": 14,
     "ci_unit_scripts_wired": 14,
     "ci_unit_scripts_unwired": 0
@@ -477,17 +477,6 @@
       "disposition": "wire-pending"
     },
     {
-      "group": "-standard",
-      "status": "unwired",
-      "kind": "odoo_tag",
-      "declarations": 1,
-      "files": [
-        "demo_addons/smart_construction_demo/tests/test_demo_action_roles.py"
-      ],
-      "owner": "demo-team",
-      "evidence": []
-    },
-    {
       "group": "acceptance_fixture_data_space",
       "status": "unwired",
       "kind": "odoo_tag",
@@ -838,14 +827,17 @@
     },
     {
       "group": "demo_action_roles",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "demo_addons/smart_construction_demo/tests/test_demo_action_roles.py"
       ],
       "owner": "demo-team",
-      "evidence": []
+      "evidence": [
+        "make:verify.local.dev.demo_action_roles.orm :: demo_action_roles"
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "demo_gate",
@@ -861,14 +853,17 @@
     },
     {
       "group": "demo_loaded_chains",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "demo_addons/smart_construction_demo/tests/test_demo_action_roles.py"
       ],
       "owner": "demo-team",
-      "evidence": []
+      "evidence": [
+        "make:verify.local.dev.demo_loaded_chains.orm :: demo_loaded_chains"
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "dictionary_scope_delivery",
