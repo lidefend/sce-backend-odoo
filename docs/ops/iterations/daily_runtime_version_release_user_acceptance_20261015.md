@@ -1346,3 +1346,77 @@ sc_platform_control         : platform_release_db 无, 快照 0 条
 | `make agent.run.resume` | `resolved`, `outside_scope []` |
 
 **这是 批次验收完成（顺序 1/2 切片），不是主线集成完成 / 版本发布完成 / 产品交付完成。**
+
+### 顺序 3：客户开发库发布声明允许的版次（已完成）
+
+在受管工具安装后执行 `remote_publish`（`DAILY_DUTY_EDITION_DUTY=customer_tenant_dev`、
+`PRODUCT_KEY=construction.standard`）：
+
+```
+platform_parameter : PASS   value = sc_tenant_baosheng_dev
+snapshot           : PASS   snapshot_id = 1
+                            version = daily-navigation-standard-10bf72ef4bb0
+                            policy_menu_count = 90 = snapshot_menu_count
+preview_page_count : 0      未自动扩 construction.preview
+```
+
+权威回读：carrier = `sc_tenant_baosheng_dev`，恰 1 条 released+active 的 `construction.standard`。
+
+重试幂等已验证：第二次发布两份收据均为 `changed:false` / `idempotent:true`，
+`release_state_digest` 前后一致（`a6fcaacd5df619ce…`）。
+
+### 顺序 4（准备）：专用导入操作员窄授权入口
+
+**问题**：`scripts/ops/daily_runtime_duty_payload.py` 之前把导入操作员身份硬编码为
+`base.user_admin`。所有者裁定：必须通过既有入口授权**专用**导入操作员，最小权限、精确租户范围、
+可撤销，**不默认给通用 admin 加组**。因此该身份属于职责声明的事实，入口不得自带字面量。
+
+**改动**：
+
+* 新增 `scripts/ops/daily_runtime_duty_operator_grant.py`（动作 `readback` / `grant`），身份全部来自
+  `config/ops/daily_runtime_database_duties.v1.json` 的 duty 声明；仅接受 `data_purpose=customer`、
+  有 `tenant_key` 且声明了 `payload_operator` 块的 duty（`carrier=narrow_import_grant`、
+  `identity_type=external_xmlid`、合法 `identity_key`、`tenant_key` 一致、非空 `authorization_basis`、
+  `customer_modules`、`contract`）。
+* 契约强校验：`direct_grant_targets==[importer]`、传递闭包必须为空、
+  `required_existing_groups==["base.group_user"]`、期望直接/生效新增精确相等、无未声明新增、
+  `grant_scope_version=3`、`expected_company_scope>=1`，且任何集合中都禁止出现
+  `smart_core.group_smart_core_data_operator`。
+* 授权在 duty 自身渲染定义里 `docker compose run --rm --no-deps -T`（不加 `--user`）执行
+  `scripts/tenant_payload/provision_operator.py`；前后各做一次只读回读并比对（含
+  `data_operator_added is False`）。
+* **空审批人直接拒绝**，不伪造审批身份。
+* `daily_runtime_duty_payload.py` 移除 `base.user_admin` 字面量，改由声明解析；未声明则停机，不 fallback。
+
+**当前 fail-closed 状态**：本仓库声明**尚未**添加 `payload_operator` 块，因此入口 readback 返回
+`BLOCKED: duty customer_tenant_dev declares no payload_operator block`。这正是测试断言的行为，属于
+**正常保护**——不修改产品校验去消除它。
+
+**只读实测事实**（`sc_tenant_baosheng_dev`）：
+
+```
+res_users : 1 __system__(inactive) / 2 admin(active,internal) / 3 default(inactive)
+            4 public(shared) / 5 portaltemplate(shared)
+importer  : smart_core.group_smart_core_tenant_payload_importer (id 19) 成员 = 0
+```
+
+即：租户库内**没有**专用的非管理员内部用户，`base.user_admin` 是当前唯一可解析的
+`external_xmlid`——而它恰是所有者裁定要排除的通用 admin。
+
+**两个待所有者给定的输入（其余准备工作已就绪）**：
+
+1. 专用操作员身份的**承载层**：由平台按声明在启用载荷接口的库上生成，
+   还是由客户模块 `sce_customer_baosheng`（客户仓库工作区）声明租户服务账号。
+2. `APPROVED_BY` 必须绑定**可核验的真实审批主体及授权依据**；所有者已明确禁止填所有者本人或伪造审批人。
+
+### 定向验证（非零，迭代阶段）
+
+| 入口 | 结果 |
+|---|---|
+| `make verify.daily.duty.operator_grant` | 19 tests, OK |
+| `make verify.daily.duty.payload` | 26 tests, OK |
+| `make verify.daily.duty.edition_release` | 46 tests, OK（输入未变，复用） |
+| `make daily.candidate.continuity.test` | 28 tests, OK（输入未变，复用） |
+| `make ci.local.iteration` | `PASS`（两个新文件已登记进 run scope，`outside_scope` 为空） |
+
+**这是 批次验收完成（顺序 1/2/3 + 顺序 4 准备切片），不是主线集成完成 / 版本发布完成 / 产品交付完成。**

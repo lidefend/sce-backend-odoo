@@ -71,9 +71,11 @@ daily.candidate.continuity.remote_install: guard.prod.forbid
 		scripts/ops/daily_runtime_duty_identity.py \
 		scripts/ops/daily_runtime_duty_payload.py \
 		scripts/ops/daily_runtime_duty_edition_release.py \
+		scripts/ops/daily_runtime_duty_operator_grant.py \
 		scripts/release/configure_colocated_platform_core.py \
 		scripts/release/initialize_colocated_platform_snapshot.py \
 		scripts/tenant_payload/odoo_action.py \
+		scripts/tenant_payload/provision_operator.py \
 		scripts/ops/daily_candidate_data_continuity_contract_v1.json \
 		scripts/ops/daily_runtime_tenant_recovery_contract_v1.json \
 		config/ops/daily_runtime_database_duties.v1.json \
@@ -243,6 +245,42 @@ daily.runtime.duty.edition_release.remote_publish: daily.runtime.duty.edition_re
 	@test "$${CONFIRM_DAILY_DUTY_EDITION_RELEASE:-}" = "RELEASE_DECLARED_EDITION_INTO_DAILY_DUTY" || { echo "exact daily duty edition release confirmation is required" >&2; exit 2; }
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
 		'CONFIRM_DAILY_DUTY_EDITION_RELEASE=RELEASE_DECLARED_EDITION_INTO_DAILY_DUTY python3 "$(DAILY_DUTY_EDITION_TOOL)" publish --duty "$(DAILY_DUTY_EDITION_DUTY)" --product-key "$(DAILY_DUTY_EDITION_PRODUCT_KEY)" --evidence "$(DAILY_DUTY_EDITION_EVIDENCE)"'
+
+# The narrow payload import grant is the product's only import authorisation,
+# and its only governed invocations were the local compose face (which passes the
+# superseded v1 environment) and the locked production release set. This entry is
+# the daily-duty transport: it resolves the duty and the operator contract from
+# `config/ops/daily_runtime_database_duties.v1.json` and drives the existing
+# `scripts/tenant_payload/provision_operator.py` inside the duty's own rendered
+# definition. It carries no operator identity of its own -- a duty that has not
+# declared one stops instead of defaulting to the widest account in the database
+# -- and it refuses an empty approver rather than fabricating a formal approval
+# identity. `readback` runs as a separate process and proves it wrote nothing.
+DAILY_DUTY_OPERATOR_TOOL ?= $(DAILY_CONTINUITY_REMOTE_ROOT)/scripts/ops/daily_runtime_duty_operator_grant.py
+DAILY_DUTY_OPERATOR_DUTY ?= customer_tenant_dev
+DAILY_DUTY_OPERATOR_APPROVED_BY ?=
+DAILY_DUTY_OPERATOR_EVIDENCE ?=
+
+.PHONY: verify.daily.duty.operator_grant daily.runtime.duty.operator_grant.remote_install daily.runtime.duty.operator_grant.remote_readback daily.runtime.duty.operator_grant.remote_grant
+
+verify.daily.duty.operator_grant: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_duty_operator_grant.py scripts/ops/test_daily_runtime_duty_operator_grant.py
+	@python3 scripts/ops/test_daily_runtime_duty_operator_grant.py
+
+daily.runtime.duty.operator_grant.remote_install: daily.candidate.continuity.remote_install
+	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
+
+daily.runtime.duty.operator_grant.remote_readback: daily.runtime.duty.operator_grant.remote_install
+	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'python3 "$(DAILY_DUTY_OPERATOR_TOOL)" readback --duty "$(DAILY_DUTY_OPERATOR_DUTY)" --evidence "$(DAILY_DUTY_OPERATOR_EVIDENCE)"'
+
+daily.runtime.duty.operator_grant.remote_grant: daily.runtime.duty.operator_grant.remote_install
+	@test -n "$(DAILY_CANDIDATE_SSH_HOST)" || { echo "DAILY_CANDIDATE_SSH_HOST is required" >&2; exit 2; }
+	@test -n "$(DAILY_DUTY_OPERATOR_APPROVED_BY)" || { echo "DAILY_DUTY_OPERATOR_APPROVED_BY is required" >&2; exit 2; }
+	@test "$${CONFIRM_DAILY_DUTY_OPERATOR_GRANT:-}" = "GRANT_NARROW_PAYLOAD_IMPORT_OPERATOR_IN_DAILY_DUTY" || { echo "exact daily duty operator grant confirmation is required" >&2; exit 2; }
+	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \
+		'CONFIRM_DAILY_DUTY_OPERATOR_GRANT=GRANT_NARROW_PAYLOAD_IMPORT_OPERATOR_IN_DAILY_DUTY python3 "$(DAILY_DUTY_OPERATOR_TOOL)" grant --duty "$(DAILY_DUTY_OPERATOR_DUTY)" --approved-by "$(DAILY_DUTY_OPERATOR_APPROVED_BY)" --evidence "$(DAILY_DUTY_OPERATOR_EVIDENCE)"'
 
 daily.candidate.sentinel.remote_capture: daily.candidate.continuity.remote_install
 	@ssh "$(DAILY_CANDIDATE_SSH_HOST)" \

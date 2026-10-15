@@ -93,6 +93,7 @@ class DutyResolutionTests(unittest.TestCase):
                 self.assertNotIn(
                     duty[section][key], source, "%s.%s.%s" % (duty["duty"], section, key)
                 )
+        self.assertNotIn("base.user_admin", source)
 
 
 class DutyEnvironmentTests(unittest.TestCase):
@@ -259,9 +260,13 @@ class PayloadStagingTests(unittest.TestCase):
         self.assertTrue(Path(staged["path"]).stat().st_mode & 0o044)
 
 
+DECLARED_OPERATOR = "base.user_admin"
+
+
 class MaintenanceCommandTests(unittest.TestCase):
     def _command(self, action="plan"):
         duty = ENTRY.resolve_duty(CUSTOMER_DUTY)
+        duty = dict(duty, payload_operator={"identity_key": DECLARED_OPERATOR})
         base = ["docker", "compose", "--project-name", duty["compose_project"]]
         return duty, ENTRY.maintenance_command(
             duty,
@@ -318,7 +323,7 @@ class MaintenanceCommandTests(unittest.TestCase):
             "SC_TENANT_PAYLOAD_TENANT_KEY=%s" % duty["tenant_key"],
             'SC_TENANT_PAYLOAD_DIRECT_GRANT_TARGETS=["%s"]' % ENTRY.IMPORTER_GROUP,
             "SC_TENANT_PAYLOAD_OPERATOR_IDENTITY_TYPE=external_xmlid",
-            "SC_TENANT_PAYLOAD_OPERATOR_IDENTITY_KEY=base.user_admin",
+            "SC_TENANT_PAYLOAD_OPERATOR_IDENTITY_KEY=%s" % DECLARED_OPERATOR,
             "SC_TENANT_PAYLOAD_PUBLIC_KEY=/mnt/tenant-payload-public-key",
         ):
             self.assertIn(expected, command)
@@ -327,6 +332,15 @@ class MaintenanceCommandTests(unittest.TestCase):
     def test_only_the_import_action_resumes_a_failed_batch(self):
         _, command = self._command("import")
         self.assertIn("SC_TENANT_PAYLOAD_RESUME_FAILED=1", command)
+
+    def test_an_undeclared_operator_is_a_stop_without_a_fallback(self):
+        duty = ENTRY.resolve_duty(CUSTOMER_DUTY)
+        with self.assertRaisesRegex(
+            ENTRY.PayloadEntryError, "never falls back to a generic administrator"
+        ):
+            ENTRY.operator_identity_key(duty)
+        with self.assertRaisesRegex(ENTRY.PayloadEntryError, "no usable"):
+            ENTRY.operator_identity_key(dict(duty, payload_operator={"identity_key": ""}))
 
 
 class ActionGuardTests(unittest.TestCase):

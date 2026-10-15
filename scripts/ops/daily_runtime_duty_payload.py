@@ -76,7 +76,7 @@ TENANT_PAYLOAD_MOUNT = "/mnt/tenant-payload"
 PUBLIC_KEY_MOUNT = "/mnt/tenant-payload-public-key"
 ACTION_SCRIPT = "scripts/tenant_payload/odoo_action.py"
 OPERATOR_IDENTITY_TYPE = "external_xmlid"
-OPERATOR_IDENTITY_KEY = "base.user_admin"
+IDENTITY_XMLID = re.compile(r"^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$")
 IMPORTER_GROUP = "smart_core.group_smart_core_tenant_payload_importer"
 APPLICATION_ENTRY = "odoo"
 ODOO_CONF = "/var/lib/odoo/odoo.conf"
@@ -124,7 +124,31 @@ def resolve_duty(duty_name: str, declaration: Path | None = None) -> dict:
         )
     if not identity["tenant_key"]:
         _fail("customer duty %s declares no tenant_key" % identity["duty"])
+    try:
+        declared = (duty_identity.load_duties(declaration) or {}).get(duty_name) or {}
+    except duty_identity.DutyIdentityError as exc:
+        _fail(str(exc))
+    operator = declared.get("payload_operator")
+    if isinstance(operator, dict):
+        identity["payload_operator"] = dict(operator)
     return identity
+
+
+def operator_identity_key(duty: dict) -> str:
+    """The importing operator is a declared fact, never a built-in default.
+
+    The narrow grant is the product's only import authorisation, so defaulting
+    it to whichever administrator happens to exist would put the widest account
+    in the database behind it.  A duty that has not declared its operator stops
+    here instead.
+    """
+    identity = (duty.get("payload_operator") or {}).get("identity_key")
+    if not isinstance(identity, str) or not IDENTITY_XMLID.fullmatch(identity.strip()):
+        _fail(
+            "duty %s declares no usable payload operator identity: this entry never "
+            "falls back to a generic administrator" % duty["duty"]
+        )
+    return identity.strip()
 
 
 def assert_private_file(path: Path, what: str) -> None:
@@ -395,7 +419,7 @@ def payload_action_env(
         "-e", "SC_TENANT_PAYLOAD_ACTION=%s" % action,
         "-e", "SC_TENANT_PAYLOAD_TENANT_KEY=%s" % duty["tenant_key"],
         "-e", "SC_TENANT_PAYLOAD_OPERATOR_IDENTITY_TYPE=%s" % OPERATOR_IDENTITY_TYPE,
-        "-e", "SC_TENANT_PAYLOAD_OPERATOR_IDENTITY_KEY=%s" % OPERATOR_IDENTITY_KEY,
+        "-e", "SC_TENANT_PAYLOAD_OPERATOR_IDENTITY_KEY=%s" % operator_identity_key(duty),
         "-e", 'SC_TENANT_PAYLOAD_DIRECT_GRANT_TARGETS=["%s"]' % IMPORTER_GROUP,
         "-e", "SC_TENANT_PAYLOAD_DB_ALLOWLIST=%s" % duty["database"],
         "-e", "SC_TENANT_PAYLOAD_APPROVED_CHECKSUM=%s" % approved_checksum,
