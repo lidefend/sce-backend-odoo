@@ -322,6 +322,11 @@
       "owner": "platform-team",
       "reason": "日常 duty 运维入口：需要在 duty 主机上以真实凭据串行执行（远程安装/计划/执行/回读），没有任何自动化通道可以消费它，按 make 的公开入口由运行手册驱动。"
     },
+    "daily.runtime.database.duty.refresh": {
+      "disposition": "ops_runbook",
+      "owner": "platform-team",
+      "reason": "日常 duty 运维入口：refresh 只重渲染已服务的 duty 栈并按声明重建服务，以修掉容器读不到运行环境的那类缺陷；它必须在 duty 主机上以真实凭据串行执行，没有任何自动化 lane 能消费它，按 make 的公开入口由运行手册驱动。"
+    },
     "daily.runtime.duty.database_registration.remote_readback": {
       "disposition": "ops_runbook",
       "owner": "platform-team",
