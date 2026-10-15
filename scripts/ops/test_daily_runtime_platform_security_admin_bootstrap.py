@@ -63,6 +63,8 @@ def readback(**overrides):
         "security_admin_member_count": 0,
         "maintenance_access_rows": 0,
         "approves_maintenance_access": False,
+        "allowed_group_closure_ids": [2, 14, 16],
+        "allowed_group_closure_complete": True,
         "exists": False,
         "identity": None,
     }
@@ -92,13 +94,14 @@ def entry_result(**overrides):
             "share": False,
             "is_security_admin": True,
             "has_stored_password": False,
-            "has_customer_business_data_scope": False,
+            "group_ids": [2, 14, 16],
             "group_xmlids": ["base.group_user", entry_module().SECURITY_ADMIN_GROUP_XMLID],
+            "groups_outside_allowed_closure": [],
         },
         "security_admin_member_count": 1,
         "maintenance_access_rows": 0,
         "approves_maintenance_access": False,
-        "grants_business_data_scope": False,
+        "identity_groups_outside_allowed_closure": [],
         "effects": {"commit_state": "not_attempted", "uid": 7},
     }
     values.update(overrides)
@@ -290,9 +293,21 @@ class EntryResultTests(unittest.TestCase):
         with self.assertRaisesRegex(ENTRY.BootstrapTransportError, "approved a maintenance access"):
             self._assert(entry_result(approves_maintenance_access=True))
 
-    def test_an_entry_that_claimed_business_data_access_is_refused(self):
-        with self.assertRaisesRegex(ENTRY.BootstrapTransportError, "granted business data access"):
-            self._assert(entry_result(grants_business_data_scope=True))
+    def test_an_entry_that_reported_a_widened_identity_is_refused(self):
+        with self.assertRaisesRegex(ENTRY.BootstrapTransportError, "approver closure"):
+            self._assert(
+                entry_result(
+                    identity_groups_outside_allowed_closure=[
+                        "smart_construction_core.group_sc_contract_manager"
+                    ]
+                )
+            )
+
+    def test_an_entry_that_did_not_report_the_group_closure_is_refused(self):
+        payload = entry_result()
+        payload.pop("identity_groups_outside_allowed_closure")
+        with self.assertRaisesRegex(ENTRY.BootstrapTransportError, "group closure"):
+            self._assert(payload)
 
     def test_an_entry_that_moved_the_authorization_ledger_is_refused(self):
         with self.assertRaisesRegex(ENTRY.BootstrapTransportError, "authorization ledger"):
@@ -309,9 +324,17 @@ class EntryResultTests(unittest.TestCase):
         with self.assertRaisesRegex(ENTRY.BootstrapTransportError, "stored credential"):
             self._assert(entry_result(identity_readback=identity))
 
-    def test_an_identity_that_claims_a_business_data_scope_is_refused(self):
-        identity = dict(entry_result()["identity_readback"], has_customer_business_data_scope=True)
-        with self.assertRaisesRegex(ENTRY.BootstrapTransportError, "customer business data scope"):
+    def test_an_identity_that_carries_unrelated_groups_is_refused(self):
+        identity = dict(
+            entry_result()["identity_readback"],
+            groups_outside_allowed_closure=["smart_construction_core.group_sc_contract_manager"],
+        )
+        with self.assertRaisesRegex(ENTRY.BootstrapTransportError, "outside the approver closure"):
+            self._assert(entry_result(identity_readback=identity))
+
+    def test_an_identity_that_is_not_the_declared_named_person_is_refused(self):
+        identity = dict(entry_result()["identity_readback"], name="Someone Else")
+        with self.assertRaisesRegex(ENTRY.BootstrapTransportError, "declared named person"):
             self._assert(entry_result(identity_readback=identity))
 
     def test_an_identity_that_is_a_portal_or_inactive_is_refused(self):
@@ -341,11 +364,14 @@ class PostCreationTests(unittest.TestCase):
         module = entry_module()
         identity = {
             "login": LOGIN,
+            "name": NAME,
             "active": True,
             "share": False,
             "is_security_admin": True,
             "has_stored_password": False,
+            "group_ids": [2, 14, 16],
             "group_xmlids": ["base.group_user", module.SECURITY_ADMIN_GROUP_XMLID],
+            "groups_outside_allowed_closure": [],
         }
         identity.update(identity_overrides)
         return readback(exists=True, identity=identity)
@@ -359,10 +385,50 @@ class PostCreationTests(unittest.TestCase):
         with self.assertRaisesRegex(ENTRY.BootstrapTransportError, "exactly once"):
             ENTRY.assert_identity_after_creation(report, entry_module(), request(), entry_result())
 
+    def test_the_identity_must_carry_the_declared_name_after_creation(self):
+        report = self.identity_report(name="Someone Else")
+        with self.assertRaisesRegex(ENTRY.BootstrapTransportError, "another name"):
+            ENTRY.assert_identity_after_creation(report, entry_module(), request(), entry_result())
+
+    def test_the_identity_must_stay_inside_the_approver_closure(self):
+        report = self.identity_report(
+            groups_outside_allowed_closure=["smart_construction_core.group_sc_contract_manager"]
+        )
+        with self.assertRaisesRegex(ENTRY.BootstrapTransportError, "outside the approver closure"):
+            ENTRY.assert_identity_after_creation(report, entry_module(), request(), entry_result())
+
     def test_an_honest_created_identity_is_accepted(self):
         ENTRY.assert_identity_after_creation(
             self.identity_report(), entry_module(), request(), entry_result()
         )
+
+
+class MakeTargetTests(unittest.TestCase):
+    """The daily entry points are wired, and they guard their inputs first."""
+
+    def setUp(self):
+        self.make = (ROOT / "make/daily_candidate.mk").read_text(encoding="utf-8")
+
+    def test_the_bootstrap_targets_are_declared(self):
+        for target in (
+            "daily.runtime.platform.security_admin.bootstrap.remote_install:",
+            "daily.runtime.platform.security_admin.bootstrap.remote_readback:",
+            "daily.runtime.platform.security_admin.bootstrap.remote_bootstrap:",
+            "verify.platform.security_admin.bootstrap:",
+        ):
+            self.assertIn(target, self.make)
+
+    def test_each_remote_entry_validates_name_and_evidence_before_connecting(self):
+        # A name or an evidence reference travels through the ssh payload as a
+        # shell argument, so both remote entries refuse the characters that
+        # would break out of it before the connection is made.
+        self.assertEqual(self.make.count("it would break the ssh payload"), 4)
+        self.assertEqual(self.make.count("{2,200}$$'"), 2)
+        self.assertEqual(self.make.count("{10,400}$$'"), 2)
+
+    def test_the_bootstrap_reuses_the_declared_identity_binding(self):
+        self.assertIn("bootstrap --login \"$(DAILY_SECURITY_ADMIN_LOGIN)\"", self.make)
+        self.assertIn("readback --login \"$(DAILY_SECURITY_ADMIN_LOGIN)\"", self.make)
 
 
 if __name__ == "__main__":

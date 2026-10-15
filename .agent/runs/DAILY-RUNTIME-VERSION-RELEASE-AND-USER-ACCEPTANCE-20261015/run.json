@@ -204,7 +204,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "The maintenance-authorization mechanism the owner ordered is delivered and verified at the entry layer (verify.smart_core.platform_maintenance_access.orm 12/12, verify.local.dev.platform_database_governance.orm 24/24, verify.smart_core.tenant_payload_operator.orm 20/20, verify.platform.security_admin.bootstrap 34/34, and the controller boundary guards PASS), with three falsifications proving the guards still fire. Next exact step is the approval-bound execution, which needs no further owner input because the owner named lidefend: (1) make daily.runtime.platform.security_admin.bootstrap.remote_readback - the control duty must report no security administrator yet; (2) make daily.runtime.platform.security_admin.bootstrap.remote_bootstrap with SC_CONFIRM_PLATFORM_SECURITY_ADMIN_BOOTSTRAP=BOOTSTRAP_DECLARED_PLATFORM_SECURITY_ADMIN, PLATFORM_SECURITY_ADMIN_LOGIN=lidefend and a real name/evidence reference, then read the identity back; (3) create the maintenance request for sc_tenant_baosheng_dev/capability migrate/operator smart_core.svc_tenant_payload_operator_baosheng/digest f1adc6fb17b516d42492fe42229df0cce65956ea113978a19243c0de57ec1ed4/operations [provision, grant] and approve it as lidefend through the entry or the governed shell; (4) make daily.runtime.duty.operator_grant.remote_provision with CONFIRM_DAILY_DUTY_OPERATOR_PROVISION=PROVISION_DECLARED_PAYLOAD_IMPORT_OPERATOR_IN_DAILY_DUTY and DAILY_DUTY_OPERATOR_SUBJECT_CHECKSUM=f1adc6fb17b516d42492fe42229df0cce65956ea113978a19243c0de57ec1ed4, read the created identity back, then daily.runtime.duty.payload.remote_plan, remote_grant, remote_import (CONFIRM_DAILY_DUTY_PAYLOAD_IMPORT=IMPORT_SIGNED_PAYLOAD_INTO_DAILY_DUTY) and remote_verify; (5) reconcile 12386 against 6322/29/6035 with amounts, source relations, attachments and ownership; (6) remote_revoke, B-line independent review, then normal mainline integration. Never delete source data and never clean migration results by uninstalling the user module. Batch acceptance, mainline integration, version release and product delivery remain separate and open.",
+  "next_exact_step": "The maintenance-authorization mechanism is delivered and verified at the entry layer (verify.smart_core.platform_maintenance_access.orm 12/12, verify.local.dev.platform_database_governance.orm 24/24, verify.smart_core.tenant_payload_operator.orm 20/20, verify.platform.security_admin.bootstrap 31+41=72, verify.daily.duty.operator_grant 39+39=78, and the controller boundary guards PASS), the B-line review's two S2 items and four S3 items are closed, and counter-examples prove the new guards fire. Next exact step is the approval-bound execution, which needs no further owner input because the owner named lidefend: (1) make daily.runtime.platform.security_admin.bootstrap.remote_readback - the control duty must report no security administrator yet; (2) make daily.runtime.platform.security_admin.bootstrap.remote_bootstrap with SC_CONFIRM_PLATFORM_SECURITY_ADMIN_BOOTSTRAP=BOOTSTRAP_DECLARED_PLATFORM_SECURITY_ADMIN, PLATFORM_SECURITY_ADMIN_LOGIN=lidefend and a real name/evidence reference, then read the identity back; (3) create the maintenance request for sc_tenant_baosheng_dev/capability migrate/operator smart_core.svc_tenant_payload_operator_baosheng/digest f1adc6fb17b516d42492fe42229df0cce65956ea113978a19243c0de57ec1ed4/operations [provision, grant] and approve it as lidefend through the entry or the governed shell; (4) make daily.runtime.duty.operator_grant.remote_provision with CONFIRM_DAILY_DUTY_OPERATOR_PROVISION=PROVISION_DECLARED_PAYLOAD_IMPORT_OPERATOR_IN_DAILY_DUTY and DAILY_DUTY_OPERATOR_SUBJECT_CHECKSUM=f1adc6fb17b516d42492fe42229df0cce65956ea113978a19243c0de57ec1ed4, read the created identity back, then daily.runtime.duty.payload.remote_plan, remote_grant, remote_import (CONFIRM_DAILY_DUTY_PAYLOAD_IMPORT=IMPORT_SIGNED_PAYLOAD_INTO_DAILY_DUTY) and remote_verify; (5) reconcile 12386 against 6322/29/6035 with amounts, source relations, attachments and ownership; (6) remote_revoke, B-line re-review of the affected layers, then normal mainline integration. Never delete source data and never clean migration results by uninstalling the user module. Batch acceptance, mainline integration, version release and product delivery remain separate and open.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "review_s2_closure_20261015": {
     "authority": "Independent B-line review of 5f5c4dae..4450e674 returned APPROVE_WITH_NOTES with one S2: the registration's control-database write had no test wiring, and the existing assertion pointed at the opposite target",
@@ -487,16 +487,16 @@
     "case": "Owner ruling (2026-10-16): 用 lidefend 作为授权人；补齐 P0 正式维护授权入口，不用一次性 P4 shell 代替审批产品能力；当前停机正确，不能绕过 provision 的前置授权。两个独立缺口：审批流程没有可用入口，平台尚未建立真实安全管理员身份。No account input was needed to finish the mechanism, so everything that does not depend on the approval was executed.",
     "delivered": {
       "entry": "addons/smart_core/controllers/platform_maintenance_access_controller.py serves GET /api/ops/maintenance/access plus POST request/approve/reject/revoke/expire. The decider is the principal verified from the authenticated session (security admin for a decision, platform or security admin for a read), never a payload fact: a body carrying approved_by/requested_by/state/valid_from/valid_until is refused with MAINTENANCE_ACCESS_SERVER_OWNED_FIELD rather than ignored, and the state machine remains the only writer.",
-      "identity_bootstrap": "scripts/ops/platform_security_admin_bootstrap.py creates or verifies exactly one named security administrator with no password, asserts has_customer_business_data_scope is False and approves_maintenance_access is False, and proves the maintenance ledger row count is unchanged, so establishing the approver can never approve this request and never grants customer business data. scripts/ops/daily_runtime_platform_security_admin_bootstrap.py is the host-side transmitter (readback/bootstrap) over the existing duty identity/payload bindings and the read-only /mnt/scripts mount.",
+      "identity_bootstrap": "scripts/ops/platform_security_admin_bootstrap.py creates or verifies exactly one named security administrator with no password, and proves the maintenance ledger row count is unchanged, so establishing the approver can never approve this request. It never introduces a business data scope: the readback compares the identity's actual group membership with the environment's own transitive implied closure of base.group_user plus smart_core.group_smart_core_security_admin, so any membership outside that closure (an industry or customer business role in particular) is refused instead of adopted, and a missing declared group makes the closure undecidable and is refused. The reuse path also compares the declared real name with the database fact before adopting an existing account. scripts/ops/daily_runtime_platform_security_admin_bootstrap.py is the host-side transmitter (readback/bootstrap) over the existing duty identity/payload bindings and the read-only /mnt/scripts mount; both remote entries refuse name/evidence values whose characters would break the ssh payload before connecting.",
       "operation_set": "database_governance.MAINTENANCE_ACCESS_OPERATIONS = (provision, grant) and the declaration carries maintenance_access.operations, so an approval must name the operation it covers. capability != grant: tenant_payload_operator_policy.validate_authorization(action=...) and the provision/grant entries each prove their own operation is inside the approved set (AUTHORIZATION_OPERATION_NOT_COVERED).",
       "refusal_vocabulary": "The refused envelope reports the governed code itself (DBGOV1_..., DATABASE_GOVERNANCE_..., MAINTENANCE_ACCESS_...) so a caller branches on the code instead of matching prose; the trace id is projected from the request headers.",
       "scope_binding": "The approval row binds requester, independent approver, target tenant and database, the operator identity, the payload checksum, the authorized operation set, the validity window, the reason and the decision note; the state readback now carries reason/requested_by/approved_by/valid_from as well, so one audit row shows the independence the state machine asserted.",
       "transport_defect_fixed": "The new entry exposed that get_trace_id(headers) was called without headers in the controller and in the pre-existing platform_ops_controller.py, so every response - including every refusal - died before it could serialize. Both call the projection with the live request headers now; the entry envelope test asserts the sent X-Trace-Id is echoed."
     },
     "remaining": [
-      "The approval identity is named (lidefend) but not yet created on the platform control database: run daily.runtime.platform.security_admin.bootstrap.remote_readback, then remote_bootstrap with SC_CONFIRM_PLATFORM_SECURITY_ADMIN_BOOTSTRAP=BOOTSTRAP_DECLARED_PLATFORM_SECURITY_ADMIN and PLATFORM_SECURITY_ADMIN_LOGIN=lidefend, then read the identity back (security admin exactly once, no stored password, no business scope, ledger unchanged).",
+      "The approval identity is named (lidefend) but not yet created on the platform control database: run daily.runtime.platform.security_admin.bootstrap.remote_readback, then remote_bootstrap with SC_CONFIRM_PLATFORM_SECURITY_ADMIN_BOOTSTRAP=BOOTSTRAP_DECLARED_PLATFORM_SECURITY_ADMIN and PLATFORM_SECURITY_ADMIN_LOGIN=lidefend and a real name/evidence reference, then read the identity back (security admin exactly once, no stored password, no membership outside the approver closure, ledger row count unchanged).",
       "Then create the maintenance request through the entry (or the governed shell) as a platform administrator and approve it as lidefend; the request must bind capability migrate, operator smart_core.svc_tenant_payload_operator_baosheng, the payload digest f1adc6fb17b516d42492fe42229df0cce65956ea113978a19243c0de57ec1ed4 and operations [provision, grant] before remote_provision may run.",
-      "Independent (B-line) review of this batch is pending; batch acceptance, mainline integration, version release and product delivery are all still open."
+      "Independent (B-line) review of this batch returned REQUEST_CHANGES with two S2 items and nine S3 observations; both S2 items and four S3 items are closed in this round (see review_s3_closure_20261016). Batch acceptance, mainline integration, version release and product delivery are all still open."
     ],
     "verification": {
       "L1": {
@@ -510,13 +510,14 @@
         "status": "passed",
         "tests": {
           "verify.daily.duty.database_registration": 33,
-          "verify.daily.duty.operator_grant": 39,
+          "verify.daily.duty.operator_grant": 78,
           "verify.daily.duty.payload": 26,
           "verify.daily.duty.recovery": 28,
           "verify.platform.database.governance.guard": 17,
-          "verify.platform.security_admin.bootstrap": 34,
+          "verify.platform.security_admin.bootstrap": 72,
           "verify.smart_core.tenant_payload_operator.policy": 39
-        }
+        },
+        "counting_basis": "Each entry's own total, summed over every unittest module the entry runs: verify.platform.security_admin.bootstrap 31+41=72 (S3-1 corrected an earlier 34 that reported one script only), verify.daily.duty.operator_grant 39+39=78 (earlier 39)."
       },
       "L2_entry": {
         "covers": "request authorizes nothing until approved; the ledger projection covers the capability only after an independent security admin approves; forbidden decision fields refused; role gate; self-approval refused (INDEPENDENT); outsider cannot read the ledger; unauthenticated refusal; migrate must name the operation set; reject/revoke decided by the independent identity; expiry sweep restricted to the security admin and idempotent; a decided request is not decidable again; the envelope echoes the request trace id.",
@@ -1814,6 +1815,13 @@
         "layer": "L1",
         "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-entry-20261016/L1-ci-local-iteration.log",
         "status": "passed for the policy guard; the entry still reports the run's registered blockers by design"
+      },
+      {
+        "command": "make verify.platform.security_admin.bootstrap; make verify.smart_core.platform_maintenance_access.orm; make verify.daily.duty.operator_grant; make verify.smart_core.tenant_payload_operator.policy; make verify.controller.boundary.guard",
+        "identity": "eacd5441 plus the review-closure dirty scope",
+        "layer": "L1+L2",
+        "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-review-s2-20261016/",
+        "status": "72 / 12 / 78 / 39 all OK with non-zero counts; controller boundary guard PASS; two counter-examples fired and the sources were restored byte-identically"
       }
     ],
     "risk": "high: database lifecycle effects; no runtime cutoff until exact governed target, rollback and tests are satisfied",
@@ -2565,5 +2573,38 @@
       ]
     },
     "validation_order": "L1 scope/syntax; exact nonzero L2; governed affected L3/L4 only once prerequisites pass"
+  },
+  "review_s3_closure_20261016": {
+    "authority": "Independent B-line read-only review of 9214f51c..eacd5441 returned REQUEST_CHANGES: no S1, two S2 blockers-to-close and nine S3 observations. Everything the reviewer could not decide offline (remote/runtime facts, the bootstrap ever having run) stays unverified and is not claimed.",
+    "s2_1_reuse_path_identity": {
+      "defect": "The reuse path accepted an existing account that merely shared the declared login: neither the real name nor the whole group membership was compared with the declaration, so an internal account that also held a business role could silently receive the control-plane security-admin role.",
+      "fix": "The reuse path now refuses a name mismatch (PLATFORM_SECURITY_ADMIN_EXISTING_IDENTITY_MISMATCH) and any membership outside the environment's implied closure of base.group_user + the security-admin group (PLATFORM_SECURITY_ADMIN_EXISTING_IDENTITY_HAS_UNRELATED_GROUPS). _assert_readable refuses the same widened identity and a readback that covers another name, and reports an undecidable closure (ALLOWED_GROUP_MISSING) instead of comparing against a partial whitelist. Group labels are reported for every group, including groups without an ir.model.data row (labelled #id), so a membership can no longer be dropped by omission. The transport asserts the name fact and the closure on both the entry receipt and the post-creation readback.",
+      "files": "scripts/ops/platform_security_admin_bootstrap.py, scripts/ops/daily_runtime_platform_security_admin_bootstrap.py"
+    },
+    "s2_2_vacuous_scope_assertion": {
+      "defect": "addons/smart_core/security/platform_admin.py has_customer_business_data_scope returns False unconditionally, so the bootstrap's 'no customer business data scope' guard could never fire; the test covered the branch only by stubbing the field True.",
+      "fix": "The entry no longer uses that helper as evidence. The readback reports the real membership facts (group_ids, group_xmlids, groups_outside_allowed_closure) and the guard is 'no membership outside the approver closure'. The helper keeps its own narrow documented meaning and is not reused as a scope proof anywhere in this entry.",
+      "files": "scripts/ops/platform_security_admin_bootstrap.py, scripts/ops/test_platform_security_admin_bootstrap.py"
+    },
+    "s3_closed": {
+      "S3-1_counting": "Entry totals corrected to 72 and 78 (see step_d_maintenance_access_entry_20261016.verification.L1_static).",
+      "S3-2_doc_status": "The iteration record no longer says the round is uncommitted; it names 8f26ffd7/9b6324c0/eacd5441.",
+      "S3-5_error_hygiene": "The controller's 500 branch no longer echoes internal exception text, and PermissionError is mapped to a governed refusal (400 with the governed code) instead of a server error.",
+      "S3-7_payload_characters": "The entry has an authoritative NAME pattern and a widened EVIDENCE pattern (Chinese allowed; double quote, apostrophe, backtick, dollar, backslash, ;|<>&() and control characters refused), and both remote Make entries refuse those characters before the ssh connection is made.",
+      "S3-9_docstring": "validate_authorization's docstring now states that action is a required keyword argument."
+    },
+    "s3_registered_not_fixed": {
+      "S3-3_requester_parameter": "_request_access(requester_id=...) is called only by the model itself and the ORM tests; the product entry uses self.env.user.id, so there is no reachable bypass. Registered as a next closure item.",
+      "S3-4_window_recheck": "The grant entry does not re-parse the validity window; the window is enforced by the _active_access SQL domain and by the policy. Adding a second time-parsing gate on the critical path before the chain has ever run risks a false refusal, so it is registered for after the chain is verified.",
+      "S3-6_session_principal": "The decision routes are auth=public with csrf=False and fall back to the session principal. Whether decisions should accept only a bearer principal or enable CSRF for a session principal must be decided together with issuing the approver credential, because the bootstrap intentionally creates the account without a password.",
+      "S3-8_narrow_migrate_approval": "A migrate request may authorize one operation and the consumer refuses the other (AUTHORIZATION_OPERATION_NOT_COVERED). Enforcing {provision, grant} at approval time would block a legitimate re-grant after revoke, so the narrow-approval-plus-per-action-refusal semantics stays and is now documented."
+    },
+    "counter_examples_proven": [
+      "dropping the widened-identity refusal makes test_a_readback_of_a_widened_identity_is_refused fail (BootstrapError not raised): 1 failed of 69",
+      "making the group-label lookup drop groups without an external id fails test_a_group_without_an_external_id_is_still_a_membership: 1 failed of 41"
+    ],
+    "evidence": "make verify.platform.security_admin.bootstrap -> 31+41=72 OK; make verify.smart_core.platform_maintenance_access.orm -> 0 failed, 0 error(s) of 12 tests; make verify.daily.duty.operator_grant -> 39+39=78 OK; make verify.smart_core.tenant_payload_operator.policy -> 39 OK; make verify.controller.boundary.guard -> PASS; the Make-side character guard was replayed against 12 name values and 6 evidence values (Chinese accepted, every payload-breaking character refused).",
+    "logs": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-review-s2-20261016/",
+    "status": "both S2 items closed in the owning layer; four S3 items closed; four S3 items registered with reasons; nothing claimed beyond what was run"
   }
 }

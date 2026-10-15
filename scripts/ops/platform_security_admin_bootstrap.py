@@ -13,9 +13,10 @@ The step is deliberately narrow:
   the control-plane security-administrator group;
 * it never approves a maintenance access, and it asserts the authorization
   ledger is exactly as it found it;
-* it never introduces a business data scope: the readback reports the
-  fail-closed customer-business-data answer, and a bootstrap that changed it
-  would be refused;
+* it never introduces a business data scope: the readback reports the identity's
+  *actual* group membership against the environment's own implied closure of the
+  two allowed groups, so any further membership -- an industry or customer
+  business role in particular -- is refused instead of adopted;
 * it never takes over a shared or technical carrier: the built-in ``admin``,
   the system and portal carriers and any disabled or portal account are stops,
   because an approval identity that anybody else also uses is not an
@@ -66,16 +67,33 @@ REFUSED_LOGINS = (
     "root",
     "odoo",
 )
+#: The complete set of groups the approving identity may carry: the ordinary
+#: internal-user group plus the control-plane security-administrator role.  The
+#: environment's transitive implied closure of these two is added when the
+#: membership is read, because Odoo completes a membership with the implied
+#: groups of the groups an account is created with.  Any membership outside that
+#: closure means the account is something other than the independent approver --
+#: for example an internal user that also holds a business role -- and reusing it
+#: would hand the control-plane role to a business identity.
+ALLOWED_GROUP_XMLIDS = (INTERNAL_USER_GROUP_XMLID, SECURITY_ADMIN_GROUP_XMLID)
+
 #: Operation identities that carry the narrow signed-payload import capability.
 #: The security administrator decides maintenance access; it must never be the
-#: identity that executes it.
+#: identity that executes it.  These groups are already outside the allowed
+#: closure; naming them keeps the refusal specific.
 REFUSED_GROUP_XMLIDS = (
     "smart_core.group_smart_core_tenant_payload_importer",
     "smart_core.group_smart_core_data_operator",
 )
 
 LOGIN = re.compile(r"^[a-z][a-z0-9_.-]{2,62}$")
-EVIDENCE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 .,;:/_-]{9,199}$")
+#: A human name.  A real name may be Chinese, so this is deliberately not
+#: ASCII-only; what it does refuse is the characters that would break out of the
+#: shell argument, the JSON string or the SQL literal the value travels through.
+NAME = re.compile(r"^[^\"'`$\\;|<>&()\x00-\x1f\x7f]{2,80}$")
+#: The evidence reference cites the ruling that names this administrator.  Same
+#: character policy as the name, long enough to cite a source.
+EVIDENCE = re.compile(r"^[^\"'`$\\;|<>&()\x00-\x1f\x7f]{10,200}$")
 
 
 class BootstrapError(RuntimeError):
@@ -94,6 +112,8 @@ def resolve_request(environ):
     name = str(environ.get(NAME_ENV) or "").strip()
     if not name:
         raise BootstrapError("PLATFORM_SECURITY_ADMIN_NAME_REQUIRED")
+    if not NAME.fullmatch(name):
+        raise BootstrapError("PLATFORM_SECURITY_ADMIN_NAME_INVALID")
     evidence = str(environ.get(EVIDENCE_ENV) or "").strip()
     if not EVIDENCE.fullmatch(evidence):
         raise BootstrapError("PLATFORM_SECURITY_ADMIN_EVIDENCE_REQUIRED")
@@ -105,13 +125,51 @@ def resolve_request(environ):
     }
 
 
-def _group_xmlids(env, group_ids):
+def _group_labels(env, group_ids):
+    """The name of every group, whether or not it carries an external id.
+
+    A group an add-on or a test created without an ``ir.model.data`` row has no
+    xmlid; it is labelled by its database id instead of being dropped, so a
+    membership comparison can never pass by silently ignoring a group.
+    """
     if not group_ids:
         return []
     rows = env["ir.model.data"].sudo().search(
         [("model", "=", "res.groups"), ("res_id", "in", sorted(set(group_ids)))]
     )
-    return sorted("%s.%s" % (row.module, row.name) for row in rows)
+    by_id = {}
+    for row in rows:
+        by_id.setdefault(row.res_id, []).append("%s.%s" % (row.module, row.name))
+    labels = []
+    for group_id in sorted(set(group_ids)):
+        names = sorted(by_id.get(group_id) or [])
+        labels.append(names[0] if names else "#%s" % (group_id,))
+    return labels
+
+
+def _allowed_group_closure_ids(env, seeds):
+    """The ids the approver may carry: the declared groups plus their closure.
+
+    The closure is read from the environment rather than hard-coded, because
+    which module implies which group is environment knowledge.  A missing seed
+    answers with an empty set, which callers treat as "cannot decide" and refuse,
+    never as "nothing is allowed but everything passes".
+    """
+    ids = []
+    for seed in seeds:
+        if not seed or seed._name != "res.groups":
+            return set()
+        ids.append(seed.id)
+    groups = env["res.groups"].sudo().browse(sorted(set(ids)))
+    return set((groups | groups.trans_implied_ids).ids)
+
+
+def _groups_outside_closure(env, group_ids, allowed_ids):
+    """The labels of the memberships the approver closure does not cover."""
+    outside = sorted(set(group_ids) - set(allowed_ids))
+    if not outside:
+        return []
+    return _group_labels(env, outside)
 
 
 def _stored_password(env, user_id):
@@ -122,11 +180,22 @@ def _stored_password(env, user_id):
 
 
 def readback(env, request):
-    """Every fact this step asserts, read from the current state."""
+    """Every fact this step asserts, read from the current state.
+
+    The membership fact is the identity's *actual* groups compared with the
+    environment's own closure of the two allowed groups.  That is the real
+    answer to "does this approver carry a business data scope": the closure
+    holds no business role, so anything outside it is a widened identity.  The
+    platform helper that answers that question from an administrator identity
+    alone is deliberately not used here as evidence of it.
+    """
     user = env["res.users"].sudo().with_context(active_test=False).search(
         [("login", "=", request["login"])], limit=1
     )
     Access = env["sc.platform.maintenance.access"].sudo()
+    group = env.ref(SECURITY_ADMIN_GROUP_XMLID, raise_if_not_found=False)
+    internal = env.ref(INTERNAL_USER_GROUP_XMLID, raise_if_not_found=False)
+    allowed_ids = _allowed_group_closure_ids(env, (internal, group))
     report = {
         "mode": "read_only",
         "writes": 0,
@@ -135,25 +204,22 @@ def readback(env, request):
         "declared_name": request["name"],
         "evidence": request["evidence"],
         "security_admin_group": SECURITY_ADMIN_GROUP_XMLID,
-        "security_admin_group_exists": bool(
-            env.ref(SECURITY_ADMIN_GROUP_XMLID, raise_if_not_found=False)
-        ),
+        "security_admin_group_exists": bool(group) and group._name == "res.groups",
         "security_admin_member_count": env["res.users"].sudo().with_context(active_test=False).search_count(
-            [("groups_id", "in", [env.ref(SECURITY_ADMIN_GROUP_XMLID).id])]
+            [("groups_id", "in", [group.id])]
         )
-        if env.ref(SECURITY_ADMIN_GROUP_XMLID, raise_if_not_found=False)
+        if group and group._name == "res.groups"
         else 0,
         "maintenance_access_rows": Access.search_count([]),
         "approves_maintenance_access": False,
+        "allowed_group_closure_ids": sorted(allowed_ids),
+        "allowed_group_closure_complete": bool(allowed_ids),
         "exists": bool(user),
     }
     if not user:
         report["identity"] = None
         return report
-    from odoo.addons.smart_core.security.platform_admin import (
-        has_customer_business_data_scope,
-        user_is_security_admin,
-    )
+    from odoo.addons.smart_core.security.platform_admin import user_is_security_admin
 
     report["identity"] = {
         "uid": user.id,
@@ -162,9 +228,12 @@ def readback(env, request):
         "active": bool(user.active),
         "share": bool(user.share),
         "company_id": user.company_id.id,
-        "group_xmlids": _group_xmlids(env, user.groups_id.ids),
+        "group_ids": sorted(user.groups_id.ids),
+        "group_xmlids": _group_labels(env, user.groups_id.ids),
+        "groups_outside_allowed_closure": _groups_outside_closure(
+            env, user.groups_id.ids, report["allowed_group_closure_ids"]
+        ),
         "is_security_admin": user_is_security_admin(user),
-        "has_customer_business_data_scope": has_customer_business_data_scope(user),
         "has_stored_password": _stored_password(env, user.id),
     }
     return report
@@ -183,10 +252,17 @@ def _assert_readable(report, request):
     identity = report.get("identity")
     if identity is None:
         return
-    if identity.get("has_customer_business_data_scope") is not False:
-        raise BootstrapError("PLATFORM_SECURITY_ADMIN_HOLDS_BUSINESS_DATA_SCOPE")
+    if not report.get("allowed_group_closure_complete"):
+        raise BootstrapError("PLATFORM_SECURITY_ADMIN_ALLOWED_GROUP_MISSING")
+    outside = identity.get("groups_outside_allowed_closure")
+    if outside:
+        raise BootstrapError(
+            "PLATFORM_SECURITY_ADMIN_HOLDS_UNRELATED_GROUPS:%s" % (",".join(outside),)
+        )
     if identity.get("login") != request["login"]:
         raise BootstrapError("PLATFORM_SECURITY_ADMIN_READBACK_OTHER_IDENTITY")
+    if identity.get("name") != request["name"]:
+        raise BootstrapError("PLATFORM_SECURITY_ADMIN_READBACK_OTHER_NAME")
 
 
 def _run_operation(env, environ, receipt):
@@ -210,6 +286,11 @@ def _run_operation(env, environ, receipt):
     if user:
         after = readback(env, request)
         identity = after["identity"]
+        # An account that merely shares the declared login is another person's
+        # account: reusing it would attach the control-plane role to whoever
+        # that account really is, so the declared name must be the fact.
+        if identity["name"] != request["name"]:
+            raise BootstrapError("PLATFORM_SECURITY_ADMIN_EXISTING_IDENTITY_MISMATCH")
         if not identity["active"]:
             raise BootstrapError("PLATFORM_SECURITY_ADMIN_EXISTING_IDENTITY_INACTIVE")
         if identity["share"]:
@@ -221,6 +302,17 @@ def _run_operation(env, environ, receipt):
             raise BootstrapError(
                 "PLATFORM_SECURITY_ADMIN_EXISTING_IDENTITY_IS_AN_OPERATOR:%s"
                 % (",".join(conflicting),)
+            )
+        # The closure is what the account may carry: internal user plus the
+        # control-plane role and the platform's own implications of them.  A
+        # business role in the membership would make this one account both the
+        # approver and a customer-data holder, which is the combination the
+        # owner forbade, so it is refused rather than adopted.
+        widened = identity.get("groups_outside_allowed_closure") or []
+        if widened:
+            raise BootstrapError(
+                "PLATFORM_SECURITY_ADMIN_EXISTING_IDENTITY_HAS_UNRELATED_GROUPS:%s"
+                % (",".join(widened),)
             )
         if group.id not in user.groups_id.ids:
             groups_before = set(user.groups_id.ids)
@@ -247,6 +339,11 @@ def _run_operation(env, environ, receipt):
         raise BootstrapError("PLATFORM_SECURITY_ADMIN_GROUP_NOT_EXACT")
     if result["identity"]["has_stored_password"]:
         raise BootstrapError("PLATFORM_SECURITY_ADMIN_MUST_NOT_CARRY_A_CREDENTIAL")
+    if result["identity"]["groups_outside_allowed_closure"]:
+        raise BootstrapError(
+            "PLATFORM_SECURITY_ADMIN_HOLDS_UNRELATED_GROUPS:%s"
+            % (",".join(result["identity"]["groups_outside_allowed_closure"]),)
+        )
     if result["maintenance_access_rows"] != access_rows_before:
         raise BootstrapError("PLATFORM_SECURITY_ADMIN_BOOTSTRAP_TOUCHED_THE_LEDGER")
     user_id = user.id
@@ -269,11 +366,14 @@ def _run_operation(env, environ, receipt):
         "created": created,
         "writes": writes,
         "group_xmlid": SECURITY_ADMIN_GROUP_XMLID,
+        "allowed_group_closure_ids": independent["allowed_group_closure_ids"],
         "identity_readback": independent["identity"],
+        "identity_groups_outside_allowed_closure": list(
+            independent["identity"]["groups_outside_allowed_closure"]
+        ),
         "security_admin_member_count": independent["security_admin_member_count"],
         "maintenance_access_rows": independent["maintenance_access_rows"],
         "approves_maintenance_access": False,
-        "grants_business_data_scope": False,
     }
     receipt.effects["uid"] = user_id
     try:

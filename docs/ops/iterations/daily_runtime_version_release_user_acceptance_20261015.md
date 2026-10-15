@@ -1795,7 +1795,7 @@ P4 shell 程序 + 独立真实批准人。**在这两项落实前，不再触发
 | L2 入口 | `make verify.smart_core.platform_maintenance_access.orm` | **12 项 0 failed / 0 error** | `.runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-entry-20261016/L2-http-entry.log` |
 | L2 模型 | `make verify.local.dev.platform_database_governance.orm` | **24 项 0 failed / 0 error** | 同上 `L2-governance-orm.log` |
 | L2 关系链 | `make verify.smart_core.tenant_payload_operator.orm` | **20 项 0 failed / 0 error** | 同上 `L2-operator-lifecycle-orm.log` |
-| L1 静态 | `verify.platform.security_admin.bootstrap` / `verify.daily.duty.operator_grant` / `verify.daily.duty.database_registration` / `verify.daily.duty.recovery` / `verify.daily.duty.payload` / `verify.platform.database.governance.guard` / `verify.smart_core.tenant_payload_operator.policy` | 34 / 39 / 33 / 28 / 26 / 17 / 39 项 OK | 同上 |
+| L1 静态 | `verify.platform.security_admin.bootstrap` / `verify.daily.duty.operator_grant` / `verify.daily.duty.database_registration` / `verify.daily.duty.recovery` / `verify.daily.duty.payload` / `verify.platform.database.governance.guard` / `verify.smart_core.tenant_payload_operator.policy` | 见下（S3-1 更正） | 同上 + `.../maintenance-access-review-s2-20261016/` |
 | L1 控制器 | `make verify.controller.boundary.guard` | PASS（delegate / allowlist / route / report / baseline 全部随新路由 PASS） | — |
 
 覆盖点：批准前**确实零写入**（`_approved_access_projection` 为 `None`）、批准后投影覆盖、
@@ -1813,16 +1813,70 @@ P4 shell 程序 + 独立真实批准人。**在这两项落实前，不再触发
 
 三次注入后均还原，控制器与备份**逐字节一致**，入口回到 12/12 全绿。
 
+### 计数口径更正（S3-1）
+
+记录曾写 `verify.platform.security_admin.bootstrap = 34`、`verify.daily.duty.operator_grant = 39`，
+取的是**单个脚本的数**，不是目标自身输出的合计。按目标真实输出更正：
+
+| 目标 | 目标自身输出 | 合计 |
+|---|---|---|
+| `verify.platform.security_admin.bootstrap` | `test_platform_security_admin_bootstrap` 31 项 + `test_daily_runtime_platform_security_admin_bootstrap` 41 项 | **72 项 OK** |
+| `verify.daily.duty.operator_grant` | `verify/test_tenant_payload_operator_policy.py` 39 项 + `test_daily_runtime_duty_operator_grant.py` 39 项 | **78 项 OK** |
+| `verify.smart_core.tenant_payload_operator.policy` | 单模块 | **39 项 OK** |
+| `verify.controller.boundary.guard` | route / allowlist / delegate / report / baseline | **PASS** |
+
+非零性不受影响；受影响的只是记录精确度。
+
+### B 线独立复核与处置（复核 HEAD `eacd5441`）
+
+结论：**无 S1**；两处 S2（需修）、九条 S3（观察）。本轮处置：
+
+- **S2-1：复用路径未绑定实名，且未对额外组 fail-closed。** 复用既有账号前比对
+  `identity["name"] != request["name"]`（`PLATFORM_SECURITY_ADMIN_EXISTING_IDENTITY_MISMATCH`）；
+  把"禁止列表反向"改为**组闭包白名单**：允许集合 = `base.group_user` +
+  `smart_core.group_smart_core_security_admin` 在**本环境**中的 `trans_implied_ids` 闭包，
+  任何闭包外成员即拒绝（`..._EXISTING_IDENTITY_HAS_UNRELATED_GROUPS`）。闭包从环境读取，
+  因此不依赖"哪个模块 imply 哪个组"的硬编码；任一声明组缺失时闭包为**不可判定集合**，
+  回读直接拒绝（`ALLOWED_GROUP_MISSING`），而不是"什么都不允许所以都通过"。
+  传输层同步断言回读的 `name` 与闭包。
+- **S2-2：`has_customer_business_data_scope` 是恒假断言，作为证据永不触发。** 不再引用
+  `platform_admin.has_customer_business_data_scope`（该函数的窄语义是"管理员身份本身不推导业务范围"，
+  恒返回 `False`，被当作"该身份没有业务数据范围"的证明即空转）。回读改为报告**真实事实**：
+  `group_ids`、`group_xmlids`（没有 `ir.model.data` 的组按 `#id` 报告，不再静默丢弃）、
+  `groups_outside_allowed_closure`，并以闭包为空作为该断言的证据。
+- S3-1 计数失真：见上表更正。
+- S3-2 文档状态失真（写成"尚未提交"）：更正为已在 `8f26ffd7` / `9b6324c0` 提交。
+- S3-5 500 分支外泄内部异常文本、`PermissionError` 未映射：500 不再回传异常文本；
+  `PermissionError` 纳入治理拒绝（400 + 治理码）。
+- S3-7 `NAME` / `EVIDENCE` 未做字符集校验：入口新增 `NAME` 权威正则，`EVIDENCE` 放宽为
+  "允许中文、禁止 `"` `'` `` ` `` `$` `\` `;|<>&()` 与控制字符"（真实姓名可能是中文，
+  ASCII-only 正则会挡住所有者输入，而字符白名单又会放过载荷破坏字符）；两个远端 Make 目标
+  在建立 ssh 连接前按同一字符策略拒绝会破坏载荷的输入。
+- S3-9 `validate_authorization` docstring 漂移：更正为"必填关键字参数"。
+
+登记不修（附理由，避免被读成遗漏）：
+
+- **S3-3** `_request_access(requester_id=)`：生产调用点只有模型自身与 ORM 测试，产品入口用
+  `self.env.user.id`，当前无可达绕过；属"可指定任意请求人"的潜在面，登记为下一步收口。
+- **S3-4** grant 执行器未复检有效期窗口：窗口已由 `_active_access` 的 SQL 域与 policy 双重保证，
+  该执行器自检属纵深；在链路首次真实执行前增加时间解析闸门会引入误拒风险，登记待链路验证后补。
+- **S3-6** 决策入口 `csrf=False` + 会话回退：批准身份的凭据尚未建立，"决策只接受 bearer 主体"
+  还是"为会话主体启用 CSRF"必须与凭据发放方式一并决定，登记为同一项收口。
+- **S3-8** 允许只批一种操作的 `migrate` 申请：既定语义就是"批准可窄、执行必拒"
+  （窄批准在 `grant` 处以 `AUTHORIZATION_OPERATION_NOT_COVERED:grant` 停机）；若在批准处强制
+  `{provision, grant} ⊆ operations`，会挡住合法的"仅重新授权"场景。
+
 ### 下一步（唯一暂停点已变为「执行批准」）
 
 1. `make daily.runtime.platform.security_admin.bootstrap.remote_readback`（预期控制库尚无安全管理员）；
 2. `...remote_bootstrap`，`SC_CONFIRM_PLATFORM_SECURITY_ADMIN_BOOTSTRAP=BOOTSTRAP_DECLARED_PLATFORM_SECURITY_ADMIN`、
    `PLATFORM_SECURITY_ADMIN_LOGIN=lidefend` + 真实姓名/证据引用，然后回读身份
-   （安全管理员恰好一次、无存储密码、无业务数据范围、维护账本行数不变）；
+   （安全管理员恰好一次、无存储密码、**闭包外的组为空**、维护账本行数不变）；
 3. 以平台管理员创建维护申请（`capability=migrate`、operator `smart_core.svc_tenant_payload_operator_baosheng`、
    摘要 `f1adc6fb…1ed4`、operations `[provision, grant]`），由 `lidefend` 通过入口批准；
 4. `remote_provision` → 回读 → `remote_plan` → `remote_grant` → `remote_import` → `remote_verify`
    → 对账（12386 / 6322／29／6035，金额、来源关系、附件、归属）→ `remote_revoke` → B 线独立复核 → 主线集成。
 
-**状态边界**：本条为**批次代码与定向/静态验证完成**；B 线独立复核、批次验收、主线集成、
-版本发布、产品交付**均未完成**；本轮所有改动**尚未提交**。
+**状态边界**：本条为**批次代码与定向/静态验证完成**（B 线复核已返回并对 S2/S3 处置完成，见上）；
+批次验收、主线集成、版本发布、产品交付**均未完成**。本轮改动已提交：`8f26ffd7`（维护授权入口）、
+`9b6324c0`（安全管理员 bootstrap）、`eacd5441`（登记）；复核处置为后续提交。

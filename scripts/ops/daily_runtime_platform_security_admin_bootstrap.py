@@ -305,8 +305,11 @@ def assert_entry_result(envelope: dict, entry, request: dict, expected_digest: s
         _fail("the bootstrap did not report whether it created or reused the identity")
     if result.get("approves_maintenance_access") is not False:
         _fail("the bootstrap claims it approved a maintenance access")
-    if result.get("grants_business_data_scope") is not False:
-        _fail("the bootstrap claims it granted business data access")
+    closure = result.get("identity_groups_outside_allowed_closure")
+    if not isinstance(closure, list):
+        _fail("the bootstrap did not report the established identity's group closure")
+    if closure:
+        _fail("the bootstrap established an identity outside the approver closure")
     if int(result.get("maintenance_access_rows") or 0) != int(before["maintenance_access_rows"]):
         _fail("the bootstrap changed the maintenance authorization ledger")
     identity = result.get("identity_readback")
@@ -316,8 +319,10 @@ def assert_entry_result(envelope: dict, entry, request: dict, expected_digest: s
         _fail("the established identity is not a control-plane security administrator")
     if identity.get("has_stored_password") is not False:
         _fail("the established identity carries a stored credential")
-    if identity.get("has_customer_business_data_scope") is not False:
-        _fail("the established identity claims a customer business data scope")
+    if _text(identity.get("name")) != request["name"]:
+        _fail("the established identity is not the declared named person")
+    if identity.get("groups_outside_allowed_closure"):
+        _fail("the established identity carries groups outside the approver closure")
     if identity.get("active") is not True or identity.get("share") is not False:
         _fail("the established identity is not an active internal account")
     if int(result.get("writes") or 0) < 0:
@@ -337,10 +342,14 @@ def assert_identity_after_creation(report: dict, entry, request: dict, result: d
         _fail("the identity is not readable after the bootstrap")
     if identity.get("login") != request["login"]:
         _fail("the readback after the bootstrap covers another identity")
+    if _text(identity.get("name")) != request["name"]:
+        _fail("the readback after the bootstrap covers another name")
     if identity.get("is_security_admin") is not True:
         _fail("the identity is not a security administrator after the bootstrap")
     if identity.get("has_stored_password") is not False:
         _fail("the identity carries a stored credential after the bootstrap")
+    if identity.get("groups_outside_allowed_closure"):
+        _fail("the identity carries groups outside the approver closure after the bootstrap")
     if identity.get("group_xmlids", []).count(entry.SECURITY_ADMIN_GROUP_XMLID) != 1:
         _fail("the identity does not carry the security-administrator group exactly once")
 

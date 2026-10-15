@@ -216,9 +216,11 @@ def validate_authorization(
     validity window.  This function only *checks* those facts; it never
     derives them from the declaration and never invents a value.
 
-    ``action`` is the operation this caller is about to execute.  When it is
-    given, the approval must name it: a capability is not a grant, so an access
-    that authorizes one operation can never be read as authorizing another.
+    ``action`` is the operation this caller is about to execute and is a
+    required argument: the caller must state what it is about to do before the
+    approval can be read.  The approval must name that operation, because a
+    capability is not a grant -- an access that authorizes one operation can
+    never be read as authorizing another.
     """
     if not isinstance(authorization, dict):
         _fail("AUTHORIZATION_MISSING")
