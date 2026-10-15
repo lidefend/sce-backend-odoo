@@ -2948,3 +2948,21 @@ verify.platform.database.governance.guard: guard.prod.forbid
 	@python3 -m py_compile addons/smart_core/security/database_governance.py addons/smart_core/models/platform_database_registry.py scripts/verify/platform_database_governance_guard.py scripts/verify/test_platform_database_governance.py
 	@python3 scripts/verify/platform_database_governance_guard.py
 	@python3 -m unittest scripts.verify.test_platform_database_governance
+
+# Offline adapter and demo identity checks; these never authorize a database write.
+.PHONY: verify.platform.database.lifecycle.unit verify.demo.lifecycle.unit
+verify.platform.database.lifecycle.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_platform_database_lifecycle_entry
+
+verify.demo.lifecycle.unit: guard.prod.forbid
+	@python3 demo_addons/smart_construction_demo/tests/test_demo_funding_baseline_lifecycle.py
+	@python3 demo_addons/smart_construction_demo/tests/test_demo_boq_import_batch.py
+	@python3 demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py
+
+.PHONY: verify.demo.supplemental.unit
+verify.demo.supplemental.unit: guard.prod.forbid
+	@python3 demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py
+
+.PHONY: verify.platform.database.rehearsal.unit
+verify.platform.database.rehearsal.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_platform_database_rehearsal
