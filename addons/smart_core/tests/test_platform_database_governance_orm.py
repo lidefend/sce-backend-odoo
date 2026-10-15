@@ -109,6 +109,46 @@ class TestPlatformDatabaseGovernance(TransactionCase):
                 data_purpose="customer",
             )
 
+    def test_lifecycle_readback_matches_persisted_audit(self):
+        registered = self.Registry._register_database(
+            db_name=self.db_name, environment_role="platform_internal_demo",
+            data_purpose="demo", tenant_key="dbgov-demo-space",
+        )
+        record = self.Registry._resolve_entry(self.db_name)
+        self.assertEqual(registered["last_operation"], "register")
+        self.assertEqual(registered["operation_count"], 1)
+        for count, (operation, prior, target) in enumerate([
+            ("provision", "declared", "provisioned"),
+            ("activate", "provisioned", "active"),
+            ("suspend", "active", "suspended"),
+        ], start=2):
+            result = self.Registry._apply_operation(self.db_name, operation)
+            audit = record.operation_ids.sorted("id")[-1]
+            self.assertEqual((audit.from_state, audit.to_state), (prior, target))
+            self.assertEqual(result["last_operation"], operation)
+            self.assertEqual(result["operation_count"], count)
+            self.assertEqual(result, record.readback())
+            self.assertEqual(audit.result, record.last_readback)
+            self.assertEqual(audit.result, result)
+
+    def test_operation_reason_and_execution_identity_survive_in_audit(self):
+        reason, execution_id = "isolated lifecycle rehearsal", "a" * 32
+        result = self.Registry._register_database(
+            db_name=self.db_name, environment_role="platform_internal_demo",
+            data_purpose="demo", tenant_key="dbgov-demo-space",
+            reason=reason, execution_id=execution_id,
+        )
+        record = self.Registry._resolve_entry(self.db_name)
+        self.assertEqual(result["operation_request"], {"reason": reason, "execution_id": execution_id})
+        self.assertEqual(record.operation_ids.sorted("id")[-1].result, result)
+        result = self.Registry._apply_operation(
+            self.db_name, "provision", reason="verify provision", execution_id="b" * 32,
+        )
+        audit = record.operation_ids.sorted("id")[-1]
+        self.assertEqual(audit.result["operation_request"],
+                         {"reason": "verify provision", "execution_id": "b" * 32})
+        self.assertEqual(audit.result, result)
+
     def test_lifecycle_entries_are_governed_and_audited(self):
         readback = self.Registry._register_database(
             db_name=self.db_name,
