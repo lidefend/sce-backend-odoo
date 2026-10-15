@@ -196,7 +196,6 @@
     }
   },
   "blockers": [
-    "The two-writer risk is disposed of, but it did execute one cross-instance write before it was removed: during the retirement the surviving sc-backend-odoo-dev-db-1 self-terminated and restarted (restarts=1 at 2026-10-15T06:58:46Z) with 'performing immediate shutdown because data directory lock file is invalid', then 'database system was not properly shut down; automatic recovery in progress', redo 5D/24BFEA80 -> 5D/24BFEB30 and an end-of-recovery immediate checkpoint. The survivor is up (pg_is_in_recovery()=f, start 2026-10-15 06:58:46.865829+00, select 1 ok), but its data health must not be assumed: Step B (error log review, readability, consistency checks, restore drill) has to pass before any database write.",
     "The platform control duty is ruled but not yet built: the owner directed a new sc_platform_control database (policy section 2), with sc_platform_core kept as a to-be-disposed historical asset. It does not exist yet, and VITE_PLATFORM_ADMIN_DB, the acceptance declarations and the guards still bind sc_platform_core, so the authority must move to the new binding in one change before any control-plane entry can resolve.",
     "The customer development environment identity is ruled but not yet created or registered: sc_tenant_baosheng_dev with role sc_tenant_baosheng_dev_app, exact filter ^sc_tenant_baosheng_dev$, compose project sc-tenant-baosheng-dev and its own filestore/session/backup namespace. Existing UAT stays separate; the ruling grants no authority to copy its data.",
     "sc_demo mixes the customer tenant volume with demo/test purposes, so 'the demo database' is not yet a pure demo database; the destination of the company-1 volume is unresolved.",
@@ -204,7 +203,7 @@
     "The governed platform-database lifecycle adapter (scripts/ops/platform_database_lifecycle_apply.py) still lacks its runtime binding, so there is no governed entry that can create or suspend a daily database, and no governed entry can retire a superseded stack.",
     "Frozen exact-head Quick, final identity-bound review and required remote checks remain pending."
   ],
-  "next_exact_step": "Step A is closed: the leftover stack is retired through the governed entry and the post-condition is verified. Next is Step B, data health and recovery verification of the surviving daily cluster (error-log review including the 06:58:46 recovery, readability of sc_demo/sc_odoo/sc_platform_core, applicable consistency checks, and a restore drill against the existing recovery point), because the retirement itself caused one crash recovery on the shared data directory. Only after Step B passes: Step C registers and builds the three duties (new sc_platform_control bound in one change across VITE_PLATFORM_ADMIN_DB, the acceptance declarations and the guards; new sc_tenant_baosheng_dev with its own role, exact filter, compose project and namespace) through the governed lifecycle entry, which needs its runtime binding first. Then Step D user-module migration, Step E unified onboarding and isolation verification, Step F product acceptance. No database write happens before the Step B verdict.",
+  "next_exact_step": "Steps A and B are closed: the leftover two-writer stack is retired, the post-condition is verified, and the surviving cluster passed the data-health and recovery verification (no corruption in the full error log, all three databases fully readable with zero errors, all seven sentinel counts equal to the pre-incident recovery point, database UUID unchanged, and the governed isolated restore drill re-passed with temporary resources removed). Next is Step C, the three-database identity registration and build, in this order: (1) give platform_database_lifecycle_apply.py its governed runtime binding, because no governed entry can create a daily database yet; (2) bind a policy section 11 determination table for each duty before its first write; (3) create sc_platform_control and move VITE_PLATFORM_ADMIN_DB, the acceptance declarations and the guards onto it in one change (one authority, not two dialects); (4) create sc_tenant_baosheng_dev with role sc_tenant_baosheng_dev_app, exact filter ^sc_tenant_baosheng_dev$, compose project sc-tenant-baosheng-dev and its own filestore, session and backup namespace, without copying the UAT data. Then Step D user-module migration from the customer repository, Step E unified onboarding plus isolation verification, Step F product acceptance. The declared Step B gaps (no page checksums because data_checksums=off, no amcheck index verification, and no paired recovery point for sc_odoo/sc_platform_core) are preconditions for the first write to those databases.",
   "takeover_20261015": {
     "head": "e12e75eaa5bdcfe5b01dfe14b89cb201fac60023",
     "dirty_paths": [
@@ -1700,6 +1699,55 @@
       "current_survivor_state": "pg_is_in_recovery()=f, pg_postmaster_start_time()=2026-10-15 06:58:46.865829+00, live LSN 5D/24BFEC18, postmaster.pid rewritten with pid 1 /var/lib/postgresql/data, select 1 returns 1, container healthy",
       "meaning": "This restarted instance is exactly the cross-instance write the ruling removed, and it is why the survivor's data health is not assumed. Step B must verify the error log, readability, applicable consistency checks and a restore drill before any database write, and must state explicitly whether the double-write window left damage.",
       "status": "unverified - blocker; no database write proceeds until the Step B verdict"
+    },
+    "step_two_data_health_20261015": {
+      "layer": "P4 read-only data health verification of the surviving daily cluster (owner-mandated ordering, Step B)",
+      "stage": "HEAD f0fb26b04b49a5d1fd1080e5da3b0d80deb5d82a (Step A commit); read-only probes plus one governed isolated restore drill",
+      "why": "The retirement itself executed one crash recovery against the shared data directory, so the survivor's data health cannot be assumed. Owner: one PGDATA writer is only the first item; the error log, readability, applicable consistency checks and a backup restore result follow.",
+      "cluster_identity": {
+        "case": "unchanged from the pre-retirement fact",
+        "system_identifier": "7597381856873586726",
+        "server_version": "15.17 (Debian 15.17-1.pgdg13+1)",
+        "database_uuid": "c838b4b6-4cd6-11f1-9590-82245e4e7b62 live and equal to the value recorded in the pre-incident recovery-point manifest and the sentinel contract",
+        "postmaster": "pg_postmaster_start_time() 2026-10-15 06:58:46.865829+00 unchanged across every probe in this step; pg_is_in_recovery()=f; RestartCount stays 1; container healthy",
+        "control": "pg_control_checkpoint checkpoint_time 2026-10-15 06:58:47+00 (the end-of-recovery checkpoint), pg_control_recovery reports no recovery in progress with min recovery end LSN 0/0",
+        "settings": "data_checksums=off, fsync=on, full_page_writes=on, wal_level=replica, archive_mode=off, logging_collector=off, log_destination=stderr"
+      },
+      "error_log_review": {
+        "source": "docker logs sc-backend-odoo-dev-db-1 (the container's whole log across both starts, 54271 lines / 41.7 MB, from the 2026-09-24 container start up to the 06:58:47 ready line)",
+        "counts": "PANIC 0, corruption 0, invalid page/block/could not read block 0, WAL write/fsync/rename errors 0, disk full 0, out of memory 0, terminated server processes 0",
+        "only_recovery_event": "exactly one crash recovery in the whole history, the 06:58:46 one caused by this retirement; 'invalid record length at 5D/24BFEB68: wanted 24, got 0' is the normal end-of-WAL marker that terminates redo, not damage",
+        "noise_classified": "the 10 FATAL and 50 'does not exist' matches are connection-level noise from other profiles (database odoo/sc_dev_demo/sc_dev_sample/sc_clean, roles sc_demo_odoo/postgres, and relations from unrelated models) and the 48 'checksum' matches are false positives on the sc_ui_base_contract_asset.asset_hash column",
+        "limitation": "log_destination is stderr with logging_collector off, so history exists only through the docker json-file driver; it is currently complete for this container's lifetime"
+      },
+      "readability_full_logical_read": {
+        "method": "pg_dump -Fc piped to wc -c for every database in the cluster, read-only, custom format discarded",
+        "sc_demo": "exit 0, 650398584 bytes in 102.2 s, zero stderr bytes - byte-identical in size to the 650398584 bytes recorded in the pre-incident recovery-point manifest (created 2026-10-15T06:22:24Z, before the 06:58 recovery)",
+        "sc_odoo": "exit 0, 1073795 bytes, zero stderr bytes",
+        "sc_platform_core": "exit 0, 5152782 bytes, zero stderr bytes",
+        "meaning": "every heap and TOAST page of all three databases was read back without a single read or consistency error; the equality with the pre-incident dump size is independent corroboration that the recovery did not lose or rewrite logical content"
+      },
+      "sentinel_comparison_against_the_pre_incident_recovery_point": {
+        "recovery_point": "/data/backups/daily_candidate/sc_demo-20261015T062043Z-849c0c54 (created 2026-10-15T06:22:24Z, i.e. 36 minutes before the crash recovery)",
+        "method": "the manifest's recorded sentinels_after table counts compared with the live counts of the same seven tables",
+        "result": "no decrease in any table - res_company 4=4, res_users 140=140, project_project 931=931, construction_contract 12677=12677, payment_request 34913=34913, ir_attachment 609394=609394, ir_module_module 704=704",
+        "conclusion": "the crash recovery preserved row counts exactly against a pre-incident snapshot"
+      },
+      "recovery_capability_restore_drill": {
+        "entry": "make daily.candidate.continuity.remote_restore_drill DAILY_CANDIDATE_SSH_HOST=sc-root DAILY_CONTINUITY_BACKUP_DIR=/data/backups/daily_candidate/sc_demo-20261015T062043Z-849c0c54",
+        "confirmation": "RESTORE_ISOLATED_COPY",
+        "result": "isolated_restore_pass true, database_restore_pass true, filestore_restore_pass true, sentinel_comparison_pass true, temporary_resources_removed true, network_egress internal_only, duration 295 s",
+        "isolation_readback": "post-drill probes show no container, volume or network carrying the sc.daily-continuity label; the live cluster was untouched (RestartCount still 1, StartedAt unchanged, postmaster start time unchanged, retired pair still exited with restart policy no)",
+        "note": "the drill runs in the frozen tool revision installed at /opt/sce/deployment-tools/<sha> and validates the backup manifest, artifacts and checksums before restoring, so this also re-proves the recovery point's own integrity"
+      },
+      "declared_gaps": [
+        "data_checksums=off on this cluster, so pg_stat_database.checksum_failures reports no value and there is no page-checksum evidence; enabling checksums requires an offline cluster rewrite and is out of scope",
+        "index-structure verification through amcheck requires installing the amcheck extension inside the business database, which is a schema write to sc_demo; it was deliberately not performed and remains a declared gap, so index verification is limited to the access paths exercised by the dump and the sentinel comparisons",
+        "the 2026-09-18 to 2026-10-15 double-write window cannot be replayed page by page; the verdict rests on the absence of any corruption error in the full log plus the three independent read-side results above",
+        "the governed continuity contract is bound to sc_demo alone; sc_odoo and sc_platform_core still have no paired recovery point, which stays a precondition for the first write to them"
+      ],
+      "verdict": "PASS - no evidence of damage from the double-write window or the recovery; the survivor is readable, identity-stable and restorable, with the checksum and amcheck gaps declared rather than hidden",
+      "status": "closed; the Step B gate that blocked database writes is released, subject to the declared gaps above being carried forward for the databases that are still unwritten"
     }
   }
 }

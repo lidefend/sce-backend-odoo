@@ -628,3 +628,73 @@ explicitly whether the double-write window left damage.
 防复发路径已清除；退役期间幸存实例发生的一次崩溃恢复已取证并登记为 Step B 的首要输入。**尚未**完成
 Step B（数据健康与恢复验证），因此三库建设、用户模块迁移、统一入驻与产品验收均未开始，本批次不构成
 主线集成完成或产品交付完成。
+
+### Step B — data health and recovery verification of the surviving cluster
+
+Step B exists because the retirement itself executed one crash recovery against the shared data directory, so
+the survivor's health could not be assumed. Every probe below is read-only except the governed isolated
+restore drill, which runs in temporary resources and never touches the live cluster.
+
+**Cluster identity.** `system_identifier 7597381856873586726` (unchanged), PostgreSQL 15.17, live
+`database.uuid = c838b4b6-4cd6-11f1-9590-82245e4e7b62` — equal to the value recorded in the pre-incident
+recovery-point manifest and the sentinel contract. `pg_postmaster_start_time()` stays
+`2026-10-15 06:58:46.865829+00` and `RestartCount` stays 1 across every probe, so nothing restarted again.
+`pg_control_checkpoint` shows the 06:58:47 end-of-recovery checkpoint and `pg_control_recovery` reports no
+recovery in progress. Settings: `data_checksums=off`, `fsync=on`, `full_page_writes=on`, `wal_level=replica`,
+`archive_mode=off`, `logging_collector=off`, `log_destination=stderr`.
+
+**Error-log review.** The container's whole log (54,271 lines / 41.7 MB, from the 2026-09-24 start through
+the 06:58:47 ready line) contains **zero** PANIC, corruption, invalid page/block, WAL write/fsync/rename
+error, disk-full, out-of-memory or terminated-server-process entries. Exactly one crash recovery exists in
+the entire history — the 06:58:46 one caused by this retirement — and the
+`invalid record length at 5D/24BFEB68: wanted 24, got 0` line is the normal end-of-WAL marker that terminates
+redo, not damage. The 10 `FATAL` and 50 `does not exist` matches are connection-level noise from other
+profiles (`odoo`, `sc_dev_demo`, `sc_dev_sample`, `sc_clean`, roles `sc_demo_odoo`/`postgres`, unrelated
+relations); the 48 `checksum` matches are false positives on the `sc_ui_base_contract_asset.asset_hash`
+column. Limitation: `log_destination=stderr` with `logging_collector=off` means history lives only in the
+docker json-file driver, currently complete for this container's lifetime.
+
+**Readability — full logical read of every database.** `pg_dump -Fc` of each database, streamed to `wc -c`
+and discarded: `sc_demo` **650,398,584 bytes in 102.2 s**, `sc_odoo` 1,073,795 bytes, `sc_platform_core`
+5,152,782 bytes, all exit 0 with **zero stderr bytes**. Every heap and TOAST page was read back without a
+single read or consistency error, and the `sc_demo` dump size is *byte-identical* to the 650398584 bytes the
+pre-incident recovery-point manifest recorded at 06:22:24Z.
+
+**Sentinel comparison against the pre-incident recovery point.** The recovery point
+`sc_demo-20261015T062043Z-849c0c54` was captured 36 minutes **before** the crash recovery, so its recorded
+table counts are a pre-incident snapshot. Live counts are equal in every sentinel table:
+`res_company 4=4`, `res_users 140=140`, `project_project 931=931`, `construction_contract 12677=12677`,
+`payment_request 34913=34913`, `ir_attachment 609394=609394`, `ir_module_module 704=704` — no decrease
+anywhere.
+
+**Recovery capability.** `make daily.candidate.continuity.remote_restore_drill
+DAILY_CANDIDATE_SSH_HOST=sc-root
+DAILY_CONTINUITY_BACKUP_DIR=/data/backups/daily_candidate/sc_demo-20261015T062043Z-849c0c54` re-passed with
+`isolated_restore_pass`, `database_restore_pass`, `filestore_restore_pass` and `sentinel_comparison_pass`
+all true, `temporary_resources_removed: true`, `network_egress: internal_only`, 295 s. The entry validates
+the manifest, artifacts and checksums before restoring, so this also re-proves the recovery point's own
+integrity. Post-drill readback: no container, volume or network carries the `sc.daily-continuity` label, and
+the live cluster is untouched.
+
+**Declared gaps (carried forward, not hidden).**
+
+- `data_checksums=off`, so `pg_stat_database.checksum_failures` has no value and there is no page-checksum
+  evidence; enabling checksums requires an offline cluster rewrite and is out of scope.
+- Index-structure verification through `amcheck` requires installing the `amcheck` extension inside the
+  business database, i.e. a schema write to `sc_demo`; it was deliberately not performed, so index
+  verification is limited to the access paths the dump and sentinel comparisons exercise.
+- The 2026-09-18 → 2026-10-15 double-write window cannot be replayed page by page; the verdict rests on the
+  absent corruption errors plus the three independent read-side results.
+- The governed continuity contract is bound to `sc_demo` alone; `sc_odoo` and `sc_platform_core` still have
+  no paired recovery point, which remains a precondition for the first write to them.
+
+**Verdict: PASS.** No evidence of damage from the double-write window or the recovery. The survivor is
+readable, identity-stable and restorable, and the Step B gate that blocked database writes is released for
+the already-covered duty, with the declared gaps carried into Step C.
+
+### Status
+
+批次状态：Step A（双实例风险处置）与 Step B（数据健康与恢复验证）均已完成并留有可复核证据；Step B 判定
+PASS，阻断数据库写入的门已解除（仅对已覆盖恢复点的职责）。三库身份登记与建设（Step C）尚未开始——其
+前置是 `platform_database_lifecycle_apply.py` 的受管运行时绑定与每库政策第 11 节判定表。本批次仍不构成
+主线集成完成或产品交付完成。
