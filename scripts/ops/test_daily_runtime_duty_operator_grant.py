@@ -44,12 +44,16 @@ OPERATOR_STATE = {
     "active": True,
     "share": False,
     "company_ids": [1],
-    "group_xmlids": ["base.group_user"],
+    # The stored relation holds the effective set: base.group_user plus the
+    # platform's own implied closure of it, exactly what the readback publishes.
+    "group_xmlids": ["base.group_user", "base.group_no_one"],
     "is_importer": False,
     "is_data_operator": False,
     "has_stored_password": False,
     "has_native_api_keys": False,
 }
+
+REQUIRED_CLOSURE = ["base.group_user", "base.group_no_one"]
 
 READBACK = {
     "mode": "read_only",
@@ -59,6 +63,7 @@ READBACK = {
     "identity_key": OPERATOR_IDENTITY,
     "importer_group_member_count": 0,
     "importer_implied_xmlids": [],
+    "required_group_closure_xmlids": list(REQUIRED_CLOSURE),
     "released_editions": [{"product_key": "construction.standard", "version": "v"}],
     "import_batch_count": 0,
     "operator": dict(OPERATOR_STATE),
@@ -603,7 +608,7 @@ class GuardTests(unittest.TestCase):
     def test_a_grant_is_asserted_against_the_declaration(self):
         duty = self._duty()
         after = json.loads(json.dumps(READBACK))
-        after["operator"]["group_xmlids"] = ["base.group_user", ENTRY.IMPORTER_GROUP]
+        after["operator"]["group_xmlids"] = list(REQUIRED_CLOSURE) + [ENTRY.IMPORTER_GROUP]
         after["operator"]["is_importer"] = True
         entry_report = {
             "schema_version": "tenant_payload_operator_lifecycle.v1",
@@ -619,7 +624,7 @@ class GuardTests(unittest.TestCase):
 
         widened = json.loads(json.dumps(entry_report))
         widened["after"]["operator"]["group_xmlids"] = [
-            "base.group_user",
+            *REQUIRED_CLOSURE,
             ENTRY.IMPORTER_GROUP,
             "smart_core.group_smart_core_admin",
         ]
@@ -634,7 +639,7 @@ class GuardTests(unittest.TestCase):
     def test_a_grant_that_touched_the_data_operator_group_is_refused(self):
         duty = self._duty()
         after = json.loads(json.dumps(READBACK))
-        after["operator"]["group_xmlids"] = ["base.group_user", ENTRY.IMPORTER_GROUP]
+        after["operator"]["group_xmlids"] = list(REQUIRED_CLOSURE) + [ENTRY.IMPORTER_GROUP]
         after["operator"]["is_importer"] = True
         after["operator"]["is_data_operator"] = True
         entry_report = {
@@ -700,6 +705,53 @@ class GuardTests(unittest.TestCase):
                 ENTRY.assert_readback(
                     dict(READBACK, operator=dict(OPERATOR_STATE, **override)), duty
                 )
+
+    def test_readback_accepts_the_published_group_closure_and_nothing_wider(self):
+        duty = self._duty()
+        ENTRY.assert_readback(
+            dict(
+                READBACK,
+                operator=dict(OPERATOR_STATE, group_xmlids=list(REQUIRED_CLOSURE)),
+            ),
+            duty,
+        )
+        ENTRY.assert_readback(
+            dict(
+                READBACK,
+                operator=dict(
+                    OPERATOR_STATE,
+                    group_xmlids=list(REQUIRED_CLOSURE) + [ENTRY.IMPORTER_GROUP],
+                ),
+            ),
+            duty,
+        )
+        for extra in ("base.group_system", ENTRY.DATA_OPERATOR_GROUP):
+            with self.subTest(extra=extra), self.assertRaisesRegex(
+                ENTRY.OperatorGrantEntryError, "does not allow"
+            ):
+                ENTRY.assert_readback(
+                    dict(
+                        READBACK,
+                        operator=dict(
+                            OPERATOR_STATE,
+                            group_xmlids=list(REQUIRED_CLOSURE) + [extra],
+                        ),
+                    ),
+                    duty,
+                )
+
+    def test_readback_refuses_an_undecidable_closure_and_a_missing_declared_group(self):
+        duty = self._duty()
+        undecidable = dict(READBACK)
+        undecidable.pop("required_group_closure_xmlids")
+        with self.assertRaisesRegex(ENTRY.OperatorGrantEntryError, "no group closure"):
+            ENTRY.assert_readback(undecidable, duty)
+        missing = dict(
+            READBACK,
+            operator=dict(OPERATOR_STATE, group_xmlids=["base.group_no_one"]),
+        )
+        with self.assertRaisesRegex(ENTRY.OperatorGrantEntryError, "missing a group"):
+            ENTRY.assert_readback(missing, duty)
 
     def test_a_readback_that_changed_nothing_is_reused(self):
         duty = self._duty()

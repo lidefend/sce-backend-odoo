@@ -492,10 +492,26 @@ def assert_readback(report: dict, duty: dict) -> None:
         _fail("the declared operator holds an unmanaged API key")
     if operator.get("is_data_operator"):
         _fail("the declared operator holds the general data operator group")
+    # The readback publishes the platform's own transitive closure of the
+    # required group instead of hard-coding it, because an account that holds
+    # base.group_user effectively holds its implied closure as well; comparing
+    # the effective set against a two-element literal would refuse every account
+    # the mechanism itself creates. The ceiling is the declared groups plus the
+    # closure the readback published, and a report that published no closure
+    # cannot be compared at all -- so it is refused instead of silently widened.
+    closure = set(report.get("required_group_closure_xmlids") or ())
+    if not closure:
+        _fail("the operator readback published no group closure to compare against")
+    declared = set(
+        (duty["payload_operator"].get("declaration") or {}).get("expected_account_groups")
+        or ()
+    )
+    allowed = {INTERNAL_USER_GROUP, IMPORTER_GROUP} | closure | declared
     groups = set(operator.get("group_xmlids") or ())
-    allowed = {INTERNAL_USER_GROUP, IMPORTER_GROUP}
     if groups - allowed:
         _fail("the declared operator holds groups the declaration does not allow")
+    if declared - groups:
+        _fail("the declared operator is missing a group the declaration requires")
     if len(operator.get("company_ids") or ()) != duty["payload_operator"]["expected_company_scope"]:
         _fail("the declared operator company scope drifted")
 
