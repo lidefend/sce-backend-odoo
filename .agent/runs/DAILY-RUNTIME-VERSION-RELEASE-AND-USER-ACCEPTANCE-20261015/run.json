@@ -193,15 +193,15 @@
     }
   },
   "blockers": [
-    "A second live postmaster owns the same cluster data volume: sc-backend-odoo-dev-db-1 and sc-backend-odoo-prod-db-1 both mount sc_dev_db_data. Two writers on one cluster directory contradict the isolation the three-database closure must prove; resolving it needs an owner decision on which stack is authoritative plus a governed stop entry.",
-    "The customer development database has no confirmed target identity yet (database name, role, exact filter, filestore, tenant key); it must not be presumed. The customer module declares tenant_key=baosheng and company_provisioning=payload_create_and_register.",
+    "A second live postmaster owns the same cluster data volume: sc-backend-odoo-dev-db-1 and sc-backend-odoo-prod-db-1 both mount sc_dev_db_data and were proven to be two separate cluster owners on one data directory (same pg_control inode and md5, two distinct pg_postmaster_start_time(), diverged pg_current_wal_lsn()). The orphan has no application consumer. Resolving it needs an owner ruling on which stack is authoritative plus a governed stop entry.",
+    "The platform control duty has no functioning database: the policy-declared sc_platform_control does not exist, and sc_platform_core exists but has no tenant registry table and no serving instance. The owner must rule between creating the policy-declared database and initialising the colocated one.",
+    "The customer development environment has no confirmed target identity (database name, role, exact filter, filestore, compose project) for tenant_key=baosheng; it must be a new environment separate from the existing UAT database and must not be presumed.",
     "sc_demo mixes the customer tenant volume with demo/test purposes, so 'the demo database' is not yet a pure demo database; the destination of the company-1 volume is unresolved.",
-    "The only login role is the superuser/createdb role 'odoo'; per-database tenant roles and credentials do not exist yet, and new credential authority requires separately authorized P4 work.",
-    "sc_platform_core is not a working control plane: older smart_core revision and no tenant registry table, and no Odoo instance serves it (routing inventory: unserved databases sc_odoo, sc_platform_core).",
-    "The governed platform-database lifecycle adapter still lacks its runtime binding (scripts/ops/platform_database_lifecycle_apply.py states this explicitly), so there is no governed entry that creates the missing database yet.",
+    "The only login role is the superuser/createdb role 'odoo'; per-database tenant roles and credentials do not exist yet, and policy section 6 requires an independent role per tenant environment. New credential authority requires separately authorized P4 work.",
+    "The governed platform-database lifecycle adapter (scripts/ops/platform_database_lifecycle_apply.py) still lacks its runtime binding, so there is no governed entry that can create or suspend a daily database, and no governed entry can retire a superseded stack.",
     "Frozen exact-head Quick, final identity-bound review and required remote checks remain pending."
   ],
-  "next_exact_step": "Bind the three duties' exact identities (role, exact database filter, filestore, tenant key) and build the governed provisioning entry the closure needs, then create only the missing customer development database; resolve the duplicate-postmaster decision with the owner first. Verification evidence at this stage identity: routing inventory FAIL on one_live_postmaster_per_cluster_data_volume only.",
+  "next_exact_step": "Owner ruling required on three points before any database write: (1) platform control duty - create the policy-declared separate control database or initialise the colocated sc_platform_core; (2) customer development environment - confirm the exact database name, role, exact filter, filestore and compose project for tenant_key=baosheng; (3) authorize stopping the leftover sc-backend-odoo-prod db/redis pair that shares sc_dev_db_data with the live dev cluster. After that: build the governed runtime binding for platform_database_lifecycle_apply.py, bind each duty's section 11 determination table, then create only the missing database(s) through the governed entry and run unified onboarding through the existing daily.runtime.data_space.onboard entry.",
   "takeover_20261015": {
     "head": "e12e75eaa5bdcfe5b01dfe14b89cb201fac60023",
     "dirty_paths": [
@@ -1574,6 +1574,43 @@
       },
       "uncovered": "The governed continuity contract is bound to sc_demo alone. sc_platform_core and the not-yet-created customer development database have no paired recovery point; the control database carries no business rows and is reproducible from source, and the customer database does not exist, so neither is a pre-write data-loss risk today. Covering those duties is a precondition for the first write to them and requires a governed extension, not an ad-hoc dump."
     },
-    "stage_identity_20261015b": "HEAD 639be2029e9d5aa5e9d55e95947dc2e88a5b3ed7 plus the recorded dirty scope (make/codex.mk modified; scripts/ops/daily_runtime_routing_inventory.py and its test untracked)"
+    "stage_identity_20261015b": "HEAD 639be2029e9d5aa5e9d55e95947dc2e88a5b3ed7 plus the recorded dirty scope (make/codex.mk modified; scripts/ops/daily_runtime_routing_inventory.py and its test untracked)",
+    "step_one_identity_binding_20261015": {
+      "layer": "P4 read-only identity binding (policy section 11 preparation)",
+      "why": "Policy section 11 forbids a database write until the target role, exact filter, filestore and tenant are resolved. Three duties are required on the daily server, so each duty's real identity has to be established from declarations and observed runtime facts before the first write.",
+      "policy_declarations_read": {
+        "control_database_logical_name": "docs/governance/database_architecture_policy.md section 2 declares PLATFORM_CONTROL_DATABASE=sc_platform_control (separate physical database, no customer business content)",
+        "legacy_colocation_adr": "docs/adr/ADR-001-single-database-colocated-platform-core.md records the historical single-runtime colocation decision; policy section 1 keeps it valid only for existing environments and requires a separate migration task to leave it",
+        "code_contract": "addons/smart_core/core/platform_database_contract.py resolves the platform database from ir.config_parameter smart_core.platform_release_db; non-production safely colocates with the current database when unset, production requires an explicit value equal to the current database",
+        "frontend_binding": "frontend/apps/web/src/services/dbContext.ts and scripts/verify/daily_dev_acceptance_env_guard.py bind the platform-admin entry to VITE_PLATFORM_ADMIN_DB=sc_platform_core",
+        "strategy_declaration": "addons/smart_core/data/tenant/database_strategy.v1.json is the single declaration source: purpose strategy demo/test=single_db_multi_company, customer=database_per_customer_tenant; lifecycle states declared/provisioned/active/suspended/retired; platform database management never grants business-data read"
+      },
+      "observed_duties": {
+        "platform_control": "not a functioning control plane. sc_platform_core exists (64 modules, smart_core 17.0.1.0, no sc.tenant.company.registration table, no business rows) but no Odoo instance serves it, so the platform-admin entry cannot resolve. The policy-declared name sc_platform_control does not exist in the cluster.",
+        "demo": "sc_demo served by sc-backend-odoo-dev-odoo-1 with exact filter ^sc_demo$; the governed onboarding plan declares role platform_internal_demo, tenant_key sc-demo-main, registered companies 1 (demo) / 21 / 22 (test). It also carries the customer tenant volume, so the duty is not yet pure.",
+        "customer_development": "unbound. A baosheng tenant database does exist (sc_tenant_baosheng_uat_core035_20260727142732_46a327) but on a separate cluster (system_identifier 7667092793767399462) served by its own stack, at older revisions (smart_core 17.0.1.1.1, sce_customer_baosheng 17.0.2.3.0, no sc.tenant.company.registration table). Policy section 7 requires dev/uat/prod separation, so that UAT database cannot be the customer development environment; a new one has to be created.",
+        "unbound_leftovers": "sc_odoo and sc_platform_core have no serving instance; per-database tenant roles and credentials do not exist (the only login role is the superuser/createdb role odoo)."
+      },
+      "existing_mechanism_inventory": {
+        "data_space_onboarding": "make daily.runtime.data_space.onboard / .plan already exists and is parameterised by --database/--role/--tenant-key (confirm token ONBOARD_DAILY_RUNTIME_DEMO_DATA_SPACE). It is the per-database onboarding entry the unified onboarding step should reuse for all three duties.",
+        "database_lifecycle": "scripts/ops/platform_database_lifecycle_apply.py already implements provision/activate/suspend/resume/retire/abandon with fail-closed connection effects, an audit row per operation and a control-plane cutoff refusal. Its governed runtime binding (profile wrapper plus the PLATFORM_DATABASE_MAINTENANCE_CONFIG identity pointing at the daily cluster) is still pending, so no governed entry can create or suspend a daily database yet.",
+        "isolated_rehearsal": "make platform.database.rehearsal.{prepare,preflight,exercise,continue,export,readback,recover,cleanup} creates an isolated control + target pair with its own roles, volumes and evidence; it provisions only rehearsal databases and is not a daily entry.",
+        "tenant_environment_precedent": "the core035 daily stack is an isolated per-tenant compose project with its own database container, volumes and exact filter, recorded in docs/audit/um_p3/um_p3_core_035_s07a_environment_handoff_v1.json (dedicated project, expiry, exact destroy policy). It is the reusable shape for a customer development environment."
+      },
+      "duplicate_postmaster_confirmation_20261015": {
+        "method": "read-only: docker inspect StartedAt/mounts, docker top, inode and md5 of global/pg_control and postmaster.pid, pg_postmaster_start_time(), pg_current_wal_lsn(), pg_stat_activity client inventory, in each container of the daily cluster",
+        "same_files_proven": "both containers report inode 935335 for /var/lib/postgresql/data/global/pg_control with identical md5 cd5d0e6b1a307cc5c992c936315ae1d9, and identical postmaster.pid (md5 f84a604d4f69e0936c73bf6de181137d)",
+        "two_live_postmasters_proven": "pg_postmaster_start_time() differs (dev 2026-09-24 08:28:55, prod 2026-09-18 09:48:20) and each container runs its own postgres with checkpointer/walwriter; pg_current_wal_lsn() has diverged (dev 5D/24BFEB68, prod 48/CF3ADD8), so they are separate cluster owners on one data directory, not one postmaster seen twice",
+        "consumer_fact": "sc-backend-odoo-dev-odoo-1 resolves service db to 192.168.32.2 and the dev database container shows three remote clients; sc-backend-odoo-prod-db-1 shows only local backends, so the prod container has no application consumer and the dev container is the serving one",
+        "risk": "the orphan postmaster still owns the same data directory; a restart, crash recovery or shutdown checkpoint from it would execute against a stale control file and can corrupt the live cluster. This is an environment mutation, not a code defect, and no governed entry exists for it, so it stays a blocker pending the owner's ruling on which stack is authoritative.",
+        "recommended_ruling": "stop and disable the leftover sc-backend-odoo-prod db/redis pair only (its odoo/nginx were never started and no client uses them), leaving sc-backend-odoo-dev-db-1 as the single postmaster of sc_dev_db_data"
+      },
+      "open_owner_decisions": [
+        "Platform control duty: create the policy-declared separate control database (policy section 2 logical name sc_platform_control, plus its own role/filestore/route and a matching change to VITE_PLATFORM_ADMIN_DB, daily_dev_acceptance_env_guard.py and environment_topology_guard.py), or initialise the already-colocated sc_platform_core as the functioning control plane and reconcile the policy logical name explicitly as a governance change?",
+        "Customer development duty: confirm the exact target identity for tenant_key=baosheng - database name, database role, exact filter, filestore and compose project (policy section 7 treats sc_tenant_<tenant_code>_dev only as a candidate format). It must be a new environment, must not reuse the existing UAT database, and per policy section 6 needs its own role and filestore.",
+        "Duplicate postmaster: authorize stopping the leftover sc-backend-odoo-prod db/redis pair so one cluster data directory has one postmaster."
+      ],
+      "not_done": "No database was created, suspended or retired; no container was stopped; no credential was created or persisted. Only container metadata, catalog facts and repository declarations were read."
+    }
   }
 }
