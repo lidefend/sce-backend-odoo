@@ -23,7 +23,7 @@
   },
   "baseline_sha": "10bf72ef4bb060556bd2844598b58f9806392d34",
   "blockers": [
-    "The customer development duty exists (sc_tenant_baosheng_dev with role sc_tenant_baosheng_dev_app, exact filter ^sc_tenant_baosheng_dev$, route 18090, own cluster and volume) and its reviewed customer addons tree is now delivered read-only to /opt/sce/tenant-addons/daily/bfbc736c51d987777b50c465261ece1d8d22f008, but its declaration still carries a cluster_only face: the product line, the customer user module and the governed migration have not run. Existing UAT stays separate and its data is not authorized for copy; the source mapping and the versioned migration belong to the customer module.",
+    "The customer duty is now a served, initialized face (sc_tenant_baosheng_dev, role sc_tenant_baosheng_dev_app, exact filter ^sc_tenant_baosheng_dev$, route 18090, own cluster and volume, product line plus sce_customer_baosheng installed from the delivered read-only tree bfbc736). Initialization is not migration: no historical data has moved, and Step D proper still has to run the customer module's own versioned migration (historical_payment_migration_policy.expected_records=12386) with the payload validated and planned first, never defaulting ownership and never copying UAT data. sc_tenant_baosheng_dev has no paired recovery point, so that is a precondition for its first business-data write, not an assumption.",
     "sc_demo mixes the customer tenant volume with demo/test purposes, so 'the demo database' is not yet a pure demo database; the destination of the company-1 volume is unresolved, and the demo duty is still declared with the shared-bootstrap-role gap and has no dedicated application role.",
     "No duty has a platform-model lifecycle registration yet: the platform model owns registration and the platform-database lifecycle adapter still lacks a governed runtime binding for the daily profile, so no governed entry can register, suspend or resume a daily database. The duty declaration in config/ops/daily_runtime_database_duties.v1.json is the ops-side authority, not the platform-side registration.",
     "The three declared Step B gaps stay preconditions for the first write to sc_odoo or sc_platform_core: the cluster reports data_checksums=off, no amcheck index verification has run, and neither database has a paired recovery point. sc_platform_control is a fresh cluster and inherited data_checksums=off; enabling checksums would need a rebuild, so the decision is recorded rather than assumed.",
@@ -99,7 +99,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "Steps A, B, C and the Step D tenant-addons delivery are closed. The legacy two-writer stack is retired with a refusal guard, the surviving dev cluster passed data-health and recovery verification, both ruled duties exist as governed clusters (sc_platform_control served on 18082 with role sc_platform_control_app and kernel smart_core only; sc_tenant_baosheng_dev on 18090 with role sc_tenant_baosheng_dev_app, exact filter ^sc_tenant_baosheng_dev$, own cluster and volume), the platform-admin authority now names sc_platform_control end to end, the read-only duty plan reports PASS for every duty and the deployment-wide binding, and the reviewed customer commit bfbc736c51d987777b50c465261ece1d8d22f008 is delivered read-only to /opt/sce/tenant-addons/daily/bfbc736c51d987777b50c465261ece1d8d22f008 (digest e0a3210da88ea49b1af16d6c037081289a97a39f7fb602d67192c25bf67dd7a6, four modules, writable_paths empty) through the new governed entry. Next, in order: (1) move customer_tenant_dev.custody.service_face from cluster_only to a served face that declares the product-line module set and this exact customer_addons_root, then run the governed duty initialize for that duty only; (2) Step D proper, the user module migration into sc_tenant_baosheng_dev driven by the customer module's own source mapping and versioned migration, with the payload first validated and planned (source payload v10 full historical attachments, historical_payment_migration_policy.expected_records=12386), never defaulting ownership and never copying UAT data; (3) Step E unified onboarding plus isolation verification; (4) Step F product acceptance, recomputing only the affected set.",
+  "next_exact_step": "Steps A, B, C and the customer duty initialization of D are closed: the legacy two-writer stack is retired with a refusal guard, the surviving dev cluster passed data-health and recovery verification, all three ruled duties exist as governed clusters and report PLan PASS in the initialized face, and the customer duty's initialization defect (two initializers in one fresh database) is fixed, tested and verified by independent readback. Next, in order: (1) take the paired recovery point for sc_tenant_baosheng_dev (recovery is a precondition for its first business-data write) and record it; (2) Step D proper, the user module migration into sc_tenant_baosheng_dev driven by the customer module's own source mapping and versioned migration, with the payload first validated and planned (source payload v10 full historical attachments, historical_payment_migration_policy.expected_records=12386), never defaulting ownership, never copying UAT data, and reading the counts back after the run; (3) Step E unified onboarding plus isolation verification (platform control must not read customer business, demo and customer data must not see each other); (4) Step F product acceptance, recomputing only the affected set.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "schema_version": 1,
   "scope": [
@@ -240,6 +240,119 @@
     "scripts/verify/test_test_coverage_registry_audit.py"
   ],
   "status": "active",
+  "step_four_customer_module_delivery_20261015": {
+    "case": "The customer duty declaration pointed at a customer addons root, and no governed entry could populate it, so 'install the user module' had no reviewed source.",
+    "delivered": {
+      "customer_repository": "/home/lidefend/workspace/sce-customer-baosheng-odoo",
+      "destination": "/opt/sce/tenant-addons/daily/bfbc736c51d987777b50c465261ece1d8d22f008",
+      "digest": "e0a3210da88ea49b1af16d6c037081289a97a39f7fb602d67192c25bf67dd7a6",
+      "modules": [
+        "sce_customer_baosheng",
+        "sce_customer_baosheng_core035_mvp",
+        "sce_customer_baosheng_history_attachments",
+        "sce_customer_baosheng_legacy"
+      ],
+      "tenant_sha": "bfbc736c51d987777b50c465261ece1d8d22f008",
+      "writable_paths": []
+    },
+    "fix": "New governed entry scripts/ops/daily_runtime_tenant_addons_deliver.py delivers one exact customer commit's addons/ tree to /opt/sce/tenant-addons/daily/<commit>, content-addressed and write-once. --apply requires a clean source worktree and one exact commit; a same-identity destination is an idempotent no-op (writes:0) and a different identity is a stop, never an overwrite. One shared tree_digest implementation runs on both the local archive check and the remote readback. make/codex.mk carries verify.daily.runtime.tenant.addons, daily.runtime.tenant.addons.plan (read-only) and daily.runtime.tenant.addons.deliver, with confirmation token DELIVER_EXACT_DAILY_RUNTIME_TENANT_ADDONS in SC_CONFIRM_DAILY_RUNTIME_TENANT_ADDONS.",
+    "gap": "config/ops/daily_runtime_database_duties.v1.json declares customer_addons_root for the customer tenant duty, yet the whole repository carried no entry that delivers a customer tree to the daily host. That tree is P2 content owned by the customer delivery repository, so the product repository must not be its source.",
+    "not_a_pass": "The delivered tree is a source identity only. The customer duty is still cluster_only: no product line, no customer user module and no governed migration have run. This is 批次验收完成 for the tenant-addons delivery slice, not for Step D.",
+    "verification": {
+      "plan": "make daily.runtime.tenant.addons.plan (bfbc736) - PASS, mode=report, digest e0a3210d..., four modules, destination read-only",
+      "unit": "make verify.daily.runtime.tenant.addons - 21 tests OK"
+    }
+  },
+  "step_four_duty_initialize_20261015": {
+    "case": "The customer duty was declared to_be_initialized, its cluster, role, database, route and delivered read-only addons tree all existed, and the first governed initialize failed.",
+    "commits": [
+      "0a445734 (declaration face move plus test decoupling)",
+      "14077ab6 (entry ordering fix and its tests)"
+    ],
+    "database_not_reset": "The half built database was repaired in place by letting the container's own bootstrap finish alone. Nothing was dropped, no pg_resetwal ran and no copy taken from a running instance was treated as a backup.",
+    "defect": "Two initializers ran in one fresh database. scripts/odoo-entrypoint.sh makes the application container its own initializer (odoo -i base --stop-after-init, then exec odoo), while the duty entry started the application with a plain `up -d` and immediately ran `docker exec <odoo> odoo -i <declared modules>`. Both built the base schema at the same time: psycopg2 UniqueViolation on pg_type_typname_nsp_index for ir_actions (2200), initialize.returncode 255, and the duty was left half initialized (ir_module_module with 677 rows, base uninstalled, 200 public types / 399 relations of partial DDL).",
+    "first_run_failed": {
+      "initialize_returncode": 255,
+      "log": ".runtime/final-acceptance/daily-deployed/duty-initialize-customer.log",
+      "receipt": ".runtime/final-acceptance/daily-deployed/database-duty-initialize.json",
+      "status": "FAIL"
+    },
+    "fix": "await_base_bootstrap(duty) runs between start_services and install_modules: it waits for the container's own bootstrap to finish, read from the cluster (ir_module_module -> base state) and from this startup's own log statements (everything after the last entrypoint render line, so a restart is not read as a finished attempt); a finished attempt that did not install base is retried once by restarting the container, which is safe only because the previous attempt is over; a second finished failure is reported instead of looped. install_modules carries an independent guard that refuses to install while base is missing. The wait bound and poll interval travel in the payload so the boundary is exercised, not asserted by reading.",
+    "independent_readback": {
+      "base_state": "installed",
+      "declared_modules_installed": "11/11",
+      "ir_ui_menu": 724,
+      "odoo_log": "0 ERROR/CRITICAL lines in the last 300",
+      "public_relations": 5455,
+      "public_types": 1748,
+      "res_company": 1,
+      "res_users": 5,
+      "route": "curl http://127.0.0.1:18090/web/login -> 200",
+      "second_startup": "the entrypoint skipped bootstrap because base was already installed",
+      "services": "db, redis, odoo, nginx all running and healthy",
+      "tenant_binding": "ir_config_parameter sc.tenant.bound_tenant_key = baosheng (the client post_init hook ran under an installed smart_core)"
+    },
+    "not_a_delivery_gate": "These are iteration-stage runtime observations; no frozen candidate and no Quick receipt are claimed.",
+    "retry_after_fix": {
+      "bootstrap": {
+        "attempts": [
+          {
+            "attempt_failed": true,
+            "base_state": "uninstalled",
+            "decision": "restart",
+            "entrypoint_finished": true
+          },
+          {
+            "decision": "wait",
+            "entrypoint_finished": false
+          }
+        ],
+        "ready": true,
+        "restarts": 1,
+        "state": "installed"
+      },
+      "failed_assertions": [],
+      "initialize_returncode": 0,
+      "registry_load_seconds": 117.22,
+      "route": "nginx healthy on host port 18090",
+      "status": "PASS"
+    },
+    "stage_identity": "HEAD 14077ab6 plus the recorded dirty scope; remote product revision 10bf72ef",
+    "tests": {
+      "cases": [
+        "the declared set is never installed before the container bootstrap is over",
+        "an in-flight attempt is never restarted",
+        "a finished failed attempt is restarted exactly once",
+        "base missing means no install, independent of the wait",
+        "the injected decision table is a single shared source"
+      ],
+      "entry": "make verify.daily.runtime.database.duty",
+      "new": 12,
+      "status": "passed",
+      "tests": 96
+    },
+    "write_back": {
+      "declaration": "config/ops/daily_runtime_database_duties.v1.json customer_tenant_dev.custody.service_face -> initialized",
+      "plan": "make daily.runtime.database.duty.plan PASS for platform_control, demo and customer_tenant_dev",
+      "plan_digest": "f4b891edd15c5251ff1226e7541450a7946eda9c413f7b8c2fe9cc9163ddde8f"
+    }
+  },
+  "step_three_control_plane_initialization_20261015": {
+    "case": "The declared control plane had a cluster, a role, a database and a route, and still could not serve.",
+    "defect_a": "The entry brought up db, redis, odoo and nginx in one `up -d --wait`, so it waited for the application's health before the initialization that makes that health reachable. The first host run timed out at 300s and the whole payload was lost to an uncaught TimeoutExpired, which reported a partial write as no write at all.",
+    "defect_b": "The application role owned sc_platform_control and could still not create a table in public: on this PostgreSQL 15 cluster `public` is owned by pg_database_owner and has_schema_privilege(app,'public','CREATE') was measured false. Every other custody fact reported the duty as healthy.",
+    "fix_a": "The entry now starts the declared services in the order their own facts allow: db/redis are waited for, odoo is only started, the declared module set is installed, and nginx is started last because it is declared to wait for the application's health. A duty that raises is read back instead of dropped, and one failing duty no longer hides a later one.",
+    "fix_b": "The entry states the application's access explicitly (REVOKE CONNECT FROM PUBLIC, GRANT CONNECT and GRANT USAGE, CREATE ON SCHEMA public to the declared role), re-asserts it in the initialize phase before installing, and reads has_schema_privilege back for the duty's own database. The verdict fails closed on application_role_can_create_in_its_public_schema for a served face.",
+    "not_a_pass": "The initialize receipt's overall status is FAIL only because the deployment-wide binding was still on the old database at that moment; that binding was switched and proven afterwards, and the plan now reports PASS. Nothing about the control plane itself failed.",
+    "verification": {
+      "frontend_build": "make daily.runtime.frontend.build - PASS, platform_admin_written=true, platform_admin_baked=true, fingerprint 23e9f516c4f415428075eec70ddc457ebb7193dc8aff63a26d103a3df73bad22, entry index-CBpDOhLc.js",
+      "frontend_unit": "python3 -m unittest scripts.ops.test_daily_runtime_frontend_build_align - 21 tests OK",
+      "initialize": "make daily.runtime.database.duty.initialize (SC_CONFIRM_DAILY_RUNTIME_DATABASE_DUTY, digest 7f74aa96e335cab6d9f53d8c356e132acd2992b3183c4f537d72616901ea1768) - phase initialize, platform_control passed with no failed assertions",
+      "plan": "make daily.runtime.database.duty.plan - status PASS, declaration digest 52ac5ad164594e4d4231c715e4cbcfa76dce953670b3fce31851dbcd91d7c2ab, all three duties and the deployment binding passing",
+      "routing": "make daily.runtime.routing.inventory - status PASS, failed_assertions [], 7 instances, one live postmaster per cluster data volume",
+      "unit": "make verify.daily.runtime.database.duty - 84 tests OK"
+    }
+  },
   "step_three_plan_20261015": {
     "cluster_facts": {
       "cluster_container": "sc-backend-odoo-dev-db-1",
@@ -2003,44 +2116,5 @@
       ]
     },
     "validation_order": "L1 scope/syntax; exact nonzero L2; governed affected L3/L4 only once prerequisites pass"
-  },
-  "step_three_control_plane_initialization_20261015": {
-    "case": "The declared control plane had a cluster, a role, a database and a route, and still could not serve.",
-    "defect_a": "The entry brought up db, redis, odoo and nginx in one `up -d --wait`, so it waited for the application's health before the initialization that makes that health reachable. The first host run timed out at 300s and the whole payload was lost to an uncaught TimeoutExpired, which reported a partial write as no write at all.",
-    "fix_a": "The entry now starts the declared services in the order their own facts allow: db/redis are waited for, odoo is only started, the declared module set is installed, and nginx is started last because it is declared to wait for the application's health. A duty that raises is read back instead of dropped, and one failing duty no longer hides a later one.",
-    "defect_b": "The application role owned sc_platform_control and could still not create a table in public: on this PostgreSQL 15 cluster `public` is owned by pg_database_owner and has_schema_privilege(app,'public','CREATE') was measured false. Every other custody fact reported the duty as healthy.",
-    "fix_b": "The entry states the application's access explicitly (REVOKE CONNECT FROM PUBLIC, GRANT CONNECT and GRANT USAGE, CREATE ON SCHEMA public to the declared role), re-asserts it in the initialize phase before installing, and reads has_schema_privilege back for the duty's own database. The verdict fails closed on application_role_can_create_in_its_public_schema for a served face.",
-    "verification": {
-      "unit": "make verify.daily.runtime.database.duty - 84 tests OK",
-      "frontend_unit": "python3 -m unittest scripts.ops.test_daily_runtime_frontend_build_align - 21 tests OK",
-      "initialize": "make daily.runtime.database.duty.initialize (SC_CONFIRM_DAILY_RUNTIME_DATABASE_DUTY, digest 7f74aa96e335cab6d9f53d8c356e132acd2992b3183c4f537d72616901ea1768) - phase initialize, platform_control passed with no failed assertions",
-      "frontend_build": "make daily.runtime.frontend.build - PASS, platform_admin_written=true, platform_admin_baked=true, fingerprint 23e9f516c4f415428075eec70ddc457ebb7193dc8aff63a26d103a3df73bad22, entry index-CBpDOhLc.js",
-      "plan": "make daily.runtime.database.duty.plan - status PASS, declaration digest 52ac5ad164594e4d4231c715e4cbcfa76dce953670b3fce31851dbcd91d7c2ab, all three duties and the deployment binding passing",
-      "routing": "make daily.runtime.routing.inventory - status PASS, failed_assertions [], 7 instances, one live postmaster per cluster data volume"
-    },
-    "not_a_pass": "The initialize receipt's overall status is FAIL only because the deployment-wide binding was still on the old database at that moment; that binding was switched and proven afterwards, and the plan now reports PASS. Nothing about the control plane itself failed."
-  },
-  "step_four_customer_module_delivery_20261015": {
-    "case": "The customer duty declaration pointed at a customer addons root, and no governed entry could populate it, so 'install the user module' had no reviewed source.",
-    "gap": "config/ops/daily_runtime_database_duties.v1.json declares customer_addons_root for the customer tenant duty, yet the whole repository carried no entry that delivers a customer tree to the daily host. That tree is P2 content owned by the customer delivery repository, so the product repository must not be its source.",
-    "fix": "New governed entry scripts/ops/daily_runtime_tenant_addons_deliver.py delivers one exact customer commit's addons/ tree to /opt/sce/tenant-addons/daily/<commit>, content-addressed and write-once. --apply requires a clean source worktree and one exact commit; a same-identity destination is an idempotent no-op (writes:0) and a different identity is a stop, never an overwrite. One shared tree_digest implementation runs on both the local archive check and the remote readback. make/codex.mk carries verify.daily.runtime.tenant.addons, daily.runtime.tenant.addons.plan (read-only) and daily.runtime.tenant.addons.deliver, with confirmation token DELIVER_EXACT_DAILY_RUNTIME_TENANT_ADDONS in SC_CONFIRM_DAILY_RUNTIME_TENANT_ADDONS.",
-    "delivered": {
-      "customer_repository": "/home/lidefend/workspace/sce-customer-baosheng-odoo",
-      "tenant_sha": "bfbc736c51d987777b50c465261ece1d8d22f008",
-      "destination": "/opt/sce/tenant-addons/daily/bfbc736c51d987777b50c465261ece1d8d22f008",
-      "digest": "e0a3210da88ea49b1af16d6c037081289a97a39f7fb602d67192c25bf67dd7a6",
-      "modules": [
-        "sce_customer_baosheng",
-        "sce_customer_baosheng_core035_mvp",
-        "sce_customer_baosheng_history_attachments",
-        "sce_customer_baosheng_legacy"
-      ],
-      "writable_paths": []
-    },
-    "verification": {
-      "unit": "make verify.daily.runtime.tenant.addons - 21 tests OK",
-      "plan": "make daily.runtime.tenant.addons.plan (bfbc736) - PASS, mode=report, digest e0a3210d..., four modules, destination read-only"
-    },
-    "not_a_pass": "The delivered tree is a source identity only. The customer duty is still cluster_only: no product line, no customer user module and no governed migration have run. This is 批次验收完成 for the tenant-addons delivery slice, not for Step D."
   }
 }

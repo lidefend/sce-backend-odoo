@@ -1030,3 +1030,85 @@ Step B gaps remain preconditions for the first write to `sc_odoo` or `sc_platfor
 
 **This is 批次验收完成 for the tenant-addons delivery slice. It is not 主线集成完成, 版本发布完成 or
 产品交付完成.**
+
+## Step D — the customer duty's initialization failed, and the defect that caused it
+
+The first `--phase initialize` for `customer_tenant_dev` **failed** (`initialize.returncode = 255`):
+
+```
+psycopg2.errors.UniqueViolation: duplicate key value violates unique constraint "pg_type_typname_nsp_index"
+DETAIL:  Key (typname, typnamespace)=(ir_actions, 2200) already exists.
+```
+
+### Root cause: two initializers in one fresh database
+
+`scripts/odoo-entrypoint.sh` makes the application container its own initializer: when
+`public.ir_module_module` is absent or `base` is not installed, it runs
+`odoo -i base --without-demo=all --stop-after-init` and only then `exec`s the server. The duty entry,
+however, started the application with a plain `up -d` (deliberately: the application's health is a
+*consequence* of the declared module set, so waiting for it before installing would wait forever) and
+then immediately ran `docker exec <odoo> odoo -i <declared modules>`.
+
+So both processes built the Odoo base schema in the same database at the same time. The duty was left
+**half initialized**: `ir_module_module` existed with 677 rows, `base` was `uninstalled`, every declared
+module was `uninstalled`, and `public` carried 200 types and 399 relations of partial DDL.
+
+### Fix: one initializer at a time, and prove it
+
+`await_base_bootstrap(duty)` now runs between `start_services` and `install_modules`:
+
+* it waits for the container's **own** bootstrap to finish, read back from the cluster
+  (`ir_module_module` → `base` state) and from *this startup's* log statements (everything after the
+  last `[entrypoint] render odoo.conf` line, so a restart is never mistaken for a finished attempt);
+* a finished attempt that did **not** install `base` is retried **once** by restarting the container —
+  safe exactly because the previous attempt is over, and refused while one is in flight;
+* a second finished failure is reported, not looped, and the entry fails closed.
+
+`install_modules` carries a second, independent guard: it refuses to install into a database whose
+`base` is not installed, so a timed-out wait can never hand the duty to the installer anyway.
+
+The wait bound and poll interval travel in the payload (`bootstrap_timeout`, `bootstrap_poll`,
+defaults 1800 s / 15 s) so the boundary is exercised by the test suite rather than asserted by reading.
+`make verify.daily.runtime.database.duty` — **96 tests OK** (12 new: ordering, in-flight attempts are
+never restarted, one restart only, and no install without `base`).
+
+### The retry that closed it (no database was reset)
+
+```
+bootstrap.attempts[0]  base_state=uninstalled  entrypoint_finished=true  attempt_failed=true  -> restart
+docker restart sc-tenant-baosheng-dev-odoo-1                                          returncode 0
+bootstrap.attempts[1]  entrypoint_finished=false                                      -> wait
+bootstrap.ready          true                state=installed
+initialize               returncode 0        modules installed, registry loaded in 117.220s
+route (nginx)            healthy             nginx_host_port 18090
+status                   PASS                failed_assertions []
+```
+
+Re-running the container's own bootstrap completed the schema the collision had left half built; the
+partially initialized database was **repaired in place**. Nothing was dropped, no `pg_resetwal`, no
+writedown of a copy taken from a running instance.
+
+Independent read-only readback (not the entry's own report):
+
+```
+base_state=installed   declared_installed=11/11   public relations=5455   types=1748
+ir_ui_menu=724         res_users=5   res_company=1
+ir_config_parameter sc.tenant.bound_tenant_key = baosheng     (the client post_init hook ran)
+containers: nginx/odoo/redis/db all running (healthy)         curl :18090/web/login -> 200
+odoo log: 0 ERROR/CRITICAL lines in the last 300
+second entrypoint run: "base already installed; skip bootstrap"   (the fix, end to end)
+```
+
+The declaration's `custody.service_face` was then written back from `to_be_initialized` to
+`initialized`, and `make daily.runtime.database.duty.plan` reports **PASS for all three duties**
+(`platform_control`, `demo`, `customer_tenant_dev`) with `plan_digest f4b891ed…`.
+
+### What this does **not** close
+
+The duty is now a served, initialized face — **not** a migration. The product line and the customer user
+module are installed from the delivered read-only tree, but no historical data has moved: Step D proper
+(the customer module's own versioned migration, `historical_payment_migration_policy.expected_records=12386`)
+and the Step E/F isolation and product acceptance remain open.
+
+**This is 批次验收完成 for the customer duty initialization slice. It is not 主线集成完成, 版本发布完成 or
+产品交付完成.**

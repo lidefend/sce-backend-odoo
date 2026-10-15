@@ -170,7 +170,7 @@
         "database_present": true,
         "database_role_present": true,
         "role_compliance": "compliant",
-        "service_face": "to_be_initialized"
+        "service_face": "initialized"
       },
       "storage": {
         "compose_project": "sc-tenant-baosheng-dev",
