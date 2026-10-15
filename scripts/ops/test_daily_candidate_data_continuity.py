@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import ast
 import importlib.util
 import json
 import os
@@ -368,6 +369,40 @@ class DutyIdentityTests(unittest.TestCase):
         self.assertTrue(distinctive)
         for value in sorted(distinctive):
             self.assertNotIn(value, shared, value)
+
+    def test_remote_bundle_ships_every_module_its_tools_import(self):
+        # The remote tool tree is a explicit file list, not the whole
+        # repository: a tool that imports a local module which is not shipped
+        # fails on the server with ModuleNotFoundError after the local tests
+        # passed. Derive the requirement from the shipped tools themselves so
+        # the list cannot drift again.
+        make = (ROOT / "make/daily_candidate.mk").read_text()
+        recipe = make.split("daily.candidate.continuity.remote_install:", 1)[1]
+        recipe = recipe.split("\n\n", 1)[0]
+        shipped = set(
+            re.findall(r"^\t\t(\S+) \\$", recipe, flags=re.MULTILINE)
+        )
+        self.assertTrue(shipped)
+        ops_root = ROOT / "scripts/ops"
+        required: set[str] = set()
+        for path in sorted(shipped):
+            if not path.endswith(".py"):
+                continue
+            local = ROOT / path
+            self.assertTrue(local.is_file(), path)
+            tree = ast.parse(local.read_text(encoding="utf-8"), filename=path)
+            names: set[str] = set()
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    names.update(alias.name.split(".")[0] for alias in node.names)
+                elif isinstance(node, ast.ImportFrom) and node.module:
+                    names.add(node.module.split(".")[0])
+            for name in names:
+                sibling = f"scripts/ops/{name}.py"
+                if (ops_root / f"{name}.py").is_file():
+                    required.add(sibling)
+        missing = sorted(required - shipped)
+        self.assertEqual(missing, [], f"remote bundle misses imported modules: {missing}")
 
     def test_duty_recovery_entries_run_the_tool_with_the_duty_contract(self):
         # The entry must execute the tool, not the contract JSON, and it must

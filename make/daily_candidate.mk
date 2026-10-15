@@ -68,6 +68,7 @@ daily.candidate.continuity.remote_install: guard.prod.forbid
 	@test -z "$$(git status --porcelain)" || { echo "clean worktree is required for immutable tool install" >&2; exit 2; }
 	@git archive --format=tar "$(DAILY_CONTINUITY_TOOL_SHA)" \
 		scripts/ops/daily_candidate_data_continuity.py \
+		scripts/ops/daily_runtime_duty_identity.py \
 		scripts/ops/daily_candidate_data_continuity_contract_v1.json \
 		scripts/ops/daily_runtime_tenant_recovery_contract_v1.json \
 		config/ops/daily_runtime_database_duties.v1.json \
