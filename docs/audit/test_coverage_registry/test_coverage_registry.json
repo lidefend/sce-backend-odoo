@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 165,
+    "odoo_tags": 168,
     "gated": 4,
     "on_demand": 18,
-    "unwired": 143,
-    "odoo_tag_declarations": 374,
+    "unwired": 146,
+    "odoo_tag_declarations": 377,
     "gated_declarations": 89,
-    "uncovered_declarations": 285,
+    "uncovered_declarations": 288,
     "ci_unit_scripts": 14,
     "ci_unit_scripts_wired": 14,
     "ci_unit_scripts_unwired": 0
@@ -477,6 +477,17 @@
       "disposition": "wire-pending"
     },
     {
+      "group": "-standard",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "demo_addons/smart_construction_demo/tests/test_demo_action_roles.py"
+      ],
+      "owner": "demo-team",
+      "evidence": []
+    },
+    {
       "group": "acceptance_fixture_data_space",
       "status": "unwired",
       "kind": "odoo_tag",
@@ -826,6 +837,17 @@
       "disposition": "class-selected"
     },
     {
+      "group": "demo_action_roles",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "demo_addons/smart_construction_demo/tests/test_demo_action_roles.py"
+      ],
+      "owner": "demo-team",
+      "evidence": []
+    },
+    {
       "group": "demo_gate",
       "status": "unwired",
       "kind": "odoo_tag",
@@ -836,6 +858,17 @@
       "owner": "demo-team",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "demo_loaded_chains",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "demo_addons/smart_construction_demo/tests/test_demo_action_roles.py"
+      ],
+      "owner": "demo-team",
+      "evidence": []
     },
     {
       "group": "dictionary_scope_delivery",

@@ -10,14 +10,87 @@
     ".agent/active-runs.json",
     ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
     ".agent/runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/",
-    "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
-    "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts",
-    "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+    "addons/smart_core/models/platform_database_registry.py",
+    "addons/smart_core/tests/test_platform_database_governance_orm.py",
     "config/frontend/role_surface_exposure_declarations_v1.json",
+    "demo_addons/smart_construction_demo/data/demo/sc_demo_users.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s00_min_path/10_project_boq.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s00_min_path/contract_boq.csv",
+    "demo_addons/smart_construction_demo/data/scenario/s60_project_cockpit/10_cockpit_business_facts.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s65_cost_budget_funding_surface/10_cost_budget_funding_records.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s66_ledger_entity_surface/10_ledger_entity_records.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s68_cockpit_workbench_surface/10_cockpit_workbench_records.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s69_payment_ledger_surface/10_payment_ledger_records.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s70_daily_business_surface/10_daily_business_records.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s73_risk_settlement_surface/10_risk_settlement_records.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s80_execution_management_surface/10_execution_management_records.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s85_admin_finance_surface/10_admin_finance_records.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s86_tender_rental_finance_surface/10_tender_rental_finance_records.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s87_resource_contract_surface/10_resource_contract_records.xml",
+    "demo_addons/smart_construction_demo/data/scenario/s89_quality_safety_surface/10_quality_safety_records.xml",
+    "demo_addons/smart_construction_demo/hooks.py",
+    "demo_addons/smart_construction_demo/models/__init__.py",
+    "demo_addons/smart_construction_demo/models/boq_demo_seed.py",
+    "demo_addons/smart_construction_demo/models/funding_baseline_demo_seed.py",
+    "demo_addons/smart_construction_demo/models/payment_request_demo_seed.py",
+    "demo_addons/smart_construction_demo/models/project_demo_cockpit_seed.py",
+    "demo_addons/smart_construction_demo/seed/business_roles.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_20_projects_demo.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_30_tenders_demo.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_40_contracts_demo.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_50_boq_wbs_demo.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_60_attachments_demo.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_demo_showroom.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_formal_product_surfaces.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_payment_ledger_p1.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_payment_request_floorplan_demo.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_phase2_payment_request_demo.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_phase2_settlement_order_demo.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_project_stage_sync.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_z_demo_full_my_work.py",
+    "demo_addons/smart_construction_demo/seed/tier_flow.py",
+    "demo_addons/smart_construction_demo/tests/__init__.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_action_roles.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_boq_import_batch.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_funding_baseline_lifecycle.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
+    "demo_addons/smart_construction_demo/tools/scenario_loader.py",
+    "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
+    "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+    "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts",
+    "make/dev.mk",
+    "make/dev_test.mk",
+    "scripts/demo/load_full.sh",
+    "scripts/mod/upgrade.sh",
     "scripts/ops/dev_acceptance_release_probe.py",
+    "scripts/ops/odoo_shell_exec.sh",
+    "scripts/ops/platform_database_lifecycle_apply.py",
+    "scripts/ops/platform_database_register.py",
+    "scripts/verify/platform_database_governance_guard.py",
     "scripts/verify/role_surface_exposure_declaration_guard.py",
+    "scripts/verify/test_daily_acceptance_fixture_lane.py",
+    "scripts/verify/test_local_development_lifecycle.py",
+    "scripts/verify/test_platform_database_lifecycle_entry.py",
     "scripts/verify/test_role_surface_exposure_declaration_guard.py",
-    "scripts/verify/test_daily_acceptance_fixture_lane.py"
+    "demo_addons/smart_construction_demo/models/issue_demo_seed.py",
+    "demo_addons/smart_construction_demo/data/scenario/s88_output_invoice_surface/10_output_invoice_records.xml",
+    "scripts/test/test_safe.sh",
+    "demo_addons/smart_construction_demo/seed/steps/step_10_users_demo.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_90_verify_demo.py",
+    "demo_addons/smart_construction_demo/seed/registry.py",
+    "demo_addons/smart_construction_demo/seed/steps/__init__.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_80_finalize_stages_demo.py",
+    "scripts/ops/platform_database_receipt.py",
+    "config/platform_database_rehearsal.json",
+    "docker-compose.platform-database-rehearsal.yml",
+    "scripts/ops/platform_database_rehearsal.py",
+    "scripts/ops/platform_database_rehearsal_runtime.py",
+    "scripts/verify/test_platform_database_rehearsal.py",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
   ],
   "environment": {
     "kind": "runtime",
@@ -86,6 +159,976 @@
       "kind": "runtime"
     }
   },
-  "blockers": [],
-  "next_exact_step": "Publish the candidate head (3d3bf6c0/81648557) to the daily runtime through CONFIRM_DAILY_CANDIDATE_BUNDLE_SYNC=SYNC_EXACT_DAILY_CANDIDATE_SHA_WITH_BUNDLE make daily.runtime.candidate.bundle_sync (DAILY_CANDIDATE_EXPECTED_OLD_SHA=ba7577c212b81468491942e972ea28bd64345ebd), then daily.runtime.source_revision.align, DAILY_RUNTIME_FRONTEND_BUILD_SHA=<candidate> make daily.runtime.frontend.build, daily.runtime.published_face.converge, daily.runtime.record_identity.resolve, and finally the three serial write lanes (payment_request / general_contract / lifecycle) with ACCEPTANCE_TARGET_SHA=<candidate>."
+  "blockers": [
+    "Frozen exact-head Quick, final identity-bound review and required remote checks remain pending.",
+    "Daily target deployment and complete user product acceptance remain pending; local demo sample read is not full product delivery."
+  ],
+  "next_exact_step": "Freeze reviewed clean candidate after final generated refresh, then exact-head Quick once; no deployment or user acceptance claim.",
+  "takeover_20261015": {
+    "head": "e12e75eaa5bdcfe5b01dfe14b89cb201fac60023",
+    "dirty_paths": [
+      "demo_addons/smart_construction_demo/tests/test_demo_funding_baseline_lifecycle.py",
+      "demo_addons/smart_construction_demo/tools/scenario_loader.py",
+      "scripts/ops/odoo_shell_exec.sh",
+      "scripts/ops/platform_database_lifecycle_apply.py",
+      "scripts/ops/platform_database_register.py",
+      "scripts/verify/platform_database_governance_guard.py",
+      "scripts/verify/test_platform_database_lifecycle_entry.py"
+    ],
+    "authority": "Owner requested takeover and closure after independent final review",
+    "layers": {
+      "P4": "demo loader and governed operation adapters reuse existing environments; cannot bypass product actions",
+      "P0": "database lifecycle model remains operation/permission authority"
+    },
+    "risk": "high: database lifecycle effects; no runtime cutoff until exact governed target, rollback and tests are satisfied",
+    "single_writer": "root; B read-only review",
+    "validation_order": "L1 scope/syntax; exact nonzero L2; governed affected L3/L4 only once prerequisites pass",
+    "existing_changes": "Preserve and inspect in-place; not frozen; no blanket reset",
+    "scope_limit": "No new database/profile/credentials or frontend semantics; no publication with known blockers",
+    "audit_readback_slice": {
+      "owner": "P0 platform_database_registry",
+      "reason": "readback produced before audit insert and last_operation update; from_state context lost",
+      "affected_set": "native lifecycle/readback ORM tests plus P4 orchestration receipts",
+      "rollback": "revert this bounded P0 delta only; no schema change",
+      "earliest_layer": "L1 then focused L2; no live cutoff"
+    },
+    "demo_actor_slice": {
+      "owner": "P4 demo fixture organization and action orchestration",
+      "reason": "Replace private tokens/sudo with declared real business seats; bonus requires an explicit business configuration seat",
+      "product_changes": "none; ACL and actions remain authoritative",
+      "validation": "L1 pure actor negative tests, then affected nonzero governed ORM; no full rebuild while seed inputs are known invalid"
+    },
+    "current_dirty_paths": [
+      ".agent/runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/run.json",
+      "addons/smart_core/models/platform_database_registry.py",
+      "addons/smart_core/tests/test_platform_database_governance_orm.py",
+      "demo_addons/smart_construction_demo/data/demo/sc_demo_users.xml",
+      "demo_addons/smart_construction_demo/data/scenario/s00_min_path/10_project_boq.xml",
+      "demo_addons/smart_construction_demo/data/scenario/s00_min_path/contract_boq.csv",
+      "demo_addons/smart_construction_demo/data/scenario/s60_project_cockpit/10_cockpit_business_facts.xml",
+      "demo_addons/smart_construction_demo/data/scenario/s65_cost_budget_funding_surface/10_cost_budget_funding_records.xml",
+      "demo_addons/smart_construction_demo/data/scenario/s66_ledger_entity_surface/10_ledger_entity_records.xml",
+      "demo_addons/smart_construction_demo/data/scenario/s68_cockpit_workbench_surface/10_cockpit_workbench_records.xml",
+      "demo_addons/smart_construction_demo/data/scenario/s69_payment_ledger_surface/10_payment_ledger_records.xml",
+      "demo_addons/smart_construction_demo/data/scenario/s70_daily_business_surface/10_daily_business_records.xml",
+      "demo_addons/smart_construction_demo/data/scenario/s73_risk_settlement_surface/10_risk_settlement_records.xml",
+      "demo_addons/smart_construction_demo/data/scenario/s80_execution_management_surface/10_execution_management_records.xml",
+      "demo_addons/smart_construction_demo/data/scenario/s85_admin_finance_surface/10_admin_finance_records.xml",
+      "demo_addons/smart_construction_demo/data/scenario/s86_tender_rental_finance_surface/10_tender_rental_finance_records.xml",
+      "demo_addons/smart_construction_demo/data/scenario/s87_resource_contract_surface/10_resource_contract_records.xml",
+      "demo_addons/smart_construction_demo/data/scenario/s89_quality_safety_surface/10_quality_safety_records.xml",
+      "demo_addons/smart_construction_demo/hooks.py",
+      "demo_addons/smart_construction_demo/models/__init__.py",
+      "demo_addons/smart_construction_demo/models/boq_demo_seed.py",
+      "demo_addons/smart_construction_demo/models/funding_baseline_demo_seed.py",
+      "demo_addons/smart_construction_demo/models/payment_request_demo_seed.py",
+      "demo_addons/smart_construction_demo/models/project_demo_cockpit_seed.py",
+      "demo_addons/smart_construction_demo/seed/business_roles.py",
+      "demo_addons/smart_construction_demo/seed/steps/step_20_projects_demo.py",
+      "demo_addons/smart_construction_demo/seed/steps/step_30_tenders_demo.py",
+      "demo_addons/smart_construction_demo/seed/steps/step_40_contracts_demo.py",
+      "demo_addons/smart_construction_demo/seed/steps/step_50_boq_wbs_demo.py",
+      "demo_addons/smart_construction_demo/seed/steps/step_60_attachments_demo.py",
+      "demo_addons/smart_construction_demo/seed/steps/step_demo_showroom.py",
+      "demo_addons/smart_construction_demo/seed/steps/step_formal_product_surfaces.py",
+      "demo_addons/smart_construction_demo/seed/steps/step_payment_ledger_p1.py",
+      "demo_addons/smart_construction_demo/seed/steps/step_payment_request_floorplan_demo.py",
+      "demo_addons/smart_construction_demo/seed/steps/step_phase2_payment_request_demo.py",
+      "demo_addons/smart_construction_demo/seed/steps/step_phase2_settlement_order_demo.py",
+      "demo_addons/smart_construction_demo/seed/steps/step_project_stage_sync.py",
+      "demo_addons/smart_construction_demo/seed/steps/step_z_demo_full_my_work.py",
+      "demo_addons/smart_construction_demo/seed/tier_flow.py",
+      "demo_addons/smart_construction_demo/tests/__init__.py",
+      "demo_addons/smart_construction_demo/tests/test_demo_action_roles.py",
+      "demo_addons/smart_construction_demo/tests/test_demo_boq_import_batch.py",
+      "demo_addons/smart_construction_demo/tests/test_demo_funding_baseline_lifecycle.py",
+      "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
+      "demo_addons/smart_construction_demo/tools/scenario_loader.py",
+      "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
+      "make/dev_test.mk",
+      "scripts/demo/load_full.sh",
+      "scripts/ops/odoo_shell_exec.sh",
+      "scripts/ops/platform_database_lifecycle_apply.py",
+      "scripts/ops/platform_database_register.py",
+      "scripts/verify/platform_database_governance_guard.py",
+      "scripts/verify/test_local_development_lifecycle.py",
+      "scripts/verify/test_platform_database_lifecycle_entry.py"
+    ],
+    "results": [
+      {
+        "layer": "L1",
+        "command": "make ci.local.iteration",
+        "status": "passed",
+        "log": "/tmp/sce-supplemental-resubmit-iteration.log",
+        "identity": "e12e75eaa5bdcfe5b01dfe14b89cb201fac60023 plus declared dirty scope; index/documentation only afterwards"
+      },
+      {
+        "layer": "L2",
+        "command": "make verify.platform.database.governance.guard verify.platform.database.lifecycle.unit verify.demo.lifecycle.unit",
+        "status": "passed",
+        "tests": {
+          "database_governance": 17,
+          "database_adapters": 45,
+          "demo_lifecycle": 24
+        },
+        "log": "/tmp/sce-takeover-targeted.log",
+        "reuse": "Database code/tests unchanged; retain 17/45 results. Demo 24 result superseded by affected 27/5 run below."
+      },
+      {
+        "layer": "L2",
+        "command": "make verify.local.development_lifecycle.unit",
+        "status": "passed",
+        "tests": 36,
+        "log": "/tmp/sce-takeover-settlement-chain-unit.log",
+        "reuse": "Rerun required by load_full release selection and changed input assertion; 36 tests passed."
+      },
+      {
+        "layer": "L2",
+        "command": "make local.dev.test MODULE=smart_core TEST_TAGS=/smart_core:TestPlatformDatabaseGovernance.test_lifecycle_readback_matches_persisted_audit,/smart_core:TestPlatformDatabaseGovernance.test_lifecycle_entries_are_governed_and_audited",
+        "status": "passed",
+        "tests": 2,
+        "log": "/tmp/sce-takeover-db-readback-orm.log",
+        "environment": "sc-local-dev / sc_dev_demo",
+        "reuse": "P0 model and its two test inputs unchanged; P4 adapters/demo changes do not affect this model-level result; not a physical database effect receipt"
+      },
+      {
+        "layer": "L2",
+        "command": "make local.dev.test MODULE=smart_construction_demo TEST_TAGS=/smart_construction_demo:TestDemoActionRoles",
+        "status": "passed",
+        "tests": 2,
+        "log": "/tmp/sce-takeover-demo-roles-orm.log",
+        "environment": "sc-local-dev / sc_dev_demo",
+        "coverage": "real non-sudo material issue creates cost result with real source/line/amount; explicit root actor rejected; transaction fixtures rolled back"
+      },
+      {
+        "layer": "L3-L5",
+        "command": "full demo rebuild / physical database suspend-resume / target acceptance / freeze",
+        "status": "not_run",
+        "reason": "Supplemental seed terminal/actor/BOQ paths remain unresolved; independent platform runtime authority pending; candidate dirty."
+      },
+      {
+        "layer": "L2",
+        "command": "make local.dev.test MODULE=smart_construction_demo TEST_TAGS=/smart_construction_demo:TestDemoActionRoles.test_native_boq_import_creates_consistent_snapshot_and_reuses_result",
+        "status": "passed",
+        "tests": 1,
+        "log": "/tmp/sce-takeover-boq-orm.log",
+        "environment": "sc-local-dev / sc_dev_demo; transactional",
+        "coverage": "Native file preflight/import, digest/items/amount/actor and repeat identity",
+        "reuse": "Relevant tested helper, model and fixture inputs unchanged by supplemental seed-chain change; no full runtime/rebuild claim"
+      },
+      {
+        "layer": "L2",
+        "command": "make local.dev.test MODULE=smart_construction_demo TEST_TAGS=/smart_construction_demo:TestDemoActionRoles.test_public_seed_wrappers_refuse_unprivileged_callers_before_side_effects",
+        "status": "passed",
+        "tests": 1,
+        "log": "/tmp/sce-takeover-seed-auth-orm.log",
+        "environment": "sc-local-dev / sc_dev_demo; transactional",
+        "coverage": "Four public wrappers deny ordinary caller before preparation",
+        "reuse": "Relevant tested helper, model and fixture inputs unchanged by supplemental seed-chain change; no full runtime/rebuild claim"
+      },
+      {
+        "layer": "L2",
+        "command": "make local.dev.test MODULE=smart_construction_demo TEST_TAGS=/smart_construction_demo:TestDemoActionRoles.test_cockpit_manual_costs_are_created_by_real_cost_operator",
+        "status": "passed",
+        "tests": 1,
+        "log": "/tmp/sce-takeover-cockpit-cost-orm.log",
+        "environment": "sc-local-dev / sc_dev_demo; transactional",
+        "coverage": "Four manual cost rows under cost operator; no false source; repeat idempotence",
+        "reuse": "Relevant tested helper, model and fixture inputs unchanged by supplemental seed-chain change; no full runtime/rebuild claim"
+      },
+      {
+        "layer": "L2",
+        "command": "make verify.demo.lifecycle.unit",
+        "status": "passed",
+        "tests": {
+          "demo_lifecycle": 27,
+          "boq_input": 5
+        },
+        "log": "/tmp/sce-takeover-settlement-chain-unit.log",
+        "prior_failure": {
+          "log": "/tmp/sce-takeover-seed-chain-unit.log",
+          "owner": "demo source regression assertion",
+          "cause": "Old assertion required sudo/carrier cleanup removed from cockpit; now requires declared actor and forbids sudo/token."
+        }
+      },
+      {
+        "layer": "L2",
+        "command": "make verify.demo.lifecycle.unit",
+        "status": "passed",
+        "tests": {
+          "demo_lifecycle": 27,
+          "boq_input": 5,
+          "supplemental_orchestration": 11
+        },
+        "log": "/tmp/sce-supplemental-resubmit-unit.log",
+        "coverage": "Offline action orchestration, prior source guards; no ORM authorization or full seed replay proof",
+        "impact": "step30/40/60 supplemental seeds, contract approval seat mapping and rejected payment resubmission changed. Database adapters/P0 and unchanged native BOQ/material helpers not rerun."
+      },
+      {
+        "layer": "L1",
+        "command": "make ci.local.iteration",
+        "status": "passed",
+        "log": "/tmp/sce-whole-orm-iteration.log",
+        "identity": "e12e75eaa5bdcfe5b01dfe14b89cb201fac60023 + declared dirty scope"
+      },
+      {
+        "layer": "L2",
+        "command": "make verify.demo.lifecycle.unit; make verify.demo.supplemental.unit",
+        "status": "passed",
+        "tests": {
+          "demo_lifecycle": 27,
+          "boq_input": 5,
+          "supplemental_orchestration": 18
+        },
+        "logs": [
+          "/tmp/sce-whole-seed-unit.log",
+          "/tmp/sce-whole-supplemental-final.log"
+        ],
+        "impact": "Only supplemental orchestration changed after aggregate run (16 to 18 tests); unchanged lifecycle 27 and BOQ 5 results carried forward. Source orchestration proof, not full runtime replay."
+      },
+      {
+        "layer": "L2",
+        "command": "make local.dev.test MODULE=smart_construction_demo TEST_TAGS=/smart_construction_demo:TestDemoActionRoles.test_manual_boq_analysis_generates_native_cost_plan_as_cost_manager,/smart_construction_demo:TestDemoActionRoles.test_wbs_normal_create_owns_plan_and_replay_respects_published_guard",
+        "status": "passed",
+        "tests": 2,
+        "log": "/tmp/sce-whole-native-chains-orm.log",
+        "environment": "sc-local-dev / sc_dev_demo; transactional rollback; no upgrade",
+        "coverage": "Non-sudo cost manager authors native analysis, publishes BOQ and generates cost plan retaining analysis and 1200 amount, repeat stable; normal WBS create owns plan, publish then replay no-op, mutation rejected."
+      },
+      {
+        "layer": "L0",
+        "command": "make local.dev.verify_authority",
+        "status": "passed",
+        "log": "/tmp/sce-whole-demo-authority.log",
+        "environment": "sc-local-dev / sc_dev_demo",
+        "coverage": "Installed Demo module, finance identity/group, CNY company and sale tax; read-only readiness, not full replay evidence"
+      },
+      {
+        "layer": "L1",
+        "command": "make ci.local.iteration",
+        "status": "passed",
+        "log": "/tmp/sce-guidance-enrollment-iteration.log",
+        "impact": "P4 demo source/seat changes; final added pure sequence test checked by its execution; no unrelated checks rerun"
+      },
+      {
+        "layer": "L2",
+        "command": "make verify.demo.supplemental.unit",
+        "status": "passed",
+        "tests": 19,
+        "log": "/tmp/sce-guidance-enrollment-unit.log",
+        "coverage": "Contract reviewer coverage derives from both native contract templates; source user replay enrolls data-space identities before commit; prior 18 tests retained"
+      },
+      {
+        "layer": "L2",
+        "command": "make local.dev.test MODULE=smart_construction_demo TEST_TAGS=/smart_construction_demo:TestDemoActionRoles.test_guidance_fixture_confirms_new_contract_and_reuses_native_soft_warning",
+        "status": "passed",
+        "tests": 1,
+        "log": "/tmp/sce-guidance-enrolled-orm.log",
+        "identity": "e12e75eaa5bdcfe5b01dfe14b89cb201fac60023 + declared dirty scope",
+        "environment": "sc-local-dev / sc_dev_demo; TransactionCase rollback",
+        "coverage": "Exact new seat XML and exact source category rule replayed transactionally, native identity enrollment, first-create draft contract confirmed through actual reviewers, ordinary initiator creates draft soft-warning payment, repeated fixture stable IDs",
+        "limitations": "Selected source rule replay is explicit: current persistent rule remains stale. No permanent module upgrade or full fresh install proved. Existing S69 source/baseline used."
+      },
+      {
+        "layer": "L2",
+        "status": "failed",
+        "command": "same focused guidance ORM before fixes",
+        "logs": [
+          "/tmp/sce-guidance-chain-orm.log",
+          "/tmp/sce-guidance-chain-orm-v2.log",
+          "/tmp/sce-guidance-category-diagnostic.log",
+          "/tmp/sce-guidance-category-readback.log",
+          "/tmp/sce-guidance-source-rule-orm.log",
+          "/tmp/sce-guidance-reviewer-orm.log"
+        ],
+        "failure_owner": "P4 test importer/diagnostic fixes; runtime stale category rule; P4 Demo reviewer declarations",
+        "recovery": "Named XML file input; current-principal diagnostic; exact source rule replay; native template-derived reviewer seat coverage and identity enrollment before business actions. All tests rollback; historical failed logs retained."
+      },
+      {
+        "layer": "L3",
+        "command": "make local.dev.snapshot",
+        "status": "passed",
+        "log": "/tmp/sce-closure-before-upgrade-snapshot.log",
+        "artifact": "artifacts/local-dev/snapshots/20261015T031821Z",
+        "environment": "sc-local-dev / sc_dev_demo / ^sc_dev_demo$ / sc_local_dev_odoo_data:/var/lib/odoo/filestore/sc_dev_demo",
+        "readback": "Manifest dump/filestore SHA256 verified; dump 10768826 bytes; archive 1805 members all under exact sc_dev_demo prefix. Recovery material saved before module upgrade; restore not exercised."
+      },
+      {
+        "layer": "L1",
+        "command": "make ci.local.iteration",
+        "status": "passed",
+        "log": "/tmp/sce-s69-source-iteration.log"
+      },
+      {
+        "layer": "L2",
+        "command": "make verify.demo.lifecycle.unit",
+        "status": "passed",
+        "tests": 52,
+        "log": "/tmp/sce-s69-source-unit.log"
+      },
+      {
+        "layer": "L2",
+        "command": "make verify.local.development_lifecycle.unit",
+        "status": "passed",
+        "tests": 36,
+        "log": "/tmp/sce-s69-resume-unit.log"
+      },
+      {
+        "layer": "L3",
+        "command": "make local.dev.demo.load SCENARIO=s69_payment_ledger_surface",
+        "status": "passed",
+        "log": "/tmp/sce-s69-purchase-chain.log",
+        "coverage": "Real draft procurement confirmation/reviews, linked settlement approval, funding activation, payment approval and execution-generated ledger. Persisted load; detailed readback pending."
+      },
+      {
+        "layer": "L3",
+        "command": "make local.dev.demo.load SCENARIO=s70_daily_business_surface",
+        "status": "passed",
+        "log": "/tmp/sce-s70-receipt-chain.log",
+        "recovery": "Replaced incorrect outgoing-payment treasury assumption with dedicated 1200000 receipt request, actual approval/received action and native receipt treasury backlink. Prior S10 request unchanged.",
+        "prior_failure": "/tmp/sce-closure-s70_daily_business_surface.log"
+      }
+    ],
+    "independent_reviews": {
+      "database": "read-only admin_data_boundary_audit: latest adapter/model delta has no new code blocker; physical effects unverified",
+      "demo": "scene_boundary_review: latest reviewer mappings, native-group operation seat, project membership union and load_base_seed identity enrollment have no new definite source blocker; independently confirmed guidance 1 ORM and supplemental 19 pure passes. Only transactional declaration replay proven."
+    },
+    "authority_correction": "AGENTS.md local.dev persistent demo-backed identity overrides contradictory .agent/context.yaml realistic/no-demo summary. Registered local.dev.test transactional ORM validation is permitted. This correction does not authorize persistent reset or new platform-control environment.",
+    "runtime_upgrade_in_progress": {
+      "command": "make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core",
+      "log": "/tmp/sce-closure-core-upgrade-authorized.log",
+      "reason": "Authoritatively observed runtime security rule differs from current source XML; exact security module upgrade declaration required by fast-mode guard",
+      "prior_attempt": "/tmp/sce-closure-core-upgrade.log: denied before mutation by fast-mode guard; explicit source/security upgrade flags now supplied",
+      "candidate": "e12e75eaa5bdcfe5b01dfe14b89cb201fac60023 + dirty",
+      "status": "failed",
+      "failure": "Adapter flags fixed; existing BOQ import snapshot conflicts with actual CSV. Rebuild needed rather than data forgery. Postfailure authority PASS.",
+      "final_log": "/tmp/sce-closure-core-upgrade-with-demo-scope.log"
+    },
+    "runtime_rebuild": {
+      "status": "failed",
+      "command": "make local.dev.rebuild_demo CONFIRM_LOCAL_DEV_DEMO_REBUILD=REBUILD_CURRENT_FEATURE_DEMO",
+      "authority": "Owner explicitly permits adapting/resetting development acceptance data and continuing closure; reuse registered demo lifecycle, not new environment",
+      "target": {
+        "role": "local feature demo",
+        "tenant": "platform-local-feature-demo",
+        "project": "sc-local-dev",
+        "db": "sc_dev_demo",
+        "dbfilter": "^sc_dev_demo$",
+        "volumes": [
+          "sc_local_dev_db_data",
+          "sc_local_dev_redis_data",
+          "sc_local_dev_odoo_data"
+        ],
+        "filestore": "sc_local_dev_odoo_data:/var/lib/odoo/filestore/sc_dev_demo"
+      },
+      "recovery_material": "artifacts/local-dev/snapshots/20261015T031821Z",
+      "trigger": "Proven legacy BOQ generated result mismatch prevents honest upgrade; source input changed and fresh formal flow required",
+      "log": "/tmp/sce-closure-fresh-demo-rebuild.log",
+      "completed": "Fresh product and demo installation, tax reconciliation and Demo authority passed; release loader committed scenarios before S69.",
+      "failure": "S69 settlement actor membership missing, then genuine purchase source missing. Fixed in P4 and resumed S69 only; no second rebuild."
+    },
+    "release_resume": {
+      "source": "RELEASE_SCENARIOS AST literal, slice strictly after S69; prior loader committed each preceding scenario",
+      "keys": [
+        "s72_project_governance_surface",
+        "s73_risk_settlement_surface",
+        "s74_partner_supplier_surface",
+        "s75_summary_projection_surface",
+        "s77_data_dictionary_surface",
+        "s78_project_document_wbs_surface",
+        "s79_execution_structure_surface",
+        "s80_execution_management_surface",
+        "s85_admin_finance_surface",
+        "s86_tender_rental_finance_surface",
+        "s87_resource_contract_surface",
+        "s88_output_invoice_surface",
+        "s89_quality_safety_surface",
+        "s90_users_roles"
+      ],
+      "status": "passed_loading",
+      "log_pattern": "/tmp/sce-closure-<scenario>.log",
+      "last_completed": "s90_users_roles",
+      "last_log": "/tmp/sce-enrolled-scenes-s90_users_roles.log",
+      "retired": {
+        "s71_governance_audit_surface": "Synthetic audit/pass records exclusively depend on retired S67. Removed from formal release declaration; no pass claimed."
+      },
+      "completed": [
+        "s69_payment_ledger_surface",
+        "s70_daily_business_surface",
+        "s72_project_governance_surface",
+        "s73_risk_settlement_surface",
+        "s74_partner_supplier_surface",
+        "s75_summary_projection_surface",
+        "s77_data_dictionary_surface",
+        "s78_project_document_wbs_surface",
+        "s79_execution_structure_surface",
+        "s80_execution_management_surface",
+        "s89_quality_safety_surface",
+        "s85_admin_finance_surface",
+        "s86_tender_rental_finance_surface",
+        "s87_resource_contract_surface",
+        "s88_output_invoice_surface",
+        "s90_users_roles"
+      ],
+      "pending_readback": "TestDemoLoadedChains after serialized data loading; checks current persisted declarations and sources, no transactional rule repair",
+      "s80_recovery": {
+        "owner": "P4 Demo orchestration",
+        "original_failure": "Draft issue cannot create rectification; fixed four S80/S89 chains with native actor create/actions, XML noupdate=0 and exact terminal verification",
+        "remaining_failure": "S80 material clerk lacks declared project membership; explicit S80/S86 project membership source added, no ACL change",
+        "checks": {
+          "L1": "/tmp/sce-issue-chain-iteration-v2.log passed",
+          "L2": "/tmp/sce-issue-chain-unit-v2.log passed 52 pure tests"
+        },
+        "review": "B scene_boundary_review found and verified role/source design; noupdate defect corrected before runtime",
+        "affected_set": [
+          "s80_execution_management_surface",
+          "s89_quality_safety_surface",
+          "s86_tender_rental_finance_surface"
+        ],
+        "reuse": "Earlier successful scene inputs unchanged; do not rerun full matrix. S75 empty source load does not establish projection behavior."
+      },
+      "current_readback": {
+        "command": "make local.dev.test MODULE=smart_construction_demo TEST_TAGS=demo_loaded_chains",
+        "log": "/tmp/sce-loaded-chains-tagged-orm.log",
+        "status": "failed",
+        "count": 3,
+        "passed": [
+          "payment and receipt authoritative sources",
+          "guidance persisted contract rule and user data scope"
+        ],
+        "failure": "Issue replay blocked: test.safe does not forward managed Demo environment flags; P4 wrapper fixed, targeted repeat only issue case next",
+        "zero_test_attempt": "/tmp/sce-loaded-chains-current-orm.log: 0 cases, failed, class selector selected default standard while class excludes it",
+        "recovery": {
+          "command": "make local.dev.test MODULE=smart_construction_demo TEST_TAGS=demo_loaded_chains/smart_construction_demo:TestDemoLoadedChains.test_loaded_issue_chains_keep_native_role_and_audit_sources",
+          "status": "passed",
+          "tests": 1,
+          "log": "/tmp/sce-issue-readback-managed-orm.log",
+          "reuse": "Earlier guidance and payment test cases passed in /tmp/sce-loaded-chains-tagged-orm.log; only failed issue case repeated. Test adapter now forwards declared Demo flags; no product or those two case inputs changed."
+        }
+      },
+      "supplemental": "Current registry demo_full has 15 steps. Role overwrite drops realm group: native reenrollment added after six users. Verification gains target-user non-sudo read checks.",
+      "remaining_keys": [],
+      "source_checks": {
+        "status": "passed",
+        "L1": "/tmp/sce-demo-test-adapter-iteration.log",
+        "L2_demo": {
+          "tests": 54,
+          "log": "/tmp/sce-demo-enrollment-unit-v2.log"
+        },
+        "L2_tool": {
+          "tests": 36,
+          "log": "/tmp/sce-demo-test-adapter-unit.log"
+        }
+      },
+      "s85_recovery": {
+        "status": "passed",
+        "failed_logs": [
+          "/tmp/sce-final-scenes-s85_admin_finance_surface.log",
+          "/tmp/sce-s85-required-chain.log"
+        ],
+        "recovery": "Declared department for leave/seal and correct requester identity for salary/bonus; no native guard or ACL change",
+        "passed_log": "/tmp/sce-s85-requester-chain.log",
+        "L1": "/tmp/sce-s85-requester-iteration.log",
+        "L2": {
+          "count": 55,
+          "log": "/tmp/sce-s85-requester-unit.log"
+        },
+        "independent_review": "B checked remaining S85/86/87/88/90 prerequisites; no additional definite source blocker found, runtime still required"
+      },
+      "s86_recovery": {
+        "owner": "P4 scenario action orchestration",
+        "failure_log": "/tmp/sce-remaining-scenes-s86_tender_rental_finance_surface.log",
+        "failure": "tender.guarantee confirm incorrectly assigned finance user without model write ACL; implicit confirm cannot replace submission/reviews",
+        "fix": "Declared existing project user acts; submit and resolve actual review instances before native confirm; require resulting native treasury ledger; project member declared",
+        "L1": {
+          "status": "passed",
+          "log": "/tmp/sce-s86-guarantee-source-iteration.log"
+        },
+        "L2": {
+          "status": "passed",
+          "tests": 56,
+          "log": "/tmp/sce-s86-guarantee-source-unit.log"
+        },
+        "runtime": {
+          "status": "failed",
+          "log": "/tmp/sce-s86-guarantee-chain.log",
+          "command": "make local.dev.demo.load SCENARIO=s86_tender_rental_finance_surface DEMO_RESTART_AFTER_LOAD=0",
+          "failure": "Guarantees succeeded transactionally; final rental paid action as single material user cannot read linked contract. Entire S86 transaction rolled back."
+        }
+      },
+      "s86_composite_actor": {
+        "owner": "P4 Demo user configuration using existing P1 assignable roles",
+        "actor": "smart_construction_demo.user_sc_rental_payment_checker_demo",
+        "roles": [
+          "group_sc_role_material_user",
+          "group_sc_role_temporary_finance"
+        ],
+        "exclusions": "No role/group inheritance/ACL/rule widening; old material actor remains contract-read denied. This does not prove single-role material end-to-end usability.",
+        "checks": {
+          "L1": "/tmp/sce-rental-checker-final-iteration.log",
+          "L2": {
+            "tests": 57,
+            "log": "/tmp/sce-rental-checker-final-unit.log"
+          }
+        },
+        "runtime": {
+          "status": "failed",
+          "log": "/tmp/sce-final-role-scenes-s86_tender_rental_finance_surface.log",
+          "failure": "New actor source was not loaded by BASE_SEED_FILES; legacy base replay omitted user declaration file entirely."
+        },
+        "recovery": {
+          "owner": "P4 shared Demo declaration replay",
+          "changed_input": "BASE_SEED_FILES now includes data/demo/sc_demo_users.xml; existing native enrollment remains after shared XML load",
+          "L1": "/tmp/sce-registered-seats-iteration.log",
+          "L2": {
+            "tests": 57,
+            "log": "/tmp/sce-registered-seats-unit.log"
+          },
+          "runtime": {
+            "status": "passed",
+            "log": "/tmp/sce-enrolled-scenes-s86_tender_rental_finance_surface.log"
+          }
+        }
+      },
+      "s87_preventive_fix": "Native labor usage confirmation requires an approved state when policy configured; declare submit + actual review processing + confirm, same existing actor.",
+      "evidence_reuse": "New user declaration is additive; old operator definitions, roles, rules and prior S69/S70/S80/S89 business records unchanged. Base replay reapplies exact sources and native enrollment. Preserve bounded prior business readback; new S86/S88 financial case pending.",
+      "final_scene_logs": {
+        "s86_tender_rental_finance_surface": "/tmp/sce-enrolled-scenes-s86_tender_rental_finance_surface.log",
+        "s87_resource_contract_surface": "/tmp/sce-enrolled-scenes-s87_resource_contract_surface.log",
+        "s88_output_invoice_surface": "/tmp/sce-enrolled-scenes-s88_output_invoice_surface.log",
+        "s90_users_roles": "/tmp/sce-enrolled-scenes-s90_users_roles.log"
+      },
+      "shared_user_replay_effect": "Reuses manifest noupdate=0 managed Demo account facts; restores names/login/lang/tz/company/group sets and may invalidate their sessions. Native enrollment occurs before commit; account passwords assigned by final existing scenario password step. No user-driven runtime preferences are claimed preserved across declared Demo reset.",
+      "new_financial_readback": {
+        "status": "passed",
+        "command": "make local.dev.test MODULE=smart_construction_demo TEST_TAGS=demo_loaded_chains/smart_construction_demo:TestDemoLoadedChains.test_loaded_rental_and_invoice_keep_native_financial_sources",
+        "log": "/tmp/sce-rental-invoice-readback-orm.log",
+        "tests": 1
+      }
+    },
+    "evidence_invalidation": "Database rebuild changes runtime identity/content: old ORM observations remain historical code-slice proof, not current runtime acceptance. Reuse unchanged pure source tests only; current runtime acceptance follows newly loaded native chains.",
+    "supplemental_resume": {
+      "status": "passed",
+      "source": "AST _PROFILES[demo_full] current registry; no prior successful supplemental runs after fresh rebuild",
+      "keys": [
+        "dictionary",
+        "project_skeleton",
+        "boq_sample",
+        "metrics_smoke",
+        "company_currency_cny",
+        "demo_10_users",
+        "demo_user_prefs",
+        "demo_20_projects",
+        "demo_30_tenders",
+        "demo_40_contracts",
+        "payment_request_floorplan_demo",
+        "demo_50_boq_wbs",
+        "demo_60_attachments",
+        "z_demo_full_my_work",
+        "demo_80_finalize_stages",
+        "demo_90_verify"
+      ],
+      "completed": [
+        "dictionary",
+        "project_skeleton",
+        "boq_sample",
+        "metrics_smoke",
+        "company_currency_cny",
+        "demo_10_users",
+        "demo_user_prefs",
+        "demo_20_projects",
+        "demo_30_tenders",
+        "demo_40_contracts",
+        "payment_request_floorplan_demo",
+        "demo_50_boq_wbs",
+        "demo_60_attachments",
+        "z_demo_full_my_work",
+        "demo_80_finalize_stages",
+        "demo_90_verify"
+      ],
+      "command_pattern": "make local.dev.demo.seed STEPS=<registered step>",
+      "log_pattern": "/tmp/sce-supplemental-<step>.log",
+      "serialization": "One governed shell per step, commit only successful step; on failure stops before next, no full release/scenario reload.",
+      "failures": [
+        "/tmp/sce-supplemental-demo_20_projects.log",
+        "/tmp/sce-supplemental-demo_20_projects-cost-role.log"
+      ],
+      "correction": "P4 source email facts and final lifecycle orchestration after business preparation; P1 guards unchanged. L1/L2 first, affected managed replay only.",
+      "stage_correction": {
+        "owner": "P4 smart_construction_demo; standard Demo data/orchestration, no P1 policy edits",
+        "changed_inputs": [
+          "sc_demo_users.xml email facts",
+          "step20 preparation and guarded forward path",
+          "step40 target-based invoice/payment preparation",
+          "registered step80 finalizer",
+          "step90 approved payment check"
+        ],
+        "affected_set": [
+          "demo_20_projects",
+          "demo_30_tenders",
+          "demo_40_contracts",
+          "payment_request_floorplan_demo",
+          "demo_50_boq_wbs",
+          "demo_60_attachments",
+          "z_demo_full_my_work",
+          "demo_80_finalize_stages",
+          "demo_90_verify"
+        ],
+        "reuse": "First seven committed steps retained; user source replay required to apply email declarations. Existing released scene business sources unchanged. No full browser matrix or rebuild.",
+        "L1": {
+          "status": "passed",
+          "log": "/tmp/sce-stage-finalization-iteration.log"
+        },
+        "L2": {
+          "status": "passed",
+          "tests": 62,
+          "log": "/tmp/sce-stage-finalization-unit.log"
+        },
+        "review": "B admin_data_boundary_audit: no definite new blocker; only finalizer idempotence established, full-profile replay not established",
+        "runtime": "pending managed S90 user replay then affected supplemental steps"
+      },
+      "results": {
+        "demo_20_projects": {
+          "status": "passed",
+          "log": "/tmp/sce-supplemental-demo_20_projects-stage-preparation.log"
+        },
+        "user_email_replay": {
+          "status": "passed",
+          "log": "/tmp/sce-stage-users-source-replay.log"
+        },
+        "demo_30_tenders": {
+          "status": "passed",
+          "log": "/tmp/sce-supplemental-forward-demo_30_tenders.log",
+          "duration_seconds": 8.5
+        },
+        "demo_40_contracts": {
+          "status": "passed",
+          "log": "/tmp/sce-supplemental-forward-demo_40_contracts.log",
+          "duration_seconds": 17.5
+        },
+        "payment_request_floorplan_demo": {
+          "status": "passed",
+          "log": "/tmp/sce-supplemental-forward-payment_request_floorplan_demo.log",
+          "duration_seconds": 8.8
+        },
+        "demo_50_boq_wbs": {
+          "status": "passed",
+          "log": "/tmp/sce-supplemental-forward-demo_50_boq_wbs.log",
+          "duration_seconds": 9.4
+        },
+        "demo_60_attachments": {
+          "status": "passed",
+          "log": "/tmp/sce-supplemental-forward-demo_60_attachments.log",
+          "duration_seconds": 9.0
+        },
+        "z_demo_full_my_work": {
+          "status": "passed",
+          "log": "/tmp/sce-supplemental-forward-z_demo_full_my_work.log",
+          "duration_seconds": 10.5
+        },
+        "demo_80_finalize_stages": {
+          "status": "passed",
+          "log": "/tmp/sce-supplemental-stage-finalize-real-manager.log"
+        },
+        "demo_90_verify": {
+          "status": "passed",
+          "log": "/tmp/sce-supplemental-final-verify.log"
+        }
+      },
+      "actor_stage_recovery": {
+        "reason": "B found step30 target depended on temporary state; runtime step40 settlement actor lacks contract read",
+        "owner": "P4 Demo existing declared business initiator, explicit submitter argument; product ACL unchanged",
+        "affected_keys": [
+          "demo_30_tenders",
+          "demo_40_contracts"
+        ],
+        "reuse": "step20 and prior committed source inputs unchanged; step30 result invalidated by target declaration consumption change",
+        "L1": "/tmp/sce-supplemental-actor-stage-iteration.log",
+        "L2": {
+          "tests": 62,
+          "log": "/tmp/sce-supplemental-actor-stage-unit.log"
+        },
+        "review": "B verified existing initiator ACL/record rules/action authorization"
+      },
+      "forward_recovery": {
+        "failure": "/tmp/sce-supplemental-demo30-declared-target.log",
+        "cause": "Prior committed submitted bids must complete via public actions; old helper rejected all non-prepare states",
+        "L1": "/tmp/sce-tender-forward-iteration.log",
+        "L2": {
+          "tests": 64,
+          "log": "/tmp/sce-tender-forward-unit.log"
+        },
+        "affected": [
+          "demo_30_tenders"
+        ]
+      },
+      "terminal_actor_recovery": {
+        "owner": "P4 Demo action identity",
+        "failure": "/tmp/sce-supplemental-forward-demo_80_finalize_stages.log",
+        "fix": "Existing user_demo_project_manager composite seat only for stage actions; no ACL changes, no global project_actor change",
+        "L1": "/tmp/sce-project-closing-actor-iteration.log",
+        "L2": {
+          "tests": 64,
+          "log": "/tmp/sce-project-closing-actor-unit.log"
+        },
+        "review": "B confirms capability closure and preexisting project membership; financial blockers remain authoritative",
+        "affected_keys": [
+          "demo_80_finalize_stages",
+          "demo_90_verify"
+        ],
+        "reuse": "Earlier preparation produced same records and state; stage20 initiating actor declaration changed but terminal check covers new actor, no repeat already complete preparation."
+      },
+      "remaining_keys": []
+    },
+    "current_local_closure": {
+      "stage_identity": {
+        "head": "e12e75eaa5bdcfe5b01dfe14b89cb201fac60023",
+        "dirty": true,
+        "scope": "Existing run scope; P0 governance plus P4 formal Demo and governed tooling; not frozen"
+      },
+      "environment": {
+        "project": "sc-local-dev",
+        "database": "sc_dev_demo",
+        "dbfilter": "^sc_dev_demo$",
+        "filestore": "sc_local_dev_odoo_data:/var/lib/odoo/filestore/sc_dev_demo"
+      },
+      "results": [
+        {
+          "layer": "L2",
+          "command": "make verify.demo.lifecycle.unit",
+          "status": "passed",
+          "tests": 64,
+          "log": "/tmp/sce-project-closing-actor-unit.log"
+        },
+        {
+          "layer": "L3",
+          "command": "make local.dev.test MODULE=smart_construction_demo TEST_TAGS=demo_action_roles",
+          "status": "passed",
+          "tests": 7,
+          "log": "/tmp/sce-closure-current-demo-action-orm.log"
+        },
+        {
+          "layer": "L3",
+          "command": "make verify.local.dev.platform_database_governance.orm",
+          "status": "passed",
+          "tests": 10,
+          "log": "/tmp/sce-closure-current-platform-governance-orm.log"
+        },
+        {
+          "layer": "L3",
+          "command": "make local.dev.up; make local.dev.restart; make local.dev.health",
+          "status": "passed",
+          "logs": [
+            "/tmp/sce-closure-local-dev-up.log",
+            "/tmp/sce-closure-local-dev-restart.log",
+            "/tmp/sce-closure-local-dev-health.log"
+          ]
+        },
+        {
+          "layer": "L3",
+          "command": "make local.dev.verify_authority",
+          "status": "passed",
+          "log": "/tmp/sce-closure-current-demo-authority.log"
+        }
+      ],
+      "scope_limit": "Registered supplemental 16/16 and recorded formal scenes loaded; target user non-sudo sample read passed in demo90. No claim of full-profile replay idempotence, remote deployment, physical database suspend/resume or all product surfaces acceptance.",
+      "reuse": "Existing current loaded-chain cases retained; latest P4 changes to supplemental orchestration do not change prior released scene facts or readback assertions. No repeated browser matrix or fresh rebuild.",
+      "review": "B source reviews for stage order, native transitions, existing initiator and composite project manager passed; full frozen independent delivery review remains not_run."
+    },
+    "physical_rehearsal_proposal": {
+      "status": "authorized_implementation",
+      "layer": "P4 governed physical database acceptance; P0 native authorization/state/audit remains authoritative",
+      "project": "sc-platform-db-rehearsal",
+      "control": {
+        "database": "sc_platform_control_rehearsal",
+        "role": "platform_control",
+        "tenant": "platform-lifecycle-rehearsal",
+        "filter": "^sc_platform_control_rehearsal$",
+        "filestore": "dedicated control volume; never local.dev volumes",
+        "modules": "minimal dependencies plus smart_core; no construction/demo or customer business data"
+      },
+      "target": {
+        "database": "sc_tenant_lifecycle_rehearsal",
+        "role": "isolated disposable tenant rehearsal",
+        "tenant": "lifecycle-rehearsal-only",
+        "filter": "^sc_tenant_lifecycle_rehearsal$",
+        "filestore": "separate target volume/namespace; empty synthetic rehearsal only"
+      },
+      "isolation": "New dedicated project/cluster and managed environment authority; separate control/target DB login roles and secrets; no published host port; no shared daily/demo/sample/clean volumes; do not register as existing baseline before approval",
+      "entrypoints": "To implement governed prepare/preflight/register/apply/readback/recover/cleanup Make entries after explicit scope confirmation; internal adapter is not itself an authorized shell entry",
+      "acceptance": [
+        "Confirm exact project, cluster, databases, owners, filters, namespace and no business data before writes",
+        "Register then provision/activate using real P0 model authority and independent audit readback",
+        "Open target session with target role; suspend denies fresh target-role connection and terminates target sessions while control remains queryable",
+        "Resume restores fresh target-role connection; bind result to native audit operation ID and catalog readback",
+        "Verify control cutoff rejection and bounded failure recovery; simulated commit tests remain source proof only",
+        "Restore target connectability even if assertion fails; uncertain commit requires exact audit reconciliation before compensation; no blind replay"
+      ],
+      "recovery": "Only new isolated rehearsal resources; preserve failure logs/receipts; cleanup requires exact project/volume/DB identity and expected state; no existing environment touched",
+      "authorization_needed": "Explicit addition of independent P4 runtime/credential authority; earlier demo rebuild authorization does not identify this new scope",
+      "confirmation": "Owner: 同意 继续 收口; authorizes exact previously proposed isolated environment and managed credentials, physical rehearsal and bounded recovery."
+    },
+    "receipt_hardening": {
+      "owner": {
+        "P4": "One request-bound atomic receipt mechanism for register/lifecycle; failure cannot reuse old success",
+        "P0": "Native operation audit records caller reason/execution identity in existing JSON snapshot, no schema or ACL change"
+      },
+      "risk": "high operation evidence only, no physical runtime writes",
+      "affected": [
+        "registration/lifecycle adapter unit cases",
+        "native audit readback ORM method"
+      ],
+      "reuse": "Demo and other platform ORM cases unchanged; no Demo reload or browser repeat",
+      "next": "Implement, focused L1/L2 and single affected native ORM; new rehearsal environment remains awaiting confirmation",
+      "changes": [
+        "Atomic pending/pass/fail receipts with output lock and per-execution identity/request binding; consumer validation required",
+        "Pending always unknown/no replay, including process kill before final receipt",
+        "Native JSON audit persists reason/execution ID in original transaction; independently read audit must match before success",
+        "Failure effects record commit state, operation ID, prior admission, observed recovery and unknown terminated count; connection admission only compensation"
+      ],
+      "results": {
+        "L1": {
+          "status": "passed",
+          "log": "/tmp/sce-receipt-binding-final-iteration.log",
+          "incremental": "Final pending-only hardening compiled, diff check passed; governance declaration unchanged"
+        },
+        "L2": {
+          "status": "passed",
+          "tests": 49,
+          "log": "/tmp/sce-receipt-binding-final-unit.log"
+        },
+        "governance": {
+          "status": "passed",
+          "tests": 17,
+          "log": "/tmp/sce-receipt-audit-governance-guard.log"
+        },
+        "B": "concurrency_review limited source PASS; pending must always be treated unknown; no physical acceptance",
+        "ORM": {
+          "status": "passed",
+          "tests": 2,
+          "command": "make local.dev.test MODULE=smart_core TEST_TAGS=platform_database_governance/smart_core:TestPlatformDatabaseGovernance.test_operation_reason_and_execution_identity_survive_in_audit,platform_database_governance/smart_core:TestPlatformDatabaseGovernance.test_lifecycle_readback_matches_persisted_audit",
+          "log": "/tmp/sce-receipt-native-audit-orm.log"
+        }
+      },
+      "runtime_adapter_requirement": "Future governed wrapper must provide repo package import path for scripts.ops.platform_database_receipt, fresh execution ID, request identity validation and exact environment binding. Not a direct shell authorization."
+    },
+    "physical_rehearsal_execution": {
+      "status": "passed_and_isolated_resources_cleaned",
+      "environment_declaration": "config/platform_database_rehearsal.json",
+      "cluster_readback": ".runtime/platform-database-rehearsal/evidence/cluster.json",
+      "authority": "Owner approved proposed independent control/target environment; credentials private ignored directory, no existing runtime used",
+      "first_failure": {
+        "log": "/tmp/sce-platform-rehearsal-exercise.log",
+        "owner": "P4 minimal source mount missed P0 smart_scene utility; added only platform source dependency"
+      },
+      "second_failure": {
+        "log": "/tmp/sce-platform-rehearsal-platform-source.log",
+        "owner": "P4 termination acknowledgment is asynchronous; zero-sessions assertion correctly refused success",
+        "receipt": ".runtime/platform-database-rehearsal/evidence/563b328291804b7588122e7b6fa3878b.json",
+        "recovery_fact": "Receipt confirms no commit attempt, admission restored true, zero remaining sessions. Prior signal count was not proof of completed termination.",
+        "fix": "Wait up to 5000 ms per backend using bound PostgreSQL15 termination function; no weakened assertion"
+      },
+      "resume_scope": [
+        "suspend",
+        "resume",
+        "control cutoff refusal",
+        "fault injection compensation"
+      ],
+      "reused_prefix": [
+        "register audit1",
+        "provision audit2",
+        "activate audit3"
+      ],
+      "reuse_proof": "continue requires exactly native three-operation prefix, exact tenant/purpose and active state, original request-bound receipts equal native audit snapshots, successful fresh target connection",
+      "tests": {
+        "L1": "/tmp/sce-rehearsal-final-iteration.log",
+        "L2": "/tmp/sce-rehearsal-audit-reuse-unit.log",
+        "environment_tests": 11,
+        "adapter_tests": 49,
+        "status": "passed"
+      },
+      "evidence_export": "Only non-secret evidence/*.json made host-readable; private authority untouched",
+      "result": {
+        "command": "make platform.database.rehearsal.continue",
+        "log": "/tmp/sce-platform-rehearsal-continue.log",
+        "receipt": ".runtime/platform-database-rehearsal/evidence/acceptance-ea20dffbb91045e0b9f111a81f03e8c8.json",
+        "readback_command": "make platform.database.rehearsal.readback",
+        "readback": ".runtime/platform-database-rehearsal/evidence/readback-64dd20cba4054765bcc690977c26e11c.json",
+        "readback_log": "/tmp/sce-platform-rehearsal-readback.log",
+        "audit_ids": [
+          1,
+          2,
+          3,
+          5,
+          6
+        ],
+        "native_state": "active",
+        "cluster_system_identifier": "7696745268391657510",
+        "assertions": [
+          "real target session terminated",
+          "fresh connection refused while suspended",
+          "control remained available",
+          "fresh target connection after resume",
+          "injected cutoff failure restores admission without successful audit",
+          "cross-database application credentials denied both directions",
+          "target empty and application roles unprivileged"
+        ]
+      },
+      "independent_review": "concurrency_review limited PASS: source, original JSON receipts and native audit-bound readback; isolated physical lifecycle blocker closed, no real tenant provisioning claim",
+      "cleanup": {
+        "command": "make platform.database.rehearsal.cleanup",
+        "status": "passed",
+        "log": "/tmp/sce-platform-rehearsal-cleanup.log",
+        "readback": "docker project-label inventories: no containers, volumes or networks remain",
+        "evidence": "Original JSON remains readable in ignored evidence directory; private credentials not exported"
+      },
+      "impact": "Only P4 rehearsal inputs changed. Reconstructed request identity validated all five original successes against native audit/current declaration by read-only readback. Demo, P0 native tests and frontend evidence unchanged; no repeat physical cycle or Demo rebuild."
+    },
+    "candidate_preparation": {
+      "status": "source_reviews_and_final_freeze_prepare_passed",
+      "command": "make ci.delivery.freeze.prepare",
+      "log": "/tmp/sce-closure-freeze-prepare.log",
+      "generated_paths": [
+        "docs/audit/test_coverage_registry/test_coverage_registry.json",
+        "docs/engineering_convergence/complexity_budget_report.md",
+        "docs/engineering_convergence/test_inventory.csv",
+        "docs/engineering_convergence/test_inventory_summary.md",
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+      ],
+      "impact": "Generated inventory/count/line-position updates only; no product semantic changes. All reports current; contract basis open defects=0. No earlier runtime result invalidated.",
+      "next": "Complete independent source review, commit layer-owned scope, freeze clean identity and run exact-head Quick once.",
+      "P0_commit": "28cbe751",
+      "P4_tools_commit": "126e4e68",
+      "platform_review": {
+        "status": "passed",
+        "reviewer": "concurrency_review",
+        "scope_hash": "67a9256ecb096ae785aacbaf24f62545ba28c83e5d25c4d5a1c50c69f97ee669",
+        "identity": "e12e75e plus reviewed dirty files; commits preserve content",
+        "limits": "Fixed isolated rehearsal only; unknown pending; terminated transactions not restorable; host-only recovery serialization"
+      },
+      "demo_legacy_retirement": {
+        "reason": "Independent review found three still registered experimental bypasses, including direct SQL approval. Removed code and registration; formal S69 and demo_full retained.",
+        "affected_keys": [
+          "payment_ledger_p1",
+          "phase2_payment_request_demo",
+          "phase2_settlement_order_demo",
+          "all registry selection"
+        ],
+        "L1": {
+          "status": "passed",
+          "log": "/tmp/sce-retired-financial-seeds-iteration.log"
+        },
+        "L2": {
+          "command": "make verify.demo.supplemental.unit",
+          "status": "passed",
+          "tests": 30,
+          "log": "/tmp/sce-retired-financial-seeds-unit.log"
+        },
+        "reuse": "Formal release scene declarations and demo_full sixteen-step order unchanged; no database/browser replay. Deleted files invalidate generated source inventories only.",
+        "review": "scene_boundary_review PASS: deleted bodies and registration close identified bypass; parser-only assertion is not whole-registry runtime proof"
+      },
+      "final_prepare_log": "/tmp/sce-closure-final-freeze-prepare.log",
+      "demo_commit": "e39628d4"
+    }
+  }
 }
