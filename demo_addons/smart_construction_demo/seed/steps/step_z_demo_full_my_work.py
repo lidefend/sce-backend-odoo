@@ -2,6 +2,7 @@
 from odoo import fields
 
 from ..registry import SeedStep, register
+from ..business_roles import project_actor, prepare_project
 
 
 MARKER = "SC_DEMO_FULL_MY_WORK"
@@ -37,17 +38,14 @@ def _ensure_doc_manager(project, demo_full):
 def _ensure_project_follow(project, partner):
     if not partner:
         return False
-    try:
-        project.message_subscribe(partner_ids=[partner.id])
-        return True
-    except Exception:
-        return False
+    project.message_subscribe(partner_ids=[partner.id])
+    return True
 
 
 def _ensure_project_mention(project, demo_full):
     if not demo_full.partner_id:
         return False
-    Message = project.env["mail.message"].sudo()
+    Message = project.env["mail.message"]
     existing = Message.search_count(
         [
             ("model", "=", project._name),
@@ -58,20 +56,18 @@ def _ensure_project_mention(project, demo_full):
     )
     if existing:
         return False
-    try:
-        project.message_post(
-            body=f"{MARKER}: 请关注该演示项目的关键事项。",
-            partner_ids=[demo_full.partner_id.id],
-            message_type="comment",
-            subtype_xmlid="mail.mt_comment",
-        )
-        return True
-    except Exception:
-        return False
+    project.message_post(
+        body=f"{MARKER}: 请关注该演示项目的关键事项。",
+        partner_ids=[demo_full.partner_id.id],
+        message_type="comment",
+        subtype_xmlid="mail.mt_comment",
+    )
+    return True
+
 
 
 def _ensure_project_activity(project, demo_full):
-    Activity = project.env["mail.activity"].sudo()
+    Activity = project.env["mail.activity"]
     todo_type = project.env.ref("mail.mail_activity_data_todo", raise_if_not_found=False)
     model_id = project.env["ir.model"].sudo()._get_id(project._name)
     if not todo_type or not model_id:
@@ -102,7 +98,7 @@ def _ensure_project_activity(project, demo_full):
 
 
 def _ensure_task_assignment(project, demo_full, task_limit=TASKS_PER_PROJECT):
-    Task = project.env["project.task"].sudo()
+    Task = project.env["project.task"]
     if "user_ids" not in Task._fields:
         return 0
     safe_limit = max(1, int(task_limit or TASKS_PER_PROJECT))
@@ -148,6 +144,8 @@ def run(env):
         "task_assignments": 0,
     }
     for project in projects:
+        prepare_project(env, project)
+        project = project_actor(project)
         stats["doc_manager_updates"] += int(bool(_ensure_doc_manager(project, demo_full)))
         stats["followers"] += int(bool(_ensure_project_follow(project, demo_full.partner_id)))
         stats["mentions"] += int(bool(_ensure_project_mention(project, demo_full)))

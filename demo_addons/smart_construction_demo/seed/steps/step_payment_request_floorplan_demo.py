@@ -4,6 +4,8 @@ import os
 import re
 
 from ..registry import SeedStep, register
+from ..business_roles import business_model, prepare_project
+from ...tools.scenario_loader import _demo_action_record, _DEMO_APPROVAL_ACTORS
 
 
 FIXTURE_NAME = "DEMO-PR-FLOORPLAN-001"
@@ -65,19 +67,12 @@ def _approval_fixture_actors(env, company):
     actors = env["res.users"]
     for step in policy.step_ids.filtered("active").sorted("sequence"):
         group = step.approve_group_id
-        xmlids = group.sudo().users.get_external_id() if group else {}
-        candidates = group.sudo().users.filtered(
-            lambda user: user.active
-            and not user.share
-            and user.login
-            and xmlids.get(user.id, "").startswith("smart_construction_demo.")
-        ).sorted("id")
-        if not candidates:
-            raise RuntimeError(
-                "payment request fixture approval step %s has no governed demo reviewer"
-                % step.display_name
-            )
-        actors |= candidates[0]
+        group_xmlid = group.get_external_id().get(group.id) if group else None
+        seat = _DEMO_APPROVAL_ACTORS.get(group_xmlid)
+        actor = env.ref(seat, raise_if_not_found=False) if seat else False
+        if not actor or not actor.active or actor.id == 1 or not actor.has_group(group_xmlid):
+            raise RuntimeError("payment fixture has no declared authorized reviewer: %s" % group_xmlid)
+        actors |= actor
     return actors
 
 
@@ -114,20 +109,30 @@ def _guidance_fixture(env):
         return record
 
     source = env.ref("smart_construction_demo.sc_demo_contract_in_069_payment")
+    prepare_project(env, source.project_id)
     partner = owned("payment_guidance_demo_partner", "res.partner", lambda: env["res.partner"].sudo().create({
         "name": "DEMO-GUIDANCE-专属风险往来单位", "sc_blacklisted": True,
         "sc_blacklist_level": "blocked", "sc_blacklist_reason": "演示风险：请核实本次交易后继续。",
     }))
-    contract = owned("payment_guidance_demo_contract", "construction.contract", lambda: source.sudo().copy({
+    contract = owned("payment_guidance_demo_contract", "construction.contract", lambda: business_model(env, "construction.contract").create({
         "partner_id": partner.id, "subject": "DEMO-GUIDANCE-专属验收合同",
+        "type": source.type, "project_id": source.project_id.id,
+        "company_id": source.company_id.id, "currency_id": source.currency_id.id,
+        "tax_id": source.tax_id.id,
+        "line_ids": [(0, 0, {"qty_contract": 1.0, "price_contract": 1000.0})],
     }))
+    if contract.project_id != source.project_id or contract.partner_id != partner:
+        raise RuntimeError("guidance contract ownership conflicts with its declaration")
+    from .step_40_contracts_demo import _confirm_contract
+    contract = business_model(env, "construction.contract").browse(contract.id)
+    _confirm_contract(contract)
     baseline = env["project.funding.baseline"].sudo().search([
         ("project_id", "=", contract.project_id.id), ("state", "=", "active"),
         ("normalization_state", "=", "normalized"),
     ], limit=2)
     if len(baseline) != 1:
         raise RuntimeError("guidance fixture requires one active normalized baseline")
-    record = owned("payment_guidance_demo_record", "payment.request", lambda: env["payment.request"].sudo().create({
+    record = owned("payment_guidance_demo_record", "payment.request", lambda: business_model(env, "payment.request").create({
         "name": "DEMO-PR-GUIDANCE-001", "type": "pay", "project_id": contract.project_id.id,
         "contract_id": contract.id, "partner_id": partner.id, "amount": 100.0,
         "date_request": baseline.period_start, "payment_account_name": partner.name,
@@ -149,9 +154,13 @@ def run(env):
         return _guidance_fixture(env)
     if scope != "submit":
         raise RuntimeError("unsupported payment fixture scope")
-    payment_model = env["payment.request"].sudo()
+    contract = env.ref("smart_construction_demo.sc_demo_contract_in_069_payment")
+    prepare_project(env, contract.project_id)
+    payment_model = business_model(env, "payment.request")
     ledger_model = env["payment.ledger"].sudo()
     existing = _owned_fixture(env)
+    if existing:
+        existing = _demo_action_record(env, existing, "action_cancel", "smart_construction_demo.user_sc_fin_mgr_01")
     existing_attachment = _owned_fixture_attachment(env)
     same_name = payment_model.search([("name", "=", FIXTURE_NAME)])
     if same_name and (not existing or same_name != existing):
@@ -180,7 +189,7 @@ def run(env):
             existing_attachment.unlink()
             existing_attachment = env["ir.attachment"]
         if existing.state not in ("draft", "cancel"):
-            existing.with_context(allow_transition=True).write({"state": "cancel"})
+            existing.action_cancel()
         existing.unlink()
     elif existing_attachment:
         existing_attachment.unlink()
@@ -231,7 +240,7 @@ def run(env):
             "note": "受管付款申请黄金页面提交闭环 fixture",
         }
     )
-    attachment = env["ir.attachment"].sudo().create(
+    attachment = payment_model.env["ir.attachment"].create(
         {
             "name": FIXTURE_ATTACHMENT_NAME,
             "type": "binary",

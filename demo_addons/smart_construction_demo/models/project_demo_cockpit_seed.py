@@ -49,12 +49,20 @@ class ProjectDemoCockpitSeed(models.Model):
 
     @api.model
     def sc_demo_seed_cockpit_round2(self):
+        from ..hooks import assert_demo_seed_principal, guard_demo_scope
+
+        assert_demo_seed_principal(self.env)
+        guard_demo_scope(self.env)
+        from ..tools.scenario_loader import _demo_project_members, _DEMO_PAYMENT_SCOPED_SEATS
+        contract_actor = self.env.ref("smart_construction_demo.user_sc_contract_manager_cap")
+        cost_actor = self.env.ref("smart_construction_demo.user_sc_cost_01")
+        finance_actor = self.env.ref("smart_construction_demo.user_sc_fin_mgr_01")
         partner_model = self.env["res.partner"]
         cost_code_model = self.env["project.cost.code"]
-        contract_model = self.env["construction.contract"]
-        contract_line_model = self.env["construction.contract.line"]
-        cost_ledger_model = self.env["project.cost.ledger"]
-        payment_request_model = self.env["payment.request"]
+        contract_model = self.env["construction.contract"].with_user(contract_actor).sudo(False)
+        contract_line_model = self.env["construction.contract.line"].with_user(contract_actor).sudo(False)
+        cost_ledger_model = self.env["project.cost.ledger"].with_user(cost_actor).sudo(False)
+        payment_request_model = self.env["payment.request"].with_user(finance_actor).sudo(False)
         activity_model = self.env["mail.activity"]
         model_model = self.env["ir.model"]
 
@@ -66,6 +74,11 @@ class ProjectDemoCockpitSeed(models.Model):
         todo_type = self.env.ref("mail.mail_activity_data_todo", raise_if_not_found=False)
 
         for project in projects:
+            _demo_project_members(self.env, project, _DEMO_PAYMENT_SCOPED_SEATS + (
+                "smart_construction_demo.user_sc_contract_manager_cap",
+                "smart_construction_demo.user_sc_cost_01",
+                "smart_construction_demo.user_sc_project_manager_cap",
+            ))
             profile = self._sc_demo_profile(project)
             partner = project.partner_id or partner_fallback
             if not partner:
@@ -84,16 +97,12 @@ class ProjectDemoCockpitSeed(models.Model):
                     cost_code=cost_code,
                     cost_ledger_model=cost_ledger_model,
                 )
-            else:
-                self._sc_demo_cleanup_cost_ledger(project)
             if profile.get("seed_payments", True):
                 self._sc_demo_seed_payments(
                     project=project,
                     partner=partner,
                     payment_request_model=payment_request_model,
                 )
-            else:
-                self._sc_demo_cleanup_payments(project)
             self._sc_demo_seed_risk_signals(
                 project=project,
                 activity_model=activity_model,
@@ -195,10 +204,7 @@ class ProjectDemoCockpitSeed(models.Model):
                 }
             )
             if contract.state in ("draft", "confirmed"):
-                try:
-                    contract.action_set_running()
-                except Exception:
-                    continue
+                contract.action_set_running()
 
     @api.model
     def _sc_demo_seed_cost_ledger(self, project, partner, cost_code, cost_ledger_model):
@@ -224,31 +230,17 @@ class ProjectDemoCockpitSeed(models.Model):
             if existing:
                 continue
             happen_day = base - timedelta(days=days)
-            try:
-                cost_ledger_model.create(
-                    {
-                        "project_id": project.id,
-                        "cost_code_id": cost_code.id,
-                        "date": happen_day,
-                        "period": happen_day.strftime("%Y-%m"),
-                        "amount": amount,
-                        "partner_id": partner.id,
-                        "note": entry_note,
-                    }
-                )
-            except Exception:
-                continue
-
-    @api.model
-    def _sc_demo_cleanup_cost_ledger(self, project):
-        ledger_model = self.env["project.cost.ledger"]
-        marker = self._DEMO_COCKPIT_MARKER
-        try:
-            ledger_model.search(
-                [("project_id", "=", project.id), ("note", "ilike", f"{marker}-%")]
-            ).unlink()
-        except Exception:
-            return
+            cost_ledger_model.create(
+                {
+                    "project_id": project.id,
+                    "cost_code_id": cost_code.id,
+                    "date": happen_day,
+                    "period": happen_day.strftime("%Y-%m"),
+                    "amount": amount,
+                    "partner_id": partner.id,
+                    "note": entry_note,
+                }
+            )
 
     @api.model
     def _sc_demo_seed_payments(self, project, partner, payment_request_model):
@@ -331,14 +323,9 @@ class ProjectDemoCockpitSeed(models.Model):
             raise UserError("演示付款样本声明了未知目标状态：%s" % target_state)
         if not contract:
             raise UserError("演示收款样本缺少收入合同，无法办理收款登记：%s" % request.name)
-        # 场景 XML 在受治迁移载体上下文里执行，那个上下文会放宽 create()
-        # 的草稿/财务身份守卫。这里要的是“真实用户新建草稿收款登记”的语义，
-        # 所以清空收款载体令牌，让 create() 按普通产品路径落草稿并自行固化
-        # finance_identity_state=normalized，再交给正式动作推进。清令牌只会
-        # 让守卫变严，不会获得额外写权限。
-        receipt_model = self.env["sc.receipt.income"].sudo().with_context(
-            sc_receipt_fact_authority_token=None
-        )
+        from ..tools.scenario_loader import _demo_action_record, _demo_finish_reviews
+
+        receipt_model = _demo_action_record(self.env, self.env["sc.receipt.income"], "action_confirm")
         receipt = receipt_model.search([("payment_request_id", "=", request.id)], limit=1)
         if not receipt:
             receipt = receipt_model.create(
@@ -353,6 +340,7 @@ class ProjectDemoCockpitSeed(models.Model):
             )
         if receipt.state == "draft":
             receipt.action_confirm()
+        _demo_finish_reviews(self.env, receipt)
         if receipt.state == "confirmed":
             finance_manager = self.env.ref(
                 "smart_construction_demo.user_sc_fin_mgr_01", raise_if_not_found=False
@@ -364,22 +352,6 @@ class ProjectDemoCockpitSeed(models.Model):
                 "演示收款样本未回写为已完成：%s 停在 %s" % (request.name, request.state)
             )
         return request
-
-    @api.model
-    def _sc_demo_cleanup_payments(self, project):
-        payment_request_model = self.env["payment.request"]
-        marker = self._DEMO_COCKPIT_MARKER
-        try:
-            payment_request_model.search(
-                [
-                    ("project_id", "=", project.id),
-                    "|",
-                    ("note", "=", marker),
-                    ("name", "ilike", f"{marker}-%"),
-                ]
-            ).unlink()
-        except Exception:
-            return
 
     @api.model
     def _sc_demo_seed_risk_signals(self, project, activity_model, todo_type, model_id, profile=None):
@@ -428,15 +400,5 @@ class ProjectDemoCockpitSeed(models.Model):
 
         target_lifecycle = str(profile.get("target_lifecycle_state") or "").strip().lower()
         if target_lifecycle and getattr(project, "lifecycle_state", "") != target_lifecycle:
-            try:
-                project.action_set_lifecycle_state(target_lifecycle)
-            except Exception as exc:
-                # 产品守卫拒绝的生命周期目标不能被悄悄吞掉，否则演示项目会
-                # 静默停在错误阶段；记录可观察的告警而不是改成直接写状态。
-                _logger.warning(
-                    "demo cockpit: project %s stayed at %s, target %s refused: %s",
-                    project.display_name,
-                    project.lifecycle_state,
-                    target_lifecycle,
-                    exc,
-                )
+            manager = self.env.ref("smart_construction_demo.user_sc_project_manager_cap")
+            project.with_user(manager).sudo(False).action_set_lifecycle_state(target_lifecycle)

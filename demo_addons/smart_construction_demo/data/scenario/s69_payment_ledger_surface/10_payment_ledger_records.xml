@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
   <data noupdate="1">
+    <record id="sc_demo_product_069_steel_batch" model="product.product">
+      <field name="name">S69 钢材采购批次</field>
+      <field name="default_code">S69-STEEL-BATCH</field>
+      <field name="type">consu</field>
+      <field name="uom_id" ref="uom.product_uom_unit"/>
+      <field name="uom_po_id" ref="uom.product_uom_unit"/>
+      <field name="purchase_ok" eval="True"/>
+    </record>
 
     <record id="sc_demo_project_069_payment_ledger" model="project.project">
       <field name="name">S69 支付台账演示项目</field>
@@ -69,7 +77,7 @@
     </record>
 
     <!-- 结算单走受控生命周期：XML 只建草稿（含审批批注字段），明细随后装载，
-         由 scenario_loader 的 _ensure_s69_settlement_lifecycle 经 _write_lifecycle("approve") 生效。 -->
+         由 scenario_loader 的 _ensure_s69_settlement_lifecycle 经正式提交与逐级审批生效。 -->
     <record id="sc_demo_settlement_069_payment" model="sc.settlement.order">
       <field name="name">S69-PAY-SET-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_069_payment_ledger"/>
@@ -102,6 +110,10 @@
       <field name="amount">120000.0</field>
       <field name="currency_id" ref="base.CNY"/>
       <field name="date_request">2025-08-23</field>
+      <field name="actual_payee_unit">德阳某某钢材贸易有限公司（示例）</field>
+      <field name="payment_account_name">德阳某某钢材贸易有限公司（示例）</field>
+      <field name="payment_bank_name">中国银行德阳示范支行</field>
+      <field name="payment_account_no">DEMO-ACCOUNT-PAY-069</field>
       <field name="note">S69 支付台账来源付款申请。</field>
     </record>
 

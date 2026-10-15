@@ -86,21 +86,27 @@
       <field name="locked">False</field>
     </record>
 
-    <record id="sc_demo_cost_ledger_065_rebar" model="project.cost.ledger">
+    <!-- 材料成本由真实出库确认生成；下游沿用生成结果的 XMLID。 -->
+    <record id="sc_demo_product_065_rebar" model="product.product">
+      <field name="name">S65 梁板钢筋</field>
+      <field name="default_code">S65-MAT-REBAR</field>
+      <field name="uom_id" ref="uom.product_uom_ton"/>
+      <field name="uom_po_id" ref="uom.product_uom_ton"/>
+    </record>
+    <record id="sc_demo_material_outbound_065_rebar" model="sc.material.outbound">
+      <field name="name">S65-OUT-REBAR-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_065_cost_funding"/>
-      <field name="wbs_id" ref="smart_construction_demo.sc_demo_wbs_065_sub_section"/>
-      <field name="cost_code_id" ref="smart_construction_demo.sc_cost_code_root_material"/>
-      <field name="date">2025-08-12</field>
-      <field name="period">2025-08</field>
-      <field name="period_id" ref="smart_construction_demo.sc_demo_cost_period_065_aug"/>
-      <field name="qty">42.0</field>
-      <field name="uom_id" ref="uom.product_uom_unit"/>
-      <field name="amount">218400.0</field>
+      <field name="outbound_date">2025-08-12</field>
+      <field name="receiver_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
+      <field name="purpose">S65 梁板钢筋领用</field>
       <field name="currency_id" ref="base.CNY"/>
-      <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
-      <field name="source_model">sc.material.inbound</field>
-      <field name="source_id">65001</field>
-      <field name="note">S65 钢筋材料成本入账样例。</field>
+    </record>
+    <record id="sc_demo_material_outbound_line_065_rebar" model="sc.material.outbound.line">
+      <field name="outbound_id" ref="smart_construction_demo.sc_demo_material_outbound_065_rebar"/>
+      <field name="product_id" ref="smart_construction_demo.sc_demo_product_065_rebar"/>
+      <field name="product_uom_id" ref="uom.product_uom_ton"/>
+      <field name="qty">42.0</field>
+      <field name="unit_price">5200.0</field>
     </record>
 
     <record id="sc_demo_progress_entry_065_rebar" model="project.progress.entry">

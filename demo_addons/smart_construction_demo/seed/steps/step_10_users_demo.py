@@ -4,6 +4,7 @@ import os
 from odoo import api
 
 from ..registry import SeedStep, register
+from ...hooks import guard_demo_data_space
 
 
 def _resolve_lang(env, preferred="zh_CN", fallback="en_US"):
@@ -147,6 +148,10 @@ def run(env):
         lang=lang,
         tz=tz,
     )
+
+    # Reapply native enrollment after authoritative role replacement. Group
+    # identity belongs to platform provisioning, not per-user seed constants.
+    guard_demo_data_space(env)
 
 
 register(

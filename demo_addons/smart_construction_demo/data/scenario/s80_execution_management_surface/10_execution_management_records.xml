@@ -215,6 +215,8 @@
     </record>
 
     <record id="sc_demo_quality_issue_080_rebar" model="sc.quality.issue">
+      <field name="owner_id" ref="smart_construction_demo.user_sc_project_user"/>
+      <field name="rechecker_id" ref="smart_construction_demo.user_sc_project_manager_cap"/>
       <field name="name">S80 钢筋保护层垫块局部缺失</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="standard_id" ref="smart_construction_demo.sc_demo_quality_standard_080_structure"/>
@@ -228,31 +230,28 @@
       <field name="responsible_party_id" ref="smart_construction_demo.sc_demo_partner_vendor_concrete"/>
       <field name="rectification_deadline">2025-04-13</field>
       <field name="description">现场抽查发现局部保护层垫块缺失，需补齐后复验。</field>
-      <field name="state">submitted</field>
     </record>
 
-    <record id="sc_demo_quality_rectification_080_rebar" model="sc.quality.rectification">
-      <field name="issue_id" ref="smart_construction_demo.sc_demo_quality_issue_080_rebar"/>
-      <field name="rectification_date">2025-04-12</field>
-      <field name="source_channel">app</field>
-      <field name="result">已补齐垫块并重新复核保护层厚度。</field>
-    </record>
+
   </data>
 
   <data noupdate="0">
-    <function model="sc.quality.issue" name="action_request_recheck">
-      <value model="sc.quality.issue" eval="obj([ref('smart_construction_demo.sc_demo_quality_issue_080_rebar')]).filtered(lambda issue: issue.state == 'rectifying').ids"/>
-    </function>
+
   </data>
 
   <data noupdate="1">
-    <record id="sc_demo_quality_recheck_080_rebar" model="sc.quality.recheck">
-      <field name="issue_id" ref="smart_construction_demo.sc_demo_quality_issue_080_rebar"/>
-      <field name="recheck_date">2025-04-13</field>
-      <field name="source_channel">app</field>
-      <field name="result">passed</field>
-      <field name="comment">复验通过，闭环资料齐全。</field>
-    </record>
+  </data>
+  <data noupdate="0">
+    <function model="sc.quality.issue" name="sc_demo_close_issue">
+  <value eval="[ref('smart_construction_demo.sc_demo_quality_issue_080_rebar')]" />
+  <value eval="'smart_construction_demo.sc_demo_quality_issue_080_rebar'" />
+  <value eval="'sc_demo_quality_rectification_080_rebar'" />
+  <value eval="{'rectification_date': '2025-04-12', 'source_channel': 'app', 'result': '已补齐垫块并重新复核保护层厚度。'}" />
+  <value eval="'sc_demo_quality_recheck_080_rebar'" />
+  <value eval="{'recheck_date': '2025-04-13', 'source_channel': 'app', 'result': 'passed', 'comment': '复验通过，闭环资料齐全。'}" />
+</function>
+  </data>
+  <data noupdate="1">
 
     <record id="sc_demo_safety_plan_080_lifting" model="sc.safety.plan">
       <field name="name">S80 塔吊交叉作业安全专项方案</field>
@@ -298,11 +297,12 @@
       <field name="valid_from">2025-04-01</field>
       <field name="valid_to">2025-04-30</field>
       <field name="control_status">controlled</field>
-      <field name="state">controlled</field>
       <field name="description">主体结构施工阶段塔吊与钢筋吊运交叉作业。</field>
     </record>
 
     <record id="sc_demo_safety_issue_080_guardrail" model="sc.safety.issue">
+      <field name="owner_id" ref="smart_construction_demo.user_sc_project_user"/>
+      <field name="rechecker_id" ref="smart_construction_demo.user_sc_project_manager_cap"/>
       <field name="name">S80 楼层临边防护局部松动</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="hazard_source_id" ref="smart_construction_demo.sc_demo_hazard_source_080_lifting"/>
@@ -313,31 +313,28 @@
       <field name="responsible_party_id" ref="smart_construction_demo.sc_demo_partner_vendor_concrete"/>
       <field name="rectification_deadline">2025-04-10</field>
       <field name="description">临边防护栏杆连接件松动，需立即加固。</field>
-      <field name="state">submitted</field>
     </record>
 
-    <record id="sc_demo_safety_rectification_080_guardrail" model="sc.safety.rectification">
-      <field name="issue_id" ref="smart_construction_demo.sc_demo_safety_issue_080_guardrail"/>
-      <field name="rectification_date">2025-04-10</field>
-      <field name="source_channel">app</field>
-      <field name="result">已更换连接件并增设警示标识。</field>
-    </record>
+
   </data>
 
   <data noupdate="0">
-    <function model="sc.safety.issue" name="action_request_recheck">
-      <value model="sc.safety.issue" eval="obj([ref('smart_construction_demo.sc_demo_safety_issue_080_guardrail')]).filtered(lambda issue: issue.state == 'rectifying').ids"/>
-    </function>
+
   </data>
 
   <data noupdate="1">
-    <record id="sc_demo_safety_recheck_080_guardrail" model="sc.safety.recheck">
-      <field name="issue_id" ref="smart_construction_demo.sc_demo_safety_issue_080_guardrail"/>
-      <field name="recheck_date">2025-04-10</field>
-      <field name="source_channel">app</field>
-      <field name="result">passed</field>
-      <field name="comment">防护牢固，复验通过。</field>
-    </record>
+  </data>
+  <data noupdate="0">
+    <function model="sc.safety.issue" name="sc_demo_close_issue">
+  <value eval="[ref('smart_construction_demo.sc_demo_safety_issue_080_guardrail')]" />
+  <value eval="'smart_construction_demo.sc_demo_safety_issue_080_guardrail'" />
+  <value eval="'sc_demo_safety_rectification_080_guardrail'" />
+  <value eval="{'rectification_date': '2025-04-10', 'source_channel': 'app', 'result': '已更换连接件并增设警示标识。'}" />
+  <value eval="'sc_demo_safety_recheck_080_guardrail'" />
+  <value eval="{'recheck_date': '2025-04-10', 'source_channel': 'app', 'result': 'passed', 'comment': '防护牢固，复验通过。'}" />
+</function>
+  </data>
+  <data noupdate="1">
 
     <record id="sc_demo_safety_patrol_080_weekly" model="sc.safety.patrol.task">
       <field name="name">S80 周安全巡检任务</field>
@@ -348,7 +345,6 @@
       <field name="planned_scope">A 区主体结构作业面</field>
       <field name="score">92.0</field>
       <field name="pass_rate">96.0</field>
-      <field name="state">done</field>
       <field name="note">S80 安全巡检任务样例</field>
     </record>
 

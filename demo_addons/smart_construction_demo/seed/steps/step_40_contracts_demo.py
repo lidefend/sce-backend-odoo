@@ -4,19 +4,16 @@ from odoo.exceptions import UserError
 from odoo.tools.float_utils import float_compare
 
 from ..registry import SeedStep, register
-from ..tier_flow import approve_tier_chain
+from .step_20_projects_demo import STAGE_PROJECTS, declared_stage
+from ..tier_flow import advance_settlement, approve_tier_chain
+from ...tools.scenario_loader import (
+    _demo_action_record, _demo_project_members, _demo_drive_approval,
+    _DEMO_DOCUMENT_SUBMITTER, _DEMO_PAYMENT_SCOPED_SEATS,
+)
 
 
 PROJECT_EXEC_CODE = "DEMO-PJ-EXEC"
-STAGE_PROJECT_CODES = [
-    "DEMO-PJ-STAGE-DRAFT",
-    "DEMO-PJ-STAGE-RUN",
-    "DEMO-PJ-STAGE-PAUSE",
-    "DEMO-PJ-STAGE-CLOSING",
-    "DEMO-PJ-STAGE-DONE",
-    "DEMO-PJ-STAGE-WARRANTY",
-    "DEMO-PJ-STAGE-CLOSED",
-]
+STAGE_PROJECT_CODES = [row[0] for row in STAGE_PROJECTS]
 DEMO_INVOICE_RATIO_BY_STATE = {
     "draft": 0.0,
     "in_progress": 0.7,
@@ -48,15 +45,10 @@ def _annual_control_period(env):
 
 
 def _ensure_funding_baseline(env, project):
-    Funding = env["project.funding.baseline"].sudo()
-    project.sudo().write({"funding_enabled": True})
+    Funding = _demo_action_record(env, env["project.funding.baseline"], "action_activate", "smart_construction_demo.user_sc_fin_mgr_01")
     if not project.company_id:
-        # Defensive: projects created with a name-only payload (showroom
-        # style) carry no company because project.company_id is a stored
-        # compute without a default; the standard funding baseline requires
-        # an explicit company/currency owner.
-        company = env.company or env["res.company"].sudo().search([], limit=1)
-        project.sudo().write({"company_id": company.id})
+        raise UserError("演示项目必须声明公司归属，不能从运行账号推断。")
+    project.sudo().write({"funding_enabled": True})
     baseline = Funding.search(
         [("project_id", "=", project.id), ("state", "=", "active")], limit=1
     )
@@ -118,8 +110,8 @@ def _ensure_funding_baseline(env, project):
 
 
 def _ensure_settlement(env, project, contract):
-    Settlement = env["sc.settlement.order"].sudo()
-    Line = env["sc.settlement.order.line"].sudo()
+    Settlement = _demo_action_record(env, env["sc.settlement.order"], "action_submit", _DEMO_DOCUMENT_SUBMITTER)
+    Line = env["sc.settlement.order.line"].with_user(Settlement.env.user).sudo(False)
     settlement = Settlement.search(
         [
             ("project_id", "=", project.id),
@@ -162,25 +154,18 @@ def _ensure_settlement(env, project, contract):
 
 
 def _approve_settlement(env, settlement):
-    if settlement.state == "draft":
-        settlement.action_submit()
-    if settlement.state == "submit":
-        if approve_tier_chain(settlement) and settlement.state == "submit":
-            settlement.action_on_tier_approved()
-    if settlement.state not in ("approve", "done"):
-        raise UserError("演示结算单未能通过正式审批状态机。")
-    return settlement
+    return advance_settlement(settlement, submitter_xmlid=_DEMO_DOCUMENT_SUBMITTER)
 
 
-def _ensure_purchase_order(env, settlement, split_first_line=False):
-    Purchase = env["purchase.order"].sudo()
-    PurchaseLine = env["purchase.order.line"].sudo()
+def _ensure_purchase_order(env, settlement, split_first_line=False, product=None):
+    Purchase = _demo_action_record(env, env["purchase.order"], "button_confirm", "smart_construction_demo.user_sc_purchase_manager_cap")
+    PurchaseLine = env["purchase.order.line"].with_user(Purchase.env.user).sudo(False)
     Product = env["product.product"].sudo()
     uom_unit = env.ref("uom.product_uom_unit", raise_if_not_found=False)
     if not uom_unit:
         uom_unit = env["uom.uom"].sudo().search([], limit=1)
 
-    product = Product.search([("name", "=", "演示采购服务")], limit=1)
+    product = product or Product.search([("name", "=", "演示采购服务")], limit=1)
     if not product:
         product = Product.create(
             {
@@ -198,12 +183,18 @@ def _ensure_purchase_order(env, settlement, split_first_line=False):
             ("partner_id", "=", settlement.partner_id.id),
             ("origin", "=", settlement.name),
         ],
-        limit=1,
+        limit=2,
     )
+    if len(po) > 1:
+        raise UserError("演示采购来源身份不唯一。")
+    if po and (po.project_id != settlement.project_id or po.company_id != settlement.company_id):
+        raise UserError("演示采购来源的项目或公司与结算不一致，禁止复用。")
     if not po:
         po = Purchase.create(
             {
                 "partner_id": settlement.partner_id.id,
+                "project_id": settlement.project_id.id,
+                "company_id": settlement.company_id.id,
                 "date_order": fields.Datetime.now(),
                 "origin": settlement.name,
             }
@@ -253,7 +244,10 @@ def _ensure_purchase_order(env, settlement, split_first_line=False):
         for line in current_lines
     }
     rounding = settlement.currency_id.rounding or 0.01
-    lines_match = set(current_amounts) == set(desired_by_name) and all(
+    lines_match = (
+        all(line.product_id == product for line in current_lines)
+        and set(current_amounts) == set(desired_by_name)
+    ) and all(
         not float_compare(
             current_amounts[name], desired_by_name[name]["amount"], precision_rounding=rounding
         )
@@ -302,10 +296,7 @@ def _ensure_purchase_order(env, settlement, split_first_line=False):
         # reviews; the one2many cache is stale until invalidated). Complete
         # the chain with per-review actors so the settlement approval finds
         # a confirmed purchase order.
-        approve_tier_chain(
-            po,
-            fallback_xmlid="smart_construction_demo.user_sc_purchase_manager_cap",
-        )
+        approve_tier_chain(po)
     if po.state in ("draft", "sent") and po.validation_status == "validated":
         # Defensive: the final tier level normally fires the server action
         # callback that confirms the order; finish it directly if not.
@@ -368,16 +359,7 @@ def _ensure_invoice_info(env, settlement, ratio):
 def _approve_payment(env, payment):
     if payment.state in ("approved", "done"):
         return payment
-    if payment.state in ("draft", "rejected"):
-        payment.action_submit()
-    if payment.state == "submit":
-        if approve_tier_chain(
-            payment,
-            fallback_xmlid="smart_construction_demo.user_sc_finance_mgr_test",
-        ) and payment.state == "submit":
-            payment.action_on_tier_approved()
-    if payment.state == "approve" and payment.validation_status == "validated":
-        payment.action_set_approved()
+    _demo_drive_approval(env, payment)
     if payment.state != "approved":
         raise UserError("演示付款申请未能通过正式审批状态机。")
     return payment
@@ -387,9 +369,9 @@ def _ensure_payments(env, project, pay_contract, receive_contract, settlement):
     # 产品的 payment.request._check_project_lifecycle 禁止在 保修/关闭 项目上
     # 提交或审批付款申请（P0_PROJECT_TERMINAL_BLOCKED）。终态项目不再新增付款
     # 事实：这里只跳过，不注入任何状态绕开守卫。
-    if project.lifecycle_state in ("warranty", "closed"):
+    if declared_stage(project) in ("warranty", "closed"):
         return
-    Payment = env["payment.request"].sudo()
+    Payment = _demo_action_record(env, env["payment.request"], "action_submit", _DEMO_DOCUMENT_SUBMITTER)
     pay = Payment.search(
         [
             ("project_id", "=", project.id),
@@ -436,34 +418,6 @@ def _ensure_payments(env, project, pay_contract, receive_contract, settlement):
     _approve_payment(env, receive)
 
 
-def _cleanup_paused_showroom_settlement(env, project):
-    Settlement = env["sc.settlement.order"].sudo()
-    Payment = env["payment.request"].sudo()
-
-    settlements = Settlement.search(
-        [
-            ("project_id", "=", project.id),
-            ("name", "=", f"SET-{project.project_code}-01"),
-        ]
-    )
-    if not settlements:
-        return
-
-    payments = Payment.search(
-        [
-            ("project_id", "=", project.id),
-            ("settlement_id", "in", settlements.ids),
-        ]
-    )
-    removable_payments = payments.filtered(lambda record: record.state in ("draft", "cancel"))
-    if removable_payments:
-        removable_payments.unlink()
-    removable_settlements = settlements.filtered(lambda record: record.state == "draft")
-    if removable_settlements:
-        removable_settlements.mapped("line_ids").unlink()
-        removable_settlements.unlink()
-
-
 def _get_project(env, code):
     return env["project.project"].sudo().search([("project_code", "=", code)], limit=1)
 
@@ -498,29 +452,30 @@ def _get_dictionary(env, xmlid, domain):
 
 
 def _ensure_contract(env, vals):
-    Contract = env["construction.contract"].sudo()
+    Contract = _demo_action_record(env, env["construction.contract"], "action_confirm", "smart_construction_demo.user_sc_contract_manager_cap")
     contract = Contract.search(
         [("project_id", "=", vals["project_id"]), ("subject", "=", vals["subject"])], limit=1
     )
+    payload = {key: value for key, value in vals.items() if key != "state"}
     if not contract:
-        return Contract.create(vals)
-    # 合同状态只能由受控业务动作推进
-    # （CONTRACT_GUARD_DIRECT_STATE_WRITE），生效后经济身份字段同时冻结。
-    # 已存在合同因此只在草稿态对齐业务字段，状态交给 action_confirm()，
-    # 与结算单/发票快照的处理方式保持一致。
-    target_state = vals.get("state") or "draft"
+        return Contract.create(payload)
     if contract.state == "draft":
-        payload = {key: value for key, value in vals.items() if key != "state"}
-        if payload:
-            contract.write(payload)
-        if target_state != "draft":
-            contract.action_confirm()
+        contract.write(payload)
     return contract
 
 
+def _confirm_contract(contract):
+    if contract.state == "draft":
+        contract.action_confirm()
+        contract.invalidate_recordset()
+        approve_tier_chain(contract)
+    if contract.state not in ("confirmed", "running", "closed"):
+        raise UserError("演示合同未能通过正式确认与审批流程。")
+
+
 def _ensure_tender(env, project, owner):
-    Tender = env["tender.bid"].sudo()
-    TenderLine = env["tender.bid.line"].sudo()
+    Tender = _demo_action_record(env, env["tender.bid"], "action_to_submitted")
+    TenderLine = env["tender.bid.line"].with_user(Tender.env.user).sudo(False)
     uom_unit = env.ref("uom.product_uom_unit", raise_if_not_found=False)
     if not uom_unit:
         uom_unit = env["uom.uom"].sudo().search([], limit=1)
@@ -539,6 +494,8 @@ def _ensure_tender(env, project, owner):
         "state": "prepare",
     }
     if tender:
+        if tender.state != "prepare":
+            return tender
         tender.write(vals)
     else:
         tender = Tender.create(vals)
@@ -591,16 +548,22 @@ def run(env):
     purchase_tax = env.ref("smart_construction_seed.tax_purchase_13", raise_if_not_found=False)
 
     today = fields.Date.context_today(env.user)
-    ContractLine = env["construction.contract.line"].sudo()
-    Contract = env["construction.contract"].sudo()
+    ContractLine = env["construction.contract.line"].with_user(env.ref("smart_construction_demo.user_sc_contract_manager_cap")).sudo(False)
+    Contract = _demo_action_record(env, env["construction.contract"], "action_confirm", "smart_construction_demo.user_sc_contract_manager_cap")
     Tender = env["tender.bid"].sudo()
     warn_codes = DEMO_WARN_PROJECT_CODES
     split_codes = {"DEMO-PJ-TENDER"}
 
     for project in projects:
+        _demo_project_members(env, project, _DEMO_PAYMENT_SCOPED_SEATS + (
+            "smart_construction_demo.user_sc_contract_manager_cap",
+            "smart_construction_demo.user_sc_project_user",
+            "smart_construction_demo.user_sc_fin_mgr_01",
+            "smart_construction_demo.user_sc_settlement_user_cap",
+            "smart_construction_demo.user_sc_purchase_manager_cap",
+        ))
         is_core_demo = bool(project.project_code and project.project_code.startswith("DEMO-"))
         if not is_core_demo and project.lifecycle_state == "paused":
-            _cleanup_paused_showroom_settlement(env, project)
             continue
 
         has_contract = Contract.search_count([("project_id", "=", project.id)]) > 0
@@ -622,7 +585,6 @@ def run(env):
             "date_contract": today,
             "date_start": today,
             "date_end": today,
-            "state": "confirmed",
         }
         if sale_tax:
             out_vals["tax_id"] = sale_tax.id
@@ -638,7 +600,6 @@ def run(env):
             "date_contract": today,
             "date_start": today,
             "date_end": today,
-            "state": "confirmed",
         }
         if purchase_tax:
             in_vals["tax_id"] = purchase_tax.id
@@ -668,19 +629,23 @@ def run(env):
                 payload = dict(vals)
                 payload["contract_id"] = contract.id
                 payload["price_contract"] = vals["price_contract"]
-                if existing:
-                    existing.write(payload)
-                else:
-                    ContractLine.create(payload)
+                if contract.state == "draft":
+                    if existing:
+                        existing.write(payload)
+                    else:
+                        ContractLine.create(payload)
+                elif not existing:
+                    raise UserError("已生效演示合同缺少声明明细，禁止补写既成事实。")
+            _confirm_contract(contract)
 
         _ensure_funding_baseline(env, project)
         settlement = _ensure_settlement(env, project, in_contract)
         split_first = project.project_code in split_codes
         _ensure_purchase_order(env, settlement, split_first_line=split_first)
         if project.project_code in warn_codes:
-            ratio = DEMO_INVOICE_WARN_RATIO_BY_STATE.get(project.lifecycle_state, 1.0)
+            ratio = DEMO_INVOICE_WARN_RATIO_BY_STATE.get(declared_stage(project), 1.0)
         else:
-            ratio = DEMO_INVOICE_RATIO_BY_STATE.get(project.lifecycle_state, 1.0)
+            ratio = DEMO_INVOICE_RATIO_BY_STATE.get(declared_stage(project), 1.0)
         _ensure_invoice_info(env, settlement, ratio)
         _approve_settlement(env, settlement)
         _ensure_payments(env, project, in_contract, out_contract, settlement)

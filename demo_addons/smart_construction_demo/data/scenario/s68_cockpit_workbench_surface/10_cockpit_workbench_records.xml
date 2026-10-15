@@ -15,7 +15,6 @@
       <field name="quantity">1.0</field>
       <field name="amount">5000000.0</field>
       <field name="currency_id" ref="base.CNY"/>
-      <field name="state">in_progress</field>
       <field name="cockpit_scope">project</field>
       <field name="metric_period">month</field>
       <field name="metric_value">5000000.0</field>
@@ -38,7 +37,6 @@
       <field name="quantity">42.0</field>
       <field name="amount">218400.0</field>
       <field name="currency_id" ref="base.CNY"/>
-      <field name="state">done</field>
       <field name="cockpit_scope">project</field>
       <field name="metric_period">month</field>
       <field name="metric_value">218400.0</field>
@@ -58,7 +56,6 @@
       <field name="business_date">2025-08-20</field>
       <field name="planned_date">2025-08-20</field>
       <field name="due_date">2025-08-27</field>
-      <field name="state">in_progress</field>
       <field name="source_model">payment.request</field>
       <field name="source_res_id" eval="ref('smart_construction_demo.sc_demo_pay_req_010_001')"/>
       <field name="priority">high</field>
@@ -96,7 +93,6 @@
       <field name="business_date">2025-08-22</field>
       <field name="planned_date">2025-08-22</field>
       <field name="due_date">2025-08-29</field>
-      <field name="state">done</field>
       <field name="source_model">project.cost.ledger</field>
       <field name="source_res_id" eval="ref('smart_construction_demo.sc_demo_cost_ledger_065_rebar')"/>
       <field name="priority">normal</field>

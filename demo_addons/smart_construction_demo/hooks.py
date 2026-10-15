@@ -6,6 +6,15 @@ ENVIRONMENT_ROLE = "platform_internal_demo"
 DEMO_TENANT_KEY = "sc-demo-main"
 
 
+def assert_demo_seed_principal(env):
+    """Only the managed installation/shell principal may delegate demo actions."""
+    from odoo import SUPERUSER_ID
+    from odoo.exceptions import AccessError
+
+    if env.uid != SUPERUSER_ID or not env.su:
+        raise AccessError("DEMO_SEED_PRINCIPAL_REQUIRED")
+
+
 def guard_demo_scope(env):
     db_name = str(env.cr.dbname or "").strip()
     if not (

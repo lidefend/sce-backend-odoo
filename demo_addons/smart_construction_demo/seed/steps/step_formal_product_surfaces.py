@@ -4,25 +4,30 @@
 from odoo import fields
 
 from ..registry import SeedStep, register
+from ..business_roles import business_model, prepare_project
 
 
 def _ensure(Model, domain, values):
-    record = Model.sudo().search(domain, limit=1)
-    return record or Model.sudo().create(values)
+    Model = business_model(Model.env, Model._name)
+    record = Model.search(domain, limit=2)
+    if len(record) > 1:
+        raise ValueError("Demo identity is ambiguous: %s" % Model._name)
+    return record or Model.create(values)
 
 
 def run(env):
     project = env.ref("smart_construction_demo.sc_demo_project_001")
     owner = env.ref("smart_construction_demo.sc_demo_partner_owner_001")
     supplier = env.ref("smart_construction_demo.sc_demo_partner_vendor_steel")
-    admin = env.ref("base.user_admin")
+    prepare_project(env, project)
+    admin = env.ref("smart_construction_demo.user_sc_project_manager_cap")
     today = fields.Date.context_today(env.user)
 
     _ensure(env["hr.job"], [("name", "=", "Demo 项目成本工程师")], {
         "name": "Demo 项目成本工程师",
         "company_id": project.company_id.id,
     })
-    analytic_plan = env["account.analytic.plan"].sudo().search([], limit=1)
+    analytic_plan = _ensure(env["account.analytic.plan"], [("name", "=", "Demo 产品成本分析")], {"name": "Demo 产品成本分析"})
     if analytic_plan:
         analytic_account = _ensure(
             env["account.analytic.account"],
@@ -57,9 +62,9 @@ def run(env):
         "note": "产品 Demo 行政资产样本。",
     })
 
-    contract = env["construction.contract"].sudo().search(
-        [("project_id", "=", project.id)], limit=1
-    )
+    contract = env.ref("smart_construction_demo.sc_demo_contract_out_001")
+    if contract.project_id != project:
+        raise ValueError("Demo contract project differs from its declared owner")
     variation = _ensure(
         env["sc.site.variation"],
         [("project_id", "=", project.id), ("subject", "=", "Demo 基础局部设计调整")],
@@ -89,7 +94,7 @@ def run(env):
                 "subject": "Demo 基础变更价款调整",
                 "change_type": "price",
                 "change_date": today,
-                "reason": "承接已确认的现场设计调整。",
+                "reason": "承接待审批的现场设计调整样例。",
                 "before_summary": "按原合同基础做法执行。",
                 "after_summary": "按复核后的基础做法执行。",
                 "amount_delta": 18500.0,
@@ -143,9 +148,8 @@ def run(env):
 
     inbound = env.ref(
         "smart_construction_demo.sc_demo_material_inbound_080_steel",
-        raise_if_not_found=False,
     )
-    warehouse = inbound.warehouse_id if inbound else env["stock.warehouse"].sudo().search([], limit=1)
+    warehouse = inbound.warehouse_id
     location = (
         inbound.location_dest_id
         if inbound and "location_dest_id" in inbound._fields
@@ -184,8 +188,8 @@ def run(env):
             "note": "产品 Demo 薪资发放样本。",
         })
 
-    bid = env["tender.bid"].sudo().search([], limit=1)
-    _ensure(env["tender.opportunity"], [("code", "=", "DEMO-TO-001")], {
+    bid = env.ref("smart_construction_demo.sc_demo_tender_bid_086_complex")
+    opportunity = _ensure(env["tender.opportunity"], [("code", "=", "DEMO-TO-001")], {
         "name": "Demo 城市更新配套工程招标",
         "code": "DEMO-TO-001",
         "company_id": project.company_id.id,
@@ -199,10 +203,12 @@ def run(env):
         "source": "产品 Demo 招标公告",
         "qualification_requirements": "具备相应施工资质。",
         "project_id": project.id,
-        "state": "following",
+        "state": "draft",
     })
+    if opportunity.state == "draft":
+        opportunity.action_follow()
     if bid:
-        _ensure(env["tender.document"], [
+        document = _ensure(env["tender.document"], [
             ("bid_id", "=", bid.id), ("name", "=", "Demo 技术标响应文件")
         ], {
             "name": "Demo 技术标响应文件",
@@ -212,8 +218,11 @@ def run(env):
             "responsible_id": admin.id,
             "deadline": fields.Datetime.now(),
             "note": "产品 Demo 标书编制样本。",
-            "state": "preparing",
+            "state": "draft",
         })
+
+        if document.state == "draft":
+            document.action_start()
 
     _ensure(env["sc.tax.certificate.registration"], [
         ("company_id", "=", project.company_id.id),
@@ -227,7 +236,7 @@ def run(env):
         "cross_region_business_address": "四川省示范区 Demo 项目现场",
         "validity_start_date": today,
         "validity_end_date": fields.Date.add(today, months=6),
-        "handler_id": admin.id,
+        "handler_id": env.ref("smart_construction_demo.user_sc_fin_mgr_01").id,
         "state": "draft",
         "note": "产品 Demo 外经证样本。",
     })
@@ -239,7 +248,7 @@ def run(env):
         "company_id": project.company_id.id,
         "period_start": fields.Date.start_of(today, "month"),
         "period_end": fields.Date.end_of(today, "month"),
-        "handler_id": admin.id,
+        "handler_id": env.ref("smart_construction_demo.user_sc_fin_mgr_01").id,
         "other_tax_adjustment": 0.0,
         "state": "draft",
         "note": "产品 Demo 税务申报样本。",

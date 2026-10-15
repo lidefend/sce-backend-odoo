@@ -3,7 +3,8 @@ from odoo import fields
 from odoo.exceptions import UserError
 
 from ..registry import SeedStep, register
-from ..tier_flow import approve_tier_chain, ensure_project_initiation_approved
+from ..business_roles import business_model, project_actor, prepare_project, ensure_manual_boq_analysis
+from ..tier_flow import advance_settlement, ensure_project_initiation_approved
 
 
 SHOWROOM_PROJECTS = [
@@ -22,19 +23,7 @@ SHOWROOM_PROJECTS = [
 
 
 def _complete_settlement(settlement):
-    if settlement.state == "draft":
-        settlement.action_submit()
-    if settlement.state == "submit":
-        # Multi-level linear approval chains fire the tier server action
-        # after every level (action_on_tier_approved no-ops mid-chain), and
-        # each level's review is scoped to its own reviewer group, so the
-        # actor must be picked per pending review instead of a fixed one.
-        if approve_tier_chain(settlement) and settlement.state == "submit":
-            settlement.action_on_tier_approved()
-    if settlement.state == "approve":
-        settlement.action_done()
-    if settlement.state != "done":
-        raise UserError("Demo 结算单未能按正式状态机完成。")
+    return advance_settlement(settlement, complete=True)
 
 TASKS_PER_PROJECT = 12
 
@@ -44,10 +33,10 @@ def _get_demo_user(env, login):
 
 
 def _ensure_boq(env, project, idx):
-    Boq = env["project.boq.line"].sudo()
+    Boq = business_model(env, "project.boq.line")
     if Boq.search_count([("project_id", "=", project.id)]) > 0:
         return
-    Version = env["project.boq.version"].sudo()
+    Version = business_model(env, "project.boq.version")
     version = Version.search(
         [
             ("project_id", "=", project.id),
@@ -68,7 +57,7 @@ def _ensure_boq(env, project, idx):
         )
     uom_unit = env.ref("uom.product_uom_unit")
     code_prefix = f"SR-{idx:02d}"
-    Boq.create(
+    line = Boq.create(
         {
             "version_id": version.id,
             "project_id": project.id,
@@ -80,6 +69,7 @@ def _ensure_boq(env, project, idx):
             "section_type": "building",
         }
     )
+    ensure_manual_boq_analysis(env, line, 120.0)
     if version.state == "draft":
         version.action_validate()
     if version.state == "validated":
@@ -87,7 +77,7 @@ def _ensure_boq(env, project, idx):
 
 
 def _ensure_tasks(env, project, user, target):
-    Task = env["project.task"].sudo()
+    Task = business_model(env, "project.task")
     existing = Task.search([("project_id", "=", project.id)])
     if len(existing) >= target:
         return
@@ -103,6 +93,7 @@ def _ensure_tasks(env, project, user, target):
 
 
 def _ensure_lifecycle(project, target_state):
+    project = project_actor(project)
     if project.lifecycle_state != "draft":
         return
     # 启动项目的前置事实是立项已通过；种子只调用产品自己的提交动作，
@@ -142,61 +133,8 @@ def _ensure_project_prereqs(env, project):
 
 
 def _ensure_purchase_order(env, settlement):
-    if settlement.purchase_order_ids:
-        return
-
-    Purchase = env["purchase.order"].sudo()
-    PurchaseLine = env["purchase.order.line"].sudo()
-    Product = env["product.product"].sudo()
-    uom_unit = env.ref("uom.product_uom_unit", raise_if_not_found=False)
-    if not uom_unit:
-        uom_unit = env["uom.uom"].sudo().search([], limit=1)
-
-    product = Product.search([("name", "=", "展厅采购服务")], limit=1)
-    if not product:
-        product = Product.create(
-            {
-                "name": "展厅采购服务",
-                "type": "service",
-                "uom_id": uom_unit.id if uom_unit else False,
-                "uom_po_id": uom_unit.id if uom_unit else False,
-                "purchase_ok": True,
-                "sale_ok": False,
-            }
-        )
-
-    po = Purchase.search(
-        [
-            ("partner_id", "=", settlement.partner_id.id),
-            ("origin", "=", settlement.name),
-        ],
-        limit=1,
-    )
-    if not po:
-        po = Purchase.create(
-            {
-                "partner_id": settlement.partner_id.id,
-                "date_order": fields.Datetime.now(),
-                "origin": settlement.name,
-            }
-        )
-    if not po.order_line:
-        total = settlement.amount_total or sum(settlement.line_ids.mapped("amount")) or 0.0
-        PurchaseLine.create(
-            {
-                "order_id": po.id,
-                "name": "展厅-采购服务",
-                "product_id": product.id,
-                "product_qty": 1.0,
-                "product_uom": uom_unit.id if uom_unit else product.uom_po_id.id,
-                "price_unit": total,
-                "date_planned": fields.Datetime.now(),
-            }
-        )
-    if po.state not in ("purchase", "done"):
-        env.cr.execute("UPDATE purchase_order SET state=%s WHERE id=%s", ("purchase", po.id))
-        env.invalidate_all()
-    settlement.purchase_order_ids = [(4, po.id)]
+    from .step_40_contracts_demo import _ensure_purchase_order as ensure_purchase
+    return ensure_purchase(env, settlement)
 
 
 def _ensure_contract_chain(env, project, idx):
@@ -204,7 +142,7 @@ def _ensure_contract_chain(env, project, idx):
     if not partner:
         partner = env["res.partner"].sudo().create({"name": "Demo-合同相对方"})
 
-    Contract = env["construction.contract"].sudo()
+    Contract = business_model(env, "construction.contract")
     tax = env.ref("smart_construction_seed.tax_purchase_13", raise_if_not_found=False)
     if not tax:
         tax = Contract._get_default_tax("in")
@@ -226,8 +164,8 @@ def _ensure_contract_chain(env, project, idx):
             }
         )
 
-    Settlement = env["sc.settlement.order"].sudo()
-    Line = env["sc.settlement.order.line"].sudo()
+    Settlement = business_model(env, "sc.settlement.order")
+    Line = business_model(env, "sc.settlement.order.line")
     settle_name = f"SHOW-SO-{idx:02d}"
     settlement = Settlement.search([("name", "=", settle_name)], limit=1)
     if not settlement:
@@ -253,7 +191,7 @@ def _ensure_contract_chain(env, project, idx):
     _ensure_purchase_order(env, settlement)
     _complete_settlement(settlement)
 
-    Payment = env["payment.request"].sudo()
+    Payment = business_model(env, "payment.request")
     pay_name = f"SHOW-PR-{idx:02d}"
     payment = Payment.search([("name", "=", pay_name)], limit=1)
     if not payment:
@@ -272,13 +210,13 @@ def _ensure_contract_chain(env, project, idx):
 
 
 def run(env):
-    Project = env["project.project"].sudo()
+    Project = business_model(env, "project.project")
     demo_pm = _get_demo_user(env, "demo_pm")
     # project.company_id is a stored compute derived from the analytic
     # account or the partner's company; a name-only create leaves it empty,
     # which later breaks company-scoped facts (e.g. funding baselines that
     # require an explicit company/currency owner).
-    seed_company_id = env.company.id
+    seed_company_id = env.ref("base.main_company").id
     for idx, spec in enumerate(SHOWROOM_PROJECTS, start=1):
         project = Project.search([("name", "=", spec["name"])], limit=1)
         created = False
@@ -287,21 +225,20 @@ def run(env):
                 {"name": spec["name"], "company_id": seed_company_id}
             )
             created = True
-        elif not project.company_id:
-            project.write({"company_id": seed_company_id})
+        prepare_project(env, project)
         _ensure_boq(env, project, idx)
         _ensure_tasks(env, project, demo_pm, TASKS_PER_PROJECT)
         _ensure_project_prereqs(env, project)
-        if created or project.lifecycle_state == "draft":
-            _ensure_lifecycle(project, spec["state"])
         if spec["with_chain"]:
             _ensure_contract_chain(env, project, idx)
+        if created or project.lifecycle_state == "draft":
+            _ensure_lifecycle(project, spec["state"])
 
     # The cockpit scenario is loaded before the showroom projects exist on a
     # freshly created tenant.  Reconcile its business facts only after the
     # authoritative showroom set has been established.  The model method is
     # idempotent and remains the single owner of those facts.
-    Project.sc_demo_seed_cockpit_round2()
+    env["project.project"].sc_demo_seed_cockpit_round2()
 
     env["ir.config_parameter"].sudo().set_param("sc.seed.demo_showroom", "1")
     return {"ok": True, "projects": len(SHOWROOM_PROJECTS)}
