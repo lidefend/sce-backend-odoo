@@ -24,7 +24,7 @@
   "baseline_sha": "10bf72ef4bb060556bd2844598b58f9806392d34",
   "blockers": [
     "Step D proper cannot start yet: sc_tenant_baosheng_dev has no released construction.standard edition snapshot (read-only readback: 0 rows) and no operator in smart_core.group_smart_core_tenant_payload_importer (group res_id 19, admin not a member), while the only governed daily snapshot entry (release.daily_product_navigation.snapshot) is hard-coded to sc_demo. The tenant duty therefore cannot register the edition it runs, provision_operator.py cannot issue the narrow import grant, and the tenant's own versioned migration cannot begin. The fix belongs to P4 ops tooling that reuses the duty declaration; the snapshot record itself must stay owned by the existing platform delivery service.",
-    "BLOCKING 2026-10-15: the customer duty's narrow import operator cannot be provisioned, planned, granted, imported or verified because sc_platform_control holds no approved in-window maintenance access and no verifiable independent approver exists (sc.platform.maintenance.access 0 rows; smart_core.group_smart_core_security_admin has 0 members; the only active internal user is the shared admin the owner forbade as approver). The approval is read as a fact from the platform control duty and is required for both provision and grant by design, so this pauses before provision rather than before grant. Resolving it needs the owner to name a formal approving account or approve through the existing authentication entry; it must not be resolved by fabricating an approval, reusing admin, or relaxing the mechanism.",
+    "BLOCKING 2026-10-15, mechanism closed 2026-10-16, approval still outstanding: the customer duty's narrow import operator cannot be provisioned, planned, granted, imported or verified without an approved, in-window maintenance access read from sc_platform_control. The P0 entry now exists (request/approve/reject/revoke/expire over sc.platform.maintenance.access, decider verified server-side, operation set required) and so does the governed security-administrator bootstrap, and the owner named lidefend as the approving subject. What remains is execution, not mechanism: bootstrap lidefend as the security administrator on the control duty, read it back, then request and approve an access bound to capability migrate, operator smart_core.svc_tenant_payload_operator_baosheng, payload digest f1adc6fb17b516d42492fe42229df0cce65956ea113978a19243c0de57ec1ed4 and operations [provision, grant]. It must not be resolved by fabricating an approval, reusing admin, self-approving, or relaxing the mechanism.",
     "The customer duty is now a served, initialized face (sc_tenant_baosheng_dev, role sc_tenant_baosheng_dev_app, exact filter ^sc_tenant_baosheng_dev$, route 18090, own cluster and volume, product line plus sce_customer_baosheng installed from the delivered read-only tree bfbc736) and its paired recovery point exists (backup set sc_tenant_baosheng_dev-20261015T095006Z-653a3119 under /data/backups/daily-tenant-baosheng-dev, validated, restored in isolation and independently checksum-readback). Initialization is not migration: no historical data has moved, and Step D proper still has to run the customer module's own versioned migration (historical_payment_migration_policy.expected_records=12386) with the payload validated and planned first, never defaulting ownership and never copying UAT data.",
     "sc_demo mixes the customer tenant volume with demo/test purposes, so 'the demo database' is not yet a pure demo database; the destination of the company-1 volume is unresolved, and the demo duty is still declared with the shared-bootstrap-role gap and has no dedicated application role.",
     "CLOSED 2026-10-15 in this run: the platform-model registration for the daily profile now has a governed runtime binding -- scripts/ops/daily_runtime_duty_database_registration.py resolves every runtime fact from config/ops/daily_runtime_database_duties.v1.json and drives the immutable platform.database.register entry inside the control duty's own rendered stack. sc_tenant_baosheng_dev is registered (customer/baosheng/customer_production/database_per_customer_tenant/^sc_tenant_baosheng_dev$ stage declared, one audited register operation, reuse path writes nothing), so DBGOV1_DATABASE_NOT_REGISTERED no longer blocks the operator lifecycle. Still open from the original finding: suspend/resume are not yet exercised for this duty and the demo duty still carries no registration of its own.",
@@ -88,7 +88,10 @@
         "scripts/ops/daily_runtime_duty_payload.py",
         "scripts/tenant_payload/provision_operator.py",
         "config/ops/daily_runtime_database_duties.v1.json",
-        "make/daily_candidate.mk"
+        "make/daily_candidate.mk",
+        "addons/smart_core/security/tenant_payload_operator_policy.py",
+        "addons/smart_core/security/tenant_payload_operator.py",
+        "scripts/verify/test_tenant_payload_operator_policy.py"
       ],
       "kind": "offline",
       "target": "verify.daily.duty.operator_grant"
@@ -152,6 +155,40 @@
       ],
       "kind": "offline",
       "target": "verify.daily.runtime.source_revision.align"
+    },
+    "platform_maintenance_access_entry": {
+      "inputs": [
+        "addons/smart_core/controllers/platform_maintenance_access_controller.py",
+        "addons/smart_core/controllers/__init__.py",
+        "addons/smart_core/controllers/platform_ops_controller.py",
+        "addons/smart_core/models/platform_database_registry.py",
+        "addons/smart_core/security/database_governance.py",
+        "addons/smart_core/security/platform_admin.py",
+        "addons/smart_core/security/auth.py",
+        "addons/smart_core/core/trace.py",
+        "addons/smart_core/security/ir.model.access.csv",
+        "addons/smart_core/security/smart_core_security.xml",
+        "addons/smart_core/tests/__init__.py",
+        "addons/smart_core/tests/test_platform_maintenance_access_http.py",
+        "addons/smart_core/tests/test_platform_database_governance_orm.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "runtime",
+      "target": "verify.smart_core.platform_maintenance_access.orm"
+    },
+    "platform_security_admin_bootstrap": {
+      "inputs": [
+        "scripts/ops/platform_security_admin_bootstrap.py",
+        "scripts/ops/test_platform_security_admin_bootstrap.py",
+        "scripts/ops/daily_runtime_platform_security_admin_bootstrap.py",
+        "scripts/ops/test_daily_runtime_platform_security_admin_bootstrap.py",
+        "scripts/ops/platform_database_receipt.py",
+        "scripts/ops/daily_runtime_duty_identity.py",
+        "scripts/ops/daily_runtime_duty_payload.py",
+        "make/daily_candidate.mk"
+      ],
+      "kind": "offline",
+      "target": "verify.platform.security_admin.bootstrap"
     }
   },
   "environment": {
@@ -167,7 +204,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "Independent review S2 (unsafe control-database test wiring) is closed at 932adae9 with proven counter-examples, so the registration transport is covered at the wiring layer; the review's S3 observations remain open and non-blocking. The daily-duty platform registration is complete and read back, so the operator lifecycle is no longer blocked by a missing registration. Steps 1-2 of the owner's seven-step order are therefore done for the registration path, and everything that does not depend on an approval has been executed: (a) provisional read-only baseline - make daily.runtime.duty.operator_grant.remote_readback reports operator=null and importer_group_member_count=0; (b) the registration itself, written once and read back, with the reuse path proven non-writing. Next exact step is the approval-bound pause: make daily.runtime.duty.operator_grant.remote_provision with CONFIRM_DAILY_DUTY_OPERATOR_PROVISION=PROVISION_DECLARED_PAYLOAD_IMPORT_OPERATOR_IN_DAILY_DUTY and DAILY_DUTY_OPERATOR_SUBJECT_CHECKSUM=f1adc6fb17b516d42492fe42229df0cce65956ea113978a19243c0de57ec1ed4 is refused until the platform control database carries an approved, in-window maintenance access for this duty binding the operator identity smart_core.svc_tenant_payload_operator_baosheng, the capability migrate, the payload digest and a validity window, approved by an independent subject holding smart_core.group_smart_core_security_admin. The owner must name that formal approving account, or approve through the existing authentication entry. Once bound: remote_provision, readback the created identity, daily.runtime.duty.payload.remote_plan, then remote_grant, remote_import (CONFIRM_DAILY_DUTY_PAYLOAD_IMPORT=IMPORT_SIGNED_PAYLOAD_INTO_DAILY_DUTY) and remote_verify; then the reconciliation of 12386 against 6322/29/6035 with amounts, source relations, attachments and ownership; then remote_revoke, B-line independent review and normal mainline integration. Never delete source data and never clean migration results by uninstalling the user module.",
+  "next_exact_step": "The maintenance-authorization mechanism the owner ordered is delivered and verified at the entry layer (verify.smart_core.platform_maintenance_access.orm 12/12, verify.local.dev.platform_database_governance.orm 24/24, verify.smart_core.tenant_payload_operator.orm 20/20, verify.platform.security_admin.bootstrap 34/34, and the controller boundary guards PASS), with three falsifications proving the guards still fire. Next exact step is the approval-bound execution, which needs no further owner input because the owner named lidefend: (1) make daily.runtime.platform.security_admin.bootstrap.remote_readback - the control duty must report no security administrator yet; (2) make daily.runtime.platform.security_admin.bootstrap.remote_bootstrap with SC_CONFIRM_PLATFORM_SECURITY_ADMIN_BOOTSTRAP=BOOTSTRAP_DECLARED_PLATFORM_SECURITY_ADMIN, PLATFORM_SECURITY_ADMIN_LOGIN=lidefend and a real name/evidence reference, then read the identity back; (3) create the maintenance request for sc_tenant_baosheng_dev/capability migrate/operator smart_core.svc_tenant_payload_operator_baosheng/digest f1adc6fb17b516d42492fe42229df0cce65956ea113978a19243c0de57ec1ed4/operations [provision, grant] and approve it as lidefend through the entry or the governed shell; (4) make daily.runtime.duty.operator_grant.remote_provision with CONFIRM_DAILY_DUTY_OPERATOR_PROVISION=PROVISION_DECLARED_PAYLOAD_IMPORT_OPERATOR_IN_DAILY_DUTY and DAILY_DUTY_OPERATOR_SUBJECT_CHECKSUM=f1adc6fb17b516d42492fe42229df0cce65956ea113978a19243c0de57ec1ed4, read the created identity back, then daily.runtime.duty.payload.remote_plan, remote_grant, remote_import (CONFIRM_DAILY_DUTY_PAYLOAD_IMPORT=IMPORT_SIGNED_PAYLOAD_INTO_DAILY_DUTY) and remote_verify; (5) reconcile 12386 against 6322/29/6035 with amounts, source relations, attachments and ownership; (6) remote_revoke, B-line independent review, then normal mainline integration. Never delete source data and never clean migration results by uninstalling the user module. Batch acceptance, mainline integration, version release and product delivery remain separate and open.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "review_s2_closure_20261015": {
     "authority": "Independent B-line review of 5f5c4dae..4450e674 returned APPROVE_WITH_NOTES with one S2: the registration's control-database write had no test wiring, and the existing assertion pointed at the opposite target",
@@ -444,6 +481,84 @@
       "duty": "customer_tenant_dev",
       "edition": "construction.standard only, version_prefix daily-navigation, expected version daily-navigation-standard-<SC_SOURCE_REVISION first 12>; construction.preview is never widened automatically",
       "tenant_key": "baosheng"
+    }
+  },
+  "step_d_maintenance_access_entry_20261016": {
+    "case": "Owner ruling (2026-10-16): 用 lidefend 作为授权人；补齐 P0 正式维护授权入口，不用一次性 P4 shell 代替审批产品能力；当前停机正确，不能绕过 provision 的前置授权。两个独立缺口：审批流程没有可用入口，平台尚未建立真实安全管理员身份。No account input was needed to finish the mechanism, so everything that does not depend on the approval was executed.",
+    "delivered": {
+      "entry": "addons/smart_core/controllers/platform_maintenance_access_controller.py serves GET /api/ops/maintenance/access plus POST request/approve/reject/revoke/expire. The decider is the principal verified from the authenticated session (security admin for a decision, platform or security admin for a read), never a payload fact: a body carrying approved_by/requested_by/state/valid_from/valid_until is refused with MAINTENANCE_ACCESS_SERVER_OWNED_FIELD rather than ignored, and the state machine remains the only writer.",
+      "identity_bootstrap": "scripts/ops/platform_security_admin_bootstrap.py creates or verifies exactly one named security administrator with no password, asserts has_customer_business_data_scope is False and approves_maintenance_access is False, and proves the maintenance ledger row count is unchanged, so establishing the approver can never approve this request and never grants customer business data. scripts/ops/daily_runtime_platform_security_admin_bootstrap.py is the host-side transmitter (readback/bootstrap) over the existing duty identity/payload bindings and the read-only /mnt/scripts mount.",
+      "operation_set": "database_governance.MAINTENANCE_ACCESS_OPERATIONS = (provision, grant) and the declaration carries maintenance_access.operations, so an approval must name the operation it covers. capability != grant: tenant_payload_operator_policy.validate_authorization(action=...) and the provision/grant entries each prove their own operation is inside the approved set (AUTHORIZATION_OPERATION_NOT_COVERED).",
+      "refusal_vocabulary": "The refused envelope reports the governed code itself (DBGOV1_..., DATABASE_GOVERNANCE_..., MAINTENANCE_ACCESS_...) so a caller branches on the code instead of matching prose; the trace id is projected from the request headers.",
+      "scope_binding": "The approval row binds requester, independent approver, target tenant and database, the operator identity, the payload checksum, the authorized operation set, the validity window, the reason and the decision note; the state readback now carries reason/requested_by/approved_by/valid_from as well, so one audit row shows the independence the state machine asserted.",
+      "transport_defect_fixed": "The new entry exposed that get_trace_id(headers) was called without headers in the controller and in the pre-existing platform_ops_controller.py, so every response - including every refusal - died before it could serialize. Both call the projection with the live request headers now; the entry envelope test asserts the sent X-Trace-Id is echoed."
+    },
+    "remaining": [
+      "The approval identity is named (lidefend) but not yet created on the platform control database: run daily.runtime.platform.security_admin.bootstrap.remote_readback, then remote_bootstrap with SC_CONFIRM_PLATFORM_SECURITY_ADMIN_BOOTSTRAP=BOOTSTRAP_DECLARED_PLATFORM_SECURITY_ADMIN and PLATFORM_SECURITY_ADMIN_LOGIN=lidefend, then read the identity back (security admin exactly once, no stored password, no business scope, ledger unchanged).",
+      "Then create the maintenance request through the entry (or the governed shell) as a platform administrator and approve it as lidefend; the request must bind capability migrate, operator smart_core.svc_tenant_payload_operator_baosheng, the payload digest f1adc6fb17b516d42492fe42229df0cce65956ea113978a19243c0de57ec1ed4 and operations [provision, grant] before remote_provision may run.",
+      "Independent (B-line) review of this batch is pending; batch acceptance, mainline integration, version release and product delivery are all still open."
+    ],
+    "verification": {
+      "L1": {
+        "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-entry-20261016/L1-ci-local-iteration.log",
+        "status": "passed for the policy guard; the entry still reports the run's registered blockers by design",
+        "target": "make ci.local.iteration"
+      },
+      "L1_static": {
+        "controller_guards": "verify.controller.boundary.guard PASS (delegate/allowlist/route/report/baseline all PASS with the new routes)",
+        "note": "every entry reports a non-zero test count",
+        "status": "passed",
+        "tests": {
+          "verify.daily.duty.database_registration": 33,
+          "verify.daily.duty.operator_grant": 39,
+          "verify.daily.duty.payload": 26,
+          "verify.daily.duty.recovery": 28,
+          "verify.platform.database.governance.guard": 17,
+          "verify.platform.security_admin.bootstrap": 34,
+          "verify.smart_core.tenant_payload_operator.policy": 39
+        }
+      },
+      "L2_entry": {
+        "covers": "request authorizes nothing until approved; the ledger projection covers the capability only after an independent security admin approves; forbidden decision fields refused; role gate; self-approval refused (INDEPENDENT); outsider cannot read the ledger; unauthenticated refusal; migrate must name the operation set; reject/revoke decided by the independent identity; expiry sweep restricted to the security admin and idempotent; a decided request is not decidable again; the envelope echoes the request trace id.",
+        "errors": 0,
+        "failed": 0,
+        "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-entry-20261016/L2-http-entry.log",
+        "target": "make verify.smart_core.platform_maintenance_access.orm",
+        "tests": 12
+      },
+      "L2_model": {
+        "errors": 0,
+        "failed": 0,
+        "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-entry-20261016/L2-governance-orm.log",
+        "note": "rerun because the state readback gained reason/requested_by/approved_by/valid_from",
+        "target": "make verify.local.dev.platform_database_governance.orm",
+        "tests": 24
+      },
+      "L2_operator_lifecycle": {
+        "errors": 0,
+        "failed": 0,
+        "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-entry-20261016/L2-operator-lifecycle-orm.log",
+        "target": "make verify.smart_core.tenant_payload_operator.orm",
+        "tests": 20
+      },
+      "falsification": {
+        "decision_role_gate": {
+          "broke": "entry role gate disabled",
+          "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-entry-20261016/falsify-role-gate.log",
+          "observed": "4 failed of 12 tests (exactly the four entry-layer role cases; the model layer still refused the writes)"
+        },
+        "restored": "the controller was restored byte-identical and the entry returned to 0 failed / 0 error of 12 tests",
+        "server_owned_field": {
+          "broke": "state removed from FORBIDDEN_BODY_FIELDS",
+          "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-entry-20261016/falsify-server-owned-field.log",
+          "observed": "2 failed of 12 tests"
+        },
+        "trace_projection": {
+          "broke": "get_trace_id() without headers",
+          "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-entry-20261016/falsify-trace.log",
+          "observed": "0 failed, 14 error(s) of 12 tests"
+        }
+      }
     }
   },
   "step_d_narrow_import_operator_grant_20261015": {
@@ -1673,6 +1788,32 @@
         "log": ".runtime/final-acceptance/daily-deployed/database-duty-plan.json",
         "note": "all three duties show failed_assertions == []; the only failing item remains the deferred platform-admin build binding (observed sc_platform_core, declared sc_platform_control)",
         "status": "passed"
+      },
+      {
+        "command": "make verify.smart_core.platform_maintenance_access.orm",
+        "identity": "9214f51c plus declared dirty scope (P0 maintenance-access entry)",
+        "layer": "L2",
+        "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-entry-20261016/L2-http-entry.log",
+        "status": "passed",
+        "tests": 12
+      },
+      {
+        "command": "make verify.local.dev.platform_database_governance.orm && make verify.smart_core.tenant_payload_operator.orm",
+        "identity": "9214f51c plus declared dirty scope (state readback gained the decision identity)",
+        "layer": "L2",
+        "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-entry-20261016/L2-governance-orm.log",
+        "status": "passed",
+        "tests": {
+          "platform_database_governance": 24,
+          "tenant_payload_operator_lifecycle": 20
+        }
+      },
+      {
+        "command": "make ci.local.iteration",
+        "identity": "9214f51c plus declared dirty scope",
+        "layer": "L1",
+        "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-entry-20261016/L1-ci-local-iteration.log",
+        "status": "passed for the policy guard; the entry still reports the run's registered blockers by design"
       }
     ],
     "risk": "high: database lifecycle effects; no runtime cutoff until exact governed target, rollback and tests are satisfied",

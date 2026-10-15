@@ -1723,6 +1723,9 @@ ssh 写性，仍需在运行时受管回读中体现。
 
 ## 待办：请所有者提供正式审批账号（当前暂停点）
 
+> 已被下一节取代：所有者已指名 `lidefend` 作为授权人，且审批入口与安全管理员 bootstrap 均已交付。
+> 本节保留为当时的事实记录（暂停时确实没有入口、没有可核验批准主体），不再表示当前状态。
+
 本轮所有者裁定（选择 A）已授权统一受管入驻机制创建专用导入服务账号，并明确
 `APPROVED_BY` 不能是 AI 助手、不能由新建服务账号自批、不能拿任意 `admin` 顶替。
 但**审批事实本身目前没有生产创建入口**，且没有任何可核验的独立批准主体：
@@ -1751,3 +1754,75 @@ P4 shell 程序 + 独立真实批准人。**在这两项落实前，不再触发
 获批后按既定顺序继续：
 `remote_provision` → 回读新身份 → `remote_plan` → `remote_grant` →
 `remote_import` → `remote_verify` → 对账 → `remote_revoke` → B 线独立复核 → 主线集成。
+
+---
+
+## 2026-10-16：P0 维护授权入口 + 安全管理员身份 bootstrap（本节取代上一节的暂停前提）
+
+上一节的暂停结论建立在两个前提上：**审批事实没有生产创建入口**、**平台没有可核验的
+独立安全管理员身份**。本轮所有者裁定补齐这两项，并指名 `lidefend` 作为授权人。
+下面记录实际交付与证据；**暂停的原因从「机制缺失」变成「尚未执行批准」**。
+
+### 交付
+
+| 层 | 交付物 | 边界 |
+|---|---|---|
+| P0 入口 | `addons/smart_core/controllers/platform_maintenance_access_controller.py` | `GET /api/ops/maintenance/access` + `POST .../request\|approve\|reject\|revoke\|expire` |
+| P0 模型 | `addons/smart_core/models/platform_database_registry.py` | 决策人由服务端 `self.env.user` 求出并校验独立性；状态机仍是唯一写入者 |
+| P0 治理词表 | `addons/smart_core/security/database_governance.py` + `data/tenant/database_strategy.v1.json` | 新增 `MAINTENANCE_ACCESS_OPERATIONS = (provision, grant)`；声明必须相等 |
+| 消费链 | `security/tenant_payload_operator_policy.py`、`tenant_payload_operator.py`、`scripts/ops/daily_runtime_duty_operator_grant.py` | `validate_authorization(action=...)`：capability ≠ grant，导入批准不能隐含允许创建账号 |
+| 身份 bootstrap | `scripts/ops/platform_security_admin_bootstrap.py`（入口）、`scripts/ops/daily_runtime_platform_security_admin_bootstrap.py`（宿主传输器） | 只建立/验证实名安全管理员；**不批准任何申请**，不获得客户业务数据 |
+
+关键约束（防止把审批变成可伪造的输入）：请求体里出现
+`approved_by/approved_by_id/requested_by/requested_by_id/state/valid_from/valid_until`
+一律**拒绝**（`MAINTENANCE_ACCESS_SERVER_OWNED_FIELD`），不是忽略；审批、拒绝、撤销、过期的
+决策人只能是被服务端验证过、且与请求人不同的 `smart_core.group_smart_core_security_admin`。
+授权记录绑定：请求人、独立批准人、目标租户与数据库、operator 身份、载荷摘要、
+**操作集合**、有效期、原因与决策说明。
+
+### 入口层暴露并修复的传输缺陷
+
+新增入口第一次运行即暴露：`get_trace_id(headers)` 在原控制器与既存
+`controllers/platform_ops_controller.py` 中都被**无参调用**，于是任何响应（包括拒绝信封）
+在序列化前就抛 `TypeError`，客户端拿到的是 HTML 错误页。两处改为用实时请求头投影，
+并新增用例断言「发出的 `X-Trace-Id` 必须被回显」。同时拒绝信封现在直接给出治理错误码
+（`DBGOV1_*` / `DATABASE_GOVERNANCE_*` / `MAINTENANCE_ACCESS_*`），调用方按码分支而不是匹配文案。
+
+### 验证（层级 / 命令 / 非零计数）
+
+| 层 | 命令 | 结果 | 日志 |
+|---|---|---|---|
+| L2 入口 | `make verify.smart_core.platform_maintenance_access.orm` | **12 项 0 failed / 0 error** | `.runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-entry-20261016/L2-http-entry.log` |
+| L2 模型 | `make verify.local.dev.platform_database_governance.orm` | **24 项 0 failed / 0 error** | 同上 `L2-governance-orm.log` |
+| L2 关系链 | `make verify.smart_core.tenant_payload_operator.orm` | **20 项 0 failed / 0 error** | 同上 `L2-operator-lifecycle-orm.log` |
+| L1 静态 | `verify.platform.security_admin.bootstrap` / `verify.daily.duty.operator_grant` / `verify.daily.duty.database_registration` / `verify.daily.duty.recovery` / `verify.daily.duty.payload` / `verify.platform.database.governance.guard` / `verify.smart_core.tenant_payload_operator.policy` | 34 / 39 / 33 / 28 / 26 / 17 / 39 项 OK | 同上 |
+| L1 控制器 | `make verify.controller.boundary.guard` | PASS（delegate / allowlist / route / report / baseline 全部随新路由 PASS） | — |
+
+覆盖点：批准前**确实零写入**（`_approved_access_projection` 为 `None`）、批准后投影覆盖、
+非法决策字段拒绝、无角色拒绝、自批拒绝（`INDEPENDENT`）、无关主体不可读账本、未认证拒绝、
+`migrate` 必须声明操作集合、拒绝/撤销由独立身份做出、过期清理由安全管理员独占且幂等、
+已决策记录不可重复决策、`X-Trace-Id` 回显。
+
+### 反例验证（注入缺陷 → 必须失败 → 还原）
+
+| 注入 | 结果 |
+|---|---|
+| `_trace_id()` 退化为无参 `get_trace_id()` | `0 failed, **14 error(s)** of 12 tests` |
+| 入口角色闸门关闭 | `**4 failed** of 12`（恰为四个入口层角色用例；模型层仍独立拦住写入） |
+| 从 `FORBIDDEN_BODY_FIELDS` 删除 `state` | `**2 failed** of 12` |
+
+三次注入后均还原，控制器与备份**逐字节一致**，入口回到 12/12 全绿。
+
+### 下一步（唯一暂停点已变为「执行批准」）
+
+1. `make daily.runtime.platform.security_admin.bootstrap.remote_readback`（预期控制库尚无安全管理员）；
+2. `...remote_bootstrap`，`SC_CONFIRM_PLATFORM_SECURITY_ADMIN_BOOTSTRAP=BOOTSTRAP_DECLARED_PLATFORM_SECURITY_ADMIN`、
+   `PLATFORM_SECURITY_ADMIN_LOGIN=lidefend` + 真实姓名/证据引用，然后回读身份
+   （安全管理员恰好一次、无存储密码、无业务数据范围、维护账本行数不变）；
+3. 以平台管理员创建维护申请（`capability=migrate`、operator `smart_core.svc_tenant_payload_operator_baosheng`、
+   摘要 `f1adc6fb…1ed4`、operations `[provision, grant]`），由 `lidefend` 通过入口批准；
+4. `remote_provision` → 回读 → `remote_plan` → `remote_grant` → `remote_import` → `remote_verify`
+   → 对账（12386 / 6322／29／6035，金额、来源关系、附件、归属）→ `remote_revoke` → B 线独立复核 → 主线集成。
+
+**状态边界**：本条为**批次代码与定向/静态验证完成**；B 线独立复核、批次验收、主线集成、
+版本发布、产品交付**均未完成**；本轮所有改动**尚未提交**。
