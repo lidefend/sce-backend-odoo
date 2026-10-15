@@ -903,6 +903,7 @@ daily.runtime.tenant.topology.inventory: guard.prod.forbid verify.daily.runtime.
 .PHONY: verify.daily.runtime.routing.inventory daily.runtime.routing.inventory
 DAILY_RUNTIME_ROUTING_REPORT ?= .runtime/final-acceptance/daily-deployed/routing-inventory.json
 DAILY_RUNTIME_ROUTING_CLUSTER_CONTAINER ?= sc-backend-odoo-dev-db-1
+DAILY_RUNTIME_RETIRED_STACKS ?= config/ops/daily_runtime_retired_stacks.v1.json
 
 verify.daily.runtime.routing.inventory: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/daily_runtime_routing_inventory.py scripts/ops/test_daily_runtime_routing_inventory.py
@@ -915,7 +916,51 @@ daily.runtime.routing.inventory: guard.prod.forbid verify.daily.runtime.routing.
 		--database "$(DAILY_RUNTIME_DATABASE)" \
 		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
 		--cluster-container "$(DAILY_RUNTIME_ROUTING_CLUSTER_CONTAINER)" \
+		--retired-stacks "$(DAILY_RUNTIME_RETIRED_STACKS)" \
 		--report "$(DAILY_RUNTIME_ROUTING_REPORT)"
+
+
+# One retired stack that is running again is a second writer on a shared data
+# volume. The leftovers cannot be removed with `docker stop`: the database
+# container declares StopSignal=SIGINT, which PostgreSQL documents as *Fast
+# Shutdown* -- the orphan would write a shutdown checkpoint into the WAL the
+# surviving live postmaster is using. The reviewed method is the documented
+# *Immediate Shutdown* (SIGQUIT, no checkpoint), and redis is stopped without a
+# shutdown handler because a graceful Redis stop writes RDB/AOF into the shared
+# volume. The entry freezes container/log/volume identity evidence on the host
+# before the first state change, never removes a container, volume or WAL file,
+# and never runs `pg_resetwal`. The plan is read-only; apply additionally needs
+# the exact confirmation token and the digest of the reviewed plan.
+.PHONY: verify.daily.runtime.legacy_stack.retire daily.runtime.legacy_stack.retire.plan daily.runtime.legacy_stack.retire.apply
+DAILY_RUNTIME_LEGACY_RETIRE_EVIDENCE_ROOT ?= /opt/projects/backups/daily-runtime-legacy-retire
+DAILY_RUNTIME_LEGACY_RETIRE_PLAN_REPORT ?= .runtime/final-acceptance/daily-deployed/legacy-stack-retire-plan.json
+DAILY_RUNTIME_LEGACY_RETIRE_APPLY_REPORT ?= .runtime/final-acceptance/daily-deployed/legacy-stack-retire-apply.json
+DAILY_RUNTIME_LEGACY_RETIRE_PLAN_DIGEST ?=
+DAILY_RUNTIME_LEGACY_EXPECTED_SHA_FLAG ?= $(if $(DAILY_RUNTIME_EXPECTED_SHA),--expected-sha "$(DAILY_RUNTIME_EXPECTED_SHA)")
+
+verify.daily.runtime.legacy_stack.retire: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/daily_runtime_legacy_stack_retire.py scripts/ops/test_daily_runtime_legacy_stack_retire.py
+	@python3 -m unittest scripts.ops.test_daily_runtime_legacy_stack_retire
+
+daily.runtime.legacy_stack.retire.plan: guard.prod.forbid verify.daily.runtime.legacy_stack.retire
+	@python3 scripts/ops/daily_runtime_legacy_stack_retire.py \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--declaration "$(DAILY_RUNTIME_RETIRED_STACKS)" \
+		--evidence-root "$(DAILY_RUNTIME_LEGACY_RETIRE_EVIDENCE_ROOT)" \
+		$(DAILY_RUNTIME_LEGACY_EXPECTED_SHA_FLAG) \
+		--report "$(DAILY_RUNTIME_LEGACY_RETIRE_PLAN_REPORT)"
+
+daily.runtime.legacy_stack.retire.apply: guard.prod.forbid verify.daily.runtime.legacy_stack.retire
+	@test "$${SC_CONFIRM_DAILY_RUNTIME_LEGACY_STACK_RETIRE:-}" = "RETIRE_DAILY_RUNTIME_LEGACY_STACK" || { echo "SC_CONFIRM_DAILY_RUNTIME_LEGACY_STACK_RETIRE=RETIRE_DAILY_RUNTIME_LEGACY_STACK is required" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_LEGACY_RETIRE_PLAN_DIGEST)" || { echo "DAILY_RUNTIME_LEGACY_RETIRE_PLAN_DIGEST must be the digest of the reviewed plan" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_legacy_stack_retire.py \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--declaration "$(DAILY_RUNTIME_RETIRED_STACKS)" \
+		--evidence-root "$(DAILY_RUNTIME_LEGACY_RETIRE_EVIDENCE_ROOT)" \
+		$(DAILY_RUNTIME_LEGACY_EXPECTED_SHA_FLAG) \
+		--apply \
+		--expect-plan-digest "$(DAILY_RUNTIME_LEGACY_RETIRE_PLAN_DIGEST)" \
+		--report "$(DAILY_RUNTIME_LEGACY_RETIRE_APPLY_REPORT)"
 
 
 # Every declared model is bounded by `user._sc_data_company_ids()`, which reads

@@ -514,3 +514,117 @@ are now the gate for the write phase: the platform control duty target, the cust
 exact identity, and the duplicate-postmaster cleanup. After that the governed runtime binding for
 `platform_database_lifecycle_apply.py` is built, each duty's section 11 table is bound, and only the missing
 database(s) are created through the governed entry.
+
+## Owner ruling and Step A: governed retirement of the leftover stack
+
+### Owner ruling 2026-10-15 (authority for this round)
+
+Dispose of the shared-PGDATA two-instance risk **before** continuing the three-database build; existing
+passing tests cannot cover a runtime risk. The three previously open decisions are now ruled:
+
+1. **Platform control duty — create a new `sc_platform_control`.** Do not edit the policy to reuse the
+   colocated database. Independent role, credential, filestore, session space and exact route; only
+   control-plane dependencies; no customer business content. `sc_platform_core` stays a to-be-disposed
+   historical asset — not deleted, not migrated automatically. `VITE_PLATFORM_ADMIN_DB`, the acceptance
+   declarations and the guards must move to the new authoritative binding **in one change**, never as two
+   drifting dialects.
+2. **Customer development environment identity** (registered as a pending build, not created):
+   tenant `baosheng`, environment `dev`, database `sc_tenant_baosheng_dev`, application role
+   `sc_tenant_baosheng_dev_app` (independent credential, no cluster management rights), exact filter
+   `^sc_tenant_baosheng_dev$` with database enumeration off, compose project `sc-tenant-baosheng-dev`, and a
+   dedicated filestore/session/backup namespace. The existing UAT database stays independent: it must not be
+   renamed into the development database, and the ruling grants **no authority to copy its data**.
+3. **Legacy db/redis retirement is approved, the plain `docker stop` approach is not.** Immediate and fast
+   shutdown differ in what they write and how they recover, so a routine stop is not a risk-free operation
+   while two instances share one directory. The stop method must follow the reviewed PostgreSQL version,
+   process topology and container stop signal.
+
+Not granted: approval of any un-reviewed low-level stop command, and any authority to stop a real production
+service — if the recheck found a production consumer the disposal path would have stopped and reported.
+The executor's order becomes: double-writer disposal → data health and recovery verification → three-database
+identity registration and build → user-module migration → unified onboarding and isolation verification →
+product acceptance.
+
+### Step A — the governed retirement entry
+
+The disposal is a P4 mutation with its own entry, not an ad-hoc command:
+`make daily.runtime.legacy_stack.retire.{plan,apply}` plus `make verify.daily.runtime.legacy_stack.retire`,
+declared in `config/ops/daily_runtime_retired_stacks.v1.json` (the same declaration the routing inventory
+now consumes through `--retired-stacks`). The plan is read-only; `apply` additionally requires the exact
+confirmation token **and** the digest of the reviewed plan, so only the reviewed commands execute.
+
+The reviewed stop method follows the ruling instead of `docker stop`:
+
+| Container kind | Method | Why not the natural command |
+|---|---|---|
+| postgres | `docker kill --signal=SIGQUIT` — documented **Immediate Shutdown** | `docker stop` sends the container's `StopSignal`, and both database containers declare `SIGINT`, which PostgreSQL documents as **Fast Shutdown**: the orphan would write a shutdown checkpoint into the WAL the surviving live postmaster is using |
+| redis | `docker kill` (SIGKILL) | a graceful Redis shutdown performs RDB/AOF persistence work inside the shared volume |
+
+Applied (plan digest `95d44e1a704b58df064087961bdbdb9fbc1f5ab860b56cc6a5bbf0cb390f164b`):
+`docker update --restart=no` on all four containers, then `docker kill --signal=SIGQUIT
+sc-backend-odoo-prod-db-1` (exit 0; log `received immediate shutdown request ... database system is shut
+down`) and `docker kill sc-backend-odoo-prod-redis-1` (exit 137). Evidence was frozen on the host **before**
+the first state change at `/opt/projects/backups/daily-runtime-legacy-retire/20261015T065842Z` (26 files plus
+`manifest.json` with hashes: container inspect, logs, volume inspect, data-directory stat/find, compose
+content, survivor probes). The legacy `docker-compose.yml` was renamed to
+`docker-compose.yml.retired-20261015T065842Z` (reviewed sha256 `d6e72b6b4c1f…`).
+
+Nothing was destroyed: no container, volume or WAL file was removed and `pg_resetwal` was not run. After the
+change `prod-db-1` is `exited 0`, `prod-redis-1` is `exited 137`, and `prod-odoo-1`/`prod-nginx-1` remain
+`created` (they had never been started); every retired container now has restart policy `no`.
+
+### Step A — guard post-condition defect found and fixed
+
+Re-running the read-only plan after the retirement **blocked**, which is a defect in the entry rather than a
+new risk: `declared_postgres_is_not_the_newest_writer` needed two distinct writer start times to compare, but
+the stopped orphan contributes no cluster facts, so only the survivor remained and comparability could not
+hold. The guard now also accepts its literal post-condition — the declared postmaster is not running and is
+not reported as a writer, while **every other owner of the shared cluster is live and reported** — and still
+refuses when the survivor's facts are unreadable, so "already retired" can never be read from an unreachable
+survivor. Two tests were added (20 in total); no assertion was removed. The plan now reports `status PLAN`
+with `failing_guards []`, leaving only the four idempotent `remove_automatic_restart_path` steps.
+
+### Step A — verification and anti-recurrence readback
+
+| Check | Result |
+|---|---|
+| `make verify.daily.runtime.legacy_stack.retire` | 20 tests, OK (nonzero) |
+| `make verify.daily.runtime.routing.inventory` | 17 tests, OK (nonzero) |
+| `make daily.runtime.legacy_stack.retire.plan` | `PLAN`, `failing_guards []`, digest `534c710a27c034…` |
+| `make daily.runtime.routing.inventory DAILY_RUNTIME_EXPECTED_SHA=10bf72ef…` | `PASS`, 0 failed assertions, `remote_head 10bf72ef…` |
+| key assertions | `one_live_postmaster_per_cluster_data_volume` PASS · `retired_stack_is_not_running` PASS (`running_retired []`) · `single_serving_instance_per_database` PASS · `instance_data_volume_distinct` PASS · `inventory_is_read_only` PASS |
+| anti-recurrence (host readback) | four retired containers `restart=no`; live postmaster owners of `sc_dev_db_data` = `[sc-backend-odoo-dev-db-1]`; no `docker-compose.yml` in the legacy checkout; no systemd unit or cron entry references it |
+
+These are iteration-stage runtime observations, not a frozen candidate or a Quick receipt.
+
+### Step A — the retirement itself executed one cross-instance write
+
+The disposal removed the shared writer, but it also proved why the owner refused a routine stop: immediately
+after the orphan shut down, the **surviving** `sc-backend-odoo-dev-db-1` restarted once
+(`restarts=1`, `started_at 2026-10-15T06:58:46Z`, exit 0, healthy):
+
+```
+06:58:46.217 [1] LOG: could not open file "postmaster.pid": No such file or directory
+06:58:46.217 [1] LOG: performing immediate shutdown because data directory lock file is invalid
+06:58:46.851 [1] LOG: starting PostgreSQL 15.17 ... database system was interrupted; last known up at 2026-10-15 06:24:28 UTC
+06:58:47.875 [29] LOG: database system was not properly shut down; automatic recovery in progress
+06:58:47.891 [29] LOG: redo starts at 5D/24BFEA80 ... redo done at 5D/24BFEB30
+06:58:47.910 [27] LOG: checkpoint starting: end-of-recovery immediate wait ... checkpoint complete ... distance=0 kB
+06:58:47.924 [1] LOG: database system is ready to accept connections
+```
+
+Both postmasters shared one `postmaster.pid` inside the shared PGDATA; when the orphan exited it removed or
+replaced that file, the survivor found its lock file invalid, self-terminated with an immediate shutdown and
+restarted, performing one crash recovery plus an end-of-recovery checkpoint on the shared directory.
+
+The survivor is up (`pg_is_in_recovery()=f`, `pg_postmaster_start_time() 2026-10-15 06:58:46.865829+00`,
+live LSN `5D/24BFEC18`, `select 1` → 1), but its **data health is not assumed**. Step B must verify the error
+log, readability, applicable consistency checks and a restore drill before any database write, and must state
+explicitly whether the double-write window left damage.
+
+### Status
+
+批次状态：Step A（双实例风险处置）已完成并复核——退役经受管入口执行、证据冻结、随后置守卫通过、
+防复发路径已清除；退役期间幸存实例发生的一次崩溃恢复已取证并登记为 Step B 的首要输入。**尚未**完成
+Step B（数据健康与恢复验证），因此三库建设、用户模块迁移、统一入驻与产品验收均未开始，本批次不构成
+主线集成完成或产品交付完成。

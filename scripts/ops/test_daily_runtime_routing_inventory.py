@@ -6,7 +6,10 @@ database is served by at most one instance with an exact filter -- plus the
 read-only contract.
 """
 
+import json
+import tempfile
 import unittest
+from pathlib import Path
 
 from scripts.ops import daily_runtime_routing_inventory as routing
 
@@ -171,6 +174,55 @@ class RoutingInventoryTest(unittest.TestCase):
         verdict = routing.evaluate("sc_demo", sample)
         self.assertFalse(verdict["passed"])
         self.assertFalse(assertion(verdict, "inventory_is_read_only")["passed"])
+
+    def test_retired_stack_running_again_fails(self):
+        sample = payload([instance("sc-backend-odoo-dev-odoo-1", "sc_demo", port="8070")])
+        sample["running_containers"] = ["sc-backend-odoo-dev-odoo-1", "sc-backend-odoo-prod-db-1"]
+        verdict = routing.evaluate("sc_demo", sample, retired=["sc-backend-odoo-prod-db-1"])
+        self.assertFalse(verdict["passed"])
+        self.assertEqual(
+            assertion(verdict, "retired_stack_is_not_running")["detail"]["running_retired"],
+            ["sc-backend-odoo-prod-db-1"],
+        )
+
+    def test_declared_retired_stack_that_is_stopped_passes(self):
+        verdict = routing.evaluate(
+            "sc_demo",
+            payload([instance("sc-backend-odoo-dev-odoo-1", "sc_demo", port="8070")]),
+            retired=["sc-backend-odoo-prod-db-1"],
+        )
+        self.assertTrue(verdict["passed"])
+
+    def test_retired_names_come_from_the_declaration_only(self):
+        declaration = {
+            "schema": "daily.runtime.retired_stacks.v1",
+            "stacks": [{"containers": [{"name": "sc-backend-odoo-prod-db-1", "id": "e37d48747997"},
+                                       {"name": "sc-backend-odoo-prod-redis-1", "id": "2193b4da1469"}]}],
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "retired.json"
+            path.write_text(json.dumps(declaration), encoding="utf-8")
+            self.assertEqual(
+                routing.retired_container_names(path),
+                ["sc-backend-odoo-prod-db-1", "sc-backend-odoo-prod-redis-1"],
+            )
+
+    def test_retired_declaration_with_a_foreign_schema_is_refused(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "retired.json"
+            path.write_text(json.dumps({"schema": "other"}), encoding="utf-8")
+            with self.assertRaises(routing.InventoryError):
+                routing.retired_container_names(path)
+
+    def test_missing_retired_declaration_is_refused(self):
+        with self.assertRaises(routing.InventoryError):
+            routing.retired_container_names("/nonexistent/retired.json")
+
+    def test_repository_declaration_lists_the_leftover_pair(self):
+        path = Path(routing.__file__).resolve().parents[2] / "config/ops/daily_runtime_retired_stacks.v1.json"
+        names = routing.retired_container_names(path)
+        self.assertIn("sc-backend-odoo-prod-db-1", names)
+        self.assertIn("sc-backend-odoo-prod-redis-1", names)
 
     def test_marker_payload_reads_last_line(self):
         self.assertEqual(

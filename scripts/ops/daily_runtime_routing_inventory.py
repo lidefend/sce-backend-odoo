@@ -270,7 +270,34 @@ def _exact_filter(instance):
     return instance.get("dbfilter") == expected
 
 
-def evaluate(database, payload):
+def retired_container_names(declaration_path):
+    """Read the retired-stack declaration the routing guard refuses on.
+
+    A retired stack that is running again is a second writer on a shared data
+    volume, so the routing verdict must be able to refuse on it. The declaration
+    is the single source of the retired identities; this tool never restates
+    them.
+    """
+    if declaration_path is None:
+        return []
+    path = Path(declaration_path)
+    if not path.exists():
+        raise InventoryError(f"retired-stack declaration missing: {path}")
+    try:
+        declaration = json.loads(path.read_text(encoding="utf-8"))
+    except ValueError as error:
+        raise InventoryError(f"retired-stack declaration is not valid JSON: {error}")
+    if declaration.get("schema") != "daily.runtime.retired_stacks.v1":
+        raise InventoryError("unexpected retired-stack declaration schema")
+    names = []
+    for stack in declaration.get("stacks") or []:
+        for container in stack.get("containers") or []:
+            if container.get("name"):
+                names.append(container["name"])
+    return sorted(set(names))
+
+
+def evaluate(database, payload, retired=()):
     instances = payload.get("instances") or []
     cluster_databases = payload.get("cluster_databases") or []
     volume_owners = payload.get("postgres_data_volume_owners") or {}
@@ -307,6 +334,8 @@ def evaluate(database, payload):
     shared_data_volumes = sorted(
         name for name, owners in volume_owners.items() if len(owners) > 1
     )
+    running_names = set(payload.get("running_containers") or [])
+    running_retired = sorted(name for name in retired if name in running_names)
     data_volume_reuse = {}
     for row in instances:
         for volume in row.get("volumes") or []:
@@ -357,6 +386,14 @@ def evaluate(database, payload):
             "detail": {name: data_volume_reuse[name] for name in shared_instance_volumes},
         },
         {
+            "id": "retired_stack_is_not_running",
+            "passed": not running_retired,
+            "detail": {
+                "declared_retired": sorted(set(retired)),
+                "running_retired": running_retired,
+            },
+        },
+        {
             "id": "inventory_is_read_only",
             "passed": payload.get("writes") is False,
             "detail": f"writes={payload.get('writes')}",
@@ -391,15 +428,17 @@ def main():
     parser.add_argument("--database", default=DEFAULT_DATABASE)
     parser.add_argument("--ssh-host", required=True)
     parser.add_argument("--cluster-container", default=DEFAULT_CLUSTER_CONTAINER)
+    parser.add_argument("--retired-stacks", default="")
     parser.add_argument("--report", required=True)
     options = parser.parse_args()
 
     try:
+        retired = retired_container_names(options.retired_stacks or None)
         payload, remote_head = inventory(
             options.expected_sha, options.database, options.ssh_host,
             options.cluster_container,
         )
-        verdict = evaluate(options.database, payload)
+        verdict = evaluate(options.database, payload, retired=retired)
     except InventoryError as error:
         print(f"[daily.runtime.routing.inventory] BLOCKED {error}", file=sys.stderr)
         return 2
@@ -411,6 +450,7 @@ def main():
         "ssh_host": options.ssh_host,
         "cluster_container": options.cluster_container,
         "cluster_database": options.database,
+        "retired_stacks_declaration": options.retired_stacks,
         "writes": False,
         "provenance": {
             "live_account_query": [

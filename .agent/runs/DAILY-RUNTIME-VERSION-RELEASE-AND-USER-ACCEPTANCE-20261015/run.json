@@ -123,7 +123,10 @@
     "scripts/ops/daily_runtime_tenant_topology_inventory.py",
     "scripts/ops/test_daily_runtime_tenant_topology_inventory.py",
     "scripts/ops/daily_runtime_routing_inventory.py",
-    "scripts/ops/test_daily_runtime_routing_inventory.py"
+    "scripts/ops/test_daily_runtime_routing_inventory.py",
+    "scripts/ops/daily_runtime_legacy_stack_retire.py",
+    "scripts/ops/test_daily_runtime_legacy_stack_retire.py",
+    "config/ops/daily_runtime_retired_stacks.v1.json"
   ],
   "environment": {
     "kind": "runtime",
@@ -193,15 +196,15 @@
     }
   },
   "blockers": [
-    "A second live postmaster owns the same cluster data volume: sc-backend-odoo-dev-db-1 and sc-backend-odoo-prod-db-1 both mount sc_dev_db_data and were proven to be two separate cluster owners on one data directory (same pg_control inode and md5, two distinct pg_postmaster_start_time(), diverged pg_current_wal_lsn()). The orphan has no application consumer. Resolving it needs an owner ruling on which stack is authoritative plus a governed stop entry.",
-    "The platform control duty has no functioning database: the policy-declared sc_platform_control does not exist, and sc_platform_core exists but has no tenant registry table and no serving instance. The owner must rule between creating the policy-declared database and initialising the colocated one.",
-    "The customer development environment has no confirmed target identity (database name, role, exact filter, filestore, compose project) for tenant_key=baosheng; it must be a new environment separate from the existing UAT database and must not be presumed.",
+    "The two-writer risk is disposed of, but it did execute one cross-instance write before it was removed: during the retirement the surviving sc-backend-odoo-dev-db-1 self-terminated and restarted (restarts=1 at 2026-10-15T06:58:46Z) with 'performing immediate shutdown because data directory lock file is invalid', then 'database system was not properly shut down; automatic recovery in progress', redo 5D/24BFEA80 -> 5D/24BFEB30 and an end-of-recovery immediate checkpoint. The survivor is up (pg_is_in_recovery()=f, start 2026-10-15 06:58:46.865829+00, select 1 ok), but its data health must not be assumed: Step B (error log review, readability, consistency checks, restore drill) has to pass before any database write.",
+    "The platform control duty is ruled but not yet built: the owner directed a new sc_platform_control database (policy section 2), with sc_platform_core kept as a to-be-disposed historical asset. It does not exist yet, and VITE_PLATFORM_ADMIN_DB, the acceptance declarations and the guards still bind sc_platform_core, so the authority must move to the new binding in one change before any control-plane entry can resolve.",
+    "The customer development environment identity is ruled but not yet created or registered: sc_tenant_baosheng_dev with role sc_tenant_baosheng_dev_app, exact filter ^sc_tenant_baosheng_dev$, compose project sc-tenant-baosheng-dev and its own filestore/session/backup namespace. Existing UAT stays separate; the ruling grants no authority to copy its data.",
     "sc_demo mixes the customer tenant volume with demo/test purposes, so 'the demo database' is not yet a pure demo database; the destination of the company-1 volume is unresolved.",
     "The only login role is the superuser/createdb role 'odoo'; per-database tenant roles and credentials do not exist yet, and policy section 6 requires an independent role per tenant environment. New credential authority requires separately authorized P4 work.",
     "The governed platform-database lifecycle adapter (scripts/ops/platform_database_lifecycle_apply.py) still lacks its runtime binding, so there is no governed entry that can create or suspend a daily database, and no governed entry can retire a superseded stack.",
     "Frozen exact-head Quick, final identity-bound review and required remote checks remain pending."
   ],
-  "next_exact_step": "Owner ruling required on three points before any database write: (1) platform control duty - create the policy-declared separate control database or initialise the colocated sc_platform_core; (2) customer development environment - confirm the exact database name, role, exact filter, filestore and compose project for tenant_key=baosheng; (3) authorize stopping the leftover sc-backend-odoo-prod db/redis pair that shares sc_dev_db_data with the live dev cluster. After that: build the governed runtime binding for platform_database_lifecycle_apply.py, bind each duty's section 11 determination table, then create only the missing database(s) through the governed entry and run unified onboarding through the existing daily.runtime.data_space.onboard entry.",
+  "next_exact_step": "Step A is closed: the leftover stack is retired through the governed entry and the post-condition is verified. Next is Step B, data health and recovery verification of the surviving daily cluster (error-log review including the 06:58:46 recovery, readability of sc_demo/sc_odoo/sc_platform_core, applicable consistency checks, and a restore drill against the existing recovery point), because the retirement itself caused one crash recovery on the shared data directory. Only after Step B passes: Step C registers and builds the three duties (new sc_platform_control bound in one change across VITE_PLATFORM_ADMIN_DB, the acceptance declarations and the guards; new sc_tenant_baosheng_dev with its own role, exact filter, compose project and namespace) through the governed lifecycle entry, which needs its runtime binding first. Then Step D user-module migration, Step E unified onboarding and isolation verification, Step F product acceptance. No database write happens before the Step B verdict.",
   "takeover_20261015": {
     "head": "e12e75eaa5bdcfe5b01dfe14b89cb201fac60023",
     "dirty_paths": [
@@ -1611,6 +1614,92 @@
         "Duplicate postmaster: authorize stopping the leftover sc-backend-odoo-prod db/redis pair so one cluster data directory has one postmaster."
       ],
       "not_done": "No database was created, suspended or retired; no container was stopped; no credential was created or persisted. Only container metadata, catalog facts and repository declarations were read."
+    },
+    "owner_ruling_20261015": {
+      "authority": "Owner ruling 2026-10-15, verbatim order given to the executor: dispose of the shared-PGDATA two-instance risk first, then continue the three-database build. Existing passing tests cannot cover this runtime risk.",
+      "order": [
+        "double-writer risk disposal",
+        "data health and recovery verification",
+        "three database identity registration and build",
+        "user module migration",
+        "unified onboarding and isolation verification",
+        "product acceptance"
+      ],
+      "platform_control": "create a new sc_platform_control database; do not modify the policy to reuse the colocated sc_platform_core. Independent role, credential, filestore, session space and exact route; only control-plane dependencies; no customer business data. sc_platform_core stays a to-be-disposed historical asset and is not deleted or migrated automatically. VITE_PLATFORM_ADMIN_DB, the acceptance declarations and the guards must all move to the new authoritative binding in one change, never as two drifting dialects.",
+      "customer_development": {
+        "tenant": "baosheng (reuse the existing authoritative registration for the stable tenant id)",
+        "environment": "dev",
+        "database": "sc_tenant_baosheng_dev",
+        "database_role": "sc_tenant_baosheng_dev_app (independent credential, no cluster management rights)",
+        "exact_filter": "^sc_tenant_baosheng_dev$ (database enumeration off)",
+        "compose_project": "sc-tenant-baosheng-dev",
+        "storage": "dedicated filestore, session and backup namespace; exact paths to be written into the governed declaration",
+        "initialisation": "install the product line and the user module, then run the governed data migration",
+        "status": "target identity registered here as a pending build; not created",
+        "constraint": "check name conflicts and the existing naming convention before creating. The existing UAT database stays independent: it must not be renamed into the development database and this ruling grants no authority to copy its data. User-module data sources, attachments and migration scope still need exact binding."
+      },
+      "legacy_retirement": "Retiring the leftover db/redis pair is approved, but the plain docker stop approach is explicitly NOT approved. Immediate shutdown and fast shutdown differ in what they write and how they recover; a normal stop is not a risk-free operation while two instances share one directory. The stop method must follow the reviewed PostgreSQL version, process topology and container stop signal, not a routine shutdown procedure.",
+      "not_granted": "This ruling is not approval of any un-reviewed low-level stop command, and it does not authorise stopping any real production service. If the review finds a real production consumer, the disposal path stops and is reported. The three-database direction does not need a new ruling.",
+      "executor_obligations": [
+        "pause three-database creation, module upgrade, data migration and business-acceptance writes until the double-writer risk is disposed of",
+        "minimal read-only identity recheck first: exact container id, host process, mount source, device and inode of the data directory, consumers and the automatic-restart source; container name is not evidence of purpose and the shared postmaster.pid cannot locate two instances",
+        "implement maintenance, isolation, evidence preservation and recovery as a governed P4 entry; the goal is to stop the orphan from writing and from restarting again",
+        "preserve container configuration, logs and recoverable data evidence; delete no container, volume or WAL; never run pg_resetwal; a copy taken from a running instance is not a consistency backup",
+        "verify consumers, mounts and persistence duties for db and redis separately; 'no database consumer' does not prove redis has none",
+        "verify the remaining database health and recovery capability: one PGDATA writer is only the first item, the error log, readability, applicable consistency checks and a restore drill follow; dev data is not assumed safe",
+        "remove the startup path that would let the leftover stack mount the volume again, and add a guard that refuses two writers on one PGDATA"
+      ]
+    },
+    "step_one_legacy_retire_20261015": {
+      "layer": "P4 governed runtime mutation (owner-authorised legacy retirement)",
+      "stage": "HEAD 517ea56fa1fedd0c7e336b192a7ff7eeccfd4492 plus the recorded dirty scope",
+      "entry": [
+        "make verify.daily.runtime.legacy_stack.retire (unit)",
+        "make daily.runtime.legacy_stack.retire.plan (read-only)",
+        "make daily.runtime.legacy_stack.retire.apply (confirmation token + reviewed plan digest)"
+      ],
+      "declaration": "config/ops/daily_runtime_retired_stacks.v1.json - single declaration of the retired stack plus the survivor probes; the routing inventory consumes it through --retired-stacks",
+      "reviewed_stop_method": {
+        "postgres": "docker kill --signal=SIGQUIT = documented Immediate Shutdown; the postmaster exits without a checkpoint, so the orphan writes no shutdown checkpoint and does not rewrite the shared control file",
+        "redis": "docker kill (SIGKILL); a graceful Redis shutdown performs RDB/AOF persistence work inside the shared volume",
+        "refused": "docker stop (the database containers declare StopSignal=SIGINT, documented as Fast Shutdown, which writes a shutdown checkpoint into the WAL the surviving live postmaster is using)",
+        "authority": "PostgreSQL 18.5, chapter 18.5 'Shutting Down the Server'"
+      },
+      "applied": {
+        "plan_digest": "95d44e1a704b58df064087961bdbdb9fbc1f5ab860b56cc6a5bbf0cb390f164b",
+        "evidence_dir": "/opt/projects/backups/daily-runtime-legacy-retire/20261015T065842Z (26 frozen files plus manifest.json with hashes; container inspect, logs, volume inspect, stat/find of the data directory, compose content, survivor probes before the change)",
+        "commands": "docker update --restart=no x4, then docker kill --signal=SIGQUIT sc-backend-odoo-prod-db-1 (exit 0, log 'received immediate shutdown request ... database system is shut down') and docker kill sc-backend-odoo-prod-redis-1 (exit 137); all commands returned exit 0",
+        "compose_neutralise": "/opt/projects/repos/sce-backend-odoo/docker-compose.yml renamed to docker-compose.yml.retired-20261015T065842Z (reviewed sha256 d6e72b6b4c1ff0a413b11394e28c39cb71be7561e9883c04f28a3ed2fb2c1da3)",
+        "receipts": ".runtime/final-acceptance/daily-deployed/legacy-stack-retire-plan.json and legacy-stack-retire-apply.json (untracked evidence area)"
+      },
+      "non_destructive": "No container, volume or WAL file was removed and pg_resetwal was not run; the four containers and both shared volumes still exist. State after the change: prod-db-1 exited 0, prod-redis-1 exited 137, prod-odoo-1 and prod-nginx-1 remain created (never started); every retired container now has restart policy no.",
+      "guard_post_condition_fix": "Re-running the read-only plan after a successful retirement blocked on declared_postgres_is_not_the_newest_writer: the stopped orphan contributes no cluster facts, so only one writer start time remained and comparability could not hold. The guard now also accepts its literal post-condition - the declared postmaster is not running and is not reported as a writer, while every other owner of the shared cluster is live and reported - and still refuses when the survivor's facts are unreadable. Two tests were added (20 in total); no assertion was removed.",
+      "verification": {
+        "unit": "make verify.daily.runtime.legacy_stack.retire - 20 tests, OK (nonzero)",
+        "unit_routing": "make verify.daily.runtime.routing.inventory - 17 tests, OK (nonzero)",
+        "plan_after_retirement": "status PLAN, failing_guards [], remaining commands are the four idempotent remove_automatic_restart_path steps, plan_digest 534c710a27c034c0b7c7ee64410af8ea48a270d05aa2e718250f301cfb57358a",
+        "routing_inventory": "make daily.runtime.routing.inventory DAILY_RUNTIME_EXPECTED_SHA=10bf72ef... - PASS, 0 failed assertions, remote_head 10bf72ef4bb060556bd2844598b58f9806392d34",
+        "key_assertions": "one_live_postmaster_per_cluster_data_volume PASS, retired_stack_is_not_running PASS (running_retired []), single_serving_instance_per_database PASS, instance_data_volume_distinct PASS, inventory_is_read_only PASS",
+        "anti_recurrence_readback": "host readback: the four retired containers all report restart policy no; sc_dev_db_data live postmaster owners = [sc-backend-odoo-dev-db-1]; the legacy checkout has no docker-compose.yml (only the .retired- timestamped file); no systemd unit references the legacy checkout; no cron entry does either",
+        "not_a_delivery_gate": "these are iteration-stage runtime observations; no frozen candidate or Quick receipt is claimed"
+      }
+    },
+    "step_one_survivor_recovery_20261015": {
+      "fact": "The surviving sc-backend-odoo-dev-db-1 restarted once immediately after the orphan was stopped: restarts=1, started_at 2026-10-15T06:58:46Z, exit code 0, healthy.",
+      "log_evidence": [
+        "06:58:46.217 [1] LOG: could not open file \"postmaster.pid\": No such file or directory",
+        "06:58:46.217 [1] LOG: performing immediate shutdown because data directory lock file is invalid",
+        "06:58:46.217 [1] LOG: received immediate shutdown request",
+        "06:58:46.851 [1] LOG: starting PostgreSQL 15.17 ... database system was interrupted; last known up at 2026-10-15 06:24:28 UTC",
+        "06:58:47.875 [29] LOG: database system was not properly shut down; automatic recovery in progress",
+        "06:58:47.891 [29] LOG: redo starts at 5D/24BFEA80 ... redo done at 5D/24BFEB30",
+        "06:58:47.910 [27] LOG: checkpoint starting: end-of-recovery immediate wait ... checkpoint complete ... distance=0 kB",
+        "06:58:47.924 [1] LOG: database system is ready to accept connections"
+      ],
+      "mechanism": "Both postmasters shared one postmaster.pid inside the shared PGDATA. When the orphan shut down at 06:58:45 it removed or replaced that file; the survivor then found its data-directory lock file invalid, self-terminated with an immediate shutdown and immediately restarted, performing one crash recovery plus an end-of-recovery immediate checkpoint against the shared data directory.",
+      "current_survivor_state": "pg_is_in_recovery()=f, pg_postmaster_start_time()=2026-10-15 06:58:46.865829+00, live LSN 5D/24BFEC18, postmaster.pid rewritten with pid 1 /var/lib/postgresql/data, select 1 returns 1, container healthy",
+      "meaning": "This restarted instance is exactly the cross-instance write the ruling removed, and it is why the survivor's data health is not assumed. Step B must verify the error log, readability, applicable consistency checks and a restore drill before any database write, and must state explicitly whether the double-write window left damage.",
+      "status": "unverified - blocker; no database write proceeds until the Step B verdict"
     }
   }
 }
