@@ -986,6 +986,7 @@ DAILY_RUNTIME_DATABASE_DUTY_DECLARATION ?= config/ops/daily_runtime_database_dut
 DAILY_RUNTIME_DATABASE_DUTY_PLAN_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-plan.json
 DAILY_RUNTIME_DATABASE_DUTY_APPLY_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-apply.json
 DAILY_RUNTIME_DATABASE_DUTY_INITIALIZE_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-initialize.json
+DAILY_RUNTIME_DATABASE_DUTY_REFRESH_REPORT ?= .runtime/final-acceptance/daily-deployed/database-duty-refresh.json
 DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST ?=
 DAILY_RUNTIME_DATABASE_DUTY_SELECTION ?=
 DAILY_RUNTIME_DATABASE_DUTY_PHASE ?= all
@@ -1038,6 +1039,30 @@ daily.runtime.database.duty.initialize: guard.prod.forbid verify.daily.runtime.d
 		--phase initialize \
 		--expect-declaration-digest "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" \
 		--report "$(DAILY_RUNTIME_DATABASE_DUTY_INITIALIZE_REPORT)"
+
+
+# A duty that already serves keeps the stack it was created from. That is
+# correct until the *reviewed* stack definition changes: the container then
+# reads an environment the declaration no longer names, and the disagreement is
+# invisible because the duty still reports itself healthy. This entry re-renders
+# the reviewed definition into exactly the selected, already-serving duties and
+# recreates their declared services, so the running container is observed to
+# read the declared runtime environment. It creates no cluster object, installs
+# no module and never touches a duty that is not declared as serving.
+.PHONY: daily.runtime.database.duty.refresh
+daily.runtime.database.duty.refresh: guard.prod.forbid verify.daily.runtime.database.duty
+	@test "$${SC_CONFIRM_DAILY_RUNTIME_DUTY_REFRESH:-}" = "REFRESH_DAILY_RUNTIME_DUTY_STACK_AND_APPLICATION" || { echo "SC_CONFIRM_DAILY_RUNTIME_DUTY_REFRESH=REFRESH_DAILY_RUNTIME_DUTY_STACK_AND_APPLICATION is required" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_SELECTION must name the duties to refresh" >&2; exit 2; }
+	@test -n "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" || { echo "DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST must be the digest of the reviewed declaration" >&2; exit 2; }
+	@python3 scripts/ops/daily_runtime_database_duty.py \
+		--ssh-host "$(DAILY_RUNTIME_SSH_HOST)" \
+		--declaration "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION)" \
+		$(DAILY_RUNTIME_DATABASE_DUTY_SELECTION_FLAGS) \
+		$(DAILY_RUNTIME_DATABASE_DUTY_EXPECTED_SHA_FLAG) \
+		--apply \
+		--phase refresh \
+		--expect-declaration-digest "$(DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST)" \
+		--report "$(DAILY_RUNTIME_DATABASE_DUTY_REFRESH_REPORT)"
 
 
 # The daily runtime serves a customer tenant duty from a *customer* addons tree

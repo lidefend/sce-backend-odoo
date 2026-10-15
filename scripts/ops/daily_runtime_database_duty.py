@@ -41,6 +41,7 @@ import argparse
 import hashlib
 import inspect
 import json
+import os
 import re
 import shlex
 import subprocess
@@ -56,10 +57,24 @@ DEFAULT_DECLARATION = "config/ops/daily_runtime_database_duties.v1.json"
 SCHEMA = "daily.runtime.database_duties.v1"
 CONFIRMATION = "PROVISION_DAILY_RUNTIME_DATABASE_DUTY"
 CONFIRM_ENV = "SC_CONFIRM_DAILY_RUNTIME_DATABASE_DUTY"
+#: A mutate has to say *which* mutation it intends. Creating a duty and
+#: re-rendering one that already serves are different decisions with different
+#: blast radii, so the refresh phase names its own token instead of inheriting
+#: the creation one and reading as a provision.
+REFRESH_CONFIRMATION = "REFRESH_DAILY_RUNTIME_DUTY_STACK_AND_APPLICATION"
+REFRESH_CONFIRM_ENV = "SC_CONFIRM_DAILY_RUNTIME_DUTY_REFRESH"
+PHASE_CONFIRMATIONS = {
+    "refresh": (REFRESH_CONFIRM_ENV, REFRESH_CONFIRMATION),
+}
 POSTGRES_DATA_DESTINATION = "/var/lib/postgresql/data"
 #: ``initialize`` brings up the declared services and installs the declared
-#: module set; it is the only phase that may touch a duty that already exists.
-PHASES = ("plan", "stack", "database", "initialize", "all")
+#: module set; it is the only phase that may touch a duty that already exists
+#: before it serves. ``refresh`` is the narrower mutation for a duty that is
+#: already serving: it re-renders the reviewed stack and recreates the declared
+#: services so the running container reads the environment the reviewed
+#: definition declares. It never creates a cluster object and never installs a
+#: module.
+PHASES = ("plan", "stack", "database", "initialize", "refresh", "all")
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
 #: Every value the declaration must supply before a duty stack can be rendered.
@@ -82,6 +97,12 @@ ENV_READBACK_KEYS = (
     "DB_DATA", "REDIS_DATA", "ODOO_DATA", "ODOO_DBFILTER", "ODOO_PORT", "NGINX_PORT",
     "LIST_DB",
 )
+#: The environment keys the *application process* itself reads. ``ENV`` decides
+#: whether ``render_odoo_conf`` may drop an unavailable optional addon root, and
+#: ``SC_ENVIRONMENT`` is read by the platform database contract and by system
+#: initialization. A duty whose container cannot see them serves a different
+#: runtime than the one its declaration names (2026-10-16).
+APPLICATION_ENVIRONMENT_KEYS = ("ENV", "SC_ENVIRONMENT")
 PLACEHOLDER = re.compile(r"@[A-Z0-9_]+@")
 #: The cluster readback is one argument vector on purpose. A combined short
 #: option cluster such as ``-Atc`` makes psql take the *next* argv as the value
@@ -333,6 +354,12 @@ def validate_stack_surface(compose_text, env_template):
     A compose reference without a default and without an env key is a stack that
     would render an empty value -- the exact shape that lets one instance come up
     against another duty's database or volume.
+
+    The converse is checked too: an env key that neither the stack hands to a
+    container nor the host entry reads back is a declared value nothing consumes.
+    That is how the 2026-10-16 incident happened -- the env file announced the
+    runtime environment, the compose file never forwarded it, and the omission
+    surfaced only as a route that answered 500.
     """
     failures = []
     referenced = re.findall(r"\$\{([A-Z0-9_]+)(:?-[^}]*)?\}", compose_text)
@@ -343,6 +370,12 @@ def validate_stack_surface(compose_text, env_template):
     if unresolved:
         failures.append("compose variables without a duty env key: %s" % (",".join(unresolved),))
     unused = sorted(defined - {name for name, _ in referenced})
+    unconsumed = sorted(set(unused) - set(ENV_READBACK_KEYS))
+    if unconsumed:
+        failures.append(
+            "duty env keys neither the stack nor the host entry reads: %s"
+            % (",".join(unconsumed),)
+        )
     return failures, unused
 
 
@@ -586,9 +619,12 @@ ENV_READBACK_KEYS = (
     "DB_DATA", "REDIS_DATA", "ODOO_DATA", "ODOO_DBFILTER", "ODOO_PORT", "NGINX_PORT",
     "LIST_DB",
 )
+APPLICATION_ENVIRONMENT_KEYS = ("ENV", "SC_ENVIRONMENT")
 INDUSTRY_MODULE_PREFIX = "smart_construction_"
 
 __BASE_BOOTSTRAP_PLAN__
+__REFRESH_REFUSAL__
+__PRUNE_SUPERSEDED_STACKS__
 
 report = {"mode": MODE, "phase": PHASE, "writes": False, "duties": []}
 
@@ -836,6 +872,7 @@ def materialise_stack_files(duty):
     compose_path = stack_compose_path()
     if read_text(compose_path) != compose_text:
         write_file(compose_path, compose_text)
+    superseded = prune_superseded_stack_files(OPS_ROOT, compose_path)
     credentials, credential_path, created = duty_credentials(duty)
     env_path = os.path.join(OPS_ROOT, duty["duty"] + ".env")
     rendered = render_env(duty, credentials)
@@ -845,6 +882,7 @@ def materialise_stack_files(duty):
     return {
         "compose_path": compose_path,
         "compose_sha256": digest,
+        "superseded_stacks_removed": superseded,
         "env_path": env_path,
         "env_sha256": hashlib.sha256(read_text(env_path).encode("utf-8")).hexdigest(),
         "credentials_path": credential_path,
@@ -930,6 +968,49 @@ def service_container(duty, service):
                    "--format", "{{.Names}}"])
     names = [line.strip() for line in (listing.stdout or "").splitlines() if line.strip()]
     return names[0] if len(names) == 1 else ""
+
+
+def application_config_facts(duty):
+    """Whether the serving application reads what the declaration says it reads.
+
+    This readback exists because of the 2026-10-16 defect. The declaration and
+    the rendered env file both named ``runtime_env=dev``, but the compose file
+    never forwarded that value into the container, so ``render_odoo_conf`` could
+    not tell this stack from a production one and kept an ``addons_path`` entry
+    for a directory the duty does not mount. Odoo raised ``FileNotFoundError``
+    while building its static-file map, and *every* ``/api/*`` route answered
+    500 before dispatch. Reading the container back is what makes a declaration
+    that says "serving" disagree out loud with a container that cannot serve.
+    """
+    facts = {"container": "", "environment": {}, "addons_path": [],
+             "missing_addons_roots": [], "error": ""}
+    container = service_container(duty, "odoo")
+    if not container:
+        facts["error"] = "the declared odoo service is not running"
+        return facts
+    facts["container"] = container
+    for key in APPLICATION_ENVIRONMENT_KEYS:
+        observed = run(["docker", "exec", container, "sh", "-lc",
+                        'printf "%s" "$' + key + '"'])
+        facts["environment"][key] = (
+            (observed.stdout or "").strip() if not observed.returncode else ""
+        )
+    probe = run(["docker", "exec", container, "sh", "-lc",
+                 "sed -n 's/^addons_path *= *//p' /var/lib/odoo/odoo.conf | tr ',' '\\n' "
+                 "| while read -r entry; do [ -n \"$entry\" ] || continue; "
+                 "if [ -d \"$entry\" ]; then echo \"present=$entry\"; "
+                 "else echo \"missing=$entry\"; fi; done"])
+    if probe.returncode:
+        facts["error"] = (probe.stderr or probe.stdout or "").strip()[:300]
+        return facts
+    for line in (probe.stdout or "").splitlines():
+        marker, _, path = line.strip().partition("=")
+        if not path:
+            continue
+        facts["addons_path"].append(path)
+        if marker == "missing":
+            facts["missing_addons_roots"].append(path)
+    return facts
 
 
 def base_readback(duty):
@@ -1222,7 +1303,8 @@ def duty_entry(duty):
     wants_initialization = duty["custody"].get("service_face") == "to_be_initialized"
     entry = {"duty": duty["duty"], "cluster": None, "custody": None, "stack": None,
              "create": None, "bootstrap": None, "privileges": None, "initialize": None,
-             "route": None, "service": None, "error": ""}
+             "refresh": None, "route": None, "service": None, "application_config": None,
+             "error": ""}
     if MODE == "apply" and PHASE in ("stack", "all"):
         if wants_creation:
             entry["stack"] = materialise_stack_files(duty)
@@ -1277,7 +1359,27 @@ def duty_entry(duty):
             else:
                 entry["create"] = {"steps": create_database(duty["cluster"]["container"], duty, password)}
                 entry["custody"] = database_facts(duty["cluster"]["container"], duty)
+    if MODE == "apply" and PHASE == "refresh":
+        # A refresh re-renders the *reviewed* stack into a duty that already
+        # serves, so that the running container reads the environment the
+        # declaration names. It creates no cluster object and installs no
+        # module, which is why it is its own phase instead of a flag on
+        # ``initialize``.
+        reason = refresh_refusal(
+            duty,
+            cluster_running=bool(entry["cluster"].get("present") and entry["cluster"].get("running")),
+        )
+        if reason:
+            entry["refresh"] = {"error": reason}
+        else:
+            entry["stack"] = materialise_stack_files(duty)
+            entry["stack"]["start"] = start_services(duty)
+            entry["route"] = start_route(duty)
+            entry["refresh"] = {"stack_sha256": entry["stack"]["compose_sha256"],
+                                "services": [str(item) for item in duty["stack"]["services"]]}
     entry["service"] = service_facts(duty)
+    if "odoo" in [str(item) for item in duty["stack"]["services"]]:
+        entry["application_config"] = application_config_facts(duty)
     return entry
 
 
@@ -1291,10 +1393,13 @@ def salvage_entry(duty, error):
     """
     entry = {"duty": duty["duty"], "cluster": None, "custody": None, "stack": None,
              "create": None, "bootstrap": None, "privileges": None, "initialize": None,
-             "route": None, "service": None, "error": "%s: %s" % (type(error).__name__, error)}
+             "refresh": None, "route": None, "service": None, "application_config": None,
+             "error": "%s: %s" % (type(error).__name__, error)}
     try:
         entry["cluster"] = cluster_facts(duty["cluster"]["container"], duty)
         entry["service"] = service_facts(duty)
+        if "odoo" in [str(item) for item in duty["stack"]["services"]]:
+            entry["application_config"] = application_config_facts(duty)
     except Exception as readback:
         entry["readback_error"] = "%s: %s" % (type(readback).__name__, readback)
     return entry
@@ -1336,6 +1441,52 @@ def base_bootstrap_plan(base_installed, entrypoint_finished, restarts):
     return "give_up"
 
 
+def refresh_refusal(duty, *, cluster_running):
+    """Why ``--phase refresh`` must not touch this duty, or an empty string.
+
+    Refresh re-renders a reviewed stack definition into a duty that already
+    serves, so that the running container reads the environment that definition
+    declares. It is neither a creation nor an initialization, and it therefore
+    refuses every duty whose declaration has not already reached the serving
+    face: an uninitialized duty belongs to ``initialize``, and refreshing around
+    a duty that is still declared ``to_be_created`` would recreate a stack for a
+    database nobody has made yet.
+    """
+    if duty["custody"].get("role_compliance") == "to_be_created":
+        return ("the declaration still says the duty is to be created; create it through the "
+                "stack phase first")
+    declared_face = str(duty["custody"].get("service_face") or "")
+    if declared_face != "initialized":
+        return ("the declaration says service_face=%r; refresh only re-renders a duty that "
+                "already serves, and the initialize phase owns the uninitialized face"
+                % (declared_face,))
+    if not cluster_running:
+        return ("the duty cluster is not running; refusing to re-render a stack whose cluster "
+                "cannot be observed")
+    return ""
+
+
+def prune_superseded_stack_files(ops_root, current_path):
+    """Delete rendered duty stacks the reviewed definition has replaced.
+
+    The rendered file name carries the digest of the definition it was rendered
+    from, so a changed definition renders a *second* file. Every consumer
+    resolves the stack by shape and refuses to proceed when more than one is
+    present, so a re-render that leaves the superseded file behind would turn a
+    successful refresh into a duty whose stack cannot be resolved at all.
+    """
+    removed = []
+    for name in sorted(os.listdir(ops_root)):
+        if not (name.startswith("duty-stack-") and name.endswith(".yml")):
+            continue
+        path = os.path.join(ops_root, name)
+        if path == current_path:
+            continue
+        os.unlink(path)
+        removed.append(path)
+    return removed
+
+
 def _bootstrap_wait(payload, key, default):
     """The declared wait, with an explicit ``0`` kept as ``0``.
 
@@ -1361,6 +1512,11 @@ def render_remote_program(payload):
         "__PSQL_READBACK__", json.dumps(list(PSQL_READBACK)),
     ).replace(
         "__BASE_BOOTSTRAP_PLAN__", textwrap.dedent(inspect.getsource(base_bootstrap_plan)),
+    ).replace(
+        "__REFRESH_REFUSAL__", textwrap.dedent(inspect.getsource(refresh_refusal)),
+    ).replace(
+        "__PRUNE_SUPERSEDED_STACKS__",
+        textwrap.dedent(inspect.getsource(prune_superseded_stack_files)),
     ).replace(
         "__BOOTSTRAP_TIMEOUT__", str(_bootstrap_wait(payload, "bootstrap_timeout",
                                                        BASE_BOOTSTRAP_TIMEOUT)),
@@ -1567,6 +1723,25 @@ def evaluate(duty, observation, declaration, *, phase="plan", initialize=False):
             {"database": duty["database"], "role": duty["database_role"],
              "public_schema_create": custody.get("public_schema_create"),
              "error": custody.get("public_schema_create_error", "")})
+    application = observation.get("application_config") or {}
+    declared_runtime_env = str(duty["stack"]["runtime_env"])
+    if "odoo" in declared_services and application.get("container"):
+        # A duty whose declaration says it serves must prove the *container*
+        # reads the environment the declaration names, and that the addon roots
+        # it was rendered with all exist. Without this, a stack that declares a
+        # runtime environment and never forwards it reports a healthy serving
+        # duty while every `/api/*` route answers 500 before dispatch.
+        environment = application.get("environment") or {}
+        add("application_container_reads_the_declared_runtime_environment",
+            all(environment.get(key) == declared_runtime_env
+                for key in APPLICATION_ENVIRONMENT_KEYS),
+            {"declared": declared_runtime_env, "observed": environment,
+             "keys": list(APPLICATION_ENVIRONMENT_KEYS),
+             "container": application.get("container")})
+        add("served_addons_path_has_no_unmounted_root",
+            not application.get("missing_addons_roots"),
+            {"missing": application.get("missing_addons_roots") or [],
+             "addons_path": application.get("addons_path") or []})
     if duty.get("data_purpose") == "platform_control" and declared_face != "cluster_only":
         industry = list(service.get("installed_industry_modules") or [])
         add("platform_control_face_carries_no_industry_module", not industry,
@@ -1661,10 +1836,12 @@ def main(argv=None):
         declaration = load_declaration(options.declaration)
         selected = declared_duties(declaration, options.duty)
         if options.apply:
-            import os
-            confirmation = os.environ.get(CONFIRM_ENV, "").strip()
-            if confirmation != CONFIRMATION:
-                raise DutyError("DAILY_DUTY_CONFIRMATION_REQUIRED:%s" % (CONFIRM_ENV,))
+            confirm_env, confirm_value = PHASE_CONFIRMATIONS.get(
+                options.phase, (CONFIRM_ENV, CONFIRMATION)
+            )
+            confirmation = os.environ.get(confirm_env, "").strip()
+            if confirmation != confirm_value:
+                raise DutyError("DAILY_DUTY_CONFIRMATION_REQUIRED:%s" % (confirm_env,))
             if not options.expect_declaration_digest:
                 raise DutyError("DAILY_DUTY_REVIEWED_DECLARATION_DIGEST_REQUIRED")
             if options.expect_declaration_digest != declaration_digest(declaration):

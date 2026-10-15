@@ -354,6 +354,44 @@ class DeclarationTests(unittest.TestCase):
         self.assertTrue(any("NOT_DECLARED_ANYWHERE" in f for f in failures))
         self.assertTrue(unused)
 
+    def test_the_shipped_stack_hands_the_runtime_environment_to_the_container(self):
+        """The env file naming the runtime environment is not the same fact as
+        the container reading it.
+
+        `render_odoo_conf` may only drop an unavailable optional addon root when
+        `ENV` says the runtime is not production, and the platform database
+        contract reads `SC_ENVIRONMENT`. A stack that declares the environment in
+        its env file and never forwards it keeps an `addons_path` entry for a
+        directory the duty does not mount, and every `/api/*` route then fails
+        before dispatch -- which is exactly what the daily control plane did on
+        2026-10-16 while reporting itself healthy.
+        """
+        compose = COMPOSE_FILE.read_text(encoding="utf-8")
+        for key in duty_entry.APPLICATION_ENVIRONMENT_KEYS:
+            self.assertIn(
+                "%s: ${%s}" % (key, key),
+                compose,
+                "the duty stack must forward %s into the application container" % key,
+            )
+
+    def test_a_declared_env_key_nothing_reads_is_refused(self):
+        """A declared value with no consumer is a silent no-op, so it fails.
+
+        This is the assertion that would have caught the 2026-10-16 defect at the
+        declaration boundary instead of at a 500 from a serving duty.
+        """
+        template = ENV_TEMPLATE.read_text(encoding="utf-8")
+        compose = COMPOSE_FILE.read_text(encoding="utf-8")
+        undeclared_again = compose.replace("      ENV: ${ENV}\n", "")
+        self.assertNotEqual(undeclared_again, compose)
+        failures, unused = duty_entry.validate_stack_surface(undeclared_again, template)
+        self.assertIn("ENV", unused)
+        self.assertTrue(
+            any("ENV" in row and "neither the stack nor the host entry reads" in row
+                for row in failures),
+            failures,
+        )
+
     def test_every_readback_key_is_declared_by_the_template(self):
         import re as re_module
 
@@ -416,8 +454,60 @@ class RemoteProgramTests(unittest.TestCase):
 
     def test_no_embedding_marker_survives_rendering(self):
         rendered = self.rendered()
-        for marker in ("__MARKER__", "__PSQL_READBACK__", "__PAYLOAD_JSON__"):
+        for marker in ("__MARKER__", "__PSQL_READBACK__", "__PAYLOAD_JSON__",
+                       "__BASE_BOOTSTRAP_PLAN__", "__REFRESH_REFUSAL__",
+                       "__PRUNE_SUPERSEDED_STACKS__"):
             self.assertNotIn(marker, rendered)
+
+    def test_superseded_rendered_stacks_are_pruned(self):
+        """A re-render writes a second file name, so the replaced one is deleted.
+
+        The rendered name carries the digest of the definition it came from, and
+        every consumer resolves the stack by shape while refusing to proceed when
+        more than one is present. Leaving the superseded file behind would turn a
+        successful refresh into a duty whose stack cannot be resolved at all.
+        """
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            superseded = root / "duty-stack-1a5ca02d60da.yml"
+            current = root / "duty-stack-b888e8a54f5e.yml"
+            unrelated = root / "platform_control.env"
+            for path in (superseded, current, unrelated):
+                path.write_text("services: {}\n", encoding="utf-8")
+            removed = duty_entry.prune_superseded_stack_files(str(root), str(current))
+            self.assertEqual(removed, [str(superseded)])
+            self.assertFalse(superseded.exists())
+            self.assertTrue(current.exists())
+            self.assertTrue(unrelated.exists())
+
+    def test_refresh_refuses_every_duty_that_is_not_already_serving(self):
+        """Refresh re-renders a serving duty, so it refuses anything else.
+
+        A refresh that ran against an uninitialized duty would recreate a stack
+        around a database nobody had made, and one that ran against a duty the
+        declaration still calls `to_be_created` would do the same while also
+        hiding that the duty was never created.
+        """
+        serving = {"custody": {"role_compliance": "compliant", "service_face": "initialized"}}
+        self.assertEqual(duty_entry.refresh_refusal(serving, cluster_running=True), "")
+
+        to_be_created = {"custody": {"role_compliance": "to_be_created",
+                                     "service_face": "initialized"}}
+        self.assertIn("to be created",
+                      duty_entry.refresh_refusal(to_be_created, cluster_running=True))
+
+        uninitialized = {"custody": {"role_compliance": "compliant",
+                                     "service_face": "to_be_initialized"}}
+        self.assertIn("initialize phase",
+                      duty_entry.refresh_refusal(uninitialized, cluster_running=True))
+
+        cluster_only = {"custody": {"role_compliance": "compliant",
+                                    "service_face": "cluster_only"}}
+        self.assertIn("initialize phase",
+                      duty_entry.refresh_refusal(cluster_only, cluster_running=True))
+
+        self.assertIn("cluster is not running",
+                      duty_entry.refresh_refusal(serving, cluster_running=False))
 
     def test_a_payload_with_booleans_and_newlines_round_trips(self):
         rendered = self.rendered()
@@ -773,6 +863,45 @@ class ServiceFaceTests(unittest.TestCase):
         row = copy.deepcopy(picked(declaration, name))
         row["custody"]["service_face"] = "initialized"
         return row
+
+    def test_a_serving_duty_must_show_the_declared_runtime_environment(self):
+        """A duty that says it serves must prove its container reads what the
+        declaration names, and that every addon root it was rendered with exists.
+
+        Without this the 2026-10-16 shape passes every other assertion: the
+        declaration, the env file, the custody facts and the module states all
+        agree while the container sees neither `ENV` nor `SC_ENVIRONMENT`, keeps
+        an `addons_path` entry for an unmounted directory, and answers 500 on
+        every `/api/*` route.
+
+        The assertion belongs to a face that serves: a duty whose cluster is not
+        up is judged by the creation assertions and never reaches the
+        application readback.
+        """
+        row = self.initialized(self.declaration(), "platform_control")
+        application = {
+            "container": "sc-platform-control-dev-odoo-1",
+            "environment": {"ENV": "dev", "SC_ENVIRONMENT": "dev"},
+            "addons_path": ["/mnt/source-addons"],
+            "missing_addons_roots": [],
+            "error": "",
+        }
+        verdict = self.verdict(row, application_config=application)
+        self.assertTrue(verdict["application_container_reads_the_declared_runtime_environment"])
+        self.assertTrue(verdict["served_addons_path_has_no_unmounted_root"])
+
+        blind = copy.deepcopy(application)
+        blind["environment"] = {"ENV": "", "SC_ENVIRONMENT": ""}
+        blind["addons_path"] = ["/mnt/source-addons", "/mnt/test-addons"]
+        blind["missing_addons_roots"] = ["/mnt/test-addons"]
+        verdict = self.verdict(row, application_config=blind)
+        self.assertFalse(verdict["application_container_reads_the_declared_runtime_environment"])
+        self.assertFalse(verdict["served_addons_path_has_no_unmounted_root"])
+
+        half_blind = copy.deepcopy(application)
+        half_blind["environment"] = {"ENV": "dev", "SC_ENVIRONMENT": ""}
+        verdict = self.verdict(row, application_config=half_blind)
+        self.assertFalse(verdict["application_container_reads_the_declared_runtime_environment"])
 
     def test_a_served_duty_must_show_its_services_running(self):
         row = self.initialized(self.declaration(), "platform_control")

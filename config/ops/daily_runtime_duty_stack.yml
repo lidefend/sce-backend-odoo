@@ -67,6 +67,15 @@ services:
       ODOO_DB: ${DB_NAME}
       ODOO_DBFILTER: ${ODOO_DBFILTER}
       LIST_DB: "false"
+      # The runtime-environment discriminator is read *inside* the container, not
+      # only by the host entry. `render_odoo_conf.py` may only drop an unavailable
+      # optional addon root when `ENV` says this is not production, and product
+      # code (`platform_database_contract`, `system_init`) reads `SC_ENVIRONMENT`.
+      # A stack that declares the environment in its env file but never forwards
+      # it keeps an `addons_path` entry for a directory the duty does not mount,
+      # and then every `/api/*` route fails before dispatch (2026-10-16).
+      ENV: ${ENV}
+      SC_ENVIRONMENT: ${SC_ENVIRONMENT}
       ADMIN_PASSWD: ${ADMIN_PASSWD}
       JWT_SECRET: ${JWT_SECRET}
       SC_BOOTSTRAP_SECRET: ${SC_BOOTSTRAP_SECRET}
