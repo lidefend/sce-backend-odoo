@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
+  "branch": "release/daily-runtime-version-release-20261015",
+  "status": "active",
+  "baseline_sha": "ba7577c212b81468491942e972ea28bd64345ebd",
+  "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
+  "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
+    ".agent/runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/",
+    "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
+    "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts",
+    "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+    "config/frontend/role_surface_exposure_declarations_v1.json",
+    "scripts/ops/dev_acceptance_release_probe.py",
+    "scripts/verify/role_surface_exposure_declaration_guard.py",
+    "scripts/verify/test_role_surface_exposure_declaration_guard.py",
+    "scripts/verify/test_daily_acceptance_fixture_lane.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "existing owner-authorized daily development runtime reached only through the governed daily.runtime.* Make entries; no new environment or credential authority",
+    "runtime_profile": "daily.dev",
+    "ssh_host": "sc-root",
+    "repository": "/opt/projects/repos/sce-product-odoo",
+    "database": "sc_demo",
+    "database_role": "persistent demo-backed daily development acceptance database, not production",
+    "base_url": "http://1.95.85.92:18081",
+    "inventory": "reuse the registered daily runtime inventory and original evidence; no new environment or credential authority"
+  },
+  "checks": {
+    "daily_dev_repo_clean": {
+      "target": "verify.daily_dev.runtime_repo.clean",
+      "inputs": [
+        "make/guards.mk",
+        "scripts/ops/daily_dev_runtime_repo_guard.sh",
+        "scripts/verify/daily_dev_customer_addons_runtime_guard.py"
+      ],
+      "kind": "runtime"
+    },
+    "daily_main_bundle_sync": {
+      "target": "verify.daily.runtime.main.bundle_sync",
+      "inputs": [
+        "scripts/ops/daily_runtime_bundle_sync.py",
+        "scripts/ops/test_daily_runtime_bundle_sync.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "daily_source_revision_align": {
+      "target": "verify.daily.runtime.source_revision.align",
+      "inputs": [
+        "scripts/ops/daily_runtime_source_revision_align.py",
+        "scripts/ops/test_daily_runtime_source_revision_align.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "daily_frontend_build": {
+      "target": "verify.daily.runtime.frontend.build",
+      "inputs": [
+        "scripts/ops/daily_runtime_frontend_build_align.py",
+        "scripts/ops/test_daily_runtime_frontend_build_align.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "daily_published_face_converge": {
+      "target": "verify.daily.runtime.published_face.converge",
+      "inputs": [
+        "scripts/ops/daily_runtime_published_face_converge.py",
+        "scripts/ops/test_daily_runtime_published_face_converge.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "business_entry_matrix_browser": {
+      "target": "verify.frontend.business_entry.matrix.browser",
+      "inputs": [
+        "scripts/verify/business_entry_matrix_browser.mjs",
+        "make/frontend.mk",
+        "docs/product/frontend_business_entry_acceptance_v1.csv"
+      ],
+      "kind": "runtime"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Publish the candidate head (3d3bf6c0/81648557) to the daily runtime through CONFIRM_DAILY_CANDIDATE_BUNDLE_SYNC=SYNC_EXACT_DAILY_CANDIDATE_SHA_WITH_BUNDLE make daily.runtime.candidate.bundle_sync (DAILY_CANDIDATE_EXPECTED_OLD_SHA=ba7577c212b81468491942e972ea28bd64345ebd), then daily.runtime.source_revision.align, DAILY_RUNTIME_FRONTEND_BUILD_SHA=<candidate> make daily.runtime.frontend.build, daily.runtime.published_face.converge, daily.runtime.record_identity.resolve, and finally the three serial write lanes (payment_request / general_contract / lifecycle) with ACCEPTANCE_TARGET_SHA=<candidate>."
+}
