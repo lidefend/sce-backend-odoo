@@ -2065,3 +2065,46 @@ odoo 日志 `base already installed; skip bootstrap`。
 ### 边界
 
 阶段实现与台账登记已提交（`f3ceb6cf`），但**尚未在目标环境实跑一次 upgrade**；维护授权链路本身仍未开始。
+
+## 2026-10-16 安全管理员凭据落盘机制修复（credential-entry）
+
+### 现象与根因
+
+维护授权链路已推进到“签发 `lidefend` 一次性交互凭据”这一步，但签发在**真实运行**中失败，且留下了一个不可用状态：
+
+| 事实 | 值 |
+|---|---|
+| 首次签发结果 | 失败，但账号口令已 `commit` |
+| 后续 `remote_readback` | `has_stored_password: true`、`maintenance_access_rows: 0` |
+| 再签发 | `_identity_guard` 以 `ALREADY_ISSUED` 拒绝 |
+
+两条独立缺陷：
+
+| 缺陷 | 说明 |
+|---|---|
+| 落盘目标不可写 | 旧入口把凭据写到 `/mnt/artifacts/...`。该目录是 `${SC_PRODUCT_ROOT}/artifacts` 的 bind mount，宿主属主 `ci:ci`、权限 `2755`；容器内 Odoo 以 `odoo(101)` 运行，**没有写权** |
+| 顺序错误 | `_run_issue` 先 `env.cr.commit()` 提交口令，再 `_write_credential_file()`。写文件失败后，口令已提交却无人知晓，而入口又拒绝重新签发——环境被锁死在一个“有口令但没人知道”的身份上 |
+
+本地 dev 容器在同一位置复现同一缺陷，说明这是**通用机制缺陷**，不是日常服务器的偶发环境问题。
+
+### 交付（P4，`scripts/ops`）
+
+| 层 | 改动 |
+|---|---|
+| 落盘位置 | `DEFAULT_OUTPUT` / `OUTPUT_ROOT` 改为 `/var/lib/odoo/credentials`：`/var/lib/odoo` 是 duty 自己的数据卷，runtime 账号拥有、无 group/world 可读，只有宿主管理员可从外部到达 |
+| 先验目标 | 新增 `_assert_output_writable()`（建目录 + `os.access(W_OK)`），在**任何账号写入之前**执行；不可写即 `PLATFORM_SECURITY_ADMIN_CREDENTIAL_OUTPUT_UNWRITABLE` |
+| 先落盘后提交 | `_run_issue` 改为先 `_write_credential_file()` 再 `env.cr.commit()`；commit 失败时 `_remove_credential_file()` 清掉那份没人能用的副本 |
+| 挂载表回读 | `inspect_odoo_container` 新增 `mounts`（destination → type/source/name/rw），把容器路径映射到宿主路径，**不另立第二份声明** |
+| 签发即回读 | carrier 新增 `credential_host_path()` / `credential_file_fact()` / `assert_credential_file()`：issue 必须回读到 `present + mode 600`，clear 必须回读到消失；`assert_entry_result` 断言入口写出的路径就是声明的路径 |
+| 回读而非自证 | carrier 以刚回读的挂载表把容器路径映射成宿主路径，再回读文件自身的 mode/属主/大小：入口自称已写出而实际未落盘、或副本不是 operator-only，都会被拒绝而不是被报告 |
+
+### 验证（层级 / 命令 / 非零计数）
+
+| 层 | 命令 | 结果 |
+|---|---|---|
+| L1 | `make verify.platform.security_admin.credential` | **48 tests OK**（原 43，+5：受管目录唯一、失败写入不留凭据、目标先备好、不可写目标在任何落盘前被拒、凭据文件先于账号提交落地、不可写即不提交） |
+| L1(peer) | `make verify.daily.duty.payload` | **26 tests OK**（`mounts` 回读改造） |
+
+### 边界
+
+这是**边界治理发现的基线缺陷修复**，不是 payment/runtime 业务能力扩展。签发凭据不等于批准：授权台账在签发前后行数断言不变，入口本身也断言 `approves_maintenance_access is False`。

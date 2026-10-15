@@ -384,6 +384,21 @@ def inspect_odoo_container(duty: dict, values: dict) -> dict:
     expected_network = "%s_default" % duty["compose_project"]
     if networks != {expected_network}:
         _fail("duty application network identity differs: %s" % sorted(networks))
+    # The mount table is read back, not assumed: a consumer that has to map one
+    # of the application's own paths to the host path it really lives at needs
+    # the source docker actually mounted, and re-deriving it from a rendered
+    # variable would be a second authority for the same fact.
+    mounts = {}
+    for row in record.get("Mounts") or []:
+        destination = str(row.get("Destination") or "")
+        if not destination:
+            continue
+        mounts[destination] = {
+            "type": str(row.get("Type") or ""),
+            "source": str(row.get("Source") or ""),
+            "name": str(row.get("Name") or ""),
+            "rw": bool(row.get("RW")),
+        }
     for destination in ("/var/lib/odoo", "/opt/sce-runtime"):
         if destination not in {
             row.get("Destination") for row in record.get("Mounts") or []
@@ -396,6 +411,7 @@ def inspect_odoo_container(duty: dict, values: dict) -> dict:
         "user": str(config.get("User") or ""),
         "network": expected_network,
         "started_at": str(record.get("State", {}).get("StartedAt") or ""),
+        "mounts": mounts,
     }
 
 

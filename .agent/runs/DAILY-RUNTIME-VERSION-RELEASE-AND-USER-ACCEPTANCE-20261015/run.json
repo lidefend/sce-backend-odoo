@@ -239,7 +239,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "duty 模块升级阶段已收口并提交（f3ceb6cf）：L1 123 tests OK、lane coverage PASS。下一步按序：(1) 先把本候选部署到日常服务器并收敛发布面——make daily.runtime.candidate.bundle_sync（先推 origin，EXPECTED_OLD_SHA=2c06bc6e…）、make daily.runtime.source_revision.align、make daily.runtime.published_face.converge，使本分支新增的维护授权路由可达；(2) make daily.runtime.database.duty.upgrade（SELECTION=platform_control，DECLARATION_DIGEST=3ebb2e19…）把控制库 smart_core 升到 17.0.1.1.15 并回读 evidence_reference 列；(3) make daily.runtime.platform.security_admin.credential.remote_issue 为 lidefend 签发一次性安全管理员交互凭据；(4) 经产品 HTTP 入口以 lidefend 完成 request -> approve（必带 evidence_reference，capability=migrate，operator=smart_core.svc_tenant_payload_operator_baosheng，operations=[provision, grant]）；(5) provision 操作员 -> payload plan/grant/import -> verify -> 对账 12386/6322/29/6035 -> revoke -> clear。任何一步都不得以直接改模型、伪造批准、复用 admin 或放宽机制替代。",
+  "next_exact_step": "(1) 提交本凭据落盘机制修复；(2) make daily.runtime.platform.security_admin.credential.remote_readback 只读确认当前事实；(3) remote_clear 复位（口令 False + token_version 递增）；(4) remote_issue 签发 lidefend 一次性凭据，回执必须 credential_file_present=true、credential_file_fact.mode=600；(5) 经产品 HTTP 入口以 lidefend 完成 request -> approve（approve 必带 evidence_reference，capability=migrate，operator=smart_core.svc_tenant_payload_operator_baosheng，operations=[provision, grant]，目标库 sc_tenant_baosheng_dev）；(6) operator provision -> payload plan/grant/import -> verify -> 对账 12386/6322/29/6035 -> revoke -> 立即 clear；(7) B 线独立复核后进主线。任何一步都不得以直接改模型、伪造批准、复用 admin 或放宽机制替代。",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "review_s2_closure_20261015": {
     "authority": "Independent B-line review of 5f5c4dae..4450e674 returned APPROVE_WITH_NOTES with one S2: the registration's control-database write had no test wiring, and the existing assertion pointed at the opposite target",
@@ -2857,5 +2857,23 @@
       "L1": "make verify.verification.lane_coverage -> PASS（72 tests OK），仅上述三项计数按登记增长"
     },
     "boundary": "阶段实现与台账登记已提交，但尚未在目标环境实跑一次 upgrade；维护授权链路本身仍未开始。"
+  },
+  "credential_entry_landing_20261016": {
+    "case": "The approver credential could not be issued in the real runtime. Two independent defects: the governed destination was a bind mount owned by the deployment account, which the container's odoo(101) cannot write; and the entry committed the password before writing the file, so a failed write left a committed password nobody knows while the identity guard refused to re-issue. Both reproduce on the local dev container, so this is a general mechanism defect rather than a daily-server accident.",
+    "delivered": {
+      "destination": "DEFAULT_OUTPUT / OUTPUT_ROOT move to /var/lib/odoo/credentials: the duty's own data volume, owned by the runtime account, never group- or world-readable, reachable from outside the container only by the host administrator.",
+      "precondition": "platform_security_admin_credential._assert_output_writable() prepares and proves the destination before any account write; an unwritable destination is PLATFORM_SECURITY_ADMIN_CREDENTIAL_OUTPUT_UNWRITABLE and stops the step.",
+      "ordering": "_run_issue writes the credential file first and commits second; a failed commit removes the copy no committed account can use. A committed password whose only readable copy failed to land is now unreachable.",
+      "readback": "daily_runtime_duty_payload.inspect_odoo_container returns the mount table it just read, and the credential carrier maps the container path to its host path from that table instead of re-deriving it. assert_credential_file reads the file's own mode/owner/size back: issue must read present with mode 600, clear must read absent."
+    },
+    "verification": {
+      "L1": "make verify.platform.security_admin.credential -> 48 tests OK (was 43)",
+      "L1_peer": "make verify.daily.duty.payload -> 26 tests OK",
+      "scope": "boundary-governance baseline fix; not a payment/runtime capability extension. Issuing a credential is not an approval: the carrier asserts maintenance_access_rows is unchanged across the run and the entry asserts approves_maintenance_access is False."
+    },
+    "not_done": [
+      "the credential has not been re-issued on the daily control duty yet: the remote can only adopt this fix once it is committed (the immutable tool tree is installed from git archive HEAD and requires a clean worktree)"
+    ],
+    "status": "mechanism fix delivered and verified offline; remote adoption still pending commit"
   }
 }

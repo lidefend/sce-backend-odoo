@@ -26,7 +26,11 @@ This step supplies that fact and nothing else.  It is deliberately narrow:
   issued credential could have minted by advancing the account's token version;
 * the credential is written by this step to a governed operator-only file
   outside the git tree.  It is never an argv, never a printed line and never
-  part of a readback, so it cannot leak through a command line or a log.
+  part of a readback, so it cannot leak through a command line or a log;
+* the file lands *before* the account is committed, and the destination is
+  proven writable before the account is touched at all.  A credential that was
+  stored while its only readable copy failed to land is an account nobody can
+  sign in with, and that is a state this step must not be able to produce.
 
 The module body only needs the standard library, so the pure decision helpers
 stay importable by a hermetic unit test.
@@ -57,11 +61,21 @@ LOGIN_ENV = bootstrap.LOGIN_ENV
 NAME_ENV = bootstrap.NAME_ENV
 EVIDENCE_ENV = bootstrap.EVIDENCE_ENV
 OUTPUT_ENV = "PLATFORM_SECURITY_ADMIN_CREDENTIAL_OUTPUT"
-#: The governed, operator-only destination.  ``/mnt/artifacts`` is the duty
-#: stack's own writable mount of ``${SC_PRODUCT_ROOT}/artifacts``, which is
-#: outside version control; the entry writes there and nowhere else.
-DEFAULT_OUTPUT = "/mnt/artifacts/platform-security-admin-credential.json"
-OUTPUT_ROOT = "/mnt/artifacts"
+#: The governed, operator-only destination.  The credential is written by the
+#: duty's own runtime account, so the destination has to be a directory *that
+#: account* can write, and it has to stay unreadable to everybody else.
+#: ``/var/lib/odoo`` is the duty stack's own data volume: the runtime account
+#: owns it, nothing group- or world-readable is created there, and only the host
+#: administrator can reach it from outside the container.  The transport reports
+#: the operator-facing host path of the file it wrote, because the same file is
+#: a different absolute path on the host.
+#:
+#: A bind mount of ``${SC_PRODUCT_ROOT}/artifacts`` looks like the natural
+#: destination but is not: that directory belongs to the *deployment* account on
+#: the host, so the container's runtime account cannot create a file in it, and
+#: every attempt fails after the account has already been written.
+DEFAULT_OUTPUT = "/var/lib/odoo/credentials/platform-security-admin-credential.json"
+OUTPUT_ROOT = "/var/lib/odoo/credentials"
 
 MINIMUM_PASSWORD_LENGTH = 24
 #: Unambiguous, shell-safe, JSON-safe: no quote, no backslash, no operator, and
@@ -147,6 +161,38 @@ def _identity_guard(readback, request):
     return identity
 
 
+def _remove_credential_file(path):
+    """Drop a credential copy that no committed account can use."""
+    try:
+        os.unlink(path)
+    except OSError:
+        pass
+
+
+def _assert_output_writable(path):
+    """Prove the governed destination is writable before anything is stored.
+
+    The order is the point.  If the account were written and committed first and
+    the credential file failed afterwards, the environment would be left holding
+    an identity whose password nobody knows and which the identity guard then
+    refuses to re-issue.  Preparing and proving the destination first makes that
+    state unreachable, whatever the destination turns out to be.
+    """
+    parent = os.path.dirname(path)
+    try:
+        os.makedirs(parent, exist_ok=True)
+    except OSError as error:
+        raise CredentialError(
+            "PLATFORM_SECURITY_ADMIN_CREDENTIAL_OUTPUT_UNWRITABLE:%s"
+            % (error.strerror or error.errno,)
+        ) from error
+    if not os.access(parent, os.W_OK):
+        raise CredentialError(
+            "PLATFORM_SECURITY_ADMIN_CREDENTIAL_OUTPUT_UNWRITABLE:%s" % (parent,)
+        )
+    return path
+
+
 def _write_credential_file(request, password, execution_id):
     """Write the credential operator-only; never stdout, never argv."""
     path = request["output"]
@@ -164,16 +210,14 @@ def _write_credential_file(request, password, execution_id):
         "single_use": True,
         "clear_with": "make daily.runtime.platform.security_admin.credential.remote_clear",
     }
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     handle = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     try:
         with os.fdopen(handle, "w", encoding="utf-8") as stream:
             json.dump(payload, stream, ensure_ascii=False, sort_keys=True)
             stream.write("\n")
     except Exception:
-        try:
-            os.unlink(path)
-        except OSError:
-            pass
+        _remove_credential_file(path)
         raise
     return path
 
@@ -213,6 +257,9 @@ def _run_issue(env, environ, receipt):
     groups_before = list(identity["group_ids"])
 
     password = _generate_password()
+    # The destination is proven first, so a credential that cannot be read back
+    # can never be stored in the first place.
+    _assert_output_writable(request["output"])
     user = env["res.users"].sudo().browse(identity["uid"])
     user.write({"password": password})
     env.cr.flush()
@@ -228,9 +275,14 @@ def _run_issue(env, environ, receipt):
         raise CredentialError("PLATFORM_SECURITY_ADMIN_CREDENTIAL_TOUCHED_THE_LEDGER")
 
     receipt.effects["uid"] = identity["uid"]
+    # The credential file lands before the commit: a committed password whose
+    # readable copy failed to land would lock the approver out of an account
+    # this step must then refuse to re-issue.
+    path = _write_credential_file(request, password, execution_id)
     try:
         env.cr.commit()
     except Exception as error:  # noqa: BLE001 - report, never replay silently
+        _remove_credential_file(path)
         raise CredentialError(
             "PLATFORM_SECURITY_ADMIN_CREDENTIAL_COMMIT_UNCONFIRMED:uid=%s; do not replay"
             % (identity["uid"],)
@@ -242,7 +294,6 @@ def _run_issue(env, environ, receipt):
         raise CredentialError(
             "PLATFORM_SECURITY_ADMIN_CREDENTIAL_COMMIT_UNCONFIRMED:uid=%s" % (identity["uid"],)
         )
-    path = _write_credential_file(request, password, execution_id)
     return _succeed(receipt, identity["uid"], {
         "ok": True,
         "entry": ENTRY,
@@ -306,11 +357,8 @@ def _run_clear(env, environ, receipt):
     bootstrap._assert_readable(independent, request)
     if independent["identity"].get("has_stored_password"):
         raise CredentialError("PLATFORM_SECURITY_ADMIN_CREDENTIAL_NOT_CLEARED")
-    try:
-        if os.path.exists(request["output"]):
-            os.unlink(request["output"])
-    except OSError:
-        pass
+    if os.path.exists(request["output"]):
+        _remove_credential_file(request["output"])
     return _succeed(receipt, identity["uid"], {
         "ok": True,
         "entry": ENTRY,

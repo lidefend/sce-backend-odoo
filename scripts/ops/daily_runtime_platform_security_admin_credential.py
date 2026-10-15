@@ -27,7 +27,12 @@ Three properties are deliberate:
 * the credential itself never travels through this transport.  The entry writes
   it to a governed operator-only file, and every receipt this transport prints
   is scrubbed of any credential value, so nothing can leak into a log, a report
-  or a conversation.
+  or a conversation;
+* the file the entry claims to have written is read back through the duty's own
+  runtime account before the step is reported as issued, and the operator-facing
+  host path is derived from the mount table that was just read back.  A claim
+  that did not land, or a copy that is not operator-only, is refused instead of
+  reported -- that failure is exactly why this step exists.
 """
 
 from __future__ import annotations
@@ -61,6 +66,15 @@ MOUNT_TOKEN = "__PLATFORM_SECURITY_ADMIN_CREDENTIAL_SCRIPTS_PARENT__"
 #: A receipt path inside the throwaway container; the entry's own operator-only
 #: credential destination comes from the entry, not from here.
 REMOTE_OUTPUT = "/tmp/platform_security_admin_credential.json"
+#: The one mount the governed credential destination may live on.  The entry
+#: writes inside the container; the operator reads the file on the host, so the
+#: transport has to map the two, and it does that from the mount table it just
+#: read back rather than from a second declaration of the same fact.
+CREDENTIAL_MOUNT_DESTINATION = "/var/lib/odoo"
+CREDENTIAL_FILE_MODE = "600"
+CREDENTIAL_PROBE_SCRIPT = (
+    'p="$1"; if [ -e "$p" ]; then stat -c "%a %u %g %s" "$p"; else echo ABSENT; fi'
+)
 #: Keys that must never appear in a value this transport prints.
 SECRET_KEYS = ("password", "secret", "api_key", "token")
 
@@ -172,6 +186,64 @@ def scrub(value):
     return value
 
 
+def credential_host_path(application: dict, container_path: str) -> str:
+    """Map the governed in-container credential path onto its host path."""
+    mounts = application.get("mounts")
+    if not isinstance(mounts, dict):
+        _fail("the duty application identity was read without its mount table")
+    mount = mounts.get(CREDENTIAL_MOUNT_DESTINATION)
+    if not isinstance(mount, dict):
+        _fail("the duty application does not mount %s" % (CREDENTIAL_MOUNT_DESTINATION,))
+    if mount.get("rw") is not True:
+        _fail("the governed credential destination is not mounted read-write")
+    if mount.get("type") not in ("volume", "bind"):
+        _fail("the governed credential mount is neither a volume nor a bind mount")
+    prefix = CREDENTIAL_MOUNT_DESTINATION.rstrip("/") + "/"
+    if not container_path.startswith(prefix):
+        _fail("the credential destination is outside the governed mount")
+    source = binding._text(mount.get("source"))
+    if not source or not os.path.isabs(source):
+        _fail("the governed credential mount reported no absolute host source")
+    return os.path.join(source, container_path[len(prefix):])
+
+
+def credential_file_fact(duty: dict, container_path: str) -> dict:
+    """Read the credential file's own permissions back, read-only.
+
+    The entry reports that it wrote the file; this reads the file the duty's own
+    runtime account would see.  A write that did not land -- the failure this
+    step exists to make unreachable -- can then not be reported as issued.
+    """
+    output = duty_runtime.run([
+        "docker", "exec", duty["odoo_container"],
+        "sh", "-c", CREDENTIAL_PROBE_SCRIPT, "credential-file-probe", container_path,
+    ]).strip()
+    if output == "ABSENT":
+        return {"container_path": container_path, "present": False}
+    fields = output.split()
+    if len(fields) != 4:
+        _fail("the credential file read answered with an unusable fact")
+    mode, uid, gid, size = fields
+    try:
+        fact = {"uid": int(uid), "gid": int(gid), "size": int(size)}
+    except ValueError as error:
+        _fail("the credential file read answered with an unusable fact: %s" % (error,))
+    return {"container_path": container_path, "present": True, "mode": mode, **fact}
+
+
+def assert_credential_file(duty: dict, container_path: str, *, expected: str) -> dict:
+    """An issue must leave a readable, operator-only file; a clear must not."""
+    fact = credential_file_fact(duty, container_path)
+    if expected == "present":
+        if not fact["present"]:
+            _fail("the credential file cannot be read back at %s" % (container_path,))
+        if fact.get("mode") != CREDENTIAL_FILE_MODE:
+            _fail("the credential file is not operator-only: mode %s" % (fact.get("mode"),))
+    elif fact["present"]:
+        _fail("the credential file survived the clear at %s" % (container_path,))
+    return fact
+
+
 def assert_readback(report: dict, entry, request: dict, control: dict) -> dict:
     """The readback is a read fact about the declared identity, and nothing more."""
     if report.get("mode") != "read_only" or int(report.get("writes") or 0) != 0:
@@ -215,6 +287,8 @@ def assert_entry_result(envelope: dict, entry, request: dict, expected_digest: s
         _fail("the credential entry reported a membership change")
     if "password" in result:
         _fail("the credential entry returned a credential value; it must only be written")
+    if binding._text(result.get("credential_file")) != request["output"]:
+        _fail("the credential entry wrote its credential to another destination")
     if int(result.get("maintenance_access_rows") or 0) != int(before.get("maintenance_access_rows") or 0):
         _fail("the authorization ledger changed across the credential step")
     return result
@@ -244,7 +318,7 @@ def execute(
     values = duty_runtime.read_duty_env(env_path, duty)
     stack = duty_runtime.stack_compose_path(ops_root)
     binding.assert_scripts_mount(stack)
-    duty_runtime.inspect_odoo_container(duty, values)
+    application = duty_runtime.inspect_odoo_container(duty, values)
     base = duty_runtime.compose_base(duty, ops_root, env_path, stack)
 
     entry_source = root / CREDENTIAL_ENTRY_SOURCE
@@ -311,8 +385,12 @@ def execute(
     if action == "issue":
         if not after["identity"].get("has_stored_password"):
             _fail("the credential step reports success but no credential is stored")
+        credential_fact = assert_credential_file(duty, request["output"], expected="present")
     if action == "clear" and after["identity"].get("has_stored_password"):
         _fail("the credential step reports success but a credential is still stored")
+    if action == "clear":
+        credential_fact = assert_credential_file(duty, request["output"], expected="absent")
+    host_path = credential_host_path(application, request["output"])
     return scrub({
         "ok": True,
         "action": action,
@@ -328,7 +406,14 @@ def execute(
         "identity_before": before.get("identity"),
         "security_admin_member_count": after.get("security_admin_member_count"),
         "maintenance_access_rows": after.get("maintenance_access_rows"),
-        "credential_file": result.get("credential_file"),
+        # The operator reads the file on the host, so the operator-facing path is
+        # the host path; the container path and the permission fact are reported
+        # beside it so the two can never be confused for one another.
+        "credential_file": host_path,
+        "credential_file_container_path": request["output"],
+        "credential_file_present": credential_fact["present"],
+        "credential_file_fact": credential_fact,
+        "credential_file_readable_by_transport": os.path.exists(host_path),
         "credential_file_removed": result.get("credential_file_removed"),
         "entry_result": result,
     })

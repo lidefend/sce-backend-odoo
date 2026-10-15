@@ -30,6 +30,7 @@ import types
 import unittest
 from contextlib import contextmanager
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -199,9 +200,19 @@ class RequestTests(unittest.TestCase):
             ENTRY.DEFAULT_OUTPUT,
         )
         self.assertTrue(ENTRY.DEFAULT_OUTPUT.startswith(ENTRY.OUTPUT_ROOT + "/"))
+        # The destination has to be writable by the duty's own runtime account,
+        # which is the account that issues the credential.  A bind mount of the
+        # deployment's artefact tree is not: it belongs to the host deployment
+        # account, so a write there fails after the password was already stored.
+        self.assertEqual(ENTRY.OUTPUT_ROOT, "/var/lib/odoo/credentials")
         for bad in (
             "/tmp/credential.json",
+            "/var/lib/odoo/credential.json",
+            "/var/lib/odoo/credentials/sub/dir.json",
+            "/var/lib/odoo/credentials/credential.txt",
+            "/var/lib/odoo/credentials/../etc/passwd.json",
             "/mnt/artifacts",
+            "/mnt/artifacts/credential.json",
             "/mnt/artifacts/",
             "/mnt/artifacts/sub/dir.json",
             "/mnt/artifacts/credential.txt",
@@ -290,10 +301,31 @@ class CredentialFileTests(unittest.TestCase):
 
     def test_a_failed_write_leaves_no_credential_behind(self):
         with tempfile.TemporaryDirectory() as directory:
-            path = os.path.join(directory, "absent", "credential.json")
+            blocked = os.path.join(directory, "blocked")
+            Path(blocked).write_text("not a directory\n", encoding="utf-8")
+            path = os.path.join(blocked, "credential.json")
             with self.assertRaises(OSError):
                 ENTRY._write_credential_file(request(output=path), "secret-value", "a" * 32)
             self.assertFalse(os.path.exists(path))
+
+    def test_the_governed_destination_is_prepared_before_it_is_written(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "credentials", "credential.json")
+            ENTRY._write_credential_file(request(output=path), "secret-value", "a" * 32)
+            self.assertTrue(os.path.exists(path))
+            self.assertEqual(stat.S_IMODE(os.stat(path).st_mode), 0o600)
+
+    def test_an_unwritable_destination_is_refused_before_anything_is_stored(self):
+        with tempfile.TemporaryDirectory() as directory:
+            blocked = os.path.join(directory, "blocked")
+            Path(blocked).write_text("not a directory\n", encoding="utf-8")
+            with self.assertRaises(ENTRY.CredentialError) as caught:
+                ENTRY._assert_output_writable(os.path.join(blocked, "credential.json"))
+            self.assertIn("OUTPUT_UNWRITABLE", str(caught.exception))
+            self.assertEqual(
+                ENTRY._assert_output_writable(os.path.join(directory, "fine.json")),
+                os.path.join(directory, "fine.json"),
+            )
 
     def test_the_entry_never_returns_the_credential_value(self):
         body = source()
@@ -740,6 +772,45 @@ class RunFlowTests(unittest.TestCase):
             )
         self.assertEqual(env.writes, [])
 
+    def test_the_credential_file_lands_before_the_account_is_committed(self):
+        """A commit must never report a stored password whose copy did not land."""
+        env = _FakeEnv()
+        observed = {}
+        commit = env.cr.commit
+
+        def recording_commit():
+            observed["credential_at_commit"] = os.path.exists(self.credential)
+            commit()
+
+        env.cr.commit = recording_commit
+        result = ENTRY.run(env, self.flow_environ("issue"), "issue")
+        self.assertEqual(result["status"], "passed")
+        self.assertIs(observed.get("credential_at_commit"), True)
+        self.assertEqual(env.commits, 1)
+
+    def test_a_credential_that_cannot_be_written_is_never_committed(self):
+        env = _FakeEnv()
+        with mock.patch.object(
+            ENTRY, "_write_credential_file", side_effect=OSError("read-only file system")
+        ):
+            with self.assertRaises(OSError):
+                ENTRY.run(env, self.flow_environ("issue"), "issue")
+        self.assertEqual(env.commits, 0)
+        self.assertFalse(os.path.exists(self.credential))
+
+    def test_an_unwritable_destination_never_reaches_the_account(self):
+        env = _FakeEnv()
+        blocked = os.path.join(self.directory.name, "blocked")
+        Path(blocked).write_text("not a directory\n", encoding="utf-8")
+        self.credential = os.path.join(blocked, "credential.json")
+        ENTRY.OUTPUT_PATH = re.compile(
+            r"^%s/[A-Za-z0-9][A-Za-z0-9_.-]{0,120}\.json$" % (re.escape(blocked),)
+        )
+        with self.assertRaisesRegex(ENTRY.CredentialError, "OUTPUT_UNWRITABLE"):
+            ENTRY.run(env, self.flow_environ("issue"), "issue")
+        self.assertEqual(env.writes, [], "the account must not be touched at all")
+        self.assertEqual(env.commits, 0)
+
 
 class TransportGateTests(unittest.TestCase):
     """The transport's own refusals: it must not carry or claim more than the entry."""
@@ -764,7 +835,7 @@ class TransportGateTests(unittest.TestCase):
             "action": "issue",
             "login": LOGIN,
             "name": NAME,
-            "credential_file": "/mnt/artifacts/credential.json",
+            "credential_file": ENTRY.DEFAULT_OUTPUT,
             "credential_written": True,
             "approves_maintenance_access": False,
             "group_ids_unchanged": True,
@@ -869,6 +940,7 @@ class TransportGateTests(unittest.TestCase):
             self.envelope(result=self.entry_result(approves_maintenance_access=True)),
             self.envelope(result=self.entry_result(group_ids_unchanged=False)),
             self.envelope(result=self.entry_result(password="value")),
+            self.envelope(result=self.entry_result(credential_file="/tmp/credential.json")),
             self.envelope(result=self.entry_result(maintenance_access_rows=1)),
             self.envelope(result=None),
         ):
@@ -878,7 +950,7 @@ class TransportGateTests(unittest.TestCase):
         accepted = self.TRANSPORT.assert_entry_result(
             self.envelope(), ENTRY, request, "a" * 64, "issue", readback()
         )
-        self.assertEqual(accepted["credential_file"], "/mnt/artifacts/credential.json")
+        self.assertEqual(accepted["credential_file"], ENTRY.DEFAULT_OUTPUT)
 
 
 class TransportScrubTests(unittest.TestCase):
