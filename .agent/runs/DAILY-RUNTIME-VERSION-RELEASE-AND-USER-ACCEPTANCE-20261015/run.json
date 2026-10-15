@@ -23,9 +23,9 @@
   },
   "baseline_sha": "10bf72ef4bb060556bd2844598b58f9806392d34",
   "blockers": [
-    "BLOCKING (approval execution, mechanism complete): the maintenance access for sc_tenant_baosheng_dev cannot be requested and approved until an authenticated principal for the named approver lidefend can reach the product entry. The security administrator now exists and is verified, but has no stored password by design; the control container runs without ENV in {dev,test,local} so the dev/test session.bootstrap intent is off; and the serving control Odoo process still serves 10bf72ef, so the decision routes added in 8f26ffd7 are not mounted. The owner has ruled that a one-off shell must not stand in for the approval product capability, so this is an owner decision about issuing the approver credential, not a mechanism gap: option A is a governed one-time interactive credential used over the HTTP entry and cleared afterwards, option B is the owner's own interactive login.",
-    "The daily runtime published face still runs SC_SOURCE_REVISION=10bf72ef and mounts the product tree at /opt/projects/repos/sce-product-odoo; the candidate tree is deployed at 5ddb3596 but the serving process has not been converged, so no HTTP route added on this branch is reachable yet.",
-    "Step D proper cannot start yet: sc_tenant_baosheng_dev has no released construction.standard edition snapshot (read-only readback: 0 rows) and no operator in smart_core.group_smart_core_tenant_payload_importer (group res_id 19, admin not a member), while the only governed daily snapshot entry (release.daily_product_navigation.snapshot) is hard-coded to sc_demo. The tenant duty therefore cannot register the edition it runs, provision_operator.py cannot issue the narrow import grant, and the tenant's own versioned migration cannot begin. The fix belongs to P4 ops tooling that reuses the duty declaration; the snapshot record itself must stay owned by the existing platform delivery service.",
+    "CLOSED 2026-10-16 in this run (was: the maintenance access for sc_tenant_baosheng_dev could not be requested and approved). The named approver lidefend is now a verified platform security administrator with an account, and the approval was driven end to end over the product HTTP entry: request by the platform administrator admin, approval by lidefend, state approved, window 2026-10-16 08:43:20 CST. The decision was taken by the product capability, not by a one-off shell. See maintenance_approval_execution_20261016 and maintenance_access_real_runtime_negatives_20261016.",
+    "CLOSED 2026-10-16 in this run (was: the daily runtime published face still ran SC_SOURCE_REVISION=10bf72ef). Two candidate bundle deployments converged the published face and the duty refresh then read all three faces back at b80841059b196f66487f4b598d90d3b0662476b4, so the routes added on this branch are mounted. See duty_stack_runtime_environment_forwarding_20261016.",
+    "PARTIALLY CLOSED 2026-10-16 in this run (was: Step D proper cannot start because sc_tenant_baosheng_dev has no released construction.standard edition and no operator in the importer group). The customer duty now carries its own effective edition snapshot (snapshot_id 2, version daily-navigation-standard-b80841059b19, 90 effective pages) and the declared operator is provisioned and holds only the narrow import group. The remaining stop is the payload itself: the newest payload was authored for customer_module_version 17.0.2.7.0 while the delivered and installed module is 17.0.2.8.0, so the mechanism refuses it with TPV1_CUSTOMER_ADAPTER_INCOMPATIBLE. That is a delivery gap on the payload side, not a mechanism gap, and it is registered as payload_import_blocker_20261016 with its required next step. The product must not be widened to accept it.",
     "The customer duty is now a served, initialized face (sc_tenant_baosheng_dev, role sc_tenant_baosheng_dev_app, exact filter ^sc_tenant_baosheng_dev$, route 18090, own cluster and volume, product line plus sce_customer_baosheng installed from the delivered read-only tree bfbc736) and its paired recovery point exists (backup set sc_tenant_baosheng_dev-20261015T095006Z-653a3119 under /data/backups/daily-tenant-baosheng-dev, validated, restored in isolation and independently checksum-readback). Initialization is not migration: no historical data has moved, and Step D proper still has to run the customer module's own versioned migration (historical_payment_migration_policy.expected_records=12386) with the payload validated and planned first, never defaulting ownership and never copying UAT data.",
     "sc_demo mixes the customer tenant volume with demo/test purposes, so 'the demo database' is not yet a pure demo database; the destination of the company-1 volume is unresolved, and the demo duty is still declared with the shared-bootstrap-role gap and has no dedicated application role.",
     "CLOSED 2026-10-15 in this run: the platform-model registration for the daily profile now has a governed runtime binding -- scripts/ops/daily_runtime_duty_database_registration.py resolves every runtime fact from config/ops/daily_runtime_database_duties.v1.json and drives the immutable platform.database.register entry inside the control duty's own rendered stack. sc_tenant_baosheng_dev is registered (customer/baosheng/customer_production/database_per_customer_tenant/^sc_tenant_baosheng_dev$ stage declared, one audited register operation, reuse path writes nothing), so DBGOV1_DATABASE_NOT_REGISTERED no longer blocks the operator lifecycle. Still open from the original finding: suspend/resume are not yet exercised for this duty and the demo duty still carries no registration of its own.",
@@ -239,7 +239,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "(1) 提交本凭据落盘机制修复；(2) make daily.runtime.platform.security_admin.credential.remote_readback 只读确认当前事实；(3) remote_clear 复位（口令 False + token_version 递增）；(4) remote_issue 签发 lidefend 一次性凭据，回执必须 credential_file_present=true、credential_file_fact.mode=600；(5) 经产品 HTTP 入口以 lidefend 完成 request -> approve（approve 必带 evidence_reference，capability=migrate，operator=smart_core.svc_tenant_payload_operator_baosheng，operations=[provision, grant]，目标库 sc_tenant_baosheng_dev）；(6) operator provision -> payload plan/grant/import -> verify -> 对账 12386/6322/29/6035 -> revoke -> 立即 clear；(7) B 线独立复核后进主线。任何一步都不得以直接改模型、伪造批准、复用 admin 或放宽机制替代。",
+  "next_exact_step": "(1) run the remaining real-runtime refusals on the one-hour fixture row already approved on the daily control duty (window 2026-10-15 21:04:14 -> 22:04:14 UTC): read the ledger, revoke the superseded approved row, prove the covering projection is then empty because the only approved row is out of window, prove the governed ops entry refuses, expire the elapsed row, and read the ledger back; (2) commit the iteration record and this run update; (3) revoke the temporary narrow import grant on the customer duty, because the import it was issued for cannot run and the approval window closes at 08:43:20 CST; (4) clear the one-time approver credential; (5) hand the payload staleness to the user-module delivery (re-emit at 17.0.2.8.0, re-sign, re-approve) and do not widen the adapter; (6) independent review, then mainline. No step may be replaced by writing the model directly, fabricating an approval, reusing admin or relaxing a mechanism.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "review_s2_closure_20261015": {
     "authority": "Independent B-line review of 5f5c4dae..4450e674 returned APPROVE_WITH_NOTES with one S2: the registration's control-database write had no test wiring, and the existing assertion pointed at the opposite target",
@@ -2875,5 +2875,127 @@
       "the credential has not been re-issued on the daily control duty yet: the remote can only adopt this fix once it is committed (the immutable tool tree is installed from git archive HEAD and requires a clean worktree)"
     ],
     "status": "mechanism fix delivered and verified offline; remote adoption still pending commit"
+  },
+  "operator_readback_closure_fix_20261016": {
+    "case": "The first real run of the declared operator lifecycle exposed a defect in the consumer, not in the mechanism. The readback publishes required_group_closure_xmlids -- the platform's own transitive closure of the groups the declaration names -- as a fact, while the consumer compared the account's effective group set against a two-element hard-coded whitelist {base.group_user, the declared importer group}. res.users.groups_id holds the effective set (direct groups plus their implied closure), so an account the mechanism itself had just created could never satisfy that whitelist.",
+    "impact": "provision committed the identity inside its own write transaction and then failed the host-side postcondition, so the step reported BLOCKED after having written; and because the account then existed, every later action -- including the read-only readback -- failed at the before-assertion, so the entry was permanently deadlocked. The daily control duty was in exactly that state.",
+    "fix": "scripts/ops/daily_runtime_duty_operator_grant.py now compares against the closure the readback published: allowed = {base.group_user} union {the declared importer group} union the published closure union the groups the declaration requires. An unpublished closure is refused instead of widened, and a forward assertion was added so a declaration that requires a group the account does not hold is now a stop as well.",
+    "verification": {
+      "L1": "make verify.daily.duty.operator_grant -> 41 tests OK (was 39, +2)",
+      "falsification": "restoring the two-element whitelist produced 3 failures + 3 errors; the file was restored byte-for-byte (sha256sum -c before.sha256 OK)",
+      "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/operator-closure-fix-20261016/",
+      "real_closure_published": [
+        "base.group_multi_currency",
+        "base.group_no_one",
+        "base.group_user",
+        "mail.group_mail_template_editor",
+        "purchase.group_send_reminder"
+      ]
+    },
+    "commit": "d92d75e8ea76b1c8a479e45de44ab7d2f5e695a9",
+    "status": "delivered, verified and adopted on the daily control duty; the remote immutable tool tree is installed from this commit"
+  },
+  "maintenance_approval_execution_20261016": {
+    "authority": "Owner ruling 2026-10-16 named lidefend the approving subject and required the authorization to be a product capability reached over HTTP, not a one-off shell. It also required the authorization record to bind requester, independent approver, target tenant and database, operation set, validity window, reason and an evidence reference.",
+    "entry": "POST /api/ops/maintenance/access/{request,approve,reject,revoke,expire} and GET /api/ops/maintenance/access on the platform control duty (localhost:18082, database sc_platform_control). Two identities: admin is the platform administrator that requests, lidefend is the security administrator that approves.",
+    "flow": {
+      "request": "PASS: access_id 1, state requested, requested_by admin, approved_by empty, capability migrate, db_name sc_tenant_baosheng_dev, authorized_operations [provision, grant], operator smart_core.svc_tenant_payload_operator_baosheng, subject_checksum f1adc6fb17b516d42492fe42229df0cce65956ea113978a19243c0de57ec1ed4.",
+      "approve": "PASS as lidefend: state approved, approved_by lidefend, valid_from 2026-10-15 20:43:20, valid_until 2026-10-16 08:43:20 (UTC, i.e. 2026-10-16 08:43:20 CST).",
+      "readback": "GET /api/ops/maintenance/access -> 200, count 1, state approved. The ledger row count was 0 before the request and 1 after it, and no write of any other kind was observed: requesting authorizes nothing."
+    },
+    "negatives": {
+      "self_approval": "403 PERMISSION_DENIED when the requester admin tried to approve its own row: the entry refuses the decider before the model's independence rule is reached.",
+      "no_role": "403 PERMISSION_DENIED for the same call with no group that may decide.",
+      "unauthenticated": "403 PERMISSION_DENIED for approve and for read without a session or token.",
+      "server_owned_fields": "400 MAINTENANCE_ACCESS_SERVER_OWNED_FIELD:approved_by,state -- a body that names the decider or the state is refused, not silently ignored.",
+      "evidence_vocabulary": "400 DATABASE_GOVERNANCE_MAINTENANCE_EVIDENCE_INVALID_CHARACTERS when the evidence reference carried one of the refused transport characters; the ledger stayed at one row, so the refused request wrote nothing.",
+      "honest_limit": "over HTTP the independence rule cannot be observed on its own, because the only available platform administrator carries no security-admin group and is therefore refused by the role check first; the independence rule itself (DBGOV1_MAINTENANCE_APPROVER_MUST_BE_INDEPENDENT) is covered by make verify.smart_core.platform_maintenance_access.orm -> 15 tests OK."
+    },
+    "evidence": {
+      "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-approval-20261016/approval-flow.log",
+      "sha256": "3ad626ffcb314ad893b3e71831598a08cd2ae9a5f9b3f72761305e5d818b5a2b",
+      "harness": "diagnostic probe driving the product HTTP entry; it reads the credential the governed credential entry issued for the named approver and never writes the authorization record itself"
+    },
+    "not_done": [
+      "the customer payload import that this authority was requested for; see payload_import_blocker_20261016"
+    ],
+    "status": "PASS: the authorization is a reachable product capability and six of the seven required bindings plus the evidence reference are enforced server-side"
+  },
+  "maintenance_access_real_runtime_negatives_20261016": {
+    "case": "Owner ruling item 4 requires the refusal cases to hold in the real runtime, not only in model tests. Four were driven over the product entry and one through the governed ops entry.",
+    "repeat_execution": "400 DBGOV1_MAINTENANCE_ACCESS_NOT_REQUESTED:approved when the approver approved an already-approved row; the ledger row was unchanged before and after.",
+    "audit_not_forgeable": "a decision body naming approved_by and state is refused with 400 (above), and the requester itself cannot decide: 403. The decided identity and the state are never taken from a request body, and the ledger's requested_by/approved_by were unchanged across every refused call.",
+    "target_substitution": "the governed ops entry (make daily.runtime.duty.operator_grant.remote_provision) was driven with a subject checksum other than the approved one: BLOCKED with 'the approved access is bound to another subject than this run'. The tool reads the approval and asserts every binding before it runs the lifecycle command, so the refusal happens before any write.",
+    "expiry_and_revocation": "revocation was driven on the live product rows and then on the governed operator lifecycle, and the validity window was driven as an A/B on one single product-created row with the minimum one-hour window (access_id 3): the same governed entry, with the same bound subject, passes while that row's window is open and must refuse once it has elapsed. See maintenance_access_decay_probe_20261016.",
+    "evidence": {
+      "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-decay-20261016/decay-flow.log",
+      "probe": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-decay-20261016/probe.py"
+    }
+  },
+  "maintenance_access_decay_probe_20261016": {
+    "case": "The validity window and revocation are the two facts that turn a valid authorization into an invalid one, so both were driven on real rows created by the product entry rather than on fixtures written into the table.",
+    "revocation": {
+      "live_rows": "POST /api/ops/maintenance/access/revoke as lidefend revoked access_id 2 (window 2026-10-15 21:04:14 -> 22:04:14 UTC) and access_id 1 (window 20:43:20 -> 2026-10-16 08:43:20 UTC) while both windows were still open; each answer was 200 with state revoked and the readback ledger then reported states ['revoked', 'revoked'].",
+      "governed_lifecycle": "the temporary narrow import grant was afterwards withdrawn through its own governed entry, so the revocation path is proven on both the authorization record and the permission it authorized.",
+      "honest_note": "the first attempt revoked both rows instead of only the expired candidate, because access_id 2's window (22:04:14 UTC) was still open at 21:10:41 UTC -- the window is stored in UTC and reads as the next day in CST. No conclusion rests on that call; the window A/B below uses a fresh row created for exactly this purpose."
+    },
+    "window_ab": {
+      "row": "access_id 3, requested by admin, approved by lidefend, authorized_operations [provision, grant], capability migrate, db_name sc_tenant_baosheng_dev, subject_checksum f1adc6fb..., window 2026-10-15 21:10:56 -> 22:10:56 UTC (i.e. 2026-10-16 06:10:56 CST).",
+      "in_window_control": "PENDING: the governed entry is run while the window is open; it must PASS and must report this row as the authorization it consumed.",
+      "out_of_window": "PENDING: the same entry, with the same subject, is run once the window has elapsed; it must refuse at the approval gate, and the row must still read state approved at that moment, so the window -- not a revocation -- is what stopped covering the run.",
+      "expire_sweep": "PENDING: POST /api/ops/maintenance/access/expire must then move that still-approved row to expired."
+    },
+    "probe_revision": {
+      "path": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-decay-20261016/probe.py",
+      "sha256": "9c3e9c7f0ae049e929a1fa7a3ebf685327ee0dc5ca05e858ca0bc6c16a5f7ab6"
+    },
+    "evidence": {
+      "log": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/maintenance-access-decay-20261016/decay-flow.log"
+    },
+    "status": "IN PROGRESS: revocation observed on real rows; the window A/B is scheduled against a one-hour row and cannot be observed before its window elapses."
+  },
+  "downstream_execution_20261016": {
+    "case": "The three declarations that blocked Step D proper (no released construction.standard edition on the customer duty, no registered operator, no narrow import grant) were driven through their governed daily entries after the approval existed.",
+    "edition_release": {
+      "readback_before": "snapshot_count 1, version daily-navigation-standard-10bf72ef4bb0 (stale)",
+      "publish": "PASS: snapshot_id 2, version daily-navigation-standard-b80841059b19, state released, the previous snapshot superseded, snapshot_effective_page_count 90, policy_menu_count 90, platform parameter smart_core.platform_release_db unchanged (sc_tenant_baosheng_dev). A tenant carries its own effective snapshot; it did not gain platform release authority."
+    },
+    "operator_lifecycle": {
+      "readback_before": "operator null, writes 0",
+      "provision": "PASS and idempotent: created false, writes 0, approval_access_id 1, uid 6, login svc-tenant-payload-operator-baosheng, xmlid smart_core.svc_tenant_payload_operator_baosheng, company [1], no stored password, no native API key, not a data operator.",
+      "grant": "PASS: only smart_core.group_smart_core_tenant_payload_importer added, membership 5 -> 6, writes 1, importer_implied_xmlids [] (the narrow group has grown no implied closure)."
+    },
+    "payload_plan": "BLOCKED twice: TPV1_IMPORT_OPERATOR_AUTHORIZATION_MISSING before the grant (expected), then TPV1_CUSTOMER_ADAPTER_INCOMPATIBLE after it. See payload_import_blocker_20261016.",
+    "evidence": {
+      "log_dir": ".runtime/agent-runs/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015/downstream-readback-20261016/",
+      "files": [
+        "edition-readback.log",
+        "edition-publish.log",
+        "operator-readback.log",
+        "operator-provision-2.log",
+        "operator-grant.log",
+        "payload-plan.log",
+        "payload-plan-2.log"
+      ]
+    },
+    "status": "edition and operator halves PASS; the payload half is stopped by a delivery gap that the product mechanism must not absorb"
+  },
+  "payload_import_blocker_20261016": {
+    "case": "TPV1_CUSTOMER_ADAPTER_INCOMPATIBLE from _validate_adapter. Three authorities were read before deciding ownership: the delivered customer module tree, the installed module record, and the payload manifest.",
+    "facts": {
+      "payload": "/data/backups/production_acceptance/payloads/baosheng-rc01-full-historical-attachments-20260811-v10, payload_id baosheng-rc01-full-historical-attachments-20260811-v10, payload_checksum f1adc6fb17b516d42492fe42229df0cce65956ea113978a19243c0de57ec1ed4, customer_module_version 17.0.2.7.0, source_version authorized-odoo17-snapshot-v1",
+      "delivered_tree": "/opt/sce/tenant-addons/daily/bfbc736c51d987777b50c465261ece1d8d22f008/sce_customer_baosheng, __manifest__.py version 17.0.2.8.0, customer_module_manifest.json module_version 17.0.2.8.0",
+      "installed_record": "ir_module_module sce_customer_baosheng state installed, latest_version 17.0.2.8.0 in sc_tenant_baosheng_dev",
+      "adapter_source": "customer_delivery_config.py:39 projects customer_module_version from the module's own customer_module_manifest.json, so the adapter declaration and the module version agree by construction",
+      "other_payloads": "every other payload in the store declares 17.0.2.6.0 or 17.0.2.7.0; none declares 17.0.2.8.0, and no 17.0.2.7.0 tree was ever delivered (the only daily trees are 40b67f99 at 17.0.2.6.0 and bfbc736c at 17.0.2.8.0)"
+    },
+    "verdict": "The payload is stale, the mechanism is right. Neither of the two checks is redundant: _validate_adapter binds the module code to the payload and _assert_customer_module binds the installed module record to it, so code, database and payload must agree. No payload exists for the version this tenant actually runs, so widening the adapter would make the product accept a payload authored against a module build that was never delivered here.",
+    "ownership": "payload production, signing and version alignment belong to the customer/user-module delivery (P2/P4). The product repository must not invent a customer-specific backfill and must not relax the adapter to make a stale payload pass.",
+    "required_next_step": "re-emit and re-sign the payload at customer_module_version 17.0.2.8.0 (or have the module declare the payload module versions it still accepts), then request a new maintenance approval bound to the new payload checksum, because the current approval is bound to f1adc6fb... and expires at 2026-10-16 08:43:20 CST.",
+    "registered_not_fixed": [
+      "superseded_payload_status is carried by the production manifest but has no consumer anywhere under addons/ or scripts/; the effect it names is realised through the module's rejected_payloads list (payload_id + payload_checksum + reason_code), which is a different vocabulary",
+      "schemas/tenant_delivery/customer_payload_manifest.schema.json declares additionalProperties false, yet the production manifest carries keys outside that schema and the runtime validator accepts them because validate_manifest enforces named fields without rejecting unknown ones; the published schema and the enforced schema have drifted apart"
+    ],
+    "status": "diagnosed and registered; owned outside this repository"
   }
 }

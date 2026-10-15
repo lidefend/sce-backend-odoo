@@ -2128,3 +2128,96 @@ odoo 日志 `base already installed; skip bootstrap`。
 | 层 | 命令 | 结果 |
 |---|---|---|
 | L1 | `make verify.platform.security_admin.credential` | **50 tests OK**（原 48，+2：clear 经 SQL 到达无凭据态且不动凭据文件、被弃用的 ORM 写法确实不可用） |
+
+## 2026-10-16 维护授权真实跑通 + 下游三条声明 + 载荷交付缺口
+
+所有者裁决（2026-10-16）把 `lidefend` 定为授权人，并把维护授权定位为 **P0 产品能力**，不得用一次性 shell 代替。
+本节记录该裁决的四项要求在真实环境的落地结果。阶段身份：`HEAD=d92d75e8` 加显式 dirty 范围（迭代期口径）。
+
+### 一、授权链路走产品 HTTP 入口
+
+| 阶段 | 入口 | 结果 |
+|---|---|---|
+| 申请 | `POST /api/ops/maintenance/access/request`（`admin`，平台管理员） | PASS：`access_id=1`、`state=requested`、`requested_by=admin`、`approved_by` 空、`capability=migrate`、`db=sc_tenant_baosheng_dev`、`authorized_operations=[provision, grant]`、`operator=smart_core.svc_tenant_payload_operator_baosheng`、`subject_checksum=f1adc6fb…` |
+| 审批 | `POST /api/ops/maintenance/access/approve`（`lidefend`，安全管理员） | PASS：`state=approved`、`approved_by=lidefend`、窗口 `2026-10-15 20:43:20 → 2026-10-16 08:43:20`（UTC，即北京时间 08:43:20 到期） |
+| 查询 | `GET /api/ops/maintenance/access` | 200、`count=1`、`state=approved` |
+
+裁决要求的七项绑定中，请求人、独立批准人、目标租户与库、操作集合、有效期、原因、证据引用全部落库；
+`evidence_reference` 在申请时声明、之后不可写。
+
+### 二、真实环境反例
+
+| 反例 | 结果 |
+|---|---|
+| 自批拒绝 | `403 PERMISSION_DENIED`：申请人 `admin` 批自己的行被入口先拦 |
+| 无角色拒绝 | `403 PERMISSION_DENIED`（同上，本例与自批在入口层同源） |
+| 未认证拒绝 | approve / read 均 `403 PERMISSION_DENIED` |
+| 服务端自有字段 | `400 MAINTENANCE_ACCESS_SERVER_OWNED_FIELD:approved_by,state`：请求体命名裁决人或状态被**拒绝**而非静默忽略 |
+| 重复执行 | `400 DBGOV1_MAINTENANCE_ACCESS_NOT_REQUESTED:approved`，前后台账行不变 |
+| 审计不可伪造 | 命名裁决人的请求体被拒；申请人本人无法裁决；台账 `requested_by` / `approved_by` 在所有被拒调用前后均未变化 |
+| 目标替换 | 受管入口 `make daily.runtime.duty.operator_grant.remote_provision` 用**非批准摘要**驱动 → `BLOCKED: the approved access is bound to another subject than this run`；入口先读授权并断言全部绑定，再执行生命周期命令，因此拒绝发生在任何写入之前 |
+| 证据引用词典 | 证据引用含被禁传输字符 → `400 DATABASE_GOVERNANCE_MAINTENANCE_EVIDENCE_INVALID_CHARACTERS`，台账仍为 1 行，拒绝即零写入 |
+
+**诚实限制**：HTTP 层无法单独观测“独立性”规则——当前唯一平台管理员 `admin` 不持有安全管理员组，
+因此在角色检查处就被拒，到不了 `DBGOV1_MAINTENANCE_APPROVER_MUST_BE_INDEPENDENT`。
+该规则本身由 `make verify.smart_core.platform_maintenance_access.orm`（15 tests OK）覆盖。
+
+证据：`.runtime/agent-runs/…/maintenance-access-approval-20261016/approval-flow.log`
+（sha256 `3ad626ffcb314ad893b3e71831598a08cd2ae9a5f9b3f72761305e5d818b5a2b`）、
+`.runtime/agent-runs/…/maintenance-access-decay-20261016/decay-flow.log`。
+
+### 三、操作员消费方缺陷修复（提交 `d92d75e8`）
+
+首次真实跑 `provision` 暴露的是**消费方**缺陷，不是机制缺陷：
+
+| 项 | 事实 |
+|---|---|
+| 根因 | 回读把 `required_group_closure_xmlids`（声明组的平台自身传递闭包）作为事实发布，消费方却用两元素硬白名单 `{base.group_user, importer}` 比对账号的**有效**组集合。`res.users.groups_id` 存的是有效集合（直接组 ∪ 隐含闭包），机制自己刚创建的账号永远无法满足该白名单 |
+| 后果 | `provision` 在写事务内已提交身份，随后后置断言失败 → 报 `BLOCKED` 却已写入；且账号一旦存在，之后所有动作（含只读 `readback`）都在 before 断言处失败 → **入口永久死锁** |
+| 修复 | 改为按已发布闭包判定：`{base.group_user} ∪ {声明 importer 组} ∪ 已发布闭包 ∪ 声明组`；未发布闭包时**拒绝**而非放宽；并补正向断言（声明要求的组必须实际持有） |
+| 验证 | `make verify.daily.duty.operator_grant` → **41 tests OK**（原 39，+2） |
+| 反例 | 改回两元素白名单 → 3 failures + 3 errors；恢复后 `sha256sum -c before.sha256` OK |
+
+### 四、下游三条声明（授权之后）
+
+| 声明 | 入口 | 结果 |
+|---|---|---|
+| 生效版次 | `make daily.runtime.duty.edition_release.remote_publish` | **PASS**：`snapshot_id=2`、`version=daily-navigation-standard-b80841059b19`、`state=released`、旧快照转 `superseded`、`snapshot_effective_page_count=90`、`policy_menu_count=90`；`smart_core.platform_release_db` 仍为 `sc_tenant_baosheng_dev`（租户持有生效快照，未取得平台发布权） |
+| 操作员身份 | `…operator_grant.remote_provision` | **PASS 且幂等**：`created=false`、`writes=0`、`approval_access_id=1`、uid 6、无口令、无原生 API Key、非 data operator |
+| 窄授权 | `…operator_grant.remote_grant` | **PASS**：仅新增 `smart_core.group_smart_core_tenant_payload_importer`，`membership 5→6`、`writes=1`、`importer_implied_xmlids=[]` |
+
+### 五、载荷交付缺口：`TPV1_CUSTOMER_ADAPTER_INCOMPATIBLE`
+
+`make daily.runtime.duty.payload.remote_plan` 在授权与授权之后各失败一次：
+第一次 `TPV1_IMPORT_OPERATOR_AUTHORIZATION_MISSING`（预期，授权尚未建立）；
+第二次 `TPV1_CUSTOMER_ADAPTER_INCOMPATIBLE`（真实阻断）。
+
+定性前先读了三个权威来源（只读）：
+
+| 权威 | 事实 |
+|---|---|
+| 载荷 | `baosheng-rc01-full-historical-attachments-20260811-v10`，`customer_module_version=17.0.2.7.0`，`source_version=authorized-odoo17-snapshot-v1`，`payload_checksum=f1adc6fb…` |
+| 已交付客户模块 | `/opt/sce/tenant-addons/daily/bfbc736c…/sce_customer_baosheng`，`__manifest__.py` 与 `customer_module_manifest.json` 均为 **17.0.2.8.0** |
+| 已安装模块记录 | `sc_tenant_baosheng_dev` 内 `ir_module_module.sce_customer_baosheng` = `installed` / **17.0.2.8.0** |
+| 适配器来源 | `customer_delivery_config.py:39` 把 `customer_module_version` 从模块自身 `customer_module_manifest.json` 投影出来，所以适配器声明与模块版本**构造上一致** |
+| 其它载荷 | 载荷库内其余载荷均声明 17.0.2.6.0 / 17.0.2.7.0；**没有任何载荷声明 17.0.2.8.0**；已交付树只有 `40b67f99`（17.0.2.6.0）与 `bfbc736c`（17.0.2.8.0） |
+
+**裁定：载荷过期，机制正确。** 两个校验都不冗余：`_validate_adapter` 绑定「模块代码 ↔ 载荷」，
+`_assert_customer_module` 绑定「已安装模块记录 ↔ 载荷」，三者必须一致。当前租户实际运行的版本没有任何对应载荷，
+放宽适配器等于让产品接受一份针对**从未在此交付过的模块构建**编写的载荷。
+
+- **归属**：载荷生产、签名与版本对齐属**用户模块（P2/P4 载荷交付）**。产品仓库不另建客户专用回填，也不放宽适配器。
+- **下一步**：在 `customer_module_version=17.0.2.8.0` 下重新出包并重新签名（或由模块声明其仍接受的载荷模块版本范围），
+  然后用**新摘要**重新申请一次维护授权——当前授权绑定 `f1adc6fb…`，且窗口 08:43:20 到期。
+
+**登记未修**（本轮不扩大）：
+
+1. `superseded_payload_status` 由生产载荷携带，但 `addons/`、`scripts/` 下**没有任何消费点**；
+   它想表达的效力实际由模块的 `rejected_payloads`（`payload_id` + `payload_checksum` + `reason_code`）实现，两者词汇不同。
+2. `schemas/tenant_delivery/customer_payload_manifest.schema.json` 声明 `additionalProperties: false`，
+   但生产载荷携带该 schema 之外的键，而运行时校验器只强制具名键、不拒绝未知键——**已发布 schema 与执行中的 schema 已漂移**。
+
+### 六、阶段口径
+
+可声明：**批次验收**（授权链路与下游两条声明的产品能力已按受影响集合验证）。
+**未完成**：主线集成、版本发布、产品交付。载荷未入库，因此客户开发租户的数据对账（12386 / 6322 / 29 / 6035）与业务闭环验收尚未开始。
