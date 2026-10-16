@@ -293,7 +293,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "STATUS 2026-10-16 (demo carrier rebuild authorized; D1=A1, D2=formal demo module, D3=preserve the historic source, D4=revalidate by dependency). Steps 1 and 2 are complete locally: the rebuilt carrier is declared, the five read-only entries bind by duty, the governed make lanes now forward that duty, the routing lane no longer defaults to the historic container, the targeted non-zero L2 layer and ci.local.iteration are green, both read-only plans were re-read with the binding wired (duty plan PASS with declaration digest dd4bad27..., retire plan PLAN with failing_guards []), and a live read-only probe proved a bare database name is refused while duty=demo reads the declared carrier sc-demo-dev-db-1. No host write has been made. NEXT: commit the two reviewed change sets, obtain the independent read-only review against that exact candidate, and only then create the sc-demo-dev cluster (daily.runtime.database.duty.apply with the reviewed declaration digest), initialize it, seed it through the product's own demo chain, stand the legacy publisher down with daily.runtime.legacy_stack.retire.apply, and switch 18081/8070 with the maintenance state as the failure default. See demo_carrier_rebuild_20261016.duty_binding_wiring_20261016.",
+  "next_exact_step": "STATUS 2026-10-16 (demo carrier rebuild authorized; D1=A1, D2=formal demo module, D3=preserve the historic source, D4=revalidate by dependency). Steps 1 and 2 are complete and committed locally: the rebuilt carrier is declared, every duty-scoped read-only entry *and* every duty-scoped write/read tool now binds the declared duty instead of a bare database name, the governed make lanes forward that duty, the routing lane no longer defaults to the historic container, the governance text registers the two same-name carriers by carrier identity, the restored tool lanes have their own non-zero L2 routes (unmappedPathCount 10 -> 0), and both read-only plans were re-read with the binding wired (duty plan PASS, retire plan PLAN with failing_guards []). A live read-only probe proved a bare database name is refused while duty=demo reads the declared carrier sc-demo-dev-db-1. No host write has been made. NEXT: obtain the independent read-only review against the current candidate identity (three commits: a95ee015, a14a931a, f45cc5df plus this ledger), and only after that review passes create the sc-demo-dev cluster (daily.runtime.database.duty.apply with the reviewed declaration digest), initialize it, seed it through the product's own demo chain, stand the legacy publisher down with daily.runtime.legacy_stack.retire.apply (maintenance state is the failure default), and switch 18081/8070. See demo_carrier_rebuild_20261016.duty_binding_wiring_20261016 and demo_carrier_rebuild_20261016.s1_1_lane_binding_20261016.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "review_s2_closure_20261015": {
     "authority": "Independent B-line review of 5f5c4dae..4450e674 returned APPROVE_WITH_NOTES with one S2: the registration's control-database write had no test wiring, and the existing assertion pointed at the opposite target",
@@ -420,6 +420,7 @@
     "scripts/ops/daily_candidate_data_continuity_contract_v1.json",
     "scripts/ops/daily_runtime_data_ownership_probe.py",
     "scripts/ops/daily_runtime_data_ownership_repair_plan.py",
+    "scripts/ops/daily_runtime_data_space_onboard.py",
     "scripts/ops/daily_runtime_database_duty.py",
     "scripts/ops/daily_runtime_database_identity_inventory.py",
     "scripts/ops/daily_runtime_duty_database_registration.py",
@@ -430,9 +431,12 @@
     "scripts/ops/daily_runtime_frontend_build_align.py",
     "scripts/ops/daily_runtime_legacy_stack_retire.py",
     "scripts/ops/daily_runtime_lifecycle_fixture_prepare.py",
+    "scripts/ops/daily_runtime_mail_sender_prepare.py",
+    "scripts/ops/daily_runtime_nav_pro_fixture_prepare.py",
     "scripts/ops/daily_runtime_platform_security_admin_bootstrap.py",
     "scripts/ops/daily_runtime_platform_security_admin_credential.py",
     "scripts/ops/daily_runtime_published_face_converge.py",
+    "scripts/ops/daily_runtime_record_identity_resolve.py",
     "scripts/ops/daily_runtime_routing_inventory.py",
     "scripts/ops/daily_runtime_tenant_addons_deliver.py",
     "scripts/ops/daily_runtime_tenant_recovery_contract_v1.json",
@@ -451,6 +455,7 @@
     "scripts/ops/test_daily_candidate_data_continuity.py",
     "scripts/ops/test_daily_runtime_data_ownership_probe.py",
     "scripts/ops/test_daily_runtime_data_ownership_repair_plan.py",
+    "scripts/ops/test_daily_runtime_data_space_onboard.py",
     "scripts/ops/test_daily_runtime_database_duty.py",
     "scripts/ops/test_daily_runtime_database_identity_inventory.py",
     "scripts/ops/test_daily_runtime_duty_database_registration.py",
@@ -461,8 +466,11 @@
     "scripts/ops/test_daily_runtime_frontend_build_align.py",
     "scripts/ops/test_daily_runtime_legacy_stack_retire.py",
     "scripts/ops/test_daily_runtime_lifecycle_fixture_prepare.py",
+    "scripts/ops/test_daily_runtime_mail_sender_prepare.py",
+    "scripts/ops/test_daily_runtime_nav_pro_fixture_prepare.py",
     "scripts/ops/test_daily_runtime_platform_security_admin_bootstrap.py",
     "scripts/ops/test_daily_runtime_published_face_converge.py",
+    "scripts/ops/test_daily_runtime_record_identity_resolve.py",
     "scripts/ops/test_daily_runtime_routing_inventory.py",
     "scripts/ops/test_daily_runtime_tenant_addons_deliver.py",
     "scripts/ops/test_daily_runtime_tenant_topology_inventory.py",
@@ -3971,10 +3979,56 @@
         "ci_local_iteration": "EXIT=0, PASS change_state=dirty, unmappedPathCount=0, outside_scope=[]"
       },
       "identity": {
-        "HEAD": "8927178e5836dbed7cebf6a789b5aaab2d32b73b",
-        "dirty": true
+        "HEAD": "f45cc5df7ab9b367a095b30c68b2af97d51b4f3b",
+        "dirty": true,
+        "dirty_scope": "this run ledger only; every product path of the S1-1 fix is committed",
+        "note": "Refresh to the frozen full fingerprint of the delivery head when this branch rides with the next real product candidate and `make ci.delivery.freeze.prepare` runs. Recorded now so a later reader cannot mistake the pre-fix 8927178e identity for the current one."
       },
       "not_a_pass": "Local units, read-only host probes and two read-only plans only. No cluster was created, no container was stopped, no database was written, no evidence was reissued, and no independent review has run yet."
+    },
+    "s1_1_lane_binding_20261016": {
+      "why_this_record": "The first wiring pass fixed the make lanes, but the write/read *tools* still routed by bare database name in five places, and two of them had been left in a state that would have failed at runtime. The demo carrier rebuild then cut the cluster over on top of that, so the gap had to close before any host write.",
+      "scope": "every duty-scoped lane that answers with a database — mail_sender.prepare, data_space.onboard(.plan), database.identity.inventory, nav_pro_fixture.prepare, record_identity.resolve, lifecycle_fixture.prepare, data_ownership.probe, routing.inventory, tenant.topology.inventory",
+      "carrier_binding_mechanism": "daily_runtime_duty_identity gains odoo_container_of() and odoo_shell_command(); the binding record now carries odoo_container, so the shell command is built from the declaration's compose_project (<project>-odoo-1). No command resolves a target from a remembered container name, an ENV_FILE or a working directory.",
+      "real_regressions_found_and_fixed": {
+        "mail_sender_prepare": "prepare() still called the deleted remote_make helper, so the lane would have raised NameError on its first real run. It now uploads scripts/prod/guard_mail_from.py into the bound container and runs it there, replacing `make prod.guard.mail_from` — which itself resolved its target from a bare DB_NAME.",
+        "lifecycle_fixture_prepare": "main() referenced an undefined `binding`, and the rewrite had dropped SC_ACCEPTANCE_FIXTURE_SCOPE / SC_ENVIRONMENT / SC_ALLOW_DEMO_DATA, which the fixture builder requires. Both are restored, with the values passed explicitly through `docker exec -e` instead of an environment file owned by whichever checkout served the database name."
+      },
+      "landing_assertions": "The evidence payloads now carry database_binding plus a landed-database probe (landed_database / shell_database / RECORD_IDENTITY_DATABASE) so 'the command succeeded' cannot be reported when the shell actually landed in the other carrier.",
+      "confirmation_token_order": "In the five tools that accept a confirmation token the duty binding now happens *after* the token check, so a missing token no longer triggers a remote instance-document read.",
+      "make_lane_change": "DAILY_RUNTIME_DATABASE defaults to empty (a lane-chosen default would be the entry picking the target) and six lanes gained DAILY_RUNTIME_DUTY_BINDING_REQUIRED plus the forwarded --duty; `make -n` expands all six correctly.",
+      "governance_text": "docs/governance/database_architecture_policy.md section 8/12 plus a new 13.1 exception entry: the two carriers that both answer to sc_demo are now distinguished by duty/carrier + cluster + volume, and the fixture / UM-P2 exclusions were changed from a database-name literal to the protected historic source so the legitimate new demo fixture target is not blocked by its own rule.",
+      "inner_loop_mapping": "frontend_dev_incremental gained one Rule per restored tool lane; daily_runtime_database_duty.py is now also routed to its own behaviour lock. unmappedPathCount went 10 -> 0.",
+      "verification": {
+        "python3 -m unittest": {
+          "test_daily_runtime_mail_sender_prepare": "18 OK",
+          "test_daily_runtime_data_space_onboard": "15 OK",
+          "test_daily_runtime_database_identity_inventory": "12 OK",
+          "test_daily_runtime_nav_pro_fixture_prepare": "21 OK",
+          "test_daily_runtime_record_identity_resolve": "28 OK",
+          "test_daily_runtime_lifecycle_fixture_prepare": "22 OK",
+          "test_daily_runtime_data_ownership_probe": "23 OK",
+          "test_daily_runtime_tenant_topology_inventory": "18 OK",
+          "test_daily_runtime_routing_inventory": "22 OK",
+          "test_daily_runtime_duty_identity": "57 OK"
+        },
+        "make": {
+          "verify.baseline.iteration.execution.policy": "16 OK",
+          "verify.frontend.dev.incremental.unit": "31 OK",
+          "verify.daily.runtime.duty.identity.unit": "57 OK",
+          "verify.tenant.product_payload_boundary": "PASS files=8341 values_recorded=false, FIXED_CUSTOMER_IDENTIFIERS=0",
+          "audit.verification.lane_coverage.check": "PASS surface within the frozen baseline (structural coverage only)",
+          "ci.local.iteration": "EXIT=0 PASS coverage=L1_only unmappedPathCount=0 outside_scope=[]"
+        },
+        "py_compile": "every changed tool and test compiles"
+      },
+      "commits": [
+        "fix(daily-runtime): bind every duty-scoped read/write lane to the declared carrier, drop bare-database routing",
+        "docs(governance): register the same-name demo carrier / protected historic source exception",
+        "chore(verify): route the daily-runtime duty tools to their own non-zero lanes"
+      ],
+      "writes": false,
+      "not_a_pass": "Local units, static guards and lane mapping only. No cluster created, no container stopped, no database written, no host probe in this session, and the independent read-only review of this candidate has not run yet."
     }
   }
 }
