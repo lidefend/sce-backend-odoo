@@ -1022,6 +1022,7 @@ guarded by `SC_CONFIRM_DAILY_RUNTIME_TENANT_ADDONS=DELIVER_EXACT_DAILY_RUNTIME_T
 SC_CONFIRM_DAILY_RUNTIME_TENANT_ADDONS=DELIVER_EXACT_DAILY_RUNTIME_TENANT_ADDONS \
 make daily.runtime.tenant.addons.deliver \
   DAILY_RUNTIME_TENANT_CUSTOMER_REPOSITORY=/home/lidefend/workspace/<customer-repository> \
+  DAILY_RUNTIME_TENANT_MODULES="<the module names the reviewed commit carries>" \
   DAILY_RUNTIME_TENANT_SHA=bfbc736c51d987777b50c465261ece1d8d22f008
 ```
 
@@ -1039,9 +1040,11 @@ A read-only `plan` against the same commit now reports `PASS` with the same dige
 modules, and the destination's writable-path set is empty. The `plan` run against `40b67f99…` earlier
 was a report-layer readback of a *different* tree and never wrote anything.
 
-Unit verification: `make verify.daily.runtime.tenant.addons` — **21 tests OK** (source validation,
+Unit verification: `make verify.daily.runtime.tenant.addons` — **22 tests OK** (source validation,
 archive module set, digest ignore/change, the remote program reusing the same digest implementation,
-six verdict counter-examples, and the command layer).
+six verdict counter-examples, and the command layer). The delivery above ran on the earlier revision
+that carried 21 cases; this batch added the required-module case, so the count is 22 at the current
+head and the recorded 21 belongs to that earlier commit identity.
 
 ### What this does **not** close
 
@@ -2409,3 +2412,44 @@ PR/定时工作流选中它们 —— 这正是 `on-demand` 的正确处置，�
 结果 `audit.verification.lane_coverage.check` PASS。
 
 同一冻结 HEAD 的 Quick 分 8 片运行：1–7 片记录通过，仅 0 片因该 check 失败 —— 因此没有尚未发现的同级失败。
+
+### B 线独立复核（2026-10-16）
+
+`af7bb718..45dee9a0`（评审 HEAD `45dee9a0`，工作区干净）由**独立只读执行体**复核，结论 **APPROVE**，无 S1/S2。
+
+| 核验点 | 结论 |
+|---|---|
+| 声明解析优先级与 fail-closed | PASS：override 只在 `managed_instances_source` 被消费；缺键、占位符、命名违规、dbfilter/`section_11` 自相矛盾、重复职责、非法 schema、ssh 空读全部抛错；占位符正则只用于检测，不存在“替换后执行”路径 |
+| 受管物化原子性 | PASS：plan 不写；同版本幂等不重写、不生成 `.previous`；写入走 `ops_root` 0700 + `.previous` + `.incomplete` 0600 + `os.replace` + 摘要回读 |
+| 产品树无客户身份 | PASS：HEAD 仅 4 个文件命中，全部是守卫自身的 `NEGATIVE_POLICY_FILES`；声明模板与合成夹具无客户身份；`files=8341` |
+| 无守卫豁免／降级 | PASS：`verification_lane_coverage.py`、baseline、exemptions 本范围未改动；覆盖登记只新增 2 条；注销入口在 target 仍有引用时拒绝；两个守卫仍接线、无 skip |
+| 行为回归／参数化 | PASS：固定客户模块常量改为必填入参并加非空守卫；恢复契约由 identity 派生角色与备份前缀且拒绝重述；无悬空引用 |
+| 测试自持性 | PASS：`SC_DAILY_RUNTIME_DUTY_INSTANCES=/nonexistent` 下十个 duty 家族套件全通过；fail-closed 用 `assertRaises` 断言，不只断言成功 |
+| 未改写已发布历史 | PASS：`origin/main` 是 `af7bb718` 的祖先；5 个提交单父线性，无 rebase／amend 痕迹 |
+
+复核提出 3 条 S3，均不阻断代码合入：
+
+- **S3-1（本批关闭）**：两处运维示例漏了新必填变量，照抄会在任何写入之前 `exit 2`。已补
+  `DAILY_DUTY_RECOVERY_DIR_PATTERN` 与 `DAILY_RUNTIME_TENANT_MODULES` 及 fail-closed 关系说明。
+- **S3-2（本批关闭）**：记录写 `21 tests OK`，HEAD 实为 **22**。已更正，并把旧的 21 绑定到产生它的旧提交身份，
+  不再被当作现状阅读。
+- **S3-3（记录未修）**：受管入口读 override 时不打印告警。声明摘要已使改道 fail-closed，因此不构成缺陷，
+  作为可选加固登记。
+
+复核**未重跑**交付车道与主机侧物化（只读约束），以等价只读检查替代：`audit.verification.lane_coverage.check`
+PASS、`verify.test.coverage.registry` PASS，以及两份登记的程序化比对一致。
+
+### 历史边界的精确口径（2026-10-16 复核补充）
+
+复核独立确认：该客户标识**已存在于已发布的 `origin/main` 历史**（`3f3824b5^` 的
+`docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md`，该 blob 在
+`3f3824b5` 把它从工作树移除后仍可达）。强制门禁都不在历史里扫描该标识：
+`repository_clean_history_guard.py` 覆盖全部可达对象，但规则集是客户模块路径、`C_`/`CWGL_` 形态来源键、
+历史标识与密钥，不含品牌标识；`public_guard` 另加的是**工作树**范围的密钥与个人数据扫描。
+`scripts/ops/gitee_publication_scope.py` 会把携带该标识的新增 blob 判为 `publication=blocked`，但它登记为
+零引用运维工具（待接线或退役），不在任何门禁内。
+
+因此所有者的条件（“若发布边界要求历史同样无客户身份”）在当前状态下**不可满足**：该要求已被已发布历史违反，
+而唯一满足它的方式（改写已发布历史）已被明确禁止。可满足且被强制的边界仍是**工作树／HEAD 干净**，
+本候选不引入新的暴露类别。若日后要求产品仓库历史同样干净，须先接线该暴露审计并取得单独裁定；
+本轮两项都不做，也不隐去这条事实。

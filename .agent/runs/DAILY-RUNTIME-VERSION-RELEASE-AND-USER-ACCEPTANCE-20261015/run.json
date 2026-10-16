@@ -287,7 +287,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "(1) re-run the one Quick for the new frozen head, because the coverage-registry gate was the only failure and its input changed; (2) B-line read-only independent review of this batch (boundary relocation, managed materialisation, host-side readback, registry seeding); (3) push to GitHub and let the remote gates decide merge readiness; (4) hand the payload staleness to the user-module delivery (re-emit at the installed version, re-sign, re-approve) and do not widen the adapter; (5) after that, the customer development tenant's data reconciliation and business acceptance. No step may be replaced by writing the model directly, fabricating an approval, reusing admin or relaxing a mechanism.",
+  "next_exact_step": "(1) B-line read-only independent review of this batch: APPROVE, no S1/S2, two document S3 closed in this batch and one recorded as hardening only; (2) re-run freeze preparation and the one exact-head Quick, then push to GitHub and let the remote gates decide merge readiness; (3) hand the payload staleness to the user-module delivery (re-emit at the installed version, re-sign, re-approve) and do not widen the adapter; (4) after that, the customer development tenant's data reconciliation and business acceptance. No step may be replaced by writing the model directly, fabricating an approval, reusing admin or relaxing a mechanism.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "review_s2_closure_20261015": {
     "authority": "Independent B-line review of 5f5c4dae..4450e674 returned APPROVE_WITH_NOTES with one S2: the registration's control-database write had no test wiring, and the existing assertion pointed at the opposite target",
@@ -3136,7 +3136,16 @@
         "method": "git log -S<token> over the pending range and over origin/main; git grep over HEAD",
         "note": "the four HEAD files are the negative-policy carriers of the token list, which the guard already treats as legitimate"
       },
-      "consequence": "A clean HEAD is the enforced boundary. Historical commits still carry the identifier, so the release boundary must not be described as history-clean; if it ever must be, the governed candidate rebuild path generates a fresh candidate and the raw evidence is preserved privately."
+      "consequence": "A clean HEAD is the enforced boundary. Historical commits still carry the identifier, so the release boundary must not be described as history-clean; if it ever must be, the governed candidate rebuild path generates a fresh candidate and the raw evidence is preserved privately.",
+      "independent_confirmation_20261016": {
+        "confirmed": [
+          "HEAD carries the token in exactly four files and origin/main carries the same four, all of them NEGATIVE_POLICY_FILES.",
+          "The token is already inside published origin/main history: the tree of 3f3824b5^ carries it in docs/ops/iterations/daily_dev_mainline_product_acceptance_closeout_20261009.md, and that blob stays reachable after 3f3824b5 removed it from the tree."
+        ],
+        "boundary_shape": "No required gate scans this token in history. repository_clean_history_guard.py does scan every reachable object, but its rule set is customer module paths, C_/CWGL_ style source keys, legacy identifiers and secrets, not the brand token; public_guard adds only worktree-scope secret and personal-data scans. scripts/ops/gitee_publication_scope.py would classify a novel blob carrying the token as publication=blocked, but it is registered as zero-reference ops tooling pending wiring or retirement and sits in no gate.",
+        "why_the_condition_is_not_operative": "The owner authorised the push unless the release boundary requires an identity-free history. That requirement is already violated by published origin/main and can only be met by rewriting published history, which the owner forbade. The operative and satisfiable boundary therefore stays a clean HEAD, and this candidate adds no new class of exposure.",
+        "still_recorded_not_hidden": "If the owner later wants a history-clean product repository, the exposure audit must first be wired and the published history rewritten under an explicit ruling. Neither is done in this batch."
+      }
     },
     "managed_materialisation_20261016": {
       "status": "materialised",
@@ -3350,5 +3359,54 @@
       "verification": "A bucket-wise comparison against HEAD shows the two target entries removed and no other entry changed; the writer only relocated one entry into its sorted position.",
       "quick_shard_evidence": "At the frozen head the Quick ran 8 shards: shards 1-7 recorded a pass and shard 0 failed only on this check, so no sibling failure is left undiscovered."
     }
+  },
+  "independent_review_identity_relocation_20261016": {
+    "authority": "B-line read-only independent review by a separate executor; no file, database, account or container write",
+    "reviewed_range": "af7bb718..45dee9a0",
+    "reviewed_head": "45dee9a0a6f7f1d8d60dfc7a0297c2eaa4cb9098",
+    "verdict": "APPROVE",
+    "s1": [],
+    "s2": [],
+    "points_verified": {
+      "declaration_resolution_priority_and_fail_closed": "PASS. The override environment variable is consumed only through managed_instances_source; a missing key, a placeholder, a naming violation, a dbfilter/section_11 contradiction, a duplicate duty, an invalid schema and an empty ssh read all raise. The placeholder pattern is used for detection only, so no 'substitute the placeholder, then execute' path exists.",
+      "managed_materialisation_atomicity": "PASS. plan writes nothing; the same revision is an idempotent no-op that rewrites nothing and creates no .previous; the write path ensures ops_root at 0700, keeps a .previous copy, stages an .incomplete file at 0600 and swaps it with os.replace, then reads the digest back.",
+      "product_tree_free_of_customer_identity": "PASS. HEAD carries the token in exactly four files and all four are NEGATIVE_POLICY_FILES of the guard itself; the declaration template and the synthetic fixture carry no customer identity; the guard ran with FIXED_CUSTOMER_IDENTIFIERS=0, CUSTOMER_PAYLOAD_FILES=0, files=8341.",
+      "no_guard_exemption_or_downgrade": "PASS. verification_lane_coverage.py, the baseline and the exemptions are untouched in this range; test_coverage_registry.yaml only gains two entries with no modification, no deletion and no group downgrade; verification_lane_dispositions.json only unregisters two targets, and the unregister function refuses a target that still has references; both guards stay wired with no skip and no widened allowlist.",
+      "behaviour_regression_and_parameterisation": "PASS. The deleted fixed customer-module constants become required operator parameters with non-empty guards at the entry; the recovery contract derives the database role and backup prefix from identity and refuses any conflicting restatement; no dangling reference to the removed constants remains.",
+      "test_self_containment": "PASS. All ten duty-family suites pass with SC_DAILY_RUNTIME_DUTY_INSTANCES=/nonexistent; the resolution tests clear the environment; the fail-closed cases are asserted with assertRaises, not only with success paths.",
+      "published_history_not_rewritten": "PASS. origin/main is an ancestor of af7bb718; the five commits are single-parent and linear with no rebase or amend trace."
+    },
+    "s3": [
+      {
+        "id": "S3-1",
+        "finding": "Two operator examples omitted variables that this batch turned into required, fail-closed inputs, so the runbook was not literally executable (it would exit 2 before any write).",
+        "files": [
+          "docs/ops/daily_candidate_data_continuity_runbook_v1.md",
+          "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md"
+        ],
+        "disposition": "closed in this batch: both examples now carry DAILY_DUTY_RECOVERY_DIR_PATTERN and DAILY_RUNTIME_TENANT_MODULES, with the fail-closed relation stated",
+        "class": "operating-document accuracy; no code, credential or data risk"
+      },
+      {
+        "id": "S3-2",
+        "finding": "The record stated 21 tests for verify.daily.runtime.tenant.addons while the head has 22.",
+        "files": [
+          "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md"
+        ],
+        "disposition": "closed in this batch: corrected to 22, and the earlier 21 is now bound to the earlier commit identity that produced it instead of being read as the current count",
+        "class": "evidence accuracy; no code or data risk"
+      },
+      {
+        "id": "S3-3",
+        "finding": "A managed entry reads the operator environment override without echoing a warning; the declaration digest already makes a silent redirection fail closed.",
+        "disposition": "recorded, not fixed: hardening only, not a defect. A warning on source=override remains a candidate follow-up.",
+        "class": "hardening suggestion"
+      }
+    ],
+    "not_reviewed_by_the_review": [
+      "The Quick delivery lane and the remote host-side materialisation were not re-run under the read-only constraint. Equivalent read-only checks were substituted: audit.verification.lane_coverage.check PASS, verify.test.coverage.registry PASS, and a programmatic diff of both registries."
+    ],
+    "stage_status": "Batch acceptance only. Mainline integration, version release and product delivery are not claimed.",
+    "evidence": "The review ran as a separate read-only executor against the frozen head; the findings are summarised here and the raw transcript stays outside the product tree."
   }
 }

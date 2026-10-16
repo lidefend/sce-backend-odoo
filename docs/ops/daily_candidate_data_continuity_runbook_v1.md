@@ -167,13 +167,20 @@ make daily.runtime.duty.recovery.remote_backup \
 
 make daily.runtime.duty.recovery.remote_validate \
   DAILY_CANDIDATE_SSH_HOST=sc-root \
+  DAILY_DUTY_RECOVERY_DIR_PATTERN=<the selected duty's recovery directory pattern, as declared for that duty> \
   DAILY_DUTY_RECOVERY_BACKUP_DIR=<the duty backup namespace>/<backup set id, as read back from the baseline step>
 
 make daily.runtime.duty.recovery.remote_restore_drill \
   DAILY_CANDIDATE_SSH_HOST=sc-root \
+  DAILY_DUTY_RECOVERY_DIR_PATTERN=<the selected duty's recovery directory pattern, as declared for that duty> \
   DAILY_DUTY_RECOVERY_BACKUP_DIR=<the duty backup namespace>/<backup set id, as read back from the baseline step> \
   CONFIRM_DAILY_CANDIDATE_RESTORE_DRILL=RESTORE_ISOLATED_COPY
 ```
+
+Both variables are required and fail closed: the entry refuses an empty
+`DAILY_DUTY_RECOVERY_DIR_PATTERN` and refuses a `DAILY_DUTY_RECOVERY_BACKUP_DIR`
+that does not match that pattern, so a duty's backup set cannot be pointed at
+another duty's directory.
 
 The remote tool tree is installed from one immutable commit, so these targets
 refuse a dirty worktree; commit the reviewed tool revision first. The
