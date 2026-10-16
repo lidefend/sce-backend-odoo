@@ -3556,9 +3556,15 @@ class TestDeclaredStateTableIsTheOnlyStateWriter(BusinessTransactionCase):
             }
         )
         self.partner = self.env["res.partner"].create({"name": "State Fact Partner"})
+        tax_group = self.env["account.tax.group"].create({
+            "name": "State Fact VAT", "company_id": self.company.id,
+            "country_id": self.env.ref("base.cn").id,
+        })
         self.tax = self.env["account.tax"].create(
             {
                 "name": "State Fact VAT 9%",
+                "tax_group_id": tax_group.id,
+                "country_id": self.env.ref("base.cn").id,
                 "amount": 9.0,
                 "amount_type": "percent",
                 "type_tax_use": "purchase",

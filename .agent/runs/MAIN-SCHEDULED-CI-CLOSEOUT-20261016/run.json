@@ -32,7 +32,15 @@
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
-    "scripts/ci/personal_data_false_positives.json"
+    "scripts/ci/personal_data_false_positives.json",
+    "scripts/ci/backend_impact_plan.py",
+    "scripts/ci/test_backend_impact_plan.py",
+    "scripts/ci/ci_risk_classifier.py",
+    ".github/workflows/professional_quality_gate.yml",
+    "make/ci.mk",
+    "scripts/ci/test_ci_risk_classifier.py",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md"
   ],
   "environment": {
     "kind": "offline",
@@ -40,7 +48,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Commit reviewed generated evidence and owned source; run one clean exact-head Quick; independent frozen review and external archive; publish PR and full isolated backend suite.",
+  "next_exact_step": "Freeze owner-requested incremental premerge CI; one exact-head Quick, independent review, publish updated PR669; required professional job now waits for affected backend suite. Do not dispatch duplicate full backend manually.",
   "source_runs": [
     38818510036,
     38811434965,
@@ -337,6 +345,22 @@
     "sce-ci-38818510036.log": {
       "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-ci-38818510036.log",
       "sha256": "3e0409f8628e7c045ca48429cc8208a4621c23c80205d8400da329fa9069c787"
+    },
+    "sce-ci-38850683334.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-ci-38850683334.log",
+      "sha256": "685fd8b75b13a188640ec13d102907fdcc5d6bcd48e8015736a7c350e34a6a6e"
+    },
+    "sce-ci-state-writer-targeted.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-ci-state-writer-targeted.log",
+      "sha256": "8aced11acc68c86c6704120202d073fd78a870e4c05148ca0b52ad0177f9083b"
+    },
+    "sce-ci-incremental-final-unit.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-ci-incremental-final-unit.log",
+      "sha256": "12d328a41c426fe65ab02f675407a8350de3f665161b3702911efc9b40f7b86a"
+    },
+    "sce-ci-incremental-tests.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-ci-incremental-tests.log",
+      "sha256": "e3c74ca32520b0530bfc82ee8220e0cafb6649c4893d4cba2d19871b2a6391d4"
     }
   },
   "validation_scope": {
@@ -354,5 +378,38 @@
     "unchanged_inputs": "all product/test/workflow source and generated reports; retain prior affected behavior and generated preparation",
     "targeted_result": "security.personal_data_scan and repository.clean_history.scan PASS; independent exact-blob review PASS",
     "next": "commit registry and run update, refreeze, exact-head Quick"
+  },
+  "incremental_boundary": {
+    "layer": "P4",
+    "target": "CI module impact selection and required-check wiring",
+    "reason": "CI execution policy, no product semantics",
+    "scope": "base/head graph, deletion/rename, shared runner dependencies, isolated existing suite",
+    "validation": "L1 syntax; L2 planner and workflow negative tests; L5 exact candidate CI. No L3/L4 product changes."
+  },
+  "incremental_ci": {
+    "status": "implementation_and_targeted_tests_passed_remote_pending",
+    "policy": "Nightly full unchanged; PR exact base/head module+consumer closure; shared runner/unknown affects full; excluded modules not claimed as tests or cached passes",
+    "selection": "base/head manifest union plus explicit odoo.addons imports; no-renames includes deletion and both owners; per-seed runnable coverage fail-closed",
+    "enforcement": "existing required professional_quality_gate depends on reusable backend suite; authorization/plan failure, missing output, cancelled/failed/skipped required run denied",
+    "tests": {
+      "planner_and_execution_truth_table": 15,
+      "risk_classifier": 29,
+      "workflow_dispatch": 6,
+      "security": 16
+    },
+    "independent_review": "local_env_review: two findings fixed, no new blocking findings",
+    "invalidation": "New workflows/planner invalidate CI and Quick, not unchanged P1 behavior. Fixture only invalidates 8 methods. Current shared-runner scope selects14modules; future leaf changes select their consumer closure. No result cache introduced."
+  },
+  "remote_recovery": {
+    "source_head": "605c4aa3ca89bb739fff8a56b37282fcaf5824ee",
+    "run": 38850683334,
+    "attempted_modules": 14,
+    "planned_modules": 14,
+    "status": "failed",
+    "root_cause": "TestDeclaredStateTableIsTheOnlyStateWriter synthetic tax missing explicit tax group on clean DB;8setup errors",
+    "fix": "Own company tax group and country explicitly declared",
+    "targeted_command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestDeclaredStateTableIsTheOnlyStateWriter",
+    "targeted_count": 8,
+    "targeted_status": "passed"
   }
 }

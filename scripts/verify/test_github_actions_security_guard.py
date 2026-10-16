@@ -21,6 +21,19 @@ class GitHubActionsSecurityGuardTests(unittest.TestCase):
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")
 
+    def test_same_commit_reusable_workflow_exception_is_exact(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = (ROOT / '.github/workflows/professional_quality_gate.yml').read_text()
+            self.write(root, 'backend_test_suite.yml', (ROOT / '.github/workflows/backend_test_suite.yml').read_text())
+            self.write(root, 'professional_quality_gate.yml', source)
+            self.assertNotIn('ACTION_NOT_PINNED_TO_SHA', {x.classification for x in guard.scan(root)})
+            for replacement in ('./.github/workflows/other.yml',
+                                './.github/workflows/backend_test_suite.yml@main'):
+                self.write(root, 'professional_quality_gate.yml', source.replace(
+                    './.github/workflows/backend_test_suite.yml', replacement))
+                self.assertIn('ACTION_NOT_PINNED_TO_SHA', {x.classification for x in guard.scan(root)})
+
     def test_safe_public_guard_passes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

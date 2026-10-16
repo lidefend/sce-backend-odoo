@@ -9,8 +9,8 @@
     "odoo_tag_declarations": 380,
     "gated_declarations": 90,
     "uncovered_declarations": 290,
-    "ci_unit_scripts": 14,
-    "ci_unit_scripts_wired": 14,
+    "ci_unit_scripts": 15,
+    "ci_unit_scripts_wired": 15,
     "ci_unit_scripts_unwired": 0
   },
   "odoo_tags": [
@@ -2259,6 +2259,19 @@
     }
   ],
   "ci_unit_scripts": [
+    {
+      "group": "scripts/ci/test_backend_impact_plan.py",
+      "status": "gated",
+      "kind": "ci_unit_script",
+      "declarations": 1,
+      "files": [
+        "scripts/ci/test_backend_impact_plan.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make/ci.mk"
+      ]
+    },
     {
       "group": "scripts/ci/test_backend_test_suite_dispatch_contract.py",
       "status": "gated",

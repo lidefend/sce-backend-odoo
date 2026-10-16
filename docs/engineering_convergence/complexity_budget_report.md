@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4809`
+- Scanned files: `4811`
 - Files requiring split plan: `66`
 - Files above warning threshold: `124`
 
@@ -22,7 +22,7 @@ Generated from repository source files. This report is informational during the 
 | 4476 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4353 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3787 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
-| 3713 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
+| 3719 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3705 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3641 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3472 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
@@ -196,11 +196,11 @@ Generated from repository source files. This report is informational during the 
 | 488 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
 | 423 | Shell script | `scripts/demo/verify.sh` |
-| 359 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
+| 397 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 356 | Shell script | `scripts/ops/git_safe_push.sh` |
+| 355 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 345 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |
 | 343 | YAML workflow | `.github/workflows/infra-stage-gate.yml` |
-| 328 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 314 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |
 | 312 | Shell script | `scripts/ci/orm_result_guard.sh` |
 | 308 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
@@ -222,7 +222,7 @@ Generated from repository source files. This report is informational during the 
 | 4476 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4353 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3787 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
-| 3713 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
+| 3719 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3705 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3641 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3472 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |

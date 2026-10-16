@@ -69,6 +69,11 @@ def scan(root: Path) -> list[Finding]:
         for action_match in ANY_ACTION.finditer(text):
             line = action_match.group(0).strip()
             reference = action_match.group(1)
+            if reference == './.github/workflows/backend_test_suite.yml':
+                # Same-commit reusable workflow, never a mutable external ref.
+                target = root / reference
+                if path.name == 'professional_quality_gate.yml' and target.is_file():
+                    continue
             if line not in pinned_lines:
                 findings.add(Finding("GA005", f"{relative}:{reference}", "ACTION_NOT_PINNED_TO_SHA"))
             elif not reference.startswith(("actions/", "github/")):

@@ -31,7 +31,7 @@ class BackendTestSuiteDispatchContractTest(unittest.TestCase):
         workflow = (ROOT / ".github/workflows/backend_test_suite.yml").read_text(encoding="utf-8")
         self.assertIn("workflow_dispatch:", workflow)
         self.assertIn("head_ref:", workflow)
-        self.assertIn("HEAD_REF: ${{ github.event.inputs.head_ref || github.ref_name }}", workflow)
+        self.assertIn("HEAD_REF: ${{ inputs.head_ref || github.event.inputs.head_ref || github.ref_name }}", workflow)
         self.assertIn("CI_PROJECT_NAME: sc-suite-${{ github.run_id }}", workflow)
         self.assertIn("docker compose down -v --remove-orphans", workflow)
 

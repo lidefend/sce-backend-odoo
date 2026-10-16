@@ -27,6 +27,7 @@ jobs:
       CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
     outputs:
+      backend_impact_required: ${{ steps.backend_impact.outputs.required }}
       lane: ${{ steps.risk.outputs.lane }}
       professional_mode: ${{ steps.risk.outputs.professional_mode }}
       frontend_changed: ${{ steps.risk.outputs.frontend_changed }}
@@ -77,6 +78,25 @@ jobs:
             --event "${GITHUB_EVENT_NAME}" \
             --ref "${GITHUB_REF}" \
             --github-output "${GITHUB_OUTPUT}"
+
+      - name: Plan affected backend modules from exact trees
+        id: backend_impact
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          python3 scripts/ci/backend_impact_plan.py --base "${BASE_SHA}" \
+            --head "${CHECKOUT_SHA}" --output "${RUNNER_TEMP}/backend-impact.json" \
+            --github-output "${GITHUB_OUTPUT}"
+          cat "${RUNNER_TEMP}/backend-impact.json" >> "${GITHUB_STEP_SUMMARY}"
+
+  backend_impact_suite:
+    needs: professional_authorization
+    if: github.event_name == 'pull_request' && needs.professional_authorization.outputs.backend_impact_required == 'true'
+    uses: ./.github/workflows/backend_test_suite.yml
+    with:
+      base_sha: ${{ github.event.pull_request.base.sha }}
+      head_sha: ${{ github.event.pull_request.head.sha }}
+      head_ref: ${{ github.event.pull_request.head.ref }}
 
   python310_runtime_compatibility:
     name: python310_runtime_compatibility
@@ -142,10 +162,10 @@ jobs:
 
   professional_quality_gate:
     name: professional_quality_gate
-    needs: professional_authorization
+    needs: [professional_authorization, backend_impact_suite]
     if: >-
       always() &&
-      needs.professional_authorization.result == 'success' &&
+      (github.event.action != 'labeled' || github.event.label.name == 'ci:candidate') &&
       github.repository == 'lidefend/sce-backend-odoo' &&
       ((github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository) ||
@@ -174,6 +194,24 @@ jobs:
         working-directory: ${{ github.workspace }}
 
     steps:
+      - name: Enforce affected backend execution
+        env:
+          AUTHORIZATION_RESULT: ${{ needs.professional_authorization.result }}
+          IMPACT_REQUIRED: ${{ needs.professional_authorization.outputs.backend_impact_required }}
+          EVENT_NAME: ${{ github.event_name }}
+          IMPACT_RESULT: ${{ needs.backend_impact_suite.result }}
+        run: |
+          set -euo pipefail
+          test "${AUTHORIZATION_RESULT}" = success
+          if [ "${EVENT_NAME}" = pull_request ]; then
+            test "${IMPACT_REQUIRED}" = true || test "${IMPACT_REQUIRED}" = false
+          fi
+          if [ "${IMPACT_REQUIRED}" = "true" ]; then
+            test "${IMPACT_RESULT}" = success
+          else
+            test "${IMPACT_RESULT}" = skipped
+          fi
+
       - name: Checkout exact authoritative GitHub commit
         run: |
           set -euo pipefail

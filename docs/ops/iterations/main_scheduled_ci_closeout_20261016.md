@@ -68,3 +68,35 @@ to freeze, not remote CI success. No daily/customer database changes or deployme
 Final exact-head Quick, independent frozen review and full isolated GitHub backend
 suite remain required. Release/frontend schedule failures will be checked through
 the affected candidate gates. All original logs are indexed in run.json.
+
+
+## Owner-requested incremental premerge backend closure
+
+P4 owns the exact-tree impact planner and required-check wiring. Nightly remains
+full. PR execution selects changed module owners and transitive consumers from
+both base/head manifests and explicit cross-module imports. Deletion and rename
+both sides are retained; shared runner or unknown inputs select full, with reasons.
+Each changed owner must have executable coverage; another covered owner cannot
+mask a gap. Excluded modules are outside impact, not fabricated passing receipts.
+No second cache or result-reuse authority is introduced.
+
+`professional_quality_gate` waits for the selected reusable backend runner and
+fails on authorization/plan failure, missing/invalid required output, failed,
+cancelled or skipped required execution. The reusable runner re-derives the plan
+from exact trees, retains per-module isolated databases and existing nonzero,
+identity and complete-plan execution checks. The registered sc_gate/sc_smoke
+suite selection remains unchanged, as do separate specialized ORM gates.
+
+This batch changes shared execution infrastructure, so its deterministic impact
+is the full 14-module set. This is not the default for every merge. Leaf changes
+select only their owner/consumer closure; docs/frontend-only inputs declare an
+empty backend set. Tests prove deletion, rename, old dependency retention,
+unknown/global fallback, individually uncovered seeds and the actual aggregate
+shell failure truth table (15 planner tests,29 risk tests,6 dispatch tests,
+16 security tests). Independent review's two fail-open findings were fixed.
+
+Old frozen run38850683334 attempted14/14; only eight methods in
+TestDeclaredStateTableIsTheOnlyStateWriter failed setup because clean installation
+had no implicit tax group. Explicit company-owned group and country fixed the
+fixture; governed local.dev targeted8/8 passed. No lifecycle assertion weakened.
+Remote execution of the new workflow and final integration remain pending.

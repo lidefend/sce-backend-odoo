@@ -8,6 +8,17 @@ name: backend_test_suite
 # is never accepted as a passing result.
 
 on:
+  workflow_call:
+    inputs:
+      base_sha:
+        required: true
+        type: string
+      head_sha:
+        required: true
+        type: string
+      head_ref:
+        required: true
+        type: string
   schedule:
     - cron: "37 19 * * *"  # 03:37 Asia/Shanghai nightly
   workflow_dispatch:
@@ -38,14 +49,17 @@ jobs:
       github.repository == 'lidefend/sce-backend-odoo' &&
       (github.event_name == 'schedule' ||
       (github.event_name == 'workflow_dispatch' &&
-      github.actor == github.repository_owner))
+      github.actor == github.repository_owner) ||
+      (github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository))
     runs-on: [self-hosted, huawei, ubuntu22]
     timeout-minutes: 240
 
     env:
       CI_REMOTE_URL: https://github.com/lidefend/sce-backend-odoo.git
-      HEAD_REF: ${{ github.event.inputs.head_ref || github.ref_name }}
-      HEAD_SHA: ${{ github.sha }}
+      HEAD_REF: ${{ inputs.head_ref || github.event.inputs.head_ref || github.ref_name }}
+      HEAD_SHA: ${{ inputs.head_sha || github.sha }}
+      IMPACT_BASE: ${{ inputs.base_sha }}
       CI_PROJECT_NAME: sc-suite-${{ github.run_id }}
       COMPOSE_PROJECT_NAME: sc-suite-${{ github.run_id }}
       DB_NAME: sc_suite_ci
@@ -76,13 +90,26 @@ jobs:
           echo "GitHub checkout failed for ${HEAD_REF}/${HEAD_SHA}" >&2
           exit 1
 
+      - name: Resolve exact premerge impact
+        if: env.IMPACT_BASE != ''
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "${IMPACT_BASE}"
+          test "$(git rev-parse HEAD)" = "${HEAD_SHA}"
+          python3 scripts/ci/backend_impact_plan.py --base "${IMPACT_BASE}" \
+            --head "${HEAD_SHA}" --output "${RUNNER_TEMP}/backend-impact.json"
+          cat "${RUNNER_TEMP}/backend-impact.json" >> "${GITHUB_STEP_SUMMARY}"
+
       - name: Resolve module list
         run: |
           set -euo pipefail
           override="${{ github.event.inputs.modules }}"
           MODULES=""
           PYTHON_MODULES=""
-          if [ -n "${override}" ]; then
+          if [ -n "${IMPACT_BASE}" ]; then
+            # Caller cannot supply a smaller override than the exact-tree plan.
+            candidates="$(python3 -c 'import json,sys; print(" ".join(json.load(open(sys.argv[1]))["modules"]))' "${RUNNER_TEMP}/backend-impact.json")"
+          elif [ -n "${override}" ]; then
             candidates="${override//,/ }"
           else
             candidates="$(find addons demo_addons -maxdepth 2 -type d -name tests -printf '%h\n' \

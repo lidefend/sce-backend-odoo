@@ -788,6 +788,7 @@ verify.unified_page_contract.lite: guard.prod.forbid
 # github-actions security sweep.
 .PHONY: verify.ci.workflow.contract
 verify.ci.workflow.contract: guard.prod.forbid
+	@python3 scripts/ci/test_backend_impact_plan.py
 	@python3 -m py_compile scripts/ci/test_backend_test_suite_dispatch_contract.py
 	@python3 scripts/ci/test_backend_test_suite_dispatch_contract.py
 	@echo "[verify.ci.workflow.contract] PASS"
