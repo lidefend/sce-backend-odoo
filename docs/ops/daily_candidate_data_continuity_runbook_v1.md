@@ -65,10 +65,19 @@ disk" is not "distinct `store_fname` values plus nothing else".
   even when the transaction later aborts. It is not an attachment body, is never
   referenced by `store_fname`, is counted separately, and is kept — never
   deleted to make a check pass.
+- **Body pending collection** — a store-named body that no live row references
+  *and* whose name is listed in `checklist`. Odoo 17 never unlinks an attachment
+  file on deletion: `_file_delete()` only marks the name, and
+  `_gc_file_store_unsafe()` unlinks the body and then the marker. Such a body is
+  a deleted attachment waiting for the collector. It is counted separately
+  (`pending_collection_body_count`) and kept: demanding its absence would only
+  assert that the collector had already run, not that the filestore is correct.
 - **Unknown** — everything else: an unreferenced file that merely looks like a
-  store name, a non-empty or badly named `checklist` entry, and any symlink,
-  fifo, socket or device. These keep blocking so they are investigated.
-  Excluding a directory by name is not a classification.
+  store name while carrying no collection marker, a non-empty or badly named
+  `checklist` entry, and any symlink, fifo, socket or device. These keep
+  blocking so they are investigated. Without a marker nothing in Odoo will ever
+  collect such a file, which is what makes it unexplained. Excluding a directory
+  by name is not a classification.
 
 The two closures are asserted separately at restore: every referenced
 attachment came back (`referenced_body_count`, no missing/corrupt body) and the

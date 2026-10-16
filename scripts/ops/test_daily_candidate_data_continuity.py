@@ -536,6 +536,56 @@ class FilestoreClassificationTests(unittest.TestCase):
         self.assertEqual(report["missing_count"], 0)
         CONTINUITY._assert_filestore_inventory(report)
 
+    def test_body_pending_collection_is_not_an_orphan(self):
+        # Odoo 17 deletes through _file_delete, which only adds the name to the
+        # checklist; _gc_file_store_unsafe unlinks the body later. A body whose
+        # row is gone but whose name is on the checklist is therefore a normal
+        # intermediate state, and requiring it to be absent would only assert
+        # that the collector had already run.
+        scan = self._scan(
+            [
+                (self.BODY_A, 12, self.BODY_A.rsplit("/", 1)[-1]),
+                (self.BODY_B, 9, self.BODY_B.rsplit("/", 1)[-1]),
+                ("checklist/" + self.BODY_B, 0, ""),
+            ]
+        )
+        report = CONTINUITY._classify_filestore(scan, self._rows(self.BODY_A))
+        self.assertEqual(report["referenced_body_count"], 1)
+        self.assertEqual(report["pending_collection_body_count"], 1)
+        self.assertEqual(report["unknown_entry_count"], 0)
+        self.assertEqual(report["missing_count"], 0)
+        CONTINUITY._assert_filestore_inventory(report)
+
+    def test_unreferenced_body_without_a_marker_is_still_unknown(self):
+        # Same shape as the case above minus the checklist entry: nothing in
+        # Odoo will ever collect this file, so it stays unexplained and fails.
+        scan = self._scan(
+            [
+                (self.BODY_A, 12, self.BODY_A.rsplit("/", 1)[-1]),
+                (self.BODY_B, 9, self.BODY_B.rsplit("/", 1)[-1]),
+            ]
+        )
+        report = CONTINUITY._classify_filestore(scan, self._rows(self.BODY_A))
+        self.assertEqual(report["pending_collection_body_count"], 0)
+        self.assertEqual(report["unknown_entry_count"], 1)
+        self.assertEqual(report["missing_count"], 0)
+        with self.assertRaisesRegex(CONTINUITY.ContinuityError, "unknown filestore entries"):
+            CONTINUITY._assert_filestore_inventory(report)
+
+    def test_pending_collection_body_that_is_not_its_own_digest_fails(self):
+        scan = self._scan(
+            [
+                (self.BODY_A, 12, self.BODY_A.rsplit("/", 1)[-1]),
+                (self.BODY_B, 9, "f" * 40),
+                ("checklist/" + self.BODY_B, 0, ""),
+            ]
+        )
+        report = CONTINUITY._classify_filestore(scan, self._rows(self.BODY_A))
+        self.assertEqual(report["pending_collection_body_count"], 0)
+        self.assertEqual(report["checksum_mismatch_count"], 1)
+        with self.assertRaisesRegex(CONTINUITY.ContinuityError, "checksum"):
+            CONTINUITY._assert_filestore_inventory(report)
+
     def test_non_empty_checklist_entry_cannot_escape_as_a_marker(self):
         scan = self._scan(
             [
