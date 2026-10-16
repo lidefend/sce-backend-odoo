@@ -293,7 +293,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": "STATUS 2026-10-16 (demo carrier rebuild authorized; D1=A1, D2=formal demo module, D3=preserve the historic source, D4=revalidate by dependency). Steps 1 and 2 are complete and committed locally: the rebuilt carrier is declared, every duty-scoped read-only entry *and* every duty-scoped write/read tool now binds the declared duty instead of a bare database name, the governed make lanes forward that duty, the routing lane no longer defaults to the historic container, the governance text registers the two same-name carriers by carrier identity, the restored tool lanes have their own non-zero L2 routes (unmappedPathCount 10 -> 0), and both read-only plans were re-read with the binding wired (duty plan PASS, retire plan PLAN with failing_guards []). A live read-only probe proved a bare database name is refused while duty=demo reads the declared carrier sc-demo-dev-db-1. No host write has been made. NEXT: obtain the independent read-only review against the current candidate identity (three commits: a95ee015, a14a931a, f45cc5df plus this ledger), and only after that review passes create the sc-demo-dev cluster (daily.runtime.database.duty.apply with the reviewed declaration digest), initialize it, seed it through the product's own demo chain, stand the legacy publisher down with daily.runtime.legacy_stack.retire.apply (maintenance state is the failure default), and switch 18081/8070. See demo_carrier_rebuild_20261016.duty_binding_wiring_20261016 and demo_carrier_rebuild_20261016.s1_1_lane_binding_20261016.",
+  "next_exact_step": "STATUS 2026-10-16 (demo carrier rebuild authorized; D1=A1, D2=formal demo module, D3=preserve the historic source, D4=revalidate by dependency). Steps 1 and 2 are complete and committed locally: the rebuilt carrier is declared; every duty-scoped read-only entry and every duty-scoped write/read tool binds the declared duty instead of a bare database name; the governed make lanes forward that duty; the routing lane no longer defaults to the historic container; the governance text registers the two same-name carriers by carrier identity; the restored tool lanes have their own non-zero L2 routes; the two weak landing assertions and the last two bare database defaults found by independent review are closed with fail-closed behaviour and regression cases; both read-only plans were re-read with the binding wired. The independent read-only review of HEAD 2ec2306c returned PASS with no S1/S2 and seven S3 findings, of which five were closed in 74545f9c and two (routing-inventory explicit cluster-container, legacy-retire running-only writer count) are accepted residuals for the first write. Read-only host readback confirms the legacy publish face still serves 18081 and 8070, the new carrier does not exist yet, there is no cron or systemd consumer, the single-postmaster disposal is still in force, and the 2026-10-15 recovery point verifies byte-for-byte. No host write has been made. NEXT: obtain a focused re-check of commit 74545f9c against the reviewed files, then create the sc-demo-dev cluster (daily.runtime.database.duty.apply with the reviewed declaration digest), initialize it, seed it through the product's own demo chain, stand the legacy publisher down with daily.runtime.legacy_stack.retire.apply (maintenance state is the failure default), and switch 18081/8070, then product acceptance and the independent B-line closure.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "review_s2_closure_20261015": {
     "authority": "Independent B-line review of 5f5c4dae..4450e674 returned APPROVE_WITH_NOTES with one S2: the registration's control-database write had no test wiring, and the existing assertion pointed at the opposite target",
@@ -3979,10 +3979,10 @@
         "ci_local_iteration": "EXIT=0, PASS change_state=dirty, unmappedPathCount=0, outside_scope=[]"
       },
       "identity": {
-        "HEAD": "f45cc5df7ab9b367a095b30c68b2af97d51b4f3b",
+        "HEAD": "74545f9c5d31f70f0819de25fbeedbaae13b449d",
         "dirty": true,
-        "dirty_scope": "this run ledger only; every product path of the S1-1 fix is committed",
-        "note": "Refresh to the frozen full fingerprint of the delivery head when this branch rides with the next real product candidate and `make ci.delivery.freeze.prepare` runs. Recorded now so a later reader cannot mistake the pre-fix 8927178e identity for the current one."
+        "dirty_scope": "this run ledger only; every product path of the S1-1 fix and its assertion closure is committed",
+        "note": "Refresh to the frozen full fingerprint of the delivery head when this branch rides with the next real product candidate and `make ci.delivery.freeze.prepare` runs."
       },
       "not_a_pass": "Local units, read-only host probes and two read-only plans only. No cluster was created, no container was stopped, no database was written, no evidence was reissued, and no independent review has run yet."
     },
@@ -4029,6 +4029,55 @@
       ],
       "writes": false,
       "not_a_pass": "Local units, static guards and lane mapping only. No cluster created, no container stopped, no database written, no host probe in this session, and the independent read-only review of this candidate has not run yet."
+    },
+    "s1_1_review_and_assertion_closure_20261016": {
+      "why_this_record": "The nine-lane binding fix passed independent review but the reviewer found that two lanes could still pass on a weak or absent landing readback, that one lane let the tool's own default answer the target question, and that the frontend build lane still hand-maintained a database literal. All of it is the same defect class the batch exists to remove, so it was closed before the first host write.",
+      "independent_review": {
+        "reviewer": "independent read-only reviewer on the same candidate (HEAD 2ec2306c, clean tree)",
+        "verdict": "PASS, no S1, no S2",
+        "independently_reproduced": "run.scope covers all 40 changed paths (outside_scope 0); unit counts 18/15/12/21/28/22/23/18/22/57; verify.frontend.dev.incremental.unit 31 OK; verify.baseline.iteration.execution.policy 16 OK; verification lane coverage PASS; product payload boundary PASS files=8341",
+        "explicitly_not_reproduced": "the remote read-only probes, the two plan re-reads and any ci.local.iteration receipt need the host or a frozen receipt; the reviewer said so rather than implying coverage.",
+        "reviewed_residuals_accepted_for_the_first_write": [
+          "S3-1 routing inventory does not refuse an explicit --cluster-container that contradicts the bound duty (read-only inventory; the report records cluster_container_source)",
+          "S3-2 legacy stack retire counts a second writer only among running containers (volume_owners and restart_policy are collected into the plan for manual reading)"
+        ]
+      },
+      "closed_from_the_review": {
+        "database_identity_inventory": "added assertion shell_database_is_the_bound_database comparing payload.current_database with the bound database; before this the inventory only proved the bound name appeared somewhere in the cluster catalogue, so a read of the other carrier could pass.",
+        "lifecycle_fixture_prepare": "the landing check was `if landed and landed != database`, which skipped the assertion when the readback field was missing; now `if not landed or landed != database`.",
+        "published_face_converge": "DEFAULT_DATABASE was \"sc_demo\" and the make lane passed only --duty, so the tool's default answered the target question for the operator. The default is now empty and the lane forwards --database.",
+        "frontend_build_align": "DEFAULT_DATABASE was \"sc_demo\" and make/codex.mk hand-maintained DAILY_RUNTIME_FRONTEND_BUILD_DATABASE ?= sc_demo, a second copy of a governance fact. The default is now empty with a fail-closed validation that the served database must be a declared duty database name, and the make value is derived from the duty declaration exactly like the platform-admin binding.",
+        "regression_cases_added": [
+          "mail_sender_prepare: landed in another database -> FAIL; no readback marker -> FAIL; failing guard -> FAIL even with the right landing",
+          "data_space_onboard: landed elsewhere -> FAIL; missing readback -> FAIL; correct landing -> PASS",
+          "lifecycle_fixture_prepare: missing database readback -> FAIL",
+          "database_identity_inventory: read of the other carrier -> refused; payload without a live readback -> refused",
+          "published_face_converge: no shipped bare default; --duty alone binds the demo carrier",
+          "frontend_build_align: empty or illegal served database -> fail closed; the make lane no longer ships the literal and derives from the declaration"
+        ],
+        "deliberate_non_closure": "daily_runtime_frontend_build_align keeps no development-inner-loop route: its only non-zero behaviour lock is verify.daily.runtime.frontend.build, a candidate-only lane the development inner loop must not select. Adding a route to it made the planner raise 'selected a candidate-only target', so the path stays unmapped and the planner reports manualNonZeroL2Required=true, which is the honest signal that a hand-picked candidate L2 is needed. The reason is recorded in the planner itself."
+      },
+      "verification": {
+        "python3 -m unittest (12 files)": "298 OK",
+        "make verify.frontend.dev.incremental.unit": "31 OK",
+        "make ci.local.iteration": "EXIT=0 PASS outside_scope=[] unmappedPathCount=2 (the two frontend_build_align files, by design)",
+        "make -n daily.runtime.published_face.converge": "--database \"\" and --duty forwarded",
+        "make -n daily.runtime.frontend.build": "--database \"sc_demo\" derived from the duty declaration (behaviour unchanged, source changed)"
+      },
+      "host_readback_supporting_the_first_write": {
+        "note": "read-only, taken by this executor while the independent review ran; no write was made",
+        "legacy_publish_face": "project sc-backend-odoo-dev: nginx 0.0.0.0:18081->80, odoo 0.0.0.0:8070->8069 (a second public entry that bypasses nginx), db and redis unpublished; all four restart policy unless-stopped",
+        "new_carrier_absent": "no sc-demo-dev container and no sc_demo* volume exists yet, so the carrier is still to_be_created as declared",
+        "ports": "18081 and 8070 are held by the legacy stack through docker-proxy; ufw is active and does not list 8070, but Docker's DNAT rules bypass ufw for published ports, which is why both the proxy and the direct odoo port must be stood down together",
+        "background_or_scheduled_consumers": "no root crontab entry and no systemd unit or timer references the legacy checkout; only the OS default timers are present",
+        "shared_pgdata_double_writer_recheck": "the sc-backend-odoo-prod containers still exist but are Exited with restart policy no; the only live writer of sc_dev_db_data is sc-backend-odoo-dev-db-1, so the 2026-10-15 disposal (SIGQUIT on the orphan postmaster, redis killed, restart set to no) is still in force. This was a precondition check, not a new disposition.",
+        "recovery_point_integrity": "/data/backups/daily_candidate/sc_demo-20261015T062043Z-849c0c54 sha256sum -c: database.dump OK, filestore.tar.gz OK, manifest.json OK; manifest records database sc_demo, data_authority CANDIDATE, pair_stable_during_capture true, recovery expectations (database_uuid and stable sample ids for project_project / payment_request / construction_contract / ir_attachment)"
+      },
+      "commits": [
+        "fix(daily-runtime): strengthen the duty-lane landing assertions and remove the last two bare database defaults"
+      ],
+      "writes": false,
+      "not_a_pass": "Still no cluster, no container stop, no database write. The reviewer PASSed the pre-fix candidate; because the fix is a delta on reviewed files, a focused re-check is requested before the first host write rather than assuming the earlier PASS covers it."
     }
   }
 }
