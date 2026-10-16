@@ -2563,3 +2563,75 @@ origin/main still binds <merged branch> in .agent/active-runs.json
 以及本候选自身待推送历史中命中客户身份的提交数 **0**。
 
 **口径**：以上均为收口尝试与阻断事实，**不是**发布，也不是产品交付；未升级任何目标环境、未迁移任何数据。
+
+## 2026-10-16：附件连续性语义修复 + `smart_core` 声明漂移收口（两项内部问题）
+
+所有者裁定：**不把当前状态归结为“只等新载荷”**；附件连续性判定与模块版本漂移属于本轮必须关闭的内部问题。
+附件那一个文件**既不整体放宽为非致命，也不删除换通过**，先按 Odoo 存储语义分类；模块漂移**先影响分析和
+恢复准备，再走既有受管入口升级**，且**禁止只改版本字段伪装一致**。
+
+### 1. 附件对象定性：原生 GC 标记（Task 1）
+
+只读读取该 duty 自身运行镜像内的实现（`odoo.release = 17.0-20251222 17.0`），产品 addons 树**没有任何**
+`ir.attachment` 存储扩展或 `_mark_for_gc` 覆写，因此以原生实现为准：
+
+- `_mark_for_gc(fname)`：`full_path = os.path.join(self._full_path('checklist'), fname)`，
+  `open(full_path,'ab').close()` → **0 字节空标记**。
+- `_file_write` 写正文后调用它（事务后续回滚也留下标记）；`_file_delete` 只调用它。
+- `_gc_file_store_unsafe` 遍历 `filestore/checklist`，把不在存活 `store_fname` 集合中的标记名 `unlink`，最后删标记自身。
+- `_get_path`：店名即内容摘要（`checksum` 算法 sha1）；`ir_attachment.location` 未设置（默认 `file`）。
+- 只读 SQL：该店名 `rows=5`、`checksum_matches=5`、`store_fname` 非摘要形状 `=0`；`attachments_total=466`。
+
+结论：`checklist/81/81e68e…be032` 是**原生维护标记**，不是附件孤儿；**未删除、未放宽守卫**。
+
+### 2. P4 连续性守卫改为语义分类（Task 2）
+
+`scripts/ops/daily_candidate_data_continuity.py` 删除 `_filestore_inventory()` 与 baseline 里
+`distinct_store_fnames == file_count` 这条比数字的断言，改为只读扫描 duty 自己的 filestore 并三分类：
+
+- **附件正文**：相对路径是存活 `store_fname`，必须存在，且**文件内容摘要 = 店名 = 该行 `checksum`**；缺失、不可读、不一致 → 阻断。
+- **维护标记**：`checklist/` 下、0 字节、`<2–3 hex>/<40 hex>` 店名形状 → **单独计数、保留、不触发清理**。
+- **未知**：其余全部（未被引用的“像店名”文件、非空或形状不对的 `checklist` 条目、symlink/fifo/socket/device）→ **继续阻断**。
+  按目录名整块排除不算分类。
+
+恢复演练把两个闭包**分开断言**：`all_attachments_present`（正文数量 + 无缺失/损坏）、
+`restored_content_matches_source`（正文内容摘要）、`maintenance_markers_preserved`（标记摘要）；单一数量比较两者都证不了。
+`backup`/`validate_backup` 也带上 `attachment_inventory`，并拒绝在“坏对”上捕获的备份。
+定向测试 `verify.daily.duty.recovery` → **Ran 39 tests OK**；反例覆盖：合法空标记不误报、同位置非空文件不能逃、
+坏形状/非 `checklist`/未引用 → unknown、缺失/损坏/店名≠内容摘要仍失败、以及**数量相同但内容不同必须区分**。
+`scripts/verify/frontend_dev_incremental.py` 新增映射，把该工具/测试/契约路由到 `verify.daily.duty.recovery`
+（plan 的 `unmappedPathCount` 由 2 归 0）。
+
+### 3. `smart_core` 声明漂移与受管升级（Task 3）
+
+三面核对（运行代码 / 交付树 / 数据库安装记录）：
+
+| duty | 代码（部署树 `b80841059b19`） | 数据库安装 | 判定 |
+|---|---|---|---|
+| platform_control | `smart_core 17.0.1.1.15` | `17.0.1.1.15` | 一致 |
+| demo | `17.0.1.1.15` | `17.0.1.1.15` | 一致 |
+| customer_tenant_dev | `17.0.1.1.15` | **`17.0.1.1.14`** | **漂移** |
+
+其余声明模块逐项一致；`smart_scene 1.0.0` / `smart_license_core 0.1.0` / `smart_construction_bundle 0.1.1`
+与库中 `17.0.1.0.0` / `17.0.0.1.0` / `17.0.0.1.1` 的差异只是 Odoo 的系列前缀归一，不是漂移。
+
+影响分析：PR #666 给既有 `sc.platform.maintenance.access` 增加 5 个字段（`evidence_reference`、
+`operator_identity_key`、`subject_checksum`、`authorized_operations`、`decision_note`），另加 2 个 controller、
+2 个 security 服务模块与 1 个按需读取的 data 文件；**无** ACL/记录规则/manifest data XML/post_init 变更，
+**无** `migrations/17.0.1.1.15/`。`PRODUCT_INTERFACE_VERSION` 仍为 `"1"`，因此该 bump **不会**使载荷的
+产品接口版本失效——载荷阻断仍只是客户模块版本本身（`17.0.2.7.0` vs `17.0.2.8.0`）。
+
+恢复准备与执行：走 `make daily.runtime.database.duty.upgrade`（声明 digest `7103947e…`，
+`--expected-sha b80841059b19`），该入口在写入前**先捕获并校验**一个 pre-upgrade 恢复点
+（该 duty 自己的 backup namespace，11269872 字节、`pg_restore --list` 23011 项、sha256 `077c2810…`），
+再对声明的 11 个模块整体 `-u`，随后重启并回读。结果 `status=PASS`，断言
+`a_verified_recovery_point_precedes_the_upgrade` 与 `the_declared_module_upgrade_completed` 均通过；
+回读：`smart_core = 17.0.1.1.15 installed`、`base = 17.0.1.3`，且库中 `sc_platform_maintenance_access`
+已带上 5 个新列（升级前没有）——所以这是**真实的 schema 缺口**，不是版本字符串问题。
+两个硬编码 `17.0.1.1.14` 的测试是合成夹具而非运行期断言，无需改动；没有为了“对齐”改任何版本字段。
+
+### 4. 口径
+
+以上为**内部工具与环境缺陷修复**，可构成正常产品候选；不是发布，也不是产品交付。客户数据迁移、
+版本发布与产品验收**均未完成**。两项关闭后，剩余外部依赖收敛为：**兼容新签名载荷及对应真实审批**。
+在载荷到达前不推进导入、不重复空库隔离查询。分支退役仍挂起，待主线解除台账绑定后再执行。
