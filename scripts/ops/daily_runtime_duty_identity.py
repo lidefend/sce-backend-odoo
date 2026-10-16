@@ -69,6 +69,20 @@ INSTANCE_KEYS = (
 #: names the shape; the instance document names the customer.
 MANAGED_SOURCE = "managed_directory"
 
+#: A *protected historic source* is a database carrier the governed runtime must
+#: never write to and must never mistake for a duty.  Before the 2026-10-16 demo
+#: rebuild the only carrier named ``sc_demo`` was a duty; afterwards a rebuilt
+#: duty and the preserved pre-governance cluster both carry that name.  A bare
+#: database name therefore stops identifying a target, and the declaration has to
+#: say so itself.
+PROTECTED_SOURCES_KEY = "protected_historic_sources"
+PROTECTED_HISTORIC_SOURCE_KEYS = (
+    "source_id", "database", "cluster", "visibility", "authority", "reason",
+)
+PROTECTED_VISIBILITIES = ("read_only_historic",)
+CARRIER_DUTY = "duty"
+CARRIER_PROTECTED_SOURCE = "protected_historic_source"
+
 
 class DutyIdentityError(RuntimeError):
     pass
@@ -288,6 +302,233 @@ def load_instances(declaration: dict, *, instances_reader=None, staging_reader=N
     )["duties"]
 
 
+def protected_historic_sources(declaration: dict) -> list[dict]:
+    """The declared read-only historic carriers, or an empty list.
+
+    An absent section means "this declaration names no historic source", which is
+    a legitimate shape for a synthetic fixture.  A present but malformed section
+    is a stop, because the only reason the section exists is to make a bare
+    database name ambiguous on purpose -- a half-written one would reintroduce
+    exactly the guess it is there to forbid.
+    """
+    sources = declaration.get(PROTECTED_SOURCES_KEY)
+    if sources is None:
+        return []
+    if not isinstance(sources, list) or not sources:
+        raise DutyIdentityError(
+            "%s must be a non-empty list when declared" % (PROTECTED_SOURCES_KEY,)
+        )
+    return sources
+
+
+def validate_protected_historic_sources(declaration: dict) -> None:
+    """Every reason a declared historic source cannot be a faithful record."""
+    duties = [
+        entry for entry in declaration.get("duties") or [] if isinstance(entry, dict)
+    ]
+    seen_ids = set()
+    for source in protected_historic_sources(declaration):
+        if not isinstance(source, dict):
+            raise DutyIdentityError("%s entries must be objects" % (PROTECTED_SOURCES_KEY,))
+        missing = [key for key in PROTECTED_HISTORIC_SOURCE_KEYS if key not in source]
+        if missing:
+            raise DutyIdentityError(
+                "protected historic source lacks keys %s" % (",".join(missing),)
+            )
+        source_id = str(source["source_id"])
+        if not SAFE_IDENTIFIER.fullmatch(source_id):
+            raise DutyIdentityError(
+                "protected historic source id %s is not a safe identifier"
+                % (source_id or "<unset>",)
+            )
+        if source_id in seen_ids:
+            raise DutyIdentityError("duplicate protected historic source id: %s" % (source_id,))
+        seen_ids.add(source_id)
+        database = str(source["database"])
+        # A preserved carrier is named by history, not by the current duty
+        # convention: the pre-governance databases predate it.  What has to hold
+        # is only that the name is a plain database identifier a governed entry
+        # can safely interpolate, never that it fits a convention it was
+        # invented without.
+        if not SAFE_IDENTIFIER.fullmatch(database):
+            raise DutyIdentityError(
+                "protected historic source %s: database %s is not a plain database name"
+                % (source_id, database or "<unset>")
+            )
+        if str(source["visibility"]) not in PROTECTED_VISIBILITIES:
+            raise DutyIdentityError(
+                "protected historic source %s: visibility must be one of %s"
+                % (source_id, ",".join(PROTECTED_VISIBILITIES))
+            )
+        for field in ("authority", "reason"):
+            if not str(source[field] or "").strip():
+                raise DutyIdentityError(
+                    "protected historic source %s needs %s" % (source_id, field)
+                )
+        cluster = source["cluster"]
+        if not isinstance(cluster, dict):
+            raise DutyIdentityError(
+                "protected historic source %s: cluster must be an object" % (source_id,)
+            )
+        for key in ("container", "compose_project", "data_volume"):
+            value = str(cluster.get(key) or "")
+            if not (SAFE_IDENTIFIER.fullmatch(value) or SAFE_COMPOSE_PROJECT.fullmatch(value)):
+                raise DutyIdentityError(
+                    "protected historic source %s: cluster.%s %s is not a safe identifier"
+                    % (source_id, key, value or "<unset>")
+                )
+        for duty in duties:
+            duty_cluster = duty.get("cluster") or {}
+            same_container = str(duty_cluster.get("container") or "") == str(cluster["container"])
+            same_volume = str(duty_cluster.get("data_volume") or "") == str(cluster["data_volume"])
+            if same_container or same_volume:
+                raise DutyIdentityError(
+                    "protected historic source %s shares a cluster container or data volume with "
+                    "duty %s; a preserved source must be a different carrier, not the duty itself"
+                    % (source_id, duty.get("duty"))
+                )
+
+
+def database_carriers(declaration: dict) -> dict[str, list[dict]]:
+    """Every declared carrier of each database name, keyed by that name."""
+    carriers: dict[str, list[dict]] = {}
+
+    def add(name: str, row: dict) -> None:
+        if name:
+            carriers.setdefault(name, []).append(row)
+
+    for entry in declaration.get("duties") or []:
+        if not isinstance(entry, dict):
+            continue
+        cluster = entry.get("cluster") or {}
+        add(str(entry.get("database") or ""), {
+            "kind": CARRIER_DUTY,
+            "id": str(entry.get("duty") or ""),
+            "database": str(entry.get("database") or ""),
+            "database_role": str(entry.get("database_role") or ""),
+            "dbfilter": str(entry.get("dbfilter") or ""),
+            "data_purpose": str(entry.get("data_purpose") or ""),
+            "compose_project": str(cluster.get("compose_project") or ""),
+            "database_container": str(cluster.get("container") or ""),
+            "database_volume": str(cluster.get("data_volume") or ""),
+            "writable": True,
+        })
+    for source in protected_historic_sources(declaration):
+        cluster = source.get("cluster") or {}
+        name = str(source.get("database") or "")
+        add(name, {
+            "kind": CARRIER_PROTECTED_SOURCE,
+            "id": str(source.get("source_id") or ""),
+            "database": name,
+            "database_role": "",
+            "dbfilter": "^%s$" % (name,),
+            "data_purpose": str(source.get("visibility") or ""),
+            "compose_project": str(cluster.get("compose_project") or ""),
+            "database_container": str(cluster.get("container") or ""),
+            "database_volume": str(cluster.get("data_volume") or ""),
+            "writable": False,
+        })
+    return carriers
+
+
+def resolve_duty_carrier(database: str, path: Path | None = None, *, instances_reader=None,
+                         staging_reader=None) -> dict:
+    """Resolve one database *name* to exactly one declared *duty* carrier, or stop.
+
+    A database name is not a target identity.  Once two declared carriers can
+    both answer to ``sc_demo`` -- the rebuilt duty and the preserved historic
+    source -- an entry that receives only a name cannot tell which one the
+    operator meant, and picking either is a guess about which data is about to be
+    written or read.  The refusal lists every carrier so the operator can bind
+    the duty, the cluster, the database and the storage explicitly instead.
+
+    The returned carrier is always a duty.  A *protected historic source* is a
+    carrier by name only: it exists so that the name stops resolving silently,
+    never so that a duty entry may adopt it as a write or acceptance target.
+    """
+    wanted = str(database or "").strip()
+    if not wanted:
+        raise DutyIdentityError("DUTY_IDENTITY_DATABASE_UNNAMED")
+    declaration = load_declaration(
+        path, instances_reader=instances_reader, staging_reader=staging_reader,
+    )
+    matches = database_carriers(declaration).get(wanted) or []
+    if not matches:
+        raise DutyIdentityError("DUTY_IDENTITY_DATABASE_UNDECLARED:%s" % (wanted,))
+    if len(matches) > 1:
+        raise DutyIdentityError(
+            "DUTY_IDENTITY_DATABASE_AMBIGUOUS:%s:%s"
+            % (wanted, ",".join(
+                "%s=%s=%s" % (row["kind"], row["id"], row["database_container"])
+                for row in matches
+            ))
+        )
+    carrier = matches[0]
+    if carrier["kind"] != CARRIER_DUTY:
+        raise DutyIdentityError(
+            "DUTY_IDENTITY_DATABASE_HISTORIC_SOURCE:%s:%s" % (wanted, carrier["id"])
+        )
+    return carrier
+
+
+def carrier_binding(carrier: dict, *, bound_by: str) -> dict:
+    """One normalized binding of a duty, its cluster, its database and its storage.
+
+    Every entry that targets a deployed face needs the same five facts, and the
+    owner ruling of 2026-10-16 makes them one identity: a database name alone
+    stopped being a target.  Returning one shape from here is what keeps the
+    entries from each assembling their own variation of it.
+    """
+    return {
+        "bound_by": bound_by,
+        "duty": carrier["id"],
+        "database": carrier["database"],
+        "database_role": carrier["database_role"],
+        "dbfilter": carrier["dbfilter"],
+        "data_purpose": carrier["data_purpose"],
+        "compose_project": carrier["compose_project"],
+        "database_container": carrier["database_container"],
+        "database_volume": carrier["database_volume"],
+    }
+
+
+def bind_duty_database(duty_name, database, path: Path | None = None, *, instances_reader=None,
+                       staging_reader=None) -> dict:
+    """Bind a target to one declared duty, or stop with the reason it cannot.
+
+    Two shapes are legitimate and they are not interchangeable.  Naming the
+    *duty* is the strong form: the duty declares its database, its cluster, its
+    storage and its purpose, so the binding is complete by construction.  Naming
+    only the *database* is the weak form and is accepted only while exactly one
+    declared duty carries that name; the moment a preserved second carrier
+    exists -- which is the whole point of ``protected_historic_sources`` -- the
+    weak form stops resolving and the caller has to say which duty it means.
+    """
+    kwargs = {"instances_reader": instances_reader, "staging_reader": staging_reader}
+    wanted = str(duty_name or "").strip()
+    if wanted:
+        declared = resolve(wanted, path, **kwargs)
+        resolved_database = str(declared.get("database") or "")
+        asked = str(database or "").strip()
+        if asked and asked != resolved_database:
+            # A caller that named both and they disagree is not choosing; it is
+            # stating one identity and asking for another.  Refusing is the only
+            # answer that cannot silently target the wrong database.
+            raise DutyIdentityError(
+                "DUTY_IDENTITY_DATABASE_DISAGREES_WITH_DUTY:%s:%s:%s"
+                % (wanted, asked, resolved_database)
+            )
+        # ``resolve`` already flattened and validated the duty: the container,
+        # the volumes and the filestore scope it returns are the ones the
+        # declaration names, so this binding is complete without re-reading it.
+        return carrier_binding({
+            key: str(declared.get(key) or "")
+            for key in ("database", "database_role", "dbfilter", "data_purpose",
+                        "compose_project", "database_container", "database_volume")
+        } | {"id": str(declared.get("duty") or wanted)}, bound_by="duty")
+    return carrier_binding(resolve_duty_carrier(database, path, **kwargs), bound_by="database")
+
+
 def load_declaration(path: Path | None = None, *, instances_reader=None, staging_reader=None) -> dict:
     """Read the tracked template and resolve its managed duty instances."""
     target = path or DUTY_DECLARATION
@@ -302,6 +543,10 @@ def load_declaration(path: Path | None = None, *, instances_reader=None, staging
     declared = payload.get("duties")
     if not isinstance(declared, list) or not declared:
         raise DutyIdentityError("duty declaration carries no duties")
+    # Validated before the managed instances are merged, because the historic
+    # source section describes carriers the merged document cannot extend: its
+    # whole purpose is to keep a preserved carrier distinguishable from a duty.
+    validate_protected_historic_sources(payload)
     managed = payload.get("managed_duty_instances")
     if managed is None:
         # A self-contained declaration is legitimate for a synthetic fixture or

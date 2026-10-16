@@ -39,8 +39,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import daily_runtime_duty_identity as duty_identity  # noqa: E402
 REMOTE_TMP = "/tmp/sc-daily-routing-inventory.py"
-DEFAULT_CLUSTER_CONTAINER = "sc-backend-odoo-dev-db-1"
 DEFAULT_DATABASE = "sc_demo"
 MARKER = "DAILY_ROUTING_INVENTORY="
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
@@ -422,23 +423,61 @@ def evaluate(database, payload, retired=()):
     }
 
 
+
+
+def resolve_cluster_container(explicit: str, binding: dict) -> str:
+    """Return the cluster container whose catalog this entry reads.
+
+    The cluster belongs to the *bound duty*: the rebuilt demo carrier runs its own
+    cluster, so a remembered container name would silently inventory a different
+    carrier. An explicit value stays available only for a deliberate cross-carrier
+    audit, and the report records which of the two was used.
+    """
+    return explicit or binding["database_container"]
+
+
+def bind_target(options, *, instances_reader=None) -> dict:
+    """Bind the target duty, its cluster, its database and its storage, or stop.
+
+    A routing fact about the wrong carrier is a wrong fact: which database a face serves only means something once the carrier is named.
+    """
+    try:
+        reader = instances_reader
+        if reader is None:
+            reader = duty_identity.ssh_instances_reader(options.ssh_host)
+        return duty_identity.bind_duty_database(
+            getattr(options, "duty", ""), options.database, instances_reader=reader,
+        )
+    except duty_identity.DutyIdentityError as error:
+        raise InventoryError(str(error))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expected-sha", required=True)
     parser.add_argument("--database", default=DEFAULT_DATABASE)
+    parser.add_argument("--duty", default="", help="the declared duty this entry binds; a database name alone is not a target identity")
     parser.add_argument("--ssh-host", required=True)
-    parser.add_argument("--cluster-container", default=DEFAULT_CLUSTER_CONTAINER)
+    # The cluster this entry reads the catalog from is the *bound duty's* cluster,
+    # never a remembered container name: the daily demo carrier now runs its own
+    # cluster, and a hard-coded legacy name would silently inventory the historic
+    # source instead. An explicit value stays available for a cross-carrier audit.
+    parser.add_argument("--cluster-container", default="", help="container whose cluster catalog is read; defaults to the bound duty's cluster")
     parser.add_argument("--retired-stacks", default="")
     parser.add_argument("--report", required=True)
     options = parser.parse_args()
 
     try:
+        binding = bind_target(options)
         retired = retired_container_names(options.retired_stacks or None)
-        payload, remote_head = inventory(
-            options.expected_sha, options.database, options.ssh_host,
-            options.cluster_container,
+        cluster_container = resolve_cluster_container(
+            options.cluster_container, binding,
         )
-        verdict = evaluate(options.database, payload, retired=retired)
+        payload, remote_head = inventory(
+            options.expected_sha, binding["database"], options.ssh_host,
+            cluster_container,
+        )
+        verdict = evaluate(binding["database"], payload, retired=retired)
     except InventoryError as error:
         print(f"[daily.runtime.routing.inventory] BLOCKED {error}", file=sys.stderr)
         return 2
@@ -448,8 +487,12 @@ def main():
         "expected_sha": options.expected_sha,
         "remote_head": remote_head,
         "ssh_host": options.ssh_host,
-        "cluster_container": options.cluster_container,
-        "cluster_database": options.database,
+        "database_binding": binding,
+        "cluster_container": cluster_container,
+        "cluster_container_source": (
+            "argument" if options.cluster_container else "bound_duty"
+        ),
+        "cluster_database": binding["database"],
         "retired_stacks_declaration": options.retired_stacks,
         "writes": False,
         "provenance": {

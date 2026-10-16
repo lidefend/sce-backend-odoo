@@ -32,8 +32,12 @@ import os
 import re
 import shlex
 import subprocess
+import sys
 from pathlib import Path
 
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import daily_runtime_duty_identity as duty_identity  # noqa: E402
 
 REMOTE_ROOT = "/opt/projects/repos/sce-product-odoo"
 DEFAULT_ENV_NAME = "dev"
@@ -504,6 +508,24 @@ def converge(
     return evidence
 
 
+
+
+def bind_target(options, *, instances_reader=None) -> dict:
+    """Bind the target duty, its cluster, its database and its storage, or stop.
+
+    Convergence rewrites the published face of one carrier; binding it by a name two carriers share would rewrite the wrong deployment.
+    """
+    try:
+        reader = instances_reader
+        if reader is None:
+            reader = duty_identity.ssh_instances_reader(options.ssh_host)
+        return duty_identity.bind_duty_database(
+            getattr(options, "duty", ""), options.database, instances_reader=reader,
+        )
+    except duty_identity.DutyIdentityError as error:
+        raise ConvergeError(str(error))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expected-sha", required=True, help="exact candidate revision the remote tree must be at")
@@ -518,6 +540,7 @@ def main() -> int:
     parser.add_argument("--env-name", default=DEFAULT_ENV_NAME)
     parser.add_argument("--env-file", default=DEFAULT_ENV_FILE)
     parser.add_argument("--database", default=DEFAULT_DATABASE)
+    parser.add_argument("--duty", default="", help="the declared duty this entry binds; a database name alone is not a target identity")
     parser.add_argument("--report", required=True, help="report path for the governed evidence envelope")
     parser.add_argument("--repository", default=".", help="local repository holding the exact candidate revision")
     parser.add_argument(
@@ -529,13 +552,16 @@ def main() -> int:
     product_keys = parse_product_keys(args.product_keys)
     modules = parse_modules(args.upgrade_modules)
     tree_ids = module_tree_ids(Path(args.repository), args.expected_sha, modules)
-    reuse_tree_ids = {} if args.force_upgrade else reuse_hint(args.report, args.database, modules, tree_ids)
+    binding = bind_target(args)
+    reuse_tree_ids = {} if args.force_upgrade else reuse_hint(
+        args.report, binding["database"], modules, tree_ids,
+    )
     evidence = converge(
         args.expected_sha,
         args.ssh_host,
         args.env_name,
         args.env_file,
-        args.database,
+        binding["database"],
         args.login,
         product_keys,
         modules,
@@ -550,7 +576,8 @@ def main() -> int:
         "expected_sha": args.expected_sha,
         "ssh_host": args.ssh_host,
         "login": args.login,
-        "database": args.database,
+        "database": binding["database"],
+        "database_binding": binding,
         "product_keys": product_keys,
         "upgrade_modules": modules,
         **evidence,

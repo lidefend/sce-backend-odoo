@@ -25,6 +25,18 @@ OLD_SHA = "b" * 40
 TREE_IDS = {"smart_core": "c" * 40}
 PRODUCTS = ["construction.standard", "construction.preview"]
 MODULES = ["smart_core"]
+#: The ambiguity under test comes from the tracked declaration alone: it already
+#: carries the rebuilt demo duty *and* the preserved historic source that share
+#: the name ``sc_demo``.  The managed instance document still has to be
+#: readable, because the resolver refuses an empty one rather than treating it
+#: as "no customer duty"; these tests therefore read the same tracked synthetic
+#: sample the other duty-identity tests use.
+SYNTHETIC_INSTANCES = ROOT / "scripts/ops/synthetic_duty_instances.sample.json"
+
+
+def synthetic_instances(_path: str) -> str:
+    """Serve the tracked synthetic instance document for a managed read."""
+    return SYNTHETIC_INSTANCES.read_text(encoding="utf-8")
 
 
 def product(key: str, **overrides: object) -> dict[str, object]:
@@ -194,7 +206,14 @@ class DailyRuntimePublishedFaceConvergeTests(unittest.TestCase):
                 "--expected-sha", SHA, "--ssh-host", "sc-root", "--login", "wutao",
                 "--report", str(report), "--repository", str(ROOT),
             ]
+            binding = {
+                "bound_by": "duty", "duty": "demo", "database": "sc_demo",
+                "database_role": "sc_demo_app", "dbfilter": "^sc_demo$",
+                "data_purpose": "demo", "compose_project": "sc-demo-dev",
+                "database_container": "sc-demo-dev-db-1", "database_volume": "sc_demo_db_data",
+            }
             with mock.patch.dict(os.environ, {"CONFIRM_DAILY_RUNTIME_PUBLISHED_FACE": module.CONFIRMATION}), \
+                    mock.patch.object(module, "bind_target", return_value=dict(binding)), \
                     mock.patch.object(module, "module_tree_ids", return_value=dict(TREE_IDS)), \
                     mock.patch.object(module, "reuse_hint", return_value=dict(TREE_IDS)), \
                     mock.patch.object(module, "converge", side_effect=fake_converge), \
@@ -203,12 +222,54 @@ class DailyRuntimePublishedFaceConvergeTests(unittest.TestCase):
             self.assertEqual(captured["reuse"], TREE_IDS)
 
             with mock.patch.dict(os.environ, {"CONFIRM_DAILY_RUNTIME_PUBLISHED_FACE": module.CONFIRMATION}), \
+                    mock.patch.object(module, "bind_target", return_value=dict(binding)), \
                     mock.patch.object(module, "module_tree_ids", return_value=dict(TREE_IDS)), \
                     mock.patch.object(module, "reuse_hint", return_value=dict(TREE_IDS)), \
                     mock.patch.object(module, "converge", side_effect=fake_converge), \
                     mock.patch.object(sys, "argv", argv + ["--force-upgrade"]):
                 self.assertEqual(module.main(), 0)
             self.assertEqual(captured["reuse"], {})
+
+    def test_a_bare_database_name_no_longer_binds_a_carrier(self) -> None:
+        """``sc_demo`` names a rebuilt duty *and* a preserved source, so it stops.
+
+        The refusal comes from the shipped declaration, not from a mock: this is
+        the property the owner ruling of 2026-10-16 asked for, and a caller that
+        passes only ``--database`` would otherwise converge whichever carrier the
+        tool happened to look at first.
+        """
+        options = mock.Mock()
+        options.duty = ""
+        options.database = "sc_demo"
+        options.ssh_host = "sc-root"
+        with self.assertRaisesRegex(module.ConvergeError, "DUTY_IDENTITY_DATABASE_AMBIGUOUS:sc_demo"):
+            module.bind_target(options, instances_reader=synthetic_instances)
+
+    def test_naming_the_duty_binds_the_demo_carrier(self) -> None:
+        options = mock.Mock()
+        options.duty = "demo"
+        options.database = "sc_demo"
+        options.ssh_host = "sc-root"
+        binding = module.bind_target(options, instances_reader=synthetic_instances)
+        self.assertEqual(binding["bound_by"], "duty")
+        self.assertEqual(binding["database"], "sc_demo")
+        self.assertEqual(binding["database_role"], "sc_demo_app")
+        self.assertEqual(binding["database_container"], "sc-demo-dev-db-1")
+        self.assertEqual(binding["database_volume"], "sc_demo_db_data")
+        self.assertEqual(binding["compose_project"], "sc-demo-dev")
+        self.assertEqual(binding["dbfilter"], "^sc_demo$")
+        self.assertEqual(binding["data_purpose"], "demo")
+
+    def test_naming_the_duty_may_not_name_another_database(self) -> None:
+        options = mock.Mock()
+        options.duty = "demo"
+        options.database = "sc_tenant_sample_dev"
+        options.ssh_host = "sc-root"
+        with self.assertRaisesRegex(
+            module.ConvergeError,
+            "DUTY_IDENTITY_DATABASE_DISAGREES_WITH_DUTY:demo:sc_tenant_sample_dev:sc_demo",
+        ):
+            module.bind_target(options, instances_reader=synthetic_instances)
 
     def _converge(
         self, stdout: bytes, returncode: int = 0, reuse_tree_ids: dict[str, str] | None = None

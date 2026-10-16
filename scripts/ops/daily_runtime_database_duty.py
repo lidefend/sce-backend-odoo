@@ -72,9 +72,16 @@ REFRESH_CONFIRM_ENV = "SC_CONFIRM_DAILY_RUNTIME_DUTY_REFRESH"
 #: migrations -- so it names its own token instead of reusing the refresh one.
 UPGRADE_CONFIRMATION = "UPGRADE_DAILY_RUNTIME_DUTY_DECLARED_MODULES"
 UPGRADE_CONFIRM_ENV = "SC_CONFIRM_DAILY_RUNTIME_DUTY_UPGRADE"
+#: Seeding a demo duty is a *data* mutation inside a duty that already serves.
+#: It is narrower than an upgrade (no schema is rewritten) and wider than a
+#: refresh (business rows are created), so it names its own token rather than
+#: borrowing either one and reading as a provision.
+SEED_CONFIRMATION = "SEED_DAILY_RUNTIME_DUTY_DEMO_DATA"
+SEED_CONFIRM_ENV = "SC_CONFIRM_DAILY_RUNTIME_DUTY_SEED"
 PHASE_CONFIRMATIONS = {
     "refresh": (REFRESH_CONFIRM_ENV, REFRESH_CONFIRMATION),
     "upgrade": (UPGRADE_CONFIRM_ENV, UPGRADE_CONFIRMATION),
+    "seed": (SEED_CONFIRM_ENV, SEED_CONFIRMATION),
 }
 POSTGRES_DATA_DESTINATION = "/var/lib/postgresql/data"
 #: ``initialize`` brings up the declared services and installs the declared
@@ -87,7 +94,7 @@ POSTGRES_DATA_DESTINATION = "/var/lib/postgresql/data"
 #: an already serving duty from the deployed source tree, after capturing and
 #: verifying a pre-upgrade recovery point, and installs nothing that the
 #: declaration does not already name.
-PHASES = ("plan", "stack", "database", "initialize", "refresh", "upgrade", "all")
+PHASES = ("plan", "stack", "database", "initialize", "refresh", "upgrade", "seed", "all")
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 SSH_HOST = re.compile(r"^[A-Za-z0-9._-]+$")
 #: Every value the declaration must supply before a duty stack can be rendered.
@@ -103,6 +110,26 @@ SECRET_KEYS = (
     "DB_PASSWORD", "DB_MAINTENANCE_PASSWORD", "ADMIN_PASSWD", "JWT_SECRET",
     "SC_BOOTSTRAP_SECRET",
 )
+#: The declared data purpose that may carry demo data, and the one secret only
+#: that purpose mints. The demo users the product's own seed creates need a
+#: password, and it is duty secret material rather than an operator argument, so
+#: it is minted once per demo duty and never rendered into a non-demo stack.
+DEMO_PURPOSE = "demo"
+DEMO_SECRET_KEYS = ("SC_DEMO_USER_PASSWORD",)
+#: The product module that owns demo data. A duty's ``demo_seed`` section names
+#: it, and the seed phase refuses any other carrier: a second demo-data lane
+#: would be the "substitute fixture" the owner ruling of 2026-10-16 forbids.
+DEMO_SEED_CARRIER = "smart_construction_demo"
+#: What ``SC_ALLOW_DEMO_DATA`` renders to per duty. It is a *derived* value, not
+#: an operator preference: the declaration's ``data_purpose`` is the single
+#: authority for whether this duty may carry demo data.
+DEMO_ALLOWED_LITERAL = "1"
+DEMO_FORBIDDEN_LITERAL = "0"
+#: A non-demo duty still has to resolve the template placeholders, and the only
+#: honest value for a password it does not have is the empty string. The demo
+#: module's own guard refuses an empty value, so this renders a stack that cannot
+#: accidentally seed demo data, rather than a stack that carries a made-up one.
+DEMO_PASSWORD_ABSENT_LITERAL = ""
 #: A duty that adopts a cluster it did not create cannot mint its own
 #: application credential: the role already exists inside the cluster's data
 #: volume and its password is not recoverable from the cluster. Such a duty
@@ -116,7 +143,7 @@ DEFAULT_CREDENTIAL_SOURCE_KEY = "DB_PASSWORD"
 ENV_READBACK_KEYS = (
     "DUTY_NAME", "COMPOSE_PROJECT_NAME", "DB_NAME", "DB_USER", "DB_MAINTENANCE_USER",
     "DB_DATA", "REDIS_DATA", "ODOO_DATA", "ODOO_DBFILTER", "ODOO_PORT", "NGINX_PORT",
-    "LIST_DB",
+    "LIST_DB", "SC_ALLOW_DEMO_DATA",
 )
 #: The environment keys the *application process* itself reads. ``ENV`` decides
 #: whether ``render_odoo_conf`` may drop an unavailable optional addon root, and
@@ -465,8 +492,22 @@ def _validate_stack(name, duty, stack, naming, ops_root):
         failures.append("duty %s: stack.product_root is outside the governed /opt/projects root" % (name,))
     if str(stack["frontend_dist_dir"]).startswith(str(stack["product_root"]) + "/") is False:
         failures.append("duty %s: stack.frontend_dist_dir must live under stack.product_root" % (name,))
-    if stack["runtime_env"] not in ("dev", "test"):
-        failures.append("duty %s: stack.runtime_env must be a non-production runtime env" % (name,))
+    # ``demo`` is the one extra runtime environment this entry accepts, and only
+    # for a duty that *declares* the demo data purpose. It is not a relaxation of
+    # the non-production rule: the demo module's own guard reads
+    # ``SC_ENVIRONMENT`` and only seeds when it says demo, so a duty that
+    # declared its purpose as demo and its environment as dev could not run the
+    # formal demo chain at all. A non-demo duty stays refused.
+    runtime_env = str(stack["runtime_env"])
+    allowed_runtime_envs = ("dev", "test")
+    if duty.get("data_purpose") == DEMO_PURPOSE:
+        allowed_runtime_envs += (DEMO_PURPOSE,)
+    if runtime_env not in allowed_runtime_envs:
+        failures.append("duty %s: stack.runtime_env must be a non-production runtime env%s" % (
+            name,
+            " (demo is accepted only for a duty that declares data_purpose=demo)"
+            if runtime_env == DEMO_PURPOSE else "",
+        ))
     services = stack.get("services")
     if not isinstance(services, list) or not services:
         failures.append("duty %s: stack.services must be a non-empty list of service names" % (name,))
@@ -533,7 +574,14 @@ def _validate_service_face(name, duty):
                 "duty %s: service_face_reason describes a cluster_only face and is not declared here"
                 % (name,)
             )
-        if face in ("to_be_initialized", "initialized") and not custody.get("database_present"):
+        if (face in ("to_be_initialized", "initialized")
+                and not custody.get("database_present")
+                and custody.get("role_compliance") != "to_be_created"):
+            # A duty that is still ``to_be_created`` is by definition not present
+            # yet: its database does not exist, and the face it declares is the
+            # face it will become once the entry creates it. Declaring
+            # ``database_present: true`` to satisfy this check would make the
+            # declaration state a fact that is false at review time.
             failures.append(
                 "duty %s: a %s face needs its database present first, otherwise the declaration "
                 "promises a face its cluster cannot carry" % (name, face)
@@ -595,6 +643,7 @@ def _validate_scope(name, duty, compliance):
     purpose = duty.get("data_purpose")
     if purpose not in ("platform_control", "demo", "test", "customer"):
         failures.append("duty %s: data_purpose %s is not declared" % (name, purpose))
+    failures.extend(validate_demo_seed(name, duty))
     table = duty.get("section_11") or {}
     if purpose == "platform_control" and not table.get("IS_PLATFORM_CONTROL_DATABASE"):
         failures.append("duty %s: a platform control duty must say so in section 11" % (name,))
@@ -604,6 +653,39 @@ def _validate_scope(name, duty, compliance):
         # Creating an empty customer database is authorized; loading customer
         # data into it belongs to the user module, not to this entry.
         pass
+    return failures
+
+
+def validate_demo_seed(name, duty):
+    """Failures of a duty's declared demo-seed carrier, as one list."""
+    failures = []
+    purpose = duty.get("data_purpose")
+    seed = duty.get("demo_seed")
+    if isinstance(seed, dict) and seed and purpose != DEMO_PURPOSE:
+        failures.append(
+            "duty %s: only a duty that declares data_purpose=demo may declare demo_seed" % (name,)
+        )
+        return failures
+    if purpose != DEMO_PURPOSE:
+        return failures
+    if not isinstance(seed, dict) or not seed:
+        failures.append(
+            "duty %s: a demo duty must name its demo-seed carrier and profile; the entry never "
+            "defaults a demo step list of its own" % (name,)
+        )
+        return failures
+    carrier = str(seed.get("carrier") or "")
+    if carrier != DEMO_SEED_CARRIER:
+        failures.append(
+            "duty %s: demo_seed.carrier %s is not the product's own demo-data carrier (%s)"
+            % (name, carrier or "<unset>", DEMO_SEED_CARRIER)
+        )
+    profile = str(seed.get("profile") or "")
+    if not re.fullmatch(r"[a-z][a-z0-9_]*", profile):
+        failures.append("duty %s: demo_seed.profile %s is not a safe profile name" % (name, profile or "<unset>"))
+    for key in ("authority", "reason"):
+        if not str(seed.get(key) or "").strip():
+            failures.append("duty %s: demo_seed.%s is required" % (name, key))
     return failures
 
 
@@ -746,10 +828,24 @@ SECRET_KEYS = (
 ENV_READBACK_KEYS = (
     "DUTY_NAME", "COMPOSE_PROJECT_NAME", "DB_NAME", "DB_USER", "DB_MAINTENANCE_USER",
     "DB_DATA", "REDIS_DATA", "ODOO_DATA", "ODOO_DBFILTER", "ODOO_PORT", "NGINX_PORT",
-    "LIST_DB",
+    "LIST_DB", "SC_ALLOW_DEMO_DATA",
 )
 APPLICATION_ENVIRONMENT_KEYS = ("ENV", "SC_ENVIRONMENT")
 INDUSTRY_MODULE_PREFIX = "smart_construction_"
+#: The demo-data switches, mirrored from the host entry so the rendered stack
+#: and the readback that proves it cannot drift apart.
+DEMO_PURPOSE = "demo"
+DEMO_SECRET_KEYS = ("SC_DEMO_USER_PASSWORD",)
+DEMO_ALLOWED_LITERAL = "1"
+DEMO_FORBIDDEN_LITERAL = "0"
+DEMO_PASSWORD_ABSENT_LITERAL = ""
+#: The product module that owns demo data, mirrored from the host entry. A duty
+#: whose ``demo_seed`` names another carrier is refused rather than seeded by an
+#: entry that picked a lane of its own.
+DEMO_SEED_CARRIER = "smart_construction_demo"
+#: A demo seed creates business rows through the product's own chain, so it is
+#: bounded like the module installs above rather than like a status readback.
+SEED_TIMEOUT = 7200
 
 __BASE_BOOTSTRAP_PLAN__
 __REFRESH_REFUSAL__
@@ -1052,6 +1148,11 @@ def duty_credentials(duty):
         if not values.get(key):
             values[key] = secrets.token_hex(32)
             created = True
+    demo_keys = DEMO_SECRET_KEYS if duty.get("data_purpose") == DEMO_PURPOSE else ()
+    for key in demo_keys:
+        if not values.get(key):
+            values[key] = secrets.token_hex(32)
+            created = True
     if duty["cluster"]["maintenance_role"] == duty["database_role"] and (
             values.get("DB_MAINTENANCE_PASSWORD") != values.get("DB_PASSWORD")):
         values["DB_MAINTENANCE_PASSWORD"] = values["DB_PASSWORD"]
@@ -1068,17 +1169,23 @@ def duty_credentials(duty):
             stream.write("# governed credential and identity material for the %s duty\n"
                          % (duty["duty"],))
             stream.write("# written by scripts/ops/daily_runtime_database_duty.py; never committed\n")
-            for key in ("DB_NAME", "DB_USER", "DB_MAINTENANCE_USER") + SECRET_KEYS:
+            for key in ("DB_NAME", "DB_USER", "DB_MAINTENANCE_USER") + SECRET_KEYS + demo_keys:
                 stream.write("%s=%s\n" % (key, values[key]))
     return values, path, created
 
 
 def render_env(duty, credentials):
+    is_demo = duty.get("data_purpose") == DEMO_PURPOSE
     values = {
         "DUTY_NAME": duty["duty"],
         "COMPOSE_PROJECT_NAME": duty["cluster"]["compose_project"],
         "ENV": duty["stack"]["runtime_env"],
         "SC_ENVIRONMENT": duty["stack"]["runtime_env"],
+        "SC_ALLOW_DEMO_DATA": DEMO_ALLOWED_LITERAL if is_demo else DEMO_FORBIDDEN_LITERAL,
+        "SC_DEMO_USER_PASSWORD": (
+            credentials.get("SC_DEMO_USER_PASSWORD", DEMO_PASSWORD_ABSENT_LITERAL)
+            if is_demo else DEMO_PASSWORD_ABSENT_LITERAL
+        ),
         "SC_PRODUCT_ROOT": duty["stack"]["product_root"],
         "SC_SOURCE_REVISION": PAYLOAD["source_revision"],
         "POSTGRES_IMAGE": duty["stack"]["postgres_image"],
@@ -1475,6 +1582,92 @@ def install_modules(duty):
     return entry
 
 
+def demo_seed_scope(duty):
+    """The demo-data switch as the *running container* carries it.
+
+    The seed chain's own guard refuses a database, an environment or a switch it
+    cannot see. Reading the same three facts back from the container is what
+    keeps a declaration that says "this duty may carry demo data" from being
+    satisfied by an env file the container never received -- the 2026-10-16
+    defect shape, one layer down.
+    """
+    container = service_container(duty, "odoo")
+    facts = {"container": container, "environment": "", "allow_demo_data": "",
+             "password_present": False, "error": ""}
+    if not container:
+        facts["error"] = "the declared odoo service is not running; start the duty stack first"
+        return facts
+    for key in ("SC_ENVIRONMENT", "SC_ALLOW_DEMO_DATA"):
+        facts[{"SC_ENVIRONMENT": "environment", "SC_ALLOW_DEMO_DATA": "allow_demo_data"}[key]] = (
+            run(["docker", "exec", container, "printenv", key]).stdout or "").strip()
+    presence = run(["docker", "exec", container, "sh", "-lc",
+                    "if [ -n \"${SC_DEMO_USER_PASSWORD:-}\" ]; then echo present; else echo absent; fi"])
+    # The value is never read back, let alone recorded: only whether the
+    # container holds one, because the seed's guard needs it and the report must
+    # not carry the secret it guards.
+    facts["password_present"] = (presence.stdout or "").strip() == "present"
+    return facts
+
+
+def seed_demo(duty):
+    """Run the *declared* demo-seed profile through the product's own chain.
+
+    No step list of this entry's own, no fixture lane, and no direct write to a
+    terminal state: the entry names the profile the declaration names and the
+    product module decides what that profile does. The demo module's guard then
+    re-checks the database, the environment and the explicit demo-data switch
+    from inside the container, so a declaration that says "demo" and a container
+    that cannot prove it disagree here rather than mid-seed.
+    """
+    seed = duty.get("demo_seed") or {}
+    profile = str(seed.get("profile") or "")
+    if duty.get("data_purpose") != DEMO_PURPOSE:
+        return {"error": "this duty does not declare data_purpose=demo; it is never seeded"}
+    if str(seed.get("carrier") or "") != DEMO_SEED_CARRIER:
+        return {"error": "the declaration names no %s demo-seed carrier" % (DEMO_SEED_CARRIER,)}
+    scope = demo_seed_scope(duty)
+    if scope.get("error"):
+        return {"error": scope["error"], "scope": scope}
+    if scope.get("environment") != DEMO_PURPOSE or scope.get("allow_demo_data") != DEMO_ALLOWED_LITERAL:
+        return {"error": "the running container does not carry the declared demo-data switch",
+                "scope": scope}
+    if not scope.get("password_present"):
+        return {"error": "the running container carries no demo user password", "scope": scope}
+    container = scope["container"]
+    program = (
+        "import os\n"
+        "from odoo.addons.%s.seed import run_steps\n"
+        "executed = run_steps(env, os.environ['SC_DEMO_SEED_PROFILE'])\n"
+        "env.cr.commit()\n"
+        "print('[demo.seed] executed=%%s' %% ','.join(executed))\n" % (DEMO_SEED_CARRIER,)
+    )
+    command = ["docker", "exec", "-i", "-e", "SC_DEMO_SEED_PROFILE=profile:" + profile,
+               container, "odoo", "shell", "-c", "/var/lib/odoo/odoo.conf",
+               "-d", duty["database"], "--no-http", "--workers=0", "--max-cron-threads=0"]
+    result = run(command, input=program, timeout=SEED_TIMEOUT)
+    tail = ((result.stdout or "") + (result.stderr or "")).strip()
+    executed = []
+    for line in tail.splitlines():
+        marker = "[demo.seed] executed="
+        if marker in line:
+            executed = [name for name in line.split(marker, 1)[1].strip().split(",") if name]
+    entry = {"container": container, "carrier": DEMO_SEED_CARRIER, "profile": profile,
+             "returncode": result.returncode, "executed": executed, "tail": tail[-1200:],
+             "scope": scope}
+    if result.returncode or not executed:
+        entry["error"] = "the declared demo-seed profile did not report an executed chain"
+        return entry
+    # The serving process holds its own registry and its own ACL/menu caches, so
+    # it is restarted before anything claims the seeded rows are visible.
+    restart = run(["docker", "restart", container], timeout=300)
+    entry["restart"] = {"command": "docker restart %s" % container,
+                        "returncode": restart.returncode}
+    waited = run(compose_base(duty) + ["up", "-d", "--wait", "odoo"], timeout=900)
+    entry["wait"] = {"returncode": waited.returncode,
+                     "error": (waited.stderr or waited.stdout or "").strip()[-400:]}
+    return entry
+
+
 def module_facts(duty):
     """The declared modules' state, read from the duty's own cluster catalog.
 
@@ -1711,7 +1904,7 @@ def duty_entry(duty):
     wants_initialization = duty["custody"].get("service_face") == "to_be_initialized"
     entry = {"duty": duty["duty"], "cluster": None, "custody": None, "stack": None,
              "create": None, "bootstrap": None, "privileges": None, "initialize": None,
-             "refresh": None, "upgrade": None, "recovery_point": None, "route": None,
+             "refresh": None, "upgrade": None, "seed": None, "recovery_point": None, "route": None,
              "service": None, "application_config": None,
              "application_credential": None, "error": ""}
     if MODE == "apply" and PHASE in ("stack", "all"):
@@ -1806,6 +1999,24 @@ def duty_entry(duty):
                              % (entry["recovery_point"].get("error") or "unverified",)}
             else:
                 entry["upgrade"] = upgrade_declared_modules(duty)
+    if MODE == "apply" and PHASE == "seed":
+        # Seeding writes business rows, so it only runs against a duty that
+        # already carries the declared module set: the chain lives inside that
+        # module, and the guard below refuses rather than seeding a duty whose
+        # declaration has not been installed yet.
+        declared_modules = [str(item) for item in duty["stack"]["modules"]]
+        observed_modules = module_facts(duty).get("module_states") or {}
+        missing = [name for name in declared_modules if observed_modules.get(name) != "installed"]
+        if not (entry["cluster"].get("present") and entry["cluster"].get("running")):
+            entry["seed"] = {"error": "the duty cluster is not running; seeding needs a serving duty"}
+        elif not base_readback(duty).get("installed"):
+            entry["seed"] = {"error": "the duty's base module is not installed; refusing to seed "
+                                       "an uninitialized duty"}
+        elif missing:
+            entry["seed"] = {"error": "the declared module set is not installed on this duty",
+                             "missing_modules": missing, "observed": observed_modules}
+        else:
+            entry["seed"] = seed_demo(duty)
     entry["service"] = service_facts(duty)
     if "odoo" in [str(item) for item in duty["stack"]["services"]]:
         entry["application_config"] = application_config_facts(duty)
@@ -1826,7 +2037,7 @@ def salvage_entry(duty, error):
     """
     entry = {"duty": duty["duty"], "cluster": None, "custody": None, "stack": None,
              "create": None, "bootstrap": None, "privileges": None, "initialize": None,
-             "refresh": None, "upgrade": None, "recovery_point": None, "route": None,
+             "refresh": None, "upgrade": None, "seed": None, "recovery_point": None, "route": None,
              "service": None, "application_config": None,
              "application_credential": None, "error": "%s: %s" % (type(error).__name__, error)}
     try:
@@ -2014,7 +2225,8 @@ def remote_duties(ssh_host, payload, *, remote_head=None):
 # ----------------------------------------------------------------------
 # evaluation
 # ----------------------------------------------------------------------
-def evaluate(duty, observation, declaration, *, phase="plan", initialize=False, upgrade=False):
+def evaluate(duty, observation, declaration, *, phase="plan", initialize=False, upgrade=False,
+             seed=False):
     """Return the per-duty assertions that decide the verdict.
 
     The two phases ask different questions about the same observation. A plan
@@ -2079,6 +2291,10 @@ def evaluate(duty, observation, declaration, *, phase="plan", initialize=False, 
                 "ODOO_PORT": str(duty["routing"]["odoo_loopback_port"]),
                 "NGINX_PORT": str(duty["routing"]["nginx_host_port"]),
                 "LIST_DB": "false",
+                "SC_ALLOW_DEMO_DATA": (
+                    DEMO_ALLOWED_LITERAL if duty.get("data_purpose") == DEMO_PURPOSE
+                    else DEMO_FORBIDDEN_LITERAL
+                ),
             }
             add("stack_environment_matches_declaration",
                 observed_keys == expected_keys,
@@ -2225,6 +2441,34 @@ def evaluate(duty, observation, declaration, *, phase="plan", initialize=False, 
                      if observed_upgrade_modules.get(name) != "installed"],
             {"modules": rewritten.get("modules"), "returncode": rewritten.get("returncode"),
              "observed": observed_upgrade_modules, "error": rewritten.get("error", "")})
+    if seed:
+        # ``seed`` creates business rows through the product's own chain inside a
+        # duty that already serves. Three facts make that reportable as done: the
+        # declaration named a demo carrier and profile, the *running container*
+        # carries the demo-data switch that chain's own guard re-checks, and the
+        # chain reported a non-empty executed step list instead of a silent no-op.
+        written = observation.get("seed") or {}
+        declared_seed = duty.get("demo_seed") or {}
+        add("demo_seed_names_the_product_carrier_and_profile",
+            duty.get("data_purpose") == DEMO_PURPOSE
+            and str(declared_seed.get("carrier") or "") == DEMO_SEED_CARRIER
+            and bool(str(declared_seed.get("profile") or "")),
+            {"data_purpose": duty.get("data_purpose"), "declared": declared_seed})
+        observed_scope = written.get("scope") or {}
+        add("seeded_container_carries_the_declared_demo_data_switch",
+            observed_scope.get("environment") == DEMO_PURPOSE
+            and observed_scope.get("allow_demo_data") == DEMO_ALLOWED_LITERAL
+            and observed_scope.get("password_present") is True,
+            {"observed": {key: observed_scope.get(key)
+                          for key in ("container", "environment", "allow_demo_data",
+                                      "password_present")},
+             "error": observed_scope.get("error", "")})
+        add("the_declared_demo_seed_profile_reported_an_executed_chain",
+            written.get("returncode") == 0 and bool(written.get("executed"))
+            and written.get("profile") == str(declared_seed.get("profile") or ""),
+            {"profile": written.get("profile"), "declared": declared_seed.get("profile"),
+             "executed": written.get("executed") or [], "returncode": written.get("returncode"),
+             "error": written.get("error", "")})
     application = observation.get("application_config") or {}
     declared_runtime_env = str(duty["stack"]["runtime_env"])
     if "odoo" in declared_services and application.get("container"):
@@ -2277,13 +2521,13 @@ def deployment_binding(declaration, frontend_build):
 
 
 def plan_verdict(declaration, selected, observations, *, phase="plan", initialize=False,
-                 upgrade=False):
+                 upgrade=False, seed=False):
     failures = validate_declaration(declaration)
     rows = []
     for duty in selected:
         observation = observations.get(duty["duty"]) or {}
         assertions = evaluate(duty, observation, declaration, phase=phase, initialize=initialize,
-                              upgrade=upgrade)
+                              upgrade=upgrade, seed=seed)
         rows.append({
             "duty": duty["duty"],
             "database": duty["database"],
@@ -2411,6 +2655,7 @@ def main(argv=None):
             phase="apply" if options.apply else "plan",
             initialize=bool(options.apply) and options.phase == "initialize",
             upgrade=bool(options.apply) and options.phase == "upgrade",
+            seed=bool(options.apply) and options.phase == "seed",
         )
     except DutyError as error:
         print("[daily.runtime.database.duty] BLOCKED %s" % (error,), file=sys.stderr)

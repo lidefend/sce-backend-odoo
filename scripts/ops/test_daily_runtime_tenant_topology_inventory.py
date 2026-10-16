@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import importlib.util
 import unittest
+from unittest import mock
 from pathlib import Path
 
 
@@ -164,6 +165,45 @@ class VerdictTests(unittest.TestCase):
         verdict = module.evaluate(list(observation), payload({**observation}) | {"writes": True})
         failed = {row["id"] for row in verdict["assertions"] if not row["passed"]}
         self.assertIn("inventory_is_read_only", failed)
+
+
+class TenantTopologyDutyBindingTests(unittest.TestCase):
+    """A database *name* stops being a target identity once two carriers share it.
+
+    The refusal is read from the shipped declaration, not from a stub: it now
+    names the rebuilt demo duty and the preserved historic source with the same
+    ``sc_demo``, so an entry that receives only ``--database`` would otherwise
+    have to guess which carrier it is measuring.
+    """
+
+    instances = Path(__file__).with_name("synthetic_duty_instances.sample.json")
+
+    def reader(self, _path: str) -> str:
+        return self.instances.read_text(encoding="utf-8")
+
+    def options(self, **overrides):
+        options = mock.Mock()
+        options.duty = ""
+        options.database = "sc_demo"
+        options.ssh_host = "sc-root"
+        for key, value in overrides.items():
+            setattr(options, key, value)
+        return options
+
+    def test_a_bare_database_name_no_longer_binds_a_carrier(self) -> None:
+        with self.assertRaisesRegex(module.InventoryError, "DUTY_IDENTITY_DATABASE_AMBIGUOUS:sc_demo"):
+            module.bind_target(self.options(), instances_reader=self.reader)
+
+    def test_naming_the_duty_binds_the_rebuilt_demo_carrier(self) -> None:
+        binding = module.bind_target(
+            self.options(duty="demo"), instances_reader=self.reader
+        )
+        self.assertEqual(binding["database"], "sc_demo")
+        self.assertEqual(binding["database_role"], "sc_demo_app")
+        self.assertEqual(binding["compose_project"], "sc-demo-dev")
+        self.assertEqual(binding["database_container"], "sc-demo-dev-db-1")
+        self.assertEqual(binding["database_volume"], "sc_demo_db_data")
+        self.assertEqual(binding["data_purpose"], "demo")
 
 
 if __name__ == "__main__":

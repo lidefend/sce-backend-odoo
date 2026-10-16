@@ -35,6 +35,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import daily_runtime_duty_identity as duty_identity  # noqa: E402
 REMOTE_ROOT = "/opt/projects/repos/sce-product-odoo"
 REMOTE_TMP = "/tmp/sc-daily-data-ownership-probe.py"
 DEFAULT_DATABASE = "sc_demo"
@@ -638,17 +640,37 @@ def evaluate(expected, payload):
     }
 
 
+
+
+def bind_target(options, *, instances_reader=None) -> dict:
+    """Bind the target duty, its cluster, its database and its storage, or stop.
+
+    Ownership is a property of one carrier's rows; probing another carrier's database would answer a different question.
+    """
+    try:
+        reader = instances_reader
+        if reader is None:
+            reader = duty_identity.ssh_instances_reader(options.ssh_host)
+        return duty_identity.bind_duty_database(
+            getattr(options, "duty", ""), options.database, instances_reader=reader,
+        )
+    except duty_identity.DutyIdentityError as error:
+        raise ProbeError(str(error))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expected-sha", required=True)
     parser.add_argument("--database", default=DEFAULT_DATABASE)
+    parser.add_argument("--duty", default="", help="the declared duty this entry binds; a database name alone is not a target identity")
     parser.add_argument("--ssh-host", required=True)
     parser.add_argument("--report", required=True)
     options = parser.parse_args()
 
     try:
+        binding = bind_target(options)
         expected, payload, remote_head = probe(
-            options.expected_sha, options.database, options.ssh_host,
+            options.expected_sha, binding["database"], options.ssh_host,
         )
         verdict = evaluate(expected, payload)
     except ProbeError as error:
@@ -661,6 +683,7 @@ def main():
         "remote_head": remote_head,
         "database": options.database,
         "ssh_host": options.ssh_host,
+        "database_binding": binding,
         "writes": False,
         "provenance": {
             "live_account_query": [

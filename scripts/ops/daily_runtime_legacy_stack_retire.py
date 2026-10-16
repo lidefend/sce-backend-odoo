@@ -59,6 +59,28 @@ CONTAINER_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
 POSTGRES_DATA_DESTINATION = "/var/lib/postgresql/data"
 REMOTE_PRODUCT_REPO = "/opt/projects/repos/sce-product-odoo"
 
+#: A leftover stack is not one shape, so the declaration has to say which one it
+#: is and the plan has to prove the matching fact. A ``shared_writer`` writes
+#: into a data directory a survivor is also writing: it is stopped *without* a
+#: shutdown handler, and the plan must prove the sharing. A
+#: ``serving_publisher`` owns no cluster data directory and only holds a
+#: published port: it is stopped *with* the signal its own image declares, and
+#: the plan must prove the opposite fact -- that it shares no writable volume
+#: with anything still running.
+SHARED_WRITER_INTENT = "shared_writer"
+SERVING_PUBLISHER_INTENT = "serving_publisher"
+STACK_INTENTS = (SHARED_WRITER_INTENT, SERVING_PUBLISHER_INTENT)
+
+#: Docker's documented default for a container that declares no stop signal. The
+#: plan resolves an empty ``Config.StopSignal`` to this instead of reading it as
+#: "no signal", so a declaration may name the signal ``docker stop`` will really
+#: send -- and a container whose image later changes it stops matching.
+DEFAULT_STOP_SIGNAL = "SIGTERM"
+SIGNAL_NAME = re.compile(r"^SIG[A-Z0-9]+$")
+#: ``REVIEWED_STOP_METHOD[...]["signal"]`` for a method whose signal is read back
+#: from the container instead of being fixed by the reviewed table.
+VERIFIED_STOP_SIGNAL = "verified"
+
 #: The reviewed stop method per container kind. ``refused`` records the command
 #: that looks natural and is *not* used, with the reason, so a later reader does
 #: not "simplify" this entry back into an unsafe stop.
@@ -110,6 +132,31 @@ REVIEWED_STOP_METHOD = {
         ),
         "refused": {},
     },
+    "serving": {
+        "mode": "graceful_stop_with_the_containers_verified_signal",
+        "signal": VERIFIED_STOP_SIGNAL,
+        "argv": ["docker", "stop", "--timeout", "120", "{container}"],
+        "authority": (
+            "this container owns no cluster data directory -- it is an application or a proxy "
+            "whose own image declares the signal for its clean shutdown (the official nginx "
+            "image declares SIGQUIT, fast shutdown; Odoo's image declares none, so docker's "
+            "documented default SIGTERM applies). ``docker stop`` sends exactly that signal. "
+            "The plan reads the signal back from the container and compares it with the "
+            "declaration, so an image that changes it refuses instead of being stopped with a "
+            "signal nobody reviewed."
+        ),
+        "refused": {
+            "docker kill (SIGKILL)": (
+                "no shared writer is being stopped here, so SIGKILL would skip the image's own "
+                "shutdown path for no gain: nothing about this container is shared with a "
+                "survivor."
+            ),
+            "docker kill --signal=SIGQUIT": (
+                "carries the postgres Immediate Shutdown rationale onto a container that owns "
+                "no cluster data directory, throwing away the image's own shutdown handler."
+            ),
+        },
+    },
 }
 
 RESTART_ACTION = ["docker", "update", "--restart=no", "{container}"]
@@ -134,6 +181,7 @@ MODE = PAYLOAD["mode"]
 EVIDENCE_ROOT = PAYLOAD["evidence_root"]
 POSTGRES_DATA_DESTINATION = __POSTGRES_DATA_DESTINATION__
 STAMP_PLACEHOLDER = __STAMP_PLACEHOLDER__
+DEFAULT_STOP_SIGNAL = __DEFAULT_STOP_SIGNAL__
 
 
 def run(command, cwd=None):
@@ -151,6 +199,7 @@ def collect():
     entries = json.loads(run(["docker", "inspect", *everything]).stdout or "[]") if everything else []
     rows = {}
     volume_owners = {}
+    running_volume_owners = {}
     postgres_volume_owners = {}
     for entry in entries:
         name = (entry.get("Name") or "").lstrip("/")
@@ -166,6 +215,12 @@ def collect():
             if not mount["name"]:
                 continue
             volume_owners.setdefault(mount["name"], []).append(name)
+            if state.get("Running"):
+                # Only a *live* co-mount is a second writer. A stopped or merely
+                # created container holding the same volume name is not writing
+                # into it, and reading it as one would refuse a publisher that
+                # shares nothing with anything running.
+                running_volume_owners.setdefault(mount["name"], []).append(name)
             if mount["destination"] == POSTGRES_DATA_DESTINATION:
                 postgres_volume_owners.setdefault(mount["name"], []).append(name)
         target = declared.get(name) or {}
@@ -184,12 +239,14 @@ def collect():
             "started_at": state.get("StartedAt") or "",
             "restart_policy": (hc.get("RestartPolicy") or {}).get("Name") or "",
             "stop_signal": cfg.get("StopSignal") or hc.get("StopSignal") or "",
+            "resolved_stop_signal": (cfg.get("StopSignal") or hc.get("StopSignal")
+                                     or DEFAULT_STOP_SIGNAL),
+            "mounts": mounts,
             "host_pid": state.get("Pid") or 0,
         }
         if target:
             row["shared_volume"] = target.get("shared_volume") or ""
             row["shared_mount_destination"] = target.get("mount_destination") or ""
-            row["mounts"] = mounts
         rows[name] = row
     for name, target in declared.items():
         if name not in rows:
@@ -260,26 +317,36 @@ def collect():
             if line:
                 data_directories.append(line)
 
-    legacy_checkout = PAYLOAD["legacy_checkout"]
+    # Every declared checkout is reported, not just the first one: a declaration
+    # may carry a shared-writer leftover and a serving publisher at the same
+    # time, and "no systemd unit revives this path" has to be answered for each.
+    checkouts = []
+    systemd_units = []
+    for path in PAYLOAD["legacy_checkouts"]:
+        checkouts.append({
+            "path": path,
+            "head": sh("git -C " + shlex.quote(path) + " rev-parse HEAD").stdout.strip(),
+            "status": sh("git -C " + shlex.quote(path) + " status --short").stdout.strip().splitlines(),
+            "compose_diff": sh("git -C " + shlex.quote(path)
+                               + " diff -- docker-compose.yml").stdout.strip()[:4000],
+        })
+        systemd_units.extend(
+            sh("grep -rl " + shlex.quote(path)
+               + " /etc/systemd/system /lib/systemd/system 2>/dev/null").stdout.strip().splitlines()
+        )
     return {
         "containers": [rows[name] for name in sorted(rows)],
         "running_containers": sorted(running),
         "all_containers": sorted(everything),
         "postgres_data_volume_owners": postgres_volume_owners,
         "volume_owners": volume_owners,
+        "running_volume_owners": running_volume_owners,
         "volumes": volumes,
         "data_directories": data_directories,
         "compose_files": compose,
-        "legacy_checkout": {
-            "path": legacy_checkout,
-            "head": sh("git -C " + shlex.quote(legacy_checkout) + " rev-parse HEAD").stdout.strip(),
-            "status": sh("git -C " + shlex.quote(legacy_checkout) + " status --short").stdout.strip().splitlines(),
-            "compose_diff": sh("git -C " + shlex.quote(legacy_checkout)
-                               + " diff -- docker-compose.yml").stdout.strip()[:4000],
-        },
+        "legacy_checkouts": checkouts,
         "startup_sources": {
-            "systemd_units": sh("grep -rl " + shlex.quote(legacy_checkout)
-                                + " /etc/systemd/system /lib/systemd/system 2>/dev/null").stdout.strip().splitlines(),
+            "systemd_units": sorted(set(systemd_units)),
             "cron": [line for line in sh("crontab -l 2>/dev/null; ls /etc/cron.d 2>/dev/null")
                      .stdout.strip().splitlines() if line.strip()],
         },
@@ -360,7 +427,10 @@ def apply_actions():
         out = run(command)
         row = {"argv": command, "exit_code": out.returncode,
                "stdout": (out.stdout or "").strip()[-800:], "stderr": (out.stderr or "").strip()[-800:]}
-        if command[:2] == ["docker", "kill"]:
+        # Both stop paths are read back: ``docker kill`` returns before the
+        # process is gone, and even ``docker stop`` -- which blocks until the
+        # container exits -- is only *evidence* once the state is read.
+        if command[:1] == ["docker"] and command[1] in ("kill", "stop"):
             name = command[-1]
             for _ in range(30):
                 if run(["docker", "inspect", "-f", "{{.State.Running}}", name]).stdout.strip() == "false":
@@ -461,9 +531,34 @@ def load_declaration_from_text(text):
             raise RetireError("retired-stack declaration lists a stack without a legacy checkout")
         if not (stack.get("containers") or []):
             raise RetireError("retired-stack declaration lists a stack without containers")
+        intent = stack.get("intent") or SHARED_WRITER_INTENT
+        if intent not in STACK_INTENTS:
+            raise RetireError(f"unsupported retirement intent {intent!r}")
+        if intent == SERVING_PUBLISHER_INTENT and not str(stack.get("revival_path") or "").strip():
+            # A publisher is stood down so that a replacement can take its port.
+            # The declaration has to say what could still bring it back, or the
+            # stop reads as durable for a reason nobody wrote down.
+            raise RetireError(
+                "a serving_publisher stack must declare what could still revive it (revival_path)")
         for container in stack["containers"]:
             if container.get("kind") not in REVIEWED_STOP_METHOD:
                 raise RetireError(f"unsupported container kind {container.get('kind')!r}")
+            if intent == SERVING_PUBLISHER_INTENT and container.get("kind") in ("postgres", "redis"):
+                # A publisher that owns a cluster writer *is* a shared writer, and
+                # the two-writer proof is what decides that case. Letting it in
+                # here would retire a writer through the graceful path.
+                raise RetireError(
+                    "a serving_publisher stack may not retire a %s container: that is the "
+                    "shared_writer intent, where the two-writer proof applies"
+                    % (container.get("kind"),))
+            if container.get("kind") == "serving":
+                if intent != SERVING_PUBLISHER_INTENT:
+                    raise RetireError(
+                        "a serving container belongs to the serving_publisher intent")
+                if not SIGNAL_NAME.fullmatch(container.get("expected_stop_signal") or ""):
+                    raise RetireError(
+                        "serving container %s must declare the signal docker stop will send "
+                        "(expected_stop_signal)" % (container.get("name"),))
             if not CONTAINER_NAME.fullmatch(container.get("name") or ""):
                 raise RetireError(f"unsupported container name {container.get('name')!r}")
             if not re.fullmatch(r"[0-9a-f]{12,64}", container.get("id") or ""):
@@ -482,6 +577,8 @@ def declaration_targets(declaration):
                 "container": container["name"],
                 "declared_id": container["id"],
                 "kind": container["kind"],
+                "intent": stack.get("intent") or SHARED_WRITER_INTENT,
+                "expected_stop_signal": container.get("expected_stop_signal") or "",
                 "shared_volume": container.get("shared_volume") or "",
                 "mount_destination": container.get("mount_destination") or "",
                 "compose_project": stack["compose_project"],
@@ -504,6 +601,8 @@ def build_plan(declaration, facts, *, ssh_host, evidence_root):
     declared_volume = {
         target["shared_volume"] for target in targets if target["shared_volume"]
     }
+    shared_targets = [t for t in targets if t["intent"] == SHARED_WRITER_INTENT]
+    serving_targets = [t for t in targets if t["intent"] == SERVING_PUBLISHER_INTENT]
     guards = []
 
     def guard(identifier, passed, detail):
@@ -521,18 +620,19 @@ def build_plan(declaration, facts, *, ssh_host, evidence_root):
     guard("declared_container_identity_matches", not mismatched, mismatched)
 
     volume_owners = facts.get("volume_owners") or {}
-    shared = {
-        volume: sorted(owners) for volume, owners in volume_owners.items()
-        if len(set(owners)) > 1 and any(owner in declared_names for owner in owners)
-    }
-    guard("declared_stack_is_a_shared_writer", bool(shared), shared)
+    if shared_targets:
+        shared = {
+            volume: sorted(owners) for volume, owners in volume_owners.items()
+            if len(set(owners)) > 1 and any(owner in declared_names for owner in owners)
+        }
+        guard("declared_stack_is_a_shared_writer", bool(shared), shared)
 
-    declared_volume_covered = sorted(
-        volume for volume in declared_volume
-        if not any(owner in declared_names for owner in volume_owners.get(volume, []))
-    )
-    guard("declared_shared_volume_is_mounted_by_the_declared_stack", not declared_volume_covered,
-          declared_volume_covered)
+        declared_volume_covered = sorted(
+            volume for volume in declared_volume
+            if not any(owner in declared_names for owner in volume_owners.get(volume, []))
+        )
+        guard("declared_shared_volume_is_mounted_by_the_declared_stack", not declared_volume_covered,
+              declared_volume_covered)
 
     # The retirement must take down the *older* writer on the shared cluster. If a
     # declared orphan had started last, the declaration points at the survivor and
@@ -571,13 +671,14 @@ def build_plan(declaration, facts, *, ssh_host, evidence_root):
         and not survivors_unreported
         and not (set(writer_start_times) & declared_names)
     )
-    guard("declared_postgres_is_not_the_newest_writer",
-          (comparable and not offending) or already_retired,
-          {"cluster_volumes": cluster_volumes, "writer_start_times": writer_start_times,
-           "comparable": comparable, "newest_writer_is_declared": offending,
-           "declared_postgres_running": running_declared_postgres,
-           "declared_postgres_already_retired": already_retired,
-           "survivors_unreported": survivors_unreported})
+    if shared_targets:
+        guard("declared_postgres_is_not_the_newest_writer",
+              (comparable and not offending) or already_retired,
+              {"cluster_volumes": cluster_volumes, "writer_start_times": writer_start_times,
+               "comparable": comparable, "newest_writer_is_declared": offending,
+               "declared_postgres_running": running_declared_postgres,
+               "declared_postgres_already_retired": already_retired,
+               "survivors_unreported": survivors_unreported})
 
     application_clients = {
         row["container"]: row.get("application_clients")
@@ -595,6 +696,43 @@ def build_plan(declaration, facts, *, ssh_host, evidence_root):
                        if row.get("kind") == "idle" and row.get("running"))
     guard("declared_idle_container_is_not_running", not live_idle, live_idle)
 
+    # A serving publisher owns no cluster data directory. The plan proves the
+    # opposite of the shared-writer case: the only thing it holds is a published
+    # port, so it must share no *writable, live* volume with anything still
+    # running, and it must not mount a PostgreSQL data directory at all.
+    running_volume_owners = facts.get("running_volume_owners") or {}
+    serving_sharing = {}
+    serving_cluster_mounts = {}
+    signal_mismatch = {}
+    for target in serving_targets:
+        row = observed.get(target["container"]) or {}
+        mounts = row.get("mounts") or []
+        for mount in mounts:
+            if mount.get("destination") == POSTGRES_DATA_DESTINATION:
+                serving_cluster_mounts.setdefault(target["container"], []).append(
+                    mount.get("destination"))
+            name = mount.get("name")
+            if not name or not mount.get("rw"):
+                continue
+            others = sorted(owner for owner in running_volume_owners.get(name, [])
+                            if owner != target["container"])
+            if others:
+                serving_sharing.setdefault(target["container"], []).append(
+                    {"volume": name, "live_owners": others})
+        if not row.get("present"):
+            continue
+        resolved = row.get("resolved_stop_signal") or DEFAULT_STOP_SIGNAL
+        if resolved != target["expected_stop_signal"]:
+            signal_mismatch[target["container"]] = {
+                "declared": target["expected_stop_signal"], "observed": resolved}
+    if serving_targets:
+        guard("declared_serving_container_does_not_share_a_live_writable_volume",
+              not serving_sharing, serving_sharing)
+        guard("declared_serving_container_owns_no_cluster_data_directory",
+              not serving_cluster_mounts, serving_cluster_mounts)
+        guard("declared_serving_stop_signal_matches_the_container",
+              not signal_mismatch, signal_mismatch)
+
     commands = []
     for target in targets:
         row = observed.get(target["container"]) or {}
@@ -606,10 +744,16 @@ def build_plan(declaration, facts, *, ssh_host, evidence_root):
         method = REVIEWED_STOP_METHOD[target["kind"]]
         if method["argv"] is None or not row.get("running"):
             continue
+        signal = method["signal"]
+        if signal == VERIFIED_STOP_SIGNAL:
+            # The reviewed table names the *source* of the signal (the container
+            # itself); the plan records the value it read back, so the digest a
+            # reviewer approves binds the exact signal ``docker stop`` will send.
+            signal = row.get("resolved_stop_signal") or DEFAULT_STOP_SIGNAL
         commands.append({
             "step": f"stop_{target['kind']}_{method['mode']}",
             "container": target["container"],
-            "signal": method["signal"],
+            "signal": signal,
             "argv": [part.format(container=target["container"]) for part in method["argv"]],
             "authority": method["authority"],
             "refused": method["refused"],
@@ -649,7 +793,7 @@ def observe(*, ssh_host, declaration, evidence_root, expected_sha):
         "targets": _remote_targets(declaration),
         "evidence_root": evidence_root,
         "compose_files": _compose_files(declaration),
-        "legacy_checkout": declaration["stacks"][0]["legacy_checkout"],
+        "legacy_checkouts": _legacy_checkouts(declaration),
         "survivor_probes": [],
     }
     result = _execute(ssh_host, payload)
@@ -667,7 +811,7 @@ def apply_retirement(*, ssh_host, declaration, actions):
         "targets": _remote_targets(declaration),
         "evidence_root": actions["evidence_root"],
         "compose_files": _compose_files(declaration),
-        "legacy_checkout": declaration["stacks"][0]["legacy_checkout"],
+        "legacy_checkouts": _legacy_checkouts(declaration),
         "commands": [command["argv"] for command in actions["commands"]],
         "compose_neutralise": actions["compose_neutralise"],
         "survivor_probes": _survivor_probes(declaration),
@@ -677,15 +821,44 @@ def apply_retirement(*, ssh_host, declaration, actions):
 
 def _remote_targets(declaration):
     return [
-        {"container": t["container"], "kind": t["kind"], "shared_volume": t["shared_volume"],
+        {"container": t["container"], "kind": t["kind"], "intent": t["intent"],
+         "expected_stop_signal": t["expected_stop_signal"],
+         "shared_volume": t["shared_volume"],
          "mount_destination": t["mount_destination"]}
         for t in declaration_targets(declaration)
     ]
 
 
+def _legacy_checkouts(declaration):
+    """Every declared checkout, de-duplicated and order-stable.
+
+    A declaration may hold a shared-writer leftover and a serving publisher at
+    once, and both have to answer "which revision is this, and could anything
+    revive it". Reading only the first stack would silently drop the second.
+    """
+    seen = []
+    for stack in declaration["stacks"]:
+        path = stack["legacy_checkout"]
+        if path not in seen:
+            seen.append(path)
+    return seen
+
+
 def _compose_files(declaration):
-    stack = declaration["stacks"][0]
-    return [f"{stack['legacy_checkout']}/{name}" for name in stack.get("compose_files") or []]
+    """Every declared compose file, de-duplicated and order-stable.
+
+    A served publisher whose compose file is *shared* with a live duty leaves it
+    unlisted: neutralising a file another duty still renders from would break the
+    stack that is starting, not the one being retired.
+    """
+    paths = []
+    for stack in declaration["stacks"]:
+        checkout = stack["legacy_checkout"]
+        for name in stack.get("compose_files") or []:
+            path = f"{checkout}/{name}"
+            if path not in paths:
+                paths.append(path)
+    return paths
 
 
 def _survivor_probes(declaration):
@@ -699,6 +872,7 @@ def _execute(ssh_host, payload):
         .replace("__PAYLOAD__", json.dumps(payload, ensure_ascii=False))
         .replace("__POSTGRES_DATA_DESTINATION__", json.dumps(POSTGRES_DATA_DESTINATION))
         .replace("__STAMP_PLACEHOLDER__", json.dumps(STAMP_PLACEHOLDER))
+        .replace("__DEFAULT_STOP_SIGNAL__", json.dumps(DEFAULT_STOP_SIGNAL))
         .encode("utf-8")
     )
     upload = ssh(ssh_host, f"cat > {shlex.quote(REMOTE_TMP)}", input_bytes=program)

@@ -8,7 +8,7 @@
     "database_role": "^[a-z0-9_]+_app$",
     "database_role_must_be_database_name_suffixed": "_app",
     "compose_project": "^sc-[a-z0-9-]+$",
-    "database_maintenance_role": "^(sc_platform_control_maintenance|sc_tenant_[a-z0-9]+_dev_maintenance|odoo)$"
+    "database_maintenance_role": "^(sc_platform_control_maintenance|sc_demo_maintenance|sc_tenant_[a-z0-9]+_dev_maintenance)$"
   },
   "duties": [
     {
@@ -82,7 +82,7 @@
     {
       "duty": "demo",
       "database": "sc_demo",
-      "database_role": "odoo",
+      "database_role": "sc_demo_app",
       "dbfilter": "^sc_demo$",
       "environment_id": "daily-dev-demo",
       "tenant_key": "sc-demo-main",
@@ -95,35 +95,32 @@
         ],
         "version_prefix": "daily-navigation"
       },
+      "demo_seed": {
+        "carrier": "smart_construction_demo",
+        "profile": "demo_full",
+        "authority": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
+        "reason": "The owner ruling of 2026-10-16 declares smart_construction_demo the demo duty's data carrier: demo data is produced by the product's own formal demo seed chain, never by a substitute fixture lane and never by writing a terminal state directly. The product tree names the carrier and the profile; the governed demo-seed entry reads this section instead of defaulting a step list of its own, and the seed's own guard still has to accept the database, the environment and the explicit demo-data switch before anything runs."
+      },
       "cluster": {
-        "container": "sc-backend-odoo-dev-db-1",
-        "compose_project": "sc-backend-odoo-dev",
-        "data_volume": "sc_dev_db_data",
-        "maintenance_role": "odoo",
-        "system_identifier": "7597381856873586726"
+        "container": "sc-demo-dev-db-1",
+        "compose_project": "sc-demo-dev",
+        "data_volume": "sc_demo_db_data",
+        "maintenance_role": "sc_demo_maintenance",
+        "system_identifier": ""
       },
       "custody": {
-        "database_present": true,
-        "database_role_present": true,
-        "role_compliance": "declared_gap",
-        "gap_kind": "shared_bootstrap_role",
-        "gap_reason": "The daily demo duty still connects as the cluster superuser role 'odoo', which is a createdb/superuser role. Policy section 6 requires an independent role per tenant environment; the dedicated demo application role is a separate authorized change because it rewrites the live dev stack credentials.",
-        "gap_owner_task": "DAILY-RUNTIME-DEMO-APP-ROLE-01",
-        "service_face": "initialized"
-      },
-      "credential_source": {
-        "env_file": "/opt/projects/repos/sce-product-odoo/.env.dev",
-        "key": "DB_PASSWORD",
-        "reason": "The sc_demo cluster and its 'odoo' role predate this duty: the role lives inside the sc_dev_db_data volume, its password cannot be read back from the cluster, and the daily dev environment file that this declaration already names as frontend_build_env_file owns that credential. The duty therefore adopts the existing credential instead of rendering a second secret the existing role would never accept, which is the 2026-10-16 shape in which every service reported healthy while the application restarted against a database that rejected its password. Rotating this role to a duty-owned secret is the dedicated application-role change and is not performed here.",
-        "owning_task": "DAILY-RUNTIME-DEMO-APP-ROLE-01"
+        "database_present": false,
+        "database_role_present": false,
+        "role_compliance": "to_be_created",
+        "service_face": "to_be_initialized"
       },
       "storage": {
-        "compose_project": "sc-backend-odoo-dev",
-        "odoo_data_volume": "sc_dev_odoo_data",
-        "redis_data_volume": "sc_dev_redis_data",
+        "compose_project": "sc-demo-dev",
+        "odoo_data_volume": "sc_demo_odoo_data",
+        "redis_data_volume": "sc_demo_redis_data",
         "filestore_scope": "sc_demo",
         "session_namespace": "sc_demo",
-        "backup_namespace": "/data/backups/daily_candidate"
+        "backup_namespace": "/data/backups/daily-demo-dev"
       },
       "routing": {
         "nginx_host_port": 18081,
@@ -146,7 +143,7 @@
       "stack": {
         "compose_file": "config/ops/daily_runtime_duty_stack.yml",
         "env_template": "config/ops/daily_runtime_duty_stack.env",
-        "runtime_env": "dev",
+        "runtime_env": "demo",
         "odoo_image": "odoo17-odoo:latest",
         "postgres_image": "postgres:15",
         "product_root": "/opt/projects/repos/sce-product-odoo",
@@ -161,9 +158,24 @@
         ],
         "modules": [
           "smart_core",
-          "smart_construction_core"
+          "smart_construction_core",
+          "smart_construction_demo"
         ]
       }
+    }
+  ],
+  "protected_historic_sources": [
+    {
+      "source_id": "pre_governance_shared_cluster",
+      "database": "sc_demo",
+      "cluster": {
+        "container": "sc-backend-odoo-dev-db-1",
+        "compose_project": "sc-backend-odoo-dev",
+        "data_volume": "sc_dev_db_data"
+      },
+      "visibility": "read_only_historic",
+      "authority": "docs/ops/user_data_production_boundary_v1.md",
+      "reason": "Before the 2026-10-16 rebuild, the demo duty borrowed this pre-governance cluster, and it also carries a company-1 tenant volume. The owner ruling keeps it unchanged in place: no rename, no clean, no migration, no upgrade and no seed. It is registered here for one reason -- a database *name* must stop identifying a target on its own. Once the rebuilt demo carrier also carries a database named sc_demo, a bare database name resolves to two carriers, and any governed entry that receives only a name has to refuse instead of guessing which one is meant. This entry declares no duty, so it can never be selected as a write target by the duty entry."
     }
   ],
   "platform_admin_database": "sc_platform_control",

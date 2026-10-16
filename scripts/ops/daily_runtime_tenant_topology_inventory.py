@@ -45,6 +45,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import daily_runtime_duty_identity as duty_identity  # noqa: E402
 REMOTE_ROOT = "/opt/projects/repos/sce-product-odoo"
 REMOTE_TMP = "/tmp/sc-daily-tenant-topology.py"
 DEFAULT_DATABASE = "sc_demo"
@@ -420,10 +422,29 @@ def evaluate(databases, payload):
     }
 
 
+
+
+def bind_target(options, *, instances_reader=None) -> dict:
+    """Bind the target duty, its cluster, its database and its storage, or stop.
+
+    The topology question is asked about one carrier: a name that resolves to two of them answers about neither.
+    """
+    try:
+        reader = instances_reader
+        if reader is None:
+            reader = duty_identity.ssh_instances_reader(options.ssh_host)
+        return duty_identity.bind_duty_database(
+            getattr(options, "duty", ""), options.database, instances_reader=reader,
+        )
+    except duty_identity.DutyIdentityError as error:
+        raise InventoryError(str(error))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expected-sha", required=True)
     parser.add_argument("--database", default=DEFAULT_DATABASE)
+    parser.add_argument("--duty", default="", help="the declared duty this entry binds; a database name alone is not a target identity")
     parser.add_argument("--databases", default=",".join(DEFAULT_DATABASES))
     parser.add_argument("--ssh-host", required=True)
     parser.add_argument("--report", required=True)
@@ -435,9 +456,10 @@ def main():
     options = parser.parse_args()
 
     try:
+        binding = bind_target(options)
         databases = parse_databases(options.databases)
         payload, remote_head = inventory(
-            options.expected_sha, options.database, options.ssh_host, databases,
+            options.expected_sha, binding["database"], options.ssh_host, databases,
             customer_module=options.customer_module,
         )
         verdict = evaluate(databases, payload)
@@ -450,6 +472,7 @@ def main():
         "expected_sha": options.expected_sha,
         "remote_head": remote_head,
         "ssh_host": options.ssh_host,
+        "database_binding": binding,
         "opened_database": options.database,
         "declared_databases": list(databases),
         "declared_customer_module": options.customer_module,

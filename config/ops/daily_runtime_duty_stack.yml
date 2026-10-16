@@ -76,6 +76,12 @@ services:
       # and then every `/api/*` route fails before dispatch (2026-10-16).
       ENV: ${ENV}
       SC_ENVIRONMENT: ${SC_ENVIRONMENT}
+      # The demo-data switches travel with the environment discriminator, for
+      # the same reason: a stack that declares the demo purpose in its env file
+      # and never forwards the switch leaves the demo module's own guard to
+      # refuse a seed that the declaration said was allowed (2026-10-16).
+      SC_ALLOW_DEMO_DATA: ${SC_ALLOW_DEMO_DATA}
+      SC_DEMO_USER_PASSWORD: ${SC_DEMO_USER_PASSWORD}
       ADMIN_PASSWD: ${ADMIN_PASSWD}
       JWT_SECRET: ${JWT_SECRET}
       SC_BOOTSTRAP_SECRET: ${SC_BOOTSTRAP_SECRET}

@@ -2,7 +2,7 @@
   "schema": "daily.runtime.retired_stacks.v1",
   "host": "sc-root",
   "authority": "Owner ruling 2026-10-15: dispose of the shared PGDATA two-writer risk before continuing the three-database build; the leftover sc-backend-odoo-prod db/redis pair is retired through a governed entry, not an ad-hoc docker stop.",
-  "purpose": "Single declaration of the leftover stack that must stay stopped. The routing inventory refuses the daily runtime while a container listed here is running, and refuses while two live postmasters own one cluster data directory.",
+  "purpose": "Single declaration of the leftover stacks that must stay stopped. Two shapes are declared and each one is proved separately: a shared_writer that still writes a volume a survivor uses, and a serving_publisher that owns no cluster data directory but holds a published port. The routing inventory refuses the daily runtime while a container listed here is running, and refuses while two live postmasters own one cluster data directory.",
   "survivor": {
     "description": "the live daily development stack that keeps the shared volumes",
     "containers": [
@@ -12,35 +12,89 @@
     "probes": [
       {
         "name": "live_postmaster_facts",
-        "argv": ["docker", "exec", "sc-backend-odoo-dev-db-1", "psql", "-U", "odoo", "-d", "postgres", "-Atc", "SELECT pg_postmaster_start_time(), pg_is_in_recovery(), pg_current_wal_lsn(), system_identifier FROM pg_control_system()"]
+        "argv": [
+          "docker",
+          "exec",
+          "sc-backend-odoo-dev-db-1",
+          "psql",
+          "-U",
+          "odoo",
+          "-d",
+          "postgres",
+          "-Atc",
+          "SELECT pg_postmaster_start_time(), pg_is_in_recovery(), pg_current_wal_lsn(), system_identifier FROM pg_control_system()"
+        ]
       },
       {
         "name": "live_cluster_databases",
-        "argv": ["docker", "exec", "sc-backend-odoo-dev-db-1", "psql", "-U", "odoo", "-d", "postgres", "-Atc", "SELECT datname FROM pg_database WHERE datistemplate = false ORDER BY datname"]
+        "argv": [
+          "docker",
+          "exec",
+          "sc-backend-odoo-dev-db-1",
+          "psql",
+          "-U",
+          "odoo",
+          "-d",
+          "postgres",
+          "-Atc",
+          "SELECT datname FROM pg_database WHERE datistemplate = false ORDER BY datname"
+        ]
       },
       {
         "name": "live_cluster_checkpoint",
-        "argv": ["docker", "exec", "sc-backend-odoo-dev-db-1", "psql", "-U", "odoo", "-d", "postgres", "-Atc", "SELECT checkpoint_time, checkpoint_lsn, timeline_id FROM pg_control_checkpoint()"]
+        "argv": [
+          "docker",
+          "exec",
+          "sc-backend-odoo-dev-db-1",
+          "psql",
+          "-U",
+          "odoo",
+          "-d",
+          "postgres",
+          "-Atc",
+          "SELECT checkpoint_time, checkpoint_lsn, timeline_id FROM pg_control_checkpoint()"
+        ]
       },
       {
         "name": "live_postmaster_pid_file",
-        "argv": ["sh", "-c", "cat /var/lib/docker/volumes/sc_dev_db_data/_data/postmaster.pid"]
+        "argv": [
+          "sh",
+          "-c",
+          "cat /var/lib/docker/volumes/sc_dev_db_data/_data/postmaster.pid"
+        ]
       },
       {
         "name": "live_redis_persistence",
-        "argv": ["docker", "exec", "sc-backend-odoo-dev-redis-1", "redis-cli", "info", "persistence"]
+        "argv": [
+          "docker",
+          "exec",
+          "sc-backend-odoo-dev-redis-1",
+          "redis-cli",
+          "info",
+          "persistence"
+        ]
       },
       {
         "name": "live_redis_clients",
-        "argv": ["docker", "exec", "sc-backend-odoo-dev-redis-1", "redis-cli", "client", "list"]
+        "argv": [
+          "docker",
+          "exec",
+          "sc-backend-odoo-dev-redis-1",
+          "redis-cli",
+          "client",
+          "list"
+        ]
       }
     ]
   },
   "stacks": [
     {
       "compose_project": "sc-backend-odoo-prod",
+      "intent": "shared_writer",
       "legacy_checkout": "/opt/projects/repos/sce-backend-odoo",
-      "compose_files": ["docker-compose.yml"],
+      "compose_files": [
+        "docker-compose.yml"
+      ],
       "why_retired": "second live postmaster on sc_dev_db_data and a second redis writer on sc_dev_redis_data, with no application consumer; proven by two distinct pg_postmaster_start_time() values on one shared pg_control inode.",
       "containers": [
         {
@@ -68,6 +122,32 @@
           "name": "sc-backend-odoo-prod-nginx-1",
           "id": "9d10e2d526e1",
           "kind": "idle",
+          "shared_volume": "",
+          "mount_destination": ""
+        }
+      ]
+    },
+    {
+      "compose_project": "sc-backend-odoo-dev",
+      "intent": "serving_publisher",
+      "legacy_checkout": "/opt/projects/repos/sce-product-odoo",
+      "compose_files": [],
+      "revival_path": "an explicit 'docker compose -p sc-backend-odoo-dev up -d' over the rendered duty stack /opt/projects/secure/daily-runtime-duties/duty-stack-b888e8a54f5e.yml (env file /opt/projects/secure/daily-runtime-duties/demo.env). There is no watcher and no systemd unit: the only automatic path is the 'unless-stopped' restart policy, which this retirement removes before stopping the containers. Nothing in the governed duty tooling re-creates this project, because the demo duty now declares its own sc-demo-dev cluster.",
+      "why_retired": "the previous demo carrier. It publishes 18081 and 8070, the two ports the rebuilt sc-demo-dev duty takes over, and it serves the protected pre-governance cluster straight through the public face -- the historic sc_demo database is in sc_dev_db_data, which its own odoo container is attached to. Left running it would keep that historic source exposed and would take the ports the new duty needs. It owns no cluster data directory and no shared volume of its own, so it is retired as a serving publisher: stopped with the signal each image declares, not with the immediate-shutdown path that exists for a second postmaster.",
+      "containers": [
+        {
+          "name": "sc-backend-odoo-dev-nginx-1",
+          "id": "d3a95831c4a8",
+          "kind": "serving",
+          "expected_stop_signal": "SIGQUIT",
+          "shared_volume": "",
+          "mount_destination": ""
+        },
+        {
+          "name": "sc-backend-odoo-dev-odoo-1",
+          "id": "a903708bb1ae",
+          "kind": "serving",
+          "expected_stop_signal": "SIGTERM",
           "shared_volume": "",
           "mount_destination": ""
         }

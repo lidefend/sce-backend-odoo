@@ -34,6 +34,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import daily_runtime_duty_identity as duty_identity  # noqa: E402
 FIXTURE_TOOL = ROOT / "addons" / "smart_construction_acceptance_fixture" / "tools" / "frontend_productization_fixture.py"
 REMOTE_ROOT = "/opt/projects/repos/sce-product-odoo"
 DEFAULT_DATABASE = "sc_demo"
@@ -239,10 +241,29 @@ def prepare(expected_sha, database, ssh_host, base_url, password):
     return evidence
 
 
+
+
+def bind_target(options, *, instances_reader=None) -> dict:
+    """Bind the target duty, its cluster, its database and its storage, or stop.
+
+    The fixture carrier is driven through one served face; the face has to be bound to a duty before it is driven.
+    """
+    try:
+        reader = instances_reader
+        if reader is None:
+            reader = duty_identity.ssh_instances_reader(options.ssh_host)
+        return duty_identity.bind_duty_database(
+            getattr(options, "duty", ""), options.database, instances_reader=reader,
+        )
+    except duty_identity.DutyIdentityError as error:
+        raise PrepareError(str(error))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expected-sha", required=True)
     parser.add_argument("--database", default=DEFAULT_DATABASE)
+    parser.add_argument("--duty", default="", help="the declared duty this entry binds; a database name alone is not a target identity")
     parser.add_argument("--ssh-host", required=True)
     parser.add_argument("--base-url", default="")
     parser.add_argument("--password", default="")
@@ -254,7 +275,7 @@ def main():
             raise PrepareError("exact daily runtime lifecycle fixture confirmation is required")
         evidence = prepare(
             options.expected_sha,
-            options.database,
+            binding["database"],
             options.ssh_host,
             options.base_url,
             options.password,
@@ -264,6 +285,7 @@ def main():
         return 2
 
     report_path = Path(options.report)
+    evidence["database_binding"] = binding
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(evidence, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(evidence, ensure_ascii=False, indent=2, sort_keys=True))

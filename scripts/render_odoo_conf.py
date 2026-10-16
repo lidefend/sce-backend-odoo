@@ -13,6 +13,11 @@ ADDONS_PATH_PATTERN = re.compile(
 
 NON_PRODUCTION_ENVIRONMENTS = {
     "dev",
+    # The demo duty declares SC_ENVIRONMENT=demo, which is what lets the demo
+    # module's own guard seed. ``render_odoo_conf`` has to agree, or the demo
+    # stack would drop an optional addon root as if it were production while the
+    # application read the same value as a non-production environment.
+    "demo",
     "daily",
     "development",
     "test",
