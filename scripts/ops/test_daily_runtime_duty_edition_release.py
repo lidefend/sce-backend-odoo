@@ -674,6 +674,65 @@ class EntryTests(unittest.TestCase):
                     ENTRY.execute(CUSTOMER_DUTY, action="publish", product_key=PREVIEW)
 
 
+class DutyEnvironmentResolutionTests(unittest.TestCase):
+    """The entry resolves the duty's own environment file, never its name.
+
+    The first readback of the rebuilt demo carrier asked for
+    ``demo.env``, which still declares ``COMPOSE_PROJECT_NAME=sc-backend-odoo-dev``
+    and still owns the surviving cluster's role password, and stopped with
+    ``duty environment COMPOSE_PROJECT_NAME disagrees with the declaration``
+    while the correct ``sc-demo-dev.env`` sat beside it. A duty named ``demo``
+    therefore resolves through its carrier.
+    """
+
+    LEGACY = "DUTY_NAME=demo\nCOMPOSE_PROJECT_NAME=sc-backend-odoo-dev\nDB_NAME=sc_demo\n"
+
+    def _declaration(self, root) -> Path:
+        payload = governed_declaration()
+        payload["ops_root"] = str(root)
+        path = Path(root) / "declaration.json"
+        path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+        return path
+
+    def test_the_carrier_qualified_file_is_the_one_read(self):
+        with tempfile.TemporaryDirectory() as root:
+            (Path(root) / "demo.env").write_text(self.LEGACY, encoding="utf-8")
+            (Path(root) / "sc-demo-dev.env").write_text(
+                "DUTY_NAME=demo\nCOMPOSE_PROJECT_NAME=sc-demo-dev\nDB_NAME=sc_demo\n",
+                encoding="utf-8",
+            )
+            seen: list[str] = []
+
+            def read_duty_env(path, duty):
+                seen.append(os.path.basename(str(path)))
+                raise ENTRY.EditionReleaseEntryError("resolved")
+
+            with mock.patch.object(ENTRY.duty_runtime, "read_duty_env", read_duty_env):
+                with self.assertRaises(ENTRY.EditionReleaseEntryError):
+                    ENTRY.execute(
+                        DEMO_DUTY, action="readback", declaration=self._declaration(root)
+                    )
+        self.assertEqual(seen, ["sc-demo-dev.env"])
+
+    def test_a_same_named_foreign_carrier_file_stops_the_entry_by_name(self):
+        with tempfile.TemporaryDirectory() as root:
+            (Path(root) / "demo.env").write_text(self.LEGACY, encoding="utf-8")
+            seen: list[str] = []
+
+            with mock.patch.object(
+                ENTRY.duty_runtime,
+                "read_duty_env",
+                lambda path, duty: seen.append(str(path)),
+            ):
+                with self.assertRaisesRegex(
+                    ENTRY.duty_identity.DutyIdentityError, "ENV_CARRIER_MISMATCH"
+                ):
+                    ENTRY.execute(
+                        DEMO_DUTY, action="readback", declaration=self._declaration(root)
+                    )
+        self.assertEqual(seen, [], "another carrier's file must not be read at all")
+
+
 class MakeTargetTests(unittest.TestCase):
     def setUp(self):
         self.make = (ROOT / "make/daily_candidate.mk").read_text(encoding="utf-8")

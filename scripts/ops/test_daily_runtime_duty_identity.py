@@ -565,6 +565,154 @@ class DutyCarrierResolutionTests(unittest.TestCase):
             self.fail("an ambiguous database name must not resolve")
 
 
+class DutyEnvPathTests(unittest.TestCase):
+    """One resolver owns which environment file a duty reads.
+
+    The rebuilt demo duty and the preserved historic source are both called
+    ``demo``, and ``demo.env`` still belongs to the pre-governance cluster. An
+    entry that derived ``<duty>.env`` on its own read that file, refused itself
+    with a carrier disagreement and never saw the correct ``sc-demo-dev.env``
+    beside it. These tests pin the shared rule and the refusal that names the
+    owner instead of silently writing another carrier's file.
+    """
+
+    DEMO = {"duty": "demo", "cluster": {"compose_project": "sc-demo-dev"}}
+    LEGACY_MARKER = "sc-backend-odoo-dev"
+
+    def _write(self, root, name, marker):
+        path = Path(root) / name
+        path.write_text(
+            "COMPOSE_PROJECT_NAME=%s\nDB_NAME=sc_demo\n" % (marker,), encoding="utf-8"
+        )
+        return path
+
+    def test_the_carrier_qualified_file_wins_when_both_exist(self):
+        with tempfile.TemporaryDirectory() as root:
+            self._write(root, "demo.env", self.LEGACY_MARKER)
+            self._write(root, "sc-demo-dev.env", "sc-demo-dev")
+            self.assertEqual(
+                identity.duty_env_path(self.DEMO, root, reading=True).name,
+                "sc-demo-dev.env",
+            )
+
+    def test_a_foreign_carrier_file_is_refused_by_name_not_read(self):
+        with tempfile.TemporaryDirectory() as root:
+            self._write(root, "demo.env", self.LEGACY_MARKER)
+            with self.assertRaises(identity.DutyIdentityError) as raised:
+                identity.duty_env_path(self.DEMO, root, reading=True)
+        message = str(raised.exception)
+        self.assertIn("ENV_CARRIER_MISMATCH", message)
+        self.assertIn(self.LEGACY_MARKER, message)
+        self.assertIn("sc-demo-dev.env", message)
+
+    def test_the_render_side_still_targets_the_qualified_name(self):
+        """Creating the duty's file is not the same question as reading one."""
+        with tempfile.TemporaryDirectory() as root:
+            self._write(root, "demo.env", self.LEGACY_MARKER)
+            self.assertEqual(
+                identity.duty_env_path(self.DEMO, root).name, "sc-demo-dev.env"
+            )
+
+    def test_a_file_without_a_carrier_marker_is_still_the_duty_own_file(self):
+        with tempfile.TemporaryDirectory() as root:
+            Path(root, "platform_control.env").write_text(
+                "DB_NAME=sc_platform_control\n", encoding="utf-8"
+            )
+            duty = {
+                "duty": "platform_control",
+                "cluster": {"compose_project": "sc-platform-control-dev"},
+            }
+            self.assertEqual(
+                identity.duty_env_path(duty, root, reading=True).name,
+                "platform_control.env",
+            )
+
+    def test_a_duty_whose_carrier_is_its_own_name_still_reads_that_file(self):
+        """The customer duty's file is named after the duty, not the carrier."""
+        with tempfile.TemporaryDirectory() as root:
+            self._write(root, "customer_tenant_dev.env", "sc-tenant-sample-dev")
+            duty = {
+                "duty": "customer_tenant_dev",
+                "cluster": {"compose_project": "sc-tenant-sample-dev"},
+            }
+            self.assertEqual(
+                identity.duty_env_path(duty, root, reading=True).name,
+                "customer_tenant_dev.env",
+            )
+
+    def test_the_resolved_identity_shape_resolves_the_same_file(self):
+        """``resolve`` hoists ``compose_project``; the resolver must read both shapes.
+
+        The edition-release entry calls the resolver with the *normalized*
+        identity, which has no ``cluster`` block. Reading only the nested shape
+        silently fell back to the duty's own name -- the first readback of the
+        rebuilt carrier asked for ``demo.env`` again.
+        """
+        with tempfile.TemporaryDirectory() as root:
+            self._write(root, "demo.env", self.LEGACY_MARKER)
+            self._write(root, "sc-demo-dev.env", "sc-demo-dev")
+            hoisted = {"duty": "demo", "compose_project": "sc-demo-dev"}
+            self.assertEqual(
+                identity.duty_env_path(hoisted, root, reading=True).name,
+                "sc-demo-dev.env",
+            )
+            self.assertEqual(identity.carrier_project(self.DEMO), "sc-demo-dev")
+            self.assertEqual(identity.carrier_project(hoisted), "sc-demo-dev")
+
+    def test_an_empty_directory_still_yields_a_creatable_path(self):
+        with tempfile.TemporaryDirectory() as root:
+            self.assertEqual(
+                identity.duty_env_path(self.DEMO, root).name, "demo.env"
+            )
+
+    def test_the_embedded_carrier_agrees_with_the_resolver(self):
+        """The uploaded program cannot import this module, so parity is asserted.
+
+        A second copy of the rule is only safe while a test proves the two
+        copies answer the same question the same way.
+        """
+        with tempfile.TemporaryDirectory() as root:
+            self._write(root, "demo.env", self.LEGACY_MARKER)
+            namespace = self._embedded_carrier(root)
+            shared = identity.duty_env_path(self.DEMO, root)
+            embedded = namespace["credentials_path"](self.DEMO)
+            self.assertEqual(os.path.basename(embedded), shared.name)
+            self._write(root, "sc-demo-dev.env", "sc-demo-dev")
+            self.assertEqual(
+                os.path.basename(namespace["credentials_path"](self.DEMO)),
+                identity.duty_env_path(self.DEMO, root).name,
+            )
+            self.assertEqual(
+                os.path.basename(namespace["credentials_path"](self.DEMO)),
+                "sc-demo-dev.env",
+            )
+
+    def _embedded_carrier(self, ops_root):
+        import contextlib
+        import hashlib
+        import io
+
+        payload = {
+            "mode": "plan",
+            "phase": "plan",
+            "product_root": "/opt/projects/repos/sce-product-odoo",
+            "ops_root": ops_root,
+            "platform_admin_database": "sc_platform_control",
+            "frontend_build_env_file": os.path.join(ops_root, "absent-build.env"),
+            "source_revision": "a" * 40,
+            "compose_sha256": hashlib.sha256(b"services:\n").hexdigest(),
+            "stack": {"compose_text": "services:\n  db:\n    image: postgres:15\n"},
+            "env_template": "DB_NAME=@DB_NAME@\n",
+            "data_destination": "/var/lib/postgresql/data",
+            "duties": [],
+        }
+        rendered = duty_entry.render_remote_program(payload)
+        namespace = {"__name__": "__parity__"}
+        with contextlib.redirect_stdout(io.StringIO()):
+            exec(compile(rendered, "<remote-carrier-parity>", "exec"), namespace)
+        return namespace
+
+
 class RemoteMaterialisationTests(unittest.TestCase):
     """The write path is the one step the product tree cannot perform for itself."""
 

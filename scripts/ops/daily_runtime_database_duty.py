@@ -1120,6 +1120,14 @@ def credentials_path(duty):
     declares another carrier is never read, adopted or written; the rebuilt duty
     uses the carrier-qualified name instead. A file without a carrier marker is
     still this duty's own file, and a drift in its identity keys still refuses.
+
+    This program is uploaded and run on its own, so it cannot import the
+    identity resolver; the same rule therefore lives here in this program's own
+    idiom and in ``daily_runtime_duty_identity.duty_env_path`` for the entries
+    that run from the checkout.  ``test_daily_runtime_duty_identity`` asserts the
+    two agree on the same directory, because an entry-local copy of the rule is
+    exactly how the edition-release entry came to read ``demo.env`` while a
+    correct ``sc-demo-dev.env`` sat next to it.
     """
     declared = str((duty.get("cluster") or {}).get("compose_project") or "")
     canonical = os.path.join(OPS_ROOT, duty["duty"] + ".env")

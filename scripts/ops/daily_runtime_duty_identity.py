@@ -471,6 +471,87 @@ def resolve_duty_carrier(database: str, path: Path | None = None, *, instances_r
     return carrier
 
 
+def carrier_project(duty: dict) -> str:
+    """The compose project a duty is carried by, in either of its two shapes.
+
+    A declaration entry nests the carrier under ``cluster``; the resolved
+    identity hoists ``compose_project`` to the top.  Both reach the same
+    resolver, and an entry that read only one of the two shapes would quietly
+    fall back to the duty's own name -- which is the defect this resolver
+    exists to remove.
+    """
+    duty = duty or {}
+    hoisted = str(duty.get("compose_project") or "").strip()
+    if hoisted:
+        return hoisted
+    return str(((duty.get("cluster") or {}).get("compose_project")) or "").strip()
+
+
+def carrier_owner(env_path) -> str:
+    """The carrier a rendered environment file declares, or an empty string.
+
+    ``COMPOSE_PROJECT_NAME`` is the marker the compiler writes into every duty
+    file, so it is what tells two files apart.  A file without it, or one that
+    cannot be read, declares no carrier: the caller then treats it as an
+    ordinary file of the duty it is named after, exactly as before.
+    """
+    try:
+        text = Path(env_path).read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    for row in text.splitlines():
+        row = row.strip()
+        if row.startswith("COMPOSE_PROJECT_NAME="):
+            return row.partition("=")[2].strip()
+    return ""
+
+
+def duty_env_path(duty: dict, ops_root, *, reading: bool = False):
+    """The one governed environment file of one duty, resolved through its carrier.
+
+    A duty's file is normally named after the duty, but the *name* is not the
+    carrier.  On 2026-10-16 the rebuilt demo duty and the preserved historic
+    source were both called ``demo``: ``demo.env`` still declares the
+    pre-governance compose project and still owns that cluster's role password.
+    An entry that resolved ``<duty>.env`` by name would therefore read, and
+    write, another carrier's file -- which is how the edition-release entry
+    refused itself with ``duty environment COMPOSE_PROJECT_NAME disagrees with
+    the declaration`` while a correct file sat next to it.  One resolver owns
+    that decision so the entries cannot each derive their own answer:
+
+    * the carrier-qualified ``<compose_project>.env`` wins whenever it exists;
+    * a file that declares no carrier is still the duty's own file;
+    * a file that declares *another* carrier is never this duty's.
+
+    ``reading`` marks an entry that must *read* the file.  When the duty's own
+    file is absent and the file under the duty's own name belongs to another
+    carrier, such an entry stops and names the owner instead of reporting a
+    misleading "unavailable".  Entries that *render* the file leave it unset,
+    because on first creation the qualified name does not exist yet and has to
+    be created rather than refused.
+    """
+    duty = duty or {}
+    declared = carrier_project(duty)
+    root = Path(ops_root)
+    canonical = root / ("%s.env" % (duty.get("duty") or ""))
+    if not declared:
+        return canonical
+    qualified = root / ("%s.env" % (declared,))
+    if qualified.exists():
+        return qualified
+    owner = carrier_owner(canonical) if canonical.exists() else ""
+    if owner and owner != declared:
+        if reading:
+            raise DutyIdentityError(
+                "DUTY_IDENTITY_ENV_CARRIER_MISMATCH: %s belongs to carrier %s, not "
+                "%s, and duty %s has no %s of its own: this entry refuses to read "
+                "another carrier's environment"
+                % (canonical, owner, declared, duty.get("duty") or "", qualified.name)
+            )
+        return qualified
+    return canonical
+
+
 def carrier_binding(carrier: dict, *, bound_by: str) -> dict:
     """One normalized binding of a duty, its cluster, its database and its storage.
 

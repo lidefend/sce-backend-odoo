@@ -314,7 +314,7 @@ def execute(
     ops_root = Path(duty_identity.load_declaration(declaration).get("ops_root") or "")
     if not ops_root.is_absolute():
         _fail("the declaration must name an absolute ops root")
-    env_path = ops_root / ("%s.env" % duty["duty"])
+    env_path = duty_identity.duty_env_path(duty, ops_root, reading=True)
     values = duty_runtime.read_duty_env(env_path, duty)
     stack = duty_runtime.stack_compose_path(ops_root)
     binding.assert_scripts_mount(stack)
