@@ -520,6 +520,52 @@ class DeclarationTests(unittest.TestCase):
         picked(declaration, "demo")["demo_seed"]["profile"] = "demo_full"
         self.assertEqual(duty_entry.validate_declaration(declaration), [])
 
+    def test_a_demo_seed_must_name_the_product_chain_stages(self):
+        """A demo duty names the chain it is seeded with, stages and all.
+
+        The entry runs no step of its own, so a declaration that named only a
+        profile would ask the entry to run the profile against a duty whose
+        scenarios were never loaded -- the 2026-10-16 shape, which raised
+        mid-chain. Refusing the declaration is what keeps that from being an
+        entry that guesses the rest of the chain.
+        """
+        for stages in (None, [], "release_seed", [1, 2]):
+            declaration = shipped()
+            picked(declaration, "demo")["demo_seed"]["stages"] = stages
+            failures = duty_entry.validate_declaration(declaration)
+            self.assertTrue(
+                any("demo_seed.stages must name the product chain stages" in f for f in failures),
+                (stages, failures),
+            )
+
+    def test_a_demo_seed_stage_the_product_does_not_have_is_refused(self):
+        declaration = shipped()
+        picked(declaration, "demo")["demo_seed"]["stages"] = ["release_seed", "profile", "extra"]
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(
+            any("names unknown stage(s) extra" in f for f in failures), failures
+        )
+
+    def test_a_demo_seed_stage_list_may_not_repeat_a_stage(self):
+        declaration = shipped()
+        picked(declaration, "demo")["demo_seed"]["stages"] = ["release_seed", "profile", "profile"]
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(any("repeats a stage" in f for f in failures), failures)
+
+    def test_a_demo_seed_stage_list_must_run_the_declared_profile(self):
+        """Seeding the scenarios and never the profile is a partial carrier.
+
+        The duty declares ``profile=demo_full``; a stage list that omits the
+        ``profile`` stage would create scenario rows and no business chain while
+        still reporting a chain that executed.
+        """
+        declaration = shipped()
+        picked(declaration, "demo")["demo_seed"]["stages"] = ["release_seed"]
+        failures = duty_entry.validate_declaration(declaration)
+        self.assertTrue(
+            any("never runs the declared profile demo_full" in f for f in failures), failures
+        )
+
     def test_a_demo_seed_needs_an_authority_and_a_reason(self):
         """The seed is a write; the declaration has to say who authorized it."""
         for key in ("authority", "reason"):
@@ -678,9 +724,45 @@ class RemoteProgramTests(unittest.TestCase):
     def test_no_embedding_marker_survives_rendering(self):
         rendered = self.rendered()
         for marker in ("__MARKER__", "__PSQL_READBACK__", "__PAYLOAD_JSON__",
-                       "__BASE_BOOTSTRAP_PLAN__", "__REFRESH_REFUSAL__",
+                       "__BASE_BOOTSTRAP_PLAN__", "__DEMO_SEED_PROGRAM__",
+                       "__REFRESH_REFUSAL__",
                        "__UPGRADE_REFUSAL__", "__PRUNE_SUPERSEDED_STACKS__"):
             self.assertNotIn(marker, rendered)
+
+    def test_the_injected_demo_seed_chain_runs_the_declared_stages_in_order(self):
+        """The chain is the product's own functions, in the declaration's order.
+
+        The 2026-10-16 rebuild proved why this is pinned: the seed entry ran the
+        ``demo_full`` profile alone, the profile's payment step resolved an S69
+        contract xmlid that only the release scenario set creates, the chain
+        raised, and the duty still read as seeded. A chain that is assembly
+        rather than text would let that regression back in silently.
+        """
+        program = duty_entry.demo_seed_program("smart_construction_demo",
+                                               ["release_seed", "profile"])
+        self.assertIn("from odoo.addons.smart_construction_demo.tools.scenario_loader "
+                      "import load_release_seed", program)
+        self.assertIn("from odoo.addons.smart_construction_demo.seed import run_steps", program)
+        self.assertLess(program.index("load_release_seed(env, mode='update')"),
+                        program.index("run_steps(env, profile)"))
+        self.assertIn("os.environ['SC_DEMO_SEED_STAGES'].split(',')", program)
+        self.assertIn("env.cr.commit()", program)
+        compile("def _f():\n" + "\n".join("    " + line for line in program.splitlines()),
+                "<chain>", "exec")
+
+    def test_the_injected_demo_seed_chain_refuses_a_stage_the_product_does_not_have(self):
+        """An unknown stage raises inside the container instead of being skipped.
+
+        Silently skipping it would report a shorter chain as a completed one,
+        which is exactly the shape that made a partial carrier look seeded.
+        """
+        program = duty_entry.demo_seed_program("smart_construction_demo", ["profile"])
+        self.assertIn("raise RuntimeError('unknown declared demo-seed stage: ' + stage)", program)
+
+    def test_the_injected_chain_names_the_carrier_the_declaration_named(self):
+        program = duty_entry.demo_seed_program("some_other_module", ["release_seed"])
+        self.assertIn("from odoo.addons.some_other_module.seed import run_steps", program)
+        self.assertNotIn("smart_construction_demo", program)
 
     def test_superseded_rendered_stacks_are_pruned(self):
         """A re-render writes a second file name, so the replaced one is deleted.
@@ -2023,6 +2105,7 @@ class CarrierExecutionTests(unittest.TestCase):
             "dbfilter": "^sc_demo$",
             "data_purpose": "demo",
             "demo_seed": {"carrier": "smart_construction_demo", "profile": "demo_full",
+                          "stages": ["release_seed", "profile"],
                           "authority": "docs/ops/iterations/x.md",
                           "reason": "the owner named the product's own demo carrier"},
             "custody": {"database_present": True, "database_role_present": True,
@@ -2299,12 +2382,40 @@ class CarrierExecutionTests(unittest.TestCase):
         seeded = self.seeds(fake)
         self.assertEqual(len(seeded), 1, "one seed chain, run once")
         command = seeded[0]
-        self.assertIn("SC_DEMO_SEED_PROFILE=profile:demo_full", command)
+        self.assertIn("SC_DEMO_SEED_PROFILE=demo_full", command)
+        # The chain is the declared stage list, not the profile alone: the
+        # release scenario set has to run before the profile, because the
+        # profile's payment step resolves an S69 contract xmlid that only that
+        # set creates. A command that carried the profile without the stages
+        # would re-open the 2026-10-16 shape.
+        self.assertIn("SC_DEMO_SEED_STAGES=release_seed,profile", command)
         self.assertEqual(command[command.index("-d") + 1], "sc_demo")
         self.assertIn("--no-http", command)
         self.assertEqual(settled["seed"]["profile"], "demo_full")
+        self.assertEqual(settled["seed"]["stages"], ["release_seed", "profile"])
         self.assertEqual(settled["seed"]["executed"], ["dictionary"])
         self.assertEqual(settled["seed"]["carrier"], "smart_construction_demo")
+
+    def test_a_duty_whose_declared_stages_are_not_runnable_is_not_seeded(self):
+        """A declaration that names no runnable chain seeds nothing.
+
+        The declaration validation refuses this shape before any write, and the
+        seed itself refuses it again rather than running whichever stage it can
+        still recognise: a chain the declaration did not name is not a chain this
+        entry may report as the duty's demo data.
+        """
+        for stages in ([], ["release_seed"], ["release_seed", "profile", "extra"]):
+            with self.subTest(stages=stages):
+                duty = self.demo_duty()
+                duty["demo_seed"]["stages"] = stages
+                fake = self.seeded_fake(duty)
+                report = self.execute(fake, [duty], phase="seed")
+                settled = report["duties"][0]
+                self.assertEqual(self.seeds(fake), [], "nothing runs for a chain that is not runnable")
+                self.assertIn("stage list", settled["seed"]["error"])
+                self.assertNotIn("executed", settled["seed"],
+                                 "a chain that never ran reports no executed steps")
+                self.assertEqual(settled["seed"]["stages"], stages)
 
     def test_the_seeded_rows_are_only_claimed_visible_after_the_application_is_restarted(self):
         """The serving process holds its own registry and its own ACL caches.

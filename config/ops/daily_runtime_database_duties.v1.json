@@ -98,8 +98,12 @@
       "demo_seed": {
         "carrier": "smart_construction_demo",
         "profile": "demo_full",
+        "stages": [
+          "release_seed",
+          "profile"
+        ],
         "authority": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
-        "reason": "The owner ruling of 2026-10-16 declares smart_construction_demo the demo duty's data carrier: demo data is produced by the product's own formal demo seed chain, never by a substitute fixture lane and never by writing a terminal state directly. The product tree names the carrier and the profile; the governed demo-seed entry reads this section instead of defaulting a step list of its own, and the seed's own guard still has to accept the database, the environment and the explicit demo-data switch before anything runs."
+        "reason": "The owner ruling of 2026-10-16 declares smart_construction_demo the demo duty's data carrier: demo data is produced by the product's own formal demo seed chain, never by a substitute fixture lane and never by writing a terminal state directly. The chain has the two stages the product's own full-demo loader has -- the release scenario set, then the declared profile -- because the profile's payment step resolves an S69 contract xmlid that only the scenario set creates; a declared stage list without the release set would seed a partial carrier. The product tree names the carrier, the stages and the profile; the governed demo-seed entry reads this section instead of defaulting a step list of its own, and the seed's own guard still has to accept the database, the environment and the explicit demo-data switch before anything runs."
       },
       "cluster": {
         "container": "sc-demo-dev-db-1",

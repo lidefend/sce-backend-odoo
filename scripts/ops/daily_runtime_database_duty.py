@@ -120,6 +120,16 @@ DEMO_SECRET_KEYS = ("SC_DEMO_USER_PASSWORD",)
 #: it, and the seed phase refuses any other carrier: a second demo-data lane
 #: would be the "substitute fixture" the owner ruling of 2026-10-16 forbids.
 DEMO_SEED_CARRIER = "smart_construction_demo"
+#: The stages of the product's own demo chain, in the only order that produces a
+#: complete carrier. The release scenario set runs first because the
+#: ``demo_full`` profile's payment step resolves an S69 contract xmlid that only
+#: that set creates; running the profile alone is the defect that made a duty
+#: seeding itself report a raised chain as an unexecuted one.
+DEMO_SEED_STAGES = ("release_seed", "profile")
+#: The stage that runs the profile the declaration names. A stage list without
+#: it would seed scenarios and never the business chain the duty names, so the
+#: declaration is refused rather than run as a partial carrier.
+DEMO_SEED_PROFILE_STAGE = "profile"
 #: What ``SC_ALLOW_DEMO_DATA`` renders to per duty. It is a *derived* value, not
 #: an operator preference: the declaration's ``data_purpose`` is the single
 #: authority for whether this duty may carry demo data.
@@ -683,6 +693,28 @@ def validate_demo_seed(name, duty):
     profile = str(seed.get("profile") or "")
     if not re.fullmatch(r"[a-z][a-z0-9_]*", profile):
         failures.append("duty %s: demo_seed.profile %s is not a safe profile name" % (name, profile or "<unset>"))
+    stages = seed.get("stages")
+    if (not isinstance(stages, list) or not stages
+            or any(not isinstance(item, str) for item in stages)):
+        failures.append(
+            "duty %s: demo_seed.stages must name the product chain stages, in order; the entry "
+            "never runs a chain the declaration does not name" % (name,)
+        )
+    else:
+        unknown = [item for item in stages if item not in DEMO_SEED_STAGES]
+        if unknown:
+            failures.append(
+                "duty %s: demo_seed.stages names unknown stage(s) %s; known stages are %s"
+                % (name, ", ".join(unknown), ", ".join(DEMO_SEED_STAGES))
+            )
+        if len(set(stages)) != len(stages):
+            failures.append("duty %s: demo_seed.stages repeats a stage" % (name,))
+        if DEMO_SEED_PROFILE_STAGE not in stages:
+            failures.append(
+                "duty %s: demo_seed.stages never runs the declared profile %s; a stage list "
+                "without %s would seed a partial carrier"
+                % (name, profile or "<unset>", DEMO_SEED_PROFILE_STAGE)
+            )
     for key in ("authority", "reason"):
         if not str(seed.get(key) or "").strip():
             failures.append("duty %s: demo_seed.%s is required" % (name, key))
@@ -843,11 +875,16 @@ DEMO_PASSWORD_ABSENT_LITERAL = ""
 #: whose ``demo_seed`` names another carrier is refused rather than seeded by an
 #: entry that picked a lane of its own.
 DEMO_SEED_CARRIER = "smart_construction_demo"
+#: The declared chain's stage vocabulary, mirrored from the host entry so a
+#: declaration the host accepted runs here as the same chain or not at all.
+DEMO_SEED_STAGES = ("release_seed", "profile")
+DEMO_SEED_PROFILE_STAGE = "profile"
 #: A demo seed creates business rows through the product's own chain, so it is
 #: bounded like the module installs above rather than like a status readback.
 SEED_TIMEOUT = 7200
 
 __BASE_BOOTSTRAP_PLAN__
+__DEMO_SEED_PROGRAM__
 __REFRESH_REFUSAL__
 __UPGRADE_REFUSAL__
 __PRUNE_SUPERSEDED_STACKS__
@@ -1636,21 +1673,33 @@ def demo_seed_scope(duty):
 
 
 def seed_demo(duty):
-    """Run the *declared* demo-seed profile through the product's own chain.
+    """Run the *declared* demo-seed chain through the product's own stages.
 
     No step list of this entry's own, no fixture lane, and no direct write to a
-    terminal state: the entry names the profile the declaration names and the
-    product module decides what that profile does. The demo module's guard then
+    terminal state: the entry names the stages the declaration names and the
+    product module decides what each stage does. The chain has two stages because
+    the product's own full-demo loader has two -- the release scenario set, then
+    the declared profile -- and the profile assumes the scenarios. Running the
+    profile alone was the defect: the S69 payment step resolves a contract xmlid
+    that only the scenario set creates, so the chain raised, nothing committed,
+    and the declaration was left reading as seeded. The demo module's guard then
     re-checks the database, the environment and the explicit demo-data switch
     from inside the container, so a declaration that says "demo" and a container
     that cannot prove it disagree here rather than mid-seed.
     """
     seed = duty.get("demo_seed") or {}
     profile = str(seed.get("profile") or "")
+    stages = [str(item) for item in (seed.get("stages") or [])]
     if duty.get("data_purpose") != DEMO_PURPOSE:
         return {"error": "this duty does not declare data_purpose=demo; it is never seeded"}
     if str(seed.get("carrier") or "") != DEMO_SEED_CARRIER:
         return {"error": "the declaration names no %s demo-seed carrier" % (DEMO_SEED_CARRIER,)}
+    unknown = [item for item in stages if item not in DEMO_SEED_STAGES]
+    if (not stages or unknown or len(set(stages)) != len(stages)
+            or DEMO_SEED_PROFILE_STAGE not in stages):
+        return {"error": "the declaration does not name a runnable %s stage list"
+                         % (DEMO_SEED_CARRIER,),
+                "stages": stages, "unknown": unknown, "known": list(DEMO_SEED_STAGES)}
     scope = demo_seed_scope(duty)
     if scope.get("error"):
         return {"error": scope["error"], "scope": scope}
@@ -1660,14 +1709,10 @@ def seed_demo(duty):
     if not scope.get("password_present"):
         return {"error": "the running container carries no demo user password", "scope": scope}
     container = scope["container"]
-    program = (
-        "import os\n"
-        "from odoo.addons.%s.seed import run_steps\n"
-        "executed = run_steps(env, os.environ['SC_DEMO_SEED_PROFILE'])\n"
-        "env.cr.commit()\n"
-        "print('[demo.seed] executed=%%s' %% ','.join(executed))\n" % (DEMO_SEED_CARRIER,)
-    )
-    command = ["docker", "exec", "-i", "-e", "SC_DEMO_SEED_PROFILE=profile:" + profile,
+    program = demo_seed_program(DEMO_SEED_CARRIER, stages)
+    command = ["docker", "exec", "-i",
+               "-e", "SC_DEMO_SEED_PROFILE=" + profile,
+               "-e", "SC_DEMO_SEED_STAGES=" + ",".join(stages),
                container, "odoo", "shell", "-c", "/var/lib/odoo/odoo.conf",
                "-d", duty["database"], "--no-http", "--workers=0", "--max-cron-threads=0"]
     result = run(command, input=program, timeout=SEED_TIMEOUT)
@@ -1678,8 +1723,8 @@ def seed_demo(duty):
         if marker in line:
             executed = [name for name in line.split(marker, 1)[1].strip().split(",") if name]
     entry = {"container": container, "carrier": DEMO_SEED_CARRIER, "profile": profile,
-             "returncode": result.returncode, "executed": executed, "tail": tail[-1200:],
-             "scope": scope}
+             "stages": stages, "returncode": result.returncode, "executed": executed,
+             "tail": tail[-1200:], "scope": scope}
     if result.returncode or not executed:
         entry["error"] = "the declared demo-seed profile did not report an executed chain"
         return entry
@@ -2090,6 +2135,36 @@ print(MARKER + json.dumps(report, ensure_ascii=False, sort_keys=True))
 '''
 
 
+def demo_seed_program(carrier, stages):
+    """The declared demo chain, as the product's own functions, in declared order.
+
+    The entry names no step of its own: every stage is a call into the carrier
+    the declaration names. An unknown stage raises inside the container instead
+    of being skipped, so a declaration that drifted from the product cannot
+    report a shorter chain as a completed one. It is defined here, outside the
+    embedded program, and injected by ``render_remote_program`` so that the
+    chain text is unit tested rather than only assembled.
+    """
+    lines = [
+        "import os",
+        "from odoo.addons.%s.tools.scenario_loader import load_release_seed" % (carrier,),
+        "from odoo.addons.%s.seed import run_steps" % (carrier,),
+        "profile = 'profile:' + os.environ['SC_DEMO_SEED_PROFILE']",
+        "executed = []",
+        "for stage in os.environ['SC_DEMO_SEED_STAGES'].split(','):",
+        "    if stage == 'release_seed':",
+        "        load_release_seed(env, mode='update')",
+        "        executed.append('release_seed')",
+        "    elif stage == 'profile':",
+        "        executed.extend(run_steps(env, profile))",
+        "    else:",
+        "        raise RuntimeError('unknown declared demo-seed stage: ' + stage)",
+        "env.cr.commit()",
+        "print('[demo.seed] executed=%s' % ','.join(executed))",
+    ]
+    return "\n".join(lines) + "\n"
+
+
 def base_bootstrap_plan(base_installed, entrypoint_finished, restarts):
     """How the entry reaches base installed with exactly one initializer.
 
@@ -2213,6 +2288,8 @@ def render_remote_program(payload):
         "__PSQL_READBACK__", json.dumps(list(PSQL_READBACK)),
     ).replace(
         "__BASE_BOOTSTRAP_PLAN__", textwrap.dedent(inspect.getsource(base_bootstrap_plan)),
+    ).replace(
+        "__DEMO_SEED_PROGRAM__", textwrap.dedent(inspect.getsource(demo_seed_program)),
     ).replace(
         "__REFRESH_REFUSAL__", textwrap.dedent(inspect.getsource(refresh_refusal)),
     ).replace(
