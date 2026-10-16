@@ -16,6 +16,51 @@ from collections import OrderedDict
 from threading import RLock
 
 
+_DEEPCOPY = copy.deepcopy
+
+
+def _isolated_clone(value, memo):
+    value_type = type(value)
+    if value_type is dict:
+        known = memo.get(id(value))
+        if known is not None:
+            return known
+        clone = {}
+        memo[id(value)] = clone
+        for key, item in value.items():
+            clone[_isolated_clone(key, memo)] = _isolated_clone(item, memo)
+        return clone
+    if value_type is list:
+        known = memo.get(id(value))
+        if known is not None:
+            return known
+        clone = []
+        memo[id(value)] = clone
+        append = clone.append
+        for item in value:
+            append(_isolated_clone(item, memo))
+        return clone
+    if value is None or value_type is str or value_type is bool or value_type is int or value_type is float:
+        # ``copy.deepcopy`` returns atomic values unchanged and never memoises
+        # them; subclasses (int/str enums, numpy scalars ...) fall through to it.
+        return value
+    return _DEEPCOPY(value, memo)
+
+
+def isolated_clone(value):
+    """Return a graph disjoint from ``value``, exactly as ``copy.deepcopy`` does.
+
+    Assembled contract payloads are JSON-shaped, so the two dominant container
+    types are cloned directly. That skips ``copy.deepcopy``'s per-object
+    dispatch (``_deepcopy_dispatch`` lookup, ``__deepcopy__``/``__reduce_ex__``
+    probing) while keeping the same memo bookkeeping, so shared sub-objects stay
+    shared in the copy exactly like ``deepcopy``. Every other type is delegated
+    to ``copy.deepcopy`` with the same memo, which keeps tuple, set, subclass
+    and custom-object semantics unchanged.
+    """
+    return _isolated_clone(value, {})
+
+
 class LoadContractResponseCache:
     def __init__(self, *, max_entries=256, ttl_seconds=30.0, clock=None):
         self.max_entries = max(1, int(max_entries))
@@ -37,7 +82,10 @@ class LoadContractResponseCache:
                 self._entries.pop(cache_key, None)
                 return None
             self._entries.move_to_end(cache_key)
-            return copy.deepcopy(response)
+            # Same isolation contract as ``copy.deepcopy`` on the payload this
+            # cache stores (JSON-shaped containers), without its per-object
+            # dispatch cost on the hot read path.
+            return isolated_clone(response)
 
     def put(self, cache_key, source_token, response):
         if not cache_key or not source_token or not isinstance(response, dict):

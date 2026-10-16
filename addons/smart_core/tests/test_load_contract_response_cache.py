@@ -2,6 +2,7 @@
 import ast
 import copy
 import importlib.util
+import json
 import os
 import tempfile
 import time
@@ -321,6 +322,113 @@ class TestContractCodeFingerprintIdentity(unittest.TestCase):
             second,
             "a same-size content rewrite with a restored mtime must change the code fingerprint",
         )
+
+
+class TestIsolatedCloneStaysDeepcopyEquivalent(unittest.TestCase):
+    """``get()`` hands out a graph disjoint from the entry. The clone used for
+    that must stay exactly equivalent to ``copy.deepcopy`` for the JSON-shaped
+    payload this cache stores, and must delegate everything else unchanged."""
+
+    @staticmethod
+    def _json_payload():
+        shared = ["name", "state", "amount"]
+        return {
+            "source_type": "runtime_intent",
+            "ui_data": {
+                "fields": {
+                    "project_id": {
+                        "relation_entry": {
+                            "search_dialog": {
+                                "columns": ["name", "partner_id"],
+                                "limit": 120,
+                                "order": "id desc",
+                            }
+                        }
+                    }
+                },
+                "rows": [{"id": index, "vals": [index, index + 1]} for index in range(25)],
+                "unicode": "合同/项目",
+                "flags": [True, False, None],
+            },
+            "ui_meta": {"intent": "ui.contract", "policy": {"locked": shared}},
+            "shared_a": shared,
+            "shared_b": shared,
+        }
+
+    def test_clone_equals_deepcopy_and_serialises_identically(self):
+        payload = self._json_payload()
+        cloned = TARGET.isolated_clone(payload)
+        copied = copy.deepcopy(payload)
+
+        self.assertEqual(cloned, copied)
+        self.assertEqual(
+            json.dumps(cloned, ensure_ascii=False, sort_keys=True),
+            json.dumps(copied, ensure_ascii=False, sort_keys=True),
+        )
+        self.assertIsNot(cloned, payload)
+
+    def test_clone_preserves_shared_aliasing_like_deepcopy(self):
+        payload = self._json_payload()
+        cloned = TARGET.isolated_clone(payload)
+        copied = copy.deepcopy(payload)
+
+        self.assertIs(cloned["shared_a"], cloned["shared_b"])
+        self.assertIs(copied["shared_a"], copied["shared_b"])
+        self.assertIsNot(cloned["shared_a"], payload["shared_a"])
+
+    def test_clone_keeps_nested_writes_off_the_source_graph(self):
+        payload = self._json_payload()
+        cloned = TARGET.isolated_clone(payload)
+
+        cloned["ui_data"]["rows"][0]["vals"].append("late")
+        cloned["ui_data"]["fields"]["project_id"]["relation_entry"]["search_dialog"]["columns"].append("late")
+        cloned["ui_meta"]["policy"]["locked"].append("late")
+
+        self.assertEqual(payload["ui_data"]["rows"][0]["vals"], [0, 1])
+        self.assertEqual(
+            payload["ui_data"]["fields"]["project_id"]["relation_entry"]["search_dialog"]["columns"],
+            ["name", "partner_id"],
+        )
+        self.assertEqual(payload["ui_meta"]["policy"]["locked"], ["name", "state", "amount"])
+
+    def test_clone_delegates_non_json_types_to_deepcopy(self):
+        from collections import OrderedDict
+
+        for value in ({1, 2}, (1, [2]), b"bytes", OrderedDict(a=1), 3 + 4j, "text", 7, 1.5, True, None):
+            with self.subTest(value=type(value).__name__):
+                cloned = TARGET.isolated_clone(value)
+                copied = copy.deepcopy(value)
+                self.assertEqual(cloned, copied)
+                self.assertIs(type(cloned), type(copied))
+
+        atomic_tuple = ("a", 1)
+        self.assertIs(TARGET.isolated_clone(atomic_tuple), atomic_tuple)
+        self.assertIs(copy.deepcopy(atomic_tuple), atomic_tuple)
+
+    def test_clone_handles_a_self_referential_graph(self):
+        payload = {"name": "root"}
+        payload["self"] = payload
+        cloned = TARGET.isolated_clone(payload)
+
+        self.assertIs(cloned["self"], cloned)
+        self.assertIsNot(cloned, payload)
+
+    def test_hot_read_never_falls_back_to_deepcopy_for_json_payloads(self):
+        payload = self._json_payload()
+        self.cache = TARGET.LoadContractResponseCache(max_entries=4, ttl_seconds=30.0)
+        self.cache.put("page", "source", payload)
+
+        with patch.object(TARGET.copy, "deepcopy", wraps=copy.deepcopy) as copied:
+            first = self.cache.get("page", "source")
+            self.assertEqual(copied.call_count, 0)
+
+        entry = self.cache._entries["page"][2]
+        self.assertIsNot(first, entry)
+        self.assertIsNot(first["ui_data"], entry["ui_data"])
+        self.assertIsNot(first["shared_a"], entry["shared_a"])
+
+        first["ui_data"]["rows"][0]["vals"].append("request-only")
+        self.assertEqual(self.cache.get("page", "source")["ui_data"]["rows"][0]["vals"], [0, 1])
 
 
 class TestHandlerHandOffOwnsTheGetCopy(unittest.TestCase):
