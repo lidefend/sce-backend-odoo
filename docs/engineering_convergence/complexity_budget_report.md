@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4811`
+- Scanned files: `4812`
 - Files requiring split plan: `66`
 - Files above warning threshold: `125`
 
@@ -56,9 +56,9 @@ Generated from repository source files. This report is informational during the 
 | 1883 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1864 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1841 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
+| 1813 | YAML workflow | `scripts/verify/registry.yaml` |
 | 1810 | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1804 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
-| 1787 | YAML workflow | `scripts/verify/registry.yaml` |
 | 1751 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1747 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1722 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
@@ -257,9 +257,9 @@ Generated from repository source files. This report is informational during the 
 | 1883 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1864 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1841 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
+| 1813 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 1810 | split_plan_required | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1804 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
-| 1787 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 1751 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1747 | split_plan_required | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1722 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |

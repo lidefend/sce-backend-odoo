@@ -197,3 +197,7 @@ B **仍为 orphan，未退役、未重新接线**。原源码保留在上述 Git
 B 退出条件：外部执行器提供精确包身份、上述八组义务的替代用例/版本化废弃理由与非零结果；产品侧核验后通过受管退役入口处理。当前不能声明此缺陷整体关闭。
 
 验证：extraction 五项测试（含六种运行链注入）通过；runtime audit 二十项测试（含真实 main 零样本、shell 环境传递/失败传播）通过；通用结构、scope、native、修正后的 chain 静态守卫通过。独立复核指出并促成环境接线修复，当前 A/B 增量无确定阻断。真实 Odoo 运行时审计未执行，shell stub 不充当活体验收；不改业务数据，不跑浏览器全量。当前 PR 的结算探针菜单缺陷仍独立未关闭，本节不宣称主线集成或发布。
+
+### 后续交付探针绑定修复
+
+`ac8987fd` 远端 backend_impact_suite 已通过；frontend_release_gate `38858302924` 在导航之后的交付强化阶段拒绝旧结算菜单。P4 resolver 改绑已发布的 `menu_sc_p1_expense_settlement`，动作不变。现有 release_navigation_policy guard 对 resolver 的全部实际 `target()` 调用解析菜单/动作，与正式 standard 发布声明核对；空集合、动态未声明、退役/停用菜单、缺动作或动作错配均失败。13 项导航测试、16 项曝光声明测试、26 项 hardening 测试通过。仅探针输入变化，无模型升级；下一冻结候选交给既有远端 frontend 门禁，不另跑手工全矩阵。旧后端成功不是新 SHA 的合并资格。

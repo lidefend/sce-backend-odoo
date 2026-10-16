@@ -60,7 +60,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Finish affected L1 and review; preserve B external evidence blocker; resume PR669 settlement probe fix before freeze/publication.",
+  "next_exact_step": "Commit final generated preparation; freeze current fingerprint; exact-head Quick, independent readback, archive, then governed PR669 push/dispatch.",
   "source_runs": [
     38818510036,
     38811434965,
@@ -439,6 +439,26 @@
     "sce-user-boundary-iteration.log": {
       "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-user-boundary-iteration.log",
       "sha256": "f464045a779a0577c38a808d27af097315e3d0e9bb0e98ad4cba71a54786a2ea"
+    },
+    "sce-ci-runtime-target-guard.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-ci-runtime-target-guard.log",
+      "sha256": "fb0ee91b6150a95c5bc72d3583431f09b9e6a9de06ef8cb103924f262ae93245"
+    },
+    "sce-ci-hardening-unit.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-ci-hardening-unit.log",
+      "sha256": "1eb6762f06d8db229943eea05f65eb8f19e0bf14f409eea77adb7e9bef33443a"
+    },
+    "sce-ci-hardening-static.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-ci-hardening-static.log",
+      "sha256": "89b9d2c905f60cf9e90e61eb5afd7ddecf9f0a86b6e3e02d2094eefbeb513179"
+    },
+    "sce-ci-converged-iteration.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-ci-converged-iteration.log",
+      "sha256": "b93553c951180778401d1271c7c71b2e1bf43e5c687890d834e99e94751aed02"
+    },
+    "sce-ci-converged-freeze.log": {
+      "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-ci-converged-freeze.log",
+      "sha256": "8e4213cd390ed8b75162d2d5e7c96a3881f32cd0cc88de9971ef30618940a032"
     }
   },
   "validation_scope": {
@@ -534,5 +554,21 @@
     "review": "local_env_review: no confirmed blocker; live runtime not proven",
     "L1": "ci.local.iteration PASS; registry audit PASS, zero undispositioned; shell syntax and diff check PASS",
     "same_layer_discovery": "generic chain initially failed four stale assertions; repaired actual owner binding, five tests incl six injections passed; earlier failed log retained"
+  },
+  "hardening_target_recovery": {
+    "source_head": "ac8987fdf9458645bba9cebf78731bccdba6a720",
+    "failure_owner": "P4 stale probe target",
+    "remote_run": 38858302924,
+    "fix": "settlement resolver uses formally published menu_sc_p1_expense_settlement; validate every resolver target/action against published standard before browser",
+    "impact": "settlement/work_settlement resolver and release navigation static check; no P1 data/schema changes; unaffected backend tests retained as observations, not current merge eligibility",
+    "tests": {
+      "navigation_policy": 13,
+      "exposure": 16,
+      "hardening": 26
+    },
+    "runtime": "remote current-head frontend gate required; no manual full browser rerun",
+    "review": "local_env_review: no blocker; exact frozen identity pending",
+    "previous_navigation": "ac8987 remote actual32/expected32/matched32 PASS",
+    "freeze_prepare": "passed; generated inventory reviewed; source/call-chain changes only"
   }
 }

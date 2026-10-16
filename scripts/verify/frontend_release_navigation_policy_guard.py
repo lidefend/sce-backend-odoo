@@ -108,6 +108,35 @@ def validate_formal_targets(manifest: dict, product: dict, scenes: dict) -> list
     return errors
 
 
+def validate_runtime_targets(source: str, product: dict) -> list[str]:
+    """Check actual resolver calls against the formal publication declaration."""
+    tree = ast.parse(source)
+    constants = {
+        target.id: node.value.value
+        for node in tree.body if isinstance(node, ast.Assign) and isinstance(node.value, ast.Constant)
+        for target in node.targets if isinstance(target, ast.Name)
+    }
+    def value(node):
+        return constants.get(node.id) if isinstance(node, ast.Name) else (
+            node.value if isinstance(node, ast.Constant) else None)
+    targets = {row["menu_xmlid"]: row for group in product["menu_groups"]
+               for row in group.get("menus", []) if row.get("menu_xmlid")}
+    calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call)
+             and isinstance(node.func, ast.Name) and node.func.id == "target"]
+    if not calls:
+        return ["runtime resolver has no declared target calls"]
+    errors = []
+    for call in calls:
+        menu = value(call.args[0]) if call.args else None
+        action = next((value(k.value) for k in call.keywords if k.arg == "declared_action_xmlid"), None)
+        row = targets.get(menu, {})
+        if not menu or not row.get("enabled") or row.get("release_state") != "released":
+            errors.append(f"runtime target not formally released at line {call.lineno}: {menu}")
+        elif not action or row.get("action_xmlid") != action:
+            errors.append(f"runtime action differs at line {call.lineno}: {menu}")
+    return errors
+
+
 def main() -> int:
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     errors = validate(manifest, _load_role_policy())
@@ -117,6 +146,8 @@ def main() -> int:
     scenes = next(ast.literal_eval(node.value) for node in tree.body
                   if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "NAV_MENU_SCENE_MAP" for t in node.targets))
     errors.extend(validate_formal_targets(manifest, standard, scenes))
+    errors.extend(validate_runtime_targets(
+        (ROOT / "scripts/verify/frontend_delivery_hardening_runtime_ids.py").read_text(), standard))
     if errors:
         print("[frontend_release_navigation_policy_guard] FAIL")
         for error in errors:

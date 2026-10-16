@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import unittest
+import json
+from pathlib import Path
 
-from scripts.verify.frontend_release_navigation_policy_guard import ROLE_MAP, validate, validate_formal_targets
+from scripts.verify.frontend_release_navigation_policy_guard import ROLE_MAP, validate, validate_formal_targets, validate_runtime_targets
 
 
 def _fixture():
@@ -96,6 +98,41 @@ class ReleaseNavigationPolicyGuardTest(unittest.TestCase):
         manifest["scene_targets"][menu]["route"] = "/s/other"
         self.assertTrue(validate_formal_targets(manifest, product, {menu: "workspace.home"}))
 
+
+
+class RuntimeTargetDeclarationTest(unittest.TestCase):
+    def setUp(self):
+        root = Path(__file__).resolve().parents[2]
+        self.source = (root / 'scripts/verify/frontend_delivery_hardening_runtime_ids.py').read_text()
+        policy = json.loads((root / 'addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json').read_text())
+        self.standard = next(p for p in policy['products'] if p['product_key'] == 'construction.standard')
+        self.assertEqual(validate_runtime_targets(self.source, self.standard), [])
+
+    def test_real_resolver_is_published(self):
+        self.assertEqual(validate_runtime_targets(self.source, self.standard), [])
+
+    def test_retired_settlement_entry_fails(self):
+        source = self.source.replace('menu_sc_p1_expense_settlement', 'menu_sc_expense_contract_settlement')
+        self.assertTrue(validate_runtime_targets(source, self.standard))
+
+    def test_mismatched_action_fails(self):
+        source = self.source.replace('action_sc_settlement_order_expense', 'action_sc_settlement_order_income')
+        self.assertTrue(validate_runtime_targets(source, self.standard))
+
+    def test_missing_action_argument_fails(self):
+        source = self.source.replace('declared_action_xmlid=SETTLEMENT_ACTION_XMLID,', '')
+        self.assertTrue(validate_runtime_targets(source, self.standard))
+
+    def test_disabled_formal_entry_fails(self):
+        for group in self.standard['menu_groups']:
+            for row in group.get('menus', []):
+                if row.get('menu_xmlid', '').endswith('.menu_sc_p1_expense_settlement'):
+                    row['enabled'] = False
+        self.assertTrue(validate_runtime_targets(self.source, self.standard))
+
+    def test_empty_or_dynamic_target_fails(self):
+        self.assertTrue(validate_runtime_targets('', self.standard))
+        self.assertTrue(validate_runtime_targets('target(resolve_menu(), x)', self.standard))
 
 
 if __name__ == "__main__":
