@@ -719,6 +719,14 @@
       "frozen_lane": "existing mandatory frontend release CI; no inner-loop full browser rerun"
     },
     "test_tool_correction": "Extended ORM fixture initially named nonexistent menu; corrected to declared menu_sc_user_payment_apply then exact2methods PASS. Original error log retained.",
-    "freeze_prepare": "PASS; generated sc_gate declaration +1, source line-count reports and actual component digest reviewed"
+    "freeze_prepare": "PASS; generated sc_gate declaration +1, source line-count reports and actual component digest reviewed",
+    "quick_7fbd072e": {
+      "status": "failed",
+      "owner": "P0 assembled cache invalidation",
+      "log": "/tmp/sce-frontend-fault-quick.log",
+      "recovery": "bump actual cache version + input pin; add owning assembler guard to existing early impact recommendation",
+      "reused": "unchanged ORM behavior, frontend and probe tests; cache version changes invalidate cached contracts rather than product schema",
+      "targeted_recovery": "assembler4sources, intent and web consumer guards PASS; planner30tests and form structure232tests PASS; B-line delta review PASS; freeze preparation PASS"
+    }
   }
 }
