@@ -552,6 +552,40 @@ class UiContractV2Handler(BaseIntentHandler):
             result.error.update(exc.public_details())
             return result
 
+    def _validate_form_record(self, model, params):
+        view_type = str(params.get("view_type") or params.get("viewType") or "form").lower()
+        record_id, _error = parse_positive_int(
+            params.get("record_id") or params.get("recordId") or params.get("res_id") or params.get("resId"),
+            allow_empty=True,
+        )
+        if view_type != "form" or not record_id:
+            return None
+        op = str(params.get("op") or params.get("subject") or "model").strip().lower()
+        if op in {"action", "action_open", "menu"}:
+            resolver = ActionDispatcher(self.env, self.su_env).resolver
+            resolved = resolver.resolve_action(
+                params.get("action_id") or params.get("id"),
+                params.get("action_xmlid") or params.get("action_xml_id"),
+                params.get("menu_id"),
+            )
+            info = resolver.drill_down_action(resolved) or {}
+            model = info.get("res_model") if info.get("type") == "ir.actions.act_window" else None
+            if model and params.get("model") and params["model"] != model:
+                return self._err(400, "请求模型与动作模型不一致")
+        if not model or model not in self.env:
+            return None
+        Model = self.env[model]
+        # Do not reveal existence before model access has been established.
+        # AccessError propagates to the intent dispatcher's existing 403 mapping.
+        Model.check_access_rights("read")
+        record = Model.browse(record_id).exists()
+        if not record:
+            result = self._err(404, "记录不存在")
+            result.error.update(reason_code="RECORD_NOT_FOUND")
+            return result
+        record.check_access_rule("read")
+        return None
+
     def _handle_contract(self, payload: Optional[Dict[str, Any]] = None, ctx: Optional[Dict[str, Any]] = None):
         started_at = time.monotonic()
         assembler_stages: dict[str, int] = {}
@@ -600,6 +634,11 @@ class UiContractV2Handler(BaseIntentHandler):
             action_record = self.env["ir.actions.act_window"].sudo().browse(action_id)
             if action_record.exists():
                 cache_model = str(action_record.res_model or "").strip()
+        # Record identity is checked before source caching/projection. Missing
+        # records must not reach action guidance as an empty configuration.
+        record_error = self._validate_form_record(cache_model, ui_params)
+        if record_error is not None:
+            return record_error
         base_params = projection_base_params(params)
         base_ui_params = projection_base_params(ui_params)
         cache_key = ""

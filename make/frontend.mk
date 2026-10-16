@@ -155,7 +155,7 @@ verify.frontend.navigation_shell.unit: guard.prod.forbid verify.frontend.scene_e
 
 .PHONY: verify.frontend.record_form_return.unit
 verify.frontend.record_form_return.unit: guard.prod.forbid
-	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/record_form_return_navigation_test.ts --bundle --platform=node --format=esm --outfile=/tmp/record-form-return-navigation-test.mjs >/dev/null
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/record_form_return_navigation_test.ts --bundle --platform=node --format=esm '--define:import.meta.env={}' --outfile=/tmp/record-form-return-navigation-test.mjs >/dev/null
 	@node /tmp/record-form-return-navigation-test.mjs
 
 .PHONY: verify.frontend.boq_import_preview.unit

@@ -316,11 +316,16 @@ function stats(values) {
   };
 }
 async function time(run) { const start = performance.now(); await run(); return Math.round(performance.now() - start); }
+function isExpectedMissingRecordResponse(row, expected) {
+  return row.status === 404 && row.intent === 'ui.contract.v2'
+    && row.op === 'action_open' && row.reason_code === 'RECORD_NOT_FOUND'
+    && row.res_id === expected.recordId && row.action_id === expected.actionId;
+}
 function capture(page) {
   const state = {
     console: [], pageerror: [], unhandled: [], http: [], expectedHttp: [], expectedConsole: [],
     network: [], expectForbidden: false, expectedConsoleAllowance: 0, pendingExpectedForbiddenResponses: 0,
-    requestCounts: {}, relationCandidateCounts: {},
+    requestCounts: {}, relationCandidateCounts: {}, pendingHttpDetails: [],
   };
   runtimeByPage.set(page, state);
   page.on('request', (request) => {
@@ -388,8 +393,14 @@ function capture(page) {
       intent: requestPayload.intent || '',
       op: requestPayload.params?.op || '',
       model: requestPayload.params?.model || '',
-      res_id: Number(requestPayload.params?.res_id || 0) || 0,
+      res_id: Number(requestPayload.params?.record_id || requestPayload.params?.res_id || 0) || 0,
+      action_id: Number(requestPayload.params?.action_id || 0) || 0,
     };
+    // Keep only bounded machine diagnostics, never business payloads or messages.
+    state.pendingHttpDetails.push(response.json().then((body) => {
+      const reason = body?.error?.reason_code;
+      if (typeof reason === 'string' && /^[A-Z0-9_]{1,96}$/.test(reason)) row.reason_code = reason;
+    }).catch(() => {}));
     const intent = row.intent;
     if (
       response.status() === 403
@@ -949,10 +960,12 @@ async function main() {
         if (surface.mode === 'dialog') await page.keyboard.press('Escape');
         if (surface.name === 'not-found' && faultSnapshot) {
           await page.waitForTimeout(250);
+          await Promise.all(runtime.pendingHttpDetails.splice(0));
           const expectedConsole = runtime.console.slice(faultSnapshot.console);
           const expectedHttp = runtime.http.slice(faultSnapshot.http);
           check(expectedConsole.every((line) => /Failed to load resource/i.test(line)), `not-found surface unexpected console=${expectedConsole.join(' | ')}`);
-          check(expectedHttp.length > 0 && expectedHttp.every((row) => row.status === 404 && ['api.data', 'chatter.timeline'].includes(row.intent)), `not-found surface unexpected HTTP=${JSON.stringify(expectedHttp)}`);
+          check(expectedHttp.length === 1 && isExpectedMissingRecordResponse(expectedHttp[0], { recordId: 999999, actionId: TARGETS.payment_request.action_id }), `not-found surface unexpected HTTP=${JSON.stringify(expectedHttp)}`);
+          check(await page.locator('main [data-semantic-state-surface="page"][role="alert"]').filter({ hasText: '该记录不存在' }).isVisible(), 'not-found surface must render the missing-record state');
           check(runtime.pageerror.length === faultSnapshot.pageerror, 'not-found surface caused pageerror');
           runtime.expectedConsole.push(...expectedConsole);
           runtime.expectedHttp.push(...expectedHttp);

@@ -52,7 +52,16 @@
     "scripts/ops/local_quick_evidence.py",
     "make/runtime_ops.mk",
     "make/dev_test.mk",
-    "docs/audit/guard_registry/guard_registry.json"
+    "docs/audit/guard_registry/guard_registry.json",
+    "frontend/apps/web/src/components/design-system/ScPopover.vue",
+    "frontend/apps/web/src/components/template/FormSection.vue",
+    "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+    "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
+    "frontend/apps/web/scripts/record_form_return_navigation_test.ts",
+    "make/frontend.mk",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
   ],
   "environment": {
     "kind": "offline",
@@ -60,7 +69,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Prepare and freeze scheduling-only follow-up; exact Quick/review/archive then publish PR669; compare remote overlap and outcomes.",
+  "next_exact_step": "Prepare generated evidence; freeze clean candidate; one Quick plus fingerprint review/archive; publish and verify PR669 required checks.",
   "source_runs": [
     38818510036,
     38811434965,
@@ -615,5 +624,101 @@
     "external_P2": "eight groups still pending",
     "review": "local_env_review: exact step comparison unchanged heavy checks and original backend verdict; no blocker",
     "freeze_prepare": "passed"
+  },
+  "frontend_failure_0529": {
+    "head": "0529c038595982482a2d3191ad85e1b240faedd2",
+    "run": 38862350872,
+    "status": "failed",
+    "findings": [
+      "not-found action contract 409 then model 404; root under investigation",
+      "7 scenes critical aria-controls targets missing when help popup closed"
+    ],
+    "boundary": {
+      "layer": "P0 generic renderer; P4 validation",
+      "reason": "Popup lifecycle is component mechanics, no business or role semantics",
+      "affected": "help interactions edit/readonly; missing-record contract path",
+      "excluded": "industry policy, ACL, customer and daily database writes"
+    },
+    "validation": "L1 then affected nonzero L2; no broad browser run before root fixes",
+    "reproduction": {
+      "command": "make local.dev.test MODULE=smart_construction_bundle TEST_TAGS=/smart_construction_bundle:TestMissingRecordContract",
+      "status": "failed",
+      "tests": 1,
+      "reason_code": "NATIVE_ACTION_GUIDANCE_INVALID",
+      "target": "action_guidance.record_identity",
+      "log": "/tmp/sce-missing-record-before.log",
+      "authority": "sc-local-dev/sc_dev_demo; rollback TransactionCase"
+    },
+    "evidence": {
+      "sce-missing-record-before": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-missing-record-before.log",
+        "sha256": "d291080ea43817ab39a5edeb7267cc1f4b13211af2f24bc40911f3e10a048284"
+      },
+      "sce-missing-record-test-authority-error": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-missing-record-test-authority-error.log",
+        "sha256": "b210f6a54c3e1454e115e32f3f1efe30f86977b26a6345411ff15a611d97a00f"
+      },
+      "sce-missing-record-after": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-missing-record-after.log",
+        "sha256": "fb9359890f7f5c6aa012db42f377381fc754818b5f3c7bc86e91b3ded3619a92"
+      },
+      "sce-contract-boundaries": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-contract-boundaries.log",
+        "sha256": "24216830df788cabd46c4cd0b3f3c29bb48a8b76726ab22b5d0fc24ad55efdf6"
+      },
+      "sce-hardening-tests": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-hardening-tests.log",
+        "sha256": "943126e91604c9d059857b2f9e02b7c8c43b385f91380be2da677dd0f79e9e5c"
+      },
+      "sce-help-layout-tests": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-help-layout-tests.log",
+        "sha256": "8a16904243355f65284df61d1a3301b34c6f77cd4fbcd0ca3692bbfa5ebfb061"
+      },
+      "sce-contract-consumer-tests": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-contract-consumer-tests.log",
+        "sha256": "924812938187a60a679d08aad10238db1c7987fa8455fe2cc8c3417dd4afc900"
+      },
+      "sce-frontend-fault-typecheck": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-frontend-fault-typecheck.log",
+        "sha256": "477b4576276869a5380b86a0a4b27f7064b2eb3288bc56bda8b6a7b166c2addf"
+      },
+      "sce-frontend-fault-lint": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-frontend-fault-lint.log",
+        "sha256": "75d64145472d8b40a34354f71ecbd8577287c871ab0cc29b9d099d0626dcde78"
+      },
+      "sce-frontend-fault-basis": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-frontend-fault-basis.log",
+        "sha256": "1c14b8247b9cea0dc52b6277958a260350e67f37dd6b9677bc0716e27be934bc"
+      },
+      "sce-frontend-fault-guard": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-frontend-fault-guard.log",
+        "sha256": "89b9d2c905f60cf9e90e61eb5afd7ddecf9f0a86b6e3e02d2094eefbeb513179"
+      },
+      "sce-frontend-fault-iteration": {
+        "path": "artifacts/main-scheduled-ci-closeout-20261016/sce-frontend-fault-iteration.log",
+        "sha256": "22a8e5cec248ab26a76833fe9b8e78ad71adebedaec705f8048163cc76949c63"
+      }
+    },
+    "results": {
+      "L1": "iteration/basis/hardening/lint/typecheck PASS; lint72warnings0errors",
+      "L2": "142 backend boundary tests; 27 hardening tests; 19 consumer cases; 80 layout cases +29 actual component assertions",
+      "L3": "2 real ORM methods PASS, covering action/model/menu/XMLID absence and model/action conflict; rollback TransactionCase",
+      "review": "B-line source review passed after canonical ActionResolver correction",
+      "not_run": "L4 affected browser and frozen remote gates pending new candidate"
+    },
+    "impact": {
+      "source_head": "0529c038595982482a2d3191ad85e1b240faedd2",
+      "dirty": true,
+      "invalidated": [
+        "record-form missing/error contract handling",
+        "native field-help ARIA in project/contract/settlement/payment/execution detail and payment edit/approval dialog",
+        "dependent hardening and candidate receipts"
+      ],
+      "reused": "unchanged role-navigation, fixture, workflow scheduling, test planner evidence",
+      "runtime_upgrade": "No schema/XML/ACL change; fresh local test process loads Python. Existing deployed runtime unchanged; CI clean install will load candidate. No module upgrade needed for this scoped test.",
+      "frozen_lane": "existing mandatory frontend release CI; no inner-loop full browser rerun"
+    },
+    "test_tool_correction": "Extended ORM fixture initially named nonexistent menu; corrected to declared menu_sc_user_payment_apply then exact2methods PASS. Original error log retained.",
+    "freeze_prepare": "PASS; generated sc_gate declaration +1, source line-count reports and actual component digest reviewed"
   }
 }

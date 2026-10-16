@@ -82,9 +82,17 @@ async function runMounted({ useRecordFormLayout, createContractV2Store, Componen
       equal(textOf(rootNode).includes('Native field explanation'), false, 'help is absent from initial body');
       const trigger = all(n => n.props['data-field-help-trigger'] !== undefined)[0];
       equal(Boolean(trigger), true, 'same occurrence has help interaction in edit and readonly');
+      equal(trigger.props['aria-controls'], undefined, 'closed popup does not reference missing content');
+      equal(trigger.props['aria-expanded'], false, 'closed state is truthful');
       const popover = all(n => n.type === 'test-help-popover')[0];
       popover.props.onClick(); await tick();
       equal(textOf(rootNode).includes('Native field explanation'), true, 'interaction shows original native help');
+      equal(trigger.props['aria-expanded'], true, 'vendor visible event reaches the actual adapter trigger');
+      equal(all(n => n.props.id === trigger.props['aria-controls']).length, 1, 'open trigger references exactly one mounted help body');
+      popover.props.onClick(); await tick();
+      equal(trigger.props['aria-controls'], undefined, 'closing removes dangling reference');
+      equal(trigger.props['aria-expanded'], false, 'closing updates expanded state');
+      equal(textOf(rootNode).includes('Native field explanation'), false, 'closed help content is destroyed');
     }
     props.value = { ...props.value, nodes: [{ ...group, columns: undefined }] }; await tick();
     equal(errors.some(e => e.name === 'ContractGapError'), true, 'missing grid columns stops actual renderer');
@@ -420,11 +428,14 @@ try {
             : args.path.endsWith('/sceneRegistry') ? 'export const getSceneByKey=()=>null;'
               : "export const usePageContract=()=>({sectionEnabled:()=>true,sectionStyle:()=>({}),sectionTagIs:()=>true});",
         loader: 'js', resolveDir: `${root}/frontend/apps/web` }));
+      if (kind === 'native-layout') {
+        builder.onResolve({ filter: /tdesignPrimitiveBridge$/ }, () => ({ path: 'popup', namespace: 'popup' }));
+        builder.onLoad({ filter: /.*/, namespace: 'popup' }, () => ({ contents: `import {h,defineComponent,ref} from 'vue';export const TDesignPopup=defineComponent({emits:['visible-change'],setup:(_, {attrs,slots,emit})=>{const open=ref(false);return()=>h('test-help-popover',{...attrs,onClick:()=>{open.value=!open.value;emit('visible-change',open.value)}},[slots.default?.(),open.value?slots.content?.():null])}});`, loader: 'js', resolveDir: `${root}/frontend/apps/web` }));
+      }
       builder.onLoad({ filter: /\.vue$/ }, args => {
-        if (args.path !== entry && !(kind === 'native-layout' && /\/(FormSection|ProfessionalBaseFieldControl)\.vue$/.test(args.path))) {
+        if (args.path !== entry && !(kind === 'native-layout' && /\/(FormSection|ProfessionalBaseFieldControl|ScPopover)\.vue$/.test(args.path))) {
           if (kind === 'native-layout') {
             assert.ok(/\/(design-system|template|professional-fields)\//.test(args.path) || /\/(SceneFieldControl|SceneButton|SceneUiProvider|RestrictedHtmlEditor)\.vue$/.test(args.path), `unexpected layout presentation ${args.path}`);
-            if (args.path.endsWith('/ScPopover.vue')) return { contents: `import {h,defineComponent,ref} from 'vue';export default defineComponent({setup:(_, {attrs,slots})=>{const open=ref(false);return()=>h('test-help-popover',{...attrs,onClick:()=>open.value=!open.value},[slots.trigger?.(),open.value?slots.default?.():null])}});`, loader: 'js', resolveDir: path.dirname(args.path) };
             if (args.path.endsWith('/ScDescriptions.vue')) return { contents: `import {h,defineComponent} from 'vue';export default defineComponent({setup:(_, {attrs,slots})=>()=>h('test-descriptions',{},(attrs.items || []).map(item=>slots.item?.({item})))});`, loader: 'js', resolveDir: path.dirname(args.path) };
             return { contents: `import {h,defineComponent} from 'vue';export default defineComponent({setup:(_, {attrs,slots})=>()=>h('test-layout-presentation',{...attrs},slots.default?.())});`, loader: 'js', resolveDir: path.dirname(args.path) };
           }

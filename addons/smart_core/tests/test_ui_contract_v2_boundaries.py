@@ -468,6 +468,40 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(resolve({**owner, "target_role_key": "finance"}, "form", permissions)["role_key"], "finance")
         self.assertEqual(resolve({**owner, "target_role_key": ""}, "list", {})["role_key"], "")
 
+    def test_form_record_preflight_preserves_access_and_missing_boundaries(self):
+        from unittest.mock import Mock
+        for present, denied in [(False, None), (True, None), (False, "model"), (True, "rule")]:
+            with self.subTest(present=present, denied=denied):
+                record = Mock()
+                model = Mock()
+                model.browse.return_value.exists.return_value = record if present else False
+                failure = PermissionError("denied")
+                if denied == "model":
+                    model.check_access_rights.side_effect = failure
+                if denied == "rule":
+                    record.check_access_rule.side_effect = failure
+                handler = self.module.UiContractV2Handler({"x.document": model})
+                params = {"record_id": 73, "view_type": "form"}
+                if denied:
+                    with self.assertRaises(PermissionError) as caught:
+                        handler._validate_form_record("x.document", params)
+                    self.assertIs(caught.exception, failure)
+                    if denied == "model":
+                        model.browse.assert_not_called()
+                else:
+                    result = handler._validate_form_record("x.document", params)
+                    if present:
+                        self.assertIsNone(result)
+                        record.check_access_rule.assert_called_once_with("read")
+                    else:
+                        self.assertEqual(result.code, 404)
+                        self.assertEqual(result.error["reason_code"], "RECORD_NOT_FOUND")
+                model.check_access_rights.assert_called_once_with("read")
+        for params in [{"record_id": "new"}, {}, {"record_id": 73, "view_type": "tree"}]:
+            model = Mock()
+            self.assertIsNone(self.module.UiContractV2Handler({"x.document": model})._validate_form_record("x.document", params))
+            self.assertFalse(model.mock_calls)
+
     def test_configuration_error_is_structured_on_both_source_paths(self):
         from unittest.mock import patch
         error = self.module.FormConfigurationError(

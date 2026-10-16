@@ -12,6 +12,23 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 
+class MissingRecordResponseTest(unittest.TestCase):
+    def test_only_matching_contract_record_absence_is_expected(self):
+        source = (ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs").read_text()
+        function = source.split("function isExpectedMissingRecordResponse(row, expected) {", 1)[1].split("\nfunction capture", 1)[0]
+        program = "const accepts = function(row, expected) {" + function + r"""
+const assert = require('node:assert/strict');
+const expected = {recordId: 73, actionId: 8};
+const valid = {status:404,intent:'ui.contract.v2',op:'action_open',reason_code:'RECORD_NOT_FOUND',res_id:73,action_id:8};
+assert.equal(accepts(valid,expected),true);
+for (const patch of [{status:409},{status:403},{status:500},{reason_code:'CONFIG_TARGET_STALE'},
+ {reason_code:undefined},{op:'model'},{intent:'api.data'},{res_id:74},{action_id:9}]) {
+ assert.equal(accepts({...valid,...patch},expected),false,JSON.stringify(patch));
+}
+"""
+        subprocess.run(["node", "-e", program], cwd=ROOT, check=True)
+
+
 class PaymentCreateFailureEvidenceTest(unittest.TestCase):
     def test_control_diagnostic_distinguishes_hidden_readonly_and_editable_without_values(self):
         source = (ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs").read_text()

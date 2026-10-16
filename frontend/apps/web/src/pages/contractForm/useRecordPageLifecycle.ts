@@ -224,30 +224,26 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       toPositiveInt(route.query.view_id) || toPositiveInt(route.query.viewId) || 0;
     let response: Awaited<ReturnType<typeof loadActionContractV2>> | null = null;
     if (actionId.value && recordId.value) {
-      try {
-        response = await loadActionContractV2(actionId.value, {
-          sceneKey: sceneKey || undefined,
-          menuId: menuId.value || undefined,
-          viewType: 'form',
-          viewId: requestedViewId || undefined,
-          recordId: recordId.value,
-          ...profileOptions,
-          surface: requestedSurface.value,
-          sourceMode: requestedSourceMode.value,
-          context: contractContext,
-          contextRaw,
-          previewToken: String(route.query.preview_token || '').trim() || undefined,
-          previewRoleKey: String(route.query.preview_role_key || '').trim() || undefined,
-        });
-        const pageInfo = response.snapshot.pageInfo;
-        if (
-          pageInfo.viewType !== 'form' ||
-          (currentModel && pageInfo.model && pageInfo.model !== currentModel)
-        ) {
-          response = null;
-        }
-      } catch {
-        response = null;
+      response = await loadActionContractV2(actionId.value, {
+        sceneKey: sceneKey || undefined,
+        menuId: menuId.value || undefined,
+        viewType: 'form',
+        viewId: requestedViewId || undefined,
+        recordId: recordId.value,
+        ...profileOptions,
+        surface: requestedSurface.value,
+        sourceMode: requestedSourceMode.value,
+        context: contractContext,
+        contextRaw,
+        previewToken: String(route.query.preview_token || '').trim() || undefined,
+        previewRoleKey: String(route.query.preview_role_key || '').trim() || undefined,
+      });
+      const pageInfo = response.snapshot.pageInfo;
+      if (
+        pageInfo.viewType !== 'form' ||
+        (currentModel && pageInfo.model && pageInfo.model !== currentModel)
+      ) {
+        throw new Error('动作表单配置与请求的模型或视图不一致');
       }
     }
     if (!response && currentModel) {
