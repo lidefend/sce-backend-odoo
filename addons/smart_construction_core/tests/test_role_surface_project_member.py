@@ -198,7 +198,7 @@ class TestProjectMemberRoleSurface(TransactionCase):
                 "smart_construction_core.menu_sc_boq_version",
                 "smart_construction_core.menu_sc_project_boq_root",
                 "smart_construction_core.menu_sc_boq_analysis",
-                "smart_construction_core.menu_sc_project_budget",
+                "smart_construction_core.menu_sc_p1_project_budget",
             }.issubset(primary_menu_xmlids)
         )
 
@@ -207,7 +207,7 @@ class TestProjectMemberRoleSurface(TransactionCase):
             "smart_construction_core.action_project_budget"
         )
         menu = self.env.ref(
-            "smart_construction_core.menu_sc_project_budget"
+            "smart_construction_core.menu_sc_p1_project_budget"
         )
         duplicate_menu = self.env.ref(
             "smart_construction_core.menu_sc_cost_plan"
@@ -741,7 +741,7 @@ class TestProjectMemberRoleSurface(TransactionCase):
         self.assertEqual(cost_plan_lines["allowed_operation"], "read")
         self.assertEqual(
             cost_plan_lines["menu_xmlid"],
-            "smart_construction_core.menu_sc_project_budget",
+            "smart_construction_core.menu_sc_p1_project_budget",
         )
         self.assertGreater(cost_plan_lines["menu_id"], 0)
         self.assertEqual(cost_plan_lines["model"], "project.cost.plan.line")
