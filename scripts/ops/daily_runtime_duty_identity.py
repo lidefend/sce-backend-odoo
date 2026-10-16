@@ -71,10 +71,11 @@ MANAGED_SOURCE = "managed_directory"
 
 #: A *protected historic source* is a database carrier the governed runtime must
 #: never write to and must never mistake for a duty.  Before the 2026-10-16 demo
-#: rebuild the only carrier named ``sc_demo`` was a duty; afterwards a rebuilt
-#: duty and the preserved pre-governance cluster both carry that name.  A bare
-#: database name therefore stops identifying a target, and the declaration has to
-#: say so itself.
+#: rebuild the demo database name identified exactly one carrier; afterwards a
+#: rebuilt duty and the preserved pre-governance cluster both answer to it.  A
+#: bare database name therefore stops identifying a target, and the declaration
+#: has to say so itself.  This note deliberately names no concrete carrier: the
+#: declaration is the only owner of those literals.
 PROTECTED_SOURCES_KEY = "protected_historic_sources"
 PROTECTED_HISTORIC_SOURCE_KEYS = (
     "source_id", "database", "cluster", "visibility", "authority", "reason",
@@ -436,8 +437,8 @@ def resolve_duty_carrier(database: str, path: Path | None = None, *, instances_r
     """Resolve one database *name* to exactly one declared *duty* carrier, or stop.
 
     A database name is not a target identity.  Once two declared carriers can
-    both answer to ``sc_demo`` -- the rebuilt duty and the preserved historic
-    source -- an entry that receives only a name cannot tell which one the
+    both answer to the same database name -- the rebuilt duty and the preserved
+    historic source -- an entry that receives only a name cannot tell which one the
     operator meant, and picking either is a guess about which data is about to be
     written or read.  The refusal lists every carrier so the operator can bind
     the duty, the cluster, the database and the storage explicitly instead.
@@ -588,8 +589,8 @@ def odoo_container_of(compose_project: str) -> str:
 #: The application container's own Odoo configuration and the flags a
 #: non-serving shell needs.  A duty-scoped write runs inside the *bound duty's
 #: own* application container, because a database name is not a target: the
-#: rebuilt demo carrier and the preserved historic source both answer to
-#: ``sc_demo``, and a command that named only the database would run in
+#: rebuilt demo carrier and the preserved historic source both answer to the
+#: same database name, and a command that named only the database would run in
 #: whichever cluster happened to serve that name -- for the demo that is the
 #: preserved pre-governance cluster, which the owner ruling protects from every
 #: governed write.

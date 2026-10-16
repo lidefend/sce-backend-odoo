@@ -42,16 +42,52 @@ def tearDownModule():
 
 
 class ContractTests(unittest.TestCase):
-    def test_fixed_daily_candidate_identity_loads(self):
+    def test_rebuilt_demo_duty_identity_resolves_from_the_declaration(self):
         contract = CONTINUITY._load_contract(CONTRACT_PATH)
+        self.assertEqual(contract["duty"], "demo")
         self.assertEqual(contract["environment_class"], "DAILY_CANDIDATE_ENVIRONMENT")
+        # Every one of these is resolved from the duty declaration. The contract
+        # cannot restate them, so rebuilding the carrier moves the contract with
+        # it instead of refusing the move.
         self.assertEqual(contract["database"], "sc_demo")
-        self.assertEqual(contract["database_volume"], "sc_dev_db_data")
+        self.assertEqual(contract["database_role"], "sc_demo_app")
+        self.assertEqual(contract["database_container"], "sc-demo-dev-db-1")
+        self.assertEqual(contract["odoo_container"], "sc-demo-dev-odoo-1")
+        self.assertEqual(contract["database_volume"], "sc_demo_db_data")
+        self.assertEqual(contract["odoo_data_volume"], "sc_demo_odoo_data")
+        self.assertEqual(contract["filestore_scope"], "sc_demo")
+        self.assertEqual(contract["backup_root"], "/data/backups/daily-demo-dev")
         self.assertEqual(
-            contract["source_repository"], "/opt/projects/repos/sce-backend-odoo"
+            contract["source_repository"], "/opt/projects/repos/sce-product-odoo"
         )
         self.assertFalse(contract["upgrade_contract"]["fixture_write_allowed"])
         self.assertFalse(contract["upgrade_contract"]["demo_data_write_allowed"])
+
+    def test_contract_restates_no_runtime_identity(self):
+        # The failure this guards against is not a wrong value but a second
+        # authority: a restated identity here outlives the declaration and turns
+        # a legitimate carrier rebuild into an identity refusal.
+        payload = json.loads(CONTRACT_PATH.read_text())
+        identity = CONTINUITY._duty_identity(CONTINUITY._load_duties()["demo"])
+        for key in sorted(set(identity) - {"duty"}):
+            self.assertNotIn(key, payload, key)
+
+    def test_rebuilt_demo_contract_cannot_select_the_historic_source(self):
+        # The pre-governance carrier answers to the same database name. It is
+        # declared as a protected historic source, never as a duty, so no duty
+        # contract can name it as its cluster.
+        contract = CONTINUITY._load_contract(CONTRACT_PATH)
+        declaration = CONTINUITY._load_duties()
+        sources = CONTINUITY.duty_identity.load_declaration().get(
+            CONTINUITY.duty_identity.PROTECTED_SOURCES_KEY
+        ) or []
+        self.assertTrue(sources)
+        for source in sources:
+            cluster = source.get("cluster") or {}
+            self.assertNotEqual(contract["database_container"], cluster.get("container"))
+            self.assertNotEqual(contract["compose_project"], cluster.get("compose_project"))
+            self.assertNotEqual(contract["database_volume"], cluster.get("data_volume"))
+        self.assertIn("demo", declaration)
 
     def test_changed_database_identity_is_rejected(self):
         contract = json.loads(CONTRACT_PATH.read_text())
