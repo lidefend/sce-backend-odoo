@@ -48,17 +48,16 @@
     "config/frontend/authoritative_navigation.json",
     "frontend/apps/web/scripts/frontend_product_maturity_audit.mjs",
     "config/frontend/role_surface_exposure_declarations_v1.json",
-    "docs/product/frontend_business_entry_acceptance_v1.csv"
+    "docs/product/frontend_business_entry_acceptance_v1.csv",
+    "scripts/ops/local_quick_evidence.py"
   ],
   "environment": {
     "kind": "offline",
     "authority": "existing governed local and GitHub CI entries; no daily runtime writes"
   },
   "checks": {},
-  "blockers": [
-    "Remote current b5 navigation failed; fixed dirty candidate verified locally, new exact-head hosted checks pending."
-  ],
-  "next_exact_step": "Freeze after scoped navigation recovery; independent review, exact-head Quick and archive; publish PR669 candidate and required hosted checks.",
+  "blockers": [],
+  "next_exact_step": "Prepare generated reports and freeze bounded P4 concurrency fix; exact Quick, independent fingerprint review, archive then publish PR669 on hosted runners.",
   "source_runs": [
     38818510036,
     38811434965,
@@ -213,6 +212,16 @@
       "dirty": true,
       "log": "artifacts/main-scheduled-ci-closeout-20261016/sce-ci-navigation-runtime.log",
       "sha256": "68b9deac38a6568f16467cd2abd471ed69e1dc225927c5c763e7f539a088924c"
+    },
+    {
+      "layer": "L2",
+      "command": "python3 scripts/verify/test_local_quick_evidence.py",
+      "status": "passed",
+      "test_count": 58,
+      "stage_head": "8ff27d65552bd28a7b1a58f53fa80d786b933245",
+      "dirty": true,
+      "log": "artifacts/main-scheduled-ci-closeout-20261016/sce-ci-ref-refresh-tests-final.log",
+      "sha256": "5a40555e3e70af2ad0ae0b707e26e69a53e9022802fbbc7c54f2ae8111b093df"
     }
   ],
   "evidence_index": {
@@ -477,5 +486,14 @@
     "affected": "owner/project_member/pm replacement menu identities; finance home scene; browser navigation audit",
     "validation": "L1 declarations and negative tests; L2 role/navigation runtime; L3 native menu upgrade required; L4 affected remote browser; L5 new clean candidate required.",
     "runtime": "4 test methods passed, three real role subcases with released navigation and owner write denial; XML upgrade and authority readback passed."
+  },
+  "ref_refresh_recovery": {
+    "classification": "P4 validation-tool concurrency limitation",
+    "scope": "single-run Quick; existing scanner authority and Make targets; no new cache or receipt import",
+    "proof": "original proofs + exact clean candidate + unchanged scan rules + one affected scan refresh + new proofs + stable refs",
+    "real_failure": "other worktree commit1cf5f74c at13:38:57 invalidated8ff signing after successful checks",
+    "review": "B-line no blocker; added real temporary second worktree new-content commit test;58pass",
+    "runtime_writes": "none",
+    "remote_backend_previous_candidate": "b5 backend job116822443887 completed success05:42:42UTC; aggregate workflow still running, not new candidate evidence"
   }
 }

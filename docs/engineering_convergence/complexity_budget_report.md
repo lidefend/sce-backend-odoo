@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `4811`
 - Files requiring split plan: `66`
-- Files above warning threshold: `124`
+- Files above warning threshold: `125`
 
 ## Split Plan Required
 
@@ -160,6 +160,7 @@ Generated from repository source files. This report is informational during the 
 | 932 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 932 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
+| 913 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 907 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
 | 901 | Python source | `addons/smart_core/tests/test_execute_button_server_action_boundaries.py` |
 | 897 | Python source | `addons/smart_core/utils/idempotency.py` |
@@ -168,7 +169,6 @@ Generated from repository source files. This report is informational during the 
 | 886 | Python source | `scripts/verify/release_capability_audit.py` |
 | 885 | Python source | `scripts/release/test_locked_menu_policy_contract.py` |
 | 883 | Python source | `scripts/audit/test_verification_lane_coverage.py` |
-| 883 | Python source | `scripts/ops/local_quick_evidence.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 877 | Python source | `addons/smart_core/app_config_engine/models/app_search_config.py` |
 | 872 | Python source | `scripts/verify/test_native_view_workflow_action_coverage_guard.py` |
@@ -190,6 +190,7 @@ Generated from repository source files. This report is informational during the 
 | 819 | Python source | `scripts/verify/workflow_action_semantics_completeness_guard.py` |
 | 814 | Python source | `scripts/ops/daily_runtime_legacy_stack_retire.py` |
 | 810 | Python source | `addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py` |
+| 808 | Python source | `scripts/verify/test_local_quick_evidence.py` |
 | 807 | Python source | `addons/smart_construction_core/models/core/material_rental.py` |
 | 802 | TypeScript source | `frontend/apps/web/src/api/businessConfig.ts` |
 | 802 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |

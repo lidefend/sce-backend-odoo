@@ -300,6 +300,23 @@ def _require_clean_start(root: Path, purpose: str) -> str:
     return head
 
 
+def _require_scan_proofs(root: Path, folder: Path, head: str, tree: str, coverage: dict) -> None:
+    for kind in scans.AUTHORITY:
+        path = folder / (kind + '.json')
+        try:
+            if path.is_symlink(): raise ValueError('symlink proof')
+            proof = json.loads(path.read_text())
+            base = proof.get('base')
+            expected = {'protocol': scans.COVERAGE_PROTOCOL, 'kind': kind, 'head': head, 'tree': tree,
+                        'coverage': coverage['scanners'][kind], 'mode': 'incremental' if base else 'full', 'base': base}
+            if proof != expected: raise ValueError('proof mismatch')
+            if base:
+                if not isinstance(base, str) or not FULL_SHA.fullmatch(base): raise ValueError('invalid base')
+                git(root, 'merge-base', '--is-ancestor', base, head)
+        except (OSError, ValueError, EvidenceError) as exc:
+            raise EvidenceError(f"actual successful scanner proof missing or invalid: {kind}") from exc
+
+
 def run_quick(root: Path, runner=subprocess.run, diagnostic: bool = False) -> Path | None:
     require_safe_make_environment()
     root = repository_root(root)
@@ -332,21 +349,34 @@ def run_quick(root: Path, runner=subprocess.run, diagnostic: bool = False) -> Pa
         completed = runner(command, cwd=root, env=environment, check=False, text=True)
         if completed.returncode: raise QuickRunFailed(completed.returncode)
         require_exact_clean_head(root, start_head)
-        if scans.coverage_snapshot(root) != coverage: raise EvidenceError("scan authority or reference snapshot changed")
-        for kind in scans.AUTHORITY:
-            path = folder / (kind + '.json')
-            try:
-                if path.is_symlink(): raise ValueError('symlink proof')
-                proof = json.loads(path.read_text())
-                base = proof.get('base')
-                expected = {'protocol': scans.COVERAGE_PROTOCOL, 'kind': kind, 'head': start_head, 'tree': tree,
-                            'coverage': coverage['scanners'][kind], 'mode': 'incremental' if base else 'full', 'base': base}
-                if proof != expected: raise ValueError('proof mismatch')
-                if base:
-                    if not isinstance(base, str) or not FULL_SHA.fullmatch(base): raise ValueError('invalid base')
-                    git(root, 'merge-base', '--is-ancestor', base, start_head)
-            except (OSError, ValueError, EvidenceError) as exc:
-                raise EvidenceError(f"actual successful scanner proof missing or invalid: {kind}") from exc
+        # First retain proof that every original scanner really succeeded.
+        _require_scan_proofs(root, folder, start_head, tree, coverage)
+        current = scans.coverage_snapshot(root)
+        if current != coverage:
+            # Another registered worktree may commit while the rest of Quick runs.
+            # Only refs may change: source/rules/revision selection never inherit a pass.
+            if (current["protocol"] != coverage["protocol"] or any(
+                {k: v for k, v in current["scanners"][kind].items() if k != "refs"}
+                != {k: v for k, v in coverage["scanners"][kind].items() if k != "refs"}
+                for kind in scans.AUTHORITY
+            )):
+                raise EvidenceError("scan authority changed; reference refresh refused")
+            affected = [kind for kind in scans.AUTHORITY
+                        if current["scanners"][kind] != coverage["scanners"][kind]]
+            for kind in affected:
+                (folder / (kind + ".json")).unlink()
+            coverage = current
+            launch["coverage"] = coverage
+            (folder / "launch.json").write_text(json.dumps(launch, sort_keys=True))
+            print("[local_quick_evidence] reference-only drift; refreshing scans=" + ",".join(affected))
+            completed = runner(["make", "--no-print-directory", *[scans.GOVERNED_SCAN_TARGETS[kind] for kind in affected]],
+                               cwd=root, env=environment, check=False, text=True)
+            if completed.returncode:
+                raise QuickRunFailed(completed.returncode)
+            require_exact_clean_head(root, start_head)
+            if scans.coverage_snapshot(root) != coverage:
+                raise EvidenceError("reference snapshot changed again during bounded scan refresh")
+            _require_scan_proofs(root, folder, start_head, tree, coverage)
         return _write_receipt_after_success(root, start_head, coverage)
 
 

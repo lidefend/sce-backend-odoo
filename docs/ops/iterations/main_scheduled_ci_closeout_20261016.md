@@ -148,3 +148,21 @@ another worktree committed while the trusted all-reference scan snapshot was liv
 Do not reuse it as a delivery pass. This new product candidate requires final
 validation after owning-layer defects are closed; unchanged earlier evidence remains
 indexed in the run. Shared-reference concurrency is not bypassed.
+
+## Shared-reference Quick recovery
+
+The 8ff27d65 suite also passed every check but correctly refused its receipt after
+another worktree committed 1cf5f74c during execution. This observed repeated failure
+is P4 orchestration scope: candidate source did not change, scanner reachability did.
+The existing single-run receipt producer now validates original scanner proofs first,
+then permits one refresh of only the affected existing scanner targets when only
+refs changed. Source, scanner authority, protocol and revision selection must remain
+unchanged. Old affected proofs are deleted; actual new successful proofs and stable
+post-refresh refs are mandatory. Failure, absent proof, candidate mutation, authority
+change or a second drift still refuses signing. No receipt import, ad-hoc cache or
+successful test fabrication is introduced. The sharded lane remains unchanged.
+
+58 focused tests pass, including a real temporary second worktree committing new
+content and moving its branch, as well as each refusal condition above. Independent
+review found no blocker. Prior full Quick runs without receipts remain non-delivery
+observations. This receipt-producer source change requires a newly frozen candidate.
