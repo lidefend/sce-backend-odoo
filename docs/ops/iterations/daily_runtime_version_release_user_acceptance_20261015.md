@@ -2674,3 +2674,44 @@ DENY verification surface grew: stale_target_dispositions: 1 > frozen baseline 0
 
 **候选状态**：`6adb56ff8184` 无 receipt。两处修完后重新冻结，只重跑**一次** exact-head Quick；
 分片遇首个失败即停，所以 shard 0 与 shard 5 的其余前置由这次重跑证明，不在文档里代替断言。
+
+### 6. 主线集成（PR #667）与续接（2026-10-16）
+
+**候选**：`6dbe7135076de4b6acb999b1c845592490af9c5b`（相对 `main 04c6a129` 共 7 个提交，含 4 个随行 bookkeeping）。
+**合并**：PR #667 以 **squash** 合并为 `b966d66a0c4132e7b2c75e497fec5bf2207d44d6`；合并前已从 API 回读
+`headRefOid` 与预期一致，`git diff <候选 HEAD> <合并提交>` **为空**——主线承载的正是被审内容，逐字节一致。
+旧分支引用**未移动、未强推**。
+
+**必需检查**（绑定该 PR 的最新源提交）：`public_guard`、`merge_policy_gate`、`professional_quality_gate`（5m31s）、
+`frontend_release_gate`、`professional_authorization`、`python310_runtime_compatibility`、`release_candidate_gate` 全部通过；
+合并前 `mergeStateStatus=CLEAN`、`reviewDecision` 为空（平台人工审查最低人数为 0）。
+
+**独立复核**（另一执行体，只读、绑定同一候选身份）：**APPROVE**，无 S1/S2。两条 S3 非阻断：
+`_scan_filestore` 未显式指定读取用户（不可读条目会落 `unknown` 并 fail-closed，不构成绕过）；
+一处**既有**文档回读字面量属 `=` 前缀派生观测，不构成第二权威。未核验：远端 CI 耗时、台账中依赖已不存在外部对象的引用、
+以及需要 duty 写权限的备份/恢复真实演练。
+
+**收尾**：`ci.delivery.freeze.prepare` PASS；`ci.local.iteration` PASS 且 `unmappedPathCount=0`。
+exact-head Quick 回执 `.git/codex/evidence/ci.local.quick/6dbe7135….json`（`head`/`tree` 与候选一致）。
+
+#### 续接（与 PR #666 后同样的 squash 续接步骤）
+
+已合并分支的 tip 不再是 `main` 祖先且远端已发布，继续在其上开发会呈现陈旧历史。因此：
+
+- 新建**未发布**分支 `fix/daily-runtime-payload-import-closeout-20261016`，基点 = `b966d66a`；
+- `.agent/active-runs.json` 绑定与本记录 `branch` 一并由旧分支改到新分支——台账守卫要求**一条 run 只绑定一个分支**，
+  且 run 声明的 `branch` 必须等于索引键；`baseline_sha` 同步对齐到 `b966d66a`；
+- **旧分支退役继续挂起**：`scripts/ops/branch_cleanup_safe.sh` 会拒绝退役“仍被绑定 main 列在
+  `.agent/active-runs.json` 中的分支”，而 `main` 仍带旧绑定的副本，直到本 bookkeeping 提交落地。退役是后续步骤，
+  不为它制造改动；
+- 本提交为 **bookkeeping**，随下一个真实产品候选同行；只改 `.agent/` 与 `docs/` 的独立候选会被
+  `pr.merge.local_quick_gate` 拒绝，因此**不单独开 PR**；
+- 回执绑定候选身份：改绑后既有回执 stale，但声明输入未变，随下一候选重录，不为自身重跑。
+
+#### 当前状态
+
+- 主线集成（本候选）：**完成**（已 squash 合并并回读）。合并不触发部署。
+- 版本发布、产品交付：**均未完成**。
+- 客户数据迁移：**尚未运行**。
+- 唯一外部阻塞：**兼容新签名载荷（客户模块 `17.0.2.8.0`）及对应真实审批**。载荷须携带构建身份、新校验和与签名依据，
+  而不是只改版本号；平台侧兼容基础已确定（该 duty 以部署树 `b80841059b19` 运行 `smart_core 17.0.1.1.15`）。

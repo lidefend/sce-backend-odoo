@@ -21,7 +21,7 @@
     "disposition": "Registered as findings of this run; not resolved in the three-database step. They belong to the fact-source unification goal and keep it open.",
     "guard_defect": "sc_data_scope_rule_coverage_guard.record_is_global treats groups=[(5,0,0)] as group-scoped although Odoo treats it as global, so three hand-written payroll global rules are invisible to the guard"
   },
-  "baseline_sha": "04c6a1292c33b923abc666bc1444c869372081b3",
+  "baseline_sha": "b966d66a0c4132e7b2c75e497fec5bf2207d44d6",
   "blockers": [
     "CLOSED 2026-10-16 in this run (was: the maintenance access for <customer-tenant-db> could not be requested and approved). The named approver lidefend is now a verified platform security administrator with an account, and the approval was driven end to end over the product HTTP entry: request by the platform administrator admin, approval by lidefend, state approved, window 2026-10-16 08:43:20 CST. The decision was taken by the product capability, not by a one-off shell. See maintenance_approval_execution_20261016 and maintenance_access_real_runtime_negatives_20261016.",
     "CLOSED 2026-10-16 in this run (was: the daily runtime published face still ran SC_SOURCE_REVISION=10bf72ef). Two candidate bundle deployments converged the published face and the duty refresh then read all three faces back at b80841059b196f66487f4b598d90d3b0662476b4, so the routes added on this branch are mounted. See duty_stack_runtime_environment_forwarding_20261016.",
@@ -30,7 +30,7 @@
     "sc_demo mixes the customer tenant volume with demo/test purposes, so 'the demo database' is not yet a pure demo database; the destination of the company-1 volume is unresolved, and the demo duty is still declared with the shared-bootstrap-role gap and has no dedicated application role.",
     "CLOSED 2026-10-15 in this run: the platform-model registration for the daily profile now has a governed runtime binding -- scripts/ops/daily_runtime_duty_database_registration.py resolves every runtime fact from config/ops/daily_runtime_database_duties.v1.json and drives the immutable platform.database.register entry inside the control duty's own rendered stack. <customer-tenant-db> is registered (customer/<tenant_key>/customer_production/database_per_customer_tenant/^<customer-tenant-db>$ stage declared, one audited register operation, reuse path writes nothing), so DBGOV1_DATABASE_NOT_REGISTERED no longer blocks the operator lifecycle. Still open from the original finding: suspend/resume are not yet exercised for this duty and the demo duty still carries no registration of its own.",
     "The three declared Step B gaps stay preconditions for the first write to sc_odoo or sc_platform_core: the cluster reports data_checksums=off, no amcheck index verification has run, and neither database has a paired recovery point. sc_platform_control is a fresh cluster and inherited data_checksums=off; enabling checksums would need a rebuild, so the decision is recorded rather than assumed.",
-    "Frozen exact-head Quick, final identity-bound review and required remote checks remain pending.",
+    "CLOSED 2026-10-16 in this run (was: frozen exact-head Quick, final identity-bound review and required remote checks remained pending). The candidate 6dbe7135076de4b6acb999b1c845592490af9c5b passed exactly one exact-head ci.local.quick (receipt in .git/codex/evidence/ci.local.quick/), an independent read-only review returned APPROVE with no S1/S2, and every required check passed on that live head: public_guard, merge_policy_gate, professional_quality_gate, frontend_release_gate, professional_authorization, python310_runtime_compatibility and release_candidate_gate. PR #667 was then squash merged as b966d66a0c4132e7b2c75e497fec5bf2207d44d6 and read back; git diff between the candidate head and the merge commit is empty. See mainline_integration_pr667_20261016.",
     "CLOSED 2026-10-16 in this run (was: the frozen candidate's Quick failed on verify.test.coverage.registry because the platform_maintenance_access and tenant_payload_operator tags had no registry disposition; the same two lines are in the preserved earlier Quick failure, so this was pre-existing and previously masked by the product-tree boundary violation). Both entries are now dispositioned against their real on-demand ORM gates, the tracked coverage snapshot is re-exported, and the gate passes. See coverage_registry_gap_20261016.",
     "CLOSED 2026-10-16 in this run (was: audit.verification.lane_coverage.check denied the frozen candidate because two make targets stayed registered as dead surface after the coverage registry named them). Both registrations were removed through the reasoned unregister path and the frozen baseline now holds. See coverage_registry_gap_20261016.follow_on.",
     "CLOSED 2026-10-16 in this run (was: the customer duty's continuity baseline fails closed on one unreferenced 0-byte filestore object). The object is a native Odoo 17 attachment garbage-collection marker: _mark_for_gc writes an empty file under filestore/<db>/checklist/<store name> for every written or deleted store name, it is never referenced by ir_attachment.store_fname, and the list of those files is exactly what the filestore GC walks. It was classified as a maintenance marker and kept; nothing was deleted and no assertion was relaxed. The guard now separates attachment bodies, maintenance markers and unknown entries and blocks only on a missing/corrupt body or an unexplained file. See attachment_filestore_semantics_20261016.",
@@ -40,7 +40,7 @@
     "CLOSED 2026-10-16 in this run (frozen-candidate early gate): the first exact-head Quick of candidate 6adb56ff8184 failed verify.product.release.version because this run's own ledger copied the product-version literal, making the ledger a second authority for a value that must have exactly one source. The literal was replaced with a reference to VERSION (the same convention the other ledgers use) and the guard now passes with duplicates=0. See frozen_candidate_early_gate_fixes_20261016.failure_1_product_version_duplication.",
     "CLOSED 2026-10-16 in this run (frozen-candidate early gate): the same Quick failed audit.verification.lane_coverage.check with stale_target_dispositions 1 > 0, because the continuity batch's new frontend_dev_incremental rule names verify.daily.duty.recovery and the target therefore stopped being zero-reference while its disposition still claimed it was not wired to any lane. The stale registration was removed through the reasoned unregister path (which refuses while the target is still zero-reference), and the check passes. The frozen allowance was deliberately not rewritten: see frozen_candidate_early_gate_fixes_20261016.failure_2_stale_zero_reference_disposition."
   ],
-  "branch": "fix/daily-runtime-identity-relocation-closeout-20261016",
+  "branch": "fix/daily-runtime-payload-import-closeout-20261016",
   "checks": {
     "business_entry_matrix_browser": {
       "inputs": [
@@ -293,7 +293,7 @@
   },
   "goal": ".agent/goals/DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015.yaml",
   "id": "DAILY-RUNTIME-VERSION-RELEASE-AND-USER-ACCEPTANCE-20261015",
-  "next_exact_step": " STATUS 2026-10-16: the two frozen-candidate early gates (duplicated product-version literal in this ledger, stale zero-reference disposition) are fixed and re-verified; the candidate is re-frozen and exactly one exact-head Quick is re-run before the candidate is pushed. After this closure the only external dependency is a signed payload re-emitted against the exact module build this tenant runs (<customer-module> 17.0.2.8.0); it must carry the build identity, the new checksum and the signature basis rather than a bumped version string. (1) The declared-module drift is closed, so the platform side of that compatibility basis is settled: the customer duty runs smart_core 17.0.1.1.15 from the deployed tree at b80841059b19. (2) The attachment/filestore continuity guard is settled by storage semantics; the customer duty's continuity baseline still has to be re-run against the fixed guard at the frozen candidate, together with the payload, and that re-run is a frozen-candidate activity rather than a step to repeat now. (3) When the payload arrives, and only then: verify delivery identity and signature -> read-only compatibility pre-check -> a real approval bound to the new checksum -> final plan -> import -> verify/reconcile -> revoke the temporary grant -> independent review. (4) Branch retirement stays suspended and the bookkeeping commits ride with the next real product candidate. Nothing here advances the import, repeats the empty-database isolation query or claims product delivery. No step may be replaced by writing the model directly, fabricating an approval, reusing admin or relaxing a mechanism.",
+  "next_exact_step": " STATUS 2026-10-16: the candidate was merged as PR #667 (main b966d66a0c4132e7b2c75e497fec5bf2207d44d6) and mainline integration for it is complete; the run continues on the unpublished branch fix/daily-runtime-payload-import-closeout-20261016. The two frozen-candidate early gates (duplicated product-version literal in this ledger, stale zero-reference disposition) are fixed and re-verified; the candidate is re-frozen and exactly one exact-head Quick is re-run before the candidate is pushed. After this closure the only external dependency is a signed payload re-emitted against the exact module build this tenant runs (<customer-module> 17.0.2.8.0); it must carry the build identity, the new checksum and the signature basis rather than a bumped version string. (1) The declared-module drift is closed, so the platform side of that compatibility basis is settled: the customer duty runs smart_core 17.0.1.1.15 from the deployed tree at b80841059b19. (2) The attachment/filestore continuity guard is settled by storage semantics; the customer duty's continuity baseline still has to be re-run against the fixed guard at the frozen candidate, together with the payload, and that re-run is a frozen-candidate activity rather than a step to repeat now. (3) When the payload arrives, and only then: verify delivery identity and signature -> read-only compatibility pre-check -> a real approval bound to the new checksum -> final plan -> import -> verify/reconcile -> revoke the temporary grant -> independent review. (4) Branch retirement stays suspended and the bookkeeping commits ride with the next real product candidate. Nothing here advances the import, repeats the empty-database isolation query or claims product delivery. No step may be replaced by writing the model directly, fabricating an approval, reusing admin or relaxing a mechanism.",
   "record": "docs/ops/iterations/daily_runtime_version_release_user_acceptance_20261015.md",
   "review_s2_closure_20261015": {
     "authority": "Independent B-line review of 5f5c4dae..4450e674 returned APPROVE_WITH_NOTES with one S2: the registration's control-database write had no test wiring, and the existing assertion pointed at the opposite target",
@@ -3694,5 +3694,59 @@
       "follow_up": "tighten max_targets_zero_reference and the frozen identity set with --write-baseline in the batch that owns the newly defined target"
     },
     "quick_state": "No receipt was issued for 6adb56ff8184. Both gates above are fixed in the commits that follow, the candidate is re-frozen, and exactly one exact-head Quick is re-run. Because each shard stops at its first failure, the remaining prerequisites of shard 0 and shard 5 were not reached; they are validated by that re-run rather than asserted here."
+  },
+  "mainline_integration_pr667_20261016": {
+    "candidate": {
+      "branch": "fix/daily-runtime-identity-relocation-closeout-20261016",
+      "head": "6dbe7135076de4b6acb999b1c845592490af9c5b",
+      "base_main": "04c6a1292c33b923abc666bc1444c869372081b3",
+      "commit_count": 7,
+      "exact_head_quick_receipt": ".git/codex/evidence/ci.local.quick/6dbe7135076de4b6acb999b1c845592490af9c5b.json"
+    },
+    "merge": {
+      "pull_request": 667,
+      "url": "https://github.com/lidefend/sce-backend-odoo/pull/667",
+      "method": "squash",
+      "subject": "Merge PR #667: filestore 连续性按存储语义分类与冻结候选早期门禁修复",
+      "merge_commit": "b966d66a0c4132e7b2c75e497fec5bf2207d44d6",
+      "merged_head_match": true,
+      "content_identity": "git diff 6dbe7135076de4b6acb999b1c845592490af9c5b b966d66a0c4132e7b2c75e497fec5bf2207d44d6 is empty, so mainline carries exactly the reviewed candidate content; the old branch tip is not an ancestor of main and its ref was neither moved nor force-pushed"
+    },
+    "required_checks": {
+      "public_guard": "pass",
+      "merge_policy_gate": "pass",
+      "professional_quality_gate": "pass (5m31s)",
+      "frontend_release_gate": "pass",
+      "professional_authorization": "pass",
+      "python310_runtime_compatibility": "pass",
+      "release_candidate_gate": "pass",
+      "state_before_merge": "mergeStateStatus=CLEAN, reviewDecision empty (platform review minimum is 0 per the owner merge rule)",
+      "identity_binding": "the successful checks belong to the live PR head 6dbe7135, which was re-read from the API and matched the expected head before the merge"
+    },
+    "independent_review": {
+      "verdict": "APPROVE",
+      "severity": "no S1/S2",
+      "scope": "filestore semantics classification and counter-examples; run ledger and document boundaries; the zero-reference disposition removal; minimality of the early-gate fixes",
+      "s3_non_blocking": [
+        "_scan_filestore does not pass an explicit --user to docker exec; an unreadable entry would land in unknown and fail closed, so it is not a bypass, but the runbook could state the read identity",
+        "one pre-existing document readback still carries a version literal in '=<value>' form; it is a declared derived observation and not a second authority"
+      ],
+      "not_verified": "remote CI runtime, ledger references to no-longer-existing external objects, and the real backup/restore drill (needs duty write access)"
+    },
+    "continuation": {
+      "why_a_new_branch": "the merged candidate branch is published and its tip is no longer an ancestor of main, so continuing on it would present a stale history; the same squash-continuation step was used after PR #666",
+      "new_branch": "fix/daily-runtime-payload-import-closeout-20261016",
+      "new_branch_base": "b966d66a0c4132e7b2c75e497fec5bf2207d44d6",
+      "binding_moved": ".agent/active-runs.json and this record both moved from fix/daily-runtime-identity-relocation-closeout-20261016 to fix/daily-runtime-payload-import-closeout-20261016, because the ledger guard requires one run to bind exactly one branch and the run's declared branch to equal the index key",
+      "old_branch_retirement": "suspended. scripts/ops/branch_cleanup_safe.sh refuses to retire a branch while the bound main still lists it in .agent/active-runs.json, and main still carries the old binding until this bookkeeping commit lands. Retirement is therefore a later step, not a manufactured change.",
+      "bookkeeping_rule": "this commit is bookkeeping and rides with the next product candidate; a standalone .agent/+docs candidate is refused by pr.merge.local_quick_gate, so no PR is opened for it",
+      "receipt_consequence": "the exact-head receipts are bound to the candidate head; after the re-bind the existing receipts go stale, the declared inputs are unchanged, and they are re-recorded with the next candidate rather than re-run for their own sake"
+    },
+    "status_boundaries": {
+      "mainline_integration": "complete for this candidate (squash merged and read back)",
+      "version_release": "not done; merging does not deploy",
+      "product_delivery": "not done",
+      "customer_data_migration": "not run"
+    }
   }
 }
